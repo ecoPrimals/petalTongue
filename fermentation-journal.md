@@ -121,3 +121,56 @@
 
 **Note**: This journal is for learning, not perfection. Document everything - good, bad, surprising, frustrating. It's all part of fermentation! 🌸
 
+
+---
+
+## Day 1 (Continued) - December 23, 2025
+
+### 🎯 Additional Goals
+- Build 01-single-primal scenario
+- Create demo scripts for each primal type
+- Document expected outputs
+
+### 📚 What I Did
+
+#### Built 01-Single-Primal Scenario
+- Created comprehensive README (~300 lines)
+- Wrote demo orchestrator script
+- Created individual primal launch scripts:
+  - beardog-only.sh - Security primal
+  - nestgate-only.sh - Storage primal
+  - stop-all-primals.sh - Cleanup script
+
+**Structure**:
+- Progressive demo (one primal at a time)
+- Clear expected outputs documented
+- Troubleshooting guide included
+- Fermentation notes added
+
+#### Key Features
+- Demonstrates simplest case (1 node, 0 edges)
+- Shows audio descriptions for each primal type
+- Tests basic rendering
+- Validates auto-refresh mechanism
+- Teaches fundamentals before complexity
+
+### 💡 Additional Learnings
+- Single-node demos are pedagogically valuable
+- Starting simple builds confidence
+- Each primal type should have unique characteristics
+- Real primals reveal more than mocks
+
+### ⏰ Additional Time Spent
+- 01-single-primal scripts: ~45 minutes
+- Documentation: ~30 minutes
+**Session Total**: ~3 hours 45 minutes
+
+### 📊 Progress Update
+Scenarios: 2/8 with infrastructure (25%)
+- ✅ 00-setup - Complete
+- ✅ 01-single-primal - Complete
+- ⏸️ 02-08 - Ready to build
+
+### 🌡️ Fermentation Temperature
+**Still Warm** 🌱 - Momentum building, patterns emerging
+
