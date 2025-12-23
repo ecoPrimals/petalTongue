@@ -163,10 +163,21 @@ impl PetalTongueApp {
 
 impl eframe::App for PetalTongueApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Set dark theme with custom colors
+        let mut style = (*ctx.style()).clone();
+        style.visuals.dark_mode = true;
+        style.visuals.override_text_color = Some(egui::Color32::from_rgb(220, 220, 220));
+        style.visuals.window_fill = egui::Color32::from_rgb(25, 25, 30);
+        style.visuals.panel_fill = egui::Color32::from_rgb(30, 30, 35);
+        ctx.set_style(style);
+        
         // Top menu bar
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+        egui::TopBottomPanel::top("top_panel")
+            .frame(egui::Frame::none().fill(egui::Color32::from_rgb(20, 20, 25)).inner_margin(8.0))
+            .show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                ui.heading("🌸 petalTongue - Universal Representation System");
+                ui.heading(egui::RichText::new("🌸 petalTongue").size(20.0).color(egui::Color32::from_rgb(255, 182, 193)));
+                ui.label(egui::RichText::new("Universal Representation System").size(14.0).color(egui::Color32::GRAY));
                 
                 ui.separator();
                 
@@ -207,18 +218,24 @@ impl eframe::App for PetalTongueApp {
         // Left panel - Controls
         if self.show_controls {
             egui::SidePanel::left("controls_panel")
-                .default_width(250.0)
+                .default_width(280.0)
+                .frame(egui::Frame::none().fill(egui::Color32::from_rgb(30, 30, 35)).inner_margin(12.0))
                 .show(ctx, |ui| {
-                    ui.heading("Controls");
+                    ui.heading(egui::RichText::new("⚙️ Controls").size(18.0));
+                    ui.add_space(8.0);
                     ui.separator();
+                    ui.add_space(8.0);
                     
-                    ui.label("🖱️ Mouse:");
+                    ui.label(egui::RichText::new("🖱️ Mouse Controls").strong());
+                    ui.add_space(4.0);
                     ui.label("  • Drag: Pan camera");
                     ui.label("  • Scroll: Zoom in/out");
                     ui.label("  • Click: Select node");
                     
+                    ui.add_space(12.0);
                     ui.separator();
-                    ui.heading("Legend");
+                    ui.add_space(12.0);
+                    ui.heading(egui::RichText::new("🎨 Health Legend").size(16.0));
                     
                     ui.horizontal(|ui| {
                         ui.colored_label(egui::Color32::from_rgb(40, 180, 40), "⬤");
@@ -242,10 +259,13 @@ impl eframe::App for PetalTongueApp {
         // Right panel - Audio information
         if self.show_audio_panel {
             egui::SidePanel::right("audio_panel")
-                .default_width(350.0)
+                .default_width(380.0)
+                .frame(egui::Frame::none().fill(egui::Color32::from_rgb(30, 30, 35)).inner_margin(12.0))
                 .show(ctx, |ui| {
-                    ui.heading("🎵 Audio Representation");
+                    ui.heading(egui::RichText::new("🎵 Audio Representation").size(18.0));
+                    ui.add_space(8.0);
                     ui.separator();
+                    ui.add_space(8.0);
                     
                     // Master volume control
                     let mut volume = self.audio_renderer.master_volume();
@@ -265,34 +285,45 @@ impl eframe::App for PetalTongueApp {
                         }
                     });
                     
+                    ui.add_space(8.0);
                     ui.separator();
+                    ui.add_space(8.0);
                     
                     // Soundscape description
-                    ui.heading("Soundscape");
+                    ui.heading(egui::RichText::new("🎼 Soundscape").size(16.0));
+                    ui.add_space(4.0);
                     let description = self.audio_renderer.describe_soundscape();
-                    ui.label(egui::RichText::new(description).size(12.0).color(egui::Color32::LIGHT_GRAY));
+                    ui.label(egui::RichText::new(description).size(13.0).color(egui::Color32::from_rgb(200, 200, 200)));
                     
+                    ui.add_space(12.0);
                     ui.separator();
+                    ui.add_space(8.0);
                     
                     // Node-level audio info
                     if let Some(selected_id) = self.visual_renderer.selected_node() {
-                        ui.heading("Selected Node Audio");
+                        ui.heading(egui::RichText::new("🎯 Selected Node").size(16.0));
+                        ui.add_space(4.0);
                         if let Some(node_desc) = self.audio_renderer.describe_node_audio(selected_id) {
-                            ui.label(egui::RichText::new(node_desc).size(12.0));
+                            ui.label(egui::RichText::new(node_desc).size(13.0).color(egui::Color32::from_rgb(255, 230, 150)));
                         }
                     } else {
-                        ui.label(egui::RichText::new("Click a node to see its audio representation").size(12.0).italics());
+                        ui.heading(egui::RichText::new("🎯 Selected Node").size(16.0).color(egui::Color32::GRAY));
+                        ui.add_space(4.0);
+                        ui.label(egui::RichText::new("Click a node to hear its audio representation").size(12.0).italics().color(egui::Color32::GRAY));
                     }
                     
+                    ui.add_space(12.0);
                     ui.separator();
+                    ui.add_space(8.0);
                     
                     // Instrument legend
-                    ui.heading("Instrument Mapping");
-                    ui.label("🐻 Security → Deep Bass");
-                    ui.label("🍄 Compute → Rhythmic Drums");
-                    ui.label("🐦 Discovery → Light Chimes");
-                    ui.label("🏠 Storage → Sustained Strings");
-                    ui.label("🐿️ AI → High Synth");
+                    ui.heading(egui::RichText::new("🎹 Instrument Mapping").size(16.0));
+                    ui.add_space(4.0);
+                    ui.label(egui::RichText::new("🐻 Security → Deep Bass").color(egui::Color32::from_rgb(100, 150, 255)));
+                    ui.label(egui::RichText::new("🍄 Compute → Rhythmic Drums").color(egui::Color32::from_rgb(255, 200, 100)));
+                    ui.label(egui::RichText::new("🐦 Discovery → Light Chimes").color(egui::Color32::from_rgb(150, 255, 150)));
+                    ui.label(egui::RichText::new("🏠 Storage → Sustained Strings").color(egui::Color32::from_rgb(255, 150, 255)));
+                    ui.label(egui::RichText::new("🐿️ AI → High Synth").color(egui::Color32::from_rgb(255, 100, 100)));
                 });
         }
         
