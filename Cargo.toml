@@ -1,0 +1,56 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/petal-tongue-core",
+    "crates/petal-tongue-graph",
+    "crates/petal-tongue-animation",
+    "crates/petal-tongue-telemetry",
+    "crates/petal-tongue-api",
+    "crates/petal-tongue-ui",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0"
+repository = "https://github.com/ecoPrimals/petalTongue"
+authors = ["ecoPrimals Project"]
+
+[workspace.dependencies]
+# SourDough core traits
+sourdough-core = { path = "../sourDough/crates/sourdough-core" }
+
+# Async runtime
+tokio = { version = "1.40", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# UI Framework (egui)
+eframe = { version = "0.29", default-features = false, features = [
+    "default_fonts",
+    "glow",
+    "persistence",
+] }
+egui = "0.29"
+egui_extras = "0.29"
+
+# Graph visualization
+egui_graphs = "0.22"
+petgraph = "0.6"
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json"] }
+
+# Time and dates
+chrono = "0.4"
