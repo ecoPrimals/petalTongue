@@ -1,0 +1,101 @@
+{
+  "name": "Simple Ecosystem",
+  "description": "5 primals, basic topology, all healthy",
+  "primals": [
+    {
+      "id": "beardog-1",
+      "name": "BearDog Security",
+      "primal_type": "Security",
+      "endpoint": "http://localhost:8001",
+      "capabilities": [
+        "authentication",
+        "authorization",
+        "encryption"
+      ],
+      "health": "healthy",
+      "last_seen": 1703376000
+    },
+    {
+      "id": "toadstool-1",
+      "name": "ToadStool Compute",
+      "primal_type": "Compute",
+      "endpoint": "http://localhost:8002",
+      "capabilities": [
+        "container_runtime",
+        "workload_execution"
+      ],
+      "health": "healthy",
+      "last_seen": 1703376060
+    },
+    {
+      "id": "songbird-1",
+      "name": "Songbird Discovery",
+      "primal_type": "Discovery",
+      "endpoint": "http://localhost:8003",
+      "capabilities": [
+        "service_discovery",
+        "capability_matching"
+      ],
+      "health": "healthy",
+      "last_seen": 1703376120
+    },
+    {
+      "id": "nestgate-1",
+      "name": "NestGate Storage",
+      "primal_type": "Storage",
+      "endpoint": "http://localhost:8004",
+      "capabilities": [
+        "permanent_storage",
+        "content_addressing",
+        "attribution"
+      ],
+      "health": "healthy",
+      "last_seen": 1703376180
+    },
+    {
+      "id": "squirrel-1",
+      "name": "Squirrel AI",
+      "primal_type": "AI",
+      "endpoint": "http://localhost:8005",
+      "capabilities": [
+        "intent_parsing",
+        "task_planning"
+      ],
+      "health": "healthy",
+      "last_seen": 1703376240
+    }
+  ],
+  "topology": [
+    {
+      "from": "beardog-1",
+      "to": "toadstool-1",
+      "edge_type": "authenticates",
+      "label": "Auth Flow"
+    },
+    {
+      "from": "songbird-1",
+      "to": "beardog-1",
+      "edge_type": "discovers",
+      "label": null
+    },
+    {
+      "from": "toadstool-1",
+      "to": "nestgate-1",
+      "edge_type": "stores_to",
+      "label": "Data Flow"
+    },
+    {
+      "from": "squirrel-1",
+      "to": "songbird-1",
+      "edge_type": "queries",
+      "label": null
+    },
+    {
+      "from": "squirrel-1",
+      "to": "toadstool-1",
+      "edge_type": "orchestrates",
+      "label": "Task Execution"
+    }
+  ]
+}
+

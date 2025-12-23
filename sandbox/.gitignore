@@ -1,0 +1,16 @@
+# Sandbox gitignore
+
+# Mock server build artifacts
+mock-biomeos/target/
+mock-biomeos/Cargo.lock
+
+# Generated scenarios
+scenarios/generated-*.json
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+.DS_Store
+
