@@ -22,6 +22,7 @@
 pub mod config;
 pub mod error;
 pub mod types;
+pub mod graph_engine;
 
 use sourdough_core::{
     PrimalLifecycle, PrimalHealth, PrimalState, PrimalError,
@@ -36,6 +37,9 @@ pub use error::petalTongueError;
 
 /// Visualization types
 pub use types::*;
+
+/// Graph engine (core topology representation)
+pub use graph_engine::{GraphEngine, Node, Position, LayoutAlgorithm, GraphStats};
 
 /// The petalTongue primal.
 pub struct petalTongue {
