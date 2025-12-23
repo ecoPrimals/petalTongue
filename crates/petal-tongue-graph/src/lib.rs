@@ -8,8 +8,12 @@
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
+#![allow(clippy::missing_errors_doc)] // Allow for now, will add later
+#![allow(clippy::missing_panics_doc)] // Allow for now, will add later
 
 pub mod visual_2d;
+// Audio playback temporarily disabled - needs ALSA libraries
+// pub mod audio_playback;
 pub mod audio_sonification;
 
 pub use visual_2d::Visual2DRenderer;

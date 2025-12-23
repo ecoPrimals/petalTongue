@@ -32,6 +32,11 @@ toml = "0.8"
 thiserror = "2.0"
 anyhow = "1.0"
 
+# Audio synthesis (temporarily disabled - needs ALSA libraries)
+# Uncomment after installing: sudo apt-get install -y libasound2-dev pkg-config
+# rodio = "0.17"
+# rand = "0.8"
+
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
