@@ -2,7 +2,9 @@
 //!
 //! Renders graph topology as 2D graphics using egui.
 
-use petal_tongue_core::{GraphEngine, Node, Position, PrimalHealthStatus};
+use petal_tongue_core::{GraphEngine, PrimalHealthStatus};
+use petal_tongue_core::graph_engine::Node;
+use petal_tongue_core::graph_engine::Position;
 use egui::{Color32, Pos2, Rect, Stroke, Vec2};
 use std::sync::{Arc, RwLock};
 

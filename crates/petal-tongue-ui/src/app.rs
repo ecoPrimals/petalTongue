@@ -1,8 +1,10 @@
 //! Main application logic for petalTongue UI
 
-use petal_tongue_core::{GraphEngine, PrimalInfo, PrimalHealthStatus, TopologyEdge, LayoutAlgorithm};
+use petal_tongue_core::{GraphEngine, LayoutAlgorithm, PrimalInfo, PrimalHealthStatus, TopologyEdge};
 use petal_tongue_graph::{Visual2DRenderer, AudioSonificationRenderer};
+use petal_tongue_api::BiomeOSClient;
 use std::sync::{Arc, RwLock};
+use std::time::{Duration, Instant};
 
 /// The main petalTongue UI application
 pub struct PetalTongueApp {
@@ -12,45 +14,110 @@ pub struct PetalTongueApp {
     visual_renderer: Visual2DRenderer,
     /// Audio renderer
     audio_renderer: AudioSonificationRenderer,
+    /// BiomeOS API client
+    biomeos_client: BiomeOSClient,
     /// Current layout algorithm
     current_layout: LayoutAlgorithm,
     /// Show audio description panel
     show_audio_panel: bool,
     /// Show controls panel
     show_controls: bool,
+    /// Last refresh time
+    last_refresh: Instant,
+    /// Auto-refresh enabled
+    auto_refresh: bool,
+    /// Refresh interval (seconds)
+    refresh_interval: f32,
 }
 
 impl PetalTongueApp {
     /// Create a new application
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+        // Create BiomeOS client (try localhost:3000, fallback to mock)
+        let biomeos_url = std::env::var("BIOMEOS_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+        let biomeos_client = BiomeOSClient::new(&biomeos_url).with_mock_mode(true);
+        
         // Create graph engine
-        let mut graph = GraphEngine::new();
-        
-        // Add sample primals
-        Self::populate_sample_graph(&mut graph);
-        
-        // Apply initial layout
-        graph.set_layout(LayoutAlgorithm::ForceDirected);
-        graph.layout(100);
-        
+        let graph = GraphEngine::new();
         let graph = Arc::new(RwLock::new(graph));
         
         // Create renderers
         let visual_renderer = Visual2DRenderer::new(Arc::clone(&graph));
         let audio_renderer = AudioSonificationRenderer::new(Arc::clone(&graph));
         
-        Self {
+        let mut app = Self {
             graph,
             visual_renderer,
             audio_renderer,
+            biomeos_client,
             current_layout: LayoutAlgorithm::ForceDirected,
             show_audio_panel: true,
             show_controls: true,
-        }
+            last_refresh: Instant::now(),
+            auto_refresh: true,
+            refresh_interval: 5.0,
+        };
+        
+        // Initial data load (async, but we'll do it sync here for simplicity)
+        // In production, this would be done in a background task
+        app.refresh_graph_data();
+        
+        app
     }
     
-    /// Populate graph with sample primals for demonstration
-    fn populate_sample_graph(graph: &mut GraphEngine) {
+    /// Refresh graph data from BiomeOS
+    fn refresh_graph_data(&mut self) {
+        // For now, we'll use blocking calls in the UI thread
+        // TODO: Move to background task with channels
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        
+        runtime.block_on(async {
+            // Discover primals
+            let primals = match self.biomeos_client.discover_primals().await {
+                Ok(p) => p,
+                Err(e) => {
+                    tracing::warn!("Failed to discover primals: {}", e);
+                    return;
+                }
+            };
+            
+            // Get topology
+            let edges = match self.biomeos_client.get_topology().await {
+                Ok(e) => e,
+                Err(e) => {
+                    tracing::warn!("Failed to get topology: {}", e);
+                    vec![]
+                }
+            };
+            
+            // Update graph
+            let mut graph = self.graph.write().unwrap();
+            
+            // Clear existing graph
+            // (In production, we'd do a smart merge to preserve positions)
+            *graph = GraphEngine::new();
+            
+            // Add primals
+            for primal in primals {
+                let _ = graph.add_node(primal);
+            }
+            
+            // Add edges
+            for edge in edges {
+                let _ = graph.add_edge(edge);
+            }
+            
+            // Apply layout
+            graph.set_layout(self.current_layout);
+            graph.layout(100);
+        });
+        
+        self.last_refresh = Instant::now();
+    }
+    
+    /// Populate graph with sample primals for demonstration (legacy)
+    #[allow(dead_code)]
+    fn populate_sample_graph_legacy(graph: &mut GraphEngine) {
         // Add BearDog (Security)
         graph.add_node(PrimalInfo {
             id: "beardog-1".to_string(),
@@ -210,6 +277,13 @@ impl eframe::App for PetalTongueApp {
                 
                 ui.separator();
                 
+                // Refresh button
+                if ui.button("🔄 Refresh").clicked() {
+                    self.refresh_graph_data();
+                }
+                
+                ui.separator();
+                
                 ui.checkbox(&mut self.show_controls, "Controls");
                 ui.checkbox(&mut self.show_audio_panel, "Audio Info");
             });
@@ -253,6 +327,23 @@ impl eframe::App for PetalTongueApp {
                         ui.colored_label(egui::Color32::from_rgb(120, 120, 120), "⬤");
                         ui.label("Unknown");
                     });
+                    
+                    ui.add_space(12.0);
+                    ui.separator();
+                    ui.add_space(12.0);
+                    
+                    // Refresh controls
+                    ui.heading(egui::RichText::new("🔄 Auto-Refresh").size(16.0));
+                    ui.add_space(4.0);
+                    ui.checkbox(&mut self.auto_refresh, "Enabled");
+                    ui.add(egui::Slider::new(&mut self.refresh_interval, 1.0..=60.0).text("Interval (s)"));
+                    
+                    let elapsed = self.last_refresh.elapsed().as_secs_f32();
+                    ui.label(format!("Last refresh: {:.1}s ago", elapsed));
+                    
+                    if ui.button("Refresh Now").clicked() {
+                        self.refresh_graph_data();
+                    }
                 });
         }
         
@@ -331,6 +422,17 @@ impl eframe::App for PetalTongueApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             self.visual_renderer.render(ui);
         });
+        
+        // Auto-refresh logic
+        if self.auto_refresh {
+            let elapsed = self.last_refresh.elapsed();
+            if elapsed >= Duration::from_secs_f32(self.refresh_interval) {
+                self.refresh_graph_data();
+            }
+            
+            // Request repaint for next frame
+            ctx.request_repaint();
+        }
     }
 }
 

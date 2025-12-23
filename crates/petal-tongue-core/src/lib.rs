@@ -39,7 +39,7 @@ pub use error::petalTongueError;
 pub use types::*;
 
 /// Graph engine (core topology representation)
-pub use graph_engine::{GraphEngine, Node, Position, LayoutAlgorithm, GraphStats};
+pub use graph_engine::{GraphEngine, LayoutAlgorithm, GraphStats};
 
 /// The petalTongue primal.
 pub struct petalTongue {

@@ -10,6 +10,7 @@ authors.workspace = true
 [dependencies]
 petal-tongue-core = { path = "../petal-tongue-core" }
 petal-tongue-graph = { path = "../petal-tongue-graph" }
+petal-tongue-api = { path = "../petal-tongue-api" }
 sourdough-core = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
