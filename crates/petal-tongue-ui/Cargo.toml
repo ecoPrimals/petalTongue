@@ -8,11 +8,20 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+petal-tongue-core = { path = "../petal-tongue-core" }
+petal-tongue-graph = { path = "../petal-tongue-graph" }
 sourdough-core = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+eframe = { workspace = true }
+egui = { workspace = true }
+
+[[bin]]
+name = "petal-tongue"
+path = "src/main.rs"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util", "macros"] }
