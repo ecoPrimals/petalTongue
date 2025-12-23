@@ -1,9 +1,11 @@
 //! # petal-tongue-ui
 //!
-//! TODO: Add description
+//! Desktop UI application for petalTongue
 
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 
-// TODO: Implement crate
+mod app;
+
+pub use app::PetalTongueApp;
