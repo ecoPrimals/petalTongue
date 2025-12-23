@@ -1,0 +1,153 @@
+{
+  "name": "Unhealthy Ecosystem",
+  "description": "Mixed health states - 2 critical, 3 warning, 5 healthy",
+  "primals": [
+    {
+      "id": "beardog-1",
+      "name": "BearDog Security",
+      "primal_type": "Security",
+      "endpoint": "http://localhost:8001",
+      "capabilities": ["authentication", "authorization"],
+      "health": "healthy",
+      "last_seen": 1703376000
+    },
+    {
+      "id": "beardog-2",
+      "name": "BearDog Backup",
+      "primal_type": "Security",
+      "endpoint": "http://localhost:8011",
+      "capabilities": ["authentication"],
+      "health": "warning",
+      "last_seen": 1703375900
+    },
+    {
+      "id": "toadstool-1",
+      "name": "ToadStool Primary",
+      "primal_type": "Compute",
+      "endpoint": "http://localhost:8002",
+      "capabilities": ["container_runtime"],
+      "health": "critical",
+      "last_seen": 1703375800
+    },
+    {
+      "id": "toadstool-2",
+      "name": "ToadStool Secondary",
+      "primal_type": "Compute",
+      "endpoint": "http://localhost:8012",
+      "capabilities": ["container_runtime"],
+      "health": "healthy",
+      "last_seen": 1703376000
+    },
+    {
+      "id": "songbird-1",
+      "name": "Songbird Discovery",
+      "primal_type": "Discovery",
+      "endpoint": "http://localhost:8003",
+      "capabilities": ["service_discovery"],
+      "health": "warning",
+      "last_seen": 1703375950
+    },
+    {
+      "id": "nestgate-1",
+      "name": "NestGate Primary",
+      "primal_type": "Storage",
+      "endpoint": "http://localhost:8004",
+      "capabilities": ["permanent_storage"],
+      "health": "healthy",
+      "last_seen": 1703376000
+    },
+    {
+      "id": "nestgate-2",
+      "name": "NestGate Replica",
+      "primal_type": "Storage",
+      "endpoint": "http://localhost:8014",
+      "capabilities": ["permanent_storage"],
+      "health": "warning",
+      "last_seen": 1703375920
+    },
+    {
+      "id": "squirrel-1",
+      "name": "Squirrel AI",
+      "primal_type": "AI",
+      "endpoint": "http://localhost:8005",
+      "capabilities": ["intent_parsing"],
+      "health": "critical",
+      "last_seen": 1703375700
+    },
+    {
+      "id": "squirrel-2",
+      "name": "Squirrel Fallback",
+      "primal_type": "AI",
+      "endpoint": "http://localhost:8015",
+      "capabilities": ["intent_parsing"],
+      "health": "healthy",
+      "last_seen": 1703376000
+    },
+    {
+      "id": "biomeos-1",
+      "name": "BiomeOS Orchestrator",
+      "primal_type": "Orchestration",
+      "endpoint": "http://localhost:3000",
+      "capabilities": ["orchestration", "discovery_coordination"],
+      "health": "healthy",
+      "last_seen": 1703376000
+    }
+  ],
+  "topology": [
+    {
+      "from": "biomeos-1",
+      "to": "songbird-1",
+      "edge_type": "coordinates",
+      "label": "Discovery Coordination"
+    },
+    {
+      "from": "beardog-1",
+      "to": "toadstool-1",
+      "edge_type": "authenticates",
+      "label": "Auth (Degraded)"
+    },
+    {
+      "from": "beardog-2",
+      "to": "toadstool-2",
+      "edge_type": "authenticates",
+      "label": "Backup Auth"
+    },
+    {
+      "from": "songbird-1",
+      "to": "beardog-1",
+      "edge_type": "discovers",
+      "label": null
+    },
+    {
+      "from": "songbird-1",
+      "to": "beardog-2",
+      "edge_type": "discovers",
+      "label": null
+    },
+    {
+      "from": "toadstool-2",
+      "to": "nestgate-1",
+      "edge_type": "stores_to",
+      "label": "Primary Storage"
+    },
+    {
+      "from": "toadstool-2",
+      "to": "nestgate-2",
+      "edge_type": "stores_to",
+      "label": "Replica Storage"
+    },
+    {
+      "from": "squirrel-2",
+      "to": "songbird-1",
+      "edge_type": "queries",
+      "label": "Failover Active"
+    },
+    {
+      "from": "squirrel-2",
+      "to": "toadstool-2",
+      "edge_type": "orchestrates",
+      "label": "Using Healthy Compute"
+    }
+  ]
+}
+
