@@ -10,5 +10,7 @@
 #![warn(clippy::pedantic)]
 
 pub mod visual_2d;
+pub mod audio_sonification;
 
 pub use visual_2d::Visual2DRenderer;
+pub use audio_sonification::{AudioSonificationRenderer, Instrument, AudioAttributes};
