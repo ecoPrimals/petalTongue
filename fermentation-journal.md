@@ -174,3 +174,56 @@ Scenarios: 2/8 with infrastructure (25%)
 ### 🌡️ Fermentation Temperature
 **Still Warm** 🌱 - Momentum building, patterns emerging
 
+
+---
+
+## Day 1 (Continued) - December 23, 2025
+
+### 🎯 Additional Goals
+- Build 02-primal-discovery scenario
+- Test real-time discovery mechanisms
+- Validate auto-refresh behavior
+
+### 📚 What I Did
+
+#### Built 02-Primal-Discovery Scenario
+- Created comprehensive README (~400 lines)
+- Wrote demo orchestrator with phases
+- Created helper scripts:
+  - add-primal.sh - Launch primal dynamically
+  - remove-primal.sh - Stop primal dynamically  
+  - remove-all-primals.sh - Clean slate
+
+**Structure**:
+- Phase 1: Sequential discovery (adding)
+- Phase 2: Primal disappearance (removing)
+- Clear timing expectations documented
+- Discovery pipeline explained
+
+#### Key Features
+- Real-time add/remove demonstration
+- Discovery latency validation (5-10s)
+- Auto-refresh behavior testing
+- Edge case exploration (rapid churn, simultaneous starts, failure injection)
+
+### 💡 Additional Learnings
+- Discovery has latency (primal → BiomeOS → petalTongue)
+- 5s auto-refresh is acceptable for monitoring
+- Push notifications would reduce latency but add complexity
+- Real-world scenarios reveal timing issues mocks hide
+
+### ⏰ Additional Time Spent
+- 02-primal-discovery scripts: ~45 minutes  
+- Documentation: ~35 minutes
+**Session Total**: ~5 hours
+
+### 📊 Progress Update
+Scenarios: 3/8 with infrastructure (37.5%)
+- ✅ 00-setup - Complete
+- ✅ 01-single-primal - Complete
+- ✅ 02-primal-discovery - Complete
+- ⏸️ 03-08 - Ready to build
+
+### 🌡️ Fermentation Temperature
+**Hot** 🔥 - Rapid progress, patterns solidifying, momentum strong
+
