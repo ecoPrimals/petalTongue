@@ -3,7 +3,9 @@
 //! Renders graph topology as audio soundscape.
 //! Maps primals to instruments, health to pitch, activity to volume, position to stereo.
 
-use petal_tongue_core::{GraphEngine, Node, Position, PrimalHealthStatus};
+use petal_tongue_core::{GraphEngine, PrimalHealthStatus};
+use petal_tongue_core::graph_engine::Node;
+use petal_tongue_core::graph_engine::Position;
 use std::sync::{Arc, RwLock};
 
 /// Instrument types for sonification
