@@ -21,17 +21,14 @@ if [ ! -d "$MOCK_DIR" ]; then
     echo -e "${YELLOW}⚠️  Mock server not found. Building...${NC}"
     cd "$SANDBOX_DIR"
     
-    # Create simple mock server if it doesn't exist
-    if [ ! -f "$MOCK_DIR/Cargo.toml" ]; then
-        echo "Mock server implementation pending."
-        echo "For now, use built-in mock mode in BiomeOSClient."
-        echo ""
-        echo "Run petalTongue with:"
-        echo "  cargo run --release -p petal-tongue-ui"
-        echo ""
-        echo "(It will automatically use mock data when BiomeOS is unavailable)"
-        exit 0
-    fi
+fi
+
+# Check if mock server is built
+if [ ! -f "$MOCK_DIR/target/release/mock-biomeos" ]; then
+    echo -e "${YELLOW}⚠️  Mock server not built. Building now...${NC}"
+    cd "$MOCK_DIR"
+    cargo build --release
+    echo ""
 fi
 
 # Start the mock server
@@ -39,12 +36,19 @@ cd "$MOCK_DIR"
 echo -e "${GREEN}✓${NC} Starting mock server on ${BLUE}http://localhost:3333${NC}"
 echo ""
 echo "Endpoints:"
-echo "  GET /api/v1/primals   - Discover primals"
-echo "  GET /api/v1/topology  - Get topology edges"
-echo "  GET /api/v1/health    - Ecosystem health"
+echo "  GET http://localhost:3333/                 - Server info"
+echo "  GET http://localhost:3333/api/v1/primals   - Discover primals"
+echo "  GET http://localhost:3333/api/v1/topology  - Get topology edges"
+echo "  GET http://localhost:3333/api/v1/health    - Ecosystem health"
+echo ""
+echo "Scenarios: $SANDBOX_DIR/scenarios/"
+echo "Hot-reload: Edit scenarios/*.json and server auto-reloads"
+echo ""
+echo "Test with petalTongue:"
+echo "  BIOMEOS_URL=http://localhost:3333 cargo run --release -p petal-tongue-ui"
 echo ""
 echo "Press Ctrl+C to stop"
 echo ""
 
-cargo run --release
+./target/release/mock-biomeos
 

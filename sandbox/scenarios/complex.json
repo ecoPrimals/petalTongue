@@ -1,0 +1,69 @@
+{
+  "name": "Complex Production-Like Ecosystem",
+  "description": "20 primals with realistic topology and mixed health states",
+  "primals": [
+    {"id": "beardog-1", "name": "BearDog Security Primary", "primal_type": "Security", "endpoint": "http://localhost:8001", "capabilities": ["authentication", "authorization", "encryption"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "beardog-2", "name": "BearDog Security Backup", "primal_type": "Security", "endpoint": "http://localhost:8101", "capabilities": ["authentication", "authorization", "encryption"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "toadstool-1", "name": "ToadStool Parse Main", "primal_type": "Compute", "endpoint": "http://localhost:8002", "capabilities": ["parsing", "transformation", "validation"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "toadstool-2", "name": "ToadStool Parse Worker 1", "primal_type": "Compute", "endpoint": "http://localhost:8102", "capabilities": ["parsing", "transformation"], "health": "warning", "last_seen": 1703376000},
+    {"id": "toadstool-3", "name": "ToadStool Parse Worker 2", "primal_type": "Compute", "endpoint": "http://localhost:8202", "capabilities": ["parsing", "transformation"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "songbird-1", "name": "Songbird Discovery Hub", "primal_type": "Discovery", "endpoint": "http://localhost:8003", "capabilities": ["service-discovery", "health-check", "routing"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "songbird-2", "name": "Songbird Discovery Edge", "primal_type": "Discovery", "endpoint": "http://localhost:8103", "capabilities": ["service-discovery", "routing"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "nestgate-1", "name": "NestGate Storage Primary", "primal_type": "Storage", "endpoint": "http://localhost:8004", "capabilities": ["storage", "retrieval", "replication"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "nestgate-2", "name": "NestGate Storage Replica 1", "primal_type": "Storage", "endpoint": "http://localhost:8104", "capabilities": ["storage", "retrieval"], "health": "warning", "last_seen": 1703376000},
+    {"id": "nestgate-3", "name": "NestGate Storage Replica 2", "primal_type": "Storage", "endpoint": "http://localhost:8204", "capabilities": ["storage", "retrieval"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "nestgate-4", "name": "NestGate Storage Archive", "primal_type": "Storage", "endpoint": "http://localhost:8304", "capabilities": ["storage", "archival"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "squirrel-1", "name": "Squirrel AI Coordinator", "primal_type": "AI", "endpoint": "http://localhost:8005", "capabilities": ["ai-inference", "model-serving", "orchestration"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "squirrel-2", "name": "Squirrel AI Worker 1", "primal_type": "AI", "endpoint": "http://localhost:8105", "capabilities": ["ai-inference", "model-serving"], "health": "critical", "last_seen": 1703376000},
+    {"id": "squirrel-3", "name": "Squirrel AI Worker 2", "primal_type": "AI", "endpoint": "http://localhost:8205", "capabilities": ["ai-inference", "model-serving"], "health": "warning", "last_seen": 1703376000},
+    {"id": "squirrel-4", "name": "Squirrel AI Worker 3", "primal_type": "AI", "endpoint": "http://localhost:8305", "capabilities": ["ai-inference", "model-serving"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "biomeos-1", "name": "BiomeOS Orchestrator", "primal_type": "Orchestration", "endpoint": "http://localhost:3000", "capabilities": ["orchestration", "capability-routing", "health-monitoring"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "rhizocrypt-1", "name": "RhizoCrypt DAG Engine", "primal_type": "DAG", "endpoint": "http://localhost:8006", "capabilities": ["dag-storage", "content-addressing", "merkle-proofs"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "loamspine-1", "name": "LoamSpine Permanence", "primal_type": "Permanence", "endpoint": "http://localhost:8007", "capabilities": ["permanence", "persistence-guarantees"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "sweetgrass-1", "name": "SweetGrass Attribution", "primal_type": "Attribution", "endpoint": "http://localhost:8008", "capabilities": ["attribution", "provenance", "queries"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "petaltongue-1", "name": "petalTongue UI", "primal_type": "Representation", "endpoint": "http://localhost:8009", "capabilities": ["visualization", "sonification", "accessibility"], "health": "healthy", "last_seen": 1703376000}
+  ],
+  "topology": [
+    {"from": "biomeos-1", "to": "songbird-1", "edge_type": "discovers", "label": "discovery-coordination"},
+    {"from": "biomeos-1", "to": "beardog-1", "edge_type": "secures", "label": "auth-check"},
+    {"from": "biomeos-1", "to": "toadstool-1", "edge_type": "parses", "label": "format-parsing"},
+    {"from": "biomeos-1", "to": "nestgate-1", "edge_type": "stores", "label": "data-storage"},
+    {"from": "biomeos-1", "to": "squirrel-1", "edge_type": "infers", "label": "ai-coordination"},
+    
+    {"from": "songbird-1", "to": "beardog-1", "edge_type": "discovers", "label": null},
+    {"from": "songbird-1", "to": "beardog-2", "edge_type": "discovers", "label": null},
+    {"from": "songbird-1", "to": "toadstool-1", "edge_type": "discovers", "label": null},
+    {"from": "songbird-1", "to": "toadstool-2", "edge_type": "discovers", "label": null},
+    {"from": "songbird-1", "to": "toadstool-3", "edge_type": "discovers", "label": null},
+    {"from": "songbird-1", "to": "nestgate-1", "edge_type": "discovers", "label": null},
+    {"from": "songbird-1", "to": "squirrel-1", "edge_type": "discovers", "label": null},
+    
+    {"from": "songbird-2", "to": "songbird-1", "edge_type": "syncs-with", "label": "discovery-sync"},
+    
+    {"from": "toadstool-1", "to": "toadstool-2", "edge_type": "delegates", "label": "workload-distribution"},
+    {"from": "toadstool-1", "to": "toadstool-3", "edge_type": "delegates", "label": "workload-distribution"},
+    
+    {"from": "nestgate-1", "to": "nestgate-2", "edge_type": "replicates", "label": "data-replication"},
+    {"from": "nestgate-1", "to": "nestgate-3", "edge_type": "replicates", "label": "data-replication"},
+    {"from": "nestgate-1", "to": "nestgate-4", "edge_type": "archives", "label": "cold-storage"},
+    {"from": "nestgate-1", "to": "rhizocrypt-1", "edge_type": "stores", "label": "dag-persistence"},
+    
+    {"from": "squirrel-1", "to": "squirrel-2", "edge_type": "distributes", "label": "inference-workload"},
+    {"from": "squirrel-1", "to": "squirrel-3", "edge_type": "distributes", "label": "inference-workload"},
+    {"from": "squirrel-1", "to": "squirrel-4", "edge_type": "distributes", "label": "inference-workload"},
+    
+    {"from": "rhizocrypt-1", "to": "loamspine-1", "edge_type": "persists", "label": "permanence-layer"},
+    {"from": "rhizocrypt-1", "to": "sweetgrass-1", "edge_type": "attributes", "label": "provenance-tracking"},
+    
+    {"from": "petaltongue-1", "to": "biomeos-1", "edge_type": "monitors", "label": "ecosystem-visualization"},
+    {"from": "petaltongue-1", "to": "songbird-1", "edge_type": "queries", "label": "topology-discovery"}
+  ]
+}
+

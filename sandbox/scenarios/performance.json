@@ -1,0 +1,121 @@
+{
+  "name": "Performance Test - 50 Nodes",
+  "description": "Large topology for stress testing layout algorithms and rendering",
+  "primals": [
+    {"id": "beardog-1", "name": "BearDog Security 1", "primal_type": "Security", "endpoint": "http://localhost:8001", "capabilities": ["auth"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "beardog-2", "name": "BearDog Security 2", "primal_type": "Security", "endpoint": "http://localhost:8002", "capabilities": ["auth"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "beardog-3", "name": "BearDog Security 3", "primal_type": "Security", "endpoint": "http://localhost:8003", "capabilities": ["auth"], "health": "warning", "last_seen": 1703376000},
+    {"id": "beardog-4", "name": "BearDog Security 4", "primal_type": "Security", "endpoint": "http://localhost:8004", "capabilities": ["auth"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "beardog-5", "name": "BearDog Security 5", "primal_type": "Security", "endpoint": "http://localhost:8005", "capabilities": ["auth"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "toadstool-1", "name": "ToadStool Compute 1", "primal_type": "Compute", "endpoint": "http://localhost:8101", "capabilities": ["parse"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "toadstool-2", "name": "ToadStool Compute 2", "primal_type": "Compute", "endpoint": "http://localhost:8102", "capabilities": ["parse"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "toadstool-3", "name": "ToadStool Compute 3", "primal_type": "Compute", "endpoint": "http://localhost:8103", "capabilities": ["parse"], "health": "critical", "last_seen": 1703376000},
+    {"id": "toadstool-4", "name": "ToadStool Compute 4", "primal_type": "Compute", "endpoint": "http://localhost:8104", "capabilities": ["parse"], "health": "warning", "last_seen": 1703376000},
+    {"id": "toadstool-5", "name": "ToadStool Compute 5", "primal_type": "Compute", "endpoint": "http://localhost:8105", "capabilities": ["parse"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "toadstool-6", "name": "ToadStool Compute 6", "primal_type": "Compute", "endpoint": "http://localhost:8106", "capabilities": ["parse"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "toadstool-7", "name": "ToadStool Compute 7", "primal_type": "Compute", "endpoint": "http://localhost:8107", "capabilities": ["parse"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "toadstool-8", "name": "ToadStool Compute 8", "primal_type": "Compute", "endpoint": "http://localhost:8108", "capabilities": ["parse"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "toadstool-9", "name": "ToadStool Compute 9", "primal_type": "Compute", "endpoint": "http://localhost:8109", "capabilities": ["parse"], "health": "warning", "last_seen": 1703376000},
+    {"id": "toadstool-10", "name": "ToadStool Compute 10", "primal_type": "Compute", "endpoint": "http://localhost:8110", "capabilities": ["parse"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "songbird-1", "name": "Songbird Discovery 1", "primal_type": "Discovery", "endpoint": "http://localhost:8201", "capabilities": ["discovery"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "songbird-2", "name": "Songbird Discovery 2", "primal_type": "Discovery", "endpoint": "http://localhost:8202", "capabilities": ["discovery"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "songbird-3", "name": "Songbird Discovery 3", "primal_type": "Discovery", "endpoint": "http://localhost:8203", "capabilities": ["discovery"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "songbird-4", "name": "Songbird Discovery 4", "primal_type": "Discovery", "endpoint": "http://localhost:8204", "capabilities": ["discovery"], "health": "warning", "last_seen": 1703376000},
+    {"id": "songbird-5", "name": "Songbird Discovery 5", "primal_type": "Discovery", "endpoint": "http://localhost:8205", "capabilities": ["discovery"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "nestgate-1", "name": "NestGate Storage 1", "primal_type": "Storage", "endpoint": "http://localhost:8301", "capabilities": ["storage"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "nestgate-2", "name": "NestGate Storage 2", "primal_type": "Storage", "endpoint": "http://localhost:8302", "capabilities": ["storage"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "nestgate-3", "name": "NestGate Storage 3", "primal_type": "Storage", "endpoint": "http://localhost:8303", "capabilities": ["storage"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "nestgate-4", "name": "NestGate Storage 4", "primal_type": "Storage", "endpoint": "http://localhost:8304", "capabilities": ["storage"], "health": "critical", "last_seen": 1703376000},
+    {"id": "nestgate-5", "name": "NestGate Storage 5", "primal_type": "Storage", "endpoint": "http://localhost:8305", "capabilities": ["storage"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "nestgate-6", "name": "NestGate Storage 6", "primal_type": "Storage", "endpoint": "http://localhost:8306", "capabilities": ["storage"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "nestgate-7", "name": "NestGate Storage 7", "primal_type": "Storage", "endpoint": "http://localhost:8307", "capabilities": ["storage"], "health": "warning", "last_seen": 1703376000},
+    {"id": "nestgate-8", "name": "NestGate Storage 8", "primal_type": "Storage", "endpoint": "http://localhost:8308", "capabilities": ["storage"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "squirrel-1", "name": "Squirrel AI 1", "primal_type": "AI", "endpoint": "http://localhost:8401", "capabilities": ["ai"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "squirrel-2", "name": "Squirrel AI 2", "primal_type": "AI", "endpoint": "http://localhost:8402", "capabilities": ["ai"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "squirrel-3", "name": "Squirrel AI 3", "primal_type": "AI", "endpoint": "http://localhost:8403", "capabilities": ["ai"], "health": "warning", "last_seen": 1703376000},
+    {"id": "squirrel-4", "name": "Squirrel AI 4", "primal_type": "AI", "endpoint": "http://localhost:8404", "capabilities": ["ai"], "health": "critical", "last_seen": 1703376000},
+    {"id": "squirrel-5", "name": "Squirrel AI 5", "primal_type": "AI", "endpoint": "http://localhost:8405", "capabilities": ["ai"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "squirrel-6", "name": "Squirrel AI 6", "primal_type": "AI", "endpoint": "http://localhost:8406", "capabilities": ["ai"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "squirrel-7", "name": "Squirrel AI 7", "primal_type": "AI", "endpoint": "http://localhost:8407", "capabilities": ["ai"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "squirrel-8", "name": "Squirrel AI 8", "primal_type": "AI", "endpoint": "http://localhost:8408", "capabilities": ["ai"], "health": "warning", "last_seen": 1703376000},
+    {"id": "squirrel-9", "name": "Squirrel AI 9", "primal_type": "AI", "endpoint": "http://localhost:8409", "capabilities": ["ai"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "squirrel-10", "name": "Squirrel AI 10", "primal_type": "AI", "endpoint": "http://localhost:8410", "capabilities": ["ai"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "biomeos-1", "name": "BiomeOS 1", "primal_type": "Orchestration", "endpoint": "http://localhost:3001", "capabilities": ["orchestration"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "biomeos-2", "name": "BiomeOS 2", "primal_type": "Orchestration", "endpoint": "http://localhost:3002", "capabilities": ["orchestration"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "biomeos-3", "name": "BiomeOS 3", "primal_type": "Orchestration", "endpoint": "http://localhost:3003", "capabilities": ["orchestration"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "rhizocrypt-1", "name": "RhizoCrypt 1", "primal_type": "DAG", "endpoint": "http://localhost:8501", "capabilities": ["dag"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "rhizocrypt-2", "name": "RhizoCrypt 2", "primal_type": "DAG", "endpoint": "http://localhost:8502", "capabilities": ["dag"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "loamspine-1", "name": "LoamSpine 1", "primal_type": "Permanence", "endpoint": "http://localhost:8601", "capabilities": ["permanence"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "loamspine-2", "name": "LoamSpine 2", "primal_type": "Permanence", "endpoint": "http://localhost:8602", "capabilities": ["permanence"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "sweetgrass-1", "name": "SweetGrass 1", "primal_type": "Attribution", "endpoint": "http://localhost:8701", "capabilities": ["attribution"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "sweetgrass-2", "name": "SweetGrass 2", "primal_type": "Attribution", "endpoint": "http://localhost:8702", "capabilities": ["attribution"], "health": "healthy", "last_seen": 1703376000},
+    
+    {"id": "petaltongue-1", "name": "petalTongue 1", "primal_type": "Representation", "endpoint": "http://localhost:8801", "capabilities": ["viz"], "health": "healthy", "last_seen": 1703376000},
+    {"id": "petaltongue-2", "name": "petalTongue 2", "primal_type": "Representation", "endpoint": "http://localhost:8802", "capabilities": ["viz"], "health": "healthy", "last_seen": 1703376000}
+  ],
+  "topology": [
+    {"from": "biomeos-1", "to": "songbird-1", "edge_type": "coordinates", "label": null},
+    {"from": "biomeos-2", "to": "songbird-2", "edge_type": "coordinates", "label": null},
+    {"from": "biomeos-3", "to": "songbird-3", "edge_type": "coordinates", "label": null},
+    
+    {"from": "songbird-1", "to": "beardog-1", "edge_type": "discovers", "label": null},
+    {"from": "songbird-1", "to": "beardog-2", "edge_type": "discovers", "label": null},
+    {"from": "songbird-2", "to": "beardog-3", "edge_type": "discovers", "label": null},
+    {"from": "songbird-2", "to": "beardog-4", "edge_type": "discovers", "label": null},
+    {"from": "songbird-3", "to": "beardog-5", "edge_type": "discovers", "label": null},
+    
+    {"from": "songbird-1", "to": "toadstool-1", "edge_type": "discovers", "label": null},
+    {"from": "songbird-1", "to": "toadstool-2", "edge_type": "discovers", "label": null},
+    {"from": "songbird-1", "to": "toadstool-3", "edge_type": "discovers", "label": null},
+    {"from": "songbird-2", "to": "toadstool-4", "edge_type": "discovers", "label": null},
+    {"from": "songbird-2", "to": "toadstool-5", "edge_type": "discovers", "label": null},
+    {"from": "songbird-2", "to": "toadstool-6", "edge_type": "discovers", "label": null},
+    {"from": "songbird-3", "to": "toadstool-7", "edge_type": "discovers", "label": null},
+    {"from": "songbird-3", "to": "toadstool-8", "edge_type": "discovers", "label": null},
+    {"from": "songbird-3", "to": "toadstool-9", "edge_type": "discovers", "label": null},
+    {"from": "songbird-3", "to": "toadstool-10", "edge_type": "discovers", "label": null},
+    
+    {"from": "toadstool-1", "to": "nestgate-1", "edge_type": "stores", "label": null},
+    {"from": "toadstool-2", "to": "nestgate-2", "edge_type": "stores", "label": null},
+    {"from": "toadstool-3", "to": "nestgate-3", "edge_type": "stores", "label": null},
+    {"from": "toadstool-4", "to": "nestgate-4", "edge_type": "stores", "label": null},
+    {"from": "toadstool-5", "to": "nestgate-5", "edge_type": "stores", "label": null},
+    {"from": "toadstool-6", "to": "nestgate-6", "edge_type": "stores", "label": null},
+    {"from": "toadstool-7", "to": "nestgate-7", "edge_type": "stores", "label": null},
+    {"from": "toadstool-8", "to": "nestgate-8", "edge_type": "stores", "label": null},
+    
+    {"from": "nestgate-1", "to": "rhizocrypt-1", "edge_type": "persists", "label": null},
+    {"from": "nestgate-2", "to": "rhizocrypt-1", "edge_type": "persists", "label": null},
+    {"from": "nestgate-3", "to": "rhizocrypt-2", "edge_type": "persists", "label": null},
+    {"from": "nestgate-4", "to": "rhizocrypt-2", "edge_type": "persists", "label": null},
+    
+    {"from": "rhizocrypt-1", "to": "loamspine-1", "edge_type": "guarantees", "label": null},
+    {"from": "rhizocrypt-2", "to": "loamspine-2", "edge_type": "guarantees", "label": null},
+    
+    {"from": "rhizocrypt-1", "to": "sweetgrass-1", "edge_type": "attributes", "label": null},
+    {"from": "rhizocrypt-2", "to": "sweetgrass-2", "edge_type": "attributes", "label": null},
+    
+    {"from": "biomeos-1", "to": "squirrel-1", "edge_type": "coordinates", "label": null},
+    {"from": "biomeos-1", "to": "squirrel-2", "edge_type": "coordinates", "label": null},
+    {"from": "biomeos-2", "to": "squirrel-3", "edge_type": "coordinates", "label": null},
+    {"from": "biomeos-2", "to": "squirrel-4", "edge_type": "coordinates", "label": null},
+    {"from": "biomeos-3", "to": "squirrel-5", "edge_type": "coordinates", "label": null},
+    {"from": "biomeos-3", "to": "squirrel-6", "edge_type": "coordinates", "label": null},
+    
+    {"from": "squirrel-1", "to": "nestgate-1", "edge_type": "queries", "label": null},
+    {"from": "squirrel-2", "to": "nestgate-2", "edge_type": "queries", "label": null},
+    {"from": "squirrel-3", "to": "nestgate-3", "edge_type": "queries", "label": null},
+    
+    {"from": "petaltongue-1", "to": "biomeos-1", "edge_type": "visualizes", "label": null},
+    {"from": "petaltongue-2", "to": "biomeos-2", "edge_type": "visualizes", "label": null}
+  ]
+}
+
