@@ -21,43 +21,50 @@
 
 pub mod config;
 pub mod error;
-pub mod types;
 pub mod graph_engine;
+pub mod types;
 
 use sourdough_core::{
-    PrimalLifecycle, PrimalHealth, PrimalState, PrimalError,
-    health::{HealthStatus, HealthReport},
+    PrimalError, PrimalHealth, PrimalLifecycle, PrimalState,
+    health::{HealthReport, HealthStatus},
 };
 
 /// petalTongue configuration.
-pub use config::petalTongueConfig;
+pub use config::PetalTongueConfig;
 
 /// petalTongue errors.
-pub use error::petalTongueError;
+pub use error::PetalTongueError;
 
 /// Visualization types
 pub use types::*;
 
 /// Graph engine (core topology representation)
-pub use graph_engine::{GraphEngine, LayoutAlgorithm, GraphStats};
+pub use graph_engine::{GraphEngine, GraphStats, LayoutAlgorithm};
 
 /// The petalTongue primal.
-pub struct petalTongue {
-    config: petalTongueConfig,
+pub struct PetalTongue {
+    config: PetalTongueConfig,
     state: PrimalState,
 }
 
-impl petalTongue {
+impl PetalTongue {
     /// Create a new petalTongue instance.
-    pub fn new(config: petalTongueConfig) -> Self {
+    #[must_use]
+    pub fn new(config: PetalTongueConfig) -> Self {
         Self {
             config,
             state: PrimalState::Created,
         }
     }
+
+    /// Get reference to configuration.
+    #[must_use]
+    pub const fn config(&self) -> &PetalTongueConfig {
+        &self.config
+    }
 }
 
-impl PrimalLifecycle for petalTongue {
+impl PrimalLifecycle for PetalTongue {
     fn state(&self) -> PrimalState {
         self.state
     }
@@ -65,9 +72,9 @@ impl PrimalLifecycle for petalTongue {
     async fn start(&mut self) -> Result<(), PrimalError> {
         self.state = PrimalState::Starting;
         tracing::info!("petalTongue starting...");
-        
+
         // TODO: Initialize resources
-        
+
         self.state = PrimalState::Running;
         tracing::info!("petalTongue running");
         Ok(())
@@ -76,16 +83,16 @@ impl PrimalLifecycle for petalTongue {
     async fn stop(&mut self) -> Result<(), PrimalError> {
         self.state = PrimalState::Stopping;
         tracing::info!("petalTongue stopping...");
-        
+
         // TODO: Clean up resources
-        
+
         self.state = PrimalState::Stopped;
         tracing::info!("petalTongue stopped");
         Ok(())
     }
 }
 
-impl PrimalHealth for petalTongue {
+impl PrimalHealth for PetalTongue {
     fn health_status(&self) -> HealthStatus {
         if self.state.is_running() {
             HealthStatus::Healthy

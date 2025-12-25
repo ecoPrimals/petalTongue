@@ -14,9 +14,9 @@ use std::time::Duration;
 /// and generates actual audio output through the system speakers.
 pub struct AudioPlaybackEngine {
     /// Audio output stream (must be kept alive)
-    _stream: OutputStream,
+    _stream: Option<OutputStream>,
     /// Handle to the output stream
-    stream_handle: OutputStreamHandle,
+    stream_handle: Option<OutputStreamHandle>,
     /// Master volume (0.0 - 1.0)
     master_volume: f32,
     /// Audio enabled state
@@ -33,8 +33,8 @@ impl AudioPlaybackEngine {
             .map_err(|e| anyhow::anyhow!("Failed to initialize audio output: {}", e))?;
 
         Ok(Self {
-            _stream,
-            stream_handle,
+            _stream: Some(_stream),
+            stream_handle: Some(stream_handle),
             master_volume: 0.3, // Default to 30% to avoid being too loud
             enabled: true,
         })
@@ -140,13 +140,13 @@ impl Default for AudioPlaybackEngine {
     fn default() -> Self {
         Self::new().unwrap_or_else(|e| {
             tracing::warn!("Failed to initialize audio playback: {}", e);
-            tracing::warn!("Audio will be disabled");
-            // Return a dummy engine (won't actually play sound)
-            let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+            tracing::warn!("Audio will be disabled - creating silent engine");
+            // Return a silent engine without attempting to create stream
+            // This is a fallback for systems without audio devices
             Self {
-                _stream,
-                stream_handle,
-                master_volume: 0.3,
+                _stream: None,
+                stream_handle: None,
+                master_volume: 0.0,
                 enabled: false,
             }
         })

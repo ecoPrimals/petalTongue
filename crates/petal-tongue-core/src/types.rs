@@ -11,7 +11,7 @@ pub struct PrimalInfo {
     pub name: String,
     /// Type of primal (e.g., "Compute", "Storage", "Security")
     pub primal_type: String,
-    /// Network endpoint (e.g., "http://localhost:8080")
+    /// Network endpoint (e.g., <http://localhost:8080>)
     pub endpoint: String,
     /// List of capabilities this primal provides
     pub capabilities: Vec<String>,
@@ -48,7 +48,7 @@ impl PrimalHealthStatus {
 
     /// Parse from string
     #[must_use]
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse_health_status(s: &str) -> Self {
         match s {
             "Healthy" => Self::Healthy,
             "Warning" => Self::Warning,
@@ -104,7 +104,7 @@ pub struct TopologyEdge {
     pub from: String,
     /// Target primal ID
     pub to: String,
-    /// Type of relationship (e.g., "api_call", "capability")
+    /// Type of relationship (e.g., `api_call`, `capability`)
     pub edge_type: String,
     /// Optional label
     pub label: Option<String>,
@@ -145,4 +145,3 @@ pub struct TrafficStats {
     /// End of time period (Unix timestamp)
     pub period_end: u64,
 }
-

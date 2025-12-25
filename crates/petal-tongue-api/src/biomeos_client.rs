@@ -1,14 +1,14 @@
-//! BiomeOS API Client
+//! `BiomeOS` API Client
 //!
 //! Connects to BiomeOS/Songbird for live primal discovery and health monitoring.
 
-use petal_tongue_core::{PrimalInfo, PrimalHealthStatus, TopologyEdge};
+use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-/// BiomeOS API client for live primal discovery
+/// `BiomeOS` API client for live primal discovery
 pub struct BiomeOSClient {
-    /// BiomeOS API base URL
+    /// `BiomeOS` API base URL
     base_url: String,
     /// HTTP client
     client: reqwest::Client,
@@ -16,14 +16,14 @@ pub struct BiomeOSClient {
     mock_mode: bool,
 }
 
-/// Response from BiomeOS discovery API
+/// Response from `BiomeOS` discovery API
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiscoveryResponse {
     /// List of discovered primals
     pub primals: Vec<DiscoveredPrimal>,
 }
 
-/// A discovered primal from BiomeOS
+/// A discovered primal from `BiomeOS`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiscoveredPrimal {
     /// Primal ID
@@ -43,7 +43,7 @@ pub struct DiscoveredPrimal {
 }
 
 impl BiomeOSClient {
-    /// Create a new BiomeOS client
+    /// Create a new `BiomeOS` client
     pub fn new(base_url: impl Into<String>) -> Self {
         Self {
             base_url: base_url.into(),
@@ -56,12 +56,13 @@ impl BiomeOSClient {
     }
 
     /// Enable mock mode (for development/testing)
+    #[must_use]
     pub fn with_mock_mode(mut self, enabled: bool) -> Self {
         self.mock_mode = enabled;
         self
     }
 
-    /// Discover primals from BiomeOS/Songbird
+    /// Discover primals from `BiomeOS`/Songbird
     pub async fn discover_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
         if self.mock_mode {
             return Ok(self.mock_discover_primals());
@@ -69,14 +70,18 @@ impl BiomeOSClient {
 
         // Try to query BiomeOS discovery endpoint
         let url = format!("{}/api/v1/primals", self.base_url);
-        
+
         match self.client.get(&url).send().await {
             Ok(response) => {
                 let discovery: DiscoveryResponse = response.json().await?;
                 Ok(discovery.primals.into_iter().map(|p| p.into()).collect())
             }
             Err(e) => {
-                tracing::warn!("Failed to connect to BiomeOS at {}: {}. Using mock data.", url, e);
+                tracing::warn!(
+                    "Failed to connect to BiomeOS at {}: {}. Using mock data.",
+                    url,
+                    e
+                );
                 // Fallback to mock data
                 Ok(self.mock_discover_primals())
             }
@@ -90,14 +95,17 @@ impl BiomeOSClient {
         }
 
         let url = format!("{}/api/v1/topology", self.base_url);
-        
+
         match self.client.get(&url).send().await {
             Ok(response) => {
                 let edges: Vec<TopologyEdge> = response.json().await?;
                 Ok(edges)
             }
             Err(e) => {
-                tracing::warn!("Failed to get topology from BiomeOS: {}. Using mock data.", e);
+                tracing::warn!(
+                    "Failed to get topology from BiomeOS: {}. Using mock data.",
+                    e
+                );
                 Ok(self.mock_topology())
             }
         }
@@ -161,10 +169,7 @@ impl BiomeOSClient {
                 name: "Squirrel AI".to_string(),
                 primal_type: "AI".to_string(),
                 endpoint: "http://localhost:8005".to_string(),
-                capabilities: vec![
-                    "intent_parsing".to_string(),
-                    "task_planning".to_string(),
-                ],
+                capabilities: vec!["intent_parsing".to_string(), "task_planning".to_string()],
                 health: PrimalHealthStatus::Critical,
                 last_seen: chrono::Utc::now().timestamp() as u64,
             },
@@ -208,7 +213,7 @@ impl BiomeOSClient {
     }
 }
 
-/// Convert DiscoveredPrimal to PrimalInfo
+/// Convert `DiscoveredPrimal` to `PrimalInfo`
 impl From<DiscoveredPrimal> for PrimalInfo {
     fn from(primal: DiscoveredPrimal) -> Self {
         Self {
@@ -235,11 +240,11 @@ mod tests {
     #[tokio::test]
     async fn test_mock_mode() {
         let client = BiomeOSClient::new("http://localhost:9000").with_mock_mode(true);
-        
+
         let primals = client.discover_primals().await.unwrap();
         assert_eq!(primals.len(), 5);
         assert_eq!(primals[0].id, "beardog-1");
-        
+
         let topology = client.get_topology().await.unwrap();
         assert_eq!(topology.len(), 5);
     }
@@ -253,12 +258,11 @@ mod tests {
             endpoint: "http://test:8000".to_string(),
             capabilities: vec!["test".to_string()],
             health: "healthy".to_string(),
-            last_seen: 1234567890,
+            last_seen: 1_234_567_890,
         };
-        
+
         let primal_info: PrimalInfo = discovered.into();
         assert_eq!(primal_info.id, "test-1");
         assert_eq!(primal_info.health, PrimalHealthStatus::Healthy);
     }
 }
-
