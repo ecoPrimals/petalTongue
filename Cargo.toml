@@ -7,6 +7,8 @@ members = [
     "crates/petal-tongue-telemetry",
     "crates/petal-tongue-api",
     "crates/petal-tongue-ui",
+    # BingoCube is now a standalone tool at bingoCube/
+    # (it has its own workspace with core, adapters, demos)
 ]
 
 [workspace.package]

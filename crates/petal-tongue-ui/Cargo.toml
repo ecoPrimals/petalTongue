@@ -11,6 +11,9 @@ authors.workspace = true
 petal-tongue-core = { path = "../petal-tongue-core" }
 petal-tongue-graph = { path = "../petal-tongue-graph" }
 petal-tongue-api = { path = "../petal-tongue-api" }
+petal-tongue-animation = { path = "../petal-tongue-animation" }
+bingocube-core = { path = "../../bingoCube/core" }
+bingocube-adapters = { path = "../../bingoCube/adapters", features = ["visual", "audio"] }
 sourdough-core = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
@@ -23,6 +26,11 @@ egui = { workspace = true }
 [[bin]]
 name = "petal-tongue"
 path = "src/main.rs"
+
+# BingoCube demo moved to bingoCube/demos
+# [[bin]]
+# name = "bingocube-demo"
+# path = "src/bingocube_main.rs"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util", "macros"] }

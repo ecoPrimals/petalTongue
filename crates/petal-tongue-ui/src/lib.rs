@@ -6,6 +6,10 @@
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 
-mod app;
+pub mod app;
 
 pub use app::PetalTongueApp;
+
+// BingoCube demo is now standalone at bingoCube/demos
+// Run it with: cd bingoCube/demos && cargo run --release
+// Or: cargo run --manifest-path bingoCube/demos/Cargo.toml

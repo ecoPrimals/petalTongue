@@ -3,21 +3,21 @@
 //! Renders graph topology as audio soundscape.
 //! Maps primals to instruments, health to pitch, activity to volume, position to stereo.
 
-use petal_tongue_core::{GraphEngine, PrimalHealthStatus};
 use petal_tongue_core::graph_engine::Node;
 use petal_tongue_core::graph_engine::Position;
+use petal_tongue_core::{GraphEngine, PrimalHealthStatus};
 use std::sync::{Arc, RwLock};
 
 /// Instrument types for sonification
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Instrument {
-    /// Deep bass (security primals like BearDog)
+    /// Deep bass (security primals like `BearDog`)
     Bass,
-    /// Rhythmic drums (compute primals like ToadStool)
+    /// Rhythmic drums (compute primals like `ToadStool`)
     Drums,
     /// Light chimes (discovery primals like Songbird)
     Chimes,
-    /// Sustained strings (storage primals like NestGate)
+    /// Sustained strings (storage primals like `NestGate`)
     Strings,
     /// High synth (AI primals like Squirrel)
     Synth,
@@ -60,8 +60,8 @@ impl AudioSonificationRenderer {
 
     /// Generate audio attributes for all nodes
     pub fn generate_audio_attributes(&self) -> Vec<(String, AudioAttributes)> {
-        let graph = self.graph.read().unwrap();
-        
+        let graph = self.graph.read().expect("graph lock poisoned");
+
         graph
             .nodes()
             .iter()
@@ -99,9 +99,9 @@ impl AudioSonificationRenderer {
     fn health_to_pitch(&self, health: &PrimalHealthStatus) -> f32 {
         match health {
             PrimalHealthStatus::Healthy => 0.75,  // Harmonic, pleasant
-            PrimalHealthStatus::Warning => 0.55,   // Slightly off-key
-            PrimalHealthStatus::Critical => 0.25,  // Dissonant, harsh
-            PrimalHealthStatus::Unknown => 0.5,    // Neutral
+            PrimalHealthStatus::Warning => 0.55,  // Slightly off-key
+            PrimalHealthStatus::Critical => 0.25, // Dissonant, harsh
+            PrimalHealthStatus::Unknown => 0.5,   // Neutral
         }
     }
 
@@ -111,7 +111,7 @@ impl AudioSonificationRenderer {
         // More capabilities = more active = louder
         let capability_count = node.info.capabilities.len();
         let normalized = (capability_count as f32 / 10.0).min(1.0);
-        
+
         // Base volume + activity
         0.3 + (normalized * 0.7)
     }
@@ -146,17 +146,14 @@ impl AudioSonificationRenderer {
 
     /// Generate a textual description of the soundscape (for AI narration)
     pub fn describe_soundscape(&self) -> String {
-        let graph = self.graph.read().unwrap();
+        let graph = self.graph.read().expect("graph lock poisoned");
         let stats = graph.stats();
-        
+
         if stats.node_count == 0 {
             return "Ecosystem is silent. No primals detected.".to_string();
         }
 
-        let mut description = format!(
-            "Ecosystem soundscape with {} primals. ",
-            stats.node_count
-        );
+        let mut description = format!("Ecosystem soundscape with {} primals. ", stats.node_count);
 
         // Count by health
         let healthy_count = graph
@@ -225,9 +222,9 @@ impl AudioSonificationRenderer {
 
     /// Get detailed information about a specific node's audio
     pub fn describe_node_audio(&self, node_id: &str) -> Option<String> {
-        let graph = self.graph.read().unwrap();
+        let graph = self.graph.read().expect("graph lock poisoned");
         let node = graph.get_node(node_id)?;
-        
+
         let attrs = self.node_to_audio(node);
         let inst_name = match attrs.instrument {
             Instrument::Bass => "deep bass",
@@ -267,11 +264,11 @@ impl AudioSonificationRenderer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use petal_tongue_core::{PrimalInfo, TopologyEdge, LayoutAlgorithm};
+    use petal_tongue_core::{LayoutAlgorithm, PrimalInfo, TopologyEdge};
 
     fn create_test_graph() -> Arc<RwLock<GraphEngine>> {
         let mut graph = GraphEngine::new();
-        
+
         // Add BearDog (Security)
         graph.add_node(PrimalInfo {
             id: "beardog-1".to_string(),
@@ -282,7 +279,7 @@ mod tests {
             health: PrimalHealthStatus::Healthy,
             last_seen: 0,
         });
-        
+
         // Add ToadStool (Compute)
         graph.add_node(PrimalInfo {
             id: "toadstool-1".to_string(),
@@ -293,7 +290,7 @@ mod tests {
             health: PrimalHealthStatus::Warning,
             last_seen: 0,
         });
-        
+
         // Add Songbird (Discovery)
         graph.add_node(PrimalInfo {
             id: "songbird-1".to_string(),
@@ -304,17 +301,17 @@ mod tests {
             health: PrimalHealthStatus::Healthy,
             last_seen: 0,
         });
-        
+
         graph.add_edge(TopologyEdge {
             from: "beardog-1".to_string(),
             to: "toadstool-1".to_string(),
             edge_type: "api".to_string(),
             label: None,
         });
-        
+
         graph.set_layout(LayoutAlgorithm::Circular);
         graph.layout(1);
-        
+
         Arc::new(RwLock::new(graph))
     }
 
@@ -322,7 +319,7 @@ mod tests {
     fn test_renderer_creation() {
         let graph = create_test_graph();
         let renderer = AudioSonificationRenderer::new(graph);
-        assert_eq!(renderer.master_volume(), 0.7);
+        assert!((renderer.master_volume() - 0.7).abs() < 0.001);
         assert!(renderer.is_enabled());
     }
 
@@ -330,11 +327,23 @@ mod tests {
     fn test_instrument_mapping() {
         let graph = create_test_graph();
         let renderer = AudioSonificationRenderer::new(graph);
-        
-        assert_eq!(renderer.map_primal_to_instrument("Security"), Instrument::Bass);
-        assert_eq!(renderer.map_primal_to_instrument("Compute"), Instrument::Drums);
-        assert_eq!(renderer.map_primal_to_instrument("Discovery"), Instrument::Chimes);
-        assert_eq!(renderer.map_primal_to_instrument("Storage"), Instrument::Strings);
+
+        assert_eq!(
+            renderer.map_primal_to_instrument("Security"),
+            Instrument::Bass
+        );
+        assert_eq!(
+            renderer.map_primal_to_instrument("Compute"),
+            Instrument::Drums
+        );
+        assert_eq!(
+            renderer.map_primal_to_instrument("Discovery"),
+            Instrument::Chimes
+        );
+        assert_eq!(
+            renderer.map_primal_to_instrument("Storage"),
+            Instrument::Strings
+        );
         assert_eq!(renderer.map_primal_to_instrument("AI"), Instrument::Synth);
     }
 
@@ -342,10 +351,13 @@ mod tests {
     fn test_health_to_pitch() {
         let graph = create_test_graph();
         let renderer = AudioSonificationRenderer::new(graph);
-        
+
         assert_eq!(renderer.health_to_pitch(&PrimalHealthStatus::Healthy), 0.75);
         assert_eq!(renderer.health_to_pitch(&PrimalHealthStatus::Warning), 0.55);
-        assert_eq!(renderer.health_to_pitch(&PrimalHealthStatus::Critical), 0.25);
+        assert_eq!(
+            renderer.health_to_pitch(&PrimalHealthStatus::Critical),
+            0.25
+        );
         assert_eq!(renderer.health_to_pitch(&PrimalHealthStatus::Unknown), 0.5);
     }
 
@@ -353,15 +365,15 @@ mod tests {
     fn test_position_to_pan() {
         let graph = create_test_graph();
         let renderer = AudioSonificationRenderer::new(graph);
-        
+
         // Left side
         let left_pos = Position::new_2d(-500.0, 0.0);
         assert_eq!(renderer.position_to_pan(left_pos), -1.0);
-        
+
         // Center
         let center_pos = Position::new_2d(0.0, 0.0);
         assert_eq!(renderer.position_to_pan(center_pos), 0.0);
-        
+
         // Right side
         let right_pos = Position::new_2d(500.0, 0.0);
         assert_eq!(renderer.position_to_pan(right_pos), 1.0);
@@ -371,10 +383,10 @@ mod tests {
     fn test_generate_audio_attributes() {
         let graph = create_test_graph();
         let renderer = AudioSonificationRenderer::new(graph);
-        
+
         let attrs = renderer.generate_audio_attributes();
         assert_eq!(attrs.len(), 3);
-        
+
         // Find BearDog
         let beardog_attrs = attrs.iter().find(|(id, _)| id == "beardog-1").unwrap();
         assert_eq!(beardog_attrs.1.instrument, Instrument::Bass);
@@ -385,28 +397,28 @@ mod tests {
     fn test_master_volume() {
         let graph = create_test_graph();
         let mut renderer = AudioSonificationRenderer::new(graph);
-        
+
         renderer.set_master_volume(0.5);
-        assert_eq!(renderer.master_volume(), 0.5);
-        
+        assert!((renderer.master_volume() - 0.5).abs() < 0.001);
+
         // Test clamping
         renderer.set_master_volume(1.5);
-        assert_eq!(renderer.master_volume(), 1.0);
-        
+        assert!((renderer.master_volume() - 1.0).abs() < 0.001);
+
         renderer.set_master_volume(-0.5);
-        assert_eq!(renderer.master_volume(), 0.0);
+        assert!((renderer.master_volume() - 0.0).abs() < 0.001);
     }
 
     #[test]
     fn test_enable_disable() {
         let graph = create_test_graph();
         let mut renderer = AudioSonificationRenderer::new(graph);
-        
+
         assert!(renderer.is_enabled());
-        
+
         renderer.set_enabled(false);
         assert!(!renderer.is_enabled());
-        
+
         renderer.set_enabled(true);
         assert!(renderer.is_enabled());
     }
@@ -415,7 +427,7 @@ mod tests {
     fn test_describe_soundscape() {
         let graph = create_test_graph();
         let renderer = AudioSonificationRenderer::new(graph);
-        
+
         let description = renderer.describe_soundscape();
         assert!(description.contains("3 primals"));
         assert!(description.contains("2 healthy, 1 warnings"));
@@ -428,18 +440,17 @@ mod tests {
     fn test_describe_node_audio() {
         let graph = create_test_graph();
         let renderer = AudioSonificationRenderer::new(graph);
-        
+
         let description = renderer.describe_node_audio("beardog-1").unwrap();
         assert!(description.contains("BearDog Security"));
         assert!(description.contains("deep bass"));
         assert!(description.contains("harmonic"));
-        
+
         let description = renderer.describe_node_audio("toadstool-1").unwrap();
         assert!(description.contains("ToadStool Compute"));
         assert!(description.contains("drums"));
         assert!(description.contains("off-key"));
-        
+
         assert!(renderer.describe_node_audio("nonexistent").is_none());
     }
 }
-

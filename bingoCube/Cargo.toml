@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "core",
+    "adapters",
+    "demos",
+]
+
+[workspace.package]
+edition = "2021"
+license = "AGPL-3.0"
+repository = "https://github.com/ecoPrimals/petalTongue"
+authors = ["ecoPrimals Project"]
+

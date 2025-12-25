@@ -30,7 +30,7 @@ else
 fi
 
 # Check petalTongue binary
-if [ -f "$PETALTONGUE_DIR/target/release/petal-tongue-ui" ]; then
+if [ -f "$PETALTONGUE_DIR/target/release/petal-tongue" ]; then
     echo -e "${GREEN}✅ petalTongue binary exists${NC}"
 else
     echo -e "${RED}❌ petalTongue binary not found${NC}"
