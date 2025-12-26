@@ -19,6 +19,7 @@
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 
+pub mod capabilities;
 pub mod config;
 pub mod error;
 pub mod graph_engine;
@@ -40,6 +41,9 @@ pub use types::*;
 
 /// Graph engine (core topology representation)
 pub use graph_engine::{GraphEngine, GraphStats, LayoutAlgorithm};
+
+/// Modality capability detection
+pub use capabilities::{CapabilityDetector, Modality, ModalityCapability, ModalityStatus};
 
 /// The petalTongue primal.
 pub struct PetalTongue {

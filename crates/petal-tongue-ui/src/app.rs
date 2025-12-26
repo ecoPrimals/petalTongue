@@ -3,9 +3,9 @@
 use petal_tongue_animation::AnimationEngine;
 use petal_tongue_api::BiomeOSClient;
 use petal_tongue_core::{
-    GraphEngine, LayoutAlgorithm, PrimalHealthStatus, PrimalInfo, TopologyEdge,
+    CapabilityDetector, GraphEngine, LayoutAlgorithm, Modality, PrimalHealthStatus, PrimalInfo, TopologyEdge,
 };
-use petal_tongue_graph::{AudioSonificationRenderer, Visual2DRenderer};
+use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer, Visual2DRenderer};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 
@@ -16,12 +16,16 @@ use bingocube_adapters::audio::BingoCubeAudioRenderer;
 
 /// The main petalTongue UI application
 pub struct PetalTongueApp {
+    /// Capability detector (knows what modalities are actually available)
+    capabilities: CapabilityDetector,
     /// The graph engine (shared between renderers)
     graph: Arc<RwLock<GraphEngine>>,
     /// Visual renderer
     visual_renderer: Visual2DRenderer,
     /// Audio renderer
     audio_renderer: AudioSonificationRenderer,
+    /// Audio file generator (pure Rust WAV export)
+    audio_generator: AudioFileGenerator,
     /// Animation engine
     animation_engine: AnimationEngine,
     /// BiomeOS API client
@@ -30,6 +34,8 @@ pub struct PetalTongueApp {
     current_layout: LayoutAlgorithm,
     /// Show audio description panel
     show_audio_panel: bool,
+    /// Show capability status panel
+    show_capability_panel: bool,
     /// Show controls panel
     show_controls: bool,
     /// Show animation (flow particles and pulses)
@@ -77,19 +83,28 @@ impl PetalTongueApp {
         let graph = GraphEngine::new();
         let graph = Arc::new(RwLock::new(graph));
 
+        // Create capability detector (tests what modalities actually work)
+        let capabilities = CapabilityDetector::default();
+        tracing::info!("Capability detection complete");
+        tracing::info!("{}", capabilities.capability_report());
+
         // Create renderers
         let visual_renderer = Visual2DRenderer::new(Arc::clone(&graph));
         let audio_renderer = AudioSonificationRenderer::new(Arc::clone(&graph));
+        let audio_generator = AudioFileGenerator::new();
         let animation_engine = AnimationEngine::new();
 
         let mut app = Self {
+            capabilities,
             graph,
             visual_renderer,
             audio_renderer,
+            audio_generator,
             animation_engine,
             biomeos_client,
             current_layout: LayoutAlgorithm::ForceDirected,
             show_audio_panel: true,
+            show_capability_panel: false,
             show_controls: true,
             show_animation: true,
             last_refresh: Instant::now(),
@@ -438,6 +453,20 @@ impl PetalTongueApp {
                     ui.heading(egui::RichText::new("🎵 Audio Sonification").size(16.0));
                     ui.add_space(5.0);
                     
+                    // Check if audio is actually available
+                    let audio_available = self.capabilities.is_available(Modality::Audio);
+                    if !audio_available {
+                        egui::Frame::none()
+                            .fill(egui::Color32::from_rgb(60, 30, 30))
+                            .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(180, 80, 80)))
+                            .inner_margin(8.0)
+                            .show(ui, |ui| {
+                                ui.label(egui::RichText::new("⚠️ Audio output not available").size(12.0).strong());
+                                ui.label(egui::RichText::new("Audio attributes calculated, but no sound will play").size(10.0).italics());
+                            });
+                        ui.add_space(8.0);
+                    }
+                    
                     if let Some(audio_renderer) = &self.bingocube_audio_renderer {
                         let description = audio_renderer.describe_soundscape(self.bingocube_x);
                         ui.label(egui::RichText::new(description).size(13.0).color(egui::Color32::from_rgb(200, 200, 200)));
@@ -452,6 +481,23 @@ impl PetalTongueApp {
                         ui.label("• Audio: Soundscape maps cells to instruments, pitch, and panning");
                         ui.label("• Both modalities represent the same underlying data");
                         ui.label("• This demonstrates petalTongue's universal representation capability");
+                        
+                        ui.add_space(10.0);
+                        ui.separator();
+                        ui.add_space(10.0);
+                        
+                        // Export BingoCube audio button
+                        ui.label(egui::RichText::new("💾 Export Audio").strong());
+                        ui.add_space(4.0);
+                        if ui.button("💾 Export BingoCube Soundscape").clicked() {
+                            self.export_bingocube_soundscape();
+                        }
+                        ui.label(
+                            egui::RichText::new("(Saves to ./audio_export/bingocube_soundscape.wav)")
+                                .size(10.0)
+                                .italics()
+                                .color(egui::Color32::GRAY),
+                        );
                     } else {
                         ui.label(egui::RichText::new("Generate a BingoCube to hear its audio representation").color(egui::Color32::GRAY).italics());
                     }
@@ -508,6 +554,87 @@ impl PetalTongueApp {
                 self.bingocube = None;
                 self.bingocube_renderer = None;
                 self.bingocube_audio_renderer = None;
+            }
+        }
+    }
+    
+    /// Export graph soundscape to WAV file
+    fn export_graph_soundscape(&self) {
+        let soundscape = self.audio_renderer.generate_audio_attributes();
+        
+        // Create output directory if it doesn't exist
+        let output_dir = std::path::PathBuf::from("./audio_export");
+        if !output_dir.exists() {
+            if let Err(e) = std::fs::create_dir_all(&output_dir) {
+                tracing::error!("Failed to create audio_export directory: {}", e);
+                return;
+            }
+        }
+        
+        // Generate filename with timestamp
+        let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+        let filename = format!("graph_soundscape_{}.wav", timestamp);
+        let filepath = output_dir.join(filename);
+        
+        // Export soundscape (5 seconds)
+        match self.audio_generator.export_soundscape(&filepath, &soundscape, 5.0) {
+            Ok(_) => {
+                tracing::info!("✅ Soundscape exported to: {}", filepath.display());
+            }
+            Err(e) => {
+                tracing::error!("❌ Failed to export soundscape: {}", e);
+            }
+        }
+    }
+    
+    /// Export BingoCube soundscape to WAV file
+    fn export_bingocube_soundscape(&self) {
+        if let Some(audio_renderer) = &self.bingocube_audio_renderer {
+            let soundscape = audio_renderer.generate_soundscape(self.bingocube_x);
+            
+            // Convert to format expected by AudioFileGenerator
+            let soundscape_vec: Vec<(String, petal_tongue_graph::AudioAttributes)> = soundscape
+                .iter()
+                .map(|((row, col), cell_audio)| {
+                    let id = format!("cell_{}_{}", row, col);
+                    let attrs = petal_tongue_graph::AudioAttributes {
+                        instrument: match cell_audio.instrument {
+                            bingocube_adapters::audio::Instrument::Piano => petal_tongue_graph::Instrument::Synth,
+                            bingocube_adapters::audio::Instrument::Strings => petal_tongue_graph::Instrument::Strings,
+                            bingocube_adapters::audio::Instrument::Bells => petal_tongue_graph::Instrument::Chimes,
+                            bingocube_adapters::audio::Instrument::Bass => petal_tongue_graph::Instrument::Bass,
+                            bingocube_adapters::audio::Instrument::Percussion => petal_tongue_graph::Instrument::Drums,
+                        },
+                        pitch: cell_audio.pitch as f32 / 127.0, // Convert MIDI to 0-1
+                        volume: cell_audio.volume,
+                        pan: cell_audio.pan,
+                    };
+                    (id, attrs)
+                })
+                .collect();
+            
+            // Create output directory
+            let output_dir = std::path::PathBuf::from("./audio_export");
+            if !output_dir.exists() {
+                if let Err(e) = std::fs::create_dir_all(&output_dir) {
+                    tracing::error!("Failed to create audio_export directory: {}", e);
+                    return;
+                }
+            }
+            
+            // Generate filename with timestamp
+            let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+            let filename = format!("bingocube_soundscape_{}.wav", timestamp);
+            let filepath = output_dir.join(filename);
+            
+            // Export soundscape (3 seconds)
+            match self.audio_generator.export_soundscape(&filepath, &soundscape_vec, 3.0) {
+                Ok(_) => {
+                    tracing::info!("✅ BingoCube soundscape exported to: {}", filepath.display());
+                }
+                Err(e) => {
+                    tracing::error!("❌ Failed to export BingoCube soundscape: {}", e);
+                }
             }
         }
     }
@@ -609,6 +736,7 @@ impl eframe::App for PetalTongueApp {
 
                     ui.checkbox(&mut self.show_controls, "Controls");
                     ui.checkbox(&mut self.show_audio_panel, "Audio Info");
+                    ui.checkbox(&mut self.show_capability_panel, "🔍 Capabilities");
                 });
             });
 
@@ -691,6 +819,29 @@ impl eframe::App for PetalTongueApp {
                     ui.add_space(8.0);
                     ui.separator();
                     ui.add_space(8.0);
+
+                    // Check if audio is actually available
+                    let audio_available = self.capabilities.is_available(Modality::Audio);
+                    if !audio_available {
+                        egui::Frame::none()
+                            .fill(egui::Color32::from_rgb(80, 40, 40))
+                            .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(200, 100, 100)))
+                            .inner_margin(12.0)
+                            .show(ui, |ui| {
+                                ui.label(egui::RichText::new("⚠️ AUDIO OUTPUT NOT AVAILABLE").size(14.0).strong());
+                                ui.add_space(6.0);
+                                if let Some(audio_cap) = self.capabilities.get_status(Modality::Audio) {
+                                    ui.label(egui::RichText::new(&audio_cap.reason).size(12.0).color(egui::Color32::from_rgb(255, 200, 200)));
+                                }
+                                ui.add_space(6.0);
+                                ui.label(egui::RichText::new("Audio attributes are being calculated, but no sound will play.").size(11.0).italics());
+                                ui.add_space(4.0);
+                                ui.label(egui::RichText::new("On Linux, install: sudo apt-get install libasound2-dev pkg-config").size(10.0).color(egui::Color32::GRAY));
+                            });
+                        ui.add_space(12.0);
+                        ui.separator();
+                        ui.add_space(8.0);
+                    }
 
                     // Master volume control
                     let mut volume = self.audio_renderer.master_volume();
@@ -783,6 +934,106 @@ impl eframe::App for PetalTongueApp {
                         egui::RichText::new("🐿️ AI → High Synth")
                             .color(egui::Color32::from_rgb(255, 100, 100)),
                     );
+                    
+                    ui.add_space(12.0);
+                    ui.separator();
+                    ui.add_space(8.0);
+                    
+                    // Export audio button
+                    ui.heading(egui::RichText::new("💾 Export Audio").size(16.0));
+                    ui.add_space(4.0);
+                    ui.label(
+                        egui::RichText::new("Export the current soundscape to a WAV file")
+                            .size(12.0)
+                            .color(egui::Color32::from_rgb(180, 180, 180)),
+                    );
+                    ui.add_space(6.0);
+                    
+                    if ui.button("💾 Export Soundscape to WAV").clicked() {
+                        self.export_graph_soundscape();
+                    }
+                    
+                    ui.add_space(4.0);
+                    ui.label(
+                        egui::RichText::new("(File will be saved to ./audio_export/)")
+                            .size(10.0)
+                            .italics()
+                            .color(egui::Color32::GRAY),
+                    );
+                });
+        }
+
+        // Capability panel - Show modality status
+        if self.show_capability_panel {
+            egui::Window::new("🔍 Modality Capabilities")
+                .default_width(500.0)
+                .default_pos([400.0, 100.0])
+                .show(ctx, |ui| {
+                    ui.heading(egui::RichText::new("petalTongue Self-Awareness").size(16.0));
+                    ui.add_space(8.0);
+                    ui.label("This system knows what it can actually do:");
+                    ui.add_space(12.0);
+                    ui.separator();
+                    ui.add_space(12.0);
+
+                    for cap in self.capabilities.get_all() {
+                        let (icon, color) = match cap.status {
+                            petal_tongue_core::ModalityStatus::Available => {
+                                ("✅", egui::Color32::from_rgb(100, 255, 100))
+                            }
+                            petal_tongue_core::ModalityStatus::NotInitialized => {
+                                ("⚠️", egui::Color32::from_rgb(255, 200, 100))
+                            }
+                            petal_tongue_core::ModalityStatus::Unavailable => {
+                                ("❌", egui::Color32::from_rgb(255, 100, 100))
+                            }
+                            petal_tongue_core::ModalityStatus::Disabled => {
+                                ("🔇", egui::Color32::from_rgb(150, 150, 150))
+                            }
+                        };
+
+                        let tested_text = if cap.tested { "tested" } else { "not tested" };
+
+                        egui::Frame::none()
+                            .fill(egui::Color32::from_rgb(40, 40, 45))
+                            .stroke(egui::Stroke::new(1.0, color))
+                            .inner_margin(10.0)
+                            .show(ui, |ui| {
+                                ui.horizontal(|ui| {
+                                    ui.label(egui::RichText::new(icon).size(24.0));
+                                    ui.vertical(|ui| {
+                                        ui.label(
+                                            egui::RichText::new(format!("{:?}", cap.modality))
+                                                .size(14.0)
+                                                .strong()
+                                                .color(color),
+                                        );
+                                        ui.label(
+                                            egui::RichText::new(format!(
+                                                "{:?} ({})",
+                                                cap.status, tested_text
+                                            ))
+                                            .size(11.0)
+                                            .color(egui::Color32::GRAY),
+                                        );
+                                    });
+                                });
+                                ui.add_space(6.0);
+                                ui.label(
+                                    egui::RichText::new(&cap.reason)
+                                        .size(12.0)
+                                        .color(egui::Color32::from_rgb(200, 200, 200)),
+                                );
+                            });
+                        ui.add_space(8.0);
+                    }
+
+                    ui.add_space(12.0);
+                    ui.separator();
+                    ui.add_space(8.0);
+                    ui.label(egui::RichText::new("💡 Why This Matters").size(14.0).strong());
+                    ui.add_space(4.0);
+                    ui.label("In critical situations (wartime AR, disaster response, accessibility),\nfalse capability claims are dangerous. This system is honest about what it can do.");
                 });
         }
 
