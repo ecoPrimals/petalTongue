@@ -16,6 +16,11 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 chrono = { workspace = true }
 reqwest = { workspace = true }
+rodio = { version = "0.19", optional = true }
+
+[features]
+default = []
+audio = ["rodio"]
 
 [build-dependencies]
 

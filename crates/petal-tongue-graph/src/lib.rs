@@ -21,9 +21,11 @@
 #![allow(clippy::missing_panics_doc)] // Allow for now, will add later
 
 pub mod visual_2d;
-// Audio playback temporarily disabled - needs ALSA libraries
-// pub mod audio_playback;
 pub mod audio_sonification;
+pub mod audio_export;
+
+#[cfg(feature = "native-audio")]
+pub mod audio_playback;
 
 // BingoCube adapters are now in bingoCube/adapters
 // petalTongue can use them via:
@@ -31,6 +33,11 @@ pub mod audio_sonification;
 // use bingocube_adapters::audio::BingoCubeAudioRenderer;
 
 pub use audio_sonification::{AudioAttributes, AudioSonificationRenderer, Instrument};
+pub use audio_export::{AudioFileGenerator, AudioFormat, AudioQuality};
+
+#[cfg(feature = "native-audio")]
+pub use audio_playback::AudioPlaybackEngine;
+
 pub use visual_2d::Visual2DRenderer;
 
 // Re-export BingoCube adapters for convenience

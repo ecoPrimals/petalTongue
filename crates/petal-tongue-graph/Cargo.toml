@@ -17,11 +17,18 @@ tokio = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-# Audio temporarily disabled - needs ALSA
-# rodio = { workspace = true }
-# rand = { workspace = true }
 egui = { workspace = true }
 egui_extras = { workspace = true }
+anyhow = { workspace = true }
+# Pure Rust audio file generation
+hound = { workspace = true }
+# Optional native audio playback (requires ALSA)
+rodio = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
+
+[features]
+default = []
+native-audio = ["rodio", "rand"]
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util", "macros"] }

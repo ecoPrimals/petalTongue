@@ -2,16 +2,23 @@
 //!
 //! Generates and plays actual sounds through speakers.
 //! Modern idiomatic Rust implementation using rodio.
+//!
+//! This module is feature-gated and only available with `native-audio` feature.
 
+#[cfg(feature = "native-audio")]
 use crate::audio_sonification::{AudioAttributes, Instrument};
+#[cfg(feature = "native-audio")]
 use rodio::{OutputStream, OutputStreamHandle, Sink, Source};
+#[cfg(feature = "native-audio")]
 use std::sync::Arc;
+#[cfg(feature = "native-audio")]
 use std::time::Duration;
 
 /// Audio playback engine for generating and playing sounds.
 ///
 /// This engine takes audio attributes (from the sonification renderer)
 /// and generates actual audio output through the system speakers.
+#[cfg(feature = "native-audio")]
 pub struct AudioPlaybackEngine {
     /// Audio output stream (must be kept alive)
     _stream: Option<OutputStream>,
@@ -23,6 +30,7 @@ pub struct AudioPlaybackEngine {
     enabled: bool,
 }
 
+#[cfg(feature = "native-audio")]
 impl AudioPlaybackEngine {
     /// Create a new audio playback engine.
     ///
@@ -80,6 +88,7 @@ impl AudioPlaybackEngine {
         let frequency = 100.0 + (attrs.pitch * 700.0);
 
         // Create waveform based on instrument
+        #[cfg(feature = "native-audio")]
         let source = match attrs.instrument {
             Instrument::DeepBass => {
                 // Bass: Low sine wave (sub-200Hz)
@@ -101,6 +110,7 @@ impl AudioPlaybackEngine {
                 // Synth: Square wave (electronic sound)
                 create_square_wave(frequency * 1.5, Duration::from_millis(300))
             }
+            _ => create_sine_wave(frequency, Duration::from_millis(400)),
         };
 
         // Apply volume (attribute volume * master volume)
@@ -136,6 +146,7 @@ impl AudioPlaybackEngine {
     }
 }
 
+#[cfg(feature = "native-audio")]
 impl Default for AudioPlaybackEngine {
     fn default() -> Self {
         Self::new().unwrap_or_else(|e| {
@@ -160,6 +171,7 @@ impl Default for AudioPlaybackEngine {
 /// Generate a sine wave tone.
 ///
 /// Sine waves produce pure, smooth tones - ideal for bass and melodic sounds.
+#[cfg(feature = "native-audio")]
 fn create_sine_wave(frequency: f32, duration: Duration) -> impl Source<Item = f32> {
     let sample_rate = 48000;
     let samples = (sample_rate as f32 * duration.as_secs_f32()) as usize;
@@ -179,6 +191,7 @@ fn create_sine_wave(frequency: f32, duration: Duration) -> impl Source<Item = f3
 /// Generate a square wave tone.
 ///
 /// Square waves produce harsh, electronic sounds - ideal for synth.
+#[cfg(feature = "native-audio")]
 fn create_square_wave(frequency: f32, duration: Duration) -> impl Source<Item = f32> {
     let sample_rate = 48000;
     let samples = (sample_rate as f32 * duration.as_secs_f32()) as usize;
@@ -198,6 +211,7 @@ fn create_square_wave(frequency: f32, duration: Duration) -> impl Source<Item = 
 /// Generate a triangle wave tone.
 ///
 /// Triangle waves are bright but smoother than square - ideal for chimes.
+#[cfg(feature = "native-audio")]
 fn create_triangle_wave(frequency: f32, duration: Duration) -> impl Source<Item = f32> {
     let sample_rate = 48000;
     let samples = (sample_rate as f32 * duration.as_secs_f32()) as usize;
@@ -223,6 +237,7 @@ fn create_triangle_wave(frequency: f32, duration: Duration) -> impl Source<Item 
 /// Generate a sawtooth wave tone.
 ///
 /// Sawtooth waves are rich in harmonics - ideal for strings.
+#[cfg(feature = "native-audio")]
 fn create_sawtooth_wave(frequency: f32, duration: Duration) -> impl Source<Item = f32> {
     let sample_rate = 48000;
     let samples = (sample_rate as f32 * duration.as_secs_f32()) as usize;
@@ -243,6 +258,7 @@ fn create_sawtooth_wave(frequency: f32, duration: Duration) -> impl Source<Item 
 /// Generate percussive noise (for drums).
 ///
 /// Uses white noise with exponential decay envelope.
+#[cfg(feature = "native-audio")]
 fn create_percussion(duration: Duration) -> impl Source<Item = f32> {
     use rand::Rng;
     let sample_rate = 48000;
