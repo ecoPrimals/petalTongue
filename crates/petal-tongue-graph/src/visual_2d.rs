@@ -310,6 +310,7 @@ impl Visual2DRenderer {
 
                 // Pulse effect: expanding circle that fades out
                 let pulse_radius = 25.0 * self.zoom * pulse.radius_multiplier();
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
                 let alpha = (255.0 * pulse.alpha()) as u8;
 
                 painter.circle_stroke(

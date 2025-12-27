@@ -54,7 +54,7 @@ mod tests {
             endpoint: "http://test:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
             capabilities: vec!["cap1".to_string(), "cap2".to_string()],
-            last_seen: 1234567890,
+            last_seen: 1_234_567_890,
         };
 
         assert_eq!(info.id, "test-1");
@@ -63,7 +63,7 @@ mod tests {
         assert_eq!(info.endpoint, "http://test:8080");
         assert_eq!(info.capabilities.len(), 2);
         assert!(matches!(info.health, PrimalHealthStatus::Healthy));
-        assert_eq!(info.last_seen, 1234567890);
+        assert_eq!(info.last_seen, 1_234_567_890);
     }
 
     #[test]
@@ -75,7 +75,7 @@ mod tests {
             endpoint: "http://test:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
             capabilities: vec!["cap1".to_string()],
-            last_seen: 1234567890,
+            last_seen: 1_234_567_890,
         };
 
         let cloned = info.clone();
@@ -123,7 +123,7 @@ mod tests {
             endpoint: "http://p1:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
             capabilities: vec![],
-            last_seen: 1234567890,
+            last_seen: 1_234_567_890,
         };
 
         let primal2 = PrimalInfo {
@@ -133,7 +133,7 @@ mod tests {
             endpoint: "http://p2:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
             capabilities: vec![],
-            last_seen: 1234567890,
+            last_seen: 1_234_567_890,
         };
 
         let edge = TopologyEdge {
@@ -146,12 +146,12 @@ mod tests {
         let graph = TopologyGraph {
             nodes: vec![primal1, primal2],
             edges: vec![edge],
-            timestamp: 1234567890,
+            timestamp: 1_234_567_890,
         };
 
         assert_eq!(graph.nodes.len(), 2);
         assert_eq!(graph.edges.len(), 1);
-        assert_eq!(graph.timestamp, 1234567890);
+        assert_eq!(graph.timestamp, 1_234_567_890);
     }
 
     #[test]
@@ -174,13 +174,13 @@ mod tests {
             primal_type: "compute".to_string(),
             status: ConnectionStatus::Connected,
             endpoint: "http://test:8080".to_string(),
-            last_heartbeat: Some(1234567890),
+            last_heartbeat: Some(1_234_567_890),
         };
 
         assert_eq!(connection.name, "Test Primal");
         assert_eq!(connection.primal_type, "compute");
         assert!(matches!(connection.status, ConnectionStatus::Connected));
-        assert_eq!(connection.last_heartbeat, Some(1234567890));
+        assert_eq!(connection.last_heartbeat, Some(1_234_567_890));
     }
 
     #[test]
@@ -190,7 +190,7 @@ mod tests {
             from: "primal-a".to_string(),
             to: "primal-b".to_string(),
             message_type: "api_call".to_string(),
-            timestamp: 1234567890,
+            timestamp: 1_234_567_890,
             metadata: Some(serde_json::json!({"key": "value"})),
         };
 
@@ -208,8 +208,8 @@ mod tests {
             message_count: 100,
             bytes_transferred: 10240,
             avg_latency_ms: 12.5,
-            period_start: 1234567890,
-            period_end: 1234567900,
+            period_start: 1_234_567_890,
+            period_end: 1_234_567_900,
         };
 
         assert_eq!(stats.message_count, 100);
@@ -226,7 +226,7 @@ mod tests {
             endpoint: "http://test:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
             capabilities: vec!["cap1".to_string()],
-            last_seen: 1234567890,
+            last_seen: 1_234_567_890,
         };
 
         let json = serde_json::to_string(&info).expect("Failed to serialize");

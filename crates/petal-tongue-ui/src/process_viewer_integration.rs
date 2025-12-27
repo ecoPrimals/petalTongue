@@ -3,9 +3,11 @@
 //! Real-time process monitoring using sysinfo.
 //! Displays running processes with CPU, memory usage, and filtering.
 
+#![allow(clippy::cast_precision_loss)]
+
 use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};
-use sysinfo::{ProcessRefreshKind, System};
 use std::time::{Duration, Instant};
+use sysinfo::{ProcessRefreshKind, System};
 
 /// Process information for display
 #[derive(Clone, Debug)]
@@ -65,7 +67,8 @@ impl ProcessViewerTool {
         let now = Instant::now();
         if now.duration_since(self.last_refresh) >= self.refresh_interval {
             // Refresh processes
-            self.system.refresh_processes_specifics(ProcessRefreshKind::everything());
+            self.system
+                .refresh_processes_specifics(ProcessRefreshKind::everything());
             self.last_refresh = now;
 
             // Collect process info
@@ -184,7 +187,7 @@ impl ProcessViewerTool {
                         });
                         row.col(|ui| {
                             let mb = process.memory as f64 / 1_048_576.0;
-                            ui.label(format!("{:.1} MB", mb));
+                            ui.label(format!("{mb:.1} MB"));
                         });
                     });
                 }
@@ -263,7 +266,6 @@ impl ToolPanel for ProcessViewerTool {
     fn status_message(&self) -> Option<String> {
         let total = self.system.processes().len();
         let showing = self.processes.len();
-        Some(format!("Processes: {}/{}", showing, total))
+        Some(format!("Processes: {showing}/{total}"))
     }
 }
-

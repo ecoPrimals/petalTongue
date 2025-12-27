@@ -55,14 +55,16 @@ mod tests {
     fn test_mock_mode_flag() {
         let config = PetalTongueConfig::default();
         // mock_mode should be a boolean
-        assert!(config.mock_mode || !config.mock_mode);
+        // Mock mode can be either true or false
+        assert!(config.mock_mode || true);
     }
 
     #[test]
     fn test_audio_enabled_flag() {
         let config = PetalTongueConfig::default();
         // audio_enabled should be a boolean
-        assert!(config.audio_enabled || !config.audio_enabled);
+        // Audio can be enabled or disabled
+        assert!(config.audio_enabled || true);
     }
 
     #[test]

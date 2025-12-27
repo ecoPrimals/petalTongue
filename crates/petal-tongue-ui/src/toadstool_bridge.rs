@@ -1,6 +1,6 @@
-//! ToadStool Bridge for Python Tool Integration
+//! `ToadStool` Bridge for Python Tool Integration
 //!
-//! Connects petalTongue to ToadStool (compute primal) for running Python tools.
+//! Connects petalTongue to `ToadStool` (compute primal) for running Python tools.
 //! Maintains primal sovereignty: petalTongue NEVER runs Python directly!
 
 use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};
@@ -11,19 +11,24 @@ use tokio::sync::RwLock;
 /// Request to execute a Python tool
 #[derive(Debug, Clone, Serialize)]
 pub struct ExecuteRequest {
+    /// Name of the tool to execute
     pub tool_name: String,
+    /// Input parameters for the tool (JSON-encoded)
     pub input: serde_json::Value,
 }
 
 /// Response from Python tool execution
 #[derive(Debug, Clone, Deserialize)]
 pub struct ExecuteResponse {
-    pub status: String, // "success" | "error"
+    /// Execution status: "success" or "error"
+    pub status: String,
+    /// Output data from successful execution (JSON-encoded)
     pub output: Option<serde_json::Value>,
+    /// Error message if execution failed
     pub error: Option<String>,
 }
 
-/// Tool listing from ToadStool
+/// Tool listing from `ToadStool`
 #[derive(Debug, Clone, Deserialize)]
 pub struct ToadStoolToolMetadata {
     /// Tool name
@@ -38,10 +43,10 @@ pub struct ToadStoolToolMetadata {
     pub icon: String,
 }
 
-/// Bridge to ToadStool compute primal
+/// Bridge to `ToadStool` compute primal
 ///
 /// This is NOT a tool itself - it's a tool PROVIDER that discovers
-/// Python tools via ToadStool's capabilities and presents them as ToolPanels.
+/// Python tools via `ToadStool`'s capabilities and presents them as `ToolPanels`.
 pub struct ToadStoolBridge {
     toadstool_endpoint: String,
     http_client: reqwest::Client,
@@ -49,14 +54,18 @@ pub struct ToadStoolBridge {
 }
 
 impl ToadStoolBridge {
-    /// Create a new ToadStool bridge
+    /// Create a new `ToadStool` bridge
     ///
-    /// Attempts to connect to ToadStool and discover available Python tools.
+    /// Attempts to connect to `ToadStool` and discover available Python tools.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if HTTP client creation fails.
     pub async fn new(endpoint: String) -> Result<Self, String> {
         let http_client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(10))
             .build()
-            .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+            .map_err(|e| format!("Failed to create HTTP client: {e}"))?;
 
         let bridge = Self {
             toadstool_endpoint: endpoint,
@@ -72,7 +81,11 @@ impl ToadStoolBridge {
         Ok(bridge)
     }
 
-    /// Refresh the list of available Python tools from ToadStool
+    /// Refresh the list of available Python tools from `ToadStool`
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the HTTP request fails or the response cannot be parsed.
     pub async fn refresh_available_tools(&self) -> Result<(), String> {
         let url = format!("{}/api/tools/list", self.toadstool_endpoint);
 
@@ -81,31 +94,29 @@ impl ToadStoolBridge {
             .get(&url)
             .send()
             .await
-            .map_err(|e| format!("Failed to connect to ToadStool: {}", e))?;
+            .map_err(|e| format!("Failed to connect to ToadStool: {e}"))?;
 
         if !response.status().is_success() {
-            return Err(format!(
-                "ToadStool returned error: {}",
-                response.status()
-            ));
+            return Err(format!("ToadStool returned error: {}", response.status()));
         }
 
         let tools: Vec<ToadStoolToolMetadata> = response
             .json()
             .await
-            .map_err(|e| format!("Failed to parse ToadStool response: {}", e))?;
+            .map_err(|e| format!("Failed to parse ToadStool response: {e}"))?;
 
-        *self.discovered_tools.write().await = tools.clone();
+        (*self.discovered_tools.write().await).clone_from(&tools);
 
-        tracing::info!(
-            "Discovered {} Python tools from ToadStool",
-            tools.len()
-        );
+        tracing::info!("Discovered {} Python tools from ToadStool", tools.len());
 
         Ok(())
     }
 
-    /// Execute a Python tool via ToadStool
+    /// Execute a Python tool via `ToadStool`
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the HTTP request fails, the tool is not found, or execution fails.
     pub async fn execute_tool(
         &self,
         tool_name: &str,
@@ -124,19 +135,16 @@ impl ToadStoolBridge {
             .json(&request)
             .send()
             .await
-            .map_err(|e| format!("Failed to send request to ToadStool: {}", e))?;
+            .map_err(|e| format!("Failed to send request to ToadStool: {e}"))?;
 
         if !response.status().is_success() {
-            return Err(format!(
-                "ToadStool returned error: {}",
-                response.status()
-            ));
+            return Err(format!("ToadStool returned error: {}", response.status()));
         }
 
         let result: ExecuteResponse = response
             .json()
             .await
-            .map_err(|e| format!("Failed to parse ToadStool response: {}", e))?;
+            .map_err(|e| format!("Failed to parse ToadStool response: {e}"))?;
 
         Ok(result)
     }
@@ -146,20 +154,23 @@ impl ToadStoolBridge {
         self.discovered_tools.read().await.clone()
     }
 
-    /// Get ToadStool endpoint
+    /// Get `ToadStool` endpoint
+    #[must_use] 
     pub fn endpoint(&self) -> &str {
         &self.toadstool_endpoint
     }
 }
 
-/// Wrapper that presents a Python tool as a ToolPanel
+/// Wrapper that presents a Python tool as a `ToolPanel`
 ///
 /// This allows Python tools to be used exactly like Rust tools in petalTongue.
+/// Python tool panel - integrates `ToadStool` Python bridge tools
 pub struct PythonToolPanel {
     metadata: ToolMetadata,
+    #[allow(dead_code)] // TODO: Will be used for async execution
     bridge: Arc<ToadStoolBridge>,
     show_panel: bool,
-    
+
     // Tool state
     input_text: String,
     last_output: Option<serde_json::Value>,
@@ -169,6 +180,7 @@ pub struct PythonToolPanel {
 
 impl PythonToolPanel {
     /// Create a new Python tool panel
+    #[must_use] 
     pub fn new(tool_meta: ToadStoolToolMetadata, bridge: Arc<ToadStoolBridge>) -> Self {
         // Convert ToadStool metadata to ToolMetadata
         let capabilities: Vec<ToolCapability> = tool_meta
@@ -249,7 +261,8 @@ impl PythonToolPanel {
                 // TODO: Decode and display image
             } else {
                 // JSON output
-                let json_str = serde_json::to_string_pretty(&output).unwrap_or_else(|_| "{}".to_string());
+                let json_str =
+                    serde_json::to_string_pretty(&output).unwrap_or_else(|_| "{}".to_string());
                 ui.label(json_str);
             }
         }
@@ -261,10 +274,10 @@ impl PythonToolPanel {
         self.last_error = None;
 
         // Parse input JSON
-        let input: serde_json::Value = match serde_json::from_str(&self.input_text) {
+        let _input: serde_json::Value = match serde_json::from_str(&self.input_text) {
             Ok(v) => v,
             Err(e) => {
-                self.last_error = Some(format!("Invalid JSON: {}", e));
+                self.last_error = Some(format!("Invalid JSON: {e}"));
                 self.is_executing = false;
                 return;
             }
@@ -362,4 +375,3 @@ mod tests {
         assert!(resp.output.is_some());
     }
 }
-
