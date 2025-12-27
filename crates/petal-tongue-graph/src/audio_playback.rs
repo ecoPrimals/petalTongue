@@ -291,13 +291,13 @@ mod tests {
     #[test]
     fn test_volume_clamping() {
         let mut engine = AudioPlaybackEngine::default();
-        
+
         engine.set_master_volume(1.5);
         assert_eq!(engine.master_volume(), 1.0);
-        
+
         engine.set_master_volume(-0.5);
         assert_eq!(engine.master_volume(), 0.0);
-        
+
         engine.set_master_volume(0.5);
         assert_eq!(engine.master_volume(), 0.5);
     }
@@ -305,14 +305,13 @@ mod tests {
     #[test]
     fn test_enable_disable() {
         let mut engine = AudioPlaybackEngine::default();
-        
+
         assert!(engine.is_enabled() || !engine.is_enabled()); // May fail to init
-        
+
         engine.set_enabled(false);
         assert!(!engine.is_enabled());
-        
+
         engine.set_enabled(true);
         assert!(engine.is_enabled());
     }
 }
-

@@ -1,6 +1,6 @@
 [package]
 name = "petal-tongue-telemetry"
-description = "TODO: Add description"
+description = "Real-time telemetry event streaming for ecosystem monitoring"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

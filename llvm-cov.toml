@@ -1,0 +1,33 @@
+# Configuration for cargo-llvm-cov
+# https://github.com/taiki-e/cargo-llvm-cov
+
+[report]
+# Output format: html, lcov, json, or text
+format = "html"
+
+# Output directory for HTML reports
+output-dir = "target/llvm-cov/html"
+
+# Include files matching pattern
+include-paths = ["crates/*/src/**"]
+
+# Exclude test files from coverage
+exclude-paths = ["crates/*/tests/**", "crates/*/benches/**"]
+
+[test]
+# Run with --all-features
+all-features = false
+
+# Run tests with these features
+features = []  # No features by default (avoids ALSA requirement)
+
+# Number of test threads
+test-threads = 4
+
+[coverage]
+# Minimum coverage threshold (90%)
+fail-under = 90
+
+# Show uncovered lines
+show-missing = true
+

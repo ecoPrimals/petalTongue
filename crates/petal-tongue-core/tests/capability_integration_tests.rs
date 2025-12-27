@@ -73,10 +73,16 @@ fn test_capability_report_format() {
     let report = detector.capability_report();
 
     // Report should mention all modalities
-    assert!(report.contains("Visual2D"), "Report should mention Visual2D");
+    assert!(
+        report.contains("Visual2D"),
+        "Report should mention Visual2D"
+    );
     assert!(report.contains("Audio"), "Report should mention Audio");
     assert!(report.contains("Haptic"), "Report should mention Haptic");
-    assert!(report.contains("Animation"), "Report should mention Animation");
+    assert!(
+        report.contains("Animation"),
+        "Report should mention Animation"
+    );
     assert!(
         report.contains("TextDescription"),
         "Report should mention TextDescription"
@@ -186,4 +192,3 @@ fn test_audio_initialization_with_feature() {
         );
     }
 }
-
