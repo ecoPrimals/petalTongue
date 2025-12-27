@@ -151,4 +151,3 @@ mod tests {
         assert!(graph.nodes().len() > 0);
     }
 }
-

@@ -91,7 +91,11 @@ impl AudioFileGenerator {
             )
         })?;
 
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            clippy::cast_precision_loss
+        )]
         let num_samples = (self.quality.sample_rate as f32 * duration_secs) as usize;
         let frequency = 100.0 + (attrs.pitch * 700.0);
 
@@ -171,7 +175,11 @@ impl AudioFileGenerator {
             )
         })?;
 
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            clippy::cast_precision_loss
+        )]
         let num_samples = (self.quality.sample_rate as f32 * duration_secs) as usize;
 
         // Constants for audio conversion

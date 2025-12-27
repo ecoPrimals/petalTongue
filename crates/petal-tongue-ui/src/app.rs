@@ -86,7 +86,7 @@ impl PetalTongueApp {
         let audio_renderer = AudioSonificationRenderer::new(Arc::clone(&graph));
         let audio_generator = AudioFileGenerator::new();
         let animation_engine = Arc::new(RwLock::new(AnimationEngine::new()));
-        
+
         // Wire animation engine to visual renderer
         visual_renderer.set_animation_engine(Arc::clone(&animation_engine));
         visual_renderer.set_animation_enabled(true); // Enable by default
@@ -295,11 +295,12 @@ impl eframe::App for PetalTongueApp {
     #[allow(clippy::too_many_lines, clippy::struct_excessive_bools)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Update animation engine (flow particles and pulses)
-        if self.show_animation && let Ok(mut engine) = self.animation_engine.write() {
-                engine.update();
-            }
-        
-        
+        if self.show_animation
+            && let Ok(mut engine) = self.animation_engine.write()
+        {
+            engine.update();
+        }
+
         // Set dark theme with custom colors
         let mut style = (*ctx.style()).clone();
         style.visuals.dark_mode = true;
@@ -462,17 +463,21 @@ impl eframe::App for PetalTongueApp {
                     if ui.button("Refresh Now").clicked() {
                         self.refresh_graph_data();
                     }
-                    
+
                     ui.add_space(12.0);
                     ui.separator();
                     ui.add_space(12.0);
-                    
+
                     // Animation controls
                     ui.heading(egui::RichText::new("✨ Animation").size(16.0));
                     ui.add_space(4.0);
-                    if ui.checkbox(&mut self.show_animation, "Flow Particles & Pulses").changed() {
+                    if ui
+                        .checkbox(&mut self.show_animation, "Flow Particles & Pulses")
+                        .changed()
+                    {
                         // Update visual renderer animation state
-                        self.visual_renderer.set_animation_enabled(self.show_animation);
+                        self.visual_renderer
+                            .set_animation_enabled(self.show_animation);
                     }
                     ui.label(
                         egui::RichText::new("Visualizes data flow between primals")

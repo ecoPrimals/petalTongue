@@ -206,7 +206,7 @@ impl CapabilityDetector {
     #[must_use]
     pub fn capability_report(&self) -> String {
         use std::fmt::Write;
-        
+
         let caps = self.get_all();
         let mut report = String::from("🔍 petalTongue Modality Capabilities\n\n");
 

@@ -6,7 +6,11 @@
 //! `BingoCube` implements the `ToolPanel` trait, making it a capability-based tool
 //! that petalTongue can use without hardcoded knowledge.
 
-#![allow(clippy::cast_precision_loss, clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+#![allow(
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss
+)]
 
 use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};
 use bingocube_adapters::audio::BingoCubeAudioRenderer;
@@ -171,10 +175,11 @@ impl BingoCubeIntegration {
                     }
 
                     if ui.button("▶ Animate Reveal").clicked()
-                        && let Some(renderer) = &mut self.renderer {
-                            renderer.set_reveal(0.0).animate_to(1.0);
-                            self.reveal_x = 0.0;
-                        }
+                        && let Some(renderer) = &mut self.renderer
+                    {
+                        renderer.set_reveal(0.0).animate_to(1.0);
+                        self.reveal_x = 0.0;
+                    }
 
                     if ui.button("⚙ Config").clicked() {
                         self.show_config = !self.show_config;
@@ -423,9 +428,10 @@ impl ToolPanel for BingoCubeIntegration {
                     if ui
                         .add(egui::Slider::new(&mut self.reveal_x, 0.0..=1.0).text(""))
                         .changed()
-                        && let Some(renderer) = &mut self.renderer {
-                            renderer.set_reveal(self.reveal_x);
-                        }
+                        && let Some(renderer) = &mut self.renderer
+                    {
+                        renderer.set_reveal(self.reveal_x);
+                    }
                     ui.label(format!("{:.0}%", self.reveal_x * 100.0));
                 });
 
@@ -433,10 +439,11 @@ impl ToolPanel for BingoCubeIntegration {
                     ui.label("Animation:");
 
                     if ui.button("▶ Animate Reveal").clicked()
-                        && let Some(renderer) = &mut self.renderer {
-                            renderer.set_reveal(0.0).animate_to(1.0);
-                            self.reveal_x = 0.0;
-                        }
+                        && let Some(renderer) = &mut self.renderer
+                    {
+                        renderer.set_reveal(0.0).animate_to(1.0);
+                        self.reveal_x = 0.0;
+                    }
 
                     if ui.button("⚙ Config").clicked() {
                         self.show_config = !self.show_config;
