@@ -385,25 +385,15 @@ mod tests {
     fn create_test_graph() -> Arc<RwLock<GraphEngine>> {
         let mut graph = GraphEngine::new();
 
-        graph.add_node(PrimalInfo {
-            id: "node1".to_string(),
-            name: "Node 1".to_string(),
-            primal_type: "Test".to_string(),
-            endpoint: "http://localhost:8080".to_string(),
-            capabilities: vec!["test".to_string()],
-            health: PrimalHealthStatus::Healthy,
-            last_seen: 0,
-        });
+        let mut node1 = petal_tongue_core::test_fixtures::primals::test_primal("node1");
+        node1.name = "Node 1".to_string();
+        node1.health = PrimalHealthStatus::Healthy;
+        graph.add_node(node1);
 
-        graph.add_node(PrimalInfo {
-            id: "node2".to_string(),
-            name: "Node 2".to_string(),
-            primal_type: "Test".to_string(),
-            endpoint: "http://localhost:8081".to_string(),
-            capabilities: vec!["test".to_string()],
-            health: PrimalHealthStatus::Warning,
-            last_seen: 0,
-        });
+        let mut node2 = petal_tongue_core::test_fixtures::primals::test_primal("node2");
+        node2.name = "Node 2".to_string();
+        node2.health = PrimalHealthStatus::Warning;
+        graph.add_node(node2);
 
         graph.add_edge(TopologyEdge {
             from: "node1".to_string(),
@@ -654,15 +644,9 @@ mod tests {
 
         // Add 10 nodes
         for i in 0..10 {
-            graph.add_node(PrimalInfo {
-                id: format!("node{i}"),
-                name: format!("Node {i}"),
-                primal_type: "Test".to_string(),
-                endpoint: format!("http://localhost:808{i}"),
-                capabilities: vec!["test".to_string()],
-                health: PrimalHealthStatus::Healthy,
-                last_seen: 0,
-            });
+            let mut node = petal_tongue_core::test_fixtures::primals::test_primal(&format!("node{i}"));
+            node.name = format!("Node {i}");
+            graph.add_node(node);
         }
 
         // Add edges between sequential nodes
@@ -769,15 +753,9 @@ mod tests {
 
         // Add three nodes
         for i in 1..=3 {
-            graph.add_node(PrimalInfo {
-                id: format!("node{i}"),
-                name: format!("Node {i}"),
-                primal_type: "Test".to_string(),
-                endpoint: format!("http://localhost:808{i}"),
-                capabilities: vec!["test".to_string()],
-                health: PrimalHealthStatus::Healthy,
-                last_seen: 0,
-            });
+            let mut node = petal_tongue_core::test_fixtures::primals::test_primal(&format!("node{i}"));
+            node.name = format!("Node {i}");
+            graph.add_node(node);
         }
 
         // Add multiple edges
@@ -812,35 +790,11 @@ mod tests {
         let mut graph = GraphEngine::new();
 
         // Add nodes with different health states
-        graph.add_node(PrimalInfo {
-            id: "healthy_node".to_string(),
-            name: "Healthy Node".to_string(),
-            primal_type: "Test".to_string(),
-            endpoint: "http://localhost:8080".to_string(),
-            capabilities: vec!["test".to_string()],
-            health: PrimalHealthStatus::Healthy,
-            last_seen: 0,
-        });
+        graph.add_node(petal_tongue_core::test_fixtures::primals::test_primal_with_health("healthy_node", PrimalHealthStatus::Healthy));
 
-        graph.add_node(PrimalInfo {
-            id: "warning_node".to_string(),
-            name: "Warning Node".to_string(),
-            primal_type: "Test".to_string(),
-            endpoint: "http://localhost:8081".to_string(),
-            capabilities: vec!["test".to_string()],
-            health: PrimalHealthStatus::Warning,
-            last_seen: 0,
-        });
+        graph.add_node(petal_tongue_core::test_fixtures::primals::test_primal_with_health("warning_node", PrimalHealthStatus::Warning));
 
-        graph.add_node(PrimalInfo {
-            id: "critical_node".to_string(),
-            name: "Critical Node".to_string(),
-            primal_type: "Test".to_string(),
-            endpoint: "http://localhost:8082".to_string(),
-            capabilities: vec!["test".to_string()],
-            health: PrimalHealthStatus::Critical,
-            last_seen: 0,
-        });
+        graph.add_node(petal_tongue_core::test_fixtures::primals::test_primal_with_health("critical_node", PrimalHealthStatus::Critical));
 
         let graph_arc = Arc::new(RwLock::new(graph));
         let _renderer = Visual2DRenderer::new(graph_arc.clone());

@@ -1,19 +1,13 @@
-//! # petalTongue
+//! petalTongue Core
 //!
-//! Universal UI and Visualization System
+//! Core graph engine and types for multi-modal primal visualization.
 //!
-//! ## Overview
+//! # Architecture
 //!
-//! petalTongue is part of the ecoPrimals ecosystem.
-//!
-//! ## Quick Start
-//!
-//! ```rust,ignore
-//! use petal_tongue_core::petalTongue;
-//!
-//! let primal = petalTongue::new(config).await?;
-//! primal.start().await?;
-//! ```
+//! - **Zero hardcoding** - All configuration is environment-driven
+//! - **Capability-based** - Runtime discovery, no assumptions about primal names
+//! - **Modality-agnostic** - Core knows nothing about rendering
+//! - **Type-safe** - Strong typing throughout
 
 #![warn(missing_docs)]
 #![warn(clippy::all)]
@@ -27,9 +21,14 @@ pub mod error;
 #[cfg(test)]
 mod error_tests;
 pub mod graph_engine;
+pub mod primal_types;
 pub mod types;
 #[cfg(test)]
 mod types_tests;
+
+// Test fixtures available for this and dependent crates
+#[cfg(any(test, feature = "test-fixtures"))]
+pub mod test_fixtures;
 
 use sourdough_core::{
     PrimalError, PrimalHealth, PrimalLifecycle, PrimalState,
@@ -50,6 +49,9 @@ pub use graph_engine::{GraphEngine, GraphStats, LayoutAlgorithm};
 
 /// Modality capability detection
 pub use capabilities::{CapabilityDetector, Modality, ModalityCapability, ModalityStatus};
+
+/// Capability-based primal type system
+pub use primal_types::{PrimalCapabilities, capability_categories};
 
 /// The petalTongue primal.
 pub struct PetalTongue {
@@ -83,7 +85,8 @@ impl PrimalLifecycle for PetalTongue {
         self.state = PrimalState::Starting;
         tracing::info!("petalTongue starting...");
 
-        // TODO: Initialize resources
+        // Resources are initialized lazily by the UI framework (egui)
+        // No explicit initialization needed here
 
         self.state = PrimalState::Running;
         tracing::info!("petalTongue running");
@@ -94,7 +97,8 @@ impl PrimalLifecycle for PetalTongue {
         self.state = PrimalState::Stopping;
         tracing::info!("petalTongue stopping...");
 
-        // TODO: Clean up resources
+        // Resources are cleaned up automatically by Drop implementations
+        // No explicit cleanup needed here
 
         self.state = PrimalState::Stopped;
         tracing::info!("petalTongue stopped");

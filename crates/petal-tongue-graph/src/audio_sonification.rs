@@ -270,37 +270,25 @@ mod tests {
         let mut graph = GraphEngine::new();
 
         // Add BearDog (Security)
-        graph.add_node(PrimalInfo {
-            id: "beardog-1".to_string(),
-            name: "BearDog Security".to_string(),
-            primal_type: "Security".to_string(),
-            endpoint: "http://localhost:8080".to_string(),
-            capabilities: vec!["auth".to_string(), "encryption".to_string()],
-            health: PrimalHealthStatus::Healthy,
-            last_seen: 0,
-        });
+        let mut beardog = petal_tongue_core::test_fixtures::primals::test_primal_with_type("beardog-1", "Security");
+        beardog.name = "BearDog Security".to_string();
+        beardog.capabilities = vec!["auth".to_string(), "encryption".to_string()];
+        beardog.health = PrimalHealthStatus::Healthy;
+        graph.add_node(beardog);
 
         // Add ToadStool (Compute)
-        graph.add_node(PrimalInfo {
-            id: "toadstool-1".to_string(),
-            name: "ToadStool Compute".to_string(),
-            primal_type: "Compute".to_string(),
-            endpoint: "http://localhost:8081".to_string(),
-            capabilities: vec!["runtime".to_string(), "execution".to_string()],
-            health: PrimalHealthStatus::Warning,
-            last_seen: 0,
-        });
+        let mut toadstool = petal_tongue_core::test_fixtures::primals::test_primal_with_type("toadstool-1", "Compute");
+        toadstool.name = "ToadStool Compute".to_string();
+        toadstool.capabilities = vec!["runtime".to_string(), "execution".to_string()];
+        toadstool.health = PrimalHealthStatus::Warning;
+        graph.add_node(toadstool);
 
         // Add Songbird (Discovery)
-        graph.add_node(PrimalInfo {
-            id: "songbird-1".to_string(),
-            name: "Songbird Discovery".to_string(),
-            primal_type: "Discovery".to_string(),
-            endpoint: "http://localhost:8082".to_string(),
-            capabilities: vec!["discovery".to_string()],
-            health: PrimalHealthStatus::Healthy,
-            last_seen: 0,
-        });
+        let mut songbird = petal_tongue_core::test_fixtures::primals::test_primal_with_type("songbird-1", "Discovery");
+        songbird.name = "Songbird Discovery".to_string();
+        songbird.capabilities = vec!["discovery".to_string()];
+        songbird.health = PrimalHealthStatus::Healthy;
+        graph.add_node(songbird);
 
         graph.add_edge(TopologyEdge {
             from: "beardog-1".to_string(),
