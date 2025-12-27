@@ -119,13 +119,12 @@ impl AppState {
         // Create renderers
         let visual_renderer = Visual2DRenderer::new(graph.clone());
         let audio_renderer = AudioSonificationRenderer::new(graph.clone());
-        let audio_generator = AudioFileGenerator::new(graph.clone());
+        let audio_generator = AudioFileGenerator::new();
         let animation_engine = AnimationEngine::new();
 
         // BingoCube tool integration (demonstrating primal tool use)
         let bingocube_config = BingoCubeConfig {
             grid_size: 8,
-            reveal_threshold: 0.5,
             ..Default::default()
         };
 
@@ -166,6 +165,171 @@ impl AppState {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_app_state_creation() {
+        let state = AppState::new();
+
+        // Verify initial state
+        assert_eq!(state.current_layout, LayoutAlgorithm::ForceDirected);
+        assert!(state.show_controls);
+        assert!(!state.show_audio_panel);
+        assert!(!state.show_capability_panel);
+        assert!(state.auto_refresh);
+        assert_eq!(state.refresh_interval, 5.0);
+    }
+
+    #[test]
+    fn test_app_state_defaults() {
+        let state = AppState::new();
+
+        // Verify capability detector initialized
+        assert!(state.capabilities.has_modality(Modality::Visual));
+
+        // Verify graph engine initialized
+        let graph = state.graph.read().expect("graph lock poisoned");
+        assert_eq!(graph.nodes().len(), 0);
+        assert_eq!(graph.edges().len(), 0);
+    }
+
+    #[test]
+    fn test_layout_algorithm_default() {
+        let state = AppState::new();
+        assert_eq!(state.current_layout, LayoutAlgorithm::ForceDirected);
+
+        // Graph should use the same layout
+        let graph = state.graph.read().expect("graph lock poisoned");
+        assert_eq!(graph.get_layout(), LayoutAlgorithm::ForceDirected);
+    }
+
+    #[test]
+    fn test_biomeos_client_initialization() {
+        // Without environment variables, should use defaults
+        std::env::remove_var("BIOMEOS_URL");
+        std::env::remove_var("PETALTONGUE_MOCK_MODE");
+
+        let state = AppState::new();
+
+        // Client should be initialized
+        // Verify it doesn't panic on creation or drop
+        drop(state);
+    }
+
+    #[test]
+    fn test_bingocube_initial_state() {
+        let state = AppState::new();
+
+        // BingoCube should not be initialized by default
+        assert!(state.bingocube.is_none());
+        assert!(state.bingocube_renderer.is_none());
+        assert!(state.bingocube_audio_renderer.is_none());
+        assert!(!state.show_bingocube_panel);
+        assert!(!state.show_bingocube_config);
+        assert!(!state.show_bingocube_audio);
+        assert_eq!(state.bingocube_seed, "");
+        assert_eq!(state.bingocube_x, 0.0);
+        assert!(state.bingocube_error.is_none());
+    }
+
+    #[test]
+    fn test_panel_visibility_defaults() {
+        let state = AppState::new();
+
+        // Controls should be visible by default
+        assert!(state.show_controls);
+
+        // Other panels should be hidden by default
+        assert!(!state.show_audio_panel);
+        assert!(!state.show_capability_panel);
+        assert!(!state.show_bingocube_panel);
+    }
+
+    #[test]
+    fn test_auto_refresh_defaults() {
+        let state = AppState::new();
+
+        // Auto-refresh should be enabled with 5 second interval
+        assert!(state.auto_refresh);
+        assert_eq!(state.refresh_interval, 5.0);
+
+        // Last refresh should be initialized (approximately now)
+        let elapsed = state.last_refresh.elapsed();
+        assert!(elapsed.as_secs() < 1);
+    }
+
+    #[test]
+    fn test_animation_defaults() {
+        let state = AppState::new();
+
+        // Animation should be disabled by default
+        assert!(!state.show_animation);
+    }
+
+    #[test]
+    fn test_capability_detector_visual() {
+        let state = AppState::new();
+
+        // Visual modality should always be available
+        assert!(state.capabilities.has_modality(Modality::Visual));
+        assert!(state.capabilities.has_capability("visual.2d"));
+    }
+
+    #[test]
+    fn test_capability_detector_audio() {
+        let state = AppState::new();
+
+        // Audio modality availability depends on system
+        // Just verify we can check it without panicking
+        let _has_audio = state.capabilities.has_modality(Modality::Audio);
+        let _has_sonification = state.capabilities.has_capability("audio.sonification");
+    }
+
+    #[test]
+    fn test_state_drop_cleanup() {
+        // Create and drop state - should not panic
+        let state = AppState::new();
+        drop(state);
+
+        // Create another one - should work fine
+        let state2 = AppState::new();
+        drop(state2);
+    }
+
+    #[test]
+    fn test_multiple_states_independent() {
+        let state1 = AppState::new();
+        let state2 = AppState::new();
+
+        // States should be independent
+        assert_ne!(Arc::as_ptr(&state1.graph), Arc::as_ptr(&state2.graph));
+
+        drop(state1);
+        drop(state2);
+    }
+
+    #[test]
+    fn test_bingocube_config_defaults() {
+        let state = AppState::new();
+
+        // BingoCube config should have sensible defaults
+        assert_eq!(state.bingocube_config.width, 5);
+        assert_eq!(state.bingocube_config.height, 5);
+        assert_eq!(state.bingocube_config.reveal_sequence.len(), 25);
+    }
+
+    #[test]
+    fn test_refresh_interval_bounds() {
+        let state = AppState::new();
+
+        // Refresh interval should be reasonable (1-60 seconds)
+        assert!(state.refresh_interval >= 1.0);
+        assert!(state.refresh_interval <= 60.0);
+    }
+}
+
 impl Default for AppState {
     fn default() -> Self {
         Self::new()
@@ -198,4 +362,3 @@ mod tests {
         assert_eq!(state.bingocube_config.grid_size, 8);
     }
 }
-

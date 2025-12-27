@@ -155,7 +155,7 @@ impl ToadStoolBridge {
     }
 
     /// Get `ToadStool` endpoint
-    #[must_use] 
+    #[must_use]
     pub fn endpoint(&self) -> &str {
         &self.toadstool_endpoint
     }
@@ -180,7 +180,7 @@ pub struct PythonToolPanel {
 
 impl PythonToolPanel {
     /// Create a new Python tool panel
-    #[must_use] 
+    #[must_use]
     pub fn new(tool_meta: ToadStoolToolMetadata, bridge: Arc<ToadStoolBridge>) -> Self {
         // Convert ToadStool metadata to ToolMetadata
         let capabilities: Vec<ToolCapability> = tool_meta

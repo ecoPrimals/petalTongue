@@ -116,12 +116,7 @@ impl GraphMetricsPlotter {
     }
 
     /// Render a line chart
-    fn render_line_chart(
-        ui: &mut egui::Ui,
-        title: &str,
-        data: &[f32],
-        color: egui::Color32,
-    ) {
+    fn render_line_chart(ui: &mut egui::Ui, title: &str, data: &[f32], color: egui::Color32) {
         ui.label(egui::RichText::new(title).strong());
 
         let height = 100.0;

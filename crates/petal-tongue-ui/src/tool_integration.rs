@@ -94,7 +94,7 @@ pub struct ToolManager {
 
 impl ToolManager {
     /// Create a new tool manager
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self { tools: Vec::new() }
     }
@@ -113,7 +113,7 @@ impl ToolManager {
     }
 
     /// Get all registered tools
-    #[must_use] 
+    #[must_use]
     pub fn tools(&self) -> &[Box<dyn ToolPanel>] {
         &self.tools
     }
@@ -124,9 +124,12 @@ impl ToolManager {
     }
 
     /// Find a tool by name
-    #[must_use] 
+    #[must_use]
     pub fn find_tool(&self, name: &str) -> Option<&dyn ToolPanel> {
-        self.tools.iter().find(|t| t.metadata().name == name).map(AsRef::as_ref)
+        self.tools
+            .iter()
+            .find(|t| t.metadata().name == name)
+            .map(AsRef::as_ref)
     }
 
     /// Find a tool by name (mutable)
@@ -136,7 +139,7 @@ impl ToolManager {
     }
 
     /// Get tools with specific capability
-    #[must_use] 
+    #[must_use]
     pub fn tools_with_capability(&self, capability: &ToolCapability) -> Vec<&dyn ToolPanel> {
         self.tools
             .iter()

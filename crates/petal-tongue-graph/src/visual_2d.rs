@@ -491,4 +491,361 @@ mod tests {
         assert_eq!(renderer.camera_offset, Vec2::ZERO);
         assert_eq!(renderer.zoom, 1.0);
     }
+
+    #[test]
+    fn test_animation_engine_integration() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph.clone());
+
+        // Initially no animation engine
+        assert!(!renderer.is_animation_enabled());
+
+        // Add animation engine
+        let animation = Arc::new(RwLock::new(AnimationEngine::new()));
+        renderer.set_animation_engine(animation);
+
+        // Enable animation
+        renderer.set_animation_enabled(true);
+        assert!(renderer.is_animation_enabled());
+
+        // Disable animation
+        renderer.set_animation_enabled(false);
+        assert!(!renderer.is_animation_enabled());
+    }
+
+    #[test]
+    fn test_zoom_levels() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph);
+
+        // Initial zoom
+        assert_eq!(renderer.zoom, 1.0);
+
+        // Test various zoom levels
+        renderer.zoom = 0.5;
+        assert_eq!(renderer.zoom, 0.5);
+
+        renderer.zoom = 2.0;
+        assert_eq!(renderer.zoom, 2.0);
+
+        renderer.zoom = 3.0;
+        assert_eq!(renderer.zoom, 3.0);
+    }
+
+    #[test]
+    fn test_camera_panning() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph);
+
+        // Initial position
+        assert_eq!(renderer.camera_offset, Vec2::ZERO);
+
+        // Pan camera
+        renderer.camera_offset = Vec2::new(100.0, 50.0);
+        assert_eq!(renderer.camera_offset, Vec2::new(100.0, 50.0));
+
+        // Pan in negative direction
+        renderer.camera_offset = Vec2::new(-50.0, -25.0);
+        assert_eq!(renderer.camera_offset, Vec2::new(-50.0, -25.0));
+    }
+
+    #[test]
+    fn test_world_to_screen_with_zoom() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph);
+
+        renderer.zoom = 2.0;
+        let world_pos = Position::new_2d(100.0, 50.0);
+        let screen_center = Pos2::new(400.0, 300.0);
+        let screen_pos = renderer.world_to_screen(world_pos, screen_center);
+
+        // With 2x zoom, positions should be scaled
+        assert_eq!(screen_pos.x, 600.0); // 400 + (100 * 2.0)
+        assert_eq!(screen_pos.y, 400.0); // 300 + (50 * 2.0)
+    }
+
+    #[test]
+    fn test_world_to_screen_with_camera_offset() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph);
+
+        renderer.camera_offset = Vec2::new(50.0, 25.0);
+        let world_pos = Position::new_2d(100.0, 50.0);
+        let screen_center = Pos2::new(400.0, 300.0);
+        let screen_pos = renderer.world_to_screen(world_pos, screen_center);
+
+        // Camera offset should shift the position
+        assert_eq!(screen_pos.x, 550.0); // 400 + 100 + 50
+        assert_eq!(screen_pos.y, 375.0); // 300 + 50 + 25
+    }
+
+    #[test]
+    fn test_health_status_all_states() {
+        // Test all health status color mappings
+        let (fill_healthy, _stroke_healthy) =
+            Visual2DRenderer::health_to_colors(PrimalHealthStatus::Healthy);
+        assert_eq!(fill_healthy, Color32::from_rgb(40, 180, 40));
+
+        let (fill_warning, _stroke_warning) =
+            Visual2DRenderer::health_to_colors(PrimalHealthStatus::Warning);
+        assert_eq!(fill_warning, Color32::from_rgb(200, 180, 40));
+
+        let (fill_critical, _stroke_critical) =
+            Visual2DRenderer::health_to_colors(PrimalHealthStatus::Critical);
+        assert_eq!(fill_critical, Color32::from_rgb(200, 40, 40));
+
+        let (fill_unknown, _stroke_unknown) =
+            Visual2DRenderer::health_to_colors(PrimalHealthStatus::Unknown);
+        assert_eq!(fill_unknown, Color32::from_rgb(120, 120, 120));
+    }
+
+    #[test]
+    fn test_selected_node_persistence() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph);
+
+        // Select multiple nodes in sequence
+        renderer.set_selected_node(Some("node1".to_string()));
+        assert_eq!(renderer.selected_node(), Some("node1"));
+
+        renderer.set_selected_node(Some("node2".to_string()));
+        assert_eq!(renderer.selected_node(), Some("node2"));
+
+        // Clear selection
+        renderer.set_selected_node(None);
+        assert!(renderer.selected_node().is_none());
+    }
+
+    #[test]
+    fn test_coordinate_conversion_roundtrip() {
+        let graph = create_test_graph();
+        let renderer = Visual2DRenderer::new(graph);
+
+        let screen_center = Pos2::new(400.0, 300.0);
+        let original_world = Position::new_2d(123.45, 67.89);
+
+        // Convert world -> screen -> world
+        let screen_pos = renderer.world_to_screen(original_world, screen_center);
+        let converted_world = renderer.screen_to_world(screen_pos, screen_center);
+
+        // Should be very close (floating point precision)
+        assert!((converted_world.x - original_world.x).abs() < 0.001);
+        assert!((converted_world.y - original_world.y).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_renderer_with_empty_graph() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let _renderer = Visual2DRenderer::new(graph.clone());
+
+        assert_eq!(_renderer.zoom, 1.0);
+        assert_eq!(_renderer.camera_offset, Vec2::ZERO);
+        assert!(_renderer.selected_node().is_none());
+
+        // Should handle empty graph gracefully
+        let graph_read = graph.read().expect("lock poisoned");
+        assert_eq!(graph_read.nodes().len(), 0);
+        assert_eq!(graph_read.edges().len(), 0);
+    }
+
+    #[test]
+    fn test_renderer_with_many_nodes() {
+        let mut graph = GraphEngine::new();
+
+        // Add 10 nodes
+        for i in 0..10 {
+            graph.add_node(PrimalInfo {
+                id: format!("node{i}"),
+                name: format!("Node {i}"),
+                primal_type: "Test".to_string(),
+                endpoint: format!("http://localhost:808{i}"),
+                capabilities: vec!["test".to_string()],
+                health: PrimalHealthStatus::Healthy,
+                last_seen: 0,
+            });
+        }
+
+        // Add edges between sequential nodes
+        for i in 0..9 {
+            graph.add_edge(TopologyEdge {
+                from: format!("node{i}"),
+                to: format!("node{}", i + 1),
+                edge_type: "test".to_string(),
+                label: None,
+            });
+        }
+
+        graph.set_layout(LayoutAlgorithm::ForceDirected);
+        graph.layout(1);
+
+        let graph_arc = Arc::new(RwLock::new(graph));
+        let _renderer = Visual2DRenderer::new(graph_arc.clone());
+
+        let graph_read = graph_arc.read().expect("lock poisoned");
+        assert_eq!(graph_read.nodes().len(), 10);
+        assert_eq!(graph_read.edges().len(), 9);
+        drop(graph_read);
+
+        assert_eq!(_renderer.zoom, 1.0);
+    }
+
+    #[test]
+    fn test_animation_engine_optional() {
+        let graph = create_test_graph();
+        let _renderer = Visual2DRenderer::new(graph);
+
+        // Animation should be disabled by default when no engine is set
+        assert!(!_renderer.is_animation_enabled());
+    }
+
+    #[test]
+    fn test_zoom_default_value() {
+        let graph = create_test_graph();
+        let _renderer = Visual2DRenderer::new(graph);
+
+        // Zoom level is set at creation (1.0 by default)
+        assert_eq!(_renderer.zoom, 1.0);
+    }
+
+    #[test]
+    fn test_health_color_mapping() {
+        // Test static method for color mapping
+        let (healthy_fill, healthy_stroke) =
+            Visual2DRenderer::health_to_colors(PrimalHealthStatus::Healthy);
+        let (warning_fill, warning_stroke) =
+            Visual2DRenderer::health_to_colors(PrimalHealthStatus::Warning);
+        let (critical_fill, critical_stroke) =
+            Visual2DRenderer::health_to_colors(PrimalHealthStatus::Critical);
+
+        // Colors should be distinct
+        assert_ne!(healthy_fill, warning_fill);
+        assert_ne!(healthy_fill, critical_fill);
+        assert_ne!(warning_fill, critical_fill);
+
+        // All colors should be non-transparent
+        assert_ne!(healthy_fill, Color32::TRANSPARENT);
+        assert_ne!(healthy_stroke, Color32::TRANSPARENT);
+    }
+
+    #[test]
+    fn test_renderer_initial_state() {
+        let graph = create_test_graph();
+        let _renderer = Visual2DRenderer::new(graph);
+
+        // Verify initial state
+        assert_eq!(_renderer.zoom, 1.0);
+        assert!(!_renderer.is_animation_enabled());
+    }
+
+    #[test]
+    fn test_animation_lifecycle() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph);
+
+        // Step 1: No animation engine
+        assert!(!renderer.is_animation_enabled());
+
+        // Step 2: Add animation engine but don't enable
+        let engine = Arc::new(RwLock::new(AnimationEngine::default()));
+        renderer.set_animation_engine(engine);
+        assert!(!renderer.is_animation_enabled());
+
+        // Step 3: Enable animation
+        renderer.set_animation_enabled(true);
+        assert!(renderer.is_animation_enabled());
+
+        // Step 4: Disable again
+        renderer.set_animation_enabled(false);
+        assert!(!renderer.is_animation_enabled());
+
+        // Step 5: Re-enable
+        renderer.set_animation_enabled(true);
+        assert!(renderer.is_animation_enabled());
+    }
+
+    #[test]
+    fn test_multi_edge_rendering() {
+        let mut graph = GraphEngine::new();
+
+        // Add three nodes
+        for i in 1..=3 {
+            graph.add_node(PrimalInfo {
+                id: format!("node{i}"),
+                name: format!("Node {i}"),
+                primal_type: "Test".to_string(),
+                endpoint: format!("http://localhost:808{i}"),
+                capabilities: vec!["test".to_string()],
+                health: PrimalHealthStatus::Healthy,
+                last_seen: 0,
+            });
+        }
+
+        // Add multiple edges
+        graph.add_edge(TopologyEdge {
+            from: "node1".to_string(),
+            to: "node2".to_string(),
+            edge_type: "connection".to_string(),
+            label: Some("Edge 1-2".to_string()),
+        });
+        graph.add_edge(TopologyEdge {
+            from: "node2".to_string(),
+            to: "node3".to_string(),
+            edge_type: "connection".to_string(),
+            label: Some("Edge 2-3".to_string()),
+        });
+        graph.add_edge(TopologyEdge {
+            from: "node1".to_string(),
+            to: "node3".to_string(),
+            edge_type: "connection".to_string(),
+            label: Some("Edge 1-3".to_string()),
+        });
+
+        let graph_arc = Arc::new(RwLock::new(graph));
+        let _renderer = Visual2DRenderer::new(graph_arc.clone());
+
+        let graph_read = graph_arc.read().expect("lock poisoned");
+        assert_eq!(graph_read.edges().len(), 3);
+    }
+
+    #[test]
+    fn test_renderer_with_different_health_states() {
+        let mut graph = GraphEngine::new();
+
+        // Add nodes with different health states
+        graph.add_node(PrimalInfo {
+            id: "healthy_node".to_string(),
+            name: "Healthy Node".to_string(),
+            primal_type: "Test".to_string(),
+            endpoint: "http://localhost:8080".to_string(),
+            capabilities: vec!["test".to_string()],
+            health: PrimalHealthStatus::Healthy,
+            last_seen: 0,
+        });
+
+        graph.add_node(PrimalInfo {
+            id: "warning_node".to_string(),
+            name: "Warning Node".to_string(),
+            primal_type: "Test".to_string(),
+            endpoint: "http://localhost:8081".to_string(),
+            capabilities: vec!["test".to_string()],
+            health: PrimalHealthStatus::Warning,
+            last_seen: 0,
+        });
+
+        graph.add_node(PrimalInfo {
+            id: "critical_node".to_string(),
+            name: "Critical Node".to_string(),
+            primal_type: "Test".to_string(),
+            endpoint: "http://localhost:8082".to_string(),
+            capabilities: vec!["test".to_string()],
+            health: PrimalHealthStatus::Critical,
+            last_seen: 0,
+        });
+
+        let graph_arc = Arc::new(RwLock::new(graph));
+        let _renderer = Visual2DRenderer::new(graph_arc.clone());
+
+        let graph_read = graph_arc.read().expect("lock poisoned");
+        assert_eq!(graph_read.nodes().len(), 3);
+    }
 }
