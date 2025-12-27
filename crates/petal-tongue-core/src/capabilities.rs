@@ -76,6 +76,10 @@ impl CapabilityDetector {
     /// Detect all modality capabilities
     ///
     /// This actually tests each modality to verify it works.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the capabilities lock is poisoned (only happens if another thread panicked while holding the lock).
     pub fn detect_all(&self) {
         let mut caps = self
             .capabilities
@@ -161,6 +165,10 @@ impl CapabilityDetector {
     }
 
     /// Get the status of a specific modality
+    ///
+    /// # Panics
+    ///
+    /// Panics if the capabilities lock is poisoned.
     #[must_use]
     pub fn get_status(&self, modality: Modality) -> Option<ModalityCapability> {
         let caps = self
@@ -171,6 +179,10 @@ impl CapabilityDetector {
     }
 
     /// Get all detected capabilities
+    ///
+    /// # Panics
+    ///
+    /// Panics if the capabilities lock is poisoned.
     #[must_use]
     pub fn get_all(&self) -> Vec<ModalityCapability> {
         self.capabilities
@@ -180,15 +192,21 @@ impl CapabilityDetector {
     }
 
     /// Check if a modality is actually available (not just theoretically)
+    ///
+    /// # Panics
+    ///
+    /// Panics if the capabilities lock is poisoned.
     #[must_use]
     pub fn is_available(&self, modality: Modality) -> bool {
         self.get_status(modality)
-            .map_or(false, |c| c.status == ModalityStatus::Available)
+            .is_some_and(|c| c.status == ModalityStatus::Available)
     }
 
     /// Get a user-facing capability report
     #[must_use]
     pub fn capability_report(&self) -> String {
+        use std::fmt::Write;
+        
         let caps = self.get_all();
         let mut report = String::from("🔍 petalTongue Modality Capabilities\n\n");
 
@@ -202,10 +220,11 @@ impl CapabilityDetector {
 
             let tested = if cap.tested { "tested" } else { "not tested" };
 
-            report.push_str(&format!(
+            let _ = write!(
+                report,
                 "{} {:?}: {:?} ({})\n   Reason: {}\n\n",
                 icon, cap.modality, cap.status, tested, cap.reason
-            ));
+            );
         }
 
         report

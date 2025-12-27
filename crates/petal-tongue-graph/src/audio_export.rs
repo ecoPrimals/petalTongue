@@ -91,14 +91,19 @@ impl AudioFileGenerator {
             )
         })?;
 
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
         let num_samples = (self.quality.sample_rate as f32 * duration_secs) as usize;
         let frequency = 100.0 + (attrs.pitch * 700.0);
 
         // Apply volume
         let volume = attrs.volume * self.master_volume;
 
+        // Constants for audio conversion
+        let max_amplitude = f32::from(i16::MAX);
+
         // Generate samples based on instrument type
         for i in 0..num_samples {
+            #[allow(clippy::cast_precision_loss)]
             let t = i as f32 / self.quality.sample_rate as f32;
             let sample = self.generate_sample(t, frequency, &attrs.instrument, volume);
 
@@ -115,14 +120,17 @@ impl AudioFileGenerator {
                     1.0 + attrs.pan
                 };
 
-                let left = (sample * left_gain * i16::MAX as f32) as i16;
-                let right = (sample * right_gain * i16::MAX as f32) as i16;
+                #[allow(clippy::cast_possible_truncation)]
+                let left = (sample * left_gain * max_amplitude) as i16;
+                #[allow(clippy::cast_possible_truncation)]
+                let right = (sample * right_gain * max_amplitude) as i16;
 
                 writer.write_sample(left)?;
                 writer.write_sample(right)?;
             } else {
                 // Mono
-                let mono = (sample * i16::MAX as f32) as i16;
+                #[allow(clippy::cast_possible_truncation)]
+                let mono = (sample * max_amplitude) as i16;
                 writer.write_sample(mono)?;
             }
         }
@@ -163,10 +171,15 @@ impl AudioFileGenerator {
             )
         })?;
 
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
         let num_samples = (self.quality.sample_rate as f32 * duration_secs) as usize;
+
+        // Constants for audio conversion
+        let max_amplitude = f32::from(i16::MAX);
 
         // Mix all tones together
         for i in 0..num_samples {
+            #[allow(clippy::cast_precision_loss)]
             let t = i as f32 / self.quality.sample_rate as f32;
 
             // Mix all primal tones
@@ -184,11 +197,13 @@ impl AudioFileGenerator {
             // Write stereo samples
             if self.quality.channels == 2 {
                 // For soundscape, we could spatialize each source, but for now just center
-                let sample_i16 = (mixed_sample * i16::MAX as f32) as i16;
+                #[allow(clippy::cast_possible_truncation)]
+                let sample_i16 = (mixed_sample * max_amplitude) as i16;
                 writer.write_sample(sample_i16)?;
                 writer.write_sample(sample_i16)?;
             } else {
-                let sample_i16 = (mixed_sample * i16::MAX as f32) as i16;
+                #[allow(clippy::cast_possible_truncation)]
+                let sample_i16 = (mixed_sample * max_amplitude) as i16;
                 writer.write_sample(sample_i16)?;
             }
         }
@@ -229,7 +244,7 @@ impl AudioFileGenerator {
                 {
                     // Simple noise approximation without rand
                     let envelope = (-t * 10.0).exp();
-                    let noise = (t * 12345.6789).sin() * (t * 98765.4321).cos();
+                    let noise = (t * 12_345.679).sin() * (t * 98_765.43).cos();
                     noise * envelope
                 }
             }
@@ -253,7 +268,7 @@ impl AudioFileGenerator {
                 // Square wave (electronic)
                 if angle.sin() > 0.0 { 1.0 } else { -1.0 }
             }
-            _ => angle.sin(),
+            Instrument::Default => angle.sin(),
         };
 
         waveform * volume

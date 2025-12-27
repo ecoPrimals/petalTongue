@@ -16,6 +16,7 @@ use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 
 /// The main petalTongue UI application
+#[allow(clippy::struct_excessive_bools)]
 pub struct PetalTongueApp {
     /// Capability detector (knows what modalities are actually available)
     capabilities: CapabilityDetector,
@@ -28,9 +29,8 @@ pub struct PetalTongueApp {
     /// Audio file generator (pure Rust WAV export)
     audio_generator: AudioFileGenerator,
     /// Animation engine (used for flow visualization)
-    #[allow(dead_code)] // TODO: Activate animation rendering in visual_renderer
-    animation_engine: AnimationEngine,
-    /// BiomeOS API client
+    animation_engine: Arc<RwLock<AnimationEngine>>,
+    /// `BiomeOS` API client
     biomeos_client: BiomeOSClient,
     /// Current layout algorithm
     current_layout: LayoutAlgorithm,
@@ -41,7 +41,6 @@ pub struct PetalTongueApp {
     /// Show controls panel
     show_controls: bool,
     /// Show animation (flow particles and pulses)
-    #[allow(dead_code)] // TODO: Wire up animation toggle to visual_renderer
     show_animation: bool,
     /// Last refresh time
     last_refresh: Instant,
@@ -83,10 +82,14 @@ impl PetalTongueApp {
         tracing::info!("{}", capabilities.capability_report());
 
         // Create renderers
-        let visual_renderer = Visual2DRenderer::new(Arc::clone(&graph));
+        let mut visual_renderer = Visual2DRenderer::new(Arc::clone(&graph));
         let audio_renderer = AudioSonificationRenderer::new(Arc::clone(&graph));
         let audio_generator = AudioFileGenerator::new();
-        let animation_engine = AnimationEngine::new();
+        let animation_engine = Arc::new(RwLock::new(AnimationEngine::new()));
+        
+        // Wire animation engine to visual renderer
+        visual_renderer.set_animation_engine(Arc::clone(&animation_engine));
+        visual_renderer.set_animation_enabled(true); // Enable by default
 
         let mut app = Self {
             capabilities,
@@ -111,10 +114,14 @@ impl PetalTongueApp {
 
         // Register available tools (discovered at runtime, not hardcoded)
         // In production, this would discover tools via capability announcement
-        app.tools.register_tool(Box::new(BingoCubeIntegration::new()));
-        app.tools.register_tool(Box::new(SystemMonitorTool::default()));
-        app.tools.register_tool(Box::new(ProcessViewerTool::default()));
-        app.tools.register_tool(Box::new(GraphMetricsPlotter::default()));
+        app.tools
+            .register_tool(Box::new(BingoCubeIntegration::new()));
+        app.tools
+            .register_tool(Box::new(SystemMonitorTool::default()));
+        app.tools
+            .register_tool(Box::new(ProcessViewerTool::default()));
+        app.tools
+            .register_tool(Box::new(GraphMetricsPlotter::default()));
 
         // Initial data load (async, but we'll do it sync here for simplicity)
         // In production, this would be done in a background task
@@ -163,7 +170,7 @@ impl PetalTongueApp {
 
             // Add edges
             for edge in edges {
-                let _ = graph.add_edge(edge);
+                graph.add_edge(edge);
             }
 
             // Apply layout
@@ -282,11 +289,17 @@ impl PetalTongueApp {
             label: Some("Task Execution".to_string()),
         });
     }
-
 }
 
 impl eframe::App for PetalTongueApp {
+    #[allow(clippy::too_many_lines, clippy::struct_excessive_bools)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Update animation engine (flow particles and pulses)
+        if self.show_animation && let Ok(mut engine) = self.animation_engine.write() {
+                engine.update();
+            }
+        
+        
         // Set dark theme with custom colors
         let mut style = (*ctx.style()).clone();
         style.visuals.dark_mode = true;
@@ -444,11 +457,28 @@ impl eframe::App for PetalTongueApp {
                     );
 
                     let elapsed = self.last_refresh.elapsed().as_secs_f32();
-                    ui.label(format!("Last refresh: {:.1}s ago", elapsed));
+                    ui.label(format!("Last refresh: {elapsed:.1}s ago"));
 
                     if ui.button("Refresh Now").clicked() {
                         self.refresh_graph_data();
                     }
+                    
+                    ui.add_space(12.0);
+                    ui.separator();
+                    ui.add_space(12.0);
+                    
+                    // Animation controls
+                    ui.heading(egui::RichText::new("✨ Animation").size(16.0));
+                    ui.add_space(4.0);
+                    if ui.checkbox(&mut self.show_animation, "Flow Particles & Pulses").changed() {
+                        // Update visual renderer animation state
+                        self.visual_renderer.set_animation_enabled(self.show_animation);
+                    }
+                    ui.label(
+                        egui::RichText::new("Visualizes data flow between primals")
+                            .size(11.0)
+                            .color(egui::Color32::GRAY),
+                    );
                 });
         }
 
@@ -599,7 +629,7 @@ impl eframe::App for PetalTongueApp {
                     if ui.button("💾 Export Soundscape to WAV").clicked() {
                         // Export graph soundscape
                         let soundscape = self.audio_renderer.generate_audio_attributes();
-                        
+
                         let filepath = std::path::PathBuf::from("graph_soundscape.wav");
                         if let Err(e) = self.audio_generator.export_soundscape(&filepath, &soundscape, 3.0) {
                             tracing::error!("Failed to export soundscape: {}", e);

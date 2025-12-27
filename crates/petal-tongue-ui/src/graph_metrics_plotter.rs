@@ -3,6 +3,8 @@
 //! Visualizes graph metrics over time (node count, edge count, updates).
 //! Demonstrates using petalTongue's own data as input to a tool.
 
+#![allow(clippy::cast_precision_loss)]
+
 use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};
 use std::collections::VecDeque;
 use std::time::Instant;
@@ -87,31 +89,46 @@ impl GraphMetricsPlotter {
         ui.add_space(10.0);
 
         // Node count chart
-        self.render_line_chart(
+        Self::render_line_chart(
             ui,
             "Node Count Over Time",
-            &self.history.iter().map(|s| s.node_count as f32).collect::<Vec<_>>(),
+            &self
+                .history
+                .iter()
+                .map(|s| s.node_count as f32)
+                .collect::<Vec<_>>(),
             egui::Color32::from_rgb(100, 150, 255),
         );
 
         ui.add_space(10.0);
 
         // Edge count chart
-        self.render_line_chart(
+        Self::render_line_chart(
             ui,
             "Edge Count Over Time",
-            &self.history.iter().map(|s| s.edge_count as f32).collect::<Vec<_>>(),
+            &self
+                .history
+                .iter()
+                .map(|s| s.edge_count as f32)
+                .collect::<Vec<_>>(),
             egui::Color32::from_rgb(100, 255, 150),
         );
     }
 
     /// Render a line chart
-    fn render_line_chart(&self, ui: &mut egui::Ui, title: &str, data: &[f32], color: egui::Color32) {
+    fn render_line_chart(
+        ui: &mut egui::Ui,
+        title: &str,
+        data: &[f32],
+        color: egui::Color32,
+    ) {
         ui.label(egui::RichText::new(title).strong());
 
         let height = 100.0;
-        let (response, painter) =
-            ui.allocate_painter(egui::Vec2::new(ui.available_width(), height), egui::Sense::hover());
+        let (response, painter) = ui.allocate_painter(
+            egui::Vec2::new(ui.available_width(), height),
+            egui::Sense::hover(),
+        );
 
         let rect = response.rect;
 
@@ -131,7 +148,10 @@ impl GraphMetricsPlotter {
         for i in 0..5 {
             let y = rect.top() + (i as f32 / 4.0) * rect.height();
             painter.line_segment(
-                [egui::Pos2::new(rect.left(), y), egui::Pos2::new(rect.right(), y)],
+                [
+                    egui::Pos2::new(rect.left(), y),
+                    egui::Pos2::new(rect.right(), y),
+                ],
                 egui::Stroke::new(0.5, egui::Color32::from_rgb(40, 40, 45)),
             );
         }
@@ -148,13 +168,10 @@ impl GraphMetricsPlotter {
             })
             .collect();
 
-        painter.add(egui::Shape::line(
-            points,
-            egui::Stroke::new(2.0, color),
-        ));
+        painter.add(egui::Shape::line(points, egui::Stroke::new(2.0, color)));
 
         // Draw labels
-        let label_text = format!("Max: {:.0} | Min: {:.0}", max_value, min_value);
+        let label_text = format!("Max: {max_value:.0} | Min: {min_value:.0}");
         painter.text(
             egui::Pos2::new(rect.left() + 5.0, rect.top() + 5.0),
             egui::Align2::LEFT_TOP,
@@ -228,4 +245,3 @@ impl ToolPanel for GraphMetricsPlotter {
         }
     }
 }
-

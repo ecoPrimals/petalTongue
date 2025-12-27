@@ -1,37 +1,39 @@
-//! BingoCube tool integration module
+//! `BingoCube` tool integration module
 //!
-//! Demonstrates how petalTongue uses external tools (BingoCube) as a primal.
+//! Demonstrates how petalTongue uses external tools (`BingoCube`) as a primal.
 //! This module encapsulates all BingoCube-related state and UI rendering.
 //!
-//! BingoCube implements the `ToolPanel` trait, making it a capability-based tool
+//! `BingoCube` implements the `ToolPanel` trait, making it a capability-based tool
 //! that petalTongue can use without hardcoded knowledge.
+
+#![allow(clippy::cast_precision_loss, clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 
 use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};
 use bingocube_adapters::audio::BingoCubeAudioRenderer;
 use bingocube_adapters::visual::BingoCubeVisualRenderer;
 use bingocube_core::{BingoCube, Config as BingoCubeConfig};
 
-/// BingoCube integration state and UI
+/// `BingoCube` integration state and UI
 pub struct BingoCubeIntegration {
-    /// Show BingoCube panel
+    /// Show `BingoCube` panel
     pub show_panel: bool,
-    /// BingoCube instance (tool being used)
+    /// `BingoCube` instance (tool being used)
     pub cube: Option<BingoCube>,
-    /// BingoCube visual renderer (adapter)
+    /// `BingoCube` visual renderer (adapter)
     pub renderer: Option<BingoCubeVisualRenderer>,
-    /// BingoCube audio renderer (adapter)
+    /// `BingoCube` audio renderer (adapter)
     pub audio_renderer: Option<BingoCubeAudioRenderer>,
-    /// BingoCube seed input
+    /// `BingoCube` seed input
     pub seed: String,
-    /// BingoCube reveal parameter (0.0-1.0)
+    /// `BingoCube` reveal parameter (0.0-1.0)
     pub reveal_x: f64,
-    /// BingoCube configuration
+    /// `BingoCube` configuration
     pub config: BingoCubeConfig,
-    /// BingoCube error message
+    /// `BingoCube` error message
     pub error: Option<String>,
-    /// Show BingoCube configuration panel
+    /// Show `BingoCube` configuration panel
     pub show_config: bool,
-    /// Show BingoCube audio panel
+    /// Show `BingoCube` audio panel
     pub show_audio: bool,
 }
 
@@ -53,17 +55,17 @@ impl Default for BingoCubeIntegration {
 }
 
 impl BingoCubeIntegration {
-    /// Create a new BingoCube integration
+    /// Create a new `BingoCube` integration
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Generate a new BingoCube from the current seed and configuration
+    /// Generate a new `BingoCube` from the current seed and configuration
     pub fn generate(&mut self) {
         // Validate configuration first
         if let Err(e) = self.config.validate() {
-            self.error = Some(format!("Invalid configuration: {}", e));
+            self.error = Some(format!("Invalid configuration: {e}"));
             tracing::error!("Invalid BingoCube configuration: {}", e);
             return;
         }
@@ -85,7 +87,7 @@ impl BingoCubeIntegration {
                 );
             }
             Err(e) => {
-                self.error = Some(format!("Failed to generate BingoCube: {}", e));
+                self.error = Some(format!("Failed to generate BingoCube: {e}"));
                 tracing::error!("Failed to generate BingoCube: {}", e);
                 self.cube = None;
                 self.renderer = None;
@@ -94,7 +96,7 @@ impl BingoCubeIntegration {
         }
     }
 
-    /// Render the BingoCube panel
+    /// Render the `BingoCube` panel
     pub fn render_panel(&mut self, ui: &mut egui::Ui) {
         ui.vertical_centered(|ui| {
             ui.add_space(20.0);
@@ -168,12 +170,11 @@ impl BingoCubeIntegration {
                         self.generate();
                     }
 
-                    if ui.button("▶ Animate Reveal").clicked() {
-                        if let Some(renderer) = &mut self.renderer {
+                    if ui.button("▶ Animate Reveal").clicked()
+                        && let Some(renderer) = &mut self.renderer {
                             renderer.set_reveal(0.0).animate_to(1.0);
                             self.reveal_x = 0.0;
                         }
-                    }
 
                     if ui.button("⚙ Config").clicked() {
                         self.show_config = !self.show_config;
@@ -242,7 +243,10 @@ impl BingoCubeIntegration {
                             * (self.config.universe_size / self.config.grid_size);
                         config_changed = true;
                     }
-                    ui.label(format!("{}×{}", self.config.grid_size, self.config.grid_size));
+                    ui.label(format!(
+                        "{}×{}",
+                        self.config.grid_size, self.config.grid_size
+                    ));
                 });
 
                 ui.horizontal(|ui| {
@@ -321,8 +325,10 @@ impl BingoCubeIntegration {
                     }
                 } else {
                     ui.label(
-                        egui::RichText::new("Generate a BingoCube to hear its audio representation")
-                            .color(egui::Color32::GRAY),
+                        egui::RichText::new(
+                            "Generate a BingoCube to hear its audio representation",
+                        )
+                        .color(egui::Color32::GRAY),
                     );
                 }
             });
@@ -349,15 +355,15 @@ impl ToolPanel for BingoCubeIntegration {
             source: Some("https://github.com/ecoPrimals/bingoCube".to_string()),
         })
     }
-    
+
     fn is_visible(&self) -> bool {
         self.show_panel
     }
-    
+
     fn toggle_visibility(&mut self) {
         self.show_panel = !self.show_panel;
     }
-    
+
     fn render_panel(&mut self, ui: &mut egui::Ui) {
         // Inline the rendering logic here since we're implementing the trait
         ui.vertical_centered(|ui| {
@@ -417,23 +423,20 @@ impl ToolPanel for BingoCubeIntegration {
                     if ui
                         .add(egui::Slider::new(&mut self.reveal_x, 0.0..=1.0).text(""))
                         .changed()
-                    {
-                        if let Some(renderer) = &mut self.renderer {
+                        && let Some(renderer) = &mut self.renderer {
                             renderer.set_reveal(self.reveal_x);
                         }
-                    }
                     ui.label(format!("{:.0}%", self.reveal_x * 100.0));
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Animation:");
-                    
-                    if ui.button("▶ Animate Reveal").clicked() {
-                        if let Some(renderer) = &mut self.renderer {
+
+                    if ui.button("▶ Animate Reveal").clicked()
+                        && let Some(renderer) = &mut self.renderer {
                             renderer.set_reveal(0.0).animate_to(1.0);
                             self.reveal_x = 0.0;
                         }
-                    }
 
                     if ui.button("⚙ Config").clicked() {
                         self.show_config = !self.show_config;
@@ -446,7 +449,7 @@ impl ToolPanel for BingoCubeIntegration {
             });
 
         ui.add_space(10.0);
-        
+
         // Configuration panel (if visible)
         if self.show_config {
             self.render_config_panel(ui);
@@ -478,17 +481,17 @@ impl ToolPanel for BingoCubeIntegration {
             self.render_audio_panel(ui);
         }
     }
-    
+
     fn status_message(&self) -> Option<String> {
         if let Some(error) = &self.error {
-            Some(format!("Error: {}", error))
+            Some(format!("Error: {error}"))
         } else if self.cube.is_some() {
             Some(format!("Generated from seed '{}'", self.seed))
         } else {
             Some("Ready to generate".to_string())
         }
     }
-    
+
     fn handle_action(&mut self, action: &str) -> Result<(), String> {
         match action {
             "generate" => {
@@ -503,8 +506,7 @@ impl ToolPanel for BingoCubeIntegration {
                 self.show_audio = !self.show_audio;
                 Ok(())
             }
-            _ => Err(format!("Unknown action: {}", action)),
+            _ => Err(format!("Unknown action: {action}")),
         }
     }
 }
-
