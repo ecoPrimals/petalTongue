@@ -1,18 +1,19 @@
 //! Main application logic for petalTongue UI
 
+use crate::bingocube_integration::BingoCubeIntegration;
+use crate::graph_metrics_plotter::GraphMetricsPlotter;
+use crate::process_viewer_integration::ProcessViewerTool;
+use crate::system_monitor_integration::SystemMonitorTool;
+use crate::tool_integration::ToolManager;
 use petal_tongue_animation::AnimationEngine;
 use petal_tongue_api::BiomeOSClient;
 use petal_tongue_core::{
-    CapabilityDetector, GraphEngine, LayoutAlgorithm, Modality, PrimalHealthStatus, PrimalInfo, TopologyEdge,
+    CapabilityDetector, GraphEngine, LayoutAlgorithm, Modality, PrimalHealthStatus, PrimalInfo,
+    TopologyEdge,
 };
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer, Visual2DRenderer};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
-
-// BingoCube tool integration - demonstrating primal tool use
-use bingocube_core::{BingoCube, Config as BingoCubeConfig};
-use bingocube_adapters::visual::BingoCubeVisualRenderer;
-use bingocube_adapters::audio::BingoCubeAudioRenderer;
 
 /// The main petalTongue UI application
 pub struct PetalTongueApp {
@@ -26,7 +27,8 @@ pub struct PetalTongueApp {
     audio_renderer: AudioSonificationRenderer,
     /// Audio file generator (pure Rust WAV export)
     audio_generator: AudioFileGenerator,
-    /// Animation engine
+    /// Animation engine (used for flow visualization)
+    #[allow(dead_code)] // TODO: Activate animation rendering in visual_renderer
     animation_engine: AnimationEngine,
     /// BiomeOS API client
     biomeos_client: BiomeOSClient,
@@ -39,6 +41,7 @@ pub struct PetalTongueApp {
     /// Show controls panel
     show_controls: bool,
     /// Show animation (flow particles and pulses)
+    #[allow(dead_code)] // TODO: Wire up animation toggle to visual_renderer
     show_animation: bool,
     /// Last refresh time
     last_refresh: Instant,
@@ -46,38 +49,29 @@ pub struct PetalTongueApp {
     auto_refresh: bool,
     /// Refresh interval (seconds)
     refresh_interval: f32,
-    
-    // BingoCube tool integration - demonstrating primal tool use
-    /// Show BingoCube panel
-    show_bingocube_panel: bool,
-    /// BingoCube instance (tool being used)
-    bingocube: Option<BingoCube>,
-    /// BingoCube visual renderer (adapter)
-    bingocube_renderer: Option<BingoCubeVisualRenderer>,
-    /// BingoCube audio renderer (adapter)
-    bingocube_audio_renderer: Option<BingoCubeAudioRenderer>,
-    /// BingoCube seed input
-    bingocube_seed: String,
-    /// BingoCube reveal parameter (0.0-1.0)
-    bingocube_x: f64,
-    /// BingoCube configuration
-    bingocube_config: BingoCubeConfig,
-    /// BingoCube error message
-    bingocube_error: Option<String>,
-    /// Show BingoCube configuration panel
-    show_bingocube_config: bool,
-    /// Show BingoCube audio panel
-    show_bingocube_audio: bool,
+
+    // Tool integration - capability-based, no hardcoded tool knowledge
+    /// Tool manager (handles all external tools dynamically)
+    tools: ToolManager,
 }
 
 impl PetalTongueApp {
     /// Create a new application
     #[must_use]
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-        // Create BiomeOS client (try localhost:3000, fallback to mock)
+        // Create BiomeOS client with runtime capability detection
+        // Mock mode is ONLY enabled via environment variable - not hardcoded
         let biomeos_url =
             std::env::var("BIOMEOS_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
-        let biomeos_client = BiomeOSClient::new(&biomeos_url).with_mock_mode(true);
+
+        // Check if mock mode is explicitly requested
+        // Default: FALSE (try real connection first, fallback to mock only if unavailable)
+        let mock_mode_requested = std::env::var("PETALTONGUE_MOCK_MODE")
+            .unwrap_or_else(|_| "false".to_string())
+            .to_lowercase()
+            == "true";
+
+        let biomeos_client = BiomeOSClient::new(&biomeos_url).with_mock_mode(mock_mode_requested);
 
         // Create graph engine
         let graph = GraphEngine::new();
@@ -110,19 +104,17 @@ impl PetalTongueApp {
             last_refresh: Instant::now(),
             auto_refresh: true,
             refresh_interval: 5.0,
-            
-            // BingoCube tool integration
-            show_bingocube_panel: false,
-            bingocube: None,
-            bingocube_renderer: None,
-            bingocube_audio_renderer: None,
-            bingocube_seed: "example-seed".to_string(),
-            bingocube_x: 1.0,
-            bingocube_config: BingoCubeConfig::default(),
-            bingocube_error: None,
-            show_bingocube_config: false,
-            show_bingocube_audio: false,
+
+            // Tool manager - capability-based integration
+            tools: ToolManager::new(),
         };
+
+        // Register available tools (discovered at runtime, not hardcoded)
+        // In production, this would discover tools via capability announcement
+        app.tools.register_tool(Box::new(BingoCubeIntegration::new()));
+        app.tools.register_tool(Box::new(SystemMonitorTool::default()));
+        app.tools.register_tool(Box::new(ProcessViewerTool::default()));
+        app.tools.register_tool(Box::new(GraphMetricsPlotter::default()));
 
         // Initial data load (async, but we'll do it sync here for simplicity)
         // In production, this would be done in a background task
@@ -290,354 +282,7 @@ impl PetalTongueApp {
             label: Some("Task Execution".to_string()),
         });
     }
-    
-    /// Render BingoCube tool panel - demonstrating how petalTongue uses external tools
-    fn render_bingocube_panel(&mut self, ui: &mut egui::Ui) {
-        ui.vertical_centered(|ui| {
-            ui.add_space(20.0);
-            ui.heading(egui::RichText::new("🎲 BingoCube Tool Integration").size(24.0));
-            ui.label(egui::RichText::new("Demonstrating Primal Tool Use").size(14.0).color(egui::Color32::GRAY));
-            ui.add_space(10.0);
-        });
-        
-        ui.separator();
-        ui.add_space(10.0);
-        
-        // Error display
-        if let Some(error) = self.bingocube_error.clone() {
-            egui::Frame::none()
-                .fill(egui::Color32::from_rgb(80, 30, 30))
-                .inner_margin(12.0)
-                .show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label(egui::RichText::new("⚠").size(20.0).color(egui::Color32::from_rgb(255, 100, 100)));
-                        ui.label(egui::RichText::new(&error).color(egui::Color32::from_rgb(255, 200, 200)));
-                        if ui.button("✕").clicked() {
-                            self.bingocube_error = None;
-                        }
-                    });
-                });
-            ui.add_space(10.0);
-        }
-        
-        // Controls panel
-        egui::Frame::none()
-            .fill(egui::Color32::from_rgb(30, 30, 35))
-            .inner_margin(12.0)
-            .show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Seed:");
-                    let response = ui.text_edit_singleline(&mut self.bingocube_seed);
-                    
-                    if response.changed() {
-                        // Generate new BingoCube when seed changes
-                        self.generate_bingocube();
-                    }
-                });
-                
-                ui.horizontal(|ui| {
-                    ui.label("Reveal (x):");
-                    if ui.add(egui::Slider::new(&mut self.bingocube_x, 0.0..=1.0).text("")).changed() {
-                        // Update renderer reveal
-                        if let Some(renderer) = &mut self.bingocube_renderer {
-                            renderer.set_reveal(self.bingocube_x);
-                        }
-                    }
-                    ui.label(format!("{:.0}%", self.bingocube_x * 100.0));
-                });
-                
-                ui.horizontal(|ui| {
-                    if ui.button("🎲 Generate New").clicked() {
-                        self.generate_bingocube();
-                    }
-                    
-                    if ui.button("▶ Animate Reveal").clicked() {
-                        if let Some(renderer) = &mut self.bingocube_renderer {
-                            renderer.set_reveal(0.0).animate_to(1.0);
-                            self.bingocube_x = 0.0;
-                        }
-                    }
-                    
-                    if ui.button("⚙ Config").clicked() {
-                        self.show_bingocube_config = !self.show_bingocube_config;
-                    }
-                    
-                    if ui.button("🎵 Audio").clicked() {
-                        self.show_bingocube_audio = !self.show_bingocube_audio;
-                    }
-                });
-            });
-        
-        ui.add_space(10.0);
-        
-        // Configuration panel (collapsible)
-        if self.show_bingocube_config {
-            egui::Frame::none()
-                .fill(egui::Color32::from_rgb(35, 35, 40))
-                .inner_margin(12.0)
-                .show(ui, |ui| {
-                    ui.heading(egui::RichText::new("Configuration").size(16.0));
-                    ui.add_space(5.0);
-                    
-                    let mut config_changed = false;
-                    
-                    ui.horizontal(|ui| {
-                        ui.label("Grid Size:");
-                        if ui.add(egui::Slider::new(&mut self.bingocube_config.grid_size, 3..=12).text("")).changed() {
-                            // Adjust universe size to maintain divisibility
-                            self.bingocube_config.universe_size = 
-                                self.bingocube_config.grid_size * (self.bingocube_config.universe_size / self.bingocube_config.grid_size);
-                            config_changed = true;
-                        }
-                        ui.label(format!("{}×{}", self.bingocube_config.grid_size, self.bingocube_config.grid_size));
-                    });
-                    
-                    ui.horizontal(|ui| {
-                        ui.label("Palette Size:");
-                        let mut palette_log2 = (self.bingocube_config.palette_size as f32).log2() as usize;
-                        if ui.add(egui::Slider::new(&mut palette_log2, 2..=8).text("")).changed() {
-                            self.bingocube_config.palette_size = 1 << palette_log2;
-                            config_changed = true;
-                        }
-                        ui.label(format!("{} colors", self.bingocube_config.palette_size));
-                    });
-                    
-                    ui.horizontal(|ui| {
-                        if ui.button("Small (5×5)").clicked() {
-                            self.bingocube_config = BingoCubeConfig::small();
-                            config_changed = true;
-                        }
-                        if ui.button("Medium (8×8)").clicked() {
-                            self.bingocube_config = BingoCubeConfig::medium();
-                            config_changed = true;
-                        }
-                        if ui.button("Large (12×12)").clicked() {
-                            self.bingocube_config = BingoCubeConfig::large();
-                            config_changed = true;
-                        }
-                    });
-                    
-                    if config_changed {
-                        self.generate_bingocube();
-                    }
-                });
-            
-            ui.add_space(10.0);
-        }
-        
-        // Render BingoCube if available
-        if let (Some(cube), Some(renderer)) = (&self.bingocube, &mut self.bingocube_renderer) {
-            // Sync reveal parameter
-            self.bingocube_x = renderer.get_reveal();
-            
-            egui::Frame::none()
-                .fill(egui::Color32::from_rgb(25, 25, 30))
-                .inner_margin(20.0)
-                .show(ui, |ui| {
-                    renderer.render(ui, cube);
-                });
-        } else {
-            ui.centered_and_justified(|ui| {
-                ui.label(egui::RichText::new("No BingoCube generated yet").color(egui::Color32::GRAY));
-            });
-        }
-        
-        ui.add_space(20.0);
-        
-        // Audio panel (collapsible)
-        if self.show_bingocube_audio {
-            egui::Frame::none()
-                .fill(egui::Color32::from_rgb(35, 35, 40))
-                .inner_margin(12.0)
-                .show(ui, |ui| {
-                    ui.heading(egui::RichText::new("🎵 Audio Sonification").size(16.0));
-                    ui.add_space(5.0);
-                    
-                    // Check if audio is actually available
-                    let audio_available = self.capabilities.is_available(Modality::Audio);
-                    if !audio_available {
-                        egui::Frame::none()
-                            .fill(egui::Color32::from_rgb(60, 30, 30))
-                            .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(180, 80, 80)))
-                            .inner_margin(8.0)
-                            .show(ui, |ui| {
-                                ui.label(egui::RichText::new("⚠️ Audio output not available").size(12.0).strong());
-                                ui.label(egui::RichText::new("Audio attributes calculated, but no sound will play").size(10.0).italics());
-                            });
-                        ui.add_space(8.0);
-                    }
-                    
-                    if let Some(audio_renderer) = &self.bingocube_audio_renderer {
-                        let description = audio_renderer.describe_soundscape(self.bingocube_x);
-                        ui.label(egui::RichText::new(description).size(13.0).color(egui::Color32::from_rgb(200, 200, 200)));
-                        
-                        ui.add_space(10.0);
-                        ui.separator();
-                        ui.add_space(10.0);
-                        
-                        ui.label(egui::RichText::new("Multi-Modal Representation:").strong());
-                        ui.add_space(5.0);
-                        ui.label("• Visual: Color grid shows cryptographic commitment");
-                        ui.label("• Audio: Soundscape maps cells to instruments, pitch, and panning");
-                        ui.label("• Both modalities represent the same underlying data");
-                        ui.label("• This demonstrates petalTongue's universal representation capability");
-                        
-                        ui.add_space(10.0);
-                        ui.separator();
-                        ui.add_space(10.0);
-                        
-                        // Export BingoCube audio button
-                        ui.label(egui::RichText::new("💾 Export Audio").strong());
-                        ui.add_space(4.0);
-                        if ui.button("💾 Export BingoCube Soundscape").clicked() {
-                            self.export_bingocube_soundscape();
-                        }
-                        ui.label(
-                            egui::RichText::new("(Saves to ./audio_export/bingocube_soundscape.wav)")
-                                .size(10.0)
-                                .italics()
-                                .color(egui::Color32::GRAY),
-                        );
-                    } else {
-                        ui.label(egui::RichText::new("Generate a BingoCube to hear its audio representation").color(egui::Color32::GRAY).italics());
-                    }
-                });
-            
-            ui.add_space(10.0);
-        }
-        
-        // Info panel
-        egui::Frame::none()
-            .fill(egui::Color32::from_rgb(30, 30, 35))
-            .inner_margin(12.0)
-            .show(ui, |ui| {
-                ui.heading("About This Demo");
-                ui.add_space(5.0);
-                ui.label("This demonstrates petalTongue using BingoCube as an external tool:");
-                ui.add_space(5.0);
-                ui.label("• BingoCube is a standalone cryptographic tool");
-                ui.label("• petalTongue uses bingocube-adapters to render it");
-                ui.label("• This is 'primal tool use' - not primal-to-primal interaction");
-                ui.label("• Any primal can use BingoCube the same way");
-                ui.label("• Multi-modal: Visual + Audio representations of the same data");
-            });
-    }
-    
-    /// Generate a new BingoCube from the current seed
-    fn generate_bingocube(&mut self) {
-        // Validate configuration first
-        if let Err(e) = self.bingocube_config.validate() {
-            self.bingocube_error = Some(format!("Invalid configuration: {}", e));
-            tracing::error!("Invalid BingoCube configuration: {}", e);
-            return;
-        }
-        
-        match BingoCube::from_seed(self.bingocube_seed.as_bytes(), self.bingocube_config.clone()) {
-            Ok(cube) => {
-                let renderer = BingoCubeVisualRenderer::new().with_reveal(self.bingocube_x);
-                let audio_renderer = BingoCubeAudioRenderer::new(cube.clone());
-                self.bingocube = Some(cube);
-                self.bingocube_renderer = Some(renderer);
-                self.bingocube_audio_renderer = Some(audio_renderer);
-                self.bingocube_error = None;
-                tracing::info!(
-                    "Generated BingoCube from seed '{}' with config: {}×{}, {} colors",
-                    self.bingocube_seed,
-                    self.bingocube_config.grid_size,
-                    self.bingocube_config.grid_size,
-                    self.bingocube_config.palette_size
-                );
-            }
-            Err(e) => {
-                self.bingocube_error = Some(format!("Failed to generate BingoCube: {}", e));
-                tracing::error!("Failed to generate BingoCube: {}", e);
-                self.bingocube = None;
-                self.bingocube_renderer = None;
-                self.bingocube_audio_renderer = None;
-            }
-        }
-    }
-    
-    /// Export graph soundscape to WAV file
-    fn export_graph_soundscape(&self) {
-        let soundscape = self.audio_renderer.generate_audio_attributes();
-        
-        // Create output directory if it doesn't exist
-        let output_dir = std::path::PathBuf::from("./audio_export");
-        if !output_dir.exists() {
-            if let Err(e) = std::fs::create_dir_all(&output_dir) {
-                tracing::error!("Failed to create audio_export directory: {}", e);
-                return;
-            }
-        }
-        
-        // Generate filename with timestamp
-        let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
-        let filename = format!("graph_soundscape_{}.wav", timestamp);
-        let filepath = output_dir.join(filename);
-        
-        // Export soundscape (5 seconds)
-        match self.audio_generator.export_soundscape(&filepath, &soundscape, 5.0) {
-            Ok(_) => {
-                tracing::info!("✅ Soundscape exported to: {}", filepath.display());
-            }
-            Err(e) => {
-                tracing::error!("❌ Failed to export soundscape: {}", e);
-            }
-        }
-    }
-    
-    /// Export BingoCube soundscape to WAV file
-    fn export_bingocube_soundscape(&self) {
-        if let Some(audio_renderer) = &self.bingocube_audio_renderer {
-            let soundscape = audio_renderer.generate_soundscape(self.bingocube_x);
-            
-            // Convert to format expected by AudioFileGenerator
-            let soundscape_vec: Vec<(String, petal_tongue_graph::AudioAttributes)> = soundscape
-                .iter()
-                .map(|((row, col), cell_audio)| {
-                    let id = format!("cell_{}_{}", row, col);
-                    let attrs = petal_tongue_graph::AudioAttributes {
-                        instrument: match cell_audio.instrument {
-                            bingocube_adapters::audio::Instrument::Piano => petal_tongue_graph::Instrument::Synth,
-                            bingocube_adapters::audio::Instrument::Strings => petal_tongue_graph::Instrument::Strings,
-                            bingocube_adapters::audio::Instrument::Bells => petal_tongue_graph::Instrument::Chimes,
-                            bingocube_adapters::audio::Instrument::Bass => petal_tongue_graph::Instrument::Bass,
-                            bingocube_adapters::audio::Instrument::Percussion => petal_tongue_graph::Instrument::Drums,
-                        },
-                        pitch: cell_audio.pitch as f32 / 127.0, // Convert MIDI to 0-1
-                        volume: cell_audio.volume,
-                        pan: cell_audio.pan,
-                    };
-                    (id, attrs)
-                })
-                .collect();
-            
-            // Create output directory
-            let output_dir = std::path::PathBuf::from("./audio_export");
-            if !output_dir.exists() {
-                if let Err(e) = std::fs::create_dir_all(&output_dir) {
-                    tracing::error!("Failed to create audio_export directory: {}", e);
-                    return;
-                }
-            }
-            
-            // Generate filename with timestamp
-            let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
-            let filename = format!("bingocube_soundscape_{}.wav", timestamp);
-            let filepath = output_dir.join(filename);
-            
-            // Export soundscape (3 seconds)
-            match self.audio_generator.export_soundscape(&filepath, &soundscape_vec, 3.0) {
-                Ok(_) => {
-                    tracing::info!("✅ BingoCube soundscape exported to: {}", filepath.display());
-                }
-                Err(e) => {
-                    tracing::error!("❌ Failed to export BingoCube soundscape: {}", e);
-                }
-            }
-        }
-    }
+
 }
 
 impl eframe::App for PetalTongueApp {
@@ -675,11 +320,13 @@ impl eframe::App for PetalTongueApp {
                     if ui.button("Reset Camera").clicked() {
                         self.visual_renderer.reset_camera();
                     }
-                    
+
                     ui.separator();
-                    
-                    // BingoCube panel toggle
-                    ui.toggle_value(&mut self.show_bingocube_panel, "🎲 BingoCube Tool");
+
+                    // Tools menu (capability-based, not hardcoded)
+                    ui.menu_button("🔧 Tools", |ui| {
+                        self.tools.render_tools_menu(ui);
+                    });
 
                     ui.separator();
 
@@ -934,11 +581,11 @@ impl eframe::App for PetalTongueApp {
                         egui::RichText::new("🐿️ AI → High Synth")
                             .color(egui::Color32::from_rgb(255, 100, 100)),
                     );
-                    
+
                     ui.add_space(12.0);
                     ui.separator();
                     ui.add_space(8.0);
-                    
+
                     // Export audio button
                     ui.heading(egui::RichText::new("💾 Export Audio").size(16.0));
                     ui.add_space(4.0);
@@ -948,11 +595,19 @@ impl eframe::App for PetalTongueApp {
                             .color(egui::Color32::from_rgb(180, 180, 180)),
                     );
                     ui.add_space(6.0);
-                    
+
                     if ui.button("💾 Export Soundscape to WAV").clicked() {
-                        self.export_graph_soundscape();
+                        // Export graph soundscape
+                        let soundscape = self.audio_renderer.generate_audio_attributes();
+                        
+                        let filepath = std::path::PathBuf::from("graph_soundscape.wav");
+                        if let Err(e) = self.audio_generator.export_soundscape(&filepath, &soundscape, 3.0) {
+                            tracing::error!("Failed to export soundscape: {}", e);
+                        } else {
+                            tracing::info!("Exported soundscape to: {}", filepath.display());
+                        }
                     }
-                    
+
                     ui.add_space(4.0);
                     ui.label(
                         egui::RichText::new("(File will be saved to ./audio_export/)")
@@ -1037,13 +692,14 @@ impl eframe::App for PetalTongueApp {
                 });
         }
 
-        // Central panel - Graph visualization or BingoCube
+        // Central panel - Graph visualization or active tool
         egui::CentralPanel::default().show(ctx, |ui| {
-            if self.show_bingocube_panel {
-                // BingoCube Tool Panel - demonstrating primal tool use
-                self.render_bingocube_panel(ui);
+            // Check if any tool is visible (capability-based, not hardcoded)
+            if let Some(tool) = self.tools.visible_tool() {
+                // Tool is active - render its panel
+                tool.render_panel(ui);
             } else {
-                // Render the graph
+                // No tool active - render the graph
                 self.visual_renderer.render(ui);
             }
         });

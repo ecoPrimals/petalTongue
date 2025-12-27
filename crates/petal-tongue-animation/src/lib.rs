@@ -53,7 +53,7 @@ impl FlowParticle {
     pub fn update(&mut self, delta_time: Duration) {
         let delta_seconds = delta_time.as_secs_f32();
         self.progress += delta_seconds * self.speed * 0.5; // 0.5 = base speed
-        
+
         // Wrap or remove if complete
         if self.progress > 1.0 {
             self.progress = 0.0; // Loop for now
@@ -99,7 +99,7 @@ impl NodePulse {
     pub fn update(&mut self, delta_time: Duration) {
         let delta_seconds = delta_time.as_secs_f32();
         self.phase += delta_seconds * self.frequency;
-        
+
         // Wrap phase at 1.0
         if self.phase > 1.0 {
             self.phase -= 1.0;
@@ -214,9 +214,12 @@ impl AnimationEngine {
     /// Add or update an edge animation
     pub fn set_edge_animation(&mut self, source: String, target: String, bandwidth: f32) {
         let key = format!("{source}->{target}");
-        
-        if let Some(anim) = self.edge_animations.iter_mut()
-            .find(|a| format!("{}->{}", a.source, a.target) == key) {
+
+        if let Some(anim) = self
+            .edge_animations
+            .iter_mut()
+            .find(|a| format!("{}->{}", a.source, a.target) == key)
+        {
             anim.bandwidth = bandwidth;
         } else {
             let mut anim = EdgeAnimation::new(source, target);
@@ -227,7 +230,8 @@ impl AnimationEngine {
 
     /// Remove an edge animation
     pub fn remove_edge_animation(&mut self, source: &str, target: &str) {
-        self.edge_animations.retain(|a| !(a.source == source && a.target == target));
+        self.edge_animations
+            .retain(|a| !(a.source == source && a.target == target));
     }
 
     /// Update all animations
@@ -235,7 +239,7 @@ impl AnimationEngine {
         let now = Instant::now();
         let delta_time = now.duration_since(self.last_update);
         let delta_seconds = delta_time.as_secs_f32();
-        
+
         // Update node pulses
         for pulse in &mut self.node_pulses {
             pulse.update(delta_time);
@@ -251,7 +255,8 @@ impl AnimationEngine {
         while self.spawn_accumulator >= 1.0 {
             // Spawn one particle on each active edge
             for anim in &mut self.edge_animations {
-                if anim.bandwidth > 0.1 { // Only spawn if there's activity
+                if anim.bandwidth > 0.1 {
+                    // Only spawn if there's activity
                     anim.spawn_particle();
                 }
             }
@@ -283,7 +288,7 @@ mod tests {
         let particle = FlowParticle::new("node1".to_string(), "node2".to_string());
         assert_eq!(particle.source, "node1");
         assert_eq!(particle.target, "node2");
-        assert_eq!(particle.progress, 0.0);
+        assert!((particle.progress - 0.0).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -298,8 +303,8 @@ mod tests {
     fn test_node_pulse_creation() {
         let pulse = NodePulse::new("node1".to_string(), 1.0);
         assert_eq!(pulse.node_id, "node1");
-        assert_eq!(pulse.frequency, 1.0);
-        assert_eq!(pulse.phase, 0.0);
+        assert!((pulse.frequency - 1.0).abs() < f32::EPSILON);
+        assert!((pulse.phase - 0.0).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -313,10 +318,10 @@ mod tests {
     fn test_edge_animation() {
         let mut edge = EdgeAnimation::new("node1".to_string(), "node2".to_string());
         assert_eq!(edge.particles.len(), 0);
-        
+
         edge.spawn_particle();
         assert_eq!(edge.particles.len(), 1);
-        
+
         edge.update(Duration::from_secs(1));
         assert!(edge.particles[0].progress > 0.0);
     }
@@ -324,13 +329,13 @@ mod tests {
     #[test]
     fn test_animation_engine() {
         let mut engine = AnimationEngine::new();
-        
+
         engine.set_node_pulse("node1".to_string(), 1.0);
         assert_eq!(engine.node_pulses.len(), 1);
-        
+
         engine.set_edge_animation("node1".to_string(), "node2".to_string(), 0.5);
         assert_eq!(engine.edge_animations.len(), 1);
-        
+
         engine.update();
         // Verify no crashes
     }

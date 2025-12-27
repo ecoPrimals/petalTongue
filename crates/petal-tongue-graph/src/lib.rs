@@ -20,9 +20,9 @@
 #![allow(clippy::missing_errors_doc)] // Allow for now, will add later
 #![allow(clippy::missing_panics_doc)] // Allow for now, will add later
 
-pub mod visual_2d;
-pub mod audio_sonification;
 pub mod audio_export;
+pub mod audio_sonification;
+pub mod visual_2d;
 
 #[cfg(feature = "native-audio")]
 pub mod audio_playback;
@@ -32,8 +32,8 @@ pub mod audio_playback;
 // use bingocube_adapters::visual::BingoCubeVisualRenderer;
 // use bingocube_adapters::audio::BingoCubeAudioRenderer;
 
-pub use audio_sonification::{AudioAttributes, AudioSonificationRenderer, Instrument};
 pub use audio_export::{AudioFileGenerator, AudioFormat, AudioQuality};
+pub use audio_sonification::{AudioAttributes, AudioSonificationRenderer, Instrument};
 
 #[cfg(feature = "native-audio")]
 pub use audio_playback::AudioPlaybackEngine;

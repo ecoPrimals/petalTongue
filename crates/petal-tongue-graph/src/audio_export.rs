@@ -83,8 +83,13 @@ impl AudioFileGenerator {
             sample_format: hound::SampleFormat::Int,
         };
 
-        let mut writer = WavWriter::create(path.as_ref(), spec)
-            .map_err(|e| anyhow::anyhow!("Failed to create WAV file: {} - {}", path.as_ref().display(), e))?;
+        let mut writer = WavWriter::create(path.as_ref(), spec).map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to create WAV file: {} - {}",
+                path.as_ref().display(),
+                e
+            )
+        })?;
 
         let num_samples = (self.quality.sample_rate as f32 * duration_secs) as usize;
         let frequency = 100.0 + (attrs.pitch * 700.0);
@@ -150,8 +155,13 @@ impl AudioFileGenerator {
             sample_format: hound::SampleFormat::Int,
         };
 
-        let mut writer = WavWriter::create(path.as_ref(), spec)
-            .map_err(|e| anyhow::anyhow!("Failed to create WAV file: {} - {}", path.as_ref().display(), e))?;
+        let mut writer = WavWriter::create(path.as_ref(), spec).map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to create WAV file: {} - {}",
+                path.as_ref().display(),
+                e
+            )
+        })?;
 
         let num_samples = (self.quality.sample_rate as f32 * duration_secs) as usize;
 
@@ -241,11 +251,7 @@ impl AudioFileGenerator {
             }
             Instrument::Synth => {
                 // Square wave (electronic)
-                if angle.sin() > 0.0 {
-                    1.0
-                } else {
-                    -1.0
-                }
+                if angle.sin() > 0.0 { 1.0 } else { -1.0 }
             }
             _ => angle.sin(),
         };
@@ -329,4 +335,3 @@ mod tests {
         let _ = std::fs::remove_file(temp_path);
     }
 }
-

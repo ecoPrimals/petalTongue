@@ -34,9 +34,11 @@ toml = "0.8"
 thiserror = "2.0"
 anyhow = "1.0"
 
-# Audio synthesis (optional - requires ALSA libraries on Linux)
+# Audio synthesis (OPTIONAL - requires ALSA libraries on Linux)
+# Enable with feature: native-audio
 # Install with: sudo apt-get install -y libasound2-dev pkg-config
-rodio = "0.19"
+# NOTE: These are NOT workspace dependencies because they're optional
+# Each crate that needs them must declare them as optional local dependencies
 rand = "0.8"
 
 # Pure Rust audio file generation (no system dependencies)

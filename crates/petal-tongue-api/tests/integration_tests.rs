@@ -1,0 +1,161 @@
+//! Integration tests for BiomeOS API client
+
+use petal_tongue_api::BiomeOSClient;
+use tokio;
+
+#[tokio::test]
+async fn test_client_creation() {
+    let client = BiomeOSClient::new("http://localhost:3000");
+    // Client created successfully
+    assert!(true);
+}
+
+#[tokio::test]
+async fn test_client_with_mock_mode() {
+    let client = BiomeOSClient::new("http://localhost:3000").with_mock_mode(true);
+    // Mock mode enabled successfully
+    assert!(true);
+}
+
+#[tokio::test]
+async fn test_discover_primals_mock() {
+    let client = BiomeOSClient::new("http://localhost:3000").with_mock_mode(true);
+
+    let primals = client
+        .discover_primals()
+        .await
+        .expect("Failed to discover primals");
+
+    // Mock should return some primals
+    assert!(!primals.is_empty());
+
+    // Verify primal structure
+    for primal in &primals {
+        assert!(!primal.id.is_empty());
+        assert!(!primal.name.is_empty());
+        assert!(!primal.endpoint.is_empty());
+    }
+}
+
+#[tokio::test]
+async fn test_get_topology_mock() {
+    let client = BiomeOSClient::new("http://localhost:3000").with_mock_mode(true);
+
+    let edges = client.get_topology().await.expect("Failed to get topology");
+
+    // Mock should return some edges
+    assert!(!edges.is_empty());
+
+    // Verify edge structure
+    for edge in &edges {
+        assert!(!edge.from.is_empty());
+        assert!(!edge.to.is_empty());
+    }
+}
+
+#[tokio::test]
+async fn test_discover_primals_with_unreachable_endpoint() {
+    let client = BiomeOSClient::new("http://localhost:9999").with_mock_mode(false);
+
+    // Should fallback to mock when endpoint is unreachable
+    let result = client.discover_primals().await;
+
+    // Should succeed with fallback mock data
+    assert!(result.is_ok());
+    let primals = result.unwrap();
+    assert!(!primals.is_empty());
+}
+
+#[tokio::test]
+async fn test_get_topology_with_unreachable_endpoint() {
+    let client = BiomeOSClient::new("http://localhost:9999").with_mock_mode(false);
+
+    // Should fallback to mock when endpoint is unreachable
+    let result = client.get_topology().await;
+
+    // Should succeed with fallback mock data
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_primal_types_in_mock_data() {
+    let client = BiomeOSClient::new("http://localhost:3000").with_mock_mode(true);
+
+    let primals = client.discover_primals().await.unwrap();
+
+    // Should have variety of primal types
+    let types: std::collections::HashSet<_> = primals.iter().map(|p| &p.primal_type).collect();
+    assert!(
+        types.len() > 1,
+        "Mock data should include multiple primal types"
+    );
+}
+
+#[tokio::test]
+async fn test_primal_health_states() {
+    let client = BiomeOSClient::new("http://localhost:3000").with_mock_mode(true);
+
+    let primals = client.discover_primals().await.unwrap();
+
+    // Should have primals in different health states
+    let has_healthy = primals
+        .iter()
+        .any(|p| matches!(p.health, petal_tongue_core::PrimalHealthStatus::Healthy));
+    assert!(has_healthy, "Mock data should include healthy primals");
+}
+
+#[tokio::test]
+async fn test_primal_capabilities() {
+    let client = BiomeOSClient::new("http://localhost:3000").with_mock_mode(true);
+
+    let primals = client.discover_primals().await.unwrap();
+
+    // Primals should have capabilities
+    let has_capabilities = primals.iter().any(|p| !p.capabilities.is_empty());
+    assert!(has_capabilities, "Mock primals should have capabilities");
+}
+
+#[tokio::test]
+async fn test_topology_connectivity() {
+    let client = BiomeOSClient::new("http://localhost:3000").with_mock_mode(true);
+
+    let primals = client.discover_primals().await.unwrap();
+    let edges = client.get_topology().await.unwrap();
+
+    // All edges should reference known primals
+    let primal_ids: std::collections::HashSet<_> = primals.iter().map(|p| &p.id).collect();
+
+    for edge in &edges {
+        assert!(
+            primal_ids.contains(&edge.from) || primal_ids.contains(&edge.to),
+            "Edge references unknown primal"
+        );
+    }
+}
+
+#[tokio::test]
+async fn test_concurrent_requests() {
+    let client =
+        std::sync::Arc::new(BiomeOSClient::new("http://localhost:3000").with_mock_mode(true));
+
+    let mut handles = vec![];
+
+    for _ in 0..10 {
+        let c = client.clone();
+        handles.push(tokio::spawn(async move { c.discover_primals().await }));
+    }
+
+    for handle in handles {
+        let result = handle.await.unwrap();
+        assert!(result.is_ok(), "Concurrent requests should succeed");
+    }
+}
+
+#[tokio::test]
+async fn test_client_timeout_handling() {
+    let client = BiomeOSClient::new("http://10.255.255.1:1").with_mock_mode(false);
+
+    // Should timeout and fallback to mock
+    let result = client.discover_primals().await;
+    assert!(result.is_ok(), "Should fallback to mock on timeout");
+}

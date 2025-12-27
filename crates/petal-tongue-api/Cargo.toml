@@ -1,6 +1,6 @@
 [package]
 name = "petal-tongue-api"
-description = "TODO: Add description"
+description = "BiomeOS API client for primal discovery and topology retrieval"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

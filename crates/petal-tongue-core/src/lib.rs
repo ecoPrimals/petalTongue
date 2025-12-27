@@ -21,9 +21,15 @@
 
 pub mod capabilities;
 pub mod config;
+#[cfg(test)]
+mod config_tests;
 pub mod error;
+#[cfg(test)]
+mod error_tests;
 pub mod graph_engine;
 pub mod types;
+#[cfg(test)]
+mod types_tests;
 
 use sourdough_core::{
     PrimalError, PrimalHealth, PrimalLifecycle, PrimalState,

@@ -1,8 +1,10 @@
 //! 2D Visual Renderer
 //!
 //! Renders graph topology as 2D graphics using egui.
+//! Supports animation of flow particles and node pulses.
 
 use egui::{Color32, Pos2, Stroke, Vec2};
+use petal_tongue_animation::AnimationEngine;
 use petal_tongue_core::graph_engine::Node;
 use petal_tongue_core::graph_engine::Position;
 use petal_tongue_core::{GraphEngine, PrimalHealthStatus};
@@ -22,6 +24,10 @@ pub struct Visual2DRenderer {
     is_dragging: bool,
     /// Last mouse position (for drag delta)
     _last_mouse_pos: Option<Pos2>,
+    /// Animation engine (optional, for flow visualization)
+    animation_engine: Option<Arc<RwLock<AnimationEngine>>>,
+    /// Animation enabled flag
+    animation_enabled: bool,
 }
 
 impl Visual2DRenderer {
@@ -34,7 +40,27 @@ impl Visual2DRenderer {
             selected_node: None,
             is_dragging: false,
             _last_mouse_pos: None,
+            animation_engine: None,
+            animation_enabled: false,
         }
+    }
+
+    /// Set the animation engine
+    ///
+    /// Enables flow particles and node pulse visualization.
+    pub fn set_animation_engine(&mut self, engine: Arc<RwLock<AnimationEngine>>) {
+        self.animation_engine = Some(engine);
+    }
+
+    /// Enable or disable animation
+    pub fn set_animation_enabled(&mut self, enabled: bool) {
+        self.animation_enabled = enabled;
+    }
+
+    /// Check if animation is enabled
+    #[must_use]
+    pub fn is_animation_enabled(&self) -> bool {
+        self.animation_enabled
     }
 
     /// Render the graph to egui
@@ -90,6 +116,15 @@ impl Visual2DRenderer {
 
             // Draw node
             self.draw_node(&painter, node, screen_pos, is_selected);
+        }
+
+        // Render animation (flow particles and pulses) if enabled
+        if self.animation_enabled {
+            if let Some(animation_engine) = &self.animation_engine {
+                if let Ok(engine) = animation_engine.read() {
+                    self.render_animation(&painter, &engine, &graph, screen_center);
+                }
+            }
         }
 
         // Draw stats in corner
@@ -228,6 +263,60 @@ impl Visual2DRenderer {
                 } else {
                     self.selected_node = None;
                 }
+            }
+        }
+    }
+
+    /// Render animation (flow particles and node pulses)
+    fn render_animation(
+        &self,
+        painter: &egui::Painter,
+        animation_engine: &AnimationEngine,
+        graph: &GraphEngine,
+        screen_center: Pos2,
+    ) {
+        // Render flow particles from edge animations
+        for edge_anim in &animation_engine.edge_animations {
+            for particle in &edge_anim.particles {
+                // Get source and target node positions
+                if let (Some(source_node), Some(target_node)) = (
+                    graph.get_node(&edge_anim.source),
+                    graph.get_node(&edge_anim.target),
+                ) {
+                    // Interpolate position along edge based on progress
+                    let source_pos = source_node.position;
+                    let target_pos = target_node.position;
+
+                    let x = source_pos.x + (target_pos.x - source_pos.x) * particle.progress;
+                    let y = source_pos.y + (target_pos.y - source_pos.y) * particle.progress;
+
+                    let world_pos = Position::new_2d(x, y);
+                    let screen_pos = self.world_to_screen(world_pos, screen_center);
+
+                    // Draw particle as a small circle
+                    painter.circle_filled(
+                        screen_pos,
+                        4.0 * self.zoom,
+                        Color32::from_rgb(100, 200, 255),
+                    );
+                }
+            }
+        }
+
+        // Render node pulses
+        for pulse in &animation_engine.node_pulses {
+            if let Some(node) = graph.get_node(&pulse.node_id) {
+                let screen_pos = self.world_to_screen(node.position, screen_center);
+
+                // Pulse effect: expanding circle that fades out
+                let pulse_radius = 25.0 * self.zoom * pulse.radius_multiplier();
+                let alpha = (255.0 * pulse.alpha()) as u8;
+
+                painter.circle_stroke(
+                    screen_pos,
+                    pulse_radius,
+                    Stroke::new(2.0, Color32::from_rgba_premultiplied(100, 200, 255, alpha)),
+                );
             }
         }
     }

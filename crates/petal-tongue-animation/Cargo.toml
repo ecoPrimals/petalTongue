@@ -1,6 +1,6 @@
 [package]
 name = "petal-tongue-animation"
-description = "TODO: Add description"
+description = "Flow animation engine for visualizing primal interactions and data movement"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
