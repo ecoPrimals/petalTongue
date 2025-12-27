@@ -36,4 +36,5 @@ default = []
 native-audio = ["rodio"]
 
 [dev-dependencies]
+petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
 tokio = { workspace = true, features = ["test-util", "macros"] }

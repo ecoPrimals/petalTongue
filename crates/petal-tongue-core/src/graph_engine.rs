@@ -212,6 +212,12 @@ impl GraphEngine {
         self.layout = layout;
     }
 
+    /// Get the current layout algorithm
+    #[must_use]
+    pub fn get_layout(&self) -> LayoutAlgorithm {
+        self.layout
+    }
+
     /// Run layout algorithm to position nodes
     pub fn layout(&mut self, iterations: usize) {
         match self.layout {
@@ -455,18 +461,12 @@ fn random_layout(nodes: &mut [Node]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::PrimalHealthStatus;
+    use crate::test_fixtures::primals;
 
     fn create_test_primal(id: &str, name: &str) -> PrimalInfo {
-        PrimalInfo {
-            id: id.to_string(),
-            name: name.to_string(),
-            primal_type: "Test".to_string(),
-            endpoint: format!("http://localhost:808{id}"),
-            capabilities: vec!["test".to_string()],
-            health: PrimalHealthStatus::Healthy,
-            last_seen: 0,
-        }
+        let mut primal = primals::test_primal(id);
+        primal.name = name.to_string();
+        primal
     }
 
     #[test]

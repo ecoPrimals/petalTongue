@@ -129,30 +129,30 @@ impl TrafficView {
     fn calculate_flow_color(metrics: &TrafficMetrics, scheme: ColorScheme) -> Color32 {
         match scheme {
             ColorScheme::Volume => {
-                // Green to red based on volume
+                // Green to red based on volume (blue channel = 32 for distinction)
                 let normalized = (metrics.bytes_per_second as f32 / 100_000.0).min(1.0);
                 Color32::from_rgb(
                     (255.0 * normalized) as u8,
                     (255.0 * (1.0 - normalized)) as u8,
-                    50,
+                    32,
                 )
             }
             ColorScheme::Latency => {
-                // Green (fast) to red (slow)
+                // Green (fast) to red (slow) (blue channel = 64 for distinction)
                 let normalized = (metrics.avg_latency_ms as f32 / 100.0).min(1.0);
                 Color32::from_rgb(
                     (255.0 * normalized) as u8,
                     (255.0 * (1.0 - normalized)) as u8,
-                    50,
+                    64,
                 )
             }
             ColorScheme::ErrorRate => {
-                // Green (no errors) to red (many errors)
+                // Green (no errors) to red (many errors) (blue channel = 96 for distinction)
                 let normalized = (metrics.error_rate as f32 * 10.0).min(1.0);
                 Color32::from_rgb(
                     (255.0 * normalized) as u8,
-                    (255.0 * (1.0 - normalized)) as u8,
-                    50,
+                    (255.0 * (1.0 - normalized) * 0.8) as u8, // Different green scaling
+                    96,
                 )
             }
         }

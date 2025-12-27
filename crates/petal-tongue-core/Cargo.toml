@@ -21,6 +21,7 @@ rodio = { version = "0.19", optional = true }
 [features]
 default = []
 audio = ["rodio"]
+test-fixtures = []
 
 [build-dependencies]
 

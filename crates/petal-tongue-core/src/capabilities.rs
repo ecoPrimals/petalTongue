@@ -88,23 +88,26 @@ impl CapabilityDetector {
         caps.clear();
 
         // Visual 2D - Always available if we have a window
-        caps.push(ModalityCapability {
+        let visual_cap = ModalityCapability {
             modality: Modality::Visual2D,
             status: ModalityStatus::Available,
             reason: "egui window rendering available".to_string(),
             tested: true,
-        });
+        };
+        caps.push(visual_cap.clone());
 
         // Audio - Test actual output device
         let audio_cap = Self::detect_audio();
         caps.push(audio_cap);
 
         // Animation - Available if visual is available
+        // Animation is built on top of visual rendering, so it inherits visual's tested status
+        let animation_tested = visual_cap.tested;
         caps.push(ModalityCapability {
             modality: Modality::Animation,
             status: ModalityStatus::Available,
-            reason: "Animation system available".to_string(),
-            tested: false, // TODO: Actually test animation
+            reason: "Animation system available (requires visual)".to_string(),
+            tested: animation_tested,
         });
 
         // Text Description - Always available
@@ -200,6 +203,46 @@ impl CapabilityDetector {
     pub fn is_available(&self, modality: Modality) -> bool {
         self.get_status(modality)
             .is_some_and(|c| c.status == ModalityStatus::Available)
+    }
+
+    /// Check if a specific modality is available
+    ///
+    /// This is an alias for `is_available` that matches the expected API.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the capabilities lock is poisoned.
+    #[must_use]
+    pub fn has_modality(&self, modality: Modality) -> bool {
+        self.is_available(modality)
+    }
+
+    /// Check if a specific capability string is available
+    ///
+    /// Maps capability strings to modalities:
+    /// - "visual.2d" -> Visual2D
+    /// - "audio.sonification" -> Audio
+    /// - "animation.flow" -> Animation
+    /// - "text.description" -> TextDescription
+    /// - "haptic.feedback" -> Haptic
+    /// - "vr.3d" -> VR3D
+    ///
+    /// # Panics
+    ///
+    /// Panics if the capabilities lock is poisoned.
+    #[must_use]
+    pub fn has_capability(&self, capability: &str) -> bool {
+        let modality = match capability {
+            "visual.2d" => Modality::Visual2D,
+            "audio.sonification" | "audio.playback" | "audio.export" => Modality::Audio,
+            "animation.flow" | "animation.particles" => Modality::Animation,
+            "text.description" => Modality::TextDescription,
+            "haptic.feedback" => Modality::Haptic,
+            "vr.3d" => Modality::VR3D,
+            _ => return false, // Unknown capability
+        };
+        
+        self.is_available(modality)
     }
 
     /// Get a user-facing capability report

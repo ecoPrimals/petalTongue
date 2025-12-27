@@ -113,65 +113,66 @@ impl BiomeOSClient {
 
     /// Mock primal discovery (for development)
     fn mock_discover_primals(&self) -> Vec<PrimalInfo> {
+        let now = chrono::Utc::now().timestamp() as u64;
         vec![
             PrimalInfo {
                 id: "beardog-1".to_string(),
                 name: "BearDog Security".to_string(),
                 primal_type: "Security".to_string(),
-                endpoint: "http://localhost:8001".to_string(),
+                endpoint: "http://mock-beardog:8001".to_string(),
                 capabilities: vec![
                     "authentication".to_string(),
                     "authorization".to_string(),
                     "encryption".to_string(),
                 ],
                 health: PrimalHealthStatus::Healthy,
-                last_seen: chrono::Utc::now().timestamp() as u64,
+                last_seen: now,
             },
             PrimalInfo {
                 id: "toadstool-1".to_string(),
                 name: "ToadStool Compute".to_string(),
                 primal_type: "Compute".to_string(),
-                endpoint: "http://localhost:8002".to_string(),
+                endpoint: "http://mock-toadstool:8002".to_string(),
                 capabilities: vec![
                     "container_runtime".to_string(),
                     "workload_execution".to_string(),
                 ],
                 health: PrimalHealthStatus::Warning,
-                last_seen: chrono::Utc::now().timestamp() as u64,
+                last_seen: now,
             },
             PrimalInfo {
                 id: "songbird-1".to_string(),
                 name: "Songbird Discovery".to_string(),
                 primal_type: "Discovery".to_string(),
-                endpoint: "http://localhost:8003".to_string(),
+                endpoint: "http://mock-songbird:8003".to_string(),
                 capabilities: vec![
                     "service_discovery".to_string(),
                     "capability_matching".to_string(),
                 ],
                 health: PrimalHealthStatus::Healthy,
-                last_seen: chrono::Utc::now().timestamp() as u64,
+                last_seen: now,
             },
             PrimalInfo {
                 id: "nestgate-1".to_string(),
                 name: "NestGate Storage".to_string(),
                 primal_type: "Storage".to_string(),
-                endpoint: "http://localhost:8004".to_string(),
+                endpoint: "http://mock-nestgate:8004".to_string(),
                 capabilities: vec![
                     "permanent_storage".to_string(),
                     "content_addressing".to_string(),
                     "attribution".to_string(),
                 ],
                 health: PrimalHealthStatus::Healthy,
-                last_seen: chrono::Utc::now().timestamp() as u64,
+                last_seen: now,
             },
             PrimalInfo {
                 id: "squirrel-1".to_string(),
                 name: "Squirrel AI".to_string(),
                 primal_type: "AI".to_string(),
-                endpoint: "http://localhost:8005".to_string(),
+                endpoint: "http://mock-squirrel:8005".to_string(),
                 capabilities: vec!["intent_parsing".to_string(), "task_planning".to_string()],
                 health: PrimalHealthStatus::Critical,
-                last_seen: chrono::Utc::now().timestamp() as u64,
+                last_seen: now,
             },
         ]
     }
@@ -236,10 +237,11 @@ impl From<DiscoveredPrimal> for PrimalInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use petal_tongue_core::test_fixtures::endpoints;
 
     #[tokio::test]
     async fn test_mock_mode() {
-        let client = BiomeOSClient::new("http://localhost:9000").with_mock_mode(true);
+        let client = BiomeOSClient::new("http://test-mock:9000").with_mock_mode(true);
 
         let primals = client.discover_primals().await.unwrap();
         assert_eq!(primals.len(), 5);

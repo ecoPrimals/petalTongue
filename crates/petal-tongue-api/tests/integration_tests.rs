@@ -1,25 +1,26 @@
 //! Integration tests for BiomeOS API client
 
 use petal_tongue_api::BiomeOSClient;
+use petal_tongue_core::test_fixtures::endpoints;
 use tokio;
 
 #[tokio::test]
 async fn test_client_creation() {
-    let client = BiomeOSClient::new("http://localhost:3000");
+    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS);
     // Client created successfully
     assert!(true);
 }
 
 #[tokio::test]
 async fn test_client_with_mock_mode() {
-    let client = BiomeOSClient::new("http://localhost:3000").with_mock_mode(true);
+    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
     // Mock mode enabled successfully
     assert!(true);
 }
 
 #[tokio::test]
 async fn test_discover_primals_mock() {
-    let client = BiomeOSClient::new("http://localhost:3000").with_mock_mode(true);
+    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
 
     let primals = client
         .discover_primals()
@@ -39,7 +40,7 @@ async fn test_discover_primals_mock() {
 
 #[tokio::test]
 async fn test_get_topology_mock() {
-    let client = BiomeOSClient::new("http://localhost:3000").with_mock_mode(true);
+    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
 
     let edges = client.get_topology().await.expect("Failed to get topology");
 
@@ -55,7 +56,8 @@ async fn test_get_topology_mock() {
 
 #[tokio::test]
 async fn test_discover_primals_with_unreachable_endpoint() {
-    let client = BiomeOSClient::new("http://localhost:9999").with_mock_mode(false);
+    // Use unreachable IP to test fallback
+    let client = BiomeOSClient::new("http://test-unreachable:9999").with_mock_mode(false);
 
     // Should fallback to mock when endpoint is unreachable
     let result = client.discover_primals().await;
@@ -68,7 +70,7 @@ async fn test_discover_primals_with_unreachable_endpoint() {
 
 #[tokio::test]
 async fn test_get_topology_with_unreachable_endpoint() {
-    let client = BiomeOSClient::new("http://localhost:9999").with_mock_mode(false);
+    let client = BiomeOSClient::new("http://test-unreachable:9999").with_mock_mode(false);
 
     // Should fallback to mock when endpoint is unreachable
     let result = client.get_topology().await;
@@ -79,7 +81,7 @@ async fn test_get_topology_with_unreachable_endpoint() {
 
 #[tokio::test]
 async fn test_primal_types_in_mock_data() {
-    let client = BiomeOSClient::new("http://localhost:3000").with_mock_mode(true);
+    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
 
     let primals = client.discover_primals().await.unwrap();
 
@@ -93,7 +95,7 @@ async fn test_primal_types_in_mock_data() {
 
 #[tokio::test]
 async fn test_primal_health_states() {
-    let client = BiomeOSClient::new("http://localhost:3000").with_mock_mode(true);
+    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
 
     let primals = client.discover_primals().await.unwrap();
 
@@ -106,7 +108,7 @@ async fn test_primal_health_states() {
 
 #[tokio::test]
 async fn test_primal_capabilities() {
-    let client = BiomeOSClient::new("http://localhost:3000").with_mock_mode(true);
+    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
 
     let primals = client.discover_primals().await.unwrap();
 
@@ -117,7 +119,7 @@ async fn test_primal_capabilities() {
 
 #[tokio::test]
 async fn test_topology_connectivity() {
-    let client = BiomeOSClient::new("http://localhost:3000").with_mock_mode(true);
+    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
 
     let primals = client.discover_primals().await.unwrap();
     let edges = client.get_topology().await.unwrap();
@@ -136,7 +138,7 @@ async fn test_topology_connectivity() {
 #[tokio::test]
 async fn test_concurrent_requests() {
     let client =
-        std::sync::Arc::new(BiomeOSClient::new("http://localhost:3000").with_mock_mode(true));
+        std::sync::Arc::new(BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true));
 
     let mut handles = vec![];
 
@@ -153,7 +155,7 @@ async fn test_concurrent_requests() {
 
 #[tokio::test]
 async fn test_client_timeout_handling() {
-    let client = BiomeOSClient::new("http://10.255.255.1:1").with_mock_mode(false);
+    let client = BiomeOSClient::new("http://test-timeout:1").with_mock_mode(false);
 
     // Should timeout and fallback to mock
     let result = client.discover_primals().await;
