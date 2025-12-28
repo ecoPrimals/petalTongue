@@ -8,12 +8,14 @@
 //! - **Capability-based** - Runtime discovery, no assumptions about primal names
 //! - **Modality-agnostic** - Core knows nothing about rendering
 //! - **Type-safe** - Strong typing throughout
+//! - **Self-contained** - No external primal dependencies, only self-knowledge
 
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 
 pub mod capabilities;
+pub mod common_config;
 pub mod config;
 #[cfg(test)]
 mod config_tests;
@@ -21,6 +23,7 @@ pub mod error;
 #[cfg(test)]
 mod error_tests;
 pub mod graph_engine;
+pub mod lifecycle;
 pub mod primal_types;
 pub mod types;
 #[cfg(test)]
@@ -30,10 +33,13 @@ mod types_tests;
 #[cfg(any(test, feature = "test-fixtures"))]
 pub mod test_fixtures;
 
-use sourdough_core::{
-    PrimalError, PrimalHealth, PrimalLifecycle, PrimalState,
-    health::{HealthReport, HealthStatus},
+// Re-export lifecycle traits and types
+pub use lifecycle::{
+    HealthReport, HealthStatus, PrimalError, PrimalHealth, PrimalLifecycle, PrimalState,
 };
+
+// Re-export common config
+pub use common_config::CommonConfig;
 
 /// petalTongue configuration.
 pub use config::PetalTongueConfig;
