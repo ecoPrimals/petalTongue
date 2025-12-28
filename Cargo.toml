@@ -19,9 +19,6 @@ repository = "https://github.com/ecoPrimals/petalTongue"
 authors = ["ecoPrimals Project"]
 
 [workspace.dependencies]
-# SourDough core traits
-sourdough-core = { path = "../sourDough/crates/sourdough-core" }
-
 # Async runtime
 tokio = { version = "1.40", features = ["full"] }
 

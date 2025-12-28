@@ -17,7 +17,6 @@ petal-tongue-animation = { path = "../petal-tongue-animation" }
 bingocube-core = { git = "ssh://git@github.com/ecoPrimals/bingoCube.git", tag = "v0.1.0" }
 bingocube-adapters = { git = "ssh://git@github.com/ecoPrimals/bingoCube.git", tag = "v0.1.0", features = ["visual", "audio"] }
 
-sourdough-core = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

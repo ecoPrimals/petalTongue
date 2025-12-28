@@ -1,7 +1,7 @@
 //! petalTongue configuration.
 
+use crate::common_config::CommonConfig;
 use serde::{Deserialize, Serialize};
-use sourdough_core::config::CommonConfig;
 use std::time::Duration;
 
 /// Configuration for petalTongue.
