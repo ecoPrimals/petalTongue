@@ -8,7 +8,10 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::process::Command;
-use tracing::{info, warn};
+use tracing::{info, warn, error};
+
+// Forward declaration for StatusReporter (avoid circular dependency)
+use crate::status_reporter::{StatusReporter, AudioProviderInfo};
 
 /// Play audio samples (writes WAV and uses system player)
 fn play_samples(samples: &[f32], sample_rate: u32) -> Result<(), String> {
@@ -128,6 +131,7 @@ impl AudioProvider for PureRustAudioProvider {
             "data_refresh" => UISounds::data_refresh(),
             "warning" => UISounds::warning(),
             "connected" => UISounds::connected(),
+            "startup" => UISounds::startup(),
             _ => {
                 return Err(format!("Unknown sound: {}", sound_name));
             }
@@ -158,6 +162,7 @@ impl AudioProvider for PureRustAudioProvider {
             "data_refresh".to_string(),
             "warning".to_string(),
             "connected".to_string(),
+            "startup".to_string(),
         ]
     }
 
@@ -222,11 +227,66 @@ impl AudioProvider for UserSoundProvider {
 
     fn play(&self, sound_name: &str) -> Result<(), String> {
         if !self.sounds.contains(&sound_name.to_string()) {
-            return Err(format!("Sound not found: {}", sound_name));
+            let err_msg = format!("❌ Sound '{}' not found in user sounds. Available: {:?}", sound_name, self.sounds);
+            warn!("{}", err_msg);
+            return Err(err_msg);
         }
 
-        info!("🔊 Playing user sound: {}", sound_name);
-        // TODO: Implement actual playback
+        // Find the sound file
+        let sound_file = std::fs::read_dir(&self.sound_dir)
+            .map_err(|e| format!("Failed to read sound directory: {}", e))?
+            .filter_map(|entry| entry.ok())
+            .find(|entry| {
+                entry.path().file_stem()
+                    .and_then(|s| s.to_str())
+                    .map(|s| s == sound_name)
+                    .unwrap_or(false)
+            })
+            .ok_or_else(|| format!("Sound file not found: {}", sound_name))?;
+
+        let sound_path = sound_file.path();
+        info!("🔊 Playing user sound: {} from {:?}", sound_name, sound_path);
+
+        // Try to play with system audio players
+        let sound_path_clone = sound_path.clone();
+        std::thread::spawn(move || {
+            let players = if cfg!(target_os = "linux") {
+                vec!["mpv", "paplay", "aplay", "ffplay", "vlc"]
+            } else if cfg!(target_os = "macos") {
+                vec!["afplay", "mpv", "ffplay"]
+            } else if cfg!(target_os = "windows") {
+                vec!["powershell"]
+            } else {
+                vec![]
+            };
+
+            let mut success = false;
+            for player in &players {
+                let result = if *player == "powershell" {
+                    Command::new(player)
+                        .args(&["-c", &format!("(New-Object Media.SoundPlayer '{}')).PlaySync()", sound_path_clone.display())])
+                        .output()
+                } else {
+                    Command::new(player)
+                        .arg(&sound_path_clone)
+                        .output()
+                };
+
+                if result.is_ok() {
+                    info!("✅ Successfully played user sound with {}: {:?}", player, sound_path_clone);
+                    success = true;
+                    break;
+                }
+            }
+
+            if !success {
+                error!("❌ AUDIO PLAYBACK FAILED: No working audio player found!");
+                error!("❌ Tried: {:?}", players);
+                error!("❌ A blind user would NOT know the sound failed!");
+                warn!("💡 Install: mpv (recommended) or paplay or aplay");
+            }
+        });
+
         Ok(())
     }
 
@@ -334,6 +394,7 @@ impl AudioProvider for ToadstoolAudioProvider {
 pub struct AudioSystem {
     providers: Vec<Box<dyn AudioProvider>>,
     current_provider: usize,
+    status_reporter: Option<Arc<StatusReporter>>,
 }
 
 impl AudioSystem {
@@ -361,7 +422,45 @@ impl AudioSystem {
         Self {
             providers,
             current_provider: 0,
+            status_reporter: None,
         }
+    }
+
+    /// Set status reporter for AI observability
+    pub fn set_status_reporter(&mut self, reporter: Arc<StatusReporter>) {
+        info!("🔊 AudioSystem: StatusReporter connected for AI observability");
+        
+        // Report initial audio system status
+        let provider_info: Vec<AudioProviderInfo> = self.providers.iter().map(|p| AudioProviderInfo {
+            name: p.name().to_string(),
+            available: p.is_available(),
+            sounds_count: p.available_sounds().len(),
+            description: p.description().to_string(),
+        }).collect();
+        
+        let system_players = Self::detect_system_players();
+        
+        reporter.update_audio_system(
+            self.providers[self.current_provider].name().to_string(),
+            provider_info,
+            system_players
+        );
+        
+        self.status_reporter = Some(reporter);
+    }
+
+    /// Detect available system audio players
+    fn detect_system_players() -> Vec<String> {
+        let candidates = vec!["mpv", "paplay", "aplay", "ffplay", "vlc", "afplay"];
+        let mut available = Vec::new();
+        
+        for player in candidates {
+            if Command::new("which").arg(player).output().map(|o| o.status.success()).unwrap_or(false) {
+                available.push(player.to_string());
+            }
+        }
+        
+        available
     }
 
     pub fn get_providers(&self) -> Vec<(&str, bool, &str)> {
@@ -382,11 +481,76 @@ impl AudioSystem {
     }
 
     pub fn play(&self, sound_name: &str) -> Result<(), String> {
+        info!("🎵 AudioSystem::play('{}') called", sound_name);
+        info!("📊 Current provider: {} (index {})", 
+              self.providers[self.current_provider].name(), 
+              self.current_provider);
+        
+        // Try current provider first
         let provider = &self.providers[self.current_provider];
+        let provider_name = provider.name().to_string();
+        
         if !provider.is_available() {
-            return Err(format!("Provider '{}' not available", provider.name()));
+            warn!("❌ Current provider '{}' is NOT available!", provider_name);
+            
+            // Try to find an available provider with this sound
+            for (idx, prov) in self.providers.iter().enumerate() {
+                if prov.is_available() && prov.available_sounds().contains(&sound_name.to_string()) {
+                    info!("✅ Found alternative provider: {} (index {})", prov.name(), idx);
+                    let alt_provider_name = prov.name().to_string();
+                    match prov.play(sound_name) {
+                        Ok(()) => {
+                            info!("✅ Successfully played '{}' with {}", sound_name, alt_provider_name);
+                            
+                            // Report success to status reporter
+                            if let Some(reporter) = &self.status_reporter {
+                                reporter.report_audio_event(sound_name, &alt_provider_name, true, None);
+                            }
+                            
+                            return Ok(());
+                        }
+                        Err(e) => {
+                            warn!("❌ Failed to play with {}: {}", alt_provider_name, e);
+                            continue;
+                        }
+                    }
+                }
+            }
+            
+            let err_msg = format!("❌ NO PROVIDER CAN PLAY '{}' - Sound will NOT be heard!", sound_name);
+            error!("{}", err_msg);
+            
+            // Report failure to status reporter
+            if let Some(reporter) = &self.status_reporter {
+                reporter.report_audio_event(sound_name, &provider_name, false, Some(err_msg.clone()));
+            }
+            
+            return Err(err_msg);
         }
-        provider.play(sound_name)
+        
+        // Try to play with current provider
+        match provider.play(sound_name) {
+            Ok(()) => {
+                info!("✅ play() returned Ok for '{}' with {}", sound_name, provider_name);
+                
+                // Report success to status reporter
+                if let Some(reporter) = &self.status_reporter {
+                    reporter.report_audio_event(sound_name, &provider_name, true, None);
+                }
+                
+                Ok(())
+            }
+            Err(e) => {
+                error!("❌ play() returned Err for '{}': {}", sound_name, e);
+                
+                // Report failure to status reporter
+                if let Some(reporter) = &self.status_reporter {
+                    reporter.report_audio_event(sound_name, &provider_name, false, Some(e.clone()));
+                }
+                
+                Err(e)
+            }
+        }
     }
 
     pub fn available_sounds(&self) -> Vec<String> {
@@ -395,6 +559,49 @@ impl AudioSystem {
 
     pub fn current_provider_name(&self) -> &str {
         self.providers[self.current_provider].name()
+    }
+    
+    /// Play a continuous tone (for data stream sonification)
+    /// frequency: Hz (e.g., 440.0 for A4)
+    /// duration: seconds
+    /// volume: 0.0-1.0
+    /// waveform: sine, square, etc.
+    pub fn play_tone(&self, frequency: f64, duration: f64, volume: f32, waveform: crate::audio_pure_rust::Waveform) -> Result<(), String> {
+        use crate::audio_pure_rust::generate_tone;
+        
+        // Generate tone samples (convert f64 to f32)
+        let samples = generate_tone(duration as f32, frequency as f32, waveform, volume);
+        
+        // Play via system player
+        play_samples(&samples, 44100)
+    }
+    
+    /// Play multiple tones simultaneously (polyphonic)
+    /// Each tuple: (frequency, volume, waveform)
+    pub fn play_polyphonic(&self, tones: &[(f64, f32, crate::audio_pure_rust::Waveform)], duration: f64) -> Result<(), String> {
+        use crate::audio_pure_rust::generate_tone;
+        
+        if tones.is_empty() {
+            return Ok(());
+        }
+        
+        // Generate first tone (convert f64 to f32)
+        let mut mixed = generate_tone(duration as f32, tones[0].0 as f32, tones[0].2, tones[0].1);
+        
+        // Mix in additional tones
+        for &(frequency, volume, waveform) in &tones[1..] {
+            let tone = generate_tone(duration as f32, frequency as f32, waveform, volume);
+            
+            // Mix by averaging (simple approach)
+            for (i, sample) in tone.iter().enumerate() {
+                if i < mixed.len() {
+                    mixed[i] = (mixed[i] + sample) / 2.0;
+                }
+            }
+        }
+        
+        // Play mixed audio
+        play_samples(&mixed, 44100)
     }
 }
 

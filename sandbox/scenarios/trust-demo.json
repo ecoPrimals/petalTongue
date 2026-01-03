@@ -1,0 +1,165 @@
+{
+  "name": "Trust Demonstration",
+  "description": "Showcase trust levels and family relationships",
+  "primals": [
+    {
+      "id": "beardog-master",
+      "name": "BearDog Master (Security)",
+      "primal_type": "Security",
+      "endpoint": "http://localhost:9000",
+      "capabilities": [
+        "authentication",
+        "authorization",
+        "encryption",
+        "trust_evaluation"
+      ],
+      "health": "Healthy",
+      "last_seen": 1735948800,
+      "trust_level": 3,
+      "family_id": "beardog-lineage-alpha"
+    },
+    {
+      "id": "songbird-orchestrator",
+      "name": "Songbird (Discovery)",
+      "primal_type": "Orchestration",
+      "endpoint": "http://localhost:8080",
+      "capabilities": [
+        "service_discovery",
+        "capability_matching",
+        "mdns_broadcast"
+      ],
+      "health": "Healthy",
+      "last_seen": 1735948800,
+      "trust_level": 3,
+      "family_id": "songbird-lineage-primary"
+    },
+    {
+      "id": "toadstool-compute-1",
+      "name": "ToadStool Compute 1",
+      "primal_type": "Compute",
+      "endpoint": "http://localhost:7000",
+      "capabilities": [
+        "container_runtime",
+        "workload_execution"
+      ],
+      "health": "Healthy",
+      "last_seen": 1735948800,
+      "trust_level": 2,
+      "family_id": "toadstool-lineage-gamma"
+    },
+    {
+      "id": "toadstool-compute-2",
+      "name": "ToadStool Compute 2",
+      "primal_type": "Compute",
+      "endpoint": "http://localhost:7001",
+      "capabilities": [
+        "container_runtime",
+        "gpu_acceleration"
+      ],
+      "health": "Warning",
+      "last_seen": 1735948700,
+      "trust_level": 2,
+      "family_id": "toadstool-lineage-gamma"
+    },
+    {
+      "id": "nestgate-storage",
+      "name": "NestGate Storage",
+      "primal_type": "Storage",
+      "endpoint": "http://localhost:6000",
+      "capabilities": [
+        "permanent_storage",
+        "content_addressing",
+        "attribution"
+      ],
+      "health": "Healthy",
+      "last_seen": 1735948800,
+      "trust_level": 1,
+      "family_id": "nestgate-lineage-beta"
+    },
+    {
+      "id": "squirrel-ai",
+      "name": "Squirrel (AI Planning)",
+      "primal_type": "AI",
+      "endpoint": "http://localhost:5000",
+      "capabilities": [
+        "intent_parsing",
+        "task_planning",
+        "reasoning"
+      ],
+      "health": "Healthy",
+      "last_seen": 1735948800,
+      "trust_level": 1,
+      "family_id": "squirrel-lineage-delta"
+    },
+    {
+      "id": "untrusted-node",
+      "name": "Untrusted Test Node",
+      "primal_type": "Test",
+      "endpoint": "http://localhost:4000",
+      "capabilities": [
+        "testing"
+      ],
+      "health": "Critical",
+      "last_seen": 1735948200,
+      "trust_level": 0,
+      "family_id": null
+    }
+  ],
+  "topology": [
+    {
+      "from": "songbird-orchestrator",
+      "to": "beardog-master",
+      "edge_type": "secured_by",
+      "label": "Trust Verification"
+    },
+    {
+      "from": "songbird-orchestrator",
+      "to": "toadstool-compute-1",
+      "edge_type": "discovers",
+      "label": null
+    },
+    {
+      "from": "songbird-orchestrator",
+      "to": "toadstool-compute-2",
+      "edge_type": "discovers",
+      "label": null
+    },
+    {
+      "from": "toadstool-compute-1",
+      "to": "nestgate-storage",
+      "edge_type": "stores_to",
+      "label": "Data Storage"
+    },
+    {
+      "from": "toadstool-compute-2",
+      "to": "nestgate-storage",
+      "edge_type": "stores_to",
+      "label": "GPU Results"
+    },
+    {
+      "from": "squirrel-ai",
+      "to": "songbird-orchestrator",
+      "edge_type": "queries",
+      "label": "Service Lookup"
+    },
+    {
+      "from": "squirrel-ai",
+      "to": "toadstool-compute-1",
+      "edge_type": "schedules",
+      "label": "Task Execution"
+    },
+    {
+      "from": "beardog-master",
+      "to": "toadstool-compute-1",
+      "edge_type": "authorizes",
+      "label": "Access Control"
+    },
+    {
+      "from": "beardog-master",
+      "to": "nestgate-storage",
+      "edge_type": "authorizes",
+      "label": "Storage Access"
+    }
+  ]
+}
+

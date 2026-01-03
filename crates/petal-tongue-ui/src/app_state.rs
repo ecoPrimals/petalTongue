@@ -4,6 +4,7 @@
 //! Separated from behavior (methods) for clarity and testability.
 
 use crate::accessibility_panel::AccessibilityPanel;
+use crate::audio_providers::AudioSystem;
 use crate::keyboard_shortcuts::KeyboardShortcuts;
 use crate::system_dashboard::SystemDashboard;
 use crate::tool_integration::ToolManager;
@@ -85,6 +86,10 @@ pub struct PetalTongueApp {
     // ===== System Monitoring =====
     /// Live system dashboard (CPU, memory, etc.)
     pub(crate) system_dashboard: SystemDashboard,
+    
+    // ===== Audio System =====
+    /// Audio system for multimodal output (UI sounds + data sonification)
+    pub(crate) audio_system: AudioSystem,
 
     // ===== Keyboard Navigation =====
     /// Keyboard shortcuts system
