@@ -1,5 +1,6 @@
 //! Core types for petalTongue visualization system
 
+use crate::property::Properties;
 use serde::{Deserialize, Serialize};
 
 /// Information about a discovered primal
@@ -19,16 +20,45 @@ pub struct PrimalInfo {
     pub health: PrimalHealthStatus,
     /// Last time this primal was seen (Unix timestamp)
     pub last_seen: u64,
+    
+    // === UNIVERSAL PROPERTIES (ecosystem-agnostic) ===
+    /// Generic properties for ecosystem-specific data
+    /// 
+    /// This field holds all ecosystem-specific data in a generic format.
+    /// Adapters interpret these properties at runtime to provide rich UI.
+    /// 
+    /// Examples:
+    /// - "trust_level": PropertyValue::Number(2.0)
+    /// - "family_id": PropertyValue::String("family-abc")
+    /// - "dna": PropertyValue::String("ACTG...")
+    #[serde(default)]
+    pub properties: Properties,
+    
+    // === DEPRECATED FIELDS (kept temporarily for backward compatibility) ===
     /// Trust level (0-3: None, Limited, Elevated, Full)
+    /// 
+    /// DEPRECATED: Use properties["trust_level"] instead
+    /// This field is kept temporarily for backward compatibility and will be removed
+    /// once all data sources migrate to the properties field.
+    #[deprecated(note = "Use properties field instead - this will be removed in a future version")]
     #[serde(default)]
     pub trust_level: Option<u8>,
+    
     /// Family ID (genetic lineage)
+    /// 
+    /// DEPRECATED: Use properties["family_id"] instead
+    /// This field is kept temporarily for backward compatibility and will be removed
+    /// once all data sources migrate to the properties field.
+    #[deprecated(note = "Use properties field instead - this will be removed in a future version")]
     #[serde(default)]
     pub family_id: Option<String>,
 }
 
 impl PrimalInfo {
-    /// Create a new PrimalInfo without trust data (for basic construction)
+    /// Create a new PrimalInfo with basic information
+    /// 
+    /// For ecosystem-specific data (trust, family, etc.), use the `properties` field
+    /// or the deprecated `with_trust` method for backward compatibility.
     #[must_use]
     pub fn new(
         id: impl Into<String>,
@@ -47,16 +77,60 @@ impl PrimalInfo {
             capabilities,
             health,
             last_seen,
+            properties: Properties::new(),
+            #[allow(deprecated)]
             trust_level: None,
+            #[allow(deprecated)]
             family_id: None,
         }
     }
 
+    /// Migrate deprecated fields to properties
+    ///
+    /// This method ensures that trust_level and family_id from the deprecated fields
+    /// are copied into the properties field for adapter-based rendering.
+    /// 
+    /// Call this after deserializing from JSON to ensure backward compatibility.
+    #[allow(deprecated)]
+    pub fn migrate_deprecated_fields(&mut self) {
+        use crate::property::PropertyValue;
+        
+        // Migrate trust_level if present and not already in properties
+        if let Some(trust) = self.trust_level {
+            if !self.properties.contains_key("trust_level") {
+                self.properties.insert("trust_level".to_string(), PropertyValue::Number(trust as f64));
+            }
+        }
+        
+        // Migrate family_id if present and not already in properties
+        if let Some(ref family) = self.family_id {
+            if !self.properties.contains_key("family_id") {
+                self.properties.insert("family_id".to_string(), PropertyValue::String(family.clone()));
+            }
+        }
+    }
+
     /// Add trust information to this primal
+    /// 
+    /// DEPRECATED: Populate the `properties` field directly instead:
+    /// ```ignore
+    /// info.properties.insert("trust_level".to_string(), PropertyValue::Number(2.0));
+    /// info.properties.insert("family_id".to_string(), PropertyValue::String("family-abc".to_string()));
+    /// ```
+    #[deprecated(note = "Use properties field directly instead")]
     #[must_use]
+    #[allow(deprecated)]
     pub fn with_trust(mut self, trust_level: u8, family_id: Option<String>) -> Self {
         self.trust_level = Some(trust_level);
-        self.family_id = family_id;
+        self.family_id = family_id.clone();
+        
+        // Also populate properties for forward compatibility
+        use crate::property::PropertyValue;
+        self.properties.insert("trust_level".to_string(), PropertyValue::Number(trust_level as f64));
+        if let Some(fid) = family_id {
+            self.properties.insert("family_id".to_string(), PropertyValue::String(fid));
+        }
+        
         self
     }
 }

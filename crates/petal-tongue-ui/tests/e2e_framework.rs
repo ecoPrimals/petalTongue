@@ -169,6 +169,8 @@ impl E2ETestRunner {
                 endpoint: "http://test:8080".to_string(),
                 capabilities: vec!["test".to_string()],
                 health: PrimalHealthStatus::Healthy,
+            trust_level: None,
+            family_id: None,
                 last_seen: 0,
             });
             steps_completed += 1;
@@ -228,6 +230,8 @@ impl E2ETestRunner {
                     endpoint: "http://test:8080".to_string(),
                     capabilities: vec![],
                     health: PrimalHealthStatus::Healthy,
+            trust_level: None,
+            family_id: None,
                     last_seen: 0,
                 });
             }
@@ -291,6 +295,8 @@ impl E2ETestRunner {
                 endpoint: "http://test:8080".to_string(),
                 capabilities: vec![],
                 health: PrimalHealthStatus::Healthy,
+            trust_level: None,
+            family_id: None,
                 last_seen: 0,
             });
             graph.add_node(PrimalInfo {
@@ -300,6 +306,8 @@ impl E2ETestRunner {
                 endpoint: "http://test:8081".to_string(),
                 capabilities: vec![],
                 health: PrimalHealthStatus::Healthy,
+            trust_level: None,
+            family_id: None,
                 last_seen: 0,
             });
             steps_completed += 1;

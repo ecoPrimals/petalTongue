@@ -2,7 +2,7 @@
 
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 use async_trait::async_trait;
-use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
+use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, Properties, PropertyValue, TopologyEdge};
 
 /// Mock provider for development and testing
 ///
@@ -27,6 +27,18 @@ impl VisualizationDataProvider for MockVisualizationProvider {
     async fn get_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
         let now = chrono::Utc::now().timestamp() as u64;
         
+        // Create primals using modern properties approach
+        let mut beardog_props = Properties::new();
+        beardog_props.insert("trust_level".to_string(), PropertyValue::Number(3.0));
+        beardog_props.insert("family_id".to_string(), PropertyValue::String("mock-family".to_string()));
+        
+        let mut songbird_props = Properties::new();
+        songbird_props.insert("trust_level".to_string(), PropertyValue::Number(2.0));
+        songbird_props.insert("family_id".to_string(), PropertyValue::String("mock-family".to_string()));
+        
+        let mut toadstool_props = Properties::new();
+        toadstool_props.insert("trust_level".to_string(), PropertyValue::Number(1.0));
+        
         Ok(vec![
             PrimalInfo {
                 id: "mock-beardog-1".to_string(),
@@ -39,7 +51,10 @@ impl VisualizationDataProvider for MockVisualizationProvider {
                 ],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: now,
-                trust_level: Some(3),
+                properties: beardog_props,
+                #[allow(deprecated)]
+                trust_level: Some(3), // Keep for backward compatibility
+                #[allow(deprecated)]
                 family_id: Some("mock-family".to_string()),
             },
             PrimalInfo {
@@ -53,7 +68,10 @@ impl VisualizationDataProvider for MockVisualizationProvider {
                 ],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: now,
+                properties: songbird_props,
+                #[allow(deprecated)]
                 trust_level: Some(2),
+                #[allow(deprecated)]
                 family_id: Some("mock-family".to_string()),
             },
             PrimalInfo {
@@ -67,7 +85,10 @@ impl VisualizationDataProvider for MockVisualizationProvider {
                 ],
                 health: PrimalHealthStatus::Warning,
                 last_seen: now,
+                properties: toadstool_props,
+                #[allow(deprecated)]
                 trust_level: Some(1),
+                #[allow(deprecated)]
                 family_id: None,
             },
         ])
@@ -92,7 +113,7 @@ impl VisualizationDataProvider for MockVisualizationProvider {
 
     fn get_metadata(&self) -> ProviderMetadata {
         ProviderMetadata {
-            name: "MockProvider".to_string(),
+            name: "Mock Provider".to_string(), // Fixed: was "MockProvider", now "Mock Provider" to match test
             endpoint: "mock://local".to_string(),
             protocol: "mock".to_string(),
             capabilities: vec![],

@@ -10,7 +10,7 @@
       "capabilities": [
         "authentication"
       ],
-      "health": "critical",
+      "health": "Critical",
       "last_seen": 1735945200
     },
     {
@@ -41,7 +41,7 @@
       "primal_type": "Storage",
       "endpoint": "http://localhost:6000",
       "capabilities": [],
-      "health": "critical",
+      "health": "Critical",
       "last_seen": 1735944000
     },
     {
@@ -75,7 +75,7 @@
         "visual_2d",
         "audio_sonification"
       ],
-      "health": "healthy",
+      "health": "Healthy",
       "last_seen": 1735948800
     },
     {
@@ -84,7 +84,7 @@
       "primal_type": "Unknown",
       "endpoint": "http://192.0.2.unknown:1337",
       "capabilities": [],
-      "health": "critical",
+      "health": "Critical",
       "last_seen": 1735942000
     }
   ],

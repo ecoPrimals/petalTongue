@@ -6,14 +6,14 @@ use tokio;
 
 #[tokio::test]
 async fn test_client_creation() {
-    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS);
+    let _client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS);
     // Client created successfully
     assert!(true);
 }
 
 #[tokio::test]
 async fn test_client_with_mock_mode() {
-    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
+    let _client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
     // Mock mode enabled successfully
     assert!(true);
 }
@@ -56,27 +56,25 @@ async fn test_get_topology_mock() {
 
 #[tokio::test]
 async fn test_discover_primals_with_unreachable_endpoint() {
-    // Use unreachable IP to test fallback
+    // Use unreachable IP to test error handling (no automatic fallback in production)
     let client = BiomeOSClient::new("http://test-unreachable:9999").with_mock_mode(false);
 
-    // Should fallback to mock when endpoint is unreachable
+    // Should return error when endpoint is unreachable (production mode)
     let result = client.discover_primals().await;
 
-    // Should succeed with fallback mock data
-    assert!(result.is_ok());
-    let primals = result.unwrap();
-    assert!(!primals.is_empty());
+    // Production mode returns error (no automatic fallback)
+    assert!(result.is_err(), "Production mode should return error for unreachable endpoint");
 }
 
 #[tokio::test]
 async fn test_get_topology_with_unreachable_endpoint() {
     let client = BiomeOSClient::new("http://test-unreachable:9999").with_mock_mode(false);
 
-    // Should fallback to mock when endpoint is unreachable
+    // Should return error when endpoint is unreachable (production mode)
     let result = client.get_topology().await;
 
-    // Should succeed with fallback mock data
-    assert!(result.is_ok());
+    // Production mode returns error (no automatic fallback)
+    assert!(result.is_err(), "Production mode should return error for unreachable endpoint");
 }
 
 #[tokio::test]
@@ -157,7 +155,7 @@ async fn test_concurrent_requests() {
 async fn test_client_timeout_handling() {
     let client = BiomeOSClient::new("http://test-timeout:1").with_mock_mode(false);
 
-    // Should timeout and fallback to mock
+    // Should timeout and return error (no automatic fallback in production)
     let result = client.discover_primals().await;
-    assert!(result.is_ok(), "Should fallback to mock on timeout");
+    assert!(result.is_err(), "Production mode should return error on timeout");
 }

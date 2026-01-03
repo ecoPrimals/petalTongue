@@ -182,10 +182,22 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_discover_returns_at_least_mock() {
-        // Even with no providers, should return mock
-        let providers = discover_visualization_providers().await.unwrap();
-        assert!(!providers.is_empty(), "Should always have at least mock provider");
+    async fn test_discover_returns_error_without_config() {
+        // Production mode requires explicit configuration - no automatic fallback
+        let result = discover_visualization_providers().await;
+        assert!(result.is_err(), "Should return error when no providers configured (production mode)");
+    }
+
+    #[tokio::test]
+    async fn test_discover_with_mock_mode() {
+        // Mock mode works when explicitly enabled
+        std::env::set_var("PETALTONGUE_MOCK_MODE", "true");
+        let result = discover_visualization_providers().await;
+        std::env::remove_var("PETALTONGUE_MOCK_MODE");
+        
+        assert!(result.is_ok(), "Mock mode should work when explicitly enabled");
+        let providers = result.unwrap();
+        assert!(!providers.is_empty(), "Mock mode should return providers");
     }
 
     #[tokio::test]

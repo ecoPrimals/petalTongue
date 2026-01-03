@@ -8,7 +8,7 @@
       "primal_type": "Security",
       "endpoint": "http://localhost:8001",
       "capabilities": ["authentication", "authorization"],
-      "health": "healthy",
+      "health": "Healthy",
       "last_seen": 1703376000
     },
     {
@@ -17,7 +17,7 @@
       "primal_type": "Security",
       "endpoint": "http://localhost:8011",
       "capabilities": ["authentication"],
-      "health": "warning",
+      "health": "Warning",
       "last_seen": 1703375900
     },
     {
@@ -26,7 +26,7 @@
       "primal_type": "Compute",
       "endpoint": "http://localhost:8002",
       "capabilities": ["container_runtime"],
-      "health": "critical",
+      "health": "Critical",
       "last_seen": 1703375800
     },
     {
@@ -35,7 +35,7 @@
       "primal_type": "Compute",
       "endpoint": "http://localhost:8012",
       "capabilities": ["container_runtime"],
-      "health": "healthy",
+      "health": "Healthy",
       "last_seen": 1703376000
     },
     {
@@ -44,7 +44,7 @@
       "primal_type": "Discovery",
       "endpoint": "http://localhost:8003",
       "capabilities": ["service_discovery"],
-      "health": "warning",
+      "health": "Warning",
       "last_seen": 1703375950
     },
     {
@@ -53,7 +53,7 @@
       "primal_type": "Storage",
       "endpoint": "http://localhost:8004",
       "capabilities": ["permanent_storage"],
-      "health": "healthy",
+      "health": "Healthy",
       "last_seen": 1703376000
     },
     {
@@ -62,7 +62,7 @@
       "primal_type": "Storage",
       "endpoint": "http://localhost:8014",
       "capabilities": ["permanent_storage"],
-      "health": "warning",
+      "health": "Warning",
       "last_seen": 1703375920
     },
     {
@@ -71,7 +71,7 @@
       "primal_type": "AI",
       "endpoint": "http://localhost:8005",
       "capabilities": ["intent_parsing"],
-      "health": "critical",
+      "health": "Critical",
       "last_seen": 1703375700
     },
     {
@@ -80,7 +80,7 @@
       "primal_type": "AI",
       "endpoint": "http://localhost:8015",
       "capabilities": ["intent_parsing"],
-      "health": "healthy",
+      "health": "Healthy",
       "last_seen": 1703376000
     },
     {
@@ -89,7 +89,7 @@
       "primal_type": "Orchestration",
       "endpoint": "http://localhost:3000",
       "capabilities": ["orchestration", "discovery_coordination"],
-      "health": "healthy",
+      "health": "Healthy",
       "last_seen": 1703376000
     }
   ],
