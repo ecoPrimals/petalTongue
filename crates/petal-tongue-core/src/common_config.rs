@@ -9,15 +9,15 @@ use serde::{Deserialize, Serialize};
 pub struct CommonConfig {
     /// Name of the primal instance
     pub name: String,
-    
+
     /// Host to bind to
     #[serde(default = "default_host")]
     pub host: String,
-    
+
     /// Port to bind to
     #[serde(default = "default_port")]
     pub port: u16,
-    
+
     /// Log level
     #[serde(default = "default_log_level")]
     pub log_level: String,
@@ -59,4 +59,3 @@ mod tests {
         assert_eq!(config.log_level, "info");
     }
 }
-

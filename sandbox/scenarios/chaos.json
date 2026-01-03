@@ -1,0 +1,136 @@
+{
+  "name": "Chaos Test Scenario",
+  "description": "Unstable ecosystem with failures, degraded services, and network issues",
+  "primals": [
+    {
+      "id": "beardog-failing",
+      "name": "BearDog (FAILING)",
+      "primal_type": "Security",
+      "endpoint": "http://localhost:9000",
+      "capabilities": [
+        "authentication"
+      ],
+      "health": "critical",
+      "last_seen": 1735945200
+    },
+    {
+      "id": "songbird-degraded",
+      "name": "Songbird (DEGRADED)",
+      "primal_type": "Orchestration",
+      "endpoint": "http://localhost:8080",
+      "capabilities": [
+        "service_discovery"
+      ],
+      "health": "degraded",
+      "last_seen": 1735948500
+    },
+    {
+      "id": "toadstool-overloaded",
+      "name": "ToadStool (OVERLOADED)",
+      "primal_type": "Compute",
+      "endpoint": "http://localhost:7000",
+      "capabilities": [
+        "container_runtime"
+      ],
+      "health": "degraded",
+      "last_seen": 1735948600
+    },
+    {
+      "id": "nestgate-offline",
+      "name": "NestGate (OFFLINE)",
+      "primal_type": "Storage",
+      "endpoint": "http://localhost:6000",
+      "capabilities": [],
+      "health": "critical",
+      "last_seen": 1735944000
+    },
+    {
+      "id": "squirrel-unstable",
+      "name": "Squirrel (UNSTABLE)",
+      "primal_type": "AI",
+      "endpoint": "http://localhost:5000",
+      "capabilities": [
+        "intent_parsing"
+      ],
+      "health": "unhealthy",
+      "last_seen": 1735948700
+    },
+    {
+      "id": "biomeos-recovering",
+      "name": "biomeOS (RECOVERING)",
+      "primal_type": "Orchestration",
+      "endpoint": "http://localhost:3000",
+      "capabilities": [
+        "ecosystem_coordination"
+      ],
+      "health": "degraded",
+      "last_seen": 1735948750
+    },
+    {
+      "id": "petaltongue-local",
+      "name": "petalTongue (Local - OK)",
+      "primal_type": "Visualization",
+      "endpoint": "self",
+      "capabilities": [
+        "visual_2d",
+        "audio_sonification"
+      ],
+      "health": "healthy",
+      "last_seen": 1735948800
+    },
+    {
+      "id": "unknown-rogue",
+      "name": "UNKNOWN (Rogue Node)",
+      "primal_type": "Unknown",
+      "endpoint": "http://192.168.1.unknown:1337",
+      "capabilities": [],
+      "health": "critical",
+      "last_seen": 1735942000
+    }
+  ],
+  "topology": [
+    {
+      "from": "petaltongue-local",
+      "to": "biomeos-recovering",
+      "edge_type": "attempts_connection",
+      "label": "Intermittent"
+    },
+    {
+      "from": "biomeos-recovering",
+      "to": "beardog-failing",
+      "edge_type": "failed_auth",
+      "label": "AUTH FAILURE"
+    },
+    {
+      "from": "biomeos-recovering",
+      "to": "songbird-degraded",
+      "edge_type": "slow_discovery",
+      "label": "High Latency"
+    },
+    {
+      "from": "songbird-degraded",
+      "to": "toadstool-overloaded",
+      "edge_type": "timeout",
+      "label": "TIMEOUT"
+    },
+    {
+      "from": "toadstool-overloaded",
+      "to": "nestgate-offline",
+      "edge_type": "connection_refused",
+      "label": "CONNECTION REFUSED"
+    },
+    {
+      "from": "squirrel-unstable",
+      "to": "songbird-degraded",
+      "edge_type": "retrying",
+      "label": "Retry Loop"
+    },
+    {
+      "from": "unknown-rogue",
+      "to": "beardog-failing",
+      "edge_type": "suspicious",
+      "label": "UNTRUSTED"
+    }
+  ]
+}
+

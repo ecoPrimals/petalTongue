@@ -1,0 +1,42 @@
+[package]
+name = "petal-tongue-discovery"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Core dependencies
+petal-tongue-core = { path = "../petal-tongue-core" }
+async-trait = "0.1"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1"
+thiserror = "1"
+
+# HTTP client
+reqwest = { version = "0.11", features = ["json"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Time
+chrono = "0.4"
+
+# Logging
+tracing = "0.1"
+
+# Low-level socket for multicast (Phase 1)
+socket2 = "0.5"
+
+# LRU cache for performance optimization (Phase 2)
+lru = "0.12"
+
+# mDNS discovery (optional feature)
+mdns-sd = { version = "0.11", optional = true }
+
+[features]
+default = []
+mdns = ["mdns-sd"]
+
+[dev-dependencies]
+tokio-test = "0.4"
+

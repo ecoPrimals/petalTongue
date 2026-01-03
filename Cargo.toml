@@ -6,6 +6,8 @@ members = [
     "crates/petal-tongue-animation",
     "crates/petal-tongue-telemetry",
     "crates/petal-tongue-api",
+    "crates/petal-tongue-discovery",
+    "crates/petal-tongue-entropy",
     "crates/petal-tongue-ui",
     # BingoCube is now a standalone tool at bingoCube/
     # (it has its own workspace with core, adapters, demos)

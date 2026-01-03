@@ -11,8 +11,8 @@ use std::sync::{Arc, RwLock};
 use std::time::Instant;
 
 // BingoCube tool integration
-use bingocube_adapters::audio::BingoCubeAudioRenderer;
 use bingocube_adapters::visual::BingoCubeVisualRenderer;
+// Audio adapter not used (audio handled by petalTongue audio system)
 use bingocube_core::{BingoCube, Config as BingoCubeConfig};
 
 /// Application state for petalTongue UI
@@ -66,8 +66,6 @@ pub struct AppState {
     pub bingocube: Option<BingoCube>,
     /// BingoCube visual renderer (adapter)
     pub bingocube_renderer: Option<BingoCubeVisualRenderer>,
-    /// BingoCube audio renderer (adapter)
-    pub bingocube_audio_renderer: Option<BingoCubeAudioRenderer>,
     /// BingoCube seed input
     pub bingocube_seed: String,
     /// BingoCube reveal parameter (0.0-1.0)
@@ -96,7 +94,7 @@ impl AppState {
     pub fn new() -> Self {
         // Use centralized configuration system - zero hardcoding
         let config = petal_tongue_core::PetalTongueConfig::default();
-        
+
         // Get BiomeOS URL from config (environment-driven)
         let biomeos_url = config.biomeos_url();
 
@@ -151,7 +149,6 @@ impl AppState {
             show_bingocube_panel: false,
             bingocube: None,
             bingocube_renderer: None,
-            bingocube_audio_renderer: None,
             bingocube_seed: String::new(),
             bingocube_x: 0.5,
             bingocube_config,
@@ -209,7 +206,7 @@ mod tests {
         // Note: We don't actually remove env vars in tests as it's unsafe
         // and affects other tests. Instead, we test that initialization
         // handles missing vars gracefully.
-        
+
         let state = AppState::new();
 
         // Client should be initialized
@@ -224,7 +221,7 @@ mod tests {
         // BingoCube should not be initialized by default
         assert!(state.bingocube.is_none());
         assert!(state.bingocube_renderer.is_none());
-        assert!(state.bingocube_audio_renderer.is_none());
+        assert!(state.bingocube_renderer.is_none());
         assert!(!state.show_bingocube_panel);
         assert!(!state.show_bingocube_config);
         assert!(!state.show_bingocube_audio);

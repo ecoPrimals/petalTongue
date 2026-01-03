@@ -32,7 +32,7 @@ pub mod capability_categories {
         "compute.python",
         "compute.execute",
     ];
-    
+
     /// Discovery/orchestration capabilities (Songbird-like)
     pub const DISCOVERY: &[&str] = &[
         "discovery.primals",
@@ -40,7 +40,7 @@ pub mod capability_categories {
         "orchestration.workflow",
         "orchestration.routing",
     ];
-    
+
     /// Storage capabilities (NestGate-like)
     pub const STORAGE: &[&str] = &[
         "storage.filesystem",
@@ -48,7 +48,7 @@ pub mod capability_categories {
         "storage.database",
         "storage.cache",
     ];
-    
+
     /// Security capabilities (BearDog-like)
     pub const SECURITY: &[&str] = &[
         "security.auth",
@@ -56,14 +56,9 @@ pub mod capability_categories {
         "security.encryption",
         "security.identity",
     ];
-    
+
     /// AI/ML capabilities (Squirrel-like)
-    pub const AI: &[&str] = &[
-        "ai.inference",
-        "ai.training",
-        "ai.nlp",
-        "ai.vision",
-    ];
+    pub const AI: &[&str] = &["ai.inference", "ai.training", "ai.nlp", "ai.vision"];
 }
 
 /// Primal capability queries
@@ -72,38 +67,38 @@ pub mod capability_categories {
 pub trait PrimalCapabilities {
     /// Check if primal has a specific capability
     fn has_capability(&self, capability: &str) -> bool;
-    
+
     /// Check if primal has any capability in a category
     fn has_any_capability(&self, capabilities: &[&str]) -> bool;
-    
+
     /// Check if primal provides compute capabilities
     fn is_compute_provider(&self) -> bool {
         self.has_any_capability(capability_categories::COMPUTE)
     }
-    
+
     /// Check if primal provides discovery capabilities
     fn is_discovery_provider(&self) -> bool {
         self.has_any_capability(capability_categories::DISCOVERY)
     }
-    
+
     /// Check if primal provides storage capabilities
     fn is_storage_provider(&self) -> bool {
         self.has_any_capability(capability_categories::STORAGE)
     }
-    
+
     /// Check if primal provides security capabilities
     fn is_security_provider(&self) -> bool {
         self.has_any_capability(capability_categories::SECURITY)
     }
-    
+
     /// Check if primal provides AI capabilities
     fn is_ai_provider(&self) -> bool {
         self.has_any_capability(capability_categories::AI)
     }
-    
+
     /// Get display name for primal type
     ///
-    /// Returns the primal_type field. **For display only, never for logic.**
+    /// Returns the `primal_type` field. **For display only, never for logic.**
     fn display_type(&self) -> &str;
 }
 
@@ -111,11 +106,11 @@ impl PrimalCapabilities for PrimalInfo {
     fn has_capability(&self, capability: &str) -> bool {
         self.capabilities.iter().any(|c| c == capability)
     }
-    
+
     fn has_any_capability(&self, capabilities: &[&str]) -> bool {
         capabilities.iter().any(|cap| self.has_capability(cap))
     }
-    
+
     fn display_type(&self) -> &str {
         &self.primal_type
     }
@@ -125,7 +120,7 @@ impl PrimalCapabilities for PrimalInfo {
 mod tests {
     use super::*;
     use crate::PrimalHealthStatus;
-    
+
     fn test_primal(capabilities: Vec<String>) -> PrimalInfo {
         PrimalInfo {
             id: "test".to_string(),
@@ -137,28 +132,28 @@ mod tests {
             last_seen: 0, // Unix timestamp
         }
     }
-    
+
     #[test]
     fn test_compute_detection() {
         let primal = test_primal(vec!["compute.container".to_string()]);
         assert!(primal.is_compute_provider());
         assert!(!primal.is_storage_provider());
     }
-    
+
     #[test]
     fn test_discovery_detection() {
         let primal = test_primal(vec!["discovery.primals".to_string()]);
         assert!(primal.is_discovery_provider());
         assert!(!primal.is_compute_provider());
     }
-    
+
     #[test]
     fn test_storage_detection() {
         let primal = test_primal(vec!["storage.filesystem".to_string()]);
         assert!(primal.is_storage_provider());
         assert!(!primal.is_discovery_provider());
     }
-    
+
     #[test]
     fn test_multiple_capabilities() {
         let primal = test_primal(vec![
@@ -168,7 +163,7 @@ mod tests {
         assert!(primal.is_compute_provider());
         assert!(primal.is_storage_provider());
     }
-    
+
     #[test]
     fn test_display_type_for_display_only() {
         let primal = test_primal(vec![]);
@@ -177,4 +172,3 @@ mod tests {
         // But never use it for logic decisions
     }
 }
-

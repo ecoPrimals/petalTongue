@@ -107,7 +107,8 @@ impl E2ETestRunner {
         let result = async {
             // Step 1: Create BiomeOS client
             let client =
-                BiomeOSClient::new(petal_tongue_core::test_fixtures::endpoints::MOCK_BIOMEOS).with_mock_mode(self.config.use_mock);
+                BiomeOSClient::new(petal_tongue_core::test_fixtures::endpoints::MOCK_BIOMEOS)
+                    .with_mock_mode(self.config.use_mock);
             steps_completed += 1;
 
             // Step 2: Discover primals
@@ -140,7 +141,10 @@ impl E2ETestRunner {
             name: test_name.to_string(),
             success: result.is_ok(),
             duration_ms,
-            error: result.err().map(|e| e.to_string()),
+            error: match &result {
+                Err(e) => Some(e.to_string()),
+                Ok(_) => None,
+            },
             steps_completed,
             total_steps,
         });
@@ -184,7 +188,7 @@ impl E2ETestRunner {
             }
             steps_completed += 1;
 
-            Ok(())
+            Ok::<(), Box<dyn std::error::Error>>(())
         }
         .await;
 
@@ -194,7 +198,10 @@ impl E2ETestRunner {
             name: test_name.to_string(),
             success: result.is_ok(),
             duration_ms,
-            error: result.err().map(|e| e.to_string()),
+            error: match &result {
+                Err(e) => Some(e.to_string()),
+                Ok(_) => None,
+            },
             steps_completed,
             total_steps,
         });
@@ -246,7 +253,7 @@ impl E2ETestRunner {
             }
             steps_completed += 1;
 
-            Ok(())
+            Ok::<(), Box<dyn std::error::Error>>(())
         }
         .await;
 
@@ -256,7 +263,10 @@ impl E2ETestRunner {
             name: test_name.to_string(),
             success: result.is_ok(),
             duration_ms,
-            error: result.err().map(|e| e.to_string()),
+            error: match &result {
+                Err(e) => Some(e.to_string()),
+                Ok(_) => None,
+            },
             steps_completed,
             total_steps,
         });
@@ -324,7 +334,7 @@ impl E2ETestRunner {
             }
             steps_completed += 1;
 
-            Ok(())
+            Ok::<(), Box<dyn std::error::Error>>(())
         }
         .await;
 
@@ -334,7 +344,10 @@ impl E2ETestRunner {
             name: test_name.to_string(),
             success: result.is_ok(),
             duration_ms,
-            error: result.err().map(|e| e.to_string()),
+            error: match &result {
+                Err(e) => Some(e.to_string()),
+                Ok(_) => None,
+            },
             steps_completed,
             total_steps,
         });
@@ -361,7 +374,7 @@ impl E2ETestRunner {
             }
             steps_completed += 1;
 
-            Ok(())
+            Ok::<(), Box<dyn std::error::Error>>(())
         }
         .await;
 
@@ -371,7 +384,10 @@ impl E2ETestRunner {
             name: test_name.to_string(),
             success: result.is_ok(),
             duration_ms,
-            error: result.err().map(|e| e.to_string()),
+            error: match &result {
+                Err(e) => Some(e.to_string()),
+                Ok(_) => None,
+            },
             steps_completed,
             total_steps,
         });
