@@ -23,11 +23,11 @@ pub mod error;
 #[cfg(test)]
 mod error_tests;
 pub mod graph_engine;
-pub mod instance;  // Instance management (Phase 1)
+pub mod instance; // Instance management (Phase 1)
 pub mod lifecycle;
 pub mod primal_types;
-pub mod property;  // Generic property system
-pub mod session;   // Session state persistence (Phase 2)
+pub mod property; // Generic property system
+pub mod session; // Session state persistence (Phase 2)
 pub mod types;
 #[cfg(test)]
 mod types_tests;

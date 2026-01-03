@@ -3,14 +3,14 @@
 //! Compact live system metrics always visible in the main UI
 //! Now with multimodal output (visual + audio + text)
 
-use crate::live_data::{LiveMetric, request_live_updates};
 use crate::accessibility::ColorPalette;
-use crate::multimodal_stream::{
-    CpuStream, MemoryStream, DataStream, MultiModalRenderer, SystemMetricRenderer,
-    AudioRepresentation, ModalityPreferences,
-};
 use crate::audio_providers::AudioSystem;
-use egui::{Context, Ui};
+use crate::live_data::{LiveMetric, request_live_updates};
+use crate::multimodal_stream::{
+    CpuStream, DataStream, MemoryStream, ModalityPreferences,
+    MultiModalRenderer, SystemMetricRenderer,
+};
+use egui::Ui;
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 use sysinfo::System;
@@ -25,13 +25,13 @@ pub struct SystemDashboard {
     cpu_history: VecDeque<f32>, // Mini sparkline
     mem_history: VecDeque<f32>,
     max_history: usize,
-    
+
     // Multimodal streams
     cpu_stream: CpuStream,
     memory_stream: MemoryStream,
     renderer: SystemMetricRenderer,
     modality_prefs: ModalityPreferences,
-    
+
     // Audio output
     last_audio_update: Instant,
     audio_update_interval: Duration,
@@ -41,7 +41,7 @@ impl Default for SystemDashboard {
     fn default() -> Self {
         let mut system = System::new_all();
         system.refresh_all();
-        
+
         let total_memory = system.total_memory();
 
         Self {
@@ -68,22 +68,23 @@ impl SystemDashboard {
     pub fn set_audio_enabled(&mut self, enabled: bool) {
         self.modality_prefs.audio_enabled = enabled;
     }
-    
+
     /// Get audio enabled state
+    #[must_use] 
     pub fn is_audio_enabled(&self) -> bool {
         self.modality_prefs.audio_enabled
     }
-    
+
     /// Set audio volume
     pub fn set_audio_volume(&mut self, volume: f32) {
         self.modality_prefs.audio_volume = volume.clamp(0.0, 1.0);
     }
-    
+
     /// Get modality preferences (for UI controls)
     pub fn modality_prefs_mut(&mut self) -> &mut ModalityPreferences {
         &mut self.modality_prefs
     }
-    
+
     /// Refresh system data and update multimodal streams
     fn refresh(&mut self, audio_system: Option<&AudioSystem>) {
         let now = Instant::now();
@@ -103,9 +104,9 @@ impl SystemDashboard {
             if self.cpu_history.len() > self.max_history {
                 self.cpu_history.pop_front();
             }
-            
+
             // Update CPU stream (normalized 0-1)
-            self.cpu_stream.push_value((cpu_usage / 100.0) as f64);
+            self.cpu_stream.push_value(f64::from(cpu_usage / 100.0));
 
             // Calculate memory usage
             let used_mem = self.system.used_memory();
@@ -120,31 +121,31 @@ impl SystemDashboard {
             if self.mem_history.len() > self.max_history {
                 self.mem_history.pop_front();
             }
-            
+
             // Update Memory stream
             self.memory_stream.push_value(used_mem);
 
             // Update live metrics
-            self.cpu_metric.update(format!("{:.1}", cpu_usage), Some("%".to_string()));
-            self.memory_metric.update(format!("{:.1}", mem_percent), Some("%".to_string()));
+            self.cpu_metric
+                .update(format!("{cpu_usage:.1}"), Some("%".to_string()));
+            self.memory_metric
+                .update(format!("{mem_percent:.1}"), Some("%".to_string()));
         }
-        
+
         // Generate audio if enabled and interval passed
-        if self.modality_prefs.audio_enabled {
-            if let Some(audio_system) = audio_system {
-                if now.duration_since(self.last_audio_update) >= self.audio_update_interval {
+        if self.modality_prefs.audio_enabled
+            && let Some(audio_system) = audio_system
+                && now.duration_since(self.last_audio_update) >= self.audio_update_interval {
                     self.generate_audio(audio_system);
                     self.last_audio_update = now;
                 }
-            }
-        }
     }
-    
+
     /// Generate polyphonic audio for all streams
     fn generate_audio(&self, audio_system: &AudioSystem) {
         // Collect audio representations for all streams
         let mut tones = Vec::new();
-        
+
         // CPU stream
         if let Some(cpu_audio) = self.renderer.render_audio(&self.cpu_stream) {
             tones.push((
@@ -153,7 +154,7 @@ impl SystemDashboard {
                 cpu_audio.waveform,
             ));
         }
-        
+
         // Memory stream
         if let Some(mem_audio) = self.renderer.render_audio(&self.memory_stream) {
             tones.push((
@@ -162,14 +163,15 @@ impl SystemDashboard {
                 mem_audio.waveform,
             ));
         }
-        
+
         // Play polyphonic audio (CPU + Memory simultaneously)
         if !tones.is_empty() {
             // Short duration (200ms) to update frequently
             let duration = self.audio_update_interval.as_secs_f64();
             if let Err(e) = audio_system.play_polyphonic(&tones, duration) {
                 // Don't spam errors - only log occasionally
-                static LAST_ERROR: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+                static LAST_ERROR: std::sync::atomic::AtomicU64 =
+                    std::sync::atomic::AtomicU64::new(0);
                 let now = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
@@ -184,12 +186,18 @@ impl SystemDashboard {
     }
 
     /// Render compact dashboard (for sidebar)
-    pub fn render_compact(&mut self, ui: &mut Ui, palette: &ColorPalette, font_scale: f32, audio_system: Option<&AudioSystem>) {
+    pub fn render_compact(
+        &mut self,
+        ui: &mut Ui,
+        palette: &ColorPalette,
+        font_scale: f32,
+        audio_system: Option<&AudioSystem>,
+    ) {
         self.refresh(audio_system);
 
         ui.group(|ui| {
             ui.set_width(ui.available_width());
-            
+
             ui.label(
                 egui::RichText::new("📊 System")
                     .size(14.0 * font_scale)
@@ -220,7 +228,7 @@ impl SystemDashboard {
             return;
         }
 
-        use egui::{Color32, Pos2, Stroke};
+        use egui::{Pos2, Stroke};
 
         let height = 20.0;
         let (response, painter) = ui.allocate_painter(
@@ -274,7 +282,13 @@ impl SystemDashboard {
     }
 
     /// Render full dashboard (for right panel)
-    pub fn render_full(&mut self, ui: &mut Ui, palette: &ColorPalette, font_scale: f32, audio_system: Option<&AudioSystem>) {
+    pub fn render_full(
+        &mut self,
+        ui: &mut Ui,
+        palette: &ColorPalette,
+        font_scale: f32,
+        audio_system: Option<&AudioSystem>,
+    ) {
         self.refresh(audio_system);
 
         ui.heading(
@@ -300,7 +314,7 @@ impl SystemDashboard {
             // Progress bar
             ui.add(
                 egui::ProgressBar::new(cpu_usage / 100.0)
-                    .text(format!("{:.1}%", cpu_usage))
+                    .text(format!("{cpu_usage:.1}%"))
                     .fill(if cpu_usage > 90.0 {
                         palette.error
                     } else if cpu_usage > 70.0 {
@@ -337,7 +351,7 @@ impl SystemDashboard {
 
             ui.add(
                 egui::ProgressBar::new(percent as f32 / 100.0)
-                    .text(format!("{:.1}%", percent))
+                    .text(format!("{percent:.1}%"))
                     .fill(if percent > 90.0 {
                         palette.error
                     } else if percent > 70.0 {
@@ -369,14 +383,13 @@ mod tests {
     fn test_refresh_updates_metrics() {
         let mut dashboard = SystemDashboard::default();
         let initial_count = dashboard.cpu_history.len();
-        
+
         // Wait a bit to ensure refresh interval passes
         std::thread::sleep(Duration::from_millis(1100));
-        
+
         dashboard.refresh(None); // No audio system in tests
-        
+
         // Should have added data
         assert!(dashboard.cpu_history.len() >= initial_count);
     }
 }
-

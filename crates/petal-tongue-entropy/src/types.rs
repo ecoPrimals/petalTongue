@@ -454,4 +454,3 @@ mod tests {
         assert!(audio_data.samples.iter().all(|&x| x == 0.0));
     }
 }
-

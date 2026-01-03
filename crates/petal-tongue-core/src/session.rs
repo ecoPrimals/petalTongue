@@ -40,7 +40,7 @@
 //! ```
 
 use crate::instance::InstanceId;
-use crate::{LayoutAlgorithm, PrimalHealthStatus, PrimalInfo, TopologyEdge};
+use crate::{LayoutAlgorithm, PrimalInfo, TopologyEdge};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -211,24 +211,21 @@ impl SessionState {
     pub fn save(&self, path: &Path) -> Result<(), SessionError> {
         // Ensure parent directory exists
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent).map_err(|e| {
-                SessionError::IoError(format!("Failed to create directory: {}", e))
-            })?;
+            fs::create_dir_all(parent)
+                .map_err(|e| SessionError::IoError(format!("Failed to create directory: {e}")))?;
         }
 
         // Serialize to RON with pretty formatting
         let contents = ron::ser::to_string_pretty(self, ron::ser::PrettyConfig::default())
-            .map_err(|e| SessionError::SerializeError(format!("Failed to serialize: {}", e)))?;
+            .map_err(|e| SessionError::SerializeError(format!("Failed to serialize: {e}")))?;
 
         // Atomic write: write to temp file, then rename
         let temp_path = path.with_extension("ron.tmp");
-        fs::write(&temp_path, contents).map_err(|e| {
-            SessionError::IoError(format!("Failed to write temp file: {}", e))
-        })?;
+        fs::write(&temp_path, contents)
+            .map_err(|e| SessionError::IoError(format!("Failed to write temp file: {e}")))?;
 
-        fs::rename(&temp_path, path).map_err(|e| {
-            SessionError::IoError(format!("Failed to rename file: {}", e))
-        })?;
+        fs::rename(&temp_path, path)
+            .map_err(|e| SessionError::IoError(format!("Failed to rename file: {e}")))?;
 
         tracing::debug!("Session saved to: {}", path.display());
         Ok(())
@@ -245,10 +242,10 @@ impl SessionState {
         }
 
         let contents = fs::read_to_string(path)
-            .map_err(|e| SessionError::IoError(format!("Failed to read file: {}", e)))?;
+            .map_err(|e| SessionError::IoError(format!("Failed to read file: {e}")))?;
 
         let session: Self = ron::from_str(&contents)
-            .map_err(|e| SessionError::ParseError(format!("Failed to parse: {}", e)))?;
+            .map_err(|e| SessionError::ParseError(format!("Failed to parse: {e}")))?;
 
         // Validate version
         if session.version > Self::VERSION {
@@ -395,7 +392,10 @@ impl SessionManager {
     /// # Errors
     ///
     /// Returns error if session cannot be loaded
-    pub fn load_or_create(&mut self, instance_id: InstanceId) -> Result<&SessionState, SessionError> {
+    pub fn load_or_create(
+        &mut self,
+        instance_id: InstanceId,
+    ) -> Result<&SessionState, SessionError> {
         if self.session_path.exists() {
             tracing::info!("Restoring session from: {}", self.session_path.display());
             self.current_state = Some(SessionState::load(&self.session_path)?);
@@ -588,7 +588,7 @@ fn get_session_path(instance_id: &InstanceId) -> Result<PathBuf, SessionError> {
     let sessions_dir = base_dir.join("sessions");
 
     fs::create_dir_all(&sessions_dir).map_err(|e| {
-        SessionError::IoError(format!("Failed to create sessions directory: {}", e))
+        SessionError::IoError(format!("Failed to create sessions directory: {e}"))
     })?;
 
     Ok(sessions_dir.join(format!("{}.ron", instance_id.as_str())))
@@ -683,4 +683,3 @@ mod tests {
         assert!(state1.nodes.iter().any(|n| n.id == "node2"));
     }
 }
-

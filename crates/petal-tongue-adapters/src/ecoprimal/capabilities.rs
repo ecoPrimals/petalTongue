@@ -99,8 +99,7 @@ impl PropertyAdapter for EcoPrimalCapabilityAdapter {
         if let Some(capabilities) = value.as_array() {
             ui.vertical(|ui| {
                 ui.label(
-                    egui::RichText::new(format!("Capabilities ({})", capabilities.len()))
-                        .strong(),
+                    egui::RichText::new(format!("Capabilities ({})", capabilities.len())).strong(),
                 );
 
                 ui.spacing_mut().item_spacing.y = 4.0;
@@ -119,13 +118,16 @@ impl PropertyAdapter for EcoPrimalCapabilityAdapter {
         }
     }
 
-    fn node_decoration(&self, _properties: &Properties) -> Option<crate::adapter_trait::NodeDecoration> {
+    fn node_decoration(
+        &self,
+        _properties: &Properties,
+    ) -> Option<crate::adapter_trait::NodeDecoration> {
         // Capabilities don't provide node decoration
         None
     }
 
     fn priority(&self) -> i32 {
-        10  // Higher priority than generic
+        10 // Higher priority than generic
     }
 }
 
@@ -165,10 +167,11 @@ mod tests {
     #[test]
     fn test_custom_config() {
         let mut config = CapabilityIconConfig::default();
-        config.icon_map.insert("custom".to_string(), "🎯".to_string());
+        config
+            .icon_map
+            .insert("custom".to_string(), "🎯".to_string());
 
         let adapter = EcoPrimalCapabilityAdapter::from_config(config);
         assert_eq!(adapter.get_icon("custom"), "🎯");
     }
 }
-

@@ -315,9 +315,11 @@ impl BingoCubeIntegration {
                     ui.add_space(10.0);
 
                     ui.label(
-                        egui::RichText::new("Audio representation available via petalTongue audio system")
-                            .size(12.0)
-                            .color(egui::Color32::LIGHT_GRAY),
+                        egui::RichText::new(
+                            "Audio representation available via petalTongue audio system",
+                        )
+                        .size(12.0)
+                        .color(egui::Color32::LIGHT_GRAY),
                     );
                 } else {
                     ui.label(

@@ -2,8 +2,8 @@
 //!
 //! Captures keystroke dynamics, typing rhythm, and content uniqueness.
 
+use crate::quality::{shannon_entropy, timing_entropy, weighted_quality};
 use crate::types::*;
-use crate::quality::{timing_entropy, shannon_entropy, weighted_quality};
 use std::time::{Duration, Instant};
 
 /// Narrative entropy capturer (stub for Phase 4)
@@ -36,7 +36,7 @@ impl NarrativeEntropyCapture {
     /// Add a character
     pub fn add_char(&mut self, c: char) {
         self.text.push(c);
-        
+
         if let Some(last) = self.last_keystroke {
             let now = Instant::now();
             self.keystroke_timings.push(now.duration_since(last));
@@ -172,4 +172,3 @@ mod tests {
         assert_eq!(quality.overall_quality, 0.0);
     }
 }
-

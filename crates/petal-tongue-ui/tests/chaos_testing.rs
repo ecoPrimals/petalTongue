@@ -110,8 +110,8 @@ impl ChaosTestRunner {
                         endpoint: format!("http://churn:808{i}"),
                         capabilities: vec![],
                         health: PrimalHealthStatus::Healthy,
-            trust_level: None,
-            family_id: None,
+                        trust_level: None,
+                        family_id: None,
                         last_seen: 0,
                     });
                     operations += 1;
@@ -173,8 +173,8 @@ impl ChaosTestRunner {
                     endpoint: "http://stress:8080".to_string(),
                     capabilities: vec![],
                     health: PrimalHealthStatus::Healthy,
-            trust_level: None,
-            family_id: None,
+                    trust_level: None,
+                    family_id: None,
                     last_seen: 0,
                 });
             }
@@ -232,8 +232,8 @@ impl ChaosTestRunner {
                     endpoint: format!("http://health:808{i}"),
                     capabilities: vec![],
                     health: PrimalHealthStatus::Healthy,
-            trust_level: None,
-            family_id: None,
+                    trust_level: None,
+                    family_id: None,
                     last_seen: 0,
                 });
             }
@@ -294,8 +294,8 @@ impl ChaosTestRunner {
                         endpoint: format!("http://concurrent:808{i}"),
                         capabilities: vec![],
                         health: PrimalHealthStatus::Healthy,
-            trust_level: None,
-            family_id: None,
+                        trust_level: None,
+                        family_id: None,
                         last_seen: 0,
                     });
                 }

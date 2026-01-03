@@ -190,4 +190,3 @@ mod tests {
         assert_eq!(IpcCommand::GetStatus.name(), "GetStatus");
     }
 }
-

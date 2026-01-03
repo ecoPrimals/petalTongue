@@ -116,7 +116,7 @@ impl<T: Clone> ProviderCache<T> {
     /// Get from cache (generic)
     fn get(&self, key: CacheKey) -> Option<T> {
         let mut cache = self.cache.lock().unwrap();
-        
+
         if let Some(entry) = cache.get(&key) {
             if entry.is_expired() {
                 // Entry expired, remove it
@@ -235,10 +235,10 @@ mod tests {
     fn test_cache_put_get() {
         let cache = ProviderCache::new(10);
         let data = vec!["test".to_string()];
-        
+
         cache.put_primals(data.clone());
         let retrieved = cache.get_primals();
-        
+
         assert!(retrieved.is_some());
         assert_eq!(retrieved.unwrap(), data);
     }
@@ -248,7 +248,7 @@ mod tests {
         let cache: ProviderCache<Vec<String>> = ProviderCache::new(10);
         let retrieved = cache.get_primals();
         assert!(retrieved.is_none());
-        
+
         let stats = cache.stats();
         assert_eq!(stats.misses, 1);
     }
@@ -257,7 +257,7 @@ mod tests {
     fn test_cache_hit() {
         let cache = ProviderCache::new(10);
         cache.put_primals(vec!["test".to_string()]);
-        
+
         let _ = cache.get_primals();
         let stats = cache.stats();
         assert_eq!(stats.hits, 1);
@@ -267,19 +267,19 @@ mod tests {
     fn test_cache_expiration() {
         let cache = ProviderCache::with_ttls(
             10,
-            Duration::from_millis(50),  // Very short TTL for testing
+            Duration::from_millis(50), // Very short TTL for testing
             Duration::from_secs(60),
             Duration::from_secs(10),
         );
-        
+
         cache.put_primals(vec!["test".to_string()]);
-        
+
         // Should hit immediately
         assert!(cache.get_primals().is_some());
-        
+
         // Wait for expiration
         std::thread::sleep(Duration::from_millis(100));
-        
+
         // Should miss after expiration
         assert!(cache.get_primals().is_none());
     }
@@ -288,11 +288,11 @@ mod tests {
     fn test_cache_invalidation() {
         let cache = ProviderCache::new(10);
         cache.put_primals(vec!["test".to_string()]);
-        
+
         assert!(cache.get_primals().is_some());
-        
+
         cache.invalidate_primals();
-        
+
         assert!(cache.get_primals().is_none());
     }
 
@@ -300,11 +300,11 @@ mod tests {
     fn test_cache_statistics() {
         let cache = ProviderCache::new(10);
         cache.put_primals(vec!["test".to_string()]);
-        
-        let _ = cache.get_primals();  // Hit
+
+        let _ = cache.get_primals(); // Hit
         let _ = cache.get_topology(); // Miss
-        let _ = cache.get_primals();  // Hit
-        
+        let _ = cache.get_primals(); // Hit
+
         let stats = cache.stats();
         assert_eq!(stats.hits, 2);
         assert_eq!(stats.misses, 1);
@@ -316,10 +316,10 @@ mod tests {
     fn test_cache_reset_stats() {
         let cache = ProviderCache::new(10);
         cache.put_primals(vec!["test".to_string()]);
-        
+
         let _ = cache.get_primals();
         assert_eq!(cache.stats().hits, 1);
-        
+
         cache.reset_stats();
         assert_eq!(cache.stats().hits, 0);
     }
@@ -327,11 +327,11 @@ mod tests {
     #[test]
     fn test_multiple_key_types() {
         let cache = ProviderCache::new(10);
-        
+
         cache.put_primals(vec!["primals".to_string()]);
         cache.put_topology(vec!["topology".to_string()]);
         cache.put_health(vec!["health".to_string()]);
-        
+
         assert_eq!(cache.get_primals().unwrap()[0], "primals");
         assert_eq!(cache.get_topology().unwrap()[0], "topology");
         assert_eq!(cache.get_health().unwrap()[0], "health");
@@ -339,16 +339,27 @@ mod tests {
 
     #[test]
     fn test_lru_eviction() {
-        let cache = ProviderCache::new(2);  // Small capacity
-        
-        cache.put(CacheKey::Primals, vec!["1".to_string()], Duration::from_secs(60));
-        cache.put(CacheKey::Topology, vec!["2".to_string()], Duration::from_secs(60));
-        cache.put(CacheKey::Health, vec!["3".to_string()], Duration::from_secs(60));
-        
+        let cache = ProviderCache::new(2); // Small capacity
+
+        cache.put(
+            CacheKey::Primals,
+            vec!["1".to_string()],
+            Duration::from_secs(60),
+        );
+        cache.put(
+            CacheKey::Topology,
+            vec!["2".to_string()],
+            Duration::from_secs(60),
+        );
+        cache.put(
+            CacheKey::Health,
+            vec!["3".to_string()],
+            Duration::from_secs(60),
+        );
+
         // Primals should be evicted (LRU)
         assert!(cache.get_primals().is_none());
         assert!(cache.get_topology().is_some());
         assert!(cache.get_health().is_some());
     }
 }
-

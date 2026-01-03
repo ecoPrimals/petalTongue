@@ -63,9 +63,9 @@ impl HttpVisualizationProvider {
 impl VisualizationDataProvider for HttpVisualizationProvider {
     async fn get_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
         let url = format!("{}/api/v1/primals", self.endpoint);
-        
+
         let response = self.client.get(&url).send().await?;
-        
+
         if !response.status().is_success() {
             return Err(anyhow::anyhow!(
                 "Provider returned error status: {}",
@@ -74,17 +74,13 @@ impl VisualizationDataProvider for HttpVisualizationProvider {
         }
 
         let discovery: DiscoveryResponse = response.json().await?;
-        
-        Ok(discovery
-            .primals
-            .into_iter()
-            .map(|p| p.into())
-            .collect())
+
+        Ok(discovery.primals.into_iter().map(|p| p.into()).collect())
     }
 
     async fn get_topology(&self) -> anyhow::Result<Vec<TopologyEdge>> {
         let url = format!("{}/api/v1/topology", self.endpoint);
-        
+
         match self.client.get(&url).send().await {
             Ok(response) => {
                 if response.status().is_success() {
@@ -95,7 +91,7 @@ impl VisualizationDataProvider for HttpVisualizationProvider {
                         #[allow(dead_code)]
                         nodes: Option<serde_json::Value>, // Optional nodes field
                     }
-                    
+
                     if let Ok(topology) = response.json::<TopologyResponse>().await {
                         Ok(topology.edges)
                     } else {
@@ -116,7 +112,7 @@ impl VisualizationDataProvider for HttpVisualizationProvider {
 
     async fn health_check(&self) -> anyhow::Result<String> {
         let url = format!("{}/api/v1/health", self.endpoint);
-        
+
         match self.client.get(&url).send().await {
             Ok(response) => {
                 if response.status().is_success() {
@@ -163,9 +159,9 @@ impl From<DiscoveredPrimal> for PrimalInfo {
             last_seen: primal.last_seen,
             properties: petal_tongue_core::Properties::new(), // Start with empty properties
             #[allow(deprecated)]
-            trust_level: None,  // Will be enriched from topology data
+            trust_level: None, // Will be enriched from topology data
             #[allow(deprecated)]
-            family_id: None,    // Will be enriched from topology data
+            family_id: None,  // Will be enriched from topology data
         }
     }
 }
@@ -206,4 +202,3 @@ mod tests {
         assert!(health.is_err(), "Invalid endpoint should fail health check");
     }
 }
-

@@ -1,6 +1,6 @@
 //! Simple audio test - generates and saves a WAV file
 
-use petal_tongue_ui::audio_pure_rust::{export_wav, generate_tone, Waveform, SAMPLE_RATE};
+use petal_tongue_ui::audio_pure_rust::{SAMPLE_RATE, Waveform, export_wav, generate_tone};
 
 fn main() {
     println!("🔊 Generating test audio...");
@@ -22,4 +22,3 @@ fn main() {
     println!("");
     println!("Play with: aplay {} (or paplay, mpv, etc.)", path);
 }
-

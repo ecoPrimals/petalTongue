@@ -9,13 +9,13 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[allow(dead_code)]
 pub enum RecordType {
-    A = 1,      // IPv4 address
-    NS = 2,     // Name server
-    CNAME = 5,  // Canonical name
-    PTR = 12,   // Pointer
-    TXT = 16,   // Text
-    AAAA = 28,  // IPv6 address
-    SRV = 33,   // Service locator
+    A = 1,     // IPv4 address
+    NS = 2,    // Name server
+    CNAME = 5, // Canonical name
+    PTR = 12,  // Pointer
+    TXT = 16,  // Text
+    AAAA = 28, // IPv6 address
+    SRV = 33,  // Service locator
 }
 
 impl RecordType {
@@ -37,7 +37,7 @@ impl RecordType {
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[allow(dead_code)]
 pub enum RecordClass {
-    IN = 1,  // Internet
+    IN = 1, // Internet
 }
 
 /// Parsed DNS header
@@ -106,12 +106,12 @@ impl<'a> NameParser<'a> {
 
                 // Extract pointer offset (14 bits)
                 let pointer = (((len & 0x3F) as usize) << 8) | (self.data[offset + 1] as usize);
-                
+
                 if !jumped {
                     jump_offset = offset + 2;
                     jumped = true;
                 }
-                
+
                 offset = pointer;
                 continue;
             }
@@ -133,7 +133,7 @@ impl<'a> NameParser<'a> {
 
             let label = &self.data[offset + 1..offset + 1 + len as usize];
             name.push_str(&String::from_utf8_lossy(label));
-            
+
             offset += 1 + len as usize;
         }
 
@@ -198,7 +198,7 @@ impl TxtRecord {
             }
 
             let txt = String::from_utf8_lossy(&rdata[offset..offset + len]);
-            
+
             // Parse key=value pairs
             if let Some((key, value)) = txt.split_once('=') {
                 attributes.push((key.to_string(), value.to_string()));
@@ -276,7 +276,7 @@ impl ResourceRecord {
     pub fn parse(data: &[u8], offset: usize) -> Result<(Self, usize)> {
         let parser = NameParser::new(data);
         let (name, name_len) = parser.parse_name(offset)?;
-        
+
         let mut pos = offset + name_len;
 
         if pos + 10 > data.len() {
@@ -285,12 +285,7 @@ impl ResourceRecord {
 
         let rtype = u16::from_be_bytes([data[pos], data[pos + 1]]);
         let rclass = u16::from_be_bytes([data[pos + 2], data[pos + 3]]);
-        let ttl = u32::from_be_bytes([
-            data[pos + 4],
-            data[pos + 5],
-            data[pos + 6],
-            data[pos + 7],
-        ]);
+        let ttl = u32::from_be_bytes([data[pos + 4], data[pos + 5], data[pos + 6], data[pos + 7]]);
         let rdlength = u16::from_be_bytes([data[pos + 8], data[pos + 9]]) as usize;
 
         pos += 10;
@@ -366,13 +361,13 @@ mod tests {
     fn test_name_parser_simple() {
         let data = [
             4, b't', b'e', b's', b't', // "test"
-            3, b'c', b'o', b'm',       // "com"
-            0,                         // end
+            3, b'c', b'o', b'm', // "com"
+            0,    // end
         ];
 
         let parser = NameParser::new(&data);
         let (name, len) = parser.parse_name(0).unwrap();
-        
+
         assert_eq!(name, "test.com");
         assert_eq!(len, 10);
     }
@@ -380,7 +375,7 @@ mod tests {
     #[test]
     fn test_txt_record_parse() {
         let data = [
-            7, b'k', b'e', b'y', b'=', b'v', b'a', b'l',  // "key=val"
+            7, b'k', b'e', b'y', b'=', b'v', b'a', b'l', // "key=val"
             9, b'p', b'o', b'r', b't', b'=', b'8', b'0', b'8', b'0', // "port=8080"
         ];
 
@@ -397,4 +392,3 @@ mod tests {
         assert_eq!(a.addr.to_string(), "192.168.1.100");
     }
 }
-
