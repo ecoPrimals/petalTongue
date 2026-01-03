@@ -24,7 +24,7 @@ pub enum Waveform {
 }
 
 /// Generate audio samples for a tone
-#[must_use] 
+#[must_use]
 pub fn generate_tone(
     frequency: f32,
     duration_secs: f32,
@@ -110,7 +110,7 @@ pub struct UISounds;
 
 impl UISounds {
     /// Success chime (pleasant ascending tone)
-    #[must_use] 
+    #[must_use]
     pub fn success() -> Vec<f32> {
         let mut samples = Vec::new();
         // C major chord: C (261.63 Hz), E (329.63 Hz), G (392.00 Hz)
@@ -121,7 +121,7 @@ impl UISounds {
     }
 
     /// Error beep (attention-grabbing)
-    #[must_use] 
+    #[must_use]
     pub fn error() -> Vec<f32> {
         let mut samples = Vec::new();
         // Two low beeps
@@ -132,13 +132,13 @@ impl UISounds {
     }
 
     /// Click sound (UI feedback)
-    #[must_use] 
+    #[must_use]
     pub fn click() -> Vec<f32> {
         generate_tone(800.0, 0.05, Waveform::Sine, 0.2)
     }
 
     /// Notification ping (gentle)
-    #[must_use] 
+    #[must_use]
     pub fn notification() -> Vec<f32> {
         let mut samples = Vec::new();
         samples.extend(generate_tone(880.0, 0.1, Waveform::Sine, 0.3));
@@ -147,7 +147,7 @@ impl UISounds {
     }
 
     /// Primal discovered (two-tone sequence)
-    #[must_use] 
+    #[must_use]
     pub fn primal_discovered() -> Vec<f32> {
         let mut samples = Vec::new();
         samples.extend(generate_tone(440.0, 0.1, Waveform::Sine, 0.3));
@@ -156,13 +156,13 @@ impl UISounds {
     }
 
     /// Data refresh (quick blip)
-    #[must_use] 
+    #[must_use]
     pub fn data_refresh() -> Vec<f32> {
         generate_tone(1000.0, 0.03, Waveform::Triangle, 0.15)
     }
 
     /// Warning alert
-    #[must_use] 
+    #[must_use]
     pub fn warning() -> Vec<f32> {
         let mut samples = Vec::new();
         // Alternating tones
@@ -174,7 +174,7 @@ impl UISounds {
     }
 
     /// Connection established
-    #[must_use] 
+    #[must_use]
     pub fn connected() -> Vec<f32> {
         let mut samples = Vec::new();
         // Ascending scale
@@ -187,7 +187,7 @@ impl UISounds {
 
     /// Startup chime (welcoming, bright, uplifting)
     /// Inspired by morning awakening sounds
-    #[must_use] 
+    #[must_use]
     pub fn startup() -> Vec<f32> {
         let mut samples = Vec::new();
 
@@ -206,7 +206,7 @@ impl UISounds {
 }
 
 /// Export samples as WAV file bytes
-#[must_use] 
+#[must_use]
 pub fn export_wav(samples: &[f32]) -> Vec<u8> {
     let num_channels = 1u16;
     let bits_per_sample = 16u16;

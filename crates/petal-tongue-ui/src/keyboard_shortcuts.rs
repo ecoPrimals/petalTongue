@@ -5,13 +5,11 @@
 use egui::Key;
 
 /// Keyboard shortcut configuration
-#[derive(Clone, Debug)]
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 pub struct KeyboardShortcuts {
     /// Show help overlay
     pub show_help: bool,
 }
-
 
 impl KeyboardShortcuts {
     /// Handle keyboard input for the app

@@ -66,7 +66,7 @@ pub enum ColorScheme {
 
 impl ColorScheme {
     /// Get the name of the color scheme
-    #[must_use] 
+    #[must_use]
     pub fn name(self) -> &'static str {
         match self {
             Self::Default => "Default",
@@ -80,7 +80,7 @@ impl ColorScheme {
     }
 
     /// Get all available color schemes
-    #[must_use] 
+    #[must_use]
     pub fn all() -> &'static [Self] {
         &[
             Self::Default,
@@ -109,7 +109,7 @@ pub enum FontSize {
 
 impl FontSize {
     /// Get the multiplier for this font size
-    #[must_use] 
+    #[must_use]
     pub fn multiplier(self) -> f32 {
         match self {
             Self::Small => 0.85,
@@ -120,7 +120,7 @@ impl FontSize {
     }
 
     /// Get the name of this font size
-    #[must_use] 
+    #[must_use]
     pub fn name(self) -> &'static str {
         match self {
             Self::Small => "Small",
@@ -156,7 +156,7 @@ pub struct ColorPalette {
 
 impl ColorPalette {
     /// Get the color palette for a given scheme
-    #[must_use] 
+    #[must_use]
     pub fn from_scheme(scheme: ColorScheme) -> Self {
         match scheme {
             ColorScheme::Default => Self::default(),
@@ -281,7 +281,7 @@ pub struct LiveIndicator {
 
 impl LiveIndicator {
     /// Create a new live indicator
-    #[must_use] 
+    #[must_use]
     pub fn new(source: String, update_interval: f64) -> Self {
         Self {
             is_live: false,
@@ -302,7 +302,7 @@ impl LiveIndicator {
     }
 
     /// Get age of last update in seconds
-    #[must_use] 
+    #[must_use]
     pub fn age_seconds(&self) -> f64 {
         use std::time::{SystemTime, UNIX_EPOCH};
         let now = SystemTime::now()
@@ -313,13 +313,13 @@ impl LiveIndicator {
     }
 
     /// Is the data stale? (older than 2x update interval)
-    #[must_use] 
+    #[must_use]
     pub fn is_stale(&self) -> bool {
         self.age_seconds() > self.update_interval * 2.0
     }
 
     /// Format age as human-readable string
-    #[must_use] 
+    #[must_use]
     pub fn age_string(&self) -> String {
         let age = self.age_seconds();
         if age < 1.0 {

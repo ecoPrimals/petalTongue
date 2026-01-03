@@ -128,7 +128,7 @@ impl Default for CpuStream {
 }
 
 impl CpuStream {
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             label: "CPU Usage".to_string(),
@@ -174,7 +174,7 @@ pub struct MemoryStream {
 }
 
 impl MemoryStream {
-    #[must_use] 
+    #[must_use]
     pub fn new(total_bytes: u64) -> Self {
         Self {
             label: "Memory Usage".to_string(),
@@ -226,7 +226,7 @@ impl Default for NetworkStream {
 }
 
 impl NetworkStream {
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             label: "Network Traffic".to_string(),
@@ -273,7 +273,7 @@ pub struct SystemMetricRenderer;
 
 impl MultiModalRenderer for SystemMetricRenderer {
     fn render_visual(&self, ui: &mut egui::Ui, stream: &dyn DataStream) {
-        use egui::{vec2, Sense, Color32, Rect};
+        use egui::{Color32, Rect, Sense, vec2};
 
         let value = stream.value();
         let label = stream.label();

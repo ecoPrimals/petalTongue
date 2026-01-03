@@ -16,7 +16,7 @@ pub struct LiveBadge {
 
 impl LiveBadge {
     /// Create a new live badge
-    #[must_use] 
+    #[must_use]
     pub fn new(source: String, update_interval: f64) -> Self {
         Self {
             indicator: LiveIndicator::new(source, update_interval),
@@ -94,7 +94,7 @@ pub struct LiveGraphHeader {
 
 impl LiveGraphHeader {
     /// Create a new live graph header
-    #[must_use] 
+    #[must_use]
     pub fn new(title: String, source: String, update_interval: f64) -> Self {
         Self {
             title,
@@ -149,7 +149,7 @@ pub struct LiveMetric {
 
 impl LiveMetric {
     /// Create a new live metric
-    #[must_use] 
+    #[must_use]
     pub fn new(label: String, source: String, update_interval: f64) -> Self {
         Self {
             label,
@@ -215,7 +215,7 @@ pub struct ConnectionStatus {
 
 impl ConnectionStatus {
     /// Create a new connection status
-    #[must_use] 
+    #[must_use]
     pub fn new(target: String) -> Self {
         Self {
             connected: false,

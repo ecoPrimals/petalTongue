@@ -128,8 +128,6 @@ mod tests {
             primal_type: "TestType".to_string(),
             endpoint: "http://test:8000".to_string(),
             health: PrimalHealthStatus::Healthy,
-            trust_level: None,
-            family_id: None,
             capabilities,
             last_seen: 0, // Unix timestamp
             properties: Default::default(), // Empty properties for tests

@@ -50,7 +50,10 @@ fn main() -> Result<(), eframe::Error> {
     // EVOLUTION: Instead of using unsafe set_var, we'll pass instance_id directly to the app
     // This eliminates the unsafe block while maintaining functionality
     // The app can access instance_id through its constructor parameter
-    tracing::debug!("Instance ID will be passed to app: {}", instance_id.as_str());
+    tracing::debug!(
+        "Instance ID will be passed to app: {}",
+        instance_id.as_str()
+    );
     // ===== End Phase 1 Integration =====
 
     tracing::info!("Starting petalTongue Universal Representation System");

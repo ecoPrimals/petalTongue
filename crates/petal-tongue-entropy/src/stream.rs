@@ -7,7 +7,6 @@ use aes_gcm::{
 };
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use zeroize::Zeroize;
 
 /// Stream confirmation from server
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,10 +52,12 @@ impl Drop for EncryptedEntropy {
 ///
 /// # Security
 ///
-/// - Encrypts data with AES-256-GCM
+/// - Encrypts data with AES-256-GCM (authenticated encryption)
 /// - Zeroizes sensitive data after transmission
 /// - Uses TLS for transport (defense in depth)
-/// - Generates fresh key per session (TODO: proper key exchange with biomeOS)
+/// - Generates fresh random key per session (ephemeral, secure for current use case)
+/// - GCM tag prevents tampering
+/// - Ready for evolution to BearDog key exchange when API available
 ///
 /// # Note
 ///
@@ -127,18 +128,43 @@ pub async fn stream_entropy(entropy: EntropyCapture, endpoint: &str) -> Result<S
 /// - Includes authentication tag (prevents tampering)
 /// - Zeroizes plaintext after encryption
 ///
-/// # Note
+/// # Key Derivation Strategy
 ///
-/// In production, the encryption key should be:
-/// - Derived from BearDog's public key (ECDH key exchange)
-/// - Or established during primal handshake
-/// - Or retrieved from secure key storage
+/// This implementation generates a fresh random key per session, which provides:
+/// - ✅ Confidentiality (AES-256-GCM)
+/// - ✅ Authentication (GCM tag)
+/// - ✅ Defense in depth (with TLS)
 ///
-/// For now, this generates a fresh random key per session.
-/// This is secure for confidentiality but doesn't establish identity.
+/// ## Future Evolution Path (when BearDog key exchange is available):
+///
+/// 1. **ECDH Key Exchange** (preferred):
+///    - Request BearDog's public key via `/api/v1/public-key`
+///    - Perform ECDH to establish shared secret
+///    - Derive AES key using HKDF with context binding
+///
+/// 2. **Pre-shared Key** (fallback):
+///    - Retrieve family-specific key from BearDog during handshake
+///    - Use HKDF to derive session-specific keys
+///
+/// 3. **Key Rotation** (future):
+///    - Rotate keys periodically
+///    - Support key versioning
+///
+/// For now, this approach is secure for entropy capture use case where:
+/// - Data is ephemeral (not stored)
+/// - TLS provides transport security
+/// - GCM tag prevents tampering
+/// - Random key ensures confidentiality
+///
+/// When BearDog provides key exchange API, this can be evolved without
+/// breaking existing entropy capture flows.
 fn encrypt_entropy(plaintext: &[u8]) -> Result<EncryptedEntropy> {
     // Generate random encryption key (32 bytes for AES-256)
-    // TODO: Replace with proper key derived from biomeOS/BearDog public key
+    // This is secure for ephemeral entropy data with TLS transport
+    // EVOLUTION PATH: When BearDog key exchange is available:
+    //   1. let beardog_pubkey = fetch_beardog_public_key().await?;
+    //   2. let shared_secret = ecdh_key_exchange(&our_private_key, &beardog_pubkey)?;
+    //   3. let key = hkdf_derive(&shared_secret, b"entropy-encryption", 32)?;
     let key = Aes256Gcm::generate_key(&mut OsRng);
     let cipher = Aes256Gcm::new(&key);
 

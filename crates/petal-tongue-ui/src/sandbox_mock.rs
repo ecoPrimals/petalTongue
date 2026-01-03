@@ -29,9 +29,7 @@ pub struct SandboxEdge {
 pub fn load_sandbox_scenario(name: &str) -> Result<SandboxScenario, String> {
     // Find sandbox directory (relative to project root)
     let sandbox_path = find_sandbox_dir()?;
-    let scenario_file = sandbox_path
-        .join("scenarios")
-        .join(format!("{name}.json"));
+    let scenario_file = sandbox_path.join("scenarios").join(format!("{name}.json"));
 
     info!("📦 Loading sandbox scenario from: {:?}", scenario_file);
 
@@ -106,7 +104,7 @@ fn find_sandbox_dir() -> Result<PathBuf, String> {
 }
 
 /// List available sandbox scenarios
-#[must_use] 
+#[must_use]
 pub fn list_sandbox_scenarios() -> Vec<String> {
     let sandbox_dir = match find_sandbox_dir() {
         Ok(dir) => dir,
