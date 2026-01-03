@@ -196,6 +196,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_discover_returns_error_without_config() {
+        // Clear any environment variables that might provide providers
+        std::env::remove_var("BIOMEOS_URL");
+        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+        std::env::remove_var("PETALTONGUE_MOCK_MODE");
+        std::env::remove_var("PETALTONGUE_ENABLE_MDNS");
+        
         // Production mode requires explicit configuration - no automatic fallback
         let result = discover_visualization_providers().await;
         assert!(
