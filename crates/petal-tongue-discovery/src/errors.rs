@@ -177,7 +177,7 @@ mod tests {
     #[test]
     fn test_discovery_failure_creation() {
         let failure = DiscoveryFailure::new("mDNS", "Timeout after 5s");
-        
+
         assert_eq!(failure.source, "mDNS");
         assert_eq!(failure.error, "Timeout after 5s");
         assert!(failure.timestamp.elapsed().as_secs() < 1);
@@ -187,7 +187,7 @@ mod tests {
     fn test_discovery_failure_with_complex_error() {
         let source_error = anyhow::anyhow!("Complex error with context");
         let failure = DiscoveryFailure::new("HTTP", source_error);
-        
+
         assert_eq!(failure.source, "HTTP");
         assert!(failure.error.contains("Complex error"));
     }

@@ -214,7 +214,8 @@ impl PetalTongueApp {
                 let available = capabilities.is_available(*modality);
                 // Get capability info to extract reason
                 let reason_string = capabilities
-                    .get_status(*modality).map_or_else(|| "Not tested".to_string(), |c| c.reason.clone());
+                    .get_status(*modality)
+                    .map_or_else(|| "Not tested".to_string(), |c| c.reason.clone());
                 let modality_name = match modality {
                     Modality::Visual2D => "visual2d",
                     Modality::Audio => "audio",
@@ -1392,7 +1393,10 @@ impl eframe::App for PetalTongueApp {
         }
 
         // Right side panel - Primal details (if node selected)
-        let selected_id_clone = self.visual_renderer.selected_node().map(std::string::ToString::to_string);
+        let selected_id_clone = self
+            .visual_renderer
+            .selected_node()
+            .map(std::string::ToString::to_string);
         if let Some(selected_id) = selected_id_clone {
             egui::SidePanel::right("primal_details_panel")
                 .default_width(350.0)

@@ -25,7 +25,7 @@ pub struct DataSource {
 
 impl DataSource {
     /// Create a new data source
-    #[must_use] 
+    #[must_use]
     pub fn new(client: BiomeOSClient) -> Self {
         Self { client }
     }

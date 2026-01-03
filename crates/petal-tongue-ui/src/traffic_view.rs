@@ -334,9 +334,10 @@ impl TrafficView {
                 );
                 if response.clicked()
                     && let Some(pointer_pos) = response.interact_pointer_pos()
-                        && click_rect.contains(pointer_pos) {
-                            self.selected_flow = Some((flow.from.clone(), flow.to.clone()));
-                        }
+                    && click_rect.contains(pointer_pos)
+                {
+                    self.selected_flow = Some((flow.from.clone(), flow.to.clone()));
+                }
             }
         }
 

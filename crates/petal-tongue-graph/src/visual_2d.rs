@@ -181,7 +181,10 @@ impl Visual2DRenderer {
 
         // Use trust level for color if available, otherwise fall back to health
         // Get trust level from properties
-        let trust_level = node.info.properties.get("trust_level")
+        let trust_level = node
+            .info
+            .properties
+            .get("trust_level")
             .and_then(|v| match v {
                 petal_tongue_core::PropertyValue::Number(n) => {
                     if *n >= 0.0 && *n <= 255.0 {
@@ -189,10 +192,10 @@ impl Visual2DRenderer {
                     } else {
                         None
                     }
-                },
+                }
                 _ => None,
             });
-        
+
         let (fill_color, stroke_color) = if trust_level.is_some() {
             Self::trust_level_to_colors(trust_level)
         } else {
@@ -240,7 +243,9 @@ impl Visual2DRenderer {
 
         // Draw trust level badge (if available and zoomed in)
         if self.zoom > 0.7 {
-            if let Some(petal_tongue_core::PropertyValue::Number(trust_val)) = node.info.properties.get("trust_level") {
+            if let Some(petal_tongue_core::PropertyValue::Number(trust_val)) =
+                node.info.properties.get("trust_level")
+            {
                 if *trust_val >= 0.0 && *trust_val <= 255.0 {
                     let trust_level = *trust_val as u8;
                     let badge_text = match trust_level {

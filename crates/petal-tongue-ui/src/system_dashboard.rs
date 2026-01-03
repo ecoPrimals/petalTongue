@@ -7,8 +7,7 @@ use crate::accessibility::ColorPalette;
 use crate::audio_providers::AudioSystem;
 use crate::live_data::{LiveMetric, request_live_updates};
 use crate::multimodal_stream::{
-    CpuStream, DataStream, MemoryStream, ModalityPreferences,
-    MultiModalRenderer, SystemMetricRenderer,
+    CpuStream, MemoryStream, ModalityPreferences, MultiModalRenderer, SystemMetricRenderer,
 };
 use egui::Ui;
 use std::collections::VecDeque;
@@ -70,7 +69,7 @@ impl SystemDashboard {
     }
 
     /// Get audio enabled state
-    #[must_use] 
+    #[must_use]
     pub fn is_audio_enabled(&self) -> bool {
         self.modality_prefs.audio_enabled
     }
@@ -135,10 +134,11 @@ impl SystemDashboard {
         // Generate audio if enabled and interval passed
         if self.modality_prefs.audio_enabled
             && let Some(audio_system) = audio_system
-                && now.duration_since(self.last_audio_update) >= self.audio_update_interval {
-                    self.generate_audio(audio_system);
-                    self.last_audio_update = now;
-                }
+            && now.duration_since(self.last_audio_update) >= self.audio_update_interval
+        {
+            self.generate_audio(audio_system);
+            self.last_audio_update = now;
+        }
     }
 
     /// Generate polyphonic audio for all streams
