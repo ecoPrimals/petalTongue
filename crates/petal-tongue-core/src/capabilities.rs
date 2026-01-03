@@ -220,10 +220,10 @@ impl CapabilityDetector {
     /// Check if a specific capability string is available
     ///
     /// Maps capability strings to modalities:
-    /// - "visual.2d" -> Visual2D
+    /// - "visual.2d" -> `Visual2D`
     /// - "audio.sonification" -> Audio
     /// - "animation.flow" -> Animation
-    /// - "text.description" -> TextDescription
+    /// - "text.description" -> `TextDescription`
     /// - "haptic.feedback" -> Haptic
     /// - "vr.3d" -> VR3D
     ///
@@ -241,7 +241,7 @@ impl CapabilityDetector {
             "vr.3d" => Modality::VR3D,
             _ => return false, // Unknown capability
         };
-        
+
         self.is_available(modality)
     }
 

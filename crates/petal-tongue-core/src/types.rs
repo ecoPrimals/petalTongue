@@ -19,6 +19,46 @@ pub struct PrimalInfo {
     pub health: PrimalHealthStatus,
     /// Last time this primal was seen (Unix timestamp)
     pub last_seen: u64,
+    /// Trust level (0-3: None, Limited, Elevated, Full)
+    #[serde(default)]
+    pub trust_level: Option<u8>,
+    /// Family ID (genetic lineage)
+    #[serde(default)]
+    pub family_id: Option<String>,
+}
+
+impl PrimalInfo {
+    /// Create a new PrimalInfo without trust data (for basic construction)
+    #[must_use]
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        primal_type: impl Into<String>,
+        endpoint: impl Into<String>,
+        capabilities: Vec<String>,
+        health: PrimalHealthStatus,
+        last_seen: u64,
+    ) -> Self {
+        Self {
+            id: id.into(),
+            name: name.into(),
+            primal_type: primal_type.into(),
+            endpoint: endpoint.into(),
+            capabilities,
+            health,
+            last_seen,
+            trust_level: None,
+            family_id: None,
+        }
+    }
+
+    /// Add trust information to this primal
+    #[must_use]
+    pub fn with_trust(mut self, trust_level: u8, family_id: Option<String>) -> Self {
+        self.trust_level = Some(trust_level);
+        self.family_id = family_id;
+        self
+    }
 }
 
 /// Health status of a primal (visualization-specific)

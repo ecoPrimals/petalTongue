@@ -50,7 +50,10 @@ pub enum HealthStatus {
     /// Primal is healthy
     Healthy,
     /// Primal is unhealthy with a reason
-    Unhealthy { reason: String },
+    Unhealthy {
+        /// Description of why the primal is unhealthy
+        reason: String,
+    },
 }
 
 impl HealthStatus {
@@ -97,15 +100,15 @@ pub enum PrimalError {
     /// Configuration error
     #[error("configuration error: {0}")]
     Config(String),
-    
+
     /// Lifecycle error
     #[error("lifecycle error: {0}")]
     Lifecycle(String),
-    
+
     /// Health check error
     #[error("health check error: {0}")]
     Health(String),
-    
+
     /// Generic error
     #[error("{0}")]
     Other(String),
@@ -141,7 +144,9 @@ pub trait PrimalHealth {
     /// # Errors
     ///
     /// Returns error if health check fails.
-    fn health_check(&self) -> impl std::future::Future<Output = Result<HealthReport, PrimalError>> + Send;
+    fn health_check(
+        &self,
+    ) -> impl std::future::Future<Output = Result<HealthReport, PrimalError>> + Send;
 }
 
 #[cfg(test)]
@@ -168,12 +173,10 @@ mod tests {
 
     #[test]
     fn test_health_report() {
-        let report = HealthReport::new("test", "1.0.0")
-            .with_status(HealthStatus::Healthy);
-        
+        let report = HealthReport::new("test", "1.0.0").with_status(HealthStatus::Healthy);
+
         assert_eq!(report.name, "test");
         assert_eq!(report.version, "1.0.0");
         assert!(report.status.is_healthy());
     }
 }
-

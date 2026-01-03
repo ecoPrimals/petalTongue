@@ -2,6 +2,7 @@
 //!
 //! Real-time system resource monitoring using sysinfo.
 //! Demonstrates petalTongue integrating with external monitoring tool.
+//! ALL DATA IS LIVE - timestamps and indicators prove it!
 
 #![allow(
     clippy::cast_precision_loss,
@@ -9,6 +10,7 @@
     clippy::cast_sign_loss
 )]
 
+use crate::live_data::{LiveGraphHeader, LiveMetric};
 use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
@@ -18,6 +20,7 @@ use sysinfo::System;
 ///
 /// Provides real-time system resource monitoring (CPU, memory, disk) using the sysinfo crate.
 /// This demonstrates petalTongue's capability-based tool integration pattern.
+/// Features LIVE data indicators to prove all metrics are real-time.
 pub struct SystemMonitorTool {
     show_panel: bool,
     system: System,
@@ -26,6 +29,12 @@ pub struct SystemMonitorTool {
     cpu_history: VecDeque<f32>, // Last N seconds
     mem_history: VecDeque<f32>, // Last N seconds
     max_history: usize,
+    
+    // Live data indicators
+    cpu_header: LiveGraphHeader,
+    memory_header: LiveGraphHeader,
+    cpu_metric: LiveMetric,
+    memory_metric: LiveMetric,
 }
 
 impl Default for SystemMonitorTool {
@@ -41,6 +50,28 @@ impl Default for SystemMonitorTool {
             cpu_history: VecDeque::new(),
             mem_history: VecDeque::new(),
             max_history: 60, // 60 seconds of history
+            
+            // Initialize live data indicators - PROVE data is live!
+            cpu_header: LiveGraphHeader::new(
+                "💻 CPU Usage".to_string(),
+                "sysinfo".to_string(),
+                1.0, // 1 second update interval
+            ),
+            memory_header: LiveGraphHeader::new(
+                "🧠 Memory Usage".to_string(),
+                "sysinfo".to_string(),
+                1.0,
+            ),
+            cpu_metric: LiveMetric::new(
+                "Current CPU".to_string(),
+                "sysinfo".to_string(),
+                1.0,
+            ),
+            memory_metric: LiveMetric::new(
+                "Current Memory".to_string(),
+                "sysinfo".to_string(),
+                1.0,
+            ),
         }
     }
 }
@@ -79,12 +110,20 @@ impl SystemMonitorTool {
             if self.mem_history.len() > self.max_history {
                 self.mem_history.pop_front();
             }
+            
+            // Mark live indicators as updated - PROOF OF LIVE DATA!
+            self.cpu_header.mark_updated();
+            self.memory_header.mark_updated();
+            self.cpu_metric.update(format!("{:.1}", cpu_usage), Some("%".to_string()));
+            self.memory_metric.update(format!("{:.1}", mem_percent), Some("%".to_string()));
         }
     }
 
     /// Render CPU section
-    fn render_cpu(&self, ui: &mut egui::Ui) {
-        ui.heading("💻 CPU");
+    fn render_cpu(&mut self, ui: &mut egui::Ui) {
+        // Live header with timestamp - PROVES data is live!
+        self.cpu_header.render(ui);
+        ui.add_space(5.0);
 
         // Current usage - calculate average
         let cpus = self.system.cpus();
@@ -94,7 +133,8 @@ impl SystemMonitorTool {
             cpus.iter().map(sysinfo::Cpu::cpu_usage).sum::<f32>() / cpus.len() as f32
         };
 
-        ui.label(format!("Usage: {cpu_usage:.1}%"));
+        // Live metric display
+        self.cpu_metric.render(ui);
         ui.label(format!("Cores: {}", cpus.len()));
 
         // Progress bar
@@ -110,9 +150,9 @@ impl SystemMonitorTool {
                 }),
         );
 
-        // Simple sparkline
+        // Simple sparkline with LIVE data
         if !self.cpu_history.is_empty() {
-            ui.label(format!("History ({} samples)", self.cpu_history.len()));
+            ui.label(format!("History ({} samples) [LIVE DATA]", self.cpu_history.len()));
             Self::render_sparkline(ui, &self.cpu_history, 100.0);
         }
 
@@ -120,8 +160,10 @@ impl SystemMonitorTool {
     }
 
     /// Render memory section
-    fn render_memory(&self, ui: &mut egui::Ui) {
-        ui.heading("🧠 Memory");
+    fn render_memory(&mut self, ui: &mut egui::Ui) {
+        // Live header with timestamp - PROVES data is live!
+        self.memory_header.render(ui);
+        ui.add_space(5.0);
 
         let used = self.system.used_memory();
         let total = self.system.total_memory();
@@ -130,6 +172,9 @@ impl SystemMonitorTool {
         } else {
             0.0
         };
+
+        // Live metric display
+        self.memory_metric.render(ui);
 
         ui.label(format!(
             "Used: {:.1} / {:.1} GB",
@@ -149,9 +194,9 @@ impl SystemMonitorTool {
                 }),
         );
 
-        // History sparkline
+        // History sparkline with LIVE data
         if !self.mem_history.is_empty() {
-            ui.label(format!("History ({} samples)", self.mem_history.len()));
+            ui.label(format!("History ({} samples) [LIVE DATA]", self.mem_history.len()));
             Self::render_sparkline(ui, &self.mem_history, 100.0);
         }
 

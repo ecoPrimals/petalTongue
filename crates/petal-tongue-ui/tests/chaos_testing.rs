@@ -95,9 +95,9 @@ impl ChaosTestRunner {
         let scenario_name = "primal_churn";
         let count = 50;
         let iterations = 10;
-        let mut operations = 0;
 
         let result = std::panic::catch_unwind(|| {
+            let mut operations = 0;
             let mut graph = GraphEngine::new();
 
             for iteration in 0..iterations {
@@ -135,7 +135,7 @@ impl ChaosTestRunner {
         let duration_ms = start.elapsed().as_millis() as u64;
         let (survived, error, final_ops) = match result {
             Ok(ops) => (true, None, ops),
-            Err(e) => (false, Some(format!("Panic: {:?}", e)), operations),
+            Err(e) => (false, Some(format!("Panic: {:?}", e)), 0),
         };
 
         self.results.push(ChaosTestResult {
@@ -156,9 +156,9 @@ impl ChaosTestRunner {
         let scenario_name = "high_update_rate";
         let updates_per_sec = 1000;
         let duration_secs = 1;
-        let mut operations = 0;
 
         let result = std::panic::catch_unwind(|| {
+            let mut operations = 0;
             let graph = Arc::new(RwLock::new(GraphEngine::new()));
 
             // Add initial node
@@ -194,7 +194,7 @@ impl ChaosTestRunner {
         let duration_ms = start.elapsed().as_millis() as u64;
         let (survived, error, final_ops) = match result {
             Ok(ops) => (true, None, ops),
-            Err(e) => (false, Some(format!("Panic: {:?}", e)), operations),
+            Err(e) => (false, Some(format!("Panic: {:?}", e)), 0),
         };
 
         self.results.push(ChaosTestResult {
@@ -214,9 +214,9 @@ impl ChaosTestRunner {
         let start = std::time::Instant::now();
         let scenario_name = "random_health_changes";
         let changes = 500;
-        let mut operations = 0;
 
         let result = std::panic::catch_unwind(|| {
+            let mut operations = 0;
             let mut graph = GraphEngine::new();
 
             // Add test nodes
@@ -251,7 +251,7 @@ impl ChaosTestRunner {
         let duration_ms = start.elapsed().as_millis() as u64;
         let (survived, error, final_ops) = match result {
             Ok(ops) => (true, None, ops),
-            Err(e) => (false, Some(format!("Panic: {:?}", e)), operations),
+            Err(e) => (false, Some(format!("Panic: {:?}", e)), 0),
         };
 
         self.results.push(ChaosTestResult {

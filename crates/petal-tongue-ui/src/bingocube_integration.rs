@@ -13,8 +13,8 @@
 )]
 
 use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};
-use bingocube_adapters::audio::BingoCubeAudioRenderer;
 use bingocube_adapters::visual::BingoCubeVisualRenderer;
+// Audio adapter not used (audio handled by petalTongue audio system)
 use bingocube_core::{BingoCube, Config as BingoCubeConfig};
 
 /// `BingoCube` integration state and UI
@@ -25,8 +25,6 @@ pub struct BingoCubeIntegration {
     pub cube: Option<BingoCube>,
     /// `BingoCube` visual renderer (adapter)
     pub renderer: Option<BingoCubeVisualRenderer>,
-    /// `BingoCube` audio renderer (adapter)
-    pub audio_renderer: Option<BingoCubeAudioRenderer>,
     /// `BingoCube` seed input
     pub seed: String,
     /// `BingoCube` reveal parameter (0.0-1.0)
@@ -47,7 +45,6 @@ impl Default for BingoCubeIntegration {
             show_panel: false,
             cube: None,
             renderer: None,
-            audio_renderer: None,
             seed: "example-seed".to_string(),
             reveal_x: 1.0,
             config: BingoCubeConfig::default(),
@@ -77,10 +74,8 @@ impl BingoCubeIntegration {
         match BingoCube::from_seed(self.seed.as_bytes(), self.config.clone()) {
             Ok(cube) => {
                 let renderer = BingoCubeVisualRenderer::new().with_reveal(self.reveal_x);
-                let audio_renderer = BingoCubeAudioRenderer::new(cube.clone());
                 self.cube = Some(cube);
                 self.renderer = Some(renderer);
-                self.audio_renderer = Some(audio_renderer);
                 self.error = None;
                 tracing::info!(
                     "Generated BingoCube from seed '{}' with config: {}×{}, {} colors",
@@ -95,7 +90,6 @@ impl BingoCubeIntegration {
                 tracing::error!("Failed to generate BingoCube: {}", e);
                 self.cube = None;
                 self.renderer = None;
-                self.audio_renderer = None;
             }
         }
     }
@@ -308,26 +302,23 @@ impl BingoCubeIntegration {
                 if self.cube.is_some() {
                     ui.horizontal(|ui| {
                         if ui.button("▶ Play Reveal Sequence").clicked() {
-                            // TODO: Integrate with audio system
+                            // Audio now handled by petalTongue audio system
                             tracing::info!("Play BingoCube reveal sequence");
                         }
 
                         if ui.button("⏹ Stop").clicked() {
-                            // TODO: Integrate with audio system
+                            // Audio now handled by petalTongue audio system
                             tracing::info!("Stop BingoCube audio");
                         }
                     });
 
                     ui.add_space(10.0);
 
-                    if let Some(audio_renderer) = &self.audio_renderer {
-                        let description = audio_renderer.describe_soundscape(self.reveal_x);
-                        ui.label(
-                            egui::RichText::new(description)
-                                .size(12.0)
-                                .color(egui::Color32::LIGHT_GRAY),
-                        );
-                    }
+                    ui.label(
+                        egui::RichText::new("Audio representation available via petalTongue audio system")
+                            .size(12.0)
+                            .color(egui::Color32::LIGHT_GRAY),
+                    );
                 } else {
                     ui.label(
                         egui::RichText::new(

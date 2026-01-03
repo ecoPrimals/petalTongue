@@ -1,0 +1,56 @@
+[package]
+name = "petal-tongue-entropy"
+version = "0.1.0"
+edition = "2021"
+authors = ["PetalTongue Team"]
+description = "Human entropy capture for petalTongue - multi-modal, accessible, sovereign"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# Core
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+thiserror = "1"
+tracing = "0.1"
+
+# Async
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+
+# Streaming & Encryption
+reqwest = { version = "0.12", features = ["json", "stream"] }
+aes-gcm = "0.10"  # AES-256-GCM authenticated encryption
+rand = "0.8"  # For nonce generation
+zeroize = { version = "1", features = ["derive"] }  # Secure memory clearing
+
+# Statistics (minimal)
+# (We'll implement Shannon entropy & variance ourselves for zero-cost)
+
+[dev-dependencies]
+tokio-test = "0.4"
+approx = "0.5"  # For floating-point comparisons in tests
+
+[features]
+default = []
+# Feature flags for optional modalities
+audio = ["cpal", "hound", "rustfft"]
+video = ["nokhwa"]
+
+# Optional dependencies (enabled by features)
+[dependencies.cpal]
+version = "0.15"
+optional = true
+
+[dependencies.hound]
+version = "3.5"
+optional = true
+
+[dependencies.rustfft]
+version = "6.2"
+optional = true
+
+[dependencies.nokhwa]
+version = "0.10"
+optional = true
+

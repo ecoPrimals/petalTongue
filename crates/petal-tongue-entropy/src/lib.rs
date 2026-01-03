@@ -1,0 +1,97 @@
+//! # PetalTongue Entropy Capture
+//!
+//! Multi-modal human entropy capture for sovereign, non-fungible keys.
+//!
+//! ## Modalities
+//!
+//! - **Audio** (`audio`): Singing, speaking (timing, pitch, dynamics)
+//! - **Visual** (`visual`): Drawing, painting (strokes, patterns)
+//! - **Narrative** (`narrative`): Storytelling (keystroke dynamics)
+//! - **Gesture** (`gesture`): Motion, touch (sensors, patterns)
+//! - **Video** (`video`): Camera motion (movement analysis)
+//!
+//! ## Architecture
+//!
+//! ```text
+//! Capture → Quality Assessment → User Feedback → Stream (Encrypted)
+//! ```
+//!
+//! **Privacy**: Stream-only (never persisted), encrypted transmission, secure zeroization.
+//!
+//! ## Example
+//!
+//! ```rust,no_run
+//! use petal_tongue_entropy::prelude::*;
+//!
+//! # async fn example() -> anyhow::Result<()> {
+//! // Create narrative capture (always available, no audio dependencies)
+//! let mut capture = NarrativeEntropyCapture::new();
+//!
+//! // Start capturing
+//! capture.start();
+//! capture.add_char('H');
+//! capture.add_char('e');
+//! capture.add_char('l');
+//! capture.add_char('l');
+//! capture.add_char('o');
+//!
+//! // Get real-time quality
+//! let quality = capture.assess_quality();
+//! println!("Quality: {:.1}%", quality.overall_quality * 100.0);
+//!
+//! // Finalize and stream
+//! let entropy = capture.finalize()?;
+//! let entropy_capture = EntropyCapture::Narrative(entropy);
+//! stream_entropy(entropy_capture, "https://biomeos/api/v1/entropy/stream").await?;
+//! # Ok(())
+//! # }
+//! ```
+
+#![warn(missing_docs)]
+#![warn(clippy::all)]
+#![deny(unsafe_code)]
+
+pub mod types;
+pub mod quality;
+pub mod stream;
+
+// Modality modules (behind feature flags)
+#[cfg(feature = "audio")]
+pub mod audio;
+
+#[cfg(feature = "video")]
+pub mod video;
+
+// Always-available modalities (no special dependencies)
+pub mod visual;
+pub mod narrative;
+pub mod gesture;
+
+/// Prelude for common imports
+pub mod prelude {
+    pub use crate::types::*;
+    pub use crate::quality::*;
+    pub use crate::stream::*;
+    
+    #[cfg(feature = "audio")]
+    pub use crate::audio::*;
+    
+    #[cfg(feature = "video")]
+    pub use crate::video::*;
+    
+    pub use crate::visual::*;
+    pub use crate::narrative::*;
+    pub use crate::gesture::*;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_crate_compiles() {
+        // Basic smoke test
+        assert!(true);
+    }
+}
+

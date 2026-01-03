@@ -23,6 +23,44 @@ pub struct DiscoveryResponse {
     pub primals: Vec<DiscoveredPrimal>,
 }
 
+/// Response from `BiomeOS` topology API (new format)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TopologyResponse {
+    /// Topology nodes (enriched with trust levels, family, etc.)
+    #[serde(default)]
+    pub nodes: Vec<TopologyNode>,
+    /// Topology edges (connections between primals)
+    pub edges: Vec<TopologyEdge>,
+    /// Mode indicator (mock, live, etc.)
+    #[serde(default)]
+    pub mode: String,
+}
+
+/// Topology node (enriched node data from biomeOS)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TopologyNode {
+    /// Node ID
+    pub id: String,
+    /// Node name
+    #[serde(default)]
+    pub name: String,
+    /// Node type
+    #[serde(default, rename = "type")]
+    pub node_type: String,
+    /// Health status
+    #[serde(default)]
+    pub status: String,
+    /// Trust level (0-3)
+    #[serde(default)]
+    pub trust_level: Option<u8>,
+    /// Family ID (genetic lineage)
+    #[serde(default)]
+    pub family_id: Option<String>,
+    /// Capabilities
+    #[serde(default)]
+    pub capabilities: Vec<String>,
+}
+
 /// A discovered primal from `BiomeOS`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiscoveredPrimal {
@@ -48,7 +86,13 @@ impl BiomeOSClient {
         Self {
             base_url: base_url.into(),
             client: reqwest::Client::builder()
-                .timeout(Duration::from_secs(10))
+                .timeout(Duration::from_secs(30)) // Increased timeout
+                .connect_timeout(Duration::from_secs(10)) // Separate connect timeout
+                .pool_idle_timeout(Duration::from_secs(90)) // Keep connections alive longer
+                .pool_max_idle_per_host(10) // More idle connections
+                .tcp_keepalive(Duration::from_secs(60)) // TCP keep-alive
+                .http2_keep_alive_interval(Some(Duration::from_secs(30))) // HTTP/2 keep-alive
+                .http2_keep_alive_timeout(Duration::from_secs(10))
                 .build()
                 .expect("Failed to build HTTP client"),
             mock_mode: false,
@@ -62,53 +106,130 @@ impl BiomeOSClient {
         self
     }
 
-    /// Discover primals from `BiomeOS`/Songbird
-    pub async fn discover_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
+    /// Check if `BiomeOS` API is available
+    pub async fn health_check(&self) -> anyhow::Result<bool> {
         if self.mock_mode {
-            return Ok(self.mock_discover_primals());
+            return Ok(true); // Mock mode is always "healthy"
         }
 
-        // Try to query BiomeOS discovery endpoint
-        let url = format!("{}/api/v1/primals", self.base_url);
-
+        let url = format!("{}/api/v1/health", self.base_url);
         match self.client.get(&url).send().await {
-            Ok(response) => {
-                let discovery: DiscoveryResponse = response.json().await?;
-                Ok(discovery.primals.into_iter().map(|p| p.into()).collect())
-            }
-            Err(e) => {
-                tracing::warn!(
-                    "Failed to connect to BiomeOS at {}: {}. Using mock data.",
-                    url,
-                    e
-                );
-                // Fallback to mock data
-                Ok(self.mock_discover_primals())
-            }
+            Ok(response) => Ok(response.status().is_success()),
+            Err(_) => Ok(false),
         }
     }
 
+    /// Discover primals from `BiomeOS`/Songbird
+    ///
+    /// **PRODUCTION MODE**: Returns error if API fails (no mock fallback)
+    /// **TEST MODE**: Set `mock_mode` to use test data
+    pub async fn discover_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
+        if self.mock_mode {
+            tracing::warn!("Mock mode enabled - using test data (TESTING ONLY)");
+            return Ok(self.mock_discover_primals());
+        }
+
+        // Query BiomeOS discovery endpoint
+        let url = format!("{}/api/v1/primals", self.base_url);
+
+        let response = self.client.get(&url).send().await.map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to connect to biomeOS at {}: {}\n\
+                \n\
+                Troubleshooting:\n\
+                - Ensure biomeOS API server is running\n\
+                - Check BIOMEOS_URL environment variable\n\
+                - Verify network connectivity\n\
+                - Check firewall settings",
+                url,
+                e
+            )
+        })?;
+
+        if !response.status().is_success() {
+            anyhow::bail!(
+                "biomeOS API returned error status: {}\n\
+                URL: {}\n\
+                \n\
+                This indicates the biomeOS API server is reachable but returned an error.",
+                response.status(),
+                url
+            );
+        }
+
+        let discovery = response.json::<DiscoveryResponse>().await.map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to parse biomeOS response: {}\n\
+                \n\
+                This may indicate:\n\
+                - API format mismatch\n\
+                - biomeOS API is not fully implemented\n\
+                - Response is not valid JSON\n\
+                \n\
+                Expected format: {{\"primals\": [...]}}",
+                e
+            )
+        })?;
+
+        tracing::info!(
+            "✅ Successfully discovered {} primals from biomeOS",
+            discovery.primals.len()
+        );
+
+        Ok(discovery.primals.into_iter().map(|p| p.into()).collect())
+    }
+
     /// Get topology edges (connections between primals)
+    ///
+    /// **PRODUCTION MODE**: Returns error if API fails (no mock fallback)
+    /// **TEST MODE**: Set `mock_mode` to use test data
+    ///
+    /// **Updated**: Now supports biomeOS's new topology format with nodes + edges
     pub async fn get_topology(&self) -> anyhow::Result<Vec<TopologyEdge>> {
         if self.mock_mode {
+            tracing::warn!("Mock mode enabled - using test topology (TESTING ONLY)");
             return Ok(self.mock_topology());
         }
 
         let url = format!("{}/api/v1/topology", self.base_url);
 
-        match self.client.get(&url).send().await {
-            Ok(response) => {
-                let edges: Vec<TopologyEdge> = response.json().await?;
-                Ok(edges)
-            }
-            Err(e) => {
-                tracing::warn!(
-                    "Failed to get topology from BiomeOS: {}. Using mock data.",
-                    e
-                );
-                Ok(self.mock_topology())
-            }
+        let response = self.client.get(&url).send().await.map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to connect to biomeOS topology endpoint at {}: {}",
+                url,
+                e
+            )
+        })?;
+
+        if !response.status().is_success() {
+            anyhow::bail!(
+                "Topology endpoint returned error status: {}\n\
+                URL: {}",
+                response.status(),
+                url
+            );
         }
+
+        // Try new format first (nodes + edges + mode)
+        let topology = response.json::<TopologyResponse>().await.map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to parse topology response: {}\n\
+                \n\
+                Expected format: {{\"nodes\": [...], \"edges\": [...], \"mode\": \"...\"}}",
+                e
+            )
+        })?;
+
+        tracing::debug!(
+            "✅ Successfully retrieved topology: {} nodes, {} edges (mode: {})",
+            topology.nodes.len(),
+            topology.edges.len(),
+            topology.mode
+        );
+
+        // TODO: Use topology.nodes for enriched data (trust levels, family ID, etc.)
+        // For now, just return edges for backward compatibility
+        Ok(topology.edges)
     }
 
     /// Mock primal discovery (for development)
@@ -127,6 +248,8 @@ impl BiomeOSClient {
                 ],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: now,
+                trust_level: None,
+                family_id: None,
             },
             PrimalInfo {
                 id: "toadstool-1".to_string(),
@@ -139,6 +262,8 @@ impl BiomeOSClient {
                 ],
                 health: PrimalHealthStatus::Warning,
                 last_seen: now,
+                trust_level: None,
+                family_id: None,
             },
             PrimalInfo {
                 id: "songbird-1".to_string(),
@@ -151,6 +276,8 @@ impl BiomeOSClient {
                 ],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: now,
+                trust_level: None,
+                family_id: None,
             },
             PrimalInfo {
                 id: "nestgate-1".to_string(),
@@ -164,6 +291,8 @@ impl BiomeOSClient {
                 ],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: now,
+                trust_level: None,
+                family_id: None,
             },
             PrimalInfo {
                 id: "squirrel-1".to_string(),
@@ -173,6 +302,8 @@ impl BiomeOSClient {
                 capabilities: vec!["intent_parsing".to_string(), "task_planning".to_string()],
                 health: PrimalHealthStatus::Critical,
                 last_seen: now,
+                trust_level: None,
+                family_id: None,
             },
         ]
     }
@@ -230,6 +361,8 @@ impl From<DiscoveredPrimal> for PrimalInfo {
                 _ => PrimalHealthStatus::Unknown,
             },
             last_seen: primal.last_seen,
+            trust_level: None,
+            family_id: None,
         }
     }
 }
@@ -249,6 +382,18 @@ mod tests {
 
         let topology = client.get_topology().await.unwrap();
         assert_eq!(topology.len(), 5);
+
+        // Health check should always succeed in mock mode
+        let health = client.health_check().await.unwrap();
+        assert!(health);
+    }
+
+    #[tokio::test]
+    async fn test_health_check_failure() {
+        let client = BiomeOSClient::new("http://nonexistent:99999");
+
+        let health = client.health_check().await.unwrap();
+        assert!(!health);
     }
 
     #[tokio::test]
