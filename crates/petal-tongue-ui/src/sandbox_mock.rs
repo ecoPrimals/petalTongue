@@ -29,27 +29,33 @@ pub struct SandboxEdge {
 pub fn load_sandbox_scenario(name: &str) -> Result<SandboxScenario, String> {
     // Find sandbox directory (relative to project root)
     let sandbox_path = find_sandbox_dir()?;
-    let scenario_file = sandbox_path.join("scenarios").join(format!("{}.json", name));
+    let scenario_file = sandbox_path
+        .join("scenarios")
+        .join(format!("{name}.json"));
 
     info!("📦 Loading sandbox scenario from: {:?}", scenario_file);
 
     if !scenario_file.exists() {
-        return Err(format!("Sandbox scenario not found: {:?}", scenario_file));
+        return Err(format!("Sandbox scenario not found: {scenario_file:?}"));
     }
 
     // Read and parse JSON
     let contents = std::fs::read_to_string(&scenario_file)
-        .map_err(|e| format!("Failed to read scenario file: {}", e))?;
+        .map_err(|e| format!("Failed to read scenario file: {e}"))?;
 
     let mut scenario: SandboxScenario = serde_json::from_str(&contents)
-        .map_err(|e| format!("Failed to parse scenario JSON: {}", e))?;
+        .map_err(|e| format!("Failed to parse scenario JSON: {e}"))?;
 
     // Migrate deprecated fields (trust_level, family_id) to properties for adapter-based rendering
     for primal in &mut scenario.primals {
         primal.migrate_deprecated_fields();
     }
 
-    info!("✅ Loaded sandbox scenario '{}' with {} primals", scenario.name, scenario.primals.len());
+    info!(
+        "✅ Loaded sandbox scenario '{}' with {} primals",
+        scenario.name,
+        scenario.primals.len()
+    );
 
     Ok(scenario)
 }
@@ -65,8 +71,8 @@ fn find_sandbox_dir() -> Result<PathBuf, String> {
     }
 
     // Try relative to current directory
-    let current_dir = std::env::current_dir()
-        .map_err(|e| format!("Failed to get current directory: {}", e))?;
+    let current_dir =
+        std::env::current_dir().map_err(|e| format!("Failed to get current directory: {e}"))?;
 
     // Try ./sandbox
     let sandbox = current_dir.join("sandbox");
@@ -75,7 +81,8 @@ fn find_sandbox_dir() -> Result<PathBuf, String> {
     }
 
     // Try ../sandbox (if running from crates/)
-    let sandbox = current_dir.parent()
+    let sandbox = current_dir
+        .parent()
         .ok_or("No parent directory")?
         .join("sandbox");
     if sandbox.exists() {
@@ -83,7 +90,8 @@ fn find_sandbox_dir() -> Result<PathBuf, String> {
     }
 
     // Try ../../sandbox (if running from crates/petal-tongue-ui/)
-    let sandbox = current_dir.parent()
+    let sandbox = current_dir
+        .parent()
         .and_then(|p| p.parent())
         .ok_or("No grandparent directory")?
         .join("sandbox");
@@ -91,10 +99,14 @@ fn find_sandbox_dir() -> Result<PathBuf, String> {
         return Ok(sandbox);
     }
 
-    Err("Sandbox directory not found. Set PETALTONGUE_SANDBOX_DIR or run from project root.".to_string())
+    Err(
+        "Sandbox directory not found. Set PETALTONGUE_SANDBOX_DIR or run from project root."
+            .to_string(),
+    )
 }
 
 /// List available sandbox scenarios
+#[must_use] 
 pub fn list_sandbox_scenarios() -> Vec<String> {
     let sandbox_dir = match find_sandbox_dir() {
         Ok(dir) => dir,
@@ -110,12 +122,12 @@ pub fn list_sandbox_scenarios() -> Vec<String> {
         .ok()
         .map(|entries| {
             entries
-                .filter_map(|entry| entry.ok())
-                .filter(|entry| {
-                    entry.path().extension().map_or(false, |ext| ext == "json")
-                })
+                .filter_map(std::result::Result::ok)
+                .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "json"))
                 .filter_map(|entry| {
-                    entry.path().file_stem()
+                    entry
+                        .path()
+                        .file_stem()
                         .and_then(|s| s.to_str())
                         .map(String::from)
                 })
@@ -212,7 +224,9 @@ mod tests {
         let scenario = get_default_scenario();
         assert!(!scenario.primals.is_empty(), "Scenario should have primals");
         // First primal ID depends on which scenario loaded (simple.json vs fallback)
-        assert!(scenario.primals[0].id.len() > 0, "First primal should have valid ID");
+        assert!(
+            scenario.primals[0].id.len() > 0,
+            "First primal should have valid ID"
+        );
     }
 }
-

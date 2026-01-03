@@ -6,16 +6,12 @@ use egui::Key;
 
 /// Keyboard shortcut configuration
 #[derive(Clone, Debug)]
+#[derive(Default)]
 pub struct KeyboardShortcuts {
     /// Show help overlay
     pub show_help: bool,
 }
 
-impl Default for KeyboardShortcuts {
-    fn default() -> Self {
-        Self { show_help: false }
-    }
-}
 
 impl KeyboardShortcuts {
     /// Handle keyboard input for the app
@@ -96,7 +92,11 @@ impl KeyboardShortcuts {
     }
 
     /// Render help overlay
-    pub fn render_help(&mut self, ctx: &egui::Context, palette: &crate::accessibility::ColorPalette) {
+    pub fn render_help(
+        &mut self,
+        ctx: &egui::Context,
+        palette: &crate::accessibility::ColorPalette,
+    ) {
         if !self.show_help {
             return;
         }
@@ -114,7 +114,11 @@ impl KeyboardShortcuts {
                 ui.add_space(5.0);
 
                 // General shortcuts
-                ui.label(egui::RichText::new("General").strong().color(palette.accent));
+                ui.label(
+                    egui::RichText::new("General")
+                        .strong()
+                        .color(palette.accent),
+                );
                 Self::shortcut_row(ui, "?", "Show/hide this help", palette);
                 Self::shortcut_row(ui, "F1", "Show/hide this help", palette);
                 Self::shortcut_row(ui, "ESC", "Close overlays", palette);
@@ -132,7 +136,11 @@ impl KeyboardShortcuts {
                 ui.add_space(10.0);
 
                 // Accessibility shortcuts
-                ui.label(egui::RichText::new("Accessibility").strong().color(palette.accent));
+                ui.label(
+                    egui::RichText::new("Accessibility")
+                        .strong()
+                        .color(palette.accent),
+                );
                 Self::shortcut_row(ui, "Ctrl+1-7", "Select color scheme (1-7)", palette);
                 Self::shortcut_row(ui, "Ctrl++", "Increase font size", palette);
                 Self::shortcut_row(ui, "Ctrl+-", "Decrease font size", palette);
@@ -140,7 +148,11 @@ impl KeyboardShortcuts {
                 ui.add_space(10.0);
 
                 // Navigation
-                ui.label(egui::RichText::new("Navigation").strong().color(palette.accent));
+                ui.label(
+                    egui::RichText::new("Navigation")
+                        .strong()
+                        .color(palette.accent),
+                );
                 Self::shortcut_row(ui, "Tab", "Next element", palette);
                 Self::shortcut_row(ui, "Shift+Tab", "Previous element", palette);
                 Self::shortcut_row(ui, "Enter", "Activate", palette);
@@ -158,7 +170,12 @@ impl KeyboardShortcuts {
     }
 
     /// Render a shortcut row
-    fn shortcut_row(ui: &mut egui::Ui, keys: &str, description: &str, palette: &crate::accessibility::ColorPalette) {
+    fn shortcut_row(
+        ui: &mut egui::Ui,
+        keys: &str,
+        description: &str,
+        palette: &crate::accessibility::ColorPalette,
+    ) {
         ui.horizontal(|ui| {
             ui.label(
                 egui::RichText::new(keys)
@@ -212,4 +229,3 @@ mod tests {
         assert_ne!(ShortcutAction::ToggleHelp, ShortcutAction::None);
     }
 }
-

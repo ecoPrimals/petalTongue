@@ -16,7 +16,7 @@ fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
     let h_prime = h / 60.0;
     let x = c * (1.0 - ((h_prime % 2.0) - 1.0).abs());
     let m = v - c;
-    
+
     let (r, g, b) = if h_prime < 1.0 {
         (c, x, 0.0)
     } else if h_prime < 2.0 {
@@ -30,7 +30,7 @@ fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
     } else {
         (c, 0.0, x)
     };
-    
+
     (
         ((r + m) * 255.0) as u8,
         ((g + m) * 255.0) as u8,
@@ -180,8 +180,21 @@ impl Visual2DRenderer {
         let radius = 20.0 * self.zoom;
 
         // Use trust level for color if available, otherwise fall back to health
-        let (fill_color, stroke_color) = if node.info.trust_level.is_some() {
-            Self::trust_level_to_colors(node.info.trust_level)
+        // Get trust level from properties
+        let trust_level = node.info.properties.get("trust_level")
+            .and_then(|v| match v {
+                petal_tongue_core::PropertyValue::Number(n) => {
+                    if *n >= 0.0 && *n <= 255.0 {
+                        Some(*n as u8)
+                    } else {
+                        None
+                    }
+                },
+                _ => None,
+            });
+        
+        let (fill_color, stroke_color) = if trust_level.is_some() {
+            Self::trust_level_to_colors(trust_level)
         } else {
             Self::health_to_colors(node.info.health)
         };
@@ -197,13 +210,12 @@ impl Visual2DRenderer {
         }
 
         // Draw family ID indicator (colored ring if present)
-        if let Some(ref family_id) = node.info.family_id {
-            let family_color = Self::family_id_to_color(family_id);
-            painter.circle_stroke(
-                screen_pos,
-                radius + 3.0,
-                Stroke::new(2.5, family_color),
-            );
+        // Get family_id from properties
+        if let Some(family_id_val) = node.info.properties.get("family_id") {
+            if let petal_tongue_core::PropertyValue::String(family_id) = family_id_val {
+                let family_color = Self::family_id_to_color(family_id);
+                painter.circle_stroke(screen_pos, radius + 3.0, Stroke::new(2.5, family_color));
+            }
         }
 
         // Draw node circle
@@ -228,21 +240,24 @@ impl Visual2DRenderer {
 
         // Draw trust level badge (if available and zoomed in)
         if self.zoom > 0.7 {
-            if let Some(trust_level) = node.info.trust_level {
-                let badge_text = match trust_level {
-                    0 => "⚫",
-                    1 => "🟡",
-                    2 => "🟠",
-                    3 => "🟢",
-                    _ => "❓",
-                };
-                painter.text(
-                    Pos2::new(screen_pos.x + radius, screen_pos.y - radius),
-                    egui::Align2::LEFT_BOTTOM,
-                    badge_text,
-                    egui::FontId::proportional(14.0),
-                    Color32::WHITE,
-                );
+            if let Some(petal_tongue_core::PropertyValue::Number(trust_val)) = node.info.properties.get("trust_level") {
+                if *trust_val >= 0.0 && *trust_val <= 255.0 {
+                    let trust_level = *trust_val as u8;
+                    let badge_text = match trust_level {
+                        0 => "⚫",
+                        1 => "🟡",
+                        2 => "🟠",
+                        3 => "🟢",
+                        _ => "❓",
+                    };
+                    painter.text(
+                        Pos2::new(screen_pos.x + radius, screen_pos.y - radius),
+                        egui::Align2::LEFT_BOTTOM,
+                        badge_text,
+                        egui::FontId::proportional(14.0),
+                        Color32::WHITE,
+                    );
+                }
             }
         }
 
@@ -263,11 +278,11 @@ impl Visual2DRenderer {
         // Map capabilities to icons
         let badge_radius = 8.0 * self.zoom;
         let orbit_radius = radius + 15.0;
-        
+
         // Show up to 6 capabilities as badges
         let displayed_caps = capabilities.iter().take(6);
         let num_caps = displayed_caps.clone().count();
-        
+
         for (i, capability) in displayed_caps.enumerate() {
             // Position badges in a circle around the node
             #[allow(clippy::cast_precision_loss)]
@@ -276,10 +291,10 @@ impl Visual2DRenderer {
                 center.x + orbit_radius * angle.cos(),
                 center.y + orbit_radius * angle.sin(),
             );
-            
+
             // Determine icon and color based on capability
             let (icon, color) = Self::capability_to_icon_and_color(capability);
-            
+
             // Draw badge background circle
             painter.circle(
                 badge_pos,
@@ -287,7 +302,7 @@ impl Visual2DRenderer {
                 color.gamma_multiply(0.3),
                 Stroke::new(1.5, color),
             );
-            
+
             // Draw icon
             painter.text(
                 badge_pos,
@@ -297,7 +312,7 @@ impl Visual2DRenderer {
                 Color32::WHITE,
             );
         }
-        
+
         // If there are more capabilities, show a "+N" badge
         if capabilities.len() > 6 {
             let more_count = capabilities.len() - 6;
@@ -306,14 +321,14 @@ impl Visual2DRenderer {
                 center.x + orbit_radius * angle.cos(),
                 center.y + orbit_radius * angle.sin(),
             );
-            
+
             painter.circle(
                 badge_pos,
                 badge_radius,
                 Color32::DARK_GRAY,
                 Stroke::new(1.5, Color32::GRAY),
             );
-            
+
             painter.text(
                 badge_pos,
                 egui::Align2::CENTER_CENTER,
@@ -327,62 +342,96 @@ impl Visual2DRenderer {
     /// Map capability to icon and color
     fn capability_to_icon_and_color(capability: &str) -> (&'static str, Color32) {
         let cap_lower = capability.to_lowercase();
-        
+
         // Security capabilities
-        if cap_lower.contains("security") || cap_lower.contains("trust") || cap_lower.contains("auth") {
+        if cap_lower.contains("security")
+            || cap_lower.contains("trust")
+            || cap_lower.contains("auth")
+        {
             return ("🔒", Color32::from_rgb(255, 100, 100));
         }
-        
+
         // Storage capabilities
-        if cap_lower.contains("storage") || cap_lower.contains("persist") || cap_lower.contains("data") {
+        if cap_lower.contains("storage")
+            || cap_lower.contains("persist")
+            || cap_lower.contains("data")
+        {
             return ("💾", Color32::from_rgb(100, 150, 255));
         }
-        
+
         // Compute capabilities
-        if cap_lower.contains("compute") || cap_lower.contains("container") || cap_lower.contains("workload") || cap_lower.contains("execution") {
+        if cap_lower.contains("compute")
+            || cap_lower.contains("container")
+            || cap_lower.contains("workload")
+            || cap_lower.contains("execution")
+        {
             return ("⚙️", Color32::from_rgb(150, 200, 100));
         }
-        
+
         // Discovery/orchestration capabilities
-        if cap_lower.contains("discovery") || cap_lower.contains("orchestr") || cap_lower.contains("federation") {
+        if cap_lower.contains("discovery")
+            || cap_lower.contains("orchestr")
+            || cap_lower.contains("federation")
+        {
             return ("🔍", Color32::from_rgb(200, 150, 255));
         }
-        
+
         // Identity capabilities
-        if cap_lower.contains("identity") || cap_lower.contains("lineage") || cap_lower.contains("genetic") {
+        if cap_lower.contains("identity")
+            || cap_lower.contains("lineage")
+            || cap_lower.contains("genetic")
+        {
             return ("🆔", Color32::from_rgb(255, 200, 100));
         }
-        
+
         // Encryption/crypto capabilities
-        if cap_lower.contains("encrypt") || cap_lower.contains("crypto") || cap_lower.contains("sign") {
+        if cap_lower.contains("encrypt")
+            || cap_lower.contains("crypto")
+            || cap_lower.contains("sign")
+        {
             return ("🔐", Color32::from_rgb(255, 150, 200));
         }
-        
+
         // AI/inference capabilities
-        if cap_lower.contains("ai") || cap_lower.contains("inference") || cap_lower.contains("intent") || cap_lower.contains("planning") {
+        if cap_lower.contains("ai")
+            || cap_lower.contains("inference")
+            || cap_lower.contains("intent")
+            || cap_lower.contains("planning")
+        {
             return ("🧠", Color32::from_rgb(200, 100, 255));
         }
-        
+
         // Network/communication capabilities
-        if cap_lower.contains("network") || cap_lower.contains("tcp") || cap_lower.contains("http") || cap_lower.contains("grpc") {
+        if cap_lower.contains("network")
+            || cap_lower.contains("tcp")
+            || cap_lower.contains("http")
+            || cap_lower.contains("grpc")
+        {
             return ("🌐", Color32::from_rgb(100, 200, 255));
         }
-        
+
         // Attribution/provenance capabilities
-        if cap_lower.contains("attribution") || cap_lower.contains("provenance") || cap_lower.contains("audit") {
+        if cap_lower.contains("attribution")
+            || cap_lower.contains("provenance")
+            || cap_lower.contains("audit")
+        {
             return ("📋", Color32::from_rgb(255, 200, 150));
         }
-        
+
         // Visualization/UI capabilities
-        if cap_lower.contains("visual") || cap_lower.contains("ui") || cap_lower.contains("display") {
+        if cap_lower.contains("visual") || cap_lower.contains("ui") || cap_lower.contains("display")
+        {
             return ("👁️", Color32::from_rgb(150, 255, 200));
         }
-        
+
         // Audio capabilities
-        if cap_lower.contains("audio") || cap_lower.contains("sound") || cap_lower.contains("sonification") {
+        if cap_lower.contains("audio")
+            || cap_lower.contains("sound")
+            || cap_lower.contains("sonification")
+        {
             return ("🔊", Color32::from_rgb(255, 150, 100));
         }
-        
+
         // Default for unknown capabilities
         ("•", Color32::GRAY)
     }
@@ -410,16 +459,16 @@ impl Visual2DRenderer {
     fn health_to_colors(health: PrimalHealthStatus) -> (Color32, Color32) {
         match health {
             PrimalHealthStatus::Healthy => (
-                Color32::from_rgb(40, 180, 40),  // Green fill
-                Color32::from_rgb(20, 120, 20),  // Dark green stroke
+                Color32::from_rgb(40, 180, 40), // Green fill
+                Color32::from_rgb(20, 120, 20), // Dark green stroke
             ),
             PrimalHealthStatus::Warning => (
                 Color32::from_rgb(200, 180, 40), // Yellow fill
                 Color32::from_rgb(140, 120, 20), // Dark yellow stroke
             ),
             PrimalHealthStatus::Critical => (
-                Color32::from_rgb(200, 40, 40),  // Red fill
-                Color32::from_rgb(140, 20, 20),  // Dark red stroke
+                Color32::from_rgb(200, 40, 40), // Red fill
+                Color32::from_rgb(140, 20, 20), // Dark red stroke
             ),
             PrimalHealthStatus::Unknown => (
                 Color32::from_rgb(120, 120, 120), // Gray fill
@@ -437,15 +486,15 @@ impl Visual2DRenderer {
                 Color32::from_rgb(60, 60, 60),
             ),
             Some(1) => (
-                Color32::from_rgb(200, 180, 40),  // Yellow - Limited trust
+                Color32::from_rgb(200, 180, 40), // Yellow - Limited trust
                 Color32::from_rgb(140, 120, 20),
             ),
             Some(2) => (
-                Color32::from_rgb(220, 140, 40),  // Orange - Elevated trust
+                Color32::from_rgb(220, 140, 40), // Orange - Elevated trust
                 Color32::from_rgb(160, 100, 20),
             ),
             Some(3) => (
-                Color32::from_rgb(40, 200, 80),   // Bright green - Full trust
+                Color32::from_rgb(40, 200, 80), // Bright green - Full trust
                 Color32::from_rgb(20, 140, 60),
             ),
             _ => (
@@ -460,7 +509,7 @@ impl Visual2DRenderer {
         // Simple hash to color mapping for consistent family visualization
         let hash: u32 = family_id.bytes().map(u32::from).sum();
         let hue = (hash % 360) as f32;
-        
+
         // Convert HSV to RGB (S=0.7, V=0.9 for pleasant colors)
         let (r, g, b) = hsv_to_rgb(hue, 0.7, 0.9);
         Color32::from_rgb(r, g, b)

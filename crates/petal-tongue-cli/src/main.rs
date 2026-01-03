@@ -80,7 +80,7 @@ async fn list_instances() -> Result<()> {
 
     println!("📋 Active petalTongue instances:\n");
     let instances = registry.list();
-    
+
     if instances.is_empty() {
         println!("{}", "No instances running".yellow());
         return Ok(());
@@ -132,8 +132,8 @@ async fn list_instances() -> Result<()> {
 
 async fn show_instance(instance_id_str: &str) -> Result<()> {
     let instance_id = resolve_instance_id(instance_id_str)?;
-    let client = IpcClient::new(&instance_id)
-        .context("Failed to connect to instance (is it running?)")?;
+    let client =
+        IpcClient::new(&instance_id).context("Failed to connect to instance (is it running?)")?;
 
     let response = client
         .send(IpcCommand::GetStatus)
@@ -187,8 +187,8 @@ async fn show_instance(instance_id_str: &str) -> Result<()> {
 
 async fn raise_instance(instance_id_str: &str) -> Result<()> {
     let instance_id = resolve_instance_id(instance_id_str)?;
-    let client = IpcClient::new(&instance_id)
-        .context("Failed to connect to instance (is it running?)")?;
+    let client =
+        IpcClient::new(&instance_id).context("Failed to connect to instance (is it running?)")?;
 
     let response = client
         .send(IpcCommand::Show)
@@ -216,8 +216,8 @@ async fn raise_instance(instance_id_str: &str) -> Result<()> {
 
 async fn ping_instance(instance_id_str: &str) -> Result<()> {
     let instance_id = resolve_instance_id(instance_id_str)?;
-    let client = IpcClient::new(&instance_id)
-        .context("Failed to connect to instance (is it running?)")?;
+    let client =
+        IpcClient::new(&instance_id).context("Failed to connect to instance (is it running?)")?;
 
     match client.ping().await {
         Ok(()) => {
@@ -269,16 +269,9 @@ async fn gc_instances(force: bool) -> Result<()> {
             .save()
             .context("Failed to save registry after cleanup")?;
 
-        println!(
-            "{} Removed {} dead instances",
-            "✓".green(),
-            removed
-        );
+        println!("{} Removed {} dead instances", "✓".green(), removed);
     } else {
-        println!(
-            "{} Run with --force to actually remove them",
-            "!".yellow()
-        );
+        println!("{} Run with --force to actually remove them", "!".yellow());
     }
 
     Ok(())
@@ -379,4 +372,3 @@ fn resolve_instance_id(id_str: &str) -> Result<InstanceId> {
         ),
     }
 }
-

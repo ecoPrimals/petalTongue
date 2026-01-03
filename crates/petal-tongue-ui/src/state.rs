@@ -19,9 +19,9 @@ use bingocube_core::{BingoCube, Config as BingoCubeConfig};
 ///
 /// This struct holds all the state needed for the application, including:
 /// - Rendering engines (visual, audio, animation)
-/// - BiomeOS client for live data
+/// - `BiomeOS` client for live data
 /// - UI state (panels, controls)
-/// - BingoCube tool integration (demonstrating primal tool use)
+/// - `BingoCube` tool integration (demonstrating primal tool use)
 pub struct AppState {
     // Core rendering engines
     /// Capability detector (knows what modalities are actually available)
@@ -38,7 +38,7 @@ pub struct AppState {
     pub animation_engine: AnimationEngine,
 
     // Data source
-    /// BiomeOS API client (capability-based discovery)
+    /// `BiomeOS` API client (capability-based discovery)
     pub biomeos_client: BiomeOSClient,
 
     // UI state
@@ -60,35 +60,35 @@ pub struct AppState {
     pub refresh_interval: f32,
 
     // BingoCube tool integration (demonstrating primal tool use)
-    /// Show BingoCube panel
+    /// Show `BingoCube` panel
     pub show_bingocube_panel: bool,
-    /// BingoCube instance (tool being used)
+    /// `BingoCube` instance (tool being used)
     pub bingocube: Option<BingoCube>,
-    /// BingoCube visual renderer (adapter)
+    /// `BingoCube` visual renderer (adapter)
     pub bingocube_renderer: Option<BingoCubeVisualRenderer>,
-    /// BingoCube seed input
+    /// `BingoCube` seed input
     pub bingocube_seed: String,
-    /// BingoCube reveal parameter (0.0-1.0)
+    /// `BingoCube` reveal parameter (0.0-1.0)
     pub bingocube_x: f64,
-    /// BingoCube configuration
+    /// `BingoCube` configuration
     pub bingocube_config: BingoCubeConfig,
-    /// BingoCube error message
+    /// `BingoCube` error message
     pub bingocube_error: Option<String>,
-    /// Show BingoCube configuration panel
+    /// Show `BingoCube` configuration panel
     pub show_bingocube_config: bool,
-    /// Show BingoCube audio panel
+    /// Show `BingoCube` audio panel
     pub show_bingocube_audio: bool,
 }
 
 impl AppState {
     /// Create new application state
     ///
-    /// Initializes all rendering engines, capability detection, and BiomeOS client.
+    /// Initializes all rendering engines, capability detection, and `BiomeOS` client.
     /// Uses environment variables for configuration (no hardcoding).
     ///
     /// # Environment Variables
     ///
-    /// - `BIOMEOS_URL`: BiomeOS endpoint (default: `http://localhost:3000`)
+    /// - `BIOMEOS_URL`: `BiomeOS` endpoint (default: `http://localhost:3000`)
     /// - `PETALTONGUE_MOCK_MODE`: Enable mock mode (`true`/`false`, default: `false`)
     #[must_use]
     pub fn new() -> Self {

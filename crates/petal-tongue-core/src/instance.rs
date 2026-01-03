@@ -36,7 +36,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 use uuid::Uuid;
@@ -71,7 +71,7 @@ impl InstanceId {
     /// Returns error if the string is not a valid UUID
     pub fn from_str(s: &str) -> Result<Self, InstanceError> {
         Ok(Self(Uuid::parse_str(s).map_err(|e| {
-            InstanceError::InvalidInstanceId(format!("Invalid UUID: {}", e))
+            InstanceError::InvalidInstanceId(format!("Invalid UUID: {e}"))
         })?))
     }
 }
@@ -140,7 +140,7 @@ impl Instance {
         // State directory: ~/.local/share/petaltongue/sessions/
         let state_dir = base_dir.join("sessions");
         fs::create_dir_all(&state_dir).map_err(|e| {
-            InstanceError::IoError(format!("Failed to create state directory: {}", e))
+            InstanceError::IoError(format!("Failed to create state directory: {e}"))
         })?;
 
         let state_path = state_dir.join(format!("{}.ron", id.as_str()));
@@ -148,7 +148,7 @@ impl Instance {
         // Socket directory: /tmp/petaltongue/ or /run/user/{uid}/petaltongue/
         let socket_dir = get_socket_dir()?;
         fs::create_dir_all(&socket_dir).map_err(|e| {
-            InstanceError::IoError(format!("Failed to create socket directory: {}", e))
+            InstanceError::IoError(format!("Failed to create socket directory: {e}"))
         })?;
 
         let socket_path = socket_dir.join(format!("{}.sock", id.as_str()));
@@ -250,13 +250,11 @@ impl InstanceRegistry {
             return Ok(Self::new());
         }
 
-        let contents = fs::read_to_string(&path).map_err(|e| {
-            InstanceError::IoError(format!("Failed to read registry: {}", e))
-        })?;
+        let contents = fs::read_to_string(&path)
+            .map_err(|e| InstanceError::IoError(format!("Failed to read registry: {e}")))?;
 
-        ron::from_str(&contents).map_err(|e| {
-            InstanceError::ParseError(format!("Failed to parse registry: {}", e))
-        })
+        ron::from_str(&contents)
+            .map_err(|e| InstanceError::ParseError(format!("Failed to parse registry: {e}")))
     }
 
     /// Save registry to disk
@@ -270,15 +268,15 @@ impl InstanceRegistry {
         // Ensure directory exists
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).map_err(|e| {
-                InstanceError::IoError(format!("Failed to create registry directory: {}", e))
+                InstanceError::IoError(format!("Failed to create registry directory: {e}"))
             })?;
         }
 
         let contents = ron::ser::to_string_pretty(self, ron::ser::PrettyConfig::default())
-            .map_err(|e| InstanceError::SerializeError(format!("Failed to serialize: {}", e)))?;
+            .map_err(|e| InstanceError::SerializeError(format!("Failed to serialize: {e}")))?;
 
         fs::write(&path, contents)
-            .map_err(|e| InstanceError::IoError(format!("Failed to write registry: {}", e)))?;
+            .map_err(|e| InstanceError::IoError(format!("Failed to write registry: {e}")))?;
 
         Ok(())
     }
@@ -291,7 +289,11 @@ impl InstanceRegistry {
     ///
     /// Returns error if instance cannot be saved
     pub fn register(&mut self, instance: Instance) -> Result<(), InstanceError> {
-        tracing::info!("Registering instance: {} (PID: {})", instance.id, instance.pid);
+        tracing::info!(
+            "Registering instance: {} (PID: {})",
+            instance.id,
+            instance.pid
+        );
         self.instances.insert(instance.id.clone(), instance);
         self.save()?;
         Ok(())
@@ -346,10 +348,7 @@ impl InstanceRegistry {
     /// List all alive instances
     #[must_use]
     pub fn list_alive(&self) -> Vec<&Instance> {
-        self.instances
-            .values()
-            .filter(|i| i.is_alive())
-            .collect()
+        self.instances.values().filter(|i| i.is_alive()).collect()
     }
 
     /// Find instance by window ID
@@ -454,7 +453,7 @@ fn process_exists(pid: u32) -> bool {
     // On Unix, we can check if the process exists by sending signal 0
     #[cfg(unix)]
     {
-        use nix::sys::signal::{kill, Signal};
+        use nix::sys::signal::{Signal, kill};
         use nix::unistd::Pid;
 
         match kill(Pid::from_raw(pid as i32), Signal::SIGTERM) {
@@ -475,7 +474,7 @@ fn process_exists(pid: u32) -> bool {
 
 /// Get the base directory for petalTongue data
 ///
-/// Uses XDG_DATA_HOME or ~/.local/share
+/// Uses `XDG_DATA_HOME` or ~/.local/share
 fn get_base_dir() -> Result<PathBuf, InstanceError> {
     if let Ok(xdg_data) = std::env::var("XDG_DATA_HOME") {
         Ok(PathBuf::from(xdg_data).join("petaltongue"))
@@ -494,8 +493,8 @@ fn get_base_dir() -> Result<PathBuf, InstanceError> {
 fn get_socket_dir() -> Result<PathBuf, InstanceError> {
     // Try /run/user/{uid}/petaltongue first (more secure)
     if let Ok(uid) = std::env::var("UID") {
-        let run_dir = PathBuf::from(format!("/run/user/{}/petaltongue", uid));
-        if run_dir.parent().map_or(false, |p| p.exists()) {
+        let run_dir = PathBuf::from(format!("/run/user/{uid}/petaltongue"));
+        if run_dir.parent().is_some_and(std::path::Path::exists) {
             return Ok(run_dir);
         }
     }
@@ -579,4 +578,3 @@ mod tests {
         assert_eq!(instance.metadata.get("key2"), Some(&"value2".to_string()));
     }
 }
-

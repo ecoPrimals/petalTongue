@@ -178,4 +178,3 @@ mod tests {
         assert!(path.to_string_lossy().contains(&instance_id.as_str()));
     }
 }
-

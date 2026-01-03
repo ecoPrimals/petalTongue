@@ -1,262 +1,234 @@
-# 🌸 PetalTongue - Documentation Index
+# 📚 petalTongue Documentation Index
 
+**Last Updated**: January 3, 2026 (Evening)  
 **Version**: 0.1.0  
-**Last Updated**: January 3, 2026  
-**Status**: ✅ Production Ready (Grade: A++ - 96/100)
+**Status**: Production-Ready | Deep Debt Evolution
 
 ---
 
-## 🚀 Quick Navigation
+## 🎯 Start Here
 
-**New User?** → Start with `README.md` then `START_HERE.md`  
-**Developer?** → See `STATUS.md` and `READY_FOR_NEXT_PHASE.md`  
-**Deploying?** → Read `DEPLOYMENT_GUIDE.md` and `ENV_VARS.md`
+### New to petalTongue?
+1. **[START_HERE.md](START_HERE.md)** - Navigation guide (read this first!)
+2. **[README.md](README.md)** - Project overview and quick start
+3. **[STATUS.md](STATUS.md)** - Current implementation status
 
----
-
-## 📁 Root Documentation (13 Essential Files)
-
-### Essential Reading
-
-1. **README.md** - Project overview, features, quick start
-2. **STATUS.md** - Detailed metrics, quality dashboard
-3. **START_HERE.md** - Navigation guide for new contributors
-
-### Configuration & Deployment
-
-4. **ENV_VARS.md** - Complete environment variable reference
-5. **DEPLOYMENT_GUIDE.md** - Production deployment instructions
-6. **QUICK_REFERENCE.md** - Command quick reference
-
-### Evolution & Planning
-
-7. **READY_FOR_NEXT_PHASE.md** - Current status & next steps (NEW!)
-8. **DUAL_TRACK_EVOLUTION_MASTER.md** - Multi-track roadmap
-9. **DISCOVERY_EVOLUTION_TRACKING.md** - Discovery infrastructure progress
-10. **TESTING_STRATEGY_AND_COVERAGE.md** - Testing approach
-
-### Reference
-
-11. **CHANGELOG.md** - Version history
-12. **PROJECT_SUMMARY.md** - High-level summary
-13. **DOCUMENTATION_INDEX.md** - This file
+### Quick Commands
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Commands and shortcuts
 
 ---
 
-## 📂 Specifications (`specs/`)
+## 📊 Core Documentation
 
-### Core Specifications (3 Files)
+### Architecture & Design
+| Document | Description | Size |
+|----------|-------------|------|
+| [specs/PETALTONGUE_UI_AND_VISUALIZATION_SPECIFICATION.md](specs/PETALTONGUE_UI_AND_VISUALIZATION_SPECIFICATION.md) | Complete UI/visualization spec | Comprehensive |
+| [specs/HUMAN_ENTROPY_CAPTURE_SPECIFICATION.md](specs/HUMAN_ENTROPY_CAPTURE_SPECIFICATION.md) | Human entropy integration spec | Comprehensive |
+| [specs/DISCOVERY_INFRASTRUCTURE_EVOLUTION_SPECIFICATION.md](specs/DISCOVERY_INFRASTRUCTURE_EVOLUTION_SPECIFICATION.md) | Discovery evolution roadmap | Comprehensive |
 
-1. **PETALTONGUE_UI_AND_VISUALIZATION_SPECIFICATION.md**
-   - Core UI/UX specification
-   - Visualization architecture
-   - Component design
+### Operations
+| Document | Description |
+|----------|-------------|
+| [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | Production deployment guide |
+| [ENV_VARS.md](ENV_VARS.md) | Environment variable reference |
+| [TESTING_STRATEGY_AND_COVERAGE.md](TESTING_STRATEGY_AND_COVERAGE.md) | Testing approach & metrics |
 
-2. **DISCOVERY_INFRASTRUCTURE_EVOLUTION_SPECIFICATION.md**
-   - Discovery roadmap
-   - mDNS implementation details
-   - Protocol adapters
-
-3. **HUMAN_ENTROPY_CAPTURE_SPECIFICATION.md** (NEW!)
-   - Multi-modal entropy capture
-   - Quality assessment algorithms
-   - 5 modality specifications
-   - Privacy & security design
-
----
-
-## 📂 Architecture Documentation (`docs/architecture/`)
-
-- `EVOLUTION_PLAN.md` - Long-term evolution
-- `VISION_SUMMARY.md` - Project vision
-- `MULTI_PRIMAL_INTEGRATION_PLAN.md` - Integration strategy
+### Policies
+| Document | Description |
+|----------|-------------|
+| [MOCK_USAGE_POLICY.md](MOCK_USAGE_POLICY.md) | Mock data usage guidelines |
 
 ---
 
-## 📂 Session History (`docs/sessions/`)
+## 🔄 Deep Debt Evolution (January 3, 2026)
 
-### January 3, 2026 (20 Documents)
+### Session Reports
 
-**Major Work**:
-- Human Entropy System (Phase 1 complete)
-- Caching Layer (Phase 2 complete)
-- Discovery infrastructure (mDNS + DNS parser)
-- biomeOS live integration
+| Document | Description | Size |
+|----------|-------------|------|
+| **[COMPREHENSIVE_AUDIT_REPORT_JAN_3_2026.md](COMPREHENSIVE_AUDIT_REPORT_JAN_3_2026.md)** | **Complete codebase audit** | **28K** |
+| [DEEP_DEBT_FINAL_STATUS_JAN_3_2026.md](DEEP_DEBT_FINAL_STATUS_JAN_3_2026.md) | Session summary & achievements | 8K |
+| [DEEP_DEBT_EXECUTION_PROGRESS_JAN_3_EVENING.md](DEEP_DEBT_EXECUTION_PROGRESS_JAN_3_EVENING.md) | Task-by-task execution tracking | 8K |
+| [DEEP_DEBT_SESSION_SUMMARY_JAN_3_EVENING.md](DEEP_DEBT_SESSION_SUMMARY_JAN_3_EVENING.md) | Metrics & progress summary | 7K |
+| [SMART_REFACTORING_PLAN_APP_RS.md](SMART_REFACTORING_PLAN_APP_RS.md) | app.rs refactoring strategy | 10K |
+| [DEEP_DEBT_STATUS.md](DEEP_DEBT_STATUS.md) | Real-time progress tracker | 1K |
 
-**Location**: `docs/sessions/jan3-2026/`
-
-**Key Documents**:
-- `HUMAN_ENTROPY_INTEGRATION_VISION_JAN_3_2026.md` (559 lines)
-- `COMPLETE_SESSION_JANUARY_3_2026_FINAL.md` (260 lines)
-- `HUMAN_ENTROPY_IMPLEMENTATION_TRACKING_JAN_3_2026.md` (350+ lines)
-- Plus 17 detailed progress reports
-
-### January 2, 2026 (4 Documents)
-
-**Major Work**:
-- Comprehensive codebase audit
-- Quality assessment (Grade A)
-- Action items identified
-
-**Location**: `docs/sessions/jan2-2026/`
+### Key Achievements
+- ✅ **Comprehensive Audit**: 60-page analysis
+- ✅ **Cargo fmt**: 2,515 lines cleaned (perfect)
+- ✅ **Test Compilation**: Zero errors
+- ✅ **Clippy**: 40% reduction (101 → 60 warnings)
+- 🔄 **Smart Refactoring**: Architecture designed
+- **Grade**: A- (Excellent foundations)
 
 ---
 
-## 📂 Latest Features Documentation
+## 📁 Documentation by Category
 
-### Human Entropy System (NEW!)
-
-**Vision**: `HUMAN_ENTROPY_INTEGRATION_VISION_JAN_3_2026.md` (559 lines)
-- Multi-modal entropy capture (song, art, story, gesture, video)
-- Architecture: petalTongue → biomeOS → BearDog
-- Privacy-first, stream-only design
-
-**Specification**: `specs/HUMAN_ENTROPY_CAPTURE_SPECIFICATION.md` (850+ lines)
-- Complete technical specification
-- 5 modality types with data structures
-- Quality assessment algorithms
-- Implementation phases
-
-**Tracking**: `HUMAN_ENTROPY_IMPLEMENTATION_TRACKING_JAN_3_2026.md` (350+ lines)
-- Phase-by-phase progress
-- Metrics & statistics
-- Session log
-
-### Caching Layer
-
-**Implementation**: `crates/petal-tongue-discovery/src/cache.rs` (355 lines)
-- LRU eviction
-- Per-type TTLs
-- Statistics tracking
-- 10 comprehensive tests
-
-**Configuration**: `ENV_VARS.md` (updated)
-- Cache TTL configuration
-- Performance tuning
-- Usage examples
-
----
-
-## 📂 Crate Documentation
-
-### Source Crates (8 Total)
-
-1. **petal-tongue-core** - Core types & traits
-2. **petal-tongue-api** - API client (legacy)
-3. **petal-tongue-discovery** - Discovery + caching
-4. **petal-tongue-entropy** - Human entropy capture (NEW!)
-5. **petal-tongue-graph** - Graph algorithms
-6. **petal-tongue-animation** - Animation engine
-7. **petal-tongue-telemetry** - Logging & metrics
-8. **petal-tongue-ui** - Main UI application
-
-**All crates**: See inline rustdoc with `cargo doc --open`
-
----
-
-## 📊 Current Status (January 3, 2026)
-
-### Metrics
-
-| Metric | Value | Status |
-|--------|-------|--------|
-| **Grade** | A++ (96/100) | ✅ Excellent |
-| **Tests** | 126/126 | ✅ 100% passing |
-| **Coverage** | ~60% | ✅ Good |
-| **Code** | ~18,400 lines | ✅ Well-organized |
-| **Docs** | ~5,750 lines | ✅ Comprehensive |
-| **Unsafe** | 0 | ✅ Perfect |
-| **Hardcoding** | 0 | ✅ Capability-based |
-
-### Features Complete
-
-- ✅ mDNS Discovery (Track A Phase 1)
-- ✅ DNS Parser (Track A Phase 1b)
-- ✅ Caching Layer (Track A Phase 2)
-- ✅ biomeOS Integration (Track B Phase 1)
-- ✅ Human Entropy Foundation (Track C Phase 1)
-
----
-
-## 🎯 Three Evolution Tracks
-
-### Track A: Discovery & Infrastructure
-- Phase 1a (mDNS): ✅ Complete
-- Phase 1b (DNS Parser): ✅ Complete
-- Phase 2 (Caching): ✅ Complete
-- Phase 3 (tarpc): ⏳ Next
-
-### Track B: Trust Integration
-- Phase 1 (API): ✅ Complete
-- Phase 2 (Viz UI): ⏳ Next
-
-### Track C: Human Entropy
-- Phase 1 (Foundation): ✅ Complete
-- Phase 2 (Audio): ⏳ Next
-
----
-
-## 🚀 Quick Access
-
-### For New Users
-1. `README.md` - What is petalTongue?
-2. `START_HERE.md` - How to get started
-3. `ENV_VARS.md` - How to configure
+### For Users
+- [README.md](README.md) - What is petalTongue?
+- [START_HERE.md](START_HERE.md) - How to navigate
+- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Quick commands
+- [docs/operations/QUICK_START.md](docs/operations/QUICK_START.md) - Getting started
 
 ### For Developers
-1. `STATUS.md` - Current metrics
-2. `READY_FOR_NEXT_PHASE.md` - What's next
-3. `DUAL_TRACK_EVOLUTION_MASTER.md` - Roadmap
-4. `specs/` directory - Technical specifications
+- [STATUS.md](STATUS.md) - Current state
+- [specs/](specs/) - Technical specifications
+- [docs/architecture/](docs/architecture/) - Design documents
+- [TESTING_STRATEGY_AND_COVERAGE.md](TESTING_STRATEGY_AND_COVERAGE.md) - Testing guide
 
-### For Deployment
-1. `DEPLOYMENT_GUIDE.md` - Production setup
-2. `ENV_VARS.md` - Configuration
-3. `TESTING_STRATEGY_AND_COVERAGE.md` - Testing
+### For Auditors
+- [COMPREHENSIVE_AUDIT_REPORT_JAN_3_2026.md](COMPREHENSIVE_AUDIT_REPORT_JAN_3_2026.md) - Latest audit
+- [DEEP_DEBT_FINAL_STATUS_JAN_3_2026.md](DEEP_DEBT_FINAL_STATUS_JAN_3_2026.md) - Current status
+- [MOCK_USAGE_POLICY.md](MOCK_USAGE_POLICY.md) - Mock usage policy
+- [STATUS.md](STATUS.md) - Implementation status
 
-### For Understanding Design
-1. `HUMAN_ENTROPY_INTEGRATION_VISION_JAN_3_2026.md` - Latest vision
-2. `specs/HUMAN_ENTROPY_CAPTURE_SPECIFICATION.md` - Technical spec
-3. `docs/sessions/jan3-2026/` - Development history
+### For Contributors
+- [CHANGELOG.md](CHANGELOG.md) - Version history
+- [docs/features/](docs/features/) - Feature documentation
+- [SMART_REFACTORING_PLAN_APP_RS.md](SMART_REFACTORING_PLAN_APP_RS.md) - Refactoring guide
 
 ---
 
-## 📞 Getting Help
+## 🗂️ Directory Structure
 
-### Documentation
-
-- **Can't find something?** Check this index or `START_HERE.md`
-- **Configuration issues?** See `ENV_VARS.md`
-- **Deployment questions?** Read `DEPLOYMENT_GUIDE.md`
-
-### Debugging
-
-```bash
-# Enable debug logging
-RUST_LOG=debug cargo run
-
-# Check specific module
-RUST_LOG=petal_tongue_discovery=trace cargo run
-
-# Run tests with output
-cargo test -- --nocapture
+```
+petalTongue/
+├── README.md                           # Project overview
+├── START_HERE.md                       # Navigation guide
+├── STATUS.md                           # Current status
+├── QUICK_REFERENCE.md                  # Command reference
+├── DEPLOYMENT_GUIDE.md                 # Deployment guide
+├── ENV_VARS.md                         # Environment variables
+├── MOCK_USAGE_POLICY.md                # Mock usage policy
+├── TESTING_STRATEGY_AND_COVERAGE.md    # Testing strategy
+├── CHANGELOG.md                        # Version history
+│
+├── Deep Debt Session (Jan 3, 2026)
+│   ├── COMPREHENSIVE_AUDIT_REPORT_JAN_3_2026.md
+│   ├── DEEP_DEBT_FINAL_STATUS_JAN_3_2026.md
+│   ├── DEEP_DEBT_EXECUTION_PROGRESS_JAN_3_EVENING.md
+│   ├── DEEP_DEBT_SESSION_SUMMARY_JAN_3_EVENING.md
+│   ├── SMART_REFACTORING_PLAN_APP_RS.md
+│   └── DEEP_DEBT_STATUS.md
+│
+├── specs/                              # Technical specifications
+│   ├── PETALTONGUE_UI_AND_VISUALIZATION_SPECIFICATION.md
+│   ├── HUMAN_ENTROPY_CAPTURE_SPECIFICATION.md
+│   └── DISCOVERY_INFRASTRUCTURE_EVOLUTION_SPECIFICATION.md
+│
+├── docs/                               # Documentation tree
+│   ├── architecture/                   # Architecture docs
+│   ├── features/                       # Feature docs
+│   ├── integration/                    # Integration guides
+│   ├── operations/                     # Operations guides
+│   ├── audit/                          # Audit reports (archive)
+│   └── sessions/                       # Session reports (archive)
+│
+├── sandbox/                            # Development sandbox
+│   ├── scenarios/                      # Test scenarios
+│   └── scripts/                        # Helper scripts
+│
+└── showcase/                           # Demonstration materials
+    └── presentations/                  # Presentation materials
 ```
 
 ---
 
-## 🎊 Bottom Line
+## 📈 Current Metrics (Jan 3, 2026)
 
-**Documentation Status**: ✅ **EXCELLENT**
-
-- Root: 13 essential, up-to-date documents
-- Specs: 3 comprehensive specifications
-- Sessions: 24 archived detailed reports
-- Inline: Complete rustdoc for all public APIs
-
-**Everything is documented, organized, and current.**
+| Metric | Value | Target | Status |
+|--------|-------|--------|--------|
+| **Grade** | A- | A+ | 🔄 Evolving |
+| **Tests** | 155+ | - | ✅ 100% passing |
+| **Coverage** | 51% | 90% | ⏳ Planned |
+| **Unsafe Blocks** | 4 | <2 | ⏳ Planned |
+| **Clippy Warnings** | ~60 | 0 | 🔄 40% done |
+| **Formatting** | ✅ Perfect | ✅ Perfect | ✅ Complete |
+| **Documentation** | >10K lines | - | ✅ Outstanding |
 
 ---
 
-🌸 **Navigate with confidence - all information is here!** 🌸
+## 🎯 Key Principles
 
-**Last Updated**: January 3, 2026
+### Deep Debt Philosophy
+1. **Evolution over Fixing** - Architectural improvement, not patches
+2. **Modern Idiomatic Rust** - Safe, fast, maintainable
+3. **Smart Refactoring** - Architectural, not mechanical
+4. **Self-Knowledge Only** - No hardcoded dependencies
+5. **Runtime Discovery** - Capability-based architecture
+6. **No Mocks in Production** - Real implementations only
+
+### TRUE PRIMAL Architecture
+- ✅ **Zero Hardcoded Primal Dependencies**
+- ✅ **Multi-Provider Discovery**
+- ✅ **Pure Capability-Based Routing**
+- ✅ **Runtime-Only Knowledge**
+
+---
+
+## 🚀 Roadmap
+
+### Immediate
+- 🔄 Complete app.rs refactoring
+- 🔄 Finish clippy warnings
+- 📋 Begin visual_2d.rs refactoring
+
+### Short-term
+- 📋 Evolve unsafe code to safe
+- 📋 Remove hardcoding
+- 📋 Expand test coverage
+
+### Medium-term
+- 📋 Discovery Evolution implementation
+- 📋 Human Entropy Capture integration
+- 📋 90% test coverage
+- 📋 E2E, chaos, fault testing
+
+---
+
+## 📞 Resources
+
+### Quick Links
+- **GitHub**: https://github.com/ecoPrimals/petalTongue
+- **Issues**: GitHub Issues
+- **Discussions**: GitHub Discussions
+
+### Support
+- Review [START_HERE.md](START_HERE.md) for navigation
+- Check [STATUS.md](STATUS.md) for current state
+- Read [COMPREHENSIVE_AUDIT_REPORT_JAN_3_2026.md](COMPREHENSIVE_AUDIT_REPORT_JAN_3_2026.md) for detailed analysis
+
+---
+
+## 🏆 Notable Features
+
+### Revolutionary Accessibility
+- First DevOps tool accessible to blind users
+- Multi-modal visualization (visual + audio)
+- Complete keyboard navigation
+- Screen reader support
+
+### Technical Excellence
+- **TRUE PRIMAL architecture** (zero hardcoded dependencies)
+- **Multi-instance management** (never lose work)
+- **Complete state persistence** (auto-save + recovery)
+- **IPC infrastructure** (remote management)
+- **Test coverage** (155+ tests, 100% passing)
+- **Outstanding documentation** (>10,000 lines)
+
+### Ethical Design
+- Digital sovereignty at core
+- User-controlled, transparent
+- No telemetry to third parties
+- AGPL-3.0 licensed
+
+---
+
+*Last Updated: January 3, 2026 (Evening)*  
+*Version: 0.1.0*  
+*Status: Production-Ready | Deep Debt Evolution*  
+*Grade: A- (Excellent foundations, active modernization)*
+
+🌸 **Universal. Accessible. Multimodal. TRUE PRIMAL.** 🚀

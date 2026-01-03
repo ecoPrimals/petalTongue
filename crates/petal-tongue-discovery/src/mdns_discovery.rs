@@ -12,7 +12,7 @@ use crate::VisualizationCapability;
 pub async fn discover_via_mdns() -> anyhow::Result<Vec<Box<dyn VisualizationDataProvider>>> {
     // TODO: Implement actual mDNS discovery using mdns-sd crate
     // For now, return empty (will fall back to environment hints)
-    
+
     tracing::debug!("mDNS discovery not yet implemented");
     Ok(Vec::new())
 }
@@ -21,7 +21,7 @@ pub async fn discover_via_mdns() -> anyhow::Result<Vec<Box<dyn VisualizationData
 pub async fn query_capability(_capability: VisualizationCapability) -> anyhow::Result<Vec<String>> {
     // TODO: Implement mDNS query
     // Returns: List of endpoint URLs that advertise this capability
-    
+
     Ok(Vec::new())
 }
 
@@ -36,4 +36,3 @@ mod tests {
         assert!(providers.is_empty());
     }
 }
-

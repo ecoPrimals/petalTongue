@@ -16,6 +16,7 @@ pub struct LiveBadge {
 
 impl LiveBadge {
     /// Create a new live badge
+    #[must_use] 
     pub fn new(source: String, update_interval: f64) -> Self {
         Self {
             indicator: LiveIndicator::new(source, update_interval),
@@ -32,7 +33,7 @@ impl LiveBadge {
     pub fn render(&mut self, ui: &mut Ui) {
         let age = self.indicator.age_seconds();
         let is_stale = self.indicator.is_stale();
-        
+
         // Color based on freshness
         let (color, text) = if !self.indicator.is_live {
             (Color32::GRAY, "WAITING")
@@ -47,13 +48,8 @@ impl LiveBadge {
             (Color32::from_rgb(0, 200, 100), "LIVE")
         };
 
-        ui.label(
-            RichText::new(text)
-                .size(11.0)
-                .strong()
-                .color(color),
-        );
-        
+        ui.label(RichText::new(text).size(11.0).strong().color(color));
+
         self.last_render = Instant::now();
     }
 
@@ -74,12 +70,13 @@ impl LiveBadge {
         ui.horizontal(|ui| {
             self.render(ui);
             ui.label(
-                RichText::new(format!("  {} • {}", 
+                RichText::new(format!(
+                    "  {} • {}",
                     self.indicator.age_string(),
                     self.indicator.source
                 ))
-                    .size(10.0)
-                    .color(Color32::GRAY),
+                .size(10.0)
+                .color(Color32::GRAY),
             );
         });
     }
@@ -97,6 +94,7 @@ pub struct LiveGraphHeader {
 
 impl LiveGraphHeader {
     /// Create a new live graph header
+    #[must_use] 
     pub fn new(title: String, source: String, update_interval: f64) -> Self {
         Self {
             title,
@@ -116,7 +114,7 @@ impl LiveGraphHeader {
             ui.heading(RichText::new(&self.title).size(16.0));
             ui.add_space(10.0);
             self.badge.render(ui);
-            
+
             if self.show_frequency {
                 ui.label(
                     RichText::new(format!("  ⟳ {:.1}s", self.badge.indicator.update_interval))
@@ -151,6 +149,7 @@ pub struct LiveMetric {
 
 impl LiveMetric {
     /// Create a new live metric
+    #[must_use] 
     pub fn new(label: String, source: String, update_interval: f64) -> Self {
         Self {
             label,
@@ -172,13 +171,13 @@ impl LiveMetric {
         ui.horizontal(|ui| {
             ui.label(RichText::new(&self.label).size(12.0).color(Color32::GRAY));
             ui.add_space(5.0);
-            
+
             let value_text = if let Some(ref unit) = self.unit {
                 format!("{}{}", self.value, unit)
             } else {
                 self.value.clone()
             };
-            
+
             ui.label(RichText::new(value_text).size(14.0).strong());
             ui.add_space(5.0);
             self.badge.render(ui);
@@ -190,13 +189,13 @@ impl LiveMetric {
         ui.vertical(|ui| {
             ui.label(RichText::new(&self.label).size(11.0).color(Color32::GRAY));
             ui.add_space(2.0);
-            
+
             let value_text = if let Some(ref unit) = self.unit {
                 format!("{}{}", self.value, unit)
             } else {
                 self.value.clone()
             };
-            
+
             ui.label(RichText::new(value_text).size(20.0).strong());
             ui.add_space(2.0);
             self.badge.render(ui);
@@ -216,6 +215,7 @@ pub struct ConnectionStatus {
 
 impl ConnectionStatus {
     /// Create a new connection status
+    #[must_use] 
     pub fn new(target: String) -> Self {
         Self {
             connected: false,
@@ -246,18 +246,23 @@ impl ConnectionStatus {
         ui.horizontal(|ui| {
             ui.label(RichText::new(symbol).size(14.0).color(color));
             ui.label(RichText::new(status_text).size(12.0).color(color));
-            ui.label(RichText::new(format!("• {}", self.target))
-                .size(10.0)
-                .color(Color32::GRAY));
+            ui.label(
+                RichText::new(format!("• {}", self.target))
+                    .size(10.0)
+                    .color(Color32::GRAY),
+            );
         });
 
         if let Some(last) = self.last_connection {
             let elapsed = last.elapsed();
             if elapsed < Duration::from_secs(60) {
                 ui.label(
-                    RichText::new(format!("  Last connected: {:.0}s ago", elapsed.as_secs_f32()))
-                        .size(9.0)
-                        .color(Color32::DARK_GRAY),
+                    RichText::new(format!(
+                        "  Last connected: {:.0}s ago",
+                        elapsed.as_secs_f32()
+                    ))
+                    .size(9.0)
+                    .color(Color32::DARK_GRAY),
                 );
             }
         }
@@ -281,18 +286,14 @@ pub fn render_timestamp(ui: &mut Ui, instant: Instant) {
     let text = if age < 1.0 {
         "Just now".to_string()
     } else if age < 60.0 {
-        format!("{:.1}s ago", age)
+        format!("{age:.1}s ago")
     } else if age < 3600.0 {
         format!("{:.1}m ago", age / 60.0)
     } else {
         format!("{:.1}h ago", age / 3600.0)
     };
 
-    ui.label(
-        RichText::new(text)
-            .size(10.0)
-            .color(Color32::GRAY),
-    );
+    ui.label(RichText::new(text).size(10.0).color(Color32::GRAY));
 }
 
 /// Request continuous repaint for live updates
@@ -324,13 +325,12 @@ mod tests {
     fn test_connection_status() {
         let mut status = ConnectionStatus::new("localhost:3000".to_string());
         assert!(!status.connected);
-        
+
         status.mark_connected();
         assert!(status.connected);
         assert!(status.last_connection.is_some());
-        
+
         status.mark_disconnected();
         assert!(!status.connected);
     }
 }
-
