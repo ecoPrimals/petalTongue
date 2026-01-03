@@ -40,6 +40,11 @@ mod mdns_provider;
 mod mock_provider;
 mod traits; // Phase 2: Caching layer (complete)
 
+// Modern async patterns (Discovery Evolution)
+pub mod concurrent;
+pub mod errors;
+pub mod retry;
+
 #[cfg(feature = "mdns")]
 mod mdns_discovery;
 
@@ -49,6 +54,11 @@ pub use http_provider::HttpVisualizationProvider;
 pub use mdns_provider::MdnsVisualizationProvider;
 pub use mock_provider::MockVisualizationProvider;
 pub use traits::{ProviderMetadata, VisualizationDataProvider}; // Export cache stats for monitoring
+
+// Re-export modern patterns
+pub use concurrent::{ConcurrentDiscoveryResult, HealthStatus, ProviderHealth};
+pub use errors::{DiscoveryError, DiscoveryFailure, DiscoveryResult};
+pub use retry::RetryPolicy;
 
 use anyhow::Result;
 
