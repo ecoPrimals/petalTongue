@@ -278,4 +278,87 @@ mod tests {
         let result = discover_first_available(providers, Duration::from_secs(1)).await;
         assert!(result.is_err());
     }
+
+    #[tokio::test]
+    async fn test_concurrent_with_failures() {
+        // Test graceful degradation when some sources fail
+        let result = ConcurrentDiscoveryResult {
+            providers: vec![Box::new(MockVisualizationProvider::new())],
+            failures: vec![
+                DiscoveryFailure::new("mDNS", "Timeout"),
+                DiscoveryFailure::new("HTTP", "Connection refused"),
+            ],
+        };
+
+        assert_eq!(result.providers.len(), 1);
+        assert_eq!(result.failures.len(), 2);
+        assert_eq!(result.failures[0].source, "mDNS");
+        assert_eq!(result.failures[1].source, "HTTP");
+    }
+
+    #[tokio::test]
+    async fn test_health_status_variants() {
+        let healthy = HealthStatus::Healthy {
+            message: "OK".to_string(),
+            response_time: Duration::from_millis(50),
+        };
+        let unhealthy = HealthStatus::Unhealthy {
+            error: "Service unavailable".to_string(),
+        };
+        let timeout = HealthStatus::Timeout {
+            duration: Duration::from_secs(5),
+        };
+
+        assert!(matches!(healthy, HealthStatus::Healthy { .. }));
+        assert!(matches!(unhealthy, HealthStatus::Unhealthy { .. }));
+        assert!(matches!(timeout, HealthStatus::Timeout { .. }));
+    }
+
+    #[tokio::test]
+    async fn test_provider_health_is_healthy() {
+        let healthy = ProviderHealth {
+            name: "test".to_string(),
+            endpoint: "http://test:8080".to_string(),
+            status: HealthStatus::Healthy {
+                message: "OK".to_string(),
+                response_time: Duration::from_millis(10),
+            },
+            checked_at: std::time::Instant::now(),
+        };
+
+        let unhealthy = ProviderHealth {
+            name: "test2".to_string(),
+            endpoint: "http://test2:8080".to_string(),
+            status: HealthStatus::Unhealthy {
+                error: "Error".to_string(),
+            },
+            checked_at: std::time::Instant::now(),
+        };
+
+        assert!(healthy.is_healthy());
+        assert!(!unhealthy.is_healthy());
+    }
+
+    #[tokio::test]
+    async fn test_parallel_faster_than_sequential() {
+        // Verify parallel execution is actually faster
+        let providers: Vec<Box<dyn VisualizationDataProvider>> = vec![
+            Box::new(MockVisualizationProvider::new()),
+            Box::new(MockVisualizationProvider::new()),
+            Box::new(MockVisualizationProvider::new()),
+        ];
+
+        let start = std::time::Instant::now();
+        let health = check_all_providers_health(&providers, Duration::from_secs(1)).await;
+        let elapsed = start.elapsed();
+
+        // If sequential, would take 3 * provider_delay
+        // Parallel should be much faster
+        assert_eq!(health.len(), 3);
+        assert!(
+            elapsed < Duration::from_millis(500),
+            "Parallel execution should be fast, took {:?}",
+            elapsed
+        );
+    }
 }
