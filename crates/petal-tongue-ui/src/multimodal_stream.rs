@@ -8,18 +8,18 @@ use std::time::{Duration, Instant};
 pub trait DataStream: Send + Sync {
     /// Current value (normalized 0.0-1.0)
     fn value(&self) -> f64;
-    
+
     /// Value range for mapping
     fn range(&self) -> (f64, f64);
-    
+
     /// Human-readable label
     fn label(&self) -> &str;
-    
+
     /// Optional: Historical values for visual rendering
     fn history(&self) -> Option<&[f64]> {
         None
     }
-    
+
     /// Update the stream (called each frame)
     fn update(&mut self) {}
 }
@@ -28,13 +28,13 @@ pub trait DataStream: Send + Sync {
 pub trait MultiModalRenderer {
     /// Render visually (line chart, bar, etc.)
     fn render_visual(&self, ui: &mut egui::Ui, stream: &dyn DataStream);
-    
+
     /// Generate audio representation (frequency, volume, waveform)
     fn render_audio(&self, stream: &dyn DataStream) -> Option<AudioRepresentation>;
-    
+
     /// Generate text description (for screen readers)
     fn render_text(&self, stream: &dyn DataStream) -> String;
-    
+
     /// Generate haptic feedback (future: vibration patterns)
     fn render_haptic(&self, stream: &dyn DataStream) -> Option<HapticPattern>;
 }
@@ -44,16 +44,16 @@ pub trait MultiModalRenderer {
 pub struct AudioRepresentation {
     /// Frequency in Hz (mapped from data value)
     pub frequency: f64,
-    
+
     /// Volume 0.0-1.0 (mapped from data value)
     pub volume: f32,
-    
+
     /// Waveform type
     pub waveform: crate::audio_pure_rust::Waveform,
-    
+
     /// Duration (for continuous streams, very short with overlap)
     pub duration: Duration,
-    
+
     /// Stereo panning -1.0 (left) to 1.0 (right)
     pub pan: f32,
 }
@@ -63,10 +63,10 @@ pub struct AudioRepresentation {
 pub struct HapticPattern {
     /// Vibration intensity 0.0-1.0
     pub intensity: f32,
-    
+
     /// Duration
     pub duration: Duration,
-    
+
     /// Pattern (pulse, continuous, etc.)
     pub pattern: HapticPatternType,
 }
@@ -83,19 +83,19 @@ pub enum HapticPatternType {
 pub struct ModalityPreferences {
     /// Enable visual output (default: true)
     pub visual_enabled: bool,
-    
+
     /// Visual opacity 0.0-1.0 (for low vision users)
     pub visual_opacity: f32,
-    
+
     /// Enable audio sonification (default: false, user must opt-in)
     pub audio_enabled: bool,
-    
+
     /// Audio volume 0.0-1.0
     pub audio_volume: f32,
-    
+
     /// Enable text descriptions (default: true)
     pub text_enabled: bool,
-    
+
     /// Enable haptic feedback (default: false, when available)
     pub haptic_enabled: bool,
 }
@@ -121,7 +121,14 @@ pub struct CpuStream {
     last_update: Option<Instant>,
 }
 
+impl Default for CpuStream {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CpuStream {
+    #[must_use] 
     pub fn new() -> Self {
         Self {
             label: "CPU Usage".to_string(),
@@ -130,7 +137,7 @@ impl CpuStream {
             last_update: None,
         }
     }
-    
+
     pub fn push_value(&mut self, value: f64) {
         self.history.push(value);
         if self.history.len() > self.max_history {
@@ -144,15 +151,15 @@ impl DataStream for CpuStream {
     fn value(&self) -> f64 {
         self.history.last().copied().unwrap_or(0.0)
     }
-    
+
     fn range(&self) -> (f64, f64) {
         (0.0, 1.0) // 0-100%
     }
-    
+
     fn label(&self) -> &str {
         &self.label
     }
-    
+
     fn history(&self) -> Option<&[f64]> {
         Some(&self.history)
     }
@@ -167,6 +174,7 @@ pub struct MemoryStream {
 }
 
 impl MemoryStream {
+    #[must_use] 
     pub fn new(total_bytes: u64) -> Self {
         Self {
             label: "Memory Usage".to_string(),
@@ -175,7 +183,7 @@ impl MemoryStream {
             total_bytes,
         }
     }
-    
+
     pub fn push_value(&mut self, used_bytes: u64) {
         let value = used_bytes as f64 / self.total_bytes as f64;
         self.history.push(value);
@@ -189,15 +197,15 @@ impl DataStream for MemoryStream {
     fn value(&self) -> f64 {
         self.history.last().copied().unwrap_or(0.0)
     }
-    
+
     fn range(&self) -> (f64, f64) {
         (0.0, 1.0) // 0-100%
     }
-    
+
     fn label(&self) -> &str {
         &self.label
     }
-    
+
     fn history(&self) -> Option<&[f64]> {
         Some(&self.history)
     }
@@ -211,7 +219,14 @@ pub struct NetworkStream {
     max_bps: f64, // Maximum observed bits/sec (for normalization)
 }
 
+impl Default for NetworkStream {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NetworkStream {
+    #[must_use] 
     pub fn new() -> Self {
         Self {
             label: "Network Traffic".to_string(),
@@ -220,13 +235,13 @@ impl NetworkStream {
             max_bps: 1_000_000.0, // Start with 1 Mbps, will adjust
         }
     }
-    
+
     pub fn push_value(&mut self, bits_per_second: f64) {
         // Auto-adjust max for normalization
         if bits_per_second > self.max_bps {
             self.max_bps = bits_per_second;
         }
-        
+
         let value = (bits_per_second / self.max_bps).min(1.0);
         self.history.push(value);
         if self.history.len() > self.max_history {
@@ -239,15 +254,15 @@ impl DataStream for NetworkStream {
     fn value(&self) -> f64 {
         self.history.last().copied().unwrap_or(0.0)
     }
-    
+
     fn range(&self) -> (f64, f64) {
         (0.0, 1.0)
     }
-    
+
     fn label(&self) -> &str {
         &self.label
     }
-    
+
     fn history(&self) -> Option<&[f64]> {
         Some(&self.history)
     }
@@ -258,23 +273,21 @@ pub struct SystemMetricRenderer;
 
 impl MultiModalRenderer for SystemMetricRenderer {
     fn render_visual(&self, ui: &mut egui::Ui, stream: &dyn DataStream) {
-        use egui::*;
-        
+        use egui::{vec2, Sense, Color32, Rect};
+
         let value = stream.value();
         let label = stream.label();
-        
+
         // Visual: Bar with color coding
         ui.horizontal(|ui| {
             ui.label(label);
-            
+
             let bar_width = ui.available_width() - 60.0;
             let bar_height = 20.0;
-            
-            let (rect, _response) = ui.allocate_exact_size(
-                vec2(bar_width, bar_height),
-                Sense::hover(),
-            );
-            
+
+            let (rect, _response) =
+                ui.allocate_exact_size(vec2(bar_width, bar_height), Sense::hover());
+
             // Color code by value
             let color = if value < 0.5 {
                 Color32::from_rgb(0, 200, 0) // Green
@@ -283,27 +296,24 @@ impl MultiModalRenderer for SystemMetricRenderer {
             } else {
                 Color32::from_rgb(255, 100, 0) // Red
             };
-            
+
             // Background
             ui.painter().rect_filled(rect, 2.0, Color32::from_gray(40));
-            
+
             // Fill
             let fill_width = rect.width() * value as f32;
-            let fill_rect = Rect::from_min_size(
-                rect.min,
-                vec2(fill_width, rect.height()),
-            );
+            let fill_rect = Rect::from_min_size(rect.min, vec2(fill_width, rect.height()));
             ui.painter().rect_filled(fill_rect, 2.0, color);
-            
+
             // Percentage text
             ui.label(format!("{:.1}%", value * 100.0));
         });
     }
-    
+
     fn render_audio(&self, stream: &dyn DataStream) -> Option<AudioRepresentation> {
         let value = stream.value();
         let label = stream.label();
-        
+
         // Map different metrics to different audio characteristics
         if label.contains("CPU") {
             // CPU: Frequency mapping (200Hz at 0% to 2000Hz at 100%)
@@ -336,12 +346,12 @@ impl MultiModalRenderer for SystemMetricRenderer {
             None
         }
     }
-    
+
     fn render_text(&self, stream: &dyn DataStream) -> String {
         let value = stream.value();
         let label = stream.label();
         let percent = value * 100.0;
-        
+
         let status = if value < 0.5 {
             "idle"
         } else if value < 0.8 {
@@ -349,13 +359,13 @@ impl MultiModalRenderer for SystemMetricRenderer {
         } else {
             "busy"
         };
-        
-        format!("{}: {:.1}% - {}", label, percent, status)
+
+        format!("{label}: {percent:.1}% - {status}")
     }
-    
+
     fn render_haptic(&self, stream: &dyn DataStream) -> Option<HapticPattern> {
         let value = stream.value();
-        
+
         Some(HapticPattern {
             intensity: value as f32,
             duration: Duration::from_millis(100),
@@ -371,40 +381,39 @@ impl MultiModalRenderer for SystemMetricRenderer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_cpu_stream() {
         let mut stream = CpuStream::new();
         stream.push_value(0.45);
-        
+
         assert_eq!(stream.value(), 0.45);
         assert_eq!(stream.range(), (0.0, 1.0));
         assert_eq!(stream.label(), "CPU Usage");
     }
-    
+
     #[test]
     fn test_audio_representation() {
         let stream = CpuStream::new();
         let renderer = SystemMetricRenderer;
-        
+
         let audio = renderer.render_audio(&stream);
         assert!(audio.is_some());
-        
+
         let audio = audio.unwrap();
         assert!(audio.frequency >= 200.0 && audio.frequency <= 2000.0);
     }
-    
+
     #[test]
     fn test_text_representation() {
         let mut stream = CpuStream::new();
         stream.push_value(0.65); // 65% -> active range (0.5-0.8)
-        
+
         let renderer = SystemMetricRenderer;
         let text = renderer.render_text(&stream);
-        
+
         assert!(text.contains("CPU Usage"));
         assert!(text.contains("65"));
         assert!(text.contains("active"));
     }
 }
-

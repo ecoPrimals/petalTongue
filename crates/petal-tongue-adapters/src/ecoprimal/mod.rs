@@ -1,10 +1,9 @@
 //! ecoPrimals-specific adapters module
 
-pub mod trust;
-pub mod family;
 pub mod capabilities;
+pub mod family;
+pub mod trust;
 
-pub use trust::EcoPrimalTrustAdapter;
-pub use family::EcoPrimalFamilyAdapter;
 pub use capabilities::EcoPrimalCapabilityAdapter;
-
+pub use family::EcoPrimalFamilyAdapter;
+pub use trust::EcoPrimalTrustAdapter;

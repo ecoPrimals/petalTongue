@@ -66,6 +66,7 @@ pub enum ColorScheme {
 
 impl ColorScheme {
     /// Get the name of the color scheme
+    #[must_use] 
     pub fn name(self) -> &'static str {
         match self {
             Self::Default => "Default",
@@ -79,6 +80,7 @@ impl ColorScheme {
     }
 
     /// Get all available color schemes
+    #[must_use] 
     pub fn all() -> &'static [Self] {
         &[
             Self::Default,
@@ -107,6 +109,7 @@ pub enum FontSize {
 
 impl FontSize {
     /// Get the multiplier for this font size
+    #[must_use] 
     pub fn multiplier(self) -> f32 {
         match self {
             Self::Small => 0.85,
@@ -117,6 +120,7 @@ impl FontSize {
     }
 
     /// Get the name of this font size
+    #[must_use] 
     pub fn name(self) -> &'static str {
         match self {
             Self::Small => "Small",
@@ -152,6 +156,7 @@ pub struct ColorPalette {
 
 impl ColorPalette {
     /// Get the color palette for a given scheme
+    #[must_use] 
     pub fn from_scheme(scheme: ColorScheme) -> Self {
         match scheme {
             ColorScheme::Default => Self::default(),
@@ -167,14 +172,14 @@ impl ColorPalette {
     /// Default color palette
     fn default() -> Self {
         Self {
-            healthy: Color32::from_rgb(50, 200, 100),   // Green
-            warning: Color32::from_rgb(255, 180, 50),   // Orange
-            error: Color32::from_rgb(220, 50, 50),      // Red
-            background: Color32::from_rgb(25, 25, 30),  // Dark gray
+            healthy: Color32::from_rgb(50, 200, 100),  // Green
+            warning: Color32::from_rgb(255, 180, 50),  // Orange
+            error: Color32::from_rgb(220, 50, 50),     // Red
+            background: Color32::from_rgb(25, 25, 30), // Dark gray
             background_alt: Color32::from_rgb(35, 35, 40),
-            text: Color32::from_rgb(240, 240, 245),     // Light gray
+            text: Color32::from_rgb(240, 240, 245), // Light gray
             text_dim: Color32::from_rgb(160, 160, 170),
-            accent: Color32::from_rgb(100, 150, 255),   // Blue
+            accent: Color32::from_rgb(100, 150, 255), // Blue
             border: Color32::from_rgb(60, 60, 70),
         }
     }
@@ -182,14 +187,14 @@ impl ColorPalette {
     /// High contrast palette (WCAG AAA)
     fn high_contrast() -> Self {
         Self {
-            healthy: Color32::from_rgb(0, 255, 100),    // Bright green
-            warning: Color32::from_rgb(255, 200, 0),    // Bright yellow
-            error: Color32::from_rgb(255, 0, 50),       // Bright red
-            background: Color32::from_rgb(0, 0, 0),     // Pure black
+            healthy: Color32::from_rgb(0, 255, 100), // Bright green
+            warning: Color32::from_rgb(255, 200, 0), // Bright yellow
+            error: Color32::from_rgb(255, 0, 50),    // Bright red
+            background: Color32::from_rgb(0, 0, 0),  // Pure black
             background_alt: Color32::from_rgb(20, 20, 20),
-            text: Color32::from_rgb(255, 255, 255),     // Pure white
+            text: Color32::from_rgb(255, 255, 255), // Pure white
             text_dim: Color32::from_rgb(200, 200, 200),
-            accent: Color32::from_rgb(100, 200, 255),   // Bright cyan
+            accent: Color32::from_rgb(100, 200, 255), // Bright cyan
             border: Color32::from_rgb(100, 100, 100),
         }
     }
@@ -198,9 +203,9 @@ impl ColorPalette {
     /// Uses blue/yellow instead of red/green
     fn deuteranopia() -> Self {
         Self {
-            healthy: Color32::from_rgb(50, 150, 255),   // Blue (good)
-            warning: Color32::from_rgb(255, 200, 50),   // Yellow (warning)
-            error: Color32::from_rgb(255, 100, 200),    // Magenta (error)
+            healthy: Color32::from_rgb(50, 150, 255), // Blue (good)
+            warning: Color32::from_rgb(255, 200, 50), // Yellow (warning)
+            error: Color32::from_rgb(255, 100, 200),  // Magenta (error)
             background: Color32::from_rgb(25, 25, 30),
             background_alt: Color32::from_rgb(35, 35, 40),
             text: Color32::from_rgb(240, 240, 245),
@@ -213,9 +218,9 @@ impl ColorPalette {
     /// Protanopia-friendly (red-blind)
     fn protanopia() -> Self {
         Self {
-            healthy: Color32::from_rgb(50, 180, 255),   // Cyan
-            warning: Color32::from_rgb(255, 220, 100),  // Yellow
-            error: Color32::from_rgb(200, 100, 255),    // Purple
+            healthy: Color32::from_rgb(50, 180, 255),  // Cyan
+            warning: Color32::from_rgb(255, 220, 100), // Yellow
+            error: Color32::from_rgb(200, 100, 255),   // Purple
             background: Color32::from_rgb(25, 25, 30),
             background_alt: Color32::from_rgb(35, 35, 40),
             text: Color32::from_rgb(240, 240, 245),
@@ -228,9 +233,9 @@ impl ColorPalette {
     /// Tritanopia-friendly (blue-yellow color blind)
     fn tritanopia() -> Self {
         Self {
-            healthy: Color32::from_rgb(50, 255, 150),   // Green
-            warning: Color32::from_rgb(255, 150, 150),  // Pink
-            error: Color32::from_rgb(255, 50, 100),     // Red-pink
+            healthy: Color32::from_rgb(50, 255, 150),  // Green
+            warning: Color32::from_rgb(255, 150, 150), // Pink
+            error: Color32::from_rgb(255, 50, 100),    // Red-pink
             background: Color32::from_rgb(25, 25, 30),
             background_alt: Color32::from_rgb(35, 35, 40),
             text: Color32::from_rgb(240, 240, 245),
@@ -248,14 +253,14 @@ impl ColorPalette {
     /// Light mode palette
     fn light() -> Self {
         Self {
-            healthy: Color32::from_rgb(0, 150, 50),     // Dark green
-            warning: Color32::from_rgb(200, 140, 0),    // Dark orange
-            error: Color32::from_rgb(180, 0, 30),       // Dark red
+            healthy: Color32::from_rgb(0, 150, 50),       // Dark green
+            warning: Color32::from_rgb(200, 140, 0),      // Dark orange
+            error: Color32::from_rgb(180, 0, 30),         // Dark red
             background: Color32::from_rgb(245, 245, 250), // Light gray
             background_alt: Color32::from_rgb(235, 235, 240),
-            text: Color32::from_rgb(20, 20, 25),        // Dark gray
+            text: Color32::from_rgb(20, 20, 25), // Dark gray
             text_dim: Color32::from_rgb(100, 100, 110),
-            accent: Color32::from_rgb(50, 100, 200),    // Blue
+            accent: Color32::from_rgb(50, 100, 200), // Blue
             border: Color32::from_rgb(200, 200, 210),
         }
     }
@@ -276,6 +281,7 @@ pub struct LiveIndicator {
 
 impl LiveIndicator {
     /// Create a new live indicator
+    #[must_use] 
     pub fn new(source: String, update_interval: f64) -> Self {
         Self {
             is_live: false,
@@ -296,6 +302,7 @@ impl LiveIndicator {
     }
 
     /// Get age of last update in seconds
+    #[must_use] 
     pub fn age_seconds(&self) -> f64 {
         use std::time::{SystemTime, UNIX_EPOCH};
         let now = SystemTime::now()
@@ -306,17 +313,19 @@ impl LiveIndicator {
     }
 
     /// Is the data stale? (older than 2x update interval)
+    #[must_use] 
     pub fn is_stale(&self) -> bool {
         self.age_seconds() > self.update_interval * 2.0
     }
 
     /// Format age as human-readable string
+    #[must_use] 
     pub fn age_string(&self) -> String {
         let age = self.age_seconds();
         if age < 1.0 {
             "Just now".to_string()
         } else if age < 60.0 {
-            format!("{:.1}s ago", age)
+            format!("{age:.1}s ago")
         } else if age < 3600.0 {
             format!("{:.1}m ago", age / 60.0)
         } else {
@@ -351,11 +360,10 @@ mod tests {
     fn test_live_indicator() {
         let mut indicator = LiveIndicator::new("test".to_string(), 1.0);
         assert!(!indicator.is_live);
-        
+
         indicator.mark_updated();
         assert!(indicator.is_live);
         assert!(indicator.age_seconds() < 0.1);
         assert!(!indicator.is_stale());
     }
 }
-

@@ -2,10 +2,11 @@
 //!
 //! Panel for users to customize accessibility settings
 
-use super::accessibility::{AccessibilitySettings, ColorScheme, FontSize, ColorPalette};
+use super::accessibility::{AccessibilitySettings, ColorPalette, ColorScheme, FontSize};
 use egui::{Context, Ui, Window};
 
 /// Accessibility settings panel
+#[derive(Default)]
 pub struct AccessibilityPanel {
     /// Settings
     pub settings: AccessibilitySettings,
@@ -13,14 +14,6 @@ pub struct AccessibilityPanel {
     pub show: bool,
 }
 
-impl Default for AccessibilityPanel {
-    fn default() -> Self {
-        Self {
-            settings: AccessibilitySettings::default(),
-            show: false,
-        }
-    }
-}
 
 impl AccessibilityPanel {
     /// Show the accessibility panel
@@ -46,16 +39,12 @@ impl AccessibilityPanel {
         // Color Scheme Section
         ui.heading("🎨 Color Scheme");
         ui.label("Choose colors that work best for you:");
-        
+
         egui::ComboBox::from_label("Color Scheme")
             .selected_text(self.settings.color_scheme.name())
             .show_ui(ui, |ui| {
                 for scheme in ColorScheme::all() {
-                    ui.selectable_value(
-                        &mut self.settings.color_scheme,
-                        *scheme,
-                        scheme.name(),
-                    );
+                    ui.selectable_value(&mut self.settings.color_scheme, *scheme, scheme.name());
                 }
             });
 
@@ -63,7 +52,7 @@ impl AccessibilityPanel {
         ui.horizontal(|ui| {
             ui.label("Preview:");
             let palette = ColorPalette::from_scheme(self.settings.color_scheme);
-            
+
             let size = egui::vec2(30.0, 20.0);
             ui.allocate_ui_with_layout(
                 egui::vec2(400.0, 30.0),
@@ -89,12 +78,16 @@ impl AccessibilityPanel {
         // Font Size Section
         ui.heading("🔤 Font Size");
         ui.label("Adjust text size for readability:");
-        
+
         ui.horizontal(|ui| {
             ui.selectable_value(&mut self.settings.font_size, FontSize::Small, "Small");
             ui.selectable_value(&mut self.settings.font_size, FontSize::Medium, "Medium");
             ui.selectable_value(&mut self.settings.font_size, FontSize::Large, "Large");
-            ui.selectable_value(&mut self.settings.font_size, FontSize::ExtraLarge, "X-Large");
+            ui.selectable_value(
+                &mut self.settings.font_size,
+                FontSize::ExtraLarge,
+                "X-Large",
+            );
         });
 
         ui.label(format!(
@@ -109,19 +102,27 @@ impl AccessibilityPanel {
         ui.heading("🔊 Audio");
         ui.label("Audio feedback and sonification:");
 
-        ui.checkbox(&mut self.settings.audio_enabled, "Enable Audio Sonification");
+        ui.checkbox(
+            &mut self.settings.audio_enabled,
+            "Enable Audio Sonification",
+        );
         ui.label("  → Convert visual data to sound (for blind users)");
 
         if self.settings.audio_enabled {
             ui.add_space(5.0);
             ui.label("Volume:");
-            ui.add(egui::Slider::new(&mut self.settings.audio_volume, 0.0..=1.0)
-                .text("Volume")
-                .clamp_to_range(true));
+            ui.add(
+                egui::Slider::new(&mut self.settings.audio_volume, 0.0..=1.0)
+                    .text("Volume")
+                    .clamp_to_range(true),
+            );
         }
 
         ui.add_space(5.0);
-        ui.checkbox(&mut self.settings.narration_enabled, "Enable Text-to-Speech Narration");
+        ui.checkbox(
+            &mut self.settings.narration_enabled,
+            "Enable Text-to-Speech Narration",
+        );
         ui.label("  → Speak UI elements and status updates");
 
         ui.add_space(10.0);
@@ -171,29 +172,33 @@ impl AccessibilityPanel {
 
         // Info footer
         ui.separator();
-        ui.label(egui::RichText::new("🌸 petalTongue: Accessible to EVERYONE")
-            .size(12.0)
-            .color(egui::Color32::GRAY));
+        ui.label(
+            egui::RichText::new("🌸 petalTongue: Accessible to EVERYONE")
+                .size(12.0)
+                .color(egui::Color32::GRAY),
+        );
     }
 
     /// Render a color preview square
     fn color_square(ui: &mut Ui, color: egui::Color32, label: &str, size: egui::Vec2) {
         let (rect, response) = ui.allocate_exact_size(size, egui::Sense::hover());
         ui.painter().rect_filled(rect, 2.0, color);
-        
+
         response.on_hover_text(label);
     }
 
     /// Get the current color palette
+    #[must_use] 
     pub fn get_palette(&self) -> ColorPalette {
         ColorPalette::from_scheme(self.settings.color_scheme)
     }
 
     /// Apply font size to text
+    #[must_use] 
     pub fn scale_font(&self, base_size: f32) -> f32 {
         base_size * self.settings.font_size.multiplier()
     }
-    
+
     /// Toggle panel visibility
     pub fn toggle(&mut self) {
         self.show = !self.show;
@@ -259,12 +264,11 @@ mod tests {
     fn test_font_scaling() {
         let mut panel = AccessibilityPanel::default();
         let base_size = 16.0;
-        
+
         panel.settings.font_size = FontSize::Small;
         assert_eq!(panel.scale_font(base_size), 13.6);
-        
+
         panel.settings.font_size = FontSize::Large;
         assert_eq!(panel.scale_font(base_size), 20.8);
     }
 }
-

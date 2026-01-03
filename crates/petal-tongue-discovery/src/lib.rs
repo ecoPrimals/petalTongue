@@ -32,23 +32,23 @@
 //! # }
 //! ```
 
+mod cache;
 mod capabilities;
 mod dns_parser;
 mod http_provider;
 mod mdns_provider;
 mod mock_provider;
-mod traits;
-mod cache; // Phase 2: Caching layer (complete)
+mod traits; // Phase 2: Caching layer (complete)
 
 #[cfg(feature = "mdns")]
 mod mdns_discovery;
 
+pub use cache::CacheStats;
 pub use capabilities::VisualizationCapability;
 pub use http_provider::HttpVisualizationProvider;
 pub use mdns_provider::MdnsVisualizationProvider;
 pub use mock_provider::MockVisualizationProvider;
-pub use traits::{ProviderMetadata, VisualizationDataProvider};
-pub use cache::{CacheStats}; // Export cache stats for monitoring
+pub use traits::{ProviderMetadata, VisualizationDataProvider}; // Export cache stats for monitoring
 
 use anyhow::Result;
 
@@ -164,7 +164,10 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
         );
     }
 
-    tracing::info!("✅ Discovery complete: {} provider(s) available", providers.len());
+    tracing::info!(
+        "✅ Discovery complete: {} provider(s) available",
+        providers.len()
+    );
     Ok(providers)
 }
 
@@ -185,7 +188,10 @@ mod tests {
     async fn test_discover_returns_error_without_config() {
         // Production mode requires explicit configuration - no automatic fallback
         let result = discover_visualization_providers().await;
-        assert!(result.is_err(), "Should return error when no providers configured (production mode)");
+        assert!(
+            result.is_err(),
+            "Should return error when no providers configured (production mode)"
+        );
     }
 
     #[tokio::test]
@@ -194,8 +200,11 @@ mod tests {
         std::env::set_var("PETALTONGUE_MOCK_MODE", "true");
         let result = discover_visualization_providers().await;
         std::env::remove_var("PETALTONGUE_MOCK_MODE");
-        
-        assert!(result.is_ok(), "Mock mode should work when explicitly enabled");
+
+        assert!(
+            result.is_ok(),
+            "Mock mode should work when explicitly enabled"
+        );
         let providers = result.unwrap();
         assert!(!providers.is_empty(), "Mock mode should return providers");
     }
@@ -207,4 +216,3 @@ mod tests {
         assert!(result.is_err());
     }
 }
-

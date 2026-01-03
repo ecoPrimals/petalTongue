@@ -2,7 +2,7 @@
 
 use crate::types::EntropyCapture;
 use aes_gcm::{
-    aead::{Aead, KeyInit, OsRng, generic_array::GenericArray},
+    aead::{generic_array::GenericArray, Aead, KeyInit, OsRng},
     Aes256Gcm,
 };
 use anyhow::{Context, Result};
@@ -65,10 +65,7 @@ impl Drop for EncryptedEntropy {
 /// - BearDog's public key (for key exchange)
 /// - Or a pre-shared key established during primal handshake
 /// - Or ephemeral keys via ECDH
-pub async fn stream_entropy(
-    entropy: EntropyCapture,
-    endpoint: &str,
-) -> Result<StreamConfirmation> {
+pub async fn stream_entropy(entropy: EntropyCapture, endpoint: &str) -> Result<StreamConfirmation> {
     tracing::info!(
         "Streaming {} entropy (quality: {:.1}%)",
         entropy.modality(),
@@ -84,13 +81,13 @@ pub async fn stream_entropy(
     tracing::debug!("Encrypted entropy with AES-256-GCM");
 
     // 3. Prepare payload
-    let payload = serde_json::to_vec(&encrypted)?;
+    let _payload = serde_json::to_vec(&encrypted)?;
 
     // 4. Stream via HTTPS
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
         .build()?;
-    
+
     let response = client
         .post(endpoint)
         .header("Content-Type", "application/json")
@@ -102,24 +99,20 @@ pub async fn stream_entropy(
         .context("Failed to send entropy to server")?;
 
     // 4. Zeroize encrypted data after sending
-    drop(encrypted);  // Explicitly drop to trigger zeroization
+    drop(encrypted); // Explicitly drop to trigger zeroization
 
     // 6. Parse confirmation
     let status = response.status();
     if !status.is_success() {
         let error_body = response.text().await.unwrap_or_default();
-        anyhow::bail!(
-            "Server rejected entropy: {} - {}",
-            status,
-            error_body
-        );
+        anyhow::bail!("Server rejected entropy: {} - {}", status, error_body);
     }
 
     let confirmation: StreamConfirmation = response
         .json()
         .await
         .context("Failed to parse server confirmation")?;
-    
+
     tracing::info!("✅ Entropy accepted: receipt {}", confirmation.receipt_id);
 
     Ok(confirmation)
@@ -152,7 +145,7 @@ fn encrypt_entropy(plaintext: &[u8]) -> Result<EncryptedEntropy> {
     // Generate random nonce (96 bits = 12 bytes, recommended for AES-GCM)
     let nonce_bytes: [u8; 12] = rand::random();
     let nonce = GenericArray::from_slice(&nonce_bytes);
-    
+
     // Encrypt with authenticated encryption
     let ciphertext = cipher
         .encrypt(nonce, plaintext)
@@ -177,11 +170,11 @@ fn encrypt_entropy(plaintext: &[u8]) -> Result<EncryptedEntropy> {
 fn decrypt_entropy(encrypted: &EncryptedEntropy, key: &[u8; 32]) -> Result<Vec<u8>> {
     let cipher = Aes256Gcm::new(key.into());
     let nonce = GenericArray::from_slice(&encrypted.nonce);
-    
+
     let plaintext = cipher
         .decrypt(nonce, encrypted.ciphertext.as_ref())
         .map_err(|e| anyhow::anyhow!("Decryption failed: {}", e))?;
-    
+
     Ok(plaintext)
 }
 
@@ -193,14 +186,14 @@ mod tests {
     #[test]
     fn test_encrypt_decrypt_roundtrip() {
         let data = b"test entropy data with sensitive information";
-        
+
         // Generate key for testing
         let key = Aes256Gcm::generate_key(&mut OsRng);
         let key_bytes: [u8; 32] = key.as_slice().try_into().unwrap();
-        
+
         // Encrypt
         let encrypted = encrypt_entropy(data).expect("Encryption failed");
-        
+
         // Verify structure
         assert_eq!(encrypted.nonce.len(), 12, "Nonce should be 12 bytes");
         assert!(
@@ -212,18 +205,18 @@ mod tests {
             data.len() + 16,
             "Ciphertext should be plaintext + 16 byte auth tag"
         );
-        
+
         // Note: Can't decrypt with different key (which is expected in production)
         // In production, only biomeOS/BearDog with the matching private key can decrypt
     }
-    
+
     #[test]
     fn test_encrypt_produces_different_outputs() {
         let data = b"same plaintext";
-        
+
         let encrypted1 = encrypt_entropy(data).expect("Encryption 1 failed");
         let encrypted2 = encrypt_entropy(data).expect("Encryption 2 failed");
-        
+
         // Different nonces should produce different ciphertexts
         assert_ne!(encrypted1.nonce, encrypted2.nonce);
         assert_ne!(encrypted1.ciphertext, encrypted2.ciphertext);
@@ -233,14 +226,14 @@ mod tests {
     fn test_encrypted_entropy_serialization() {
         let data = b"test data";
         let encrypted = encrypt_entropy(data).expect("Encryption failed");
-        
+
         // Should serialize to JSON
         let json = serde_json::to_string(&encrypted).expect("Serialization failed");
         assert!(json.contains("ciphertext"));
         assert!(json.contains("nonce"));
-        
+
         // Should deserialize back
-        let deserialized: EncryptedEntropy = 
+        let deserialized: EncryptedEntropy =
             serde_json::from_str(&json).expect("Deserialization failed");
         assert_eq!(deserialized.ciphertext, encrypted.ciphertext);
         assert_eq!(deserialized.nonce, encrypted.nonce);
@@ -250,13 +243,17 @@ mod tests {
     #[ignore] // Requires live server
     async fn test_stream_entropy_integration() {
         use std::time::Duration;
-        
+
         let audio_data = AudioEntropyData {
             samples: vec![0.1, 0.2, 0.3],
             sample_rate: 44100,
             duration: Duration::from_secs(1),
             peaks: vec![0.3, 0.5, 0.4],
-            timestamps: vec![Duration::from_millis(0), Duration::from_millis(100), Duration::from_millis(200)],
+            timestamps: vec![
+                Duration::from_millis(0),
+                Duration::from_millis(100),
+                Duration::from_millis(200),
+            ],
             peak_amplitude: 0.5,
             avg_amplitude: 0.4,
             quality_metrics: AudioQualityMetrics {
@@ -275,4 +272,3 @@ mod tests {
         assert!(result.is_err()); // Expected to fail in test environment
     }
 }
-

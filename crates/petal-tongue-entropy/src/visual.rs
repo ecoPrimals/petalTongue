@@ -2,8 +2,8 @@
 //!
 //! Captures stroke patterns, spatial coverage, and timing for visual creativity.
 
-use crate::types::*;
 use crate::quality::weighted_quality;
+use crate::types::*;
 
 /// Visual entropy capturer (stub for Phase 3)
 pub struct VisualEntropyCapture {
@@ -108,4 +108,3 @@ mod tests {
         assert_eq!(quality.overall_quality, 0.0);
     }
 }
-

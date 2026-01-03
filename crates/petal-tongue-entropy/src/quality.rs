@@ -65,11 +65,7 @@ pub fn variance(values: &[f64]) -> f64 {
     let mean: f64 = values.iter().sum::<f64>() / values.len() as f64;
 
     // Calculate variance
-    let var: f64 = values
-        .iter()
-        .map(|&x| (x - mean).powi(2))
-        .sum::<f64>()
-        / values.len() as f64;
+    let var: f64 = values.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / values.len() as f64;
 
     // Normalize using sigmoid(σ/4) to get [0.0-1.0]
     // Standard deviation / 4 gives good sensitivity
@@ -134,10 +130,7 @@ pub fn timing_entropy(durations: &[Duration]) -> f64 {
     }
 
     // Convert to milliseconds
-    let ms_values: Vec<u64> = durations
-        .iter()
-        .map(|d| d.as_millis() as u64)
-        .collect();
+    let ms_values: Vec<u64> = durations.iter().map(|d| d.as_millis() as u64).collect();
 
     // Create histogram buckets (10 buckets for timing)
     let ms_f64: Vec<f64> = ms_values.iter().map(|&x| x as f64).collect();
@@ -240,4 +233,3 @@ mod tests {
         assert_relative_eq!(quality, 0.733, epsilon = 0.01);
     }
 }
-

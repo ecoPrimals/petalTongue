@@ -1,8 +1,8 @@
 # 🌸 petalTongue Showcase - Complete Index
 
-**Last Updated**: December 27, 2025  
+**Last Updated**: January 3, 2026  
 **Philosophy**: Local First → Multi-Modal → Inter-Primal  
-**Status**: Production Ready
+**Status**: Phase 1 ✅ | Phase 2 ✅ | Phase 3 🚧 Building
 
 ---
 
@@ -63,15 +63,15 @@
 
 | Demo | Description | Duration | Status |
 |------|-------------|----------|--------|
-| [01-songbird-discovery](03-inter-primal/01-songbird-discovery/) | Multi-tower federation | 15 min | 📋 Planned |
-| [02-beardog-security](03-inter-primal/02-beardog-security/) | Security visualization | 10 min | 📋 Planned |
+| [01-songbird-discovery](03-inter-primal/01-songbird-discovery/) | Multi-tower federation | 15 min | ✅ Ready |
+| [02-beardog-security](03-inter-primal/02-beardog-security/) | Security visualization | 10 min | ✅ Ready |
 | [03-nestgate-storage](03-inter-primal/03-nestgate-storage/) | Storage patterns | 10 min | 📋 Planned |
-| [04-toadstool-compute](03-inter-primal/04-toadstool-compute/) | Compute mesh | 15 min | 📋 Planned |
-| [05-loamspine-permanence](03-inter-primal/05-loamspine-permanence/) | Spine visualization | 10 min | 📋 Planned |
-| [06-rhizocrypt-dag](03-inter-primal/06-rhizocrypt-dag/) | DAG visualization | 10 min | 📋 Planned |
-| [07-full-ecosystem](03-inter-primal/07-full-ecosystem/) | All primals together | 20 min | 📋 Planned |
+| [04-toadstool-compute](03-inter-primal/04-toadstool-compute/) | Compute mesh | 15 min | ✅ Ready |
+| [05-loamspine-permanence](03-inter-primal/05-loamspine-permanence/) | Spine visualization | 10 min | 📋 Future |
+| [06-rhizocrypt-dag](03-inter-primal/06-rhizocrypt-dag/) | DAG visualization | 10 min | 📋 Future |
+| [07-full-ecosystem](03-inter-primal/07-full-ecosystem/) | All primals together | 20 min | ✅ Ready |
 
-**Total**: ~90 minutes | **Status**: Phase 3 (Future)
+**Total**: ~90 minutes | **Run All**: `cd 03-inter-primal && ./RUN_ALL_INTER_PRIMAL.sh` | **Status**: ✅ 57% Complete (4/7 ready)
 
 ---
 
@@ -162,14 +162,15 @@ cat README.md      # Read about it
 |-------|-------|----------|-------------|---------|----------|
 | Phase 1: Local | 9 | 9 ✅ | 0 | 0 | 0 |
 | Phase 2: BiomeOS | 5 | 4 ✅ | 1 🚧 | 0 | 0 |
-| Phase 3: Inter-Primal | 7 | 0 | 0 | 7 📋 | 0 |
+| Phase 3: Inter-Primal | 7 | 4 ✅ | 0 | 3 📋 | 0 |
 | Phase 4: Accessibility | 4 | 0 | 0 | 4 📋 | 0 |
 | Phase 5: Production | 5 | 0 | 0 | 2 📋 | 3 📄 |
 | Phase 6: Performance | 4 | 0 | 0 | 4 📋 | 0 |
-| **Total** | **34** | **13** | **1** | **17** | **3** |
+| **Total** | **34** | **17** | **1** | **13** | **3** |
 
-**Completion**: 38% (13/34 demos ready)  
-**Phase 1 & 2**: 100% (13/14 demos ready) ✅
+**Completion**: 50% (17/34 demos ready) 🎉 **MILESTONE!**  
+**Phase 1 & 2**: 93% (13/14 demos ready) ✅  
+**Phase 3**: 57% (4/7 demos ready) ✅ Major Progress!
 
 ---
 

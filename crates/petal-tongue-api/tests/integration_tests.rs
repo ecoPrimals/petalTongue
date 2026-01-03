@@ -63,7 +63,10 @@ async fn test_discover_primals_with_unreachable_endpoint() {
     let result = client.discover_primals().await;
 
     // Production mode returns error (no automatic fallback)
-    assert!(result.is_err(), "Production mode should return error for unreachable endpoint");
+    assert!(
+        result.is_err(),
+        "Production mode should return error for unreachable endpoint"
+    );
 }
 
 #[tokio::test]
@@ -74,7 +77,10 @@ async fn test_get_topology_with_unreachable_endpoint() {
     let result = client.get_topology().await;
 
     // Production mode returns error (no automatic fallback)
-    assert!(result.is_err(), "Production mode should return error for unreachable endpoint");
+    assert!(
+        result.is_err(),
+        "Production mode should return error for unreachable endpoint"
+    );
 }
 
 #[tokio::test]
@@ -157,5 +163,8 @@ async fn test_client_timeout_handling() {
 
     // Should timeout and return error (no automatic fallback in production)
     let result = client.discover_primals().await;
-    assert!(result.is_err(), "Production mode should return error on timeout");
+    assert!(
+        result.is_err(),
+        "Production mode should return error on timeout"
+    );
 }

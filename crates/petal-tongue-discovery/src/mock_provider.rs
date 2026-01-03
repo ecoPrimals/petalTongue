@@ -26,19 +26,25 @@ impl Default for MockVisualizationProvider {
 impl VisualizationDataProvider for MockVisualizationProvider {
     async fn get_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
         let now = chrono::Utc::now().timestamp() as u64;
-        
+
         // Create primals using modern properties approach
         let mut beardog_props = Properties::new();
         beardog_props.insert("trust_level".to_string(), PropertyValue::Number(3.0));
-        beardog_props.insert("family_id".to_string(), PropertyValue::String("mock-family".to_string()));
-        
+        beardog_props.insert(
+            "family_id".to_string(),
+            PropertyValue::String("mock-family".to_string()),
+        );
+
         let mut songbird_props = Properties::new();
         songbird_props.insert("trust_level".to_string(), PropertyValue::Number(2.0));
-        songbird_props.insert("family_id".to_string(), PropertyValue::String("mock-family".to_string()));
-        
+        songbird_props.insert(
+            "family_id".to_string(),
+            PropertyValue::String("mock-family".to_string()),
+        );
+
         let mut toadstool_props = Properties::new();
         toadstool_props.insert("trust_level".to_string(), PropertyValue::Number(1.0));
-        
+
         Ok(vec![
             PrimalInfo {
                 id: "mock-beardog-1".to_string(),
@@ -132,18 +138,18 @@ mod tests {
     #[tokio::test]
     async fn test_mock_provider() {
         let provider = MockVisualizationProvider::new();
-        
+
         // Test primal discovery
         let primals = provider.get_primals().await.unwrap();
         assert_eq!(primals.len(), 3);
         assert_eq!(primals[0].id, "mock-beardog-1");
         assert_eq!(primals[0].trust_level, Some(3));
         assert_eq!(primals[1].trust_level, Some(2));
-        
+
         // Test topology
         let topology = provider.get_topology().await.unwrap();
         assert_eq!(topology.len(), 2);
-        
+
         // Test metadata
         let metadata = provider.get_metadata();
         assert_eq!(metadata.name, "Mock Provider");

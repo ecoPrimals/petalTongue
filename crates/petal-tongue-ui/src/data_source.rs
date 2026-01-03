@@ -1,13 +1,13 @@
 //! Data source management for topology and primal discovery
 //!
-//! This module handles fetching topology data from BiomeOS via capability-based discovery.
-//! NO HARDCODED PRIMAL NAMES - all discovery happens at runtime via BiomeOS.
+//! This module handles fetching topology data from `BiomeOS` via capability-based discovery.
+//! NO HARDCODED PRIMAL NAMES - all discovery happens at runtime via `BiomeOS`.
 //!
 //! # Design Philosophy
 //!
 //! - **Runtime Discovery**: Never hardcode primal names or endpoints
 //! - **Capability-Based**: Discover what's available, don't assume
-//! - **Graceful Degradation**: Fall back to minimal data if BiomeOS unavailable
+//! - **Graceful Degradation**: Fall back to minimal data if `BiomeOS` unavailable
 //! - **Self-Knowledge Only**: petalTongue knows itself, discovers others
 
 use petal_tongue_api::BiomeOSClient;
@@ -16,28 +16,29 @@ use std::sync::{Arc, RwLock};
 
 /// Data source for topology information
 ///
-/// Handles fetching primal discovery and topology data from BiomeOS.
+/// Handles fetching primal discovery and topology data from `BiomeOS`.
 /// Uses capability-based runtime discovery - no hardcoded primal names.
 pub struct DataSource {
-    /// BiomeOS client for live discovery
+    /// `BiomeOS` client for live discovery
     client: BiomeOSClient,
 }
 
 impl DataSource {
     /// Create a new data source
+    #[must_use] 
     pub fn new(client: BiomeOSClient) -> Self {
         Self { client }
     }
 
-    /// Refresh graph data from BiomeOS
+    /// Refresh graph data from `BiomeOS`
     ///
-    /// Discovers primals and topology via BiomeOS capability-based API.
-    /// If BiomeOS is unavailable, returns empty data (no mock fallback in production).
+    /// Discovers primals and topology via `BiomeOS` capability-based API.
+    /// If `BiomeOS` is unavailable, returns empty data (no mock fallback in production).
     ///
     /// # Returns
     ///
     /// - `Ok((primals, edges))` on success
-    /// - `Err(...)` if BiomeOS unavailable and no fallback
+    /// - `Err(...)` if `BiomeOS` unavailable and no fallback
     pub async fn refresh_topology(&self) -> Result<(Vec<PrimalInfo>, Vec<TopologyEdge>), String> {
         // Discover primals via BiomeOS
         let primals = self

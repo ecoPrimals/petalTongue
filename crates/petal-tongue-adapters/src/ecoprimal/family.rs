@@ -25,9 +25,9 @@ impl EcoPrimalFamilyAdapter {
     /// Generate a deterministic color from family_id string
     fn family_id_to_color(family_id: &str) -> Color32 {
         // Hash the family_id to get a consistent color
-        let hash = family_id.bytes().fold(0u32, |acc, b| {
-            acc.wrapping_mul(31).wrapping_add(b as u32)
-        });
+        let hash = family_id
+            .bytes()
+            .fold(0u32, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u32));
 
         // Generate RGB from hash
         let r = ((hash >> 16) & 0xFF) as u8;
@@ -67,11 +67,7 @@ impl PropertyAdapter for EcoPrimalFamilyAdapter {
 
                     ui.horizontal(|ui| {
                         // Colored dot representing family
-                        ui.label(
-                            egui::RichText::new("●")
-                                .color(color)
-                                .size(16.0),
-                        );
+                        ui.label(egui::RichText::new("●").color(color).size(16.0));
 
                         // Family ID
                         ui.label(egui::RichText::new(family_id).color(color));
@@ -110,7 +106,7 @@ impl PropertyAdapter for EcoPrimalFamilyAdapter {
             return Some(NodeDecoration {
                 badge: None,
                 fill_color: None,
-                ring_color: Some(color),  // Ring color shows family
+                ring_color: Some(color), // Ring color shows family
                 tooltip: Some(format!("Family: {}", family_id)),
             });
         }
@@ -118,7 +114,7 @@ impl PropertyAdapter for EcoPrimalFamilyAdapter {
     }
 
     fn priority(&self) -> i32 {
-        10  // Higher priority than generic
+        10 // Higher priority than generic
     }
 }
 
@@ -161,4 +157,3 @@ mod tests {
         assert!(decoration.tooltip.is_some());
     }
 }
-

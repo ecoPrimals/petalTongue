@@ -5,7 +5,7 @@
 //
 // Based on Songbird's proven UDP multicast implementation.
 
-use crate::dns_parser::{DnsHeader, ResourceRecord, RecordType};
+use crate::dns_parser::{DnsHeader, RecordType, ResourceRecord};
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
@@ -92,12 +92,11 @@ impl MdnsVisualizationProvider {
         tracing::info!("Starting mDNS discovery for visualization providers...");
 
         // Create UDP socket with multicast support
-        let socket = Self::create_multicast_socket()
-            .context("Failed to create multicast socket")?;
+        let socket =
+            Self::create_multicast_socket().context("Failed to create multicast socket")?;
 
         // Convert to tokio socket
-        let socket = UdpSocket::from_std(socket)
-            .context("Failed to convert to tokio socket")?;
+        let socket = UdpSocket::from_std(socket).context("Failed to convert to tokio socket")?;
 
         // Query for services
         let providers = match timeout(DISCOVERY_TIMEOUT, Self::query_services(socket)).await {
@@ -172,9 +171,7 @@ impl MdnsVisualizationProvider {
     }
 
     /// Query for visualization provider services
-    async fn query_services(
-        socket: UdpSocket,
-    ) -> Result<Vec<Box<dyn VisualizationDataProvider>>> {
+    async fn query_services(socket: UdpSocket) -> Result<Vec<Box<dyn VisualizationDataProvider>>> {
         // Build mDNS query packet
         let query = Self::build_mdns_query(SERVICE_NAME);
 
@@ -223,7 +220,7 @@ impl MdnsVisualizationProvider {
     fn build_mdns_query(service_name: &str) -> Vec<u8> {
         // For now, return a simple query packet
         // TODO: Implement full DNS packet building
-        
+
         // mDNS query packet structure (simplified):
         // - Transaction ID: 0x0000
         // - Flags: 0x0000 (standard query)
@@ -234,7 +231,7 @@ impl MdnsVisualizationProvider {
         // - Question: service_name, type PTR (12), class IN (1)
 
         let mut packet = Vec::new();
-        
+
         // DNS header (12 bytes)
         packet.extend_from_slice(&[0x00, 0x00]); // Transaction ID
         packet.extend_from_slice(&[0x00, 0x00]); // Flags
@@ -253,7 +250,7 @@ impl MdnsVisualizationProvider {
 
         // Type: PTR (12)
         packet.extend_from_slice(&[0x00, 0x0C]);
-        
+
         // Class: IN (1)
         packet.extend_from_slice(&[0x00, 0x01]);
 
@@ -265,7 +262,7 @@ impl MdnsVisualizationProvider {
     /// Parse an mDNS response packet
     ///
     /// Extracts service information from DNS-SD response using proper DNS parsing.
-    /// 
+    ///
     /// Parses PTR, SRV, TXT, and A records to build provider information.
     fn parse_mdns_response(
         data: &[u8],
@@ -278,11 +275,7 @@ impl MdnsVisualizationProvider {
             anyhow::bail!("Not a DNS response packet");
         }
 
-        tracing::trace!(
-            "DNS response: {} answers from {}",
-            header.answers,
-            addr
-        );
+        tracing::trace!("DNS response: {} answers from {}", header.answers, addr);
 
         // Skip question section (we know what we asked for)
         let mut offset = 12; // After header
@@ -318,7 +311,10 @@ impl MdnsVisualizationProvider {
                 }
                 Some(RecordType::TXT) => {
                     if let Ok(txt) = record.as_txt() {
-                        tracing::debug!("Found TXT record with {} attributes", txt.attributes.len());
+                        tracing::debug!(
+                            "Found TXT record with {} attributes",
+                            txt.attributes.len()
+                        );
                         txt_records.push(txt);
                     }
                 }
@@ -375,7 +371,11 @@ impl MdnsVisualizationProvider {
             capabilities,
         };
 
-        tracing::info!("Discovered provider via mDNS: {} at {}", metadata.name, endpoint);
+        tracing::info!(
+            "Discovered provider via mDNS: {} at {}",
+            metadata.name,
+            endpoint
+        );
 
         Ok(Box::new(MdnsVisualizationProvider::new(endpoint, metadata)))
     }
@@ -386,7 +386,7 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
     async fn get_primals(&self) -> Result<Vec<PrimalInfo>> {
         // Query the discovered endpoint
         let url = format!("{}/api/v1/primals/discovered", self.endpoint);
-        
+
         let response = self
             .client
             .get(&url)
@@ -396,10 +396,7 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
             .context("Failed to query primals from mDNS-discovered provider")?;
 
         if !response.status().is_success() {
-            anyhow::bail!(
-                "Provider returned error status: {}",
-                response.status()
-            );
+            anyhow::bail!("Provider returned error status: {}", response.status());
         }
 
         #[derive(serde::Deserialize)]
@@ -417,7 +414,7 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
 
     async fn get_topology(&self) -> Result<Vec<TopologyEdge>> {
         let url = format!("{}/api/v1/topology", self.endpoint);
-        
+
         let response = self
             .client
             .get(&url)
@@ -427,10 +424,7 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
             .context("Failed to query topology from mDNS-discovered provider")?;
 
         if !response.status().is_success() {
-            anyhow::bail!(
-                "Provider returned error status: {}",
-                response.status()
-            );
+            anyhow::bail!("Provider returned error status: {}", response.status());
         }
 
         #[derive(serde::Deserialize)]
@@ -448,7 +442,7 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
 
     async fn health_check(&self) -> Result<String> {
         let url = format!("{}/api/v1/health", self.endpoint);
-        
+
         let response = self
             .client
             .get(&url)
@@ -476,10 +470,10 @@ mod tests {
     #[test]
     fn test_build_mdns_query() {
         let query = MdnsVisualizationProvider::build_mdns_query(SERVICE_NAME);
-        
+
         // Should have DNS header (12 bytes) + question
         assert!(query.len() > 12, "Query packet too short");
-        
+
         // Check DNS header
         assert_eq!(&query[0..2], &[0x00, 0x00], "Transaction ID should be 0");
         assert_eq!(&query[4..6], &[0x00, 0x01], "Should have 1 question");
@@ -496,13 +490,12 @@ mod tests {
     async fn test_discover_timeout() {
         // Discovery should timeout gracefully if no responses
         let result = MdnsVisualizationProvider::discover().await;
-        
+
         // Should succeed but return empty list (no providers on localhost by default)
         assert!(result.is_ok());
         let providers = result.unwrap();
-        
+
         // Might find providers or might not - both are valid
         tracing::info!("Discovery found {} providers", providers.len());
     }
 }
-
