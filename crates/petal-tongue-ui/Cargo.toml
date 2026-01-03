@@ -15,6 +15,7 @@ petal-tongue-animation = { path = "../petal-tongue-animation" }
 petal-tongue-telemetry = { path = "../petal-tongue-telemetry" }
 petal-tongue-discovery = { path = "../petal-tongue-discovery" }
 petal-tongue-entropy = { path = "../petal-tongue-entropy" }
+petal-tongue-adapters = { path = "../petal-tongue-adapters" }  # NEW: Adapter system
 
 # BingoCube is now a standalone tool at https://github.com/ecoPrimals/bingoCube
 bingocube-core = { git = "ssh://git@github.com/ecoPrimals/bingoCube.git", tag = "v0.1.0" }

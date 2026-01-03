@@ -2,7 +2,7 @@
 //!
 //! Connects to BiomeOS/Songbird for live primal discovery and health monitoring.
 
-use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
+use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, Properties, TopologyEdge};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -248,7 +248,10 @@ impl BiomeOSClient {
                 ],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: now,
+                properties: Properties::new(), // Generic properties
+                #[allow(deprecated)]
                 trust_level: None,
+                #[allow(deprecated)]
                 family_id: None,
             },
             PrimalInfo {
@@ -262,7 +265,10 @@ impl BiomeOSClient {
                 ],
                 health: PrimalHealthStatus::Warning,
                 last_seen: now,
+                properties: Properties::new(),
+                #[allow(deprecated)]
                 trust_level: None,
+                #[allow(deprecated)]
                 family_id: None,
             },
             PrimalInfo {
@@ -276,7 +282,10 @@ impl BiomeOSClient {
                 ],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: now,
+                properties: Properties::new(),
+                #[allow(deprecated)]
                 trust_level: None,
+                #[allow(deprecated)]
                 family_id: None,
             },
             PrimalInfo {
@@ -291,7 +300,10 @@ impl BiomeOSClient {
                 ],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: now,
+                properties: Properties::new(),
+                #[allow(deprecated)]
                 trust_level: None,
+                #[allow(deprecated)]
                 family_id: None,
             },
             PrimalInfo {
@@ -302,7 +314,10 @@ impl BiomeOSClient {
                 capabilities: vec!["intent_parsing".to_string(), "task_planning".to_string()],
                 health: PrimalHealthStatus::Critical,
                 last_seen: now,
+                properties: Properties::new(),
+                #[allow(deprecated)]
                 trust_level: None,
+                #[allow(deprecated)]
                 family_id: None,
             },
         ]
@@ -361,7 +376,10 @@ impl From<DiscoveredPrimal> for PrimalInfo {
                 _ => PrimalHealthStatus::Unknown,
             },
             last_seen: primal.last_seen,
+            properties: Properties::new(), // Start with empty properties
+            #[allow(deprecated)]
             trust_level: None,
+            #[allow(deprecated)]
             family_id: None,
         }
     }

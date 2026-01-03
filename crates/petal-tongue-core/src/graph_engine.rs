@@ -289,7 +289,7 @@ pub struct GraphStats {
 }
 
 /// Layout algorithm types
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LayoutAlgorithm {
     /// Force-directed layout (physics-based)
     ForceDirected,
