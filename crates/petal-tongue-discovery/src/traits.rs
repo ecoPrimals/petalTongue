@@ -59,4 +59,3 @@ pub trait VisualizationDataProvider: Send + Sync {
 
 // Keep DiscoveredProvider as an alias for backward compatibility
 pub type DiscoveredProvider = ProviderMetadata;
-

@@ -29,7 +29,7 @@ pub struct SystemMonitorTool {
     cpu_history: VecDeque<f32>, // Last N seconds
     mem_history: VecDeque<f32>, // Last N seconds
     max_history: usize,
-    
+
     // Live data indicators
     cpu_header: LiveGraphHeader,
     memory_header: LiveGraphHeader,
@@ -50,7 +50,7 @@ impl Default for SystemMonitorTool {
             cpu_history: VecDeque::new(),
             mem_history: VecDeque::new(),
             max_history: 60, // 60 seconds of history
-            
+
             // Initialize live data indicators - PROVE data is live!
             cpu_header: LiveGraphHeader::new(
                 "💻 CPU Usage".to_string(),
@@ -62,11 +62,7 @@ impl Default for SystemMonitorTool {
                 "sysinfo".to_string(),
                 1.0,
             ),
-            cpu_metric: LiveMetric::new(
-                "Current CPU".to_string(),
-                "sysinfo".to_string(),
-                1.0,
-            ),
+            cpu_metric: LiveMetric::new("Current CPU".to_string(), "sysinfo".to_string(), 1.0),
             memory_metric: LiveMetric::new(
                 "Current Memory".to_string(),
                 "sysinfo".to_string(),
@@ -110,12 +106,14 @@ impl SystemMonitorTool {
             if self.mem_history.len() > self.max_history {
                 self.mem_history.pop_front();
             }
-            
+
             // Mark live indicators as updated - PROOF OF LIVE DATA!
             self.cpu_header.mark_updated();
             self.memory_header.mark_updated();
-            self.cpu_metric.update(format!("{:.1}", cpu_usage), Some("%".to_string()));
-            self.memory_metric.update(format!("{:.1}", mem_percent), Some("%".to_string()));
+            self.cpu_metric
+                .update(format!("{cpu_usage:.1}"), Some("%".to_string()));
+            self.memory_metric
+                .update(format!("{mem_percent:.1}"), Some("%".to_string()));
         }
     }
 
@@ -152,7 +150,10 @@ impl SystemMonitorTool {
 
         // Simple sparkline with LIVE data
         if !self.cpu_history.is_empty() {
-            ui.label(format!("History ({} samples) [LIVE DATA]", self.cpu_history.len()));
+            ui.label(format!(
+                "History ({} samples) [LIVE DATA]",
+                self.cpu_history.len()
+            ));
             Self::render_sparkline(ui, &self.cpu_history, 100.0);
         }
 
@@ -196,7 +197,10 @@ impl SystemMonitorTool {
 
         // History sparkline with LIVE data
         if !self.mem_history.is_empty() {
-            ui.label(format!("History ({} samples) [LIVE DATA]", self.mem_history.len()));
+            ui.label(format!(
+                "History ({} samples) [LIVE DATA]",
+                self.mem_history.len()
+            ));
             Self::render_sparkline(ui, &self.mem_history, 100.0);
         }
 

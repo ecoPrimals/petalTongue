@@ -134,15 +134,13 @@ impl BiomeOSClient {
 
         let response = self.client.get(&url).send().await.map_err(|e| {
             anyhow::anyhow!(
-                "Failed to connect to biomeOS at {}: {}\n\
+                "Failed to connect to biomeOS at {url}: {e}\n\
                 \n\
                 Troubleshooting:\n\
                 - Ensure biomeOS API server is running\n\
                 - Check BIOMEOS_URL environment variable\n\
                 - Verify network connectivity\n\
-                - Check firewall settings",
-                url,
-                e
+                - Check firewall settings"
             )
         })?;
 
@@ -159,15 +157,14 @@ impl BiomeOSClient {
 
         let discovery = response.json::<DiscoveryResponse>().await.map_err(|e| {
             anyhow::anyhow!(
-                "Failed to parse biomeOS response: {}\n\
+                "Failed to parse biomeOS response: {e}\n\
                 \n\
                 This may indicate:\n\
                 - API format mismatch\n\
                 - biomeOS API is not fully implemented\n\
                 - Response is not valid JSON\n\
                 \n\
-                Expected format: {{\"primals\": [...]}}",
-                e
+                Expected format: {{\"primals\": [...]}}"
             )
         })?;
 
@@ -195,9 +192,7 @@ impl BiomeOSClient {
 
         let response = self.client.get(&url).send().await.map_err(|e| {
             anyhow::anyhow!(
-                "Failed to connect to biomeOS topology endpoint at {}: {}",
-                url,
-                e
+                "Failed to connect to biomeOS topology endpoint at {url}: {e}"
             )
         })?;
 
@@ -213,10 +208,9 @@ impl BiomeOSClient {
         // Try new format first (nodes + edges + mode)
         let topology = response.json::<TopologyResponse>().await.map_err(|e| {
             anyhow::anyhow!(
-                "Failed to parse topology response: {}\n\
+                "Failed to parse topology response: {e}\n\
                 \n\
-                Expected format: {{\"nodes\": [...], \"edges\": [...], \"mode\": \"...\"}}",
-                e
+                Expected format: {{\"nodes\": [...], \"edges\": [...], \"mode\": \"...\"}}"
             )
         })?;
 

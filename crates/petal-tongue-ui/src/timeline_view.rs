@@ -135,30 +135,26 @@ impl TimelineView {
             .iter()
             .filter(|e| {
                 // Apply event type filter
-                if let Some(ref filter) = self.event_type_filter {
-                    if &e.event_type != filter {
+                if let Some(ref filter) = self.event_type_filter
+                    && &e.event_type != filter {
                         return false;
                     }
-                }
 
                 // Apply primal filter
-                if let Some(ref filter) = self.primal_filter {
-                    if &e.from != filter && &e.to != filter {
+                if let Some(ref filter) = self.primal_filter
+                    && &e.from != filter && &e.to != filter {
                         return false;
                     }
-                }
 
                 // Apply time range filter
-                if let Some(start) = self.time_range_start {
-                    if e.timestamp < start {
+                if let Some(start) = self.time_range_start
+                    && e.timestamp < start {
                         return false;
                     }
-                }
-                if let Some(end) = self.time_range_end {
-                    if e.timestamp > end {
+                if let Some(end) = self.time_range_end
+                    && e.timestamp > end {
                         return false;
                     }
-                }
 
                 true
             })
@@ -345,13 +341,11 @@ impl TimelineView {
 
                     // Check for click
                     let click_rect = Rect::from_center_size(from_pos, Vec2::splat(10.0));
-                    if response.clicked() {
-                        if let Some(pointer_pos) = response.interact_pointer_pos() {
-                            if click_rect.contains(pointer_pos) {
+                    if response.clicked()
+                        && let Some(pointer_pos) = response.interact_pointer_pos()
+                            && click_rect.contains(pointer_pos) {
                                 clicked_event_id = Some(event.id.clone());
                             }
-                        }
-                    }
                 }
             }
 
@@ -384,7 +378,7 @@ impl TimelineView {
                         ui.label("Status:");
                         ui.horizontal(|ui| {
                             ui.label(event_status.icon());
-                            ui.label(format!("{:?}", event_status));
+                            ui.label(format!("{event_status:?}"));
                         });
                         ui.end_row();
 

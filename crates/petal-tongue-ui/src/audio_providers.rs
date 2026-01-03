@@ -6,15 +6,15 @@
 //! 3. Toadstool integration (advanced synthesis)
 
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 use std::process::Command;
-use tracing::{info, warn, error};
+use std::sync::Arc;
+use tracing::{error, info, warn};
 
 // Forward declaration for StatusReporter (avoid circular dependency)
-use crate::status_reporter::{StatusReporter, AudioProviderInfo};
+use crate::status_reporter::{AudioProviderInfo, StatusReporter};
 
 /// Play audio samples (writes WAV and uses system player)
-fn play_samples(samples: &[f32], sample_rate: u32) -> Result<(), String> {
+fn play_samples(samples: &[f32], _sample_rate: u32) -> Result<(), String> {
     use crate::audio_pure_rust::export_wav;
 
     // Create temp directory
@@ -23,8 +23,7 @@ fn play_samples(samples: &[f32], sample_rate: u32) -> Result<(), String> {
 
     // Export to WAV
     let wav_bytes = export_wav(samples);
-    std::fs::write(&wav_path, wav_bytes)
-        .map_err(|e| format!("Failed to write WAV: {}", e))?;
+    std::fs::write(&wav_path, wav_bytes).map_err(|e| format!("Failed to write WAV: {e}"))?;
 
     info!("💾 Saved audio to {:?}", wav_path);
 
@@ -44,12 +43,16 @@ fn play_samples(samples: &[f32], sample_rate: u32) -> Result<(), String> {
         for player in players {
             let result = if player == "powershell" {
                 Command::new(player)
-                    .args(&["-c", &format!("(New-Object Media.SoundPlayer '{}')).PlaySync()", wav_path.display())])
+                    .args([
+                        "-c",
+                        &format!(
+                            "(New-Object Media.SoundPlayer '{}')).PlaySync()",
+                            wav_path.display()
+                        ),
+                    ])
                     .output()
             } else {
-                Command::new(player)
-                    .arg(&wav_path)
-                    .output()
+                Command::new(player).arg(&wav_path).output()
             };
 
             if result.is_ok() {
@@ -108,7 +111,7 @@ impl Default for PureRustAudioProvider {
 }
 
 impl AudioProvider for PureRustAudioProvider {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Pure Rust Tones"
     }
 
@@ -117,7 +120,7 @@ impl AudioProvider for PureRustAudioProvider {
     }
 
     fn play(&self, sound_name: &str) -> Result<(), String> {
-        use crate::audio_pure_rust::{export_wav, UISounds, SAMPLE_RATE};
+        use crate::audio_pure_rust::{SAMPLE_RATE, UISounds};
 
         info!("🔊 Playing pure Rust sound: {}", sound_name);
 
@@ -133,7 +136,7 @@ impl AudioProvider for PureRustAudioProvider {
             "connected" => UISounds::connected(),
             "startup" => UISounds::startup(),
             _ => {
-                return Err(format!("Unknown sound: {}", sound_name));
+                return Err(format!("Unknown sound: {sound_name}"));
             }
         };
 
@@ -166,7 +169,7 @@ impl AudioProvider for PureRustAudioProvider {
         ]
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Pure Rust mathematical waveforms. No external dependencies. Always available."
     }
 }
@@ -197,11 +200,12 @@ impl UserSoundProvider {
             .ok()
             .map(|entries| {
                 entries
-                    .filter_map(|entry| entry.ok())
+                    .filter_map(std::result::Result::ok)
                     .filter(|entry| {
-                        entry.path().extension().map_or(false, |ext| {
-                            ext == "wav" || ext == "mp3" || ext == "ogg"
-                        })
+                        entry
+                            .path()
+                            .extension()
+                            .is_some_and(|ext| ext == "wav" || ext == "mp3" || ext == "ogg")
                     })
                     .filter_map(|entry| {
                         entry
@@ -217,7 +221,7 @@ impl UserSoundProvider {
 }
 
 impl AudioProvider for UserSoundProvider {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "User Sound Files"
     }
 
@@ -227,25 +231,32 @@ impl AudioProvider for UserSoundProvider {
 
     fn play(&self, sound_name: &str) -> Result<(), String> {
         if !self.sounds.contains(&sound_name.to_string()) {
-            let err_msg = format!("❌ Sound '{}' not found in user sounds. Available: {:?}", sound_name, self.sounds);
+            let err_msg = format!(
+                "❌ Sound '{}' not found in user sounds. Available: {:?}",
+                sound_name, self.sounds
+            );
             warn!("{}", err_msg);
             return Err(err_msg);
         }
 
         // Find the sound file
         let sound_file = std::fs::read_dir(&self.sound_dir)
-            .map_err(|e| format!("Failed to read sound directory: {}", e))?
-            .filter_map(|entry| entry.ok())
+            .map_err(|e| format!("Failed to read sound directory: {e}"))?
+            .filter_map(std::result::Result::ok)
             .find(|entry| {
-                entry.path().file_stem()
+                entry
+                    .path()
+                    .file_stem()
                     .and_then(|s| s.to_str())
-                    .map(|s| s == sound_name)
-                    .unwrap_or(false)
+                    .is_some_and(|s| s == sound_name)
             })
-            .ok_or_else(|| format!("Sound file not found: {}", sound_name))?;
+            .ok_or_else(|| format!("Sound file not found: {sound_name}"))?;
 
         let sound_path = sound_file.path();
-        info!("🔊 Playing user sound: {} from {:?}", sound_name, sound_path);
+        info!(
+            "🔊 Playing user sound: {} from {:?}",
+            sound_name, sound_path
+        );
 
         // Try to play with system audio players
         let sound_path_clone = sound_path.clone();
@@ -264,16 +275,23 @@ impl AudioProvider for UserSoundProvider {
             for player in &players {
                 let result = if *player == "powershell" {
                     Command::new(player)
-                        .args(&["-c", &format!("(New-Object Media.SoundPlayer '{}')).PlaySync()", sound_path_clone.display())])
+                        .args([
+                            "-c",
+                            &format!(
+                                "(New-Object Media.SoundPlayer '{}')).PlaySync()",
+                                sound_path_clone.display()
+                            ),
+                        ])
                         .output()
                 } else {
-                    Command::new(player)
-                        .arg(&sound_path_clone)
-                        .output()
+                    Command::new(player).arg(&sound_path_clone).output()
                 };
 
                 if result.is_ok() {
-                    info!("✅ Successfully played user sound with {}: {:?}", player, sound_path_clone);
+                    info!(
+                        "✅ Successfully played user sound with {}: {:?}",
+                        player, sound_path_clone
+                    );
                     success = true;
                     break;
                 }
@@ -298,7 +316,7 @@ impl AudioProvider for UserSoundProvider {
         self.sounds.clone()
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "User-provided sound files (WAV, MP3, OGG) from custom directory."
     }
 }
@@ -328,13 +346,10 @@ impl ToadstoolAudioProvider {
     }
 
     async fn request_synthesis(&self, params: &str) -> Result<Vec<u8>, String> {
-        let endpoint = self
-            .endpoint
-            .as_ref()
-            .ok_or("Toadstool not configured")?;
+        let endpoint = self.endpoint.as_ref().ok_or("Toadstool not configured")?;
 
         // Make HTTP request to toadstool for audio synthesis
-        let url = format!("{}/api/v1/audio/synthesize", endpoint);
+        let _url = format!("{endpoint}/api/v1/audio/synthesize");
         info!("🔊 Requesting audio synthesis from toadstool: {}", params);
 
         // TODO: Implement actual HTTP request
@@ -349,7 +364,7 @@ impl Default for ToadstoolAudioProvider {
 }
 
 impl AudioProvider for ToadstoolAudioProvider {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Toadstool Synthesis"
     }
 
@@ -385,7 +400,7 @@ impl AudioProvider for ToadstoolAudioProvider {
         }
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Advanced audio synthesis via Toadstool primal. Supports music, voice, and complex soundscapes."
     }
 }
@@ -406,9 +421,7 @@ impl AudioSystem {
 
         // Add user sound provider if directory exists
         if let Ok(sounds_dir) = std::env::var("PETALTONGUE_SOUNDS_DIR") {
-            providers.push(Box::new(UserSoundProvider::new(PathBuf::from(
-                sounds_dir,
-            ))));
+            providers.push(Box::new(UserSoundProvider::new(PathBuf::from(sounds_dir))));
         }
 
         // Add toadstool provider if available
@@ -429,23 +442,27 @@ impl AudioSystem {
     /// Set status reporter for AI observability
     pub fn set_status_reporter(&mut self, reporter: Arc<StatusReporter>) {
         info!("🔊 AudioSystem: StatusReporter connected for AI observability");
-        
+
         // Report initial audio system status
-        let provider_info: Vec<AudioProviderInfo> = self.providers.iter().map(|p| AudioProviderInfo {
-            name: p.name().to_string(),
-            available: p.is_available(),
-            sounds_count: p.available_sounds().len(),
-            description: p.description().to_string(),
-        }).collect();
-        
+        let provider_info: Vec<AudioProviderInfo> = self
+            .providers
+            .iter()
+            .map(|p| AudioProviderInfo {
+                name: p.name().to_string(),
+                available: p.is_available(),
+                sounds_count: p.available_sounds().len(),
+                description: p.description().to_string(),
+            })
+            .collect();
+
         let system_players = Self::detect_system_players();
-        
+
         reporter.update_audio_system(
             self.providers[self.current_provider].name().to_string(),
             provider_info,
-            system_players
+            system_players,
         );
-        
+
         self.status_reporter = Some(reporter);
     }
 
@@ -453,16 +470,22 @@ impl AudioSystem {
     fn detect_system_players() -> Vec<String> {
         let candidates = vec!["mpv", "paplay", "aplay", "ffplay", "vlc", "afplay"];
         let mut available = Vec::new();
-        
+
         for player in candidates {
-            if Command::new("which").arg(player).output().map(|o| o.status.success()).unwrap_or(false) {
+            if Command::new("which")
+                .arg(player)
+                .output()
+                .map(|o| o.status.success())
+                .unwrap_or(false)
+            {
                 available.push(player.to_string());
             }
         }
-        
+
         available
     }
 
+    #[must_use] 
     pub fn get_providers(&self) -> Vec<(&str, bool, &str)> {
         self.providers
             .iter()
@@ -482,31 +505,46 @@ impl AudioSystem {
 
     pub fn play(&self, sound_name: &str) -> Result<(), String> {
         info!("🎵 AudioSystem::play('{}') called", sound_name);
-        info!("📊 Current provider: {} (index {})", 
-              self.providers[self.current_provider].name(), 
-              self.current_provider);
-        
+        info!(
+            "📊 Current provider: {} (index {})",
+            self.providers[self.current_provider].name(),
+            self.current_provider
+        );
+
         // Try current provider first
         let provider = &self.providers[self.current_provider];
         let provider_name = provider.name().to_string();
-        
+
         if !provider.is_available() {
             warn!("❌ Current provider '{}' is NOT available!", provider_name);
-            
+
             // Try to find an available provider with this sound
             for (idx, prov) in self.providers.iter().enumerate() {
-                if prov.is_available() && prov.available_sounds().contains(&sound_name.to_string()) {
-                    info!("✅ Found alternative provider: {} (index {})", prov.name(), idx);
+                if prov.is_available() && prov.available_sounds().contains(&sound_name.to_string())
+                {
+                    info!(
+                        "✅ Found alternative provider: {} (index {})",
+                        prov.name(),
+                        idx
+                    );
                     let alt_provider_name = prov.name().to_string();
                     match prov.play(sound_name) {
                         Ok(()) => {
-                            info!("✅ Successfully played '{}' with {}", sound_name, alt_provider_name);
-                            
+                            info!(
+                                "✅ Successfully played '{}' with {}",
+                                sound_name, alt_provider_name
+                            );
+
                             // Report success to status reporter
                             if let Some(reporter) = &self.status_reporter {
-                                reporter.report_audio_event(sound_name, &alt_provider_name, true, None);
+                                reporter.report_audio_event(
+                                    sound_name,
+                                    &alt_provider_name,
+                                    true,
+                                    None,
+                                );
                             }
-                            
+
                             return Ok(());
                         }
                         Err(e) => {
@@ -516,82 +554,104 @@ impl AudioSystem {
                     }
                 }
             }
-            
-            let err_msg = format!("❌ NO PROVIDER CAN PLAY '{}' - Sound will NOT be heard!", sound_name);
+
+            let err_msg = format!(
+                "❌ NO PROVIDER CAN PLAY '{sound_name}' - Sound will NOT be heard!"
+            );
             error!("{}", err_msg);
-            
+
             // Report failure to status reporter
             if let Some(reporter) = &self.status_reporter {
-                reporter.report_audio_event(sound_name, &provider_name, false, Some(err_msg.clone()));
+                reporter.report_audio_event(
+                    sound_name,
+                    &provider_name,
+                    false,
+                    Some(err_msg.clone()),
+                );
             }
-            
+
             return Err(err_msg);
         }
-        
+
         // Try to play with current provider
         match provider.play(sound_name) {
             Ok(()) => {
-                info!("✅ play() returned Ok for '{}' with {}", sound_name, provider_name);
-                
+                info!(
+                    "✅ play() returned Ok for '{}' with {}",
+                    sound_name, provider_name
+                );
+
                 // Report success to status reporter
                 if let Some(reporter) = &self.status_reporter {
                     reporter.report_audio_event(sound_name, &provider_name, true, None);
                 }
-                
+
                 Ok(())
             }
             Err(e) => {
                 error!("❌ play() returned Err for '{}': {}", sound_name, e);
-                
+
                 // Report failure to status reporter
                 if let Some(reporter) = &self.status_reporter {
                     reporter.report_audio_event(sound_name, &provider_name, false, Some(e.clone()));
                 }
-                
+
                 Err(e)
             }
         }
     }
 
+    #[must_use] 
     pub fn available_sounds(&self) -> Vec<String> {
         self.providers[self.current_provider].available_sounds()
     }
 
+    #[must_use] 
     pub fn current_provider_name(&self) -> &str {
         self.providers[self.current_provider].name()
     }
-    
+
     /// Play a continuous tone (for data stream sonification)
     /// frequency: Hz (e.g., 440.0 for A4)
     /// duration: seconds
     /// volume: 0.0-1.0
     /// waveform: sine, square, etc.
-    pub fn play_tone(&self, frequency: f64, duration: f64, volume: f32, waveform: crate::audio_pure_rust::Waveform) -> Result<(), String> {
+    pub fn play_tone(
+        &self,
+        frequency: f64,
+        duration: f64,
+        volume: f32,
+        waveform: crate::audio_pure_rust::Waveform,
+    ) -> Result<(), String> {
         use crate::audio_pure_rust::generate_tone;
-        
+
         // Generate tone samples (convert f64 to f32)
         let samples = generate_tone(duration as f32, frequency as f32, waveform, volume);
-        
+
         // Play via system player
         play_samples(&samples, 44100)
     }
-    
+
     /// Play multiple tones simultaneously (polyphonic)
     /// Each tuple: (frequency, volume, waveform)
-    pub fn play_polyphonic(&self, tones: &[(f64, f32, crate::audio_pure_rust::Waveform)], duration: f64) -> Result<(), String> {
+    pub fn play_polyphonic(
+        &self,
+        tones: &[(f64, f32, crate::audio_pure_rust::Waveform)],
+        duration: f64,
+    ) -> Result<(), String> {
         use crate::audio_pure_rust::generate_tone;
-        
+
         if tones.is_empty() {
             return Ok(());
         }
-        
+
         // Generate first tone (convert f64 to f32)
         let mut mixed = generate_tone(duration as f32, tones[0].0 as f32, tones[0].2, tones[0].1);
-        
+
         // Mix in additional tones
         for &(frequency, volume, waveform) in &tones[1..] {
             let tone = generate_tone(duration as f32, frequency as f32, waveform, volume);
-            
+
             // Mix by averaging (simple approach)
             for (i, sample) in tone.iter().enumerate() {
                 if i < mixed.len() {
@@ -599,7 +659,7 @@ impl AudioSystem {
                 }
             }
         }
-        
+
         // Play mixed audio
         play_samples(&mixed, 44100)
     }
@@ -628,9 +688,11 @@ mod tests {
         let system = AudioSystem::new();
         assert!(!system.get_providers().is_empty());
         // Pure Rust provider should always be available
-        assert!(system.get_providers().iter().any(|(name, available, _)| {
-            name == &"Pure Rust Tones" && *available
-        }));
+        assert!(
+            system
+                .get_providers()
+                .iter()
+                .any(|(name, available, _)| { name == &"Pure Rust Tones" && *available })
+        );
     }
 }
-

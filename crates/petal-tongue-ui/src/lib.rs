@@ -9,7 +9,6 @@
 pub mod accessibility;
 pub mod accessibility_panel;
 pub mod app;
-pub mod app_state;
 pub mod audio_providers;
 pub mod audio_pure_rust;
 pub mod bingocube_integration;

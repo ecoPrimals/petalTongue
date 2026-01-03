@@ -132,6 +132,7 @@ mod tests {
             family_id: None,
             capabilities,
             last_seen: 0, // Unix timestamp
+            properties: Default::default(), // Empty properties for tests
         }
     }
 

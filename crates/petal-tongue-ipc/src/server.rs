@@ -2,7 +2,7 @@
 //!
 //! Unix domain socket server for handling commands from other instances or CLI tools.
 
-use crate::protocol::{IpcCommand, IpcResponse, InstanceStatus};
+use crate::protocol::{IpcCommand, IpcResponse};
 use petal_tongue_core::{Instance, InstanceId};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
@@ -46,9 +46,8 @@ impl IpcServer {
         }
 
         // Create Unix listener
-        let listener = UnixListener::bind(&socket_path).map_err(|e| {
-            IpcServerError::SocketError(format!("Failed to bind socket: {}", e))
-        })?;
+        let listener = UnixListener::bind(&socket_path)
+            .map_err(|e| IpcServerError::SocketError(format!("Failed to bind socket: {}", e)))?;
 
         tracing::info!("IPC server started at: {}", socket_path.display());
 
@@ -119,11 +118,10 @@ impl IpcServer {
 impl Drop for IpcServer {
     fn drop(&mut self) {
         // Clean up socket file
-        if self.socket_path.exists() {
-            if let Err(e) = std::fs::remove_file(&self.socket_path) {
+        if self.socket_path.exists()
+            && let Err(e) = std::fs::remove_file(&self.socket_path) {
                 tracing::warn!("Failed to remove socket file: {}", e);
             }
-        }
     }
 }
 
@@ -163,8 +161,9 @@ async fn handle_connection(
         .ok_or(IpcServerError::ChannelClosed)?;
 
     // Send response (JSON line)
-    let response_json = serde_json::to_string(&response)
-        .map_err(|e| IpcServerError::SerializeError(format!("Failed to serialize response: {}", e)))?;
+    let response_json = serde_json::to_string(&response).map_err(|e| {
+        IpcServerError::SerializeError(format!("Failed to serialize response: {}", e))
+    })?;
 
     writer
         .write_all(response_json.as_bytes())
@@ -226,4 +225,3 @@ mod tests {
         assert!(server.socket_path().exists());
     }
 }
-

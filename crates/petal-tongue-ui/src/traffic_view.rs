@@ -309,7 +309,7 @@ impl TrafficView {
 
         // Draw flows
         for flow in &self.flows {
-            if let (Some((from_left, from_right)), Some((to_left, to_right))) = (
+            if let (Some((_from_left, from_right)), Some((to_left, _to_right))) = (
                 primal_positions.get(&flow.from),
                 primal_positions.get(&flow.to),
             ) {
@@ -329,16 +329,14 @@ impl TrafficView {
 
                 // Check for click
                 let click_rect = Rect::from_center_size(
-                    Pos2::new((start.x + end.x) / 2.0, (start.y + end.y) / 2.0),
+                    Pos2::new(f32::midpoint(start.x, end.x), f32::midpoint(start.y, end.y)),
                     Vec2::splat(30.0),
                 );
-                if response.clicked() {
-                    if let Some(pointer_pos) = response.interact_pointer_pos() {
-                        if click_rect.contains(pointer_pos) {
+                if response.clicked()
+                    && let Some(pointer_pos) = response.interact_pointer_pos()
+                        && click_rect.contains(pointer_pos) {
                             self.selected_flow = Some((flow.from.clone(), flow.to.clone()));
                         }
-                    }
-                }
             }
         }
 

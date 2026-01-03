@@ -51,37 +51,37 @@
 #![warn(clippy::all)]
 #![deny(unsafe_code)]
 
-pub mod types;
 pub mod quality;
 pub mod stream;
+pub mod types;
 
 // Modality modules (behind feature flags)
 #[cfg(feature = "audio")]
 pub mod audio;
 
-#[cfg(feature = "video")]
-pub mod video;
+// #[cfg(feature = "video")]
+// pub mod video; // TODO: Implement video modality
 
 // Always-available modalities (no special dependencies)
-pub mod visual;
-pub mod narrative;
 pub mod gesture;
+pub mod narrative;
+pub mod visual;
 
 /// Prelude for common imports
 pub mod prelude {
-    pub use crate::types::*;
     pub use crate::quality::*;
     pub use crate::stream::*;
-    
+    pub use crate::types::*;
+
     #[cfg(feature = "audio")]
     pub use crate::audio::*;
-    
-    #[cfg(feature = "video")]
-    pub use crate::video::*;
-    
-    pub use crate::visual::*;
-    pub use crate::narrative::*;
+
+    // #[cfg(feature = "video")]
+    // pub use crate::video::*; // TODO: Implement video modality
+
     pub use crate::gesture::*;
+    pub use crate::narrative::*;
+    pub use crate::visual::*;
 }
 
 #[cfg(test)]
@@ -94,4 +94,3 @@ mod tests {
         assert!(true);
     }
 }
-

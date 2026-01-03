@@ -56,5 +56,4 @@ pub use registry::AdapterRegistry;
 
 // ecoPrimals-specific adapters
 pub mod ecoprimal;
-pub use ecoprimal::{EcoPrimalTrustAdapter, EcoPrimalFamilyAdapter, EcoPrimalCapabilityAdapter};
-
+pub use ecoprimal::{EcoPrimalCapabilityAdapter, EcoPrimalFamilyAdapter, EcoPrimalTrustAdapter};

@@ -29,11 +29,10 @@
 //! └─────────────────────────────────────────────────────────────┘
 //! ```
 
+pub mod client;
 pub mod protocol;
 pub mod server;
-pub mod client;
 
-pub use protocol::{IpcCommand, IpcResponse, InstanceStatus};
-pub use server::{IpcServer, IpcServerError};
 pub use client::{IpcClient, IpcClientError};
-
+pub use protocol::{InstanceStatus, IpcCommand, IpcResponse};
+pub use server::{IpcServer, IpcServerError};

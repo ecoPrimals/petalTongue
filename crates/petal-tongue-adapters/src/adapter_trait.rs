@@ -131,4 +131,3 @@ mod tests {
         assert!(adapter.node_decoration(&props).is_none());
     }
 }
-

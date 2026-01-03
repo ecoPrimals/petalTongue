@@ -85,4 +85,3 @@ mod tests {
         assert_eq!(format!("{}", cap), "visualization.primal-provider");
     }
 }
-

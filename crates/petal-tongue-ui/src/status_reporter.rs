@@ -1,5 +1,5 @@
 //! Machine-readable status reporter for AI and external system inspection
-//! 
+//!
 //! This module makes petalTongue's internal state observable to:
 //! - AI systems that need to understand what's happening
 //! - External monitoring tools
@@ -7,35 +7,34 @@
 //! - Other primals that need to adjust their behavior
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 
 /// Machine-readable status of the entire system
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemStatus {
     /// Timestamp of this status report
     pub timestamp: String,
-    
+
     /// Overall health: "healthy", "degraded", "unhealthy"
     pub health: String,
-    
+
     /// Modality capabilities (visual, audio, haptic, etc.)
     pub modalities: ModalityStatus,
-    
+
     /// Audio system status
     pub audio: AudioStatus,
-    
+
     /// Discovery status (mDNS, primals found, etc.)
     pub discovery: DiscoveryStatus,
-    
+
     /// UI state
     pub ui: UIStatus,
-    
+
     /// Recent events (last 10)
     pub recent_events: Vec<StatusEvent>,
-    
+
     /// Warnings and errors
     pub issues: Vec<Issue>,
 }
@@ -62,19 +61,19 @@ pub struct ModalityState {
 pub struct AudioStatus {
     /// Is audio system initialized?
     pub initialized: bool,
-    
+
     /// Current audio provider name
     pub current_provider: String,
-    
+
     /// Available providers
     pub available_providers: Vec<AudioProviderInfo>,
-    
+
     /// Last sound played (or attempted)
     pub last_sound: Option<AudioEvent>,
-    
+
     /// Recent audio failures
     pub recent_failures: Vec<String>,
-    
+
     /// Audio player availability
     pub system_players: Vec<String>,
 }
@@ -139,6 +138,7 @@ pub struct StatusReporter {
 }
 
 impl StatusReporter {
+    #[must_use] 
     pub fn new() -> Self {
         let status = SystemStatus {
             timestamp: chrono::Utc::now().to_rfc3339(),
@@ -221,14 +221,15 @@ impl StatusReporter {
     }
 
     /// Get current status (thread-safe)
+    #[must_use] 
     pub fn get_status(&self) -> SystemStatus {
         let mut status = self.status.lock().unwrap().clone();
         status.timestamp = chrono::Utc::now().to_rfc3339();
-        
+
         // Include recent events
         let events = self.events.lock().unwrap();
         status.recent_events = events.iter().rev().take(10).cloned().collect();
-        
+
         status
     }
 
@@ -239,7 +240,11 @@ impl StatusReporter {
             available,
             tested,
             reason: reason.clone(),
-            last_used: if available { Some(chrono::Utc::now().to_rfc3339()) } else { None },
+            last_used: if available {
+                Some(chrono::Utc::now().to_rfc3339())
+            } else {
+                None
+            },
         };
 
         match modality {
@@ -252,14 +257,32 @@ impl StatusReporter {
             _ => warn!("Unknown modality: {}", modality),
         }
 
-        self.add_event("modality", "info", &format!("{} modality: {}", modality, if available { "available" } else { "unavailable" }));
+        self.add_event(
+            "modality",
+            "info",
+            &format!(
+                "{} modality: {}",
+                modality,
+                if available {
+                    "available"
+                } else {
+                    "unavailable"
+                }
+            ),
+        );
         self.write_status_file();
     }
 
     /// Report audio event (play attempt)
-    pub fn report_audio_event(&self, sound_name: &str, provider: &str, success: bool, error_message: Option<String>) {
+    pub fn report_audio_event(
+        &self,
+        sound_name: &str,
+        provider: &str,
+        success: bool,
+        error_message: Option<String>,
+    ) {
         let mut status = self.status.lock().unwrap();
-        
+
         let event = AudioEvent {
             sound_name: sound_name.to_string(),
             provider: provider.to_string(),
@@ -268,39 +291,54 @@ impl StatusReporter {
             error_message: error_message.clone(),
         };
 
-        if !success {
-            let failure_msg = format!("Failed to play '{}': {}", sound_name, error_message.as_deref().unwrap_or("unknown"));
+        if success {
+            self.add_event(
+                "audio",
+                "info",
+                &format!("Played '{sound_name}' with {provider}"),
+            );
+        } else {
+            let failure_msg = format!(
+                "Failed to play '{}': {}",
+                sound_name,
+                error_message.as_deref().unwrap_or("unknown")
+            );
             status.audio.recent_failures.push(failure_msg.clone());
-            
+
             // Add as an issue
             status.issues.push(Issue {
                 severity: "error".to_string(),
                 category: "audio".to_string(),
                 message: failure_msg.clone(),
-                suggested_action: Some("Check audio system availability. Install mpv or aplay.".to_string()),
+                suggested_action: Some(
+                    "Check audio system availability. Install mpv or aplay.".to_string(),
+                ),
                 timestamp: chrono::Utc::now().to_rfc3339(),
             });
 
             self.add_event("audio", "error", &failure_msg);
-        } else {
-            self.add_event("audio", "info", &format!("Played '{}' with {}", sound_name, provider));
         }
 
         status.audio.last_sound = Some(event);
         drop(status);
-        
+
         self.write_status_file();
     }
 
     /// Update audio system status
-    pub fn update_audio_system(&self, current_provider: String, providers: Vec<AudioProviderInfo>, system_players: Vec<String>) {
+    pub fn update_audio_system(
+        &self,
+        current_provider: String,
+        providers: Vec<AudioProviderInfo>,
+        system_players: Vec<String>,
+    ) {
         let mut status = self.status.lock().unwrap();
         status.audio.initialized = true;
         status.audio.current_provider = current_provider;
         status.audio.available_providers = providers;
         status.audio.system_players = system_players;
         drop(status);
-        
+
         self.add_event("audio", "info", "Audio system initialized");
         self.write_status_file();
     }
@@ -310,7 +348,7 @@ impl StatusReporter {
         let mut status = self.status.lock().unwrap();
         status.health = health.to_string();
         drop(status);
-        
+
         self.write_status_file();
     }
 
@@ -325,7 +363,7 @@ impl StatusReporter {
 
         let mut events = self.events.lock().unwrap();
         events.push(event);
-        
+
         // Keep only last 100 events
         if events.len() > 100 {
             let excess = events.len() - 100;
@@ -338,16 +376,14 @@ impl StatusReporter {
         if let Some(path) = &self.status_file_path {
             let status = self.get_status();
             match serde_json::to_string_pretty(&status) {
-                Ok(json) => {
-                    match std::fs::write(path, json) {
-                        Ok(()) => {
-                            info!("✅ Status file written to: {:?}", path);
-                        }
-                        Err(e) => {
-                            error!("❌ Failed to write status file to {:?}: {}", path, e);
-                        }
+                Ok(json) => match std::fs::write(path, json) {
+                    Ok(()) => {
+                        info!("✅ Status file written to: {:?}", path);
                     }
-                }
+                    Err(e) => {
+                        error!("❌ Failed to write status file to {:?}: {}", path, e);
+                    }
+                },
                 Err(e) => {
                     error!("❌ Failed to serialize status: {}", e);
                 }
@@ -364,15 +400,19 @@ impl StatusReporter {
     }
 
     /// Health check - returns true if system is healthy
+    #[must_use] 
     pub fn is_healthy(&self) -> bool {
         let status = self.status.lock().unwrap();
         status.health == "healthy"
     }
 
     /// Get critical issues (errors and critical warnings)
+    #[must_use] 
     pub fn get_critical_issues(&self) -> Vec<Issue> {
         let status = self.status.lock().unwrap();
-        status.issues.iter()
+        status
+            .issues
+            .iter()
             .filter(|issue| issue.severity == "error" || issue.severity == "critical")
             .cloned()
             .collect()
@@ -390,4 +430,3 @@ impl Default for StatusReporter {
         Self::new()
     }
 }
-

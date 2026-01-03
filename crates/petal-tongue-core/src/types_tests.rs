@@ -57,6 +57,7 @@ mod tests {
             family_id: None,
             capabilities: vec!["cap1".to_string(), "cap2".to_string()],
             last_seen: 1_234_567_890,
+            properties: Default::default(),
         };
 
         assert_eq!(info.id, "test-1");
@@ -80,6 +81,7 @@ mod tests {
             family_id: None,
             capabilities: vec!["cap1".to_string()],
             last_seen: 1_234_567_890,
+            properties: Default::default(),
         };
 
         let cloned = info.clone();
@@ -130,6 +132,7 @@ mod tests {
             family_id: None,
             capabilities: vec![],
             last_seen: 1_234_567_890,
+            properties: Default::default(),
         };
 
         let primal2 = PrimalInfo {
@@ -142,6 +145,7 @@ mod tests {
             family_id: None,
             capabilities: vec![],
             last_seen: 1_234_567_890,
+            properties: Default::default(),
         };
 
         let edge = TopologyEdge {
@@ -237,6 +241,7 @@ mod tests {
             family_id: None,
             capabilities: vec!["cap1".to_string()],
             last_seen: 1_234_567_890,
+            properties: Default::default(),
         };
 
         let json = serde_json::to_string(&info).expect("Failed to serialize");

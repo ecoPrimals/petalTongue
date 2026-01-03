@@ -1,6 +1,6 @@
 //! Main application logic for petalTongue UI
 
-use crate::accessibility::{ColorPalette};
+use crate::accessibility::ColorPalette;
 use crate::accessibility_panel::AccessibilityPanel;
 use crate::audio_providers::AudioSystem;
 use crate::bingocube_integration::BingoCubeIntegration;
@@ -12,16 +12,16 @@ use crate::system_dashboard::SystemDashboard;
 use crate::system_monitor_integration::SystemMonitorTool;
 use crate::tool_integration::ToolManager;
 use crate::trust_dashboard::TrustDashboard;
-use petal_tongue_animation::AnimationEngine;
-use petal_tongue_api::BiomeOSClient;
-use petal_tongue_core::{
-    CapabilityDetector, GraphEngine, InstanceId, LayoutAlgorithm, Modality, PrimalHealthStatus, 
-    PrimalInfo, Properties, PropertyValue, SessionManager, TopologyEdge,
-};
 use petal_tongue_adapters::{
     AdapterRegistry, EcoPrimalCapabilityAdapter, EcoPrimalFamilyAdapter, EcoPrimalTrustAdapter,
 };
-use petal_tongue_discovery::{discover_visualization_providers, VisualizationDataProvider};
+use petal_tongue_animation::AnimationEngine;
+use petal_tongue_api::BiomeOSClient;
+use petal_tongue_core::{
+    CapabilityDetector, GraphEngine, InstanceId, LayoutAlgorithm, Modality, PrimalHealthStatus,
+    PrimalInfo, Properties, SessionManager, TopologyEdge,
+};
+use petal_tongue_discovery::{VisualizationDataProvider, discover_visualization_providers};
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer, Visual2DRenderer};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
@@ -43,7 +43,7 @@ pub struct PetalTongueApp {
     animation_engine: Arc<RwLock<AnimationEngine>>,
     /// Visualization data providers (discovered at runtime - capability-based!)
     data_providers: Vec<Box<dyn VisualizationDataProvider>>,
-    /// Legacy BiomeOS client (DEPRECATED - kept for backward compatibility)
+    /// Legacy `BiomeOS` client (DEPRECATED - kept for backward compatibility)
     #[deprecated(note = "Use data_providers instead - biomeOS is just another primal!")]
     biomeos_client: BiomeOSClient,
     /// Current layout algorithm
@@ -66,39 +66,39 @@ pub struct PetalTongueApp {
     // Tool integration - capability-based, no hardcoded tool knowledge
     /// Tool manager (handles all external tools dynamically)
     tools: ToolManager,
-    
+
     // Universal UI - Accessibility
     /// Accessibility settings panel
     accessibility_panel: AccessibilityPanel,
-    
+
     // System Dashboard - Always visible metrics
     /// Live system dashboard
     system_dashboard: SystemDashboard,
     /// Show system dashboard sidebar
     show_dashboard: bool,
-    
+
     // Audio System - Multimodal output
     /// Audio system for UI sounds and data sonification
     audio_system: AudioSystem,
-    
+
     // Status Reporter - AI-accessible observability
     /// Status reporter (makes petalTongue observable to AI and external systems)
     pub status_reporter: Arc<StatusReporter>,
-    
+
     // Keyboard Navigation
     /// Keyboard shortcuts system
     keyboard_shortcuts: KeyboardShortcuts,
-    
+
     // Adapter System - Universal property rendering
     /// Property adapter registry (ecosystem-agnostic rendering)
     adapter_registry: AdapterRegistry,
-    
+
     // Trust Dashboard - Trust visualization and monitoring
     /// Trust status dashboard
     trust_dashboard: TrustDashboard,
     /// Show trust dashboard panel
     show_trust_dashboard: bool,
-    
+
     // ===== Phase 2: Session Management =====
     /// Session manager for state persistence (optional, graceful degradation)
     session_manager: Option<SessionManager>,
@@ -124,23 +124,27 @@ impl PetalTongueApp {
         // Capability-based discovery: Find ANY primal that provides visualization data
         // This could be: biomeOS, Songbird, custom aggregator, or multiple providers!
         // We discover at runtime - no hardcoded assumptions!
-        
+
         tracing::info!("Starting capability-based provider discovery...");
-        
-        let runtime = tokio::runtime::Runtime::new()
-            .expect("Failed to create tokio runtime");
-        
+
+        let runtime = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+
         let data_providers = if showcase_mode {
             // Showcase mode: Load from sandbox/scenarios/
             tracing::info!("Loading sandbox scenario for showcase...");
-            vec![Box::new(petal_tongue_discovery::MockVisualizationProvider::new()) 
-                as Box<dyn VisualizationDataProvider>]
+            vec![
+                Box::new(petal_tongue_discovery::MockVisualizationProvider::new())
+                    as Box<dyn VisualizationDataProvider>,
+            ]
         } else {
             // Production mode: Discover real providers
             runtime.block_on(async {
                 match discover_visualization_providers().await {
                     Ok(providers) => {
-                        tracing::info!("Discovered {} visualization data provider(s)", providers.len());
+                        tracing::info!(
+                            "Discovered {} visualization data provider(s)",
+                            providers.len()
+                        );
                         for provider in &providers {
                             let metadata = provider.get_metadata();
                             tracing::info!(
@@ -155,8 +159,10 @@ impl PetalTongueApp {
                     Err(e) => {
                         tracing::error!("Provider discovery failed: {}", e);
                         tracing::warn!("Falling back to mock provider");
-                        vec![Box::new(petal_tongue_discovery::MockVisualizationProvider::new()) 
-                            as Box<dyn VisualizationDataProvider>]
+                        vec![
+                            Box::new(petal_tongue_discovery::MockVisualizationProvider::new())
+                                as Box<dyn VisualizationDataProvider>,
+                        ]
                     }
                 }
             })
@@ -190,19 +196,25 @@ impl PetalTongueApp {
                 reporter.enable_status_file(std::path::PathBuf::from(status_file));
             } else {
                 // Default status file location
-                reporter.enable_status_file(std::path::PathBuf::from("/tmp/petaltongue_status.json"));
+                reporter
+                    .enable_status_file(std::path::PathBuf::from("/tmp/petaltongue_status.json"));
             }
-            
+
             let reporter_arc = Arc::new(reporter);
-            
+
             // Report capability detection results immediately
-            for modality in &[Modality::Visual2D, Modality::Audio, Modality::Animation, 
-                             Modality::TextDescription, Modality::Haptic, Modality::VR3D] {
+            for modality in &[
+                Modality::Visual2D,
+                Modality::Audio,
+                Modality::Animation,
+                Modality::TextDescription,
+                Modality::Haptic,
+                Modality::VR3D,
+            ] {
                 let available = capabilities.is_available(*modality);
                 // Get capability info to extract reason
-                let reason_string = capabilities.get_status(*modality)
-                    .map(|c| c.reason.clone())
-                    .unwrap_or_else(|| "Not tested".to_string());
+                let reason_string = capabilities
+                    .get_status(*modality).map_or_else(|| "Not tested".to_string(), |c| c.reason.clone());
                 let modality_name = match modality {
                     Modality::Visual2D => "visual2d",
                     Modality::Audio => "audio",
@@ -213,7 +225,7 @@ impl PetalTongueApp {
                 };
                 reporter_arc.update_modality(modality_name, available, true, reason_string);
             }
-            
+
             reporter_arc
         };
 
@@ -233,8 +245,11 @@ impl PetalTongueApp {
         adapter_registry.register(Box::new(EcoPrimalTrustAdapter::new()));
         adapter_registry.register(Box::new(EcoPrimalFamilyAdapter::new()));
         adapter_registry.register(Box::new(EcoPrimalCapabilityAdapter::new()));
-        
-        tracing::info!("Registered {} property adapters", adapter_registry.adapter_count());
+
+        tracing::info!(
+            "Registered {} property adapters",
+            adapter_registry.adapter_count()
+        );
         tracing::debug!("Adapters: {:?}", adapter_registry.adapter_names());
 
         // Initialize tool manager and register available tools
@@ -273,7 +288,7 @@ impl PetalTongueApp {
 
             // Tool manager - capability-based integration
             tools,
-            
+
             accessibility_panel: AccessibilityPanel::default(),
             system_dashboard: SystemDashboard::default(),
             show_dashboard: true, // Show by default - part of Universal UI
@@ -283,10 +298,10 @@ impl PetalTongueApp {
             adapter_registry, // Universal property rendering
             trust_dashboard: TrustDashboard::new(),
             show_trust_dashboard: true, // Show by default
-            
+
             // Phase 2: Session management (optional, graceful degradation)
-            session_manager,
-            instance_id,
+            session_manager: None, // TODO: Initialize from main.rs
+            instance_id: None,     // TODO: Initialize from main.rs
         };
 
         // Play startup anthem
@@ -318,7 +333,8 @@ impl PetalTongueApp {
         tracing::info!("📦 Loading sandbox demonstration data...");
 
         // Try to load requested scenario from SANDBOX_SCENARIO env var
-        let scenario_name = std::env::var("SANDBOX_SCENARIO").unwrap_or_else(|_| "simple".to_string());
+        let scenario_name =
+            std::env::var("SANDBOX_SCENARIO").unwrap_or_else(|_| "simple".to_string());
 
         let scenario = match load_sandbox_scenario(&scenario_name) {
             Ok(s) => {
@@ -405,10 +421,10 @@ impl PetalTongueApp {
             // Apply layout
             graph.set_layout(self.current_layout);
             graph.layout(100);
-            
+
             // Drop the graph lock before updating trust dashboard
             drop(graph);
-            
+
             // Update trust dashboard with new primal data
             self.trust_dashboard.update_from_primals(&primals);
             tracing::debug!("✅ Trust dashboard updated with {} primals", primals.len());
@@ -435,9 +451,9 @@ impl PetalTongueApp {
             last_seen: 1_703_376_000,
             properties: Properties::new(),
             #[allow(deprecated)]
-                trust_level: None,
+            trust_level: None,
             #[allow(deprecated)]
-                family_id: None,
+            family_id: None,
         });
 
         // Add ToadStool (Compute)
@@ -454,9 +470,9 @@ impl PetalTongueApp {
             last_seen: 1_703_376_060,
             properties: Properties::new(),
             #[allow(deprecated)]
-                trust_level: None,
+            trust_level: None,
             #[allow(deprecated)]
-                family_id: None,
+            family_id: None,
         });
 
         // Add Songbird (Discovery)
@@ -473,9 +489,9 @@ impl PetalTongueApp {
             last_seen: 1_703_376_120,
             properties: Properties::new(),
             #[allow(deprecated)]
-                trust_level: None,
+            trust_level: None,
             #[allow(deprecated)]
-                family_id: None,
+            family_id: None,
         });
 
         // Add NestGate (Storage)
@@ -493,9 +509,9 @@ impl PetalTongueApp {
             last_seen: 1_703_376_180,
             properties: Properties::new(),
             #[allow(deprecated)]
-                trust_level: None,
+            trust_level: None,
             #[allow(deprecated)]
-                family_id: None,
+            family_id: None,
         });
 
         // Add Squirrel (AI)
@@ -509,9 +525,9 @@ impl PetalTongueApp {
             last_seen: 1_703_376_240,
             properties: Properties::new(),
             #[allow(deprecated)]
-                trust_level: None,
+            trust_level: None,
             #[allow(deprecated)]
-                family_id: None,
+            family_id: None,
         });
 
         // Add connections
@@ -552,7 +568,12 @@ impl PetalTongueApp {
     }
 
     /// Render the primal details panel for a selected node
-    fn render_primal_details_panel(&mut self, ui: &mut egui::Ui, selected_id: &str, palette: &ColorPalette) {
+    fn render_primal_details_panel(
+        &mut self,
+        ui: &mut egui::Ui,
+        selected_id: &str,
+        palette: &ColorPalette,
+    ) {
         ui.heading("🔍 Primal Details");
         ui.add_space(8.0);
         ui.separator();
@@ -578,7 +599,11 @@ impl PetalTongueApp {
             ui.add_space(8.0);
 
             // ID
-            ui.label(egui::RichText::new(format!("ID: {}", info.id)).size(12.0).color(egui::Color32::GRAY));
+            ui.label(
+                egui::RichText::new(format!("ID: {}", info.id))
+                    .size(12.0)
+                    .color(egui::Color32::GRAY),
+            );
             ui.add_space(4.0);
 
             // Type
@@ -586,45 +611,57 @@ impl PetalTongueApp {
             ui.add_space(4.0);
 
             // Endpoint
-            ui.label(egui::RichText::new(format!("📍 {}", info.endpoint)).size(12.0).color(palette.text_dim));
+            ui.label(
+                egui::RichText::new(format!("📍 {}", info.endpoint))
+                    .size(12.0)
+                    .color(palette.text_dim),
+            );
             ui.add_space(12.0);
 
             // === ADAPTER-BASED PROPERTY RENDERING ===
             // Use properties directly if available, otherwise convert from legacy fields
-            let properties = if !info.properties.is_empty() {
-                // Modern path: use properties directly
-                info.properties.clone()
-            } else {
+            let properties = if info.properties.is_empty() {
                 // Legacy path: convert from old fields (backward compatibility)
                 use petal_tongue_core::{Properties, PropertyValue};
                 let mut props = Properties::new();
-                
+
                 #[allow(deprecated)]
                 if let Some(trust_level) = info.trust_level {
-                    props.insert("trust_level".to_string(), PropertyValue::Number(trust_level as f64));
+                    props.insert(
+                        "trust_level".to_string(),
+                        PropertyValue::Number(f64::from(trust_level)),
+                    );
                 }
-                
+
                 #[allow(deprecated)]
                 if let Some(family_id) = &info.family_id {
-                    props.insert("family_id".to_string(), PropertyValue::String(family_id.clone()));
+                    props.insert(
+                        "family_id".to_string(),
+                        PropertyValue::String(family_id.clone()),
+                    );
                 }
-                
+
                 // Add capabilities as array
-                let cap_array: Vec<PropertyValue> = info.capabilities.iter()
+                let cap_array: Vec<PropertyValue> = info
+                    .capabilities
+                    .iter()
                     .map(|c| PropertyValue::String(c.clone()))
                     .collect();
                 props.insert("capabilities".to_string(), PropertyValue::Array(cap_array));
-                
+
                 props
+            } else {
+                // Modern path: use properties directly
+                info.properties.clone()
             };
-            
+
             // Render properties using adapters
             if properties.get("trust_level").is_some() {
                 ui.separator();
                 ui.add_space(8.0);
                 ui.label(egui::RichText::new("🔒 Trust Level").size(16.0).strong());
                 ui.add_space(6.0);
-                
+
                 egui::Frame::none()
                     .fill(egui::Color32::from_rgb(40, 40, 45))
                     .inner_margin(12.0)
@@ -635,16 +672,16 @@ impl PetalTongueApp {
                             ui,
                         );
                     });
-                
+
                 ui.add_space(12.0);
             }
-            
+
             if properties.get("family_id").is_some() {
                 ui.separator();
                 ui.add_space(8.0);
                 ui.label(egui::RichText::new("👨‍👩‍👧‍👦 Family Lineage").size(16.0).strong());
                 ui.add_space(6.0);
-                
+
                 egui::Frame::none()
                     .fill(egui::Color32::from_rgb(30, 40, 60))
                     .inner_margin(12.0)
@@ -655,7 +692,7 @@ impl PetalTongueApp {
                             ui,
                         );
                     });
-                
+
                 ui.add_space(12.0);
             }
 
@@ -686,8 +723,12 @@ impl PetalTongueApp {
             // Capabilities
             ui.separator();
             ui.add_space(8.0);
-            
-            if !info.capabilities.is_empty() {
+
+            if info.capabilities.is_empty() {
+                ui.label(egui::RichText::new("⚙️ Capabilities").size(16.0).strong());
+                ui.add_space(6.0);
+                ui.label(egui::RichText::new("No capabilities listed").color(egui::Color32::GRAY));
+            } else {
                 // Use adapter for capabilities rendering
                 egui::ScrollArea::vertical()
                     .max_height(200.0)
@@ -698,10 +739,6 @@ impl PetalTongueApp {
                             ui,
                         );
                     });
-            } else {
-                ui.label(egui::RichText::new("⚙️ Capabilities").size(16.0).strong());
-                ui.add_space(6.0);
-                ui.label(egui::RichText::new("No capabilities listed").color(egui::Color32::GRAY));
             }
 
             ui.add_space(12.0);
@@ -710,7 +747,8 @@ impl PetalTongueApp {
             ui.separator();
             ui.add_space(8.0);
             ui.label(
-                egui::RichText::new(format!("⏱️ Last seen: {} seconds ago", 
+                egui::RichText::new(format!(
+                    "⏱️ Last seen: {} seconds ago",
                     std::time::SystemTime::now()
                         .duration_since(std::time::UNIX_EPOCH)
                         .unwrap_or_default()
@@ -743,7 +781,7 @@ impl PetalTongueApp {
 
     /// Get icon for a capability (shared logic)
     /// Get icon for capability type
-    /// 
+    ///
     /// DEPRECATED: Use adapter system instead
     /// This method is kept temporarily for backward compatibility with any remaining code
     /// that hasn't been migrated to adapters yet.
@@ -751,30 +789,64 @@ impl PetalTongueApp {
     fn get_capability_icon(&self, capability: &str) -> &'static str {
         let capability_lower = capability.to_lowercase();
 
-        if capability_lower.contains("security") || capability_lower.contains("trust") || capability_lower.contains("auth") {
+        if capability_lower.contains("security")
+            || capability_lower.contains("trust")
+            || capability_lower.contains("auth")
+        {
             "🔒"
-        } else if capability_lower.contains("storage") || capability_lower.contains("persist") || capability_lower.contains("data") {
+        } else if capability_lower.contains("storage")
+            || capability_lower.contains("persist")
+            || capability_lower.contains("data")
+        {
             "💾"
-        } else if capability_lower.contains("compute") || capability_lower.contains("container") || capability_lower.contains("workload") {
+        } else if capability_lower.contains("compute")
+            || capability_lower.contains("container")
+            || capability_lower.contains("workload")
+        {
             "⚙️"
-        } else if capability_lower.contains("discovery") || capability_lower.contains("orchestration") || capability_lower.contains("federation") {
+        } else if capability_lower.contains("discovery")
+            || capability_lower.contains("orchestration")
+            || capability_lower.contains("federation")
+        {
             "🔍"
-        } else if capability_lower.contains("identity") || capability_lower.contains("lineage") || capability_lower.contains("genetic") {
+        } else if capability_lower.contains("identity")
+            || capability_lower.contains("lineage")
+            || capability_lower.contains("genetic")
+        {
             "🆔"
-        } else if capability_lower.contains("encrypt") || capability_lower.contains("crypto") || capability_lower.contains("sign") {
+        } else if capability_lower.contains("encrypt")
+            || capability_lower.contains("crypto")
+            || capability_lower.contains("sign")
+        {
             "🔐"
-        } else if capability_lower.contains("ai") || capability_lower.contains("inference") || capability_lower.contains("intent") {
+        } else if capability_lower.contains("ai")
+            || capability_lower.contains("inference")
+            || capability_lower.contains("intent")
+        {
             "🧠"
-        } else if capability_lower.contains("network") || capability_lower.contains("tcp") || capability_lower.contains("http") || capability_lower.contains("grpc") {
+        } else if capability_lower.contains("network")
+            || capability_lower.contains("tcp")
+            || capability_lower.contains("http")
+            || capability_lower.contains("grpc")
+        {
             "🌐"
-        } else if capability_lower.contains("attribution") || capability_lower.contains("provenance") || capability_lower.contains("audit") {
+        } else if capability_lower.contains("attribution")
+            || capability_lower.contains("provenance")
+            || capability_lower.contains("audit")
+        {
             "📋"
-        } else if capability_lower.contains("visual") || capability_lower.contains("ui") || capability_lower.contains("display") {
+        } else if capability_lower.contains("visual")
+            || capability_lower.contains("ui")
+            || capability_lower.contains("display")
+        {
             "👁️"
-        } else if capability_lower.contains("audio") || capability_lower.contains("sound") || capability_lower.contains("sonification") {
+        } else if capability_lower.contains("audio")
+            || capability_lower.contains("sound")
+            || capability_lower.contains("sonification")
+        {
             "🔊"
         } else {
-            "⚙️"  // Default
+            "⚙️" // Default
         }
     }
 }
@@ -783,9 +855,11 @@ impl eframe::App for PetalTongueApp {
     #[allow(clippy::too_many_lines, clippy::struct_excessive_bools)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Sync accessibility audio settings with system dashboard
-        self.system_dashboard.set_audio_enabled(self.accessibility_panel.settings.audio_enabled);
-        self.system_dashboard.set_audio_volume(self.accessibility_panel.settings.audio_volume);
-        
+        self.system_dashboard
+            .set_audio_enabled(self.accessibility_panel.settings.audio_enabled);
+        self.system_dashboard
+            .set_audio_volume(self.accessibility_panel.settings.audio_volume);
+
         // Update animation engine (flow particles and pulses)
         if self.show_animation
             && let Ok(mut engine) = self.animation_engine.write()
@@ -889,14 +963,14 @@ impl eframe::App for PetalTongueApp {
                     }
 
                     ui.separator();
-                    
+
                     // Accessibility panel toggle
                     if ui.button("♿ Accessibility").clicked() {
                         self.accessibility_panel.show = !self.accessibility_panel.show;
                     }
-                    
+
                     ui.separator();
-                    
+
                     // Dashboard toggle
                     ui.checkbox(&mut self.show_dashboard, "📊 Dashboard");
 
@@ -918,8 +992,10 @@ impl eframe::App for PetalTongueApp {
                         .inner_margin(12.0),
                 )
                 .show(ctx, |ui| {
-                    ui.heading(egui::RichText::new("⚙️ Controls")
-                        .size(self.accessibility_panel.scale_font(18.0)));
+                    ui.heading(
+                        egui::RichText::new("⚙️ Controls")
+                            .size(self.accessibility_panel.scale_font(18.0)),
+                    );
                     ui.add_space(8.0);
                     ui.separator();
                     ui.add_space(8.0);
@@ -933,8 +1009,10 @@ impl eframe::App for PetalTongueApp {
                     ui.add_space(12.0);
                     ui.separator();
                     ui.add_space(12.0);
-                    ui.heading(egui::RichText::new("🎨 Health Legend")
-                        .size(self.accessibility_panel.scale_font(16.0)));
+                    ui.heading(
+                        egui::RichText::new("🎨 Health Legend")
+                            .size(self.accessibility_panel.scale_font(16.0)),
+                    );
 
                     // Use accessibility colors - respects color-blind modes!
                     ui.horizontal(|ui| {
@@ -1026,10 +1104,10 @@ impl eframe::App for PetalTongueApp {
                                     ui.label(egui::RichText::new(&audio_cap.reason).size(12.0).color(egui::Color32::from_rgb(200, 220, 210)));
                                 }
                                 ui.add_space(8.0);
-                                
+
                                 ui.label(egui::RichText::new("✅ Audio System: Multi-Tier").size(13.0).strong());
                                 ui.add_space(4.0);
-                                
+
                                 ui.horizontal(|ui| {
                                     ui.label("1️⃣");
                                     ui.vertical(|ui| {
@@ -1038,7 +1116,7 @@ impl eframe::App for PetalTongueApp {
                                         ui.label(egui::RichText::new("8 UI sounds (success, error, notification, etc.)").size(10.0).color(egui::Color32::GRAY));
                                     });
                                 });
-                                
+
                                 ui.add_space(6.0);
                                 ui.horizontal(|ui| {
                                     ui.label("2️⃣");
@@ -1048,7 +1126,7 @@ impl eframe::App for PetalTongueApp {
                                         ui.label(egui::RichText::new("Supports WAV, MP3, OGG files").size(10.0).color(egui::Color32::GRAY));
                                     });
                                 });
-                                
+
                                 ui.add_space(6.0);
                                 ui.horizontal(|ui| {
                                     ui.label("3️⃣");
@@ -1058,11 +1136,11 @@ impl eframe::App for PetalTongueApp {
                                         ui.label(egui::RichText::new("Advanced music, voice, soundscapes").size(10.0).color(egui::Color32::GRAY));
                                     });
                                 });
-                                
+
                                 ui.add_space(8.0);
                                 ui.separator();
                                 ui.add_space(4.0);
-                                
+
                                 ui.label(egui::RichText::new("💡 Quick Start:").size(12.0).strong());
                                 ui.label(egui::RichText::new("Pure Rust audio works NOW (mathematical waveforms)").size(11.0).color(egui::Color32::from_rgb(200, 220, 210)));
                                 ui.label(egui::RichText::new("For advanced features, connect Toadstool or add sound files").size(10.0).italics().color(egui::Color32::GRAY));
@@ -1287,7 +1365,12 @@ impl eframe::App for PetalTongueApp {
                 .show(ctx, |ui| {
                     let font_scale = self.accessibility_panel.settings.font_size.multiplier();
                     // Pass audio_system for multimodal data sonification
-                    self.system_dashboard.render_compact(ui, &palette, font_scale, Some(&self.audio_system));
+                    self.system_dashboard.render_compact(
+                        ui,
+                        &palette,
+                        font_scale,
+                        Some(&self.audio_system),
+                    );
                 });
         }
 
@@ -1303,12 +1386,13 @@ impl eframe::App for PetalTongueApp {
                 )
                 .show(ctx, |ui| {
                     let font_scale = self.accessibility_panel.settings.font_size.multiplier();
-                    self.trust_dashboard.render(ui, &palette, font_scale, Some(&self.audio_system));
+                    self.trust_dashboard
+                        .render(ui, &palette, font_scale, Some(&self.audio_system));
                 });
         }
 
         // Right side panel - Primal details (if node selected)
-        let selected_id_clone = self.visual_renderer.selected_node().map(|s| s.to_string());
+        let selected_id_clone = self.visual_renderer.selected_node().map(std::string::ToString::to_string);
         if let Some(selected_id) = selected_id_clone {
             egui::SidePanel::right("primal_details_panel")
                 .default_width(350.0)
@@ -1329,10 +1413,10 @@ impl eframe::App for PetalTongueApp {
                 self.visual_renderer.render(ui);
             }
         });
-        
+
         // Render accessibility panel (as a window)
         self.accessibility_panel.show(ctx);
-        
+
         // Render keyboard shortcuts help overlay
         self.keyboard_shortcuts.render_help(ctx, &palette);
 

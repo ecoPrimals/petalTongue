@@ -2,8 +2,8 @@
 //!
 //! Captures sensor data (accelerometer, gyroscope) and touch patterns.
 
-use crate::types::*;
 use crate::quality::{variance, weighted_quality};
+use crate::types::*;
 
 /// Gesture entropy capturer (stub for Phase 5)
 pub struct GestureEntropyCapture {
@@ -25,12 +25,7 @@ impl GestureEntropyCapture {
     }
 
     /// Add sensor reading
-    pub fn add_sensor_reading(
-        &mut self,
-        accel: Vec3,
-        gyro: Vec3,
-        timestamp: std::time::Duration,
-    ) {
+    pub fn add_sensor_reading(&mut self, accel: Vec3, gyro: Vec3, timestamp: std::time::Duration) {
         self.accelerometer.push(accel);
         self.gyroscope.push(gyro);
         self.timestamps.push(timestamp);
@@ -155,11 +150,19 @@ mod tests {
     #[test]
     fn test_gesture_sensor_diversity() {
         let mut capture = GestureEntropyCapture::new();
-        
+
         // Add accelerometer reading
         capture.add_sensor_reading(
-            Vec3 { x: 0.1, y: 0.2, z: 0.3 },
-            Vec3 { x: 0.0, y: 0.0, z: 0.0 },
+            Vec3 {
+                x: 0.1,
+                y: 0.2,
+                z: 0.3,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
             std::time::Duration::from_secs(0),
         );
 
@@ -167,4 +170,3 @@ mod tests {
         assert!(quality.sensor_diversity > 0.0);
     }
 }
-

@@ -15,7 +15,7 @@ pub struct TrustConfig {
     pub max_level: u8,
     pub level_names: Vec<String>,
     pub level_emojis: Vec<String>,
-    pub level_colors: Vec<String>,  // Hex colors like "#808080"
+    pub level_colors: Vec<String>, // Hex colors like "#808080"
 }
 
 impl Default for TrustConfig {
@@ -37,10 +37,10 @@ impl Default for TrustConfig {
                 "🟢".to_string(),
             ],
             level_colors: vec![
-                "#808080".to_string(),  // Gray
-                "#FFD700".to_string(),  // Gold
-                "#FF8C00".to_string(),  // Dark orange
-                "#32CD32".to_string(),  // Lime green
+                "#808080".to_string(), // Gray
+                "#FFD700".to_string(), // Gold
+                "#FF8C00".to_string(), // Dark orange
+                "#32CD32".to_string(), // Lime green
             ],
         }
     }
@@ -52,7 +52,7 @@ impl Default for TrustConfig {
 /// Configuration comes from the ecosystem's trust-management capability spec.
 pub struct EcoPrimalTrustAdapter {
     config: TrustConfig,
-    colors: Vec<Color32>,  // Parsed from hex
+    colors: Vec<Color32>, // Parsed from hex
 }
 
 impl EcoPrimalTrustAdapter {
@@ -79,7 +79,9 @@ impl EcoPrimalTrustAdapter {
     #[allow(dead_code)]
     pub fn from_capability_spec(spec: &serde_json::Value) -> Option<Self> {
         // Parse spec into TrustConfig
-        serde_json::from_value(spec.clone()).ok().map(Self::from_config)
+        serde_json::from_value(spec.clone())
+            .ok()
+            .map(Self::from_config)
     }
 
     fn get_level_index(&self, level: u8) -> Option<usize> {
@@ -150,7 +152,7 @@ impl PropertyAdapter for EcoPrimalTrustAdapter {
     }
 
     fn priority(&self) -> i32 {
-        10  // Higher priority than generic
+        10 // Higher priority than generic
     }
 }
 
@@ -205,14 +207,10 @@ mod tests {
     fn test_node_decoration() {
         let adapter = EcoPrimalTrustAdapter::new();
         let mut props = Properties::new();
-        props.insert(
-            "trust_level".to_string(),
-            PropertyValue::Number(2.0),
-        );
+        props.insert("trust_level".to_string(), PropertyValue::Number(2.0));
 
         let decoration = adapter.node_decoration(&props).unwrap();
         assert_eq!(decoration.badge, Some("🟠".to_string()));
         assert!(decoration.tooltip.is_some());
     }
 }
-
