@@ -611,6 +611,7 @@ fn get_base_dir() -> Result<PathBuf, SessionError> {
 mod tests {
     use super::*;
     use crate::instance::InstanceId;
+    use crate::PrimalHealthStatus;
 
     #[test]
     fn test_session_state_creation() {
