@@ -31,7 +31,7 @@ pub enum PropertyValue {
 
 impl PropertyValue {
     /// Try to get as string
-    #[must_use] 
+    #[must_use]
     pub fn as_string(&self) -> Option<&str> {
         match self {
             PropertyValue::String(s) => Some(s),
@@ -40,7 +40,7 @@ impl PropertyValue {
     }
 
     /// Try to get as number
-    #[must_use] 
+    #[must_use]
     pub fn as_number(&self) -> Option<f64> {
         match self {
             PropertyValue::Number(n) => Some(*n),
@@ -49,7 +49,7 @@ impl PropertyValue {
     }
 
     /// Try to get as u8 (for things like trust levels)
-    #[must_use] 
+    #[must_use]
     pub fn as_u8(&self) -> Option<u8> {
         self.as_number().and_then(|n| {
             if (0.0..=255.0).contains(&n) {
@@ -61,7 +61,7 @@ impl PropertyValue {
     }
 
     /// Try to get as boolean
-    #[must_use] 
+    #[must_use]
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             PropertyValue::Boolean(b) => Some(*b),
@@ -70,7 +70,7 @@ impl PropertyValue {
     }
 
     /// Try to get as object
-    #[must_use] 
+    #[must_use]
     pub fn as_object(&self) -> Option<&HashMap<String, PropertyValue>> {
         match self {
             PropertyValue::Object(obj) => Some(obj),
@@ -79,7 +79,7 @@ impl PropertyValue {
     }
 
     /// Try to get as array
-    #[must_use] 
+    #[must_use]
     pub fn as_array(&self) -> Option<&Vec<PropertyValue>> {
         match self {
             PropertyValue::Array(arr) => Some(arr),
@@ -88,7 +88,7 @@ impl PropertyValue {
     }
 
     /// Check if this is null
-    #[must_use] 
+    #[must_use]
     pub fn is_null(&self) -> bool {
         matches!(self, PropertyValue::Null)
     }

@@ -14,7 +14,6 @@ pub struct AccessibilityPanel {
     pub show: bool,
 }
 
-
 impl AccessibilityPanel {
     /// Show the accessibility panel
     pub fn show(&mut self, ctx: &Context) {
@@ -188,13 +187,13 @@ impl AccessibilityPanel {
     }
 
     /// Get the current color palette
-    #[must_use] 
+    #[must_use]
     pub fn get_palette(&self) -> ColorPalette {
         ColorPalette::from_scheme(self.settings.color_scheme)
     }
 
     /// Apply font size to text
-    #[must_use] 
+    #[must_use]
     pub fn scale_font(&self, base_size: f32) -> f32 {
         base_size * self.settings.font_size.multiplier()
     }

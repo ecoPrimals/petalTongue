@@ -485,7 +485,7 @@ impl AudioSystem {
         available
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn get_providers(&self) -> Vec<(&str, bool, &str)> {
         self.providers
             .iter()
@@ -555,9 +555,8 @@ impl AudioSystem {
                 }
             }
 
-            let err_msg = format!(
-                "❌ NO PROVIDER CAN PLAY '{sound_name}' - Sound will NOT be heard!"
-            );
+            let err_msg =
+                format!("❌ NO PROVIDER CAN PLAY '{sound_name}' - Sound will NOT be heard!");
             error!("{}", err_msg);
 
             // Report failure to status reporter
@@ -601,12 +600,12 @@ impl AudioSystem {
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn available_sounds(&self) -> Vec<String> {
         self.providers[self.current_provider].available_sounds()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn current_provider_name(&self) -> &str {
         self.providers[self.current_provider].name()
     }

@@ -119,9 +119,10 @@ impl Drop for IpcServer {
     fn drop(&mut self) {
         // Clean up socket file
         if self.socket_path.exists()
-            && let Err(e) = std::fs::remove_file(&self.socket_path) {
-                tracing::warn!("Failed to remove socket file: {}", e);
-            }
+            && let Err(e) = std::fs::remove_file(&self.socket_path)
+        {
+            tracing::warn!("Failed to remove socket file: {}", e);
+        }
     }
 }
 

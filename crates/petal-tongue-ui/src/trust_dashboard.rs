@@ -43,7 +43,7 @@ impl Default for TrustDashboard {
 
 impl TrustDashboard {
     /// Create a new trust dashboard
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             visible: false,
@@ -240,17 +240,18 @@ impl TrustDashboard {
 
             // Play audio cue if audio is enabled
             if let Some(audio) = audio_system
-                && ui.small_button("🔊 Hear Trust Level").clicked() {
-                    // Play notification based on trust level
-                    let sound = match avg.round() as i32 {
-                        3 => "success",
-                        2 => "notification",
-                        1 => "warning",
-                        0 => "error",
-                        _ => "notification",
-                    };
-                    let _ = audio.play(sound);
-                }
+                && ui.small_button("🔊 Hear Trust Level").clicked()
+            {
+                // Play notification based on trust level
+                let sound = match avg.round() as i32 {
+                    3 => "success",
+                    2 => "notification",
+                    1 => "warning",
+                    0 => "error",
+                    _ => "notification",
+                };
+                let _ = audio.play(sound);
+            }
 
             ui.add_space(12.0);
         }
