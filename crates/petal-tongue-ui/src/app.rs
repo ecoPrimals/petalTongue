@@ -1,18 +1,25 @@
 //! Main application logic for petalTongue UI
 
+use crate::accessibility::{ColorPalette};
 use crate::accessibility_panel::AccessibilityPanel;
+use crate::audio_providers::AudioSystem;
 use crate::bingocube_integration::BingoCubeIntegration;
 use crate::graph_metrics_plotter::GraphMetricsPlotter;
 use crate::keyboard_shortcuts::KeyboardShortcuts;
 use crate::process_viewer_integration::ProcessViewerTool;
+use crate::status_reporter::StatusReporter;
 use crate::system_dashboard::SystemDashboard;
 use crate::system_monitor_integration::SystemMonitorTool;
 use crate::tool_integration::ToolManager;
+use crate::trust_dashboard::TrustDashboard;
 use petal_tongue_animation::AnimationEngine;
 use petal_tongue_api::BiomeOSClient;
 use petal_tongue_core::{
-    CapabilityDetector, GraphEngine, LayoutAlgorithm, Modality, PrimalHealthStatus, PrimalInfo,
-    TopologyEdge,
+    CapabilityDetector, GraphEngine, InstanceId, LayoutAlgorithm, Modality, PrimalHealthStatus, 
+    PrimalInfo, Properties, PropertyValue, SessionManager, TopologyEdge,
+};
+use petal_tongue_adapters::{
+    AdapterRegistry, EcoPrimalCapabilityAdapter, EcoPrimalFamilyAdapter, EcoPrimalTrustAdapter,
 };
 use petal_tongue_discovery::{discover_visualization_providers, VisualizationDataProvider};
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer, Visual2DRenderer};
@@ -70,9 +77,34 @@ pub struct PetalTongueApp {
     /// Show system dashboard sidebar
     show_dashboard: bool,
     
+    // Audio System - Multimodal output
+    /// Audio system for UI sounds and data sonification
+    audio_system: AudioSystem,
+    
+    // Status Reporter - AI-accessible observability
+    /// Status reporter (makes petalTongue observable to AI and external systems)
+    pub status_reporter: Arc<StatusReporter>,
+    
     // Keyboard Navigation
     /// Keyboard shortcuts system
     keyboard_shortcuts: KeyboardShortcuts,
+    
+    // Adapter System - Universal property rendering
+    /// Property adapter registry (ecosystem-agnostic rendering)
+    adapter_registry: AdapterRegistry,
+    
+    // Trust Dashboard - Trust visualization and monitoring
+    /// Trust status dashboard
+    trust_dashboard: TrustDashboard,
+    /// Show trust dashboard panel
+    show_trust_dashboard: bool,
+    
+    // ===== Phase 2: Session Management =====
+    /// Session manager for state persistence (optional, graceful degradation)
+    session_manager: Option<SessionManager>,
+    /// Instance ID for this petalTongue instance
+    instance_id: Option<InstanceId>,
+    // ===== End Phase 2 =====
 }
 
 impl PetalTongueApp {
@@ -150,6 +182,41 @@ impl PetalTongueApp {
         tracing::info!("Capability detection complete");
         tracing::info!("{}", capabilities.capability_report());
 
+        // Create status reporter EARLY so we can report capability detection
+        let status_reporter = {
+            let mut reporter = StatusReporter::new();
+            // Enable status file for AI inspection FIRST
+            if let Ok(status_file) = std::env::var("PETALTONGUE_STATUS_FILE") {
+                reporter.enable_status_file(std::path::PathBuf::from(status_file));
+            } else {
+                // Default status file location
+                reporter.enable_status_file(std::path::PathBuf::from("/tmp/petaltongue_status.json"));
+            }
+            
+            let reporter_arc = Arc::new(reporter);
+            
+            // Report capability detection results immediately
+            for modality in &[Modality::Visual2D, Modality::Audio, Modality::Animation, 
+                             Modality::TextDescription, Modality::Haptic, Modality::VR3D] {
+                let available = capabilities.is_available(*modality);
+                // Get capability info to extract reason
+                let reason_string = capabilities.get_status(*modality)
+                    .map(|c| c.reason.clone())
+                    .unwrap_or_else(|| "Not tested".to_string());
+                let modality_name = match modality {
+                    Modality::Visual2D => "visual2d",
+                    Modality::Audio => "audio",
+                    Modality::Animation => "animation",
+                    Modality::TextDescription => "text_description",
+                    Modality::Haptic => "haptic",
+                    Modality::VR3D => "vr3d",
+                };
+                reporter_arc.update_modality(modality_name, available, true, reason_string);
+            }
+            
+            reporter_arc
+        };
+
         // Create renderers
         let mut visual_renderer = Visual2DRenderer::new(Arc::clone(&graph));
         let audio_renderer = AudioSonificationRenderer::new(Arc::clone(&graph));
@@ -159,6 +226,31 @@ impl PetalTongueApp {
         // Wire animation engine to visual renderer
         visual_renderer.set_animation_engine(Arc::clone(&animation_engine));
         visual_renderer.set_animation_enabled(true); // Enable by default
+
+        // Initialize adapter registry with ecoPrimals adapters
+        // In the future, adapters will be loaded based on ecosystem capability discovery
+        let adapter_registry = AdapterRegistry::new();
+        adapter_registry.register(Box::new(EcoPrimalTrustAdapter::new()));
+        adapter_registry.register(Box::new(EcoPrimalFamilyAdapter::new()));
+        adapter_registry.register(Box::new(EcoPrimalCapabilityAdapter::new()));
+        
+        tracing::info!("Registered {} property adapters", adapter_registry.adapter_count());
+        tracing::debug!("Adapters: {:?}", adapter_registry.adapter_names());
+
+        // Initialize tool manager and register available tools
+        // Discovered at runtime, not hardcoded - capability-based!
+        let tools = {
+            let mut tm = ToolManager::new();
+            tm.register_tool(Box::new(BingoCubeIntegration::new()));
+            tm.register_tool(Box::new(SystemMonitorTool::default()));
+            tm.register_tool(Box::new(ProcessViewerTool::default()));
+            tm.register_tool(Box::new(GraphMetricsPlotter::default()));
+            tm
+        };
+
+        // Initialize audio system and connect status reporter for observability
+        let mut audio_system = AudioSystem::new();
+        audio_system.set_status_reporter(Arc::clone(&status_reporter));
 
         let mut app = Self {
             capabilities,
@@ -180,24 +272,33 @@ impl PetalTongueApp {
             refresh_interval: 5.0,
 
             // Tool manager - capability-based integration
-            tools: ToolManager::new(),
+            tools,
             
             accessibility_panel: AccessibilityPanel::default(),
             system_dashboard: SystemDashboard::default(),
             show_dashboard: true, // Show by default - part of Universal UI
+            audio_system,
+            status_reporter,
             keyboard_shortcuts: KeyboardShortcuts::default(),
+            adapter_registry, // Universal property rendering
+            trust_dashboard: TrustDashboard::new(),
+            show_trust_dashboard: true, // Show by default
+            
+            // Phase 2: Session management (optional, graceful degradation)
+            session_manager,
+            instance_id,
         };
 
-        // Register available tools (discovered at runtime, not hardcoded)
-        // In production, this would discover tools via capability announcement
-        app.tools
-            .register_tool(Box::new(BingoCubeIntegration::new()));
-        app.tools
-            .register_tool(Box::new(SystemMonitorTool::default()));
-        app.tools
-            .register_tool(Box::new(ProcessViewerTool::default()));
-        app.tools
-            .register_tool(Box::new(GraphMetricsPlotter::default()));
+        // Play startup anthem
+        tracing::info!("🎵 Playing startup anthem...");
+        if let Err(e) = app.audio_system.play("startup") {
+            tracing::warn!("Could not play startup anthem: {}", e);
+        }
+
+        // Set initial health status and force write AFTER audio system is ready
+        tracing::info!("📊 Writing initial status file for AI observability...");
+        app.status_reporter.update_health("healthy");
+        app.status_reporter.force_write();
 
         // Initial data load
         // In showcase mode, load from sandbox; otherwise discover from network
@@ -292,8 +393,8 @@ impl PetalTongueApp {
             *graph = GraphEngine::new();
 
             // Add primals
-            for primal in primals {
-                graph.add_node(primal);
+            for primal in &primals {
+                graph.add_node(primal.clone());
             }
 
             // Add edges
@@ -304,6 +405,13 @@ impl PetalTongueApp {
             // Apply layout
             graph.set_layout(self.current_layout);
             graph.layout(100);
+            
+            // Drop the graph lock before updating trust dashboard
+            drop(graph);
+            
+            // Update trust dashboard with new primal data
+            self.trust_dashboard.update_from_primals(&primals);
+            tracing::debug!("✅ Trust dashboard updated with {} primals", primals.len());
         });
 
         self.last_refresh = Instant::now();
@@ -325,7 +433,10 @@ impl PetalTongueApp {
             ],
             health: PrimalHealthStatus::Healthy,
             last_seen: 1_703_376_000,
+            properties: Properties::new(),
+            #[allow(deprecated)]
                 trust_level: None,
+            #[allow(deprecated)]
                 family_id: None,
         });
 
@@ -341,7 +452,10 @@ impl PetalTongueApp {
             ],
             health: PrimalHealthStatus::Warning,
             last_seen: 1_703_376_060,
+            properties: Properties::new(),
+            #[allow(deprecated)]
                 trust_level: None,
+            #[allow(deprecated)]
                 family_id: None,
         });
 
@@ -357,7 +471,10 @@ impl PetalTongueApp {
             ],
             health: PrimalHealthStatus::Healthy,
             last_seen: 1_703_376_120,
+            properties: Properties::new(),
+            #[allow(deprecated)]
                 trust_level: None,
+            #[allow(deprecated)]
                 family_id: None,
         });
 
@@ -374,7 +491,10 @@ impl PetalTongueApp {
             ],
             health: PrimalHealthStatus::Healthy,
             last_seen: 1_703_376_180,
+            properties: Properties::new(),
+            #[allow(deprecated)]
                 trust_level: None,
+            #[allow(deprecated)]
                 family_id: None,
         });
 
@@ -387,7 +507,10 @@ impl PetalTongueApp {
             capabilities: vec!["intent_parsing".to_string(), "task_planning".to_string()],
             health: PrimalHealthStatus::Critical,
             last_seen: 1_703_376_240,
+            properties: Properties::new(),
+            #[allow(deprecated)]
                 trust_level: None,
+            #[allow(deprecated)]
                 family_id: None,
         });
 
@@ -427,11 +550,242 @@ impl PetalTongueApp {
             label: Some("Task Execution".to_string()),
         });
     }
+
+    /// Render the primal details panel for a selected node
+    fn render_primal_details_panel(&mut self, ui: &mut egui::Ui, selected_id: &str, palette: &ColorPalette) {
+        ui.heading("🔍 Primal Details");
+        ui.add_space(8.0);
+        ui.separator();
+        ui.add_space(8.0);
+
+        // Get primal info from graph
+        let graph = self.graph.read().expect("graph lock poisoned");
+        let primal_node = graph.nodes().iter().find(|n| n.info.id == selected_id);
+
+        if let Some(node) = primal_node {
+            let info = &node.info;
+
+            // Close button
+            ui.horizontal(|ui| {
+                ui.label(egui::RichText::new(&info.name).size(20.0).strong());
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui.button("✖").clicked() {
+                        self.visual_renderer.set_selected_node(None);
+                    }
+                });
+            });
+
+            ui.add_space(8.0);
+
+            // ID
+            ui.label(egui::RichText::new(format!("ID: {}", info.id)).size(12.0).color(egui::Color32::GRAY));
+            ui.add_space(4.0);
+
+            // Type
+            ui.label(egui::RichText::new(format!("Type: {}", info.primal_type)).size(14.0));
+            ui.add_space(4.0);
+
+            // Endpoint
+            ui.label(egui::RichText::new(format!("📍 {}", info.endpoint)).size(12.0).color(palette.text_dim));
+            ui.add_space(12.0);
+
+            // === ADAPTER-BASED PROPERTY RENDERING ===
+            // Use properties directly if available, otherwise convert from legacy fields
+            let properties = if !info.properties.is_empty() {
+                // Modern path: use properties directly
+                info.properties.clone()
+            } else {
+                // Legacy path: convert from old fields (backward compatibility)
+                use petal_tongue_core::{Properties, PropertyValue};
+                let mut props = Properties::new();
+                
+                #[allow(deprecated)]
+                if let Some(trust_level) = info.trust_level {
+                    props.insert("trust_level".to_string(), PropertyValue::Number(trust_level as f64));
+                }
+                
+                #[allow(deprecated)]
+                if let Some(family_id) = &info.family_id {
+                    props.insert("family_id".to_string(), PropertyValue::String(family_id.clone()));
+                }
+                
+                // Add capabilities as array
+                let cap_array: Vec<PropertyValue> = info.capabilities.iter()
+                    .map(|c| PropertyValue::String(c.clone()))
+                    .collect();
+                props.insert("capabilities".to_string(), PropertyValue::Array(cap_array));
+                
+                props
+            };
+            
+            // Render properties using adapters
+            if properties.get("trust_level").is_some() {
+                ui.separator();
+                ui.add_space(8.0);
+                ui.label(egui::RichText::new("🔒 Trust Level").size(16.0).strong());
+                ui.add_space(6.0);
+                
+                egui::Frame::none()
+                    .fill(egui::Color32::from_rgb(40, 40, 45))
+                    .inner_margin(12.0)
+                    .show(ui, |ui| {
+                        self.adapter_registry.render_property(
+                            "trust_level",
+                            properties.get("trust_level").unwrap(),
+                            ui,
+                        );
+                    });
+                
+                ui.add_space(12.0);
+            }
+            
+            if properties.get("family_id").is_some() {
+                ui.separator();
+                ui.add_space(8.0);
+                ui.label(egui::RichText::new("👨‍👩‍👧‍👦 Family Lineage").size(16.0).strong());
+                ui.add_space(6.0);
+                
+                egui::Frame::none()
+                    .fill(egui::Color32::from_rgb(30, 40, 60))
+                    .inner_margin(12.0)
+                    .show(ui, |ui| {
+                        self.adapter_registry.render_property(
+                            "family_id",
+                            properties.get("family_id").unwrap(),
+                            ui,
+                        );
+                    });
+                
+                ui.add_space(12.0);
+            }
+
+            // Health Status
+            ui.separator();
+            ui.add_space(8.0);
+            ui.label(egui::RichText::new("🩺 Health Status").size(16.0).strong());
+            ui.add_space(6.0);
+
+            let (health_icon, health_color) = match info.health {
+                PrimalHealthStatus::Healthy => ("✅", egui::Color32::from_rgb(0, 200, 0)),
+                PrimalHealthStatus::Warning => ("⚠️", egui::Color32::from_rgb(255, 200, 0)),
+                PrimalHealthStatus::Critical => ("❌", egui::Color32::from_rgb(255, 50, 50)),
+                PrimalHealthStatus::Unknown => ("❓", egui::Color32::GRAY),
+            };
+
+            ui.horizontal(|ui| {
+                ui.label(egui::RichText::new(health_icon).size(24.0));
+                ui.label(
+                    egui::RichText::new(format!("{:?}", info.health))
+                        .size(16.0)
+                        .color(health_color),
+                );
+            });
+
+            ui.add_space(12.0);
+
+            // Capabilities
+            ui.separator();
+            ui.add_space(8.0);
+            
+            if !info.capabilities.is_empty() {
+                // Use adapter for capabilities rendering
+                egui::ScrollArea::vertical()
+                    .max_height(200.0)
+                    .show(ui, |ui| {
+                        self.adapter_registry.render_property(
+                            "capabilities",
+                            properties.get("capabilities").unwrap(),
+                            ui,
+                        );
+                    });
+            } else {
+                ui.label(egui::RichText::new("⚙️ Capabilities").size(16.0).strong());
+                ui.add_space(6.0);
+                ui.label(egui::RichText::new("No capabilities listed").color(egui::Color32::GRAY));
+            }
+
+            ui.add_space(12.0);
+
+            // Last Seen
+            ui.separator();
+            ui.add_space(8.0);
+            ui.label(
+                egui::RichText::new(format!("⏱️ Last seen: {} seconds ago", 
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_secs()
+                        .saturating_sub(info.last_seen)
+                ))
+                .size(12.0)
+                .color(egui::Color32::GRAY),
+            );
+
+            ui.add_space(16.0);
+
+            // Action Buttons
+            ui.separator();
+            ui.add_space(8.0);
+            ui.horizontal(|ui| {
+                if ui.button("🔍 Query Primal").clicked() {
+                    tracing::info!("Query primal: {}", info.id);
+                    // TODO: Implement query interface
+                }
+                if ui.button("📊 View Logs").clicked() {
+                    tracing::info!("View logs for: {}", info.id);
+                    // TODO: Implement log viewer
+                }
+            });
+        } else {
+            ui.label(egui::RichText::new("Node not found").color(egui::Color32::RED));
+        }
+    }
+
+    /// Get icon for a capability (shared logic)
+    /// Get icon for capability type
+    /// 
+    /// DEPRECATED: Use adapter system instead
+    /// This method is kept temporarily for backward compatibility with any remaining code
+    /// that hasn't been migrated to adapters yet.
+    #[deprecated(note = "Use adapter_registry with EcoPrimalCapabilityAdapter instead")]
+    fn get_capability_icon(&self, capability: &str) -> &'static str {
+        let capability_lower = capability.to_lowercase();
+
+        if capability_lower.contains("security") || capability_lower.contains("trust") || capability_lower.contains("auth") {
+            "🔒"
+        } else if capability_lower.contains("storage") || capability_lower.contains("persist") || capability_lower.contains("data") {
+            "💾"
+        } else if capability_lower.contains("compute") || capability_lower.contains("container") || capability_lower.contains("workload") {
+            "⚙️"
+        } else if capability_lower.contains("discovery") || capability_lower.contains("orchestration") || capability_lower.contains("federation") {
+            "🔍"
+        } else if capability_lower.contains("identity") || capability_lower.contains("lineage") || capability_lower.contains("genetic") {
+            "🆔"
+        } else if capability_lower.contains("encrypt") || capability_lower.contains("crypto") || capability_lower.contains("sign") {
+            "🔐"
+        } else if capability_lower.contains("ai") || capability_lower.contains("inference") || capability_lower.contains("intent") {
+            "🧠"
+        } else if capability_lower.contains("network") || capability_lower.contains("tcp") || capability_lower.contains("http") || capability_lower.contains("grpc") {
+            "🌐"
+        } else if capability_lower.contains("attribution") || capability_lower.contains("provenance") || capability_lower.contains("audit") {
+            "📋"
+        } else if capability_lower.contains("visual") || capability_lower.contains("ui") || capability_lower.contains("display") {
+            "👁️"
+        } else if capability_lower.contains("audio") || capability_lower.contains("sound") || capability_lower.contains("sonification") {
+            "🔊"
+        } else {
+            "⚙️"  // Default
+        }
+    }
 }
 
 impl eframe::App for PetalTongueApp {
     #[allow(clippy::too_many_lines, clippy::struct_excessive_bools)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Sync accessibility audio settings with system dashboard
+        self.system_dashboard.set_audio_enabled(self.accessibility_panel.settings.audio_enabled);
+        self.system_dashboard.set_audio_volume(self.accessibility_panel.settings.audio_volume);
+        
         // Update animation engine (flow particles and pulses)
         if self.show_animation
             && let Ok(mut engine) = self.animation_engine.write()
@@ -932,7 +1286,35 @@ impl eframe::App for PetalTongueApp {
                 )
                 .show(ctx, |ui| {
                     let font_scale = self.accessibility_panel.settings.font_size.multiplier();
-                    self.system_dashboard.render_compact(ui, &palette, font_scale);
+                    // Pass audio_system for multimodal data sonification
+                    self.system_dashboard.render_compact(ui, &palette, font_scale, Some(&self.audio_system));
+                });
+        }
+
+        // Right panel - Trust Dashboard (Trust status visualization!)
+        if self.show_trust_dashboard {
+            egui::SidePanel::right("trust_dashboard_panel")
+                .default_width(280.0)
+                .resizable(true)
+                .frame(
+                    egui::Frame::none()
+                        .fill(palette.background_alt)
+                        .inner_margin(12.0),
+                )
+                .show(ctx, |ui| {
+                    let font_scale = self.accessibility_panel.settings.font_size.multiplier();
+                    self.trust_dashboard.render(ui, &palette, font_scale, Some(&self.audio_system));
+                });
+        }
+
+        // Right side panel - Primal details (if node selected)
+        let selected_id_clone = self.visual_renderer.selected_node().map(|s| s.to_string());
+        if let Some(selected_id) = selected_id_clone {
+            egui::SidePanel::right("primal_details_panel")
+                .default_width(350.0)
+                .resizable(true)
+                .show(ctx, |ui| {
+                    self.render_primal_details_panel(ui, &selected_id, &palette);
                 });
         }
 

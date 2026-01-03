@@ -175,6 +175,24 @@ impl UISounds {
         }
         samples
     }
+
+    /// Startup chime (welcoming, bright, uplifting)
+    /// Inspired by morning awakening sounds
+    pub fn startup() -> Vec<f32> {
+        let mut samples = Vec::new();
+        
+        // Bright, ascending melody (major scale feel)
+        // Start gentle and build
+        samples.extend(generate_tone(440.0, 0.15, Waveform::Sine, 0.25));  // A4
+        samples.extend(vec![0.0; (SAMPLE_RATE as f32 * 0.05) as usize]);  // Short pause
+        samples.extend(generate_tone(554.37, 0.15, Waveform::Sine, 0.30)); // C#5
+        samples.extend(vec![0.0; (SAMPLE_RATE as f32 * 0.05) as usize]);  // Short pause
+        samples.extend(generate_tone(659.25, 0.2, Waveform::Sine, 0.35));  // E5
+        samples.extend(vec![0.0; (SAMPLE_RATE as f32 * 0.05) as usize]);  // Short pause
+        samples.extend(generate_tone(880.0, 0.3, Waveform::Sine, 0.40));   // A5 - triumphant finish!
+        
+        samples
+    }
 }
 
 /// Export samples as WAV file bytes

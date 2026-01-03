@@ -39,6 +39,45 @@ URL of the BiomeOS API endpoint. petalTongue will connect to this endpoint to di
 
 ---
 
+## 🤖 Self-Awareness & AI Integration
+
+### **PETALTONGUE_STATUS_FILE**
+**Type**: String (file path)  
+**Default**: `/tmp/petaltongue_status.json`  
+**Required**: No  
+**Example**: `PETALTONGUE_STATUS_FILE=/var/run/petaltongue/status.json`
+
+Path to write machine-readable status file for AI systems.
+
+**Format**: JSON with system state, health, events, and issues.
+
+**Use Cases**:
+- External AI agents monitoring petalTongue
+- Integration tests checking system state
+- DevOps dashboards
+- Automated diagnosis tools
+
+---
+
+### **PETALTONGUE_SOUNDS_DIR**
+**Type**: String (directory path)  
+**Default**: `./sounds` (current directory)  
+**Required**: No (falls back to generated sounds)  
+**Example**: `PETALTONGUE_SOUNDS_DIR=/usr/share/petaltongue/sounds`
+
+Directory containing user-supplied sound files for audio system.
+
+**Supported Files**:
+- `startup.mp3` - Startup anthem
+- `success.mp3` - Success notification
+- `error.mp3` - Error notification
+- `click.mp3` - UI click sound
+- (etc. - see audio system docs)
+
+**Fallback**: If directory doesn't exist or files are missing, petalTongue generates pure Rust audio.
+
+---
+
 ## 📊 Logging & Debugging
 
 ### **RUST_LOG**
@@ -208,6 +247,7 @@ BIOMEOS_URL=http://localhost:3000
 PETALTONGUE_MOCK_MODE=true
 RUST_LOG=debug
 PETALTONGUE_DEBUG_OVERLAY=true
+PETALTONGUE_STATUS_FILE=/tmp/petaltongue_dev_status.json
 ```
 
 ### High-Performance Configuration
@@ -248,7 +288,7 @@ RUST_LOG=error
 
 ---
 
-## 🚀 Deployment Checklist
+### Deployment Checklist
 
 Before deploying to production:
 
@@ -256,10 +296,13 @@ Before deploying to production:
 - [ ] Ensure `PETALTONGUE_MOCK_MODE` is `false` (or unset)
 - [ ] Set `RUST_LOG` to `info` or `warn`
 - [ ] Unset `PETALTONGUE_DEBUG_OVERLAY` (or set to `false`)
+- [ ] Configure `PETALTONGUE_STATUS_FILE` for monitoring
+- [ ] Set `PETALTONGUE_SOUNDS_DIR` if using custom sounds
 - [ ] Configure refresh interval based on load requirements
 - [ ] Test with actual BiomeOS instance
 - [ ] Verify capability detection works correctly
 - [ ] Confirm no hardcoded development values
+- [ ] Test AI monitoring tools can read status file
 
 ---
 
@@ -272,7 +315,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: December 27, 2025  
+**Last Updated**: January 3, 2026 (Self-Awareness Session)  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0
 

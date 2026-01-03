@@ -18,15 +18,18 @@ pub mod graph_metrics_plotter;
 pub mod human_entropy_window;
 pub mod keyboard_shortcuts;
 pub mod live_data;
+pub mod multimodal_stream;
 pub mod process_viewer_integration;
 pub mod sandbox_mock;
 pub mod state;
+pub mod status_reporter;
 pub mod system_dashboard;
 pub mod system_monitor_integration;
 pub mod timeline_view;
 pub mod toadstool_bridge;
 pub mod tool_integration;
 pub mod traffic_view;
+pub mod trust_dashboard;
 
 pub use app::PetalTongueApp;
 pub use human_entropy_window::HumanEntropyWindow;

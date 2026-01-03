@@ -23,8 +23,11 @@ pub mod error;
 #[cfg(test)]
 mod error_tests;
 pub mod graph_engine;
+pub mod instance;  // Instance management (Phase 1)
 pub mod lifecycle;
 pub mod primal_types;
+pub mod property;  // Generic property system
+pub mod session;   // Session state persistence (Phase 2)
 pub mod types;
 #[cfg(test)]
 mod types_tests;
@@ -50,6 +53,9 @@ pub use error::PetalTongueError;
 /// Visualization types
 pub use types::*;
 
+/// Generic property system (ecosystem-agnostic)
+pub use property::{Properties, PropertyValue};
+
 /// Graph engine (core topology representation)
 pub use graph_engine::{GraphEngine, GraphStats, LayoutAlgorithm};
 
@@ -58,6 +64,14 @@ pub use capabilities::{CapabilityDetector, Modality, ModalityCapability, Modalit
 
 /// Capability-based primal type system
 pub use primal_types::{PrimalCapabilities, capability_categories};
+
+/// Instance management (multi-instance support)
+pub use instance::{Instance, InstanceError, InstanceId, InstanceRegistry};
+
+/// Session state persistence
+pub use session::{
+    AccessibilitySettings, SessionError, SessionManager, SessionState, TrustSummary,
+};
 
 /// The petalTongue primal.
 pub struct PetalTongue {

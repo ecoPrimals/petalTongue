@@ -1,0 +1,23 @@
+[package]
+name = "petal-tongue-cli"
+description = "Command-line interface for managing petalTongue instances"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "petaltongue"
+path = "src/main.rs"
+
+[dependencies]
+petal-tongue-core = { path = "../petal-tongue-core" }
+petal-tongue-ipc = { path = "../petal-tongue-ipc" }
+tokio = { workspace = true, features = ["full"] }
+clap = { version = "4.5", features = ["derive", "cargo"] }
+serde_json = { workspace = true }
+anyhow = "1.0"
+colored = "2.1"
+uuid = "1.9"
+

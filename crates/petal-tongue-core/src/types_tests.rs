@@ -53,6 +53,8 @@ mod tests {
             primal_type: "compute".to_string(),
             endpoint: "http://test:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
+            trust_level: None,
+            family_id: None,
             capabilities: vec!["cap1".to_string(), "cap2".to_string()],
             last_seen: 1_234_567_890,
         };
@@ -74,6 +76,8 @@ mod tests {
             primal_type: "compute".to_string(),
             endpoint: "http://test:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
+            trust_level: None,
+            family_id: None,
             capabilities: vec!["cap1".to_string()],
             last_seen: 1_234_567_890,
         };
@@ -122,6 +126,8 @@ mod tests {
             primal_type: "compute".to_string(),
             endpoint: "http://p1:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
+            trust_level: None,
+            family_id: None,
             capabilities: vec![],
             last_seen: 1_234_567_890,
         };
@@ -132,6 +138,8 @@ mod tests {
             primal_type: "storage".to_string(),
             endpoint: "http://p2:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
+            trust_level: None,
+            family_id: None,
             capabilities: vec![],
             last_seen: 1_234_567_890,
         };
@@ -225,6 +233,8 @@ mod tests {
             primal_type: "compute".to_string(),
             endpoint: "http://test:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
+            trust_level: None,
+            family_id: None,
             capabilities: vec!["cap1".to_string()],
             last_seen: 1_234_567_890,
         };

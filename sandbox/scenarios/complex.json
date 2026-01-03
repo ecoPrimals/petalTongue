@@ -14,7 +14,7 @@
         "trust_evaluation",
         "lineage_verification"
       ],
-      "health": "healthy",
+      "health": "Healthy",
       "last_seen": 1735948800
     },
     {
@@ -28,7 +28,7 @@
         "peer_coordination",
         "mdns_broadcast"
       ],
-      "health": "healthy",
+      "health": "Healthy",
       "last_seen": 1735948800
     },
     {
@@ -41,7 +41,7 @@
         "workload_execution",
         "resource_scheduling"
       ],
-      "health": "healthy",
+      "health": "Healthy",
       "last_seen": 1735948800
     },
     {
@@ -54,7 +54,7 @@
         "workload_execution",
         "gpu_acceleration"
       ],
-      "health": "healthy",
+      "health": "Healthy",
       "last_seen": 1735948800
     },
     {
@@ -68,7 +68,7 @@
         "attribution",
         "replication"
       ],
-      "health": "healthy",
+      "health": "Healthy",
       "last_seen": 1735948800
     },
     {
@@ -81,7 +81,7 @@
         "content_addressing",
         "backup"
       ],
-      "health": "healthy",
+      "health": "Healthy",
       "last_seen": 1735948800
     },
     {
@@ -95,7 +95,7 @@
         "natural_language",
         "reasoning"
       ],
-      "health": "healthy",
+      "health": "Healthy",
       "last_seen": 1735948800
     },
     {
@@ -109,7 +109,7 @@
         "api_aggregation",
         "universal_client"
       ],
-      "health": "healthy",
+      "health": "Healthy",
       "last_seen": 1735948800
     },
     {
@@ -123,7 +123,7 @@
         "human_entropy",
         "accessibility"
       ],
-      "health": "healthy",
+      "health": "Healthy",
       "last_seen": 1735948800
     },
     {
@@ -136,7 +136,7 @@
         "cross_tower_trust",
         "mesh_networking"
       ],
-      "health": "degraded",
+      "health": "Warning",
       "last_seen": 1735948200
     }
   ],
