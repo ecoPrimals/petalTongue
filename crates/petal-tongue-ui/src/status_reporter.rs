@@ -138,7 +138,7 @@ pub struct StatusReporter {
 }
 
 impl StatusReporter {
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         let status = SystemStatus {
             timestamp: chrono::Utc::now().to_rfc3339(),
@@ -221,7 +221,7 @@ impl StatusReporter {
     }
 
     /// Get current status (thread-safe)
-    #[must_use] 
+    #[must_use]
     pub fn get_status(&self) -> SystemStatus {
         let mut status = self.status.lock().unwrap().clone();
         status.timestamp = chrono::Utc::now().to_rfc3339();
@@ -400,14 +400,14 @@ impl StatusReporter {
     }
 
     /// Health check - returns true if system is healthy
-    #[must_use] 
+    #[must_use]
     pub fn is_healthy(&self) -> bool {
         let status = self.status.lock().unwrap();
         status.health == "healthy"
     }
 
     /// Get critical issues (errors and critical warnings)
-    #[must_use] 
+    #[must_use]
     pub fn get_critical_issues(&self) -> Vec<Issue> {
         let status = self.status.lock().unwrap();
         status

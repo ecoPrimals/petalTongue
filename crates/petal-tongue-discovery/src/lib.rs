@@ -201,7 +201,7 @@ mod tests {
         std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
         std::env::remove_var("PETALTONGUE_MOCK_MODE");
         std::env::remove_var("PETALTONGUE_ENABLE_MDNS");
-        
+
         // Production mode requires explicit configuration - no automatic fallback
         let result = discover_visualization_providers().await;
         assert!(

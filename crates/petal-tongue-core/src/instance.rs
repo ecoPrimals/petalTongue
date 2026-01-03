@@ -69,7 +69,12 @@ impl InstanceId {
     /// # Errors
     ///
     /// Returns error if the string is not a valid UUID
-    pub fn from_str(s: &str) -> Result<Self, InstanceError> {
+    /// Parse an `InstanceId` from a string representation
+    ///
+    /// # Errors
+    ///
+    /// Returns `InstanceError::InvalidInstanceId` if the string is not a valid UUID
+    pub fn parse(s: &str) -> Result<Self, InstanceError> {
         Ok(Self(Uuid::parse_str(s).map_err(|e| {
             InstanceError::InvalidInstanceId(format!("Invalid UUID: {e}"))
         })?))
@@ -457,10 +462,8 @@ fn process_exists(pid: u32) -> bool {
         use nix::unistd::Pid;
 
         match kill(Pid::from_raw(pid as i32), Signal::SIGTERM) {
-            Ok(()) => true,
-            Err(nix::errno::Errno::ESRCH) => false, // No such process
-            Err(nix::errno::Errno::EPERM) => true,  // No permission but exists
-            Err(_) => false,
+            Ok(()) | Err(nix::errno::Errno::EPERM) => true, // Process exists (with or without permission)
+            Err(nix::errno::Errno::ESRCH | _) => false, // No such process or other error
         }
     }
 

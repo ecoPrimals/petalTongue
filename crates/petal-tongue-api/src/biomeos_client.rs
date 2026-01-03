@@ -191,9 +191,7 @@ impl BiomeOSClient {
         let url = format!("{}/api/v1/topology", self.base_url);
 
         let response = self.client.get(&url).send().await.map_err(|e| {
-            anyhow::anyhow!(
-                "Failed to connect to biomeOS topology endpoint at {url}: {e}"
-            )
+            anyhow::anyhow!("Failed to connect to biomeOS topology endpoint at {url}: {e}")
         })?;
 
         if !response.status().is_success() {

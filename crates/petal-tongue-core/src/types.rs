@@ -97,21 +97,23 @@ impl PrimalInfo {
 
         // Migrate trust_level if present and not already in properties
         if let Some(trust) = self.trust_level
-            && !self.properties.contains_key("trust_level") {
-                self.properties.insert(
-                    "trust_level".to_string(),
-                    PropertyValue::Number(f64::from(trust)),
-                );
-            }
+            && !self.properties.contains_key("trust_level")
+        {
+            self.properties.insert(
+                "trust_level".to_string(),
+                PropertyValue::Number(f64::from(trust)),
+            );
+        }
 
         // Migrate family_id if present and not already in properties
         if let Some(ref family) = self.family_id
-            && !self.properties.contains_key("family_id") {
-                self.properties.insert(
-                    "family_id".to_string(),
-                    PropertyValue::String(family.clone()),
-                );
-            }
+            && !self.properties.contains_key("family_id")
+        {
+            self.properties.insert(
+                "family_id".to_string(),
+                PropertyValue::String(family.clone()),
+            );
+        }
     }
 
     /// Add trust information to this primal

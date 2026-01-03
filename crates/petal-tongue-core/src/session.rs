@@ -587,9 +587,8 @@ fn get_session_path(instance_id: &InstanceId) -> Result<PathBuf, SessionError> {
     let base_dir = get_base_dir()?;
     let sessions_dir = base_dir.join("sessions");
 
-    fs::create_dir_all(&sessions_dir).map_err(|e| {
-        SessionError::IoError(format!("Failed to create sessions directory: {e}"))
-    })?;
+    fs::create_dir_all(&sessions_dir)
+        .map_err(|e| SessionError::IoError(format!("Failed to create sessions directory: {e}")))?;
 
     Ok(sessions_dir.join(format!("{}.ron", instance_id.as_str())))
 }
@@ -610,8 +609,8 @@ fn get_base_dir() -> Result<PathBuf, SessionError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::instance::InstanceId;
     use crate::PrimalHealthStatus;
+    use crate::instance::InstanceId;
 
     #[test]
     fn test_session_state_creation() {
