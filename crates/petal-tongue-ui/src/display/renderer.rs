@@ -2,34 +2,238 @@
 //!
 //! Renders egui UI to a pixel buffer (RGBA8) for display via backends.
 //! This decouples egui from OpenGL/eframe.
+//!
+//! ## Architecture
+//!
+//! ```text
+//! egui::Context → egui::FullOutput → ClippedPrimitives
+//!     ↓
+//! Tessellate to Mesh
+//!     ↓
+//! Rasterize with tiny-skia
+//!     ↓
+//! RGBA8 pixel buffer
+//! ```
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
+use egui::{ClippedPrimitive, TexturesDelta};
+use epaint::{Mesh, Primitive, TessellationOptions, Tessellator};
+use std::collections::HashMap;
+use tiny_skia::{Color, Paint, Path, PathBuilder, Pixmap, Transform};
+use tracing::{debug, warn};
 
 /// Egui pixel renderer
+///
+/// Converts egui paint commands to RGBA8 pixel buffer using pure Rust rendering.
 pub struct EguiPixelRenderer {
     width: u32,
     height: u32,
+    pixels_per_point: f32,
+    tessellator: Tessellator,
+    textures: HashMap<egui::TextureId, Pixmap>,
 }
 
 impl EguiPixelRenderer {
     /// Create new egui pixel renderer
     pub fn new(width: u32, height: u32) -> Self {
-        Self { width, height }
+        Self {
+            width,
+            height,
+            pixels_per_point: 1.0,
+            tessellator: Tessellator::new(
+                1.0, // pixels_per_point
+                TessellationOptions::default(),
+                Default::default(),
+                Vec::new(),
+            ),
+            textures: HashMap::new(),
+        }
     }
 
-    /// Render egui context to pixel buffer
+    /// Set pixels per point (DPI scaling)
+    pub fn set_pixels_per_point(&mut self, ppp: f32) {
+        self.pixels_per_point = ppp;
+        self.tessellator = Tessellator::new(
+            ppp, // pixels_per_point
+            TessellationOptions::default(),
+            Default::default(),
+            Vec::new(),
+        );
+    }
+
+    /// Update textures from egui
+    pub fn update_textures(&mut self, textures_delta: &TexturesDelta) -> Result<()> {
+        // Handle texture updates
+        for (id, delta) in &textures_delta.set {
+            let image = &delta.image;
+            let size = image.size();
+            
+            let mut pixmap = Pixmap::new(size[0] as u32, size[1] as u32)
+                .ok_or_else(|| anyhow!("Failed to create pixmap for texture"))?;
+            
+            // Convert egui image to pixmap
+            let width = pixmap.width();
+            match image {
+                egui::ImageData::Color(color_image) => {
+                    let pixels_mut = pixmap.pixels_mut();
+                    for (i, pixel) in color_image.pixels.iter().enumerate() {
+                        let x = (i % size[0]) as u32;
+                        let y = (i / size[0]) as u32;
+                        let color = tiny_skia::ColorU8::from_rgba(
+                            pixel.r(),
+                            pixel.g(),
+                            pixel.b(),
+                            pixel.a(),
+                        );
+                        pixels_mut[(y * width + x) as usize] = color.premultiply();
+                    }
+                }
+                egui::ImageData::Font(font_image) => {
+                    let pixels_mut = pixmap.pixels_mut();
+                    for (i, alpha) in font_image.srgba_pixels(None).enumerate() {
+                        let x = (i % size[0]) as u32;
+                        let y = (i / size[0]) as u32;
+                        let color = tiny_skia::ColorU8::from_rgba(
+                            alpha.r(),
+                            alpha.g(),
+                            alpha.b(),
+                            alpha.a(),
+                        );
+                        pixels_mut[(y * width + x) as usize] = color.premultiply();
+                    }
+                }
+            }
+            
+            self.textures.insert(*id, pixmap);
+        }
+        
+        // Handle texture removals
+        for id in &textures_delta.free {
+            self.textures.remove(id);
+        }
+        
+        Ok(())
+    }
+
+    /// Render egui primitives to pixel buffer
     ///
     /// Returns RGBA8 pixel buffer (width * height * 4 bytes)
-    pub fn render(&self, _ctx: &egui::Context) -> Result<Vec<u8>> {
-        // TODO: Implement actual egui rendering to pixels
-        // This will require:
-        // 1. Extracting paint primitives from egui
-        // 2. Rasterizing them to pixels using tiny-skia or similar
-        // 3. Returning the pixel buffer
+    pub fn render(&mut self, primitives: &[ClippedPrimitive]) -> Result<Vec<u8>> {
+        // Create pixmap for rendering
+        let mut pixmap = Pixmap::new(self.width, self.height)
+            .ok_or_else(|| anyhow!("Failed to create pixmap"))?;
+        
+        // Clear to transparent black
+        pixmap.fill(Color::TRANSPARENT);
+        
+        // Render each clipped primitive
+        for clipped_primitive in primitives {
+            let clip_rect = clipped_primitive.clip_rect;
+            
+            // Convert egui clip rect to tiny-skia clip rect
+            let clip_min_x = (clip_rect.min.x * self.pixels_per_point) as u32;
+            let clip_min_y = (clip_rect.min.y * self.pixels_per_point) as u32;
+            let clip_max_x = (clip_rect.max.x * self.pixels_per_point) as u32;
+            let clip_max_y = (clip_rect.max.y * self.pixels_per_point) as u32;
+            
+            // Skip if clip rect is outside bounds
+            if clip_min_x >= self.width || clip_min_y >= self.height {
+                continue;
+            }
+            
+            match &clipped_primitive.primitive {
+                Primitive::Mesh(mesh) => {
+                    self.render_mesh(&mut pixmap, mesh, clip_min_x, clip_min_y, clip_max_x, clip_max_y)?;
+                }
+                Primitive::Callback(_) => {
+                    warn!("Callback primitives not supported in pixel renderer");
+                }
+            }
+        }
+        
+        // Convert pixmap to RGBA8 buffer
+        // tiny-skia stores pixels as PremultipliedColorU8
+        // For now, we'll use encode_png and then decode to get RGBA8
+        // TODO: Optimize this with direct pixel conversion
+        let png_data = pixmap.encode_png()
+            .map_err(|e| anyhow!("Failed to encode PNG: {}", e))?;
+        
+        // Decode PNG to get RGBA8
+        let decoder = png::Decoder::new(png_data.as_slice());
+        let mut reader = decoder.read_info()
+            .map_err(|e| anyhow!("Failed to decode PNG: {}", e))?;
+        
+        let mut buffer = vec![0u8; reader.output_buffer_size()];
+        let info = reader.next_frame(&mut buffer)
+            .map_err(|e| anyhow!("Failed to read PNG frame: {}", e))?;
+        
+        // Ensure we have RGBA8
+        buffer.truncate(info.buffer_size());
+        
+        Ok(buffer)
+    }
 
-        // For now, return a placeholder buffer
-        let buffer_size = (self.width * self.height * 4) as usize;
-        Ok(vec![0; buffer_size])
+    /// Render a single mesh
+    fn render_mesh(
+        &self,
+        pixmap: &mut Pixmap,
+        mesh: &Mesh,
+        clip_min_x: u32,
+        clip_min_y: u32,
+        clip_max_x: u32,
+        clip_max_y: u32,
+    ) -> Result<()> {
+        // Render triangles from mesh
+        for triangle in mesh.indices.chunks(3) {
+            if triangle.len() != 3 {
+                continue;
+            }
+            
+            let v0 = &mesh.vertices[triangle[0] as usize];
+            let v1 = &mesh.vertices[triangle[1] as usize];
+            let v2 = &mesh.vertices[triangle[2] as usize];
+            
+            // Build path for triangle
+            let mut pb = PathBuilder::new();
+            pb.move_to(
+                v0.pos.x * self.pixels_per_point,
+                v0.pos.y * self.pixels_per_point,
+            );
+            pb.line_to(
+                v1.pos.x * self.pixels_per_point,
+                v1.pos.y * self.pixels_per_point,
+            );
+            pb.line_to(
+                v2.pos.x * self.pixels_per_point,
+                v2.pos.y * self.pixels_per_point,
+            );
+            pb.close();
+            
+            if let Some(path) = pb.finish() {
+                // Use average color of vertices (simple approach)
+                let color = v0.color;
+                let paint = Paint {
+                    shader: tiny_skia::Shader::SolidColor(Color::from_rgba8(
+                        color.r(),
+                        color.g(),
+                        color.b(),
+                        color.a(),
+                    )),
+                    ..Default::default()
+                };
+                
+                // TODO: Apply clipping
+                pixmap.fill_path(
+                    &path,
+                    &paint,
+                    tiny_skia::FillRule::Winding,
+                    Transform::identity(),
+                    None,
+                );
+            }
+        }
+        
+        Ok(())
     }
 
     /// Set dimensions
@@ -55,11 +259,28 @@ mod tests {
     }
 
     #[test]
-    fn test_render_placeholder() {
-        let renderer = EguiPixelRenderer::new(100, 100);
-        let ctx = egui::Context::default();
-        let buffer = renderer.render(&ctx).unwrap();
+    fn test_render_empty() {
+        let mut renderer = EguiPixelRenderer::new(100, 100);
+        // Render empty primitives
+        let buffer = renderer.render(&[]).unwrap();
         assert_eq!(buffer.len(), 100 * 100 * 4);
+        // Should be all transparent (0,0,0,0)
+        assert!(buffer.iter().all(|&b| b == 0));
+    }
+    
+    #[test]
+    fn test_set_dimensions() {
+        let mut renderer = EguiPixelRenderer::new(100, 100);
+        renderer.set_dimensions(200, 150);
+        assert_eq!(renderer.dimensions(), (200, 150));
+    }
+    
+    #[test]
+    fn test_pixels_per_point() {
+        let mut renderer = EguiPixelRenderer::new(100, 100);
+        renderer.set_pixels_per_point(2.0);
+        // Just ensure it doesn't panic
+        assert_eq!(renderer.dimensions(), (100, 100));
     }
 }
 
