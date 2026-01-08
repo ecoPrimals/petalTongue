@@ -67,10 +67,10 @@ impl EguiPixelRenderer {
         for (id, delta) in &textures_delta.set {
             let image = &delta.image;
             let size = image.size();
-            
+
             let mut pixmap = Pixmap::new(size[0] as u32, size[1] as u32)
                 .ok_or_else(|| anyhow!("Failed to create pixmap for texture"))?;
-            
+
             // Convert egui image to pixmap
             let width = pixmap.width();
             match image {
@@ -103,15 +103,15 @@ impl EguiPixelRenderer {
                     }
                 }
             }
-            
+
             self.textures.insert(*id, pixmap);
         }
-        
+
         // Handle texture removals
         for id in &textures_delta.free {
             self.textures.remove(id);
         }
-        
+
         Ok(())
     }
 
@@ -122,54 +122,64 @@ impl EguiPixelRenderer {
         // Create pixmap for rendering
         let mut pixmap = Pixmap::new(self.width, self.height)
             .ok_or_else(|| anyhow!("Failed to create pixmap"))?;
-        
+
         // Clear to transparent black
         pixmap.fill(Color::TRANSPARENT);
-        
+
         // Render each clipped primitive
         for clipped_primitive in primitives {
             let clip_rect = clipped_primitive.clip_rect;
-            
+
             // Convert egui clip rect to tiny-skia clip rect
             let clip_min_x = (clip_rect.min.x * self.pixels_per_point) as u32;
             let clip_min_y = (clip_rect.min.y * self.pixels_per_point) as u32;
             let clip_max_x = (clip_rect.max.x * self.pixels_per_point) as u32;
             let clip_max_y = (clip_rect.max.y * self.pixels_per_point) as u32;
-            
+
             // Skip if clip rect is outside bounds
             if clip_min_x >= self.width || clip_min_y >= self.height {
                 continue;
             }
-            
+
             match &clipped_primitive.primitive {
                 Primitive::Mesh(mesh) => {
-                    self.render_mesh(&mut pixmap, mesh, clip_min_x, clip_min_y, clip_max_x, clip_max_y)?;
+                    self.render_mesh(
+                        &mut pixmap,
+                        mesh,
+                        clip_min_x,
+                        clip_min_y,
+                        clip_max_x,
+                        clip_max_y,
+                    )?;
                 }
                 Primitive::Callback(_) => {
                     warn!("Callback primitives not supported in pixel renderer");
                 }
             }
         }
-        
+
         // Convert pixmap to RGBA8 buffer
         // tiny-skia stores pixels as PremultipliedColorU8
         // For now, we'll use encode_png and then decode to get RGBA8
         // TODO: Optimize this with direct pixel conversion
-        let png_data = pixmap.encode_png()
+        let png_data = pixmap
+            .encode_png()
             .map_err(|e| anyhow!("Failed to encode PNG: {}", e))?;
-        
+
         // Decode PNG to get RGBA8
         let decoder = png::Decoder::new(png_data.as_slice());
-        let mut reader = decoder.read_info()
+        let mut reader = decoder
+            .read_info()
             .map_err(|e| anyhow!("Failed to decode PNG: {}", e))?;
-        
+
         let mut buffer = vec![0u8; reader.output_buffer_size()];
-        let info = reader.next_frame(&mut buffer)
+        let info = reader
+            .next_frame(&mut buffer)
             .map_err(|e| anyhow!("Failed to read PNG frame: {}", e))?;
-        
+
         // Ensure we have RGBA8
         buffer.truncate(info.buffer_size());
-        
+
         Ok(buffer)
     }
 
@@ -188,11 +198,11 @@ impl EguiPixelRenderer {
             if triangle.len() != 3 {
                 continue;
             }
-            
+
             let v0 = &mesh.vertices[triangle[0] as usize];
             let v1 = &mesh.vertices[triangle[1] as usize];
             let v2 = &mesh.vertices[triangle[2] as usize];
-            
+
             // Build path for triangle
             let mut pb = PathBuilder::new();
             pb.move_to(
@@ -208,7 +218,7 @@ impl EguiPixelRenderer {
                 v2.pos.y * self.pixels_per_point,
             );
             pb.close();
-            
+
             if let Some(path) = pb.finish() {
                 // Use average color of vertices (simple approach)
                 let color = v0.color;
@@ -221,7 +231,7 @@ impl EguiPixelRenderer {
                     )),
                     ..Default::default()
                 };
-                
+
                 // TODO: Apply clipping
                 pixmap.fill_path(
                     &path,
@@ -232,7 +242,7 @@ impl EguiPixelRenderer {
                 );
             }
         }
-        
+
         Ok(())
     }
 
@@ -267,14 +277,14 @@ mod tests {
         // Should be all transparent (0,0,0,0)
         assert!(buffer.iter().all(|&b| b == 0));
     }
-    
+
     #[test]
     fn test_set_dimensions() {
         let mut renderer = EguiPixelRenderer::new(100, 100);
         renderer.set_dimensions(200, 150);
         assert_eq!(renderer.dimensions(), (200, 150));
     }
-    
+
     #[test]
     fn test_pixels_per_point() {
         let mut renderer = EguiPixelRenderer::new(100, 100);
@@ -283,4 +293,3 @@ mod tests {
         assert_eq!(renderer.dimensions(), (100, 100));
     }
 }
-

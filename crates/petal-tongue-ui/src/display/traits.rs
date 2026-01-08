@@ -113,8 +113,8 @@ impl DisplayCapabilities {
             requires_gpu: true, // Usually OpenGL
             requires_root: false,
             supports_resize: true,
-            max_fps: 144, // Can be very high
-            latency_ms: 8,  // Very low latency
+            max_fps: 144,  // Can be very high
+            latency_ms: 8, // Very low latency
             requires_display_server: true,
             remote_capable: false, // Display server must be local
         }
@@ -133,4 +133,3 @@ pub enum BackendPriority {
     /// Tier 4: Low priority (External fallback)
     External = 4,
 }
-

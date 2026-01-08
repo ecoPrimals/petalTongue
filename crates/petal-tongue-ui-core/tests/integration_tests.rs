@@ -1,7 +1,9 @@
 //! Integration tests for petal-tongue-ui-core
 
 use anyhow::Result;
-use petal_tongue_core::{GraphEngine, LayoutAlgorithm, PrimalHealthStatus, PrimalInfo, TopologyEdge};
+use petal_tongue_core::{
+    GraphEngine, LayoutAlgorithm, PrimalHealthStatus, PrimalInfo, TopologyEdge,
+};
 use petal_tongue_ui_core::{
     CanvasUI, ExportFormat, SvgUI, TerminalUI, TextUI, UIMode, UniversalUI, detect_best_ui_mode,
 };
@@ -112,7 +114,10 @@ fn test_text_ui_json_integration() -> Result<()> {
     assert!(parsed["topology"]["primals"].is_array());
     assert_eq!(parsed["topology"]["primals"].as_array().unwrap().len(), 3);
     assert!(parsed["topology"]["connections"].is_array());
-    assert_eq!(parsed["topology"]["connections"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        parsed["topology"]["connections"].as_array().unwrap().len(),
+        2
+    );
 
     Ok(())
 }
@@ -206,9 +211,12 @@ fn test_dot_export_to_file() -> Result<()> {
 fn test_ui_mode_detection() {
     // Test that detection doesn't crash
     let mode = detect_best_ui_mode();
-    
+
     // In CI/test environment, should detect headless or terminal
-    assert!(matches!(mode, UIMode::Headless | UIMode::Terminal | UIMode::Display));
+    assert!(matches!(
+        mode,
+        UIMode::Headless | UIMode::Terminal | UIMode::Display
+    ));
 }
 
 #[test]
@@ -327,4 +335,3 @@ fn test_health_status_colors() -> Result<()> {
 
     Ok(())
 }
-

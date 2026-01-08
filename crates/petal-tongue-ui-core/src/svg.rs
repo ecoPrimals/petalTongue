@@ -64,7 +64,6 @@ impl SvgUI {
         self
     }
 
-
     /// Render SVG content
     fn render_svg(&self) -> Result<String> {
         let mut svg = String::new();
@@ -84,11 +83,13 @@ impl SvgUI {
         svg.push('\n');
 
         // Styles
-        svg.push_str(r#"<style>
+        svg.push_str(
+            r#"<style>
             text { font-family: system-ui, sans-serif; fill: #f3f4f6; }
             .node-label { font-size: 12px; text-anchor: middle; }
             .edge { stroke: #6b7280; stroke-width: 2; }
-        </style>"#);
+        </style>"#,
+        );
         svg.push('\n');
 
         // Get graph data
@@ -202,10 +203,10 @@ mod tests {
     fn test_svg_ui_render() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         let ui = SvgUI::new(graph, 800, 600);
-        
+
         let result = ui.render_to_string();
         assert!(result.is_ok());
-        
+
         let svg = result.unwrap();
         assert!(svg.contains("<svg"));
         assert!(svg.contains("</svg>"));
@@ -217,10 +218,9 @@ mod tests {
     fn test_svg_ui_capabilities() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         let ui = SvgUI::new(graph, 800, 600);
-        
+
         assert!(ui.supports(UICapability::RenderToString));
         assert!(ui.supports(UICapability::Export));
         assert!(!ui.supports(UICapability::Interactive));
     }
 }
-

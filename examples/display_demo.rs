@@ -6,13 +6,13 @@ use petal_tongue_ui::display::prompt::prompt_for_display_server;
 
 fn main() -> anyhow::Result<()> {
     println!("\n🌸 petalTongue Pure Rust Display System Demo\n");
-    
+
     // Check display availability
-    let has_display = std::env::var("DISPLAY").is_ok() 
+    let has_display = std::env::var("DISPLAY").is_ok()
         || std::env::var("WAYLAND_DISPLAY").is_ok()
         || cfg!(target_os = "windows")
         || cfg!(target_os = "macos");
-    
+
     if has_display {
         println!("✅ Display server detected:");
         if let Ok(display) = std::env::var("DISPLAY") {
@@ -37,7 +37,7 @@ fn main() -> anyhow::Result<()> {
         println!("   5. Software Rendering");
         println!("   6. Framebuffer Direct");
         println!();
-        
+
         // Show the prompt
         println!("Demonstrating display server prompt...\n");
         match prompt_for_display_server() {
@@ -46,7 +46,7 @@ fn main() -> anyhow::Result<()> {
             Err(e) => println!("\n⚠️  Prompt error: {}", e),
         }
     }
-    
+
     println!("\n════════════════════════════════════════════════════════════");
     println!("   ✅ Display System Architecture Complete!");
     println!("════════════════════════════════════════════════════════════");
@@ -59,7 +59,6 @@ fn main() -> anyhow::Result<()> {
     println!();
     println!("All backends support the awakening experience!");
     println!("════════════════════════════════════════════════════════════\n");
-    
+
     Ok(())
 }
-

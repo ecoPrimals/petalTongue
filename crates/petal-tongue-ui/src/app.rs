@@ -1,9 +1,9 @@
 //! Main application logic for petalTongue UI
-//! 
+//!
 //! This is the **EguiGUI Modality** implementation - the native desktop GUI.
-//! 
+//!
 //! ## Architecture Note
-//! 
+//!
 //! This module represents Tier 3 (Enhancement) GUI modality using egui/eframe.
 //! Rather than extracting to a separate modality file, we recognize that this
 //! IS the EguiGUI implementation. This is a "smart refactor" approach - we don't
@@ -109,7 +109,7 @@ pub struct PetalTongueApp {
     trust_dashboard: TrustDashboard,
     /// Show trust dashboard panel
     show_trust_dashboard: bool,
-    
+
     // Awakening Experience - Multi-modal startup
     /// Awakening overlay (visual flower animation + tutorial transition)
     awakening_overlay: AwakeningOverlay,
@@ -153,14 +153,14 @@ impl PetalTongueApp {
                     Ok(providers) => {
                         if providers.is_empty() {
                             tracing::warn!("No visualization providers discovered");
-                            
+
                             // Graceful fallback: Use tutorial data so user can still see petalTongue
                             if crate::tutorial_mode::should_fallback(0) {
                                 tracing::info!("💡 Using tutorial data as graceful fallback");
-                                vec![
-                                    Box::new(petal_tongue_discovery::MockVisualizationProvider::new())
-                                        as Box<dyn VisualizationDataProvider>,
-                                ]
+                                vec![Box::new(
+                                    petal_tongue_discovery::MockVisualizationProvider::new(),
+                                )
+                                    as Box<dyn VisualizationDataProvider>]
                             } else {
                                 vec![]
                             }
@@ -183,7 +183,7 @@ impl PetalTongueApp {
                     }
                     Err(e) => {
                         tracing::error!("Provider discovery failed: {}", e);
-                        
+
                         // Graceful fallback
                         if crate::tutorial_mode::should_fallback(0) {
                             tracing::info!("💡 Using tutorial data as graceful fallback");
@@ -201,12 +201,21 @@ impl PetalTongueApp {
 
         // Legacy BiomeOS client (DEPRECATED - for backward compatibility only)
         // New code should use data_providers instead
-        let biomeos_url =
-            std::env::var("BIOMEOS_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+        //
+        // TRUE PRIMAL: BiomeOS URL is discovered at runtime, not assumed.
+        // Priority: ENV > Discovery > Mock fallback (no hardcoded defaults)
+        let biomeos_url = std::env::var("BIOMEOS_URL").ok();
         let mock_mode_requested = std::env::var("PETALTONGUE_MOCK_MODE")
             .unwrap_or_else(|_| "false".to_string())
             .to_lowercase()
             == "true";
+        
+        // If no BiomeOS URL provided and not in mock mode, we'll discover at runtime
+        let biomeos_url = biomeos_url.unwrap_or_else(|| {
+            tracing::info!("No BIOMEOS_URL provided - will discover BiomeOS capability at runtime");
+            "".to_string() // Empty = not yet discovered
+        });
+        
         #[allow(deprecated)]
         let biomeos_client = BiomeOSClient::new(&biomeos_url).with_mock_mode(mock_mode_requested);
 
@@ -333,7 +342,7 @@ impl PetalTongueApp {
             adapter_registry, // Universal property rendering
             trust_dashboard: TrustDashboard::new(),
             show_trust_dashboard: true, // Show by default
-            
+
             // Awakening experience
             awakening_overlay: AwakeningOverlay::new(),
 
@@ -347,7 +356,7 @@ impl PetalTongueApp {
             .ok()
             .and_then(|v| v.parse::<bool>().ok())
             .unwrap_or(true); // Enabled by default
-        
+
         if awakening_enabled {
             tracing::info!("🌸 Awakening experience enabled");
             app.awakening_overlay.start();
@@ -357,7 +366,10 @@ impl PetalTongueApp {
         tracing::info!("🎵 Initializing startup audio...");
         let startup_audio = crate::startup_audio::StartupAudio::new();
         if startup_audio.has_startup_music() {
-            tracing::info!("🎵 Startup music found: {:?}", startup_audio.startup_music_path());
+            tracing::info!(
+                "🎵 Startup music found: {:?}",
+                startup_audio.startup_music_path()
+            );
         }
         startup_audio.play(&app.audio_system);
 
@@ -443,8 +455,6 @@ impl PetalTongueApp {
         self.last_refresh = Instant::now();
     }
 
-
-
     /// Get icon for a capability (shared logic)
     /// Get icon for capability type
     ///
@@ -526,10 +536,10 @@ impl eframe::App for PetalTongueApp {
             if let Err(e) = self.awakening_overlay.update(delta_time) {
                 tracing::error!("Awakening overlay update error: {}", e);
             }
-            
+
             // Render awakening overlay (full-screen)
             self.awakening_overlay.render(ctx);
-            
+
             // Check for tutorial transition
             if self.awakening_overlay.should_transition_to_tutorial() {
                 tracing::info!("🎓 Transitioning to tutorial mode");
@@ -538,14 +548,14 @@ impl eframe::App for PetalTongueApp {
                     tutorial.load_into_graph(self.graph.clone(), self.current_layout);
                 }
             }
-            
+
             // Request repaint for smooth animation
             ctx.request_repaint();
-            
+
             // Skip normal UI while awakening is active
             return;
         }
-        
+
         // Sync accessibility audio settings with system dashboard
         self.system_dashboard
             .set_audio_enabled(self.accessibility_panel.settings.audio_enabled);
@@ -592,8 +602,9 @@ impl eframe::App for PetalTongueApp {
                         &mut self.show_audio_panel,
                         &mut self.show_capability_panel,
                     )
-                }).inner;
-                
+                })
+                .inner;
+
                 if refresh_clicked {
                     self.refresh_graph_data();
                 }
@@ -620,7 +631,7 @@ impl eframe::App for PetalTongueApp {
                         &mut self.show_animation,
                         &mut self.visual_renderer,
                     );
-                    
+
                     if refresh_clicked {
                         self.refresh_graph_data();
                     }

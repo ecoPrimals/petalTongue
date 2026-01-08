@@ -2,12 +2,10 @@
 //!
 //! Manages multiple display backends, handles fallback, and coordinates rendering.
 
-use crate::display::{
-    ExternalDisplay, FramebufferDisplay, SoftwareDisplay, ToadstoolDisplay,
-};
 use crate::display::prompt::prompt_for_display_server;
 use crate::display::traits::{BackendPriority, DisplayBackend};
-use anyhow::{anyhow, Result};
+use crate::display::{ExternalDisplay, FramebufferDisplay, SoftwareDisplay, ToadstoolDisplay};
+use anyhow::{Result, anyhow};
 use tracing::{info, warn};
 
 /// Display manager - coordinates multiple backends
@@ -106,12 +104,13 @@ impl DisplayManager {
         // Sort by priority (lower number = higher priority)
         backends.sort_by_key(|entry| entry.priority);
 
-        info!(
-            "🌸 Found {} display backend(s)",
-            backends.len()
-        );
+        info!("🌸 Found {} display backend(s)", backends.len());
         for entry in &backends {
-            info!("   - {} (Priority: {:?})", entry.backend.name(), entry.priority);
+            info!(
+                "   - {} (Priority: {:?})",
+                entry.backend.name(),
+                entry.priority
+            );
         }
 
         let mut manager = Self {
@@ -173,7 +172,11 @@ impl DisplayManager {
         match self.backends[idx].backend.present(buffer).await {
             Ok(()) => Ok(()),
             Err(e) => {
-                warn!("Present failed on {}: {}", self.backends[idx].backend.name(), e);
+                warn!(
+                    "Present failed on {}: {}",
+                    self.backends[idx].backend.name(),
+                    e
+                );
                 // Try to fallback to next backend
                 self.fallback().await
             }
@@ -197,7 +200,10 @@ impl DisplayManager {
 
             match self.backends[idx].backend.init().await {
                 Ok(()) => {
-                    info!("✅ Fallback successful: {}", self.backends[idx].backend.name());
+                    info!(
+                        "✅ Fallback successful: {}",
+                        self.backends[idx].backend.name()
+                    );
                     self.backends[idx].initialized = true;
                     self.active_backend_idx = Some(idx);
                     return Ok(());
@@ -249,9 +255,11 @@ mod tests {
                 }
             }
             Err(e) => {
-                warn!("Display manager init failed (expected in some environments): {}", e);
+                warn!(
+                    "Display manager init failed (expected in some environments): {}",
+                    e
+                );
             }
         }
     }
 }
-

@@ -49,7 +49,7 @@ pub use canvas::CanvasUI;
 pub use svg::SvgUI;
 pub use terminal::TerminalUI;
 pub use text::TextUI;
-pub use trait_def::{ExportFormat, UniversalUI, UICapability};
+pub use trait_def::{ExportFormat, UICapability, UniversalUI};
 pub use utils::*;
 
 /// Detect the best UI mode for the current environment
@@ -57,12 +57,12 @@ pub fn detect_best_ui_mode() -> UIMode {
     let has_display = std::env::var("DISPLAY").is_ok()
         || std::env::var("WAYLAND_DISPLAY").is_ok()
         || cfg!(target_os = "windows");
-    
+
     let is_terminal = atty::is(atty::Stream::Stdout);
     let is_headless = std::env::var("HEADLESS").is_ok()
         || std::env::var("CI").is_ok()
         || std::env::var("PETALTONGUE_HEADLESS").is_ok();
-    
+
     if is_headless {
         tracing::info!("Detected headless environment");
         UIMode::Headless
@@ -103,4 +103,3 @@ mod tests {
         ));
     }
 }
-

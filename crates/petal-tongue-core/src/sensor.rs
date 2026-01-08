@@ -12,16 +12,16 @@ use std::time::Instant;
 pub trait Sensor: Send + Sync {
     /// Get sensor capabilities
     fn capabilities(&self) -> &SensorCapabilities;
-    
+
     /// Check if sensor is currently available
     fn is_available(&self) -> bool;
-    
+
     /// Poll for new events (non-blocking)
     async fn poll_events(&mut self) -> Result<Vec<SensorEvent>>;
-    
+
     /// Get last activity timestamp
     fn last_activity(&self) -> Option<Instant>;
-    
+
     /// Get sensor name (for logging/debugging)
     fn name(&self) -> &str;
 }
@@ -31,25 +31,25 @@ pub trait Sensor: Send + Sync {
 pub struct SensorCapabilities {
     /// Type of sensor
     pub sensor_type: SensorType,
-    
+
     /// Can receive input
     pub input: bool,
-    
+
     /// Can provide output
     pub output: bool,
-    
+
     /// Provides spatial data (x, y coordinates)
     pub spatial: bool,
-    
+
     /// Provides temporal data (timing, rhythm)
     pub temporal: bool,
-    
+
     /// Continuous values (analog)
     pub continuous: bool,
-    
+
     /// Discrete events (digital)
     pub discrete: bool,
-    
+
     /// Bidirectional (input AND output)
     pub bidirectional: bool,
 }
@@ -86,34 +86,34 @@ pub enum SensorCapability {
 pub enum SensorType {
     /// Display output (terminal, framebuffer, window)
     Screen,
-    
+
     /// Discrete input device (keys, buttons)
     Keyboard,
-    
+
     /// Spatial input device (pointing, clicking)
     Mouse,
-    
+
     /// Audio input/output (microphone, speaker)
     Audio,
-    
+
     /// Visual input (camera, image sensor)
     Camera,
-    
+
     /// Motion detection (accelerometer, gyroscope)
     Motion,
-    
+
     /// Location awareness (GPS, network location)
     Location,
-    
+
     /// Biometric sensor (heart rate, temperature, etc.)
     Biometric,
-    
+
     /// Environmental sensor (temperature, humidity, etc.)
     Environmental,
-    
+
     /// Network sensor (primal discovery, health)
     Network,
-    
+
     /// Unknown sensor type
     Unknown,
 }
@@ -127,66 +127,66 @@ pub enum SensorEvent {
         y: f32,
         timestamp: Instant,
     },
-    
+
     Click {
         x: f32,
         y: f32,
         button: MouseButton,
         timestamp: Instant,
     },
-    
+
     Scroll {
         delta_x: f32,
         delta_y: f32,
         timestamp: Instant,
     },
-    
+
     // Discrete events
     KeyPress {
         key: Key,
         modifiers: Modifiers,
         timestamp: Instant,
     },
-    
+
     KeyRelease {
         key: Key,
         modifiers: Modifiers,
         timestamp: Instant,
     },
-    
+
     ButtonPress {
         button: u8,
         timestamp: Instant,
     },
-    
+
     // Continuous events
     AudioLevel {
         amplitude: f32,
         frequency: Option<f32>,
         timestamp: Instant,
     },
-    
+
     Temperature {
         celsius: f32,
         timestamp: Instant,
     },
-    
+
     // Confirmation events (sensory feedback)
     Heartbeat {
         latency: std::time::Duration,
         timestamp: Instant,
     },
-    
+
     FrameAcknowledged {
         frame_id: u64,
         timestamp: Instant,
     },
-    
+
     DisplayVisible {
         visible: bool,
         timestamp: Instant,
     },
-    
+
     // Generic event for unknown types
     Generic {
         data: String,
@@ -212,7 +212,7 @@ impl SensorEvent {
             SensorEvent::Generic { timestamp, .. } => *timestamp,
         }
     }
-    
+
     /// Check if this is a user interaction event
     pub fn is_user_interaction(&self) -> bool {
         matches!(
@@ -223,7 +223,7 @@ impl SensorEvent {
                 | SensorEvent::Scroll { .. }
         )
     }
-    
+
     /// Check if this is a confirmation event
     pub fn is_confirmation(&self) -> bool {
         matches!(
@@ -249,26 +249,26 @@ pub enum MouseButton {
 pub enum Key {
     /// Character key
     Char(char),
-    
+
     /// Named key
     Named(String),
-    
+
     /// Special keys
     Escape,
     Enter,
     Tab,
     Backspace,
     Delete,
-    
+
     /// Arrow keys
     Up,
     Down,
     Left,
     Right,
-    
+
     /// Function keys
     F(u8),
-    
+
     /// Unknown key
     Unknown,
 }
@@ -291,7 +291,7 @@ impl Modifiers {
             meta: false,
         }
     }
-    
+
     pub fn ctrl() -> Self {
         Self {
             ctrl: true,
@@ -314,17 +314,17 @@ impl SensorRegistry {
             last_poll: None,
         }
     }
-    
+
     /// Register a sensor
     pub fn register(&mut self, sensor: Box<dyn Sensor>) {
         self.sensors.push(sensor);
     }
-    
+
     /// Get all sensors
     pub fn sensors(&self) -> &[Box<dyn Sensor>] {
         &self.sensors
     }
-    
+
     /// Get sensors by type
     pub fn sensors_by_type(&self, sensor_type: SensorType) -> Vec<&Box<dyn Sensor>> {
         self.sensors
@@ -332,18 +332,18 @@ impl SensorRegistry {
             .filter(|s| s.capabilities().sensor_type == sensor_type)
             .collect()
     }
-    
+
     /// Check if we have a sensor with specific capability
     pub fn has_capability(&self, capability: SensorCapability) -> bool {
         self.sensors
             .iter()
             .any(|s| s.capabilities().has_capability(capability))
     }
-    
+
     /// Poll all sensors for events
     pub async fn poll_all(&mut self) -> Result<Vec<SensorEvent>> {
         let mut all_events = Vec::new();
-        
+
         for sensor in &mut self.sensors {
             if sensor.is_available() {
                 match sensor.poll_events().await {
@@ -354,16 +354,16 @@ impl SensorRegistry {
                 }
             }
         }
-        
+
         self.last_poll = Some(Instant::now());
         Ok(all_events)
     }
-    
+
     /// Get count of active sensors
     pub fn active_count(&self) -> usize {
         self.sensors.iter().filter(|s| s.is_available()).count()
     }
-    
+
     /// Get sensor statistics
     pub fn stats(&self) -> SensorStats {
         let total = self.sensors.len();
@@ -371,7 +371,7 @@ impl SensorRegistry {
         let has_input = self.has_capability(SensorCapability::Input);
         let has_output = self.has_capability(SensorCapability::Output);
         let has_bidirectional = self.has_capability(SensorCapability::Bidirectional);
-        
+
         SensorStats {
             total,
             active,
@@ -389,21 +389,27 @@ impl Default for SensorRegistry {
     }
 }
 
-/// Sensor statistics
+/// Sensor statistics for runtime tracking
 #[derive(Debug, Clone)]
 pub struct SensorStats {
+    /// Total number of sensors registered
     pub total: usize,
+    /// Number of currently active sensors
     pub active: usize,
+    /// Whether this sensor can receive input
     pub has_input: bool,
+    /// Whether this sensor can provide output
     pub has_output: bool,
+    /// Whether this sensor supports bidirectional communication
     pub has_bidirectional: bool,
+    /// Timestamp of last poll operation
     pub last_poll: Option<Instant>,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_sensor_capabilities() {
         let caps = SensorCapabilities {
@@ -416,12 +422,12 @@ mod tests {
             discrete: true,
             bidirectional: false,
         };
-        
+
         assert!(caps.has_capability(SensorCapability::Input));
         assert!(!caps.has_capability(SensorCapability::Output));
         assert!(caps.has_capability(SensorCapability::Discrete));
     }
-    
+
     #[test]
     fn test_sensor_event_classification() {
         let click = SensorEvent::Click {
@@ -430,26 +436,25 @@ mod tests {
             button: MouseButton::Left,
             timestamp: Instant::now(),
         };
-        
+
         assert!(click.is_user_interaction());
         assert!(!click.is_confirmation());
-        
+
         let heartbeat = SensorEvent::Heartbeat {
             latency: std::time::Duration::from_millis(10),
             timestamp: Instant::now(),
         };
-        
+
         assert!(!heartbeat.is_user_interaction());
         assert!(heartbeat.is_confirmation());
     }
-    
+
     #[test]
     fn test_modifiers() {
         let none = Modifiers::none();
         assert!(!none.ctrl && !none.alt && !none.shift && !none.meta);
-        
+
         let ctrl = Modifiers::ctrl();
         assert!(ctrl.ctrl && !ctrl.alt);
     }
 }
-

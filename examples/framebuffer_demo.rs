@@ -52,11 +52,11 @@ async fn main() -> Result<()> {
 
     // Initialize display manager
     let mut display_manager = DisplayManager::init().await?;
-    
+
     // Check if framebuffer backend is active
     let active_name = display_manager.active_backend_name().unwrap_or("Unknown");
     println!("✅ Active backend: {}", active_name);
-    
+
     if !active_name.contains("Framebuffer") {
         eprintln!("⚠️  WARNING: Not using framebuffer backend!");
         eprintln!("   This demo is intended for framebuffer display.");
@@ -88,20 +88,23 @@ async fn main() -> Result<()> {
             egui::CentralPanel::default().show(ctx, |ui| {
                 ui.heading("🌸 petalTongue - Framebuffer Demo");
                 ui.separator();
-                
-                ui.label(format!("Backend: {}", display_manager.active_backend_name().unwrap_or("Unknown")));
+
+                ui.label(format!(
+                    "Backend: {}",
+                    display_manager.active_backend_name().unwrap_or("Unknown")
+                ));
                 ui.label(format!("Frame: {}/60", i + 1));
                 ui.label(format!("Delta: {:.2}ms", delta_time * 1000.0));
-                
+
                 ui.separator();
-                
+
                 ui.label("✅ Pure Rust rendering");
                 ui.label("✅ No X11/Wayland required");
                 ui.label("✅ No OpenGL required");
                 ui.label("✅ Direct hardware access");
-                
+
                 ui.separator();
-                
+
                 if i < 20 {
                     ui.label("🌸 Stage: Warming up...");
                 } else if i < 40 {
@@ -116,7 +119,7 @@ async fn main() -> Result<()> {
                 if ui.button("Button (demo)").clicked() {
                     println!("Button clicked at frame {}", i);
                 }
-                
+
                 let mut value = i as f32 / 60.0;
                 ui.add(egui::Slider::new(&mut value, 0.0..=1.0).text("Progress"));
             });
@@ -140,7 +143,8 @@ async fn main() -> Result<()> {
 
         // Print progress every 10 frames
         if (i + 1) % 10 == 0 {
-            let avg_frame_time: Duration = frame_times.iter().sum::<Duration>() / frame_times.len() as u32;
+            let avg_frame_time: Duration =
+                frame_times.iter().sum::<Duration>() / frame_times.len() as u32;
             println!(
                 "Frame {}/60 | Frame: {:.2}ms | Render: {:.2}ms | Present: {:.2}ms | Avg: {:.2}ms",
                 i + 1,
@@ -168,12 +172,15 @@ async fn main() -> Result<()> {
     println!("Total Time: {:.2}s", total_time.as_secs_f64());
     println!("Frames: 60");
     println!("Average FPS: {:.1}", fps);
-    println!("Average Frame Time: {:.2}ms", avg_frame_time.as_secs_f64() * 1000.0);
+    println!(
+        "Average Frame Time: {:.2}ms",
+        avg_frame_time.as_secs_f64() * 1000.0
+    );
     println!("Target Frame Time: 16.67ms (60 FPS)");
-    
+
     let target_achievement = (16.67 / (avg_frame_time.as_secs_f64() * 1000.0)) * 100.0;
     println!("Target Achievement: {:.1}%", target_achievement);
-    
+
     println!("\n✅ Framebuffer demo complete!");
     println!("   Direct hardware rendering working");
     println!("   No display server required");
@@ -181,4 +188,3 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
-
