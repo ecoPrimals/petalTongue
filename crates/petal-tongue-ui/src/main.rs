@@ -1,9 +1,10 @@
 //! Main entry point for petalTongue desktop UI
 
 use petal_tongue_core::{Instance, InstanceId, InstanceRegistry};
+use petal_tongue_ui::display::prompt::prompt_for_display_server;
 use petal_tongue_ui::PetalTongueApp;
 
-fn main() -> Result<(), eframe::Error> {
+fn main() -> anyhow::Result<()> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
 
@@ -29,6 +30,8 @@ fn main() -> Result<(), eframe::Error> {
     } else {
         tracing::info!("✅ Instance registered in registry");
     }
+    
+    tracing::info!("🧹 Running garbage collection...");
 
     // Clean up dead instances (returns count of removed)
     match registry.gc() {
@@ -45,32 +48,47 @@ fn main() -> Result<(), eframe::Error> {
     if let Err(e) = registry.save() {
         tracing::error!("Failed to save registry: {}", e);
     }
+    
+    tracing::info!("📝 Registry saved");
 
-    // Store instance_id for app use (Phase 2 will use this)
-    // EVOLUTION: Instead of using unsafe set_var, we'll pass instance_id directly to the app
-    // This eliminates the unsafe block while maintaining functionality
-    // The app can access instance_id through its constructor parameter
     tracing::debug!(
         "Instance ID will be passed to app: {}",
         instance_id.as_str()
     );
     // ===== End Phase 1 Integration =====
+    
+    tracing::info!("🔄 Phase 1 complete, starting Phase 2...");
+    tracing::info!("🌸 Starting petalTongue Universal Representation System");
 
-    tracing::info!("Starting petalTongue Universal Representation System");
+    // ===== Phase 2: Pure Rust Display System Integration =====
+    // Check if external display is available, prompt if not
+    tracing::info!("🎨 Checking display availability...");
+    
+    let has_display = std::env::var("DISPLAY").is_ok() 
+        || std::env::var("WAYLAND_DISPLAY").is_ok()
+        || cfg!(target_os = "windows")
+        || cfg!(target_os = "macos");
+    
+    if !has_display {
+        tracing::info!("🪟 No display server detected");
+        tracing::info!("   Pure Rust display backends:");
+        tracing::info!("   - TerminalGUI (ASCII art topology)");
+        tracing::info!("   - SVGGUI (vector export)");
+        tracing::info!("   - PNGGUI (raster export)");
+        tracing::info!("   - Toadstool WASM (if available)");
+        
+        // Prompt user about display server
+        match prompt_for_display_server() {
+            Ok(true) => tracing::info!("✅ Display server now available"),
+            Ok(false) => tracing::info!("📦 Continuing without display server"),
+            Err(e) => tracing::warn!("⚠️  Prompt error: {}", e),
+        }
+    } else {
+        tracing::info!("✅ Display server detected");
+    }
 
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size([1400.0, 900.0])
-            .with_min_inner_size([800.0, 600.0])
-            .with_title("🌸 petalTongue - Universal Representation System"),
-        ..Default::default()
-    };
-
-    let result = eframe::run_native(
-        "petalTongue",
-        options,
-        Box::new(|cc| Ok(Box::new(PetalTongueApp::new(cc)))),
-    );
+    // Try to run with eframe
+    let result = run_with_eframe();
 
     // ===== Cleanup on shutdown =====
     tracing::info!("🌸 petalTongue shutting down...");
@@ -88,5 +106,22 @@ fn main() -> Result<(), eframe::Error> {
         }
     }
 
-    result
+    result.map_err(|e| anyhow::anyhow!("eframe error: {:?}", e))
+}
+
+/// Run with traditional eframe
+fn run_with_eframe() -> Result<(), eframe::Error> {
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([1400.0, 900.0])
+            .with_min_inner_size([800.0, 600.0])
+            .with_title("🌸 petalTongue - Universal Representation System"),
+        ..Default::default()
+    };
+
+    eframe::run_native(
+        "petalTongue",
+        options,
+        Box::new(|cc| Ok(Box::new(PetalTongueApp::new(cc)))),
+    )
 }

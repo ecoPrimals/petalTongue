@@ -455,18 +455,20 @@ fn current_timestamp() -> u64 {
 
 /// Check if a process exists
 fn process_exists(pid: u32) -> bool {
-    // On Unix, we can check if the process exists by sending signal 0
+    // On Unix, we can check if the process exists by sending signal 0 (null signal)
+    // Signal 0 doesn't actually send a signal, it just checks if the process exists
     #[cfg(unix)]
     {
-        use nix::sys::signal::{Signal, kill};
+        use nix::sys::signal::kill;
         use nix::unistd::Pid;
 
         // SAFETY: Converting u32 PID to i32. PIDs are typically small positive numbers.
         // On Linux, max PID is ~4M by default (well within i32 range).
         #[allow(clippy::cast_possible_wrap)]
-        match kill(Pid::from_raw(pid as i32), Signal::SIGTERM) {
+        match kill(Pid::from_raw(pid as i32), None) {
             Ok(()) | Err(nix::errno::Errno::EPERM) => true, // Process exists (with or without permission)
-            Err(nix::errno::Errno::ESRCH | _) => false,     // No such process or other error
+            Err(nix::errno::Errno::ESRCH) => false,          // No such process
+            Err(_) => false,                                  // Other error, assume dead
         }
     }
 

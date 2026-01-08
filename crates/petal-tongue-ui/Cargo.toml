@@ -41,9 +41,17 @@ egui_extras = { workspace = true }  # For table widgets in process viewer
 # External tool integrations
 sysinfo = "0.30"  # System monitoring tool
 
+# Pure Rust display system
+atty = "0.2"  # Terminal detection for display prompts
+async-trait = "0.1"  # For DisplayBackend trait
+
 [[bin]]
 name = "petal-tongue"
 path = "src/main.rs"
+
+[[example]]
+name = "display_demo"
+path = "../../examples/display_demo.rs"
 
 # BingoCube demo moved to bingoCube/demos
 # [[bin]]
