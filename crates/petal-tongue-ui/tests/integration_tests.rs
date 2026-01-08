@@ -104,8 +104,8 @@ fn test_multiple_primals_different_health() {
             endpoint: "http://h1:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
             properties: petal_tongue_core::Properties::new(),
-        #[allow(deprecated)]
-        trust_level: None,
+            #[allow(deprecated)]
+            trust_level: None,
             family_id: None,
             capabilities: vec![],
             last_seen: 1234567890,
@@ -117,8 +117,8 @@ fn test_multiple_primals_different_health() {
             endpoint: "http://w1:8080".to_string(),
             health: PrimalHealthStatus::Warning,
             properties: petal_tongue_core::Properties::new(),
-        #[allow(deprecated)]
-        trust_level: None,
+            #[allow(deprecated)]
+            trust_level: None,
             family_id: None,
             capabilities: vec![],
             last_seen: 1234567890,
@@ -130,8 +130,8 @@ fn test_multiple_primals_different_health() {
             endpoint: "http://c1:8080".to_string(),
             health: PrimalHealthStatus::Critical,
             properties: petal_tongue_core::Properties::new(),
-        #[allow(deprecated)]
-        trust_level: None,
+            #[allow(deprecated)]
+            trust_level: None,
             family_id: None,
             capabilities: vec![],
             last_seen: 1234567890,
@@ -174,8 +174,8 @@ fn test_graph_clear() {
                 endpoint: format!("http://p{}:8080", i),
                 health: PrimalHealthStatus::Healthy,
                 properties: petal_tongue_core::Properties::new(),
-        #[allow(deprecated)]
-        trust_level: None,
+                #[allow(deprecated)]
+                trust_level: None,
                 family_id: None,
                 capabilities: vec![],
                 last_seen: 1234567890,
@@ -254,8 +254,8 @@ fn test_edge_with_label() {
             endpoint: "http://source:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
             properties: petal_tongue_core::Properties::new(),
-        #[allow(deprecated)]
-        trust_level: None,
+            #[allow(deprecated)]
+            trust_level: None,
             family_id: None,
             capabilities: vec![],
             last_seen: 1234567890,
@@ -268,8 +268,8 @@ fn test_edge_with_label() {
             endpoint: "http://target:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
             properties: petal_tongue_core::Properties::new(),
-        #[allow(deprecated)]
-        trust_level: None,
+            #[allow(deprecated)]
+            trust_level: None,
             family_id: None,
             capabilities: vec![],
             last_seen: 1234567890,
@@ -303,8 +303,8 @@ fn test_concurrent_access() {
             endpoint: "http://initial:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
             properties: petal_tongue_core::Properties::new(),
-        #[allow(deprecated)]
-        trust_level: None,
+            #[allow(deprecated)]
+            trust_level: None,
             family_id: None,
             capabilities: vec![],
             last_seen: 1234567890,
@@ -350,8 +350,8 @@ fn test_graph_stats() {
                 endpoint: format!("http://p{}:8080", i),
                 health: PrimalHealthStatus::Healthy,
                 properties: petal_tongue_core::Properties::new(),
-        #[allow(deprecated)]
-        trust_level: None,
+                #[allow(deprecated)]
+                trust_level: None,
                 family_id: None,
                 capabilities: vec![],
                 last_seen: 1234567890,
@@ -405,8 +405,8 @@ fn test_remove_node_removes_edges() {
                 endpoint: format!("http://p{}:8080", i),
                 health: PrimalHealthStatus::Healthy,
                 properties: petal_tongue_core::Properties::new(),
-        #[allow(deprecated)]
-        trust_level: None,
+                #[allow(deprecated)]
+                trust_level: None,
                 family_id: None,
                 capabilities: vec![],
                 last_seen: 1234567890,

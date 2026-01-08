@@ -15,10 +15,10 @@ pub fn health_to_percentage(health: &PrimalHealthStatus) -> u8 {
 /// Convert health status to color (hex)
 pub fn health_to_color(health: &PrimalHealthStatus) -> &'static str {
     match health {
-        PrimalHealthStatus::Healthy => "#4ade80",    // green-400
-        PrimalHealthStatus::Warning => "#facc15",    // yellow-400
-        PrimalHealthStatus::Critical => "#f87171",   // red-400
-        PrimalHealthStatus::Unknown => "#9ca3af",    // gray-400
+        PrimalHealthStatus::Healthy => "#4ade80",  // green-400
+        PrimalHealthStatus::Warning => "#facc15",  // yellow-400
+        PrimalHealthStatus::Critical => "#f87171", // red-400
+        PrimalHealthStatus::Unknown => "#9ca3af",  // gray-400
     }
 }
 
@@ -41,12 +41,12 @@ pub fn get_trust_level(info: &PrimalInfo) -> String {
             return format!("{}", num as u8);
         }
     }
-    
+
     // Fall back to deprecated field
     if let Some(trust) = info.trust_level {
         return format!("{}", trust);
     }
-    
+
     "unknown".to_string()
 }
 
@@ -59,12 +59,12 @@ pub fn get_family_lineage(info: &PrimalInfo) -> String {
             return s.to_string();
         }
     }
-    
+
     // Fall back to deprecated field
     if let Some(ref family) = info.family_id {
         return family.clone();
     }
-    
+
     "unknown".to_string()
 }
 
@@ -92,4 +92,3 @@ mod tests {
         assert_eq!(health_to_emoji(&PrimalHealthStatus::Warning), "🟡");
     }
 }
-

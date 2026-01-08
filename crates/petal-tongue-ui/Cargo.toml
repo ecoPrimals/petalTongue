@@ -29,6 +29,7 @@ tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 reqwest = { workspace = true }
+base64 = { workspace = true }
 anyhow = { workspace = true }  # For rendering_discovery error handling
 thiserror = { workspace = true }
 tracing = { workspace = true }

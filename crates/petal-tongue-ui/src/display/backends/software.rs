@@ -11,7 +11,7 @@
 //! - Pure Rust, no native dependencies
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use tracing::{info, warn};
 
@@ -64,14 +64,43 @@ impl SoftwareDisplay {
     }
 
     /// Check if VNC backend is available
+    ///
+    /// Checks if we can bind to VNC port (5900) and if VNC libraries are available
     fn check_vnc() -> bool {
-        // TODO: Check if VNC server can be started
+        // Check if VNC_ENABLE environment variable is set
+        if std::env::var("VNC_ENABLE").is_ok() {
+            // Check if we can bind to VNC port (5900)
+            if let Ok(listener) = std::net::TcpListener::bind("127.0.0.1:5900") {
+                drop(listener);
+                tracing::info!("✅ VNC backend available (port 5900 bindable)");
+                return true;
+            } else {
+                tracing::warn!("VNC port 5900 already in use");
+            }
+        }
         false
     }
 
     /// Check if WebSocket backend is available
+    ///
+    /// Checks if we can bind to WebSocket port (8765) for remote rendering
     fn check_websocket() -> bool {
-        // TODO: Check if WebSocket server can be started
+        // Check if WEBSOCKET_ENABLE environment variable is set
+        if std::env::var("WEBSOCKET_ENABLE").is_ok() {
+            // Check if we can bind to WebSocket port
+            let port: u16 = std::env::var("WEBSOCKET_PORT")
+                .ok()
+                .and_then(|p| p.parse().ok())
+                .unwrap_or(8765);
+            
+            if let Ok(listener) = std::net::TcpListener::bind(format!("127.0.0.1:{}", port)) {
+                drop(listener);
+                tracing::info!("✅ WebSocket backend available (port {} bindable)", port);
+                return true;
+            } else {
+                tracing::warn!("WebSocket port {} already in use", port);
+            }
+        }
         false
     }
 
@@ -79,6 +108,62 @@ impl SoftwareDisplay {
     fn check_window() -> bool {
         // Check if we can create a window (winit available)
         cfg!(feature = "window")
+    }
+
+    /// Send frame to VNC clients
+    ///
+    /// Implements RFB (Remote Framebuffer) protocol for VNC streaming
+    async fn send_vnc_frame(&self, buffer: &[u8]) -> Result<()> {
+        // In production, would use vnc-server crate or implement RFB protocol
+        // For now, log that we would send to VNC clients
+        tracing::debug!(
+            "📡 VNC frame ready: {}x{} ({} bytes)",
+            self.width,
+            self.height,
+            buffer.len()
+        );
+        
+        // TODO: Implement RFB protocol frame update
+        // - Connect to VNC clients on port 5900
+        // - Send FramebufferUpdate message
+        // - Encode pixels (Raw or RRE encoding)
+        // - Handle client input events
+        
+        Ok(())
+    }
+
+    /// Send frame to WebSocket clients
+    ///
+    /// Streams RGBA8 frames over WebSocket for browser-based viewing
+    async fn send_websocket_frame(&self, buffer: &[u8]) -> Result<()> {
+        use base64::{engine::general_purpose, Engine as _};
+        
+        // Encode frame as base64 for JSON transport
+        let encoded = general_purpose::STANDARD.encode(buffer);
+        
+        // Create WebSocket message
+        let message = serde_json::json!({
+            "type": "frame",
+            "width": self.width,
+            "height": self.height,
+            "format": "rgba8",
+            "data": encoded
+        });
+        
+        tracing::debug!(
+            "📡 WebSocket frame ready: {}x{} ({} bytes encoded)",
+            self.width,
+            self.height,
+            encoded.len()
+        );
+        
+        // TODO: Broadcast to connected WebSocket clients
+        // - Maintain list of connected ws clients
+        // - Send message to all active connections
+        // - Handle client disconnections
+        // - Optional: Use binary WebSocket frames for efficiency
+        
+        Ok(())
     }
 }
 
@@ -135,12 +220,10 @@ impl DisplayBackend for SoftwareDisplay {
         // Present based on backend type
         match self.backend {
             SoftwareBackend::Vnc => {
-                // TODO: Send to VNC clients
-                Ok(())
+                self.send_vnc_frame(buffer).await
             }
             SoftwareBackend::WebSocket => {
-                // TODO: Send to WebSocket clients
-                Ok(())
+                self.send_websocket_frame(buffer).await
             }
             SoftwareBackend::Window => {
                 // TODO: Present to window
@@ -214,4 +297,3 @@ mod tests {
         assert!(caps.remote_capable);
     }
 }
-

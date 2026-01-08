@@ -1,5 +1,5 @@
 //! # Terminal GUI Modality
-//! 
+//!
 //! ASCII-based terminal visualization (Tier 1: Always Available).
 
 use anyhow::Result;
@@ -9,7 +9,7 @@ use crossterm::{
     style::{Color, Print, ResetColor, SetForegroundColor},
     terminal::{self, Clear, ClearType},
 };
-use std::io::{stdout, Write};
+use std::io::{Write, stdout};
 use std::sync::Arc;
 
 use petal_tongue_core::{
@@ -19,9 +19,9 @@ use petal_tongue_core::{
 };
 
 /// Terminal GUI Modality
-/// 
+///
 /// Renders topology as ASCII art in the terminal.
-/// 
+///
 /// **Tier**: 1 (Always Available)
 /// **Dependencies**: Zero (uses crossterm for terminal control)
 /// **Interactive**: Yes
@@ -29,10 +29,10 @@ use petal_tongue_core::{
 pub struct TerminalGUI {
     /// Reference to engine
     engine: Option<Arc<UniversalRenderingEngine>>,
-    
+
     /// Current frame number
     frame: u64,
-    
+
     /// Running state
     running: bool,
 }
@@ -46,18 +46,18 @@ impl TerminalGUI {
             running: false,
         }
     }
-    
+
     /// Clear terminal screen
     fn clear_screen(&self) -> Result<()> {
         let mut stdout = stdout();
         execute!(stdout, Clear(ClearType::All), cursor::MoveTo(0, 0))?;
         Ok(())
     }
-    
+
     /// Render header
     fn render_header(&self) -> Result<()> {
         let mut stdout = stdout();
-        
+
         queue!(
             stdout,
             cursor::MoveTo(0, 0),
@@ -70,15 +70,15 @@ impl TerminalGUI {
             Print("\n"),
             ResetColor
         )?;
-        
+
         stdout.flush()?;
         Ok(())
     }
-    
+
     /// Render topology (placeholder)
     fn render_topology(&self) -> Result<()> {
         let mut stdout = stdout();
-        
+
         queue!(
             stdout,
             cursor::MoveTo(0, 4),
@@ -94,15 +94,15 @@ impl TerminalGUI {
             Print("   │ Node 2  │\n"),
             Print("   └─────────┘\n"),
         )?;
-        
+
         stdout.flush()?;
         Ok(())
     }
-    
+
     /// Render footer
     fn render_footer(&self) -> Result<()> {
         let mut stdout = stdout();
-        
+
         queue!(
             stdout,
             cursor::MoveTo(0, 20),
@@ -113,15 +113,15 @@ impl TerminalGUI {
             Print("\n"),
             ResetColor
         )?;
-        
+
         stdout.flush()?;
         Ok(())
     }
-    
+
     /// Render awakening stage
     fn render_awakening(&self, stage: &str, message: &str) -> Result<()> {
         let mut stdout = stdout();
-        
+
         queue!(
             stdout,
             cursor::MoveTo(0, 10),
@@ -130,7 +130,7 @@ impl TerminalGUI {
             Print("\n"),
             ResetColor
         )?;
-        
+
         stdout.flush()?;
         Ok(())
     }
@@ -147,37 +147,37 @@ impl GUIModality for TerminalGUI {
     fn name(&self) -> &'static str {
         "terminal"
     }
-    
+
     fn is_available(&self) -> bool {
         // Terminal is always available
         true
     }
-    
+
     fn tier(&self) -> ModalityTier {
         ModalityTier::AlwaysAvailable
     }
-    
+
     async fn initialize(&mut self, engine: Arc<UniversalRenderingEngine>) -> Result<()> {
         tracing::info!("🖥️  Initializing Terminal GUI");
-        
+
         self.engine = Some(engine);
-        
+
         // Setup terminal
         terminal::enable_raw_mode()?;
         self.clear_screen()?;
-        
+
         Ok(())
     }
-    
+
     async fn render(&mut self) -> Result<()> {
         tracing::info!("🖥️  Starting Terminal GUI rendering");
-        
+
         self.running = true;
-        
+
         // Subscribe to events
         let events = self.engine.as_ref().unwrap().events();
         let mut rx = events.subscribe().await;
-        
+
         // Main render loop
         while self.running {
             // Clear and render
@@ -185,31 +185,31 @@ impl GUIModality for TerminalGUI {
             self.render_header()?;
             self.render_topology()?;
             self.render_footer()?;
-            
+
             self.frame += 1;
-            
+
             // Check for events (non-blocking)
             if let Ok(event) = rx.try_recv() {
                 self.handle_event(event).await?;
             }
-            
+
             // Check for quit key (simplified)
             // In real implementation, would use crossterm::event
-            
+
             // Sleep for frame time (30 FPS = ~33ms)
             tokio::time::sleep(std::time::Duration::from_millis(33)).await;
-            
+
             // For demo, run for limited time
             if self.frame > 300 {
                 break;
             }
         }
-        
+
         tracing::info!("🖥️  Terminal GUI rendering complete");
-        
+
         Ok(())
     }
-    
+
     async fn handle_event(&mut self, event: EngineEvent) -> Result<()> {
         match event {
             EngineEvent::StateUpdate { key, value } => {
@@ -231,19 +231,19 @@ impl GUIModality for TerminalGUI {
         }
         Ok(())
     }
-    
+
     async fn shutdown(&mut self) -> Result<()> {
         tracing::info!("🖥️  Shutting down Terminal GUI");
-        
+
         self.running = false;
-        
+
         // Restore terminal
         terminal::disable_raw_mode()?;
         self.clear_screen()?;
-        
+
         Ok(())
     }
-    
+
     fn capabilities(&self) -> ModalityCapabilities {
         ModalityCapabilities {
             interactive: true,
@@ -273,7 +273,7 @@ impl GUIModality for TerminalGUI {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_terminal_gui_creation() {
         let gui = TerminalGUI::new();
@@ -281,27 +281,26 @@ mod tests {
         assert_eq!(gui.tier(), ModalityTier::AlwaysAvailable);
         assert!(gui.is_available());
     }
-    
+
     #[test]
     fn test_terminal_gui_capabilities() {
         let gui = TerminalGUI::new();
         let caps = gui.capabilities();
-        
+
         assert!(caps.interactive);
         assert!(caps.realtime);
         assert!(!caps.export);
         assert!(caps.animation);
         assert_eq!(caps.max_nodes, Some(100));
     }
-    
+
     #[test]
     fn test_terminal_gui_accessibility() {
         let gui = TerminalGUI::new();
         let caps = gui.capabilities();
-        
+
         assert!(caps.accessibility.screen_reader);
         assert!(caps.accessibility.keyboard_only);
         assert!(caps.accessibility.wcag_compliant);
     }
 }
-

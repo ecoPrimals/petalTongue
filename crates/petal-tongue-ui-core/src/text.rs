@@ -95,7 +95,10 @@ impl TextUI {
                 .map(|n| n.info.name.as_str())
                 .unwrap_or("unknown");
 
-            output.push_str(&format!("  • {} → {} ({})\n", from_name, to_name, edge.edge_type));
+            output.push_str(&format!(
+                "  • {} → {} ({})\n",
+                from_name, to_name, edge.edge_type
+            ));
         }
         output.push('\n');
 
@@ -104,7 +107,7 @@ impl TextUI {
         output.push_str("--------\n");
         output.push_str(&format!("  Total primals: {}\n", nodes.len()));
         output.push_str(&format!("  Total connections: {}\n", edges.len()));
-        
+
         let timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC");
         output.push_str(&format!("  Generated: {}\n", timestamp));
 
@@ -114,7 +117,7 @@ impl TextUI {
     /// Render as JSON
     fn render_json(&self) -> Result<String> {
         let graph = self.graph.read().unwrap();
-        
+
         // Create a simplified structure for JSON export
         let data = serde_json::json!({
             "topology": {
@@ -283,4 +286,3 @@ mod tests {
         assert!(dot.contains("PetalTongue"));
     }
 }
-

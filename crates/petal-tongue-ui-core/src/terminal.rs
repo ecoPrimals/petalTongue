@@ -55,7 +55,6 @@ impl TerminalUI {
         self
     }
 
-
     /// Render terminal output
     fn render_terminal(&self) -> Result<String> {
         let mut output = String::new();
@@ -220,4 +219,3 @@ mod tests {
         assert!(!ui.supports(UICapability::Interactive));
     }
 }
-

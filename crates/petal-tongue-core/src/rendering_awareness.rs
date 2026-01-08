@@ -10,13 +10,13 @@ use std::time::{Duration, Instant};
 pub struct RenderingAwareness {
     /// Motor state (output)
     motor: MotorState,
-    
+
     /// Sensory state (input)
     sensory: SensoryState,
-    
+
     /// Validation pipeline
     validation: ValidationPipeline,
-    
+
     /// Metrics
     metrics: RenderingMetrics,
 }
@@ -31,7 +31,7 @@ impl RenderingAwareness {
             metrics: RenderingMetrics::default(),
         }
     }
-    
+
     /// Record a motor command (frame sent)
     pub fn motor_command(&mut self, command: MotorCommand) -> CommandId {
         let id = self.motor.execute(command);
@@ -39,11 +39,11 @@ impl RenderingAwareness {
         self.metrics.commands_sent += 1;
         id
     }
-    
+
     /// Record sensory feedback (confirmation received)
     pub fn sensory_feedback(&mut self, event: &SensorEvent) {
         self.sensory.record_event(event);
-        
+
         match event {
             SensorEvent::FrameAcknowledged { frame_id, .. } => {
                 self.validation.confirm_frame(*frame_id);
@@ -58,41 +58,41 @@ impl RenderingAwareness {
             _ => {}
         }
     }
-    
+
     /// Assess complete state (motor + sensory)
     pub fn assess_self(&self) -> SelfAssessment {
         let motor_working = self.motor.is_functional();
         let sensory_working = self.sensory.is_functional();
         let validation_health = self.validation.health();
-        
+
         SelfAssessment {
             // Motor function
             can_render: motor_working,
             frames_sent: self.metrics.commands_sent,
-            
+
             // Sensory function
             can_sense: sensory_working,
             frames_confirmed: self.metrics.frames_confirmed,
-            
+
             // Bidirectional
             is_complete_loop: motor_working && sensory_working && validation_health.healthy,
-            
+
             // Validation
             confirmation_rate: validation_health.confirmation_rate,
-            
+
             // User engagement
             user_visibility: self.user_visibility(),
             user_interactivity: self.user_interactivity(),
-            
+
             // Health
             substrate_responsive: self.sensory.substrate_health.responsive,
         }
     }
-    
+
     /// Determine if user can see our output
     fn user_visibility(&self) -> VisibilityState {
         let confirmed_rate = self.validation.health().confirmation_rate;
-        
+
         if confirmed_rate > 90.0 {
             VisibilityState::Confirmed
         } else if confirmed_rate > 50.0 {
@@ -103,21 +103,17 @@ impl RenderingAwareness {
             VisibilityState::Unknown
         }
     }
-    
+
     /// Determine if user can interact
     fn user_interactivity(&self) -> InteractivityState {
         match self.sensory.last_user_interaction {
-            Some(time) if time.elapsed() < Duration::from_secs(5) => {
-                InteractivityState::Active
-            }
-            Some(time) if time.elapsed() < Duration::from_secs(30) => {
-                InteractivityState::Recent
-            }
+            Some(time) if time.elapsed() < Duration::from_secs(5) => InteractivityState::Active,
+            Some(time) if time.elapsed() < Duration::from_secs(30) => InteractivityState::Recent,
             Some(_) => InteractivityState::Idle,
             None => InteractivityState::Unconfirmed,
         }
     }
-    
+
     /// Get metrics
     pub fn metrics(&self) -> &RenderingMetrics {
         &self.metrics
@@ -143,13 +139,13 @@ impl MotorState {
             commands_executed: 0,
         }
     }
-    
+
     fn execute(&mut self, _command: MotorCommand) -> CommandId {
         self.last_command = Some(Instant::now());
         self.commands_executed += 1;
         self.commands_executed
     }
-    
+
     fn is_functional(&self) -> bool {
         self.commands_executed > 0
     }
@@ -172,22 +168,22 @@ impl SensoryState {
             substrate_health: SubstrateHealth::default(),
         }
     }
-    
+
     fn record_event(&mut self, event: &SensorEvent) {
         self.last_event = Some(event.timestamp());
         self.events_received += 1;
-        
+
         if event.is_user_interaction() {
             self.last_user_interaction = Some(event.timestamp());
         }
     }
-    
+
     fn update_substrate_health(&mut self, latency: Duration) {
         self.substrate_health.last_heartbeat = Some(Instant::now());
         self.substrate_health.latency = Some(latency);
         self.substrate_health.responsive = latency < Duration::from_millis(100);
     }
-    
+
     fn is_functional(&self) -> bool {
         self.events_received > 0
     }
@@ -228,43 +224,42 @@ impl ValidationPipeline {
             timeout: Duration::from_secs(5),
         }
     }
-    
+
     fn track_frame(&mut self, frame_id: CommandId) {
         self.sent_frames.push_back((frame_id, Instant::now()));
-        
+
         // Cleanup old frames
         self.cleanup_old_frames();
     }
-    
+
     fn confirm_frame(&mut self, frame_id: CommandId) {
         self.confirmed_frames.push_back((frame_id, Instant::now()));
-        
+
         // Remove from sent queue
         self.sent_frames.retain(|(id, _)| *id != frame_id);
-        
+
         // Cleanup old confirmations
         while self.confirmed_frames.len() > 100 {
             self.confirmed_frames.pop_front();
         }
     }
-    
+
     fn cleanup_old_frames(&mut self) {
         let now = Instant::now();
-        self.sent_frames.retain(|(_, timestamp)| {
-            now.duration_since(*timestamp) < self.timeout
-        });
+        self.sent_frames
+            .retain(|(_, timestamp)| now.duration_since(*timestamp) < self.timeout);
     }
-    
+
     fn health(&self) -> ValidationHealth {
         let unconfirmed = self.sent_frames.len();
         let total_sent = unconfirmed + self.confirmed_frames.len();
-        
+
         let confirmation_rate = if total_sent > 0 {
             (self.confirmed_frames.len() as f32 / total_sent as f32) * 100.0
         } else {
             0.0
         };
-        
+
         ValidationHealth {
             healthy: unconfirmed < self.max_unconfirmed,
             confirmation_rate,
@@ -290,7 +285,7 @@ pub enum MotorCommand {
     /// Render a specific frame
     RenderFrame {
         /// Frame identifier
-        frame_id: u64
+        frame_id: u64,
     },
     /// Update display without new frame
     UpdateDisplay,
@@ -307,19 +302,19 @@ pub struct SelfAssessment {
     // Motor
     pub can_render: bool,
     pub frames_sent: u64,
-    
+
     // Sensory
     pub can_sense: bool,
     pub frames_confirmed: u64,
-    
+
     // Bidirectional
     pub is_complete_loop: bool,
     pub confirmation_rate: f32,
-    
+
     // User state
     pub user_visibility: VisibilityState,
     pub user_interactivity: InteractivityState,
-    
+
     // Health
     pub substrate_responsive: bool,
 }
@@ -327,16 +322,13 @@ pub struct SelfAssessment {
 impl SelfAssessment {
     /// Check if everything is working
     pub fn is_healthy(&self) -> bool {
-        self.can_render
-            && self.can_sense
-            && self.is_complete_loop
-            && self.substrate_responsive
+        self.can_render && self.can_sense && self.is_complete_loop && self.substrate_responsive
     }
-    
+
     /// Get overall health percentage
     pub fn health_percentage(&self) -> f32 {
         let mut score = 0.0;
-        
+
         if self.can_render {
             score += 20.0;
         }
@@ -349,9 +341,9 @@ impl SelfAssessment {
         if self.substrate_responsive {
             score += 10.0;
         }
-        
+
         score += (self.confirmation_rate * 0.2).min(20.0);
-        
+
         score
     }
 }
@@ -359,10 +351,10 @@ impl SelfAssessment {
 /// User visibility state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VisibilityState {
-    Confirmed,   // >90% confirmation
-    Probable,    // >50% confirmation
-    Uncertain,   // >0% confirmation
-    Unknown,     // No confirmation
+    Confirmed, // >90% confirmation
+    Probable,  // >50% confirmation
+    Uncertain, // >0% confirmation
+    Unknown,   // No confirmation
 }
 
 /// User interactivity state
@@ -386,80 +378,80 @@ pub struct RenderingMetrics {
 mod tests {
     use super::*;
     use crate::sensor::MouseButton;
-    
+
     #[test]
     fn test_motor_command() {
         let mut awareness = RenderingAwareness::new();
-        
+
         let cmd_id = awareness.motor_command(MotorCommand::RenderFrame { frame_id: 1 });
         assert_eq!(cmd_id, 1);
         assert_eq!(awareness.metrics.commands_sent, 1);
     }
-    
+
     #[test]
     fn test_sensory_feedback() {
         let mut awareness = RenderingAwareness::new();
-        
+
         // Send a frame
         let frame_id = awareness.motor_command(MotorCommand::RenderFrame { frame_id: 1 });
-        
+
         // Confirm it
         let event = SensorEvent::FrameAcknowledged {
             frame_id,
             timestamp: Instant::now(),
         };
         awareness.sensory_feedback(&event);
-        
+
         assert_eq!(awareness.metrics.frames_confirmed, 1);
     }
-    
+
     #[test]
     fn test_user_interaction_tracking() {
         let mut awareness = RenderingAwareness::new();
-        
+
         let click = SensorEvent::Click {
             x: 100.0,
             y: 200.0,
             button: MouseButton::Left,
             timestamp: Instant::now(),
         };
-        
+
         awareness.sensory_feedback(&click);
-        
+
         assert_eq!(awareness.metrics.user_interactions, 1);
         let assessment = awareness.assess_self();
         assert_eq!(assessment.user_interactivity, InteractivityState::Active);
     }
-    
+
     #[test]
     fn test_bidirectional_loop() {
         let mut awareness = RenderingAwareness::new();
-        
+
         // Motor: send frame
         let frame_id = awareness.motor_command(MotorCommand::RenderFrame { frame_id: 1 });
-        
+
         // Sensory: confirm frame
         awareness.sensory_feedback(&SensorEvent::FrameAcknowledged {
             frame_id,
             timestamp: Instant::now(),
         });
-        
+
         // Sensory: heartbeat
         awareness.sensory_feedback(&SensorEvent::Heartbeat {
             latency: Duration::from_millis(10),
             timestamp: Instant::now(),
         });
-        
+
         let assessment = awareness.assess_self();
         assert!(assessment.can_render);
         assert!(assessment.can_sense);
         assert!(assessment.is_complete_loop);
     }
-    
+
     #[test]
     fn test_health_percentage() {
         let mut awareness = RenderingAwareness::new();
-        
+
         // Send and confirm multiple frames
         for i in 0..10 {
             let frame_id = awareness.motor_command(MotorCommand::RenderFrame { frame_id: i });
@@ -468,17 +460,16 @@ mod tests {
                 timestamp: Instant::now(),
             });
         }
-        
+
         awareness.sensory_feedback(&SensorEvent::Heartbeat {
             latency: Duration::from_millis(5),
             timestamp: Instant::now(),
         });
-        
+
         let assessment = awareness.assess_self();
         let health = assessment.health_percentage();
-        
+
         // Should be near 100% (all checks pass)
         assert!(health > 95.0, "Health was {}", health);
     }
 }
-

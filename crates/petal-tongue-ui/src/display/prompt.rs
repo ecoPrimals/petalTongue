@@ -115,4 +115,3 @@ mod tests {
         info!("Non-interactive: {}", non_interactive);
     }
 }
-

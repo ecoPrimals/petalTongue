@@ -6,14 +6,19 @@ This document describes all environment variables used by petalTongue.
 
 ### **BIOMEOS_URL**
 **Type**: String (URL)  
-**Default**: `http://localhost:3000`  
+**Default**: None (discovered at runtime)  
 **Required**: No  
 **Example**: `BIOMEOS_URL=http://biomeos.local:3000`
 
 URL of the BiomeOS API endpoint. petalTongue will connect to this endpoint to discover primals and retrieve topology data.
 
-**Production**: Set to your actual BiomeOS instance.  
-**Development**: Can use localhost or mock-biomeos server.
+**TRUE PRIMAL Behavior**:
+- If set: Uses this URL directly
+- If not set: Discovers BiomeOS via mDNS/HTTP probing at runtime
+- Graceful degradation: Falls back to mock mode if no BiomeOS found
+
+**Production**: Set to your actual BiomeOS instance for faster startup.  
+**Development**: Can omit to test runtime discovery, or set for direct connection.
 
 ---
 
@@ -232,11 +237,32 @@ Show debug overlay with internal state (FPS, memory, etc.).
 
 ---
 
+---
+
+### **DISCOVERY_PORTS**
+**Type**: String (comma-separated port numbers)  
+**Default**: `8080,8081,8082,8083,8084,8085,3000,3001,9000,9001`  
+**Required**: No  
+**Example**: `DISCOVERY_PORTS=8080,8081,9000,9001`
+
+Ports to probe during HTTP-based capability discovery.
+
+**TRUE PRIMAL Behavior**:
+- Probes these ports for `/capabilities`, `/health`, `/api/v1/capabilities` endpoints
+- No assumptions about which services run on which ports
+- Discovers any primal advertising visualization capabilities
+
+**Production**: Can narrow to known port range for faster discovery.  
+**Development**: Use default for maximum discovery coverage.
+
+---
+
 ## 📋 Quick Reference
 
 ### Minimal Production Configuration
 ```bash
-# Only one required variable (defaults work for everything else)
+# ZERO required variables! Pure runtime discovery works.
+# Optionally set for faster startup:
 BIOMEOS_URL=http://your-biomeos-instance:3000
 ```
 

@@ -43,15 +43,15 @@ pub mod types;
 mod types_tests;
 
 // NEW: Universal Rendering System
-pub mod awakening;             // Awakening experience (default touchpoint)
+pub mod awakening; // Awakening experience (default touchpoint)
 pub mod awakening_coordinator; // Timeline coordination for awakening
-pub mod compute;               // Compute provider system (optional GPU)
-pub mod engine;                // Universal rendering engine
-pub mod event;                 // Event bus (multi-modal coordination)
-pub mod modality;              // Modality system (trait and registry)
-pub mod rendering_awareness;   // Bidirectional UUI awareness (motor + sensory)
-pub mod sensor;                // Sensor abstraction layer
-pub mod toadstool_compute;     // Toadstool GPU compute integration
+pub mod compute; // Compute provider system (optional GPU)
+pub mod engine; // Universal rendering engine
+pub mod event; // Event bus (multi-modal coordination)
+pub mod modality; // Modality system (trait and registry)
+pub mod rendering_awareness; // Bidirectional UUI awareness (motor + sensory)
+pub mod sensor; // Sensor abstraction layer
+pub mod toadstool_compute; // Toadstool GPU compute integration
 
 // Test fixtures available for this and dependent crates
 #[cfg(any(test, feature = "test-fixtures"))]
@@ -109,7 +109,7 @@ pub use compute::{ComputeCapability, ComputeProvider, ComputeRegistry};
 pub use toadstool_compute::{CPUFallbackCompute, ToadstoolCompute, ToadstoolServiceInfo};
 
 /// Universal rendering engine
-pub use engine::{EngineState, UniversalRenderingEngine, ViewMode, Viewport, TimeState};
+pub use engine::{EngineState, TimeState, UniversalRenderingEngine, ViewMode, Viewport};
 
 /// Event system
 pub use event::{EngineEvent, EventBus};
