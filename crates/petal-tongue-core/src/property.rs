@@ -53,7 +53,10 @@ impl PropertyValue {
     pub fn as_u8(&self) -> Option<u8> {
         self.as_number().and_then(|n| {
             if (0.0..=255.0).contains(&n) {
-                Some(n as u8)
+                // Range is already validated, so cast is safe
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                let value = n as u8;
+                Some(value)
             } else {
                 None
             }

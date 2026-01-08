@@ -8,10 +8,14 @@
 //! - Activity indicators (pulsing, flowing)
 //! - Bandwidth usage visualization
 //! - Temporal patterns (bursts, steady-state)
+//! - Flower opening (awakening experience)
 
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
+
+pub mod flower;
+pub mod visual_flower;
 
 use std::time::{Duration, Instant};
 
@@ -278,6 +282,10 @@ impl Default for AnimationEngine {
         Self::new()
     }
 }
+
+// Re-export flower animation
+pub use flower::{FlowerAnimation, FlowerFrame, FlowerState, generate_awakening_sequence};
+pub use visual_flower::VisualFlowerRenderer;
 
 #[cfg(test)]
 mod tests {

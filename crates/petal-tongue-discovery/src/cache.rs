@@ -1,6 +1,11 @@
 //! Provider caching layer
 //!
 //! Implements intelligent caching to reduce API calls and improve performance.
+//!
+//! NOTE: This module is currently complete but unused. It will be integrated
+//! when performance optimization becomes a priority.
+
+#![allow(dead_code)] // Entire module is reserved for future use
 
 use lru::LruCache;
 use std::num::NonZeroUsize;
@@ -9,12 +14,14 @@ use std::time::{Duration, Instant};
 
 /// Cached entry with expiration
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Reserved for future use when caching is enabled
 struct CachedEntry<T> {
     data: T,
     expires_at: Instant,
 }
 
 impl<T> CachedEntry<T> {
+    #[allow(dead_code)] // Reserved for future use when caching is enabled
     fn new(data: T, ttl: Duration) -> Self {
         Self {
             data,
@@ -22,6 +29,7 @@ impl<T> CachedEntry<T> {
         }
     }
 
+    #[allow(dead_code)] // Reserved for future use when caching is enabled
     fn is_expired(&self) -> bool {
         Instant::now() >= self.expires_at
     }
@@ -29,7 +37,8 @@ impl<T> CachedEntry<T> {
 
 /// Cache key for different data types
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-enum CacheKey {
+#[allow(dead_code)] // Reserved for future use when caching is enabled
+pub(crate) enum CacheKey {
     Primals,
     Topology,
     Health,
@@ -39,6 +48,7 @@ enum CacheKey {
 ///
 /// Uses LRU eviction when cache is full.
 #[derive(Debug)]
+#[allow(dead_code)] // Reserved for future use when caching is enabled
 pub struct ProviderCache<T> {
     cache: Arc<Mutex<LruCache<CacheKey, CachedEntry<T>>>>,
     primals_ttl: Duration,
@@ -51,6 +61,7 @@ pub struct ProviderCache<T> {
 
 impl<T: Clone> ProviderCache<T> {
     /// Create a new cache with specified capacity
+    #[allow(dead_code)] // Reserved for future use when caching is enabled
     pub fn new(capacity: usize) -> Self {
         Self {
             cache: Arc::new(Mutex::new(LruCache::new(
@@ -152,7 +163,7 @@ impl<T: Clone> ProviderCache<T> {
     }
 
     /// Invalidate specific key
-    pub fn invalidate(&self, key: CacheKey) {
+    pub(crate) fn invalidate(&self, key: CacheKey) {
         let mut cache = self.cache.lock().unwrap();
         cache.pop(&key);
         tracing::debug!("Cache invalidated: {:?}", key);

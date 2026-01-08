@@ -461,9 +461,12 @@ fn process_exists(pid: u32) -> bool {
         use nix::sys::signal::{Signal, kill};
         use nix::unistd::Pid;
 
+        // SAFETY: Converting u32 PID to i32. PIDs are typically small positive numbers.
+        // On Linux, max PID is ~4M by default (well within i32 range).
+        #[allow(clippy::cast_possible_wrap)]
         match kill(Pid::from_raw(pid as i32), Signal::SIGTERM) {
             Ok(()) | Err(nix::errno::Errno::EPERM) => true, // Process exists (with or without permission)
-            Err(nix::errno::Errno::ESRCH | _) => false, // No such process or other error
+            Err(nix::errno::Errno::ESRCH | _) => false,     // No such process or other error
         }
     }
 
@@ -493,6 +496,10 @@ fn get_base_dir() -> Result<PathBuf, InstanceError> {
 /// Get the socket directory
 ///
 /// Uses /run/user/{uid}/petaltongue or /tmp/petaltongue
+///
+/// Currently always succeeds, but returns Result for future extensibility
+/// (e.g., permission checks, validation)
+#[allow(clippy::unnecessary_wraps)]
 fn get_socket_dir() -> Result<PathBuf, InstanceError> {
     // Try /run/user/{uid}/petaltongue first (more secure)
     if let Ok(uid) = std::env::var("UID") {
@@ -526,7 +533,7 @@ mod tests {
     fn test_instance_id_string_conversion() {
         let id = InstanceId::new();
         let id_str = id.as_str();
-        let parsed = InstanceId::from_str(&id_str).unwrap();
+        let parsed = InstanceId::parse(&id_str).unwrap();
         assert_eq!(id, parsed);
     }
 

@@ -2,11 +2,13 @@
 //!
 //! Provides a user-friendly interface for multi-modal entropy capture.
 
+// TODO: Define 'audio' feature in Cargo.toml when audio entropy capture is implemented
+#![allow(unexpected_cfgs)]
+
 use eframe::egui;
-#[cfg(feature = "audio")]
-use petal_tongue_entropy::audio::AudioEntropyCapture;
 use petal_tongue_entropy::prelude::*;
-// use std::sync::{Arc, Mutex}; // TODO: Needed for future entropy capture state
+// use std::sync::{Arc, Mutex}; // TODO: Needed for future audio entropy capture state  
+// use petal_tongue_entropy::audio::AudioEntropyCapture; // TODO: When audio implementation ready
 use std::time::Instant;
 use tracing::{info, warn};
 
@@ -25,9 +27,8 @@ pub struct HumanEntropyWindow {
     /// Capture state
     state: CaptureWindowState,
 
-    /// Audio capturer (if audio feature enabled)
-    #[cfg(feature = "audio")]
-    audio_capturer: Option<Arc<Mutex<AudioEntropyCapture>>>,
+    /// Audio capturer (TODO: Implement when audio entropy capture ready)
+    // audio_capturer: Option<Arc<Mutex<AudioEntropyCapture>>>,
 
     /// Narrative capturer (always available)
     narrative_capturer: Option<NarrativeEntropyCapture>,
@@ -88,10 +89,7 @@ impl EntropyModality {
 
     fn is_available(&self) -> bool {
         match self {
-            #[cfg(feature = "audio")]
-            Self::Audio => true,
-            #[cfg(not(feature = "audio"))]
-            Self::Audio => false,
+            Self::Audio => false, // TODO: Enable when audio entropy capture implemented
 
             Self::Narrative => true, // Always available
 

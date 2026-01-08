@@ -1,0 +1,51 @@
+[package]
+name = "petal-tongue-ui-core"
+description = "Pure Rust UI generation for petalTongue - terminal, SVG, text exports (zero native dependencies)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Core dependencies
+petal-tongue-core = { path = "../petal-tongue-core" }
+petal-tongue-graph = { path = "../petal-tongue-graph" }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Terminal UI (pure Rust, cross-platform)
+crossterm = "0.27"
+atty = "0.2"
+term_size = "0.3"
+
+# 2D rendering (pure Rust, no native deps)
+tiny-skia = "0.11"
+
+# Image encoding (pure Rust)
+png = "0.17"
+
+# SVG generation (pure Rust)
+svg = "0.14"
+
+# Time
+chrono = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros"] }
+
+[features]
+default = []
+
