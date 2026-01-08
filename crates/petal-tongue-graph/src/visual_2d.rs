@@ -11,6 +11,8 @@ use petal_tongue_core::{GraphEngine, PrimalHealthStatus};
 use std::sync::{Arc, RwLock};
 
 /// Convert HSV to RGB (H: 0-360, S: 0-1, V: 0-1)
+#[allow(clippy::many_single_char_names)] // Standard HSV→RGB notation: h,s,v,r,g,b,c,x,m
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // Values clamped to [0,255]
 fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
     let c = v * s;
     let h_prime = h / 60.0;
@@ -188,7 +190,10 @@ impl Visual2DRenderer {
             .and_then(|v| match v {
                 petal_tongue_core::PropertyValue::Number(n) => {
                     if *n >= 0.0 && *n <= 255.0 {
-                        Some(*n as u8)
+                        // Range validated, cast is safe
+                        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                        let value = *n as u8;
+                        Some(value)
                     } else {
                         None
                     }
@@ -214,11 +219,11 @@ impl Visual2DRenderer {
 
         // Draw family ID indicator (colored ring if present)
         // Get family_id from properties
-        if let Some(family_id_val) = node.info.properties.get("family_id") {
-            if let petal_tongue_core::PropertyValue::String(family_id) = family_id_val {
-                let family_color = Self::family_id_to_color(family_id);
-                painter.circle_stroke(screen_pos, radius + 3.0, Stroke::new(2.5, family_color));
-            }
+        if let Some(petal_tongue_core::PropertyValue::String(family_id)) =
+            node.info.properties.get("family_id")
+        {
+            let family_color = Self::family_id_to_color(family_id);
+            painter.circle_stroke(screen_pos, radius + 3.0, Stroke::new(2.5, family_color));
         }
 
         // Draw node circle
@@ -247,6 +252,8 @@ impl Visual2DRenderer {
                 node.info.properties.get("trust_level")
             {
                 if *trust_val >= 0.0 && *trust_val <= 255.0 {
+                    // Range validated, cast is safe
+                    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
                     let trust_level = *trust_val as u8;
                     let badge_text = match trust_level {
                         0 => "⚫",

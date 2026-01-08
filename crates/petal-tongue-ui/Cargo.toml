@@ -11,11 +11,15 @@ authors.workspace = true
 petal-tongue-core = { path = "../petal-tongue-core" }
 petal-tongue-graph = { path = "../petal-tongue-graph" }
 petal-tongue-api = { path = "../petal-tongue-api" }
-petal-tongue-animation = { path = "../petal-tongue-animation" }
+petal-tongue-animation = { path = "../petal-tongue-animation", features = ["egui"] }
 petal-tongue-telemetry = { path = "../petal-tongue-telemetry" }
 petal-tongue-discovery = { path = "../petal-tongue-discovery" }
 petal-tongue-entropy = { path = "../petal-tongue-entropy" }
 petal-tongue-adapters = { path = "../petal-tongue-adapters" }  # NEW: Adapter system
+
+# Songbird for capability-based discovery (TRUE PRIMAL integration)
+songbird-universal = { path = "../../../../phase1/songbird/crates/songbird-universal" }
+songbird-types = { path = "../../../../phase1/songbird/crates/songbird-types" }
 
 # BingoCube is now a standalone tool at https://github.com/ecoPrimals/bingoCube
 bingocube-core = { git = "ssh://git@github.com/ecoPrimals/bingoCube.git", tag = "v0.1.0" }
@@ -25,6 +29,7 @@ tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 reqwest = { workspace = true }
+anyhow = { workspace = true }  # For rendering_discovery error handling
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

@@ -392,6 +392,11 @@ impl SessionManager {
     /// # Errors
     ///
     /// Returns error if session cannot be loaded
+    ///
+    /// # Panics
+    ///
+    /// This function does not panic. The unwrap is safe because `current_state`
+    /// is always set to `Some(...)` in all code paths above.
     pub fn load_or_create(
         &mut self,
         instance_id: InstanceId,
@@ -405,6 +410,7 @@ impl SessionManager {
             self.dirty = true;
         }
 
+        // SAFETY: current_state is guaranteed to be Some after the branches above
         Ok(self.current_state.as_ref().unwrap())
     }
 
@@ -559,7 +565,12 @@ pub enum SessionError {
 
     /// Version mismatch
     #[error("Version mismatch: found {found}, expected {expected}")]
-    VersionMismatch { found: u32, expected: u32 },
+    VersionMismatch {
+        /// The version found in the session file
+        found: u32,
+        /// The expected version for this build
+        expected: u32,
+    },
 
     /// No current state
     #[error("No current session state")]
