@@ -49,6 +49,8 @@ pub mod compute;               // Compute provider system (optional GPU)
 pub mod engine;                // Universal rendering engine
 pub mod event;                 // Event bus (multi-modal coordination)
 pub mod modality;              // Modality system (trait and registry)
+pub mod rendering_awareness;   // Bidirectional UUI awareness (motor + sensory)
+pub mod sensor;                // Sensor abstraction layer
 pub mod toadstool_compute;     // Toadstool GPU compute integration
 
 // Test fixtures available for this and dependent crates
@@ -115,6 +117,18 @@ pub use event::{EngineEvent, EventBus};
 /// Modality system
 pub use modality::{
     AccessibilityFeatures, GUIModality, ModalityCapabilities, ModalityRegistry, ModalityTier,
+};
+
+/// Rendering awareness (bidirectional UUI)
+pub use rendering_awareness::{
+    InteractivityState, MotorCommand, RenderingAwareness, RenderingMetrics, SelfAssessment,
+    ValidationHealth, VisibilityState,
+};
+
+/// Sensor system (input abstraction)
+pub use sensor::{
+    Key, Modifiers, MouseButton, Sensor, SensorCapabilities, SensorCapability, SensorEvent,
+    SensorRegistry, SensorStats, SensorType,
 };
 
 /// The petalTongue primal.
