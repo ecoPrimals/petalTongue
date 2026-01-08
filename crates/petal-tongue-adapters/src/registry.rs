@@ -52,7 +52,7 @@ impl AdapterRegistry {
         adapters.push(adapter);
 
         // Sort by priority (highest first)
-        adapters.sort_by(|a, b| b.priority().cmp(&a.priority()));
+        adapters.sort_by_key(|a| std::cmp::Reverse(a.priority()));
     }
 
     /// Render a property with the appropriate adapter or generic fallback

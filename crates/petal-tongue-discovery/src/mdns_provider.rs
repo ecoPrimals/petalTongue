@@ -289,7 +289,7 @@ impl MdnsVisualizationProvider {
 
         // Parse answer records
         let mut service_port: Option<u16> = None;
-        let mut service_host: Option<String> = None;
+        let mut _service_host: Option<String> = None; // TODO: Use for hostname resolution if needed
         let mut txt_records: Vec<crate::dns_parser::TxtRecord> = Vec::new();
         let mut a_records: Vec<Ipv4Addr> = Vec::new();
 
@@ -305,7 +305,7 @@ impl MdnsVisualizationProvider {
                 Some(RecordType::SRV) => {
                     if let Ok(srv) = record.as_srv(data, rdata_offset) {
                         service_port = Some(srv.port);
-                        service_host = Some(srv.target.clone());
+                        _service_host = Some(srv.target.clone());
                         tracing::debug!("Found SRV record: {}:{}", srv.target, srv.port);
                     }
                 }

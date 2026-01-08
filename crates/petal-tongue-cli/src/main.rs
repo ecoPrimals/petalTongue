@@ -13,7 +13,6 @@ use clap::{Parser, Subcommand};
 use colored::*;
 use petal_tongue_core::{InstanceId, InstanceRegistry};
 use petal_tongue_ipc::{IpcClient, IpcCommand, IpcResponse};
-use std::str::FromStr;
 
 #[derive(Parser)]
 #[command(name = "petaltongue")]
@@ -349,7 +348,7 @@ fn resolve_instance_id(id_str: &str) -> Result<InstanceId> {
     // Try to parse as UUID string and create InstanceId
     if let Ok(uuid) = uuid::Uuid::parse_str(id_str) {
         let id_string = uuid.to_string();
-        return InstanceId::from_str(&id_string)
+        return InstanceId::parse(&id_string)
             .map_err(|e| anyhow::anyhow!("Invalid instance ID: {}", e));
     }
 

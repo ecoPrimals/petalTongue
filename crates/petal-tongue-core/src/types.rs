@@ -37,7 +37,7 @@ pub struct PrimalInfo {
     // === DEPRECATED FIELDS (kept temporarily for backward compatibility) ===
     /// Trust level (0-3: None, Limited, Elevated, Full)
     ///
-    /// DEPRECATED: Use properties["`trust_level`"] instead
+    /// DEPRECATED: Use properties[`trust_level`] instead
     /// This field is kept temporarily for backward compatibility and will be removed
     /// once all data sources migrate to the properties field.
     #[deprecated(note = "Use properties field instead - this will be removed in a future version")]
@@ -46,7 +46,7 @@ pub struct PrimalInfo {
 
     /// Family ID (genetic lineage)
     ///
-    /// DEPRECATED: Use properties["`family_id`"] instead
+    /// DEPRECATED: Use properties[`family_id`] instead
     /// This field is kept temporarily for backward compatibility and will be removed
     /// once all data sources migrate to the properties field.
     #[deprecated(note = "Use properties field instead - this will be removed in a future version")]
@@ -127,11 +127,12 @@ impl PrimalInfo {
     #[must_use]
     #[allow(deprecated)]
     pub fn with_trust(mut self, trust_level: u8, family_id: Option<String>) -> Self {
+        use crate::property::PropertyValue;
+
         self.trust_level = Some(trust_level);
-        self.family_id = family_id.clone();
+        self.family_id.clone_from(&family_id);
 
         // Also populate properties for forward compatibility
-        use crate::property::PropertyValue;
         self.properties.insert(
             "trust_level".to_string(),
             PropertyValue::Number(f64::from(trust_level)),

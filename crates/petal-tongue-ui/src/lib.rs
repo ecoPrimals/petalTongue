@@ -9,7 +9,15 @@
 pub mod accessibility;
 pub mod accessibility_panel;
 pub mod app;
-pub mod app_state;
+pub mod app_panels;
+pub mod awakening_overlay;
+pub mod startup_audio;
+pub mod tutorial_mode;
+// Smart refactoring modules (app.rs → modular architecture) - TEMPORARILY DISABLED FOR INCREMENTAL REFACTORING
+// pub mod app_state;    // Application state (Phase 1)
+// pub mod app_ui;       // UI rendering (Phase 2)
+// pub mod app_data;     // Data management (Phase 3)
+// pub mod app_adapters; // Adapter management (Phase 4)
 pub mod audio_providers;
 pub mod audio_pure_rust;
 pub mod bingocube_integration;
@@ -20,6 +28,11 @@ pub mod keyboard_shortcuts;
 pub mod live_data;
 pub mod multimodal_stream;
 pub mod process_viewer_integration;
+// DEPRECATED: Old hardcoded discovery (remove after migration)
+// pub mod rendering_discovery;
+
+// NEW: Universal infant discovery (zero hardcoded knowledge)
+pub mod universal_discovery; // NEW: Capability-based GPU rendering discovery via Songbird
 pub mod sandbox_mock;
 pub mod state;
 pub mod status_reporter;

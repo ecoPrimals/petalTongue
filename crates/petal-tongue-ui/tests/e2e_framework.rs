@@ -169,7 +169,10 @@ impl E2ETestRunner {
                 endpoint: "http://test:8080".to_string(),
                 capabilities: vec!["test".to_string()],
                 health: PrimalHealthStatus::Healthy,
+                properties: petal_tongue_core::Properties::new(),
+                #[allow(deprecated)]
                 trust_level: None,
+                #[allow(deprecated)]
                 family_id: None,
                 last_seen: 0,
             });
@@ -230,7 +233,10 @@ impl E2ETestRunner {
                     endpoint: "http://test:8080".to_string(),
                     capabilities: vec![],
                     health: PrimalHealthStatus::Healthy,
+                    properties: petal_tongue_core::Properties::new(),
+                    #[allow(deprecated)]
                     trust_level: None,
+                    #[allow(deprecated)]
                     family_id: None,
                     last_seen: 0,
                 });
@@ -295,7 +301,10 @@ impl E2ETestRunner {
                 endpoint: "http://test:8080".to_string(),
                 capabilities: vec![],
                 health: PrimalHealthStatus::Healthy,
+                properties: petal_tongue_core::Properties::new(),
+                #[allow(deprecated)]
                 trust_level: None,
+                #[allow(deprecated)]
                 family_id: None,
                 last_seen: 0,
             });
@@ -306,7 +315,10 @@ impl E2ETestRunner {
                 endpoint: "http://test:8081".to_string(),
                 capabilities: vec![],
                 health: PrimalHealthStatus::Healthy,
+                properties: petal_tongue_core::Properties::new(),
+                #[allow(deprecated)]
                 trust_level: None,
+                #[allow(deprecated)]
                 family_id: None,
                 last_seen: 0,
             });

@@ -46,6 +46,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_primal_info_creation() {
         let info = PrimalInfo {
             id: "test-1".to_string(),
@@ -70,6 +71,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_primal_info_clone() {
         let info = PrimalInfo {
             id: "test-1".to_string(),
@@ -121,6 +123,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_topology_graph() {
         let primal1 = PrimalInfo {
             id: "primal-1".to_string(),
@@ -230,6 +233,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_primal_info_serialization() {
         let info = PrimalInfo {
             id: "test-1".to_string(),

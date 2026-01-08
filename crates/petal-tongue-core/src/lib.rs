@@ -9,6 +9,16 @@
 //! - **Modality-agnostic** - Core knows nothing about rendering
 //! - **Type-safe** - Strong typing throughout
 //! - **Self-contained** - No external primal dependencies, only self-knowledge
+//!
+//! # New: Universal Rendering System (Phase 2026)
+//!
+//! "A graphical interface is simply the interconnection of information
+//!  and how it is represented."
+//!
+//! - **Awakening Experience**: Default touchpoint (flower opening to sunrise)
+//! - **Modality System**: Multiple representations (audio, visual, text)
+//! - **Event Coordination**: Synchronize across modalities
+//! - **Compute Integration**: Optional GPU acceleration (Toadstool)
 
 #![warn(missing_docs)]
 #![warn(clippy::all)]
@@ -31,6 +41,15 @@ pub mod session; // Session state persistence (Phase 2)
 pub mod types;
 #[cfg(test)]
 mod types_tests;
+
+// NEW: Universal Rendering System
+pub mod awakening;             // Awakening experience (default touchpoint)
+pub mod awakening_coordinator; // Timeline coordination for awakening
+pub mod compute;               // Compute provider system (optional GPU)
+pub mod engine;                // Universal rendering engine
+pub mod event;                 // Event bus (multi-modal coordination)
+pub mod modality;              // Modality system (trait and registry)
+pub mod toadstool_compute;     // Toadstool GPU compute integration
 
 // Test fixtures available for this and dependent crates
 #[cfg(any(test, feature = "test-fixtures"))]
@@ -71,6 +90,31 @@ pub use instance::{Instance, InstanceError, InstanceId, InstanceRegistry};
 /// Session state persistence
 pub use session::{
     AccessibilitySettings, SessionError, SessionManager, SessionState, TrustSummary,
+};
+
+/// Awakening experience (default touchpoint)
+pub use awakening::{AwakeningConfig, AwakeningExperience, AwakeningStage};
+
+/// Awakening coordinator (timeline synchronization)
+pub use awakening_coordinator::{
+    AwakeningCoordinator, AwakeningTimeline, TimelineEvent, TimelineEventType,
+};
+
+/// Compute provider system
+pub use compute::{ComputeCapability, ComputeProvider, ComputeRegistry};
+
+/// Toadstool compute integration
+pub use toadstool_compute::{CPUFallbackCompute, ToadstoolCompute, ToadstoolServiceInfo};
+
+/// Universal rendering engine
+pub use engine::{EngineState, UniversalRenderingEngine, ViewMode, Viewport, TimeState};
+
+/// Event system
+pub use event::{EngineEvent, EventBus};
+
+/// Modality system
+pub use modality::{
+    AccessibilityFeatures, GUIModality, ModalityCapabilities, ModalityRegistry, ModalityTier,
 };
 
 /// The petalTongue primal.

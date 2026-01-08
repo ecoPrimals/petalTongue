@@ -1,0 +1,18 @@
+<svg width="1920" height="1080" xmlns="http://www.w3.org/2000/svg">
+<rect width="100%" height="100%" fill="#141822"/>
+<style>
+            text { font-family: system-ui, sans-serif; fill: #f3f4f6; }
+            .node-label { font-size: 12px; text-anchor: middle; }
+            .edge { stroke: #6b7280; stroke-width: 2; }
+        </style>
+<line x1="113.60409" y1="165.2005" x2="87.25252" y2="169.23157" class="edge"/>
+<line x1="-89.50404" y1="195.19815" x2="87.25252" y2="169.23157" class="edge"/>
+<circle cx="87.25252" cy="169.23157" r="20" fill="#4ade80" stroke="#f3f4f6" stroke-width="2"/>
+<text x="87.25252" y="204.23157" class="node-label">petalTongue Headless</text>
+<circle cx="113.60409" cy="165.2005" r="20" fill="#4ade80" stroke="#f3f4f6" stroke-width="2"/>
+<text x="113.60409" y="200.2005" class="node-label">biomeOS</text>
+<circle cx="-89.50404" cy="195.19815" r="20" fill="#facc15" stroke="#f3f4f6" stroke-width="2"/>
+<text x="-89.50404" y="230.19815" class="node-label">Songbird</text>
+<text x="20" y="30" style="font-size: 18px; font-weight: bold;">🌸 petalTongue Topology - 3 primals</text>
+<text x="20" y="1070" style="font-size: 10px; fill: #9ca3af;">Generated: 2026-01-06 19:30:01 UTC</text>
+</svg>

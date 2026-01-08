@@ -63,6 +63,7 @@ pub mod audio;
 // pub mod video; // TODO: Implement video modality
 
 // Always-available modalities (no special dependencies)
+pub mod awakening_audio; // NEW: Awakening experience audio layers
 pub mod gesture;
 pub mod narrative;
 pub mod visual;
@@ -79,6 +80,7 @@ pub mod prelude {
     // #[cfg(feature = "video")]
     // pub use crate::video::*; // TODO: Implement video modality
 
+    pub use crate::awakening_audio::*;
     pub use crate::gesture::*;
     pub use crate::narrative::*;
     pub use crate::visual::*;
