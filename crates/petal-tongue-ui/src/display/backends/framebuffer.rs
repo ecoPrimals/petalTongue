@@ -133,6 +133,8 @@ impl DisplayBackend for FramebufferDisplay {
     }
 
     async fn present(&mut self, buffer: &[u8]) -> Result<()> {
+        use std::io::{Seek, SeekFrom};
+        
         // Verify buffer size
         let expected_size = (self.width * self.height * 4) as usize;
         if buffer.len() != expected_size {
@@ -145,10 +147,17 @@ impl DisplayBackend for FramebufferDisplay {
 
         // Write to framebuffer device
         if let Some(fb_device) = &mut self.fb_device {
+            // Seek to beginning for each frame
+            fb_device.seek(SeekFrom::Start(0)).map_err(|e| {
+                anyhow!("Failed to seek framebuffer: {}", e)
+            })?;
+            
             fb_device.write_all(buffer).map_err(|e| {
                 anyhow!("Failed to write to framebuffer: {}", e)
             })?;
             fb_device.flush()?;
+            
+            tracing::trace!("Presented {} bytes to framebuffer", buffer.len());
         } else {
             return Err(anyhow!("Framebuffer device not initialized"));
         }
