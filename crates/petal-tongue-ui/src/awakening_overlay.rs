@@ -1,5 +1,5 @@
 //! # Awakening Overlay for Egui
-//! 
+//!
 //! Full-screen awakening experience with visual flower animation.
 
 use anyhow::Result;
@@ -11,16 +11,16 @@ use std::time::Instant;
 pub struct AwakeningOverlay {
     /// Visual flower renderer
     flower_renderer: VisualFlowerRenderer,
-    
+
     /// Current stage
     current_stage: AwakeningStage,
-    
+
     /// Start time
     start_time: Instant,
-    
+
     /// Is active
     active: bool,
-    
+
     /// Should transition to tutorial
     transition_to_tutorial: bool,
 }
@@ -36,7 +36,7 @@ impl AwakeningOverlay {
             transition_to_tutorial: false,
         }
     }
-    
+
     /// Start the awakening experience
     pub fn start(&mut self) {
         self.active = true;
@@ -45,25 +45,25 @@ impl AwakeningOverlay {
         self.current_stage = AwakeningStage::Awakening;
         tracing::info!("🌸 Starting visual awakening experience");
     }
-    
+
     /// Check if active
     pub fn is_active(&self) -> bool {
         self.active
     }
-    
+
     /// Check if should transition to tutorial
     pub fn should_transition_to_tutorial(&self) -> bool {
         self.transition_to_tutorial
     }
-    
+
     /// Update awakening state
     pub fn update(&mut self, delta_time: f32) -> Result<()> {
         if !self.active {
             return Ok(());
         }
-        
+
         let elapsed = self.start_time.elapsed().as_secs_f32();
-        
+
         // Update stage based on time
         self.current_stage = match elapsed {
             t if t < 3.0 => AwakeningStage::Awakening,
@@ -76,42 +76,42 @@ impl AwakeningOverlay {
                     .ok()
                     .and_then(|v| v.parse::<bool>().ok())
                     .unwrap_or(false);
-                
+
                 self.active = false;
                 AwakeningStage::Complete
             }
         };
-        
+
         // Update flower animation
         self.flower_renderer.update(delta_time);
-        
+
         Ok(())
     }
-    
+
     /// Render awakening overlay
     pub fn render(&self, ctx: &egui::Context) {
         if !self.active {
             return;
         }
-        
+
         // Full-screen overlay
         egui::CentralPanel::default()
             .frame(egui::Frame::none().fill(egui::Color32::from_rgb(20, 20, 25)))
             .show(ctx, |ui| {
                 let rect = ui.max_rect();
                 let center = rect.center();
-                
+
                 // Calculate size based on screen
                 let size = rect.width().min(rect.height()) * 0.4;
-                
+
                 // Render visual flower
                 self.flower_renderer.render(ui, center, size);
-                
+
                 // Render stage text
                 self.render_stage_text(ui, rect);
             });
     }
-    
+
     /// Render stage text
     fn render_stage_text(&self, ui: &mut egui::Ui, rect: egui::Rect) {
         let text = match self.current_stage {
@@ -121,10 +121,10 @@ impl AwakeningOverlay {
             AwakeningStage::Tutorial => "🌿 Ready to explore...",
             AwakeningStage::Complete => "✅ Complete!",
         };
-        
+
         // Position text below flower
         let text_pos = rect.center() + egui::Vec2::new(0.0, rect.height() * 0.25);
-        
+
         ui.painter().text(
             text_pos,
             egui::Align2::CENTER_CENTER,
@@ -132,7 +132,7 @@ impl AwakeningOverlay {
             egui::FontId::proportional(32.0),
             egui::Color32::from_rgb(150, 255, 180),
         );
-        
+
         // Show stage name below
         let stage_name = match self.current_stage {
             AwakeningStage::Awakening => "Stage 1: Awakening",
@@ -142,7 +142,7 @@ impl AwakeningOverlay {
             AwakeningStage::Complete => "Complete",
         };
         let stage_pos = text_pos + egui::Vec2::new(0.0, 40.0);
-        
+
         ui.painter().text(
             stage_pos,
             egui::Align2::CENTER_CENTER,
@@ -162,51 +162,50 @@ impl Default for AwakeningOverlay {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_awakening_overlay_creation() {
         let overlay = AwakeningOverlay::new();
         assert!(!overlay.is_active());
         assert_eq!(overlay.current_stage, AwakeningStage::Awakening);
     }
-    
+
     #[test]
     fn test_awakening_overlay_start() {
         let mut overlay = AwakeningOverlay::new();
         overlay.start();
         assert!(overlay.is_active());
     }
-    
+
     #[test]
     fn test_awakening_overlay_progression() {
         let mut overlay = AwakeningOverlay::new();
         overlay.start();
-        
+
         // Stage 1: Awakening
         assert_eq!(overlay.current_stage, AwakeningStage::Awakening);
-        
+
         // Simulate time passing
         overlay.start_time = Instant::now() - std::time::Duration::from_secs(4);
         overlay.update(0.016).unwrap();
         assert_eq!(overlay.current_stage, AwakeningStage::SelfKnowledge);
-        
+
         // Stage 3
         overlay.start_time = Instant::now() - std::time::Duration::from_secs(7);
         overlay.update(0.016).unwrap();
         assert_eq!(overlay.current_stage, AwakeningStage::Discovery);
     }
-    
+
     #[test]
     fn test_awakening_overlay_completion() {
         let mut overlay = AwakeningOverlay::new();
         overlay.start();
-        
+
         // Simulate completion
         overlay.start_time = Instant::now() - std::time::Duration::from_secs(13);
         overlay.update(0.016).unwrap();
-        
+
         assert!(!overlay.is_active());
         assert_eq!(overlay.current_stage, AwakeningStage::Complete);
     }
 }
-

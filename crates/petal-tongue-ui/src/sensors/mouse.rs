@@ -22,14 +22,14 @@ impl MouseSensor {
         let capabilities = SensorCapabilities {
             sensor_type: SensorType::Mouse,
             input: true,
-            output: false, // Mouse is input only
-            spatial: true, // Provides X, Y coordinates
-            temporal: true, // Timing of clicks
+            output: false,    // Mouse is input only
+            spatial: true,    // Provides X, Y coordinates
+            temporal: true,   // Timing of clicks
             continuous: true, // Continuous position updates
-            discrete: true, // Discrete click events
+            discrete: true,   // Discrete click events
             bidirectional: false,
         };
-        
+
         Self {
             capabilities,
             pointer_type,
@@ -44,15 +44,15 @@ impl Sensor for MouseSensor {
     fn capabilities(&self) -> &SensorCapabilities {
         &self.capabilities
     }
-    
+
     fn is_available(&self) -> bool {
         // Mouse is available if we're in a terminal or GUI
         true
     }
-    
+
     async fn poll_events(&mut self) -> Result<Vec<SensorEvent>> {
         let mut events = Vec::new();
-        
+
         // Non-blocking poll with very short timeout
         match self.pointer_type {
             PointerType::TerminalMouse => {
@@ -61,12 +61,12 @@ impl Sensor for MouseSensor {
                         let timestamp = Instant::now();
                         let x = mouse_event.column as f32;
                         let y = mouse_event.row as f32;
-                        
+
                         match mouse_event.kind {
                             MouseEventKind::Down(btn) => {
                                 self.last_click = Some(timestamp);
                                 self.last_position = Some((x, y));
-                                
+
                                 events.push(SensorEvent::Click {
                                     x,
                                     y,
@@ -76,12 +76,8 @@ impl Sensor for MouseSensor {
                             }
                             MouseEventKind::Moved => {
                                 self.last_position = Some((x, y));
-                                
-                                events.push(SensorEvent::Position {
-                                    x,
-                                    y,
-                                    timestamp,
-                                });
+
+                                events.push(SensorEvent::Position { x, y, timestamp });
                             }
                             MouseEventKind::ScrollDown => {
                                 events.push(SensorEvent::Scroll {
@@ -103,14 +99,14 @@ impl Sensor for MouseSensor {
                 }
             }
         }
-        
+
         Ok(events)
     }
-    
+
     fn last_activity(&self) -> Option<Instant> {
         self.last_click
     }
-    
+
     fn name(&self) -> &str {
         match self.pointer_type {
             PointerType::TerminalMouse => "Terminal Mouse",
@@ -140,14 +136,14 @@ pub async fn discover() -> Option<MouseSensor> {
         tracing::debug!("Discovered terminal mouse");
         return Some(MouseSensor::new(PointerType::TerminalMouse));
     }
-    
+
     None
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_mouse_sensor_creation() {
         let sensor = MouseSensor::new(PointerType::TerminalMouse);
@@ -155,7 +151,7 @@ mod tests {
         assert!(sensor.capabilities().input);
         assert!(sensor.capabilities().spatial);
     }
-    
+
     #[test]
     fn test_button_mapping() {
         assert_eq!(map_button(CrosstermButton::Left), MouseButton::Left);
@@ -163,4 +159,3 @@ mod tests {
         assert_eq!(map_button(CrosstermButton::Middle), MouseButton::Middle);
     }
 }
-

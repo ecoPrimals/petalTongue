@@ -1,8 +1,8 @@
 //! Main entry point for petalTongue desktop UI
 
 use petal_tongue_core::{Instance, InstanceId, InstanceRegistry};
-use petal_tongue_ui::display::prompt::prompt_for_display_server;
 use petal_tongue_ui::PetalTongueApp;
+use petal_tongue_ui::display::prompt::prompt_for_display_server;
 
 fn main() -> anyhow::Result<()> {
     // Initialize tracing
@@ -30,7 +30,7 @@ fn main() -> anyhow::Result<()> {
     } else {
         tracing::info!("✅ Instance registered in registry");
     }
-    
+
     tracing::info!("🧹 Running garbage collection...");
 
     // Clean up dead instances (returns count of removed)
@@ -48,7 +48,7 @@ fn main() -> anyhow::Result<()> {
     if let Err(e) = registry.save() {
         tracing::error!("Failed to save registry: {}", e);
     }
-    
+
     tracing::info!("📝 Registry saved");
 
     tracing::debug!(
@@ -56,19 +56,19 @@ fn main() -> anyhow::Result<()> {
         instance_id.as_str()
     );
     // ===== End Phase 1 Integration =====
-    
+
     tracing::info!("🔄 Phase 1 complete, starting Phase 2...");
     tracing::info!("🌸 Starting petalTongue Universal Representation System");
 
     // ===== Phase 2: Pure Rust Display System Integration =====
     // Check if external display is available, prompt if not
     tracing::info!("🎨 Checking display availability...");
-    
-    let has_display = std::env::var("DISPLAY").is_ok() 
+
+    let has_display = std::env::var("DISPLAY").is_ok()
         || std::env::var("WAYLAND_DISPLAY").is_ok()
         || cfg!(target_os = "windows")
         || cfg!(target_os = "macos");
-    
+
     if !has_display {
         tracing::info!("🪟 No display server detected");
         tracing::info!("   Pure Rust display backends:");
@@ -76,7 +76,7 @@ fn main() -> anyhow::Result<()> {
         tracing::info!("   - SVGGUI (vector export)");
         tracing::info!("   - PNGGUI (raster export)");
         tracing::info!("   - Toadstool WASM (if available)");
-        
+
         // Prompt user about display server
         match prompt_for_display_server() {
             Ok(true) => tracing::info!("✅ Display server now available"),

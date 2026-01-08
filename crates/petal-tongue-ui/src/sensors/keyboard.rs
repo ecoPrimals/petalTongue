@@ -28,7 +28,7 @@ impl KeyboardSensor {
             discrete: true, // Individual key events
             bidirectional: false,
         };
-        
+
         Self {
             capabilities,
             input_type,
@@ -42,15 +42,15 @@ impl Sensor for KeyboardSensor {
     fn capabilities(&self) -> &SensorCapabilities {
         &self.capabilities
     }
-    
+
     fn is_available(&self) -> bool {
         // Keyboard is available if terminal stdin is a TTY
         atty::is(atty::Stream::Stdin)
     }
-    
+
     async fn poll_events(&mut self) -> Result<Vec<SensorEvent>> {
         let mut events = Vec::new();
-        
+
         // Non-blocking poll with very short timeout
         match self.input_type {
             InputType::Terminal => {
@@ -58,10 +58,10 @@ impl Sensor for KeyboardSensor {
                     if let Event::Key(key_event) = event::read()? {
                         let timestamp = Instant::now();
                         self.last_key_press = Some(timestamp);
-                        
+
                         let key = map_keycode(key_event.code);
                         let modifiers = map_modifiers(key_event.modifiers);
-                        
+
                         events.push(SensorEvent::KeyPress {
                             key,
                             modifiers,
@@ -71,14 +71,14 @@ impl Sensor for KeyboardSensor {
                 }
             }
         }
-        
+
         Ok(events)
     }
-    
+
     fn last_activity(&self) -> Option<Instant> {
         self.last_key_press
     }
-    
+
     fn name(&self) -> &str {
         match self.input_type {
             InputType::Terminal => "Terminal Keyboard",
@@ -127,14 +127,14 @@ pub async fn discover() -> Option<KeyboardSensor> {
         tracing::debug!("Discovered terminal keyboard");
         return Some(KeyboardSensor::new(InputType::Terminal));
     }
-    
+
     None
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_keyboard_sensor_creation() {
         let sensor = KeyboardSensor::new(InputType::Terminal);
@@ -142,14 +142,14 @@ mod tests {
         assert!(sensor.capabilities().input);
         assert!(!sensor.capabilities().output);
     }
-    
+
     #[test]
     fn test_keycode_mapping() {
         assert_eq!(map_keycode(KeyCode::Char('a')), Key::Char('a'));
         assert_eq!(map_keycode(KeyCode::Esc), Key::Escape);
         assert_eq!(map_keycode(KeyCode::Up), Key::Up);
     }
-    
+
     #[test]
     fn test_modifier_mapping() {
         let mods = map_modifiers(KeyModifiers::CONTROL | KeyModifiers::SHIFT);
@@ -158,4 +158,3 @@ mod tests {
         assert!(!mods.alt);
     }
 }
-

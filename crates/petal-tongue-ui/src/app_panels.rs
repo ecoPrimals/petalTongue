@@ -13,8 +13,8 @@ use crate::accessibility::ColorPalette;
 use crate::accessibility_panel::AccessibilityPanel;
 use crate::tool_integration::ToolManager;
 use petal_tongue_adapters::AdapterRegistry;
-use petal_tongue_graph::Visual2DRenderer;
 use petal_tongue_core::{GraphEngine, LayoutAlgorithm, Modality, PrimalHealthStatus};
+use petal_tongue_graph::Visual2DRenderer;
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer};
 use std::sync::{Arc, RwLock};
 
@@ -64,7 +64,11 @@ pub fn render_top_menu_bar(
         .selected_text(format!("{:?}", current_layout))
         .show_ui(ui, |ui| {
             if ui
-                .selectable_value(current_layout, LayoutAlgorithm::ForceDirected, "Force-Directed")
+                .selectable_value(
+                    current_layout,
+                    LayoutAlgorithm::ForceDirected,
+                    "Force-Directed",
+                )
                 .clicked()
             {
                 let mut g = graph.write().expect("graph lock poisoned");
@@ -72,7 +76,11 @@ pub fn render_top_menu_bar(
                 g.layout(100);
             }
             if ui
-                .selectable_value(current_layout, LayoutAlgorithm::Hierarchical, "Hierarchical")
+                .selectable_value(
+                    current_layout,
+                    LayoutAlgorithm::Hierarchical,
+                    "Hierarchical",
+                )
                 .clicked()
             {
                 let mut g = graph.write().expect("graph lock poisoned");
@@ -111,7 +119,7 @@ pub fn render_top_menu_bar(
     ui.checkbox(show_controls, "Controls");
     ui.checkbox(show_audio_panel, "Audio Info");
     ui.checkbox(show_capability_panel, "🔍 Capabilities");
-    
+
     refresh_clicked
 }
 
@@ -127,9 +135,7 @@ pub fn render_controls_panel(
     show_animation: &mut bool,
     visual_renderer: &mut Visual2DRenderer,
 ) -> bool {
-    ui.heading(
-        egui::RichText::new("⚙️ Controls").size(accessibility_panel.scale_font(18.0)),
-    );
+    ui.heading(egui::RichText::new("⚙️ Controls").size(accessibility_panel.scale_font(18.0)));
     ui.add_space(8.0);
     ui.separator();
     ui.add_space(8.0);
@@ -143,9 +149,7 @@ pub fn render_controls_panel(
     ui.add_space(12.0);
     ui.separator();
     ui.add_space(12.0);
-    ui.heading(
-        egui::RichText::new("🎨 Health Legend").size(accessibility_panel.scale_font(16.0)),
-    );
+    ui.heading(egui::RichText::new("🎨 Health Legend").size(accessibility_panel.scale_font(16.0)));
 
     // Use accessibility colors - respects color-blind modes!
     ui.horizontal(|ui| {
@@ -186,7 +190,10 @@ pub fn render_controls_panel(
     // Animation controls
     ui.heading(egui::RichText::new("✨ Animation").size(16.0));
     ui.add_space(4.0);
-    if ui.checkbox(show_animation, "Flow Particles & Pulses").changed() {
+    if ui
+        .checkbox(show_animation, "Flow Particles & Pulses")
+        .changed()
+    {
         // Update visual renderer animation state
         visual_renderer.set_animation_enabled(*show_animation);
     }
@@ -195,7 +202,7 @@ pub fn render_controls_panel(
             .size(11.0)
             .color(egui::Color32::GRAY),
     );
-    
+
     refresh_clicked
 }
 
@@ -220,7 +227,10 @@ pub fn render_audio_panel(
     if !audio_available {
         egui::Frame::none()
             .fill(egui::Color32::from_rgb(40, 50, 45))
-            .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(100, 200, 150)))
+            .stroke(egui::Stroke::new(
+                1.0,
+                egui::Color32::from_rgb(100, 200, 150),
+            ))
             .inner_margin(12.0)
             .show(ui, |ui| {
                 ui.label(
@@ -239,7 +249,11 @@ pub fn render_audio_panel(
                 }
                 ui.add_space(8.0);
 
-                ui.label(egui::RichText::new("✅ Audio System: Multi-Tier").size(13.0).strong());
+                ui.label(
+                    egui::RichText::new("✅ Audio System: Multi-Tier")
+                        .size(13.0)
+                        .strong(),
+                );
                 ui.add_space(4.0);
 
                 ui.horizontal(|ui| {
@@ -310,10 +324,12 @@ pub fn render_audio_panel(
                         .color(egui::Color32::from_rgb(200, 220, 210)),
                 );
                 ui.label(
-                    egui::RichText::new("For advanced features, connect Toadstool or add sound files")
-                        .size(10.0)
-                        .italics()
-                        .color(egui::Color32::GRAY),
+                    egui::RichText::new(
+                        "For advanced features, connect Toadstool or add sound files",
+                    )
+                    .size(10.0)
+                    .italics()
+                    .color(egui::Color32::GRAY),
                 );
             });
         ui.add_space(12.0);
@@ -390,11 +406,25 @@ pub fn render_audio_panel(
     // Instrument legend
     ui.heading(egui::RichText::new("🎹 Instrument Mapping").size(16.0));
     ui.add_space(4.0);
-    ui.label(egui::RichText::new("🐻 Security → Deep Bass").color(egui::Color32::from_rgb(100, 150, 255)));
-    ui.label(egui::RichText::new("🍄 Compute → Rhythmic Drums").color(egui::Color32::from_rgb(255, 200, 100)));
-    ui.label(egui::RichText::new("🐦 Discovery → Light Chimes").color(egui::Color32::from_rgb(150, 255, 150)));
-    ui.label(egui::RichText::new("🏠 Storage → Sustained Strings").color(egui::Color32::from_rgb(255, 150, 255)));
-    ui.label(egui::RichText::new("🐿️ AI → High Synth").color(egui::Color32::from_rgb(255, 100, 100)));
+    ui.label(
+        egui::RichText::new("🐻 Security → Deep Bass")
+            .color(egui::Color32::from_rgb(100, 150, 255)),
+    );
+    ui.label(
+        egui::RichText::new("🍄 Compute → Rhythmic Drums")
+            .color(egui::Color32::from_rgb(255, 200, 100)),
+    );
+    ui.label(
+        egui::RichText::new("🐦 Discovery → Light Chimes")
+            .color(egui::Color32::from_rgb(150, 255, 150)),
+    );
+    ui.label(
+        egui::RichText::new("🏠 Storage → Sustained Strings")
+            .color(egui::Color32::from_rgb(255, 150, 255)),
+    );
+    ui.label(
+        egui::RichText::new("🐿️ AI → High Synth").color(egui::Color32::from_rgb(255, 100, 100)),
+    );
 
     ui.add_space(12.0);
     ui.separator();
@@ -501,7 +531,10 @@ pub fn render_primal_details_panel(
 
             #[allow(deprecated)]
             if let Some(family_id) = &info.family_id {
-                props.insert("family_id".to_string(), PropertyValue::String(family_id.clone()));
+                props.insert(
+                    "family_id".to_string(),
+                    PropertyValue::String(family_id.clone()),
+                );
             }
 
             // Add capabilities as array
@@ -641,4 +674,3 @@ pub fn render_primal_details_panel(
         ui.label(egui::RichText::new("Node not found").color(egui::Color32::RED));
     }
 }
-

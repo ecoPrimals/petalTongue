@@ -123,8 +123,7 @@ fn test_json_export_to_file() {
 
     // Verify content is valid JSON
     let content = fs::read_to_string(&output_file).expect("Failed to read file");
-    let parsed: serde_json::Value =
-        serde_json::from_str(&content).expect("Invalid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&content).expect("Invalid JSON");
     assert!(parsed["topology"].is_object());
     assert!(parsed["topology"]["primals"].is_array());
 
@@ -203,7 +202,9 @@ fn test_png_without_output() {
         .arg("png")
         .assert()
         .failure()
-        .stderr(predicate::str::contains("PNG mode requires --output option"));
+        .stderr(predicate::str::contains(
+            "PNG mode requires --output option",
+        ));
 }
 
 #[test]
@@ -232,7 +233,7 @@ fn test_showcase_mode() {
 #[test]
 fn test_output_consistency() {
     let temp_dir = std::env::temp_dir();
-    
+
     // Generate same topology twice
     let file1 = temp_dir.join("consistency_test_1.json");
     let file2 = temp_dir.join("consistency_test_2.json");
@@ -331,4 +332,3 @@ fn test_concurrent_exports() {
         fs::remove_file(file).ok();
     }
 }
-
