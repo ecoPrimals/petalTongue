@@ -23,6 +23,7 @@ pub mod audio_pure_rust;
 pub mod bingocube_integration;
 pub mod data_source;
 pub mod display; // Pure Rust display system
+pub mod sensors; // Sensor implementations (bidirectional UUI)
 pub mod graph_metrics_plotter;
 pub mod human_entropy_window;
 pub mod keyboard_shortcuts;
@@ -47,6 +48,7 @@ pub mod trust_dashboard;
 
 pub use app::PetalTongueApp;
 pub use human_entropy_window::HumanEntropyWindow;
+pub use sensors::{discover_all_sensors, AudioSensor, KeyboardSensor, MouseSensor, ScreenSensor};
 pub use timeline_view::TimelineView;
 pub use traffic_view::TrafficView;
 
