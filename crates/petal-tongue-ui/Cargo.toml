@@ -37,6 +37,7 @@ chrono = { workspace = true }
 eframe = { workspace = true }
 egui = { workspace = true }
 egui_extras = { workspace = true }  # For table widgets in process viewer
+libc = "0.2"  # For framebuffer demo root check
 
 # External tool integrations
 sysinfo = "0.30"  # System monitoring tool
@@ -47,6 +48,24 @@ async-trait = "0.1"  # For DisplayBackend trait
 tiny-skia = "0.11"  # For egui → pixel rendering
 epaint = { version = "0.29", default-features = false }  # For egui tessellation
 png = "0.17"  # For pixel buffer conversion
+
+# Pure Rust Display Backends
+softbuffer = { version = "0.4", optional = true }
+pixels = { version = "0.13", optional = true }
+nix = { version = "0.28", optional = true, features = ["process"] } # For framebuffer
+dialoguer = { version = "0.11", optional = true } # For external display prompt
+
+# For Toadstool WASM integration
+wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+web-sys = { version = "0.3", optional = true, features = ["Window", "Document", "Element", "HtmlCanvasElement", "CanvasRenderingContext2d"] }
+
+[features]
+default = ["external-display"]
+external-display = [] # For eframe/egui native window
+software-rendering = ["softbuffer", "pixels"]
+framebuffer-direct = ["nix", "dialoguer"]
+toadstool-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys"]
 
 [[bin]]
 name = "petal-tongue"
@@ -67,6 +86,12 @@ path = "../../examples/pure_rust_gui_demo.rs"
 [[example]]
 name = "awakening_pure_rust"
 path = "../../examples/awakening_pure_rust.rs"
+required-features = ["software-rendering"]
+
+[[example]]
+name = "framebuffer_demo"
+path = "../../examples/framebuffer_demo.rs"
+required-features = ["framebuffer-direct"]
 
 # BingoCube demo moved to bingoCube/demos
 # [[bin]]
