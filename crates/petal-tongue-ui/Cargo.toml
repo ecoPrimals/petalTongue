@@ -60,6 +60,10 @@ path = "../../examples/display_demo.rs"
 name = "pixel_renderer_demo"
 path = "../../examples/pixel_renderer_demo.rs"
 
+[[example]]
+name = "pure_rust_gui_demo"
+path = "../../examples/pure_rust_gui_demo.rs"
+
 # BingoCube demo moved to bingoCube/demos
 # [[bin]]
 # name = "bingocube-demo"
