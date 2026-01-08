@@ -53,8 +53,8 @@ impl TutorialMode {
             .and_then(|v| v.parse::<bool>().ok())
             .unwrap_or(false);
 
-        let scenario_name = std::env::var("SANDBOX_SCENARIO")
-            .unwrap_or_else(|_| "simple".to_string());
+        let scenario_name =
+            std::env::var("SANDBOX_SCENARIO").unwrap_or_else(|_| "simple".to_string());
 
         if enabled {
             info!("🎭 TUTORIAL MODE ENABLED");
@@ -327,13 +327,10 @@ mod tests {
     #[test]
     fn test_minimal_example_structure() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        TutorialMode::create_fallback_scenario(
-            Arc::clone(&graph),
-            LayoutAlgorithm::ForceDirected,
-        );
+        TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
 
-        let graph = graph.read().unwrap();
-        
+        let graph = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+
         // Verify structure
         assert_eq!(graph.nodes().len(), 3, "Should have 3 tutorial primals");
         assert_eq!(graph.edges().len(), 2, "Should have 2 connections");
@@ -342,14 +339,11 @@ mod tests {
     #[test]
     fn test_minimal_example_node_ids() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        TutorialMode::create_fallback_scenario(
-            Arc::clone(&graph),
-            LayoutAlgorithm::ForceDirected,
-        );
+        TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
 
-        let graph = graph.read().unwrap();
+        let graph = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
         let nodes = graph.nodes();
-        
+
         // Verify tutorial nodes have correct IDs
         let ids: Vec<&str> = nodes.iter().map(|n| n.info.id.as_str()).collect();
         assert!(ids.contains(&"petaltongue-tutorial"));
@@ -360,13 +354,10 @@ mod tests {
     #[test]
     fn test_minimal_example_node_health() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        TutorialMode::create_fallback_scenario(
-            Arc::clone(&graph),
-            LayoutAlgorithm::ForceDirected,
-        );
+        TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
 
-        let graph = graph.read().unwrap();
-        
+        let graph = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+
         // All tutorial nodes should be healthy
         for node in graph.nodes() {
             assert_eq!(
@@ -381,40 +372,39 @@ mod tests {
     #[test]
     fn test_minimal_example_self_awareness() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        TutorialMode::create_fallback_scenario(
-            Arc::clone(&graph),
-            LayoutAlgorithm::ForceDirected,
-        );
+        TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
 
-        let graph = graph.read().unwrap();
-        
+        let graph = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+
         // Find petalTongue node (self-awareness)
         let petal_node = graph
             .nodes()
             .iter()
             .find(|n| n.info.id == "petaltongue-tutorial");
-        
+
         assert!(petal_node.is_some(), "Should include petalTongue itself");
-        
+
         let petal_node = petal_node.unwrap();
         assert_eq!(petal_node.info.primal_type, "Visualization");
-        assert!(petal_node.info.capabilities.contains(&"visual_2d".to_string()));
+        assert!(
+            petal_node
+                .info
+                .capabilities
+                .contains(&"visual_2d".to_string())
+        );
     }
 
     #[test]
     fn test_minimal_example_edges() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        TutorialMode::create_fallback_scenario(
-            Arc::clone(&graph),
-            LayoutAlgorithm::ForceDirected,
-        );
+        TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
 
-        let graph = graph.read().unwrap();
+        let graph = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
         let edges = graph.edges();
-        
+
         // Verify edge structure
         assert_eq!(edges.len(), 2);
-        
+
         // Should connect petalTongue → songbird → beardog
         let has_petal_to_songbird = edges
             .iter()
@@ -423,7 +413,7 @@ mod tests {
             has_petal_to_songbird,
             "Should have petalTongue → songbird edge"
         );
-        
+
         let has_songbird_to_beardog = edges
             .iter()
             .any(|e| e.from == "songbird-tutorial" && e.to == "beardog-tutorial");
@@ -437,7 +427,7 @@ mod tests {
     fn test_load_into_graph_with_layout() {
         let tutorial = TutorialMode::new();
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        
+
         // Test with different layouts
         for layout in &[
             LayoutAlgorithm::ForceDirected,
@@ -445,9 +435,13 @@ mod tests {
             LayoutAlgorithm::Circular,
         ] {
             tutorial.load_into_graph(Arc::clone(&graph), *layout);
-            
-            let graph_read = graph.read().unwrap();
-            assert!(!graph_read.nodes().is_empty(), "Should load nodes with {:?}", layout);
+
+            let graph_read = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+            assert!(
+                !graph_read.nodes().is_empty(),
+                "Should load nodes with {:?}",
+                layout
+            );
             drop(graph_read); // Release lock for next iteration
         }
     }
@@ -455,20 +449,17 @@ mod tests {
     #[test]
     fn test_tutorial_properties() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        TutorialMode::create_fallback_scenario(
-            Arc::clone(&graph),
-            LayoutAlgorithm::ForceDirected,
-        );
+        TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
 
-        let graph = graph.read().unwrap();
-        
+        let graph = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+
         // petalTongue node should have tutorial_note property
         let petal_node = graph
             .nodes()
             .iter()
             .find(|n| n.info.id == "petaltongue-tutorial")
             .unwrap();
-        
+
         assert!(
             petal_node.info.properties.contains_key("tutorial_note"),
             "Should have tutorial_note property"
@@ -478,23 +469,20 @@ mod tests {
     #[test]
     fn test_fallback_creates_valid_graph() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        TutorialMode::create_fallback_scenario(
-            Arc::clone(&graph),
-            LayoutAlgorithm::ForceDirected,
-        );
+        TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
 
-        let graph = graph.read().unwrap();
-        
+        let graph = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+
         // Verify graph is valid and usable
         assert!(!graph.nodes().is_empty());
         assert!(!graph.edges().is_empty());
-        
+
         // All nodes should have valid timestamps
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         for node in graph.nodes() {
             assert!(
                 node.info.last_seen <= now,
@@ -509,4 +497,3 @@ mod tests {
         }
     }
 }
-

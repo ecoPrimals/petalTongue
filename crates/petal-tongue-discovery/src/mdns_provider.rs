@@ -341,7 +341,17 @@ impl MdnsVisualizationProvider {
             }
         };
 
-        let port = service_port.unwrap_or(3000); // Default to 3000 if no SRV
+        // TRUE PRIMAL: No port assumption - skip if no port advertised
+        let port = match service_port {
+            Some(p) => p,
+            None => {
+                tracing::warn!(
+                    "mDNS service at {} has no SRV port record - skipping (no port assumptions)",
+                    ip
+                );
+                anyhow::bail!("No port advertised in mDNS service - refusing to assume default");
+            }
+        };
         let endpoint = format!("http://{}:{}", ip, port);
 
         // Extract capabilities from TXT records

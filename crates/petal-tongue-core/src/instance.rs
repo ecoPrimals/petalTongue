@@ -467,8 +467,8 @@ fn process_exists(pid: u32) -> bool {
         #[allow(clippy::cast_possible_wrap)]
         match kill(Pid::from_raw(pid as i32), None) {
             Ok(()) | Err(nix::errno::Errno::EPERM) => true, // Process exists (with or without permission)
-            Err(nix::errno::Errno::ESRCH) => false,          // No such process
-            Err(_) => false,                                  // Other error, assume dead
+            Err(nix::errno::Errno::ESRCH) => false,         // No such process
+            Err(_) => false,                                // Other error, assume dead
         }
     }
 
@@ -560,9 +560,12 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_millis(100));
         instance.heartbeat();
 
-        assert!(instance.last_heartbeat >= first_heartbeat, 
-            "Heartbeat should update timestamp (first: {}, current: {})", 
-            first_heartbeat, instance.last_heartbeat);
+        assert!(
+            instance.last_heartbeat >= first_heartbeat,
+            "Heartbeat should update timestamp (first: {}, current: {})",
+            first_heartbeat,
+            instance.last_heartbeat
+        );
     }
 
     #[test]

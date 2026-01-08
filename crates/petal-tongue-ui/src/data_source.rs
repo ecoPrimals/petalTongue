@@ -134,7 +134,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Verify graph was updated
-        let graph = graph.read().unwrap();
+        let graph = graph.read().expect("SAFETY: Lock poisoned - indicates panic in concurrent thread");
         let node_count = graph.nodes().len();
         assert!(node_count > 0, "Graph should have nodes after update");
     }
@@ -148,7 +148,7 @@ mod tests {
         let result = data_source.refresh_and_update(&graph).await;
         assert!(result.is_ok());
 
-        let graph = graph.read().unwrap();
+        let graph = graph.read().expect("SAFETY: Lock poisoned - indicates panic in concurrent thread");
         assert!(graph.nodes().len() > 0);
     }
 }

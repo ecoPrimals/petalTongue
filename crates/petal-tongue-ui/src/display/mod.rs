@@ -43,4 +43,3 @@ pub async fn init_display() -> Result<DisplayManager> {
     tracing::info!("🌸 Initializing Pure Rust display system...");
     DisplayManager::init().await
 }
-

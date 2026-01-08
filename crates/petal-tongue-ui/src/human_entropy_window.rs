@@ -7,7 +7,7 @@
 
 use eframe::egui;
 use petal_tongue_entropy::prelude::*;
-// use std::sync::{Arc, Mutex}; // TODO: Needed for future audio entropy capture state  
+// use std::sync::{Arc, Mutex}; // TODO: Needed for future audio entropy capture state
 // use petal_tongue_entropy::audio::AudioEntropyCapture; // TODO: When audio implementation ready
 use std::time::Instant;
 use tracing::{info, warn};

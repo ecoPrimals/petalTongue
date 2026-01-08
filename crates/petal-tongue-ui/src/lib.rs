@@ -23,18 +23,17 @@ pub mod audio_pure_rust;
 pub mod bingocube_integration;
 pub mod data_source;
 pub mod display; // Pure Rust display system
-pub mod sensors; // Sensor implementations (bidirectional UUI)
 pub mod graph_metrics_plotter;
 pub mod human_entropy_window;
 pub mod keyboard_shortcuts;
 pub mod live_data;
 pub mod multimodal_stream;
 pub mod process_viewer_integration;
+pub mod sensors; // Sensor implementations (bidirectional UUI)
 // DEPRECATED: Old hardcoded discovery (remove after migration)
 // pub mod rendering_discovery;
 
 // NEW: Universal infant discovery (zero hardcoded knowledge)
-pub mod universal_discovery; // NEW: Capability-based GPU rendering discovery via Songbird
 pub mod sandbox_mock;
 pub mod state;
 pub mod status_reporter;
@@ -45,10 +44,11 @@ pub mod toadstool_bridge;
 pub mod tool_integration;
 pub mod traffic_view;
 pub mod trust_dashboard;
+pub mod universal_discovery; // NEW: Capability-based GPU rendering discovery via Songbird
 
 pub use app::PetalTongueApp;
 pub use human_entropy_window::HumanEntropyWindow;
-pub use sensors::{discover_all_sensors, AudioSensor, KeyboardSensor, MouseSensor, ScreenSensor};
+pub use sensors::{AudioSensor, KeyboardSensor, MouseSensor, ScreenSensor, discover_all_sensors};
 pub use timeline_view::TimelineView;
 pub use traffic_view::TrafficView;
 

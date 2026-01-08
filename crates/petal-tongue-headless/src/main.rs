@@ -14,7 +14,7 @@
 use anyhow::Result;
 use petal_tongue_core::GraphEngine;
 use petal_tongue_ui_core::{
-    detect_best_ui_mode, ExportFormat, SvgUI, TerminalUI, TextUI, UIMode, UniversalUI, CanvasUI,
+    CanvasUI, ExportFormat, SvgUI, TerminalUI, TextUI, UIMode, UniversalUI, detect_best_ui_mode,
 };
 use std::path::Path;
 use std::sync::{Arc, RwLock};
@@ -199,7 +199,7 @@ fn main() -> Result<()> {
 
 /// Load graph data (tutorial mode or discovery)
 fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
-    use petal_tongue_core::{PrimalInfo, PrimalHealthStatus, TopologyEdge};
+    use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
 
     // For now, create a simple example topology
     tracing::info!("📚 Loading demonstration topology");
@@ -270,7 +270,11 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
 
     let node_count = g.nodes().len();
     let edge_count = g.edges().len();
-    tracing::info!("📊 Loaded: {} primals, {} connections", node_count, edge_count);
+    tracing::info!(
+        "📊 Loaded: {} primals, {} connections",
+        node_count,
+        edge_count
+    );
 
     Ok(())
 }
@@ -286,7 +290,7 @@ fn render_terminal(graph: Arc<RwLock<GraphEngine>>) -> Result<()> {
 /// Render SVG
 fn render_svg(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
     let ui = SvgUI::new(graph, args.width, args.height);
-    
+
     if let Some(ref output) = args.output {
         ui.export(Path::new(output), ExportFormat::Svg)?;
         tracing::info!("✅ Exported to {}", output);
@@ -294,14 +298,14 @@ fn render_svg(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
         let svg = ui.render_to_string()?;
         println!("{}", svg);
     }
-    
+
     Ok(())
 }
 
 /// Render JSON
 fn render_json(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
     let ui = TextUI::new(graph).with_format(ExportFormat::Json);
-    
+
     if let Some(ref output) = args.output {
         ui.export(Path::new(output), ExportFormat::Json)?;
         tracing::info!("✅ Exported to {}", output);
@@ -309,14 +313,14 @@ fn render_json(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
         let json = ui.render_to_string()?;
         println!("{}", json);
     }
-    
+
     Ok(())
 }
 
 /// Render DOT
 fn render_dot(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
     let ui = TextUI::new(graph).with_format(ExportFormat::Dot);
-    
+
     if let Some(ref output) = args.output {
         ui.export(Path::new(output), ExportFormat::Dot)?;
         tracing::info!("✅ Exported to {}", output);
@@ -324,14 +328,14 @@ fn render_dot(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
         let dot = ui.render_to_string()?;
         println!("{}", dot);
     }
-    
+
     Ok(())
 }
 
 /// Render PNG
 fn render_png(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
     let ui = CanvasUI::new(graph, args.width, args.height);
-    
+
     if let Some(ref output) = args.output {
         ui.export(Path::new(output), ExportFormat::Png)?;
         tracing::info!("✅ Exported to {}", output);
@@ -339,7 +343,6 @@ fn render_png(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
         eprintln!("Error: PNG mode requires --output option");
         std::process::exit(1);
     }
-    
+
     Ok(())
 }
-

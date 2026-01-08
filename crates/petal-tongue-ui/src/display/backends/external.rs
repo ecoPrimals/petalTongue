@@ -11,7 +11,7 @@
 //! - Highest performance (when available)
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use std::env;
 use tracing::{info, warn};
@@ -182,4 +182,3 @@ mod tests {
         assert!(!caps.remote_capable);
     }
 }
-
