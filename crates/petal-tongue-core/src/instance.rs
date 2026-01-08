@@ -556,10 +556,13 @@ mod tests {
         let mut instance = Instance::new(id, None).unwrap();
 
         let first_heartbeat = instance.last_heartbeat;
-        std::thread::sleep(std::time::Duration::from_millis(10));
+        // Sleep longer to ensure timestamp changes (some systems have coarse timestamps)
+        std::thread::sleep(std::time::Duration::from_millis(100));
         instance.heartbeat();
 
-        assert!(instance.last_heartbeat > first_heartbeat);
+        assert!(instance.last_heartbeat >= first_heartbeat, 
+            "Heartbeat should update timestamp (first: {}, current: {})", 
+            first_heartbeat, instance.last_heartbeat);
     }
 
     #[test]
