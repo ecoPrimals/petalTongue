@@ -113,7 +113,7 @@ impl AccessibilityPanel {
             ui.add(
                 egui::Slider::new(&mut self.settings.audio_volume, 0.0..=1.0)
                     .text("Volume")
-                    .clamp_to_range(true),
+                    .clamping(egui::SliderClamping::Always),
             );
         }
 

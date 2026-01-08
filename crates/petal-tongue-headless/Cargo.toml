@@ -1,0 +1,39 @@
+[package]
+name = "petal-tongue-headless"
+description = "Headless petalTongue - Pure Rust UI (zero GUI dependencies)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Core dependencies ONLY (zero GUI)
+petal-tongue-core = { path = "../petal-tongue-core" }
+petal-tongue-ui-core = { path = "../petal-tongue-ui-core" }
+petal-tongue-graph = { path = "../petal-tongue-graph" }
+petal-tongue-discovery = { path = "../petal-tongue-discovery" }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[[bin]]
+name = "petal-tongue-headless"
+path = "src/main.rs"
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.0"
+

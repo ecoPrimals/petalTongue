@@ -549,7 +549,7 @@ impl AudioSystem {
                         }
                         Err(e) => {
                             warn!("❌ Failed to play with {}: {}", alt_provider_name, e);
-                            continue;
+                            // Try next provider (continue is implicit at end of loop)
                         }
                     }
                 }
