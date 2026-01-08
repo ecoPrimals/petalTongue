@@ -365,13 +365,11 @@ mod tests {
     #[test]
     fn test_has_startup_music() {
         let startup = StartupAudio::new();
-        let has_music = startup.has_startup_music();
-        
-        // Should match path existence
-        assert_eq!(
-            has_music,
-            startup.startup_music_path().is_some(),
-            "has_startup_music should match path existence"
+        // With embedded music, has_startup_music() always returns true
+        // unless explicitly disabled via PETALTONGUE_DISABLE_EMBEDDED_MUSIC
+        assert!(
+            startup.has_startup_music(),
+            "has_startup_music should return true (embedded music available)"
         );
     }
 
