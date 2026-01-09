@@ -372,6 +372,8 @@ mod tests {
             capabilities: vec![],
             health: PrimalHealthStatus::Healthy,
             last_seen: 0,
+            endpoints: None,
+            metadata: None,
             properties: props,
             #[allow(deprecated)]
             trust_level: trust,
