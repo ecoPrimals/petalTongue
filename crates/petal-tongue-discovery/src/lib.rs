@@ -39,6 +39,7 @@ mod http_provider;
 mod mdns_provider;
 mod mock_provider;
 mod traits; // Phase 2: Caching layer (complete)
+pub mod unix_socket_provider; // Phase 2: Unix socket discovery
 
 // Modern async patterns (Discovery Evolution)
 pub mod concurrent;
