@@ -96,6 +96,8 @@ fn test_add_edge() {
         to: primal2.id.clone(),
         edge_type: "connection".to_string(),
         label: Some("test".to_string()),
+        capability: None,
+        metrics: None,
     };
 
     graph.add_edge(edge);
@@ -200,12 +202,16 @@ fn test_neighbors() {
         to: primal2.id.clone(),
         edge_type: "connection".to_string(),
         label: None,
+        capability: None,
+        metrics: None,
     });
     graph.add_edge(TopologyEdge {
         from: primal1.id.clone(),
         to: primal3.id.clone(),
         edge_type: "connection".to_string(),
         label: None,
+        capability: None,
+        metrics: None,
     });
 
     let neighbors = graph.neighbors(&primal1.id);
@@ -229,6 +235,8 @@ fn test_layout_algorithm_force_directed() {
         to: primal2.id.clone(),
         edge_type: "connection".to_string(),
         label: None,
+        capability: None,
+        metrics: None,
     });
 
     // Apply layout (modern API uses just iterations)
@@ -275,12 +283,16 @@ fn test_layout_algorithm_hierarchical() {
         to: primal2.id,
         edge_type: "parent".to_string(),
         label: None,
+        capability: None,
+        metrics: None,
     });
     graph.add_edge(TopologyEdge {
         from: primal1.id.clone(),
         to: primal3.id,
         edge_type: "parent".to_string(),
         label: None,
+        capability: None,
+        metrics: None,
     });
 
     // Apply layout

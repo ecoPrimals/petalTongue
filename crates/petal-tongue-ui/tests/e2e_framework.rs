@@ -184,6 +184,8 @@ impl E2ETestRunner {
                 to: "test1".to_string(),
                 edge_type: "self".to_string(),
                 label: None,
+                capability: None,
+                metrics: None,
             });
             steps_completed += 1;
 
@@ -330,6 +332,8 @@ impl E2ETestRunner {
                 to: "node2".to_string(),
                 edge_type: "test".to_string(),
                 label: Some("test edge".to_string()),
+                capability: None,
+                metrics: None,
             });
             if graph.edges().len() != 1 {
                 return Err("Edge not added".into());
