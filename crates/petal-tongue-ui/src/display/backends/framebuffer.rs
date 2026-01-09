@@ -85,7 +85,8 @@ impl FramebufferDisplay {
     /// Falls back to configured dimensions if ioctl fails.
     fn get_framebuffer_info(&self) -> Result<(u32, u32)> {
         // Try to get actual dimensions from framebuffer device
-        if let Some(fb_path) = &self.device_path {
+        if self.fb_device.is_some() {
+            let fb_path = "/dev/fb0";
             // Future: Use nix or libc crate for proper ioctl calls
             // Example:
             // use nix::ioctl_read;
