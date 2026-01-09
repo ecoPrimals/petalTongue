@@ -17,6 +17,7 @@ use crate::bingocube_integration::BingoCubeIntegration;
 use crate::graph_metrics_plotter::GraphMetricsPlotter;
 use crate::keyboard_shortcuts::KeyboardShortcuts;
 use crate::process_viewer_integration::ProcessViewerTool;
+use crate::proprioception::{ProprioceptionSystem, initialize_standard_proprioception}; // v1.1.0: SAME DAVE integration
 use crate::status_reporter::StatusReporter;
 use crate::system_dashboard::SystemDashboard;
 use crate::system_monitor_integration::SystemMonitorTool;
@@ -133,6 +134,9 @@ pub struct PetalTongueApp {
     frame_count: u64,
     /// Last display verification time (Phase 4)
     last_display_verification: Instant,
+    // ===== v1.1.0: SAME DAVE Proprioception System =====
+    /// Complete self-awareness system (output + input + bidirectional feedback)
+    proprioception: ProprioceptionSystem,
 }
 
 impl PetalTongueApp {
@@ -388,6 +392,8 @@ impl PetalTongueApp {
             sensor_registry,
             frame_count: 0,
             last_display_verification: Instant::now(),
+            // v1.1.0: SAME DAVE Proprioception
+            proprioception: initialize_standard_proprioception(),
         };
 
         // Check if awakening experience is enabled
@@ -593,6 +599,8 @@ impl eframe::App for PetalTongueApp {
                     if let Ok(mut awareness) = self.rendering_awareness.write() {
                         awareness.sensory_feedback(&event);
                     }
+                    // v1.1.0: SAME DAVE proprioception - pointer input received
+                    self.proprioception.input_received(&crate::input_verification::InputModality::Pointer);
                 }
             }
 
@@ -606,6 +614,8 @@ impl eframe::App for PetalTongueApp {
                 if let Ok(mut awareness) = self.rendering_awareness.write() {
                     awareness.sensory_feedback(&event);
                 }
+                // v1.1.0: SAME DAVE proprioception - pointer movement
+                self.proprioception.input_received(&crate::input_verification::InputModality::Pointer);
             }
 
             // Any key press = bidirectional confirmation
@@ -619,6 +629,8 @@ impl eframe::App for PetalTongueApp {
                     if let Ok(mut awareness) = self.rendering_awareness.write() {
                         awareness.sensory_feedback(&event);
                     }
+                    // v1.1.0: SAME DAVE proprioception - keyboard input received
+                    self.proprioception.input_received(&crate::input_verification::InputModality::Keyboard);
                 }
             }
         });
@@ -657,6 +669,17 @@ impl eframe::App for PetalTongueApp {
                     verification.status_message
                 );
             }
+            
+            // v1.1.0: SAME DAVE proprioception - periodic self-assessment
+            let state = self.proprioception.assess();
+            tracing::debug!(
+                "🧠 Proprioception: Health={:.0}% Confidence={:.0}% Motor={} Sensory={} Loop={}",
+                state.health * 100.0,
+                state.confidence * 100.0,
+                state.motor_functional,
+                state.sensory_functional,
+                state.loop_complete
+            );
         }
 
         // Update awakening overlay (if active)
@@ -893,6 +916,16 @@ impl eframe::App for PetalTongueApp {
                         font_scale,
                         &self.rendering_awareness,
                         &self.sensor_registry,
+                    );
+                    
+                    ui.add_space(8.0);
+                    
+                    // v1.1.0: SAME DAVE Proprioception (complete self-awareness)
+                    crate::system_dashboard::SystemDashboard::render_proprioception_status(
+                        ui,
+                        &palette,
+                        font_scale,
+                        &mut self.proprioception,
                     );
                 });
         }
