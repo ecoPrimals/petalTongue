@@ -111,17 +111,47 @@ fn main() -> anyhow::Result<()> {
 
 /// Run with traditional eframe
 fn run_with_eframe() -> Result<(), eframe::Error> {
+    // v1.2.0: Conditional diagnostic logging (set PETALTONGUE_DIAG=1 to enable)
+    let diagnostic_enabled = std::env::var("PETALTONGUE_DIAG").is_ok();
+    
+    if diagnostic_enabled {
+        tracing::info!("🎬 DIAGNOSTIC: Entered run_with_eframe()");
+        tracing::info!("🔍 DIAGNOSTIC: DISPLAY={:?}", std::env::var("DISPLAY"));
+        tracing::info!("🔍 DIAGNOSTIC: WAYLAND_DISPLAY={:?}", std::env::var("WAYLAND_DISPLAY"));
+    }
+    
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1400.0, 900.0])
             .with_min_inner_size([800.0, 600.0])
-            .with_title("🌸 petalTongue - Universal Representation System"),
+            .with_title("🌸 petalTongue - Universal Representation System")
+            .with_visible(true), // FIX: Explicitly show window (critical for headless+remote setups!)
         ..Default::default()
     };
 
-    eframe::run_native(
+    if diagnostic_enabled {
+        tracing::info!("🎬 DIAGNOSTIC: About to call eframe::run_native");
+        tracing::info!("🎬 DIAGNOSTIC: This will block until window closes");
+    }
+    
+    let result = eframe::run_native(
         "petalTongue",
         options,
-        Box::new(|cc| Ok(Box::new(PetalTongueApp::new(cc)))),
-    )
+        Box::new(move |cc| {
+            if diagnostic_enabled {
+                tracing::info!("🎨 DIAGNOSTIC: Inside app creation callback");
+                tracing::info!("🎨 DIAGNOSTIC: Creating PetalTongueApp...");
+            }
+            let app = PetalTongueApp::new(cc);
+            if diagnostic_enabled {
+                tracing::info!("🎨 DIAGNOSTIC: PetalTongueApp created successfully");
+            }
+            Ok(Box::new(app))
+        }),
+    );
+    
+    if diagnostic_enabled {
+        tracing::info!("🎬 DIAGNOSTIC: eframe::run_native returned: {:?}", result);
+    }
+    result
 }
