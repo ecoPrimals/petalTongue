@@ -7,6 +7,50 @@ use serde::{Deserialize, Serialize};
 const PROP_TRUST_LEVEL: &str = "trust_level";
 const PROP_FAMILY_ID: &str = "family_id";
 
+/// Endpoints for different protocols (biomeOS format)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PrimalEndpoints {
+    /// Unix socket path (e.g., "/tmp/beardog-node-alpha.sock")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unix_socket: Option<String>,
+    
+    /// HTTP endpoint (e.g., "http://localhost:8080")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub http: Option<String>,
+}
+
+/// Metadata about a primal (biomeOS format)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PrimalMetadata {
+    /// Primal version (e.g., "v0.15.2")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    
+    /// Family ID (genetic lineage)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub family_id: Option<String>,
+    
+    /// Node ID within the family
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub node_id: Option<String>,
+}
+
+/// Connection metrics (biomeOS format)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConnectionMetrics {
+    /// Total request count
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub request_count: Option<u64>,
+    
+    /// Average latency in milliseconds
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub avg_latency_ms: Option<f64>,
+    
+    /// Error count
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error_count: Option<u64>,
+}
+
 /// Information about a discovered primal
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrimalInfo {
@@ -15,8 +59,9 @@ pub struct PrimalInfo {
     /// Human-readable name
     pub name: String,
     /// Type of primal (e.g., "Compute", "Storage", "Security")
+    #[serde(alias = "type")]  // biomeOS uses "type" field
     pub primal_type: String,
-    /// Network endpoint (e.g., <http://localhost:8080>)
+    /// Network endpoint (e.g., <http://localhost:8080>, unix:///tmp/primal.sock)
     pub endpoint: String,
     /// List of capabilities this primal provides
     pub capabilities: Vec<String>,
@@ -24,6 +69,15 @@ pub struct PrimalInfo {
     pub health: PrimalHealthStatus,
     /// Last time this primal was seen (Unix timestamp)
     pub last_seen: u64,
+    
+    /// Endpoints for different protocols (biomeOS format)
+    /// Supports both HTTP and Unix socket endpoints
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub endpoints: Option<PrimalEndpoints>,
+    
+    /// Metadata from primal (version, node_id, etc.)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<PrimalMetadata>,
 
     // === UNIVERSAL PROPERTIES (ecosystem-agnostic) ===
     /// Generic properties for ecosystem-specific data
@@ -81,6 +135,8 @@ impl PrimalInfo {
             capabilities,
             health,
             last_seen,
+            endpoints: None,
+            metadata: None,
             properties: Properties::new(),
             #[allow(deprecated)]
             trust_level: None,
@@ -93,6 +149,8 @@ impl PrimalInfo {
     ///
     /// This method ensures that `trust_level` and `family_id` from the deprecated fields
     /// are copied into the properties field for adapter-based rendering.
+    ///
+    /// Also migrates biomeOS metadata fields to properties.
     ///
     /// Call this after deserializing from JSON to ensure backward compatibility.
     #[allow(deprecated)]
@@ -119,6 +177,31 @@ impl PrimalInfo {
                 PROP_FAMILY_ID.to_string(),
                 PropertyValue::String(family.clone()),
             );
+        }
+        
+        // Migrate biomeOS metadata to properties
+        if let Some(ref metadata) = self.metadata {
+            if let Some(ref version) = metadata.version {
+                self.properties.insert("version".to_string(), PropertyValue::String(version.clone()));
+            }
+            if let Some(ref family) = metadata.family_id {
+                self.properties.insert(PROP_FAMILY_ID.to_string(), PropertyValue::String(family.clone()));
+            }
+            if let Some(ref node_id) = metadata.node_id {
+                self.properties.insert("node_id".to_string(), PropertyValue::String(node_id.clone()));
+            }
+        }
+        
+        // Set endpoint from endpoints if available and primary endpoint is empty
+        if let Some(ref endpoints) = self.endpoints {
+            if self.endpoint.is_empty() || self.endpoint == "unknown" {
+                // Prefer Unix socket for local primals
+                if let Some(ref unix_socket) = endpoints.unix_socket {
+                    self.endpoint = format!("unix://{}", unix_socket);
+                } else if let Some(ref http) = endpoints.http {
+                    self.endpoint = http.clone();
+                }
+            }
         }
     }
 
@@ -237,10 +320,24 @@ pub struct TopologyEdge {
     pub from: String,
     /// Target primal ID
     pub to: String,
-    /// Type of relationship (e.g., `api_call`, `capability`)
+    /// Type of relationship (e.g., `api_call`, `capability`, `capability_invocation`)
+    #[serde(default = "default_edge_type", alias = "type")]
     pub edge_type: String,
     /// Optional label
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
+    
+    /// Specific capability being invoked (biomeOS format)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub capability: Option<String>,
+    
+    /// Connection metrics (biomeOS format)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metrics: Option<ConnectionMetrics>,
+}
+
+fn default_edge_type() -> String {
+    "connection".to_string()
 }
 
 /// Real-time flow event showing message between primals
