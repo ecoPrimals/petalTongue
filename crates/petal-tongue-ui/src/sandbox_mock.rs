@@ -156,6 +156,8 @@ pub fn get_default_scenario() -> SandboxScenario {
                 capabilities: vec!["visual".to_string(), "audio".to_string()],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: chrono::Utc::now().timestamp() as u64,
+                endpoints: None,
+                metadata: None,
                 properties: Properties::new(),
                 #[allow(deprecated)]
                 trust_level: None,
@@ -170,6 +172,8 @@ pub fn get_default_scenario() -> SandboxScenario {
                 capabilities: vec!["authentication".to_string(), "encryption".to_string()],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: chrono::Utc::now().timestamp() as u64,
+                endpoints: None,
+                metadata: None,
                 properties: Properties::new(),
                 #[allow(deprecated)]
                 trust_level: None,
@@ -184,6 +188,8 @@ pub fn get_default_scenario() -> SandboxScenario {
                 capabilities: vec!["discovery".to_string(), "coordination".to_string()],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: chrono::Utc::now().timestamp() as u64,
+                endpoints: None,
+                metadata: None,
                 properties: Properties::new(),
                 #[allow(deprecated)]
                 trust_level: None,
