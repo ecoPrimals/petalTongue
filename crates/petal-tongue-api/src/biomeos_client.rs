@@ -240,6 +240,8 @@ impl BiomeOSClient {
                 ],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: now,
+                endpoints: None,
+                metadata: None,
                 properties: Properties::new(), // Generic properties
                 #[allow(deprecated)]
                 trust_level: None,
@@ -257,6 +259,8 @@ impl BiomeOSClient {
                 ],
                 health: PrimalHealthStatus::Warning,
                 last_seen: now,
+                endpoints: None,
+                metadata: None,
                 properties: Properties::new(),
                 #[allow(deprecated)]
                 trust_level: None,
@@ -274,6 +278,8 @@ impl BiomeOSClient {
                 ],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: now,
+                endpoints: None,
+                metadata: None,
                 properties: Properties::new(),
                 #[allow(deprecated)]
                 trust_level: None,
@@ -292,6 +298,8 @@ impl BiomeOSClient {
                 ],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: now,
+                endpoints: None,
+                metadata: None,
                 properties: Properties::new(),
                 #[allow(deprecated)]
                 trust_level: None,
@@ -306,6 +314,8 @@ impl BiomeOSClient {
                 capabilities: vec!["intent_parsing".to_string(), "task_planning".to_string()],
                 health: PrimalHealthStatus::Critical,
                 last_seen: now,
+                endpoints: None,
+                metadata: None,
                 properties: Properties::new(),
                 #[allow(deprecated)]
                 trust_level: None,
@@ -368,6 +378,8 @@ impl From<DiscoveredPrimal> for PrimalInfo {
                 _ => PrimalHealthStatus::Unknown,
             },
             last_seen: primal.last_seen,
+            endpoints: None,
+            metadata: None,
             properties: Properties::new(), // Start with empty properties
             #[allow(deprecated)]
             trust_level: None,
