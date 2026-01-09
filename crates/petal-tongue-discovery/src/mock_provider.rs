@@ -113,6 +113,8 @@ impl VisualizationDataProvider for MockVisualizationProvider {
                 to: "mock-toadstool-1".to_string(),
                 edge_type: "orchestrates".to_string(),
                 label: None,
+                capability: None,
+                metrics: None,
             },
         ])
     }
