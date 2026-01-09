@@ -131,6 +131,8 @@ pub struct PetalTongueApp {
     sensor_registry: Arc<RwLock<SensorRegistry>>,
     /// Frame counter for tracking motor commands
     frame_count: u64,
+    /// Last display verification time (Phase 4)
+    last_display_verification: Instant,
 }
 
 impl PetalTongueApp {
@@ -385,6 +387,7 @@ impl PetalTongueApp {
             rendering_awareness,
             sensor_registry,
             frame_count: 0,
+            last_display_verification: Instant::now(),
         };
 
         // Check if awakening experience is enabled
@@ -619,6 +622,42 @@ impl eframe::App for PetalTongueApp {
                 }
             }
         });
+
+        // === PHASE 4: DISPLAY VISIBILITY VERIFICATION ===
+        // Periodically verify that the display substrate is actually visible
+        let now = Instant::now();
+        if now.duration_since(self.last_display_verification) > Duration::from_secs(5) {
+            self.last_display_verification = now;
+            
+            // Get last interaction time from rendering awareness
+            let last_interaction_secs = if let Ok(awareness) = self.rendering_awareness.read() {
+                awareness.time_since_last_interaction().as_secs_f32()
+            } else {
+                999.0 // Unknown
+            };
+            
+            // Run display verification
+            let verification = crate::display_verification::continuous_verification(
+                "petalTongue",
+                last_interaction_secs
+            );
+            
+            // Log the verification result
+            tracing::debug!(
+                "🔍 Display verification: {} (visible: {}, wm_responsive: {})",
+                verification.status_message,
+                verification.window_visible,
+                verification.wm_responsive
+            );
+            
+            // If we detect an issue, log it prominently
+            if !verification.window_visible && verification.display_server_available {
+                tracing::warn!(
+                    "⚠️  Display substrate verification: Window may not be visible! Status: {}",
+                    verification.status_message
+                );
+            }
+        }
 
         // Update awakening overlay (if active)
         if self.awakening_overlay.is_active() {
