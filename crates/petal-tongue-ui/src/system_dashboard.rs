@@ -224,6 +224,90 @@ impl SystemDashboard {
         request_live_updates(ui.ctx());
     }
 
+    /// Render SAME DAVE proprioception status (v1.1.0)
+    pub fn render_proprioception_status(
+        ui: &mut Ui,
+        palette: &ColorPalette,
+        font_scale: f32,
+        proprioception: &mut crate::proprioception::ProprioceptionSystem,
+    ) {
+        use crate::proprioception::ProprioceptiveState;
+        
+        ui.group(|ui| {
+            ui.set_width(ui.available_width());
+
+            ui.label(
+                egui::RichText::new("🧠 SAME DAVE Proprioception")
+                    .size(14.0 * font_scale)
+                    .strong()
+                    .color(palette.text),
+            );
+
+            ui.add_space(5.0);
+
+            // Get current state
+            let state: ProprioceptiveState = proprioception.assess();
+            
+            // Health percentage with color coding
+            let health_pct = state.health * 100.0;
+            let health_color = if health_pct > 80.0 {
+                egui::Color32::from_rgb(0, 200, 83) // Green
+            } else if health_pct > 50.0 {
+                palette.warning // Yellow
+            } else {
+                palette.error // Red
+            };
+            
+            ui.add(
+                egui::ProgressBar::new(state.health)
+                    .text(format!("Health: {:.0}%", health_pct))
+                    .fill(health_color),
+            );
+            
+            // Confidence percentage
+            let conf_pct = state.confidence * 100.0;
+            ui.add(
+                egui::ProgressBar::new(state.confidence)
+                    .text(format!("Confidence: {:.0}%", conf_pct))
+                    .fill(if conf_pct > 70.0 {
+                        egui::Color32::from_rgb(100, 149, 237) // Cornflower blue
+                    } else {
+                        palette.text_dim
+                    }),
+            );
+            
+            ui.add_space(3.0);
+            
+            // System status
+            let motor_icon = if state.motor_functional { "✅" } else { "❌" };
+            let sensory_icon = if state.sensory_functional { "✅" } else { "❌" };
+            let loop_icon = if state.loop_complete { "✅" } else { "⏳" };
+            
+            ui.label(
+                egui::RichText::new(format!("{} Motor | {} Sensory | {} Loop", 
+                    motor_icon, sensory_icon, loop_icon))
+                    .size(10.0 * font_scale)
+                    .color(palette.text_dim),
+            );
+            
+            // Get diagnostic summary
+            let output_status = proprioception.get_output_status();
+            let input_status = proprioception.get_input_status();
+            
+            ui.label(
+                egui::RichText::new(format!("📤 {}", output_status))
+                    .size(9.0 * font_scale)
+                    .color(palette.text_dim),
+            );
+            
+            ui.label(
+                egui::RichText::new(format!("📥 {}", input_status))
+                    .size(9.0 * font_scale)
+                    .color(palette.text_dim),
+            );
+        });
+    }
+
     /// Render bidirectional sensory status (central nervous system)
     pub fn render_sensory_status(
         ui: &mut Ui,
