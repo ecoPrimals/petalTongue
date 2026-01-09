@@ -120,8 +120,9 @@ impl GraphEngine {
 
     /// Add a node to the graph
     pub fn add_node(&mut self, info: PrimalInfo) {
-        let node_id = info.id.clone();
         let node = Node::new(info);
+        // OPTIMIZATION: Clone ID after moving info into node, not before
+        let node_id = node.info.id.clone();
 
         self.node_index.insert(node_id, self.nodes.len());
         self.nodes.push(node);
@@ -379,40 +380,59 @@ fn force_directed_layout(nodes: &mut [Node], edges: &[TopologyEdge], iterations:
 }
 
 /// Hierarchical layout (simple tree-like layout)
+///
+/// OPTIMIZATION: Uses node indices instead of cloning IDs repeatedly
 fn hierarchical_layout(nodes: &mut [Node], edges: &[TopologyEdge]) {
-    // Find root nodes (nodes with no incoming edges)
-    let mut incoming_counts: HashMap<String, usize> = HashMap::new();
-    for edge in edges {
-        *incoming_counts.entry(edge.to.clone()).or_insert(0) += 1;
+    if nodes.is_empty() {
+        return;
     }
 
-    let roots: Vec<String> = nodes
+    // Build ID -> index mapping
+    let id_to_index: HashMap<&str, usize> = nodes
         .iter()
-        .filter(|node| !incoming_counts.contains_key(&node.info.id))
-        .map(|node| node.info.id.clone())
+        .enumerate()
+        .map(|(idx, node)| (node.info.id.as_str(), idx))
         .collect();
 
-    // Assign levels using BFS
-    let mut levels: HashMap<String, usize> = HashMap::new();
-    let mut queue = roots.clone();
-    for root in &roots {
-        levels.insert(root.clone(), 0);
+    // Find root nodes (nodes with no incoming edges)
+    let mut incoming_counts: HashMap<usize, usize> = HashMap::new();
+    for edge in edges {
+        if let Some(&to_idx) = id_to_index.get(edge.to.as_str()) {
+            *incoming_counts.entry(to_idx).or_insert(0) += 1;
+        }
     }
 
-    while let Some(current) = queue.pop() {
-        let current_level = levels[&current];
+    let root_indices: Vec<usize> = (0..nodes.len())
+        .filter(|&idx| !incoming_counts.contains_key(&idx))
+        .collect();
+
+    // Assign levels using BFS (using indices, not IDs)
+    let mut levels: HashMap<usize, usize> = HashMap::new();
+    let mut queue = root_indices.clone();
+    for &root_idx in &root_indices {
+        levels.insert(root_idx, 0);
+    }
+
+    while let Some(current_idx) = queue.pop() {
+        let current_level = levels[&current_idx];
+        let current_id = &nodes[current_idx].info.id;
+        
         for edge in edges {
-            if edge.from == current && !levels.contains_key(&edge.to) {
-                levels.insert(edge.to.clone(), current_level + 1);
-                queue.push(edge.to.clone());
+            if edge.from.as_str() == current_id.as_str() {
+                if let Some(&to_idx) = id_to_index.get(edge.to.as_str()) {
+                    if !levels.contains_key(&to_idx) {
+                        levels.insert(to_idx, current_level + 1);
+                        queue.push(to_idx);
+                    }
+                }
             }
         }
     }
 
     // Position nodes by level
     let mut level_counts: HashMap<usize, usize> = HashMap::new();
-    for node in nodes.iter_mut() {
-        let level = levels.get(&node.info.id).copied().unwrap_or(0);
+    for (idx, node) in nodes.iter_mut().enumerate() {
+        let level = levels.get(&idx).copied().unwrap_or(0);
         let count = level_counts.entry(level).or_insert(0);
 
         #[allow(clippy::cast_precision_loss)]

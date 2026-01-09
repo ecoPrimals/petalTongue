@@ -3,6 +3,10 @@
 use crate::property::Properties;
 use serde::{Deserialize, Serialize};
 
+// OPTIMIZATION: Common property keys as static constants to avoid allocations
+const PROP_TRUST_LEVEL: &str = "trust_level";
+const PROP_FAMILY_ID: &str = "family_id";
+
 /// Information about a discovered primal
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrimalInfo {
@@ -96,21 +100,23 @@ impl PrimalInfo {
         use crate::property::PropertyValue;
 
         // Migrate trust_level if present and not already in properties
+        // OPTIMIZATION: Use static string constant
         if let Some(trust) = self.trust_level
-            && !self.properties.contains_key("trust_level")
+            && !self.properties.contains_key(PROP_TRUST_LEVEL)
         {
             self.properties.insert(
-                "trust_level".to_string(),
+                PROP_TRUST_LEVEL.to_string(),
                 PropertyValue::Number(f64::from(trust)),
             );
         }
 
         // Migrate family_id if present and not already in properties
+        // OPTIMIZATION: Use static string constant
         if let Some(ref family) = self.family_id
-            && !self.properties.contains_key("family_id")
+            && !self.properties.contains_key(PROP_FAMILY_ID)
         {
             self.properties.insert(
-                "family_id".to_string(),
+                PROP_FAMILY_ID.to_string(),
                 PropertyValue::String(family.clone()),
             );
         }
@@ -120,8 +126,9 @@ impl PrimalInfo {
     ///
     /// DEPRECATED: Populate the `properties` field directly instead:
     /// ```ignore
-    /// info.properties.insert("trust_level".to_string(), PropertyValue::Number(2.0));
-    /// info.properties.insert("family_id".to_string(), PropertyValue::String("family-abc".to_string()));
+    /// use petal_tongue_core::property::PropertyValue;
+    /// info.properties.insert(PROP_TRUST_LEVEL.to_string(), PropertyValue::Number(2.0));
+    /// info.properties.insert(PROP_FAMILY_ID.to_string(), PropertyValue::String("family-abc".to_string()));
     /// ```
     #[deprecated(note = "Use properties field directly instead")]
     #[must_use]
@@ -133,13 +140,14 @@ impl PrimalInfo {
         self.family_id.clone_from(&family_id);
 
         // Also populate properties for forward compatibility
+        // OPTIMIZATION: Use static string constants
         self.properties.insert(
-            "trust_level".to_string(),
+            PROP_TRUST_LEVEL.to_string(),
             PropertyValue::Number(f64::from(trust_level)),
         );
         if let Some(fid) = family_id {
             self.properties
-                .insert("family_id".to_string(), PropertyValue::String(fid));
+                .insert(PROP_FAMILY_ID.to_string(), PropertyValue::String(fid));
         }
 
         self
