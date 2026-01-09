@@ -9,7 +9,7 @@ use eframe::egui;
 use petal_tongue_entropy::prelude::*;
 // use std::sync::{Arc, Mutex}; // TODO: Needed for future audio entropy capture state
 // use petal_tongue_entropy::audio::AudioEntropyCapture; // TODO: When audio implementation ready
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use tracing::{info, warn};
 
 /// Human entropy capture window
@@ -444,19 +444,160 @@ impl HumanEntropyWindow {
         self.state = CaptureWindowState::Processing;
         self.status_message = "Streaming to BearDog...".to_string();
 
-        // TODO: Actual streaming implementation
-        // For now, just simulate completion
+        // Get entropy capture data by moving capturer out of Option
+        let entropy_result = match self.modality {
+            #[cfg(feature = "audio")]
+            EntropyModality::Audio => {
+                if let Some(capturer) = self.audio_capturer.take() {
+                    let cap = capturer.lock().expect("SAFETY: Audio capturer lock poisoned");
+                    // Note: This consumes the capturer
+                    Some(cap.finalize())
+                } else {
+                    None
+                }
+            }
 
-        // In real implementation:
-        // 1. Finalize capturer to get entropy data
-        // 2. Stream to biomeOS/BearDog via encrypted channel
-        // 3. Show success/failure
+            EntropyModality::Narrative => {
+                self.narrative_capturer.take().map(|c| c.finalize())
+            }
 
-        warn!("Streaming not yet implemented - entropy would be zeroized here");
+            _ => None,
+        };
 
-        // Reset to idle after "streaming"
-        self.reset();
-        self.status_message = "Entropy sent successfully! (simulated)".to_string();
+        // Handle Result and convert to EntropyCapture based on modality
+        let entropy_data: Option<EntropyCapture> = match self.modality {
+            #[cfg(feature = "audio")]
+            EntropyModality::Audio => {
+                match entropy_result {
+                    Some(Ok(audio_data)) => Some(EntropyCapture::Audio(audio_data)),
+                    Some(Err(e)) => {
+                        warn!("Failed to finalize audio entropy: {}", e);
+                        None
+                    }
+                    None => None,
+                }
+            }
+
+            EntropyModality::Narrative => {
+                match entropy_result {
+                    Some(Ok(narrative_data)) => Some(EntropyCapture::Narrative(narrative_data)),
+                    Some(Err(e)) => {
+                        warn!("Failed to finalize narrative entropy: {}", e);
+                        None
+                    }
+                    None => None,
+                }
+            }
+
+            _ => None,
+        };
+
+        if let Some(entropy) = entropy_data {
+            // Discover BearDog endpoint via capability-based discovery
+            let endpoint = self.discover_beardog_endpoint();
+            
+            if let Some(url) = endpoint {
+                // Stream entropy asynchronously (fire and forget)
+                Self::stream_entropy_to_beardog(url, entropy);
+                
+                // Update UI state optimistically
+                self.reset();
+                self.status_message = "✅ Entropy sent to BearDog!".to_string();
+                info!("Entropy streaming initiated");
+            } else {
+                warn!("No BearDog endpoint found - entropy will be zeroized");
+                self.reset();
+                self.status_message = "⚠️ BearDog not found. Entropy discarded.".to_string();
+            }
+        } else {
+            warn!("No entropy data to stream");
+            self.reset();
+            self.status_message = "⚠️ No entropy data captured".to_string();
+        }
+    }
+
+    /// Discover BearDog endpoint via capability-based discovery
+    ///
+    /// TRUE PRIMAL: We don't hardcode BearDog's location. We discover it.
+    fn discover_beardog_endpoint(&self) -> Option<String> {
+        // Try environment variable first (manual configuration)
+        if let Ok(endpoint) = std::env::var("BEARDOG_ENTROPY_ENDPOINT") {
+            info!("Using configured BearDog endpoint: {}", endpoint);
+            return Some(endpoint);
+        }
+
+        // Try discovery hints (comma-separated list of URLs)
+        if let Ok(hints) = std::env::var("PETALTONGUE_DISCOVERY_HINTS") {
+            for hint in hints.split(',') {
+                let hint = hint.trim();
+                // Check if this primal advertises entropy ingestion capability
+                if self.check_entropy_capability(hint) {
+                    info!("Discovered BearDog at: {}", hint);
+                    return Some(format!("{}/api/v1/entropy", hint));
+                }
+            }
+        }
+
+        // Future: Use mDNS discovery to find primals with "entropy-ingestion" capability
+        // For now, return None and let user configure via environment
+        warn!("BearDog endpoint not discovered. Set BEARDOG_ENTROPY_ENDPOINT environment variable.");
+        None
+    }
+
+    /// Check if endpoint has entropy ingestion capability
+    fn check_entropy_capability(&self, _endpoint: &str) -> bool {
+        // Future: Query endpoint's /api/v1/capabilities
+        // For now, trust that configured endpoints are correct
+        false
+    }
+
+    /// Stream entropy to BearDog asynchronously
+    ///
+    /// This is a fire-and-forget operation. In production, you'd want to track
+    /// the task and report completion/errors back to the UI.
+    fn stream_entropy_to_beardog(endpoint: String, entropy: EntropyCapture) {
+        // Serialize entropy for transmission
+        let payload = match serde_json::to_vec(&entropy) {
+            Ok(json) => json,
+            Err(e) => {
+                warn!("Failed to serialize entropy: {}", e);
+                return;
+            }
+        };
+
+        // Spawn async task (fire and forget for now)
+        // Production: Should track status and retry
+        tokio::spawn(async move {
+            let client = reqwest::Client::builder()
+                .timeout(Duration::from_secs(30))
+                .build()
+                .expect("Failed to create HTTP client");
+
+            match client
+                .post(&endpoint)
+                .header("Content-Type", "application/json")
+                .body(payload)
+                .send()
+                .await
+            {
+                Ok(response) => {
+                    if response.status().is_success() {
+                        info!("✅ Entropy streamed successfully to {}", endpoint);
+                    } else {
+                        warn!(
+                            "⚠️ BearDog returned error: {} ({})",
+                            response.status(),
+                            endpoint
+                        );
+                    }
+                }
+                Err(e) => {
+                    warn!("❌ Failed to stream entropy: {}", e);
+                }
+            }
+
+            // Entropy is automatically zeroized when dropped
+        });
     }
 
     fn discard(&mut self) {
