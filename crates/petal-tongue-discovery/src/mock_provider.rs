@@ -120,8 +120,6 @@ impl VisualizationDataProvider for MockVisualizationProvider {
                 from: "mock-songbird-1".to_string(),
                 to: "mock-toadstool-1".to_string(),
                 edge_type: "orchestrates".to_string(),
-                capability: None,
-                metrics: None,
                 label: None,
                 capability: None,
                 metrics: None,
