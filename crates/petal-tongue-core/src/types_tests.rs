@@ -54,6 +54,8 @@ mod tests {
             primal_type: "compute".to_string(),
             endpoint: "http://test:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
+            endpoints: None,
+            metadata: None,
             trust_level: None,
             family_id: None,
             capabilities: vec!["cap1".to_string(), "cap2".to_string()],
@@ -83,6 +85,8 @@ mod tests {
             family_id: None,
             capabilities: vec!["cap1".to_string()],
             last_seen: 1_234_567_890,
+            endpoints: None,
+            metadata: None,
             properties: Default::default(),
         };
 
@@ -100,6 +104,8 @@ mod tests {
             to: "primal-b".to_string(),
             edge_type: "capability".to_string(),
             label: Some("test-label".to_string()),
+            capability: None,
+            metrics: None,
         };
 
         assert_eq!(edge.from, "primal-a");
@@ -115,6 +121,8 @@ mod tests {
             to: "primal-b".to_string(),
             edge_type: "capability".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         };
 
         assert_eq!(edge.from, "primal-a");
@@ -135,6 +143,8 @@ mod tests {
             family_id: None,
             capabilities: vec![],
             last_seen: 1_234_567_890,
+            endpoints: None,
+            metadata: None,
             properties: Default::default(),
         };
 
@@ -148,6 +158,8 @@ mod tests {
             family_id: None,
             capabilities: vec![],
             last_seen: 1_234_567_890,
+            endpoints: None,
+            metadata: None,
             properties: Default::default(),
         };
 
@@ -156,6 +168,8 @@ mod tests {
             to: "primal-2".to_string(),
             edge_type: "api_call".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         };
 
         let graph = TopologyGraph {
@@ -245,6 +259,8 @@ mod tests {
             family_id: None,
             capabilities: vec!["cap1".to_string()],
             last_seen: 1_234_567_890,
+            endpoints: None,
+            metadata: None,
             properties: Default::default(),
         };
 
@@ -264,6 +280,8 @@ mod tests {
             to: "primal-b".to_string(),
             edge_type: "capability".to_string(),
             label: Some("test".to_string()),
+            capability: None,
+            metrics: None,
         };
 
         let json = serde_json::to_string(&edge).expect("Failed to serialize");

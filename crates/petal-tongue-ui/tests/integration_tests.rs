@@ -77,6 +77,8 @@ fn test_graph_with_edges() {
         to: "primal-b".to_string(),
         edge_type: "capability".to_string(),
         label: Some("test-edge".to_string()),
+        capability: None,
+        metrics: None,
     };
 
     {
@@ -280,6 +282,8 @@ fn test_edge_with_label() {
             to: "target".to_string(),
             edge_type: "data_transfer".to_string(),
             label: Some("12.5ms latency".to_string()),
+            capability: None,
+            metrics: None,
         });
     }
 
@@ -364,6 +368,8 @@ fn test_graph_stats() {
             to: "primal-1".to_string(),
             edge_type: "capability".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
 
         g.add_edge(TopologyEdge {
@@ -371,6 +377,8 @@ fn test_graph_stats() {
             to: "primal-2".to_string(),
             edge_type: "capability".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
 
         g.add_edge(TopologyEdge {
@@ -378,6 +386,8 @@ fn test_graph_stats() {
             to: "primal-0".to_string(),
             edge_type: "capability".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
     }
 
@@ -419,6 +429,8 @@ fn test_remove_node_removes_edges() {
             to: "primal-1".to_string(),
             edge_type: "capability".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
 
         g.add_edge(TopologyEdge {
@@ -426,6 +438,8 @@ fn test_remove_node_removes_edges() {
             to: "primal-2".to_string(),
             edge_type: "capability".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
     }
 

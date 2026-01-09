@@ -701,6 +701,8 @@ mod tests {
             to: "node2".to_string(),
             edge_type: "test".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
 
         graph.set_layout(LayoutAlgorithm::Circular);
@@ -958,6 +960,8 @@ mod tests {
                 to: format!("node{}", i + 1),
                 edge_type: "test".to_string(),
                 label: None,
+                capability: None,
+                metrics: None,
             });
         }
 
@@ -1067,18 +1071,24 @@ mod tests {
             to: "node2".to_string(),
             edge_type: "connection".to_string(),
             label: Some("Edge 1-2".to_string()),
+            capability: None,
+            metrics: None,
         });
         graph.add_edge(TopologyEdge {
             from: "node2".to_string(),
             to: "node3".to_string(),
             edge_type: "connection".to_string(),
             label: Some("Edge 2-3".to_string()),
+            capability: None,
+            metrics: None,
         });
         graph.add_edge(TopologyEdge {
             from: "node1".to_string(),
             to: "node3".to_string(),
             edge_type: "connection".to_string(),
             label: Some("Edge 1-3".to_string()),
+            capability: None,
+            metrics: None,
         });
 
         let graph_arc = Arc::new(RwLock::new(graph));

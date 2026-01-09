@@ -129,6 +129,8 @@ mod tests {
             primal_type: "TestType".to_string(),
             endpoint: "http://test:8000".to_string(),
             health: PrimalHealthStatus::Healthy,
+            endpoints: None,
+            metadata: None,
             trust_level: None,
             family_id: None,
             capabilities,
