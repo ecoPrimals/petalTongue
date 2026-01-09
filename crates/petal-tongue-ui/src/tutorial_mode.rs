@@ -185,6 +185,8 @@ impl TutorialMode {
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_secs(),
+            endpoints: None,
+            metadata: None,
             properties: {
                 let mut props = Properties::new();
                 props.insert(
@@ -218,6 +220,8 @@ impl TutorialMode {
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_secs(),
+            endpoints: None,
+            metadata: None,
             properties: Properties::new(),
             #[allow(deprecated)]
             trust_level: None,
@@ -240,6 +244,8 @@ impl TutorialMode {
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_secs(),
+            endpoints: None,
+            metadata: None,
             properties: Properties::new(),
             #[allow(deprecated)]
             trust_level: None,
