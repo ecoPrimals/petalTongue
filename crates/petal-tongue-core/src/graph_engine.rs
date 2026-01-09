@@ -520,6 +520,8 @@ mod tests {
             to: "2".to_string(),
             edge_type: "test".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
 
         assert_eq!(graph.edges().len(), 1);
@@ -536,6 +538,8 @@ mod tests {
             to: "2".to_string(),
             edge_type: "test".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
 
         assert!(graph.remove_node("1"));
@@ -556,12 +560,16 @@ mod tests {
             to: "2".to_string(),
             edge_type: "test".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
         graph.add_edge(TopologyEdge {
             from: "1".to_string(),
             to: "3".to_string(),
             edge_type: "test".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
 
         let neighbors = graph.neighbors("1");
@@ -580,12 +588,16 @@ mod tests {
             to: "2".to_string(),
             edge_type: "test".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
         graph.add_edge(TopologyEdge {
             from: "2".to_string(),
             to: "3".to_string(),
             edge_type: "test".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
 
         graph.set_layout(LayoutAlgorithm::ForceDirected);
@@ -644,12 +656,16 @@ mod tests {
             to: "2".to_string(),
             edge_type: "test".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
         graph.add_edge(TopologyEdge {
             from: "2".to_string(),
             to: "3".to_string(),
             edge_type: "test".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
 
         let stats = graph.stats();
