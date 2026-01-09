@@ -30,9 +30,13 @@
 //! ```
 
 pub mod client;
+pub mod json_rpc;
 pub mod protocol;
 pub mod server;
+pub mod unix_socket_server;
 
 pub use client::{IpcClient, IpcClientError};
+pub use json_rpc::{JsonRpcError, JsonRpcRequest, JsonRpcResponse};
 pub use protocol::{InstanceStatus, IpcCommand, IpcResponse};
 pub use server::{IpcServer, IpcServerError};
+pub use unix_socket_server::UnixSocketServer;
