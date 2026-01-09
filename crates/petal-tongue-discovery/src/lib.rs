@@ -159,24 +159,22 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
         }
     }
 
-    // NO FALLBACK TO MOCK - Fail properly if no providers found
+    // Bidirectional UUI + TRUE PRIMAL fix:
+    // Return empty vec instead of error - let GUI handle graceful degradation
+    // The GUI itself tests if it can render (bidirectional sensory verification)
     if providers.is_empty() {
-        anyhow::bail!(
-            "No visualization data providers found!\n\
+        tracing::warn!(
+            "⚠️  No visualization data providers found!\n\
             \n\
-            Please configure at least one provider:\n\
+            Configured options:\n\
+            1. Automatic mDNS: PETALTONGUE_ENABLE_MDNS=true (default)\n\
+            2. Manual config: BIOMEOS_URL=http://localhost:3000\n\
+            3. Development: PETALTONGUE_MOCK_MODE=true\n\
             \n\
-            Option 1: Automatic mDNS discovery (zero-config)\n\
-            - Ensure biomeOS API is running with mDNS enabled\n\
-            - Set PETALTONGUE_ENABLE_MDNS=true (default)\n\
-            \n\
-            Option 2: Manual configuration\n\
-            - Set BIOMEOS_URL=http://localhost:3000\n\
-            - Or set PETALTONGUE_DISCOVERY_HINTS=http://provider1:8080,http://provider2:9000\n\
-            \n\
-            Option 3: Testing/Development only\n\
-            - Set PETALTONGUE_MOCK_MODE=true (NOT for production!)"
+            💡 GUI will start with tutorial mode as graceful fallback"
         );
+        // Return empty vec - GUI will handle this with tutorial mode
+        return Ok(vec![]);
     }
 
     tracing::info!(

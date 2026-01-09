@@ -28,8 +28,9 @@ use petal_tongue_adapters::{
 use petal_tongue_animation::AnimationEngine;
 use petal_tongue_api::BiomeOSClient;
 use petal_tongue_core::{
-    CapabilityDetector, GraphEngine, InstanceId, LayoutAlgorithm, Modality, PrimalHealthStatus,
-    PrimalInfo, Properties, SessionManager, TopologyEdge,
+    CapabilityDetector, GraphEngine, InstanceId, LayoutAlgorithm, Modality, MotorCommand,
+    PrimalHealthStatus, PrimalInfo, Properties, RenderingAwareness, SensorEvent, SensorRegistry,
+    SessionManager, TopologyEdge,
 };
 use petal_tongue_discovery::{VisualizationDataProvider, discover_visualization_providers};
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer, Visual2DRenderer};
@@ -122,6 +123,14 @@ pub struct PetalTongueApp {
     #[allow(dead_code)] // TODO: Use for multi-instance coordination
     instance_id: Option<InstanceId>,
     // ===== End Phase 2 =====
+
+    // ===== Central Nervous System - Bidirectional Sensory Coordination =====
+    /// Rendering awareness - motor + sensory feedback loop
+    rendering_awareness: Arc<RwLock<RenderingAwareness>>,
+    /// Sensor registry - discovered input peripherals
+    sensor_registry: Arc<RwLock<SensorRegistry>>,
+    /// Frame counter for tracking motor commands
+    frame_count: u64,
 }
 
 impl PetalTongueApp {
@@ -311,6 +320,28 @@ impl PetalTongueApp {
         // Check if we need fallback BEFORE consuming data_providers
         let needs_fallback = !tutorial_mode.is_enabled() && data_providers.is_empty();
 
+        // Initialize central nervous system components
+        let rendering_awareness = Arc::new(RwLock::new(RenderingAwareness::new()));
+        let sensor_registry = Arc::new(RwLock::new(SensorRegistry::new()));
+        tracing::info!("🧠 Central nervous system initialized");
+
+        // Discover available sensors at runtime (no hardcoded assumptions!)
+        let sensor_registry_clone = Arc::clone(&sensor_registry);
+        runtime.block_on(async {
+            if let Err(e) = crate::sensor_discovery::discover_all_sensors(sensor_registry_clone).await {
+                tracing::error!("Sensor discovery failed: {}", e);
+            }
+        });
+
+        // Verify essential sensors are available
+        if !crate::sensor_discovery::verify_essential_sensors(&sensor_registry) {
+            tracing::warn!("⚠️  Running with limited sensor capabilities");
+        }
+
+        // Note: Sensory event loop will be activated when sensors support async polling
+        // Currently, sensors are polled via egui input events (which works perfectly!)
+        tracing::info!("🔄 Sensory feedback via egui input events (bidirectional loop active)");
+
         let mut app = Self {
             capabilities,
             graph,
@@ -349,6 +380,11 @@ impl PetalTongueApp {
             // Phase 2: Session management (optional, graceful degradation)
             session_manager: None, // TODO: Initialize from main.rs
             instance_id: None,     // TODO: Initialize from main.rs
+
+            // Central Nervous System
+            rendering_awareness,
+            sensor_registry,
+            frame_count: 0,
         };
 
         // Check if awakening experience is enabled
@@ -530,6 +566,60 @@ impl PetalTongueApp {
 impl eframe::App for PetalTongueApp {
     #[allow(clippy::too_many_lines, clippy::struct_excessive_bools)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // === CENTRAL NERVOUS SYSTEM - Motor Command ===
+        // Record that we're rendering a frame (motor output)
+        self.frame_count += 1;
+        if let Ok(mut awareness) = self.rendering_awareness.write() {
+            awareness.motor_command(MotorCommand::RenderFrame {
+                frame_id: self.frame_count,
+            });
+        }
+
+        // === CENTRAL NERVOUS SYSTEM - Sensory Feedback ===
+        // Process user interactions as sensory confirmation
+        ctx.input(|i| {
+            // Mouse clicks = confirmation that user can see and interact
+            if i.pointer.any_click() {
+                if let Some(pos) = i.pointer.interact_pos() {
+                    let event = SensorEvent::Click {
+                        x: pos.x,
+                        y: pos.y,
+                        button: petal_tongue_core::MouseButton::Left,
+                        timestamp: Instant::now(),
+                    };
+                    if let Ok(mut awareness) = self.rendering_awareness.write() {
+                        awareness.sensory_feedback(&event);
+                    }
+                }
+            }
+
+            // Mouse movement = user can see display
+            if let Some(pos) = i.pointer.hover_pos() {
+                let event = SensorEvent::Position {
+                    x: pos.x,
+                    y: pos.y,
+                    timestamp: Instant::now(),
+                };
+                if let Ok(mut awareness) = self.rendering_awareness.write() {
+                    awareness.sensory_feedback(&event);
+                }
+            }
+
+            // Any key press = bidirectional confirmation
+            for key_event in &i.events {
+                if let egui::Event::Key { .. } = key_event {
+                    let event = SensorEvent::KeyPress {
+                        key: petal_tongue_core::Key::Unknown,
+                        modifiers: petal_tongue_core::Modifiers::none(),
+                        timestamp: Instant::now(),
+                    };
+                    if let Ok(mut awareness) = self.rendering_awareness.write() {
+                        awareness.sensory_feedback(&event);
+                    }
+                }
+            }
+        });
+
         // Update awakening overlay (if active)
         if self.awakening_overlay.is_active() {
             let delta_time = ctx.input(|i| i.stable_dt);
@@ -746,12 +836,24 @@ impl eframe::App for PetalTongueApp {
                 )
                 .show(ctx, |ui| {
                     let font_scale = self.accessibility_panel.settings.font_size.multiplier();
-                    // Pass audio_system for multimodal data sonification
+                    
+                    // System metrics
                     self.system_dashboard.render_compact(
                         ui,
                         &palette,
                         font_scale,
                         Some(&self.audio_system),
+                    );
+
+                    ui.add_space(8.0);
+
+                    // Bidirectional sensory status (central nervous system)
+                    crate::system_dashboard::SystemDashboard::render_sensory_status(
+                        ui,
+                        &palette,
+                        font_scale,
+                        &self.rendering_awareness,
+                        &self.sensor_registry,
                     );
                 });
         }
