@@ -57,6 +57,8 @@ impl VisualizationDataProvider for MockVisualizationProvider {
                 ],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: now,
+                endpoints: None,
+                metadata: None,
                 properties: beardog_props,
                 #[allow(deprecated)]
                 trust_level: Some(3), // Keep for backward compatibility
@@ -74,6 +76,8 @@ impl VisualizationDataProvider for MockVisualizationProvider {
                 ],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: now,
+                endpoints: None,
+                metadata: None,
                 properties: songbird_props,
                 #[allow(deprecated)]
                 trust_level: Some(2),
@@ -91,6 +95,8 @@ impl VisualizationDataProvider for MockVisualizationProvider {
                 ],
                 health: PrimalHealthStatus::Warning,
                 last_seen: now,
+                endpoints: None,
+                metadata: None,
                 properties: toadstool_props,
                 #[allow(deprecated)]
                 trust_level: Some(1),
