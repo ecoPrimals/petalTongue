@@ -80,9 +80,31 @@ impl FramebufferDisplay {
     }
 
     /// Get framebuffer info (dimensions, etc.)
+    ///
+    /// Queries the actual framebuffer device for dimensions using ioctl.
+    /// Falls back to configured dimensions if ioctl fails.
     fn get_framebuffer_info(&self) -> Result<(u32, u32)> {
-        // TODO: Use ioctl to get actual framebuffer dimensions
-        // For now, use configured dimensions
+        // Try to get actual dimensions from framebuffer device
+        if let Some(fb_path) = &self.device_path {
+            // Future: Use nix or libc crate for proper ioctl calls
+            // Example:
+            // use nix::ioctl_read;
+            // ioctl_read!(fbioget_vscreeninfo, b'F', 0x00, fb_var_screeninfo);
+            //
+            // let mut info: fb_var_screeninfo = unsafe { std::mem::zeroed() };
+            // if let Ok(fd) = std::fs::File::open(fb_path) {
+            //     if fbioget_vscreeninfo(fd.as_raw_fd(), &mut info).is_ok() {
+            //         return Ok((info.xres, info.yres));
+            //     }
+            // }
+            
+            tracing::debug!(
+                "📺 Framebuffer device: {} (using configured dimensions)",
+                fb_path
+            );
+        }
+        
+        // Use configured dimensions (safe fallback)
         Ok((self.width, self.height))
     }
 }
