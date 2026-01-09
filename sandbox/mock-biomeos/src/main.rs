@@ -1,239 +1,218 @@
-//! Mock BiomeOS Server
+//! Mock biomeOS Topology Server
 //!
-//! Simple HTTP server that serves JSON scenarios for petalTongue development.
-//! Supports hot-reload when scenario files change.
+//! Serves biomeOS-formatted topology data for testing petalTongue integration
 
 use axum::{
-    extract::State,
-    http::{header, StatusCode},
-    response::{IntoResponse, Json, Response},
+    extract::Path as AxumPath,
+    http::StatusCode,
+    response::Json,
     routing::get,
     Router,
 };
-use notify::{Watcher, RecursiveMode, Event};
 use serde::{Deserialize, Serialize};
-use std::{
-    net::SocketAddr,
-    path::PathBuf,
-    sync::{Arc, RwLock},
-};
+use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
 
-/// Mock BiomeOS server state
-#[derive(Clone)]
-struct AppState {
-    /// Current scenario data
-    scenario: Arc<RwLock<ScenarioData>>,
-    /// Path to scenarios directory
-    scenarios_dir: PathBuf,
-}
-
-/// Scenario data structure
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-struct ScenarioData {
-    name: String,
-    description: String,
-    primals: Vec<PrimalInfo>,
-    topology: Vec<TopologyEdge>,
-}
-
-/// Primal information
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct PrimalInfo {
+struct PrimalEndpoints {
+    unix_socket: Option<String>,
+    http: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct PrimalMetadata {
+    version: Option<String>,
+    family_id: Option<String>,
+    node_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Primal {
     id: String,
     name: String,
+    #[serde(rename = "type")]
     primal_type: String,
-    endpoint: String,
     capabilities: Vec<String>,
     health: String,
-    last_seen: u64,
+    endpoints: PrimalEndpoints,
+    metadata: Option<PrimalMetadata>,
 }
 
-/// Topology edge
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct TopologyEdge {
+struct ConnectionMetrics {
+    request_count: Option<u64>,
+    avg_latency_ms: Option<f64>,
+    error_count: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Connection {
     from: String,
     to: String,
-    edge_type: String,
-    label: Option<String>,
+    #[serde(rename = "type")]
+    connection_type: String,
+    capability: Option<String>,
+    metrics: Option<ConnectionMetrics>,
 }
 
-/// API response wrapper
-#[derive(Debug, Clone, Serialize)]
-struct DiscoveryResponse {
-    primals: Vec<PrimalInfo>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct TopologyResponse {
+    primals: Vec<Primal>,
+    connections: Vec<Connection>,
+    health_status: HealthStatus,
 }
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    // Initialize tracing
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "mock_biomeos=info,tower_http=debug".into()),
-        )
-        .init();
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct HealthStatus {
+    overall: String,
+    primals_healthy: usize,
+    primals_total: usize,
+}
 
-    tracing::info!("🧪 Starting Mock BiomeOS Server");
+/// Get mock topology data
+async fn get_topology() -> Json<TopologyResponse> {
+    let primals = vec![
+        Primal {
+            id: "beardog-node-alpha".to_string(),
+            name: "BearDog Alpha".to_string(),
+            primal_type: "beardog".to_string(),
+            capabilities: vec![
+                "security".to_string(),
+                "encryption".to_string(),
+                "identity".to_string(),
+            ],
+            health: "healthy".to_string(),
+            endpoints: PrimalEndpoints {
+                unix_socket: Some("/tmp/beardog-node-alpha.sock".to_string()),
+                http: None,
+            },
+            metadata: Some(PrimalMetadata {
+                version: Some("v0.15.2".to_string()),
+                family_id: Some("nat0".to_string()),
+                node_id: Some("node-alpha".to_string()),
+            }),
+        },
+        Primal {
+            id: "songbird-node-alpha".to_string(),
+            name: "Songbird Alpha".to_string(),
+            primal_type: "songbird".to_string(),
+            capabilities: vec!["discovery".to_string(), "p2p".to_string(), "btsp".to_string()],
+            health: "healthy".to_string(),
+            endpoints: PrimalEndpoints {
+                unix_socket: Some("/tmp/songbird-node-alpha.sock".to_string()),
+                http: None,
+            },
+            metadata: Some(PrimalMetadata {
+                version: Some("v3.19.0".to_string()),
+                family_id: Some("nat0".to_string()),
+                node_id: Some("node-alpha".to_string()),
+            }),
+        },
+        Primal {
+            id: "petaltongue-node-alpha".to_string(),
+            name: "PetalTongue Alpha".to_string(),
+            primal_type: "petaltongue".to_string(),
+            capabilities: vec![
+                "ui.desktop-interface".to_string(),
+                "visualization.graph-rendering".to_string(),
+                "ui.multi-modal".to_string(),
+            ],
+            health: "healthy".to_string(),
+            endpoints: PrimalEndpoints {
+                unix_socket: Some("/tmp/petaltongue-node-alpha.sock".to_string()),
+                http: Some("http://localhost:8080".to_string()),
+            },
+            metadata: Some(PrimalMetadata {
+                version: Some("v0.4.0".to_string()),
+                family_id: Some("nat0".to_string()),
+                node_id: Some("node-alpha".to_string()),
+            }),
+        },
+    ];
 
-    // Determine scenarios directory
-    let scenarios_dir = std::env::current_dir()?
-        .join("../scenarios");
-    
-    tracing::info!("Scenarios directory: {:?}", scenarios_dir);
+    let connections = vec![Connection {
+        from: "songbird-node-alpha".to_string(),
+        to: "beardog-node-alpha".to_string(),
+        connection_type: "capability_invocation".to_string(),
+        capability: Some("encryption".to_string()),
+        metrics: Some(ConnectionMetrics {
+            request_count: Some(42),
+            avg_latency_ms: Some(2.3),
+            error_count: Some(0),
+        }),
+    }];
 
-    // Load initial scenario (try simple.json first)
-    let initial_scenario = load_scenario(&scenarios_dir.join("simple.json"))
-        .or_else(|_| load_scenario(&scenarios_dir.join("unhealthy.json")))
-        .unwrap_or_default();
-
-    tracing::info!("Loaded scenario: {}", initial_scenario.name);
-    tracing::info!("  Primals: {}", initial_scenario.primals.len());
-    tracing::info!("  Edges: {}", initial_scenario.topology.len());
-
-    // Create shared state
-    let state = AppState {
-        scenario: Arc::new(RwLock::new(initial_scenario)),
-        scenarios_dir: scenarios_dir.clone(),
+    let health_status = HealthStatus {
+        overall: "healthy".to_string(),
+        primals_healthy: 3,
+        primals_total: 3,
     };
 
-    // Set up file watcher for hot reload
-    let state_clone = state.clone();
-    tokio::spawn(async move {
-        if let Err(e) = watch_scenarios(state_clone).await {
-            tracing::error!("File watcher error: {}", e);
-        }
-    });
-
-    // Build router
-    let app = Router::new()
-        .route("/", get(root))
-        .route("/api/v1/primals", get(get_primals))
-        .route("/api/v1/topology", get(get_topology))
-        .route("/api/v1/health", get(get_health))
-        .layer(CorsLayer::permissive())
-        .with_state(state);
-
-    // Start server
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3333));
-    tracing::info!("🚀 Mock BiomeOS listening on http://{}", addr);
-    tracing::info!("");
-    tracing::info!("Endpoints:");
-    tracing::info!("  GET /api/v1/primals   - Discover primals");
-    tracing::info!("  GET /api/v1/topology  - Get topology edges");
-    tracing::info!("  GET /api/v1/health    - Ecosystem health");
-    tracing::info!("");
-    tracing::info!("Test with:");
-    tracing::info!("  curl http://localhost:3333/api/v1/primals");
-    tracing::info!("");
-    tracing::info!("Or run petalTongue:");
-    tracing::info!("  BIOMEOS_URL=http://localhost:3333 cargo run --release -p petal-tongue-ui");
-    tracing::info!("");
-
-    let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
-
-    Ok(())
-}
-
-/// Root endpoint - welcome message
-async fn root() -> impl IntoResponse {
-    Json(serde_json::json!({
-        "service": "Mock BiomeOS",
-        "version": "0.1.0",
-        "description": "Mock BiomeOS server for petalTongue development",
-        "endpoints": {
-            "primals": "/api/v1/primals",
-            "topology": "/api/v1/topology",
-            "health": "/api/v1/health"
-        }
-    }))
-}
-
-/// GET /api/v1/primals - Return discovered primals
-async fn get_primals(State(state): State<AppState>) -> impl IntoResponse {
-    let scenario = state.scenario.read().unwrap();
-    
-    tracing::info!("GET /api/v1/primals - Returning {} primals", scenario.primals.len());
-    
-    Json(DiscoveryResponse {
-        primals: scenario.primals.clone(),
+    Json(TopologyResponse {
+        primals,
+        connections,
+        health_status,
     })
 }
 
-/// GET /api/v1/topology - Return topology edges
-async fn get_topology(State(state): State<AppState>) -> impl IntoResponse {
-    let scenario = state.scenario.read().unwrap();
-    
-    tracing::info!("GET /api/v1/topology - Returning {} edges", scenario.topology.len());
-    
-    Json(scenario.topology.clone())
-}
-
-/// GET /api/v1/health - Return ecosystem health
-async fn get_health(State(state): State<AppState>) -> impl IntoResponse {
-    let scenario = state.scenario.read().unwrap();
-    
-    let healthy = scenario.primals.iter().filter(|p| p.health == "healthy").count();
-    let warning = scenario.primals.iter().filter(|p| p.health == "warning").count();
-    let critical = scenario.primals.iter().filter(|p| p.health == "critical").count();
-    
-    tracing::info!("GET /api/v1/health - {} primals ({} healthy, {} warning, {} critical)", 
-        scenario.primals.len(), healthy, warning, critical);
-    
+/// Get health status
+async fn get_health() -> Json<serde_json::Value> {
     Json(serde_json::json!({
-        "status": if critical > 0 { "critical" } else if warning > 0 { "warning" } else { "healthy" },
-        "primal_count": scenario.primals.len(),
-        "healthy": healthy,
-        "warning": warning,
-        "critical": critical,
-        "timestamp": chrono::Utc::now().timestamp(),
+        "status": "healthy",
+        "version": "mock-biomeos-v0.1.0",
+        "uptime_seconds": 12345
     }))
 }
 
-/// Load scenario from JSON file
-fn load_scenario(path: &PathBuf) -> anyhow::Result<ScenarioData> {
-    let content = std::fs::read_to_string(path)?;
-    let scenario: ScenarioData = serde_json::from_str(&content)?;
-    Ok(scenario)
+/// Get capabilities
+async fn get_capabilities() -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "capabilities": [
+            "topology.query",
+            "primal.discovery",
+            "unix-socket.json-rpc"
+        ],
+        "version": "mock-biomeos-v0.1.0"
+    }))
 }
 
-/// Watch scenario files for changes and reload
-async fn watch_scenarios(state: AppState) -> anyhow::Result<()> {
-    let (tx, mut rx) = tokio::sync::mpsc::channel(100);
+/// Get specific primal info
+async fn get_primal(AxumPath(primal_id): AxumPath<String>) -> Result<Json<Primal>, StatusCode> {
+    let topology = get_topology().await.0;
     
-    let mut watcher = notify::recommended_watcher(move |res: Result<Event, notify::Error>| {
-        if let Ok(event) = res {
-            let _ = tx.blocking_send(event);
-        }
-    })?;
-    
-    watcher.watch(&state.scenarios_dir, RecursiveMode::NonRecursive)?;
-    
-    tracing::info!("👁️  Watching for scenario changes...");
-    
-    while let Some(event) = rx.recv().await {
-        if let notify::EventKind::Modify(_) = event.kind {
-            if let Some(path) = event.paths.first() {
-                if path.extension().and_then(|s| s.to_str()) == Some("json") {
-                    tracing::info!("🔄 Scenario file changed: {:?}", path.file_name());
-                    
-                    match load_scenario(path) {
-                        Ok(scenario) => {
-                            *state.scenario.write().unwrap() = scenario.clone();
-                            tracing::info!("✅ Reloaded scenario: {}", scenario.name);
-                            tracing::info!("   Primals: {}, Edges: {}", 
-                                scenario.primals.len(), scenario.topology.len());
-                        }
-                        Err(e) => {
-                            tracing::error!("❌ Failed to reload scenario: {}", e);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    Ok(())
+    topology
+        .primals
+        .into_iter()
+        .find(|p| p.id == primal_id)
+        .map(Json)
+        .ok_or(StatusCode::NOT_FOUND)
 }
 
+#[tokio::main]
+async fn main() {
+    // Initialize tracing
+    tracing_subscriber::fmt::init();
+
+    // Build router
+    let app = Router::new()
+        .route("/api/v1/topology", get(get_topology))
+        .route("/api/v1/health", get(get_health))
+        .route("/api/v1/capabilities", get(get_capabilities))
+        .route("/api/v1/primals/:id", get(get_primal))
+        .layer(CorsLayer::permissive());
+
+    // Start server
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    println!("🌱 Mock biomeOS server starting on http://{}", addr);
+    println!("   Endpoints:");
+    println!("   - GET  /api/v1/topology");
+    println!("   - GET  /api/v1/health");
+    println!("   - GET  /api/v1/capabilities");
+    println!("   - GET  /api/v1/primals/:id");
+    println!();
+    println!("   Test with: curl http://localhost:3000/api/v1/topology | jq");
+    println!();
+
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
+}
