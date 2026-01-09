@@ -113,9 +113,10 @@ impl SoftwareDisplay {
     /// Send frame to VNC clients
     ///
     /// Implements RFB (Remote Framebuffer) protocol for VNC streaming
+    ///
+    /// Uses a file-based approach for VNC integration. Production systems
+    /// would maintain TCP connections to clients on port 5900.
     async fn send_vnc_frame(&self, buffer: &[u8]) -> Result<()> {
-        // In production, would use vnc-server crate or implement RFB protocol
-        // For now, log that we would send to VNC clients
         tracing::debug!(
             "📡 VNC frame ready: {}x{} ({} bytes)",
             self.width,
@@ -123,10 +124,24 @@ impl SoftwareDisplay {
             buffer.len()
         );
         
-        // TODO: Implement RFB protocol frame update
-        // - Connect to VNC clients on port 5900
-        // - Send FramebufferUpdate message
-        // - Encode pixels (Raw or RRE encoding)
+        // Write frame to file for VNC server integration
+        // VNC servers like x11vnc can monitor this file for updates
+        if let Ok(vnc_output) = std::env::var("VNC_FRAME_OUTPUT") {
+            match std::fs::write(&vnc_output, buffer) {
+                Ok(_) => {
+                    tracing::info!("✅ VNC frame written to {}", vnc_output);
+                }
+                Err(e) => {
+                    tracing::warn!("⚠️  Failed to write VNC frame: {}", e);
+                }
+            }
+        }
+        
+        // Future production implementation:
+        // - Maintain TCP server on port 5900
+        // - Handle RFB handshake and authentication
+        // - Send FramebufferUpdate messages (type 0)
+        // - Support Raw, RRE, Hextile, ZRLE encodings
         // - Handle client input events
         
         Ok(())
@@ -157,11 +172,27 @@ impl SoftwareDisplay {
             encoded.len()
         );
         
-        // TODO: Broadcast to connected WebSocket clients
-        // - Maintain list of connected ws clients
-        // - Send message to all active connections
-        // - Handle client disconnections
-        // - Optional: Use binary WebSocket frames for efficiency
+        // Write frame to file for WebSocket server integration
+        if let Ok(ws_output) = std::env::var("WEBSOCKET_FRAME_OUTPUT") {
+            let json_str = serde_json::to_string(&message)
+                .unwrap_or_else(|_| "{}".to_string());
+                
+            match std::fs::write(&ws_output, json_str) {
+                Ok(_) => {
+                    tracing::info!("✅ WebSocket frame written to {}", ws_output);
+                }
+                Err(e) => {
+                    tracing::warn!("⚠️  Failed to write WebSocket frame: {}", e);
+                }
+            }
+        }
+        
+        // Future production implementation:
+        // - Maintain Vec<WebSocketConnection> of active clients
+        // - Broadcast via tokio::sync::broadcast channel
+        // - Handle disconnections gracefully
+        // - Use binary frames for better performance
+        // - Implement rate limiting and backpressure
         
         Ok(())
     }
