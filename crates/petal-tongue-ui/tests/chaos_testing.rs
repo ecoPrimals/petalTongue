@@ -110,6 +110,8 @@ impl ChaosTestRunner {
                         endpoint: format!("http://churn:808{i}"),
                         capabilities: vec![],
                         health: PrimalHealthStatus::Healthy,
+                        endpoints: None,
+                        metadata: None,
                         properties: petal_tongue_core::Properties::new(),
                         #[allow(deprecated)]
                         trust_level: None,
@@ -176,6 +178,8 @@ impl ChaosTestRunner {
                     endpoint: "http://stress:8080".to_string(),
                     capabilities: vec![],
                     health: PrimalHealthStatus::Healthy,
+                    endpoints: None,
+                    metadata: None,
                     properties: petal_tongue_core::Properties::new(),
                     #[allow(deprecated)]
                     trust_level: None,
@@ -238,6 +242,8 @@ impl ChaosTestRunner {
                     endpoint: format!("http://health:808{i}"),
                     capabilities: vec![],
                     health: PrimalHealthStatus::Healthy,
+                    endpoints: None,
+                    metadata: None,
                     properties: petal_tongue_core::Properties::new(),
                     #[allow(deprecated)]
                     trust_level: None,
@@ -303,6 +309,8 @@ impl ChaosTestRunner {
                         endpoint: format!("http://concurrent:808{i}"),
                         capabilities: vec![],
                         health: PrimalHealthStatus::Healthy,
+                        endpoints: None,
+                        metadata: None,
                         properties: petal_tongue_core::Properties::new(),
                         #[allow(deprecated)]
                         trust_level: None,

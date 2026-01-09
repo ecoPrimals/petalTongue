@@ -304,6 +304,8 @@ mod tests {
             to: "toadstool-1".to_string(),
             edge_type: "api".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
 
         graph.set_layout(LayoutAlgorithm::Circular);
