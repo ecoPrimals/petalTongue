@@ -129,6 +129,8 @@ impl TutorialMode {
                 to: edge.to_id,
                 edge_type: edge.edge_type,
                 label: None,
+                capability: None,
+                metrics: None,
             });
         }
 
@@ -259,6 +261,8 @@ impl TutorialMode {
             to: "songbird-tutorial".to_string(),
             edge_type: "discovers_via".to_string(),
             label: Some("Discovery".to_string()),
+            capability: None,
+            metrics: None,
         });
 
         graph.add_edge(petal_tongue_core::TopologyEdge {
@@ -266,6 +270,8 @@ impl TutorialMode {
             to: "beardog-tutorial".to_string(),
             edge_type: "finds".to_string(),
             label: Some("Service Discovery".to_string()),
+            capability: None,
+            metrics: None,
         });
 
         info!("✅ Minimal example created: 3 primals, 2 connections");
