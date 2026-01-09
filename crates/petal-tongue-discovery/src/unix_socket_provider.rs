@@ -12,6 +12,24 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
 use tracing::{debug, info, warn};
 
+/// JSON-RPC 2.0 error
+#[derive(Debug, Deserialize)]
+struct JsonRpcError {
+    code: i32,
+    message: String,
+}
+
+/// JSON-RPC 2.0 response
+#[derive(Debug, Deserialize)]
+struct JsonRpcResponse {
+    jsonrpc: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    result: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<JsonRpcError>,
+    id: u64,
+}
+
 /// Unix socket discovery provider
 ///
 /// Discovers primals by scanning for Unix socket files and querying their capabilities.
