@@ -5,6 +5,39 @@ All notable changes to petalTongue will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - Post-v1.2.0 Test Infrastructure Hardening
+
+### Fixed
+
+#### **Struct Initialization Compilation Errors** ✅
+- **Issue**: 51 compilation errors (E0063) where struct initializations missing new optional fields
+- **Structs Affected**: 
+  - `TopologyEdge`: Missing `capability` and `metrics` fields (45 instances)
+  - `PrimalInfo`: Missing `endpoints` and `metadata` fields (6 instances)
+- **Files Modified**: 12 files (test and source)
+- **Impact**: 
+  - ✅ Workspace builds successfully with zero E0063 errors
+  - ✅ All struct initializations complete and correct
+  - ✅ Test infrastructure hardened for future evolution
+- **Methodology**: Systematic deep debt approach - fixed ALL instances, not just failing tests
+- **Commit**: `fed8591`
+
+### Changed
+
+#### **Documentation Cleanup** 📚
+- Archived v1.2.0 session documentation to `docs/sessions/archived_releases/v1.2.0/`
+- Archived v1.0.0 session documentation to `docs/sessions/archived_releases/v1.0.0/`
+- Moved `launch-remote.sh` to `tools/scripts/` for future diagnostic use
+- Keeps root directory clean while preserving historical documentation
+- **Commit**: `96c4159`
+
+#### **Next Evolution Planning** 🗺️
+- Updated `NEXT_EVOLUTIONS.md` to reflect Option 1 completion (UI Integration)
+- Current priority: Option 2 (Fix Pre-Existing Test Issues)
+- Documented test fix progress and remaining work
+
+---
+
 ## [1.2.0] - 2026-01-09
 
 ### 🚨 Critical Bug Fix + Evolved Proprioception
