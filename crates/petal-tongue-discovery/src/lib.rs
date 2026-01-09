@@ -96,6 +96,25 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
         return Ok(providers);
     }
 
+    // Try Unix socket discovery FIRST (port-free, local primals - Phase 2)
+    tracing::info!("Attempting Unix socket discovery (port-free)...");
+    match unix_socket_provider::UnixSocketProvider::new().discover().await {
+        Ok(unix_primals) => {
+            if !unix_primals.is_empty() {
+                tracing::info!("Unix sockets discovered {} primal(s)", unix_primals.len());
+                for primal in &unix_primals {
+                    tracing::info!("  - {} ({})", primal.name, primal.endpoint);
+                }
+                // TODO: Wrap in UnixSocketVisualizationProvider
+            } else {
+                tracing::debug!("Unix socket discovery found no primals");
+            }
+        }
+        Err(e) => {
+            tracing::debug!("Unix socket discovery: {}", e);
+        }
+    }
+
     // Try mDNS auto-discovery (Phase 1 implementation)
     let enable_mdns = std::env::var("PETALTONGUE_ENABLE_MDNS")
         .unwrap_or_else(|_| "true".to_string())
