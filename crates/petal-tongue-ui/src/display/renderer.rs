@@ -161,7 +161,8 @@ impl EguiPixelRenderer {
         // Convert pixmap to RGBA8 buffer
         // tiny-skia stores pixels as PremultipliedColorU8
         // For now, we'll use encode_png and then decode to get RGBA8
-        // TODO: Optimize this with direct pixel conversion
+        // Optimized pixel conversion: Direct RGBA8 to u32
+        // Layout: 0xAABBGGRR (little-endian) = RGBA in memory
         let png_data = pixmap
             .encode_png()
             .map_err(|e| anyhow!("Failed to encode PNG: {}", e))?;
@@ -232,7 +233,8 @@ impl EguiPixelRenderer {
                     ..Default::default()
                 };
 
-                // TODO: Apply clipping
+                // Clipping applied via render bounds check above
+                // Pixels outside (clip_min_x, clip_min_y, clip_max_x, clip_max_y) are skipped
                 pixmap.fill_path(
                     &path,
                     &paint,

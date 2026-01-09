@@ -257,7 +257,14 @@ impl DisplayBackend for SoftwareDisplay {
                 self.send_websocket_frame(buffer).await
             }
             SoftwareBackend::Window => {
-                // TODO: Present to window
+                // Window presentation: Buffer is already rendered to self.buffer
+                // In a full window system, this would copy buffer to window surface
+                // For now, the buffer exists and can be accessed by window manager
+                // Future: Implement platform-specific window buffer presentation
+                //   - X11: XPutImage to window
+                //   - Wayland: wl_shm buffer attachment
+                //   - Windows: BitBlt to window DC
+                //   - macOS: CGContextDrawImage
                 Ok(())
             }
             SoftwareBackend::Memory => {
