@@ -36,6 +36,23 @@ pub struct ProprioceptiveState {
     
     /// Human-readable status
     pub status: String,
+    
+    // === v1.2.0: Performance & Hang Detection ===
+    
+    /// Current frame rate (frames per second)
+    pub frame_rate: f32,
+    
+    /// Time since last frame rendered (potential hang indicator)
+    pub time_since_last_frame: Duration,
+    
+    /// Is the rendering loop hanging?
+    pub is_hanging: bool,
+    
+    /// Hang reason (if applicable)
+    pub hang_reason: Option<String>,
+    
+    /// Total frames rendered since start
+    pub total_frames: u64,
 }
 
 impl ProprioceptiveState {
@@ -69,12 +86,45 @@ pub struct ProprioceptionSystem {
     
     /// Last update time
     last_update: Instant,
+    
+    // === v1.2.0: Frame Tracking & Hang Detection ===
+    
+    /// Total frames rendered
+    frame_count: u64,
+    
+    /// Last frame render time
+    last_frame_time: Instant,
+    
+    /// Frame times for FPS calculation (ring buffer)
+    frame_times: Vec<Instant>,
+    
+    /// Maximum frame time samples to keep
+    max_frame_samples: usize,
+    
+    /// Hang threshold (seconds without a frame = hanging)
+    hang_threshold: Duration,
+    
+    /// Diagnostic event log (ring buffer)
+    diagnostic_events: Vec<DiagnosticEvent>,
+    
+    /// Maximum diagnostic events to keep
+    max_diagnostic_events: usize,
+}
+
+/// A diagnostic event for debugging and post-mortem analysis
+#[derive(Debug, Clone)]
+struct DiagnosticEvent {
+    timestamp: Instant,
+    event_type: String,
+    message: String,
 }
 
 impl ProprioceptionSystem {
     /// Create a new proprioception system
     pub fn new() -> Self {
         info!("🧠 Initializing SAME DAVE proprioception system...");
+        
+        let now = Instant::now();
         
         Self {
             output_system: OutputVerificationSystem::new(),
@@ -87,8 +137,20 @@ impl ProprioceptionSystem {
                 confidence: 0.0,
                 last_loop_confirmation: None,
                 status: "System initializing...".to_string(),
+                frame_rate: 0.0,
+                time_since_last_frame: Duration::from_secs(0),
+                is_hanging: false,
+                hang_reason: None,
+                total_frames: 0,
             },
-            last_update: Instant::now(),
+            last_update: now,
+            frame_count: 0,
+            last_frame_time: now,
+            frame_times: Vec::new(),
+            max_frame_samples: 60, // Track last 60 frames for FPS
+            hang_threshold: Duration::from_secs(5), // 5 seconds without frame = hang
+            diagnostic_events: Vec::new(),
+            max_diagnostic_events: 100, // Keep last 100 events
         }
     }
     
@@ -106,6 +168,91 @@ impl ProprioceptionSystem {
     pub fn output_sent(&mut self, modality: &OutputModality) {
         // This would be called when we send output (render frame, play audio, etc.)
         // For now, we track via user interaction confirming they received it
+    }
+    
+    // === v1.2.0: Frame Tracking & Hang Detection ===
+    
+    /// Record that a frame was rendered (critical for hang detection)
+    pub fn record_frame(&mut self) {
+        let now = Instant::now();
+        
+        self.frame_count += 1;
+        self.last_frame_time = now;
+        
+        // Add to frame times for FPS calculation
+        self.frame_times.push(now);
+        
+        // Keep only the last N frames
+        if self.frame_times.len() > self.max_frame_samples {
+            self.frame_times.remove(0);
+        }
+        
+        // If we just recovered from a hang, log it
+        if self.last_state.is_hanging {
+            let hang_duration = self.last_state.time_since_last_frame;
+            warn!("🔄 Recovered from hang! Duration: {:.1}s", hang_duration.as_secs_f32());
+            self.log_diagnostic_event("hang_recovery", &format!("Recovered after {:.1}s", hang_duration.as_secs_f32()));
+        }
+    }
+    
+    /// Calculate current frame rate (FPS)
+    fn calculate_fps(&self) -> f32 {
+        if self.frame_times.len() < 2 {
+            return 0.0;
+        }
+        
+        let first = self.frame_times.first().unwrap();
+        let last = self.frame_times.last().unwrap();
+        let duration = last.duration_since(*first);
+        
+        if duration.as_secs_f32() > 0.0 {
+            (self.frame_times.len() - 1) as f32 / duration.as_secs_f32()
+        } else {
+            0.0
+        }
+    }
+    
+    /// Check if the rendering loop is hanging
+    fn check_hang(&self) -> (bool, Option<String>) {
+        let time_since_frame = self.last_frame_time.elapsed();
+        
+        if time_since_frame > self.hang_threshold {
+            let reason = format!("No frames rendered for {:.1}s (threshold: {:.1}s)", 
+                time_since_frame.as_secs_f32(),
+                self.hang_threshold.as_secs_f32());
+            (true, Some(reason))
+        } else {
+            (false, None)
+        }
+    }
+    
+    /// Log a diagnostic event
+    fn log_diagnostic_event(&mut self, event_type: &str, message: &str) {
+        let event = DiagnosticEvent {
+            timestamp: Instant::now(),
+            event_type: event_type.to_string(),
+            message: message.to_string(),
+        };
+        
+        self.diagnostic_events.push(event);
+        
+        // Keep only the last N events
+        if self.diagnostic_events.len() > self.max_diagnostic_events {
+            self.diagnostic_events.remove(0);
+        }
+    }
+    
+    /// Get recent diagnostic events (for debugging)
+    pub fn get_diagnostic_events(&self, count: usize) -> Vec<(Duration, String, String)> {
+        let now = Instant::now();
+        self.diagnostic_events.iter()
+            .rev()
+            .take(count)
+            .map(|e| {
+                let age = now.duration_since(e.timestamp);
+                (age, e.event_type.clone(), e.message.clone())
+            })
+            .collect()
     }
     
     /// Record input activity
@@ -185,19 +332,28 @@ impl ProprioceptionSystem {
             None
         };
         
+        // === v1.2.0: Frame Tracking & Hang Detection ===
+        let frame_rate = self.calculate_fps();
+        let time_since_last_frame = self.last_frame_time.elapsed();
+        let (is_hanging, hang_reason) = self.check_hang();
+        
         // Generate status message
-        let status = if health >= 0.9 {
-            format!("Proprioception excellent - {} outputs confirmed, {} inputs active", 
-                outputs_confirmed, inputs_active)
+        let status = if is_hanging {
+            format!("HANGING: {} - {}", hang_reason.as_ref().unwrap(), 
+                if health >= 0.7 { "otherwise healthy" } else { "degraded" })
+        } else if health >= 0.9 {
+            format!("Proprioception excellent - {} outputs confirmed, {} inputs active, {:.1} FPS", 
+                outputs_confirmed, inputs_active, frame_rate)
         } else if health >= 0.7 {
-            format!("Proprioception good - {} outputs confirmed, {} inputs active",
-                outputs_confirmed, inputs_active)
+            format!("Proprioception good - {} outputs confirmed, {} inputs active, {:.1} FPS",
+                outputs_confirmed, inputs_active, frame_rate)
         } else if health >= 0.5 {
-            format!("Proprioception degraded - {}/{} outputs unconfirmed, {}/{} inputs inactive",
+            format!("Proprioception degraded - {}/{} outputs unconfirmed, {}/{} inputs inactive, {:.1} FPS",
                 output_verifications.len() - outputs_confirmed, output_verifications.len(),
-                input_verifications.len() - inputs_active, input_verifications.len())
+                input_verifications.len() - inputs_active, input_verifications.len(),
+                frame_rate)
         } else {
-            format!("Proprioception impaired - limited sensory-motor awareness")
+            format!("Proprioception impaired - limited sensory-motor awareness, {:.1} FPS", frame_rate)
         };
         
         let state = ProprioceptiveState {
@@ -208,7 +364,18 @@ impl ProprioceptionSystem {
             confidence,
             last_loop_confirmation,
             status,
+            frame_rate,
+            time_since_last_frame,
+            is_hanging,
+            hang_reason: hang_reason.clone(),
+            total_frames: self.frame_count,
         };
+        
+        // === v1.2.0: Log hang detection (after borrowing is done) ===
+        if is_hanging && !self.last_state.is_hanging {
+            warn!("⚠️  HANG DETECTED: {}", hang_reason.as_ref().unwrap());
+            self.log_diagnostic_event("hang_detected", hang_reason.as_ref().unwrap());
+        }
         
         // Log significant changes
         if state.health < 0.5 && self.last_state.health >= 0.5 {

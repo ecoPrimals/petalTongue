@@ -278,6 +278,35 @@ impl SystemDashboard {
             
             ui.add_space(3.0);
             
+            // === v1.2.0: Frame Rate & Hang Detection ===
+            
+            // FPS display with color coding
+            let fps_color = if state.frame_rate > 30.0 {
+                egui::Color32::from_rgb(0, 200, 83) // Green
+            } else if state.frame_rate > 15.0 {
+                palette.warning // Yellow
+            } else {
+                palette.error // Red
+            };
+            
+            ui.label(
+                egui::RichText::new(format!("🎬 {:.1} FPS ({} frames)", 
+                    state.frame_rate, state.total_frames))
+                    .size(10.0 * font_scale)
+                    .color(fps_color),
+            );
+            
+            // Hang detection warning
+            if state.is_hanging {
+                ui.label(
+                    egui::RichText::new(format!("⚠️  HANG: {}", 
+                        state.hang_reason.as_ref().unwrap_or(&"Unknown".to_string())))
+                        .size(10.0 * font_scale)
+                        .color(palette.error)
+                        .strong(),
+                );
+            }
+            
             // System status
             let motor_icon = if state.motor_functional { "✅" } else { "❌" };
             let sensory_icon = if state.sensory_functional { "✅" } else { "❌" };

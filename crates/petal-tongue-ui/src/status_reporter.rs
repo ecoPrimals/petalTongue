@@ -235,27 +235,30 @@ impl StatusReporter {
 
     /// Update modality status
     pub fn update_modality(&self, modality: &str, available: bool, tested: bool, reason: String) {
-        let mut status = self.status.lock().unwrap();
-        let state = ModalityState {
-            available,
-            tested,
-            reason: reason.clone(),
-            last_used: if available {
-                Some(chrono::Utc::now().to_rfc3339())
-            } else {
-                None
-            },
-        };
+        {
+            // Scope the lock to avoid deadlock
+            let mut status = self.status.lock().unwrap();
+            let state = ModalityState {
+                available,
+                tested,
+                reason: reason.clone(),
+                last_used: if available {
+                    Some(chrono::Utc::now().to_rfc3339())
+                } else {
+                    None
+                },
+            };
 
-        match modality {
-            "visual2d" => status.modalities.visual2d = state,
-            "audio" => status.modalities.audio = state,
-            "animation" => status.modalities.animation = state,
-            "text_description" => status.modalities.text_description = state,
-            "haptic" => status.modalities.haptic = state,
-            "vr3d" => status.modalities.vr3d = state,
-            _ => warn!("Unknown modality: {}", modality),
-        }
+            match modality {
+                "visual2d" => status.modalities.visual2d = state,
+                "audio" => status.modalities.audio = state,
+                "animation" => status.modalities.animation = state,
+                "text_description" => status.modalities.text_description = state,
+                "haptic" => status.modalities.haptic = state,
+                "vr3d" => status.modalities.vr3d = state,
+                _ => warn!("Unknown modality: {}", modality),
+            }
+        } // Lock dropped here
 
         self.add_event(
             "modality",

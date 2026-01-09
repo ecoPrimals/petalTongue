@@ -578,6 +578,10 @@ impl eframe::App for PetalTongueApp {
         // === CENTRAL NERVOUS SYSTEM - Motor Command ===
         // Record that we're rendering a frame (motor output)
         self.frame_count += 1;
+        
+        // v1.2.0: SAME DAVE - Record frame for hang detection & FPS tracking
+        self.proprioception.record_frame();
+        
         if let Ok(mut awareness) = self.rendering_awareness.write() {
             awareness.motor_command(MotorCommand::RenderFrame {
                 frame_id: self.frame_count,
