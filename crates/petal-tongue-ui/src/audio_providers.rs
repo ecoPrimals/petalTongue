@@ -309,7 +309,17 @@ impl AudioProvider for UserSoundProvider {
     }
 
     fn stop(&self) {
-        // TODO: Implement stop
+        // NOTE: Current architecture spawns fire-and-forget threads for audio playback.
+        // To implement stop(), we would need to:
+        // 1. Track spawned Command processes
+        // 2. Store Child handles in shared state (Arc<Mutex<Vec<Child>>>)
+        // 3. Kill processes on stop()
+        //
+        // This is a deep debt architectural issue. For now, audio plays to completion.
+        // Most UI sounds are <1s so this is acceptable.
+        //
+        // Future evolution: Use audio library with proper playback control (rodio, cpal).
+        warn!("Audio stop() not implemented - fire-and-forget architecture. Sounds play to completion.");
     }
 
     fn available_sounds(&self) -> Vec<String> {

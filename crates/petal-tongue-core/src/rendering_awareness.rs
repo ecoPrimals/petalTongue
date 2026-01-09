@@ -118,6 +118,13 @@ impl RenderingAwareness {
     pub fn metrics(&self) -> &RenderingMetrics {
         &self.metrics
     }
+
+    /// Get time since last user interaction (for display verification)
+    pub fn time_since_last_interaction(&self) -> Duration {
+        self.sensory.last_user_interaction
+            .map(|t| t.elapsed())
+            .unwrap_or_else(|| Duration::from_secs(9999))
+    }
 }
 
 impl Default for RenderingAwareness {
@@ -296,26 +303,35 @@ pub enum MotorCommand {
 /// Command ID (unique identifier for tracking)
 pub type CommandId = u64;
 
-/// Complete self-assessment
+/// Complete self-assessment of the central nervous system
 #[derive(Debug, Clone)]
 pub struct SelfAssessment {
     // Motor
+    /// Whether the system can render output (motor capability)
     pub can_render: bool,
+    /// Total number of frames sent (motor activity)
     pub frames_sent: u64,
 
     // Sensory
+    /// Whether the system can receive input (sensory capability)
     pub can_sense: bool,
+    /// Number of frames with confirmed sensory feedback
     pub frames_confirmed: u64,
 
     // Bidirectional
+    /// Whether the bidirectional loop is complete
     pub is_complete_loop: bool,
+    /// Rate of sensory confirmation (frames_confirmed / frames_sent)
     pub confirmation_rate: f32,
 
     // User state
+    /// Current visibility state from user perspective
     pub user_visibility: VisibilityState,
+    /// Current interactivity state from user perspective
     pub user_interactivity: InteractivityState,
 
     // Health
+    /// Whether the display substrate is responsive
     pub substrate_responsive: bool,
 }
 
