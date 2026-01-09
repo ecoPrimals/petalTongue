@@ -5,10 +5,9 @@
 
 use anyhow::{anyhow, Context, Result};
 use petal_tongue_core::types::{PrimalHealthStatus, PrimalInfo};
-use petal_tongue_ipc::json_rpc::JsonRpcRequest;
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
 use tracing::{debug, info, warn};
@@ -75,9 +74,9 @@ impl UnixSocketProvider {
     /// Probe a Unix socket for primal information
     async fn probe_socket(&self, path: &Path) -> Result<PrimalInfo> {
         // Connect to the Unix socket
-        let stream = UnixStream::connect(path).await?;
+        let mut stream = UnixStream::connect(path).await?;
         
-        // Send get_capabilities request
+        // Send get_capabilities JSON-RPC request
         let request = json!({
             "jsonrpc": "2.0",
             "method": "get_capabilities",
