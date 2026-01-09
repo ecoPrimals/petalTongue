@@ -10,7 +10,9 @@ use crate::multimodal_stream::{
     CpuStream, MemoryStream, ModalityPreferences, MultiModalRenderer, SystemMetricRenderer,
 };
 use egui::Ui;
+use petal_tongue_core::{RenderingAwareness, SensorRegistry};
 use std::collections::VecDeque;
+use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 use sysinfo::System;
 
@@ -220,6 +222,114 @@ impl SystemDashboard {
 
         // Request continuous updates
         request_live_updates(ui.ctx());
+    }
+
+    /// Render bidirectional sensory status (central nervous system)
+    pub fn render_sensory_status(
+        ui: &mut Ui,
+        palette: &ColorPalette,
+        font_scale: f32,
+        rendering_awareness: &Arc<RwLock<RenderingAwareness>>,
+        sensor_registry: &Arc<RwLock<SensorRegistry>>,
+    ) {
+        ui.group(|ui| {
+            ui.set_width(ui.available_width());
+
+            ui.label(
+                egui::RichText::new("🧠 Sensory Loop")
+                    .size(14.0 * font_scale)
+                    .strong()
+                    .color(palette.text),
+            );
+
+            ui.add_space(5.0);
+
+            // Get self-assessment
+            if let Ok(awareness) = rendering_awareness.read() {
+                let assessment = awareness.assess_self();
+                let metrics = awareness.metrics();
+
+                // Motor function
+                let motor_icon = if assessment.can_render { "✅" } else { "❌" };
+                ui.label(
+                    egui::RichText::new(format!("{} Render: {}", motor_icon, metrics.commands_sent))
+                        .size(11.0 * font_scale)
+                        .color(palette.text),
+                );
+
+                // Sensory function
+                let sensory_icon = if assessment.can_sense { "✅" } else { "❌" };
+                ui.label(
+                    egui::RichText::new(format!(
+                        "{} Sense: {}",
+                        sensory_icon, metrics.frames_confirmed
+                    ))
+                    .size(11.0 * font_scale)
+                    .color(palette.text),
+                );
+
+                // Bidirectional loop
+                let loop_icon = if assessment.is_complete_loop {
+                    "✅"
+                } else {
+                    "⏳"
+                };
+                ui.label(
+                    egui::RichText::new(format!("{} Loop: {:.1}%", loop_icon, assessment.confirmation_rate))
+                        .size(11.0 * font_scale)
+                        .color(if assessment.is_complete_loop {
+                            egui::Color32::from_rgb(0, 200, 83) // Green
+                        } else {
+                            palette.warning
+                        }),
+                );
+
+                // User visibility state
+                let visibility_text = match assessment.user_visibility {
+                    petal_tongue_core::VisibilityState::Confirmed => "👁️ Confirmed",
+                    petal_tongue_core::VisibilityState::Probable => "👁️ Probable",
+                    petal_tongue_core::VisibilityState::Uncertain => "👁️ Uncertain",
+                    petal_tongue_core::VisibilityState::Unknown => "❓ Unknown",
+                };
+                ui.label(
+                    egui::RichText::new(visibility_text)
+                        .size(10.0 * font_scale)
+                        .color(palette.text_dim),
+                );
+
+                // Health percentage
+                let health_pct = assessment.health_percentage();
+                ui.add(
+                    egui::ProgressBar::new(health_pct / 100.0)
+                        .text(format!("{:.0}% Healthy", health_pct))
+                        .fill(if health_pct > 80.0 {
+                            egui::Color32::from_rgb(0, 200, 83) // Green
+                        } else if health_pct > 50.0 {
+                            palette.warning
+                        } else {
+                            palette.error
+                        }),
+                );
+            } else {
+                ui.label(
+                    egui::RichText::new("⚠️ Awareness unavailable")
+                        .size(11.0 * font_scale)
+                        .color(palette.warning),
+                );
+            }
+
+            ui.add_space(5.0);
+
+            // Discovered sensors
+            if let Ok(reg) = sensor_registry.read() {
+                let stats = reg.stats();
+                ui.label(
+                    egui::RichText::new(format!("🔍 Sensors: {}/{}", stats.active, stats.total))
+                        .size(10.0 * font_scale)
+                        .color(palette.text_dim),
+                );
+            }
+        });
     }
 
     /// Render mini sparkline

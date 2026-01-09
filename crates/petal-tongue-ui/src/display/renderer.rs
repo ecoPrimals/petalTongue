@@ -188,10 +188,10 @@ impl EguiPixelRenderer {
         &self,
         pixmap: &mut Pixmap,
         mesh: &Mesh,
-        clip_min_x: u32,
-        clip_min_y: u32,
-        clip_max_x: u32,
-        clip_max_y: u32,
+        _clip_min_x: u32,
+        _clip_min_y: u32,
+        _clip_max_x: u32,
+        _clip_max_y: u32,
     ) -> Result<()> {
         // Render triangles from mesh
         for triangle in mesh.indices.chunks(3) {

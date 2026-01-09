@@ -8,6 +8,8 @@
 
 pub mod accessibility;
 pub mod accessibility_panel;
+pub mod event_loop;
+pub mod sensor_discovery;
 pub mod app;
 pub mod app_panels;
 pub mod awakening_overlay;
