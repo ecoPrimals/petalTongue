@@ -3,10 +3,11 @@
 //! Discovers primals via Unix domain sockets by scanning /tmp for .sock files
 //! and querying their capabilities via JSON-RPC.
 
-use anyhow::Result;
+use anyhow::{anyhow, Context, Result};
 use petal_tongue_core::types::{PrimalHealthStatus, PrimalInfo};
 use petal_tongue_ipc::json_rpc::JsonRpcRequest;
-use serde_json::Value;
+use serde::Deserialize;
+use serde_json::{json, Value};
 use std::path::PathBuf;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
