@@ -39,7 +39,7 @@ mod http_provider;
 mod mdns_provider;
 mod mock_provider;
 mod traits; // Phase 2: Caching layer (complete)
-pub mod unix_socket_provider; // Phase 2: Unix socket discovery
+// TODO: Unix socket discovery provider (future work - server side complete)
 
 // Modern async patterns (Discovery Evolution)
 pub mod concurrent;
@@ -97,24 +97,9 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
         return Ok(providers);
     }
 
-    // Try Unix socket discovery FIRST (port-free, local primals - Phase 2)
-    tracing::info!("Attempting Unix socket discovery (port-free)...");
-    match unix_socket_provider::UnixSocketProvider::new().discover().await {
-        Ok(unix_primals) => {
-            if !unix_primals.is_empty() {
-                tracing::info!("Unix sockets discovered {} primal(s)", unix_primals.len());
-                for primal in &unix_primals {
-                    tracing::info!("  - {} ({})", primal.name, primal.endpoint);
-                }
-                // TODO: Wrap in UnixSocketVisualizationProvider
-            } else {
-                tracing::debug!("Unix socket discovery found no primals");
-            }
-        }
-        Err(e) => {
-            tracing::debug!("Unix socket discovery: {}", e);
-        }
-    }
+    // TODO: Unix socket discovery (future work - server infrastructure complete)
+    // The Unix socket JSON-RPC server is implemented in petal-tongue-ipc.
+    // Discovery client will be added in future work.
 
     // Try mDNS auto-discovery (Phase 1 implementation)
     let enable_mdns = std::env::var("PETALTONGUE_ENABLE_MDNS")
