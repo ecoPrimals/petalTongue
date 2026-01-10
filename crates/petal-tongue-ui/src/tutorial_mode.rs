@@ -341,7 +341,9 @@ mod tests {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
 
-        let graph = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+        let graph = graph
+            .read()
+            .expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
 
         // Verify structure
         assert_eq!(graph.nodes().len(), 3, "Should have 3 tutorial primals");
@@ -353,7 +355,9 @@ mod tests {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
 
-        let graph = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+        let graph = graph
+            .read()
+            .expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
         let nodes = graph.nodes();
 
         // Verify tutorial nodes have correct IDs
@@ -368,7 +372,9 @@ mod tests {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
 
-        let graph = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+        let graph = graph
+            .read()
+            .expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
 
         // All tutorial nodes should be healthy
         for node in graph.nodes() {
@@ -386,7 +392,9 @@ mod tests {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
 
-        let graph = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+        let graph = graph
+            .read()
+            .expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
 
         // Find petalTongue node (self-awareness)
         let petal_node = graph
@@ -411,7 +419,9 @@ mod tests {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
 
-        let graph = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+        let graph = graph
+            .read()
+            .expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
         let edges = graph.edges();
 
         // Verify edge structure
@@ -448,7 +458,9 @@ mod tests {
         ] {
             tutorial.load_into_graph(Arc::clone(&graph), *layout);
 
-            let graph_read = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+            let graph_read = graph
+                .read()
+                .expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
             assert!(
                 !graph_read.nodes().is_empty(),
                 "Should load nodes with {:?}",
@@ -463,7 +475,9 @@ mod tests {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
 
-        let graph = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+        let graph = graph
+            .read()
+            .expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
 
         // petalTongue node should have tutorial_note property
         let petal_node = graph
@@ -483,7 +497,9 @@ mod tests {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
 
-        let graph = graph.read().expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+        let graph = graph
+            .read()
+            .expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
 
         // Verify graph is valid and usable
         assert!(!graph.nodes().is_empty());

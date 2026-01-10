@@ -92,7 +92,7 @@ impl SoftwareDisplay {
                 .ok()
                 .and_then(|p| p.parse().ok())
                 .unwrap_or(8765);
-            
+
             if let Ok(listener) = std::net::TcpListener::bind(format!("127.0.0.1:{}", port)) {
                 drop(listener);
                 tracing::info!("✅ WebSocket backend available (port {} bindable)", port);
@@ -123,7 +123,7 @@ impl SoftwareDisplay {
             self.height,
             buffer.len()
         );
-        
+
         // Write frame to file for VNC server integration
         // VNC servers like x11vnc can monitor this file for updates
         if let Ok(vnc_output) = std::env::var("VNC_FRAME_OUTPUT") {
@@ -136,14 +136,14 @@ impl SoftwareDisplay {
                 }
             }
         }
-        
+
         // Future production implementation:
         // - Maintain TCP server on port 5900
         // - Handle RFB handshake and authentication
         // - Send FramebufferUpdate messages (type 0)
         // - Support Raw, RRE, Hextile, ZRLE encodings
         // - Handle client input events
-        
+
         Ok(())
     }
 
@@ -151,11 +151,11 @@ impl SoftwareDisplay {
     ///
     /// Streams RGBA8 frames over WebSocket for browser-based viewing
     async fn send_websocket_frame(&self, buffer: &[u8]) -> Result<()> {
-        use base64::{engine::general_purpose, Engine as _};
-        
+        use base64::{Engine as _, engine::general_purpose};
+
         // Encode frame as base64 for JSON transport
         let encoded = general_purpose::STANDARD.encode(buffer);
-        
+
         // Create WebSocket message
         let message = serde_json::json!({
             "type": "frame",
@@ -164,19 +164,18 @@ impl SoftwareDisplay {
             "format": "rgba8",
             "data": encoded
         });
-        
+
         tracing::debug!(
             "📡 WebSocket frame ready: {}x{} ({} bytes encoded)",
             self.width,
             self.height,
             encoded.len()
         );
-        
+
         // Write frame to file for WebSocket server integration
         if let Ok(ws_output) = std::env::var("WEBSOCKET_FRAME_OUTPUT") {
-            let json_str = serde_json::to_string(&message)
-                .unwrap_or_else(|_| "{}".to_string());
-                
+            let json_str = serde_json::to_string(&message).unwrap_or_else(|_| "{}".to_string());
+
             match std::fs::write(&ws_output, json_str) {
                 Ok(_) => {
                     tracing::info!("✅ WebSocket frame written to {}", ws_output);
@@ -186,14 +185,14 @@ impl SoftwareDisplay {
                 }
             }
         }
-        
+
         // Future production implementation:
         // - Maintain Vec<WebSocketConnection> of active clients
         // - Broadcast via tokio::sync::broadcast channel
         // - Handle disconnections gracefully
         // - Use binary frames for better performance
         // - Implement rate limiting and backpressure
-        
+
         Ok(())
     }
 }
@@ -250,12 +249,8 @@ impl DisplayBackend for SoftwareDisplay {
 
         // Present based on backend type
         match self.backend {
-            SoftwareBackend::Vnc => {
-                self.send_vnc_frame(buffer).await
-            }
-            SoftwareBackend::WebSocket => {
-                self.send_websocket_frame(buffer).await
-            }
+            SoftwareBackend::Vnc => self.send_vnc_frame(buffer).await,
+            SoftwareBackend::WebSocket => self.send_websocket_frame(buffer).await,
             SoftwareBackend::Window => {
                 // Window presentation: Buffer is already rendered to self.buffer
                 // In a full window system, this would copy buffer to window surface

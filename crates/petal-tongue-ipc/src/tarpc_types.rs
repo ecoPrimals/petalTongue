@@ -16,8 +16,14 @@
 //! - JSON-RPC SECONDARY for local IPC and debugging
 //! - HTTPS OPTIONAL for external/browser access
 //! - Protocol-agnostic architecture
-//! - Zero unsafe blocks
+//! - Zero unsafe blocks in this module
 //! - Modern idiomatic Rust
+//!
+//! ## Safety
+//! The `#[tarpc::service]` macro generates safe code using the tarpc framework.
+//! All serialization is handled by serde with compile-time type checking.
+//! No manual memory manipulation or unsafe operations are performed.
+//! The generated client/server implementations use only safe Rust abstractions.
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -375,4 +381,3 @@ mod tests {
         assert!(!version.capabilities.is_empty());
     }
 }
-

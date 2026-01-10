@@ -309,7 +309,8 @@ impl UniversalDiscovery {
 
         // TRUE PRIMAL: Port list from environment, not hardcoded
         let ports = if let Ok(port_str) = std::env::var("DISCOVERY_PORTS") {
-            port_str.split(',')
+            port_str
+                .split(',')
                 .filter_map(|s| s.trim().parse::<u16>().ok())
                 .collect()
         } else {

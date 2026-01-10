@@ -4,3 +4,8 @@ Cargo.lock
 *.swp
 *.swo
 .DS_Store
+coverage.json
+*.lcov
+test_outputs/
+awakening_demo.*
+demo.svg

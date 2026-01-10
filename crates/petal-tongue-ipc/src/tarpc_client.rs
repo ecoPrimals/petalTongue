@@ -12,11 +12,16 @@
 //!
 //! ## Philosophy
 //! - tarpc PRIMARY for primal-to-primal
-//! - Zero unsafe blocks
+//! - Zero unsafe blocks in this module
 //! - Modern async/await
 //! - Type-safe error handling
 //! - Automatic reconnection support
 //! - Agnostic: Discovers primals at runtime, no hardcoding
+//!
+//! ## Safety
+//! This module contains NO unsafe code. All communication is handled through
+//! safe abstractions provided by tarpc and tokio. Serialization is performed
+//! by serde with compile-time type safety guarantees.
 //!
 //! ## Usage
 //! ```no_run
@@ -38,8 +43,8 @@ use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
 use crate::tarpc_types::{
-    HealthStatus, PetalTongueRpcClient, PrimalEndpoint, PrimalMetrics, ProtocolInfo,
-    RenderRequest, RenderResponse, VersionInfo,
+    HealthStatus, PetalTongueRpcClient, PrimalEndpoint, PrimalMetrics, ProtocolInfo, RenderRequest,
+    RenderResponse, VersionInfo,
 };
 
 /// Error type for tarpc client operations
@@ -187,10 +192,7 @@ impl TarpcClient {
     ///
     /// # Errors
     /// Returns error if connection fails or RPC call fails
-    pub async fn discover_capability(
-        &self,
-        capability: &str,
-    ) -> TarpcResult<Vec<PrimalEndpoint>> {
+    pub async fn discover_capability(&self, capability: &str) -> TarpcResult<Vec<PrimalEndpoint>> {
         debug!(
             "Discovering capability '{}' from {}",
             capability, self.endpoint
@@ -311,11 +313,7 @@ impl TarpcClient {
     ///
     /// # Errors
     /// Returns error if method is unknown or RPC call fails
-    pub async fn call_method(
-        &self,
-        method: &str,
-        params: Option<Value>,
-    ) -> TarpcResult<Value> {
+    pub async fn call_method(&self, method: &str, params: Option<Value>) -> TarpcResult<Value> {
         debug!("Calling method: {} with params: {:?}", method, params);
 
         match method {
@@ -359,14 +357,10 @@ impl TarpcClient {
                 })
             }
             "render_graph" => {
-                let request: RenderRequest = serde_json::from_value(
-                    params.ok_or_else(|| {
-                        TarpcClientError::Configuration("Missing request parameter".to_string())
-                    })?,
-                )
-                .map_err(|e| {
-                    TarpcClientError::Serialization(format!("Invalid request: {}", e))
-                })?;
+                let request: RenderRequest = serde_json::from_value(params.ok_or_else(|| {
+                    TarpcClientError::Configuration("Missing request parameter".to_string())
+                })?)
+                .map_err(|e| TarpcClientError::Serialization(format!("Invalid request: {}", e)))?;
 
                 let result = self.render_graph(request).await?;
                 serde_json::to_value(result).map_err(|e| {
@@ -434,17 +428,12 @@ impl TarpcClient {
         debug!("Connecting to tarpc server at {}", self.addr);
 
         // Connect with timeout
-        let stream = tokio::time::timeout(
-            self.timeout,
-            tokio::net::TcpStream::connect(self.addr),
-        )
-        .await
-        .map_err(|_| {
-            TarpcClientError::Timeout(format!("Connection timeout to {}", self.addr))
-        })?
-        .map_err(|e| {
-            TarpcClientError::Connection(format!("Failed to connect to {}: {}", self.addr, e))
-        })?;
+        let stream = tokio::time::timeout(self.timeout, tokio::net::TcpStream::connect(self.addr))
+            .await
+            .map_err(|_| TarpcClientError::Timeout(format!("Connection timeout to {}", self.addr)))?
+            .map_err(|e| {
+                TarpcClientError::Connection(format!("Failed to connect to {}: {}", self.addr, e))
+            })?;
 
         debug!("✅ TCP connection established to {}", self.addr);
 
@@ -614,4 +603,3 @@ mod tests {
         assert!(debug_str.contains("localhost:9001"));
     }
 }
-

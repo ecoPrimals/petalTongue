@@ -231,6 +231,9 @@ mod egui_rendering {
         }
 
         /// Convert HSV to Color32
+        // Standard HSV to RGB conversion algorithm
+        // Single-letter variable names are standard notation in color science
+        #[allow(clippy::many_single_char_names)]
         fn hsv_to_color32(h: f32, s: f32, v: f32) -> Color32 {
             let c = v * s;
             let h_prime = h / 60.0;

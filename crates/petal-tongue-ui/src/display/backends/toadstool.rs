@@ -116,7 +116,10 @@ impl ToadstoolDisplay {
 
         info!(
             "🎨 Rendering {}x{} frame via Toadstool ({} bytes -> {})",
-            self.width, self.height, buffer.len(), self.endpoint
+            self.width,
+            self.height,
+            buffer.len(),
+            self.endpoint
         );
 
         // Determine protocol from endpoint
@@ -131,11 +134,11 @@ impl ToadstoolDisplay {
 
     /// HTTP rendering protocol
     async fn render_via_http(&self, buffer: &[u8]) -> Result<()> {
-        use base64::{engine::general_purpose, Engine as _};
-        
+        use base64::{Engine as _, engine::general_purpose};
+
         // Encode buffer as base64 for JSON transport
         let encoded = general_purpose::STANDARD.encode(buffer);
-        
+
         // Create render request
         let request = serde_json::json!({
             "width": self.width,
@@ -147,7 +150,7 @@ impl ToadstoolDisplay {
         // Send POST request to toadstool
         let url = format!("{}/api/v1/render", self.endpoint);
         let client = reqwest::Client::new();
-        
+
         match client
             .post(&url)
             .json(&request)
@@ -178,20 +181,20 @@ impl ToadstoolDisplay {
         // tarpc requires protobufor similar serialization
         // For now, fall back to HTTP-like JSON protocol
         warn!("tarpc protocol not fully implemented, using fallback");
-        
+
         // In production, would use tarpc client:
         // let client = ToadstoolRenderClient::connect(self.endpoint).await?;
         // client.render_frame(self.width, self.height, buffer.to_vec()).await?;
-        
+
         Err(anyhow!("tarpc protocol requires toadstool client library"))
     }
 
     /// JSON-RPC rendering protocol
     async fn render_via_jsonrpc(&self, buffer: &[u8]) -> Result<()> {
-        use base64::{engine::general_purpose, Engine as _};
-        
+        use base64::{Engine as _, engine::general_purpose};
+
         let encoded = general_purpose::STANDARD.encode(buffer);
-        
+
         // JSON-RPC 2.0 request
         let request = serde_json::json!({
             "jsonrpc": "2.0",
@@ -207,7 +210,7 @@ impl ToadstoolDisplay {
 
         // Send to WebSocket or HTTP JSON-RPC endpoint
         let client = reqwest::Client::new();
-        
+
         match client
             .post(&self.endpoint)
             .json(&request)
