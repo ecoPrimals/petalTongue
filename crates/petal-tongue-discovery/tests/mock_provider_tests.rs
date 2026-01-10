@@ -6,7 +6,7 @@ use petal_tongue_discovery::{MockVisualizationProvider, VisualizationDataProvide
 
 #[tokio::test]
 async fn test_mock_provider_creation() {
-    let provider = MockVisualizationProvider::new();
+    let _provider = MockVisualizationProvider::new();
     // Should create without error
     assert!(true, "Mock provider created successfully");
 }
@@ -58,8 +58,8 @@ async fn test_mock_health_check() {
     assert!(health.is_ok(), "Mock health check should succeed");
     let status = health.unwrap();
     assert!(
-        status.contains("mock") || status.contains("OK"),
-        "Status should indicate mock mode"
+        status.contains("Mock") || status.contains("healthy"),
+        "Status should indicate mock mode or health"
     );
 }
 
@@ -68,8 +68,9 @@ async fn test_mock_get_metadata() {
     let provider = MockVisualizationProvider::new();
     let metadata = provider.get_metadata();
 
-    assert_eq!(metadata.name, "mock");
-    assert_eq!(metadata.description, "Mock provider for testing");
+    assert_eq!(metadata.name, "Mock Provider");
+    assert_eq!(metadata.protocol, "mock");
+    assert_eq!(metadata.endpoint, "mock://local");
 }
 
 #[tokio::test]

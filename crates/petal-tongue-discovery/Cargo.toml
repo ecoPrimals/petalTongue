@@ -43,4 +43,5 @@ mdns = ["mdns-sd"]
 
 [dev-dependencies]
 tokio-test = "0.4"
+wiremock = "0.6"
 

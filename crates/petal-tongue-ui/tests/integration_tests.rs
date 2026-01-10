@@ -25,6 +25,8 @@ fn test_graph_engine_integration() {
         family_id: None,
         capabilities: vec!["capability-1".to_string()],
         last_seen: 1234567890,
+        endpoints: None,
+        metadata: None,
     };
 
     {
@@ -56,6 +58,8 @@ fn test_graph_with_edges() {
         family_id: None,
         capabilities: vec![],
         last_seen: 1234567890,
+        endpoints: None,
+        metadata: None,
     };
 
     let primal2 = PrimalInfo {
@@ -70,6 +74,8 @@ fn test_graph_with_edges() {
         family_id: None,
         capabilities: vec![],
         last_seen: 1234567890,
+        endpoints: None,
+        metadata: None,
     };
 
     let edge = TopologyEdge {
@@ -111,6 +117,8 @@ fn test_multiple_primals_different_health() {
             family_id: None,
             capabilities: vec![],
             last_seen: 1234567890,
+            endpoints: None,
+            metadata: None,
         },
         PrimalInfo {
             id: "warning-1".to_string(),
@@ -124,6 +132,8 @@ fn test_multiple_primals_different_health() {
             family_id: None,
             capabilities: vec![],
             last_seen: 1234567890,
+            endpoints: None,
+            metadata: None,
         },
         PrimalInfo {
             id: "critical-1".to_string(),
@@ -137,6 +147,8 @@ fn test_multiple_primals_different_health() {
             family_id: None,
             capabilities: vec![],
             last_seen: 1234567890,
+            endpoints: None,
+            metadata: None,
         },
     ];
 
@@ -181,6 +193,8 @@ fn test_graph_clear() {
                 family_id: None,
                 capabilities: vec![],
                 last_seen: 1234567890,
+                endpoints: None,
+                metadata: None,
             };
             g.add_node(primal);
         }
@@ -225,6 +239,8 @@ fn test_primal_with_capabilities() {
             "storage.read".to_string(),
         ],
         last_seen: 1234567890,
+        endpoints: None,
+        metadata: None,
     };
 
     {
@@ -261,6 +277,8 @@ fn test_edge_with_label() {
             family_id: None,
             capabilities: vec![],
             last_seen: 1234567890,
+            endpoints: None,
+            metadata: None,
         });
 
         g.add_node(PrimalInfo {
@@ -275,6 +293,8 @@ fn test_edge_with_label() {
             family_id: None,
             capabilities: vec![],
             last_seen: 1234567890,
+            endpoints: None,
+            metadata: None,
         });
 
         g.add_edge(TopologyEdge {
@@ -312,6 +332,8 @@ fn test_concurrent_access() {
             family_id: None,
             capabilities: vec![],
             last_seen: 1234567890,
+            endpoints: None,
+            metadata: None,
         });
     }
 
@@ -359,6 +381,8 @@ fn test_graph_stats() {
                 family_id: None,
                 capabilities: vec![],
                 last_seen: 1234567890,
+                endpoints: None,
+                metadata: None,
             });
         }
 
@@ -420,6 +444,8 @@ fn test_remove_node_removes_edges() {
                 family_id: None,
                 capabilities: vec![],
                 last_seen: 1234567890,
+                endpoints: None,
+                metadata: None,
             });
         }
 

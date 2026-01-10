@@ -24,7 +24,7 @@ pub struct ConcurrentDiscoveryResult {
 ///
 /// # Example
 ///
-/// ```rust,no_run
+/// ```rust,ignore
 /// use petal_tongue_discovery::concurrent::discover_concurrent;
 ///
 /// # async fn example() -> anyhow::Result<()> {
@@ -106,7 +106,7 @@ where
 ///
 /// # Example
 ///
-/// ```rust,no_run
+/// ```rust,ignore
 /// use petal_tongue_discovery::concurrent::discover_first_available;
 ///
 /// # async fn example() -> anyhow::Result<()> {

@@ -113,6 +113,8 @@ fn test_add_edge_without_nodes() {
         to: "non-existent-2".to_string(),
         edge_type: "connection".to_string(),
         label: None,
+        capability: None,
+        metrics: None,
     };
 
     graph.add_edge(edge);
@@ -134,6 +136,8 @@ fn test_remove_edge() {
         to: primal2.id.clone(),
         edge_type: "connection".to_string(),
         label: None,
+        capability: None,
+        metrics: None,
     };
 
     graph.add_edge(edge.clone());
@@ -158,6 +162,8 @@ fn test_clear_graph() {
         to: primal2.id,
         edge_type: "connection".to_string(),
         label: None,
+        capability: None,
+        metrics: None,
     };
     graph.add_edge(edge);
 
@@ -348,6 +354,8 @@ fn test_get_all_edges() {
         to: primal2.id,
         edge_type: "connection".to_string(),
         label: None,
+        capability: None,
+        metrics: None,
     };
     graph.add_edge(edge);
 
@@ -394,6 +402,8 @@ fn test_complex_topology() {
             to: primal.id,
             edge_type: "connection".to_string(),
             label: None,
+            capability: None,
+            metrics: None,
         });
     }
 
