@@ -232,7 +232,7 @@ impl SystemDashboard {
         proprioception: &mut crate::proprioception::ProprioceptionSystem,
     ) {
         use crate::proprioception::ProprioceptiveState;
-        
+
         ui.group(|ui| {
             ui.set_width(ui.available_width());
 
@@ -247,7 +247,7 @@ impl SystemDashboard {
 
             // Get current state
             let state: ProprioceptiveState = proprioception.assess();
-            
+
             // Health percentage with color coding
             let health_pct = state.health * 100.0;
             let health_color = if health_pct > 80.0 {
@@ -257,13 +257,13 @@ impl SystemDashboard {
             } else {
                 palette.error // Red
             };
-            
+
             ui.add(
                 egui::ProgressBar::new(state.health)
                     .text(format!("Health: {:.0}%", health_pct))
                     .fill(health_color),
             );
-            
+
             // Confidence percentage
             let conf_pct = state.confidence * 100.0;
             ui.add(
@@ -275,11 +275,11 @@ impl SystemDashboard {
                         palette.text_dim
                     }),
             );
-            
+
             ui.add_space(3.0);
-            
+
             // === v1.2.0: Frame Rate & Hang Detection ===
-            
+
             // FPS display with color coding
             let fps_color = if state.frame_rate > 30.0 {
                 egui::Color32::from_rgb(0, 200, 83) // Green
@@ -288,47 +288,57 @@ impl SystemDashboard {
             } else {
                 palette.error // Red
             };
-            
+
             ui.label(
-                egui::RichText::new(format!("🎬 {:.1} FPS ({} frames)", 
-                    state.frame_rate, state.total_frames))
-                    .size(10.0 * font_scale)
-                    .color(fps_color),
+                egui::RichText::new(format!(
+                    "🎬 {:.1} FPS ({} frames)",
+                    state.frame_rate, state.total_frames
+                ))
+                .size(10.0 * font_scale)
+                .color(fps_color),
             );
-            
+
             // Hang detection warning
             if state.is_hanging {
                 ui.label(
-                    egui::RichText::new(format!("⚠️  HANG: {}", 
-                        state.hang_reason.as_ref().unwrap_or(&"Unknown".to_string())))
-                        .size(10.0 * font_scale)
-                        .color(palette.error)
-                        .strong(),
+                    egui::RichText::new(format!(
+                        "⚠️  HANG: {}",
+                        state.hang_reason.as_ref().unwrap_or(&"Unknown".to_string())
+                    ))
+                    .size(10.0 * font_scale)
+                    .color(palette.error)
+                    .strong(),
                 );
             }
-            
+
             // System status
             let motor_icon = if state.motor_functional { "✅" } else { "❌" };
-            let sensory_icon = if state.sensory_functional { "✅" } else { "❌" };
+            let sensory_icon = if state.sensory_functional {
+                "✅"
+            } else {
+                "❌"
+            };
             let loop_icon = if state.loop_complete { "✅" } else { "⏳" };
-            
+
             ui.label(
-                egui::RichText::new(format!("{} Motor | {} Sensory | {} Loop", 
-                    motor_icon, sensory_icon, loop_icon))
-                    .size(10.0 * font_scale)
-                    .color(palette.text_dim),
+                egui::RichText::new(format!(
+                    "{} Motor | {} Sensory | {} Loop",
+                    motor_icon, sensory_icon, loop_icon
+                ))
+                .size(10.0 * font_scale)
+                .color(palette.text_dim),
             );
-            
+
             // Get diagnostic summary
             let output_status = proprioception.get_output_status();
             let input_status = proprioception.get_input_status();
-            
+
             ui.label(
                 egui::RichText::new(format!("📤 {}", output_status))
                     .size(9.0 * font_scale)
                     .color(palette.text_dim),
             );
-            
+
             ui.label(
                 egui::RichText::new(format!("📥 {}", input_status))
                     .size(9.0 * font_scale)
@@ -365,9 +375,12 @@ impl SystemDashboard {
                 // Motor function
                 let motor_icon = if assessment.can_render { "✅" } else { "❌" };
                 ui.label(
-                    egui::RichText::new(format!("{} Render: {}", motor_icon, metrics.commands_sent))
-                        .size(11.0 * font_scale)
-                        .color(palette.text),
+                    egui::RichText::new(format!(
+                        "{} Render: {}",
+                        motor_icon, metrics.commands_sent
+                    ))
+                    .size(11.0 * font_scale)
+                    .color(palette.text),
                 );
 
                 // Sensory function
@@ -388,13 +401,16 @@ impl SystemDashboard {
                     "⏳"
                 };
                 ui.label(
-                    egui::RichText::new(format!("{} Loop: {:.1}%", loop_icon, assessment.confirmation_rate))
-                        .size(11.0 * font_scale)
-                        .color(if assessment.is_complete_loop {
-                            egui::Color32::from_rgb(0, 200, 83) // Green
-                        } else {
-                            palette.warning
-                        }),
+                    egui::RichText::new(format!(
+                        "{} Loop: {:.1}%",
+                        loop_icon, assessment.confirmation_rate
+                    ))
+                    .size(11.0 * font_scale)
+                    .color(if assessment.is_complete_loop {
+                        egui::Color32::from_rgb(0, 200, 83) // Green
+                    } else {
+                        palette.warning
+                    }),
                 );
 
                 // User visibility state

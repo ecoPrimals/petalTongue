@@ -259,7 +259,8 @@ fn test_connection_metrics_optional() {
         "type": "connection"
     }"#;
 
-    let edge: TopologyEdge = serde_json::from_str(json).expect("Failed to parse minimal connection");
+    let edge: TopologyEdge =
+        serde_json::from_str(json).expect("Failed to parse minimal connection");
 
     assert_eq!(edge.from, "primal-a");
     assert_eq!(edge.to, "primal-b");
@@ -267,4 +268,3 @@ fn test_connection_metrics_optional() {
     assert!(edge.metrics.is_none());
     assert!(edge.capability.is_none());
 }
-

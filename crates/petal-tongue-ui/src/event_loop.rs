@@ -19,7 +19,7 @@ pub fn start_event_loop(
     _rendering_awareness: Arc<RwLock<RenderingAwareness>>,
 ) -> tokio::task::JoinHandle<()> {
     tracing::info!("🔄 Sensory loop active (via egui input events)");
-    
+
     // Placeholder task that completes immediately
     // Real implementation will use tokio::sync::RwLock instead of std::sync::RwLock
     tokio::spawn(async {
@@ -72,10 +72,7 @@ mod tests {
         let awareness = Arc::new(RwLock::new(RenderingAwareness::new()));
 
         // Start event loop (currently a placeholder that completes immediately)
-        let handle = start_event_loop(
-            Arc::clone(&registry),
-            Arc::clone(&awareness),
-        );
+        let handle = start_event_loop(Arc::clone(&registry), Arc::clone(&awareness));
 
         // Let task complete (placeholder completes immediately)
         tokio::time::sleep(Duration::from_millis(10)).await;
@@ -105,4 +102,3 @@ mod tests {
         // For now, we just verify the infrastructure is ready
     }
 }
-

@@ -206,7 +206,9 @@ async fn test_get_metadata() {
 
     assert_eq!(metadata.name, "HTTP Provider");
     assert_eq!(metadata.protocol, "http");
-    assert!(metadata.capabilities.contains(&"visualization.primal-provider".to_string()));
+    assert!(metadata
+        .capabilities
+        .contains(&"visualization.primal-provider".to_string()));
 }
 
 #[tokio::test]

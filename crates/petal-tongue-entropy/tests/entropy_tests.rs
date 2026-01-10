@@ -67,10 +67,7 @@ fn test_visual_entropy_creation() {
 #[test]
 fn test_stroke_creation() {
     let stroke = Stroke {
-        points: vec![
-            Point2D { x: 0.0, y: 0.0 },
-            Point2D { x: 10.0, y: 10.0 },
-        ],
+        points: vec![Point2D { x: 0.0, y: 0.0 }, Point2D { x: 10.0, y: 10.0 }],
         timestamps: vec![Duration::from_millis(0), Duration::from_millis(10)],
         pressure: vec![0.5, 0.6],
         color: Color {

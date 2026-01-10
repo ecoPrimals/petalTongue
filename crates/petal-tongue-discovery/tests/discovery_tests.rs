@@ -10,7 +10,7 @@ async fn test_discover_with_mock_mode() {
     std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
     std::env::remove_var("BIOMEOS_URL");
     std::env::remove_var("PETALTONGUE_ENABLE_MDNS");
-    
+
     // Set mock mode environment variable
     std::env::set_var("PETALTONGUE_MOCK_MODE", "true");
 
@@ -115,7 +115,7 @@ async fn test_discovery_priority() {
     std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
     std::env::remove_var("BIOMEOS_URL");
     std::env::remove_var("PETALTONGUE_ENABLE_MDNS");
-    
+
     // Mock mode should take priority over everything
     std::env::set_var("PETALTONGUE_MOCK_MODE", "true");
     std::env::set_var(

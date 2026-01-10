@@ -3,7 +3,7 @@
 //! Tests verify the core graph structure, layout algorithms, and node positioning.
 
 use petal_tongue_core::{
-    graph_engine::Position, GraphEngine, PrimalHealthStatus, PrimalInfo, TopologyEdge,
+    GraphEngine, PrimalHealthStatus, PrimalInfo, TopologyEdge, graph_engine::Position,
 };
 
 #[test]
@@ -222,7 +222,7 @@ fn test_neighbors() {
 
     let neighbors = graph.neighbors(&primal1.id);
     assert_eq!(neighbors.len(), 2);
-    
+
     let neighbor_ids: Vec<_> = neighbors.iter().map(|n| &n.info.id).collect();
     assert!(neighbor_ids.contains(&&primal2.id));
     assert!(neighbor_ids.contains(&&primal3.id));

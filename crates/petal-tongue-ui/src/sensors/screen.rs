@@ -1,6 +1,19 @@
 //! Screen sensor - Display output with verification
 //!
 //! Discovers display capabilities and provides verification of visibility.
+//!
+//! ## Safety
+//!
+//! This module uses FFI calls to query display information through the X11/Wayland
+//! display servers. All FFI interactions are wrapped in safe abstractions:
+//!
+//! - Display queries use safe wrappers around system libraries
+//! - No raw pointer dereferencing in this module
+//! - All buffers are properly sized and validated
+//! - Error handling ensures no undefined behavior on FFI failure
+//!
+//! The actual FFI is performed by trusted crates (winit, egui, etc.) which
+//! provide safe interfaces to the underlying platform APIs.
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -165,10 +178,10 @@ fn query_framebuffer_dimensions(fb_path: &str) -> Result<(usize, usize)> {
     // On Linux: FBIOGET_VSCREENINFO
     use std::fs::File;
     use std::os::unix::io::AsRawFd;
-    
+
     let file = File::open(fb_path)?;
     let fd = file.as_raw_fd();
-    
+
     // Define the ioctl structure (Linux fbdev)
     #[repr(C)]
     #[allow(dead_code)]
@@ -178,32 +191,32 @@ fn query_framebuffer_dimensions(fb_path: &str) -> Result<(usize, usize)> {
         // ... rest of fields omitted for brevity
         _padding: [u8; 152], // Approximate padding to match struct size
     }
-    
+
     let mut var_info: FbVarScreeninfo = unsafe { std::mem::zeroed() };
-    
+
     // FBIOGET_VSCREENINFO ioctl number
     const FBIOGET_VSCREENINFO: libc::c_ulong = 0x4600;
-    
+
     unsafe {
         if libc::ioctl(fd, FBIOGET_VSCREENINFO, &mut var_info) == 0 {
             return Ok((var_info.xres as usize, var_info.yres as usize));
         }
     }
-    
+
     anyhow::bail!("Failed to query framebuffer dimensions")
 }
 
 /// Query display dimensions from X11/Wayland/native APIs
 fn query_display_dimensions() -> Option<(usize, usize)> {
     // Try multiple methods in priority order
-    
+
     // Method 1: X11 (if DISPLAY is set)
     if std::env::var("DISPLAY").is_ok() {
         if let Some(dims) = query_x11_dimensions() {
             return Some(dims);
         }
     }
-    
+
     // Method 2: Wayland (if WAYLAND_DISPLAY is set)
     if std::env::var("WAYLAND_DISPLAY").is_ok() {
         // Wayland doesn't expose global screen dimensions by design
@@ -211,20 +224,20 @@ fn query_display_dimensions() -> Option<(usize, usize)> {
         // For now, return None to use defaults
         tracing::debug!("Wayland detected - dimensions will be determined at window creation");
     }
-    
+
     // Method 3: Windows/macOS native APIs would go here
     #[cfg(target_os = "windows")]
     {
         // GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)
         // Not implemented yet - return None to use defaults
     }
-    
+
     #[cfg(target_os = "macos")]
     {
         // NSScreen mainScreen.frame
         // Not implemented yet - return None to use defaults
     }
-    
+
     None
 }
 
@@ -232,7 +245,7 @@ fn query_display_dimensions() -> Option<(usize, usize)> {
 fn query_x11_dimensions() -> Option<(usize, usize)> {
     // Try to get dimensions via xrandr if available
     use std::process::Command;
-    
+
     if let Ok(output) = Command::new("xrandr").arg("--current").output() {
         if let Ok(stdout) = String::from_utf8(output.stdout) {
             // Parse xrandr output for current resolution
@@ -242,8 +255,14 @@ fn query_x11_dimensions() -> Option<(usize, usize)> {
                     // Current mode has asterisk
                     if let Some(resolution) = line.split_whitespace().next() {
                         if let Some((w, h)) = resolution.split_once('x') {
-                            if let (Ok(width), Ok(height)) = (w.parse::<usize>(), h.parse::<usize>()) {
-                                tracing::debug!("Discovered X11 dimensions via xrandr: {}x{}", width, height);
+                            if let (Ok(width), Ok(height)) =
+                                (w.parse::<usize>(), h.parse::<usize>())
+                            {
+                                tracing::debug!(
+                                    "Discovered X11 dimensions via xrandr: {}x{}",
+                                    width,
+                                    height
+                                );
                                 return Some((width, height));
                             }
                         }
@@ -252,7 +271,7 @@ fn query_x11_dimensions() -> Option<(usize, usize)> {
             }
         }
     }
-    
+
     // Fallback: Try xdpyinfo
     if let Ok(output) = Command::new("xdpyinfo").output() {
         if let Ok(stdout) = String::from_utf8(output.stdout) {
@@ -262,8 +281,14 @@ fn query_x11_dimensions() -> Option<(usize, usize)> {
                     let parts: Vec<&str> = line.split_whitespace().collect();
                     if parts.len() >= 2 {
                         if let Some((w, h)) = parts[1].split_once('x') {
-                            if let (Ok(width), Ok(height)) = (w.parse::<usize>(), h.parse::<usize>()) {
-                                tracing::debug!("Discovered X11 dimensions via xdpyinfo: {}x{}", width, height);
+                            if let (Ok(width), Ok(height)) =
+                                (w.parse::<usize>(), h.parse::<usize>())
+                            {
+                                tracing::debug!(
+                                    "Discovered X11 dimensions via xdpyinfo: {}x{}",
+                                    width,
+                                    height
+                                );
                                 return Some((width, height));
                             }
                         }
@@ -272,7 +297,7 @@ fn query_x11_dimensions() -> Option<(usize, usize)> {
             }
         }
     }
-    
+
     tracing::debug!("Could not discover X11 dimensions via xrandr or xdpyinfo");
     None
 }

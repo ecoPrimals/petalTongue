@@ -29,7 +29,10 @@ fn test_invalid_endpoint() {
     // Missing tarpc:// prefix
     let result = TarpcClient::new("localhost:9001");
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), TarpcClientError::Configuration(_)));
+    assert!(matches!(
+        result.unwrap_err(),
+        TarpcClientError::Configuration(_)
+    ));
 
     // Missing port
     let result = TarpcClient::new("tarpc://localhost");
@@ -113,7 +116,11 @@ mod live_tests {
         let client = TarpcClient::new(&endpoint).unwrap();
 
         let capabilities = client.get_capabilities().await;
-        assert!(capabilities.is_ok(), "Get capabilities failed: {:?}", capabilities.err());
+        assert!(
+            capabilities.is_ok(),
+            "Get capabilities failed: {:?}",
+            capabilities.err()
+        );
 
         let capabilities = capabilities.unwrap();
         assert!(!capabilities.is_empty(), "No capabilities returned");
@@ -140,7 +147,11 @@ mod live_tests {
         let client = TarpcClient::new(&endpoint).unwrap();
 
         let protocols = client.protocols().await;
-        assert!(protocols.is_ok(), "Protocols check failed: {:?}", protocols.err());
+        assert!(
+            protocols.is_ok(),
+            "Protocols check failed: {:?}",
+            protocols.err()
+        );
 
         let protocols = protocols.unwrap();
         assert!(!protocols.is_empty(), "No protocols returned");
@@ -149,4 +160,3 @@ mod live_tests {
         assert!(protocols.iter().any(|p| p.name == "tarpc"));
     }
 }
-

@@ -8,11 +8,11 @@
 
 pub mod accessibility;
 pub mod accessibility_panel;
-pub mod event_loop;
-pub mod sensor_discovery;
 pub mod app;
 pub mod app_panels;
 pub mod awakening_overlay;
+pub mod event_loop;
+pub mod sensor_discovery;
 pub mod startup_audio;
 pub mod tutorial_mode;
 // Smart refactoring modules (app.rs → modular architecture) - TEMPORARILY DISABLED FOR INCREMENTAL REFACTORING
@@ -26,16 +26,16 @@ pub mod bingocube_integration;
 pub mod data_source;
 pub mod display; // Pure Rust display system
 pub mod display_verification; // Phase 4: Active display visibility verification
-pub mod output_verification; // Universal output verification (visual, audio, haptic, etc.)
-pub mod input_verification; // Universal input verification (keyboard, pointer, etc.)
-pub mod proprioception; // SAME DAVE - Complete sensory-motor self-awareness
-pub mod protocol_selection; // Protocol priority: tarpc PRIMARY, JSON-RPC SECONDARY, HTTPS FALLBACK
 pub mod graph_metrics_plotter;
 pub mod human_entropy_window;
+pub mod input_verification; // Universal input verification (keyboard, pointer, etc.)
 pub mod keyboard_shortcuts;
 pub mod live_data;
 pub mod multimodal_stream;
+pub mod output_verification; // Universal output verification (visual, audio, haptic, etc.)
 pub mod process_viewer_integration;
+pub mod proprioception; // SAME DAVE - Complete sensory-motor self-awareness
+pub mod protocol_selection; // Protocol priority: tarpc PRIMARY, JSON-RPC SECONDARY, HTTPS FALLBACK
 pub mod sensors; // Sensor implementations (bidirectional UUI)
 // DEPRECATED: Old hardcoded discovery (remove after migration)
 // pub mod rendering_discovery;

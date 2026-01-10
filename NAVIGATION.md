@@ -1,242 +1,311 @@
-# 🧭 petalTongue Navigation Guide
+# 📚 petalTongue Documentation Navigation
 
-**Last Updated**: January 8, 2026  
-**Purpose**: Find what you need quickly
-
----
-
-## 🚀 Quick Start
-
-| I want to... | Read this |
-|--------------|-----------|
-| **Build the project** | [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md) |
-| **Understand what happened today** | [START_HERE_JAN_8_2026.md](START_HERE_JAN_8_2026.md) |
-| **Deploy to production** | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) |
-| **Run a demo** | [DEMO_GUIDE.md](DEMO_GUIDE.md) or [QUICK_START.md](QUICK_START.md) |
-| **Configure environment** | [ENV_VARS.md](ENV_VARS.md) |
-| **See current status** | [STATUS.md](STATUS.md) |
+**Last Updated**: January 10, 2026  
+**Version**: 1.3.0
 
 ---
 
-## 📚 Documentation Categories
+## 🎯 Start Here (By Role)
 
-### For New Users
-- **[README.md](README.md)** - Project overview and quick reference
-- **[QUICK_START.md](QUICK_START.md)** - Get running in 5 minutes
-- **[DEMO_GUIDE.md](DEMO_GUIDE.md)** - Interactive demonstrations
+### **New User** → [START_HERE.md](START_HERE.md)
+Quick introduction and first steps.
 
-### For Developers
-- **[BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md)** - Complete build guide
-- **[ENV_VARS.md](ENV_VARS.md)** - All environment variables
-- **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Complete doc catalog
-- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick API reference
+### **Developer** → [STATUS.md](STATUS.md)
+Current project status, metrics, and health.
 
-### For Operations
-- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Production deployment
-- **[STATUS.md](STATUS.md)** - Current system status
-- **[CHANGELOG.md](CHANGELOG.md)** - Version history
+### **Architect** → [specs/](specs/)
+Technical specifications and design documents.
 
-### For Contributors
-- **[IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md)** - What's next (7 phases)
-- **[QUICK_WINS_AVAILABLE.md](QUICK_WINS_AVAILABLE.md)** - Easy improvements
-- **[TECHNICAL_DEBT_WINDOW_VERIFICATION.md](TECHNICAL_DEBT_WINDOW_VERIFICATION.md)** - Known issues
+### **Contributor** → [AUDIT_ACTION_ITEMS.md](AUDIT_ACTION_ITEMS.md)
+Current priorities and implementation roadmap.
 
 ---
 
-## 📊 Current Session (Jan 8, 2026)
+## 📖 Core Documentation
 
-### Executive View
-- **[START_HERE_JAN_8_2026.md](START_HERE_JAN_8_2026.md)** - Session overview
-- **[SESSION_COMPLETE_JAN_8_2026_FINAL.md](SESSION_COMPLETE_JAN_8_2026_FINAL.md)** - Complete summary
-- **[AUDIT_EXECUTIVE_SUMMARY.md](AUDIT_EXECUTIVE_SUMMARY.md)** - Audit TL;DR
+### **Getting Started**
+- [README.md](README.md) - Project overview
+- [START_HERE.md](START_HERE.md) - First steps
+- [QUICK_START.md](QUICK_START.md) - Fast setup
+- [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md) - Build & dependencies
 
-### Technical Deep-Dive
-- **[COMPREHENSIVE_AUDIT_REPORT_JAN_8_2026.md](COMPREHENSIVE_AUDIT_REPORT_JAN_8_2026.md)** - Full 17-category audit
-- **[EXECUTION_PROGRESS_JAN_8_2026.md](EXECUTION_PROGRESS_JAN_8_2026.md)** - Implementation progress
-- **[WORK_COMPLETED_JAN_8_2026.md](WORK_COMPLETED_JAN_8_2026.md)** - Deliverables summary
+### **Running & Deployment**
+- [DEMO_GUIDE.md](DEMO_GUIDE.md) - Interactive demonstrations
+- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Production deployment
+- [ENV_VARS.md](ENV_VARS.md) - Environment configuration
 
-### Specific Topics
-- **[HARDCODING_ELIMINATION_JAN_8_2026.md](HARDCODING_ELIMINATION_JAN_8_2026.md)** - How we achieved zero-config
-- **[REFACTOR_STATUS_JAN_8_2026.md](REFACTOR_STATUS_JAN_8_2026.md)** - Smart refactoring progress
-- **[SESSION_PROGRESS_JAN_8_2026.md](SESSION_PROGRESS_JAN_8_2026.md)** - Detailed progress tracking
-
-### Audit & Remediation
-- **[AUDIT_AND_REMEDIATION_INDEX.md](AUDIT_AND_REMEDIATION_INDEX.md)** - Complete audit navigation
+### **Project Status**
+- [STATUS.md](STATUS.md) - Comprehensive status (794 lines)
+- [CHANGELOG.md](CHANGELOG.md) - Version history
+- [RELEASE_NOTES_V1.3.0.md](RELEASE_NOTES_V1.3.0.md) - Latest release
 
 ---
 
-## 📖 Specifications (specs/)
+## 🔍 Recent Audit (Jan 10, 2026)
 
-### Core Architecture
-- **[BIDIRECTIONAL_UUI_ARCHITECTURE.md](specs/BIDIRECTIONAL_UUI_ARCHITECTURE.md)** - Self-awareness system
-- **[SENSORY_INPUT_V1_PERIPHERALS.md](specs/SENSORY_INPUT_V1_PERIPHERALS.md)** - Sensor discovery
-- **[PURE_RUST_DISPLAY_ARCHITECTURE.md](specs/PURE_RUST_DISPLAY_ARCHITECTURE.md)** - Display system
+### **Primary Documents**
+1. **[COMPREHENSIVE_AUDIT_REPORT_JAN_10_2026.md](COMPREHENSIVE_AUDIT_REPORT_JAN_10_2026.md)** (24KB)
+   - Complete 11-section analysis
+   - Spec gaps, code quality, safety review
+   - **Grade: A (9.5/10)**
 
-### Features
-- **[PETALTONGUE_AWAKENING_EXPERIENCE.md](specs/PETALTONGUE_AWAKENING_EXPERIENCE.md)** - Awakening flow
-- **[HUMAN_ENTROPY_CAPTURE_SPECIFICATION.md](specs/HUMAN_ENTROPY_CAPTURE_SPECIFICATION.md)** - Entropy system
-- **[PRIMAL_MULTIMODAL_RENDERING_SPECIFICATION.md](specs/PRIMAL_MULTIMODAL_RENDERING_SPECIFICATION.md)** - Multi-modal rendering
+2. **[AUDIT_ACTION_ITEMS.md](AUDIT_ACTION_ITEMS.md)** (9KB)
+   - Prioritized roadmap
+   - Time estimates
+   - Implementation guides
 
-### Discovery & Integration
-- **[DISCOVERY_INFRASTRUCTURE_EVOLUTION_SPECIFICATION.md](specs/DISCOVERY_INFRASTRUCTURE_EVOLUTION_SPECIFICATION.md)** - Discovery system
-- **[PETALTONGUE_UI_AND_VISUALIZATION_SPECIFICATION.md](specs/PETALTONGUE_UI_AND_VISUALIZATION_SPECIFICATION.md)** - UI architecture
+3. **[AUDIT_COMPLETE_NEXT_PHASE.md](AUDIT_COMPLETE_NEXT_PHASE.md)** (9KB)
+   - Handoff for next developer
+   - 8-week roadmap
+   - Success metrics
+
+4. **[FINAL_SESSION_REPORT.md](FINAL_SESSION_REPORT.md)** (9KB)
+   - Session summary
+   - Key achievements
+   - Findings & insights
+
+### **Key Findings**
+- ✅ 95% complete - production ready for visualization
+- ✅ Discovery infrastructure 100% complete (surprise!)
+- ✅ TRUE PRIMAL architecture validated
+- ⚠️ Entropy capture ~10% complete (only major gap)
 
 ---
 
-## 📁 Directory Structure
+## 📐 Technical Specifications
 
+All specs in [specs/](specs/) directory:
+
+1. **[BIDIRECTIONAL_UUI_ARCHITECTURE.md](specs/BIDIRECTIONAL_UUI_ARCHITECTURE.md)**
+   - SAME DAVE: Central Nervous System model
+   - Motor (output) + Sensory (input) functions
+   - Proprioception & feedback loops
+
+2. **[DISCOVERY_INFRASTRUCTURE_EVOLUTION_SPECIFICATION.md](specs/DISCOVERY_INFRASTRUCTURE_EVOLUTION_SPECIFICATION.md)**
+   - Multi-protocol discovery (mDNS + HTTP)
+   - Caching & trust verification
+   - **Status: Phases 1 & 2 complete!**
+
+3. **[HUMAN_ENTROPY_CAPTURE_SPECIFICATION.md](specs/HUMAN_ENTROPY_CAPTURE_SPECIFICATION.md)**
+   - Multi-modal entropy capture
+   - Audio, visual, narrative, gesture, video
+   - **Status: ~10% complete - NEXT PRIORITY**
+
+4. **[PETALTONGUE_AWAKENING_EXPERIENCE.md](specs/PETALTONGUE_AWAKENING_EXPERIENCE.md)**
+   - Startup journey specification
+   - Visual & audio cues
+   - Tutorial transitions
+
+5. **[PETALTONGUE_UI_AND_VISUALIZATION_SPECIFICATION.md](specs/PETALTONGUE_UI_AND_VISUALIZATION_SPECIFICATION.md)**
+   - Core UI architecture
+   - Visualization requirements
+
+6. **[PRIMAL_MULTIMODAL_RENDERING_SPECIFICATION.md](specs/PRIMAL_MULTIMODAL_RENDERING_SPECIFICATION.md)**
+   - Multi-backend rendering
+   - Modality selection & fallback
+
+7. **[PURE_RUST_DISPLAY_ARCHITECTURE.md](specs/PURE_RUST_DISPLAY_ARCHITECTURE.md)**
+   - Native display system
+   - Backend implementations
+
+8. **[SENSORY_INPUT_V1_PERIPHERALS.md](specs/SENSORY_INPUT_V1_PERIPHERALS.md)**
+   - Input device discovery
+   - Peripheral integration
+
+---
+
+## 📂 Extended Documentation
+
+### **Architecture** ([docs/architecture/](docs/architecture/))
+- Display system design
+- Primal communication patterns
+- State management
+- Error handling strategies
+
+### **Features** ([docs/features/](docs/features/))
+- Feature specifications
+- Implementation guides
+- Usage examples
+
+### **Integration** ([docs/integration/](docs/integration/))
+- biomeOS integration
+- Inter-primal communication
+- Discovery protocols
+
+### **Operations** ([docs/operations/](docs/operations/))
+- Monitoring & telemetry
+- Performance tuning
+- Troubleshooting
+
+### **Technical Deep-Dives** ([docs/technical/](docs/technical/))
+- Implementation details
+- Optimization techniques
+- Design decisions
+
+### **Session Notes** ([docs/sessions/](docs/sessions/))
+- 28 development session reports
+- Historical context
+- Evolution tracking
+
+---
+
+## 🎭 Demonstrations
+
+### **Showcase** ([showcase/](showcase/))
+- [00_SHOWCASE_INDEX.md](showcase/00_SHOWCASE_INDEX.md) - Overview
+- [EXECUTIVE_SUMMARY.md](showcase/EXECUTIVE_SUMMARY.md) - Key demos
+- [LIVE_SHOWCASE.sh](showcase/LIVE_SHOWCASE.sh) - Run all demos
+
+### **Live Demos by Category**
+1. **Local Primal** - Standalone operation
+2. **biomeOS Integration** - Ecosystem discovery
+3. **Inter-Primal** - Multi-primal coordination
+4. **Accessibility** - Multi-modal rendering
+5. **Performance** - Optimization showcase
+
+---
+
+## 🧪 Testing & Development
+
+### **Sandbox** ([sandbox/](sandbox/))
+- Mock biomeOS server
+- Test scenarios (JSON configs)
+- Development scripts
+
+### **Tests** ([tests/](tests/))
+- E2E integration tests
+- Chaos testing scenarios
+- Coverage: 85%+ (target: 90%)
+
+### **Examples** ([examples/](examples/))
+- Display backends
+- Awakening experience
+- Pure Rust GUI
+- Framebuffer rendering
+
+---
+
+## 🔧 Development Tools
+
+### **Scripts** ([scripts/](scripts/))
+- Health monitoring
+- Development automation
+- Testing utilities
+
+### **Tools** ([tools/](tools/))
+- Helper scripts
+- Development utilities
+
+---
+
+## 📊 Status & Planning
+
+### **Current Status**
+- [STATUS.md](STATUS.md) - Comprehensive project status
+- [IPC_STATUS_REPORT.md](IPC_STATUS_REPORT.md) - Inter-primal comm status
+- [TARPC_IMPLEMENTATION_COMPLETE.md](TARPC_IMPLEMENTATION_COMPLETE.md) - tarpc integration
+
+### **Planning & Roadmap**
+- [NEXT_EVOLUTIONS.md](NEXT_EVOLUTIONS.md) - Future directions
+- [AUDIT_ACTION_ITEMS.md](AUDIT_ACTION_ITEMS.md) - Prioritized tasks
+
+---
+
+## 🌊 Inter-Primal Context
+
+### **Ecosystem Discussions**
+- [../wateringHole/INTER_PRIMAL_INTERACTIONS.md](../wateringHole/INTER_PRIMAL_INTERACTIONS.md)
+  - Cross-primal coordination
+  - Interaction patterns
+  - Integration strategies
+
+---
+
+## 📋 Quick Reference
+
+### **Common Commands**
+```bash
+# Build & run
+cargo run --release
+
+# Run tests
+cargo test --all-features
+
+# Run specific demo
+./showcase/QUICK_START.sh
+
+# Check status
+cat STATUS.md | head -50
+
+# Generate coverage
+cargo llvm-cov --all-features --workspace --lcov --output-path coverage.lcov
 ```
-petalTongue/
-├── README.md                    ← Start here (project overview)
-├── NAVIGATION.md                ← You are here
-├── START_HERE_JAN_8_2026.md    ← Today's session overview
-│
-├── Quick Start/
-│   ├── BUILD_INSTRUCTIONS.md
-│   ├── QUICK_START.md
-│   ├── DEMO_GUIDE.md
-│   └── ENV_VARS.md
-│
-├── Current Status/
-│   ├── STATUS.md
-│   ├── CHANGELOG.md
-│   └── DEPLOYMENT_GUIDE.md
-│
-├── Jan 8 Session/
-│   ├── SESSION_COMPLETE_JAN_8_2026_FINAL.md
-│   ├── EXECUTION_PROGRESS_JAN_8_2026.md
-│   ├── WORK_COMPLETED_JAN_8_2026.md
-│   ├── HARDCODING_ELIMINATION_JAN_8_2026.md
-│   └── (see section above for all)
-│
-├── Implementation/
-│   ├── IMPLEMENTATION_ROADMAP.md
-│   ├── QUICK_WINS_AVAILABLE.md
-│   └── TECHNICAL_DEBT_WINDOW_VERIFICATION.md
-│
-├── specs/                       ← Architecture specifications
-│   └── (8 comprehensive specs)
-│
-├── docs/                        ← Detailed documentation
-│   ├── architecture/
-│   ├── features/
-│   ├── guides/
-│   └── operations/
-│
-├── showcase/                    ← Live demonstrations
-│   └── (7 showcase scenarios)
-│
-├── examples/                    ← Code examples
-│   └── (6 runnable examples)
-│
-└── archive/                     ← Historical documents
-    └── sessions_jan_8_2026/
-```
+
+### **Key Files**
+- `Cargo.toml` - Workspace configuration
+- `llvm-cov.toml` - Coverage configuration
+- `launch-demo.sh` - Quick demo launcher
+- `fix_tests.sh` - Test repair utility
+
+### **Project Metrics** (as of Jan 10, 2026)
+- **LOC**: ~47,000
+- **Crates**: 14
+- **Tests**: 460+
+- **Coverage**: 85%+
+- **Grade**: A (9.5/10)
+- **Status**: 95% complete
 
 ---
 
-## 🎯 By Use Case
+## 🎯 Next Steps
 
-### "I'm new here"
-1. Read [README.md](README.md)
-2. Run [QUICK_START.md](QUICK_START.md)
-3. Try [DEMO_GUIDE.md](DEMO_GUIDE.md)
+### **For New Contributors**
+1. Read [README.md](README.md) - Project overview
+2. Read [STATUS.md](STATUS.md) - Current state
+3. Review [AUDIT_ACTION_ITEMS.md](AUDIT_ACTION_ITEMS.md) - Priorities
+4. Check [specs/HUMAN_ENTROPY_CAPTURE_SPECIFICATION.md](specs/HUMAN_ENTROPY_CAPTURE_SPECIFICATION.md)
+5. Explore `crates/petal-tongue-entropy/src/` - Start here!
 
-### "I want to build"
-1. Read [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md)
-2. Check [ENV_VARS.md](ENV_VARS.md)
-3. See [TECHNICAL_DEBT_WINDOW_VERIFICATION.md](TECHNICAL_DEBT_WINDOW_VERIFICATION.md) for known issues
+### **Current Priority: Entropy Capture**
+**Status**: ~10% complete  
+**Timeline**: 4-5 weeks  
+**Impact**: CRITICAL for key generation
 
-### "I want to deploy"
-1. Read [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
-2. Review [ENV_VARS.md](ENV_VARS.md) for production
-3. Check [STATUS.md](STATUS.md) for readiness
-
-### "I want to contribute"
-1. Read [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md)
-2. Check [QUICK_WINS_AVAILABLE.md](QUICK_WINS_AVAILABLE.md)
-3. Review [COMPREHENSIVE_AUDIT_REPORT_JAN_8_2026.md](COMPREHENSIVE_AUDIT_REPORT_JAN_8_2026.md)
-
-### "I want to understand today's work"
-1. Start with [START_HERE_JAN_8_2026.md](START_HERE_JAN_8_2026.md)
-2. Read [SESSION_COMPLETE_JAN_8_2026_FINAL.md](SESSION_COMPLETE_JAN_8_2026_FINAL.md)
-3. Deep-dive: [COMPREHENSIVE_AUDIT_REPORT_JAN_8_2026.md](COMPREHENSIVE_AUDIT_REPORT_JAN_8_2026.md)
-
-### "I need architecture details"
-1. Browse [specs/](specs/) directory
-2. Read [BIDIRECTIONAL_UUI_ARCHITECTURE.md](specs/BIDIRECTIONAL_UUI_ARCHITECTURE.md)
-3. Check [docs/architecture/](docs/architecture/)
+See [AUDIT_COMPLETE_NEXT_PHASE.md](AUDIT_COMPLETE_NEXT_PHASE.md) for detailed roadmap.
 
 ---
 
-## 🔍 Search Patterns
+## 📞 Support & Resources
 
-### Finding Features
-- **Display System**: [specs/PURE_RUST_DISPLAY_ARCHITECTURE.md](specs/PURE_RUST_DISPLAY_ARCHITECTURE.md)
-- **Sensor System**: [specs/SENSORY_INPUT_V1_PERIPHERALS.md](specs/SENSORY_INPUT_V1_PERIPHERALS.md)
-- **Discovery**: [specs/DISCOVERY_INFRASTRUCTURE_EVOLUTION_SPECIFICATION.md](specs/DISCOVERY_INFRASTRUCTURE_EVOLUTION_SPECIFICATION.md)
+### **Documentation Issues**
+- Check [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)
+- Review [docs/README.md](docs/README.md)
 
-### Finding Status
-- **Current**: [STATUS.md](STATUS.md)
-- **Historical**: [CHANGELOG.md](CHANGELOG.md)
-- **Today**: [START_HERE_JAN_8_2026.md](START_HERE_JAN_8_2026.md)
+### **Build Issues**
+- See [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md)
+- Check environment: [ENV_VARS.md](ENV_VARS.md)
 
-### Finding How-To
-- **Build**: [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md)
-- **Deploy**: [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
-- **Demo**: [DEMO_GUIDE.md](DEMO_GUIDE.md)
-- **Configure**: [ENV_VARS.md](ENV_VARS.md)
+### **Deployment Issues**
+- See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
+- Review showcase demos for working examples
 
 ---
 
-## 📈 Version History
+## 🌸 Philosophy
 
-| Version | Date | Key Achievement |
-|---------|------|-----------------|
-| **v0.3.2** | Jan 8, 2026 | TRUE PRIMAL evolution, zero-config deployment |
-| v0.3.1 | Jan 8, 2026 | Bidirectional UUI complete |
-| v0.3.0 | Jan 7, 2026 | Pure Rust display system |
+> "Evolution through deep understanding - not surface-level patches"
 
-See [CHANGELOG.md](CHANGELOG.md) for complete history.
-
----
-
-## 🆘 Help & Support
-
-### Common Questions
-- **Build fails?** → [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md)
-- **Can't find BiomeOS?** → That's OK! Runtime discovery works. See [ENV_VARS.md](ENV_VARS.md)
-- **Need a quick demo?** → Run `./launch-demo.sh` or see [DEMO_GUIDE.md](DEMO_GUIDE.md)
-
-### Documentation Issues
-- **Can't find something?** → Check this file's search patterns above
-- **Doc seems outdated?** → Check [STATUS.md](STATUS.md) for current state
-- **Need more detail?** → See [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)
+petalTongue documentation follows this principle:
+- Comprehensive yet navigable
+- Context-rich specifications
+- Clear next steps
+- Honest status reporting
 
 ---
 
-## 🎓 Learning Path
+**Last Audit**: January 10, 2026  
+**Grade**: A (9.5/10)  
+**Status**: Production-Ready (Visualization)  
+**Next**: Complete Entropy Capture
 
-### Beginner
-1. [README.md](README.md) - Overview
-2. [QUICK_START.md](QUICK_START.md) - First run
-3. [DEMO_GUIDE.md](DEMO_GUIDE.md) - Interactive demos
-
-### Intermediate
-4. [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md) - Building
-5. [ENV_VARS.md](ENV_VARS.md) - Configuration
-6. [specs/BIDIRECTIONAL_UUI_ARCHITECTURE.md](specs/BIDIRECTIONAL_UUI_ARCHITECTURE.md) - Architecture
-
-### Advanced
-7. [COMPREHENSIVE_AUDIT_REPORT_JAN_8_2026.md](COMPREHENSIVE_AUDIT_REPORT_JAN_8_2026.md) - Deep analysis
-8. [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) - Future work
-9. [docs/architecture/](docs/architecture/) - Detailed architecture
-
----
-
-**Last Updated**: January 8, 2026  
-**Status**: Up-to-date with v0.3.2 release  
-**Maintained**: Living document, updated with each session
-
-🌸 **petalTongue: Documentation that guides, not confuses** 🚀
-
+🌸 **Navigate with confidence - documentation is complete** 🌸
