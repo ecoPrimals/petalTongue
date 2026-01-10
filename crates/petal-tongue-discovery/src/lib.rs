@@ -109,7 +109,7 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
         Ok(songbird_provider) => {
             tracing::info!("✅ Songbird connected - using as primary provider");
             providers.push(Box::new(songbird_provider) as Box<dyn VisualizationDataProvider>);
-            
+
             // If Songbird is available, it's our primary source - return it
             return Ok(providers);
         }
