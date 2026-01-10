@@ -10,6 +10,7 @@ async-trait = "0.1"
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 thiserror = "1"
+libc = "0.2"  # For Unix UID detection in socket paths
 
 # HTTP client
 reqwest = { version = "0.11", features = ["json"] }
