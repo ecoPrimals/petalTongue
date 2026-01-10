@@ -39,6 +39,7 @@ mod http_provider;
 mod mdns_provider;
 mod mock_provider;
 mod songbird_client;
+mod songbird_provider;
 mod traits;
 mod unix_socket_provider;
 
@@ -56,6 +57,7 @@ pub use http_provider::HttpVisualizationProvider;
 pub use mdns_provider::MdnsVisualizationProvider;
 pub use mock_provider::MockVisualizationProvider;
 pub use songbird_client::SongbirdClient;
+pub use songbird_provider::SongbirdVisualizationProvider;
 pub use traits::{ProviderMetadata, VisualizationDataProvider};
 pub use unix_socket_provider::UnixSocketProvider;
 
@@ -103,56 +105,17 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
     // Priority 1: Try Songbird for live primal discovery (PREFERRED METHOD)
     // This queries Songbird which has the complete primal registry
     tracing::info!("🎵 Attempting Songbird discovery (live primal topology)...");
-    match SongbirdClient::discover(None) {
-        Ok(songbird) => {
-            // Test connectivity first
-            match songbird.health_check().await {
-                Ok(status) => {
-                    tracing::info!("✅ Songbird is {} - discovering primals...", status);
-                    
-                    // Try to get all primals from Songbird
-                    match songbird.get_all_primals().await {
-                        Ok(primals) if !primals.is_empty() => {
-                            tracing::info!("🎵 Songbird found {} registered primals!", primals.len());
-                            
-                            // Create a Songbird-based visualization provider
-                            // TODO: Wrap SongbirdClient in VisualizationDataProvider trait
-                            // For now, fall through to other discovery methods
-                            tracing::info!("   (Songbird integration in progress - using secondary discovery)");
-                        }
-                        Ok(_) => {
-                            tracing::warn!("Songbird is running but no primals registered yet");
-                        }
-                        Err(e) => {
-                            tracing::warn!("Songbird query failed: {}", e);
-                        }
-                    }
-                }
-                Err(e) => {
-                    tracing::warn!("Songbird health check failed: {}", e);
-                }
-            }
+    match SongbirdVisualizationProvider::discover(None).await {
+        Ok(songbird_provider) => {
+            tracing::info!("✅ Songbird connected - using as primary provider");
+            providers.push(Box::new(songbird_provider) as Box<dyn VisualizationDataProvider>);
+            
+            // If Songbird is available, it's our primary source - return it
+            return Ok(providers);
         }
         Err(e) => {
             tracing::debug!("Songbird not available: {}", e);
             tracing::info!("💡 Tip: Start Songbird for live primal discovery");
-        }
-    }
-
-    // Priority 2: Try Unix socket discovery (scanning for .sock files)
-    tracing::info!("🔍 Attempting Unix socket discovery...");
-    let unix_provider = UnixSocketProvider::new();
-    match unix_provider.discover().await {
-        Ok(primals) if !primals.is_empty() => {
-            tracing::info!("✅ Unix socket discovery found {} primals", primals.len());
-            // TODO: Wrap Unix socket discovery results in VisualizationDataProvider
-            // For now, this provides a fallback path
-        }
-        Ok(_) => {
-            tracing::debug!("Unix socket discovery found no primals");
-        }
-        Err(e) => {
-            tracing::debug!("Unix socket discovery failed: {}", e);
         }
     }
 

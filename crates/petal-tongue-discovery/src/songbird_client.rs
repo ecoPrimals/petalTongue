@@ -2,12 +2,18 @@
 //!
 //! Queries Songbird primal for capability-based discovery of other primals.
 //! This is the PRIMARY method for petalTongue to discover live ecosystem topology.
+//!
+//! MODERN IDIOMATIC RUST:
+//! - Aggressive timeouts to prevent hanging
+//! - Non-blocking operations throughout
+//! - Proper error propagation
 
 use anyhow::{Context, Result};
 use petal_tongue_core::types::{PrimalHealthStatus, PrimalInfo};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::path::PathBuf;
+use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
 use tracing::{debug, info, warn};
@@ -33,6 +39,7 @@ struct JsonRpcResponse {
 /// Songbird client for primal discovery
 ///
 /// Connects to Songbird via Unix socket and queries for registered primals.
+#[derive(Debug)]
 pub struct SongbirdClient {
     /// Path to Songbird's Unix socket
     socket_path: PathBuf,
@@ -100,6 +107,12 @@ impl SongbirdClient {
     #[must_use]
     pub fn with_socket_path(socket_path: PathBuf) -> Self {
         Self { socket_path }
+    }
+    
+    /// Get the socket path (for metadata/debugging)
+    #[must_use]
+    pub fn socket_path(&self) -> &PathBuf {
+        &self.socket_path
     }
     
     /// Discover primals by capability
@@ -197,27 +210,59 @@ impl SongbirdClient {
     }
     
     /// Send JSON-RPC request to Songbird
+    ///
+    /// Uses aggressive timeouts to prevent hanging on unresponsive Songbird.
     async fn send_request(&self, request: Value) -> Result<Value> {
-        // Connect to Unix socket
-        let stream = UnixStream::connect(&self.socket_path)
-            .await
-            .context(format!(
-                "Failed to connect to Songbird at {}",
-                self.socket_path.display()
-            ))?;
+        // CRITICAL: Wrap socket connect in timeout
+        let connect_timeout = Duration::from_millis(200);
+        
+        let stream = match tokio::time::timeout(
+            connect_timeout,
+            UnixStream::connect(&self.socket_path)
+        ).await {
+            Ok(Ok(stream)) => stream,
+            Ok(Err(e)) => {
+                return Err(e).context(format!(
+                    "Failed to connect to Songbird at {}",
+                    self.socket_path.display()
+                ));
+            }
+            Err(_) => {
+                return Err(anyhow::anyhow!(
+                    "Connection timeout to Songbird at {}",
+                    self.socket_path.display()
+                ));
+            }
+        };
         
         let (reader, mut writer) = stream.into_split();
         let mut reader = BufReader::new(reader);
         
-        // Send request
-        let request_json = serde_json::to_string(&request)?;
-        writer.write_all(request_json.as_bytes()).await?;
-        writer.write_all(b"\n").await?;
-        writer.flush().await?;
+        // CRITICAL: Wrap write operations in timeout
+        let write_timeout = Duration::from_millis(100);
         
-        // Read response
+        let request_json = serde_json::to_string(&request)?;
+        
+        match tokio::time::timeout(write_timeout, async {
+            writer.write_all(request_json.as_bytes()).await?;
+            writer.write_all(b"\n").await?;
+            writer.flush().await?;
+            Ok::<(), std::io::Error>(())
+        }).await {
+            Ok(Ok(())) => {}
+            Ok(Err(e)) => return Err(e.into()),
+            Err(_) => return Err(anyhow::anyhow!("Write timeout to Songbird")),
+        }
+        
+        // CRITICAL: Wrap read operation in timeout
+        let read_timeout = Duration::from_millis(500);
+        
         let mut line = String::new();
-        reader.read_line(&mut line).await?;
+        match tokio::time::timeout(read_timeout, reader.read_line(&mut line)).await {
+            Ok(Ok(_)) => {}
+            Ok(Err(e)) => return Err(e.into()),
+            Err(_) => return Err(anyhow::anyhow!("Read timeout from Songbird")),
+        }
         
         // Parse response
         let response: JsonRpcResponse = serde_json::from_str(&line)?;
