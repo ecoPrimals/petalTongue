@@ -1,4 +1,3 @@
-
 //! Socket path resolution for ecoPrimals ecosystem
 //!
 //! Provides capability-based socket path resolution following the biomeOS convention:
@@ -43,7 +42,7 @@ use std::path::PathBuf;
 pub fn get_petaltongue_socket_path() -> Result<PathBuf> {
     let family_id = get_family_id();
     let runtime_dir = get_runtime_dir()?;
-    
+
     Ok(runtime_dir.join(format!("petaltongue-{}.sock", family_id)))
 }
 
@@ -74,12 +73,12 @@ pub fn get_runtime_dir() -> Result<PathBuf> {
     if let Ok(dir) = env::var("XDG_RUNTIME_DIR") {
         return Ok(PathBuf::from(dir));
     }
-    
+
     // Fallback to /run/user/<uid>
     // Use `id -u` command to get UID in a portable way
     let uid = get_current_uid()?;
     let runtime_dir = PathBuf::from(format!("/run/user/{}", uid));
-    
+
     // Verify directory exists and is writable
     if !runtime_dir.exists() {
         anyhow::bail!(
@@ -89,7 +88,7 @@ pub fn get_runtime_dir() -> Result<PathBuf> {
             uid
         );
     }
-    
+
     Ok(runtime_dir)
 }
 
@@ -124,7 +123,7 @@ pub fn discover_primal_socket(primal_name: &str, family_id: Option<&str>) -> Res
         None => get_family_id(),
     };
     let runtime_dir = get_runtime_dir()?;
-    
+
     Ok(runtime_dir.join(format!("{}-{}.sock", primal_name, family)))
 }
 
@@ -143,19 +142,19 @@ pub fn socket_exists(socket_path: &PathBuf) -> bool {
 /// Uses the standard Unix `id` command rather than unsafe libc calls.
 fn get_current_uid() -> Result<u32> {
     use std::process::Command;
-    
+
     let output = Command::new("id")
         .arg("-u")
         .output()
         .map_err(|e| anyhow::anyhow!("Failed to run 'id -u': {}", e))?;
-    
+
     if !output.status.success() {
         anyhow::bail!("'id -u' command failed");
     }
-    
+
     let uid_str = String::from_utf8(output.stdout)
         .map_err(|e| anyhow::anyhow!("Invalid UTF-8 from 'id -u': {}", e))?;
-    
+
     uid_str
         .trim()
         .parse::<u32>()
@@ -166,27 +165,35 @@ fn get_current_uid() -> Result<u32> {
 mod tests {
     use super::*;
     use std::env;
-    
+
     #[test]
     fn test_default_family_id() {
         // SAFETY: Test-only environment variable modification
-        unsafe { env::remove_var("FAMILY_ID"); }
+        unsafe {
+            env::remove_var("FAMILY_ID");
+        }
         assert_eq!(get_family_id(), "nat0");
     }
-    
+
     #[test]
     fn test_custom_family_id() {
         // SAFETY: Test-only environment variable modification
-        unsafe { env::set_var("FAMILY_ID", "test-family"); }
+        unsafe {
+            env::set_var("FAMILY_ID", "test-family");
+        }
         assert_eq!(get_family_id(), "test-family");
-        unsafe { env::remove_var("FAMILY_ID"); }
+        unsafe {
+            env::remove_var("FAMILY_ID");
+        }
     }
-    
+
     #[test]
     fn test_petaltongue_socket_path_format() {
         // SAFETY: Test-only environment variable modification
-        unsafe { env::remove_var("FAMILY_ID"); }
-        
+        unsafe {
+            env::remove_var("FAMILY_ID");
+        }
+
         // This test assumes /run/user/<uid> exists
         if let Ok(path) = get_petaltongue_socket_path() {
             let path_str = path.to_string_lossy();
@@ -194,18 +201,20 @@ mod tests {
             assert!(path_str.contains("/run/user/") || path_str.contains("XDG_RUNTIME_DIR"));
         }
     }
-    
+
     #[test]
     fn test_discover_primal_socket() {
         // SAFETY: Test-only environment variable modification
-        unsafe { env::remove_var("FAMILY_ID"); }
-        
+        unsafe {
+            env::remove_var("FAMILY_ID");
+        }
+
         if let Ok(path) = discover_primal_socket("beardog", None) {
             let path_str = path.to_string_lossy();
             assert!(path_str.contains("beardog-nat0.sock"));
         }
     }
-    
+
     #[test]
     fn test_discover_primal_socket_custom_family() {
         if let Ok(path) = discover_primal_socket("songbird", Some("staging")) {
@@ -213,17 +222,20 @@ mod tests {
             assert!(path_str.contains("songbird-staging.sock"));
         }
     }
-    
+
     #[test]
     fn test_runtime_dir_from_xdg() {
         let test_dir = "/tmp/test-runtime";
         // SAFETY: Test-only environment variable modification
-        unsafe { env::set_var("XDG_RUNTIME_DIR", test_dir); }
-        
+        unsafe {
+            env::set_var("XDG_RUNTIME_DIR", test_dir);
+        }
+
         let runtime_dir = get_runtime_dir().unwrap();
         assert_eq!(runtime_dir, PathBuf::from(test_dir));
-        
-        unsafe { env::remove_var("XDG_RUNTIME_DIR"); }
+
+        unsafe {
+            env::remove_var("XDG_RUNTIME_DIR");
+        }
     }
 }
-
