@@ -29,6 +29,7 @@ pub mod display_verification; // Phase 4: Active display visibility verification
 pub mod output_verification; // Universal output verification (visual, audio, haptic, etc.)
 pub mod input_verification; // Universal input verification (keyboard, pointer, etc.)
 pub mod proprioception; // SAME DAVE - Complete sensory-motor self-awareness
+pub mod protocol_selection; // Protocol priority: tarpc PRIMARY, JSON-RPC SECONDARY, HTTPS FALLBACK
 pub mod graph_metrics_plotter;
 pub mod human_entropy_window;
 pub mod keyboard_shortcuts;

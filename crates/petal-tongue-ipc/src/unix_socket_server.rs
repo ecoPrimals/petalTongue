@@ -4,7 +4,7 @@
 //! communication following the ecoPrimals standard.
 
 use crate::json_rpc::{error_codes, JsonRpcRequest, JsonRpcResponse};
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use petal_tongue_core::graph_engine::GraphEngine;
 use serde_json::{json, Value};
 use std::path::PathBuf;

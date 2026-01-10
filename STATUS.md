@@ -16,6 +16,7 @@
 | Build System | ✅ Working | Excellent | A+ (10/10) |
 | Architecture | ✅ Validated | Exceptional | A+ (9.5/10) |
 | Port-Free IPC | ✅ Complete | Unix sockets | A+ (10/10) |
+| tarpc RPC | ✅ Complete | Primal-to-primal | A+ (10/10) |
 | biomeOS Integration | ✅ Complete | Full compat | A+ (10/10) |
 | Nervous System | ✅ Complete | Self-aware | A (9/10) |
 | Display Verification | ✅ Complete | Active checks | A (9/10) |
