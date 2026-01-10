@@ -30,7 +30,7 @@ pub struct UnixSocketServer {
 
     /// Shared graph engine
     graph: Arc<RwLock<GraphEngine>>,
-    
+
     /// Server start time (for uptime calculation)
     start_time: SystemTime,
 }
@@ -60,13 +60,10 @@ impl UnixSocketServer {
             start_time: SystemTime::now(),
         })
     }
-    
+
     /// Get uptime in seconds
     fn uptime_seconds(&self) -> u64 {
-        self.start_time
-            .elapsed()
-            .unwrap_or_default()
-            .as_secs()
+        self.start_time.elapsed().unwrap_or_default().as_secs()
     }
 
     /// Start the Unix socket server
@@ -167,13 +164,13 @@ impl UnixSocketServer {
             "announce_capabilities" => self.handle_announce_capabilities(&req),
             "ui.render" => self.handle_ui_render(&req).await,
             "ui.display_status" => self.handle_ui_display_status(&req),
-            
+
             // Legacy methods (for backward compatibility)
             "get_capabilities" => self.get_capabilities(req.id),
             "render_graph" => self.render_graph(req.params, req.id).await,
             "get_health" => self.get_health(req.id),
             "get_topology" => self.get_topology(req.id),
-            
+
             _ => {
                 warn!("Unknown method: {}", req.method);
                 JsonRpcResponse::error(
@@ -184,9 +181,9 @@ impl UnixSocketServer {
             }
         }
     }
-    
+
     // ===== biomeOS Integration Methods =====
-    
+
     /// biomeOS API: health_check
     ///
     /// Returns health status following biomeOS convention.
@@ -205,7 +202,7 @@ impl UnixSocketServer {
     fn handle_health_check(&self, request: &JsonRpcRequest) -> JsonRpcResponse {
         // Detect available modalities (capability-based, not hardcoded)
         let modalities = self.detect_active_modalities();
-        
+
         JsonRpcResponse::success(
             request.id.clone(),
             json!({
@@ -217,7 +214,7 @@ impl UnixSocketServer {
             }),
         )
     }
-    
+
     /// biomeOS API: announce_capabilities
     ///
     /// Returns available capabilities following biomeOS taxonomy.
@@ -243,7 +240,7 @@ impl UnixSocketServer {
     fn handle_announce_capabilities(&self, request: &JsonRpcRequest) -> JsonRpcResponse {
         // Detect available capabilities (runtime, not hardcoded)
         let capabilities = self.detect_capabilities();
-        
+
         JsonRpcResponse::success(
             request.id.clone(),
             json!({
@@ -251,7 +248,7 @@ impl UnixSocketServer {
             }),
         )
     }
-    
+
     /// biomeOS API: ui.render
     ///
     /// Renders content following biomeOS convention.
@@ -289,23 +286,23 @@ impl UnixSocketServer {
                     request.id.clone(),
                     error_codes::INVALID_PARAMS,
                     "params must be an object",
-                )
+                );
             }
         };
-        
+
         let content_type = params
             .get("content_type")
             .and_then(|v| v.as_str())
             .unwrap_or("graph");
-        
+
         let data = params.get("data").cloned().unwrap_or(json!({}));
-        
+
         // Route to appropriate rendering engine based on content_type
         match content_type {
             "graph" => {
                 // Update graph engine with new data
                 let result = self.render_graph_data(data).await;
-                
+
                 match result {
                     Ok(_) => JsonRpcResponse::success(
                         request.id.clone(),
@@ -329,7 +326,7 @@ impl UnixSocketServer {
             ),
         }
     }
-    
+
     /// biomeOS API: ui.display_status
     ///
     /// Updates primal status display in UI.
@@ -354,21 +351,21 @@ impl UnixSocketServer {
                     request.id.clone(),
                     error_codes::INVALID_PARAMS,
                     "params must be an object",
-                )
+                );
             }
         };
-        
+
         let primal_name = params
             .get("primal_name")
             .and_then(|v| v.as_str())
             .unwrap_or("unknown");
-        
+
         let status = params.get("status").cloned().unwrap_or(json!({}));
-        
+
         // TODO: Integrate with SystemDashboard to update primal status
         // For now, just acknowledge receipt
         debug!("Status update for {}: {:?}", primal_name, status);
-        
+
         JsonRpcResponse::success(
             request.id.clone(),
             json!({
@@ -377,9 +374,9 @@ impl UnixSocketServer {
             }),
         )
     }
-    
+
     // ===== Helper Methods =====
-    
+
     /// Detect active modalities (capability-based)
     ///
     /// # TRUE PRIMAL: Runtime Detection
@@ -387,27 +384,27 @@ impl UnixSocketServer {
     /// Modalities are detected at runtime, not hardcoded.
     fn detect_active_modalities(&self) -> Vec<&'static str> {
         let mut modalities = Vec::new();
-        
+
         // Always available (terminal fallback)
         modalities.push("terminal");
-        
+
         // Check for display (visual mode)
         if std::env::var("DISPLAY").is_ok() || std::env::var("WAYLAND_DISPLAY").is_ok() {
             modalities.push("visual");
         }
-        
+
         // Check for audio (if audio devices available)
         // TODO: More sophisticated audio detection
         modalities.push("audio");
-        
+
         // Check for framebuffer
         if std::path::Path::new("/dev/fb0").exists() {
             modalities.push("framebuffer");
         }
-        
+
         modalities
     }
-    
+
     /// Detect available capabilities (runtime, not hardcoded)
     ///
     /// # TRUE PRIMAL: Capability-Based
@@ -415,34 +412,34 @@ impl UnixSocketServer {
     /// Returns capabilities following biomeOS taxonomy.
     fn detect_capabilities(&self) -> Vec<&'static str> {
         let mut capabilities = Vec::new();
-        
+
         // Core UI capabilities (always available)
         capabilities.push("ui.render");
         capabilities.push("ui.visualization");
         capabilities.push("ui.graph");
-        
+
         // Modality-specific capabilities (runtime detected)
         let modalities = self.detect_active_modalities();
-        
+
         if modalities.contains(&"visual") {
             // Visual capabilities available
         }
-        
+
         if modalities.contains(&"terminal") {
             capabilities.push("ui.terminal");
         }
-        
+
         if modalities.contains(&"audio") {
             capabilities.push("ui.audio");
         }
-        
+
         if modalities.contains(&"framebuffer") {
             capabilities.push("ui.framebuffer");
         }
-        
+
         capabilities
     }
-    
+
     /// Render graph data from biomeOS format
     async fn render_graph_data(&self, data: Value) -> Result<()> {
         // TODO: Parse biomeOS graph format and update graph engine
@@ -450,10 +447,9 @@ impl UnixSocketServer {
         debug!("Rendering graph data: {:?}", data);
         Ok(())
     }
-    
+
     // ===== Legacy Methods (Backward Compatibility) =====
 
-    
     /// API: get_capabilities (legacy)
     ///
     /// Returns the capabilities of this petalTongue instance
@@ -622,13 +618,13 @@ mod tests {
     #[test]
     fn test_unix_socket_server_creation() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        
+
         // SAFETY: Test-only environment variable modification
         unsafe {
             std::env::set_var("FAMILY_ID", "test-family");
             std::env::set_var("XDG_RUNTIME_DIR", "/tmp");
         }
-        
+
         let server = UnixSocketServer::new(graph).unwrap();
 
         assert_eq!(server.family_id, "test-family");
@@ -636,7 +632,7 @@ mod tests {
             server.socket_path.to_str().unwrap(),
             "/tmp/petaltongue-test-family.sock"
         );
-        
+
         // Clean up
         unsafe {
             std::env::remove_var("FAMILY_ID");
@@ -648,7 +644,9 @@ mod tests {
     fn test_get_capabilities_response() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         // SAFETY: Test-only environment variable modification
-        unsafe { std::env::set_var("XDG_RUNTIME_DIR", "/tmp"); }
+        unsafe {
+            std::env::set_var("XDG_RUNTIME_DIR", "/tmp");
+        }
         let server = UnixSocketServer::new(graph).unwrap();
 
         let response = server.get_capabilities(json!(1));
@@ -657,15 +655,19 @@ mod tests {
         let result = response.result.unwrap();
         assert!(result["capabilities"].is_array());
         assert_eq!(result["family_id"], server.family_id);
-        
-        unsafe { std::env::remove_var("XDG_RUNTIME_DIR"); }
+
+        unsafe {
+            std::env::remove_var("XDG_RUNTIME_DIR");
+        }
     }
 
     #[test]
     fn test_get_health_response() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         // SAFETY: Test-only environment variable modification
-        unsafe { std::env::set_var("XDG_RUNTIME_DIR", "/tmp"); }
+        unsafe {
+            std::env::set_var("XDG_RUNTIME_DIR", "/tmp");
+        }
         let server = UnixSocketServer::new(graph).unwrap();
 
         let response = server.get_health(json!(1));
@@ -674,45 +676,55 @@ mod tests {
         let result = response.result.unwrap();
         assert_eq!(result["status"], "healthy");
         assert_eq!(result["family_id"], server.family_id);
-        
-        unsafe { std::env::remove_var("XDG_RUNTIME_DIR"); }
+
+        unsafe {
+            std::env::remove_var("XDG_RUNTIME_DIR");
+        }
     }
-    
+
     #[test]
     fn test_biomeos_health_check() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         // SAFETY: Test-only environment variable modification
-        unsafe { std::env::set_var("XDG_RUNTIME_DIR", "/tmp"); }
+        unsafe {
+            std::env::set_var("XDG_RUNTIME_DIR", "/tmp");
+        }
         let server = UnixSocketServer::new(graph).unwrap();
-        
+
         let request = JsonRpcRequest::new("health_check", json!({}), json!(1));
         let response = server.handle_health_check(&request);
-        
+
         assert!(response.result.is_some());
         let result = response.result.unwrap();
         assert_eq!(result["status"], "healthy");
         assert_eq!(result["version"], env!("CARGO_PKG_VERSION"));
         assert!(result["modalities_active"].is_array());
-        
-        unsafe { std::env::remove_var("XDG_RUNTIME_DIR"); }
+
+        unsafe {
+            std::env::remove_var("XDG_RUNTIME_DIR");
+        }
     }
-    
+
     #[test]
     fn test_biomeos_announce_capabilities() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         // SAFETY: Test-only environment variable modification
-        unsafe { std::env::set_var("XDG_RUNTIME_DIR", "/tmp"); }
+        unsafe {
+            std::env::set_var("XDG_RUNTIME_DIR", "/tmp");
+        }
         let server = UnixSocketServer::new(graph).unwrap();
-        
+
         let request = JsonRpcRequest::new("announce_capabilities", json!({}), json!(1));
         let response = server.handle_announce_capabilities(&request);
-        
+
         assert!(response.result.is_some());
         let result = response.result.unwrap();
         assert!(result["capabilities"].is_array());
         let caps = result["capabilities"].as_array().unwrap();
         assert!(caps.len() > 0);
-        
-        unsafe { std::env::remove_var("XDG_RUNTIME_DIR"); }
+
+        unsafe {
+            std::env::remove_var("XDG_RUNTIME_DIR");
+        }
     }
 }

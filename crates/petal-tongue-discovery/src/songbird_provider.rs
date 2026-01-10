@@ -29,12 +29,12 @@ impl SongbirdVisualizationProvider {
     /// Discovers Songbird's Unix socket and wraps it in a provider.
     pub async fn discover(family_id: Option<&str>) -> Result<Self> {
         let client = SongbirdClient::discover(family_id)?;
-        
+
         // Test connectivity
         client.health_check().await?;
-        
+
         let socket_path = format!("{}", client.socket_path().display());
-        
+
         Ok(Self {
             client: Arc::new(RwLock::new(client)),
             metadata: ProviderMetadata {
@@ -49,11 +49,11 @@ impl SongbirdVisualizationProvider {
             },
         })
     }
-    
+
     /// Create from existing client (for testing)
     pub fn from_client(client: SongbirdClient) -> Self {
         let socket_path = format!("{}", client.socket_path().display());
-        
+
         Self {
             client: Arc::new(RwLock::new(client)),
             metadata: ProviderMetadata {
@@ -77,7 +77,7 @@ impl VisualizationDataProvider for SongbirdVisualizationProvider {
         let client = self.client.read().await;
         client.get_all_primals().await
     }
-    
+
     async fn get_topology(&self) -> Result<Vec<TopologyEdge>> {
         // Songbird provides primal list, but topology edges need to be inferred
         // from capabilities and connections. For now, return empty and let
@@ -85,12 +85,12 @@ impl VisualizationDataProvider for SongbirdVisualizationProvider {
         debug!("Topology inference from capabilities (Songbird doesn't provide edges yet)");
         Ok(Vec::new())
     }
-    
+
     async fn health_check(&self) -> Result<String> {
         let client = self.client.read().await;
         client.health_check().await
     }
-    
+
     fn get_metadata(&self) -> ProviderMetadata {
         self.metadata.clone()
     }
@@ -105,22 +105,27 @@ mod tests {
     fn test_create_from_client() {
         let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test-songbird.sock"));
         let provider = SongbirdVisualizationProvider::from_client(client);
-        
+
         let metadata = provider.get_metadata();
         assert_eq!(metadata.name, "Songbird Registry");
         assert_eq!(metadata.protocol, "unix+jsonrpc");
-        assert!(metadata.capabilities.contains(&"primal-discovery".to_string()));
+        assert!(metadata
+            .capabilities
+            .contains(&"primal-discovery".to_string()));
     }
-    
+
     #[test]
     fn test_metadata_contains_required_capabilities() {
         let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
         let provider = SongbirdVisualizationProvider::from_client(client);
-        
+
         let metadata = provider.get_metadata();
-        assert!(metadata.capabilities.contains(&"primal-discovery".to_string()));
-        assert!(metadata.capabilities.contains(&"capability-query".to_string()));
+        assert!(metadata
+            .capabilities
+            .contains(&"primal-discovery".to_string()));
+        assert!(metadata
+            .capabilities
+            .contains(&"capability-query".to_string()));
         assert!(metadata.capabilities.contains(&"registry".to_string()));
     }
 }
-
