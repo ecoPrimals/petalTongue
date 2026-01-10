@@ -119,8 +119,7 @@ fn test_parse_biomeos_primal_list() {
                     "version": "v3.19.0"
                 }
             }
-        }
-    ]"#;
+        ]"#;
 
     let primals: Vec<PrimalInfo> =
         serde_json::from_str(json).expect("Failed to parse biomeOS primal list");
