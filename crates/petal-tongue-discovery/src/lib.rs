@@ -198,18 +198,24 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_discover_returns_error_without_config() {
+    async fn test_discover_returns_empty_without_config() {
         // Clear any environment variables that might provide providers
         std::env::remove_var("BIOMEOS_URL");
         std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
         std::env::remove_var("PETALTONGUE_MOCK_MODE");
         std::env::remove_var("PETALTONGUE_ENABLE_MDNS");
 
-        // Production mode requires explicit configuration - no automatic fallback
+        // Production mode with no config returns empty vec (graceful degradation)
+        // GUI will start with tutorial mode as fallback
         let result = discover_visualization_providers().await;
         assert!(
-            result.is_err(),
-            "Should return error when no providers configured (production mode)"
+            result.is_ok(),
+            "Should return Ok even when no providers configured (graceful degradation)"
+        );
+        let providers = result.unwrap();
+        assert!(
+            providers.is_empty(),
+            "Should return empty vec when no providers found"
         );
     }
 
