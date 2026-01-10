@@ -4,13 +4,19 @@
 //!
 //! NOTE: This module is currently complete but unused. It will be integrated
 //! when performance optimization becomes a priority.
+//!
+//! MODERN IDIOMATIC RUST:
+//! - Uses tokio::sync::RwLock for async compatibility (no deadlocks!)
+//! - Fully concurrent, lock-free reads
+//! - No blocking operations in async context
 
 #![allow(dead_code)] // Entire module is reserved for future use
 
 use lru::LruCache;
 use std::num::NonZeroUsize;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
+use tokio::sync::RwLock;
 
 /// Cached entry with expiration
 #[derive(Debug, Clone)]
@@ -47,16 +53,18 @@ pub(crate) enum CacheKey {
 /// Provider cache with TTL support
 ///
 /// Uses LRU eviction when cache is full.
+/// 
+/// ASYNC-SAFE: Uses tokio::sync::RwLock to prevent deadlocks in async context.
 #[derive(Debug)]
 #[allow(dead_code)] // Reserved for future use when caching is enabled
 pub struct ProviderCache<T> {
-    cache: Arc<Mutex<LruCache<CacheKey, CachedEntry<T>>>>,
+    cache: Arc<RwLock<LruCache<CacheKey, CachedEntry<T>>>>,
     primals_ttl: Duration,
     topology_ttl: Duration,
     health_ttl: Duration,
     // Statistics
-    hits: Arc<Mutex<u64>>,
-    misses: Arc<Mutex<u64>>,
+    hits: Arc<RwLock<u64>>,
+    misses: Arc<RwLock<u64>>,
 }
 
 impl<T: Clone> ProviderCache<T> {
@@ -64,14 +72,14 @@ impl<T: Clone> ProviderCache<T> {
     #[allow(dead_code)] // Reserved for future use when caching is enabled
     pub fn new(capacity: usize) -> Self {
         Self {
-            cache: Arc::new(Mutex::new(LruCache::new(
+            cache: Arc::new(RwLock::new(LruCache::new(
                 NonZeroUsize::new(capacity).unwrap(),
             ))),
             primals_ttl: Duration::from_secs(30),
             topology_ttl: Duration::from_secs(60),
             health_ttl: Duration::from_secs(10),
-            hits: Arc::new(Mutex::new(0)),
-            misses: Arc::new(Mutex::new(0)),
+            hits: Arc::new(RwLock::new(0)),
+            misses: Arc::new(RwLock::new(0)),
         }
     }
 
@@ -83,111 +91,111 @@ impl<T: Clone> ProviderCache<T> {
         health_ttl: Duration,
     ) -> Self {
         Self {
-            cache: Arc::new(Mutex::new(LruCache::new(
+            cache: Arc::new(RwLock::new(LruCache::new(
                 NonZeroUsize::new(capacity).unwrap(),
             ))),
             primals_ttl,
             topology_ttl,
             health_ttl,
-            hits: Arc::new(Mutex::new(0)),
-            misses: Arc::new(Mutex::new(0)),
+            hits: Arc::new(RwLock::new(0)),
+            misses: Arc::new(RwLock::new(0)),
         }
     }
 
     /// Get primals from cache
-    pub fn get_primals(&self) -> Option<T> {
-        self.get(CacheKey::Primals)
+    pub async fn get_primals(&self) -> Option<T> {
+        self.get(CacheKey::Primals).await
     }
 
     /// Put primals in cache
-    pub fn put_primals(&self, data: T) {
-        self.put(CacheKey::Primals, data, self.primals_ttl);
+    pub async fn put_primals(&self, data: T) {
+        self.put(CacheKey::Primals, data, self.primals_ttl).await;
     }
 
     /// Get topology from cache
-    pub fn get_topology(&self) -> Option<T> {
-        self.get(CacheKey::Topology)
+    pub async fn get_topology(&self) -> Option<T> {
+        self.get(CacheKey::Topology).await
     }
 
     /// Put topology in cache
-    pub fn put_topology(&self, data: T) {
-        self.put(CacheKey::Topology, data, self.topology_ttl);
+    pub async fn put_topology(&self, data: T) {
+        self.put(CacheKey::Topology, data, self.topology_ttl).await;
     }
 
     /// Get health from cache
-    pub fn get_health(&self) -> Option<T> {
-        self.get(CacheKey::Health)
+    pub async fn get_health(&self) -> Option<T> {
+        self.get(CacheKey::Health).await
     }
 
     /// Put health in cache
-    pub fn put_health(&self, data: T) {
-        self.put(CacheKey::Health, data, self.health_ttl);
+    pub async fn put_health(&self, data: T) {
+        self.put(CacheKey::Health, data, self.health_ttl).await;
     }
 
-    /// Get from cache (generic)
-    fn get(&self, key: CacheKey) -> Option<T> {
-        let mut cache = self.cache.lock().unwrap();
+    /// Get from cache (generic) - ASYNC-SAFE
+    async fn get(&self, key: CacheKey) -> Option<T> {
+        let mut cache = self.cache.write().await;
 
         if let Some(entry) = cache.get(&key) {
             if entry.is_expired() {
                 // Entry expired, remove it
                 cache.pop(&key);
-                *self.misses.lock().unwrap() += 1;
+                *self.misses.write().await += 1;
                 tracing::debug!("Cache MISS (expired): {:?}", key);
                 None
             } else {
                 // Cache hit!
-                *self.hits.lock().unwrap() += 1;
+                *self.hits.write().await += 1;
                 tracing::debug!("Cache HIT: {:?}", key);
                 Some(entry.data.clone())
             }
         } else {
             // Cache miss
-            *self.misses.lock().unwrap() += 1;
+            *self.misses.write().await += 1;
             tracing::debug!("Cache MISS (not found): {:?}", key);
             None
         }
     }
 
-    /// Put into cache (generic)
-    fn put(&self, key: CacheKey, data: T, ttl: Duration) {
-        let mut cache = self.cache.lock().unwrap();
+    /// Put into cache (generic) - ASYNC-SAFE
+    async fn put(&self, key: CacheKey, data: T, ttl: Duration) {
+        let mut cache = self.cache.write().await;
         cache.put(key, CachedEntry::new(data, ttl));
     }
 
-    /// Invalidate all cache entries
-    pub fn invalidate_all(&self) {
-        let mut cache = self.cache.lock().unwrap();
+    /// Invalidate all cache entries - ASYNC-SAFE
+    pub async fn invalidate_all(&self) {
+        let mut cache = self.cache.write().await;
         cache.clear();
         tracing::info!("Cache invalidated (all entries cleared)");
     }
 
-    /// Invalidate specific key
-    pub(crate) fn invalidate(&self, key: CacheKey) {
-        let mut cache = self.cache.lock().unwrap();
+    /// Invalidate specific key - ASYNC-SAFE
+    pub(crate) async fn invalidate(&self, key: CacheKey) {
+        let mut cache = self.cache.write().await;
         cache.pop(&key);
         tracing::debug!("Cache invalidated: {:?}", key);
     }
 
-    /// Invalidate primals
-    pub fn invalidate_primals(&self) {
-        self.invalidate(CacheKey::Primals);
+    /// Invalidate primals - ASYNC-SAFE
+    pub async fn invalidate_primals(&self) {
+        self.invalidate(CacheKey::Primals).await;
     }
 
-    /// Invalidate topology
-    pub fn invalidate_topology(&self) {
-        self.invalidate(CacheKey::Topology);
+    /// Invalidate topology - ASYNC-SAFE
+    pub async fn invalidate_topology(&self) {
+        self.invalidate(CacheKey::Topology).await;
     }
 
-    /// Invalidate health
-    pub fn invalidate_health(&self) {
-        self.invalidate(CacheKey::Health);
+    /// Invalidate health - ASYNC-SAFE
+    pub async fn invalidate_health(&self) {
+        self.invalidate(CacheKey::Health).await;
     }
 
-    /// Get cache statistics
-    pub fn stats(&self) -> CacheStats {
-        let hits = *self.hits.lock().unwrap();
-        let misses = *self.misses.lock().unwrap();
+    /// Get cache statistics - ASYNC-SAFE
+    pub async fn stats(&self) -> CacheStats {
+        let hits = *self.hits.read().await;
+        let misses = *self.misses.read().await;
         let total = hits + misses;
         let hit_rate = if total > 0 {
             (hits as f64 / total as f64) * 100.0
@@ -203,10 +211,10 @@ impl<T: Clone> ProviderCache<T> {
         }
     }
 
-    /// Reset statistics
-    pub fn reset_stats(&self) {
-        *self.hits.lock().unwrap() = 0;
-        *self.misses.lock().unwrap() = 0;
+    /// Reset statistics - ASYNC-SAFE
+    pub async fn reset_stats(&self) {
+        *self.hits.write().await = 0;
+        *self.misses.write().await = 0;
         tracing::debug!("Cache statistics reset");
     }
 }

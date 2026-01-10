@@ -45,4 +45,5 @@ mdns = ["mdns-sd"]
 [dev-dependencies]
 tokio-test = "0.4"
 wiremock = "0.6"
+futures = "0.3"  # For join_all in concurrent tests
 
