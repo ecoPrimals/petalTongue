@@ -180,8 +180,9 @@ impl TelemetryCollector {
     pub fn push_event(&self, event: TelemetryEvent) {
         // Add to buffer
         {
-            let mut buffer = self.buffer.write()
-                .expect("SAFETY: Telemetry buffer lock poisoned - indicates panic in telemetry thread");
+            let mut buffer = self.buffer.write().expect(
+                "SAFETY: Telemetry buffer lock poisoned - indicates panic in telemetry thread",
+            );
             buffer.push_back(event.clone());
 
             // Trim buffer if too large
@@ -192,8 +193,9 @@ impl TelemetryCollector {
 
         // Notify subscribers
         {
-            let mut subscribers = self.subscribers.write()
-                .expect("SAFETY: Telemetry subscribers lock poisoned - indicates panic in subscriber");
+            let mut subscribers = self.subscribers.write().expect(
+                "SAFETY: Telemetry subscribers lock poisoned - indicates panic in subscriber",
+            );
             for subscriber in subscribers.iter_mut() {
                 subscriber.on_event(&event);
             }
@@ -205,7 +207,9 @@ impl TelemetryCollector {
 
     /// Add a subscriber to the telemetry stream
     pub fn add_subscriber(&self, subscriber: Box<dyn TelemetrySubscriber>) {
-        let mut subscribers = self.subscribers.write()
+        let mut subscribers = self
+            .subscribers
+            .write()
             .expect("SAFETY: Telemetry subscribers lock poisoned - indicates panic in subscriber");
         subscribers.push(subscriber);
     }
@@ -213,7 +217,8 @@ impl TelemetryCollector {
     /// Get current metrics snapshot
     #[must_use]
     pub fn get_metrics(&self) -> TelemetryMetrics {
-        self.metrics.read()
+        self.metrics
+            .read()
             .expect("SAFETY: Telemetry metrics lock poisoned - indicates panic in metrics update")
             .clone()
     }
@@ -221,7 +226,9 @@ impl TelemetryCollector {
     /// Get recent events from buffer
     #[must_use]
     pub fn get_recent_events(&self, count: usize) -> Vec<TelemetryEvent> {
-        let buffer = self.buffer.read()
+        let buffer = self
+            .buffer
+            .read()
             .expect("SAFETY: Telemetry buffer lock poisoned - indicates panic in telemetry thread");
         buffer.iter().rev().take(count).cloned().collect()
     }

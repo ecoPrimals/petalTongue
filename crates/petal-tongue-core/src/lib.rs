@@ -45,6 +45,7 @@ mod types_tests;
 // NEW: Universal Rendering System
 pub mod awakening; // Awakening experience (default touchpoint)
 pub mod awakening_coordinator; // Timeline coordination for awakening
+pub mod capability_taxonomy; // biomeOS capability taxonomy
 pub mod compute; // Compute provider system (optional GPU)
 pub mod engine; // Universal rendering engine
 pub mod event; // Event bus (multi-modal coordination)

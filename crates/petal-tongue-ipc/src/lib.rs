@@ -49,6 +49,7 @@ pub mod client;
 pub mod json_rpc;
 pub mod protocol;
 pub mod server;
+pub mod socket_path;
 pub mod tarpc_client;
 pub mod tarpc_types;
 pub mod unix_socket_server;

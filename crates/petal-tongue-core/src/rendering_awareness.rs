@@ -121,7 +121,8 @@ impl RenderingAwareness {
 
     /// Get time since last user interaction (for display verification)
     pub fn time_since_last_interaction(&self) -> Duration {
-        self.sensory.last_user_interaction
+        self.sensory
+            .last_user_interaction
             .map(|t| t.elapsed())
             .unwrap_or_else(|| Duration::from_secs(9999))
     }

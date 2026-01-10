@@ -106,76 +106,76 @@ impl FlowerAnimation {
 
     /// ASCII: Closed bud
     fn ascii_closed(&self) -> String {
-        r#"
+        r"
     ___
    /   \
   |  •  |
    \___/
-        "#
+        "
         .to_string()
     }
 
     /// ASCII: Opening flower
     fn ascii_opening(&self, percent: u8) -> String {
         if percent < 33 {
-            r#"
+            r"
     ___
    /   \
   | ••• |
    \___/
-            "#
+            "
             .to_string()
         } else if percent < 66 {
-            r#"
+            r"
     _🌸_
    /   \
   | ••• |
    \____/
-            "#
+            "
             .to_string()
         } else {
-            r#"
+            r"
    _🌸🌸_
   /     \
  | ••••• |
   \_____/
-            "#
+            "
             .to_string()
         }
     }
 
     /// ASCII: Fully open
     fn ascii_open(&self) -> String {
-        r#"
+        r"
   🌸🌸🌸
  /  |  \
 | ••••• |
  \_____|
-        "#
+        "
         .to_string()
     }
 
     /// ASCII: Glowing (self-knowledge)
     fn ascii_glowing(&self) -> String {
-        r#"
+        r"
   ✨🌸✨
  /  |  \
 | ••••• |
  \_____|
   ✨ ✨
-        "#
+        "
         .to_string()
     }
 
     /// ASCII: Reaching (discovery)
     fn ascii_reaching(&self) -> String {
-        r#"
+        r"
   🌸🌸🌸
  /~~|~~\
 | ••••• |
  \_____|
   ~   ~
-        "#
+        "
         .to_string()
     }
 }

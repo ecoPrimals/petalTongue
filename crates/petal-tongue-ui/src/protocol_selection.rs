@@ -155,7 +155,10 @@ mod tests {
     #[test]
     fn test_detect_protocol() {
         assert_eq!(detect_protocol("tarpc://localhost:9001"), Protocol::Tarpc);
-        assert_eq!(detect_protocol("unix:///tmp/service.sock"), Protocol::JsonRpc);
+        assert_eq!(
+            detect_protocol("unix:///tmp/service.sock"),
+            Protocol::JsonRpc
+        );
         assert_eq!(detect_protocol("ipc:///tmp/service"), Protocol::JsonRpc);
         assert_eq!(detect_protocol("http://localhost:8080"), Protocol::Https);
         assert_eq!(detect_protocol("https://api.example.com"), Protocol::Https);
@@ -167,4 +170,3 @@ mod tests {
         assert!(Protocol::JsonRpc < Protocol::Https);
     }
 }
-

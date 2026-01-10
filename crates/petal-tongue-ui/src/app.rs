@@ -224,13 +224,13 @@ impl PetalTongueApp {
             .unwrap_or_else(|_| "false".to_string())
             .to_lowercase()
             == "true";
-        
+
         // If no BiomeOS URL provided and not in mock mode, we'll discover at runtime
         let biomeos_url = biomeos_url.unwrap_or_else(|| {
             tracing::info!("No BIOMEOS_URL provided - will discover BiomeOS capability at runtime");
             "".to_string() // Empty = not yet discovered
         });
-        
+
         #[allow(deprecated)]
         let biomeos_client = BiomeOSClient::new(&biomeos_url).with_mock_mode(mock_mode_requested);
 
@@ -334,7 +334,9 @@ impl PetalTongueApp {
         // Discover available sensors at runtime (no hardcoded assumptions!)
         let sensor_registry_clone = Arc::clone(&sensor_registry);
         runtime.block_on(async {
-            if let Err(e) = crate::sensor_discovery::discover_all_sensors(sensor_registry_clone).await {
+            if let Err(e) =
+                crate::sensor_discovery::discover_all_sensors(sensor_registry_clone).await
+            {
                 tracing::error!("Sensor discovery failed: {}", e);
             }
         });
@@ -578,10 +580,10 @@ impl eframe::App for PetalTongueApp {
         // === CENTRAL NERVOUS SYSTEM - Motor Command ===
         // Record that we're rendering a frame (motor output)
         self.frame_count += 1;
-        
+
         // v1.2.0: SAME DAVE - Record frame for hang detection & FPS tracking
         self.proprioception.record_frame();
-        
+
         if let Ok(mut awareness) = self.rendering_awareness.write() {
             awareness.motor_command(MotorCommand::RenderFrame {
                 frame_id: self.frame_count,
@@ -604,7 +606,8 @@ impl eframe::App for PetalTongueApp {
                         awareness.sensory_feedback(&event);
                     }
                     // v1.1.0: SAME DAVE proprioception - pointer input received
-                    self.proprioception.input_received(&crate::input_verification::InputModality::Pointer);
+                    self.proprioception
+                        .input_received(&crate::input_verification::InputModality::Pointer);
                 }
             }
 
@@ -619,7 +622,8 @@ impl eframe::App for PetalTongueApp {
                     awareness.sensory_feedback(&event);
                 }
                 // v1.1.0: SAME DAVE proprioception - pointer movement
-                self.proprioception.input_received(&crate::input_verification::InputModality::Pointer);
+                self.proprioception
+                    .input_received(&crate::input_verification::InputModality::Pointer);
             }
 
             // Any key press = bidirectional confirmation
@@ -634,7 +638,8 @@ impl eframe::App for PetalTongueApp {
                         awareness.sensory_feedback(&event);
                     }
                     // v1.1.0: SAME DAVE proprioception - keyboard input received
-                    self.proprioception.input_received(&crate::input_verification::InputModality::Keyboard);
+                    self.proprioception
+                        .input_received(&crate::input_verification::InputModality::Keyboard);
                 }
             }
         });
@@ -644,20 +649,20 @@ impl eframe::App for PetalTongueApp {
         let now = Instant::now();
         if now.duration_since(self.last_display_verification) > Duration::from_secs(5) {
             self.last_display_verification = now;
-            
+
             // Get last interaction time from rendering awareness
             let last_interaction_secs = if let Ok(awareness) = self.rendering_awareness.read() {
                 awareness.time_since_last_interaction().as_secs_f32()
             } else {
                 999.0 // Unknown
             };
-            
+
             // Run display verification
             let verification = crate::display_verification::continuous_verification(
                 "petalTongue",
-                last_interaction_secs
+                last_interaction_secs,
             );
-            
+
             // Log the verification result
             tracing::debug!(
                 "🔍 Display verification: {} (visible: {}, wm_responsive: {})",
@@ -665,7 +670,7 @@ impl eframe::App for PetalTongueApp {
                 verification.window_visible,
                 verification.wm_responsive
             );
-            
+
             // If we detect an issue, log it prominently
             if !verification.window_visible && verification.display_server_available {
                 tracing::warn!(
@@ -673,7 +678,7 @@ impl eframe::App for PetalTongueApp {
                     verification.status_message
                 );
             }
-            
+
             // v1.1.0: SAME DAVE proprioception - periodic self-assessment
             let state = self.proprioception.assess();
             tracing::debug!(
@@ -902,7 +907,7 @@ impl eframe::App for PetalTongueApp {
                 )
                 .show(ctx, |ui| {
                     let font_scale = self.accessibility_panel.settings.font_size.multiplier();
-                    
+
                     // System metrics
                     self.system_dashboard.render_compact(
                         ui,
@@ -921,9 +926,9 @@ impl eframe::App for PetalTongueApp {
                         &self.rendering_awareness,
                         &self.sensor_registry,
                     );
-                    
+
                     ui.add_space(8.0);
-                    
+
                     // v1.1.0: SAME DAVE Proprioception (complete self-awareness)
                     crate::system_dashboard::SystemDashboard::render_proprioception_status(
                         ui,

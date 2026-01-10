@@ -7,30 +7,26 @@
 //! - Network failures
 //! - Resource exhaustion scenarios
 
-use petal_tongue_ui::{
-    proprioception::*,
-    output_verification::*,
-    input_verification::*,
-};
-use std::time::Duration;
+use petal_tongue_ui::{input_verification::*, output_verification::*, proprioception::*};
 use std::thread;
+use std::time::Duration;
 
 /// Chaos Scenario: All outputs fail simultaneously
 #[test]
 fn chaos_all_outputs_fail() {
     let mut system = initialize_standard_proprioception();
-    
+
     // Establish healthy state
     system.input_received(&InputModality::Keyboard);
     let initial_state = system.assess();
     assert!(initial_state.health > 0.0);
-    
+
     // CHAOS: Simulate all outputs failing (no new confirmations)
     thread::sleep(Duration::from_millis(50));
-    
+
     // System should detect degradation
     let degraded_state = system.assess();
-    
+
     // Should not crash!
     assert!(!degraded_state.is_healthy() || degraded_state.confidence < 1.0);
 }
@@ -39,16 +35,16 @@ fn chaos_all_outputs_fail() {
 #[test]
 fn chaos_all_inputs_stop() {
     let mut system = initialize_standard_proprioception();
-    
+
     // Establish healthy state
     system.input_received(&InputModality::Keyboard);
     system.input_received(&InputModality::Pointer);
     let initial_state = system.assess();
-    
+
     // CHAOS: No more input for extended period
     thread::sleep(Duration::from_millis(50));
     let degraded_state = system.assess();
-    
+
     // System should report uncertainty
     // Should not crash!
     assert!(degraded_state.confidence <= initial_state.confidence);
@@ -58,7 +54,7 @@ fn chaos_all_inputs_stop() {
 #[test]
 fn chaos_rapid_modality_changes() {
     let mut system = ProprioceptionSystem::new();
-    
+
     // Rapidly add and use modalities
     for _ in 0..100 {
         system.register_output(OutputModality::Visual);
@@ -66,7 +62,7 @@ fn chaos_rapid_modality_changes() {
         system.input_received(&InputModality::Keyboard);
         system.assess();
     }
-    
+
     // Should not crash or panic
     let state = system.assess();
     assert!(state.health >= 0.0 && state.health <= 1.0);
@@ -76,7 +72,7 @@ fn chaos_rapid_modality_changes() {
 #[test]
 fn chaos_intermittent_connectivity() {
     let mut system = initialize_standard_proprioception();
-    
+
     // Simulate on/off/on/off pattern
     for i in 0..10 {
         if i % 2 == 0 {
@@ -84,10 +80,10 @@ fn chaos_intermittent_connectivity() {
             system.input_received(&InputModality::Keyboard);
         }
         // Input unavailable (no action)
-        
+
         system.assess();
     }
-    
+
     // System should handle intermittent input gracefully
     let state = system.assess();
     assert!(state.health >= 0.0 && state.health <= 1.0);
@@ -97,20 +93,20 @@ fn chaos_intermittent_connectivity() {
 #[test]
 fn chaos_unknown_modalities() {
     let mut system = ProprioceptionSystem::new();
-    
+
     // Register unknown/future modalities
     system.register_output(OutputModality::Generic("neural-interface".to_string()));
     system.register_output(OutputModality::Generic("hologram".to_string()));
     system.register_input(InputModality::Generic("brain-waves".to_string()));
     system.register_input(InputModality::Generic("eye-tracking".to_string()));
-    
+
     // Should not crash
     let state = system.assess();
     assert_eq!(state.health, 0.0); // No confirmations yet
-    
+
     // Simulate future input
     system.input_received(&InputModality::Generic("brain-waves".to_string()));
-    
+
     // Should handle gracefully
     let state2 = system.assess();
     assert!(state2.health >= state.health);
@@ -120,13 +116,13 @@ fn chaos_unknown_modalities() {
 #[test]
 fn chaos_massive_registrations() {
     let mut system = ProprioceptionSystem::new();
-    
+
     // Register many modalities
     for i in 0..50 {
         system.register_output(OutputModality::Generic(format!("output-{}", i)));
         system.register_input(InputModality::Generic(format!("input-{}", i)));
     }
-    
+
     // Should not crash
     let state = system.assess();
     assert!(state.health >= 0.0);
@@ -136,14 +132,14 @@ fn chaos_massive_registrations() {
 #[test]
 fn chaos_rapid_assessments() {
     let mut system = initialize_standard_proprioception();
-    
+
     system.input_received(&InputModality::Keyboard);
-    
+
     // Call assess many times rapidly
     for _ in 0..1000 {
         let _state = system.assess();
     }
-    
+
     // Should not crash or degrade
     let final_state = system.assess();
     assert!(final_state.health > 0.0);
@@ -159,7 +155,7 @@ fn chaos_topology_detection_failures() {
         let (_topology, _evidence) = detect_audio_topology();
         let (_topology, _evidence) = detect_haptic_topology();
     }
-    
+
     // Should not crash
 }
 
@@ -167,10 +163,10 @@ fn chaos_topology_detection_failures() {
 #[test]
 fn chaos_zero_modality_system() {
     let mut system = ProprioceptionSystem::new();
-    
+
     // No modalities registered
     let state = system.assess();
-    
+
     // Should report zero health, not crash
     assert_eq!(state.health, 0.0);
     assert!(!state.is_healthy());
@@ -181,13 +177,13 @@ fn chaos_zero_modality_system() {
 #[test]
 fn chaos_input_without_output() {
     let mut system = ProprioceptionSystem::new();
-    
+
     // Register only input, no output
     system.register_input(InputModality::Keyboard);
-    
+
     // Receive input
     system.input_received(&InputModality::Keyboard);
-    
+
     // Should not crash trying to confirm non-existent output
     let state = system.assess();
     assert!(state.sensory_functional || state.health > 0.0);
@@ -197,13 +193,13 @@ fn chaos_input_without_output() {
 #[test]
 fn chaos_output_without_input() {
     let mut system = ProprioceptionSystem::new();
-    
+
     // Register only output, no input
     system.register_output(OutputModality::Visual);
-    
+
     // Assess without any input
     let state = system.assess();
-    
+
     // Should report incomplete loop
     assert!(!state.loop_complete);
     assert_eq!(state.health, 0.0);
@@ -213,18 +209,20 @@ fn chaos_output_without_input() {
 #[test]
 fn chaos_concurrent_access_pattern() {
     let mut system = initialize_standard_proprioception();
-    
+
     // Simulate concurrent-like access pattern
     // (In real concurrent scenario, would use Arc<RwLock<ProprioceptionSystem>>)
     for i in 0..100 {
         match i % 3 {
             0 => system.input_received(&InputModality::Keyboard),
             1 => system.input_received(&InputModality::Pointer),
-            2 => { let _s = system.assess(); },
+            2 => {
+                let _s = system.assess();
+            }
             _ => {}
         }
     }
-    
+
     // Should maintain consistency
     let state = system.assess();
     assert!(state.health > 0.0);
@@ -234,14 +232,14 @@ fn chaos_concurrent_access_pattern() {
 #[test]
 fn chaos_stale_confirmation_handling() {
     let mut verification = OutputVerification::unverified(OutputModality::Visual);
-    
+
     // Confirm
     verification.confirm_via_interaction();
     assert!(!verification.is_stale(Duration::from_secs(60)));
-    
+
     // Check staleness with zero duration (should be stale)
     assert!(verification.is_stale(Duration::from_secs(0)));
-    
+
     // Should not panic
 }
 
@@ -249,9 +247,9 @@ fn chaos_stale_confirmation_handling() {
 #[test]
 fn chaos_diagnostic_report_empty_system() {
     let system = ProprioceptionSystem::new();
-    
+
     let report = system.get_diagnostic_report();
-    
+
     // Should generate report even with no data
     assert!(report.contains("Health"));
     assert!(report.contains("0%")); // Zero health
@@ -261,10 +259,10 @@ fn chaos_diagnostic_report_empty_system() {
 #[test]
 fn chaos_status_summary_empty() {
     let system = ProprioceptionSystem::new();
-    
+
     let output_status = system.get_output_status();
     let input_status = system.get_input_status();
-    
+
     // Should not crash
     assert!(output_status.contains("0/0") || output_status.contains("Outputs"));
     assert!(input_status.contains("0/0") || input_status.contains("Inputs"));
@@ -274,13 +272,13 @@ fn chaos_status_summary_empty() {
 #[test]
 fn chaos_evidence_collection_failures() {
     let mut verification = OutputVerification::unverified(OutputModality::Visual);
-    
+
     // Add empty evidence
     verification.evidence.clear();
-    
+
     // Should not crash when generating status
     let _status = verification.status_message.clone();
-    
+
     // Confirm with no evidence
     verification.confirm_via_interaction();
     assert!(verification.reaches_user);
@@ -290,7 +288,7 @@ fn chaos_evidence_collection_failures() {
 #[test]
 fn chaos_rapid_modality_switching() {
     let mut system = initialize_standard_proprioception();
-    
+
     // Rapidly switch between different input types
     for i in 0..1000 {
         match i % 4 {
@@ -301,7 +299,7 @@ fn chaos_rapid_modality_switching() {
             _ => {}
         }
     }
-    
+
     let state = system.assess();
     assert!(state.health > 0.0);
     assert!(state.sensory_functional);
@@ -311,12 +309,12 @@ fn chaos_rapid_modality_switching() {
 #[test]
 fn chaos_health_calculation_edge_cases() {
     let mut system = ProprioceptionSystem::new();
-    
+
     // Edge case: Single modality
     system.register_output(OutputModality::Visual);
     system.register_input(InputModality::Keyboard);
     system.input_received(&InputModality::Keyboard);
-    
+
     let state = system.assess();
     // Health should be some valid percentage
     assert!(state.health >= 0.0 && state.health <= 1.0);
@@ -326,16 +324,16 @@ fn chaos_health_calculation_edge_cases() {
 #[test]
 fn chaos_confidence_no_recent_activity() {
     let mut system = initialize_standard_proprioception();
-    
+
     // Old activity
     system.input_received(&InputModality::Keyboard);
-    
+
     // Wait briefly
     thread::sleep(Duration::from_millis(50));
-    
+
     // Assess
     let state = system.assess();
-    
+
     // Confidence should still be valid range
     assert!(state.confidence >= 0.0 && state.confidence <= 1.0);
 }
@@ -344,21 +342,20 @@ fn chaos_confidence_no_recent_activity() {
 #[test]
 fn chaos_loop_completion_edge_cases() {
     let mut system = ProprioceptionSystem::new();
-    
+
     // Case 1: Only output
     system.register_output(OutputModality::Visual);
     let state1 = system.assess();
     assert!(!state1.loop_complete);
-    
+
     // Case 2: Add input but no activity
     system.register_input(InputModality::Keyboard);
     let state2 = system.assess();
     assert!(!state2.loop_complete);
-    
+
     // Case 3: Input activity
     system.input_received(&InputModality::Keyboard);
     let state3 = system.assess();
     // Loop should be complete or health should be positive
     assert!(state3.loop_complete || state3.health > 0.0);
 }
-
