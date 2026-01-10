@@ -8,7 +8,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 #[tokio::test]
 async fn test_http_provider_creation() {
-    let provider = HttpVisualizationProvider::new("http://test:3000");
+    let _provider = HttpVisualizationProvider::new("http://test:3000");
     // Provider should be created successfully
     assert!(true, "HTTP provider created");
 }
@@ -192,10 +192,10 @@ async fn test_health_check_failure() {
     let provider = HttpVisualizationProvider::new(&mock_server.uri());
     let health = provider.health_check().await;
 
-    // Health check failures are reported but don't error
+    // Health check returns Err on unhealthy status
     assert!(
-        health.is_ok(),
-        "Health check reports status even if unhealthy"
+        health.is_err(),
+        "Health check should return error on unhealthy status"
     );
 }
 
@@ -204,8 +204,9 @@ async fn test_get_metadata() {
     let provider = HttpVisualizationProvider::new("http://test:3000");
     let metadata = provider.get_metadata();
 
-    assert_eq!(metadata.name, "http");
-    assert!(metadata.supports_realtime == false || metadata.supports_realtime == true);
+    assert_eq!(metadata.name, "HTTP Provider");
+    assert_eq!(metadata.protocol, "http");
+    assert!(metadata.capabilities.contains(&"visualization.primal-provider".to_string()));
 }
 
 #[tokio::test]

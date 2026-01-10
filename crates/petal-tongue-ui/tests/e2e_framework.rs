@@ -175,6 +175,8 @@ impl E2ETestRunner {
                 #[allow(deprecated)]
                 family_id: None,
                 last_seen: 0,
+                endpoints: None,
+                metadata: None,
             });
             steps_completed += 1;
 
@@ -241,6 +243,8 @@ impl E2ETestRunner {
                     #[allow(deprecated)]
                     family_id: None,
                     last_seen: 0,
+                    endpoints: None,
+                    metadata: None,
                 });
             }
             steps_completed += 1;
@@ -309,6 +313,8 @@ impl E2ETestRunner {
                 #[allow(deprecated)]
                 family_id: None,
                 last_seen: 0,
+                endpoints: None,
+                metadata: None,
             });
             graph.add_node(PrimalInfo {
                 id: "node2".to_string(),
@@ -323,6 +329,8 @@ impl E2ETestRunner {
                 #[allow(deprecated)]
                 family_id: None,
                 last_seen: 0,
+                endpoints: None,
+                metadata: None,
             });
             steps_completed += 1;
 

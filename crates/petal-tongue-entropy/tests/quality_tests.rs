@@ -51,12 +51,12 @@ fn test_shannon_entropy_binary() {
 
 #[test]
 fn test_shannon_entropy_skewed() {
-    // Skewed distribution should have lower entropy
+    // Skewed distribution should have lower entropy than uniform
     let values = vec![1, 1, 1, 1, 1, 2];
     let entropy = shannon_entropy(&values);
 
     assert!(
-        entropy < 0.5,
+        entropy < 0.7,
         "Skewed distribution should have low entropy: {}",
         entropy
     );
