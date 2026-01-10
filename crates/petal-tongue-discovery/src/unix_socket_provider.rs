@@ -3,9 +3,9 @@
 //! Discovers primals via Unix domain sockets by scanning /tmp for .sock files
 //! and querying their capabilities via JSON-RPC.
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::Result;
 use petal_tongue_core::types::{PrimalHealthStatus, PrimalInfo};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -13,21 +13,21 @@ use tokio::net::UnixStream;
 use tracing::{debug, info, warn};
 
 /// JSON-RPC 2.0 error
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct JsonRpcError {
     code: i32,
     message: String,
 }
 
 /// JSON-RPC 2.0 response
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct JsonRpcResponse {
     jsonrpc: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     result: Option<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     error: Option<JsonRpcError>,
-    id: u64,
+    id: Value,
 }
 
 /// Unix socket discovery provider
@@ -40,13 +40,32 @@ pub struct UnixSocketProvider {
 
 impl UnixSocketProvider {
     /// Create a new Unix socket provider
+    ///
+    /// Searches for Unix sockets in:
+    /// 1. $XDG_RUNTIME_DIR (e.g., /run/user/1000) - biomeOS convention
+    /// 2. /tmp - fallback for development
+    /// 3. /var/run/ecoPrimals - alternative runtime directory
     pub fn new() -> Self {
-        Self {
-            search_paths: vec![
-                PathBuf::from("/tmp"),
-                PathBuf::from("/var/run/ecoPrimals"),
-            ],
+        let mut search_paths = Vec::new();
+        
+        // Priority 1: XDG_RUNTIME_DIR (biomeOS convention)
+        if let Ok(xdg_runtime) = std::env::var("XDG_RUNTIME_DIR") {
+            search_paths.push(PathBuf::from(xdg_runtime));
         }
+        
+        // Priority 2: /run/user/<uid> (fallback if XDG not set)
+        // SAFETY: getuid() is a safe FFI call that returns the effective user ID
+        // without preconditions that could lead to undefined behavior.
+        let uid = unsafe { libc::getuid() };
+        search_paths.push(PathBuf::from(format!("/run/user/{}", uid)));
+        
+        // Priority 3: /tmp (development fallback)
+        search_paths.push(PathBuf::from("/tmp"));
+        
+        // Priority 4: /var/run/ecoPrimals (alternative)
+        search_paths.push(PathBuf::from("/var/run/ecoPrimals"));
+        
+        Self { search_paths }
     }
     
     /// Discover all primals via Unix sockets
@@ -92,7 +111,7 @@ impl UnixSocketProvider {
     /// Probe a Unix socket for primal information
     async fn probe_socket(&self, path: &Path) -> Result<PrimalInfo> {
         // Connect to the Unix socket
-        let mut stream = UnixStream::connect(path).await?;
+        let stream = UnixStream::connect(path).await?;
         
         // Send get_capabilities JSON-RPC request
         let request = json!({
@@ -148,7 +167,7 @@ impl UnixSocketProvider {
             .unwrap_or("unknown")
             .to_string();
         
-        let version = result["version"]
+        let _version = result["version"]
             .as_str()
             .unwrap_or("unknown")
             .to_string();
@@ -212,23 +231,6 @@ impl Default for UnixSocketProvider {
     fn default() -> Self {
         Self::new()
     }
-}
-
-/// JSON-RPC response for deserialization
-#[derive(Debug, Deserialize, Serialize)]
-struct JsonRpcResponse {
-    jsonrpc: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    result: Option<Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    error: Option<JsonRpcError>,
-    id: Value,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct JsonRpcError {
-    code: i32,
-    message: String,
 }
 
 #[cfg(test)]

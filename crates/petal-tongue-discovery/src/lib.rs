@@ -38,8 +38,9 @@ mod dns_parser;
 mod http_provider;
 mod mdns_provider;
 mod mock_provider;
-mod traits; // Phase 2: Caching layer (complete)
-            // TODO: Unix socket discovery provider (future work - server side complete)
+mod songbird_client;
+mod traits;
+mod unix_socket_provider;
 
 // Modern async patterns (Discovery Evolution)
 pub mod concurrent;
@@ -54,7 +55,9 @@ pub use capabilities::VisualizationCapability;
 pub use http_provider::HttpVisualizationProvider;
 pub use mdns_provider::MdnsVisualizationProvider;
 pub use mock_provider::MockVisualizationProvider;
-pub use traits::{ProviderMetadata, VisualizationDataProvider}; // Export cache stats for monitoring
+pub use songbird_client::SongbirdClient;
+pub use traits::{ProviderMetadata, VisualizationDataProvider};
+pub use unix_socket_provider::UnixSocketProvider;
 
 // Re-export modern patterns
 pub use concurrent::{ConcurrentDiscoveryResult, HealthStatus, ProviderHealth};
@@ -97,11 +100,63 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
         return Ok(providers);
     }
 
-    // TODO: Unix socket discovery (future work - server infrastructure complete)
-    // The Unix socket JSON-RPC server is implemented in petal-tongue-ipc.
-    // Discovery client will be added in future work.
+    // Priority 1: Try Songbird for live primal discovery (PREFERRED METHOD)
+    // This queries Songbird which has the complete primal registry
+    tracing::info!("🎵 Attempting Songbird discovery (live primal topology)...");
+    match SongbirdClient::discover(None) {
+        Ok(songbird) => {
+            // Test connectivity first
+            match songbird.health_check().await {
+                Ok(status) => {
+                    tracing::info!("✅ Songbird is {} - discovering primals...", status);
+                    
+                    // Try to get all primals from Songbird
+                    match songbird.get_all_primals().await {
+                        Ok(primals) if !primals.is_empty() => {
+                            tracing::info!("🎵 Songbird found {} registered primals!", primals.len());
+                            
+                            // Create a Songbird-based visualization provider
+                            // TODO: Wrap SongbirdClient in VisualizationDataProvider trait
+                            // For now, fall through to other discovery methods
+                            tracing::info!("   (Songbird integration in progress - using secondary discovery)");
+                        }
+                        Ok(_) => {
+                            tracing::warn!("Songbird is running but no primals registered yet");
+                        }
+                        Err(e) => {
+                            tracing::warn!("Songbird query failed: {}", e);
+                        }
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("Songbird health check failed: {}", e);
+                }
+            }
+        }
+        Err(e) => {
+            tracing::debug!("Songbird not available: {}", e);
+            tracing::info!("💡 Tip: Start Songbird for live primal discovery");
+        }
+    }
 
-    // Try mDNS auto-discovery (Phase 1 implementation)
+    // Priority 2: Try Unix socket discovery (scanning for .sock files)
+    tracing::info!("🔍 Attempting Unix socket discovery...");
+    let unix_provider = UnixSocketProvider::new();
+    match unix_provider.discover().await {
+        Ok(primals) if !primals.is_empty() => {
+            tracing::info!("✅ Unix socket discovery found {} primals", primals.len());
+            // TODO: Wrap Unix socket discovery results in VisualizationDataProvider
+            // For now, this provides a fallback path
+        }
+        Ok(_) => {
+            tracing::debug!("Unix socket discovery found no primals");
+        }
+        Err(e) => {
+            tracing::debug!("Unix socket discovery failed: {}", e);
+        }
+    }
+
+    // Priority 3: Try mDNS auto-discovery (Phase 1 implementation)
     let enable_mdns = std::env::var("PETALTONGUE_ENABLE_MDNS")
         .unwrap_or_else(|_| "true".to_string())
         .to_lowercase()
