@@ -13,7 +13,7 @@ pub struct PrimalEndpoints {
     /// Unix socket path (e.g., "/tmp/beardog-node-alpha.sock")
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unix_socket: Option<String>,
-    
+
     /// HTTP endpoint (e.g., "http://localhost:8080")
     #[serde(skip_serializing_if = "Option::is_none")]
     pub http: Option<String>,
@@ -25,11 +25,11 @@ pub struct PrimalMetadata {
     /// Primal version (e.g., "v0.15.2")
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
-    
+
     /// Family ID (genetic lineage)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub family_id: Option<String>,
-    
+
     /// Node ID within the family
     #[serde(skip_serializing_if = "Option::is_none")]
     pub node_id: Option<String>,
@@ -41,11 +41,11 @@ pub struct ConnectionMetrics {
     /// Total request count
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub request_count: Option<u64>,
-    
+
     /// Average latency in milliseconds
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub avg_latency_ms: Option<f64>,
-    
+
     /// Error count
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub error_count: Option<u64>,
@@ -59,7 +59,7 @@ pub struct PrimalInfo {
     /// Human-readable name
     pub name: String,
     /// Type of primal (e.g., "Compute", "Storage", "Security")
-    #[serde(alias = "type")]  // biomeOS uses "type" field
+    #[serde(alias = "type")] // biomeOS uses "type" field
     pub primal_type: String,
     /// Network endpoint (e.g., <http://localhost:8080>, unix:///tmp/primal.sock)
     pub endpoint: String,
@@ -69,12 +69,12 @@ pub struct PrimalInfo {
     pub health: PrimalHealthStatus,
     /// Last time this primal was seen (Unix timestamp)
     pub last_seen: u64,
-    
+
     /// Endpoints for different protocols (biomeOS format)
     /// Supports both HTTP and Unix socket endpoints
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub endpoints: Option<PrimalEndpoints>,
-    
+
     /// Metadata from primal (version, node_id, etc.)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub metadata: Option<PrimalMetadata>,
@@ -178,20 +178,29 @@ impl PrimalInfo {
                 PropertyValue::String(family.clone()),
             );
         }
-        
+
         // Migrate biomeOS metadata to properties
         if let Some(ref metadata) = self.metadata {
             if let Some(ref version) = metadata.version {
-                self.properties.insert("version".to_string(), PropertyValue::String(version.clone()));
+                self.properties.insert(
+                    "version".to_string(),
+                    PropertyValue::String(version.clone()),
+                );
             }
             if let Some(ref family) = metadata.family_id {
-                self.properties.insert(PROP_FAMILY_ID.to_string(), PropertyValue::String(family.clone()));
+                self.properties.insert(
+                    PROP_FAMILY_ID.to_string(),
+                    PropertyValue::String(family.clone()),
+                );
             }
             if let Some(ref node_id) = metadata.node_id {
-                self.properties.insert("node_id".to_string(), PropertyValue::String(node_id.clone()));
+                self.properties.insert(
+                    "node_id".to_string(),
+                    PropertyValue::String(node_id.clone()),
+                );
             }
         }
-        
+
         // Set endpoint from endpoints if available and primary endpoint is empty
         if let Some(ref endpoints) = self.endpoints {
             if self.endpoint.is_empty() || self.endpoint == "unknown" {
@@ -326,11 +335,11 @@ pub struct TopologyEdge {
     /// Optional label
     #[serde(skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
-    
+
     /// Specific capability being invoked (biomeOS format)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub capability: Option<String>,
-    
+
     /// Connection metrics (biomeOS format)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub metrics: Option<ConnectionMetrics>,

@@ -155,36 +155,56 @@ impl AwakeningExperience {
         tracing::info!("🌸 Stage 1: Awakening...");
 
         // Broadcast awakening stage transition
-        if let Err(e) = self.engine.events().broadcast(crate::event::EngineEvent::AwakeningStage {
-            stage: "awakening".to_string(),
-            message: "Awakening...".to_string(),
-        }).await {
+        if let Err(e) = self
+            .engine
+            .events()
+            .broadcast(crate::event::EngineEvent::AwakeningStage {
+                stage: "awakening".to_string(),
+                message: "Awakening...".to_string(),
+            })
+            .await
+        {
             tracing::warn!("Failed to broadcast awakening stage: {}", e);
         }
 
         // Coordinate modalities
         if self.config.visual_enabled {
-            if let Err(e) = self.engine.events().broadcast(crate::event::EngineEvent::AwakeningVisual {
-                frame_type: "flower_opening".to_string(),
-                frame: 0,
-            }).await {
+            if let Err(e) = self
+                .engine
+                .events()
+                .broadcast(crate::event::EngineEvent::AwakeningVisual {
+                    frame_type: "flower_opening".to_string(),
+                    frame: 0,
+                })
+                .await
+            {
                 tracing::warn!("Failed to broadcast visual: {}", e);
             }
         }
 
         if self.config.audio_enabled {
-            if let Err(e) = self.engine.events().broadcast(crate::event::EngineEvent::AwakeningAudio {
-                layer: "signature-tone".to_string(),
-                action: "start".to_string(),
-            }).await {
+            if let Err(e) = self
+                .engine
+                .events()
+                .broadcast(crate::event::EngineEvent::AwakeningAudio {
+                    layer: "signature-tone".to_string(),
+                    action: "start".to_string(),
+                })
+                .await
+            {
                 tracing::warn!("Failed to broadcast audio: {}", e);
             }
         }
 
         if self.config.text_enabled {
-            if let Err(e) = self.engine.events().broadcast(crate::event::EngineEvent::AwakeningText {
-                message: "Awakening...".to_string(),
-            }).await {
+            if let Err(e) = self
+                .engine
+                .events()
+                .broadcast(crate::event::EngineEvent::AwakeningText {
+                    message: "Awakening...".to_string(),
+                })
+                .await
+            {
                 tracing::warn!("Failed to broadcast text: {}", e);
             }
         }
@@ -204,36 +224,56 @@ impl AwakeningExperience {
         tracing::info!("🌸 Stage 2: Self-Knowledge...");
 
         // Broadcast self-knowledge stage transition
-        if let Err(e) = self.engine.events().broadcast(crate::event::EngineEvent::AwakeningStage {
-            stage: "self-knowledge".to_string(),
-            message: "I am petalTongue. I know myself.".to_string(),
-        }).await {
+        if let Err(e) = self
+            .engine
+            .events()
+            .broadcast(crate::event::EngineEvent::AwakeningStage {
+                stage: "self-knowledge".to_string(),
+                message: "I am petalTongue. I know myself.".to_string(),
+            })
+            .await
+        {
             tracing::warn!("Failed to broadcast self-knowledge stage: {}", e);
         }
 
         // Coordinate modalities
         if self.config.visual_enabled {
-            if let Err(e) = self.engine.events().broadcast(crate::event::EngineEvent::AwakeningVisual {
-                frame_type: "flower_glowing".to_string(),
-                frame: 0,
-            }).await {
+            if let Err(e) = self
+                .engine
+                .events()
+                .broadcast(crate::event::EngineEvent::AwakeningVisual {
+                    frame_type: "flower_glowing".to_string(),
+                    frame: 0,
+                })
+                .await
+            {
                 tracing::warn!("Failed to broadcast visual: {}", e);
             }
         }
 
         if self.config.audio_enabled {
-            if let Err(e) = self.engine.events().broadcast(crate::event::EngineEvent::AwakeningAudio {
-                layer: "heartbeat".to_string(),
-                action: "start".to_string(),
-            }).await {
+            if let Err(e) = self
+                .engine
+                .events()
+                .broadcast(crate::event::EngineEvent::AwakeningAudio {
+                    layer: "heartbeat".to_string(),
+                    action: "start".to_string(),
+                })
+                .await
+            {
                 tracing::warn!("Failed to broadcast audio: {}", e);
             }
         }
 
         if self.config.text_enabled {
-            if let Err(e) = self.engine.events().broadcast(crate::event::EngineEvent::AwakeningText {
-                message: "I am petalTongue. I know myself.".to_string(),
-            }).await {
+            if let Err(e) = self
+                .engine
+                .events()
+                .broadcast(crate::event::EngineEvent::AwakeningText {
+                    message: "I am petalTongue. I know myself.".to_string(),
+                })
+                .await
+            {
                 tracing::warn!("Failed to broadcast text: {}", e);
             }
         }
@@ -253,28 +293,43 @@ impl AwakeningExperience {
         tracing::info!("🌸 Stage 3: Discovery...");
 
         // Broadcast discovery stage transition
-        if let Err(e) = self.engine.events().broadcast(crate::event::EngineEvent::AwakeningStage {
-            stage: "discovery".to_string(),
-            message: "Discovering...".to_string(),
-        }).await {
+        if let Err(e) = self
+            .engine
+            .events()
+            .broadcast(crate::event::EngineEvent::AwakeningStage {
+                stage: "discovery".to_string(),
+                message: "Discovering...".to_string(),
+            })
+            .await
+        {
             tracing::warn!("Failed to broadcast discovery stage: {}", e);
         }
 
         // Coordinate modalities
         if self.config.visual_enabled {
-            if let Err(e) = self.engine.events().broadcast(crate::event::EngineEvent::AwakeningVisual {
-                frame_type: "flower_reaching".to_string(),
-                frame: 0,
-            }).await {
+            if let Err(e) = self
+                .engine
+                .events()
+                .broadcast(crate::event::EngineEvent::AwakeningVisual {
+                    frame_type: "flower_reaching".to_string(),
+                    frame: 0,
+                })
+                .await
+            {
                 tracing::warn!("Failed to broadcast visual: {}", e);
             }
         }
 
         if self.config.audio_enabled {
-            if let Err(e) = self.engine.events().broadcast(crate::event::EngineEvent::AwakeningAudio {
-                layer: "discovery-chimes".to_string(),
-                action: "start".to_string(),
-            }).await {
+            if let Err(e) = self
+                .engine
+                .events()
+                .broadcast(crate::event::EngineEvent::AwakeningAudio {
+                    layer: "discovery-chimes".to_string(),
+                    action: "start".to_string(),
+                })
+                .await
+            {
                 tracing::warn!("Failed to broadcast audio: {}", e);
             }
         }
@@ -305,36 +360,56 @@ impl AwakeningExperience {
         tracing::info!("🌸 Stage 4: Tutorial Invitation...");
 
         // Broadcast tutorial stage transition
-        if let Err(e) = self.engine.events().broadcast(crate::event::EngineEvent::AwakeningStage {
-            stage: "tutorial".to_string(),
-            message: "Ready. Let me show you.".to_string(),
-        }).await {
+        if let Err(e) = self
+            .engine
+            .events()
+            .broadcast(crate::event::EngineEvent::AwakeningStage {
+                stage: "tutorial".to_string(),
+                message: "Ready. Let me show you.".to_string(),
+            })
+            .await
+        {
             tracing::warn!("Failed to broadcast tutorial stage: {}", e);
         }
 
         // Coordinate modalities
         if self.config.visual_enabled {
-            if let Err(e) = self.engine.events().broadcast(crate::event::EngineEvent::AwakeningVisual {
-                frame_type: "tutorial_invitation".to_string(),
-                frame: 0,
-            }).await {
+            if let Err(e) = self
+                .engine
+                .events()
+                .broadcast(crate::event::EngineEvent::AwakeningVisual {
+                    frame_type: "tutorial_invitation".to_string(),
+                    frame: 0,
+                })
+                .await
+            {
                 tracing::warn!("Failed to broadcast visual: {}", e);
             }
         }
 
         if self.config.audio_enabled {
-            if let Err(e) = self.engine.events().broadcast(crate::event::EngineEvent::AwakeningAudio {
-                layer: "completion-harmony".to_string(),
-                action: "start".to_string(),
-            }).await {
+            if let Err(e) = self
+                .engine
+                .events()
+                .broadcast(crate::event::EngineEvent::AwakeningAudio {
+                    layer: "completion-harmony".to_string(),
+                    action: "start".to_string(),
+                })
+                .await
+            {
                 tracing::warn!("Failed to broadcast audio: {}", e);
             }
         }
 
         if self.config.text_enabled {
-            if let Err(e) = self.engine.events().broadcast(crate::event::EngineEvent::AwakeningText {
-                message: "Ready. Let me show you.".to_string(),
-            }).await {
+            if let Err(e) = self
+                .engine
+                .events()
+                .broadcast(crate::event::EngineEvent::AwakeningText {
+                    message: "Ready. Let me show you.".to_string(),
+                })
+                .await
+            {
                 tracing::warn!("Failed to broadcast text: {}", e);
             }
         }

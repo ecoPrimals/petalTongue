@@ -319,7 +319,9 @@ impl AudioProvider for UserSoundProvider {
         // Most UI sounds are <1s so this is acceptable.
         //
         // Future evolution: Use audio library with proper playback control (rodio, cpal).
-        warn!("Audio stop() not implemented - fire-and-forget architecture. Sounds play to completion.");
+        warn!(
+            "Audio stop() not implemented - fire-and-forget architecture. Sounds play to completion."
+        );
     }
 
     fn available_sounds(&self) -> Vec<String> {
@@ -402,7 +404,10 @@ impl ToadstoolAudioProvider {
             .await
             .map_err(|e| format!("Failed to read audio data: {}", e))?;
 
-        info!("✅ Received {} bytes of audio from Toadstool", audio_bytes.len());
+        info!(
+            "✅ Received {} bytes of audio from Toadstool",
+            audio_bytes.len()
+        );
         Ok(audio_bytes.to_vec())
     }
 }
@@ -441,7 +446,7 @@ impl AudioProvider for ToadstoolAudioProvider {
 
                 if let Ok(client) = client {
                     let url = format!("{}/api/v1/audio/play", ep);
-                    
+
                     #[derive(serde::Serialize)]
                     struct PlayRequest {
                         sound: String,

@@ -11,14 +11,14 @@ use serde_json::Value;
 pub struct JsonRpcRequest {
     /// Protocol version (always "2.0")
     pub jsonrpc: String,
-    
+
     /// Method name to invoke
     pub method: String,
-    
+
     /// Method parameters (structured value or array)
     #[serde(default)]
     pub params: Value,
-    
+
     /// Request identifier (can be string, number, or null)
     pub id: Value,
 }
@@ -40,15 +40,15 @@ impl JsonRpcRequest {
 pub struct JsonRpcResponse {
     /// Protocol version (always "2.0")
     pub jsonrpc: String,
-    
+
     /// Result data (present on success)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<Value>,
-    
+
     /// Error data (present on failure)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<JsonRpcError>,
-    
+
     /// Request identifier (matches the request)
     pub id: Value,
 }
@@ -63,7 +63,7 @@ impl JsonRpcResponse {
             id,
         }
     }
-    
+
     /// Create an error response
     pub fn error(id: Value, code: i32, message: impl Into<String>) -> Self {
         Self {
@@ -77,7 +77,7 @@ impl JsonRpcResponse {
             id,
         }
     }
-    
+
     /// Create an error response with additional data
     pub fn error_with_data(id: Value, code: i32, message: impl Into<String>, data: Value) -> Self {
         Self {
@@ -98,10 +98,10 @@ impl JsonRpcResponse {
 pub struct JsonRpcError {
     /// Error code (standard or application-defined)
     pub code: i32,
-    
+
     /// Human-readable error message
     pub message: String,
-    
+
     /// Additional error data (optional)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<Value>,
@@ -112,19 +112,19 @@ pub struct JsonRpcError {
 pub mod error_codes {
     /// Invalid JSON was received by the server
     pub const PARSE_ERROR: i32 = -32700;
-    
+
     /// The JSON sent is not a valid Request object
     pub const INVALID_REQUEST: i32 = -32600;
-    
+
     /// The method does not exist / is not available
     pub const METHOD_NOT_FOUND: i32 = -32601;
-    
+
     /// Invalid method parameter(s)
     pub const INVALID_PARAMS: i32 = -32602;
-    
+
     /// Internal JSON-RPC error
     pub const INTERNAL_ERROR: i32 = -32603;
-    
+
     /// Reserved for implementation-defined server-errors
     /// Range: -32000 to -32099
     pub const SERVER_ERROR_START: i32 = -32000;
@@ -138,12 +138,8 @@ mod tests {
 
     #[test]
     fn test_json_rpc_request_serialization() {
-        let request = JsonRpcRequest::new(
-            "get_capabilities",
-            json!({}),
-            json!(1)
-        );
-        
+        let request = JsonRpcRequest::new("get_capabilities", json!({}), json!(1));
+
         let json = serde_json::to_string(&request).unwrap();
         assert!(json.contains("\"jsonrpc\":\"2.0\""));
         assert!(json.contains("\"method\":\"get_capabilities\""));
@@ -152,11 +148,8 @@ mod tests {
 
     #[test]
     fn test_json_rpc_response_success() {
-        let response = JsonRpcResponse::success(
-            json!(1),
-            json!({"status": "ok"})
-        );
-        
+        let response = JsonRpcResponse::success(json!(1), json!({"status": "ok"}));
+
         assert_eq!(response.jsonrpc, "2.0");
         assert!(response.result.is_some());
         assert!(response.error.is_none());
@@ -164,16 +157,13 @@ mod tests {
 
     #[test]
     fn test_json_rpc_response_error() {
-        let response = JsonRpcResponse::error(
-            json!(1),
-            error_codes::METHOD_NOT_FOUND,
-            "Method not found"
-        );
-        
+        let response =
+            JsonRpcResponse::error(json!(1), error_codes::METHOD_NOT_FOUND, "Method not found");
+
         assert_eq!(response.jsonrpc, "2.0");
         assert!(response.result.is_none());
         assert!(response.error.is_some());
-        
+
         let error = response.error.unwrap();
         assert_eq!(error.code, error_codes::METHOD_NOT_FOUND);
         assert_eq!(error.message, "Method not found");
@@ -187,7 +177,7 @@ mod tests {
             "params": {},
             "id": 42
         }"#;
-        
+
         let request: JsonRpcRequest = serde_json::from_str(json).unwrap();
         assert_eq!(request.jsonrpc, "2.0");
         assert_eq!(request.method, "get_health");
@@ -201,11 +191,10 @@ mod tests {
             "result": {"status": "healthy"},
             "id": 1
         }"#;
-        
+
         let response: JsonRpcResponse = serde_json::from_str(json).unwrap();
         assert_eq!(response.jsonrpc, "2.0");
         assert!(response.result.is_some());
         assert!(response.error.is_none());
     }
 }
-

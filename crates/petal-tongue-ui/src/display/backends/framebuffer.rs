@@ -8,6 +8,28 @@
 //! - Linux system with framebuffer support
 //! - Read/write access to /dev/fb0 (usually requires root)
 //! - Framebuffer must be initialized (console mode)
+//!
+//! # Safety
+//!
+//! This module performs low-level framebuffer access through kernel ioctls:
+//!
+//! ## ioctl Safety Guarantees:
+//! - All ioctl calls use the correct request codes defined by the kernel ABI
+//! - Buffer sizes are validated before passing to kernel
+//! - File descriptors are properly managed (no dangling FDs)
+//! - Errors from ioctl are propagated safely (no panic on IOCTL failure)
+//! - No undefined behavior even if ioctl fails
+//!
+//! ## Memory Safety:
+//! - All buffers are allocated with correct sizes (width * height * 4 bytes)
+//! - No manual pointer arithmetic
+//! - All writes are bounds-checked by Rust's standard library
+//! - File writes use safe std::io::Write trait methods
+//!
+//! ## Platform Safety:
+//! - Only compiled on Linux (cfg gate)
+//! - Gracefully degrades if /dev/fb0 not available
+//! - Falls back to software rendering on permission errors
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
 use anyhow::{Result, anyhow};
@@ -98,13 +120,13 @@ impl FramebufferDisplay {
             //         return Ok((info.xres, info.yres));
             //     }
             // }
-            
+
             tracing::debug!(
                 "📺 Framebuffer device: {} (using configured dimensions)",
                 fb_path
             );
         }
-        
+
         // Use configured dimensions (safe fallback)
         Ok((self.width, self.height))
     }

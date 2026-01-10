@@ -416,7 +416,7 @@ fn hierarchical_layout(nodes: &mut [Node], edges: &[TopologyEdge]) {
     while let Some(current_idx) = queue.pop() {
         let current_level = levels[&current_idx];
         let current_id = &nodes[current_idx].info.id;
-        
+
         for edge in edges {
             if edge.from.as_str() == current_id.as_str() {
                 if let Some(&to_idx) = id_to_index.get(edge.to.as_str()) {

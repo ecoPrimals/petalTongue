@@ -68,7 +68,7 @@ pub async fn discover_all_sensors(registry: Arc<RwLock<SensorRegistry>>) -> Resu
         tracing::info!("📊 Sensor statistics:");
         tracing::info!("   Total sensors: {}", stats.total);
         tracing::info!("   Active sensors: {}", stats.active);
-        
+
         // Count sensors by capability
         let mut input_count = 0;
         let mut output_count = 0;
@@ -99,7 +99,7 @@ pub fn verify_essential_sensors(registry: &Arc<RwLock<SensorRegistry>>) -> bool 
                 break;
             }
         }
-        
+
         if !has_output {
             tracing::warn!("⚠️  No output sensors available!");
             return false;
@@ -120,7 +120,7 @@ mod tests {
     #[tokio::test]
     async fn test_sensor_discovery() {
         let registry = Arc::new(RwLock::new(SensorRegistry::new()));
-        
+
         // Discovery should not fail even if no sensors found
         let result = discover_all_sensors(Arc::clone(&registry)).await;
         assert!(result.is_ok());
@@ -136,9 +136,8 @@ mod tests {
     #[test]
     fn test_verify_essential_sensors() {
         let registry = Arc::new(RwLock::new(SensorRegistry::new()));
-        
+
         // With empty registry, should return false (no output)
         assert!(!verify_essential_sensors(&registry));
     }
 }
-

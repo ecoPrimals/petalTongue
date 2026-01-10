@@ -449,7 +449,9 @@ impl HumanEntropyWindow {
             #[cfg(feature = "audio")]
             EntropyModality::Audio => {
                 if let Some(capturer) = self.audio_capturer.take() {
-                    let cap = capturer.lock().expect("SAFETY: Audio capturer lock poisoned");
+                    let cap = capturer
+                        .lock()
+                        .expect("SAFETY: Audio capturer lock poisoned");
                     // Note: This consumes the capturer
                     Some(cap.finalize())
                 } else {
@@ -457,9 +459,7 @@ impl HumanEntropyWindow {
                 }
             }
 
-            EntropyModality::Narrative => {
-                self.narrative_capturer.take().map(|c| c.finalize())
-            }
+            EntropyModality::Narrative => self.narrative_capturer.take().map(|c| c.finalize()),
 
             _ => None,
         };
@@ -467,27 +467,23 @@ impl HumanEntropyWindow {
         // Handle Result and convert to EntropyCapture based on modality
         let entropy_data: Option<EntropyCapture> = match self.modality {
             #[cfg(feature = "audio")]
-            EntropyModality::Audio => {
-                match entropy_result {
-                    Some(Ok(audio_data)) => Some(EntropyCapture::Audio(audio_data)),
-                    Some(Err(e)) => {
-                        warn!("Failed to finalize audio entropy: {}", e);
-                        None
-                    }
-                    None => None,
+            EntropyModality::Audio => match entropy_result {
+                Some(Ok(audio_data)) => Some(EntropyCapture::Audio(audio_data)),
+                Some(Err(e)) => {
+                    warn!("Failed to finalize audio entropy: {}", e);
+                    None
                 }
-            }
+                None => None,
+            },
 
-            EntropyModality::Narrative => {
-                match entropy_result {
-                    Some(Ok(narrative_data)) => Some(EntropyCapture::Narrative(narrative_data)),
-                    Some(Err(e)) => {
-                        warn!("Failed to finalize narrative entropy: {}", e);
-                        None
-                    }
-                    None => None,
+            EntropyModality::Narrative => match entropy_result {
+                Some(Ok(narrative_data)) => Some(EntropyCapture::Narrative(narrative_data)),
+                Some(Err(e)) => {
+                    warn!("Failed to finalize narrative entropy: {}", e);
+                    None
                 }
-            }
+                None => None,
+            },
 
             _ => None,
         };
@@ -495,11 +491,11 @@ impl HumanEntropyWindow {
         if let Some(entropy) = entropy_data {
             // Discover BearDog endpoint via capability-based discovery
             let endpoint = self.discover_beardog_endpoint();
-            
+
             if let Some(url) = endpoint {
                 // Stream entropy asynchronously (fire and forget)
                 Self::stream_entropy_to_beardog(url, entropy);
-                
+
                 // Update UI state optimistically
                 self.reset();
                 self.status_message = "✅ Entropy sent to BearDog!".to_string();
@@ -540,7 +536,9 @@ impl HumanEntropyWindow {
 
         // Future: Use mDNS discovery to find primals with "entropy-ingestion" capability
         // For now, return None and let user configure via environment
-        warn!("BearDog endpoint not discovered. Set BEARDOG_ENTROPY_ENDPOINT environment variable.");
+        warn!(
+            "BearDog endpoint not discovered. Set BEARDOG_ENTROPY_ENDPOINT environment variable."
+        );
         None
     }
 

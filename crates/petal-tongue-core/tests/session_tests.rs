@@ -13,7 +13,7 @@ use tempfile::TempDir;
 fn test_session_state_creation() {
     let instance_id = InstanceId::new();
     let state = SessionState::new(instance_id.clone());
-    
+
     assert_eq!(state.instance_id, instance_id);
     assert_eq!(state.version, SessionState::VERSION);
     assert!(state.nodes.is_empty());
