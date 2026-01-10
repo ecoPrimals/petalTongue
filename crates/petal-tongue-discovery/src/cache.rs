@@ -53,7 +53,7 @@ pub(crate) enum CacheKey {
 /// Provider cache with TTL support
 ///
 /// Uses LRU eviction when cache is full.
-/// 
+///
 /// ASYNC-SAFE: Uses tokio::sync::RwLock to prevent deadlocks in async context.
 #[derive(Debug)]
 #[allow(dead_code)] // Reserved for future use when caching is enabled
@@ -242,48 +242,48 @@ impl std::fmt::Display for CacheStats {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_cache_creation() {
+    #[tokio::test]
+    async fn test_cache_creation() {
         let cache: ProviderCache<Vec<String>> = ProviderCache::new(10);
-        let stats = cache.stats();
+        let stats = cache.stats().await;
         assert_eq!(stats.hits, 0);
         assert_eq!(stats.misses, 0);
     }
 
-    #[test]
-    fn test_cache_put_get() {
+    #[tokio::test]
+    async fn test_cache_put_get() {
         let cache = ProviderCache::new(10);
         let data = vec!["test".to_string()];
 
-        cache.put_primals(data.clone());
-        let retrieved = cache.get_primals();
+        cache.put_primals(data.clone()).await;
+        let retrieved = cache.get_primals().await;
 
         assert!(retrieved.is_some());
         assert_eq!(retrieved.unwrap(), data);
     }
 
-    #[test]
-    fn test_cache_miss() {
+    #[tokio::test]
+    async fn test_cache_miss() {
         let cache: ProviderCache<Vec<String>> = ProviderCache::new(10);
-        let retrieved = cache.get_primals();
+        let retrieved = cache.get_primals().await;
         assert!(retrieved.is_none());
 
-        let stats = cache.stats();
+        let stats = cache.stats().await;
         assert_eq!(stats.misses, 1);
     }
 
-    #[test]
-    fn test_cache_hit() {
+    #[tokio::test]
+    async fn test_cache_hit() {
         let cache = ProviderCache::new(10);
-        cache.put_primals(vec!["test".to_string()]);
+        cache.put_primals(vec!["test".to_string()]).await;
 
-        let _ = cache.get_primals();
-        let stats = cache.stats();
+        let _ = cache.get_primals().await;
+        let stats = cache.stats().await;
         assert_eq!(stats.hits, 1);
     }
 
-    #[test]
-    fn test_cache_expiration() {
+    #[tokio::test]
+    async fn test_cache_expiration() {
         let cache = ProviderCache::with_ttls(
             10,
             Duration::from_millis(50), // Very short TTL for testing
@@ -291,94 +291,100 @@ mod tests {
             Duration::from_secs(10),
         );
 
-        cache.put_primals(vec!["test".to_string()]);
+        cache.put_primals(vec!["test".to_string()]).await;
 
         // Should hit immediately
-        assert!(cache.get_primals().is_some());
+        assert!(cache.get_primals().await.is_some());
 
-        // Wait for expiration
-        std::thread::sleep(Duration::from_millis(100));
+        // Wait for expiration (async sleep, no blocking!)
+        tokio::time::sleep(Duration::from_millis(100)).await;
 
         // Should miss after expiration
-        assert!(cache.get_primals().is_none());
+        assert!(cache.get_primals().await.is_none());
     }
 
-    #[test]
-    fn test_cache_invalidation() {
+    #[tokio::test]
+    async fn test_cache_invalidation() {
         let cache = ProviderCache::new(10);
-        cache.put_primals(vec!["test".to_string()]);
+        cache.put_primals(vec!["test".to_string()]).await;
 
-        assert!(cache.get_primals().is_some());
+        assert!(cache.get_primals().await.is_some());
 
-        cache.invalidate_primals();
+        cache.invalidate_primals().await;
 
-        assert!(cache.get_primals().is_none());
+        assert!(cache.get_primals().await.is_none());
     }
 
-    #[test]
-    fn test_cache_statistics() {
+    #[tokio::test]
+    async fn test_cache_statistics() {
         let cache = ProviderCache::new(10);
-        cache.put_primals(vec!["test".to_string()]);
+        cache.put_primals(vec!["test".to_string()]).await;
 
-        let _ = cache.get_primals(); // Hit
-        let _ = cache.get_topology(); // Miss
-        let _ = cache.get_primals(); // Hit
+        let _ = cache.get_primals().await; // Hit
+        let _ = cache.get_topology().await; // Miss
+        let _ = cache.get_primals().await; // Hit
 
-        let stats = cache.stats();
+        let stats = cache.stats().await;
         assert_eq!(stats.hits, 2);
         assert_eq!(stats.misses, 1);
         assert_eq!(stats.total, 3);
         assert!((stats.hit_rate - 66.666).abs() < 0.1);
     }
 
-    #[test]
-    fn test_cache_reset_stats() {
+    #[tokio::test]
+    async fn test_cache_reset_stats() {
         let cache = ProviderCache::new(10);
-        cache.put_primals(vec!["test".to_string()]);
+        cache.put_primals(vec!["test".to_string()]).await;
 
-        let _ = cache.get_primals();
-        assert_eq!(cache.stats().hits, 1);
+        let _ = cache.get_primals().await;
+        assert_eq!(cache.stats().await.hits, 1);
 
-        cache.reset_stats();
-        assert_eq!(cache.stats().hits, 0);
+        cache.reset_stats().await;
+        assert_eq!(cache.stats().await.hits, 0);
     }
 
-    #[test]
-    fn test_multiple_key_types() {
+    #[tokio::test]
+    async fn test_multiple_key_types() {
         let cache = ProviderCache::new(10);
 
-        cache.put_primals(vec!["primals".to_string()]);
-        cache.put_topology(vec!["topology".to_string()]);
-        cache.put_health(vec!["health".to_string()]);
+        cache.put_primals(vec!["primals".to_string()]).await;
+        cache.put_topology(vec!["topology".to_string()]).await;
+        cache.put_health(vec!["health".to_string()]).await;
 
-        assert_eq!(cache.get_primals().unwrap()[0], "primals");
-        assert_eq!(cache.get_topology().unwrap()[0], "topology");
-        assert_eq!(cache.get_health().unwrap()[0], "health");
+        assert_eq!(cache.get_primals().await.unwrap()[0], "primals");
+        assert_eq!(cache.get_topology().await.unwrap()[0], "topology");
+        assert_eq!(cache.get_health().await.unwrap()[0], "health");
     }
 
-    #[test]
-    fn test_lru_eviction() {
+    #[tokio::test]
+    async fn test_lru_eviction() {
         let cache = ProviderCache::new(2); // Small capacity
 
-        cache.put(
-            CacheKey::Primals,
-            vec!["1".to_string()],
-            Duration::from_secs(60),
-        );
-        cache.put(
-            CacheKey::Topology,
-            vec!["2".to_string()],
-            Duration::from_secs(60),
-        );
-        cache.put(
-            CacheKey::Health,
-            vec!["3".to_string()],
-            Duration::from_secs(60),
-        );
+        cache
+            .put(
+                CacheKey::Primals,
+                vec!["1".to_string()],
+                Duration::from_secs(60),
+            )
+            .await;
+        cache
+            .put(
+                CacheKey::Topology,
+                vec!["2".to_string()],
+                Duration::from_secs(60),
+            )
+            .await;
+        cache
+            .put(
+                CacheKey::Health,
+                vec!["3".to_string()],
+                Duration::from_secs(60),
+            )
+            .await;
 
         // Primals should be evicted (LRU)
-        assert!(cache.get_primals().is_none());
-        assert!(cache.get_topology().is_some());
-        assert!(cache.get_health().is_some());
+        assert!(cache.get(CacheKey::Primals).await.is_none());
+        assert!(cache.get(CacheKey::Topology).await.is_some());
+        assert!(cache.get(CacheKey::Health).await.is_some());
     }
 }
