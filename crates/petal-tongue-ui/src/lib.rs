@@ -26,6 +26,7 @@ pub mod audio_providers;
 pub mod audio_pure_rust;
 pub mod bingocube_integration;
 pub mod biomeos_integration; // biomeOS UI Integration - Phase 1 (device management provider)
+pub mod biomeos_ui_manager; // biomeOS UI Manager - Phase 5 (integration & wiring)
 pub mod data_source;
 pub mod device_panel; // Device Management UI - Phase 2
 pub mod display; // Pure Rust display system
