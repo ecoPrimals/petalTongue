@@ -194,7 +194,7 @@ pub fn detect_display_topology() -> (DisplayTopology, Vec<String>) {
 
     // EVOLVED: Check for virtual display using pure Rust
     use crate::display_pure_rust;
-    
+
     if display_pure_rust::is_virtual_display() {
         evidence.push("Virtual display detected (pure Rust detection)".to_string());
         return (DisplayTopology::Virtual, evidence);
@@ -332,8 +332,8 @@ fn check_window_manager() -> bool {
     let monitors = display_pure_rust::get_all_monitors();
     if !monitors.is_empty() {
         debug!("✅ Display system available ({} monitor(s))", monitors.len());
-        return true;
-    }
+            return true;
+        }
     
     // Fallback: Check for X11/Wayland environment
     if std::env::var("DISPLAY").is_ok() || std::env::var("WAYLAND_DISPLAY").is_ok() {
@@ -380,9 +380,9 @@ fn find_window_by_title(title: &str) -> bool {
         debug!("✅ Display system available - assuming window '{}' exists", title);
         // In a real GUI app, the window would be created by eframe/egui
         // and would definitely exist if we're running
-        return true;
+            return true;
     }
-    
+
     // Fallback: Try wmctrl (legacy)
     if let Ok(output) = Command::new("wmctrl").arg("-l").output() {
         if output.status.success() {
