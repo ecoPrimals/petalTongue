@@ -29,6 +29,7 @@ pub mod data_source;
 pub mod display; // Pure Rust display system
 pub mod display_pure_rust;
 pub mod display_verification; // Phase 4: Active display visibility verification
+pub mod graph_editor; // Collaborative Intelligence - Interactive graph editing
 pub mod graph_metrics_plotter;
 pub mod human_entropy_window;
 pub mod input_verification; // Universal input verification (keyboard, pointer, etc.)
