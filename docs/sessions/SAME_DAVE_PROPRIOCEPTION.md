@@ -12,10 +12,24 @@
 
 **KEY INSIGHT**: Like human proprioception (knowing body position without seeing it), primals need complete sensory-motor awareness through feedback loops!
 
-## SAME DAVE
+## SAME DAVE - Neuroanatomy Model
 
-**S**elf-**A**wareness via **M**ulti-modal **E**vidence  
-**D**eterministic **A**ssessment of **V**erification **E**fficacy
+This implements the neuroanatomy mnemonic for spinal cord pathways:
+
+- **SAME**: **S**ensory **A**fferent, **M**otor **E**fferent
+- **DAVE**: **D**orsal **A**fferent, **V**entral **E**fferent
+
+In human anatomy:
+- **Dorsal (back)**: Sensory/Afferent pathways - signals coming IN
+- **Ventral (front)**: Motor/Efferent pathways - signals going OUT
+
+For primals:
+- **Sensory (Afferent)**: Input pathways - signals coming TO the primal (keyboard, mouse, sensors)
+- **Motor (Efferent)**: Output pathways - signals going FROM the primal (display, audio, haptic)
+- **Bidirectional Loop**: Both pathways working together = proprioception function
+
+Just like human proprioception requires both motor commands (efferent) and sensory feedback (afferent) 
+to know body position, primals need both output and input verification to achieve complete self-awareness.
 
 This is proprioception for primals!
 
