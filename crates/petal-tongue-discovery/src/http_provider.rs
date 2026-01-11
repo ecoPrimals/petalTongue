@@ -1,7 +1,34 @@
 //! HTTP-based visualization data provider
 //!
-//! Generic provider that works with any HTTP REST API following the
-//! visualization data contract (not specific to biomeOS!)
+//! ⚠️  **DEPRECATED AS PRIMARY PROTOCOL** ⚠️
+//!
+//! HTTP/REST is the **FALLBACK** protocol for external integrations only.
+//! The PRIMARY protocol for ecoPrimals is **JSON-RPC 2.0 over Unix sockets**.
+//!
+//! # Why JSON-RPC First?
+//!
+//! - 100x faster (Unix sockets vs TCP/IP)
+//! - Port-free architecture
+//! - Secure by default (file permissions)
+//! - Compatible with all primals (Songbird, BearDog, ToadStool, etc.)
+//!
+//! # When to Use HTTP
+//!
+//! - External web integrations
+//! - Remote access over network
+//! - Legacy systems without Unix socket support
+//!
+//! # Migration
+//!
+//! Replace:
+//! ```bash
+//! BIOMEOS_URL=http://localhost:3000
+//! ```
+//!
+//! With:
+//! ```bash
+//! BIOMEOS_URL=unix:///run/user/$UID/biomeos-device-management.sock
+//! ```
 
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 use async_trait::async_trait;
@@ -11,10 +38,19 @@ use std::time::Duration;
 
 /// HTTP-based visualization data provider
 ///
+/// ⚠️  **DEPRECATED AS PRIMARY PROTOCOL**
+///
+/// This provider is for **external integrations only**.
+/// Use `JsonRpcProvider` for TRUE PRIMAL inter-primal communication!
+///
 /// Works with any primal that exposes:
 /// - `GET /api/v1/health`
 /// - `GET /api/v1/primals`
 /// - `GET /api/v1/topology` (optional)
+#[deprecated(
+    since = "1.4.0",
+    note = "HTTP is FALLBACK protocol. Use JsonRpcProvider for TRUE PRIMAL architecture!"
+)]
 pub struct HttpVisualizationProvider {
     /// Endpoint URL
     endpoint: String,
@@ -42,9 +78,23 @@ struct DiscoveredPrimal {
 
 impl HttpVisualizationProvider {
     /// Create a new HTTP provider
+    ///
+    /// ⚠️  **DEPRECATED**: Use `JsonRpcProvider` for TRUE PRIMAL protocol!
+    ///
+    /// This is for external integrations only (web APIs, remote access).
+    #[allow(deprecated)]
     pub fn new(endpoint: impl Into<String>) -> Self {
+        let endpoint_str = endpoint.into();
+
+        // Log deprecation warning
+        tracing::warn!("⚠️  HttpVisualizationProvider is DEPRECATED as primary protocol!");
+        tracing::warn!(
+            "💡 Migrate to JSON-RPC: JsonRpcProvider::discover() or BIOMEOS_URL=unix://..."
+        );
+        tracing::info!("Using HTTP provider at: {}", endpoint_str);
+
         Self {
-            endpoint: endpoint.into(),
+            endpoint: endpoint_str,
             client: reqwest::Client::builder()
                 .timeout(Duration::from_secs(30)) // Increased timeout
                 .connect_timeout(Duration::from_secs(10)) // Separate connect timeout
