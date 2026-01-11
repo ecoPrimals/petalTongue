@@ -2,20 +2,91 @@
 //!
 //! Plays signature audio tone followed by startup music when petalTongue launches.
 //!
-//! Architecture:
-//! 1. Signature Tone: Pure Rust generation (always works, no dependencies)
-//! 2. Startup Music: Embedded MP3 (self-contained, always available)
+//! Architecture (TRUE PRIMAL - Pure Rust):
+//! 1. Signature Tone: Pure Rust generation (rodio, always works)
+//! 2. Startup Music: Embedded MP3 decoded with pure Rust (symphonia)
 //! 3. Fallback: External file if embedded not available
 //!
 //! # Sovereignty
 //!
-//! The startup music is **embedded** into the binary, making petalTongue
-//! completely self-contained. No external files needed!
+//! **EVOLVED**: Now uses 100% pure Rust audio stack!
+//! - rodio: Cross-platform audio playback
+//! - symphonia: Pure Rust MP3/WAV decoder
+//! - NO external dependencies (mpv, ffplay, aplay, etc.)
+//! - Self-stable operation guaranteed
 
 use crate::audio_providers::AudioSystem;
 use crate::audio_pure_rust::{SAMPLE_RATE, Waveform, generate_tone};
-use std::path::PathBuf;
+use std::io::Cursor;
+use std::path::{Path, PathBuf};
 use tracing::{info, warn};
+
+/// Play audio samples using pure Rust (rodio)
+///
+/// This is the TRUE PRIMAL audio playback - no external dependencies!
+fn play_audio_pure_rust(samples: &[f32]) -> Result<(), String> {
+    use rodio::{OutputStream, Sink, buffer::SamplesBuffer};
+    
+    // Get default output device
+    let (_stream, stream_handle) = OutputStream::try_default()
+        .map_err(|e| format!("Failed to get audio output device: {}", e))?;
+    
+    let sink = Sink::try_new(&stream_handle)
+        .map_err(|e| format!("Failed to create audio sink: {}", e))?;
+    
+    // Create audio source from samples
+    let source = SamplesBuffer::new(1, SAMPLE_RATE, samples.to_vec());
+    
+    sink.append(source);
+    sink.sleep_until_end();
+    
+    Ok(())
+}
+
+/// Play embedded MP3 using pure Rust (rodio + symphonia)
+fn play_embedded_mp3_pure_rust(mp3_data: &[u8]) -> Result<(), String> {
+    use rodio::{Decoder, OutputStream, Sink};
+    
+    let (_stream, stream_handle) = OutputStream::try_default()
+        .map_err(|e| format!("Failed to get audio output device: {}", e))?;
+    
+    let sink = Sink::try_new(&stream_handle)
+        .map_err(|e| format!("Failed to create audio sink: {}", e))?;
+    
+    // Decode MP3 from memory (pure Rust - symphonia!)
+    let cursor = Cursor::new(mp3_data);
+    let source = Decoder::new(cursor)
+        .map_err(|e| format!("Failed to decode MP3: {}", e))?;
+    
+    sink.append(source);
+    sink.sleep_until_end();
+    
+    Ok(())
+}
+
+/// Play audio file using pure Rust (rodio + symphonia)
+fn play_file_pure_rust(path: &Path) -> Result<(), String> {
+    use rodio::{Decoder, OutputStream, Sink};
+    use std::fs::File;
+    
+    let (_stream, stream_handle) = OutputStream::try_default()
+        .map_err(|e| format!("Failed to get audio output device: {}", e))?;
+    
+    let sink = Sink::try_new(&stream_handle)
+        .map_err(|e| format!("Failed to create audio sink: {}", e))?;
+    
+    // Open and decode file (pure Rust!)
+    let file = File::open(path)
+        .map_err(|e| format!("Failed to open audio file: {}", e))?;
+    
+    let source = Decoder::new(file)
+        .map_err(|e| format!("Failed to decode audio file: {}", e))?;
+    
+    sink.append(source);
+    sink.sleep_until_end();
+    
+    Ok(())
+}
 
 /// Embedded startup music (11MB MP3)
 ///
@@ -193,50 +264,52 @@ impl StartupAudio {
                 let wav_path = temp_dir.join("petaltongue_signature.wav");
                 let wav_bytes = export_wav(&signature);
 
-                if let Err(e) = std::fs::write(&wav_path, wav_bytes) {
-                    warn!("Failed to write signature tone: {}", e);
-                } else {
-                    info!("🎵 Signature tone exported to {:?}", wav_path);
-
-                    // Try to play with system command
-                    use std::process::Command;
-                    let players = vec!["aplay", "paplay", "ffplay", "mpv"];
-
-                    for player in players {
-                        if Command::new(player).arg(&wav_path).spawn().is_ok() {
-                            info!("🎵 Signature tone playing with {}...", player);
-                            // Wait for signature to finish
-                            #[allow(clippy::cast_precision_loss)]
-                            let duration = signature.len() as f32 / SAMPLE_RATE as f32;
-                            std::thread::sleep(std::time::Duration::from_secs_f32(duration + 0.2));
-                            break;
+                // EVOLVED: Pure Rust audio playback (no external dependencies!)
+                match play_audio_pure_rust(&signature) {
+                    Ok(()) => {
+                        info!("✅ Signature tone played with pure Rust (rodio)");
+                    }
+                    Err(e) => {
+                        warn!("⚠️ Pure Rust audio failed: {}, writing to disk as fallback", e);
+                        
+                        // Fallback: Write to disk for manual playback
+                        if let Err(e) = std::fs::write(&wav_path, wav_bytes) {
+                            warn!("Failed to write signature tone: {}", e);
+                        } else {
+                            info!("🎵 Signature tone exported to {:?}", wav_path);
                         }
                     }
                 }
             }
 
-            // 2. Play startup music (if available)
+            // 2. Play startup music (embedded or external)
             if play_music {
-                if let Some(path) = music_path {
-                    info!("🎵 Playing startup music: {}", path.display());
-
-                    // Use system player for mp3
-                    use std::process::Command;
-                    let players = vec!["mpv", "ffplay", "paplay", "aplay"];
-
-                    for player in players {
-                        if Command::new(player)
-                            .arg(&path)
-                            .arg("--really-quiet")
-                            .spawn()
-                            .is_ok()
-                        {
-                            info!("🎵 Startup music playing with {} (non-blocking)...", player);
-                            break;
+                if Self::has_embedded_music() {
+                    info!("🎵 Playing embedded startup music (pure Rust)...");
+                    
+                    // EVOLVED: Play embedded MP3 with pure Rust!
+                    match play_embedded_mp3_pure_rust(Self::get_embedded_music()) {
+                        Ok(()) => {
+                            info!("✅ Embedded startup music played successfully (rodio)");
+                        }
+                        Err(e) => {
+                            warn!("⚠️ Failed to play embedded music: {}", e);
+                        }
+                    }
+                } else if let Some(path) = music_path {
+                    info!("🎵 Playing external startup music: {}", path.display());
+                    
+                    // EVOLVED: Play external file with pure Rust!
+                    match play_file_pure_rust(&path) {
+                        Ok(()) => {
+                            info!("✅ External startup music played successfully (rodio)");
+                        }
+                        Err(e) => {
+                            warn!("⚠️ Failed to play external music: {}", e);
                         }
                     }
                 } else {
-                    info!("🎵 No startup music configured (signature tone only)");
+                    info!("🎵 No startup music available (signature tone only)");
                 }
             }
 
