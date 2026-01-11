@@ -21,70 +21,144 @@ use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use tracing::{info, warn};
 
-/// Play audio samples using pure Rust (rodio)
+/// Play audio samples using Audio Canvas (direct hardware access!)
 ///
-/// This is the TRUE PRIMAL audio playback - no external dependencies!
+/// EVOLVED: Like WGPU for graphics, we write directly to /dev/snd!
+/// NO rodio, NO cpal, NO ALSA library - just raw device access!
 fn play_audio_pure_rust(samples: &[f32]) -> Result<(), String> {
-    use rodio::{OutputStream, Sink, buffer::SamplesBuffer};
-    
-    // Get default output device
-    let (_stream, stream_handle) = OutputStream::try_default()
-        .map_err(|e| format!("Failed to get audio output device: {}", e))?;
-    
-    let sink = Sink::try_new(&stream_handle)
-        .map_err(|e| format!("Failed to create audio sink: {}", e))?;
-    
-    // Create audio source from samples
-    let source = SamplesBuffer::new(1, SAMPLE_RATE, samples.to_vec());
-    
-    sink.append(source);
-    sink.sleep_until_end();
-    
+    use crate::audio_canvas::AudioCanvas;
+
+    // Open audio device directly (like opening framebuffer!)
+    let mut canvas =
+        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {}", e))?;
+
+    // Write samples directly to hardware!
+    canvas
+        .write_samples(samples)
+        .map_err(|e| format!("Failed to write samples: {}", e))?;
+
     Ok(())
 }
 
-/// Play embedded MP3 using pure Rust (rodio + symphonia)
+/// Play embedded MP3 using Audio Canvas + symphonia (100% pure Rust!)
 fn play_embedded_mp3_pure_rust(mp3_data: &[u8]) -> Result<(), String> {
-    use rodio::{Decoder, OutputStream, Sink};
-    
-    let (_stream, stream_handle) = OutputStream::try_default()
-        .map_err(|e| format!("Failed to get audio output device: {}", e))?;
-    
-    let sink = Sink::try_new(&stream_handle)
-        .map_err(|e| format!("Failed to create audio sink: {}", e))?;
-    
-    // Decode MP3 from memory (pure Rust - symphonia!)
-    let cursor = Cursor::new(mp3_data);
-    let source = Decoder::new(cursor)
-        .map_err(|e| format!("Failed to decode MP3: {}", e))?;
-    
-    sink.append(source);
-    sink.sleep_until_end();
-    
+    use crate::audio_canvas::AudioCanvas;
+
+    // Decode MP3 with symphonia (pure Rust!)
+    let decoded =
+        decode_audio_symphonia(mp3_data).map_err(|e| format!("Failed to decode MP3: {}", e))?;
+
+    // Open audio canvas
+    let mut canvas =
+        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {}", e))?;
+
+    // Write samples directly to hardware!
+    canvas
+        .write_samples(&decoded.samples)
+        .map_err(|e| format!("Failed to write samples: {}", e))?;
+
     Ok(())
 }
 
-/// Play audio file using pure Rust (rodio + symphonia)
+/// Decode audio with symphonia (pure Rust!)
+pub fn decode_audio_symphonia(audio_data: &[u8]) -> Result<DecodedAudio, String> {
+    use std::io::Cursor;
+    use symphonia::core::audio::{AudioBufferRef, Signal};
+    use symphonia::core::codecs::DecoderOptions;
+    use symphonia::core::formats::FormatOptions;
+    use symphonia::core::io::MediaSourceStream;
+    use symphonia::core::meta::MetadataOptions;
+    use symphonia::core::probe::Hint;
+
+    // Own the data to satisfy lifetime requirements
+    let cursor = Cursor::new(audio_data.to_vec());
+    let mss = MediaSourceStream::new(Box::new(cursor), Default::default());
+
+    let mut hint = Hint::new();
+    hint.with_extension("mp3");
+
+    let probed = symphonia::default::get_probe()
+        .format(
+            &hint,
+            mss,
+            &FormatOptions::default(),
+            &MetadataOptions::default(),
+        )
+        .map_err(|e| format!("Probe failed: {}", e))?;
+
+    let mut format = probed.format;
+    let track = format.default_track().ok_or("No default track")?;
+
+    let mut decoder = symphonia::default::get_codecs()
+        .make(&track.codec_params, &DecoderOptions::default())
+        .map_err(|e| format!("Decoder creation failed: {}", e))?;
+
+    let sample_rate = track.codec_params.sample_rate.ok_or("No sample rate")? as f32;
+
+    let mut samples = Vec::new();
+
+    loop {
+        let packet = match format.next_packet() {
+            Ok(p) => p,
+            Err(_) => break,
+        };
+
+        let decoded_buf = match decoder.decode(&packet) {
+            Ok(d) => d,
+            Err(_) => continue,
+        };
+
+        // Convert to f32 samples
+        match decoded_buf {
+            AudioBufferRef::F32(buf) => {
+                for &sample in buf.chan(0) {
+                    samples.push(sample);
+                }
+            }
+            AudioBufferRef::S16(buf) => {
+                for &sample in buf.chan(0) {
+                    samples.push(f32::from(sample) / 32768.0);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    Ok(DecodedAudio {
+        samples,
+        sample_rate,
+    })
+}
+
+/// Decoded audio data
+pub struct DecodedAudio {
+    /// Audio samples as f32 in range [-1.0, 1.0]
+    pub samples: Vec<f32>,
+    /// Sample rate in Hz
+    pub sample_rate: f32,
+}
+
+/// Play audio file using Audio Canvas + symphonia (100% pure Rust!)
 fn play_file_pure_rust(path: &Path) -> Result<(), String> {
-    use rodio::{Decoder, OutputStream, Sink};
-    use std::fs::File;
-    
-    let (_stream, stream_handle) = OutputStream::try_default()
-        .map_err(|e| format!("Failed to get audio output device: {}", e))?;
-    
-    let sink = Sink::try_new(&stream_handle)
-        .map_err(|e| format!("Failed to create audio sink: {}", e))?;
-    
-    // Open and decode file (pure Rust!)
-    let file = File::open(path)
-        .map_err(|e| format!("Failed to open audio file: {}", e))?;
-    
-    let source = Decoder::new(file)
-        .map_err(|e| format!("Failed to decode audio file: {}", e))?;
-    
-    sink.append(source);
-    sink.sleep_until_end();
-    
+    use crate::audio_canvas::AudioCanvas;
+    use std::fs;
+
+    // Read file
+    let data = fs::read(path).map_err(|e| format!("Failed to read audio file: {}", e))?;
+
+    // Decode with symphonia
+    let decoded =
+        decode_audio_symphonia(&data).map_err(|e| format!("Failed to decode audio: {}", e))?;
+
+    // Open audio canvas
+    let mut canvas =
+        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {}", e))?;
+
+    // Write samples directly to hardware!
+    canvas
+        .write_samples(&decoded.samples)
+        .map_err(|e| format!("Failed to write samples: {}", e))?;
+
     Ok(())
 }
 
@@ -270,13 +344,16 @@ impl StartupAudio {
                         info!("✅ Signature tone played with pure Rust (rodio)");
                     }
                     Err(e) => {
-                        warn!("⚠️ Pure Rust audio failed: {}, writing to disk as fallback", e);
-                        
+                        warn!(
+                            "⚠️ Pure Rust audio failed: {}, writing to disk as fallback",
+                            e
+                        );
+
                         // Fallback: Write to disk for manual playback
-                if let Err(e) = std::fs::write(&wav_path, wav_bytes) {
-                    warn!("Failed to write signature tone: {}", e);
-                } else {
-                    info!("🎵 Signature tone exported to {:?}", wav_path);
+                        if let Err(e) = std::fs::write(&wav_path, wav_bytes) {
+                            warn!("Failed to write signature tone: {}", e);
+                        } else {
+                            info!("🎵 Signature tone exported to {:?}", wav_path);
                         }
                     }
                 }
@@ -298,7 +375,7 @@ impl StartupAudio {
                     }
                 } else if let Some(path) = music_path {
                     info!("🎵 Playing external startup music: {}", path.display());
-                    
+
                     // EVOLVED: Play external file with pure Rust!
                     match play_file_pure_rust(&path) {
                         Ok(()) => {
