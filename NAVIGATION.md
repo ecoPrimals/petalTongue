@@ -26,7 +26,9 @@
 - **[HANDOFF_READY.md](HANDOFF_READY.md)** - Production readiness
 
 ### Integration:
-- **[BIOMEOS_UI_FINAL_HANDOFF.md](BIOMEOS_UI_FINAL_HANDOFF.md)** ⭐ - biomeOS UI Integration handoff
+- **[JSONRPC_PROTOCOL_EVOLUTION_ANALYSIS.md](JSONRPC_PROTOCOL_EVOLUTION_ANALYSIS.md)** ⭐ NEW! - Protocol evolution analysis
+- **[JSONRPC_PROTOCOL_EVOLUTION_TRACKING.md](JSONRPC_PROTOCOL_EVOLUTION_TRACKING.md)** ⭐ NEW! - Implementation tracking
+- **[BIOMEOS_UI_FINAL_HANDOFF.md](BIOMEOS_UI_FINAL_HANDOFF.md)** - biomeOS UI Integration handoff
 - **[BIOMEOS_UI_INTEGRATION_COMPLETE.md](BIOMEOS_UI_INTEGRATION_COMPLETE.md)** - Completion report
 - **[BIOMEOS_UI_INTEGRATION_TRACKING.md](BIOMEOS_UI_INTEGRATION_TRACKING.md)** - Progress tracking
 - **[READY_FOR_BIOMEOS_HANDOFF.md](READY_FOR_BIOMEOS_HANDOFF.md)** - Legacy handoff doc
@@ -72,7 +74,8 @@ Audio (Future):        /run/user/$UID/pipewire-0 → PipeWire → Device
 
 ### Architecture:
 - **[specs/](specs/)** - Technical specifications
-  - [biomeOS UI Integration](specs/BIOMEOS_UI_INTEGRATION_ARCHITECTURE.md) ⭐ NEW!
+  - [JSON-RPC Protocol](specs/JSONRPC_PROTOCOL_SPECIFICATION.md) ⭐ NEW! (Primal Protocol Evolution)
+  - [biomeOS UI Integration](specs/BIOMEOS_UI_INTEGRATION_ARCHITECTURE.md)
   - [Collaborative Intelligence](specs/COLLABORATIVE_INTELLIGENCE_INTEGRATION.md)
   - [Bidirectional UUI Architecture](specs/BIDIRECTIONAL_UUI_ARCHITECTURE.md)
   - [Discovery Infrastructure](specs/DISCOVERY_INFRASTRUCTURE_EVOLUTION_SPECIFICATION.md)
