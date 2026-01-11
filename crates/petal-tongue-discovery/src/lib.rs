@@ -36,6 +36,7 @@ mod cache;
 mod capabilities;
 mod dns_parser;
 mod http_provider;
+mod jsonrpc_provider;
 mod mdns_provider;
 mod mock_provider;
 mod songbird_client;
@@ -54,6 +55,7 @@ mod mdns_discovery;
 pub use cache::CacheStats;
 pub use capabilities::VisualizationCapability;
 pub use http_provider::HttpVisualizationProvider;
+pub use jsonrpc_provider::JsonRpcProvider;
 pub use mdns_provider::MdnsVisualizationProvider;
 pub use mock_provider::MockVisualizationProvider;
 pub use songbird_client::SongbirdClient;
@@ -119,6 +121,23 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
         }
     }
 
+    // Priority 2: Try JSON-RPC over Unix sockets (PRIMARY PRIMAL PROTOCOL)
+    // This is the standard protocol for all ecoPrimals (Songbird, BearDog, ToadStool, etc.)
+    tracing::info!("🔌 Attempting JSON-RPC discovery (Unix sockets)...");
+    match JsonRpcProvider::discover().await {
+        Ok(jsonrpc_provider) => {
+            tracing::info!("✅ JSON-RPC provider connected - TRUE PRIMAL protocol!");
+            providers.push(Box::new(jsonrpc_provider) as Box<dyn VisualizationDataProvider>);
+
+            // JSON-RPC found, return it as primary provider
+            return Ok(providers);
+        }
+        Err(e) => {
+            tracing::debug!("JSON-RPC discovery failed: {}", e);
+            tracing::debug!("💡 Tip: Ensure biomeOS device_management_server is running");
+        }
+    }
+
     // Priority 3: Try mDNS auto-discovery (Phase 1 implementation)
     let enable_mdns = std::env::var("PETALTONGUE_ENABLE_MDNS")
         .unwrap_or_else(|_| "true".to_string())
@@ -142,15 +161,35 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
         }
     }
 
-    // Try environment hints
+    // Try environment hints (JSON-RPC first, then HTTP as fallback)
     if providers.is_empty() {
         if let Ok(hints) = std::env::var("PETALTONGUE_DISCOVERY_HINTS") {
             tracing::info!("Trying discovery hints: {}", hints);
             for hint in hints.split(',') {
                 let hint = hint.trim();
+
+                // Try JSON-RPC first if it looks like a Unix socket
+                if hint.starts_with("unix://") || hint.starts_with("/") {
+                    let socket_path = hint.strip_prefix("unix://").unwrap_or(hint);
+                    match try_connect_jsonrpc(socket_path).await {
+                        Ok(provider) => {
+                            tracing::info!("✅ Connected to JSON-RPC provider at {}", socket_path);
+                            providers.push(provider);
+                            continue;
+                        }
+                        Err(e) => {
+                            tracing::debug!("JSON-RPC connection failed: {}", e);
+                        }
+                    }
+                }
+
+                // Fallback to HTTP (with warning)
                 match try_connect_http(hint).await {
                     Ok(provider) => {
-                        tracing::info!("✅ Connected to provider at {}", hint);
+                        tracing::warn!("⚠️  Using HTTP provider (external fallback) at {}", hint);
+                        tracing::warn!(
+                            "💡 Consider using JSON-RPC over Unix sockets for TRUE PRIMAL protocol"
+                        );
                         providers.push(provider);
                     }
                     Err(e) => {
@@ -161,13 +200,34 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
         }
     }
 
-    // Try legacy BIOMEOS_URL (backward compatibility)
+    // Try legacy BIOMEOS_URL (backward compatibility, but prefer JSON-RPC)
     if providers.is_empty() {
         if let Ok(biomeos_url) = std::env::var("BIOMEOS_URL") {
             tracing::info!("Trying legacy BIOMEOS_URL: {}", biomeos_url);
+
+            // Try JSON-RPC first if it's a Unix socket
+            if biomeos_url.starts_with("unix://") || biomeos_url.starts_with("/") {
+                let socket_path = biomeos_url.strip_prefix("unix://").unwrap_or(&biomeos_url);
+                match try_connect_jsonrpc(socket_path).await {
+                    Ok(provider) => {
+                        tracing::info!("✅ Connected to JSON-RPC provider at {}", socket_path);
+                        providers.push(provider);
+                        return Ok(providers);
+                    }
+                    Err(e) => {
+                        tracing::debug!("JSON-RPC connection failed: {}", e);
+                    }
+                }
+            }
+
+            // Fallback to HTTP (with deprecation warning)
             match try_connect_http(&biomeos_url).await {
                 Ok(provider) => {
-                    tracing::info!("✅ Connected to legacy biomeOS at {}", biomeos_url);
+                    tracing::warn!(
+                        "⚠️  Using HTTP provider (external fallback) at {}",
+                        biomeos_url
+                    );
+                    tracing::warn!("💡 Migrate to JSON-RPC: BIOMEOS_URL=unix:///run/user/$UID/biomeos-device-management.sock");
                     providers.push(provider);
                 }
                 Err(e) => {
@@ -184,10 +244,14 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
         tracing::warn!(
             "⚠️  No visualization data providers found!\n\
             \n\
-            Configured options:\n\
-            1. Automatic mDNS: PETALTONGUE_ENABLE_MDNS=true (default)\n\
-            2. Manual config: BIOMEOS_URL=http://localhost:3000\n\
-            3. Development: PETALTONGUE_MOCK_MODE=true\n\
+            Recommended options (TRUE PRIMAL):\n\
+            1. Songbird discovery: Start Songbird for live primal topology\n\
+            2. JSON-RPC (PRIMARY): BIOMEOS_URL=unix:///run/user/$UID/biomeos-device-management.sock\n\
+            3. Auto-discovery: PETALTONGUE_ENABLE_MDNS=true (default)\n\
+            \n\
+            Fallback options (external only):\n\
+            4. HTTP fallback: BIOMEOS_URL=http://localhost:3000\n\
+            5. Development: PETALTONGUE_MOCK_MODE=true\n\
             \n\
             💡 GUI will start with tutorial mode as graceful fallback"
         );
@@ -202,7 +266,19 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
     Ok(providers)
 }
 
+/// Try to connect to a JSON-RPC provider at the given Unix socket path
+async fn try_connect_jsonrpc(socket_path: &str) -> Result<Box<dyn VisualizationDataProvider>> {
+    let provider = JsonRpcProvider::new(socket_path);
+
+    // Test connection with health check
+    provider.health_check().await?;
+    Ok(Box::new(provider))
+}
+
 /// Try to connect to an HTTP provider at the given URL
+///
+/// ⚠️  HTTP is the FALLBACK protocol for external integrations only.
+/// Prefer JSON-RPC over Unix sockets for TRUE PRIMAL architecture!
 async fn try_connect_http(url: &str) -> Result<Box<dyn VisualizationDataProvider>> {
     let provider = HttpVisualizationProvider::new(url);
 
