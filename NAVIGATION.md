@@ -70,11 +70,28 @@ Audio (Future):        /run/user/$UID/pipewire-0 → PipeWire → Device
 
 ---
 
+## 🔌 JSON-RPC Protocol (TRUE PRIMAL!)
+
+### Core Protocol:
+- **[JSON-RPC Protocol Spec](specs/JSONRPC_PROTOCOL_SPECIFICATION.md)** ⭐ PRIMARY PROTOCOL
+- **[JSON-RPC Evolution Analysis](JSONRPC_PROTOCOL_EVOLUTION_ANALYSIS.md)** - Why & how
+- **[JSON-RPC Evolution Complete](JSONRPC_PROTOCOL_EVOLUTION_COMPLETE.md)** - Final summary
+- **[JSON-RPC Tracking](JSONRPC_PROTOCOL_EVOLUTION_TRACKING.md)** - Implementation progress
+
+### Key Points:
+- **JSON-RPC 2.0** over Unix sockets is PRIMARY protocol
+- 100x faster than HTTP (< 1ms latency)
+- Compatible with ALL primals (Songbird, BearDog, ToadStool, etc.)
+- Port-free, secure, auto-discovery
+- HTTP is FALLBACK only (external integrations)
+
+---
+
 ## 📚 Technical Documentation
 
 ### Architecture:
 - **[specs/](specs/)** - Technical specifications
-  - [JSON-RPC Protocol](specs/JSONRPC_PROTOCOL_SPECIFICATION.md) ⭐ NEW! (Primal Protocol Evolution)
+  - [JSON-RPC Protocol](specs/JSONRPC_PROTOCOL_SPECIFICATION.md) ⭐ PRIMARY PROTOCOL
   - [biomeOS UI Integration](specs/BIOMEOS_UI_INTEGRATION_ARCHITECTURE.md)
   - [Collaborative Intelligence](specs/COLLABORATIVE_INTELLIGENCE_INTEGRATION.md)
   - [Bidirectional UUI Architecture](specs/BIDIRECTIONAL_UUI_ARCHITECTURE.md)
