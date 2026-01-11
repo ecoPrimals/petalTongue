@@ -160,6 +160,70 @@ impl AudioBackend {
 
 ---
 
-**Status**: 🚧 Phase 1 starting now!
+---
 
-This is deep debt resolution and evolution to modern idiomatic Rust! 🦀✨
+## Status Update - Pragmatic Evolution Path
+
+**Date**: January 11, 2026
+
+### Phase 1: Discovery ✅ COMPLETE
+- Audio backend discovery implemented
+- PipeWire, PulseAudio, Direct ALSA detection
+- Graceful fallback chain
+- **Result**: PipeWire preferred on this system!
+
+### Phase 2: Protocol Client 🚧 DEFERRED
+- **Reality**: Implementing pure Rust PipeWire protocol = 2-4 weeks
+- **Complexity**: Binary protocol, SPA buffer management, shared memory
+- **Decision**: Ship with Audio Canvas now, evolve PipeWire client later
+
+### Current Approach: Pragmatic Evolution
+
+Following TRUE PRIMAL principles:
+> "Primals are self-stable, then network, then externals."
+
+**Shipping Strategy**:
+1. ✅ **Audio Canvas** (Self-Stable)
+   - 100% Pure Rust
+   - Direct `/dev/snd/pcmC0D0p` access
+   - Requires: audio group (one-time)
+   - Status: PRODUCTION READY
+
+2. 🚧 **PipeWire Client** (Network Evolution)
+   - To be evolved: 2-4 weeks
+   - Pure Rust protocol implementation
+   - No privileges needed
+   - Status: DOCUMENTED, planned for future
+
+3. ✅ **Silent Mode** (Graceful Degradation)
+   - Visual-only operation
+   - Always works
+   - Status: IMPLEMENTED
+
+### Immediate Action: Enable Audio Canvas
+
+See: [AUDIO_ENABLE_GUIDE.md](AUDIO_ENABLE_GUIDE.md)
+
+```bash
+# 5 minute solution:
+sudo usermod -aG audio $USER
+# Logout/login, then enjoy audio!
+```
+
+### Long-Term Evolution
+
+When we have 2-4 weeks for focused implementation:
+- Implement PipeWire wire protocol in pure Rust
+- SPA buffer management
+- Stream negotiation
+- Direct Unix socket communication
+- Zero external dependencies
+- TRUE PRIMAL sovereignty!
+
+---
+
+**Status**: ✅ Audio Canvas production ready, PipeWire evolution documented  
+**Philosophy**: Ship self-stable, evolve network layer over time  
+**Timeline**: Audio working TODAY, pure PipeWire in 2-4 weeks (future)
+
+This is pragmatic evolution and modern idiomatic Rust! 🦀✨
