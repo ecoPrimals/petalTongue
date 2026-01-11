@@ -26,14 +26,17 @@
 - **[HANDOFF_READY.md](HANDOFF_READY.md)** - Production readiness
 
 ### Integration:
-- **[JSONRPC_PROTOCOL_EVOLUTION_ANALYSIS.md](JSONRPC_PROTOCOL_EVOLUTION_ANALYSIS.md)** ⭐ NEW! - Protocol evolution analysis
-- **[JSONRPC_PROTOCOL_EVOLUTION_TRACKING.md](JSONRPC_PROTOCOL_EVOLUTION_TRACKING.md)** ⭐ NEW! - Implementation tracking
-- **[BIOMEOS_UI_FINAL_HANDOFF.md](BIOMEOS_UI_FINAL_HANDOFF.md)** - biomeOS UI Integration handoff
-- **[BIOMEOS_UI_INTEGRATION_COMPLETE.md](BIOMEOS_UI_INTEGRATION_COMPLETE.md)** - Completion report
-- **[BIOMEOS_UI_INTEGRATION_TRACKING.md](BIOMEOS_UI_INTEGRATION_TRACKING.md)** - Progress tracking
-- **[READY_FOR_BIOMEOS_HANDOFF.md](READY_FOR_BIOMEOS_HANDOFF.md)** - Legacy handoff doc
+- **[BIOMEOS_UI_FINAL_HANDOFF.md](BIOMEOS_UI_FINAL_HANDOFF.md)** ⭐ - biomeOS UI Integration handoff
 - **[BIOMEOS_HANDOFF_CHECKLIST.md](BIOMEOS_HANDOFF_CHECKLIST.md)** - Integration checklist
 - **[BIOMEOS_REQUESTS_STATUS.md](BIOMEOS_REQUESTS_STATUS.md)** - Request tracking
+- **[HANDOFF_READY.md](HANDOFF_READY.md)** - General handoff status
+
+### Completed Features (Archived):
+- **[docs/completed/](docs/completed/)** - Fossil record of completed features
+  - [JSON-RPC Evolution](docs/completed/jsonrpc/) - TRUE PRIMAL protocol
+  - [Audio Canvas](docs/completed/audio-canvas/) - Pure Rust audio
+  - [biomeOS UI](docs/completed/biomeos-ui/) - Device/niche management
+  - [Collaborative Intelligence](docs/completed/collaborative-intelligence/) - Human-AI collaboration
 
 ---
 
