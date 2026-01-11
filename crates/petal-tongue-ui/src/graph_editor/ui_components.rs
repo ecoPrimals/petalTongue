@@ -83,9 +83,7 @@ impl StatusDisplay {
 
             ui.horizontal(|ui| {
                 ui.label("Disk I/O:");
-                ui.label(
-                    RichText::new(format!("{:.1} MB/s", resources.disk_io_mbps)).strong(),
-                );
+                ui.label(RichText::new(format!("{:.1} MB/s", resources.disk_io_mbps)).strong());
             });
 
             ui.horizontal(|ui| {
@@ -112,10 +110,7 @@ impl StatusDisplay {
             }
 
             if error.recoverable {
-                ui.colored_label(
-                    Color32::from_rgb(255, 165, 0),
-                    "⚠️ Recoverable error",
-                );
+                ui.colored_label(Color32::from_rgb(255, 165, 0), "⚠️ Recoverable error");
 
                 if let Some(action) = &error.suggested_action {
                     ui.colored_label(Color32::YELLOW, format!("💡 Suggestion: {}", action));
@@ -153,8 +148,11 @@ impl ReasoningDisplay {
 
                             ui.colored_label(
                                 confidence_color,
-                                RichText::new(format!("Confidence: {:.0}%", reasoning.confidence * 100.0))
-                                    .strong(),
+                                RichText::new(format!(
+                                    "Confidence: {:.0}%",
+                                    reasoning.confidence * 100.0
+                                ))
+                                .strong(),
                             );
                         });
                     });
@@ -240,9 +238,13 @@ impl ReasoningDisplay {
             ui.label("  •");
             ui.label(&pattern.description);
             ui.label(
-                RichText::new(format!("({}, {:.0}% relevant)", pattern.source, pattern.relevance * 100.0))
-                    .size(12.0)
-                    .color(Color32::GRAY),
+                RichText::new(format!(
+                    "({}, {:.0}% relevant)",
+                    pattern.source,
+                    pattern.relevance * 100.0
+                ))
+                .size(12.0)
+                .color(Color32::GRAY),
             );
         });
     }
@@ -287,7 +289,12 @@ impl ConflictResolution {
                 ui.vertical(|ui| {
                     // Header
                     ui.horizontal(|ui| {
-                        ui.label(RichText::new("⚠️ Conflict Detected").size(16.0).strong().color(Color32::YELLOW));
+                        ui.label(
+                            RichText::new("⚠️ Conflict Detected")
+                                .size(16.0)
+                                .strong()
+                                .color(Color32::YELLOW),
+                        );
                     });
 
                     ui.separator();
@@ -300,7 +307,11 @@ impl ConflictResolution {
                     ui.horizontal(|ui| {
                         // User change
                         ui.vertical(|ui| {
-                            ui.label(RichText::new("Your Change:").strong().color(Color32::from_rgb(100, 200, 255)));
+                            ui.label(
+                                RichText::new("Your Change:")
+                                    .strong()
+                                    .color(Color32::from_rgb(100, 200, 255)),
+                            );
                             egui::Frame::group(ui.style())
                                 .fill(Color32::from_rgb(30, 30, 40))
                                 .show(ui, |ui| {
@@ -312,7 +323,11 @@ impl ConflictResolution {
 
                         // AI change
                         ui.vertical(|ui| {
-                            ui.label(RichText::new("AI Suggestion:").strong().color(Color32::from_rgb(255, 200, 100)));
+                            ui.label(
+                                RichText::new("AI Suggestion:")
+                                    .strong()
+                                    .color(Color32::from_rgb(255, 200, 100)),
+                            );
                             egui::Frame::group(ui.style())
                                 .fill(Color32::from_rgb(30, 30, 40))
                                 .show(ui, |ui| {
@@ -378,4 +393,3 @@ mod tests {
         assert_eq!(variants.len(), 4);
     }
 }
-

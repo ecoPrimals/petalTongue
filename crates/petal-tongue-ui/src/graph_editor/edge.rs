@@ -74,9 +74,9 @@ impl GraphEdge {
     #[must_use]
     pub fn display_color(&self) -> [u8; 3] {
         match &self.dependency_type {
-            DependencyType::Sequential => [0, 0, 0],        // Black
-            DependencyType::DataFlow => [0, 0, 255],        // Blue
-            DependencyType::Optional => [128, 128, 128],    // Gray
+            DependencyType::Sequential => [0, 0, 0],             // Black
+            DependencyType::DataFlow => [0, 0, 255],             // Blue
+            DependencyType::Optional => [128, 128, 128],         // Gray
             DependencyType::Conditional { .. } => [255, 165, 0], // Orange
         }
     }
@@ -161,4 +161,3 @@ mod tests {
         assert_eq!(edge.display_style(), EdgeStyle::Dotted);
     }
 }
-

@@ -35,17 +35,24 @@ impl GraphValidator {
     pub fn validate_graph(graph: &Graph) -> Result<()> {
         // Validate all nodes
         for node in graph.nodes.values() {
-            Self::validate_node(node)
-                .with_context(|| format!("Invalid node '{}'", node.id))?;
+            Self::validate_node(node).with_context(|| format!("Invalid node '{}'", node.id))?;
         }
 
         // Validate all edges reference existing nodes
         for edge in &graph.edges {
             if !graph.nodes.contains_key(&edge.from) {
-                anyhow::bail!("Edge '{}' references non-existent source node '{}'", edge.id, edge.from);
+                anyhow::bail!(
+                    "Edge '{}' references non-existent source node '{}'",
+                    edge.id,
+                    edge.from
+                );
             }
             if !graph.nodes.contains_key(&edge.to) {
-                anyhow::bail!("Edge '{}' references non-existent target node '{}'", edge.id, edge.to);
+                anyhow::bail!(
+                    "Edge '{}' references non-existent target node '{}'",
+                    edge.id,
+                    edge.to
+                );
             }
         }
 
@@ -120,4 +127,3 @@ mod tests {
         assert!(GraphValidator::validate_graph(&graph).is_err());
     }
 }
-
