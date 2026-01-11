@@ -320,27 +320,37 @@ pub fn detect_visual_topology() -> (OutputTopology, Vec<String>) {
 pub fn detect_audio_topology() -> (OutputTopology, Vec<String>) {
     let mut evidence = Vec::new();
 
-    // Check for PulseAudio (common Linux audio server)
-    if std::process::Command::new("pactl")
-        .arg("info")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
-    {
-        evidence.push("PulseAudio detected".to_string());
-
-        // Check if it's network audio
-        if let Ok(output) = std::process::Command::new("pactl")
-            .arg("list")
-            .arg("sinks")
-            .output()
-        {
-            if let Ok(stdout) = String::from_utf8(output.stdout) {
-                if stdout.contains("network") || stdout.contains("tunnel") {
-                    evidence.push("Network audio sink detected".to_string());
-                    return (OutputTopology::Forwarded, evidence);
+    // EVOLVED: Pure Rust audio device detection (cpal)
+    // Note: cpal is already a dependency via rodio!
+    use cpal::traits::{DeviceTrait, HostTrait};
+    
+    match cpal::default_host().default_output_device() {
+        Some(device) => {
+            let device_name = device.name().unwrap_or_else(|_| "Unknown".to_string());
+            evidence.push(format!("Audio output device: {} (pure Rust - cpal)", device_name));
+            
+            // Check if it's a network/virtual device by name
+            let name_lower = device_name.to_lowercase();
+            if name_lower.contains("network") || name_lower.contains("tunnel") || name_lower.contains("remote") {
+                evidence.push("Network audio device detected".to_string());
+                return (OutputTopology::Forwarded, evidence);
+            }
+            
+            // Enumerate all devices for additional info
+            let host = cpal::default_host();
+            match host.output_devices() {
+                Ok(devices) => {
+                    let device_count = devices.count();
+                    evidence.push(format!("{} audio output device(s) available", device_count));
+                }
+                Err(e) => {
+                    tracing::debug!("Failed to enumerate audio devices: {}", e);
                 }
             }
+        }
+        None => {
+            evidence.push("No audio output device detected".to_string());
+            return (OutputTopology::Unknown, evidence);
         }
     }
 
