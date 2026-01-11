@@ -26,14 +26,14 @@ fn play_samples(samples: &[f32], sample_rate: u32) -> Result<(), String> {
     use rodio::{OutputStream, Sink, buffer::SamplesBuffer};
     
     info!("🔊 Playing {} samples at {} Hz (pure Rust)", samples.len(), sample_rate);
-    
+
     // Get default output device
     let (_stream, stream_handle) = OutputStream::try_default()
         .map_err(|e| format!("Failed to get audio output device: {}", e))?;
     
     let sink = Sink::try_new(&stream_handle)
         .map_err(|e| format!("Failed to create audio sink: {}", e))?;
-    
+
     // Create audio source from samples (mono)
     let source = SamplesBuffer::new(1, sample_rate, samples.to_vec());
     
@@ -51,9 +51,9 @@ fn play_samples(samples: &[f32], sample_rate: u32) -> Result<(), String> {
 fn play_file(path: &Path) -> Result<(), String> {
     use rodio::{Decoder, OutputStream, Sink};
     use std::fs::File;
-    
+
     info!("🔊 Playing audio file: {} (pure Rust)", path.display());
-    
+
     let path_clone = path.to_path_buf();
     
     // Play in background (non-blocking)
@@ -82,7 +82,7 @@ fn play_file(path: &Path) -> Result<(), String> {
             Err(e) => error!("❌ Audio playback failed: {}", e),
         }
     });
-    
+
     Ok(())
 }
 
