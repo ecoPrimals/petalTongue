@@ -22,6 +22,7 @@ pub mod tutorial_mode;
 // pub mod app_adapters; // Adapter management (Phase 4)
 pub mod audio_providers;
 pub mod audio_pure_rust;
+pub mod display_pure_rust;
 pub mod bingocube_integration;
 pub mod data_source;
 pub mod display; // Pure Rust display system
