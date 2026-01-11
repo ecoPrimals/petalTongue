@@ -28,25 +28,46 @@ cargo test --all-features
 
 ---
 
-## 🎨 Audio Canvas Breakthrough
+## 🎨 Audio Sovereignty
 
-**Major Achievement**: Direct hardware audio access - NO C dependencies!
+**Current**: Audio Canvas (100% Pure Rust, Production Ready!)
+- Direct hardware access via `/dev/snd/pcmC0D0p`
+- symphonia MP3 decoder (pure Rust)
+- Embedded startup music (11MB)
+- Requires: audio group (one-time setup)
+
+**Future**: PipeWire client evolution (2-4 weeks)
+- Pure Rust protocol implementation
+- Unix socket communication
+- No permissions needed
+
+**Quick Setup**: See **[AUDIO_ENABLE_GUIDE.md](AUDIO_ENABLE_GUIDE.md)** (5 minutes)  
+**Evolution Path**: See **[AUDIO_SOVEREIGNTY_EVOLUTION.md](AUDIO_SOVEREIGNTY_EVOLUTION.md)**
 
 ```
 Graphics (Toadstool):  /dev/dri/card0 → WGPU → Direct GPU
 Audio (petalTongue):   /dev/snd/pcmC0D0p → AudioCanvas → Direct Device
+Audio (Future):        /run/user/$UID/pipewire-0 → PipeWire → Device
 ```
-
-See **[AUDIO_CANVAS_BREAKTHROUGH.md](AUDIO_CANVAS_BREAKTHROUGH.md)** for full technical details.
 
 ---
 
 ## 📚 Core Documentation
 
 ### **🚀 Start Here**
-- **[HANDOFF_READY.md](HANDOFF_READY.md)** - Production readiness status
+- **[START_HERE.md](START_HERE.md)** - Comprehensive getting started guide
+- **[NAVIGATION.md](NAVIGATION.md)** - Complete navigation & docs overview
+- **[AUDIO_ENABLE_GUIDE.md](AUDIO_ENABLE_GUIDE.md)** - Enable audio (5 minutes!)
+
+### **📊 Status & Integration**
 - **[STATUS.md](STATUS.md)** - Current project status (A++ architecture!)
-- **[AUDIO_CANVAS_BREAKTHROUGH.md](AUDIO_CANVAS_BREAKTHROUGH.md)** - Audio Canvas innovation
+- **[HANDOFF_READY.md](HANDOFF_READY.md)** - Production readiness
+- **[READY_FOR_BIOMEOS_HANDOFF.md](READY_FOR_BIOMEOS_HANDOFF.md)** - biomeOS integration
+
+### **🎵 Audio System**
+- **[AUDIO_ENABLE_GUIDE.md](AUDIO_ENABLE_GUIDE.md)** - Setup instructions (5 min)
+- **[AUDIO_SOVEREIGNTY_EVOLUTION.md](AUDIO_SOVEREIGNTY_EVOLUTION.md)** - Evolution path
+- **[AUDIO_CANVAS_BREAKTHROUGH.md](AUDIO_CANVAS_BREAKTHROUGH.md)** - Technical deep dive
 
 ### **📖 Session Reports**
 - **[SESSION_SUMMARY_JAN_11_2026.md](SESSION_SUMMARY_JAN_11_2026.md)** - Latest evolution
