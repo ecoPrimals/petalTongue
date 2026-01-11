@@ -245,7 +245,7 @@ fn query_display_dimensions() -> Option<(usize, usize)> {
 fn query_x11_dimensions() -> Option<(usize, usize)> {
     // EVOLVED: Use pure Rust (winit) instead of external commands!
     use crate::display_pure_rust;
-    
+
     if let Some((width, height)) = display_pure_rust::get_display_dimensions_pure_rust() {
         tracing::debug!(
             "Discovered display dimensions via pure Rust (winit): {}x{}",
@@ -254,7 +254,7 @@ fn query_x11_dimensions() -> Option<(usize, usize)> {
         );
         return Some((width as usize, height as usize));
     }
-    
+
     // Fallback: Try terminal dimensions if display detection fails
     if let Some((term_width, term_height)) = term_size::dimensions() {
         tracing::debug!(
@@ -267,7 +267,7 @@ fn query_x11_dimensions() -> Option<(usize, usize)> {
         let pixel_height = (term_height * 30).max(600);
         return Some((pixel_width, pixel_height));
     }
-    
+
     // Last resort: Default dimensions
     tracing::warn!("Could not detect display dimensions, using defaults");
     Some((1920, 1080))
@@ -279,7 +279,7 @@ fn query_x11_dimensions_legacy() -> Option<(usize, usize)> {
     // DEPRECATED: This function used external commands (xrandr, xdpyinfo)
     // Now replaced with pure Rust (winit) via query_x11_dimensions()
     // Kept for reference only
-    
+
     use std::process::Command;
 
     if let Ok(output) = Command::new("xrandr").arg("--current").output() {

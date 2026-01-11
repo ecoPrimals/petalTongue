@@ -35,7 +35,10 @@ use std::path::PathBuf;
 /// // Returns: /run/user/1000/petaltongue-nat0.sock
 ///
 /// // Custom family
-/// std::env::set_var("FAMILY_ID", "staging");
+/// // SAFETY: Doctest-only env var manipulation
+/// unsafe {
+///     std::env::set_var("FAMILY_ID", "staging");
+/// }
 /// let path = socket_path::get_petaltongue_socket_path().unwrap();
 /// // Returns: /run/user/1000/petaltongue-staging.sock
 /// ```

@@ -1,18 +1,27 @@
 //! Comprehensive tests for discovery module
 //!
 //! Tests verify discovery logic, environment handling, and provider selection.
+//!
+//! **NOTE**: These tests manipulate environment variables and should be run with
+//! `--test-threads=1` to avoid conflicts:
+//! ```bash
+//! cargo test --package petal-tongue-discovery -- --test-threads=1
+//! ```
 
 use petal_tongue_discovery::discover_visualization_providers;
 
 #[tokio::test]
 async fn test_discover_with_mock_mode() {
     // Clean up any existing env vars first
-    std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
-    std::env::remove_var("BIOMEOS_URL");
-    std::env::remove_var("PETALTONGUE_ENABLE_MDNS");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+        std::env::remove_var("BIOMEOS_URL");
+        std::env::remove_var("PETALTONGUE_ENABLE_MDNS");
 
-    // Set mock mode environment variable
-    std::env::set_var("PETALTONGUE_MOCK_MODE", "true");
+        // Set mock mode environment variable
+        std::env::set_var("PETALTONGUE_MOCK_MODE", "true");
+    }
 
     let providers = discover_visualization_providers().await;
 
@@ -21,16 +30,22 @@ async fn test_discover_with_mock_mode() {
     assert_eq!(providers.len(), 1, "Should have exactly 1 mock provider");
 
     // Clean up
-    std::env::remove_var("PETALTONGUE_MOCK_MODE");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::remove_var("PETALTONGUE_MOCK_MODE");
+    }
 }
 
 #[tokio::test]
 async fn test_discover_without_hints() {
     // Make sure no hints are set
-    std::env::remove_var("PETALTONGUE_MOCK_MODE");
-    std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
-    std::env::remove_var("BIOMEOS_URL");
-    std::env::remove_var("PETALTONGUE_ENABLE_MDNS");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::remove_var("PETALTONGUE_MOCK_MODE");
+        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+        std::env::remove_var("BIOMEOS_URL");
+        std::env::remove_var("PETALTONGUE_ENABLE_MDNS");
+    }
 
     let providers = discover_visualization_providers().await;
 
@@ -46,39 +61,54 @@ async fn test_discover_without_hints() {
 async fn test_mock_mode_case_insensitive() {
     // Test various capitalizations
     for value in &["true", "True", "TRUE", "TrUe"] {
-        std::env::set_var("PETALTONGUE_MOCK_MODE", value);
+        // SAFETY: Test-only env var manipulation in isolated test
+        unsafe {
+            std::env::set_var("PETALTONGUE_MOCK_MODE", value);
+        }
 
         let providers = discover_visualization_providers().await;
         assert!(providers.is_ok(), "Should work with {}", value);
 
-        std::env::remove_var("PETALTONGUE_MOCK_MODE");
+        // SAFETY: Test-only env var manipulation in isolated test
+        unsafe {
+            std::env::remove_var("PETALTONGUE_MOCK_MODE");
+        }
     }
 }
 
 #[tokio::test]
 async fn test_mock_mode_false() {
-    std::env::set_var("PETALTONGUE_MOCK_MODE", "false");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::set_var("PETALTONGUE_MOCK_MODE", "false");
 
-    // Clean other env vars
-    std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
-    std::env::remove_var("BIOMEOS_URL");
+        // Clean other env vars
+        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+        std::env::remove_var("BIOMEOS_URL");
+    }
 
     let providers = discover_visualization_providers().await;
 
     // With mock mode explicitly false and no other config,
     // discovery behavior is undefined (could succeed with fallback or fail)
     // This test verifies it doesn't panic
-    std::env::remove_var("PETALTONGUE_MOCK_MODE");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::remove_var("PETALTONGUE_MOCK_MODE");
+    }
 }
 
 #[tokio::test]
 async fn test_discovery_hints_parsing() {
     // Set discovery hints
-    std::env::set_var(
-        "PETALTONGUE_DISCOVERY_HINTS",
-        "http://test1:3000,http://test2:3000",
-    );
-    std::env::remove_var("PETALTONGUE_MOCK_MODE");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::set_var(
+            "PETALTONGUE_DISCOVERY_HINTS",
+            "http://test1:3000,http://test2:3000",
+        );
+        std::env::remove_var("PETALTONGUE_MOCK_MODE");
+    }
 
     let providers = discover_visualization_providers().await;
 
@@ -89,14 +119,20 @@ async fn test_discovery_hints_parsing() {
         "Discovery completes"
     );
 
-    std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+    }
 }
 
 #[tokio::test]
 async fn test_legacy_biomeos_url() {
-    std::env::set_var("BIOMEOS_URL", "http://legacy:3000");
-    std::env::remove_var("PETALTONGUE_MOCK_MODE");
-    std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::set_var("BIOMEOS_URL", "http://legacy:3000");
+        std::env::remove_var("PETALTONGUE_MOCK_MODE");
+        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+    }
 
     let providers = discover_visualization_providers().await;
 
@@ -106,23 +142,29 @@ async fn test_legacy_biomeos_url() {
         "Legacy discovery completes"
     );
 
-    std::env::remove_var("BIOMEOS_URL");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::remove_var("BIOMEOS_URL");
+    }
 }
 
 #[tokio::test]
 async fn test_discovery_priority() {
     // Clean up first to avoid test interference
-    std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
-    std::env::remove_var("BIOMEOS_URL");
-    std::env::remove_var("PETALTONGUE_ENABLE_MDNS");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+        std::env::remove_var("BIOMEOS_URL");
+        std::env::remove_var("PETALTONGUE_ENABLE_MDNS");
 
-    // Mock mode should take priority over everything
-    std::env::set_var("PETALTONGUE_MOCK_MODE", "true");
-    std::env::set_var(
-        "PETALTONGUE_DISCOVERY_HINTS",
-        "http://should-not-be-used:3000",
-    );
-    std::env::set_var("BIOMEOS_URL", "http://also-should-not-be-used:3000");
+        // Mock mode should take priority over everything
+        std::env::set_var("PETALTONGUE_MOCK_MODE", "true");
+        std::env::set_var(
+            "PETALTONGUE_DISCOVERY_HINTS",
+            "http://should-not-be-used:3000",
+        );
+        std::env::set_var("BIOMEOS_URL", "http://also-should-not-be-used:3000");
+    }
 
     let providers = discover_visualization_providers().await.unwrap();
 
@@ -130,15 +172,21 @@ async fn test_discovery_priority() {
     assert_eq!(providers.len(), 1, "Mock mode should take priority");
 
     // Clean up
-    std::env::remove_var("PETALTONGUE_MOCK_MODE");
-    std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
-    std::env::remove_var("BIOMEOS_URL");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::remove_var("PETALTONGUE_MOCK_MODE");
+        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+        std::env::remove_var("BIOMEOS_URL");
+    }
 }
 
 #[tokio::test]
 async fn test_empty_discovery_hints() {
-    std::env::set_var("PETALTONGUE_DISCOVERY_HINTS", "");
-    std::env::remove_var("PETALTONGUE_MOCK_MODE");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::set_var("PETALTONGUE_DISCOVERY_HINTS", "");
+        std::env::remove_var("PETALTONGUE_MOCK_MODE");
+    }
 
     let providers = discover_visualization_providers().await;
 
@@ -148,13 +196,19 @@ async fn test_empty_discovery_hints() {
         "Empty hints handled"
     );
 
-    std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+    }
 }
 
 #[tokio::test]
 async fn test_malformed_hints() {
-    std::env::set_var("PETALTONGUE_DISCOVERY_HINTS", "not-a-url,also not a url");
-    std::env::remove_var("PETALTONGUE_MOCK_MODE");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::set_var("PETALTONGUE_DISCOVERY_HINTS", "not-a-url,also not a url");
+        std::env::remove_var("PETALTONGUE_MOCK_MODE");
+    }
 
     let providers = discover_visualization_providers().await;
 
@@ -164,12 +218,18 @@ async fn test_malformed_hints() {
         "Malformed hints handled"
     );
 
-    std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+    }
 }
 
 #[tokio::test]
 async fn test_concurrent_discovery_attempts() {
-    std::env::set_var("PETALTONGUE_MOCK_MODE", "true");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::set_var("PETALTONGUE_MOCK_MODE", "true");
+    }
 
     // Make multiple concurrent discovery attempts
     let mut handles = vec![];
@@ -184,5 +244,8 @@ async fn test_concurrent_discovery_attempts() {
         assert!(result.is_ok(), "Concurrent discovery should work");
     }
 
-    std::env::remove_var("PETALTONGUE_MOCK_MODE");
+    // SAFETY: Test-only env var manipulation in isolated test
+    unsafe {
+        std::env::remove_var("PETALTONGUE_MOCK_MODE");
+    }
 }

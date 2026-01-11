@@ -41,10 +41,15 @@ egui = { workspace = true }
 egui_extras = { workspace = true }  # For table widgets in process viewer
 libc = "0.2"  # For framebuffer demo root check
 
-# Pure Rust Audio (TRUE PRIMAL sovereignty)
-# Note: cpal backend auto-selects best available (PulseAudio, JACK, ALSA, etc.)
-rodio = { version = "0.19", default-features = false, features = ["symphonia-mp3", "symphonia-wav", "symphonia"] }
-cpal = "0.15"  # Cross-platform audio I/O (rodio uses this internally)
+# Pure Rust Audio (TRUE PRIMAL sovereignty - Audio Canvas!)
+# EVOLVED: Direct hardware access (like WGPU for graphics!)
+# NO rodio, NO cpal, NO ALSA - just raw device access!
+symphonia = { version = "0.5", default-features = false, features = ["mp3", "wav"] }  # Pure Rust decoding only
+winit = "0.30"  # Pure Rust windowing (for display detection)
+
+# REMOVED: rodio (had ALSA C dependency via cpal)
+# REMOVED: cpal (had alsa-sys C bindings)
+# EVOLVED: AudioCanvas - direct /dev/snd access!
 
 # External tool integrations
 sysinfo = "0.30"  # System monitoring tool

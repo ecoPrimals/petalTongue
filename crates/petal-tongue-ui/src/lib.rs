@@ -20,13 +20,13 @@ pub mod tutorial_mode;
 // pub mod app_ui;       // UI rendering (Phase 2)
 // pub mod app_data;     // Data management (Phase 3)
 // pub mod app_adapters; // Adapter management (Phase 4)
+pub mod audio_canvas; // Direct hardware access (like WGPU!)
 pub mod audio_providers;
-pub mod audio_canvas;  // Direct hardware access (like WGPU!)
 pub mod audio_pure_rust;
-pub mod display_pure_rust;
 pub mod bingocube_integration;
 pub mod data_source;
 pub mod display; // Pure Rust display system
+pub mod display_pure_rust;
 pub mod display_verification; // Phase 4: Active display visibility verification
 pub mod graph_metrics_plotter;
 pub mod human_entropy_window;
