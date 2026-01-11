@@ -11,12 +11,23 @@ use std::path::PathBuf;
 
 /// Get the socket path for this petalTongue instance
 ///
-/// Path format: `/run/user/<uid>/petaltongue-<family>.sock`
+/// Path format: `/run/user/<uid>/petaltongue-<family>-<node>.sock`
 ///
-/// # Environment Variables
+/// # Environment Variables (Priority Order)
 ///
-/// - `FAMILY_ID`: Family identifier (default: "nat0")
-/// - `XDG_RUNTIME_DIR`: Runtime directory (default: `/run/user/<uid>`)
+/// 1. **`PETALTONGUE_SOCKET`**: Explicit socket path override (highest priority)
+/// 2. **`FAMILY_ID`**: Family identifier (default: "nat0")
+/// 3. **`PETALTONGUE_NODE_ID`**: Node identifier for multi-instance (default: "default")
+/// 4. **`XDG_RUNTIME_DIR`**: Runtime directory (standard, falls back to `/run/user/<uid>`)
+///
+/// # biomeOS Socket Standard Compliance
+///
+/// This function implements the biomeOS socket standardization:
+/// - **Explicit Override**: `PETALTONGUE_SOCKET` for custom paths
+/// - **XDG Compliant**: Uses `/run/user/<uid>/` for secure sockets
+/// - **Multi-Instance**: Supports `NODE_ID` for multiple instances per family
+/// - **Graceful Fallback**: Falls back to `/tmp/` if XDG runtime unavailable
+/// - **Parent Directory Creation**: Ensures socket parent directory exists
 ///
 /// # TRUE PRIMAL Principles
 ///
@@ -30,23 +41,62 @@ use std::path::PathBuf;
 /// ```
 /// use petal_tongue_ipc::socket_path;
 ///
-/// // Default (nat0 family)
+/// // Default (nat0 family, default node)
 /// let path = socket_path::get_petaltongue_socket_path().unwrap();
-/// // Returns: /run/user/1000/petaltongue-nat0.sock
+/// // Returns: /run/user/1000/petaltongue-nat0-default.sock
 ///
-/// // Custom family
+/// // Custom family and node
 /// // SAFETY: Doctest-only env var manipulation
 /// unsafe {
 ///     std::env::set_var("FAMILY_ID", "staging");
+///     std::env::set_var("PETALTONGUE_NODE_ID", "node1");
 /// }
 /// let path = socket_path::get_petaltongue_socket_path().unwrap();
-/// // Returns: /run/user/1000/petaltongue-staging.sock
+/// // Returns: /run/user/1000/petaltongue-staging-node1.sock
+///
+/// // Explicit override
+/// unsafe {
+///     std::env::set_var("PETALTONGUE_SOCKET", "/tmp/custom.sock");
+/// }
+/// let path = socket_path::get_petaltongue_socket_path().unwrap();
+/// // Returns: /tmp/custom.sock
 /// ```
 pub fn get_petaltongue_socket_path() -> Result<PathBuf> {
-    let family_id = get_family_id();
-    let runtime_dir = get_runtime_dir()?;
+    // Priority 1: Explicit override (biomeOS standard)
+    if let Ok(socket_path) = env::var("PETALTONGUE_SOCKET") {
+        let path = PathBuf::from(socket_path);
 
-    Ok(runtime_dir.join(format!("petaltongue-{}.sock", family_id)))
+        // Ensure parent directory exists
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+
+        return Ok(path);
+    }
+
+    // Priority 2: XDG runtime directory (standard)
+    let family_id = get_family_id();
+    let node_id = get_node_id();
+
+    match get_runtime_dir() {
+        Ok(runtime_dir) => {
+            let path = runtime_dir.join(format!("petaltongue-{}-{}.sock", family_id, node_id));
+
+            // Ensure runtime directory exists
+            std::fs::create_dir_all(&runtime_dir)?;
+
+            Ok(path)
+        }
+        Err(_) => {
+            // Priority 3: Fallback to /tmp (last resort)
+            let path = PathBuf::from(format!("/tmp/petaltongue-{}-{}.sock", family_id, node_id));
+
+            // Ensure /tmp exists (it should, but be defensive)
+            std::fs::create_dir_all("/tmp")?;
+
+            Ok(path)
+        }
+    }
 }
 
 /// Get the family ID for this instance
@@ -61,11 +111,32 @@ pub fn get_family_id() -> String {
     env::var("FAMILY_ID").unwrap_or_else(|_| "nat0".to_string())
 }
 
+/// Get the node ID for this instance
+///
+/// Returns value from `PETALTONGUE_NODE_ID` environment variable, or "default" as default.
+///
+/// # biomeOS Multi-Instance Support
+///
+/// Node IDs enable running multiple petalTongue instances in the same family:
+/// - `petaltongue-nat0-node1.sock`
+/// - `petaltongue-nat0-node2.sock`
+///
+/// This is critical for atomic deployments where multiple instances
+/// may need to run on the same machine.
+pub fn get_node_id() -> String {
+    env::var("PETALTONGUE_NODE_ID").unwrap_or_else(|_| "default".to_string())
+}
+
 /// Get the runtime directory for socket placement
 ///
 /// Returns:
 /// 1. `XDG_RUNTIME_DIR` if set (standard)
 /// 2. `/run/user/<uid>` as fallback
+///
+/// # biomeOS Socket Standard
+///
+/// Returns an error if neither XDG nor `/run/user/<uid>` are available.
+/// Callers should fall back to `/tmp/` in this case (see `get_petaltongue_socket_path`).
 ///
 /// # TRUE PRIMAL: Capability-Based
 ///
@@ -74,7 +145,10 @@ pub fn get_family_id() -> String {
 pub fn get_runtime_dir() -> Result<PathBuf> {
     // Try XDG_RUNTIME_DIR first (standard)
     if let Ok(dir) = env::var("XDG_RUNTIME_DIR") {
-        return Ok(PathBuf::from(dir));
+        let path = PathBuf::from(dir);
+        if path.exists() || path.parent().map_or(false, |p| p.exists()) {
+            return Ok(path);
+        }
     }
 
     // Fallback to /run/user/<uid>
@@ -82,17 +156,16 @@ pub fn get_runtime_dir() -> Result<PathBuf> {
     let uid = get_current_uid()?;
     let runtime_dir = PathBuf::from(format!("/run/user/{}", uid));
 
-    // Verify directory exists and is writable
-    if !runtime_dir.exists() {
+    // Check if directory exists (don't require it, caller will create)
+    if runtime_dir.exists() || runtime_dir.parent().map_or(false, |p| p.exists()) {
+        Ok(runtime_dir)
+    } else {
         anyhow::bail!(
             "Runtime directory does not exist: {}. \
-            Please set XDG_RUNTIME_DIR or ensure /run/user/{} exists.",
-            runtime_dir.display(),
-            uid
-        );
+            Will fall back to /tmp/",
+            runtime_dir.display()
+        )
     }
-
-    Ok(runtime_dir)
 }
 
 /// Discover another primal's socket path (capability-based)
@@ -102,10 +175,18 @@ pub fn get_runtime_dir() -> Result<PathBuf> {
 /// This function discovers OTHER primals at runtime, without hardcoding.
 /// It follows the biomeOS convention but remains agnostic to specific primals.
 ///
+/// # biomeOS Socket Standard
+///
+/// Tries in order:
+/// 1. `<PRIMAL>_SOCKET` env var (if set)
+/// 2. `/run/user/<uid>/<primal>-<family>-<node>.sock` (XDG)
+/// 3. `/tmp/<primal>-<family>-<node>.sock` (fallback)
+///
 /// # Arguments
 ///
 /// * `primal_name` - Name of the primal to discover (e.g., "beardog", "songbird")
 /// * `family_id` - Optional family ID (defaults to current FAMILY_ID)
+/// * `node_id` - Optional node ID (defaults to "default")
 ///
 /// # Examples
 ///
@@ -113,21 +194,44 @@ pub fn get_runtime_dir() -> Result<PathBuf> {
 /// use petal_tongue_ipc::socket_path;
 ///
 /// // Discover beardog in same family
-/// let beardog = socket_path::discover_primal_socket("beardog", None).unwrap();
-/// // Returns: /run/user/1000/beardog-nat0.sock
+/// let beardog = socket_path::discover_primal_socket("beardog", None, None).unwrap();
+/// // Returns: /run/user/1000/beardog-nat0-default.sock
 ///
-/// // Discover in specific family
-/// let songbird = socket_path::discover_primal_socket("songbird", Some("staging")).unwrap();
-/// // Returns: /run/user/1000/songbird-staging.sock
+/// // Discover in specific family and node
+/// let songbird = socket_path::discover_primal_socket("songbird", Some("staging"), Some("node1")).unwrap();
+/// // Returns: /run/user/1000/songbird-staging-node1.sock
 /// ```
-pub fn discover_primal_socket(primal_name: &str, family_id: Option<&str>) -> Result<PathBuf> {
+pub fn discover_primal_socket(
+    primal_name: &str,
+    family_id: Option<&str>,
+    node_id: Option<&str>,
+) -> Result<PathBuf> {
+    // Priority 1: Check for explicit override env var
+    let env_var = format!("{}_SOCKET", primal_name.to_uppercase());
+    if let Ok(socket_path) = env::var(&env_var) {
+        return Ok(PathBuf::from(socket_path));
+    }
+
     let family = match family_id {
         Some(f) => f.to_string(),
         None => get_family_id(),
     };
-    let runtime_dir = get_runtime_dir()?;
 
-    Ok(runtime_dir.join(format!("{}-{}.sock", primal_name, family)))
+    let node = match node_id {
+        Some(n) => n.to_string(),
+        None => "default".to_string(),
+    };
+
+    // Priority 2: XDG runtime directory
+    if let Ok(runtime_dir) = get_runtime_dir() {
+        return Ok(runtime_dir.join(format!("{}-{}-{}.sock", primal_name, family, node)));
+    }
+
+    // Priority 3: Fallback to /tmp
+    Ok(PathBuf::from(format!(
+        "/tmp/{}-{}-{}.sock",
+        primal_name, family, node
+    )))
 }
 
 /// Check if a socket path exists and is accessible
@@ -195,13 +299,18 @@ mod tests {
         // SAFETY: Test-only environment variable modification
         unsafe {
             env::remove_var("FAMILY_ID");
+            env::remove_var("PETALTONGUE_NODE_ID");
+            env::remove_var("PETALTONGUE_SOCKET");
         }
 
         // This test assumes /run/user/<uid> exists
         if let Ok(path) = get_petaltongue_socket_path() {
             let path_str = path.to_string_lossy();
-            assert!(path_str.contains("petaltongue-nat0.sock"));
-            assert!(path_str.contains("/run/user/") || path_str.contains("XDG_RUNTIME_DIR"));
+            // Should now include node ID: petaltongue-nat0-default.sock
+            assert!(
+                path_str.contains("petaltongue-nat0-default.sock")
+                    || path_str.contains("/tmp/petaltongue-nat0-default.sock")
+            );
         }
     }
 
@@ -210,19 +319,68 @@ mod tests {
         // SAFETY: Test-only environment variable modification
         unsafe {
             env::remove_var("FAMILY_ID");
+            env::remove_var("BEARDOG_SOCKET");
         }
 
-        if let Ok(path) = discover_primal_socket("beardog", None) {
+        if let Ok(path) = discover_primal_socket("beardog", None, None) {
             let path_str = path.to_string_lossy();
-            assert!(path_str.contains("beardog-nat0.sock"));
+            assert!(path_str.contains("beardog-nat0-default.sock"));
         }
     }
 
     #[test]
     fn test_discover_primal_socket_custom_family() {
-        if let Ok(path) = discover_primal_socket("songbird", Some("staging")) {
+        if let Ok(path) = discover_primal_socket("songbird", Some("staging"), Some("node1")) {
             let path_str = path.to_string_lossy();
-            assert!(path_str.contains("songbird-staging.sock"));
+            assert!(path_str.contains("songbird-staging-node1.sock"));
+        }
+    }
+
+    #[test]
+    fn test_petaltongue_socket_override() {
+        // SAFETY: Test-only environment variable modification
+        unsafe {
+            env::set_var("PETALTONGUE_SOCKET", "/tmp/custom-petaltongue.sock");
+        }
+
+        let path = get_petaltongue_socket_path().unwrap();
+        assert_eq!(path, PathBuf::from("/tmp/custom-petaltongue.sock"));
+
+        unsafe {
+            env::remove_var("PETALTONGUE_SOCKET");
+        }
+    }
+
+    #[test]
+    fn test_node_id() {
+        // SAFETY: Test-only environment variable modification
+        unsafe {
+            env::remove_var("PETALTONGUE_NODE_ID");
+        }
+        assert_eq!(get_node_id(), "default");
+
+        unsafe {
+            env::set_var("PETALTONGUE_NODE_ID", "node1");
+        }
+        assert_eq!(get_node_id(), "node1");
+
+        unsafe {
+            env::remove_var("PETALTONGUE_NODE_ID");
+        }
+    }
+
+    #[test]
+    fn test_primal_socket_env_override() {
+        // SAFETY: Test-only environment variable modification
+        unsafe {
+            env::set_var("SONGBIRD_SOCKET", "/tmp/custom-songbird.sock");
+        }
+
+        let path = discover_primal_socket("songbird", None, None).unwrap();
+        assert_eq!(path, PathBuf::from("/tmp/custom-songbird.sock"));
+
+        unsafe {
+            env::remove_var("SONGBIRD_SOCKET");
         }
     }
 

@@ -2,23 +2,98 @@
 
 This document describes all environment variables used by petalTongue.
 
-## 🔧 Configuration Variables
+## 🔌 Socket Configuration (biomeOS Standard)
+
+### **PETALTONGUE_SOCKET**
+**Type**: String (absolute path)  
+**Default**: None (uses XDG runtime or /tmp fallback)  
+**Required**: No  
+**Example**: `PETALTONGUE_SOCKET=/run/user/1000/petaltongue-nat0-node1.sock`
+
+**HIGHEST PRIORITY** socket path override. When set, petalTongue will use this exact socket path.
+
+**biomeOS Socket Standard**:
+- Priority 1: `PETALTONGUE_SOCKET` (explicit override)
+- Priority 2: `/run/user/<uid>/petaltongue-<family>-<node>.sock` (XDG)
+- Priority 3: `/tmp/petaltongue-<family>-<node>.sock` (fallback)
+
+**Use Cases**:
+- Atomic deployments with custom socket locations
+- Testing with specific socket paths
+- Multi-instance deployments with explicit coordination
+
+---
+
+### **FAMILY_ID**
+**Type**: String  
+**Default**: `nat0`  
+**Required**: No  
+**Example**: `FAMILY_ID=staging`
+
+Family identifier for this petalTongue instance. Used in socket path construction.
+
+**Socket Path Impact**:
+- `FAMILY_ID=nat0` → `/run/user/1000/petaltongue-nat0-default.sock`
+- `FAMILY_ID=staging` → `/run/user/1000/petaltongue-staging-default.sock`
+
+**Atomic Architecture**:
+Multiple families can run on the same machine without conflict.
+
+---
+
+### **PETALTONGUE_NODE_ID**
+**Type**: String  
+**Default**: `default`  
+**Required**: No  
+**Example**: `PETALTONGUE_NODE_ID=node1`
+
+Node identifier for multi-instance deployments. Enables multiple petalTongue instances in the same family.
+
+**Socket Path Impact**:
+- `NODE_ID=default` → `/run/user/1000/petaltongue-nat0-default.sock`
+- `NODE_ID=node1` → `/run/user/1000/petaltongue-nat0-node1.sock`
+- `NODE_ID=node2` → `/run/user/1000/petaltongue-nat0-node2.sock`
+
+**Use Cases**:
+- Running multiple visualization instances
+- Load balancing across instances
+- A/B testing different configurations
+
+---
+
+### **XDG_RUNTIME_DIR**
+**Type**: String (directory path)  
+**Default**: `/run/user/<uid>` (auto-detected)  
+**Required**: No  
+**Example**: `XDG_RUNTIME_DIR=/run/user/1000`
+
+Standard XDG runtime directory for socket placement. This is the standard Unix location for user-level runtime files.
+
+**TRUE PRIMAL Principle**: Uses standard Unix conventions rather than hardcoded paths.
+
+---
+
+## 🔧 Discovery & Integration
 
 ### **BIOMEOS_URL**
 **Type**: String (URL)  
 **Default**: None (discovered at runtime)  
 **Required**: No  
-**Example**: `BIOMEOS_URL=http://biomeos.local:3000`
+**Example**: `BIOMEOS_URL=unix:///run/user/1000/biomeos-device-management.sock`
 
-URL of the BiomeOS API endpoint. petalTongue will connect to this endpoint to discover primals and retrieve topology data.
+URL of the BiomeOS API endpoint. Supports both Unix sockets (primary) and HTTP (fallback).
+
+**Formats**:
+- `unix:///run/user/1000/biomeos.sock` - Unix socket (PRIMARY protocol)
+- `http://biomeos.local:3000` - HTTP endpoint (FALLBACK only)
 
 **TRUE PRIMAL Behavior**:
 - If set: Uses this URL directly
-- If not set: Discovers BiomeOS via mDNS/HTTP probing at runtime
+- If not set: Discovers BiomeOS via socket scanning at runtime
 - Graceful degradation: Falls back to mock mode if no BiomeOS found
 
-**Production**: Set to your actual BiomeOS instance for faster startup.  
-**Development**: Can omit to test runtime discovery, or set for direct connection.
+**Production**: Set to Unix socket for fast, secure JSON-RPC.  
+**Development**: Can omit to test runtime discovery.
 
 ---
 
@@ -44,6 +119,25 @@ URL of the BiomeOS API endpoint. petalTongue will connect to this endpoint to di
 
 ---
 
+### **PETALTONGUE_DISCOVERY_HINTS**
+**Type**: String (comma-separated list)  
+**Default**: None  
+**Required**: No  
+**Example**: `PETALTONGUE_DISCOVERY_HINTS=unix:///tmp/custom.sock,http://fallback:3000`
+
+Comma-separated list of discovery hints for finding BiomeOS and other primals.
+
+**Format**:
+- Unix sockets: `unix:///path/to/socket` or just `/path/to/socket`
+- HTTP endpoints: `http://hostname:port`
+
+**Priority**:
+1. Standard Unix socket paths (auto-discovered)
+2. Discovery hints (if set)
+3. Environment variables (`BIOMEOS_URL`)
+
+---
+
 ## 🤖 Self-Awareness & AI Integration
 
 ### **PETALTONGUE_STATUS_FILE**
@@ -63,8 +157,6 @@ Path to write machine-readable status file for AI systems.
 - Automated diagnosis tools
 
 ---
-
-### **PETALTONGUE_SOUNDS_DIR**
 **Type**: String (directory path)  
 **Default**: `./sounds` (current directory)  
 **Required**: No (falls back to generated sounds)  
