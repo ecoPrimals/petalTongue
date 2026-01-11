@@ -149,11 +149,8 @@ impl DevicePanel {
             .id_source("device_list")
             .show(ui, |ui| {
                 // Clone devices to avoid borrow checker issues with mutable UI rendering
-                let filtered_devices: Vec<Device> = self
-                    .filtered_devices()
-                    .iter()
-                    .map(|&d| d.clone())
-                    .collect();
+                let filtered_devices: Vec<Device> =
+                    self.filtered_devices().iter().map(|&d| d.clone()).collect();
 
                 if filtered_devices.is_empty() {
                     ui.colored_label(Color32::GRAY, "No devices found");
@@ -290,7 +287,8 @@ impl DevicePanel {
         if is_dragging {
             // Store device ID in drag payload using egui's memory
             ui.memory_mut(|mem| {
-                mem.data.insert_temp(egui::Id::new("dragged_device"), device.id.clone());
+                mem.data
+                    .insert_temp(egui::Id::new("dragged_device"), device.id.clone());
             });
         }
 
