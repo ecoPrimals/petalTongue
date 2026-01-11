@@ -40,6 +40,7 @@ eframe = { workspace = true }
 egui = { workspace = true }
 egui_extras = { workspace = true }  # For table widgets in process viewer
 libc = "0.2"  # For framebuffer demo root check
+uuid = { version = "1.7", features = ["v4", "serde"] }  # For graph node IDs
 
 # Pure Rust Audio (TRUE PRIMAL sovereignty - Audio Canvas!)
 # EVOLVED: Direct hardware access (like WGPU for graphics!)

@@ -97,7 +97,7 @@ mod tests {
     fn test_keyboard_sensor_creation() {
         use crate::sensors::keyboard::InputType;
 
-        let keyboard = KeyboardSensor::new(InputType::Physical);
+        let keyboard = KeyboardSensor::new(InputType::Terminal);
         assert!(keyboard.capabilities().input);
         assert!(!keyboard.capabilities().output);
         assert!(!keyboard.capabilities().spatial);
@@ -109,7 +109,7 @@ mod tests {
     fn test_mouse_sensor_creation() {
         use crate::sensors::mouse::PointerType;
 
-        let mouse = MouseSensor::new(PointerType::Mouse);
+        let mouse = MouseSensor::new(PointerType::TerminalMouse);
         assert!(mouse.capabilities().input);
         assert!(!mouse.capabilities().output);
         assert!(mouse.capabilities().spatial);
