@@ -218,6 +218,11 @@ impl BiomeOSUIManager {
     pub fn is_mock_mode(&self) -> bool {
         self.use_mock
     }
+
+    /// Get current tab
+    pub fn current_tab(&self) -> UITab {
+        self.current_tab
+    }
 }
 
 /// JSON-RPC Methods for biomeOS Integration
