@@ -273,10 +273,10 @@ impl StartupAudio {
                         warn!("⚠️ Pure Rust audio failed: {}, writing to disk as fallback", e);
                         
                         // Fallback: Write to disk for manual playback
-                        if let Err(e) = std::fs::write(&wav_path, wav_bytes) {
-                            warn!("Failed to write signature tone: {}", e);
-                        } else {
-                            info!("🎵 Signature tone exported to {:?}", wav_path);
+                if let Err(e) = std::fs::write(&wav_path, wav_bytes) {
+                    warn!("Failed to write signature tone: {}", e);
+                } else {
+                    info!("🎵 Signature tone exported to {:?}", wav_path);
                         }
                     }
                 }
@@ -286,7 +286,7 @@ impl StartupAudio {
             if play_music {
                 if Self::has_embedded_music() {
                     info!("🎵 Playing embedded startup music (pure Rust)...");
-                    
+
                     // EVOLVED: Play embedded MP3 with pure Rust!
                     match play_embedded_mp3_pure_rust(Self::get_embedded_music()) {
                         Ok(()) => {
