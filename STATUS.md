@@ -647,9 +647,20 @@ Confidence: 87% ██████████████▒▒░
 
 **Evolution**: Display Verification → Output Verification → Input Verification → **Complete Proprioception**
 
-#### SAME DAVE: Self-Awareness via Multi-modal Evidence and Deterministic Assessment of Verification Efficacy
+#### SAME DAVE: Neuroanatomy Model for Primals
 
-Like human proprioception (knowing body position without seeing it), primals now have complete self-awareness through bidirectional feedback loops!
+This implements the neuroanatomy mnemonic for spinal cord pathways:
+
+- **SAME**: **S**ensory **A**fferent, **M**otor **E**fferent
+- **DAVE**: **D**orsal **A**fferent, **V**entral **E**fferent
+
+**In our model**:
+- **Sensory (Afferent)**: Input pathways - signals coming TO the primal (keyboard, mouse, sensors)
+- **Motor (Efferent)**: Output pathways - signals going FROM the primal (display, audio, haptic)
+- **Bidirectional Loop**: Both pathways working together = proprioception function
+
+Just like human proprioception requires both motor commands (efferent) and sensory feedback (afferent) 
+to know body position, primals now have complete self-awareness through bidirectional feedback loops!
 
 #### What Was Built:
 

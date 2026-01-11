@@ -4,8 +4,21 @@
 //! the primal knows its complete input/output state through bidirectional
 //! verification loops.
 //!
-//! This is SAME DAVE for primals - Self-Awareness via Multi-modal Evidence
-//! and Deterministic Assessment of Verification Efficacy.
+//! # SAME DAVE - Neuroanatomy Model
+//!
+//! This implements the neuroanatomy mnemonic for spinal cord pathways:
+//!
+//! - **SAME**: **S**ensory **A**fferent, **M**otor **E**fferent
+//! - **DAVE**: **D**orsal **A**fferent, **V**entral **E**fferent
+//!
+//! In our model:
+//! - **Sensory (Afferent)**: Input pathways - signals coming TO the primal (keyboard, mouse, etc.)
+//! - **Motor (Efferent)**: Output pathways - signals going FROM the primal (display, audio, etc.)
+//! - **Bidirectional Loop**: Both pathways working together = proprioception function
+//!
+//! Just like human proprioception requires both motor commands (efferent) and
+//! sensory feedback (afferent) to know body position, primals need both output
+//! and input verification to achieve complete self-awareness.
 
 use crate::input_verification::{InputModality, InputVerificationSystem};
 use crate::output_verification::{OutputModality, OutputVerificationSystem};
@@ -14,15 +27,20 @@ use std::time::{Duration, Instant};
 use tracing::{info, warn};
 
 /// Complete proprioceptive state - full sensory-motor awareness
+///
+/// Based on neuroanatomy model (SAME DAVE):
+/// - Motor = Efferent pathways (output)
+/// - Sensory = Afferent pathways (input)
+/// - Both required for proprioception function
 #[derive(Debug, Clone)]
 pub struct ProprioceptiveState {
-    /// Can we send output?
+    /// Motor function: Can we send output? (Efferent pathways)
     pub motor_functional: bool,
 
-    /// Can we receive input?
+    /// Sensory function: Can we receive input? (Afferent pathways)
     pub sensory_functional: bool,
 
-    /// Is the bidirectional loop complete?
+    /// Is the bidirectional loop complete? (Motor + Sensory working)
     pub loop_complete: bool,
 
     /// Overall system health (0.0-1.0)
@@ -66,15 +84,21 @@ impl ProprioceptiveState {
     }
 }
 
-/// SAME DAVE - Self-Awareness via Multi-modal Evidence
-/// and Deterministic Assessment of Verification Efficacy
+/// SAME DAVE Proprioception System
 ///
-/// This is the complete central nervous system for primals!
+/// Implements the neuroanatomy model (SAME DAVE mnemonic):
+/// - Sensory Afferent: Input pathways (keyboard, mouse, audio in)
+/// - Motor Efferent: Output pathways (display, audio out, haptic)
+/// - Dorsal Afferent: Sensory signals coming in
+/// - Ventral Efferent: Motor commands going out
+///
+/// Both motor (efferent) and sensory (afferent) pathways are required
+/// for proprioception function - complete self-awareness!
 pub struct ProprioceptionSystem {
-    /// Output verification (motor)
+    /// Output verification (Motor/Efferent pathways)
     output_system: OutputVerificationSystem,
 
-    /// Input verification (sensory)  
+    /// Input verification (Sensory/Afferent pathways)  
     input_system: InputVerificationSystem,
 
     /// Last proprioceptive assessment
@@ -116,8 +140,12 @@ struct DiagnosticEvent {
 
 impl ProprioceptionSystem {
     /// Create a new proprioception system
+    ///
+    /// Initializes the neuroanatomy model (SAME DAVE):
+    /// - Sensory Afferent (input pathways)
+    /// - Motor Efferent (output pathways)
     pub fn new() -> Self {
-        info!("🧠 Initializing SAME DAVE proprioception system...");
+        info!("🧠 Initializing SAME DAVE proprioception system (neuroanatomy model)...");
 
         let now = Instant::now();
 
