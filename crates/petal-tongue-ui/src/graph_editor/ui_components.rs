@@ -269,7 +269,7 @@ pub enum ConflictType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ConflictResolution {
+pub enum ConflictResolutionChoice {
     KeepUser,
     KeepAI,
     MergeBoth,
@@ -278,7 +278,7 @@ pub enum ConflictResolution {
 
 impl ConflictResolution {
     /// Show conflict resolution dialog
-    pub fn show(ui: &mut Ui, conflict: &Conflict) -> Option<Self> {
+    pub fn show(ui: &mut Ui, conflict: &Conflict) -> Option<ConflictResolutionChoice> {
         let mut result = None;
 
         egui::Frame::popup(ui.style())
@@ -326,20 +326,20 @@ impl ConflictResolution {
                     // Action buttons
                     ui.horizontal(|ui| {
                         if ui.button("✓ Keep My Change").clicked() {
-                            result = Some(Self::KeepUser);
+                            result = Some(ConflictResolutionChoice::KeepUser);
                         }
 
                         if ui.button("🤖 Use AI Suggestion").clicked() {
-                            result = Some(Self::KeepAI);
+                            result = Some(ConflictResolutionChoice::KeepAI);
                         }
 
                         if ui.button("🔀 Merge Both").clicked() {
-                            result = Some(Self::MergeBoth);
+                            result = Some(ConflictResolutionChoice::MergeBoth);
                         }
 
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                             if ui.button("✗ Cancel").clicked() {
-                                result = Some(Self::Cancel);
+                                result = Some(ConflictResolutionChoice::Cancel);
                             }
                         });
                     });
@@ -369,10 +369,10 @@ mod tests {
     #[test]
     fn test_conflict_resolution_variants() {
         let variants = vec![
-            ConflictResolution::KeepUser,
-            ConflictResolution::KeepAI,
-            ConflictResolution::MergeBoth,
-            ConflictResolution::Cancel,
+            ConflictResolutionChoice::KeepUser,
+            ConflictResolutionChoice::KeepAI,
+            ConflictResolutionChoice::MergeBoth,
+            ConflictResolutionChoice::Cancel,
         ];
 
         assert_eq!(variants.len(), 4);
