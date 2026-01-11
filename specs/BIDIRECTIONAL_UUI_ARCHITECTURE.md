@@ -10,11 +10,26 @@
 
 > **"petalTongue needs a central nervous system - motor function (display output) AND sensory function (user input + validation), with full awareness of its own state."**
 
-Like a biological nervous system, petalTongue must have:
-1. **Motor neurons**: Display output (what we're rendering)
-2. **Sensory neurons**: User input + rendering verification (confirmation it worked)
+### SAME DAVE - Neuroanatomy Model
+
+This implements the neuroanatomy mnemonic for spinal cord pathways:
+
+- **SAME**: **S**ensory **A**fferent, **M**otor **E**fferent
+- **DAVE**: **D**orsal **A**fferent, **V**entral **E**fferent
+
+In human anatomy:
+- **Dorsal (back)**: Sensory/Afferent pathways - signals coming IN
+- **Ventral (front)**: Motor/Efferent pathways - signals going OUT
+
+For petalTongue:
+1. **Sensory (Afferent)**: Input pathways - signals coming TO the primal (keyboard, mouse, sensors)
+2. **Motor (Efferent)**: Output pathways - signals going FROM the primal (display, audio, haptic)
 3. **Central awareness**: Self-knowledge of the complete state
 4. **Feedback loop**: Continuous validation that motor functions reach sensory confirmation
+
+**Key Insight**: Just like human proprioception requires both motor commands (efferent) and 
+sensory feedback (afferent) to know body position, primals need both output and input 
+verification to achieve complete self-awareness!
 
 ---
 
