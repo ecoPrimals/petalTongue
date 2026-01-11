@@ -80,7 +80,12 @@ impl PrimalPanel {
 
     /// Process pending events
     pub async fn process_events(&mut self) {
-        let events = self.event_handler.write().await.consume_primal_panel_events().await;
+        let events = self
+            .event_handler
+            .write()
+            .await
+            .consume_primal_panel_events()
+            .await;
 
         for event in events {
             match event {
@@ -136,11 +141,8 @@ impl PrimalPanel {
             .id_source("primal_list")
             .show(ui, |ui| {
                 // Clone primals to avoid borrow checker issues with mutable UI rendering
-                let filtered_primals: Vec<Primal> = self
-                    .filtered_primals()
-                    .iter()
-                    .map(|&p| p.clone())
-                    .collect();
+                let filtered_primals: Vec<Primal> =
+                    self.filtered_primals().iter().map(|&p| p.clone()).collect();
 
                 if filtered_primals.is_empty() {
                     ui.colored_label(Color32::GRAY, "No primals found");
@@ -190,9 +192,21 @@ impl PrimalPanel {
     /// Render stats
     fn render_stats(&self, ui: &mut Ui) {
         let total = self.primals.len();
-        let healthy = self.primals.iter().filter(|p| p.health == Health::Healthy).count();
-        let degraded = self.primals.iter().filter(|p| p.health == Health::Degraded).count();
-        let error = self.primals.iter().filter(|p| p.health == Health::Offline).count();
+        let healthy = self
+            .primals
+            .iter()
+            .filter(|p| p.health == Health::Healthy)
+            .count();
+        let degraded = self
+            .primals
+            .iter()
+            .filter(|p| p.health == Health::Degraded)
+            .count();
+        let error = self
+            .primals
+            .iter()
+            .filter(|p| p.health == Health::Offline)
+            .count();
 
         ui.horizontal(|ui| {
             ui.label(format!("Total: {}", total));
@@ -290,7 +304,9 @@ impl PrimalPanel {
 
         // Drop zone for device assignment
         let is_dragging_device = ui.memory(|mem| {
-            mem.data.get_temp::<String>(egui::Id::new("dragged_device")).is_some()
+            mem.data
+                .get_temp::<String>(egui::Id::new("dragged_device"))
+                .is_some()
         });
 
         if is_dragging_device {
@@ -302,16 +318,19 @@ impl PrimalPanel {
                     .rect_stroke(highlight_rect, 4.0, (2.0, Color32::LIGHT_BLUE));
 
                 // Show drop hint
-                response.clone().on_hover_text(format!("Drop device here to assign to {}", primal.name));
+                response
+                    .clone()
+                    .on_hover_text(format!("Drop device here to assign to {}", primal.name));
 
                 // Handle drop
                 if !ui.input(|i| i.pointer.is_decidedly_dragging()) {
                     // Drag ended, check if we can get the device ID
                     if let Some(device_id) = ui.memory_mut(|mem| {
-                        mem.data.remove_temp::<String>(egui::Id::new("dragged_device"))
+                        mem.data
+                            .remove_temp::<String>(egui::Id::new("dragged_device"))
                     }) {
                         info!("🎯 Device {} dropped on primal {}", device_id, primal.id);
-                        
+
                         // Send assignment event
                         let primal_id = primal.id.clone();
                         let event_handler = self.event_handler.clone();
@@ -340,7 +359,6 @@ impl PrimalPanel {
                     PrimalFilter::All => true,
                     PrimalFilter::Healthy => primal.health == Health::Healthy,
                     PrimalFilter::Degraded => primal.health == Health::Degraded,
-                    PrimalFilter::Degraded => primal.health == Health::Offline,
                 };
 
                 // Apply search
@@ -350,7 +368,10 @@ impl PrimalPanel {
                     let query = self.search_query.to_lowercase();
                     primal.name.to_lowercase().contains(&query)
                         || primal.id.to_lowercase().contains(&query)
-                        || primal.capabilities.iter().any(|c| c.to_lowercase().contains(&query))
+                        || primal
+                            .capabilities
+                            .iter()
+                            .any(|c| c.to_lowercase().contains(&query))
                 };
 
                 filter_match && search_match
@@ -568,4 +589,3 @@ mod tests {
         assert_eq!(panel.selected_primal().unwrap().name, "Test Primal");
     }
 }
-
