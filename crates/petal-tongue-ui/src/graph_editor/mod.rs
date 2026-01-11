@@ -34,6 +34,7 @@ pub use graph::Graph;
 pub use node::GraphNode;
 pub use rpc_methods::GraphEditorService;
 pub use streaming::{StreamHandler, StreamMessage};
-pub use ui_components::{ConflictResolution, ConflictResolutionChoice, ReasoningDisplay, StatusDisplay};
+pub use ui_components::{
+    ConflictResolution, ConflictResolutionChoice, ReasoningDisplay, StatusDisplay,
+};
 pub use validation::GraphValidator;
-
