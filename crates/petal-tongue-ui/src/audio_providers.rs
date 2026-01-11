@@ -19,69 +19,55 @@ use tracing::{error, info, warn};
 // Forward declaration for StatusReporter (avoid circular dependency)
 use crate::status_reporter::{AudioProviderInfo, StatusReporter};
 
-/// Play audio samples using pure Rust (rodio)
+/// Play audio samples using Audio Canvas (direct hardware!)
 ///
-/// TRUE PRIMAL: No external dependencies, always works!
-fn play_samples(samples: &[f32], sample_rate: u32) -> Result<(), String> {
-    use rodio::{OutputStream, Sink, buffer::SamplesBuffer};
-    
-    info!("🔊 Playing {} samples at {} Hz (pure Rust)", samples.len(), sample_rate);
+/// EVOLVED: Like WGPU for graphics - direct device access!
+fn play_samples(samples: &[f32], _sample_rate: u32) -> Result<(), String> {
+    use crate::audio_canvas::AudioCanvas;
 
-    // Get default output device
-    let (_stream, stream_handle) = OutputStream::try_default()
-        .map_err(|e| format!("Failed to get audio output device: {}", e))?;
-    
-    let sink = Sink::try_new(&stream_handle)
-        .map_err(|e| format!("Failed to create audio sink: {}", e))?;
+    info!(
+        "🎨 Playing {} samples via Audio Canvas (100% pure Rust!)",
+        samples.len()
+    );
 
-    // Create audio source from samples (mono)
-    let source = SamplesBuffer::new(1, sample_rate, samples.to_vec());
-    
-    // Play in background (non-blocking)
-    std::thread::spawn(move || {
-        sink.append(source);
-        sink.sleep_until_end();
-        info!("✅ Audio playback complete");
-    });
-    
+    // Open audio canvas (direct hardware access!)
+    let mut canvas =
+        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {}", e))?;
+
+    // Write samples directly to hardware!
+    canvas
+        .write_samples(samples)
+        .map_err(|e| format!("Failed to write samples: {}", e))?;
+
+    info!("✅ Audio playback complete (Audio Canvas)");
+
     Ok(())
 }
 
-/// Play audio file using pure Rust (rodio + symphonia)
+/// Play audio file using Audio Canvas + symphonia (100% pure Rust!)
 fn play_file(path: &Path) -> Result<(), String> {
-    use rodio::{Decoder, OutputStream, Sink};
-    use std::fs::File;
+    use crate::audio_canvas::AudioCanvas;
+    use std::fs;
 
-    info!("🔊 Playing audio file: {} (pure Rust)", path.display());
+    info!("🎨 Playing audio file: {} (Audio Canvas)", path.display());
 
-    let path_clone = path.to_path_buf();
-    
-    // Play in background (non-blocking)
-    std::thread::spawn(move || {
-        let result = (|| -> Result<(), String> {
-            let (_stream, stream_handle) = OutputStream::try_default()
-                .map_err(|e| format!("Failed to get audio output device: {}", e))?;
-            
-            let sink = Sink::try_new(&stream_handle)
-                .map_err(|e| format!("Failed to create audio sink: {}", e))?;
-            
-            let file = File::open(&path_clone)
-                .map_err(|e| format!("Failed to open audio file: {}", e))?;
-            
-            let source = Decoder::new(file)
-                .map_err(|e| format!("Failed to decode audio file: {}", e))?;
-            
-            sink.append(source);
-            sink.sleep_until_end();
-            
-            Ok(())
-        })();
-        
-        match result {
-            Ok(()) => info!("✅ Audio file playback complete"),
-            Err(e) => error!("❌ Audio playback failed: {}", e),
-        }
-    });
+    // Read file
+    let data = fs::read(path).map_err(|e| format!("Failed to read audio file: {}", e))?;
+
+    // Decode with symphonia (pure Rust!)
+    let decoded = crate::startup_audio::decode_audio_symphonia(&data)
+        .map_err(|e| format!("Failed to decode audio: {}", e))?;
+
+    // Open audio canvas
+    let mut canvas =
+        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {}", e))?;
+
+    // Write samples directly to hardware!
+    canvas
+        .write_samples(&decoded.samples)
+        .map_err(|e| format!("Failed to write samples: {}", e))?;
+
+    info!("✅ Audio file playback complete (Audio Canvas)");
 
     Ok(())
 }
@@ -284,7 +270,7 @@ impl AudioProvider for UserSoundProvider {
         // With rodio, we can implement proper stop by:
         // 1. Store Arc<Mutex<Vec<Sink>>> in provider
         // 2. Call sink.stop() on all active sinks
-        // 
+        //
         // For now, sounds play to completion (most are <1s)
         info!("UserSoundProvider: stop() called (sounds complete naturally)");
     }

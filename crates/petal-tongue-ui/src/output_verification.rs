@@ -320,52 +320,48 @@ pub fn detect_visual_topology() -> (OutputTopology, Vec<String>) {
 pub fn detect_audio_topology() -> (OutputTopology, Vec<String>) {
     let mut evidence = Vec::new();
 
-    // EVOLVED: Pure Rust audio device detection (cpal)
-    // Note: cpal is already a dependency via rodio!
-    use cpal::traits::{DeviceTrait, HostTrait};
-    
-    match cpal::default_host().default_output_device() {
-        Some(device) => {
-            let device_name = device.name().unwrap_or_else(|_| "Unknown".to_string());
-            evidence.push(format!("Audio output device: {} (pure Rust - cpal)", device_name));
-            
-            // Check if it's a network/virtual device by name
-            let name_lower = device_name.to_lowercase();
-            if name_lower.contains("network") || name_lower.contains("tunnel") || name_lower.contains("remote") {
-                evidence.push("Network audio device detected".to_string());
-                return (OutputTopology::Forwarded, evidence);
-            }
-            
-            // Enumerate all devices for additional info
-            let host = cpal::default_host();
-            match host.output_devices() {
-                Ok(devices) => {
-                    let device_count = devices.count();
-                    evidence.push(format!("{} audio output device(s) available", device_count));
-                }
-                Err(e) => {
-                    tracing::debug!("Failed to enumerate audio devices: {}", e);
+    // EVOLVED: Audio Canvas - direct device detection!
+    // Check /dev/snd for audio devices (Linux)
+    if let Ok(devices) = crate::audio_canvas::AudioCanvas::discover() {
+        if !devices.is_empty() {
+            evidence.push(format!(
+                "Audio Canvas: {} device(s) found in /dev/snd (100% pure Rust!)",
+                devices.len()
+            ));
+
+            // Check for virtual/network audio by device names
+            for device in &devices {
+                if let Some(name) = device.to_str() {
+                    let device_lower = name.to_lowercase();
+                    if device_lower.contains("network")
+                        || device_lower.contains("tunnel")
+                        || device_lower.contains("remote")
+                    {
+                        evidence.push("Network audio device detected".to_string());
+                        return (OutputTopology::Forwarded, evidence);
+                    }
                 }
             }
-        }
-        None => {
-            evidence.push("No audio output device detected".to_string());
-            return (OutputTopology::Unknown, evidence);
-        }
-    }
 
-    // Check for ALSA
-    if std::path::Path::new("/proc/asound/cards").exists() {
-        evidence.push("ALSA audio devices present".to_string());
-    }
-
-    // Default: assume direct if we have audio devices
-    if !evidence.is_empty() {
-        (OutputTopology::Direct, evidence)
+            return (OutputTopology::Direct, evidence);
+        } else {
+            evidence.push("No audio devices found in /dev/snd".to_string());
+        }
     } else {
-        evidence.push("No audio output detected".to_string());
-        (OutputTopology::Unknown, evidence)
+        evidence.push("Failed to scan /dev/snd for audio devices".to_string());
     }
+
+    // Check for ALSA as fallback indicator
+    if std::path::Path::new("/proc/asound/cards").exists() {
+        evidence.push("ALSA audio devices present (but using Audio Canvas!)".to_string());
+    }
+
+    // Default: unknown if no devices found
+    if evidence.is_empty() {
+        evidence.push("No audio output detected".to_string());
+    }
+
+    (OutputTopology::Unknown, evidence)
 }
 
 /// Detect haptic output topology (agnostic)
