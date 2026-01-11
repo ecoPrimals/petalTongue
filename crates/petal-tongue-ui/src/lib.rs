@@ -39,6 +39,7 @@ pub mod keyboard_shortcuts;
 pub mod live_data;
 pub mod mock_device_provider; // Mock provider for testing & graceful degradation
 pub mod multimodal_stream;
+pub mod niche_designer; // Niche Designer UI - Phase 4
 pub mod output_verification; // Universal output verification (visual, audio, haptic, etc.)
 pub mod primal_panel; // Primal Status UI - Phase 3
 pub mod process_viewer_integration;
