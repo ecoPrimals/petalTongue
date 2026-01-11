@@ -26,7 +26,10 @@
 - **[HANDOFF_READY.md](HANDOFF_READY.md)** - Production readiness
 
 ### Integration:
-- **[READY_FOR_BIOMEOS_HANDOFF.md](READY_FOR_BIOMEOS_HANDOFF.md)** - biomeOS integration status
+- **[BIOMEOS_UI_FINAL_HANDOFF.md](BIOMEOS_UI_FINAL_HANDOFF.md)** ⭐ - biomeOS UI Integration handoff
+- **[BIOMEOS_UI_INTEGRATION_COMPLETE.md](BIOMEOS_UI_INTEGRATION_COMPLETE.md)** - Completion report
+- **[BIOMEOS_UI_INTEGRATION_TRACKING.md](BIOMEOS_UI_INTEGRATION_TRACKING.md)** - Progress tracking
+- **[READY_FOR_BIOMEOS_HANDOFF.md](READY_FOR_BIOMEOS_HANDOFF.md)** - Legacy handoff doc
 - **[BIOMEOS_HANDOFF_CHECKLIST.md](BIOMEOS_HANDOFF_CHECKLIST.md)** - Integration checklist
 - **[BIOMEOS_REQUESTS_STATUS.md](BIOMEOS_REQUESTS_STATUS.md)** - Request tracking
 
@@ -69,9 +72,12 @@ Audio (Future):        /run/user/$UID/pipewire-0 → PipeWire → Device
 
 ### Architecture:
 - **[specs/](specs/)** - Technical specifications
+  - [biomeOS UI Integration](specs/BIOMEOS_UI_INTEGRATION_ARCHITECTURE.md) ⭐ NEW!
+  - [Collaborative Intelligence](specs/COLLABORATIVE_INTELLIGENCE_INTEGRATION.md)
   - [Bidirectional UUI Architecture](specs/BIDIRECTIONAL_UUI_ARCHITECTURE.md)
   - [Discovery Infrastructure](specs/DISCOVERY_INFRASTRUCTURE_EVOLUTION_SPECIFICATION.md)
   - [Human Entropy Capture](specs/HUMAN_ENTROPY_CAPTURE_SPECIFICATION.md)
+  - [Pure Rust Display](specs/PURE_RUST_DISPLAY_ARCHITECTURE.md)
 
 ### Implementation:
 - **[IPC_STATUS_REPORT.md](IPC_STATUS_REPORT.md)** - IPC implementation details
