@@ -20,14 +20,16 @@
 //! - Self-stable (no external dependencies required)
 
 pub mod canvas;
+pub mod edge;
 pub mod graph;
 pub mod node;
-pub mod edge;
+pub mod rpc_methods;
 pub mod validation;
 
 pub use canvas::GraphCanvas;
+pub use edge::{DependencyType, GraphEdge};
 pub use graph::Graph;
 pub use node::GraphNode;
-pub use edge::{GraphEdge, DependencyType};
+pub use rpc_methods::GraphEditorService;
 pub use validation::GraphValidator;
 
