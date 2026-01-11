@@ -180,7 +180,11 @@ impl Graph {
         }
 
         // Validate edge doesn't already exist
-        if self.edges.iter().any(|e| e.from == edge.from && e.to == edge.to) {
+        if self
+            .edges
+            .iter()
+            .any(|e| e.from == edge.from && e.to == edge.to)
+        {
             anyhow::bail!("Edge from '{}' to '{}' already exists", edge.from, edge.to);
         }
 
@@ -227,13 +231,19 @@ impl Graph {
     /// Get incoming edges for a node
     #[must_use]
     pub fn get_incoming_edges(&self, node_id: &str) -> Vec<&GraphEdge> {
-        self.edges.iter().filter(|edge| edge.to == node_id).collect()
+        self.edges
+            .iter()
+            .filter(|edge| edge.to == node_id)
+            .collect()
     }
 
     /// Get outgoing edges for a node
     #[must_use]
     pub fn get_outgoing_edges(&self, node_id: &str) -> Vec<&GraphEdge> {
-        self.edges.iter().filter(|edge| edge.from == node_id).collect()
+        self.edges
+            .iter()
+            .filter(|edge| edge.from == node_id)
+            .collect()
     }
 
     /// Validate the entire graph
@@ -365,10 +375,8 @@ impl Graph {
 
     /// Calculate maximum depth of the graph
     fn max_depth(&self) -> usize {
-        let adj: HashMap<String, Vec<String>> = self
-            .edges
-            .iter()
-            .fold(HashMap::new(), |mut acc, edge| {
+        let adj: HashMap<String, Vec<String>> =
+            self.edges.iter().fold(HashMap::new(), |mut acc, edge| {
                 acc.entry(edge.from.clone())
                     .or_default()
                     .push(edge.to.clone());
@@ -600,4 +608,3 @@ mod tests {
         assert!(!stats.has_cycles);
     }
 }
-

@@ -250,12 +250,13 @@ impl GraphEditorService {
 
     /// 3. Modify node in graph
     pub async fn modify_node(&self, req: ModifyNodeRequest) -> Result<ModifyNodeResponse> {
-        debug!("Modifying node '{}' in graph '{}'", req.node_id, req.graph_id);
+        debug!(
+            "Modifying node '{}' in graph '{}'",
+            req.node_id, req.graph_id
+        );
 
         let mut graphs = self.graphs.write().await;
-        let graph = graphs
-            .get_mut(&req.graph_id)
-            .context("Graph not found")?;
+        let graph = graphs.get_mut(&req.graph_id).context("Graph not found")?;
 
         // Get existing node
         let mut node = graph
@@ -294,12 +295,13 @@ impl GraphEditorService {
 
     /// 4. Remove node from graph
     pub async fn remove_node(&self, req: RemoveNodeRequest) -> Result<RemoveNodeResponse> {
-        debug!("Removing node '{}' from graph '{}'", req.node_id, req.graph_id);
+        debug!(
+            "Removing node '{}' from graph '{}'",
+            req.node_id, req.graph_id
+        );
 
         let mut graphs = self.graphs.write().await;
-        let graph = graphs
-            .get_mut(&req.graph_id)
-            .context("Graph not found")?;
+        let graph = graphs.get_mut(&req.graph_id).context("Graph not found")?;
 
         match graph.remove_node(&req.node_id) {
             Ok(affected_edges) => Ok(RemoveNodeResponse {
@@ -312,12 +314,13 @@ impl GraphEditorService {
 
     /// 5. Add edge between nodes
     pub async fn add_edge(&self, req: AddEdgeRequest) -> Result<AddEdgeResponse> {
-        debug!("Adding edge from '{}' to '{}' in graph '{}'", req.from, req.to, req.graph_id);
+        debug!(
+            "Adding edge from '{}' to '{}' in graph '{}'",
+            req.from, req.to, req.graph_id
+        );
 
         let mut graphs = self.graphs.write().await;
-        let graph = graphs
-            .get_mut(&req.graph_id)
-            .context("Graph not found")?;
+        let graph = graphs.get_mut(&req.graph_id).context("Graph not found")?;
 
         let edge_id = format!("edge-{}", uuid::Uuid::new_v4());
         let edge = GraphEdge::new(edge_id.clone(), req.from, req.to, req.edge_type);
@@ -376,7 +379,10 @@ impl GraphEditorService {
 
     /// 7. Apply template to graph
     pub async fn apply_template(&self, req: ApplyTemplateRequest) -> Result<ApplyTemplateResponse> {
-        info!("Applying template '{}' (merge: {})", req.template_id, req.merge);
+        info!(
+            "Applying template '{}' (merge: {})",
+            req.template_id, req.merge
+        );
 
         let templates = self.templates.read().await;
         let template = templates
@@ -424,7 +430,8 @@ impl GraphEditorService {
         // Collect warnings
         let mut warnings = Vec::new();
         if execution_order.len() > 100 {
-            warnings.push("Large graph (>100 nodes) may take significant time to execute".to_string());
+            warnings
+                .push("Large graph (>100 nodes) may take significant time to execute".to_string());
         }
 
         Ok(GetPreviewResponse {
@@ -513,15 +520,21 @@ mod tests {
         let node1 = GraphNode::new("node-1".to_string(), "test-type".to_string());
         let node2 = GraphNode::new("node-2".to_string(), "test-type".to_string());
 
-        service.add_node(AddNodeRequest {
-            graph_id: "test-graph".to_string(),
-            node: node1,
-        }).await.unwrap();
+        service
+            .add_node(AddNodeRequest {
+                graph_id: "test-graph".to_string(),
+                node: node1,
+            })
+            .await
+            .unwrap();
 
-        service.add_node(AddNodeRequest {
-            graph_id: "test-graph".to_string(),
-            node: node2,
-        }).await.unwrap();
+        service
+            .add_node(AddNodeRequest {
+                graph_id: "test-graph".to_string(),
+                node: node2,
+            })
+            .await
+            .unwrap();
 
         // Add edge
         let req = AddEdgeRequest {
@@ -541,10 +554,13 @@ mod tests {
 
         // Add a node
         let node = GraphNode::new("node-1".to_string(), "test-type".to_string());
-        service.add_node(AddNodeRequest {
-            graph_id: "test-graph".to_string(),
-            node,
-        }).await.unwrap();
+        service
+            .add_node(AddNodeRequest {
+                graph_id: "test-graph".to_string(),
+                node,
+            })
+            .await
+            .unwrap();
 
         // Save as template
         let save_req = SaveTemplateRequest {
@@ -582,4 +598,3 @@ mod tests {
         assert!(resp.validation_warnings.is_empty());
     }
 }
-

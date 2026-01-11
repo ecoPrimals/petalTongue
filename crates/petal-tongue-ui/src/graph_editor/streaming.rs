@@ -14,7 +14,7 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::{RwLock, broadcast};
 use tracing::{debug, info, warn};
 
 /// Stream message - Real-time updates for graph execution
@@ -150,11 +150,23 @@ pub struct ErrorInfo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case")]
 pub enum GraphModification {
-    AddNode { node: serde_json::Value },
-    RemoveNode { node_id: String },
-    ModifyNode { node_id: String, changes: serde_json::Value },
-    AddEdge { from: String, to: String },
-    RemoveEdge { edge_id: String },
+    AddNode {
+        node: serde_json::Value,
+    },
+    RemoveNode {
+        node_id: String,
+    },
+    ModifyNode {
+        node_id: String,
+        changes: serde_json::Value,
+    },
+    AddEdge {
+        from: String,
+        to: String,
+    },
+    RemoveEdge {
+        edge_id: String,
+    },
 }
 
 /// Stream handler - Manages WebSocket connections and message routing
@@ -395,7 +407,10 @@ mod tests {
         let _rx = handler.subscribe(); // Keep subscriber alive
 
         // Start execution
-        handler.start_execution("test-graph".to_string()).await.unwrap();
+        handler
+            .start_execution("test-graph".to_string())
+            .await
+            .unwrap();
 
         // Send node status
         handler
@@ -445,7 +460,9 @@ mod tests {
 
         let msg = rx.recv().await.unwrap();
         match msg {
-            StreamMessage::Progress { progress, message, .. } => {
+            StreamMessage::Progress {
+                progress, message, ..
+            } => {
                 assert_eq!(progress, 0.75);
                 assert_eq!(message, "Processing...");
             }
@@ -461,7 +478,10 @@ mod tests {
         let reasoning = AIReasoning {
             decision: "Execute node A next".to_string(),
             confidence: 0.87,
-            rationale: vec!["Highest priority".to_string(), "Resources available".to_string()],
+            rationale: vec![
+                "Highest priority".to_string(),
+                "Resources available".to_string(),
+            ],
             alternatives: vec![Alternative {
                 description: "Execute node B".to_string(),
                 confidence: 0.73,
@@ -504,7 +524,11 @@ mod tests {
         };
 
         handler
-            .send_error("test-graph".to_string(), Some("node-1".to_string()), error.clone())
+            .send_error(
+                "test-graph".to_string(),
+                Some("node-1".to_string()),
+                error.clone(),
+            )
             .await
             .unwrap();
 
@@ -547,4 +571,3 @@ mod tests {
         }
     }
 }
-
