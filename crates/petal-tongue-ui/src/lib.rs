@@ -25,6 +25,7 @@ pub mod audio_discovery; // v1.3.1: Audio discovery - PipeWire/PulseAudio Unix s
 pub mod audio_providers;
 pub mod audio_pure_rust;
 pub mod bingocube_integration;
+pub mod biomeos_integration; // biomeOS UI Integration - Phase 1 (device management provider)
 pub mod data_source;
 pub mod display; // Pure Rust display system
 pub mod display_pure_rust;
@@ -35,12 +36,14 @@ pub mod human_entropy_window;
 pub mod input_verification; // Universal input verification (keyboard, pointer, etc.)
 pub mod keyboard_shortcuts;
 pub mod live_data;
+pub mod mock_device_provider; // Mock provider for testing & graceful degradation
 pub mod multimodal_stream;
 pub mod output_verification; // Universal output verification (visual, audio, haptic, etc.)
 pub mod process_viewer_integration;
 pub mod proprioception; // SAME DAVE - Complete sensory-motor self-awareness
 pub mod protocol_selection; // Protocol priority: tarpc PRIMARY, JSON-RPC SECONDARY, HTTPS FALLBACK
-pub mod sensors; // Sensor implementations (bidirectional UUI)
+pub mod sensors;
+pub mod ui_events; // Event-driven architecture for real-time updates // Sensor implementations (bidirectional UUI)
 // DEPRECATED: Old hardcoded discovery (remove after migration)
 // pub mod rendering_discovery;
 
