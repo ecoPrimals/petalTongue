@@ -40,6 +40,7 @@ pub mod live_data;
 pub mod mock_device_provider; // Mock provider for testing & graceful degradation
 pub mod multimodal_stream;
 pub mod output_verification; // Universal output verification (visual, audio, haptic, etc.)
+pub mod primal_panel; // Primal Status UI - Phase 3
 pub mod process_viewer_integration;
 pub mod proprioception; // SAME DAVE - Complete sensory-motor self-awareness
 pub mod protocol_selection; // Protocol priority: tarpc PRIMARY, JSON-RPC SECONDARY, HTTPS FALLBACK
