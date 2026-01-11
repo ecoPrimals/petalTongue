@@ -157,11 +157,11 @@ impl GraphNode {
     #[must_use]
     pub fn display_color(&self) -> [u8; 3] {
         match &self.state {
-            NodeState::Pending => [128, 128, 128],  // Gray
+            NodeState::Pending => [128, 128, 128],      // Gray
             NodeState::Running { .. } => [0, 128, 255], // Blue
-            NodeState::Completed => [0, 255, 0],    // Green
-            NodeState::Failed { .. } => [255, 0, 0], // Red
-            NodeState::Paused => [255, 255, 0],     // Yellow
+            NodeState::Completed => [0, 255, 0],        // Green
+            NodeState::Failed { .. } => [255, 0, 0],    // Red
+            NodeState::Paused => [255, 255, 0],         // Yellow
         }
     }
 
@@ -242,4 +242,3 @@ mod tests {
         assert_eq!(node.display_color(), [255, 0, 0]); // Failed = Red
     }
 }
-

@@ -2,9 +2,7 @@
 //!
 //! Interactive egui-based canvas for graph editing.
 
-use egui::{
-    Color32, FontId, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2,
-};
+use egui::{Color32, FontId, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
 use std::collections::HashSet;
 
 use super::edge::GraphEdge;
@@ -61,10 +59,7 @@ impl GraphCanvas {
 
     /// Render the canvas
     pub fn show(&mut self, ui: &mut Ui) -> Response {
-        let (response, painter) = ui.allocate_painter(
-            ui.available_size(),
-            Sense::click_and_drag(),
-        );
+        let (response, painter) = ui.allocate_painter(ui.available_size(), Sense::click_and_drag());
 
         let rect = response.rect;
 
@@ -126,7 +121,13 @@ impl GraphCanvas {
     }
 
     /// Draw a single node
-    fn draw_node(&mut self, painter: &egui::Painter, rect: Rect, node: &GraphNode, response: &Response) {
+    fn draw_node(
+        &mut self,
+        painter: &egui::Painter,
+        rect: Rect,
+        node: &GraphNode,
+        response: &Response,
+    ) {
         let screen_pos = self.world_to_screen(Pos2::new(node.position.0, node.position.1), rect);
 
         // Node size
@@ -215,24 +216,17 @@ impl GraphCanvas {
             self.graph.nodes.get(&edge.from),
             self.graph.nodes.get(&edge.to),
         ) {
-            let from_pos = self.world_to_screen(
-                Pos2::new(from_node.position.0, from_node.position.1),
-                rect,
-            );
-            let to_pos = self.world_to_screen(
-                Pos2::new(to_node.position.0, to_node.position.1),
-                rect,
-            );
+            let from_pos =
+                self.world_to_screen(Pos2::new(from_node.position.0, from_node.position.1), rect);
+            let to_pos =
+                self.world_to_screen(Pos2::new(to_node.position.0, to_node.position.1), rect);
 
             // Edge color
             let rgb = edge.display_color();
             let edge_color = Color32::from_rgb(rgb[0], rgb[1], rgb[2]);
 
             // Draw line
-            painter.line_segment(
-                [from_pos, to_pos],
-                Stroke::new(2.0 * self.zoom, edge_color),
-            );
+            painter.line_segment([from_pos, to_pos], Stroke::new(2.0 * self.zoom, edge_color));
 
             // Draw arrow head
             let direction = (to_pos - from_pos).normalized();
@@ -271,7 +265,7 @@ impl GraphCanvas {
     /// Add a node at screen position
     pub fn add_node_at_screen_pos(&mut self, screen_pos: Pos2, rect: Rect, node_type: String) {
         let world_pos = self.screen_to_world(screen_pos, rect);
-        
+
         let node_id = format!("node-{}", uuid::Uuid::new_v4());
         let mut node = GraphNode::new(node_id, node_type);
         node.position = (world_pos.x, world_pos.y);
@@ -296,4 +290,3 @@ impl GraphCanvas {
         self.zoom = 1.0;
     }
 }
-
