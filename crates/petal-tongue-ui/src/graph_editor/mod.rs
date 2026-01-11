@@ -24,6 +24,8 @@ pub mod edge;
 pub mod graph;
 pub mod node;
 pub mod rpc_methods;
+pub mod streaming;
+pub mod ui_components;
 pub mod validation;
 
 pub use canvas::GraphCanvas;
@@ -31,5 +33,7 @@ pub use edge::{DependencyType, GraphEdge};
 pub use graph::Graph;
 pub use node::GraphNode;
 pub use rpc_methods::GraphEditorService;
+pub use streaming::{StreamHandler, StreamMessage};
+pub use ui_components::{ConflictResolution, ReasoningDisplay, StatusDisplay};
 pub use validation::GraphValidator;
 
