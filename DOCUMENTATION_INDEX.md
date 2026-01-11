@@ -18,20 +18,40 @@
 
 ---
 
-## 🎨 Audio Canvas (Major Innovation)
+## 🎵 Audio System
 
-### Core Documentation:
+### User Guides (Start Here!):
+- **[AUDIO_ENABLE_GUIDE.md](AUDIO_ENABLE_GUIDE.md)** - Setup instructions (5 minutes!)
+- **[AUDIO_SOVEREIGNTY_EVOLUTION.md](AUDIO_SOVEREIGNTY_EVOLUTION.md)** - Evolution path & roadmap
+
+### Technical Documentation:
 - **[AUDIO_CANVAS_BREAKTHROUGH.md](AUDIO_CANVAS_BREAKTHROUGH.md)** - Technical deep dive (343 lines)
 - **[AUDIO_CANVAS_VERIFICATION.md](AUDIO_CANVAS_VERIFICATION.md)** - Verification report (251 lines)
 - **[COMPLETE.md](COMPLETE.md)** - Completion summary (345 lines)
 
-### Achievement:
+### Current Status:
+**Audio Canvas** (Production Ready):
 ```
 Graphics (Toadstool):  /dev/dri/card0 → WGPU → Direct GPU
 Audio (petalTongue):   /dev/snd/pcmC0D0p → AudioCanvas → Direct Device
 ```
+- 100% Pure Rust ✅
+- symphonia MP3 decoder
+- Embedded startup music (11MB)
+- Requires: audio group (one-time setup)
+- Status: **PRODUCTION READY**
 
-**Result**: ZERO C dependencies, 100% Pure Rust, Absolute Sovereignty!
+**PipeWire Client** (Future Evolution):
+```
+Audio (Future):        /run/user/$UID/pipewire-0 → PipeWire → Device
+```
+- Pure Rust protocol implementation
+- Unix socket communication
+- No permissions needed
+- Timeline: 2-4 weeks
+- Status: **DOCUMENTED**
+
+**Result**: Production-ready audio TODAY, clear evolution path for the future!
 
 ---
 
