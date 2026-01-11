@@ -327,14 +327,17 @@ fn check_window_manager() -> bool {
     // EVOLVED: Pure Rust window manager detection
     // Instead of checking for external tools, check if we can create windows
     use crate::display_pure_rust;
-    
+
     // If we can enumerate monitors, we have a working display system
     let monitors = display_pure_rust::get_all_monitors();
     if !monitors.is_empty() {
-        debug!("✅ Display system available ({} monitor(s))", monitors.len());
-            return true;
-        }
-    
+        debug!(
+            "✅ Display system available ({} monitor(s))",
+            monitors.len()
+        );
+        return true;
+    }
+
     // Fallback: Check for X11/Wayland environment
     if std::env::var("DISPLAY").is_ok() || std::env::var("WAYLAND_DISPLAY").is_ok() {
         debug!("✅ Display environment detected (DISPLAY/WAYLAND_DISPLAY)");
@@ -370,17 +373,20 @@ fn check_window_manager() -> bool {
 fn find_window_by_title(title: &str) -> bool {
     // EVOLVED: Pure Rust window detection
     // Note: winit doesn't provide window enumeration, so we use heuristics
-    
+
     // If we're running in a GUI environment, assume window exists
     // This is a reasonable assumption for petalTongue's use case
     use crate::display_pure_rust;
-    
+
     let monitors = display_pure_rust::get_all_monitors();
     if !monitors.is_empty() {
-        debug!("✅ Display system available - assuming window '{}' exists", title);
+        debug!(
+            "✅ Display system available - assuming window '{}' exists",
+            title
+        );
         // In a real GUI app, the window would be created by eframe/egui
         // and would definitely exist if we're running
-            return true;
+        return true;
     }
 
     // Fallback: Try wmctrl (legacy)
