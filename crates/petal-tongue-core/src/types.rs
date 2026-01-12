@@ -14,7 +14,7 @@ pub struct PrimalEndpoints {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unix_socket: Option<String>,
 
-    /// HTTP endpoint (e.g., "http://localhost:8080")
+    /// HTTP endpoint (e.g., `<http://localhost:8080>`)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub http: Option<String>,
 }
@@ -61,7 +61,7 @@ pub struct PrimalInfo {
     /// Type of primal (e.g., "Compute", "Storage", "Security")
     #[serde(alias = "type")] // biomeOS uses "type" field
     pub primal_type: String,
-    /// Network endpoint (e.g., <http://localhost:8080>, unix:///tmp/primal.sock)
+    /// Network endpoint (e.g., <http://localhost:8080>, `<unix:///tmp/primal.sock>`)
     pub endpoint: String,
     /// List of capabilities this primal provides
     pub capabilities: Vec<String>,
@@ -75,7 +75,7 @@ pub struct PrimalInfo {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub endpoints: Option<PrimalEndpoints>,
 
-    /// Metadata from primal (version, node_id, etc.)
+    /// Metadata from primal (version, `node_id`, etc.)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub metadata: Option<PrimalMetadata>,
 
@@ -202,14 +202,14 @@ impl PrimalInfo {
         }
 
         // Set endpoint from endpoints if available and primary endpoint is empty
-        if let Some(ref endpoints) = self.endpoints {
-            if self.endpoint.is_empty() || self.endpoint == "unknown" {
-                // Prefer Unix socket for local primals
-                if let Some(ref unix_socket) = endpoints.unix_socket {
-                    self.endpoint = format!("unix://{}", unix_socket);
-                } else if let Some(ref http) = endpoints.http {
-                    self.endpoint = http.clone();
-                }
+        if let Some(ref endpoints) = self.endpoints
+            && (self.endpoint.is_empty() || self.endpoint == "unknown")
+        {
+            // Prefer Unix socket for local primals
+            if let Some(ref unix_socket) = endpoints.unix_socket {
+                self.endpoint = format!("unix://{unix_socket}");
+            } else if let Some(ref http) = endpoints.http {
+                self.endpoint = http.clone();
             }
         }
     }
