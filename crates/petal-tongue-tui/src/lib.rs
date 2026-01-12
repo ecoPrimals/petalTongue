@@ -30,31 +30,35 @@
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
 
+/// Application core
 pub mod app;
+/// Interactive views
 pub mod views;
+/// Reusable widgets
 pub mod widgets;
+/// State management
 pub mod state;
+/// Event system
 pub mod events;
+/// Layout utilities
 pub mod layout;
-
-// Re-exports
-pub use app::{RichTUI, TUIConfig};
-pub use state::{TUIState, View};
 
 use anyhow::Result;
 
-/// Launch the Rich TUI
-///
-/// This is the main entry point for the terminal UI.
+// Re-exports for convenience
+pub use app::{RichTUI, TUIConfig};
+pub use state::{TUIState, View};
+
+/// Launch the TUI with default configuration
 ///
 /// # Example
 ///
 /// ```no_run
-/// use petal_tongue_tui;
+/// use petal_tongue_tui::launch;
 ///
 /// #[tokio::main]
 /// async fn main() -> anyhow::Result<()> {
-///     petal_tongue_tui::launch().await
+///     launch().await
 /// }
 /// ```
 pub async fn launch() -> Result<()> {
@@ -62,9 +66,25 @@ pub async fn launch() -> Result<()> {
     tui.run().await
 }
 
-/// Launch with custom configuration
-pub async fn launch_with_config(config: app::TUIConfig) -> Result<()> {
+/// Launch the TUI with custom configuration
+///
+/// # Example
+///
+/// ```no_run
+/// use petal_tongue_tui::{launch_with_config, TUIConfig};
+/// use std::time::Duration;
+///
+/// #[tokio::main]
+/// async fn main() -> anyhow::Result<()> {
+///     let config = TUIConfig {
+///         tick_rate: Duration::from_millis(50),
+///         mouse_support: true,
+///         standalone: false,
+///     };
+///     launch_with_config(config).await
+/// }
+/// ```
+pub async fn launch_with_config(config: TUIConfig) -> Result<()> {
     let mut tui = RichTUI::with_config(config).await?;
     tui.run().await
 }
-

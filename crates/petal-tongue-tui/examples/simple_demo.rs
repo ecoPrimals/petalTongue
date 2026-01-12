@@ -4,27 +4,46 @@
 //!
 //! Run with: cargo run --example simple_demo
 
-use petal_tongue_tui::{TUIConfig, launch_with_config};
+use petal_tongue_tui::launch;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
 
-    // Create config
-    let config = TUIConfig {
-        tick_rate: std::time::Duration::from_millis(100),
-        mouse_support: false,
-        standalone: false, // Try to discover primals
-    };
+    // Show welcome message
+    println!("╔═══════════════════════════════════════════════════════════╗");
+    println!("║                                                           ║");
+    println!("║   🌸 petalTongue Rich TUI - Demo                         ║");
+    println!("║                                                           ║");
+    println!("╚═══════════════════════════════════════════════════════════╝");
+    println!();
+    println!("📚 Keyboard Shortcuts:");
+    println!("  [1-8]  Switch views");
+    println!("  [↑/k ↓/j]  Navigate");
+    println!("  [r]  Refresh");
+    println!("  [?]  Help");
+    println!("  [q]  Quit");
+    println!();
+    println!("🌸 Press any key to start...");
+    println!();
+
+    // Wait a moment
+    std::thread::sleep(std::time::Duration::from_secs(2));
 
     // Launch TUI
-    println!("🌸 Launching petalTongue Rich TUI...");
-    println!("Press 'q' to quit, '1-8' to switch views, '?' for help");
+    launch().await?;
 
-    launch_with_config(config).await?;
-
-    println!("👋 Thanks for using petalTongue!");
+    // Show goodbye message
+    println!();
+    println!("╔═══════════════════════════════════════════════════════════╗");
+    println!("║                                                           ║");
+    println!("║   👋 Thanks for using petalTongue!                       ║");
+    println!("║                                                           ║");
+    println!("╚═══════════════════════════════════════════════════════════╝");
+    println!();
+    println!("Different orders of the same architecture. 🍄🐸🌸");
+    println!();
 
     Ok(())
 }
