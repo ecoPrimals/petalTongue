@@ -15,12 +15,14 @@ This directory contains documentation for **completed features** - our fossil re
 - `JSONRPC_PROTOCOL_EVOLUTION_TRACKING.md` - Progress tracking
 
 ### `/audio-canvas/` - Audio Canvas Breakthrough
-**Completed**: January 10, 2026  
+**Completed**: January 10-11, 2026  
 **Impact**: 100% Pure Rust audio, zero C dependencies
 
 - `AUDIO_CANVAS_BREAKTHROUGH.md` - Technical details
 - `AUDIO_CANVAS_VERIFICATION.md` - Verification report
 - `COMPLETE.md` - Completion summary
+- `AUDIO_ENABLE_GUIDE.md` - User guide for enabling audio
+- `AUDIO_SOVEREIGNTY_EVOLUTION.md` - Evolution to PipeWire abstraction
 
 ### `/biomeos-ui/` - biomeOS UI Integration
 **Completed**: January 11, 2026  
@@ -38,6 +40,14 @@ This directory contains documentation for **completed features** - our fossil re
 - `COLLABORATIVE_INTELLIGENCE_COMPLETE.md` - Summary
 - `COLLABORATIVE_INTELLIGENCE_REQUIREMENTS.md` - Requirements
 - `COLLABORATIVE_INTELLIGENCE_TRACKING.md` - Progress
+
+### `/socket-config/` - Socket Configuration Standardization
+**Completed**: January 11-12, 2026  
+**Impact**: 100% biomeOS compliant, unblocked atomic deployments
+
+- `SOCKET_CONFIGURATION_AUDIT.md` - Initial audit and gaps
+- `README.md` - Completion summary
+- **Root**: `SOCKET_CONFIGURATION_COMPLETE.md` - Final compliance report
 
 ---
 
@@ -57,7 +67,7 @@ These documents serve as our **fossil record** - preserving the history, decisio
 For current, active documentation see:
 - **Root** `/` - Essential docs (README, STATUS, NAVIGATION)
 - **Specs** `/specs/` - Technical specifications (active reference)
-- **Guides** Root `/AUDIO_ENABLE_GUIDE.md`, etc. - User-facing guides
+- **Archive** `/docs/archive/` - Historical session reports and status updates
 
 ---
 
