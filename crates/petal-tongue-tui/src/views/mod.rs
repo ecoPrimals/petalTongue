@@ -6,6 +6,11 @@
 mod dashboard;
 mod topology;
 mod logs;
+mod devices;
+mod primals;
+mod neural_api;
+mod nucleus;
+mod livespore;
 
 use ratatui::Frame;
 use tokio::runtime::Handle;
@@ -59,8 +64,13 @@ pub fn render_devices(frame: &mut Frame, state: &TUIState) {
     let view = block_on(state.get_view());
     let standalone = block_on(state.is_standalone());
 
+    // Header
     Header::render(frame, layout.header, view);
-    render_placeholder(frame, layout.body, "Devices View - Coming Soon");
+
+    // Body - implemented devices
+    devices::render(frame, layout.body, state);
+
+    // Footer
     Footer::render(frame, layout.footer, standalone);
 }
 
@@ -70,8 +80,13 @@ pub fn render_primals(frame: &mut Frame, state: &TUIState) {
     let view = block_on(state.get_view());
     let standalone = block_on(state.is_standalone());
 
+    // Header
     Header::render(frame, layout.header, view);
-    render_placeholder(frame, layout.body, "Primals View - Coming Soon");
+
+    // Body - implemented primals
+    primals::render(frame, layout.body, state);
+
+    // Footer
     Footer::render(frame, layout.footer, standalone);
 }
 
@@ -97,8 +112,13 @@ pub fn render_neural_api(frame: &mut Frame, state: &TUIState) {
     let view = block_on(state.get_view());
     let standalone = block_on(state.is_standalone());
 
+    // Header
     Header::render(frame, layout.header, view);
-    render_placeholder(frame, layout.body, "neuralAPI View - Coming Soon");
+
+    // Body - implemented neuralAPI
+    neural_api::render(frame, layout.body, state);
+
+    // Footer
     Footer::render(frame, layout.footer, standalone);
 }
 
@@ -108,8 +128,13 @@ pub fn render_nucleus(frame: &mut Frame, state: &TUIState) {
     let view = block_on(state.get_view());
     let standalone = block_on(state.is_standalone());
 
+    // Header
     Header::render(frame, layout.header, view);
-    render_placeholder(frame, layout.body, "NUCLEUS View - Coming Soon");
+
+    // Body - implemented NUCLEUS
+    nucleus::render(frame, layout.body, state);
+
+    // Footer
     Footer::render(frame, layout.footer, standalone);
 }
 
@@ -119,27 +144,13 @@ pub fn render_livespore(frame: &mut Frame, state: &TUIState) {
     let view = block_on(state.get_view());
     let standalone = block_on(state.is_standalone());
 
+    // Header
     Header::render(frame, layout.header, view);
-    render_placeholder(frame, layout.body, "LiveSpore View - Coming Soon");
+
+    // Body - implemented LiveSpore
+    livespore::render(frame, layout.body, state);
+
+    // Footer
     Footer::render(frame, layout.footer, standalone);
-}
-
-/// Render placeholder content
-fn render_placeholder(frame: &mut Frame, area: ratatui::layout::Rect, text: &str) {
-    use ratatui::{
-        style::{Color, Style},
-        text::Line,
-        widgets::{Block, Borders, Paragraph},
-    };
-
-    let paragraph = Paragraph::new(Line::from(text))
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::DarkGray)),
-        )
-        .style(Style::default().fg(Color::DarkGray));
-
-    frame.render_widget(paragraph, area);
 }
 
