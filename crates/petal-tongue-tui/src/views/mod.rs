@@ -3,6 +3,10 @@
 //! All 8 interactive views for the TUI.
 //! Pure Rust, capability-based, graceful degradation.
 
+mod dashboard;
+mod topology;
+mod logs;
+
 use ratatui::Frame;
 use tokio::runtime::Handle;
 
@@ -26,8 +30,8 @@ pub fn render_dashboard(frame: &mut Frame, state: &TUIState) {
     // Header
     Header::render(frame, layout.header, view);
 
-    // Body (TODO: implement dashboard content)
-    render_placeholder(frame, layout.body, "Dashboard View - Coming Soon");
+    // Body - implemented dashboard
+    dashboard::render(frame, layout.body, state);
 
     // Footer
     Footer::render(frame, layout.footer, standalone);
@@ -42,8 +46,8 @@ pub fn render_topology(frame: &mut Frame, state: &TUIState) {
     // Header
     Header::render(frame, layout.header, view);
 
-    // Body (TODO: implement topology graph)
-    render_placeholder(frame, layout.body, "Topology View - Coming Soon");
+    // Body - implemented topology
+    topology::render(frame, layout.body, state);
 
     // Footer
     Footer::render(frame, layout.footer, standalone);
@@ -77,8 +81,13 @@ pub fn render_logs(frame: &mut Frame, state: &TUIState) {
     let view = block_on(state.get_view());
     let standalone = block_on(state.is_standalone());
 
+    // Header
     Header::render(frame, layout.header, view);
-    render_placeholder(frame, layout.body, "Logs View - Coming Soon");
+
+    // Body - implemented logs
+    logs::render(frame, layout.body, state);
+
+    // Footer
     Footer::render(frame, layout.footer, standalone);
 }
 
