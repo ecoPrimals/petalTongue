@@ -14,6 +14,7 @@ members = [
     "crates/petal-tongue-ui-core",   # NEW: Pure Rust UI (Tier 1)
     "crates/petal-tongue-modalities", # NEW: Modality implementations
     "crates/petal-tongue-ui",        # Tier 2: Native GUI (egui)
+    "crates/petal-tongue-tui",       # NEW: Rich TUI (Terminal UI)
     "crates/petal-tongue-headless",  # NEW: Headless binary (Tier 1 only)
     # BingoCube is now a standalone tool at bingoCube/
     # (it has its own workspace with core, adapters, demos)

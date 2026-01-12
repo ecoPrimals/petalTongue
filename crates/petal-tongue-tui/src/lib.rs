@@ -38,9 +38,8 @@ pub mod events;
 pub mod layout;
 
 // Re-exports
-pub use app::RichTUI;
-pub use state::TUIState;
-pub use views::View;
+pub use app::{RichTUI, TUIConfig};
+pub use state::{TUIState, View};
 
 use anyhow::Result;
 
