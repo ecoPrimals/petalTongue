@@ -47,10 +47,6 @@ dashmap = "6.1"
 tempfile = "3.10"
 
 [[example]]
-name = "tui_demo"
-path = "examples/tui_demo.rs"
-
-[[example]]
-name = "biomeos_dashboard"
-path = "examples/biomeos_dashboard.rs"
+name = "simple_demo"
+path = "examples/simple_demo.rs"
 

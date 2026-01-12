@@ -467,8 +467,7 @@ fn process_exists(pid: u32) -> bool {
         #[allow(clippy::cast_possible_wrap)]
         match kill(Pid::from_raw(pid as i32), None) {
             Ok(()) | Err(nix::errno::Errno::EPERM) => true, // Process exists (with or without permission)
-            Err(nix::errno::Errno::ESRCH) => false,         // No such process
-            Err(_) => false,                                // Other error, assume dead
+            Err(nix::errno::Errno::ESRCH) | Err(_) => false, // No such process or other error, assume dead
         }
     }
 
