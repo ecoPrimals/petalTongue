@@ -154,7 +154,7 @@ mod tests {
         let doom = Arc::new(RwLock::new(DoomInstance::new(640, 480).unwrap()));
         let panel = DoomStatsPanel::new(doom);
         assert!(!panel.wants_keyboard_input());
-        assert!(!panel.wants_pointer_input());
+        assert!(!panel.wants_mouse_input());
     }
     
     #[test]
@@ -165,11 +165,11 @@ mod tests {
         assert_eq!(factory.description(), "Displays real-time Doom game statistics");
         
         let config = CustomPanelConfig {
-            id: "test".to_string(),
             panel_type: "doom_stats".to_string(),
-            title: Some("Test".to_string()),
-            position: Some("center".to_string()),
-            size: None,
+            title: "Test Stats".to_string(),
+            width: None,
+            height: None,
+            fullscreen: false,
             config: serde_json::json!({}),
         };
         let panel = factory.create(&config);
