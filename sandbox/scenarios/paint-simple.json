@@ -1,0 +1,106 @@
+{
+  "name": "Paint Test - Ultra Simple",
+  "description": "Minimal 3-node graph for testing rendering pipeline",
+  "version": "2.0.0",
+  "mode": "paint-canvas",
+  
+  "sensory_config": {
+    "required_capabilities": {
+      "outputs": ["visual"],
+      "inputs": []
+    },
+    "optional_capabilities": {
+      "outputs": [],
+      "inputs": ["pointer"]
+    },
+    "complexity_hint": "simple"
+  },
+  
+  "ui_config": {
+    "theme": "paint-light",
+    "layout": "canvas-only",
+    "show_panels": {
+      "left_sidebar": false,
+      "right_sidebar": false,
+      "top_menu": true,
+      "system_dashboard": false,
+      "audio_panel": false,
+      "trust_dashboard": false,
+      "proprioception": false,
+      "graph_stats": false
+    },
+    "animations": {
+      "enabled": false,
+      "breathing_nodes": false,
+      "connection_pulses": false,
+      "smooth_transitions": false,
+      "celebration_effects": false
+    },
+    "performance": {
+      "target_fps": 30,
+      "vsync": false,
+      "hardware_acceleration": false
+    },
+    "features": {
+      "audio_sonification": false,
+      "auto_refresh": false,
+      "neural_api": false,
+      "tutorial_mode": false
+    }
+  },
+  
+  "ecosystem": {
+    "primals": [
+      {
+        "id": "node-1",
+        "name": "Red Circle",
+        "type": "test",
+        "family": "paint",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 100,
+        "position": { "x": 200, "y": 200 },
+        "capabilities": ["render"],
+        "metrics": {
+          "cpu_percent": 1.0,
+          "memory_mb": 10
+        }
+      },
+      {
+        "id": "node-2",
+        "name": "Green Square",
+        "type": "test",
+        "family": "paint",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 100,
+        "position": { "x": 400, "y": 200 },
+        "capabilities": ["render"],
+        "metrics": {
+          "cpu_percent": 1.0,
+          "memory_mb": 10
+        }
+      },
+      {
+        "id": "node-3",
+        "name": "Blue Triangle",
+        "type": "test",
+        "family": "paint",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 100,
+        "position": { "x": 300, "y": 350 },
+        "capabilities": ["render"],
+        "metrics": {
+          "cpu_percent": 1.0,
+          "memory_mb": 10
+        }
+      }
+    ]
+  },
+  
+  "neural_api": {
+    "enabled": false
+  }
+}
+

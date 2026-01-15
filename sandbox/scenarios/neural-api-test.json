@@ -1,0 +1,88 @@
+{
+  "name": "Neural API Dashboard Test",
+  "description": "Test Neural API visualization and proprioception",
+  "version": "2.0.0",
+  "mode": "neural-dashboard",
+  
+  "sensory_config": {
+    "required_capabilities": {
+      "outputs": ["visual"],
+      "inputs": ["pointer"]
+    },
+    "optional_capabilities": {
+      "outputs": ["audio"],
+      "inputs": ["keyboard"]
+    },
+    "complexity_hint": "standard"
+  },
+  
+  "ui_config": {
+    "theme": "neural-dark",
+    "animations": {
+      "enabled": true,
+      "breathing_nodes": false,
+      "connection_pulses": true,
+      "smooth_transitions": true,
+      "celebration_effects": false
+    },
+    "performance": {
+      "target_fps": 60,
+      "vsync": true,
+      "hardware_acceleration": true
+    }
+  },
+  
+  "ecosystem": {
+    "primals": [
+      {
+        "id": "nucleus-test",
+        "name": "NUCLEUS",
+        "type": "coordination",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 95,
+        "position": { "x": 400, "y": 300 },
+        "capabilities": [
+          "neural-api",
+          "graph-execution",
+          "primal-coordination"
+        ],
+        "metrics": {
+          "cpu_percent": 12.5,
+          "memory_mb": 256,
+          "uptime_seconds": 7200,
+          "requests_per_second": 150,
+          "active_primals": 5,
+          "graphs_available": 8,
+          "active_executions": 2
+        },
+        "proprioception": {
+          "sensory": {
+            "active_sockets": 5,
+            "last_scan": "2026-01-15T18:00:00Z"
+          },
+          "self_awareness": {
+            "knows_about": 5,
+            "can_coordinate": true,
+            "has_security": true,
+            "has_discovery": true,
+            "has_compute": true
+          },
+          "motor": {
+            "can_deploy": true,
+            "can_execute_graphs": true,
+            "can_coordinate_primals": true
+          }
+        }
+      }
+    ]
+  },
+  
+  "neural_api": {
+    "enabled": true,
+    "learning_rate": 0.01,
+    "optimization_cycles": 100
+  }
+}
+

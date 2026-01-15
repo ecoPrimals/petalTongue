@@ -22,6 +22,7 @@
 
 pub mod audio_export;
 pub mod audio_sonification;
+pub mod capability_validator;
 pub mod color_utils;
 pub mod visual_2d;
 
