@@ -10,7 +10,6 @@
 //! Key insight: Like proprioception, we need to know if our inputs
 //! are actually receiving signals from the environment.
 
-use anyhow::Result;
 use petal_tongue_core::rendering_awareness::InteractivityState;
 use std::time::{Duration, Instant};
 use tracing::{debug, info, warn};

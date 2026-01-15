@@ -6,9 +6,13 @@
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 
+/// Accessibility features and compliance (WCAG, universal design)
 pub mod accessibility;
 pub mod accessibility_panel;
 pub mod app;
+pub mod scenario;
+pub mod adaptive_ui;
+pub mod sensory_ui;
 pub mod app_panels;
 pub mod awakening_overlay;
 pub mod event_loop;
@@ -20,11 +24,13 @@ pub mod tutorial_mode;
 // pub mod app_ui;       // UI rendering (Phase 2)
 // pub mod app_data;     // Data management (Phase 3)
 // pub mod app_adapters; // Adapter management (Phase 4)
+pub mod audio; // NEW: Substrate-agnostic audio system (TRUE PRIMAL evolution!)
 pub mod audio_canvas; // Direct hardware access (like WGPU!)
 pub mod audio_discovery; // v1.3.1: Audio discovery - PipeWire/PulseAudio Unix sockets (TRUE PRIMAL!)
 pub mod audio_providers;
 pub mod audio_pure_rust;
-pub mod bingocube_integration;
+// bingocube is a primalTool (ecoPrimals/primalTools/bingoCube)
+// Discovered at runtime via IPC, not compiled into petalTongue
 pub mod biomeos_integration; // biomeOS UI Integration - Phase 1 (device management provider)
 pub mod biomeos_ui_manager; // biomeOS UI Manager - Phase 5 (integration & wiring)
 pub mod data_source;
@@ -39,11 +45,18 @@ pub mod input_verification; // Universal input verification (keyboard, pointer, 
 pub mod keyboard_shortcuts;
 pub mod live_data;
 pub mod mock_device_provider; // Mock provider for testing & graceful degradation
+/// Multimodal data streaming (audio, visual, haptic, etc.)
 pub mod multimodal_stream;
 pub mod niche_designer; // Niche Designer UI - Phase 4
 pub mod output_verification; // Universal output verification (visual, audio, haptic, etc.)
 pub mod primal_panel; // Primal Status UI - Phase 3
 pub mod process_viewer_integration;
+pub mod proprioception_panel; // SAME DAVE self-awareness visualization (Neural API)
+pub mod metrics_dashboard; // System metrics dashboard with sparklines (Neural API)
+pub mod graph_canvas; // Graph builder canvas - visual graph construction (Neural API Phase 4)
+pub mod node_palette; // Node palette - available node types for graph builder
+pub mod property_panel; // Property panel - node parameter editor
+pub mod graph_manager; // Graph manager - save/load/execute via Neural API
 pub mod proprioception; // SAME DAVE - Complete sensory-motor self-awareness
 pub mod protocol_selection; // Protocol priority: tarpc PRIMARY, JSON-RPC SECONDARY, HTTPS FALLBACK
 pub mod sensors;

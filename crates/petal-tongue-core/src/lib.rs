@@ -37,7 +37,15 @@ pub mod instance; // Instance management (Phase 1)
 pub mod lifecycle;
 pub mod primal_types;
 pub mod property; // Generic property system
+pub mod proprioception;
+pub mod graph_builder; // SAME DAVE proprioception data (Neural API)
+pub mod graph_validation; // Graph validation (cycle detection, dependencies)
+pub mod metrics; // System metrics (CPU, memory, Neural API stats)
+pub mod dynamic_schema; // Dynamic schema system for live evolution
+pub mod adaptive_rendering; // Adaptive rendering for multi-device support
+pub mod state_sync; // State synchronization across devices
 pub mod session; // Session state persistence (Phase 2)
+pub mod system_info; // System information utilities (safe FFI wrappers)
 pub mod types;
 #[cfg(test)]
 mod types_tests;
@@ -86,6 +94,51 @@ pub use capabilities::{CapabilityDetector, Modality, ModalityCapability, Modalit
 
 /// Capability-based primal type system
 pub use primal_types::{PrimalCapabilities, capability_categories};
+
+/// Proprioception data (SAME DAVE self-awareness from Neural API)
+pub use proprioception::{
+    HealthData, HealthStatus as ProprioceptionHealthStatus, MotorData, ProprioceptionData,
+    SelfAwarenessData, SensoryData,
+};
+
+/// System metrics (CPU, memory, Neural API statistics)
+pub use metrics::{
+    CpuHistory, MemoryHistory, NeuralApiMetrics, SystemMetrics, SystemResourceMetrics,
+    ThresholdLevel,
+};
+
+/// Graph builder types (Visual graph construction - Neural API Phase 4)
+pub use graph_builder::{
+    EdgeType, GraphEdge, GraphLayout, GraphNode, NodeType, NodeVisualState, Vec2, VisualGraph,
+};
+
+/// Graph validation types (Cycle detection, dependency resolution)
+pub use graph_validation::{GraphValidator, ValidationIssue, ValidationResult};
+
+/// Dynamic schema system (Live evolution, no recompilation)
+pub use dynamic_schema::{
+    DynamicData, DynamicValue, MigrationRegistry, SchemaVersion, SchemaMigration,
+};
+
+/// Adaptive rendering (Multi-device support)
+pub use adaptive_rendering::{
+    AdaptiveRenderer, DeviceType, HapticPrecision, InputMethod, PerformanceTier,
+    RenderingCapabilities, RenderingModality, UIComplexity,
+};
+
+/// State synchronization (Cross-device state)
+pub use state_sync::{DeviceState, LocalStatePersistence, StatePersistence, StateSync};
+
+/// Sensory capability system (Runtime I/O discovery)
+pub mod sensory_capabilities;
+pub mod sensory_discovery;
+pub use sensory_capabilities::{
+    AudioInputCapability, AudioOutputCapability, CapabilityError, GestureInputCapability,
+    HapticOutputCapability, KeyboardInputCapability, NeuralInputCapability,
+    NeuralOutputCapability, PointerInputCapability, SensoryCapabilities, SmellOutputCapability,
+    TasteOutputCapability, TouchInputCapability, UIComplexity as SensoryUIComplexity,
+    VisualOutputCapability,
+};
 
 /// Instance management (multi-instance support)
 pub use instance::{Instance, InstanceError, InstanceId, InstanceRegistry};

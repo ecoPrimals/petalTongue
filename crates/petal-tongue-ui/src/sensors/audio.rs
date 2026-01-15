@@ -40,39 +40,51 @@ impl AudioSensor {
     }
 
     /// Play a tone (minimal output)
+    ///
+    /// EVOLVED: Capability-based audio using AudioCanvas (direct hardware)
+    /// Primals discover audio capability at runtime rather than compile-time features
     pub async fn beep(&mut self, frequency: f32, duration_ms: u64) -> Result<()> {
         if !self.has_output {
             return Ok(());
         }
 
-        // Simple beep using rodio
-        #[cfg(feature = "audio")]
-        {
-            use rodio::{
-                OutputStream, Sink,
-                source::{SineWave, Source},
-            };
-            use std::time::Duration;
-
-            if let Ok((_stream, stream_handle)) = OutputStream::try_default() {
-                if let Ok(sink) = Sink::try_new(&stream_handle) {
-                    let source = SineWave::new(frequency)
-                        .take_duration(Duration::from_millis(duration_ms))
-                        .amplify(0.20);
-
-                    sink.append(source);
-                    sink.sleep_until_end();
-                }
+        // Try AudioCanvas (direct /dev/snd access - pure Rust, no ALSA library!)
+        match Self::beep_audio_canvas(frequency, duration_ms) {
+            Ok(()) => {
+                self.last_audio_event = Some(Instant::now());
+                return Ok(());
+            }
+            Err(e) => {
+                tracing::debug!("AudioCanvas unavailable: {}", e);
             }
         }
 
-        #[cfg(not(feature = "audio"))]
-        {
-            // Fallback: print to terminal
-            println!("\x07"); // Bell character
-        }
+        // Fallback: Terminal bell (always works)
+        tracing::info!("🔔 Audio Canvas unavailable, using terminal bell");
+        println!("\x07"); // Bell character
 
         self.last_audio_event = Some(Instant::now());
+        Ok(())
+    }
+
+    /// Try to beep using AudioCanvas (pure Rust, no C dependencies)
+    fn beep_audio_canvas(frequency: f32, duration_ms: u64) -> Result<()> {
+        use crate::audio_canvas::AudioCanvas;
+        use crate::audio_pure_rust::{Waveform, generate_tone};
+
+        // Generate pure Rust tone (duration in seconds)
+        let duration_secs = duration_ms as f32 / 1000.0;
+        let samples = generate_tone(
+            frequency,
+            duration_secs,
+            Waveform::Sine,
+            0.2, // amplitude
+        );
+
+        // Write directly to /dev/snd (like framebuffer!)
+        let mut canvas = AudioCanvas::open_default()?;
+        canvas.write_samples(&samples)?;
+
         Ok(())
     }
 }

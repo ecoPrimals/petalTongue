@@ -12,7 +12,7 @@
 //!
 //! # Architecture
 //!
-//! ```
+//! ```text
 //! DisplayManager
 //!   ├── discover_backends()
 //!   ├── init_best_backend()

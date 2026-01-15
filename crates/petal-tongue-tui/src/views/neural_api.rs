@@ -150,4 +150,3 @@ fn render_execution_details(frame: &mut Frame, area: Rect, standalone: bool) {
 
     frame.render_widget(paragraph, area);
 }
-

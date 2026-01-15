@@ -15,10 +15,7 @@ impl Footer {
     /// Render footer with keyboard shortcuts
     pub fn render(frame: &mut Frame, area: Rect, standalone: bool) {
         let mode_indicator = if standalone {
-            Span::styled(
-                "  [STANDALONE MODE]",
-                Style::default().fg(Color::Yellow),
-            )
+            Span::styled("  [STANDALONE MODE]", Style::default().fg(Color::Yellow))
         } else {
             Span::raw("")
         };
@@ -32,10 +29,9 @@ impl Footer {
             mode_indicator,
         ];
 
-        let paragraph = Paragraph::new(Line::from(shortcuts))
-            .block(Block::default().borders(Borders::ALL));
+        let paragraph =
+            Paragraph::new(Line::from(shortcuts)).block(Block::default().borders(Borders::ALL));
 
         frame.render_widget(paragraph, area);
     }
 }
-

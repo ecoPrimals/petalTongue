@@ -18,9 +18,8 @@
 //! - Graceful degradation
 //! - No hard dependencies
 
-use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 /// Audio backend type discovered
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -110,12 +109,10 @@ impl AudioDiscovery {
     fn discover_pipewire() -> Option<AudioSocket> {
         debug!("🔍 Searching for PipeWire socket...");
 
-        // Get user runtime directory
-        let uid = unsafe { libc::getuid() };
-        let runtime_dir =
-            std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| format!("/run/user/{}", uid));
+        // Get user runtime directory (using safe helper from core)
+        let runtime_dir = petal_tongue_core::system_info::get_user_runtime_dir();
 
-        let socket_path = PathBuf::from(&runtime_dir).join("pipewire-0");
+        let socket_path = runtime_dir.join("pipewire-0");
 
         if socket_path.exists() {
             debug!("Found PipeWire socket: {}", socket_path.display());
@@ -149,12 +146,10 @@ impl AudioDiscovery {
     fn discover_pulseaudio() -> Option<AudioSocket> {
         debug!("🔍 Searching for PulseAudio socket...");
 
-        // Get user runtime directory
-        let uid = unsafe { libc::getuid() };
-        let runtime_dir =
-            std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| format!("/run/user/{}", uid));
+        // Get user runtime directory (using safe helper from core)
+        let runtime_dir = petal_tongue_core::system_info::get_user_runtime_dir();
 
-        let socket_path = PathBuf::from(&runtime_dir).join("pulse/native");
+        let socket_path = runtime_dir.join("pulse/native");
 
         if socket_path.exists() {
             debug!("Found PulseAudio socket: {}", socket_path.display());

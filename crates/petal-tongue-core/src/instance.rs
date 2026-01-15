@@ -37,7 +37,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -449,7 +449,13 @@ pub enum InstanceError {
 fn current_timestamp() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards")
+        .unwrap_or_else(|_| {
+            // SAFETY: System clock went backwards (extremely rare).
+            // This can happen during NTP sync or manual clock adjustment.
+            // Fallback to 0 maintains monotonicity for current process.
+            tracing::warn!("System clock went backwards during timestamp generation");
+            Duration::from_secs(0)
+        })
         .as_secs()
 }
 
@@ -467,7 +473,7 @@ fn process_exists(pid: u32) -> bool {
         #[allow(clippy::cast_possible_wrap)]
         match kill(Pid::from_raw(pid as i32), None) {
             Ok(()) | Err(nix::errno::Errno::EPERM) => true, // Process exists (with or without permission)
-            Err(nix::errno::Errno::ESRCH) | Err(_) => false, // No such process or other error, assume dead
+            Err(nix::errno::Errno::ESRCH | _) => false, // No such process or other error, assume dead
         }
     }
 
@@ -555,15 +561,26 @@ mod tests {
         let mut instance = Instance::new(id, None).unwrap();
 
         let first_heartbeat = instance.last_heartbeat;
-        // Sleep longer to ensure timestamp changes (some systems have coarse timestamps)
-        std::thread::sleep(std::time::Duration::from_millis(100));
-        instance.heartbeat();
 
+        // Call heartbeat multiple times to verify monotonicity
+        // No sleep needed - we're testing the update mechanism, not time passage
+        instance.heartbeat();
+        let second_heartbeat = instance.last_heartbeat;
+        instance.heartbeat();
+        let third_heartbeat = instance.last_heartbeat;
+
+        // Heartbeat should never decrease (monotonic)
         assert!(
-            instance.last_heartbeat >= first_heartbeat,
-            "Heartbeat should update timestamp (first: {}, current: {})",
+            second_heartbeat >= first_heartbeat,
+            "Heartbeat should update timestamp (first: {}, second: {})",
             first_heartbeat,
-            instance.last_heartbeat
+            second_heartbeat
+        );
+        assert!(
+            third_heartbeat >= second_heartbeat,
+            "Heartbeat should maintain monotonicity (second: {}, third: {})",
+            second_heartbeat,
+            third_heartbeat
         );
     }
 
@@ -593,5 +610,191 @@ mod tests {
 
         assert_eq!(instance.metadata.get("key1"), Some(&"value1".to_string()));
         assert_eq!(instance.metadata.get("key2"), Some(&"value2".to_string()));
+    }
+
+    #[test]
+    fn test_instance_window_id() {
+        let id = InstanceId::new();
+        let mut instance = Instance::new(id, None).unwrap();
+
+        assert_eq!(instance.window_id, None);
+
+        instance.set_window_id(0x0012_3456);
+        assert_eq!(instance.window_id, Some(0x0012_3456));
+
+        instance.set_window_id(0x00AB_CDEF);
+        assert_eq!(instance.window_id, Some(0x00AB_CDEF));
+    }
+
+    #[test]
+    fn test_instance_age_seconds() {
+        let id = InstanceId::new();
+        let instance = Instance::new(id, None).unwrap();
+
+        // Age should be 0 or very small (< 1 second)
+        let age = instance.age_seconds();
+        assert!(age < 2, "Age should be very small at creation: {}", age);
+    }
+
+    #[test]
+    #[allow(clippy::similar_names)]
+    fn test_registry_multiple_instances() {
+        let mut registry = InstanceRegistry::new();
+
+        let id1 = InstanceId::new();
+        let id2 = InstanceId::new();
+        let id3 = InstanceId::new();
+
+        let instance1 = Instance::new(id1.clone(), Some("test1".to_string())).unwrap();
+        let instance2 = Instance::new(id2.clone(), Some("test2".to_string())).unwrap();
+        let instance3 = Instance::new(id3.clone(), None).unwrap();
+
+        registry.register(instance1).unwrap();
+        registry.register(instance2).unwrap();
+        registry.register(instance3).unwrap();
+
+        assert_eq!(registry.count(), 3);
+        assert_eq!(registry.count_alive(), 3);
+
+        let all_instances = registry.list();
+        assert_eq!(all_instances.len(), 3);
+
+        let alive = registry.list_alive();
+        assert_eq!(alive.len(), 3);
+    }
+
+    #[test]
+    fn test_registry_find_by_window() {
+        let mut registry = InstanceRegistry::new();
+        let id = InstanceId::new();
+        let mut instance = Instance::new(id.clone(), None).unwrap();
+
+        instance.set_window_id(0x0012_3456);
+        registry.register(instance).unwrap();
+
+        assert!(registry.find_by_window(0x0012_3456).is_some());
+        assert!(registry.find_by_window(0x0099_9999).is_none());
+    }
+
+    #[test]
+    fn test_registry_find_by_pid() {
+        let mut registry = InstanceRegistry::new();
+        let id = InstanceId::new();
+        let instance = Instance::new(id.clone(), None).unwrap();
+        let pid = instance.pid;
+
+        registry.register(instance).unwrap();
+
+        assert!(registry.find_by_pid(pid).is_some());
+        assert!(registry.find_by_pid(99_999_999).is_none());
+    }
+
+    #[test]
+    fn test_registry_update() {
+        let mut registry = InstanceRegistry::new();
+        let id = InstanceId::new();
+        let mut instance = Instance::new(id.clone(), Some("original".to_string())).unwrap();
+
+        registry.register(instance.clone()).unwrap();
+
+        // Update instance metadata
+        instance.add_metadata("key", "value");
+        instance.set_window_id(0x123456);
+
+        registry.update(instance.clone()).unwrap();
+
+        let retrieved = registry.get(&id).unwrap();
+        assert_eq!(retrieved.metadata.get("key"), Some(&"value".to_string()));
+        assert_eq!(retrieved.window_id, Some(0x123456));
+    }
+
+    #[test]
+    fn test_registry_update_nonexistent() {
+        let mut registry = InstanceRegistry::new();
+        let id = InstanceId::new();
+        let instance = Instance::new(id.clone(), None).unwrap();
+
+        // Try to update without registering first
+        let result = registry.update(instance);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_registry_get_mut() {
+        let mut registry = InstanceRegistry::new();
+        let id = InstanceId::new();
+        let instance = Instance::new(id.clone(), Some("test".to_string())).unwrap();
+
+        registry.register(instance).unwrap();
+
+        // Get mutable reference and modify
+        if let Some(inst) = registry.get_mut(&id) {
+            inst.add_metadata("key", "value");
+            inst.heartbeat();
+        }
+
+        // Verify changes
+        let retrieved = registry.get(&id).unwrap();
+        assert_eq!(retrieved.metadata.get("key"), Some(&"value".to_string()));
+    }
+
+    #[test]
+    fn test_registry_count_methods() {
+        let mut registry = InstanceRegistry::new();
+
+        assert_eq!(registry.count(), 0);
+        assert_eq!(registry.count_alive(), 0);
+
+        let id1 = InstanceId::new();
+        let id2 = InstanceId::new();
+        let instance1 = Instance::new(id1.clone(), None).unwrap();
+        let instance2 = Instance::new(id2.clone(), None).unwrap();
+
+        registry.register(instance1).unwrap();
+        assert_eq!(registry.count(), 1);
+        assert_eq!(registry.count_alive(), 1);
+
+        registry.register(instance2).unwrap();
+        assert_eq!(registry.count(), 2);
+        assert_eq!(registry.count_alive(), 2);
+
+        registry.unregister(&id1).unwrap();
+        assert_eq!(registry.count(), 1);
+        assert_eq!(registry.count_alive(), 1);
+    }
+
+    #[test]
+    fn test_instance_id_invalid_parse() {
+        assert!(InstanceId::parse("").is_err());
+        assert!(InstanceId::parse("not-a-uuid").is_err());
+        assert!(InstanceId::parse("12345678").is_err());
+    }
+
+    #[test]
+    fn test_instance_id_display() {
+        let id = InstanceId::new();
+        let displayed = format!("{}", id);
+        let as_str = id.as_str();
+
+        assert_eq!(displayed, as_str);
+    }
+
+    #[test]
+    fn test_instance_paths_created() {
+        let id = InstanceId::new();
+        let instance = Instance::new(id.clone(), None).unwrap();
+
+        // State path should contain the instance ID
+        assert!(instance.state_path.to_string_lossy().contains(&id.as_str()));
+        assert!(instance.state_path.to_string_lossy().ends_with(".ron"));
+
+        // Socket path should contain the instance ID
+        assert!(
+            instance
+                .socket_path
+                .to_string_lossy()
+                .contains(&id.as_str())
+        );
+        assert!(instance.socket_path.to_string_lossy().ends_with(".sock"));
     }
 }

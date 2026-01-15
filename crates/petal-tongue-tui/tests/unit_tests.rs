@@ -2,9 +2,9 @@
 //!
 //! Comprehensive unit testing for all TUI components.
 
-use petal_tongue_tui::state::{LogLevel, LogMessage, TUIState, View};
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use chrono::Utc;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use petal_tongue_tui::state::{LogLevel, LogMessage, TUIState, View};
 use std::time::Duration;
 
 mod common;
@@ -16,10 +16,10 @@ mod state_tests {
     #[tokio::test]
     async fn test_view_navigation() {
         let state = TUIState::new();
-        
+
         // Test initial state
         assert_eq!(state.get_view().await, View::Dashboard);
-        
+
         // Test all view switches
         for view in View::all() {
             state.set_view(view).await;
@@ -32,19 +32,19 @@ mod state_tests {
     #[tokio::test]
     async fn test_selection_navigation() {
         let state = TUIState::new();
-        
+
         // Test with 10 items
         let max = 10;
-        
+
         // Move down through all items
         for i in 0..max {
             assert_eq!(state.get_selected_index().await, i);
             state.select_next(max).await;
         }
-        
+
         // Should wrap to 0
         assert_eq!(state.get_selected_index().await, 0);
-        
+
         // Move up (should wrap to last)
         state.select_previous(max).await;
         assert_eq!(state.get_selected_index().await, max - 1);
@@ -53,28 +53,32 @@ mod state_tests {
     #[tokio::test]
     async fn test_log_management() {
         let state = TUIState::new();
-        
+
         // Add logs
         for i in 0..50 {
-            state.add_log(LogMessage {
-                timestamp: Utc::now(),
-                source: Some(format!("primal-{}", i)),
-                level: LogLevel::Info,
-                message: format!("Test message {}", i),
-            }).await;
+            state
+                .add_log(LogMessage {
+                    timestamp: Utc::now(),
+                    source: Some(format!("primal-{}", i)),
+                    level: LogLevel::Info,
+                    message: format!("Test message {}", i),
+                })
+                .await;
         }
-        
+
         let logs = state.get_logs().await;
         assert_eq!(logs.len(), 50);
-        
+
         // Test log levels
-        state.add_log(LogMessage {
-            timestamp: Utc::now(),
-            source: None,
-            level: LogLevel::Error,
-            message: "Error message".to_string(),
-        }).await;
-        
+        state
+            .add_log(LogMessage {
+                timestamp: Utc::now(),
+                source: None,
+                level: LogLevel::Error,
+                message: "Error message".to_string(),
+            })
+            .await;
+
         let logs = state.get_logs().await;
         assert!(logs.last().unwrap().level == LogLevel::Error);
     }
@@ -82,21 +86,23 @@ mod state_tests {
     #[tokio::test]
     async fn test_log_ring_buffer_overflow() {
         let state = TUIState::new();
-        
+
         // Add more than buffer size (1000)
         for i in 0..1500 {
-            state.add_log(LogMessage {
-                timestamp: Utc::now(),
-                source: None,
-                level: LogLevel::Debug,
-                message: format!("Log {}", i),
-            }).await;
+            state
+                .add_log(LogMessage {
+                    timestamp: Utc::now(),
+                    source: None,
+                    level: LogLevel::Debug,
+                    message: format!("Log {}", i),
+                })
+                .await;
         }
-        
+
         // Should only keep last 1000
         let logs = state.get_logs().await;
         assert_eq!(logs.len(), 1000);
-        
+
         // Should have latest logs
         assert!(logs.last().unwrap().message.contains("1499"));
         assert!(logs.first().unwrap().message.contains("500"));
@@ -105,28 +111,32 @@ mod state_tests {
     #[tokio::test]
     async fn test_capability_management() {
         let state = TUIState::new();
-        
+
         // Register capabilities
         state.register_capability(
             "songbird".to_string(),
-            vec!["discovery".to_string(), "events".to_string(), "topology".to_string()],
+            vec![
+                "discovery".to_string(),
+                "events".to_string(),
+                "topology".to_string(),
+            ],
         );
-        
+
         state.register_capability(
             "toadstool".to_string(),
             vec!["compute".to_string(), "gpu".to_string()],
         );
-        
+
         // Test capability checks
         assert!(state.has_capability("songbird", "discovery"));
         assert!(state.has_capability("songbird", "topology"));
         assert!(!state.has_capability("songbird", "compute"));
-        
+
         assert!(state.has_capability("toadstool", "gpu"));
         assert!(!state.has_capability("toadstool", "discovery"));
-        
+
         assert!(!state.has_capability("beardog", "auth"));
-        
+
         // Test getting capabilities
         let songbird_caps = state.get_capabilities("songbird").unwrap();
         assert_eq!(songbird_caps.len(), 3);
@@ -136,12 +146,12 @@ mod state_tests {
     #[tokio::test]
     async fn test_standalone_mode_detection() {
         let state = TUIState::new();
-        
+
         assert!(!state.is_standalone().await);
-        
+
         state.set_standalone_mode(true).await;
         assert!(state.is_standalone().await);
-        
+
         state.set_standalone_mode(false).await;
         assert!(!state.is_standalone().await);
     }
@@ -150,34 +160,38 @@ mod state_tests {
     async fn test_concurrent_state_access() {
         let state = TUIState::new();
         let state_clone = state.clone();
-        
+
         // Spawn concurrent tasks
         let handle1 = tokio::spawn(async move {
             for i in 0..100 {
-                state_clone.add_log(LogMessage {
-                    timestamp: Utc::now(),
-                    source: Some("task1".to_string()),
-                    level: LogLevel::Info,
-                    message: format!("Message {}", i),
-                }).await;
+                state_clone
+                    .add_log(LogMessage {
+                        timestamp: Utc::now(),
+                        source: Some("task1".to_string()),
+                        level: LogLevel::Info,
+                        message: format!("Message {}", i),
+                    })
+                    .await;
             }
         });
-        
+
         let state_clone2 = state.clone();
         let handle2 = tokio::spawn(async move {
             for i in 0..100 {
-                state_clone2.add_log(LogMessage {
-                    timestamp: Utc::now(),
-                    source: Some("task2".to_string()),
-                    level: LogLevel::Debug,
-                    message: format!("Message {}", i),
-                }).await;
+                state_clone2
+                    .add_log(LogMessage {
+                        timestamp: Utc::now(),
+                        source: Some("task2".to_string()),
+                        level: LogLevel::Debug,
+                        message: format!("Message {}", i),
+                    })
+                    .await;
             }
         });
-        
+
         handle1.await.unwrap();
         handle2.await.unwrap();
-        
+
         // Should have 200 logs total
         let logs = state.get_logs().await;
         assert_eq!(logs.len(), 200);
@@ -186,11 +200,11 @@ mod state_tests {
     #[tokio::test]
     async fn test_statistics() {
         let state = TUIState::new();
-        
+
         state.set_view(View::Topology).await;
         state.register_capability("songbird".to_string(), vec!["discovery".to_string()]);
         state.register_capability("toadstool".to_string(), vec!["compute".to_string()]);
-        
+
         let stats = state.stats().await;
         assert_eq!(stats.view, View::Topology);
         assert_eq!(stats.registered_capabilities, 2);
@@ -262,4 +276,3 @@ mod log_level_tests {
         assert_eq!(level, cloned);
     }
 }
-

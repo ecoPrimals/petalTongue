@@ -59,4 +59,3 @@ fn format_duration(duration: std::time::Duration) -> String {
         format!("{}s", seconds)
     }
 }
-

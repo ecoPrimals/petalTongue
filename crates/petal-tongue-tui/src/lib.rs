@@ -32,16 +32,16 @@
 
 /// Application core
 pub mod app;
-/// Interactive views
-pub mod views;
-/// Reusable widgets
-pub mod widgets;
-/// State management
-pub mod state;
 /// Event system
 pub mod events;
 /// Layout utilities
 pub mod layout;
+/// State management
+pub mod state;
+/// Interactive views
+pub mod views;
+/// Reusable widgets
+pub mod widgets;
 
 use anyhow::Result;
 

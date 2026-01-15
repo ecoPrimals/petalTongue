@@ -63,9 +63,8 @@ impl UnixSocketProvider {
         }
 
         // Priority 2: /run/user/<uid> (fallback if XDG not set)
-        // SAFETY: getuid() is a safe FFI call that returns the effective user ID
-        // without preconditions that could lead to undefined behavior.
-        let uid = unsafe { libc::getuid() };
+        // EVOLVED: Now using safe rustix-based function from core (was unsafe libc::getuid())
+        let uid = petal_tongue_core::system_info::get_current_uid();
         search_paths.push(PathBuf::from(format!("/run/user/{}", uid)));
 
         // Priority 3: /tmp (development fallback)

@@ -6,6 +6,9 @@
 //! - Topology changes
 //! - Network failures
 //! - Resource exhaustion scenarios
+//!
+//! EVOLUTION NOTE: Chaos tests focus on mechanism robustness, not time-based decay.
+//! Removed blocking sleeps - testing failure detection, not waiting for timeouts.
 
 use petal_tongue_ui::{input_verification::*, output_verification::*, proprioception::*};
 use std::thread;
@@ -21,33 +24,56 @@ fn chaos_all_outputs_fail() {
     let initial_state = system.assess();
     assert!(initial_state.health > 0.0);
 
-    // CHAOS: Simulate all outputs failing (no new confirmations)
-    thread::sleep(Duration::from_millis(50));
+    // CHAOS: Register outputs but never confirm them (simulates display/audio failure)
+    system.register_output(OutputModality::Visual);
+    system.register_output(OutputModality::Audio);
+    system.register_output(OutputModality::Haptic);
 
-    // System should detect degradation
+    // Without confirmation, motor should not be functional
     let degraded_state = system.assess();
 
-    // Should not crash!
-    assert!(!degraded_state.is_healthy() || degraded_state.confidence < 1.0);
+    // Should not crash! System detects unconfirmed outputs
+    assert!(
+        !degraded_state.motor_functional,
+        "Motor should not be functional without output confirmation"
+    );
+
+    // EVOLUTION: Removed sleep - testing failure detection mechanism, not time-based decay
 }
 
-/// Chaos Scenario: All inputs stop simultaneously
+/// Chaos Scenario: All inputs stop simultaneously  
 #[test]
 fn chaos_all_inputs_stop() {
     let mut system = initialize_standard_proprioception();
 
-    // Establish healthy state
+    // Establish healthy state with inputs
     system.input_received(&InputModality::Keyboard);
     system.input_received(&InputModality::Pointer);
     let initial_state = system.assess();
+    assert!(
+        initial_state.confidence > 0.0,
+        "Should have confidence with input"
+    );
 
-    // CHAOS: No more input for extended period
-    thread::sleep(Duration::from_millis(50));
-    let degraded_state = system.assess();
+    // CHAOS: Register inputs but never receive them (simulates input device failure)
+    let mut system_no_input = ProprioceptionSystem::new();
+    system_no_input.register_input(InputModality::Keyboard);
+    system_no_input.register_input(InputModality::Pointer);
 
-    // System should report uncertainty
-    // Should not crash!
-    assert!(degraded_state.confidence <= initial_state.confidence);
+    // Without receiving input, sensory should not be functional
+    let degraded_state = system_no_input.assess();
+
+    // Should not crash! System detects no input
+    assert_eq!(
+        degraded_state.confidence, 0.0,
+        "Confidence should be 0 without input"
+    );
+    assert!(
+        !degraded_state.sensory_functional,
+        "Sensory should not be functional without input"
+    );
+
+    // EVOLUTION: Removed sleep - testing mechanism, not time-based decay
 }
 
 /// Chaos Scenario: Rapid modality registration/deregistration

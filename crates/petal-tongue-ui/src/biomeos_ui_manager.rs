@@ -55,8 +55,11 @@ pub struct BiomeOSUIManager {
 /// UI Tab selection
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UITab {
+    /// Device management tab
     Devices,
+    /// Primal status tab
     Primals,
+    /// Niche designer tab
     NicheDesigner,
 }
 

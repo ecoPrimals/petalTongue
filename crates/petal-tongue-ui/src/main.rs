@@ -1,12 +1,45 @@
 //! Main entry point for petalTongue desktop UI
 
-use petal_tongue_core::{Instance, InstanceId, InstanceRegistry};
+use clap::Parser;
+use petal_tongue_core::{Instance, InstanceId, InstanceRegistry, RenderingCapabilities};
 use petal_tongue_ui::PetalTongueApp;
 use petal_tongue_ui::display::prompt::prompt_for_display_server;
+use std::path::PathBuf;
+
+#[derive(Parser)]
+#[command(name = "petal-tongue")]
+#[command(about = "petalTongue - The Human Interface for ecoPrimals", long_about = None)]
+#[command(version)]
+struct Cli {
+    /// Subcommand (defaults to 'ui' if not specified)
+    #[command(subcommand)]
+    command: Option<Commands>,
+
+    /// Path to scenario JSON file
+    #[arg(long, global = true)]
+    scenario: Option<PathBuf>,
+}
+
+#[derive(clap::Subcommand)]
+enum Commands {
+    /// Launch the graphical UI (default)
+    Ui {
+        /// Path to scenario JSON file
+        #[arg(long)]
+        scenario: Option<PathBuf>,
+    },
+}
 
 fn main() -> anyhow::Result<()> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
+
+    // Parse CLI args
+    let cli = Cli::parse();
+    let scenario_path = match &cli.command {
+        Some(Commands::Ui { scenario }) => scenario.clone().or(cli.scenario.clone()),
+        None => cli.scenario.clone(),
+    };
 
     // ===== Phase 1: Instance Management Integration =====
     // Create unique instance ID for this petalTongue instance
@@ -60,6 +93,21 @@ fn main() -> anyhow::Result<()> {
     tracing::info!("🔄 Phase 1 complete, starting Phase 2...");
     tracing::info!("🌸 Starting petalTongue Universal Representation System");
 
+    // ===== Phase 2.5: Device Capability Detection =====
+    tracing::info!("🎨 Detecting device capabilities...");
+    let rendering_caps = RenderingCapabilities::detect();
+    tracing::info!(
+        "✅ Device type: {} | UI complexity: {:?}",
+        rendering_caps.device_type,
+        rendering_caps.ui_complexity
+    );
+    tracing::info!(
+        "   Screen: {:?} | Modalities: {}",
+        rendering_caps.screen_size,
+        rendering_caps.modalities.len()
+    );
+    // ===== End Phase 2.5 =====
+
     // ===== Phase 2: Pure Rust Display System Integration =====
     // Check if external display is available, prompt if not
     tracing::info!("🎨 Checking display availability...");
@@ -88,7 +136,7 @@ fn main() -> anyhow::Result<()> {
     }
 
     // Try to run with eframe
-    let result = run_with_eframe();
+    let result = run_with_eframe(scenario_path, rendering_caps);
 
     // ===== Cleanup on shutdown =====
     tracing::info!("🌸 petalTongue shutting down...");
@@ -110,7 +158,10 @@ fn main() -> anyhow::Result<()> {
 }
 
 /// Run with traditional eframe
-fn run_with_eframe() -> Result<(), eframe::Error> {
+fn run_with_eframe(
+    scenario_path: Option<PathBuf>,
+    rendering_caps: RenderingCapabilities,
+) -> Result<(), eframe::Error> {
     // v1.2.0: Conditional diagnostic logging (set PETALTONGUE_DIAG=1 to enable)
     let diagnostic_enabled = std::env::var("PETALTONGUE_DIAG").is_ok();
 
@@ -145,7 +196,7 @@ fn run_with_eframe() -> Result<(), eframe::Error> {
                 tracing::info!("🎨 DIAGNOSTIC: Inside app creation callback");
                 tracing::info!("🎨 DIAGNOSTIC: Creating PetalTongueApp...");
             }
-            let app = PetalTongueApp::new(cc);
+            let app = PetalTongueApp::new(cc, scenario_path, rendering_caps.clone());
             if diagnostic_enabled {
                 tracing::info!("🎨 DIAGNOSTIC: PetalTongueApp created successfully");
             }

@@ -13,7 +13,7 @@
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
-use tracing::{info, warn};
+use tracing::info;
 
 /// Software rendering backend
 pub struct SoftwareDisplay {
