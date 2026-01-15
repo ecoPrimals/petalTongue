@@ -6,8 +6,10 @@
 pub mod doom_panel;
 pub mod doom_factory;
 pub mod doom_stats_panel;
+pub mod metrics_panel;
 
 pub use doom_panel::DoomPanel;
 pub use doom_factory::{DoomPanelFactory, create_doom_factory};
 pub use doom_stats_panel::{DoomStatsPanel, DoomStatsPanelFactory};
+pub use metrics_panel::{MetricsPanel, MetricsPanelFactory};
 
