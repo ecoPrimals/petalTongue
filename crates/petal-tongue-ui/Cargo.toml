@@ -17,6 +17,7 @@ petal-tongue-discovery = { path = "../petal-tongue-discovery" }
 petal-tongue-entropy = { path = "../petal-tongue-entropy" }
 petal-tongue-adapters = { path = "../petal-tongue-adapters" }  # NEW: Adapter system
 petal-tongue-ipc = { path = "../petal-tongue-ipc" }  # IPC with tarpc PRIMARY
+doom-core = { path = "../doom-core" }  # Doom integration for platform testing
 
 # Songbird for capability-based discovery (TRUE PRIMAL integration)
 songbird-universal = { path = "../../../../phase1/songbird/crates/songbird-universal" }
