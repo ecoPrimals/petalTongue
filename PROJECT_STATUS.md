@@ -1,8 +1,8 @@
 # 🌸 petalTongue - Project Status
 
-**Last Updated**: January 15, 2026, 22:00 PST  
-**Version**: 2.5.0 (Doom Phase 1.2 Complete!)  
-**Status**: ✅ **Production Ready** - Can Run Doom!
+**Last Updated**: January 15, 2026, 23:30 PST  
+**Version**: 2.6.0 (Doom Phase 1.4 Complete!)  
+**Status**: ✅ **Production Ready** - Doom + Live biomeOS Stats!
 
 ---
 
