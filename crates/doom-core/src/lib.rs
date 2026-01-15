@@ -437,6 +437,46 @@ impl DoomInstance {
             Err(DoomError::EngineError("No WAD loaded".to_string()))
         }
     }
+    
+    /// Get game statistics for display
+    pub fn stats(&self) -> GameStats {
+        let (player_x, player_y, player_angle) = if let Some(renderer) = &self.raycast_renderer {
+            (Some(renderer.player_x), Some(renderer.player_y), Some(renderer.player_angle))
+        } else {
+            (None, None, None)
+        };
+        
+        GameStats {
+            state: self.state,
+            frame_count: self.frame_count,
+            dimensions: (self.width, self.height),
+            current_map: self.current_map.clone(),
+            view_mode: if self.first_person_mode { ViewMode::FirstPerson } else { ViewMode::TopDown },
+            player_x,
+            player_y,
+            player_angle,
+        }
+    }
+}
+
+/// Game statistics for display in UI
+#[derive(Debug, Clone)]
+pub struct GameStats {
+    pub state: DoomState,
+    pub frame_count: u64,
+    pub dimensions: (usize, usize),
+    pub current_map: Option<String>,
+    pub view_mode: ViewMode,
+    pub player_x: Option<f32>,
+    pub player_y: Option<f32>,
+    pub player_angle: Option<f32>,
+}
+
+/// View mode for rendering
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ViewMode {
+    TopDown,
+    FirstPerson,
 }
 
 #[cfg(test)]
