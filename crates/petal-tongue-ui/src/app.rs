@@ -463,6 +463,12 @@ impl PetalTongueApp {
         
         // Register available panel types
         panel_registry.register(create_doom_factory());
+        
+        // v2.5: Register Phase 1.4 stats panels
+        panel_registry.register(Arc::new(crate::panels::MetricsPanelFactory::new()));
+        panel_registry.register(Arc::new(crate::panels::ProprioceptionPanelFactory::new()));
+        // Note: doom_stats panel requires DoomInstance coordination - will be added in future evolution
+        
         tracing::info!("✅ Panel registry initialized");
         tracing::info!("   Available panel types: {:?}", panel_registry.available_types());
         

@@ -1,0 +1,66 @@
+{
+  "schema_version": "v2.0.0",
+  "scenario_id": "doom-with-live-stats",
+  "name": "Doom with Live biomeOS Stats",
+  "description": "Play Doom with real-time biomeOS monitoring - validates panel system and Neural API integration",
+  
+  "sensory_config": {
+    "required_capabilities": {
+      "outputs": ["visual"],
+      "inputs": ["keyboard", "pointer"]
+    },
+    "optional_capabilities": {
+      "outputs": ["audio"],
+      "inputs": []
+    },
+    "complexity_hint": "rich"
+  },
+  
+  "ui_config": {
+    "mode": "custom",
+    "show_left_sidebar": false,
+    "show_right_sidebar": false,
+    "show_dashboard": false,
+    "show_graph_stats": false,
+    "enable_audio_sonification": false,
+    "auto_refresh": false,
+    
+    "custom_panels": [
+      {
+        "type": "doom",
+        "title": "Doom E1M1",
+        "width": 960,
+        "height": 720,
+        "fullscreen": false,
+        "config": {
+          "mode": "game"
+        }
+      },
+      {
+        "type": "proprioception",
+        "title": "System Health (SAME DAVE)",
+        "width": 300,
+        "height": 350,
+        "fullscreen": false,
+        "config": {
+          "update_interval_secs": 5
+        }
+      },
+      {
+        "type": "metrics",
+        "title": "System Metrics",
+        "width": 300,
+        "height": 300,
+        "fullscreen": false,
+        "config": {
+          "update_interval_secs": 1
+        }
+      }
+    ]
+  },
+  
+  "data": {
+    "description": "This scenario demonstrates petalTongue's ability to compose multiple panels: a game (Doom) running alongside real-time system monitoring. This validates: 1) Panel system architecture, 2) Input focus management, 3) Neural API integration, 4) Async updates without blocking, 5) petalTongue as a composition layer."
+  }
+}
+
