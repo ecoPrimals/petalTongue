@@ -4,7 +4,7 @@
 //! Now with multimodal output (visual + audio + text)
 
 use crate::accessibility::ColorPalette;
-use crate::audio_providers::AudioSystem;
+use crate::audio::AudioSystemV2;
 use crate::live_data::{LiveMetric, request_live_updates};
 use crate::multimodal_stream::{
     CpuStream, MemoryStream, ModalityPreferences, MultiModalRenderer, SystemMetricRenderer,
@@ -87,7 +87,7 @@ impl SystemDashboard {
     }
 
     /// Refresh system data and update multimodal streams
-    fn refresh(&mut self, audio_system: Option<&AudioSystem>) {
+    fn refresh(&mut self, audio_system: Option<&AudioSystemV2>) {
         let now = Instant::now();
         if now.duration_since(self.last_refresh) >= self.refresh_interval {
             self.system.refresh_all();
@@ -144,7 +144,7 @@ impl SystemDashboard {
     }
 
     /// Generate polyphonic audio for all streams
-    fn generate_audio(&self, audio_system: &AudioSystem) {
+    fn generate_audio(&self, audio_system: &AudioSystemV2) {
         // Collect audio representations for all streams
         let mut tones = Vec::new();
 
@@ -193,7 +193,7 @@ impl SystemDashboard {
         ui: &mut Ui,
         palette: &ColorPalette,
         font_scale: f32,
-        audio_system: Option<&AudioSystem>,
+        audio_system: Option<&AudioSystemV2>,
     ) {
         self.refresh(audio_system);
 
@@ -526,7 +526,7 @@ impl SystemDashboard {
         ui: &mut Ui,
         palette: &ColorPalette,
         font_scale: f32,
-        audio_system: Option<&AudioSystem>,
+        audio_system: Option<&AudioSystemV2>,
     ) {
         self.refresh(audio_system);
 

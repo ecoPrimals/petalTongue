@@ -124,10 +124,15 @@ pub fn get_all_monitors() -> Vec<MonitorInfo> {
 /// Monitor information
 #[derive(Debug, Clone)]
 pub struct MonitorInfo {
+    /// Monitor name/identifier
     pub name: String,
+    /// Width in pixels
     pub width: u32,
+    /// Height in pixels
     pub height: u32,
+    /// Scale factor (HiDPI support)
     pub scale_factor: f64,
+    /// Whether this is the primary monitor
     pub is_primary: bool,
 }
 

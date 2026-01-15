@@ -108,7 +108,7 @@ fn render_graph(
         ];
 
         use petal_tongue_core::PrimalHealthStatus;
-        
+
         for primal in primals {
             let health_icon = match primal.health {
                 PrimalHealthStatus::Healthy => "✅",
@@ -117,9 +117,7 @@ fn render_graph(
                 PrimalHealthStatus::Unknown => "❓",
             };
 
-            lines.push(Line::from(vec![
-                Span::raw("    ┌─────────────┐"),
-            ]));
+            lines.push(Line::from(vec![Span::raw("    ┌─────────────┐")]));
             lines.push(Line::from(vec![
                 Span::raw("    │ "),
                 Span::styled(&primal.name, Style::default().fg(Color::Cyan)),
@@ -127,9 +125,7 @@ fn render_graph(
                 Span::raw(health_icon),
                 Span::raw(" │"),
             ]));
-            lines.push(Line::from(vec![
-                Span::raw("    └─────────────┘"),
-            ]));
+            lines.push(Line::from(vec![Span::raw("    └─────────────┘")]));
             lines.push(Line::from(""));
         }
 
@@ -164,9 +160,9 @@ fn render_ascii_graph<'a>(
 
     // Simple vertical layout for now
     // TODO: Implement proper force-directed layout (optionally with ToadStool)
-    
+
     use petal_tongue_core::PrimalHealthStatus;
-    
+
     for (i, primal) in primals.iter().enumerate() {
         let health_icon = match primal.health {
             PrimalHealthStatus::Healthy => "✅",
@@ -176,14 +172,12 @@ fn render_ascii_graph<'a>(
         };
 
         // Node box
-        lines.push(Line::from(vec![
-            Span::raw("    ┌─────────────────┐"),
-        ]));
+        lines.push(Line::from(vec![Span::raw("    ┌─────────────────┐")]));
         lines.push(Line::from(vec![
             Span::raw("    │ "),
             Span::styled(
                 format!("{} {} ", health_icon, &primal.name),
-                Style::default().fg(Color::Cyan)
+                Style::default().fg(Color::Cyan),
             ),
             Span::raw(" │"),
         ]));
@@ -192,20 +186,13 @@ fn render_ascii_graph<'a>(
             Span::styled(&primal.primal_type, Style::default().fg(Color::Magenta)),
             Span::raw(")      │"),
         ]));
-        lines.push(Line::from(vec![
-            Span::raw("    └─────────────────┘"),
-        ]));
+        lines.push(Line::from(vec![Span::raw("    └─────────────────┘")]));
 
         // Show outgoing edges
-        let outgoing: Vec<_> = topology
-            .iter()
-            .filter(|e| e.from == primal.id)
-            .collect();
+        let outgoing: Vec<_> = topology.iter().filter(|e| e.from == primal.id).collect();
 
         for edge in outgoing {
-            lines.push(Line::from(vec![
-                Span::raw("           │"),
-            ]));
+            lines.push(Line::from(vec![Span::raw("           │")]));
             lines.push(Line::from(vec![
                 Span::raw("           ↓ "),
                 Span::styled(&edge.edge_type, Style::default().fg(Color::Yellow)),
@@ -275,10 +262,7 @@ fn render_details(
                 Span::raw("  • "),
                 Span::styled(edge_type, Style::default().fg(Color::Yellow)),
                 Span::raw(": "),
-                Span::styled(
-                    format!("{}", count),
-                    Style::default().fg(Color::Green),
-                ),
+                Span::styled(format!("{}", count), Style::default().fg(Color::Green)),
             ])));
         }
 
@@ -294,4 +278,3 @@ fn render_details(
 
     frame.render_widget(list, area);
 }
-

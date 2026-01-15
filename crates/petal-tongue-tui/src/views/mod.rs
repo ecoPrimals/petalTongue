@@ -4,13 +4,13 @@
 //! Pure Rust, capability-based, graceful degradation.
 
 mod dashboard;
-mod topology;
-mod logs;
 mod devices;
-mod primals;
+mod livespore;
+mod logs;
 mod neural_api;
 mod nucleus;
-mod livespore;
+mod primals;
+mod topology;
 
 use ratatui::Frame;
 use tokio::runtime::Handle;
@@ -153,4 +153,3 @@ pub fn render_livespore(frame: &mut Frame, state: &TUIState) {
     // Footer
     Footer::render(frame, layout.footer, standalone);
 }
-

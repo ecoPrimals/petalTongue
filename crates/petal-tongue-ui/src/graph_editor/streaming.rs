@@ -15,7 +15,7 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::{RwLock, broadcast};
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 /// Stream message - Real-time updates for graph execution
 ///
@@ -26,54 +26,79 @@ use tracing::{debug, info, warn};
 pub enum StreamMessage {
     /// Node status update (running, completed, failed, etc)
     NodeStatus {
+        /// Graph identifier
         graph_id: String,
+        /// Node identifier
         node_id: String,
+        /// Current node status
         status: NodeStatus,
+        /// When status changed
         timestamp: chrono::DateTime<chrono::Utc>,
     },
 
     /// Progress update (percentage complete)
     Progress {
+        /// Graph identifier
         graph_id: String,
+        /// Node identifier
         node_id: String,
-        progress: f32, // 0.0 - 1.0
+        /// Progress fraction (0.0 - 1.0)
+        progress: f32,
+        /// Progress description
         message: String,
+        /// When progress updated
         timestamp: chrono::DateTime<chrono::Utc>,
     },
 
     /// AI reasoning update (why decisions are made)
     Reasoning {
+        /// Graph identifier
         graph_id: String,
+        /// AI reasoning explanation
         reasoning: AIReasoning,
+        /// When reasoning generated
         timestamp: chrono::DateTime<chrono::Utc>,
     },
 
     /// Resource usage update
     ResourceUsage {
+        /// Graph identifier
         graph_id: String,
+        /// Node identifier
         node_id: String,
+        /// Resource usage metrics
         resources: ResourceUsage,
+        /// When measured
         timestamp: chrono::DateTime<chrono::Utc>,
     },
 
     /// Error update
     Error {
+        /// Graph identifier
         graph_id: String,
+        /// Node that errored (if specific)
         node_id: Option<String>,
+        /// Error details
         error: ErrorInfo,
+        /// When error occurred
         timestamp: chrono::DateTime<chrono::Utc>,
     },
 
     /// Graph modification (from user)
     GraphModification {
+        /// Graph identifier
         graph_id: String,
+        /// Modification details
         modification: GraphModification,
+        /// User who made modification
         user_id: Option<String>,
+        /// When modified
         timestamp: chrono::DateTime<chrono::Utc>,
     },
 
     /// Heartbeat (keep connection alive)
     Heartbeat {
+        /// Heartbeat timestamp
         timestamp: chrono::DateTime<chrono::Utc>,
     },
 }
@@ -82,10 +107,21 @@ pub enum StreamMessage {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum NodeStatus {
+    /// Node is pending execution
     Pending,
-    Running { progress: u8 }, // 0-100
+    /// Node is currently running
+    Running {
+        /// Progress percentage (0-100)
+        progress: u8,
+    },
+    /// Node completed successfully
     Completed,
-    Failed { error: String },
+    /// Node failed with error
+    Failed {
+        /// Error message
+        error: String,
+    },
+    /// Node execution paused
     Paused,
 }
 
@@ -114,35 +150,50 @@ pub struct AIReasoning {
 /// Alternative option considered by AI
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Alternative {
+    /// Description of alternative
     pub description: String,
+    /// Confidence in this alternative
     pub confidence: f32,
+    /// Why this wasn't chosen
     pub reason_not_chosen: String,
 }
 
 /// Historical pattern referenced
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Pattern {
+    /// Pattern description
     pub description: String,
-    pub source: String, // "user_history", "community", "system"
+    /// Pattern source (user_history, community, system)
+    pub source: String,
+    /// Relevance score (0.0 - 1.0)
     pub relevance: f32,
 }
 
 /// Resource usage
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResourceUsage {
+    /// CPU usage percentage
     pub cpu_percent: f32,
+    /// Memory usage in megabytes
     pub memory_mb: u64,
+    /// Disk I/O in MB/s
     pub disk_io_mbps: f32,
+    /// Network usage in MB/s
     pub network_mbps: f32,
 }
 
 /// Error information
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ErrorInfo {
+    /// Error type identifier
     pub error_type: String,
+    /// Human-readable error message
     pub message: String,
+    /// Additional error details
     pub details: Option<String>,
+    /// Whether error is recoverable
     pub recoverable: bool,
+    /// Suggested action to resolve error
     pub suggested_action: Option<String>,
 }
 
@@ -150,21 +201,33 @@ pub struct ErrorInfo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case")]
 pub enum GraphModification {
+    /// Add new node to graph
     AddNode {
+        /// Node data
         node: serde_json::Value,
     },
+    /// Remove node from graph
     RemoveNode {
+        /// Node to remove
         node_id: String,
     },
+    /// Modify existing node
     ModifyNode {
+        /// Node to modify
         node_id: String,
+        /// Changes to apply
         changes: serde_json::Value,
     },
+    /// Add edge between nodes
     AddEdge {
+        /// Source node
         from: String,
+        /// Target node
         to: String,
     },
+    /// Remove edge from graph
     RemoveEdge {
+        /// Edge to remove
         edge_id: String,
     },
 }
@@ -183,10 +246,15 @@ pub struct StreamHandler {
 /// Execution state for a graph
 #[derive(Debug, Clone)]
 pub struct ExecutionState {
+    /// Unique graph identifier
     pub graph_id: String,
+    /// Timestamp when execution started
     pub started_at: chrono::DateTime<chrono::Utc>,
+    /// Currently executing node (if any)
     pub current_node: Option<String>,
+    /// Nodes that have completed successfully
     pub completed_nodes: Vec<String>,
+    /// Nodes that have failed
     pub failed_nodes: Vec<String>,
 }
 

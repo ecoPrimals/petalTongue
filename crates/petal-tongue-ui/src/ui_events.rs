@@ -34,65 +34,99 @@ use super::biomeos_integration::{Device, DeviceStatus, Health, NicheTemplate, Pr
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum UIEvent {
     // Device events
+    /// New device discovered
     DeviceDiscovered(Device),
-    DeviceRemoved(String),                     // device_id
-    DeviceStatusChanged(String, DeviceStatus), // device_id, new_status
-    DeviceUsageChanged(String, f64),           // device_id, new_usage (0.0-1.0)
+    /// Device removed (device_id)
+    DeviceRemoved(String),
+    /// Device status changed (device_id, new_status)
+    DeviceStatusChanged(String, DeviceStatus),
+    /// Device usage changed (device_id, new_usage 0.0-1.0)
+    DeviceUsageChanged(String, f64),
 
     // Primal events
+    /// New primal discovered
     PrimalDiscovered(Primal),
-    PrimalRemoved(String),               // primal_id
-    PrimalHealthChanged(String, Health), // primal_id, new_health
-    PrimalLoadChanged(String, f64),      // primal_id, new_load (0.0-1.0)
+    /// Primal removed (primal_id)
+    PrimalRemoved(String),
+    /// Primal health changed (primal_id, new_health)
+    PrimalHealthChanged(String, Health),
+    /// Primal load changed (primal_id, new_load 0.0-1.0)
+    PrimalLoadChanged(String, f64),
 
     // Assignment events
-    DeviceAssigned(String, String),   // device_id, primal_id
-    DeviceUnassigned(String, String), // device_id, primal_id
+    /// Device assigned to primal (device_id, primal_id)
+    DeviceAssigned(String, String),
+    /// Device unassigned from primal (device_id, primal_id)
+    DeviceUnassigned(String, String),
 
     // Niche events
-    NicheDeployed(String, NicheTemplate), // niche_id, template
-    NicheRemoved(String),                 // niche_id
+    /// Niche deployed (niche_id, template)
+    NicheDeployed(String, NicheTemplate),
+    /// Niche removed (niche_id)
+    NicheRemoved(String),
 
     // AI suggestion events
+    /// AI generated a suggestion
     AISuggestion(Suggestion),
-    SuggestionAccepted(String), // suggestion_id
-    SuggestionRejected(String), // suggestion_id
+    /// User accepted suggestion (suggestion_id)
+    SuggestionAccepted(String),
+    /// User rejected suggestion (suggestion_id)
+    SuggestionRejected(String),
 }
 
-/// AI suggestion
+/// AI suggestion for system optimization
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Suggestion {
+    /// Unique suggestion identifier
     pub id: String,
+    /// Type of suggestion
     pub suggestion_type: SuggestionType,
-    pub confidence: f64, // 0.0-1.0
+    /// Confidence level (0.0-1.0)
+    pub confidence: f64,
+    /// Human-readable reasoning
     pub reasoning: String,
+    /// Suggested actions to take
     pub actions: Vec<SuggestedAction>,
 }
 
 /// Suggestion type
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SuggestionType {
+    /// Suggest device assignment to primal
     DeviceAssignment,
+    /// Suggest niche optimization
     NicheOptimization,
+    /// Suggest resource rebalancing
     ResourceRebalancing,
+    /// Warning about health issue
     HealthWarning,
 }
 
 /// Suggested action
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SuggestedAction {
+    /// Assign device to primal
     AssignDevice {
+        /// Device to assign
         device_id: String,
+        /// Primal to receive device
         primal_id: String,
     },
+    /// Unassign device from primal
     UnassignDevice {
+        /// Device to unassign
         device_id: String,
+        /// Primal to lose device
         primal_id: String,
     },
+    /// Deploy new niche
     DeployNiche {
+        /// Template to use for deployment
         template_id: String,
     },
+    /// Remove existing niche
     RemoveNiche {
+        /// Niche to remove
         niche_id: String,
     },
 }

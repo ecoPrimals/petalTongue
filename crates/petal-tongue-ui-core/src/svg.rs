@@ -4,6 +4,7 @@
 //! SVG files can be viewed in any browser and embedded in web pages.
 
 use crate::trait_def::{ExportFormat, UICapability, UniversalUI};
+/// Utility functions for health visualization
 use crate::utils::{health_to_color, health_to_percentage};
 use anyhow::Result;
 use petal_tongue_core::GraphEngine;

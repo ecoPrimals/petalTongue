@@ -435,4 +435,3 @@ mod tests {
         assert_eq!(stats.registered_capabilities, 1);
     }
 }
-

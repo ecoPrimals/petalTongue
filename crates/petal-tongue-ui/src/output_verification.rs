@@ -9,8 +9,7 @@
 //! Key insight: Like human proprioception, we need feedback to know
 //! if our outputs are actually reaching the user.
 
-use anyhow::Result;
-use petal_tongue_core::rendering_awareness::{InteractivityState, VisibilityState};
+use petal_tongue_core::rendering_awareness::VisibilityState;
 use std::time::{Duration, Instant};
 use tracing::{debug, info, warn};
 

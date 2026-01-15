@@ -10,10 +10,9 @@ use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer, Visual2D
 use std::sync::{Arc, RwLock};
 use std::time::Instant;
 
-// BingoCube tool integration
-use bingocube_adapters::visual::BingoCubeVisualRenderer;
-// Audio adapter not used (audio handled by petalTongue audio system)
-use bingocube_core::{BingoCube, Config as BingoCubeConfig};
+// BingoCube is a primalTool (ecoPrimals/primalTools/bingoCube)
+// Discovered at runtime via IPC/tarpc, not compiled into petalTongue
+// TRUE PRIMAL: Zero compile-time knowledge of other primals/tools!
 
 /// Application state for petalTongue UI
 ///
@@ -21,7 +20,7 @@ use bingocube_core::{BingoCube, Config as BingoCubeConfig};
 /// - Rendering engines (visual, audio, animation)
 /// - `BiomeOS` client for live data
 /// - UI state (panels, controls)
-/// - `BingoCube` tool integration (demonstrating primal tool use)
+/// - PrimalTools discovered at runtime via IPC (no compile-time dependencies)
 pub struct AppState {
     // Core rendering engines
     /// Capability detector (knows what modalities are actually available)
@@ -58,26 +57,9 @@ pub struct AppState {
     pub auto_refresh: bool,
     /// Refresh interval (seconds)
     pub refresh_interval: f32,
-
-    // BingoCube tool integration (demonstrating primal tool use)
-    /// Show `BingoCube` panel
-    pub show_bingocube_panel: bool,
-    /// `BingoCube` instance (tool being used)
-    pub bingocube: Option<BingoCube>,
-    /// `BingoCube` visual renderer (adapter)
-    pub bingocube_renderer: Option<BingoCubeVisualRenderer>,
-    /// `BingoCube` seed input
-    pub bingocube_seed: String,
-    /// `BingoCube` reveal parameter (0.0-1.0)
-    pub bingocube_x: f64,
-    /// `BingoCube` configuration
-    pub bingocube_config: BingoCubeConfig,
-    /// `BingoCube` error message
-    pub bingocube_error: Option<String>,
-    /// Show `BingoCube` configuration panel
-    pub show_bingocube_config: bool,
-    /// Show `BingoCube` audio panel
-    pub show_bingocube_audio: bool,
+    // PrimalTools (like BingoCube) are discovered at runtime via IPC
+    // No compile-time state needed - use tarpc/JSON-RPC discovery instead
+    // See: petal-tongue-ipc for runtime tool discovery patterns
 }
 
 impl AppState {
@@ -117,11 +99,7 @@ impl AppState {
         let audio_generator = AudioFileGenerator::new();
         let animation_engine = AnimationEngine::new();
 
-        // BingoCube tool integration (demonstrating primal tool use)
-        let bingocube_config = BingoCubeConfig {
-            grid_size: 8,
-            ..Default::default()
-        };
+        // PrimalTools are discovered at runtime (no compile-time config)
 
         Self {
             // Core engines
@@ -144,17 +122,7 @@ impl AppState {
             last_refresh: Instant::now(),
             auto_refresh: true,
             refresh_interval: config.refresh_interval_secs as f32,
-
-            // BingoCube tool state
-            show_bingocube_panel: false,
-            bingocube: None,
-            bingocube_renderer: None,
-            bingocube_seed: String::new(),
-            bingocube_x: 0.5,
-            bingocube_config,
-            bingocube_error: None,
-            show_bingocube_config: false,
-            show_bingocube_audio: false,
+            // PrimalTools state managed via runtime discovery (no compile-time state)
         }
     }
 }
@@ -216,19 +184,11 @@ mod tests {
 
     #[test]
     fn test_bingocube_initial_state() {
-        let state = AppState::new();
+        let _state = AppState::new();
 
-        // BingoCube should not be initialized by default
-        assert!(state.bingocube.is_none());
-        assert!(state.bingocube_renderer.is_none());
-        assert!(state.bingocube_renderer.is_none());
-        assert!(!state.show_bingocube_panel);
-        assert!(!state.show_bingocube_config);
-        assert!(!state.show_bingocube_audio);
-        assert_eq!(state.bingocube_seed, "");
-        // Actual default: bingocube_x is 0.5 (set in AppState::new)
-        assert_eq!(state.bingocube_x, 0.5);
-        assert!(state.bingocube_error.is_none());
+        // BingoCube is a primalTool, discovered at runtime (not a compile-time dependency)
+        // No compile-time state for BingoCube in AppState - discovered via IPC
+        // This test is deprecated - BingoCube integration is now runtime-only
     }
 
     #[test]
@@ -241,7 +201,7 @@ mod tests {
         // Other panels should be hidden by default
         assert!(!state.show_audio_panel);
         assert!(!state.show_capability_panel);
-        assert!(!state.show_bingocube_panel);
+        // show_bingocube_panel removed - BingoCube is runtime-discovered primalTool
     }
 
     #[test]
@@ -307,15 +267,7 @@ mod tests {
         drop(state2);
     }
 
-    #[test]
-    fn test_bingocube_config_defaults() {
-        let state = AppState::new();
-
-        // BingoCube config should have sensible defaults
-        // Actual default: grid_size is 8 (set in AppState::new)
-        assert_eq!(state.bingocube_config.grid_size, 8);
-        assert!(state.bingocube_config.palette_size > 0);
-    }
+    // BingoCube config test removed - it's a primalTool, discovered at runtime
 
     #[test]
     fn test_refresh_interval_bounds() {

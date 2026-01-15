@@ -35,36 +35,22 @@ fn test_capability_detection_is_honest() {
         "VR3D should be unavailable (not implemented)"
     );
 
-    // Audio depends on build features and system
+    // Audio is now pure Rust (AudioCanvas with /dev/snd) - always available on Linux
     let audio_status = detector.get_status(Modality::Audio);
     assert!(audio_status.is_some(), "Audio status should be reported");
     let audio = audio_status.unwrap();
     assert!(audio.tested, "Audio capability MUST be tested, not assumed");
 
-    // If audio is available, it should have been successfully initialized
-    #[cfg(feature = "audio")]
-    {
-        // With audio feature, we should at least attempt initialization
-        // It might fail if no audio device, but it must be tested
-        assert!(
-            audio.tested,
-            "With audio feature enabled, audio must be tested"
-        );
-    }
-
-    #[cfg(not(feature = "audio"))]
-    {
-        // Without audio feature, it should be unavailable
-        assert_eq!(
-            audio.status,
-            ModalityStatus::Unavailable,
-            "Without audio feature, audio should be unavailable"
-        );
-        assert!(
-            audio.reason.contains("not compiled"),
-            "Reason should mention compilation"
-        );
-    }
+    // Audio should be available (pure Rust implementation)
+    assert_eq!(
+        audio.status,
+        ModalityStatus::Available,
+        "Audio should be available via AudioCanvas (pure Rust /dev/snd)"
+    );
+    assert!(
+        audio.reason.contains("AudioCanvas") || audio.reason.contains("/dev/snd"),
+        "Reason should mention AudioCanvas or /dev/snd implementation"
+    );
 }
 
 #[test]
@@ -156,39 +142,31 @@ fn test_audio_capability_is_tested() {
     );
 }
 
-#[cfg(feature = "audio")]
 #[test]
-fn test_audio_initialization_with_feature() {
-    // With audio feature enabled, we should attempt real initialization
+fn test_audio_pure_rust_implementation() {
+    // Audio is now pure Rust (no feature flags needed)
     let detector = CapabilityDetector::default();
     let audio_cap = detector
         .get_status(Modality::Audio)
         .expect("Audio capability must be reported");
 
-    // It might be available or unavailable depending on system,
-    // but it MUST have been tested
+    // Audio MUST be tested (not assumed)
     assert!(
         audio_cap.tested,
-        "With audio feature, audio must be actually tested"
+        "Audio must be actually tested (not assumed)"
     );
 
-    // If available, reason should mention successful initialization
-    if audio_cap.status == ModalityStatus::Available {
-        assert!(
-            audio_cap.reason.contains("initialized")
-                || audio_cap.reason.contains("available")
-                || audio_cap.reason.contains("success"),
-            "Available audio should have positive reason: {}",
-            audio_cap.reason
-        );
-    }
+    // Should be available (pure Rust AudioCanvas implementation)
+    assert_eq!(
+        audio_cap.status,
+        ModalityStatus::Available,
+        "Audio should be available via AudioCanvas"
+    );
 
-    // If unavailable, reason should explain why
-    if audio_cap.status == ModalityStatus::Unavailable {
-        assert!(
-            audio_cap.reason.contains("failed") || audio_cap.reason.contains("error"),
-            "Unavailable audio should explain failure: {}",
-            audio_cap.reason
-        );
-    }
+    // Reason should mention the implementation
+    assert!(
+        audio_cap.reason.contains("AudioCanvas") || audio_cap.reason.contains("/dev/snd") || audio_cap.reason.contains("pure Rust"),
+        "Reason should mention AudioCanvas or /dev/snd: {}",
+        audio_cap.reason
+    );
 }

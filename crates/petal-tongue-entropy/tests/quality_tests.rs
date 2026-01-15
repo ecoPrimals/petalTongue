@@ -118,7 +118,7 @@ fn test_variance_normalization() {
     let var = variance(&values);
 
     assert!(
-        var >= 0.0 && var <= 1.0,
+        (0.0..=1.0).contains(&var),
         "Variance should be normalized: {}",
         var
     );

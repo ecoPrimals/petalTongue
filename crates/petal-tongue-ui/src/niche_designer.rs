@@ -239,7 +239,7 @@ impl NicheDesigner {
         let dragged_primal_id =
             ui.memory(|mem| mem.data.get_temp::<String>(egui::Id::new("dragged_primal")));
 
-        if let Some(primal_id) = dragged_primal_id {
+        if let Some(_primal_id) = dragged_primal_id {
             if slot_response.hovered() {
                 // Highlight as drop zone
                 let highlight_rect = slot_response.rect.expand(2.0);

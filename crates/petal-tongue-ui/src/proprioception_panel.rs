@@ -1,0 +1,308 @@
+//! Proprioception Panel - SAME DAVE Self-Awareness Visualization
+//!
+//! Displays Neural API proprioception data (system self-awareness) in an egui panel.
+//! Updates automatically every 5 seconds with fresh data from Neural API.
+
+use egui::{Color32, ProgressBar, RichText, Ui};
+use petal_tongue_core::{MotorData, ProprioceptionData, ProprioceptionHealthStatus as HealthStatus, SelfAwarenessData, SensoryData};
+use petal_tongue_discovery::NeuralApiProvider;
+use std::time::{Duration, Instant};
+use tracing::{debug, warn};
+
+/// Auto-refresh interval for proprioception data (5 seconds)
+const REFRESH_INTERVAL: Duration = Duration::from_secs(5);
+
+/// Proprioception visualization panel
+pub struct ProprioceptionPanel {
+    /// Current proprioception data (None if not yet fetched)
+    data: Option<ProprioceptionData>,
+    
+    /// Last update timestamp
+    last_update: Instant,
+    
+    /// Whether data is currently being fetched
+    fetching: bool,
+}
+
+impl ProprioceptionPanel {
+    /// Create a new proprioception panel
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            data: None,
+            last_update: Instant::now() - REFRESH_INTERVAL, // Trigger immediate fetch
+            fetching: false,
+        }
+    }
+    
+    /// Update proprioception data from Neural API (async)
+    ///
+    /// This should be called from an async context. The UI will show stale data
+    /// while fetching new data.
+    pub async fn update(&mut self, provider: &NeuralApiProvider) {
+        if self.last_update.elapsed() < REFRESH_INTERVAL {
+            return; // Too soon to refresh
+        }
+        
+        if self.fetching {
+            return; // Already fetching
+        }
+        
+        self.fetching = true;
+        debug!("Fetching proprioception data from Neural API...");
+        
+        match provider.get_proprioception().await {
+            Ok(data) => {
+                debug!("Proprioception data received: {}", data.summary());
+                self.data = Some(data);
+                self.last_update = Instant::now();
+            }
+            Err(e) => {
+                warn!("Failed to fetch proprioception data: {}", e);
+                // Keep old data if fetch fails (graceful degradation)
+            }
+        }
+        
+        self.fetching = false;
+    }
+    
+    /// Render the proprioception panel
+    pub fn render(&self, ui: &mut Ui) {
+        ui.heading("🧠 NUCLEUS Proprioception");
+        
+        ui.separator();
+        
+        if let Some(data) = &self.data {
+            self.render_health_indicator(ui, data);
+            ui.add_space(8.0);
+            self.render_confidence_meter(ui, data);
+            ui.add_space(8.0);
+            self.render_same_dave_panel(ui, data);
+            ui.add_space(8.0);
+            self.render_timestamp(ui, data);
+        } else {
+            ui.label(RichText::new("No proprioception data available")
+                .color(Color32::from_rgb(156, 163, 175))); // gray-400
+            ui.label("Waiting for Neural API...");
+        }
+    }
+    
+    /// Render health indicator with color coding
+    fn render_health_indicator(&self, ui: &mut Ui, data: &ProprioceptionData) {
+        ui.horizontal(|ui| {
+            // Emoji indicator
+            ui.label(RichText::new(data.health.status.emoji())
+                .size(24.0));
+            
+            ui.vertical(|ui| {
+                // Status text with color
+                let (r, g, b) = data.health.status.color_rgb();
+                let color = Color32::from_rgb(r, g, b);
+                
+                ui.label(RichText::new(format!("Health: {:.1}%", data.health.percentage))
+                    .size(18.0)
+                    .color(color)
+                    .strong());
+                
+                ui.label(RichText::new(format!("Status: {}", data.health.status))
+                    .color(color));
+            });
+        });
+    }
+    
+    /// Render confidence meter as a progress bar
+    fn render_confidence_meter(&self, ui: &mut Ui, data: &ProprioceptionData) {
+        ui.label(RichText::new("Confidence").strong());
+        
+        // Progress bar with color coding
+        let progress = data.confidence / 100.0;
+        let color = if data.is_confident() {
+            Color32::from_rgb(34, 197, 94) // green-500
+        } else if data.confidence >= 50.0 {
+            Color32::from_rgb(234, 179, 8) // yellow-500
+        } else {
+            Color32::from_rgb(239, 68, 68) // red-500
+        };
+        
+        ui.add(ProgressBar::new(progress)
+            .fill(color)
+            .text(format!("{:.1}%", data.confidence)));
+    }
+    
+    /// Render SAME DAVE panel with all four components
+    fn render_same_dave_panel(&self, ui: &mut Ui, data: &ProprioceptionData) {
+        ui.group(|ui| {
+            ui.label(RichText::new("SAME DAVE Self-Awareness").strong().size(14.0));
+            
+            ui.separator();
+            
+            // Sensory
+            self.render_sensory_section(ui, &data.sensory);
+            ui.add_space(4.0);
+            
+            // Awareness
+            self.render_awareness_section(ui, &data.self_awareness);
+            ui.add_space(4.0);
+            
+            // Motor
+            self.render_motor_section(ui, &data.motor);
+            ui.add_space(4.0);
+            
+            // Evaluative
+            self.render_evaluative_section(ui, data);
+        });
+    }
+    
+    /// Render sensory section
+    fn render_sensory_section(&self, ui: &mut Ui, sensory: &SensoryData) {
+        ui.horizontal(|ui| {
+            ui.label(RichText::new("👁️ Sensory:").strong());
+            ui.label(format!("{} active sockets detected", sensory.active_sockets));
+        });
+        
+        // Show scan recency
+        let age = (chrono::Utc::now() - sensory.last_scan).num_seconds();
+        ui.label(RichText::new(format!("  Last scan: {}s ago", age))
+            .color(Color32::from_rgb(156, 163, 175))); // gray-400
+    }
+    
+    /// Render awareness section
+    fn render_awareness_section(&self, ui: &mut Ui, awareness: &SelfAwarenessData) {
+        ui.horizontal(|ui| {
+            ui.label(RichText::new("🧠 Awareness:").strong());
+            ui.label(format!("Knows about {} primals", awareness.knows_about));
+        });
+        
+        ui.horizontal(|ui| {
+            ui.label("  Core Systems:");
+            if awareness.has_security {
+                ui.label(RichText::new("✅ Security").color(Color32::from_rgb(34, 197, 94)));
+            }
+            if awareness.has_discovery {
+                ui.label(RichText::new("✅ Discovery").color(Color32::from_rgb(34, 197, 94)));
+            }
+            if awareness.has_compute {
+                ui.label(RichText::new("✅ Compute").color(Color32::from_rgb(34, 197, 94)));
+            }
+        });
+        
+        if awareness.can_coordinate {
+            ui.label(RichText::new("  ✅ Can coordinate multiple primals")
+                .color(Color32::from_rgb(34, 197, 94)));
+        }
+    }
+    
+    /// Render motor section
+    fn render_motor_section(&self, ui: &mut Ui, motor: &MotorData) {
+        ui.label(RichText::new("💪 Motor:").strong());
+        
+        ui.horizontal(|ui| {
+            ui.label("  Capabilities:");
+            
+            if motor.can_deploy {
+                ui.label(RichText::new("✅ Deploy").color(Color32::from_rgb(34, 197, 94)));
+            }
+            if motor.can_execute_graphs {
+                ui.label(RichText::new("✅ Execute").color(Color32::from_rgb(34, 197, 94)));
+            }
+            if motor.can_coordinate_primals {
+                ui.label(RichText::new("✅ Coordinate").color(Color32::from_rgb(34, 197, 94)));
+            }
+        });
+    }
+    
+    /// Render evaluative section
+    fn render_evaluative_section(&self, ui: &mut Ui, data: &ProprioceptionData) {
+        ui.horizontal(|ui| {
+            ui.label(RichText::new("⚖️ Evaluative:").strong());
+            
+            let status_text = if data.is_healthy() && data.is_confident() {
+                "System is healthy and confident"
+            } else if data.is_healthy() {
+                "System is healthy but low confidence"
+            } else if data.is_confident() {
+                "System is confident but degraded"
+            } else {
+                "System requires attention"
+            };
+            
+            let color = if data.is_healthy() && data.is_confident() {
+                Color32::from_rgb(34, 197, 94) // green-500
+            } else {
+                Color32::from_rgb(234, 179, 8) // yellow-500
+            };
+            
+            ui.label(RichText::new(status_text).color(color));
+        });
+    }
+    
+    /// Render timestamp and freshness indicator
+    fn render_timestamp(&self, ui: &mut Ui, data: &ProprioceptionData) {
+        let age_secs = data.age().num_seconds();
+        let age_text = if age_secs < 60 {
+            format!("{}s ago", age_secs)
+        } else {
+            format!("{}m ago", age_secs / 60)
+        };
+        
+        let color = if data.is_stale() {
+            Color32::from_rgb(239, 68, 68) // red-500 (stale)
+        } else {
+            Color32::from_rgb(156, 163, 175) // gray-400 (fresh)
+        };
+        
+        ui.horizontal(|ui| {
+            ui.label(RichText::new("Last updated:").color(color));
+            ui.label(RichText::new(age_text).color(color));
+            
+            if data.is_stale() {
+                ui.label(RichText::new("⚠️ Stale data")
+                    .color(Color32::from_rgb(239, 68, 68)));
+            }
+        });
+        
+        // Show next refresh countdown
+        let next_refresh = REFRESH_INTERVAL.as_secs()
+            .saturating_sub(self.last_update.elapsed().as_secs());
+        if next_refresh > 0 {
+            ui.label(RichText::new(format!("Next refresh in {}s", next_refresh))
+                .color(Color32::from_rgb(156, 163, 175))); // gray-400
+        } else if self.fetching {
+            ui.label(RichText::new("Fetching...")
+                .color(Color32::from_rgb(59, 130, 246))); // blue-500
+        }
+    }
+}
+
+impl Default for ProprioceptionPanel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use petal_tongue_core::ProprioceptionData;
+
+    #[test]
+    fn test_new_panel() {
+        let panel = ProprioceptionPanel::new();
+        assert!(panel.data.is_none());
+        assert!(!panel.fetching);
+    }
+
+    #[test]
+    fn test_panel_with_healthy_data() {
+        let mut data = ProprioceptionData::empty("test");
+        data.health.percentage = 95.0;
+        data.confidence = 90.0;
+        
+        let mut panel = ProprioceptionPanel::new();
+        panel.data = Some(data);
+        
+        assert!(panel.data.is_some());
+        assert!(panel.data.as_ref().unwrap().is_healthy());
+    }
+}
+

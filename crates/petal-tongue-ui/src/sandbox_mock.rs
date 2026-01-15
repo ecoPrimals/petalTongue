@@ -10,9 +10,13 @@ use tracing::{info, warn};
 /// Sandbox scenario for demonstrations
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SandboxScenario {
+    /// Scenario name
     pub name: String,
+    /// Scenario description
     pub description: String,
+    /// Primals in this scenario
     pub primals: Vec<PrimalInfo>,
+    /// Edges between primals
     #[serde(default)]
     pub edges: Vec<SandboxEdge>,
 }
@@ -20,8 +24,11 @@ pub struct SandboxScenario {
 /// Edge in sandbox scenario
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SandboxEdge {
+    /// Source primal ID
     pub from_id: String,
+    /// Target primal ID
     pub to_id: String,
+    /// Type of edge relationship
     pub edge_type: String,
 }
 

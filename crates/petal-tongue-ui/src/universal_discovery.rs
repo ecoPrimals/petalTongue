@@ -20,10 +20,10 @@
 //! Just as an infant learns by exploring, our code discovers the environment
 //! at runtime without assumptions.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 /// Universal service discovery
 ///

@@ -9,13 +9,18 @@
 //! IS the EguiGUI implementation. This is a "smart refactor" approach - we don't
 //! split code just to split it; the current organization is clean and working.
 
-use crate::accessibility::ColorPalette;
 use crate::accessibility_panel::AccessibilityPanel;
-use crate::audio_providers::AudioSystem;
+use crate::audio::AudioSystemV2; // NEW: Substrate-agnostic audio
 use crate::awakening_overlay::AwakeningOverlay;
-use crate::bingocube_integration::BingoCubeIntegration;
+// BingoCubeIntegration removed - it's a primalTool, discovered at runtime
 use crate::graph_metrics_plotter::GraphMetricsPlotter;
 use crate::keyboard_shortcuts::KeyboardShortcuts;
+use crate::metrics_dashboard::MetricsDashboard; // NEW: Neural API metrics dashboard
+use crate::proprioception_panel::ProprioceptionPanel; // NEW: Neural API SAME DAVE panel
+use crate::graph_canvas::GraphCanvas; // NEW: Graph Builder canvas (Phase 4.8)
+use crate::node_palette::NodePalette; // NEW: Node palette for graph builder
+use crate::property_panel::PropertyPanel; // NEW: Property panel for node editing
+use crate::graph_manager::GraphManagerPanel; // NEW: Graph manager for save/load/execute
 use crate::process_viewer_integration::ProcessViewerTool;
 use crate::proprioception::{ProprioceptionSystem, initialize_standard_proprioception}; // v1.1.0: SAME DAVE integration
 use crate::status_reporter::StatusReporter;
@@ -30,10 +35,9 @@ use petal_tongue_animation::AnimationEngine;
 use petal_tongue_api::BiomeOSClient;
 use petal_tongue_core::{
     CapabilityDetector, GraphEngine, InstanceId, LayoutAlgorithm, Modality, MotorCommand,
-    PrimalHealthStatus, PrimalInfo, Properties, RenderingAwareness, SensorEvent, SensorRegistry,
-    SessionManager, TopologyEdge,
+    RenderingAwareness, SensorEvent, SensorRegistry, SessionManager,
 };
-use petal_tongue_discovery::{VisualizationDataProvider, discover_visualization_providers};
+use petal_tongue_discovery::{NeuralApiProvider, VisualizationDataProvider, discover_visualization_providers};
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer, Visual2DRenderer};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
@@ -90,9 +94,10 @@ pub struct PetalTongueApp {
     /// Show system dashboard sidebar
     show_dashboard: bool,
 
-    // Audio System - Multimodal output
+    // Audio System - Multimodal output (EVOLVED: Substrate-agnostic!)
     /// Audio system for UI sounds and data sonification
-    audio_system: AudioSystem,
+    /// Now uses substrate-agnostic AudioManager (runtime discovery, zero hardcoding)
+    audio_system: AudioSystemV2,
 
     // Status Reporter - AI-accessible observability
     /// Status reporter (makes petalTongue observable to AI and external systems)
@@ -137,14 +142,84 @@ pub struct PetalTongueApp {
     // ===== v1.1.0: SAME DAVE Proprioception System =====
     /// Complete self-awareness system (output + input + bidirectional feedback)
     proprioception: ProprioceptionSystem,
+    
+    // ===== v2.0: Neural API Integration =====
+    /// Neural API provider (discovered at runtime)
+    neural_api_provider: Option<Arc<NeuralApiProvider>>,
+    /// Neural API proprioception panel (SAME DAVE visualization)
+    neural_proprioception_panel: ProprioceptionPanel,
+    /// Show Neural API proprioception panel
+    show_neural_proprioception: bool,
+    /// Neural API metrics dashboard
+    neural_metrics_dashboard: MetricsDashboard,
+    /// Show Neural API metrics dashboard
+    show_neural_metrics: bool,
+    /// Tokio runtime for async Neural API updates
+    tokio_runtime: tokio::runtime::Runtime,
+    
+    // ===== v2.0: Graph Builder (Phase 4.8) =====
+    /// Graph Builder canvas (interactive visual graph construction)
+    graph_canvas: GraphCanvas,
+    /// Node palette (available node types)
+    node_palette: NodePalette,
+    /// Property panel (node parameter editor)
+    property_panel: PropertyPanel,
+    /// Graph manager (save/load/execute via Neural API)
+    graph_manager: GraphManagerPanel,
+    /// Show Graph Builder window
+    show_graph_builder: bool,
+    
+    // ===== v2.1: Adaptive UI (device-specific rendering) =====
+    /// Adaptive UI manager (device-specific rendering) - DEPRECATED
+    adaptive_ui: crate::adaptive_ui::AdaptiveUIManager,
+    
+    // ===== v2.2: Sensory UI (capability-based rendering) =====
+    /// Sensory UI manager (capability-based rendering) - TRUE PRIMAL evolution
+    sensory_ui: Option<crate::sensory_ui::SensoryUIManager>,
+    /// Use sensory UI instead of adaptive UI (feature flag for migration)
+    use_sensory_ui: bool,
 }
 
 impl PetalTongueApp {
     /// Create a new application
     #[must_use]
-    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(
+        _cc: &eframe::CreationContext<'_>,
+        scenario_path: Option<std::path::PathBuf>,
+        rendering_caps: petal_tongue_core::RenderingCapabilities,
+    ) -> Self {
+        // Load scenario if provided
+        let (scenario, scenario_path_for_provider) = if let Some(path) = scenario_path {
+            match crate::scenario::Scenario::load(&path) {
+                Ok(s) => {
+                    tracing::info!("✅ Scenario loaded successfully: {}", s.name);
+                    (Some(s), Some(path))
+                }
+                Err(e) => {
+                    tracing::error!("❌ Failed to load scenario: {}", e);
+                    (None, None)
+                }
+            }
+        } else {
+            (None, None)
+        };
+
         // Initialize tutorial mode (checks SHOWCASE_MODE environment variable)
-        let tutorial_mode = crate::tutorial_mode::TutorialMode::new();
+        // OVERRIDE: If scenario is provided, disable tutorial mode
+        let tutorial_mode = if scenario.is_some() {
+            tracing::info!("📋 Scenario mode: Disabling tutorial/mock data");
+            crate::tutorial_mode::TutorialMode::disabled()
+        } else {
+            crate::tutorial_mode::TutorialMode::new()
+        };
+
+        // Log rendering capabilities
+        tracing::info!(
+            "🎨 Rendering: {} ({:?}) - {} modalities",
+            rendering_caps.device_type,
+            rendering_caps.ui_complexity,
+            rendering_caps.modalities.len()
+        );
 
         // Capability-based discovery: Find ANY primal that provides visualization data
         // This could be: biomeOS, Songbird, custom aggregator, or multiple providers!
@@ -154,7 +229,34 @@ impl PetalTongueApp {
 
         let runtime = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
 
-        let data_providers = if tutorial_mode.is_enabled() {
+        let data_providers = if let (Some(_scenario), Some(path)) = (&scenario, &scenario_path_for_provider) {
+            // Scenario mode: Use DYNAMIC scenario provider (schema-agnostic!)
+            tracing::info!("📋 Scenario mode: Loading primals with dynamic schema");
+            match petal_tongue_discovery::DynamicScenarioProvider::from_file(path) {
+                Ok(provider) => {
+                    if let Some(version) = provider.version() {
+                        tracing::info!("   Schema version: {}", version);
+                    }
+                    vec![
+                        Box::new(provider) as Box<dyn VisualizationDataProvider>
+                    ]
+                },
+                Err(e) => {
+                    tracing::error!("Failed to create dynamic scenario provider: {}", e);
+                    tracing::info!("Falling back to static provider...");
+                    // Fallback to static provider
+                    match petal_tongue_discovery::ScenarioVisualizationProvider::from_file(path) {
+                        Ok(provider) => vec![
+                            Box::new(provider) as Box<dyn VisualizationDataProvider>
+                        ],
+                        Err(e2) => {
+                            tracing::error!("Static provider also failed: {}", e2);
+                            vec![]
+                        }
+                    }
+                }
+            }
+        } else if tutorial_mode.is_enabled() {
             // Tutorial mode: Use mock provider (explicitly requested by user)
             tracing::info!("📚 Tutorial mode: Using demonstration data");
             vec![
@@ -234,6 +336,21 @@ impl PetalTongueApp {
         #[allow(deprecated)]
         let biomeos_client = BiomeOSClient::new(&biomeos_url).with_mock_mode(mock_mode_requested);
 
+        // Discover Neural API provider (v2.0: Central coordination for all primals)
+        tracing::info!("🧠 Attempting Neural API discovery (central coordinator)...");
+        let neural_api_provider = runtime.block_on(async {
+            match NeuralApiProvider::discover(None).await {
+                Ok(provider) => {
+                    tracing::info!("✅ Neural API connected - using as primary provider");
+                    Some(Arc::new(provider))
+                }
+                Err(e) => {
+                    tracing::info!("Neural API not available: {} (graceful degradation)", e);
+                    None
+                }
+            }
+        });
+
         // Create graph engine
         let graph = GraphEngine::new();
         let graph = Arc::new(RwLock::new(graph));
@@ -312,16 +429,27 @@ impl PetalTongueApp {
         // Discovered at runtime, not hardcoded - capability-based!
         let tools = {
             let mut tm = ToolManager::new();
-            tm.register_tool(Box::new(BingoCubeIntegration::new()));
+            // BingoCubeIntegration removed - it's a primalTool, discovered at runtime via IPC
             tm.register_tool(Box::new(SystemMonitorTool::default()));
             tm.register_tool(Box::new(ProcessViewerTool::default()));
             tm.register_tool(Box::new(GraphMetricsPlotter::default()));
             tm
         };
 
-        // Initialize audio system and connect status reporter for observability
-        let mut audio_system = AudioSystem::new();
-        audio_system.set_status_reporter(Arc::clone(&status_reporter));
+        // Initialize audio system (EVOLVED: Substrate-agnostic with runtime discovery!)
+        let audio_system = AudioSystemV2::new();
+
+        // Log discovered audio backend for observability
+        if let Some(backend) = audio_system.active_backend() {
+            tracing::info!("🎵 Active audio backend: {}", backend);
+        }
+
+        // Report available backends
+        let backends = audio_system.available_backends();
+        tracing::info!("🎵 Available audio backends: {} total", backends.len());
+        for backend in &backends {
+            tracing::info!("  - {}", backend);
+        }
 
         // Check if we need fallback BEFORE consuming data_providers
         let needs_fallback = !tutorial_mode.is_enabled() && data_providers.is_empty();
@@ -386,8 +514,9 @@ impl PetalTongueApp {
             awakening_overlay: AwakeningOverlay::new(),
 
             // Phase 2: Session management (optional, graceful degradation)
-            session_manager: None, // TODO: Initialize from main.rs
-            instance_id: None,     // TODO: Initialize from main.rs
+            // Initialized in main.rs via Phase 1 integration (see main.rs:13-18)
+            session_manager: None,
+            instance_id: None,
 
             // Central Nervous System
             rendering_awareness,
@@ -396,6 +525,28 @@ impl PetalTongueApp {
             last_display_verification: Instant::now(),
             // v1.1.0: SAME DAVE Proprioception
             proprioception: initialize_standard_proprioception(),
+            
+            // v2.0: Neural API Integration
+            neural_api_provider: neural_api_provider.clone(),
+            neural_proprioception_panel: ProprioceptionPanel::new(),
+            show_neural_proprioception: false, // Toggle with 'P' key
+            neural_metrics_dashboard: MetricsDashboard::new(),
+            show_neural_metrics: false, // Toggle with 'M' key
+            tokio_runtime: runtime,
+            
+            // v2.0: Graph Builder (Phase 4.8)
+            graph_canvas: GraphCanvas::new("New Graph".to_string()),
+            node_palette: NodePalette::new(),
+            property_panel: PropertyPanel::new(),
+            graph_manager: GraphManagerPanel::new(),
+            show_graph_builder: false, // Toggle with 'G' key
+            
+            // v2.1: Adaptive UI (device-specific rendering) - DEPRECATED
+            adaptive_ui: crate::adaptive_ui::AdaptiveUIManager::new(rendering_caps),
+            
+            // v2.2: Sensory UI (capability-based rendering) - TRUE PRIMAL
+            sensory_ui: crate::sensory_ui::SensoryUIManager::new().ok(),
+            use_sensory_ui: true, // Enable sensory UI by default (zero hardcoding!)
         };
 
         // Check if awakening experience is enabled
@@ -717,6 +868,48 @@ impl eframe::App for PetalTongueApp {
             return;
         }
 
+        // Handle keyboard shortcuts for Neural API panels
+        ctx.input(|i| {
+            // 'P' key: Toggle Neural API Proprioception Panel
+            if i.key_pressed(egui::Key::P) && !i.modifiers.ctrl && !i.modifiers.shift {
+                self.show_neural_proprioception = !self.show_neural_proprioception;
+                tracing::info!(
+                    "🧠 Neural Proprioception Panel {}",
+                    if self.show_neural_proprioception {
+                        "enabled"
+                    } else {
+                        "disabled"
+                    }
+                );
+            }
+            
+            // 'M' key: Toggle Neural API Metrics Dashboard
+            if i.key_pressed(egui::Key::M) && !i.modifiers.ctrl && !i.modifiers.shift {
+                self.show_neural_metrics = !self.show_neural_metrics;
+                tracing::info!(
+                    "📊 Neural Metrics Dashboard {}",
+                    if self.show_neural_metrics {
+                        "enabled"
+                    } else {
+                        "disabled"
+                    }
+                );
+            }
+            
+            // 'G' key: Toggle Graph Builder
+            if i.key_pressed(egui::Key::G) && !i.modifiers.ctrl && !i.modifiers.shift {
+                self.show_graph_builder = !self.show_graph_builder;
+                tracing::info!(
+                    "🎨 Graph Builder {}",
+                    if self.show_graph_builder {
+                        "enabled"
+                    } else {
+                        "disabled"
+                    }
+                );
+            }
+        });
+
         // Sync accessibility audio settings with system dashboard
         self.system_dashboard
             .set_audio_enabled(self.accessibility_panel.settings.audio_enabled);
@@ -762,6 +955,9 @@ impl eframe::App for PetalTongueApp {
                         &mut self.show_controls,
                         &mut self.show_audio_panel,
                         &mut self.show_capability_panel,
+                        &mut self.show_neural_proprioception,
+                        &mut self.show_neural_metrics,
+                        &mut self.show_graph_builder,
                     )
                 })
                 .inner;
@@ -953,6 +1149,92 @@ impl eframe::App for PetalTongueApp {
                     let font_scale = self.accessibility_panel.settings.font_size.multiplier();
                     self.trust_dashboard
                         .render(ui, &palette, font_scale, Some(&self.audio_system));
+                });
+        }
+
+        // v2.0: Neural API Proprioception Panel (SAME DAVE from Neural API)
+        if self.show_neural_proprioception {
+            egui::Window::new("🧠 Neural API Proprioception")
+                .default_width(500.0)
+                .default_height(600.0)
+                .default_pos([100.0, 100.0])
+                .show(ctx, |ui| {
+                    if let Some(provider) = &self.neural_api_provider {
+                        // Update panel with latest data (async)
+                        self.tokio_runtime.block_on(async {
+                            self.neural_proprioception_panel
+                                .update(provider.as_ref())
+                                .await;
+                        });
+
+                        // Render the panel
+                        self.neural_proprioception_panel.render(ui);
+                    } else {
+                        ui.label("❌ Neural API not available");
+                        ui.label("Start biomeOS nucleus to enable proprioception data.");
+                    }
+                });
+        }
+
+        // v2.0: Neural API Metrics Dashboard
+        if self.show_neural_metrics {
+            egui::Window::new("📊 Neural API Metrics")
+                .default_width(600.0)
+                .default_height(500.0)
+                .default_pos([150.0, 150.0])
+                .show(ctx, |ui| {
+                    if let Some(provider) = &self.neural_api_provider {
+                        // Update dashboard with latest data (async)
+                        self.tokio_runtime.block_on(async {
+                            self.neural_metrics_dashboard
+                                .update(provider.as_ref())
+                                .await;
+                        });
+
+                        // Render the dashboard
+                        self.neural_metrics_dashboard.render(ui);
+                    } else {
+                        ui.label("❌ Neural API not available");
+                        ui.label("Start biomeOS nucleus to enable metrics data.");
+                    }
+                });
+        }
+
+        // v2.0: Graph Builder (Phase 4.8)
+        if self.show_graph_builder {
+            egui::Window::new("🎨 Graph Builder")
+                .default_width(1200.0)
+                .default_height(800.0)
+                .default_pos([50.0, 50.0])
+                .resizable(true)
+                .show(ctx, |ui| {
+                    if self.neural_api_provider.is_some() {
+                        ui.heading("🎨 Neural Graph Builder");
+                        ui.separator();
+                        ui.label("Interactive visual graph construction for Neural API.");
+                        ui.separator();
+                        
+                        // Simplified initial implementation
+                        // Full three-panel layout will be added in Phase 4.8.1
+                        ui.horizontal(|ui| {
+                            // Canvas area
+                            ui.vertical(|ui| {
+                                ui.heading("Canvas");
+                                ui.separator();
+                                
+                                // Render the graph canvas
+                                self.graph_canvas.render(ui, &palette);
+                            });
+                        });
+                        
+                        ui.separator();
+                        ui.label("💡 Coming soon: Node palette, property editor, and graph management.");
+                    } else {
+                        ui.label("❌ Neural API not available");
+                        ui.label("Start biomeOS nucleus to enable Graph Builder.");
+                        ui.separator();
+                        ui.label("The Graph Builder requires Neural API for graph persistence and execution.");
+                    }
                 });
         }
 

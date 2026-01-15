@@ -3,7 +3,6 @@
 //! This module implements active verification that the display substrate
 //! is actually reaching the user. Part of the bidirectional nervous system.
 
-use anyhow::{Context, Result};
 use petal_tongue_core::rendering_awareness::{InteractivityState, VisibilityState};
 use std::process::Command;
 use tracing::{debug, info, warn};

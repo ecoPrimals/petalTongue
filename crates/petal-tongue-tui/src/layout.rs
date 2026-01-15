@@ -24,9 +24,9 @@ impl StandardLayout {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(3),   // Header
-                Constraint::Min(0),      // Body (flexible)
-                Constraint::Length(3),   // Footer
+                Constraint::Length(3), // Header
+                Constraint::Min(0),    // Body (flexible)
+                Constraint::Length(3), // Footer
             ])
             .split(frame.area());
 
@@ -51,10 +51,7 @@ impl TwoColumnLayout {
     pub fn new(area: Rect, sidebar_width: u16) -> Self {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Length(sidebar_width),
-                Constraint::Min(0),
-            ])
+            .constraints([Constraint::Length(sidebar_width), Constraint::Min(0)])
             .split(area);
 
         Self {
@@ -119,4 +116,3 @@ impl SplitLayout {
         }
     }
 }
-

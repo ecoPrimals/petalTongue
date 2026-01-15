@@ -223,4 +223,3 @@ fn render_primal_details(
 
     frame.render_widget(paragraph, area);
 }
-

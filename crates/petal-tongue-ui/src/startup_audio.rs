@@ -15,9 +15,8 @@
 //! - NO external dependencies (mpv, ffplay, aplay, etc.)
 //! - Self-stable operation guaranteed
 
-use crate::audio_providers::AudioSystem;
+use crate::audio::AudioSystemV2; // EVOLVED: Substrate-agnostic
 use crate::audio_pure_rust::{SAMPLE_RATE, Waveform, generate_tone};
-use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use tracing::{info, warn};
 
@@ -315,7 +314,7 @@ impl StartupAudio {
     ///
     /// Plays signature tone followed by startup music (if available).
     /// Non-blocking - spawns background thread.
-    pub fn play(&self, _audio_system: &AudioSystem) {
+    pub fn play(&self, _audio_system: &AudioSystemV2) {
         if !self.play_signature && !self.play_music {
             return;
         }

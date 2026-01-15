@@ -1,101 +1,88 @@
 {
   "name": "Simple Ecosystem",
-  "description": "5 primals, basic topology, all healthy",
-  "primals": [
-    {
-      "id": "beardog-1",
-      "name": "BearDog Security",
-      "primal_type": "Security",
-      "endpoint": "http://localhost:8001",
-      "capabilities": [
-        "authentication",
-        "authorization",
-        "encryption"
-      ],
-      "health": "Healthy",
-      "last_seen": 1703376000
+  "description": "Minimal scenario - 3 primals, basic topology, all healthy",
+  "version": "2.0.0",
+  "mode": "live-ecosystem",
+  
+  "sensory_config": {
+    "required_capabilities": {
+      "outputs": ["visual"],
+      "inputs": []
     },
-    {
-      "id": "toadstool-1",
-      "name": "ToadStool Compute",
-      "primal_type": "Compute",
-      "endpoint": "http://localhost:8002",
-      "capabilities": [
-        "container_runtime",
-        "workload_execution"
-      ],
-      "health": "Healthy",
-      "last_seen": 1703376060
+    "optional_capabilities": {
+      "outputs": [],
+      "inputs": ["pointer", "keyboard"]
     },
-    {
-      "id": "songbird-1",
-      "name": "Songbird Discovery",
-      "primal_type": "Discovery",
-      "endpoint": "http://localhost:8003",
-      "capabilities": [
-        "service_discovery",
-        "capability_matching"
-      ],
-      "health": "Healthy",
-      "last_seen": 1703376120
+    "complexity_hint": "simple"
+  },
+  
+  "ui_config": {
+    "theme": "benchtop-dark",
+    "animations": {
+      "enabled": false,
+      "breathing_nodes": false,
+      "connection_pulses": false,
+      "smooth_transitions": true,
+      "celebration_effects": false
     },
-    {
-      "id": "nestgate-1",
-      "name": "NestGate Storage",
-      "primal_type": "Storage",
-      "endpoint": "http://localhost:8004",
-      "capabilities": [
-        "permanent_storage",
-        "content_addressing",
-        "attribution"
-      ],
-      "health": "Healthy",
-      "last_seen": 1703376180
-    },
-    {
-      "id": "squirrel-1",
-      "name": "Squirrel AI",
-      "primal_type": "AI",
-      "endpoint": "http://localhost:8005",
-      "capabilities": [
-        "intent_parsing",
-        "task_planning"
-      ],
-      "health": "Healthy",
-      "last_seen": 1703376240
+    "performance": {
+      "target_fps": 30,
+      "vsync": true,
+      "hardware_acceleration": false
     }
-  ],
-  "topology": [
-    {
-      "from": "beardog-1",
-      "to": "toadstool-1",
-      "edge_type": "authenticates",
-      "label": "Auth Flow"
-    },
-    {
-      "from": "songbird-1",
-      "to": "beardog-1",
-      "edge_type": "discovers",
-      "label": null
-    },
-    {
-      "from": "toadstool-1",
-      "to": "nestgate-1",
-      "edge_type": "stores_to",
-      "label": "Data Flow"
-    },
-    {
-      "from": "squirrel-1",
-      "to": "songbird-1",
-      "edge_type": "queries",
-      "label": null
-    },
-    {
-      "from": "squirrel-1",
-      "to": "toadstool-1",
-      "edge_type": "orchestrates",
-      "label": "Task Execution"
-    }
-  ]
+  },
+  
+  "ecosystem": {
+    "primals": [
+      {
+        "id": "beardog-1",
+        "name": "BearDog",
+        "type": "security",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 100,
+        "position": { "x": 200, "y": 300 },
+        "capabilities": ["authentication", "authorization", "encryption"],
+        "metrics": {
+          "cpu_percent": 1.2,
+          "memory_mb": 45
+        }
+      },
+      {
+        "id": "songbird-1",
+        "name": "Songbird",
+        "type": "discovery",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 100,
+        "position": { "x": 400, "y": 300 },
+        "capabilities": ["service-discovery", "health-monitoring"],
+        "metrics": {
+          "cpu_percent": 0.8,
+          "memory_mb": 32
+        }
+      },
+      {
+        "id": "toadstool-1",
+        "name": "Toadstool",
+        "type": "compute",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 100,
+        "position": { "x": 600, "y": 300 },
+        "capabilities": ["container-runtime", "workload-execution"],
+        "metrics": {
+          "cpu_percent": 5.3,
+          "memory_mb": 128
+        }
+      }
+    ]
+  },
+  
+  "neural_api": {
+    "enabled": false
+  }
 }
-

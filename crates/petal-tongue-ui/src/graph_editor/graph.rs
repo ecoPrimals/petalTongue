@@ -9,10 +9,10 @@
 //! - **Immutability**: Operations return new graphs (functional style)
 //! - **Serializable**: Can save/load as templates
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use tracing::{debug, info, warn};
+use tracing::debug;
 
 use super::edge::{DependencyType, GraphEdge};
 use super::node::GraphNode;
@@ -435,9 +435,13 @@ impl Default for GraphMetadata {
 /// Graph statistics
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GraphStats {
+    /// Total number of nodes
     pub node_count: usize,
+    /// Total number of edges
     pub edge_count: usize,
+    /// Maximum depth of the graph
     pub max_depth: usize,
+    /// Whether the graph contains cycles
     pub has_cycles: bool,
 }
 

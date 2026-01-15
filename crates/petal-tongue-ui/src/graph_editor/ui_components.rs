@@ -255,26 +255,40 @@ impl ReasoningDisplay {
 /// Shows conflicts between user and AI modifications, allowing user to choose.
 pub struct ConflictResolution;
 
+/// Conflict between concurrent modifications
 #[derive(Debug, Clone)]
 pub struct Conflict {
+    /// Type of conflict
     pub conflict_type: ConflictType,
+    /// User's proposed change
     pub user_change: String,
+    /// AI's proposed change
     pub ai_change: String,
+    /// Human-readable conflict description
     pub description: String,
 }
 
+/// Type of conflict
 #[derive(Debug, Clone)]
 pub enum ConflictType {
+    /// User change vs AI suggestion
     UserVsAI,
+    /// User change vs another user's change
     UserVsUser,
+    /// Modification during execution
     ExecutionVsModification,
 }
 
+/// User's choice for resolving a conflict
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ConflictResolutionChoice {
+    /// Keep user's change, discard AI's
     KeepUser,
+    /// Keep AI's change, discard user's
     KeepAI,
+    /// Merge both changes
     MergeBoth,
+    /// Cancel and revert both
     Cancel,
 }
 

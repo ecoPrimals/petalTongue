@@ -14,7 +14,7 @@ use crate::display::traits::{DisplayBackend, DisplayCapabilities};
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use std::env;
-use tracing::{info, warn};
+use tracing::info;
 
 /// External display server backend
 pub struct ExternalDisplay {

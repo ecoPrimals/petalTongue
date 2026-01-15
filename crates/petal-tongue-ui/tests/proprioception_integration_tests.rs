@@ -6,9 +6,11 @@
 //! - Bidirectional feedback loops
 //! - Health assessment
 //! - Topology detection
+//!
+//! EVOLUTION NOTE: Tests evolved to remove blocking thread::sleep calls.
+//! Time-based behavior is tested via mechanism verification, not actual time passage.
 
 use petal_tongue_ui::{input_verification::*, output_verification::*, proprioception::*};
-use std::thread;
 use std::time::Duration;
 
 #[test]
@@ -91,22 +93,34 @@ fn test_health_calculation() {
 }
 
 #[test]
-fn test_confidence_decay() {
+fn test_confidence_mechanism() {
     let mut system = initialize_standard_proprioception();
 
-    // Simulate interaction
+    // Test 1: Confidence should be 0 initially (no input)
+    let state_no_input = system.assess();
+    assert_eq!(
+        state_no_input.confidence, 0.0,
+        "Confidence should be 0 with no input"
+    );
+
+    // Test 2: Confidence should increase after input
     system.input_received(&InputModality::Keyboard);
-    let state1 = system.assess();
-    let confidence1 = state1.confidence;
+    let state_with_input = system.assess();
+    assert!(
+        state_with_input.confidence > state_no_input.confidence,
+        "Confidence should increase after input"
+    );
 
-    // Wait a bit (simulate time passing)
-    thread::sleep(Duration::from_millis(100));
+    // Test 3: Multiple inputs should maintain/increase confidence
+    system.input_received(&InputModality::Pointer);
+    let state_more_input = system.assess();
+    assert!(
+        state_more_input.confidence >= state_with_input.confidence,
+        "Confidence should remain high with continued input"
+    );
 
-    // Confidence should be based on recency
-    let state2 = system.assess();
-
-    // Within 30s, confidence should still be high
-    assert!(state2.confidence > 0.0);
+    // EVOLUTION: Removed blocking sleep - testing mechanism, not time passage
+    // Staleness/decay is tested separately via is_stale() mechanism
 }
 
 #[test]
@@ -310,11 +324,9 @@ mod output_verification_tests {
         // Zero threshold should always be stale (tests the boundary condition)
         assert!(verification.is_stale(Duration::from_secs(0)));
 
-        // Test that is_stale logic exists and doesn't panic
-        thread::sleep(Duration::from_millis(10));
-        let is_stale = verification.is_stale(Duration::from_millis(5));
-        // is_stale could be true or false depending on timing, just verify no panic
-        let _ = is_stale;
+        // EVOLUTION: Removed flaky time-based test
+        // Staleness mechanism is verified above via boundary conditions
+        // Production code handles time-based staleness correctly via SystemTime
     }
 }
 
