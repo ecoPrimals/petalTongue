@@ -25,16 +25,12 @@ impl Header {
                     .add_modifier(Modifier::BOLD),
             ),
             Span::raw(" - Universal Interface (TUI Mode) - "),
-            Span::styled(
-                current_view.name(),
-                Style::default().fg(Color::Yellow),
-            ),
+            Span::styled(current_view.name(), Style::default().fg(Color::Yellow)),
         ];
 
-        let paragraph = Paragraph::new(Line::from(title))
-            .block(Block::default().borders(Borders::ALL));
+        let paragraph =
+            Paragraph::new(Line::from(title)).block(Block::default().borders(Borders::ALL));
 
         frame.render_widget(paragraph, area);
     }
 }
-

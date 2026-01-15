@@ -107,18 +107,16 @@ impl AudioCanvas {
             .collect();
 
         // Convert to bytes (safe transmute via bytemuck or manual)
-        // SAFETY: i16 is repr(transparent) and has no padding
-        // We're converting Vec<i16> to &[u8] for raw device write
-        let bytes = unsafe {
-            std::slice::from_raw_parts(
-                i16_samples.as_ptr().cast::<u8>(),
-                i16_samples.len() * std::mem::size_of::<i16>(),
-            )
-        };
+        // EVOLVED: Safe Rust - convert i16 samples to bytes
+        // Each i16 is 2 bytes in little-endian format (ALSA default)
+        let mut bytes = Vec::with_capacity(i16_samples.len() * 2);
+        for sample in &i16_samples {
+            bytes.extend_from_slice(&sample.to_le_bytes());
+        }
 
         // Write directly to device!
         self.device
-            .write_all(bytes)
+            .write_all(&bytes)
             .context("Failed to write samples to audio device")?;
 
         self.device

@@ -165,4 +165,3 @@ fn render_trust_matrix(frame: &mut Frame, area: Rect, standalone: bool) {
 
     frame.render_widget(paragraph, area);
 }
-

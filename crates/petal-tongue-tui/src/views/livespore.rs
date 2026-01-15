@@ -157,4 +157,3 @@ fn render_node_status(frame: &mut Frame, area: Rect, standalone: bool) {
 
     frame.render_widget(paragraph, area);
 }
-

@@ -1,6 +1,7 @@
 # petalTongue Quick Start Guide
 
-**Get up and running in 60 seconds!**
+**Get up and running in 60 seconds!**  
+**Requirements**: ZERO - Just Rust! (100% Pure Rust - no dependencies!) ✅
 
 ---
 

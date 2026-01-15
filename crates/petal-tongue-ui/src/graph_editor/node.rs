@@ -3,7 +3,6 @@
 //! Represents a single node in the execution graph.
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Graph Node - Single unit of execution
 ///

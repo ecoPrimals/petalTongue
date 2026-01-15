@@ -264,7 +264,7 @@ impl AudioSonificationRenderer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use petal_tongue_core::{LayoutAlgorithm, PrimalInfo, TopologyEdge};
+    use petal_tongue_core::{LayoutAlgorithm, TopologyEdge};
 
     fn create_test_graph() -> Arc<RwLock<GraphEngine>> {
         let mut graph = GraphEngine::new();

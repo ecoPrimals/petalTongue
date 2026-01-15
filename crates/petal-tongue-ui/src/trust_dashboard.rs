@@ -5,7 +5,7 @@
 //! in a way that works with ANY trust model (not just ecoPrimals).
 
 use crate::accessibility::ColorPalette;
-use crate::audio_providers::AudioSystem;
+use crate::audio::AudioSystemV2;
 use egui::{Color32, RichText, Ui};
 use petal_tongue_core::{PrimalInfo, PropertyValue};
 use std::collections::HashMap;
@@ -133,7 +133,7 @@ impl TrustDashboard {
         ui: &mut Ui,
         palette: &ColorPalette,
         font_scale: f32,
-        audio_system: Option<&AudioSystem>,
+        audio_system: Option<&AudioSystemV2>,
     ) {
         ui.heading(
             RichText::new("🔐 Trust Dashboard")

@@ -1,0 +1,367 @@
+{
+  "name": "Live Ecosystem - benchTop Showcase",
+  "description": "Smooth, modern desktop environment with real-time primal coordination",
+  "version": "2.0.0",
+  "mode": "live-ecosystem",
+  
+  "sensory_config": {
+    "required_capabilities": {
+      "outputs": ["visual"],
+      "inputs": ["pointer"]
+    },
+    "optional_capabilities": {
+      "outputs": ["audio", "haptic"],
+      "inputs": ["keyboard", "touch", "gesture"]
+    },
+    "complexity_hint": "auto"
+  },
+  
+  "ui_config": {
+    "theme": "benchtop-dark",
+    "animations": {
+      "enabled": true,
+      "breathing_nodes": true,
+      "connection_pulses": true,
+      "smooth_transitions": true,
+      "celebration_effects": true
+    },
+    "performance": {
+      "target_fps": 60,
+      "vsync": true,
+      "hardware_acceleration": true
+    }
+  },
+  
+  "ecosystem": {
+    "primals": [
+      {
+        "id": "nucleus-1",
+        "name": "NUCLEUS",
+        "type": "coordination",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 98,
+        "position": { "x": 400, "y": 300 },
+        "capabilities": [
+          "neural-api",
+          "graph-execution",
+          "primal-coordination",
+          "learning",
+          "optimization"
+        ],
+        "metrics": {
+          "cpu_percent": 8.5,
+          "memory_mb": 145,
+          "uptime_seconds": 3600,
+          "requests_per_second": 234,
+          "active_primals": 8,
+          "graphs_available": 12,
+          "active_executions": 2
+        },
+        "proprioception": {
+          "sensory": {
+            "active_sockets": 8,
+            "last_scan": "2026-01-15T20:30:00Z"
+          },
+          "awareness": {
+            "knows_about": 8,
+            "can_coordinate": true,
+            "has_security": true,
+            "has_discovery": true,
+            "has_compute": true
+          },
+          "motor": {
+            "can_deploy": true,
+            "can_execute_graphs": true,
+            "can_coordinate_primals": true
+          },
+          "evaluative": {
+            "health_status": "healthy",
+            "confidence": 98
+          }
+        }
+      },
+      {
+        "id": "beardog-1",
+        "name": "BearDog",
+        "type": "security",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 100,
+        "position": { "x": 200, "y": 150 },
+        "capabilities": [
+          "encryption",
+          "authentication",
+          "key-management",
+          "unified-crypto"
+        ],
+        "metrics": {
+          "cpu_percent": 2.1,
+          "memory_mb": 45,
+          "uptime_seconds": 7200,
+          "encryptions_per_second": 1250,
+          "active_keys": 24
+        }
+      },
+      {
+        "id": "songbird-1",
+        "name": "Songbird",
+        "type": "discovery",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 95,
+        "confidence": 92,
+        "position": { "x": 600, "y": 150 },
+        "capabilities": [
+          "service-discovery",
+          "capability-query",
+          "federation",
+          "mesh-formation"
+        ],
+        "metrics": {
+          "cpu_percent": 1.8,
+          "memory_mb": 38,
+          "uptime_seconds": 7200,
+          "discoveries_per_second": 45,
+          "registered_primals": 8
+        }
+      },
+      {
+        "id": "toadstool-1",
+        "name": "Toadstool",
+        "type": "compute",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 98,
+        "confidence": 95,
+        "position": { "x": 400, "y": 500 },
+        "capabilities": [
+          "gpu-compute",
+          "cpu-compute",
+          "3d-rendering",
+          "ml-inference"
+        ],
+        "metrics": {
+          "cpu_percent": 45.2,
+          "memory_mb": 2048,
+          "gpu_percent": 78,
+          "uptime_seconds": 7200,
+          "compute_tasks": 156
+        }
+      },
+      {
+        "id": "nestgate-1",
+        "name": "NestGate",
+        "type": "storage",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 100,
+        "position": { "x": 200, "y": 450 },
+        "capabilities": [
+          "content-addressed",
+          "deduplication",
+          "persistence",
+          "federation"
+        ],
+        "metrics": {
+          "cpu_percent": 3.2,
+          "memory_mb": 128,
+          "storage_gb": 45.7,
+          "uptime_seconds": 7200,
+          "objects_stored": 15234
+        }
+      },
+      {
+        "id": "petaltongue-1",
+        "name": "petalTongue",
+        "type": "visualization",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 100,
+        "position": { "x": 600, "y": 450 },
+        "capabilities": [
+          "ui-rendering",
+          "multi-modal",
+          "real-time-viz",
+          "graph-builder"
+        ],
+        "metrics": {
+          "cpu_percent": 12.5,
+          "memory_mb": 185,
+          "fps": 60,
+          "uptime_seconds": 1800,
+          "render_time_ms": 8
+        }
+      },
+      {
+        "id": "squirrel-1",
+        "name": "Squirrel",
+        "type": "intelligence",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 92,
+        "confidence": 88,
+        "position": { "x": 150, "y": 300 },
+        "capabilities": [
+          "natural-language",
+          "graph-generation",
+          "learning",
+          "optimization"
+        ],
+        "metrics": {
+          "cpu_percent": 15.3,
+          "memory_mb": 512,
+          "uptime_seconds": 3600,
+          "queries_per_second": 23
+        }
+      },
+      {
+        "id": "rootpulse-1",
+        "name": "RootPulse",
+        "type": "temporal",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 100,
+        "position": { "x": 650, "y": 300 },
+        "capabilities": [
+          "version-control",
+          "temporal-tracking",
+          "dag-timeline",
+          "semantic-attribution"
+        ],
+        "metrics": {
+          "cpu_percent": 4.1,
+          "memory_mb": 95,
+          "uptime_seconds": 7200,
+          "commits_per_hour": 145,
+          "active_branches": 8
+        }
+      }
+    ],
+    
+    "connections": [
+      { "from": "nucleus-1", "to": "beardog-1", "type": "security", "active": true, "bandwidth_mbps": 2.5 },
+      { "from": "nucleus-1", "to": "songbird-1", "type": "discovery", "active": true, "bandwidth_mbps": 1.8 },
+      { "from": "nucleus-1", "to": "toadstool-1", "type": "compute", "active": true, "bandwidth_mbps": 15.3 },
+      { "from": "nucleus-1", "to": "nestgate-1", "type": "storage", "active": true, "bandwidth_mbps": 8.2 },
+      { "from": "nucleus-1", "to": "petaltongue-1", "type": "visualization", "active": true, "bandwidth_mbps": 3.1 },
+      { "from": "nucleus-1", "to": "squirrel-1", "type": "intelligence", "active": true, "bandwidth_mbps": 5.7 },
+      { "from": "nucleus-1", "to": "rootpulse-1", "type": "temporal", "active": true, "bandwidth_mbps": 2.1 },
+      { "from": "beardog-1", "to": "nestgate-1", "type": "encrypted-storage", "active": true, "bandwidth_mbps": 4.2 },
+      { "from": "songbird-1", "to": "petaltongue-1", "type": "discovery-data", "active": true, "bandwidth_mbps": 0.8 },
+      { "from": "toadstool-1", "to": "petaltongue-1", "type": "render-data", "active": true, "bandwidth_mbps": 12.5 },
+      { "from": "squirrel-1", "to": "nucleus-1", "type": "graph-generation", "active": true, "bandwidth_mbps": 1.2 },
+      { "from": "rootpulse-1", "to": "nestgate-1", "type": "content-store", "active": true, "bandwidth_mbps": 3.5 }
+    ]
+  },
+  
+  "neural_api": {
+    "enabled": true,
+    "learning_enabled": true,
+    "optimization_enabled": true,
+    "patterns": [
+      {
+        "name": "Common Deployment",
+        "frequency": 145,
+        "optimization_level": "high",
+        "pathway": ["nucleus-1", "beardog-1", "nestgate-1"],
+        "avg_latency_ms": 25
+      },
+      {
+        "name": "Graph Execution",
+        "frequency": 234,
+        "optimization_level": "optimized",
+        "pathway": ["nucleus-1", "toadstool-1", "nestgate-1"],
+        "avg_latency_ms": 12
+      },
+      {
+        "name": "Discovery Query",
+        "frequency": 456,
+        "optimization_level": "learned",
+        "pathway": ["songbird-1", "nucleus-1"],
+        "avg_latency_ms": 8
+      }
+    ]
+  },
+  
+  "interactions": {
+    "tooltips_enabled": true,
+    "click_to_inspect": true,
+    "drag_to_pan": true,
+    "scroll_to_zoom": true,
+    "keyboard_shortcuts": true,
+    "context_menus": true
+  },
+  
+  "animations": {
+    "node_breathing": {
+      "enabled": true,
+      "duration_ms": 2000,
+      "amplitude": 1.05
+    },
+    "connection_pulse": {
+      "enabled": true,
+      "speed": 1.0,
+      "color": "data-flow"
+    },
+    "health_transition": {
+      "enabled": true,
+      "duration_ms": 500,
+      "easing": "ease-out"
+    },
+    "panel_slide": {
+      "enabled": true,
+      "duration_ms": 300,
+      "easing": "ease-in-out"
+    }
+  },
+  
+  "demo_sequence": [
+    {
+      "timestamp": 0,
+      "action": "show_ecosystem",
+      "description": "Display full ecosystem with smooth fade-in"
+    },
+    {
+      "timestamp": 2000,
+      "action": "highlight_nucleus",
+      "description": "Pulse NUCLEUS node - central coordinator"
+    },
+    {
+      "timestamp": 4000,
+      "action": "show_connections",
+      "description": "Animate connection pulses - data flow"
+    },
+    {
+      "timestamp": 6000,
+      "action": "show_metrics",
+      "description": "Display metrics dashboard (press M)"
+    },
+    {
+      "timestamp": 8000,
+      "action": "show_proprioception",
+      "description": "Display proprioception panel (press P)"
+    },
+    {
+      "timestamp": 10000,
+      "action": "click_beardog",
+      "description": "Inspect BearDog - security primal"
+    },
+    {
+      "timestamp": 12000,
+      "action": "show_graph_builder",
+      "description": "Open graph builder (press G)"
+    },
+    {
+      "timestamp": 14000,
+      "action": "loop",
+      "description": "Return to ecosystem view"
+    }
+  ]
+}
+

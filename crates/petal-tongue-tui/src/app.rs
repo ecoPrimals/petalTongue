@@ -8,10 +8,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{
-    backend::CrosstermBackend,
-    Terminal,
-};
+use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io;
 use std::time::Duration;
 
@@ -276,8 +273,11 @@ impl RichTUI {
             Err(e) => {
                 // Discovery failed - standalone mode
                 self.state.set_standalone_mode(true).await;
-                self.add_log(format!("Discovery failed: {}. Running in standalone mode.", e))
-                    .await;
+                self.add_log(format!(
+                    "Discovery failed: {}. Running in standalone mode.",
+                    e
+                ))
+                .await;
             }
         }
 
@@ -330,12 +330,11 @@ impl RichTUI {
     /// Cleanup terminal
     fn cleanup(&mut self) -> Result<()> {
         disable_raw_mode().context("Failed to disable raw mode")?;
-        execute!(
-            self.terminal.backend_mut(),
-            LeaveAlternateScreen
-        )
-        .context("Failed to leave alternate screen")?;
-        self.terminal.show_cursor().context("Failed to show cursor")?;
+        execute!(self.terminal.backend_mut(), LeaveAlternateScreen)
+            .context("Failed to leave alternate screen")?;
+        self.terminal
+            .show_cursor()
+            .context("Failed to show cursor")?;
 
         Ok(())
     }
@@ -347,4 +346,3 @@ impl Drop for RichTUI {
         let _ = self.cleanup();
     }
 }
-

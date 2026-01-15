@@ -23,8 +23,8 @@ pub fn render(frame: &mut Frame, area: Rect, state: &TUIState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Min(0),      // Logs
-            Constraint::Length(5),   // Help/controls
+            Constraint::Min(0),    // Logs
+            Constraint::Length(5), // Help/controls
         ])
         .split(area);
 
@@ -97,18 +97,9 @@ fn render_log_list(
                 };
 
                 ListItem::new(Line::from(vec![
-                    Span::styled(
-                        format!("{} ", level_icon),
-                        style.fg(level_color),
-                    ),
-                    Span::styled(
-                        format!("[{}] ", timestamp),
-                        style.fg(Color::DarkGray),
-                    ),
-                    Span::styled(
-                        format!("{} ", source),
-                        style.fg(Color::Magenta),
-                    ),
+                    Span::styled(format!("{} ", level_icon), style.fg(level_color)),
+                    Span::styled(format!("[{}] ", timestamp), style.fg(Color::DarkGray)),
+                    Span::styled(format!("{} ", source), style.fg(Color::Magenta)),
                     Span::styled(&log.message, style.fg(Color::White)),
                 ]))
                 .style(style)
@@ -131,14 +122,12 @@ fn render_log_list(
 /// Render help/controls
 fn render_help(frame: &mut Frame, area: Rect) {
     let lines = vec![
-        Line::from(vec![
-            Span::styled(
-                "Controls:",
-                Style::default()
-                    .fg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ]),
+        Line::from(vec![Span::styled(
+            "Controls:",
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )]),
         Line::from(vec![
             Span::raw("  "),
             Span::styled("[↑/k ↓/j]", Style::default().fg(Color::Yellow)),
@@ -158,4 +147,3 @@ fn render_help(frame: &mut Frame, area: Rect) {
 
     frame.render_widget(paragraph, area);
 }
-

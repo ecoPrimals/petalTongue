@@ -92,9 +92,8 @@ impl SongbirdClient {
         }
 
         // Priority 2: /run/user/<uid>
-        // SAFETY: getuid() is a safe FFI call that returns the effective user ID
-        // without preconditions that could lead to undefined behavior.
-        let uid = unsafe { libc::getuid() };
+        // EVOLVED: Now using safe rustix-based function from core (was unsafe libc::getuid())
+        let uid = petal_tongue_core::system_info::get_current_uid();
         paths.push(PathBuf::from(format!("/run/user/{}", uid)));
 
         // Priority 3: /tmp (development)
@@ -169,13 +168,17 @@ impl SongbirdClient {
     /// Get all registered primals
     ///
     /// Returns the complete list of primals known to Songbird.
+    /// Uses discover_by_capability("*") to get all registered primals.
     pub async fn get_all_primals(&self) -> Result<Vec<PrimalInfo>> {
         debug!("🔍 Querying Songbird for all registered primals");
 
+        // Songbird's API uses discover_by_capability with "*" to get all primals
         let request = json!({
             "jsonrpc": "2.0",
-            "method": "get_all_primals",
-            "params": {},
+            "method": "discover_by_capability",
+            "params": {
+                "capability": "*"
+            },
             "id": 1
         });
 

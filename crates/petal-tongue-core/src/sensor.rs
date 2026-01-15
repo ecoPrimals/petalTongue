@@ -69,15 +69,22 @@ impl SensorCapabilities {
     }
 }
 
-/// Specific capabilities to query for
+/// Specific capabilities to query for - sensor characteristics
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SensorCapability {
+    /// Accepts input from user/environment
     Input,
+    /// Provides output to user/environment
     Output,
+    /// Tracks spatial position/movement
     Spatial,
+    /// Tracks temporal changes/events
     Temporal,
+    /// Provides continuous stream of data
     Continuous,
+    /// Provides discrete events/readings
     Discrete,
+    /// Supports bidirectional communication
     Bidirectional,
 }
 
@@ -122,74 +129,117 @@ pub enum SensorType {
 #[derive(Debug, Clone)]
 pub enum SensorEvent {
     // Spatial events
+    /// Mouse/pointer position update
     Position {
+        /// X coordinate
         x: f32,
+        /// Y coordinate
         y: f32,
+        /// When event occurred
         timestamp: Instant,
     },
 
+    /// Mouse/pointer click event
     Click {
+        /// X coordinate of click
         x: f32,
+        /// Y coordinate of click
         y: f32,
+        /// Which button was clicked
         button: MouseButton,
+        /// When click occurred
         timestamp: Instant,
     },
 
+    /// Scroll wheel event
     Scroll {
+        /// Horizontal scroll delta
         delta_x: f32,
+        /// Vertical scroll delta
         delta_y: f32,
+        /// When scroll occurred
         timestamp: Instant,
     },
 
     // Discrete events
+    /// Keyboard key press event
     KeyPress {
+        /// Which key was pressed
         key: Key,
+        /// Active modifier keys (Ctrl, Shift, Alt, etc.)
         modifiers: Modifiers,
+        /// When key was pressed
         timestamp: Instant,
     },
 
+    /// Keyboard key release event
     KeyRelease {
+        /// Which key was released
         key: Key,
+        /// Active modifier keys
         modifiers: Modifiers,
+        /// When key was released
         timestamp: Instant,
     },
 
+    /// Generic button press event
     ButtonPress {
+        /// Button identifier
         button: u8,
+        /// When button was pressed
         timestamp: Instant,
     },
 
     // Continuous events
+    /// Audio input level measurement
     AudioLevel {
+        /// Sound amplitude (0.0 to 1.0)
         amplitude: f32,
+        /// Dominant frequency if detected
         frequency: Option<f32>,
+        /// When measured
         timestamp: Instant,
     },
 
+    /// Temperature sensor reading
     Temperature {
+        /// Temperature in Celsius
         celsius: f32,
+        /// When measured
         timestamp: Instant,
     },
 
     // Confirmation events (sensory feedback)
+    /// Heartbeat confirmation from display backend
     Heartbeat {
+        /// Round-trip latency
         latency: std::time::Duration,
+        /// When measured
         timestamp: Instant,
     },
 
+    /// Confirmation that a rendered frame was displayed
     FrameAcknowledged {
+        /// ID of acknowledged frame
         frame_id: u64,
+        /// When acknowledged
         timestamp: Instant,
     },
 
+    /// Display visibility changed (app focused/unfocused)
     DisplayVisible {
+        /// Whether display is currently visible
         visible: bool,
+        /// When visibility changed
         timestamp: Instant,
     },
 
     // Generic event for unknown types
+    /// Generic event for extensibility
     Generic {
+        /// Event data as string
         data: String,
+        /// When event occurred
         timestamp: Instant,
     },
 }
@@ -238,9 +288,13 @@ impl SensorEvent {
 /// Mouse button identifier
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MouseButton {
+    /// Left mouse button
     Left,
+    /// Right mouse button
     Right,
+    /// Middle mouse button
     Middle,
+    /// Other mouse button (by ID)
     Other(u8),
 }
 
@@ -254,16 +308,25 @@ pub enum Key {
     Named(String),
 
     /// Special keys
+    /// Escape key
     Escape,
+    /// Enter/Return key
     Enter,
+    /// Tab key
     Tab,
+    /// Backspace key
     Backspace,
+    /// Delete key
     Delete,
 
     /// Arrow keys
+    /// Up arrow key
     Up,
+    /// Down arrow key
     Down,
+    /// Left arrow key
     Left,
+    /// Right arrow key
     Right,
 
     /// Function keys
@@ -276,13 +339,18 @@ pub enum Key {
 /// Keyboard modifiers
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Modifiers {
+    /// Control key pressed
     pub ctrl: bool,
+    /// Alt key pressed
     pub alt: bool,
+    /// Shift key pressed
     pub shift: bool,
+    /// Meta/Command/Windows key pressed
     pub meta: bool,
 }
 
 impl Modifiers {
+    /// No modifiers pressed
     pub fn none() -> Self {
         Self {
             ctrl: false,
@@ -292,6 +360,7 @@ impl Modifiers {
         }
     }
 
+    /// Only Ctrl modifier pressed
     pub fn ctrl() -> Self {
         Self {
             ctrl: true,

@@ -193,6 +193,7 @@ fn encrypt_entropy(plaintext: &[u8]) -> Result<EncryptedEntropy> {
 ///
 /// In production, only biomeOS/BearDog would decrypt (using their private key).
 #[cfg(test)]
+#[allow(dead_code)] // Used in future streaming implementation
 fn decrypt_entropy(encrypted: &EncryptedEntropy, key: &[u8; 32]) -> Result<Vec<u8>> {
     let cipher = Aes256Gcm::new(key.into());
     let nonce = GenericArray::from_slice(&encrypted.nonce);
@@ -215,7 +216,7 @@ mod tests {
 
         // Generate key for testing
         let key = Aes256Gcm::generate_key(&mut OsRng);
-        let key_bytes: [u8; 32] = key.as_slice().try_into().unwrap();
+        let _key_bytes: [u8; 32] = key.as_slice().try_into().unwrap();
 
         // Encrypt
         let encrypted = encrypt_entropy(data).expect("Encryption failed");

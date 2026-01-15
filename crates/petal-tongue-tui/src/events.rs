@@ -5,8 +5,8 @@
 
 use anyhow::Result;
 use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent, KeyModifiers};
-use tokio::sync::mpsc;
 use std::time::Duration;
+use tokio::sync::mpsc;
 
 /// TUI event
 #[derive(Debug, Clone)]
@@ -21,7 +21,12 @@ pub enum TUIEvent {
     Quit,
 
     /// Resize event
-    Resize { width: u16, height: u16 },
+    Resize {
+        /// New terminal width
+        width: u16,
+        /// New terminal height
+        height: u16,
+    },
 
     /// External event (from other primals)
     External(ExternalEvent),
@@ -31,13 +36,26 @@ pub enum TUIEvent {
 #[derive(Debug, Clone)]
 pub enum ExternalEvent {
     /// Primal discovered
-    PrimalDiscovered { name: String },
+    PrimalDiscovered {
+        /// Name of discovered primal
+        name: String,
+    },
 
     /// Primal status changed
-    PrimalStatusChanged { name: String, healthy: bool },
+    PrimalStatusChanged {
+        /// Name of primal
+        name: String,
+        /// Whether primal is healthy
+        healthy: bool,
+    },
 
     /// New log message
-    LogMessage { source: String, message: String },
+    LogMessage {
+        /// Source of log message
+        source: String,
+        /// Log message content
+        message: String,
+    },
 
     /// Topology changed
     TopologyChanged,
@@ -322,4 +340,3 @@ mod tests {
         }
     }
 }
-

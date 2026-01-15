@@ -22,7 +22,6 @@
 
 use crate::input_verification::{InputModality, InputVerificationSystem};
 use crate::output_verification::{OutputModality, OutputVerificationSystem};
-use petal_tongue_core::rendering_awareness::{InteractivityState, VisibilityState};
 use std::time::{Duration, Instant};
 use tracing::{info, warn};
 
@@ -188,7 +187,7 @@ impl ProprioceptionSystem {
     }
 
     /// Record output activity
-    pub fn output_sent(&mut self, modality: &OutputModality) {
+    pub fn output_sent(&mut self, _modality: &OutputModality) {
         // This would be called when we send output (render frame, play audio, etc.)
         // For now, we track via user interaction confirming they received it
     }

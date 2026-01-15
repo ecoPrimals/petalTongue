@@ -365,29 +365,40 @@ impl SelfAssessment {
     }
 }
 
-/// User visibility state
+/// User visibility state - confidence that user can see output
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VisibilityState {
-    Confirmed, // >90% confirmation
-    Probable,  // >50% confirmation
-    Uncertain, // >0% confirmation
-    Unknown,   // No confirmation
+    /// High confidence user can see output (>90% confirmation)
+    Confirmed,
+    /// Likely user can see output (>50% confirmation)
+    Probable,
+    /// Uncertain if user can see output (>0% confirmation)
+    Uncertain,
+    /// No confirmation of visibility
+    Unknown,
 }
 
-/// User interactivity state
+/// User interactivity state - recency of user interaction
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InteractivityState {
-    Active,      // Interacted <5s ago
-    Recent,      // Interacted <30s ago
-    Idle,        // Interacted >30s ago
-    Unconfirmed, // Never interacted
+    /// User actively interacting (interacted <5s ago)
+    Active,
+    /// Recent user interaction (interacted <30s ago)
+    Recent,
+    /// User idle (interacted >30s ago)
+    Idle,
+    /// No user interaction confirmed
+    Unconfirmed,
 }
 
-/// Rendering metrics
+/// Rendering metrics - quantitative feedback on rendering effectiveness
 #[derive(Debug, Clone, Default)]
 pub struct RenderingMetrics {
+    /// Total rendering commands sent to output
     pub commands_sent: u64,
+    /// Number of frames confirmed as visible
     pub frames_confirmed: u64,
+    /// Number of user interactions detected
     pub user_interactions: u64,
 }
 

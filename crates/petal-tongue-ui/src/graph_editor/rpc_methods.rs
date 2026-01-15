@@ -38,148 +38,201 @@ pub struct GraphEditorService {
 /// Graph template
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraphTemplate {
+    /// Template identifier
     pub id: String,
+    /// Template name
     pub name: String,
+    /// Template description
     pub description: String,
+    /// Graph definition
     pub graph: Graph,
+    /// Template author
     pub author: Option<String>,
+    /// Classification tags
     pub tags: Vec<String>,
+    /// When template was created
     pub created_at: chrono::DateTime<chrono::Utc>,
+    /// Number of times template has been used
     pub usage_count: u64,
 }
 
 /// Request: Open graph editor
 #[derive(Debug, Deserialize)]
 pub struct EditorOpenRequest {
+    /// Graph to open
     pub graph_id: String,
 }
 
 /// Response: Open graph editor
 #[derive(Debug, Serialize)]
 pub struct EditorOpenResponse {
+    /// Opened graph
     pub graph: Graph,
+    /// Template information if graph is from template
     pub template_info: Option<GraphTemplate>,
 }
 
 /// Request: Add node
 #[derive(Debug, Deserialize)]
 pub struct AddNodeRequest {
+    /// Graph to add node to
     pub graph_id: String,
+    /// Node to add
     pub node: GraphNode,
 }
 
 /// Response: Add node
 #[derive(Debug, Serialize)]
 pub struct AddNodeResponse {
+    /// ID of added node
     pub node_id: String,
+    /// Validation result
     pub validation: ValidationResult,
 }
 
 /// Request: Modify node
 #[derive(Debug, Deserialize)]
 pub struct ModifyNodeRequest {
+    /// Graph containing node
     pub graph_id: String,
+    /// Node to modify
     pub node_id: String,
+    /// Changes to apply
     pub changes: serde_json::Value,
 }
 
 /// Response: Modify node
 #[derive(Debug, Serialize)]
 pub struct ModifyNodeResponse {
+    /// Whether modification succeeded
     pub success: bool,
+    /// Validation result
     pub validation: ValidationResult,
 }
 
 /// Request: Remove node
 #[derive(Debug, Deserialize)]
 pub struct RemoveNodeRequest {
+    /// Graph containing node
     pub graph_id: String,
+    /// Node to remove
     pub node_id: String,
 }
 
 /// Response: Remove node
 #[derive(Debug, Serialize)]
 pub struct RemoveNodeResponse {
+    /// Whether removal succeeded
     pub success: bool,
+    /// Edges that were removed due to node removal
     pub affected_edges: Vec<String>,
 }
 
 /// Request: Add edge
 #[derive(Debug, Deserialize)]
 pub struct AddEdgeRequest {
+    /// Graph to add edge to
     pub graph_id: String,
+    /// Source node
     pub from: String,
+    /// Target node
     pub to: String,
+    /// Type of edge (dependency type)
     pub edge_type: DependencyType,
 }
 
 /// Response: Add edge
 #[derive(Debug, Serialize)]
 pub struct AddEdgeResponse {
+    /// ID of added edge
     pub edge_id: String,
+    /// Validation result
     pub validation: ValidationResult,
 }
 
 /// Request: Save template
 #[derive(Debug, Deserialize)]
 pub struct SaveTemplateRequest {
+    /// Graph to save as template
     pub graph_id: String,
+    /// Template name
     pub name: String,
+    /// Template description
     pub description: String,
+    /// Classification tags
     pub tags: Vec<String>,
 }
 
 /// Response: Save template
 #[derive(Debug, Serialize)]
 pub struct SaveTemplateResponse {
+    /// ID of saved template
     pub template_id: String,
+    /// When template was saved
     pub saved_at: chrono::DateTime<chrono::Utc>,
 }
 
 /// Request: Apply template
 #[derive(Debug, Deserialize)]
 pub struct ApplyTemplateRequest {
+    /// Template to apply
     pub template_id: String,
-    pub merge: bool, // true = merge with existing, false = replace
+    /// Whether to merge with existing graph (true) or replace (false)
+    pub merge: bool,
 }
 
 /// Response: Apply template
 #[derive(Debug, Serialize)]
 pub struct ApplyTemplateResponse {
+    /// Resulting graph
     pub graph: Graph,
+    /// Number of nodes added
     pub nodes_added: usize,
+    /// Number of edges added
     pub edges_added: usize,
 }
 
 /// Request: Get preview
 #[derive(Debug, Deserialize)]
 pub struct GetPreviewRequest {
+    /// Graph to preview
     pub graph: Graph,
 }
 
 /// Response: Get preview
 #[derive(Debug, Serialize)]
 pub struct GetPreviewResponse {
+    /// Execution order (node IDs)
     pub execution_order: Vec<String>,
+    /// Estimated execution duration
     pub estimated_duration: String,
+    /// Resource requirements estimate
     pub resource_requirements: ResourceEstimate,
+    /// Validation warnings
     pub validation_warnings: Vec<String>,
 }
 
 /// Validation result
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ValidationResult {
+    /// Whether validation passed
     pub valid: bool,
+    /// Validation errors
     pub errors: Vec<String>,
+    /// Validation warnings
     pub warnings: Vec<String>,
 }
 
 /// Resource estimate
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResourceEstimate {
+    /// Estimated CPU cores needed
     pub cpu_cores: f32,
+    /// Estimated memory in megabytes
     pub memory_mb: u64,
+    /// Estimated disk space in gigabytes
     pub disk_gb: f32,
+    /// Estimated network bandwidth in MB/s
     pub network_mbps: f32,
 }
 
@@ -389,7 +442,7 @@ impl GraphEditorService {
             .get(&req.template_id)
             .context("Template not found")?;
 
-        let mut graph = template.graph.clone();
+        let graph = template.graph.clone();
 
         if req.merge {
             // TODO: Implement merge logic

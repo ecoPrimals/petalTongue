@@ -7,8 +7,8 @@ use petal_tongue_discovery::{JsonRpcProvider, VisualizationDataProvider};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Initialize logging
-    tracing_subscriber::fmt::init();
+    // Note: Logging initialization removed (tracing_subscriber not in example deps)
+    // Examples are for demonstration, not production use
 
     println!("🔌 JSON-RPC Provider Demo");
     println!("═══════════════════════════\n");
@@ -41,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
                 Ok(primals) => {
                     println!("   Found {} primals:", primals.len());
                     for primal in primals {
-                        println!("   • {} ({}) - {}", primal.name, primal.id, primal.health);
+                        println!("   • {} ({}) - {:?}", primal.name, primal.id, primal.health);
                     }
                 }
                 Err(e) => println!("   ❌ Error: {}", e),

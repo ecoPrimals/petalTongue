@@ -95,14 +95,12 @@ fn render_device_list(frame: &mut Frame, area: Rect, status: &crate::state::Syst
     } else {
         // Show discovered devices
         let mut items = vec![
-            ListItem::new(Line::from(vec![
-                Span::styled(
-                    format!("Discovered {} devices:", device_count),
-                    Style::default()
-                        .fg(Color::Cyan)
-                        .add_modifier(Modifier::BOLD),
-                ),
-            ])),
+            ListItem::new(Line::from(vec![Span::styled(
+                format!("Discovered {} devices:", device_count),
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            )])),
             ListItem::new(Line::from("")),
         ];
 
@@ -183,4 +181,3 @@ fn render_device_details(frame: &mut Frame, area: Rect, status: &crate::state::S
 
     frame.render_widget(paragraph, area);
 }
-

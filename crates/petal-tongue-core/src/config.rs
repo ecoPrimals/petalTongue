@@ -67,12 +67,12 @@ impl PetalTongueConfig {
         std::env::var("BIOMEOS_URL")
             .ok()
             .or_else(|| self.biomeos_url.clone())
-        .unwrap_or_else(|| {
-            tracing::warn!(
-                "No BiomeOS URL configured - discovery will rely on mDNS/HTTP probing"
-            );
-            String::new() // Empty = not configured, will discover at runtime
-        })
+            .unwrap_or_else(|| {
+                tracing::warn!(
+                    "No BiomeOS URL configured - discovery will rely on mDNS/HTTP probing"
+                );
+                String::new() // Empty = not configured, will discover at runtime
+            })
     }
 }
 

@@ -89,6 +89,7 @@ impl Sensor for KeyboardSensor {
 /// Input type (discovered at runtime)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InputType {
+    /// Terminal/console input
     Terminal,
 }
 

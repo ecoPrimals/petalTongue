@@ -32,6 +32,9 @@ pub fn render_top_menu_bar(
     show_controls: &mut bool,
     show_audio_panel: &mut bool,
     show_capability_panel: &mut bool,
+    show_neural_proprioception: &mut bool,
+    show_neural_metrics: &mut bool,
+    show_graph_builder: &mut bool,
 ) -> bool {
     ui.heading(
         egui::RichText::new("🌸 petalTongue")
@@ -55,6 +58,27 @@ pub fn render_top_menu_bar(
     // Tools menu (capability-based, not hardcoded)
     ui.menu_button("🔧 Tools", |ui| {
         tools.render_tools_menu(ui);
+    });
+
+    ui.separator();
+
+    // View menu (panel visibility toggles)
+    ui.menu_button("👁️ View", |ui| {
+        ui.checkbox(show_dashboard, "System Dashboard");
+        ui.checkbox(show_controls, "Controls Panel");
+        ui.checkbox(show_audio_panel, "Audio Panel");
+        ui.checkbox(show_capability_panel, "Capabilities");
+        ui.separator();
+        ui.label(egui::RichText::new("Neural API Panels").strong());
+        if ui.checkbox(show_neural_proprioception, "🧠 Proprioception (P)").changed() {
+            tracing::info!("Neural proprioception panel toggled: {}", show_neural_proprioception);
+        }
+        if ui.checkbox(show_neural_metrics, "📊 Metrics Dashboard (M)").changed() {
+            tracing::info!("Neural metrics dashboard toggled: {}", show_neural_metrics);
+        }
+        if ui.checkbox(show_graph_builder, "🎨 Graph Builder (G)").changed() {
+            tracing::info!("Graph Builder toggled: {}", show_graph_builder);
+        }
     });
 
     ui.separator();
@@ -211,7 +235,7 @@ pub fn render_controls_panel(
 pub fn render_audio_panel(
     ui: &mut egui::Ui,
     palette: &ColorPalette,
-    accessibility_panel: &AccessibilityPanel,
+    _accessibility_panel: &AccessibilityPanel,
     audio_renderer: &mut AudioSonificationRenderer,
     audio_generator: &AudioFileGenerator,
     visual_renderer: &Visual2DRenderer,

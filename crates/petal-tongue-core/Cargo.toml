@@ -14,21 +14,28 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
-chrono = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
 reqwest = { workspace = true }
-rodio = { version = "0.19", optional = true }
 # Phase 1: Instance Management dependencies
-uuid = { version = "1.6", features = ["v4", "serde"] }
+uuid = { version = "1.7", features = ["v4", "serde"] }
 ron = "0.8"
-dirs = "5.0"
+dirs = "5.0"  # For state storage directories
 nix = { version = "0.27", features = ["signal"] }
 # Universal Rendering System dependencies
 async-trait = "0.1"
 indexmap = "2.0"
+# System information (Pure Rust Unix syscalls - EVOLVED from libc!)
+# EVOLUTION: Migrated from libc to rustix for 100% safe Rust
+rustix = { version = "0.38", features = ["process"] }
 
 [features]
 default = []
-audio = ["rodio"]
+
+# EVOLUTION COMPLETE: Audio capability detection is now pure Rust via AudioCanvas
+# NO rodio, NO cpal, NO ALSA dependencies needed!
+# AudioCanvas provides direct /dev/snd access (like framebuffer for graphics)
+# See: crates/petal-tongue-ui/src/audio_canvas.rs
+
 test-fixtures = []
 
 [build-dependencies]
