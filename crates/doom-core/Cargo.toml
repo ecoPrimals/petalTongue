@@ -1,0 +1,18 @@
+[package]
+name = "doom-core"
+version = "0.1.0"
+edition = "2021"
+authors = ["petalTongue Evolution Team"]
+description = "Doom integration for petalTongue platform"
+license = "MIT"
+
+[dependencies]
+# Core dependencies
+thiserror = "1.0"
+tracing = "0.1"
+
+# For now, we'll use a simple approach
+# Later: Add doomgeneric bindings or rust-doom
+
+[dev-dependencies]
+

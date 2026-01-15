@@ -53,6 +53,31 @@ pub struct UiConfig {
     pub performance: PerformanceConfig,
     #[serde(default)]
     pub features: FeatureFlags,
+    /// Custom panels (e.g., Doom, web browser, video player)
+    #[serde(default)]
+    pub custom_panels: Vec<CustomPanelConfig>,
+}
+
+impl UiConfig {
+    /// Validate UI configuration
+    pub fn validate(&self) -> Result<()> {
+        // Validate custom panels
+        for (idx, panel) in self.custom_panels.iter().enumerate() {
+            panel.validate()
+                .with_context(|| format!("Custom panel {} validation failed", idx))?;
+        }
+        
+        // Validate performance config
+        if self.performance.target_fps > 0 && self.performance.target_fps < 10 {
+            tracing::warn!("⚠️  Target FPS ({}) is very low, may cause sluggish UI", self.performance.target_fps);
+        }
+        
+        if self.performance.target_fps > 240 {
+            tracing::warn!("⚠️  Target FPS ({}) is very high, may waste resources", self.performance.target_fps);
+        }
+        
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -102,6 +127,69 @@ impl Default for FeatureFlags {
             neural_api: false, // Disabled by default (requires external service)
             tutorial_mode: false,
         }
+    }
+}
+
+/// Custom panel configuration (for embedded apps like Doom, web browsers, etc.)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomPanelConfig {
+    /// Panel type identifier (e.g., "doom_game", "web_view", "video_player")
+    #[serde(rename = "type")]
+    pub panel_type: String,
+    
+    /// Panel title
+    pub title: String,
+    
+    /// Panel width (optional, defaults to fit)
+    #[serde(default)]
+    pub width: Option<usize>,
+    
+    /// Panel height (optional, defaults to fit)
+    #[serde(default)]
+    pub height: Option<usize>,
+    
+    /// Fullscreen mode
+    #[serde(default)]
+    pub fullscreen: bool,
+    
+    /// Panel-specific configuration (JSON value for flexibility)
+    #[serde(default)]
+    pub config: serde_json::Value,
+}
+
+impl CustomPanelConfig {
+    /// Validate panel configuration
+    pub fn validate(&self) -> Result<()> {
+        // Check panel type
+        if self.panel_type.trim().is_empty() {
+            anyhow::bail!("Panel type cannot be empty (e.g., 'doom_game', 'web_view')");
+        }
+        
+        // Check title
+        if self.title.trim().is_empty() {
+            anyhow::bail!("Panel '{}' has empty title", self.panel_type);
+        }
+        
+        // Validate dimensions
+        if let Some(width) = self.width {
+            if width == 0 {
+                anyhow::bail!("Panel '{}' has zero width", self.title);
+            }
+            if width > 7680 {  // Reasonable max: 8K resolution
+                tracing::warn!("⚠️  Panel '{}' has unusually large width: {}", self.title, width);
+            }
+        }
+        
+        if let Some(height) = self.height {
+            if height == 0 {
+                anyhow::bail!("Panel '{}' has zero height", self.title);
+            }
+            if height > 4320 {  // Reasonable max: 8K resolution
+                tracing::warn!("⚠️  Panel '{}' has unusually large height: {}", self.title, height);
+            }
+        }
+        
+        Ok(())
     }
 }
 
@@ -266,8 +354,62 @@ fn default_complexity_hint() -> String {
     "auto".to_string()
 }
 
+impl SensoryConfig {
+    /// Validate sensory configuration
+    pub fn validate(&self) -> Result<()> {
+        // Validate complexity hint
+        let valid_hints = ["auto", "minimal", "simple", "standard", "rich", "immersive"];
+        if !valid_hints.contains(&self.complexity_hint.as_str()) {
+            anyhow::bail!(
+                "Invalid complexity_hint '{}'. Must be one of: {}",
+                self.complexity_hint,
+                valid_hints.join(", ")
+            );
+        }
+        
+        // Validate capability requirements
+        self.required_capabilities.validate("required")?;
+        self.optional_capabilities.validate("optional")?;
+        
+        Ok(())
+    }
+}
+
+impl CapabilityRequirements {
+    /// Validate capability requirements
+    pub fn validate(&self, context: &str) -> Result<()> {
+        // Valid output modalities
+        let valid_outputs = ["visual", "audio", "haptic"];
+        for output in &self.outputs {
+            if !valid_outputs.contains(&output.as_str()) {
+                anyhow::bail!(
+                    "Invalid {} output capability '{}'. Must be one of: {}",
+                    context,
+                    output,
+                    valid_outputs.join(", ")
+                );
+            }
+        }
+        
+        // Valid input modalities
+        let valid_inputs = ["pointer", "keyboard", "touch", "gesture", "audio"];
+        for input in &self.inputs {
+            if !valid_inputs.contains(&input.as_str()) {
+                anyhow::bail!(
+                    "Invalid {} input capability '{}'. Must be one of: {}",
+                    context,
+                    input,
+                    valid_inputs.join(", ")
+                );
+            }
+        }
+        
+        Ok(())
+    }
+}
+
 impl Scenario {
-    /// Load scenario from JSON file
+    /// Load scenario from JSON file with validation
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
         let path = path.as_ref();
         let contents = std::fs::read_to_string(path)
@@ -276,11 +418,53 @@ impl Scenario {
         let scenario: Scenario = serde_json::from_str(&contents)
             .with_context(|| format!("Failed to parse scenario JSON: {}", path.display()))?;
 
+        // ✅ NEW: Explicit validation
+        scenario.validate()
+            .with_context(|| format!("Scenario validation failed: {}", path.display()))?;
+
         tracing::info!("📋 Loaded scenario: {} ({})", scenario.name, scenario.version);
         tracing::info!("   Mode: {}", scenario.mode);
         tracing::info!("   Primals: {}", scenario.ecosystem.primals.len());
 
         Ok(scenario)
+    }
+    
+    /// Validate scenario structure and contents
+    ///
+    /// This catches common mistakes like:
+    /// - Empty required fields
+    /// - Invalid panel configurations
+    /// - Malformed capability requirements
+    /// - Orphaned references
+    pub fn validate(&self) -> Result<()> {
+        // Check required fields
+        if self.name.trim().is_empty() {
+            anyhow::bail!("Scenario name cannot be empty");
+        }
+        
+        if self.mode.trim().is_empty() {
+            anyhow::bail!("Scenario mode cannot be empty (e.g., 'doom-showcase', 'live-ecosystem')");
+        }
+        
+        if self.version.trim().is_empty() {
+            anyhow::bail!("Scenario version cannot be empty");
+        }
+        
+        // Validate version format (should be semver-like)
+        if !self.version.contains('.') {
+            tracing::warn!("⚠️  Scenario version '{}' doesn't follow semver format (e.g., '2.0.0')", self.version);
+        }
+        
+        // Validate UI config
+        self.ui_config.validate()
+            .with_context(|| "UI configuration validation failed")?;
+        
+        // Validate sensory config
+        self.sensory_config.validate()
+            .with_context(|| "Sensory configuration validation failed")?;
+        
+        tracing::debug!("✅ Scenario validation passed: {}", self.name);
+        Ok(())
     }
 
     /// Get count of primals in the scenario
@@ -477,6 +661,205 @@ impl Scenario {
 #[cfg(test)]
 mod tests {
     use super::*;
+    
+    // ===== Validation Tests =====
+    
+    #[test]
+    fn test_scenario_validation_success() {
+        let json = r#"{
+            "name": "Test Scenario",
+            "description": "A test",
+            "version": "2.0.0",
+            "mode": "test-mode",
+            "ui_config": {
+                "custom_panels": []
+            },
+            "sensory_config": {
+                "required_capabilities": {
+                    "outputs": [],
+                    "inputs": []
+                },
+                "optional_capabilities": {
+                    "outputs": [],
+                    "inputs": []
+                },
+                "complexity_hint": "auto"
+            },
+            "ecosystem": {
+                "primals": []
+            }
+        }"#;
+        
+        let scenario: Scenario = serde_json::from_str(json).unwrap();
+        let result = scenario.validate();
+        if let Err(e) = &result {
+            eprintln!("Validation error: {}", e);
+        }
+        assert!(result.is_ok());
+    }
+    
+    #[test]
+    fn test_scenario_validation_empty_name() {
+        let json = r#"{
+            "name": "",
+            "description": "A test",
+            "version": "2.0.0",
+            "mode": "test-mode",
+            "ecosystem": {"primals": []}
+        }"#;
+        
+        let scenario: Scenario = serde_json::from_str(json).unwrap();
+        let result = scenario.validate();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("name cannot be empty"));
+    }
+    
+    #[test]
+    fn test_scenario_validation_empty_mode() {
+        let json = r#"{
+            "name": "Test",
+            "description": "A test",
+            "version": "2.0.0",
+            "mode": "",
+            "ecosystem": {"primals": []}
+        }"#;
+        
+        let scenario: Scenario = serde_json::from_str(json).unwrap();
+        let result = scenario.validate();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("mode cannot be empty"));
+    }
+    
+    #[test]
+    fn test_custom_panel_validation_empty_type() {
+        let panel = CustomPanelConfig {
+            panel_type: "".to_string(),
+            title: "Test Panel".to_string(),
+            width: None,
+            height: None,
+            fullscreen: false,
+            config: serde_json::Value::Null,
+        };
+        
+        let result = panel.validate();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Panel type cannot be empty"));
+    }
+    
+    #[test]
+    fn test_custom_panel_validation_empty_title() {
+        let panel = CustomPanelConfig {
+            panel_type: "test_panel".to_string(),
+            title: "".to_string(),
+            width: None,
+            height: None,
+            fullscreen: false,
+            config: serde_json::Value::Null,
+        };
+        
+        let result = panel.validate();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("empty title"));
+    }
+    
+    #[test]
+    fn test_custom_panel_validation_zero_dimensions() {
+        let panel = CustomPanelConfig {
+            panel_type: "test_panel".to_string(),
+            title: "Test".to_string(),
+            width: Some(0),
+            height: Some(480),
+            fullscreen: false,
+            config: serde_json::Value::Null,
+        };
+        
+        let result = panel.validate();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("zero width"));
+    }
+    
+    #[test]
+    fn test_sensory_config_validation_invalid_complexity() {
+        let config = SensoryConfig {
+            required_capabilities: CapabilityRequirements::default(),
+            optional_capabilities: CapabilityRequirements::default(),
+            complexity_hint: "invalid".to_string(),
+        };
+        
+        let result = config.validate();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid complexity_hint"));
+    }
+    
+    #[test]
+    fn test_sensory_config_validation_valid_complexity() {
+        let valid_hints = ["auto", "minimal", "simple", "standard", "rich", "immersive"];
+        
+        for hint in &valid_hints {
+            let config = SensoryConfig {
+                required_capabilities: CapabilityRequirements::default(),
+                optional_capabilities: CapabilityRequirements::default(),
+                complexity_hint: hint.to_string(),
+            };
+            
+            assert!(config.validate().is_ok(), "Failed for hint: {}", hint);
+        }
+    }
+    
+    #[test]
+    fn test_capability_requirements_invalid_output() {
+        let reqs = CapabilityRequirements {
+            outputs: vec!["invalid_output".to_string()],
+            inputs: vec![],
+        };
+        
+        let result = reqs.validate("test");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid test output capability"));
+    }
+    
+    #[test]
+    fn test_capability_requirements_invalid_input() {
+        let reqs = CapabilityRequirements {
+            outputs: vec![],
+            inputs: vec!["invalid_input".to_string()],
+        };
+        
+        let result = reqs.validate("test");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid test input capability"));
+    }
+    
+    #[test]
+    fn test_capability_requirements_valid() {
+        let reqs = CapabilityRequirements {
+            outputs: vec!["visual".to_string(), "audio".to_string()],
+            inputs: vec!["pointer".to_string(), "keyboard".to_string()],
+        };
+        
+        assert!(reqs.validate("test").is_ok());
+    }
+    
+    #[test]
+    fn test_ui_config_validation_with_panels() {
+        let config = UiConfig {
+            custom_panels: vec![
+                CustomPanelConfig {
+                    panel_type: "doom_game".to_string(),
+                    title: "Doom".to_string(),
+                    width: Some(640),
+                    height: Some(480),
+                    fullscreen: false,
+                    config: serde_json::Value::Null,
+                },
+            ],
+            ..Default::default()
+        };
+        
+        assert!(config.validate().is_ok());
+    }
+    
+    // ===== Original Tests =====
 
     #[test]
     fn test_scenario_parsing() {
@@ -559,7 +942,7 @@ mod tests {
         };
 
         // Desktop capabilities (has visual + pointer)
-        let caps = SensoryCapabilities::discover();
+        let caps = SensoryCapabilities::discover().unwrap();
         assert!(scenario.validate_capabilities(&caps).is_ok());
     }
 
@@ -580,7 +963,7 @@ mod tests {
             },
         };
 
-        let caps = SensoryCapabilities::discover();
+        let caps = SensoryCapabilities::discover().unwrap();
         let complexity = scenario.determine_complexity(&caps);
         assert_eq!(complexity, SensoryUIComplexity::Standard);
     }
@@ -602,7 +985,7 @@ mod tests {
             },
         };
 
-        let caps = SensoryCapabilities::discover();
+        let caps = SensoryCapabilities::discover().unwrap();
         let complexity = scenario.determine_complexity(&caps);
         // Should auto-detect based on current device (likely Rich or Immersive on desktop)
         assert!(matches!(
