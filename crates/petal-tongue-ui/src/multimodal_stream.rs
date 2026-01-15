@@ -71,10 +71,14 @@ pub struct HapticPattern {
     pub pattern: HapticPatternType,
 }
 
+/// Haptic pattern type
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HapticPatternType {
+    /// Continuous vibration
     Continuous,
+    /// Single pulse vibration
     Pulse,
+    /// Rhythmic pattern vibration
     Rhythm,
 }
 
@@ -128,6 +132,7 @@ impl Default for CpuStream {
 }
 
 impl CpuStream {
+    /// Create new CPU usage stream
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -138,6 +143,7 @@ impl CpuStream {
         }
     }
 
+    /// Add new CPU usage value to stream
     pub fn push_value(&mut self, value: f64) {
         self.history.push(value);
         if self.history.len() > self.max_history {
@@ -174,6 +180,7 @@ pub struct MemoryStream {
 }
 
 impl MemoryStream {
+    /// Create new memory usage stream with total memory capacity
     #[must_use]
     pub fn new(total_bytes: u64) -> Self {
         Self {
@@ -184,6 +191,7 @@ impl MemoryStream {
         }
     }
 
+    /// Add new memory usage value to stream
     pub fn push_value(&mut self, used_bytes: u64) {
         let value = used_bytes as f64 / self.total_bytes as f64;
         self.history.push(value);
@@ -226,6 +234,7 @@ impl Default for NetworkStream {
 }
 
 impl NetworkStream {
+    /// Create new network traffic stream
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -236,6 +245,7 @@ impl NetworkStream {
         }
     }
 
+    /// Add new network traffic value to stream
     pub fn push_value(&mut self, bits_per_second: f64) {
         // Auto-adjust max for normalization
         if bits_per_second > self.max_bps {

@@ -96,8 +96,11 @@ impl GraphEdge {
 /// Edge display style
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EdgeStyle {
+    /// Solid line
     Solid,
+    /// Dashed line
     Dashed,
+    /// Dotted line
     Dotted,
 }
 

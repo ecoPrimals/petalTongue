@@ -33,23 +33,15 @@ approx = "0.5"  # For floating-point comparisons in tests
 
 [features]
 default = []
-# Feature flags for optional modalities
-audio = ["cpal", "hound", "rustfft"]
+
+# EVOLUTION COMPLETE: Audio entropy capture now uses AudioCanvas (pure Rust!)
+# NO cpal, NO hound, NO ALSA dependencies - direct /dev/snd access
+# For entropy capture, we read raw PCM data from audio devices
+# Status: Phase 3 feature (not needed for core functionality)
+
 video = ["nokhwa"]
 
-# Optional dependencies (enabled by features)
-[dependencies.cpal]
-version = "0.15"
-optional = true
-
-[dependencies.hound]
-version = "3.5"
-optional = true
-
-[dependencies.rustfft]
-version = "6.2"
-optional = true
-
+# Video capture (optional, Phase 3 feature)
 [dependencies.nokhwa]
 version = "0.10"
 optional = true

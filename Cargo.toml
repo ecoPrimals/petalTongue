@@ -13,6 +13,7 @@ members = [
     "crates/petal-tongue-cli",       # Phase 3: CLI tools
     "crates/petal-tongue-ui-core",   # NEW: Pure Rust UI (Tier 1)
     "crates/petal-tongue-modalities", # NEW: Modality implementations
+    "crates/petal-tongue-primitives", # NEW: UI infrastructure primitives (v2.0)
     "crates/petal-tongue-ui",        # Tier 2: Native GUI (egui)
     "crates/petal-tongue-tui",       # NEW: Rich TUI (Terminal UI)
     "crates/petal-tongue-headless",  # NEW: Headless binary (Tier 1 only)
@@ -67,8 +68,9 @@ egui_extras = "0.29"
 egui_graphs = "0.22"
 petgraph = "0.6"
 
-# HTTP client
-reqwest = { version = "0.12", features = ["json"] }
+# HTTP client (Pure Rust TLS via rustls - NO OpenSSL!)
+# TRUE PRIMAL: 100% pure Rust networking stack
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "charset", "http2"] }
 base64 = "0.21"
 
 # Time and dates
@@ -77,6 +79,9 @@ chrono = "0.4"
 # RPC frameworks for inter-primal communication
 # Following ecosystem pattern: tarpc PRIMARY, JSON-RPC fallback, HTTPS optional
 tarpc = { version = "0.34", features = ["full"] }
+
+# CLI argument parsing
+clap = { version = "4.5", features = ["derive", "cargo"] }
 tokio-util = { version = "0.7", features = ["codec"] }
 tokio-serde = "0.8"  # Must match tarpc's version
 bincode = "1.3"

@@ -1,16 +1,32 @@
-//! Audio Provider System
+//! DEPRECATED: Legacy Audio Provider System
 //!
-//! TRUE PRIMAL Multi-tiered audio system (Pure Rust):
-//! 1. Pure Rust tones (rodio, always available)
-//! 2. User-provided sound files (rodio + symphonia decoder)
-//! 3. Toadstool integration (advanced synthesis via primal network)
+//! **STATUS**: This module is DEPRECATED as of January 13, 2026
+//! **USE INSTEAD**: `crate::audio::AudioSystemV2` (substrate-agnostic)
 //!
-//! # Sovereignty
+//! # Migration Path
 //!
-//! **EVOLVED**: 100% Pure Rust audio stack!
-//! - Tier 1 (Self-Stable): rodio + symphonia
-//! - Tier 2 (Network): Toadstool primal (optional)
-//! - Tier 3 (Extensions): REMOVED - no external dependencies
+//! Old (this module):
+//! ```ignore
+//! use crate::audio_providers::AudioSystem;
+//! let audio = AudioSystem::new();
+//! ```
+//!
+//! New (recommended):
+//! ```ignore
+//! use crate::audio::AudioSystemV2;
+//! let audio = AudioSystemV2::new();
+//! ```
+//!
+//! # Why Deprecated
+//!
+//! This system still had hardcoded assumptions about audio backends.
+//! The new `AudioSystemV2` provides TRUE substrate agnosticism:
+//! - Runtime discovery of all audio backends
+//! - Works on Linux, macOS, Windows, FreeBSD, embedded
+//! - Graceful degradation (silent mode)
+//! - Zero hardcoding of OS APIs
+//!
+//! This module will be removed in a future version.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -99,6 +115,7 @@ pub struct PureRustAudioProvider {
 }
 
 impl PureRustAudioProvider {
+    /// Create new pure Rust audio provider
     pub fn new() -> Self {
         info!("🔊 Pure Rust audio provider initialized (always available)");
         Self { enabled: true }
@@ -182,6 +199,7 @@ pub struct UserSoundProvider {
 }
 
 impl UserSoundProvider {
+    /// Create new user sound provider from directory
     pub fn new(sound_dir: PathBuf) -> Self {
         let sounds = Self::scan_sound_directory(&sound_dir);
         info!(
@@ -291,6 +309,7 @@ pub struct ToadstoolAudioProvider {
 }
 
 impl ToadstoolAudioProvider {
+    /// Create new Toadstool audio provider (discovers via environment)
     pub fn new() -> Self {
         // Check for toadstool via environment or discovery
         let endpoint = std::env::var("TOADSTOOL_URL").ok();
@@ -491,6 +510,16 @@ pub struct AudioSystem {
 }
 
 impl AudioSystem {
+    /// Create new audio system with all available providers
+    ///
+    /// **DEPRECATED**: Use `crate::audio::AudioSystemV2` instead
+    ///
+    /// This method is kept for backward compatibility but will be removed.
+    /// The new AudioSystemV2 provides true substrate agnosticism.
+    #[deprecated(
+        since = "1.4.0",
+        note = "Use `crate::audio::AudioSystemV2` for substrate-agnostic audio"
+    )]
     pub fn new() -> Self {
         let mut providers: Vec<Box<dyn AudioProvider>> = Vec::new();
 
@@ -553,6 +582,7 @@ impl AudioSystem {
         vec!["rodio (pure Rust)".to_string()]
     }
 
+    /// Get list of all providers with their status
     #[must_use]
     pub fn get_providers(&self) -> Vec<(&str, bool, &str)> {
         self.providers
@@ -561,6 +591,7 @@ impl AudioSystem {
             .collect()
     }
 
+    /// Switch to a different audio provider by index
     pub fn set_provider(&mut self, index: usize) {
         if index < self.providers.len() {
             self.current_provider = index;
@@ -571,6 +602,7 @@ impl AudioSystem {
         }
     }
 
+    /// Play audio by name using current provider
     pub fn play(&self, sound_name: &str) -> Result<(), String> {
         info!("🎵 AudioSystem::play('{}') called", sound_name);
         info!(
@@ -668,11 +700,13 @@ impl AudioSystem {
         }
     }
 
+    /// Get list of available sounds from current provider
     #[must_use]
     pub fn available_sounds(&self) -> Vec<String> {
         self.providers[self.current_provider].available_sounds()
     }
 
+    /// Get name of current audio provider
     #[must_use]
     pub fn current_provider_name(&self) -> &str {
         self.providers[self.current_provider].name()

@@ -17,12 +17,14 @@ pub struct VisualFlowerRenderer {
     /// Current time for animation
     current_time: f32,
 
-    /// Base color (hue in HSV)
+    /// Base color (hue in HSV) - reserved for future color customization
+    #[allow(dead_code)]
     base_hue: f32,
 }
 
 impl VisualFlowerRenderer {
     /// Create new visual flower renderer
+    #[must_use]
     pub fn new() -> Self {
         Self {
             animation: FlowerAnimation::new(30), // 30 FPS
@@ -43,27 +45,31 @@ impl VisualFlowerRenderer {
     }
 
     /// Get current state
+    #[must_use]
     pub fn current_state(&self) -> FlowerState {
         let progress = (self.current_time / 3.0).clamp(0.0, 1.0);
-        self.calculate_state(progress)
+        Self::calculate_state(progress)
     }
 
     /// Calculate state from progress (0.0 to 1.0)
-    fn calculate_state(&self, progress: f32) -> FlowerState {
+    fn calculate_state(progress: f32) -> FlowerState {
         if progress < 0.1 {
             FlowerState::Closed
         } else if progress < 0.9 {
-            FlowerState::Opening(((progress - 0.1) / 0.8 * 100.0) as u8)
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let percent = ((progress - 0.1) / 0.8 * 100.0) as u8;
+            FlowerState::Opening(percent)
         } else {
             FlowerState::Open
         }
     }
 
-    /// Get opening percentage (0.0 to 1.0)
+    /// Get opening percentage (0.0 to 1.0) - reserved for future use in custom renderers
+    #[allow(dead_code, clippy::unused_self)]
     fn opening_percent(&self) -> f32 {
         match self.current_state() {
             FlowerState::Closed => 0.0,
-            FlowerState::Opening(p) => p as f32 / 100.0,
+            FlowerState::Opening(p) => f32::from(p) / 100.0,
             FlowerState::Open | FlowerState::Glowing | FlowerState::Reaching => 1.0,
         }
     }
@@ -77,9 +83,10 @@ impl Default for VisualFlowerRenderer {
 
 #[cfg(feature = "egui")]
 mod egui_rendering {
-    use super::*;
     use egui::{Color32, Pos2, Stroke, Vec2};
     use std::f32::consts::PI;
+
+    use super::VisualFlowerRenderer;
 
     impl VisualFlowerRenderer {
         /// Render flower to egui
@@ -106,6 +113,8 @@ mod egui_rendering {
         }
 
         /// Render stem
+        // Graphics helper - self not needed but kept for consistency with other render methods
+        #[allow(clippy::unused_self)]
         fn render_stem(&self, painter: &egui::Painter, center: Pos2, size: f32) {
             let stem_start = center + Vec2::new(0.0, size * 0.3);
             let stem_end = center + Vec2::new(0.0, size * 0.8);
@@ -130,6 +139,8 @@ mod egui_rendering {
         }
 
         /// Render single leaf
+        // Graphics helper - self not needed but kept for consistency with other render methods
+        #[allow(clippy::unused_self)]
         fn render_leaf(
             &self,
             painter: &egui::Painter,
@@ -157,6 +168,8 @@ mod egui_rendering {
             // Calculate angle offset based on opening progress
             let spread = progress * 0.8; // Petals spread as they open
 
+            // Graphics calculations - precision loss acceptable for visual rendering
+            #[allow(clippy::cast_precision_loss)]
             for i in 0..num_petals {
                 let base_angle = (i as f32 / num_petals as f32) * 2.0 * PI;
                 let angle = base_angle + spread * (i as f32 - num_petals as f32 / 2.0) * 0.1;
@@ -199,6 +212,8 @@ mod egui_rendering {
         }
 
         /// Render flower center (pistil/stamen)
+        // Graphics helper - self not needed but kept for consistency with other render methods
+        #[allow(clippy::unused_self)]
         fn render_center(&self, painter: &egui::Painter, center: Pos2, size: f32, progress: f32) {
             let center_size = size * 0.08 * progress;
 
@@ -210,6 +225,8 @@ mod egui_rendering {
             if progress > 0.5 {
                 let dot_count = 12;
                 let dot_radius = center_size * 0.6;
+                // Graphics calculations - precision loss acceptable for visual rendering
+                #[allow(clippy::cast_precision_loss)]
                 for i in 0..dot_count {
                     let angle = (i as f32 / dot_count as f32) * 2.0 * PI;
                     let dot_pos =
@@ -220,8 +237,16 @@ mod egui_rendering {
         }
 
         /// Render glow effect
+        // Graphics helper - self not needed but kept for consistency with other render methods
+        #[allow(clippy::unused_self)]
         fn render_glow(&self, painter: &egui::Painter, center: Pos2, size: f32) {
             // Multiple layers of glow with decreasing alpha
+            // Graphics calculations - casts are intentional for color values
+            #[allow(
+                clippy::cast_precision_loss,
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss
+            )]
             for i in 0..5 {
                 let layer_size = size * (0.35 + i as f32 * 0.08);
                 let alpha = 30 - i * 5;
@@ -233,7 +258,12 @@ mod egui_rendering {
         /// Convert HSV to Color32
         // Standard HSV to RGB conversion algorithm
         // Single-letter variable names are standard notation in color science
-        #[allow(clippy::many_single_char_names)]
+        // Float to u8 casts are intentional for color conversion (0.0-1.0 → 0-255)
+        #[allow(
+            clippy::many_single_char_names,
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss
+        )]
         fn hsv_to_color32(h: f32, s: f32, v: f32) -> Color32 {
             let c = v * s;
             let h_prime = h / 60.0;
@@ -270,7 +300,7 @@ mod tests {
     #[test]
     fn test_visual_flower_creation() {
         let renderer = VisualFlowerRenderer::new();
-        assert_eq!(renderer.current_time, 0.0);
+        assert!((renderer.current_time - 0.0).abs() < f32::EPSILON);
         assert_eq!(renderer.current_state(), FlowerState::Closed);
     }
 
@@ -278,7 +308,7 @@ mod tests {
     fn test_visual_flower_update() {
         let mut renderer = VisualFlowerRenderer::new();
         renderer.update(1.5);
-        assert_eq!(renderer.current_time, 1.5);
+        assert!((renderer.current_time - 1.5).abs() < f32::EPSILON);
         assert!(matches!(renderer.current_state(), FlowerState::Opening(_)));
     }
 
@@ -287,7 +317,7 @@ mod tests {
         let mut renderer = VisualFlowerRenderer::new();
         renderer.update(2.0);
         renderer.reset();
-        assert_eq!(renderer.current_time, 0.0);
+        assert!((renderer.current_time - 0.0).abs() < f32::EPSILON);
         assert_eq!(renderer.current_state(), FlowerState::Closed);
     }
 
@@ -296,7 +326,7 @@ mod tests {
         let mut renderer = VisualFlowerRenderer::new();
 
         // Closed
-        assert_eq!(renderer.opening_percent(), 0.0);
+        assert!((renderer.opening_percent() - 0.0).abs() < f32::EPSILON);
 
         // Opening
         renderer.update(1.5);
@@ -305,7 +335,7 @@ mod tests {
 
         // Open
         renderer.update(3.0);
-        assert_eq!(renderer.opening_percent(), 1.0);
+        assert!((renderer.opening_percent() - 1.0).abs() < f32::EPSILON);
     }
 
     #[test]

@@ -623,20 +623,32 @@ mod tests {
         unsafe {
             std::env::set_var("FAMILY_ID", "test-family");
             std::env::set_var("XDG_RUNTIME_DIR", "/tmp");
+            std::env::set_var("PETALTONGUE_NODE_ID", "default");
         }
 
         let server = UnixSocketServer::new(graph).unwrap();
 
         assert_eq!(server.family_id, "test-family");
-        assert_eq!(
-            server.socket_path.to_str().unwrap(),
-            "/tmp/petaltongue-test-family.sock"
+
+        // Socket path now includes node ID: petaltongue-<family>-<node>.sock
+        // The path respects XDG_RUNTIME_DIR when set (proper behavior)
+        let socket_str = server.socket_path.to_str().unwrap();
+        assert!(
+            socket_str.ends_with("petaltongue-test-family-default.sock"),
+            "Socket path should end with family and node ID, got: {}",
+            socket_str
+        );
+        assert!(
+            socket_str.contains("/tmp") || socket_str.contains("/run/user"),
+            "Socket path should use XDG runtime directory, got: {}",
+            socket_str
         );
 
         // Clean up
         unsafe {
             std::env::remove_var("FAMILY_ID");
             std::env::remove_var("XDG_RUNTIME_DIR");
+            std::env::remove_var("PETALTONGUE_NODE_ID");
         }
     }
 

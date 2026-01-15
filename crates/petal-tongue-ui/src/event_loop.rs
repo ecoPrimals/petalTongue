@@ -7,7 +7,6 @@ use anyhow::Result;
 use petal_tongue_core::{RenderingAwareness, SensorRegistry};
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
-use tokio::time::sleep;
 
 /// Start the sensory event loop (background task)
 /// NOTE: Currently disabled - egui already provides perfect sensory feedback!

@@ -188,7 +188,7 @@ impl AwakeningAudio {
 
         for i in 0..num_samples {
             // Generate white noise
-            let noise = (i as f32 * 12.9898).sin() * 43758.5453;
+            let noise = (i as f32 * 12.9898).sin() * 43_758.547;
             let noise = (noise - noise.floor()) * 2.0 - 1.0;
 
             // Low-pass filter
@@ -284,7 +284,7 @@ mod tests {
 
         // Check that samples are in valid range
         for &sample in &samples {
-            assert!(sample >= -1.0 && sample <= 1.0);
+            assert!((-1.0..=1.0).contains(&sample));
         }
     }
 
@@ -297,7 +297,7 @@ mod tests {
 
         // Check valid range
         for &sample in &samples {
-            assert!(sample >= -1.0 && sample <= 1.0);
+            assert!((-1.0..=1.0).contains(&sample));
         }
     }
 
@@ -310,7 +310,7 @@ mod tests {
 
         // Check valid range
         for &sample in &samples {
-            assert!(sample >= -1.0 && sample <= 1.0);
+            assert!((-1.0..=1.0).contains(&sample));
         }
     }
 
@@ -340,7 +340,7 @@ mod tests {
 
         // Check all samples in valid range
         for &sample in &sequence {
-            assert!(sample >= -1.0 && sample <= 1.0);
+            assert!((-1.0..=1.0).contains(&sample));
         }
     }
 
@@ -364,7 +364,7 @@ mod tests {
 
         // Should be normalized to prevent clipping
         for &sample in &mixed {
-            assert!(sample >= -1.0 && sample <= 1.0);
+            assert!((-1.0..=1.0).contains(&sample));
         }
     }
 

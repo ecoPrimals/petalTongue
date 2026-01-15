@@ -68,6 +68,15 @@ impl TutorialMode {
         }
     }
 
+    /// Create a disabled tutorial mode (for scenario mode)
+    #[must_use]
+    pub fn disabled() -> Self {
+        Self {
+            enabled: false,
+            scenario_name: "scenario".to_string(),
+        }
+    }
+
     /// Check if tutorial mode is explicitly enabled
     #[must_use]
     pub fn is_enabled(&self) -> bool {

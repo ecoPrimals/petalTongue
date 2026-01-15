@@ -20,9 +20,9 @@ pub fn render(frame: &mut Frame, area: Rect, state: &TUIState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(5),   // Status summary
-            Constraint::Min(0),      // Main content (2 columns)
-            Constraint::Length(3),   // Bottom status bar
+            Constraint::Length(5), // Status summary
+            Constraint::Min(0),    // Main content (2 columns)
+            Constraint::Length(3), // Bottom status bar
         ])
         .split(area);
 
@@ -98,27 +98,23 @@ fn render_primal_list(frame: &mut Frame, area: Rect, state: &TUIState) {
     let standalone = tokio::runtime::Handle::current().block_on(state.is_standalone());
 
     let items: Vec<ListItem> = if standalone {
-        vec![ListItem::new(Line::from(vec![
-            Span::styled(
-                "⚠️  Standalone Mode",
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ]))]
+        vec![ListItem::new(Line::from(vec![Span::styled(
+            "⚠️  Standalone Mode",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )]))]
     } else if primals.is_empty() {
-        vec![ListItem::new(Line::from(vec![
-            Span::styled(
-                "🔍 Discovering primals...",
-                Style::default().fg(Color::Gray),
-            ),
-        ]))]
+        vec![ListItem::new(Line::from(vec![Span::styled(
+            "🔍 Discovering primals...",
+            Style::default().fg(Color::Gray),
+        )]))]
     } else {
         primals
             .iter()
             .map(|primal| {
                 use petal_tongue_core::PrimalHealthStatus;
-                
+
                 let (health_icon, health_color, health_text) = match primal.health {
                     PrimalHealthStatus::Healthy => ("✅", Color::Green, "Healthy"),
                     PrimalHealthStatus::Warning => ("⚠️", Color::Yellow, "Warning"),
@@ -130,15 +126,9 @@ fn render_primal_list(frame: &mut Frame, area: Rect, state: &TUIState) {
                     Span::raw(format!("{} ", health_icon)),
                     Span::styled(&primal.name, Style::default().fg(Color::Cyan)),
                     Span::raw(" ("),
-                    Span::styled(
-                        &primal.primal_type,
-                        Style::default().fg(Color::Magenta),
-                    ),
+                    Span::styled(&primal.primal_type, Style::default().fg(Color::Magenta)),
                     Span::raw(") - "),
-                    Span::styled(
-                        health_text,
-                        Style::default().fg(health_color),
-                    ),
+                    Span::styled(health_text, Style::default().fg(health_color)),
                 ]))
             })
             .collect()
@@ -269,4 +259,3 @@ fn render_bottom_status(frame: &mut Frame, area: Rect, state: &TUIState) {
     let status = tokio::runtime::Handle::current().block_on(state.get_status());
     StatusBar::render(frame, area, &status);
 }
-

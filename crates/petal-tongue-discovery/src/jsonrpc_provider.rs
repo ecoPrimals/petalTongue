@@ -49,7 +49,7 @@ use tracing::{debug, info, warn};
 /// # Example
 ///
 /// ```rust,no_run
-/// use petal_tongue_discovery::JsonRpcProvider;
+/// use petal_tongue_discovery::{JsonRpcProvider, VisualizationDataProvider};
 ///
 /// # async fn example() -> anyhow::Result<()> {
 /// // Auto-discover
@@ -168,8 +168,8 @@ impl JsonRpcProvider {
 
     /// Get standard Unix socket paths to scan
     fn get_standard_socket_paths() -> anyhow::Result<Vec<PathBuf>> {
-        // Get current user UID for /run/user/{uid}/ paths
-        let uid = unsafe { libc::getuid() };
+        // Get current user UID for /run/user/{uid}/ paths (using safe helper)
+        let uid = petal_tongue_core::system_info::get_current_uid();
 
         Ok(vec![
             PathBuf::from(format!("/run/user/{}/biomeos-device-management.sock", uid)),

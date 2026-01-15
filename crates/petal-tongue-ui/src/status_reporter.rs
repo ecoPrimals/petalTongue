@@ -39,24 +39,37 @@ pub struct SystemStatus {
     pub issues: Vec<Issue>,
 }
 
+/// Modality status for all supported modalities
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModalityStatus {
+    /// 2D visual rendering status
     pub visual2d: ModalityState,
+    /// Audio output status
     pub audio: ModalityState,
+    /// Animation system status
     pub animation: ModalityState,
+    /// Text description generation status
     pub text_description: ModalityState,
+    /// Haptic feedback status
     pub haptic: ModalityState,
+    /// 3D VR rendering status
     pub vr3d: ModalityState,
 }
 
+/// State of a single modality
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModalityState {
+    /// Whether modality is available
     pub available: bool,
+    /// Whether modality has been tested
     pub tested: bool,
+    /// Reason for current state (why available/unavailable)
     pub reason: String,
+    /// Last time modality was used
     pub last_used: Option<String>,
 }
 
+/// Audio system status
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AudioStatus {
     /// Is audio system initialized?
@@ -78,55 +91,89 @@ pub struct AudioStatus {
     pub system_players: Vec<String>,
 }
 
+/// Information about an audio provider
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AudioProviderInfo {
+    /// Provider name
     pub name: String,
+    /// Whether provider is currently available
     pub available: bool,
+    /// Number of sounds available from this provider
     pub sounds_count: usize,
+    /// Human-readable description of provider
     pub description: String,
 }
 
+/// Audio event (sound played or attempted)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AudioEvent {
+    /// Name of sound played
     pub sound_name: String,
+    /// Provider used to play sound
     pub provider: String,
+    /// When event occurred
     pub timestamp: String,
+    /// Whether playback succeeded
     pub success: bool,
+    /// Error message if playback failed
     pub error_message: Option<String>,
 }
 
+/// Discovery status for primal and service discovery
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiscoveryStatus {
+    /// Whether mDNS discovery is enabled
     pub mdns_enabled: bool,
+    /// Number of visualization providers found
     pub providers_found: usize,
+    /// Number of primals discovered
     pub primals_discovered: usize,
+    /// Last successful discovery timestamp
     pub last_discovery: Option<String>,
+    /// Recent discovery errors
     pub discovery_errors: Vec<String>,
 }
 
+/// UI status information for system monitoring
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UIStatus {
+    /// Whether the main window is currently open
     pub window_open: bool,
+    /// Current frames per second
     pub fps: f32,
+    /// Name of the currently active view
     pub active_view: String,
+    /// Whether keyboard shortcuts are enabled
     pub keyboard_shortcuts_enabled: bool,
+    /// List of active accessibility features
     pub accessibility_features: Vec<String>,
 }
 
+/// System status event for monitoring and diagnostics
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StatusEvent {
+    /// RFC3339 timestamp when event occurred
     pub timestamp: String,
-    pub category: String, // "audio", "discovery", "ui", "modality"
-    pub severity: String, // "info", "warning", "error"
+    /// Event category ("audio", "discovery", "ui", "modality")
+    pub category: String,
+    /// Event severity level ("info", "warning", "error")
+    pub severity: String,
+    /// Human-readable event message
     pub message: String,
 }
 
+/// System issue requiring attention
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Issue {
-    pub severity: String, // "warning", "error", "critical"
+    /// Issue severity level ("warning", "error", "critical")
+    pub severity: String,
+    /// Issue category for grouping
     pub category: String,
+    /// Detailed issue description
     pub message: String,
+    /// Suggested remediation action if available
     pub suggested_action: Option<String>,
+    /// RFC3339 timestamp when issue was detected
     pub timestamp: String,
 }
 
@@ -138,6 +185,7 @@ pub struct StatusReporter {
 }
 
 impl StatusReporter {
+    /// Create a new status reporter with default state
     #[must_use]
     pub fn new() -> Self {
         let status = SystemStatus {

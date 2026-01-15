@@ -135,35 +135,16 @@ impl CapabilityDetector {
         });
     }
 
-    /// Detect audio capability by attempting to initialize output device
+    /// Detect audio capability by checking for AudioCanvas support
+    /// NOTE: Audio is now handled by AudioCanvas in petal-tongue-ui (pure Rust /dev/snd access)
     fn detect_audio() -> ModalityCapability {
-        #[cfg(feature = "audio")]
-        {
-            // Try to initialize an audio output device
-            match rodio::OutputStream::try_default() {
-                Ok((_stream, _handle)) => ModalityCapability {
-                    modality: Modality::Audio,
-                    status: ModalityStatus::Available,
-                    reason: "Audio output device initialized successfully".to_string(),
-                    tested: true,
-                },
-                Err(e) => ModalityCapability {
-                    modality: Modality::Audio,
-                    status: ModalityStatus::Unavailable,
-                    reason: format!("Audio device initialization failed: {}", e),
-                    tested: true,
-                },
-            }
-        }
-
-        #[cfg(not(feature = "audio"))]
-        {
-            ModalityCapability {
-                modality: Modality::Audio,
-                status: ModalityStatus::Unavailable,
-                reason: "Audio feature not compiled (requires libasound2-dev on Linux)".to_string(),
-                tested: true,
-            }
+        // AudioCanvas is always available on Linux (direct /dev/snd access)
+        // No feature flags needed - pure Rust implementation
+        ModalityCapability {
+            modality: Modality::Audio,
+            status: ModalityStatus::Available,
+            reason: "Audio via AudioCanvas (pure Rust /dev/snd access)".to_string(),
+            tested: true,
         }
     }
 

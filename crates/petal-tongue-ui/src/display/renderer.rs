@@ -19,8 +19,8 @@ use anyhow::{Result, anyhow};
 use egui::{ClippedPrimitive, TexturesDelta};
 use epaint::{Mesh, Primitive, TessellationOptions, Tessellator};
 use std::collections::HashMap;
-use tiny_skia::{Color, Paint, Path, PathBuilder, Pixmap, Transform};
-use tracing::{debug, warn};
+use tiny_skia::{Color, Paint, PathBuilder, Pixmap, Transform};
+use tracing::warn;
 
 /// Egui pixel renderer
 ///

@@ -1,7 +1,7 @@
 //! Common test utilities for petalTongue TUI tests
 
-use petal_tongue_core::{PrimalInfo, TopologyEdge, PrimalHealthStatus};
 use chrono::Utc;
+use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
 
 /// Create a test PrimalInfo with minimal required fields
 pub fn create_test_primal(name: &str, id: &str) -> PrimalInfo {
@@ -30,7 +30,11 @@ pub fn create_test_primal_with_caps(name: &str, id: &str, capabilities: Vec<Stri
 }
 
 /// Create a test PrimalInfo with specific health status
-pub fn create_test_primal_with_health(name: &str, id: &str, health: PrimalHealthStatus) -> PrimalInfo {
+pub fn create_test_primal_with_health(
+    name: &str,
+    id: &str,
+    health: PrimalHealthStatus,
+) -> PrimalInfo {
     PrimalInfo::new(
         id,
         name,
@@ -53,4 +57,3 @@ pub fn create_test_edge(from: &str, to: &str, edge_type: &str) -> TopologyEdge {
         metrics: None,
     }
 }
-

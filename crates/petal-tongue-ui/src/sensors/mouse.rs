@@ -117,6 +117,7 @@ impl Sensor for MouseSensor {
 /// Pointer type (discovered at runtime)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PointerType {
+    /// Terminal/console mouse input
     TerminalMouse,
 }
 

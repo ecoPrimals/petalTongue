@@ -1,0 +1,297 @@
+{
+  "name": "Graph Builder Studio - Neural API Integration",
+  "description": "Visual graph construction with smooth interactions and real-time execution",
+  "version": "1.0.0",
+  "mode": "graph-builder",
+  
+  "ui_config": {
+    "theme": "benchtop-dark",
+    "layout": "three-panel",
+    "panels": {
+      "palette": {
+        "width": 200,
+        "position": "left",
+        "collapsible": true
+      },
+      "canvas": {
+        "flexible": true,
+        "grid_enabled": true,
+        "snap_to_grid": true,
+        "grid_size": 50
+      },
+      "properties": {
+        "width": 300,
+        "position": "right",
+        "tabs": ["properties", "validation", "execution"]
+      }
+    }
+  },
+  
+  "node_palette": [
+    {
+      "type": "PrimalStart",
+      "name": "Start Primal",
+      "icon": "▶️",
+      "color": "#a6e3a1",
+      "description": "Initialize and start a primal",
+      "parameters": {
+        "required": ["primal_name"],
+        "optional": ["config_path", "wait_for_ready"]
+      }
+    },
+    {
+      "type": "Verification",
+      "name": "Verify Health",
+      "icon": "✓",
+      "color": "#89b4fa",
+      "description": "Verify primal health and readiness",
+      "parameters": {
+        "required": ["primal_id"],
+        "optional": ["timeout_seconds", "retry_count"]
+      }
+    },
+    {
+      "type": "WaitFor",
+      "name": "Wait Condition",
+      "icon": "⏱️",
+      "color": "#f9e2af",
+      "description": "Wait for a specific condition",
+      "parameters": {
+        "required": ["condition"],
+        "optional": ["timeout_seconds", "poll_interval"]
+      }
+    },
+    {
+      "type": "Conditional",
+      "name": "If/Else",
+      "icon": "🔀",
+      "color": "#cba6f7",
+      "description": "Conditional branching logic",
+      "parameters": {
+        "required": ["condition", "true_branch", "false_branch"],
+        "optional": []
+      }
+    }
+  ],
+  
+  "example_graphs": [
+    {
+      "name": "Simple NUCLEUS Deploy",
+      "description": "Deploy basic NUCLEUS with verification",
+      "nodes": [
+        {
+          "id": "start-nucleus",
+          "type": "PrimalStart",
+          "position": { "x": 100, "y": 100 },
+          "parameters": {
+            "primal_name": "nucleus",
+            "wait_for_ready": "true"
+          }
+        },
+        {
+          "id": "verify-nucleus",
+          "type": "Verification",
+          "position": { "x": 300, "y": 100 },
+          "parameters": {
+            "primal_id": "${start-nucleus.id}",
+            "timeout_seconds": "30"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "start-nucleus",
+          "to": "verify-nucleus",
+          "type": "dependency"
+        }
+      ]
+    },
+    {
+      "name": "Full Ecosystem Deploy",
+      "description": "Deploy complete ecosystem with dependencies",
+      "nodes": [
+        {
+          "id": "start-beardog",
+          "type": "PrimalStart",
+          "position": { "x": 100, "y": 100 },
+          "parameters": { "primal_name": "beardog" }
+        },
+        {
+          "id": "start-songbird",
+          "type": "PrimalStart",
+          "position": { "x": 100, "y": 200 },
+          "parameters": { "primal_name": "songbird" }
+        },
+        {
+          "id": "wait-discovery",
+          "type": "WaitFor",
+          "position": { "x": 300, "y": 150 },
+          "parameters": {
+            "condition": "discovery_ready",
+            "timeout_seconds": "60"
+          }
+        },
+        {
+          "id": "start-nucleus",
+          "type": "PrimalStart",
+          "position": { "x": 500, "y": 150 },
+          "parameters": { "primal_name": "nucleus" }
+        },
+        {
+          "id": "verify-all",
+          "type": "Verification",
+          "position": { "x": 700, "y": 150 },
+          "parameters": {
+            "primal_id": "all",
+            "timeout_seconds": "90"
+          }
+        }
+      ],
+      "edges": [
+        { "from": "start-beardog", "to": "wait-discovery", "type": "dependency" },
+        { "from": "start-songbird", "to": "wait-discovery", "type": "dependency" },
+        { "from": "wait-discovery", "to": "start-nucleus", "type": "dependency" },
+        { "from": "start-nucleus", "to": "verify-all", "type": "dependency" }
+      ]
+    }
+  ],
+  
+  "interactions": {
+    "drag_from_palette": {
+      "enabled": true,
+      "preview": true,
+      "snap_to_grid": true
+    },
+    "node_manipulation": {
+      "drag": true,
+      "multi_select": true,
+      "delete": true,
+      "copy_paste": true
+    },
+    "edge_creation": {
+      "ctrl_drag": true,
+      "auto_validate": true,
+      "smooth_curves": true
+    },
+    "property_editing": {
+      "real_time_validation": true,
+      "auto_complete": true,
+      "error_highlighting": true
+    }
+  },
+  
+  "validation": {
+    "real_time": true,
+    "checks": [
+      "cycle_detection",
+      "required_parameters",
+      "type_compatibility",
+      "reachability"
+    ],
+    "visual_feedback": {
+      "error_nodes": "#f38ba8",
+      "warning_nodes": "#f9e2af",
+      "valid_nodes": "#a6e3a1"
+    }
+  },
+  
+  "execution": {
+    "enabled": true,
+    "modes": ["validate", "dry-run", "execute"],
+    "visualization": {
+      "show_progress": true,
+      "animate_execution": true,
+      "highlight_active_node": true,
+      "show_data_flow": true
+    },
+    "status_indicators": {
+      "pending": "⏳",
+      "running": "▶️",
+      "success": "✅",
+      "error": "❌",
+      "skipped": "⏭️"
+    }
+  },
+  
+  "neural_api_integration": {
+    "save_to_neural": true,
+    "load_from_neural": true,
+    "execute_via_neural": true,
+    "monitor_execution": true,
+    "learning_feedback": true
+  },
+  
+  "animations": {
+    "panel_transitions": {
+      "duration_ms": 300,
+      "easing": "ease-in-out"
+    },
+    "node_creation": {
+      "duration_ms": 200,
+      "easing": "spring"
+    },
+    "edge_drawing": {
+      "duration_ms": 150,
+      "easing": "ease-out"
+    },
+    "execution_flow": {
+      "speed": 1.0,
+      "particle_count": 5,
+      "trail_length": 50
+    }
+  },
+  
+  "demo_sequence": [
+    {
+      "timestamp": 0,
+      "action": "show_empty_canvas",
+      "description": "Display empty graph canvas with grid"
+    },
+    {
+      "timestamp": 1000,
+      "action": "highlight_palette",
+      "description": "Pulse node palette - drag nodes here"
+    },
+    {
+      "timestamp": 2000,
+      "action": "drag_primal_start",
+      "description": "Drag 'Start Primal' onto canvas"
+    },
+    {
+      "timestamp": 3000,
+      "action": "show_properties",
+      "description": "Property panel appears - edit parameters"
+    },
+    {
+      "timestamp": 4000,
+      "action": "add_verification",
+      "description": "Add verification node"
+    },
+    {
+      "timestamp": 5000,
+      "action": "draw_edge",
+      "description": "Ctrl+Drag to create edge"
+    },
+    {
+      "timestamp": 6000,
+      "action": "validate_graph",
+      "description": "Real-time validation - green checkmarks"
+    },
+    {
+      "timestamp": 7000,
+      "action": "save_graph",
+      "description": "Save to Neural API"
+    },
+    {
+      "timestamp": 8000,
+      "action": "execute_graph",
+      "description": "Execute - animated data flow"
+    },
+    {
+      "timestamp": 10000,
+      "action": "show_success",
+      "description": "Celebration animation - execution complete!"
+    }
+  ]
+}
+
