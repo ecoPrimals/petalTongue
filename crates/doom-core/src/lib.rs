@@ -15,9 +15,18 @@
 //!
 //! As we implement Doom, we discover and solve these gaps, evolving petalTongue
 //! into a robust platform for ANY embedded application.
+//!
+//! # Phase 1.1: WAD Parsing & Map Display
+//!
+//! We start by loading a real Doom WAD file and displaying the map geometry.
+//! This validates our asset loading and rendering capabilities.
 
 use std::collections::HashSet;
+use std::path::Path;
 use thiserror::Error;
+
+pub mod wad_loader;
+pub mod map_renderer;
 
 /// Doom-specific errors
 #[derive(Debug, Error)]
@@ -119,20 +128,24 @@ pub enum DoomState {
     Error,
 }
 
-/// Mock Doom instance (for now - will be replaced with real implementation)
+/// Doom instance - Phase 1.1: Real map rendering!
 ///
 /// # Evolution Note
-/// This is intentionally minimal. As we implement, we'll discover what we actually need.
-/// The spec will evolve based on real requirements.
+/// We've evolved from test patterns to real Doom maps!
+/// This demonstrates test-driven evolution in action.
 pub struct DoomInstance {
     width: usize,
     height: usize,
     state: DoomState,
-    framebuffer: Vec<u8>,
     keys_pressed: HashSet<DoomKey>,
     mouse_x: i32,
     mouse_y: i32,
     frame_count: u64,
+    
+    // Phase 1.1: Real Doom data!
+    wad_data: Option<wad_loader::WadData>,
+    current_map: Option<String>,
+    map_renderer: Option<map_renderer::MapRenderer>,
 }
 
 impl DoomInstance {
@@ -144,47 +157,124 @@ impl DoomInstance {
             width,
             height,
             state: DoomState::Uninitialized,
-            framebuffer: vec![0; width * height * 4], // RGBA
             keys_pressed: HashSet::new(),
             mouse_x: 0,
             mouse_y: 0,
             frame_count: 0,
+            wad_data: None,
+            current_map: None,
+            map_renderer: None,
         })
     }
     
-    /// Initialize the Doom engine
+    /// Initialize the Doom engine with a WAD file
+    ///
+    /// # Phase 1.1: Real WAD loading!
     pub fn init(&mut self) -> Result<()> {
+        self.init_with_wad(None::<&Path>)
+    }
+    
+    /// Initialize with a specific WAD file path
+    ///
+    /// If no path is provided, looks for common locations:
+    /// - ./doom1.wad (shareware)
+    /// - ./freedoom1.wad (free alternative)
+    /// - /usr/share/games/doom/doom1.wad (Linux)
+    pub fn init_with_wad<P: AsRef<Path>>(&mut self, wad_path: Option<P>) -> Result<()> {
         tracing::info!("Initializing Doom engine");
         self.state = DoomState::Loading;
         
-        // TODO: Load WAD file
-        // TODO: Initialize Doom engine
-        // For now: Just set state to menu
+        // Try to find a WAD file
+        let wad_path = if let Some(path) = wad_path {
+            path.as_ref().to_path_buf()
+        } else {
+            self.find_wad_file()?
+        };
         
-        // Mock initialization: Fill framebuffer with test pattern
-        self.draw_test_pattern();
+        tracing::info!("Loading WAD: {}", wad_path.display());
         
-        self.state = DoomState::Menu;
-        Ok(())
+        // Load the WAD file
+        match wad_loader::WadData::load(&wad_path) {
+            Ok(wad_data) => {
+                tracing::info!("WAD loaded successfully with {} maps", wad_data.maps.len());
+                
+                // Start with the first map
+                if let Some(first_map) = wad_data.first_map() {
+                    self.current_map = Some(first_map.name.clone());
+                    tracing::info!("Starting map: {}", first_map.name);
+                }
+                
+                // Create map renderer
+                self.map_renderer = Some(map_renderer::MapRenderer::new(self.width, self.height));
+                
+                self.wad_data = Some(wad_data);
+                self.state = DoomState::Menu;
+                Ok(())
+            }
+            Err(e) => {
+                tracing::error!("Failed to load WAD: {}", e);
+                Err(DoomError::InvalidWad(e.to_string()))
+            }
+        }
+    }
+    
+    /// Try to find a WAD file in common locations
+    fn find_wad_file(&self) -> Result<std::path::PathBuf> {
+        let candidates = vec![
+            "./doom1.wad",
+            "./freedoom1.wad",
+            "./DOOM1.WAD",
+            "./FREEDOOM1.WAD",
+            "/usr/share/games/doom/doom1.wad",
+            "/usr/share/games/doom/freedoom1.wad",
+            "/usr/local/share/games/doom/doom1.wad",
+        ];
+        
+        for candidate in candidates {
+            let path = std::path::Path::new(candidate);
+            if path.exists() {
+                tracing::info!("Found WAD file: {}", path.display());
+                return Ok(path.to_path_buf());
+            }
+        }
+        
+        Err(DoomError::WadNotFound(
+            "No WAD file found. Please provide doom1.wad or freedoom1.wad".to_string()
+        ))
     }
     
     /// Run one game tick
+    ///
+    /// # Phase 1.1: Real map rendering!
     pub fn tick(&mut self) -> Result<()> {
         if self.state != DoomState::Playing && self.state != DoomState::Menu {
             return Ok(());
         }
         
-        // TODO: Run actual Doom game logic
-        // For now: Just update test pattern
         self.frame_count += 1;
-        self.update_test_pattern();
+        
+        // Phase 1.1: Render the current map!
+        if let (Some(wad_data), Some(map_name), Some(renderer)) = 
+            (&self.wad_data, &self.current_map, &mut self.map_renderer) 
+        {
+            if let Some(map) = wad_data.get_map(map_name) {
+                renderer.render(map);
+            }
+        }
         
         Ok(())
     }
     
     /// Get the current framebuffer (RGBA format)
+    ///
+    /// # Phase 1.1: Real map rendering!
     pub fn framebuffer(&self) -> &[u8] {
-        &self.framebuffer
+        if let Some(renderer) = &self.map_renderer {
+            renderer.framebuffer()
+        } else {
+            // Fallback: empty buffer
+            &[]
+        }
     }
     
     /// Get framebuffer dimensions
@@ -238,29 +328,23 @@ impl DoomInstance {
         }
     }
     
-    // === Mock rendering for development ===
-    
-    fn draw_test_pattern(&mut self) {
-        // Draw a simple gradient pattern to verify rendering works
-        for y in 0..self.height {
-            for x in 0..self.width {
-                let idx = (y * self.width + x) * 4;
-                self.framebuffer[idx] = (x * 255 / self.width) as u8;     // R
-                self.framebuffer[idx + 1] = (y * 255 / self.height) as u8; // G
-                self.framebuffer[idx + 2] = 128;                           // B
-                self.framebuffer[idx + 3] = 255;                           // A
-            }
-        }
+    /// Get the current map name
+    pub fn current_map(&self) -> Option<&str> {
+        self.current_map.as_deref()
     }
     
-    fn update_test_pattern(&mut self) {
-        // Animate the test pattern
-        let offset = (self.frame_count % 255) as u8;
-        for y in 0..self.height {
-            for x in 0..self.width {
-                let idx = (y * self.width + x) * 4;
-                self.framebuffer[idx + 2] = offset; // Animate blue channel
+    /// Load a specific map
+    pub fn load_map(&mut self, map_name: &str) -> Result<()> {
+        if let Some(wad_data) = &self.wad_data {
+            if wad_data.get_map(map_name).is_some() {
+                tracing::info!("Loading map: {}", map_name);
+                self.current_map = Some(map_name.to_string());
+                Ok(())
+            } else {
+                Err(DoomError::EngineError(format!("Map {} not found", map_name)))
             }
+        } else {
+            Err(DoomError::EngineError("No WAD loaded".to_string()))
         }
     }
 }
