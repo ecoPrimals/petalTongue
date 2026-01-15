@@ -1,0 +1,60 @@
+{
+  "name": "Doom MVP - Minimal Viable Proof",
+  "description": "First test of Doom integration - exposing gaps in petalTongue architecture",
+  "version": "2.0.0",
+  "mode": "doom-showcase",
+  
+  "ui_config": {
+    "layout": "custom",
+    "show_panels": {
+      "left_sidebar": false,
+      "right_sidebar": false,
+      "graph_statistics": false,
+      "system_dashboard": false,
+      "trust_dashboard": false
+    },
+    "features": {
+      "audio_sonification": false,
+      "auto_refresh": false
+    },
+    "custom_panels": [
+      {
+        "type": "doom_game",
+        "title": "🎮 Doom MVP - Testing petalTongue Platform",
+        "width": 640,
+        "height": 480,
+        "fullscreen": false,
+        "config": {
+          "show_debug": true,
+          "target_fps": 35
+        }
+      }
+    ]
+  },
+  
+  "sensory_config": {
+    "required": {
+      "visual_outputs": ["2d"],
+      "keyboard_input": true,
+      "pointer_input": true
+    },
+    "optional": {
+      "audio_outputs": ["stereo"]
+    },
+    "complexity_hint": "standard"
+  },
+  
+  "ecosystem": {
+    "primals": []
+  },
+  
+  "_comments": [
+    "This scenario is intentionally minimal to expose gaps:",
+    "1. How do we register custom panel types?",
+    "2. How does input focus work with multiple panels?",
+    "3. How do we handle panel lifecycle (init/update/cleanup)?",
+    "4. How do performance budgets work?",
+    "As we implement, we'll discover and solve these gaps."
+  ]
+}
+

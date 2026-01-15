@@ -1,0 +1,11 @@
+//! Panel implementations for petalTongue
+//!
+//! This module contains embeddable panels that can be composed into different UIs.
+//! Each panel is self-contained and follows the emerging panel system architecture.
+
+pub mod doom_panel;
+pub mod doom_factory;
+
+pub use doom_panel::DoomPanel;
+pub use doom_factory::{DoomPanelFactory, create_doom_factory};
+

@@ -12,6 +12,8 @@
 use crate::accessibility_panel::AccessibilityPanel;
 use crate::audio::AudioSystemV2; // NEW: Substrate-agnostic audio
 use crate::awakening_overlay::AwakeningOverlay;
+use crate::panel_registry::{PanelRegistry, PanelInstance};
+use crate::panels::create_doom_factory;
 // BingoCubeIntegration removed - it's a primalTool, discovered at runtime
 use crate::graph_metrics_plotter::GraphMetricsPlotter;
 use crate::keyboard_shortcuts::KeyboardShortcuts;
@@ -178,6 +180,12 @@ pub struct PetalTongueApp {
     sensory_ui: Option<crate::sensory_ui::SensoryUIManager>,
     /// Use sensory UI instead of adaptive UI (feature flag for migration)
     use_sensory_ui: bool,
+    
+    // ===== v2.4: Panel System (Doom evolution) =====
+    /// Panel registry for custom panel types (Doom, web, video, etc.)
+    panel_registry: PanelRegistry,
+    /// Active custom panels
+    custom_panels: Vec<Box<dyn PanelInstance>>,
 }
 
 impl PetalTongueApp {
@@ -449,6 +457,33 @@ impl PetalTongueApp {
 
         // Initialize audio system (EVOLVED: Substrate-agnostic with runtime discovery!)
         let audio_system = AudioSystemV2::new();
+        
+        // ===== v2.4: Initialize Panel Registry (Doom evolution) =====
+        let mut panel_registry = PanelRegistry::new();
+        
+        // Register available panel types
+        panel_registry.register(create_doom_factory());
+        tracing::info!("✅ Panel registry initialized");
+        tracing::info!("   Available panel types: {:?}", panel_registry.available_types());
+        
+        // Create custom panels from scenario
+        let mut custom_panels: Vec<Box<dyn PanelInstance>> = Vec::new();
+        if let Some(ref s) = scenario {
+            for panel_config in &s.ui_config.custom_panels {
+                match panel_registry.create(panel_config) {
+                    Ok(panel) => {
+                        tracing::info!("✅ Created custom panel: {} (type: {})", 
+                            panel_config.title, panel_config.panel_type);
+                        custom_panels.push(panel);
+                    }
+                    Err(e) => {
+                        tracing::error!("❌ Failed to create panel '{}': {}", 
+                            panel_config.title, e);
+                    }
+                }
+            }
+        }
+        tracing::info!("✅ Custom panels initialized: {} panels", custom_panels.len());
 
         // Log discovered audio backend for observability
         if let Some(backend) = audio_system.active_backend() {
@@ -558,6 +593,10 @@ impl PetalTongueApp {
             // v2.2: Sensory UI (capability-based rendering) - TRUE PRIMAL
             sensory_ui: crate::sensory_ui::SensoryUIManager::new().ok(),
             use_sensory_ui: true, // Enable sensory UI by default (zero hardcoding!)
+            
+            // v2.4: Panel system
+            panel_registry,
+            custom_panels,
         };
 
         // Check if awakening experience is enabled
@@ -1268,6 +1307,19 @@ impl eframe::App for PetalTongueApp {
                 });
         }
 
+        // ===== v2.4: Render Custom Panels (Doom, web, video, etc.) =====
+        for (idx, panel) in self.custom_panels.iter_mut().enumerate() {
+            egui::Window::new(panel.title())
+                .id(egui::Id::new(format!("custom_panel_{}", idx)))
+                .default_width(640.0)
+                .default_height(480.0)
+                .resizable(true)
+                .show(ctx, |ui| {
+                    panel.update();
+                    panel.render(ui);
+                });
+        }
+        
         // Right side panel - Primal details (if node selected)
         let selected_id_clone = self
             .visual_renderer
