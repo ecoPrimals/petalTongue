@@ -27,6 +27,7 @@ use thiserror::Error;
 
 pub mod wad_loader;
 pub mod map_renderer;
+pub mod raycast_renderer;
 
 /// Doom-specific errors
 #[derive(Debug, Error)]
@@ -128,11 +129,11 @@ pub enum DoomState {
     Error,
 }
 
-/// Doom instance - Phase 1.1: Real map rendering!
+/// Doom instance - Phase 1.2: First-person view!
 ///
 /// # Evolution Note
-/// We've evolved from test patterns to real Doom maps!
-/// This demonstrates test-driven evolution in action.
+/// Phase 1.1: Added real WAD loading and 2D map rendering
+/// Phase 1.2: Added first-person raycasting renderer!
 pub struct DoomInstance {
     width: usize,
     height: usize,
@@ -140,12 +141,17 @@ pub struct DoomInstance {
     keys_pressed: HashSet<DoomKey>,
     mouse_x: i32,
     mouse_y: i32,
+    mouse_dx: f32, // Mouse movement for turning
     frame_count: u64,
     
     // Phase 1.1: Real Doom data!
     wad_data: Option<wad_loader::WadData>,
     current_map: Option<String>,
     map_renderer: Option<map_renderer::MapRenderer>,
+    
+    // Phase 1.2: First-person rendering!
+    raycast_renderer: Option<raycast_renderer::RaycastRenderer>,
+    first_person_mode: bool, // true = first-person, false = top-down
 }
 
 impl DoomInstance {
@@ -160,10 +166,13 @@ impl DoomInstance {
             keys_pressed: HashSet::new(),
             mouse_x: 0,
             mouse_y: 0,
+            mouse_dx: 0.0,
             frame_count: 0,
             wad_data: None,
             current_map: None,
             map_renderer: None,
+            raycast_renderer: None,
+            first_person_mode: true, // Start in first-person mode!
         })
     }
     
@@ -204,9 +213,20 @@ impl DoomInstance {
                     tracing::info!("Starting map: {}", first_map.name);
                 }
                 
-                // Create map renderer
+                // Create renderers
                 self.map_renderer = Some(map_renderer::MapRenderer::new(self.width, self.height));
                 
+                // Phase 1.2: Create raycasting renderer!
+                let mut raycast = raycast_renderer::RaycastRenderer::new(self.width, self.height);
+                
+                // Set player start position from map
+                if let Some(first_map) = wad_data.first_map() {
+                    raycast.set_player_start(first_map);
+                    tracing::info!("Player start: ({}, {}) angle: {}", 
+                                  raycast.player_x, raycast.player_y, raycast.player_angle);
+                }
+                
+                self.raycast_renderer = Some(raycast);
                 self.wad_data = Some(wad_data);
                 self.state = DoomState::Menu;
                 Ok(())
@@ -245,7 +265,7 @@ impl DoomInstance {
     
     /// Run one game tick
     ///
-    /// # Phase 1.1: Real map rendering!
+    /// # Phase 1.2: First-person + player movement!
     pub fn tick(&mut self) -> Result<()> {
         if self.state != DoomState::Playing && self.state != DoomState::Menu {
             return Ok(());
@@ -253,28 +273,83 @@ impl DoomInstance {
         
         self.frame_count += 1;
         
-        // Phase 1.1: Render the current map!
-        if let (Some(wad_data), Some(map_name), Some(renderer)) = 
-            (&self.wad_data, &self.current_map, &mut self.map_renderer) 
-        {
+        // Update player movement based on keys
+        self.update_player();
+        
+        // Render current map
+        if let (Some(wad_data), Some(map_name)) = (&self.wad_data, &self.current_map) {
             if let Some(map) = wad_data.get_map(map_name) {
-                renderer.render(map);
+                if self.first_person_mode {
+                    // Phase 1.2: First-person raycasting!
+                    if let Some(renderer) = &mut self.raycast_renderer {
+                        renderer.render(map);
+                    }
+                } else {
+                    // Phase 1.1: Top-down view
+                    if let Some(renderer) = &mut self.map_renderer {
+                        renderer.render(map);
+                    }
+                }
             }
         }
         
         Ok(())
     }
     
+    /// Update player position/rotation based on input
+    ///
+    /// # Phase 1.2: Player movement!
+    fn update_player(&mut self) {
+        if let Some(renderer) = &mut self.raycast_renderer {
+            let move_speed = 10.0; // Units per frame
+            let turn_speed = 0.05; // Radians per frame
+            
+            // Rotation (mouse)
+            renderer.rotate(self.mouse_dx * turn_speed);
+            self.mouse_dx = 0.0; // Reset mouse delta
+            
+            // Rotation (arrow keys)
+            if self.keys_pressed.contains(&DoomKey::Left) {
+                renderer.rotate(-turn_speed);
+            }
+            if self.keys_pressed.contains(&DoomKey::Right) {
+                renderer.rotate(turn_speed);
+            }
+            
+            // Forward/backward
+            if self.keys_pressed.contains(&DoomKey::Up) {
+                renderer.move_forward(move_speed);
+            }
+            if self.keys_pressed.contains(&DoomKey::Down) {
+                renderer.move_forward(-move_speed);
+            }
+            
+            // Strafe left/right
+            if self.keys_pressed.contains(&DoomKey::StrafeLeft) {
+                renderer.move_strafe(-move_speed);
+            }
+            if self.keys_pressed.contains(&DoomKey::StrafeRight) {
+                renderer.move_strafe(move_speed);
+            }
+        }
+    }
+    
     /// Get the current framebuffer (RGBA format)
     ///
-    /// # Phase 1.1: Real map rendering!
+    /// # Phase 1.2: First-person or top-down!
     pub fn framebuffer(&self) -> &[u8] {
-        if let Some(renderer) = &self.map_renderer {
-            renderer.framebuffer()
+        if self.first_person_mode {
+            if let Some(renderer) = &self.raycast_renderer {
+                return renderer.framebuffer();
+            }
         } else {
-            // Fallback: empty buffer
-            &[]
+            if let Some(renderer) = &self.map_renderer {
+                return renderer.framebuffer();
+            }
         }
+        
+        // Fallback: empty buffer
+        &[]
     }
     
     /// Get framebuffer dimensions
@@ -301,8 +376,23 @@ impl DoomInstance {
     
     /// Update mouse position
     pub fn mouse_move(&mut self, x: i32, y: i32) {
+        let old_x = self.mouse_x;
         self.mouse_x = x;
         self.mouse_y = y;
+        
+        // Calculate mouse delta for turning
+        self.mouse_dx = (x - old_x) as f32;
+    }
+    
+    /// Toggle between first-person and top-down view
+    pub fn toggle_view_mode(&mut self) {
+        self.first_person_mode = !self.first_person_mode;
+        tracing::info!("View mode: {}", if self.first_person_mode { "first-person" } else { "top-down" });
+    }
+    
+    /// Check if in first-person mode
+    pub fn is_first_person(&self) -> bool {
+        self.first_person_mode
     }
     
     /// Start a new game
