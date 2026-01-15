@@ -44,9 +44,65 @@ pub struct UiConfig {
     #[serde(default)]
     pub theme: String,
     #[serde(default)]
+    pub layout: String, // "canvas-only", "dashboard-centered", "full-dashboard"
+    #[serde(default)]
+    pub show_panels: PanelVisibility,
+    #[serde(default)]
     pub animations: AnimationConfig,
     #[serde(default)]
     pub performance: PerformanceConfig,
+    #[serde(default)]
+    pub features: FeatureFlags,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct PanelVisibility {
+    pub left_sidebar: bool,
+    pub right_sidebar: bool,
+    pub top_menu: bool,
+    pub system_dashboard: bool,
+    pub audio_panel: bool,
+    pub trust_dashboard: bool,
+    pub proprioception: bool,
+    pub graph_stats: bool,
+}
+
+impl Default for PanelVisibility {
+    fn default() -> Self {
+        // Default: show everything (backward compatible)
+        Self {
+            left_sidebar: true,
+            right_sidebar: true,
+            top_menu: true,
+            system_dashboard: true,
+            audio_panel: true,
+            trust_dashboard: true,
+            proprioception: true,
+            graph_stats: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct FeatureFlags {
+    pub audio_sonification: bool,
+    pub auto_refresh: bool,
+    pub neural_api: bool,
+    pub tutorial_mode: bool,
+}
+
+impl Default for FeatureFlags {
+    fn default() -> Self {
+        // Default: enable all features (backward compatible)
+        Self {
+            audio_sonification: true,
+            auto_refresh: true,
+            neural_api: false, // Disabled by default (requires external service)
+            tutorial_mode: false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -230,6 +286,52 @@ impl Scenario {
     /// Get count of primals in the scenario
     pub fn primal_count(&self) -> usize {
         self.ecosystem.primals.len()
+    }
+
+    /// Convert scenario primals to PrimalInfo for graph display
+    pub fn to_primal_infos(&self) -> Vec<petal_tongue_core::PrimalInfo> {
+        use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, Properties, PropertyValue};
+        
+        self.ecosystem.primals.iter().map(|p| {
+            let health_status = match p.status.to_lowercase().as_str() {
+                "healthy" => PrimalHealthStatus::Healthy,
+                "degraded" | "warning" => PrimalHealthStatus::Warning,
+                "critical" => PrimalHealthStatus::Critical,
+                _ => PrimalHealthStatus::Unknown,
+            };
+            
+            // Convert scenario data to properties
+            let mut properties = Properties::new();
+            
+            // Add capabilities as boolean properties
+            for cap in &p.capabilities {
+                properties.insert(
+                    format!("capability.{}", cap),
+                    PropertyValue::Boolean(true),
+                );
+            }
+            
+            // Add metrics as properties
+            properties.insert("cpu_percent".to_string(), PropertyValue::Number(p.metrics.cpu_percent as f64));
+            properties.insert("memory_mb".to_string(), PropertyValue::Number(p.metrics.memory_mb as f64));
+            properties.insert("health_percent".to_string(), PropertyValue::Number(p.health as f64));
+            properties.insert("confidence".to_string(), PropertyValue::Number(p.confidence as f64));
+            
+            PrimalInfo {
+                id: p.id.clone(),
+                name: p.name.clone(),
+                primal_type: p.primal_type.clone(),
+                health: health_status,
+                capabilities: p.capabilities.clone(),
+                endpoint: format!("scenario://{}", p.id), // Virtual endpoint for scenarios
+                last_seen: chrono::Utc::now().timestamp() as u64,
+                endpoints: None,
+                metadata: None,
+                properties,
+                trust_level: None,
+                family_id: Some(p.family.clone()),
+            }
+        }).collect()
     }
 
     /// Get system metrics from scenario (if available)

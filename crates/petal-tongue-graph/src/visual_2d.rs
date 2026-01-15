@@ -21,13 +21,23 @@
 //!
 //! **Extracted**: Truly independent utilities moved to `color_utils` module.
 
+use crate::capability_validator::{validate_connection, ValidationResult};
 use crate::color_utils::hsv_to_rgb;
 use egui::{Color32, Pos2, Stroke, Vec2};
 use petal_tongue_animation::AnimationEngine;
 use petal_tongue_core::graph_engine::Node;
 use petal_tongue_core::graph_engine::Position;
-use petal_tongue_core::{GraphEngine, PrimalHealthStatus};
+use petal_tongue_core::{GraphEngine, PrimalHealthStatus, PrimalInfo, Properties, PropertyValue};
 use std::sync::{Arc, RwLock};
+
+/// Edge being drafted (during drag-to-connect)
+#[derive(Debug, Clone)]
+struct EdgeDraft {
+    /// Source node ID
+    from: String,
+    /// Current cursor position
+    current_pos: Pos2,
+}
 
 /// 2D Visual Renderer for graphs
 pub struct Visual2DRenderer {
@@ -47,6 +57,14 @@ pub struct Visual2DRenderer {
     animation_engine: Option<Arc<RwLock<AnimationEngine>>>,
     /// Animation enabled flag
     animation_enabled: bool,
+    /// Show graph statistics window
+    show_stats: bool,
+    /// Interactive mode enabled (allows creating/editing nodes)
+    interactive_mode: bool,
+    /// Currently dragging a node (for moving)
+    dragging_node: Option<String>,
+    /// Edge being drawn (for connecting nodes)
+    drawing_edge: Option<EdgeDraft>,
 }
 
 impl Visual2DRenderer {
@@ -61,6 +79,10 @@ impl Visual2DRenderer {
             _last_mouse_pos: None,
             animation_engine: None,
             animation_enabled: false,
+            show_stats: true, // Default: show (backward compatible)
+            interactive_mode: false, // Default: display-only (backward compatible)
+            dragging_node: None,
+            drawing_edge: None,
         }
     }
 
@@ -82,6 +104,28 @@ impl Visual2DRenderer {
         self.animation_enabled
     }
 
+    /// Enable or disable graph statistics window
+    pub fn set_show_stats(&mut self, show: bool) {
+        self.show_stats = show;
+    }
+
+    /// Check if statistics window is enabled
+    #[must_use]
+    pub fn show_stats(&self) -> bool {
+        self.show_stats
+    }
+
+    /// Enable or disable interactive mode (create/edit nodes)
+    pub fn set_interactive_mode(&mut self, enabled: bool) {
+        self.interactive_mode = enabled;
+    }
+
+    /// Check if interactive mode is enabled
+    #[must_use]
+    pub fn is_interactive(&self) -> bool {
+        self.interactive_mode
+    }
+
     /// Render the graph to egui
     pub fn render(&mut self, ui: &mut egui::Ui) {
         // Get available space
@@ -90,17 +134,15 @@ impl Visual2DRenderer {
             ui.allocate_painter(available_size, egui::Sense::click_and_drag());
 
         // Handle input (before we borrow graph)
-        self.handle_input(&response);
+        let clip_rect = response.rect;
+        let screen_center = clip_rect.center();
+        self.handle_input(&response, screen_center);
 
         // Clip to available area
-        let clip_rect = response.rect;
         painter.set_clip_rect(clip_rect);
 
         // Now borrow graph for reading
         let graph = self.graph.read().expect("graph lock poisoned");
-
-        // Calculate center of screen for world-to-screen conversion
-        let screen_center = clip_rect.center();
 
         // Render edges first (so they appear behind nodes)
         for edge in graph.edges() {
@@ -146,8 +188,24 @@ impl Visual2DRenderer {
             }
         }
 
-        // Draw stats in corner
-        self.draw_stats(ui, &graph);
+        // Draw edge being drafted (if in interactive mode)
+        if let Some(ref edge_draft) = self.drawing_edge {
+            painter.line_segment(
+                [
+                    self.world_to_screen(
+                        graph.get_node(&edge_draft.from).unwrap().position,
+                        screen_center,
+                    ),
+                    edge_draft.current_pos,
+                ],
+                Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
+            );
+        }
+
+        // Draw stats in corner (if enabled)
+        if self.show_stats {
+            self.draw_stats(ui, &graph);
+        }
     }
 
     /// Convert world coordinates to screen coordinates
@@ -516,8 +574,8 @@ impl Visual2DRenderer {
         Color32::from_rgb(r, g, b)
     }
 
-    /// Handle user input (pan, zoom, click)
-    fn handle_input(&mut self, response: &egui::Response) {
+    /// Handle user input (pan, zoom, click, double-click, drag)
+    fn handle_input(&mut self, response: &egui::Response, screen_center: Pos2) {
         // Handle zoom (scroll wheel)
         if response.hovered() {
             let scroll_delta = response.ctx.input(|i| i.raw_scroll_delta.y);
@@ -527,25 +585,91 @@ impl Visual2DRenderer {
             }
         }
 
-        // Handle pan (drag)
-        if response.dragged() {
-            self.camera_offset += response.drag_delta();
-            self.is_dragging = true;
+        // Interactive mode: Handle double-click to create node
+        if self.interactive_mode && response.double_clicked() {
+            if let Some(mouse_pos) = response.interact_pointer_pos() {
+                let world_pos = self.screen_to_world(mouse_pos, screen_center);
+                self.create_node_at(world_pos);
+            }
+        }
+
+        // Interactive mode: Handle drag to move node or create edge
+        if self.interactive_mode && response.drag_started() {
+            if let Some(mouse_pos) = response.interact_pointer_pos() {
+                let world_pos = self.screen_to_world(mouse_pos, screen_center);
+                
+                // Check if starting drag on a node
+                let graph = self.graph.read().expect("graph lock poisoned");
+                let node_under_cursor = graph.nodes().iter().find(|node| {
+                    let distance = node.position.distance_to(world_pos);
+                    distance < 20.0
+                });
+
+                if let Some(node) = node_under_cursor {
+                    // Start dragging node (will be used for either moving or connecting)
+                    self.dragging_node = Some(node.info.id.clone());
+                }
+            }
+        }
+
+        // Interactive mode: Handle drag for edge creation
+        if self.interactive_mode && response.dragged() {
+            if let Some(ref dragging_id) = self.dragging_node {
+                // Check if we moved significantly (edge creation, not just click jitter)
+                if response.drag_delta().length() > 10.0 {
+                    // Start edge draft
+                    if self.drawing_edge.is_none() {
+                        self.drawing_edge = Some(EdgeDraft {
+                            from: dragging_id.clone(),
+                            current_pos: response.interact_pointer_pos().unwrap_or_default(),
+                        });
+                    } else if let Some(ref mut edge_draft) = self.drawing_edge {
+                        // Update edge draft position
+                        edge_draft.current_pos = response.interact_pointer_pos().unwrap_or_default();
+                    }
+                }
+            } else {
+                // No node being dragged - pan the canvas
+                self.camera_offset += response.drag_delta();
+                self.is_dragging = true;
+            }
         } else {
             self.is_dragging = false;
         }
 
+        // Interactive mode: Handle drag release for edge completion
+        if self.interactive_mode && response.drag_released() {
+            if let Some(edge_draft) = self.drawing_edge.take() {
+                // Check if we released over a different node
+                if let Some(mouse_pos) = response.interact_pointer_pos() {
+                    let world_pos = self.screen_to_world(mouse_pos, screen_center);
+                    
+                    let target_id = {
+                        let graph = self.graph.read().expect("graph lock poisoned");
+                        graph.nodes().iter().find(|node| {
+                            let distance = node.position.distance_to(world_pos);
+                            distance < 20.0 && node.info.id != edge_draft.from
+                        }).map(|node| node.info.id.clone())
+                    }; // graph lock released here
+
+                    if let Some(target) = target_id {
+                        self.create_edge(edge_draft.from, target);
+                    }
+                }
+            }
+            self.dragging_node = None;
+        }
+
         // Handle node selection (click)
-        if response.clicked() && !self.is_dragging {
+        if response.clicked() && !self.is_dragging && self.drawing_edge.is_none() {
             if let Some(mouse_pos) = response.interact_pointer_pos() {
-                let screen_center = response.rect.center();
                 let world_pos = self.screen_to_world(mouse_pos, screen_center);
 
                 // Find node under cursor
                 let graph = self.graph.read().expect("graph lock poisoned");
                 let clicked_node = graph.nodes().iter().find(|node| {
                     let distance = node.position.distance_to(world_pos);
-                    distance < 20.0 // Node radius in world coordinates
+                    distance < 20.0
                 });
 
                 if let Some(node) = clicked_node {
@@ -555,6 +679,118 @@ impl Visual2DRenderer {
                 }
             }
         }
+
+        // Interactive mode: Handle delete key
+        if self.interactive_mode {
+            response.ctx.input(|i| {
+                if i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace) {
+                    if let Some(ref selected_id) = self.selected_node {
+                        self.delete_node(selected_id.clone());
+                        self.selected_node = None;
+                    }
+                }
+            });
+        }
+    }
+
+    /// Create a new node at the given world position (interactive mode)
+    fn create_node_at(&mut self, world_pos: Position) {
+        let mut graph = self.graph.write().expect("graph lock poisoned");
+        
+        let node_count = graph.nodes().len();
+        let new_id = format!("interactive-node-{}", node_count + 1);
+        
+        // Create a new primal with discovered capabilities
+        let mut properties = Properties::new();
+        properties.insert(
+            "created_by".to_string(),
+            PropertyValue::String("interactive-paint".to_string()),
+        );
+        
+        let new_primal = PrimalInfo {
+            id: new_id.clone(),
+            name: format!("Node {}", node_count + 1),
+            primal_type: "custom".to_string(), // Agnostic type, capabilities define it
+            endpoint: format!("interactive://{}", new_id),
+            capabilities: vec!["interactive".to_string()], // Minimal default capability
+            health: PrimalHealthStatus::Healthy,
+            last_seen: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+            endpoints: None,
+            metadata: None,
+            properties,
+            trust_level: None,
+            family_id: Some("interactive".to_string()),
+        };
+        
+        graph.add_node(new_primal);
+        
+        // Set the new node's position (must be done after adding to graph)
+        if let Some(node) = graph.get_node_mut(&new_id) {
+            node.position = world_pos;
+        }
+        
+        // Select the newly created node
+        drop(graph);
+        self.selected_node = Some(new_id);
+    }
+
+    /// Create an edge between two nodes (interactive mode)
+    fn create_edge(&mut self, from: String, to: String) {
+        use petal_tongue_core::TopologyEdge;
+        
+        let graph = self.graph.read().expect("graph lock poisoned");
+        
+        // Check if edge already exists
+        let edge_exists = graph.edges().iter().any(|e| {
+            (e.from == from && e.to == to) || (e.from == to && e.to == from)
+        });
+        
+        if edge_exists {
+            return; // Don't create duplicate
+        }
+        
+        // Validate connection based on capabilities (TRUE PRIMAL: no hardcoded types!)
+        let from_node = graph.get_node(&from);
+        let to_node = graph.get_node(&to);
+        
+        if let (Some(from_primal), Some(to_primal)) = (from_node, to_node) {
+            let validation = validate_connection(&from_primal.info, &to_primal.info);
+            
+            match validation {
+                ValidationResult::Invalid(reason) => {
+                    tracing::warn!("❌ Connection invalid: {}", reason);
+                    return; // Don't create invalid connection
+                }
+                ValidationResult::Warning(reason) => {
+                    tracing::info!("⚠️ Connection warning: {}", reason);
+                    // Continue to create, but log warning
+                }
+                ValidationResult::Valid => {
+                    tracing::info!("✅ Connection validated");
+                }
+            }
+        }
+        
+        drop(graph); // Release read lock
+        
+        let mut graph = self.graph.write().expect("graph lock poisoned");
+        graph.add_edge(TopologyEdge {
+            from,
+            to,
+            edge_type: "interactive".to_string(), // Agnostic type
+            label: None,
+            capability: None, // Capabilities discovered at runtime
+            metrics: None,
+        });
+    }
+
+    /// Delete a node (interactive mode)
+    fn delete_node(&mut self, node_id: String) {
+        let mut graph = self.graph.write().expect("graph lock poisoned");
+        graph.remove_node(&node_id);
     }
 
     /// Render animation (flow particles and node pulses)

@@ -411,6 +411,17 @@ impl PetalTongueApp {
         // Wire animation engine to visual renderer
         visual_renderer.set_animation_engine(Arc::clone(&animation_engine));
         visual_renderer.set_animation_enabled(true); // Enable by default
+        
+        // Configure from scenario
+        if let Some(ref s) = scenario {
+            visual_renderer.set_show_stats(s.ui_config.show_panels.graph_stats);
+            
+            // Enable interactive mode for paint-canvas layouts
+            if s.ui_config.layout == "canvas-only" || s.mode.contains("paint") {
+                visual_renderer.set_interactive_mode(true);
+                tracing::info!("✅ Interactive mode enabled for {} scenario", s.mode);
+            }
+        }
 
         // Initialize adapter registry with ecoPrimals adapters
         // In the future, adapters will be loaded based on ecosystem capability discovery
@@ -489,9 +500,9 @@ impl PetalTongueApp {
             #[allow(deprecated)]
             biomeos_client,
             current_layout: LayoutAlgorithm::ForceDirected,
-            show_audio_panel: true,
+            show_audio_panel: scenario.as_ref().map_or(true, |s| s.ui_config.show_panels.audio_panel),
             show_capability_panel: false,
-            show_controls: true,
+            show_controls: scenario.as_ref().map_or(true, |s| s.ui_config.show_panels.left_sidebar),
             show_animation: true,
             last_refresh: Instant::now(),
             auto_refresh: true,
@@ -502,13 +513,13 @@ impl PetalTongueApp {
 
             accessibility_panel: AccessibilityPanel::default(),
             system_dashboard: SystemDashboard::default(),
-            show_dashboard: true, // Show by default - part of Universal UI
+            show_dashboard: scenario.as_ref().map_or(true, |s| s.ui_config.show_panels.system_dashboard),
             audio_system,
             status_reporter,
             keyboard_shortcuts: KeyboardShortcuts::default(),
             adapter_registry, // Universal property rendering
             trust_dashboard: TrustDashboard::new(),
-            show_trust_dashboard: true, // Show by default
+            show_trust_dashboard: scenario.as_ref().map_or(true, |s| s.ui_config.show_panels.trust_dashboard),
 
             // Awakening experience
             awakening_overlay: AwakeningOverlay::new(),
@@ -577,8 +588,27 @@ impl PetalTongueApp {
         app.status_reporter.force_write();
 
         // Initial data load
-        // In tutorial mode, load scenarios; otherwise discover from network
-        if tutorial_mode.is_enabled() {
+        // Priority: Scenario > Tutorial > Network Discovery > Fallback
+        if let Some(ref loaded_scenario) = scenario {
+            // Scenario mode: Load primals directly from scenario
+            tracing::info!("📋 Loading {} primals from scenario", loaded_scenario.primal_count());
+            let primals = loaded_scenario.to_primal_infos();
+            
+            let mut graph = app.graph.write().expect("graph lock poisoned");
+            // CRITICAL: Don't replace the graph instance - it breaks Arc references!
+            // Just clear the existing graph and repopulate it
+            graph.clear();
+            
+            for primal in &primals {
+                graph.add_node(primal.clone());
+            }
+            
+            // CRITICAL: Scenarios have explicit positions - DON'T run force-directed layout!
+            // The scenario JSON defines exact positions for demonstration purposes.
+            // Running layout() would scatter nodes randomly, breaking the curated visualization.
+            tracing::info!("✅ Scenario primals loaded: {} nodes with explicit positions", primals.len());
+            drop(graph);
+        } else if tutorial_mode.is_enabled() {
             tutorial_mode.load_into_graph(Arc::clone(&app.graph), app.current_layout);
         } else if needs_fallback {
             // No providers and not in tutorial mode - create minimal fallback

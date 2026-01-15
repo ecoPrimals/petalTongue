@@ -1,0 +1,139 @@
+{
+  "name": "Full Dashboard - All Subsystems",
+  "description": "Complete benchTop experience with all features enabled",
+  "version": "2.0.0",
+  "mode": "full-dashboard",
+  
+  "sensory_config": {
+    "required_capabilities": {
+      "outputs": ["visual"],
+      "inputs": ["pointer"]
+    },
+    "optional_capabilities": {
+      "outputs": ["audio"],
+      "inputs": ["keyboard"]
+    },
+    "complexity_hint": "rich"
+  },
+  
+  "ui_config": {
+    "theme": "cosmic-dark",
+    "layout": "full-dashboard",
+    "show_panels": {
+      "left_sidebar": true,
+      "right_sidebar": true,
+      "top_menu": true,
+      "system_dashboard": true,
+      "audio_panel": true,
+      "trust_dashboard": true,
+      "proprioception": true,
+      "graph_stats": true
+    },
+    "animations": {
+      "enabled": true,
+      "breathing_nodes": true,
+      "connection_pulses": true,
+      "smooth_transitions": true,
+      "celebration_effects": true
+    },
+    "performance": {
+      "target_fps": 60,
+      "vsync": true,
+      "hardware_acceleration": true
+    },
+    "features": {
+      "audio_sonification": true,
+      "auto_refresh": true,
+      "neural_api": false,
+      "tutorial_mode": false
+    }
+  },
+  
+  "ecosystem": {
+    "primals": [
+      {
+        "id": "nucleus-1",
+        "name": "NUCLEUS",
+        "type": "coordination",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 95,
+        "position": { "x": 0, "y": -200 },
+        "capabilities": ["coordination", "graph-execution", "primal-management"],
+        "metrics": {
+          "cpu_percent": 15.5,
+          "memory_mb": 384,
+          "uptime_seconds": 14400
+        }
+      },
+      {
+        "id": "beardog-1",
+        "name": "BearDog",
+        "type": "security",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 98,
+        "position": { "x": -250, "y": 0 },
+        "capabilities": ["security", "authentication", "authorization"],
+        "metrics": {
+          "cpu_percent": 8.2,
+          "memory_mb": 156
+        }
+      },
+      {
+        "id": "songbird-1",
+        "name": "Songbird",
+        "type": "discovery",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 92,
+        "position": { "x": 250, "y": 0 },
+        "capabilities": ["discovery", "service-registry", "health-monitoring"],
+        "metrics": {
+          "cpu_percent": 5.4,
+          "memory_mb": 128
+        }
+      },
+      {
+        "id": "toadstool-1",
+        "name": "Toadstool",
+        "type": "compute",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 88,
+        "position": { "x": 0, "y": 200 },
+        "capabilities": ["compute", "wasm-execution", "isolation"],
+        "metrics": {
+          "cpu_percent": 32.8,
+          "memory_mb": 512
+        }
+      },
+      {
+        "id": "nestgate-1",
+        "name": "NestGate",
+        "type": "storage",
+        "family": "nat0",
+        "status": "healthy",
+        "health": 95,
+        "confidence": 90,
+        "position": { "x": -180, "y": 200 },
+        "capabilities": ["storage", "persistence", "versioning"],
+        "metrics": {
+          "cpu_percent": 4.1,
+          "memory_mb": 196
+        }
+      }
+    ]
+  },
+  
+  "neural_api": {
+    "enabled": false,
+    "learning_rate": 0.01,
+    "optimization_cycles": 100
+  }
+}
+
