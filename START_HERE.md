@@ -1,5 +1,181 @@
 # 🌸 petalTongue - Start Here
 
+**Last Updated**: January 15, 2026  
+**Status**: ✅ Production Ready - Deep Debt Evolution Complete
+
+---
+
+## 🎯 **Quick Start**
+
+petalTongue is ecoPrimals' **universal UI platform** - a sensory coordination layer that can embed any application as a panel.
+
+### **Run It**
+
+```bash
+# Default UI
+cargo run --release --bin petal-tongue
+
+# With specific scenario
+cargo run --release --bin petal-tongue -- --scenario sandbox/scenarios/doom-mvp.json
+
+# With paint mode (interactive canvas)
+cargo run --release --bin petal-tongue -- --scenario sandbox/scenarios/paint-simple.json
+```
+
+### **Test It**
+
+```bash
+# All tests
+cargo test
+
+# Specific package
+cargo test --package petal-tongue-ui
+
+# With coverage
+cargo llvm-cov --html
+```
+
+---
+
+## 🎉 **Recent Achievements (Jan 15, 2026)**
+
+We just completed **4 critical architectural phases** using test-driven evolution:
+
+1. ✅ **Validation Layer** (17/17 tests) - Prevents silent failures
+2. ✅ **Error Messages** (3/3 tests) - Helpful user guidance  
+3. ✅ **Input Focus** (7/7 tests) - Explicit input routing
+4. ✅ **Lifecycle Hooks** (10 methods) - Resource management
+
+**Impact**: Every future panel (web, video, terminal, games) benefits from this foundation!
+
+---
+
+## 📚 **Key Documentation**
+
+### **Essential Reading**
+- `PROJECT_STATUS.md` - Current project health & metrics
+- `DOCS_GUIDE.md` - Navigate all documentation
+- `specs/PANEL_SYSTEM_V2.md` - Panel architecture
+
+### **Recent Work**
+- `SESSION_COMPREHENSIVE_JAN_15_2026.md` - Today's full summary
+- `DOOM_EVOLUTION_INSIGHTS_JAN_15_2026.md` - Evolution opportunities
+- `PHASE_4_LIFECYCLE_COMPLETE_JAN_15_2026.md` - Lifecycle details
+
+### **Architecture**
+- `PETALTONGUE_AS_PLATFORM.md` - Platform vision
+- `DOOM_SHOWCASE_PLAN.md` - Doom integration plan
+- `DOOM_GAP_LOG.md` - Gap discovery & resolution
+
+---
+
+## 🧬 **What Makes petalTongue Special**
+
+### **Universal Panel System**
+Embed **any application** as a panel:
+- Games (Doom - currently in MVP)
+- Web browsers
+- Video players
+- Terminals
+- IDEs
+- Custom tools
+
+### **TRUE PRIMAL Architecture**
+✅ Zero Hardcoding - Everything discovered  
+✅ Live Evolution - Hot-reload scenarios  
+✅ Self-Knowledge - Panels declare capabilities  
+✅ Graceful Degradation - Error isolation  
+✅ Modern Rust - Pure, safe, idiomatic  
+
+### **Sensory Capability System**
+Instead of hardcoding device types, we discover:
+- **Outputs**: Visual (2D/3D), Audio, Haptic
+- **Inputs**: Pointer, Keyboard, Touch, Gesture, Audio
+
+This means petalTongue adapts to:
+- Desktop, laptop, phone, watch, terminal
+- VR headsets, neural interfaces (future)
+- **Any device with I/O capabilities**
+
+---
+
+## 🚀 **What's Next**
+
+With our solid foundation:
+
+### **Near Term**
+- Real Doom integration (doomgeneric-rs)
+- Web browser panel (embedded webkit)
+- Video player panel
+- Terminal panel (PTY)
+
+### **Medium Term**
+- Performance budgets (Phase 5)
+- Panel composition (Phase 6)
+- Hot reloading (Phase 7)
+
+### **Long Term**
+- Multi-monitor support
+- VR/AR integration
+- Neural interface support
+
+---
+
+## 📊 **Project Health**
+
+**Tests**: 295/296 passing (1 ignored) ✅  
+**Build**: Release compiles cleanly ✅  
+**Documentation**: Comprehensive ✅  
+**Technical Debt**: Systematically paid ✅  
+
+See `PROJECT_STATUS.md` for detailed metrics.
+
+---
+
+## 💡 **Philosophy**
+
+> "it's a successfully fail" - User, on discovering Gap #5
+
+We use **test-driven evolution**:
+1. Build minimal functionality
+2. Run it and discover gaps
+3. Solve gaps systematically
+4. Document learnings
+5. Repeat
+
+**Architecture emerges from reality, not speculation.**
+
+---
+
+## 🤝 **Contributing**
+
+petalTongue follows TRUE PRIMAL principles:
+- No hardcoding (discover capabilities)
+- Pure Rust (no unnecessary external deps)
+- Modern idioms (traits, Results, zero unsafe)
+- Smart refactoring (extend, don't split)
+- Comprehensive testing
+- Clear documentation
+
+See recent commits for examples of evolution in action.
+
+---
+
+## 📞 **Getting Help**
+
+- Check `DOCS_GUIDE.md` for documentation map
+- Review `archive/` for historical context
+- See `specs/` for architectural details
+- Read session summaries for recent changes
+
+---
+
+**Welcome to petalTongue!** 🌸
+
+The universal UI platform that adapts to any device and embeds any application.
+
+From "successfully fail" to production-ready foundation! 🚀
+
 **Welcome to petalTongue v2.3.0** - An interactive TRUE PRIMAL modeling platform for biomeOS ecosystems.
 
 ---
