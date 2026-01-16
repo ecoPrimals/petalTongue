@@ -6,6 +6,7 @@
 use doom_core::{DoomInstance, DoomKey, DoomState, Result};
 use egui::{ColorImage, TextureHandle, Ui, Key, Vec2};
 use std::time::Instant;
+use std::collections::HashSet;
 
 /// Panel that embeds Doom
 pub struct DoomPanel {
@@ -31,6 +32,9 @@ pub struct DoomPanel {
     fps: f32,
     last_fps_update: Instant,
     frames_since_fps_update: u32,
+    
+    /// 🖥️ Track previously pressed keys (for state change detection)
+    prev_keys_down: HashSet<Key>,
 }
 
 impl DoomPanel {
@@ -46,6 +50,7 @@ impl DoomPanel {
             fps: 0.0,
             last_fps_update: Instant::now(),
             frames_since_fps_update: 0,
+            prev_keys_down: HashSet::new(),
         }
     }
     
@@ -87,6 +92,9 @@ impl DoomPanel {
     
     /// Render to egui
     pub fn render(&mut self, ui: &mut Ui) {
+        // 🖥️ CRITICAL REMOTE DESKTOP FIX: Tell egui we want ALL input
+        ui.ctx().set_cursor_icon(egui::CursorIcon::Default);
+        
         // Initialize on first render
         if let Err(e) = self.ensure_initialized(640, 480) {
             ui.colored_label(egui::Color32::RED, format!("Doom initialization failed: {}", e));
@@ -120,15 +128,24 @@ impl DoomPanel {
             
             // Display texture
             if let Some(texture) = &self.texture {
-                let response = ui.image(egui::load::SizedTexture::new(
-                    texture.id(),
-                    egui::vec2(width as f32, height as f32)
-                ));
+                // 🖥️ Make the image interactive (critical for input capture!)
+                let response = ui.add(
+                    egui::Image::new(egui::load::SizedTexture::new(
+                        texture.id(),
+                        egui::vec2(width as f32, height as f32)
+                    ))
+                    .sense(egui::Sense::click_and_drag()) // Make it sense ALL input
+                );
                 
-                // 🎮 Request focus and ALWAYS handle input (it's a game!)
+                // 🎮 Request focus AGGRESSIVELY
                 response.request_focus();
-                if let Some(doom) = &mut self.doom {
-                    Self::handle_input_static(ui, doom);
+                ui.memory_mut(|mem| mem.request_focus(response.id));
+                
+                // 🖥️ ALWAYS handle input (not conditional!)
+                // Take doom out temporarily to avoid borrow checker issues
+                if let Some(mut doom) = self.doom.take() {
+                    self.handle_input(ui, &mut doom);
+                    self.doom = Some(doom);
                 }
             }
             
@@ -139,15 +156,13 @@ impl DoomPanel {
         }
     }
     
-    /// Handle keyboard and mouse input (static to avoid borrow issues)
-    fn handle_input_static(ui: &Ui, doom: &mut DoomInstance) {
-        // 🖥️ REMOTE DESKTOP FIX: Poll key state instead of events
-        // This works better with RustDesk and other remote desktop protocols
-        // that may not forward keyboard events properly.
+    /// Handle keyboard and mouse input with state change detection
+    fn handle_input(&mut self, ui: &Ui, doom: &mut DoomInstance) {
+        // 🖥️ REMOTE DESKTOP FIX: Poll key state and only send on CHANGE
+        // This prevents stuttering from repeated key_down/key_up calls
         
         ui.input(|i| {
-            // Check currently pressed keys (state polling - works with remote desktop!)
-            for key in &[
+            let keys_to_check = [
                 Key::W, Key::ArrowUp,
                 Key::S, Key::ArrowDown,
                 Key::A, Key::ArrowLeft,
@@ -156,25 +171,48 @@ impl DoomPanel {
                 Key::Space, Key::Enter, Key::Escape,
                 Key::Num1, Key::Num2, Key::Num3, Key::Num4, Key::Num5,
                 Key::Tab,
-            ] {
-                if let Some(doom_key) = Self::egui_to_doom_key_static(*key) {
-                    if i.keys_down.contains(key) {
+            ];
+            
+            // Build current keys_down set
+            let current_keys: HashSet<Key> = keys_to_check.iter()
+                .filter(|k| i.keys_down.contains(k))
+                .copied()
+                .collect();
+            
+            // Send key_down for newly pressed keys
+            for key in &current_keys {
+                if !self.prev_keys_down.contains(key) {
+                    if let Some(doom_key) = Self::egui_to_doom_key_static(*key) {
                         doom.key_down(doom_key);
-                    } else {
-                        doom.key_up(doom_key);
+                        tracing::debug!("🎮 Key DOWN: {:?}", key);
                     }
                 }
             }
             
-            // Also try event-based (for local keyboard - faster response)
+            // Send key_up for newly released keys
+            for key in &self.prev_keys_down {
+                if !current_keys.contains(key) {
+                    if let Some(doom_key) = Self::egui_to_doom_key_static(*key) {
+                        doom.key_up(doom_key);
+                        tracing::debug!("🎮 Key UP: {:?}", key);
+                    }
+                }
+            }
+            
+            // Update previous state
+            self.prev_keys_down = current_keys;
+            
+            // Also process events (for local keyboard - faster response)
             for event in &i.events {
                 match event {
                     egui::Event::Key { key, pressed, .. } => {
                         if let Some(doom_key) = Self::egui_to_doom_key_static(*key) {
                             if *pressed {
                                 doom.key_down(doom_key);
+                                tracing::debug!("🎮 Event Key DOWN: {:?}", key);
                             } else {
                                 doom.key_up(doom_key);
+                                tracing::debug!("🎮 Event Key UP: {:?}", key);
                             }
                         }
                     }
