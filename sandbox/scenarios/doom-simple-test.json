@@ -1,0 +1,42 @@
+{
+  "schema_version": "v2.0.0",
+  "scenario_id": "doom-simple-test",
+  "name": "Doom Simple Test",
+  "description": "Minimal Doom test scenario",
+  
+  "sensory_config": {
+    "required_capabilities": {
+      "outputs": ["visual"],
+      "inputs": ["keyboard"]
+    },
+    "optional_capabilities": {
+      "outputs": [],
+      "inputs": []
+    },
+    "complexity_hint": "standard"
+  },
+  
+  "ui_config": {
+    "mode": "custom",
+    "show_left_sidebar": false,
+    "show_right_sidebar": false,
+    "show_dashboard": false,
+    "show_graph_stats": false,
+    "enable_audio_sonification": false,
+    "auto_refresh": false,
+    
+    "custom_panels": [
+      {
+        "type": "doom",
+        "title": "Doom Test",
+        "width": 800,
+        "height": 600,
+        "fullscreen": false,
+        "config": {}
+      }
+    ]
+  },
+  
+  "data": {}
+}
+

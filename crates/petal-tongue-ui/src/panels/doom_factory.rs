@@ -63,6 +63,19 @@ impl PanelInstance for DoomPanelWrapper {
     fn update(&mut self) {
         // DoomPanel handles its own updates in render()
     }
+    
+    // 🎮 Doom needs ALL the input!
+    fn wants_keyboard_input(&self) -> bool {
+        true // WASD, arrows, keys
+    }
+    
+    fn wants_mouse_input(&self) -> bool {
+        true // Click to fire, mouse to turn
+    }
+    
+    fn wants_exclusive_input(&self) -> bool {
+        true // Games need exclusive input
+    }
 }
 
 /// Convenience function to create a Doom panel factory
