@@ -125,11 +125,10 @@ impl DoomPanel {
                     egui::vec2(width as f32, height as f32)
                 ));
                 
-                // Handle input when hovering
-                if response.hovered() {
-                    if let Some(doom) = &mut self.doom {
-                        Self::handle_input_static(ui, doom);
-                    }
+                // 🎮 Request focus and ALWAYS handle input (it's a game!)
+                response.request_focus();
+                if let Some(doom) = &mut self.doom {
+                    Self::handle_input_static(ui, doom);
                 }
             }
             
