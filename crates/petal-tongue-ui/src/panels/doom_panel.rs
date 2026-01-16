@@ -217,23 +217,43 @@ impl DoomPanel {
     }
     
     /// Map egui keys to Doom keys (static helper)
+    /// 
+    /// Modern FPS controls:
+    /// - WASD: W/S move, A/D strafe (modern)
+    /// - Arrows: Up/Down move, Left/Right turn (classic)
     fn egui_to_doom_key_static(key: Key) -> Option<DoomKey> {
         Some(match key {
-            Key::W | Key::ArrowUp => DoomKey::Up,
-            Key::S | Key::ArrowDown => DoomKey::Down,
-            Key::A | Key::ArrowLeft => DoomKey::Left,
-            Key::D | Key::ArrowRight => DoomKey::Right,
+            // Arrow keys: Classic Doom controls (move + turn)
+            Key::ArrowUp => DoomKey::Up,
+            Key::ArrowDown => DoomKey::Down,
+            Key::ArrowLeft => DoomKey::Left,
+            Key::ArrowRight => DoomKey::Right,
+            
+            // WASD: Modern FPS controls (move + strafe)
+            Key::W => DoomKey::Up,
+            Key::S => DoomKey::Down,
+            Key::A => DoomKey::StrafeLeft,   // Strafe, not turn!
+            Key::D => DoomKey::StrafeRight,  // Strafe, not turn!
+            
+            // Q/E: Alternative strafe (for those who prefer it)
             Key::Q => DoomKey::StrafeLeft,
             Key::E => DoomKey::StrafeRight,
+            
+            // Actions
             Key::Space => DoomKey::Use,
             Key::Enter => DoomKey::Enter,
             Key::Escape => DoomKey::Escape,
+            
+            // Weapons
             Key::Num1 => DoomKey::Weapon1,
             Key::Num2 => DoomKey::Weapon2,
             Key::Num3 => DoomKey::Weapon3,
             Key::Num4 => DoomKey::Weapon4,
             Key::Num5 => DoomKey::Weapon5,
+            
+            // Other
             Key::Tab => DoomKey::Map,
+            
             _ => return None,
         })
     }
