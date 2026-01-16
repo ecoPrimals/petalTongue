@@ -177,9 +177,12 @@ fn run_with_eframe(
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1400.0, 900.0])
-            .with_min_inner_size([800.0, 600.0])
+            .with_min_inner_size([800.0, 900.0])
             .with_title("🌸 petalTongue - Universal Representation System")
-            .with_visible(true), // FIX: Explicitly show window (critical for headless+remote setups!)
+            .with_visible(true) // FIX: Explicitly show window (critical for headless+remote setups!)
+            .with_active(true), // 🖥️ REMOTE DESKTOP FIX: Request active/focused state
+        // 🖥️ CRITICAL: Always request input focus (for remote desktop)
+        centered: true,
         ..Default::default()
     };
 
