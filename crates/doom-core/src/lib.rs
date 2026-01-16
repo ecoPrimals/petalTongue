@@ -301,8 +301,11 @@ impl DoomInstance {
     /// # Phase 1.2: Player movement!
     fn update_player(&mut self) {
         if let Some(renderer) = &mut self.raycast_renderer {
-            let move_speed = 10.0; // Units per frame
-            let turn_speed = 0.05; // Radians per frame
+            // 🎮 Speed scaled for 60 Hz tick rate (was 35 Hz)
+            // Original: 10.0 units/tick × 35 Hz = 350 units/sec
+            // Now: 6.0 units/tick × 60 Hz = 360 units/sec (similar feel)
+            let move_speed = 6.0; // Units per frame (scaled for 60 Hz)
+            let turn_speed = 0.03; // Radians per frame (scaled for 60 Hz)
             
             // Rotation (mouse)
             renderer.rotate(self.mouse_dx * turn_speed);
