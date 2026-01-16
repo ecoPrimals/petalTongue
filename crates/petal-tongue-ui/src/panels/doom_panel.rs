@@ -70,14 +70,14 @@ impl DoomPanel {
         if let Some(doom) = &mut self.doom {
             let elapsed = self.last_update.elapsed();
             
-            // Only tick at target rate (35 Hz)
-            if elapsed.as_millis() as f32 >= self.target_frame_time_ms {
-                if let Err(e) = doom.tick() {
-                    tracing::error!("Doom tick error: {}", e);
-                }
-                self.last_update = Instant::now();
-                self.frame_count += 1;
+            // 🎮 FIX: Tick every frame for smooth movement!
+            // Original Doom ran at 35 Hz, but modern games tick at render rate
+            // This fixes the "tick, pause, tick" stuttering
+            if let Err(e) = doom.tick() {
+                tracing::error!("Doom tick error: {}", e);
             }
+            self.last_update = Instant::now();
+            self.frame_count += 1;
         }
         
         // Update FPS counter
@@ -202,23 +202,9 @@ impl DoomPanel {
             // Update previous state
             self.prev_keys_down = current_keys;
             
-            // Also process events (for local keyboard - faster response)
-            for event in &i.events {
-                match event {
-                    egui::Event::Key { key, pressed, .. } => {
-                        if let Some(doom_key) = Self::egui_to_doom_key_static(*key) {
-                            if *pressed {
-                                doom.key_down(doom_key);
-                                tracing::debug!("🎮 Event Key DOWN: {:?}", key);
-                            } else {
-                                doom.key_up(doom_key);
-                                tracing::debug!("🎮 Event Key UP: {:?}", key);
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
+            // 🖥️ REMOVED: Event processing
+            // We use state polling exclusively now (works for both local AND remote)
+            // Event processing was causing DOUBLE key_down/key_up calls!
         });
         
         // Mouse input
