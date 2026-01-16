@@ -1,0 +1,72 @@
+{
+  "name": "Doom Test",
+  "description": "Test Doom integration with minimal configuration",
+  "version": "2.0.0",
+  "mode": "custom",
+  
+  "sensory_config": {
+    "required_capabilities": {
+      "outputs": ["visual"],
+      "inputs": ["keyboard"]
+    },
+    "optional_capabilities": {
+      "outputs": [],
+      "inputs": ["pointer"]
+    },
+    "complexity_hint": "standard"
+  },
+  
+  "ui_config": {
+    "theme": "default",
+    "layout": "custom",
+    "show_panels": {
+      "left_sidebar": false,
+      "right_sidebar": false,
+      "top_menu": true,
+      "system_dashboard": false,
+      "audio_panel": false,
+      "trust_dashboard": false,
+      "proprioception": false,
+      "graph_stats": false
+    },
+    "animations": {
+      "enabled": false,
+      "breathing_nodes": false,
+      "connection_pulses": false,
+      "smooth_transitions": false,
+      "celebration_effects": false
+    },
+    "performance": {
+      "target_fps": 60,
+      "vsync": true,
+      "hardware_acceleration": true
+    },
+    "features": {
+      "audio_sonification": false,
+      "auto_refresh": false,
+      "neural_api": false,
+      "tutorial_mode": false
+    },
+    "custom_panels": [
+      {
+        "type": "doom_game",
+        "title": "Doom E1M1",
+        "width": 800,
+        "height": 600,
+        "fullscreen": false,
+        "config": {
+          "show_debug": true
+        }
+      }
+    ]
+  },
+  
+  "ecosystem": {
+    "primals": []
+  },
+  
+  "neural_api": {
+    "enabled": false
+  }
+}
+
