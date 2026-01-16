@@ -37,33 +37,49 @@ cargo llvm-cov --html
 
 ---
 
-## 🎉 **Recent Achievements (Jan 15, 2026)**
+## 🎉 **Recent Achievements (Jan 16, 2026)**
 
-### **Extraordinary Session - 6 Major Milestones!**
+### **Epic Debugging Session - Doom Now PLAYABLE!**
 
-1. ✅ **Deep Debt Evolution** (4 phases, 27 tests)
-   - Validation Layer, Error Messages, Input Focus, Lifecycle Hooks
-   
-2. ✅ **Documentation Cleanup** (28% reduction)
-   - Archived 9 files, reviewed 91 TODOs, clean structure
+**7 Critical Fixes in One Session:**
 
-3. ✅ **Doom Vision** (Complete roadmap)
-   - "petalTongue runs Doom" → "petalTongue IS Doom"
+1. ✅ **Input Capability Declarations**
+   - Panel now declares it wants keyboard/mouse/exclusive input
+   - Fixed: "No input at all"
 
-4. ✅ **Phase 1.1: Pure Rust WAD Parser** (~400 lines, 0 deps!)
-   - Complete Doom WAD file parsing
-   - Top-down 2D map rendering
+2. ✅ **Interactive Widget (.sense)**
+   - Changed from passive display to interactive widget
+   - Fixed: Input not captured through egui
 
-5. ✅ **Phase 1.2: First-Person Raycasting** (~350 lines)
-   - **Walk through Doom maps in first-person view!** 🎮
-   - WASD movement, mouse turning, full 3D perspective
+3. ✅ **State Change Detection**
+   - Track previous frame's keys, only send on change
+   - Fixed: Stuttering from repeated key_down() calls
 
-6. ✅ **Phase 1.4: Live Stats Integration** (~1,200 lines, 12 tests!)
-   - **Play Doom with live biomeOS monitoring!** 📊
-   - System Metrics Panel (CPU, memory, primals)
-   - Proprioception Panel (SAME DAVE self-awareness)
-   - Neural API integration
-   - Multi-panel composition validated
+4. ✅ **Remove Duplicate Event Processing**
+   - Unified to state polling only (works local + remote)
+   - Fixed: Double key signals confusing Doom
+
+5. ✅ **Tick Every Frame (60 Hz)**
+   - Changed from 35 Hz limiting to render-rate ticking
+   - Fixed: "Tick, pause, tick" stuttering
+
+6. ✅ **Correct Key Mappings**
+   - Arrows: turn, WASD: strafe (modern FPS)
+   - Fixed: Overlapping mappings causing confusion
+
+7. ✅ **Speed Scaling for 60 Hz**
+   - Scaled movement/turn speeds for new tick rate
+   - Fixed: Game 71% too fast
+
+**Result**: Smooth, responsive, playable Doom through RustDesk! 🎮
+
+---
+
+### **Previous Achievements (Jan 15, 2026)**
+
+1. ✅ **Phase 1.1: Pure Rust WAD Parser** (~400 lines, 0 deps!)
+2. ✅ **Phase 1.2: First-Person Raycasting** (~350 lines)  
+3. ✅ **Phase 1.4: Live Stats with biomeOS** (~1,200 lines, 12 tests!)
 
 **Impact**: petalTongue is now a proven composition layer for complex applications!
 
@@ -77,9 +93,9 @@ cargo llvm-cov --html
 - `specs/PANEL_SYSTEM_V2.md` - Panel architecture
 
 ### **Recent Work**
-- `SESSION_COMPREHENSIVE_JAN_15_2026.md` - Today's full summary
+- `DOOM_DEBUGGING_SESSION_JAN_16_2026.md` - Epic debugging journey (7 fixes!)
+- `SESSION_COMPREHENSIVE_JAN_15_2026.md` - Jan 15 full summary
 - `DOOM_EVOLUTION_INSIGHTS_JAN_15_2026.md` - Evolution opportunities
-- `PHASE_4_LIFECYCLE_COMPLETE_JAN_15_2026.md` - Lifecycle details
 
 ### **Architecture**
 - `PETALTONGUE_AS_PLATFORM.md` - Platform vision
