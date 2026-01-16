@@ -141,7 +141,32 @@ impl DoomPanel {
     
     /// Handle keyboard and mouse input (static to avoid borrow issues)
     fn handle_input_static(ui: &Ui, doom: &mut DoomInstance) {
+        // 🖥️ REMOTE DESKTOP FIX: Poll key state instead of events
+        // This works better with RustDesk and other remote desktop protocols
+        // that may not forward keyboard events properly.
+        
         ui.input(|i| {
+            // Check currently pressed keys (state polling - works with remote desktop!)
+            for key in &[
+                Key::W, Key::ArrowUp,
+                Key::S, Key::ArrowDown,
+                Key::A, Key::ArrowLeft,
+                Key::D, Key::ArrowRight,
+                Key::Q, Key::E,
+                Key::Space, Key::Enter, Key::Escape,
+                Key::Num1, Key::Num2, Key::Num3, Key::Num4, Key::Num5,
+                Key::Tab,
+            ] {
+                if let Some(doom_key) = Self::egui_to_doom_key_static(*key) {
+                    if i.keys_down.contains(key) {
+                        doom.key_down(doom_key);
+                    } else {
+                        doom.key_up(doom_key);
+                    }
+                }
+            }
+            
+            // Also try event-based (for local keyboard - faster response)
             for event in &i.events {
                 match event {
                     egui::Event::Key { key, pressed, .. } => {
