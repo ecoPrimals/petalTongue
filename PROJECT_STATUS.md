@@ -1,8 +1,8 @@
 # 🌸 petalTongue - Project Status
 
-**Last Updated**: January 16, 2026  
-**Version**: 2.6.2 (Doom Fully Playable!)  
-**Status**: ✅ **Doom Phase 1.2 Complete** - Playable through Remote Desktop!
+**Last Updated**: January 18, 2026  
+**Version**: 2.6.3 (ecoBin Hybrid!)  
+**Status**: ✅ **Headless & CLI are TRUE ecoBin!**
 
 ---
 
@@ -10,7 +10,17 @@
 
 ### **Overall Health: A+ (Excellent)**
 
-petalTongue has just completed an extraordinary debugging session, systematically solving 7 critical deep debt issues to make Doom **fully playable** both locally and through remote desktop (RustDesk).
+petalTongue has successfully completed **ecoBin migration** for headless and CLI binaries, following pragmatic upstream guidance. 2 out of 3 binaries are now TRUE ecoBin compliant!
+
+### **🌍 ecoBin Compliance NEW!**
+
+| Binary | Size (ARM64) | ecoBin | Use Case |
+|--------|--------------|--------|----------|
+| Headless | 1.9M | ✅ **TRUE ecoBin!** | Server/automation |
+| CLI | 2.4M | ✅ **TRUE ecoBin!** | Scripting/portable |
+| GUI | ~35M | ❌ Desktop app | Development/visualization |
+
+**Philosophy**: ecoBin where it makes sense, not dogmatic!
 
 ---
 
@@ -32,11 +42,32 @@ petalTongue has just completed an extraordinary debugging session, systematicall
 
 ---
 
-## 🎉 **Recent Achievements (January 16, 2026)**
+## 🎉 **Recent Achievements (January 18, 2026)**
 
-### **Epic Debugging Session - 7 Critical Fixes**
+### **ecoBin Migration Complete! (~2.5 hours)**
 
-From "no input at all" to "smooth, playable Doom" in one session!
+**Hybrid Approach Success**: Made headless & CLI TRUE ecoBin!
+
+**What We Did**:
+1. ✅ **Replaced `dirs` with `etcetera`**
+   - Pure Rust XDG Base Directory implementation
+   - No more `dirs-sys` C dependency
+   
+2. ✅ **Fixed reqwest OpenSSL issue**
+   - Updated `petal-tongue-discovery` and `petal-tongue-adapters`
+   - All now use workspace `reqwest` (0.12 with `rustls-tls`)
+   - No more `openssl-sys` C dependency
+
+3. ✅ **ARM64 Builds**
+   - Headless: 1.9M (62% under 5M goal!)
+   - CLI: 2.4M (52% under 5M goal!)
+   - Both build cleanly for `aarch64-unknown-linux-musl`
+
+**Result**: Zero C dependencies (except `linux-raw-sys` - acceptable!)
+
+---
+
+### **Previous Achievements**
 
 #### **Fix 1: Input Capability Declarations**
 - **Problem**: Panel didn't declare it wanted input

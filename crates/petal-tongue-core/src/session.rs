@@ -606,15 +606,12 @@ fn get_session_path(instance_id: &InstanceId) -> Result<PathBuf, SessionError> {
 
 /// Get the base directory for petalTongue data
 fn get_base_dir() -> Result<PathBuf, SessionError> {
-    if let Ok(xdg_data) = std::env::var("XDG_DATA_HOME") {
-        Ok(PathBuf::from(xdg_data).join("petaltongue"))
-    } else if let Some(home) = dirs::home_dir() {
-        Ok(home.join(".local/share/petaltongue"))
-    } else {
-        Err(SessionError::DirectoryError(
-            "Could not determine home directory".to_string(),
-        ))
-    }
+    use etcetera::{choose_base_strategy, BaseStrategy};
+    
+    let strategy = choose_base_strategy()
+        .map_err(|e| SessionError::DirectoryError(format!("Could not determine data directory: {}", e)))?;
+    
+    Ok(strategy.data_dir().join("petaltongue"))
 }
 
 #[cfg(test)]
