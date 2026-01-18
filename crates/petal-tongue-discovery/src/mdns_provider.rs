@@ -129,10 +129,12 @@ impl MdnsVisualizationProvider {
             .context("Failed to set SO_REUSEADDR")?;
 
         // Enable port reuse (BSD systems)
-        #[cfg(not(target_os = "windows"))]
-        socket
-            .set_reuse_port(true)
-            .context("Failed to set SO_REUSEPORT")?;
+        // NOTE: set_reuse_port() not available in socket2 v0.5, only in v0.6+
+        // This is optional optimization for BSD systems, not required
+        // #[cfg(all(unix, not(target_os = "windows")))]
+        // socket
+        //     .set_reuse_port(true)
+        //     .context("Failed to set SO_REUSEPORT")?;
 
         // Bind to 0.0.0.0:5353 to receive multicast
         let bind_addr = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, MDNS_PORT);
