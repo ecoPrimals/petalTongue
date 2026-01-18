@@ -487,17 +487,14 @@ fn process_exists(pid: u32) -> bool {
 
 /// Get the base directory for petalTongue data
 ///
-/// Uses `XDG_DATA_HOME` or ~/.local/share
+/// Uses XDG Base Directory spec via etcetera (Pure Rust!)
 fn get_base_dir() -> Result<PathBuf, InstanceError> {
-    if let Ok(xdg_data) = std::env::var("XDG_DATA_HOME") {
-        Ok(PathBuf::from(xdg_data).join("petaltongue"))
-    } else if let Some(home) = dirs::home_dir() {
-        Ok(home.join(".local/share/petaltongue"))
-    } else {
-        Err(InstanceError::DirectoryError(
-            "Could not determine home directory".to_string(),
-        ))
-    }
+    use etcetera::{choose_base_strategy, BaseStrategy};
+    
+    let strategy = choose_base_strategy()
+        .map_err(|e| InstanceError::DirectoryError(format!("Could not determine data directory: {}", e)))?;
+    
+    Ok(strategy.data_dir().join("petaltongue"))
 }
 
 /// Get the socket directory

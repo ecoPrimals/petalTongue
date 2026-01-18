@@ -1,7 +1,7 @@
 # 🌸 petalTongue - Start Here
 
-**Last Updated**: January 16, 2026  
-**Status**: ✅ Doom Phase 1.2 FULLY PLAYABLE! (Input, Timing, Scaling Fixed)
+**Last Updated**: January 18, 2026  
+**Status**: ✅ Headless & CLI are TRUE ecoBin! (Doom Fully Playable!)
 
 ---
 
