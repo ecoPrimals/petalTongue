@@ -128,10 +128,12 @@ impl LocalStatePersistence {
 
     /// Get default state directory
     fn default_state_dir() -> Result<PathBuf> {
-        let config_dir = dirs::config_dir()
-            .context("Failed to get config directory")?;
-
-        Ok(config_dir.join("petalTongue").join("state"))
+        use etcetera::{choose_base_strategy, BaseStrategy};
+        
+        let strategy = choose_base_strategy()
+            .map_err(|e| anyhow::anyhow!("Could not determine config directory: {}", e))?;
+        
+        Ok(strategy.config_dir().join("petalTongue").join("state"))
     }
 
     /// Get state file path for device
