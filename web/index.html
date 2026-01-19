@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌸 petalTongue Web UI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        .header h1 { font-size: 3rem; margin-bottom: 0.5rem; }
+        .header p { font-size: 1.2rem; opacity: 0.9; }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 1200px;
+            width: 100%;
+        }
+        .status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+        }
+        .card h3 { margin-bottom: 0.5rem; }
+        .badge {
+            display: inline-block;
+            background: rgba(0, 255, 0, 0.3);
+            color: #0f0;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌸 petalTongue</h1>
+        <p>ecoBud Web UI (Pure Rust Backend!)</p>
+    </div>
+    
+    <div class="container">
+        <div class="status">
+            <div class="card">
+                <h3>UniBin</h3>
+                <span class="badge">✅ Active</span>
+                <p>1 binary, 5 modes</p>
+            </div>
+            <div class="card">
+                <h3>ecoBin</h3>
+                <span class="badge">✅ 80%</span>
+                <p>4/5 modes Pure Rust</p>
+            </div>
+            <div class="card">
+                <h3>Web Mode</h3>
+                <span class="badge">✅ Pure Rust</span>
+                <p>Zero C dependencies</p>
+            </div>
+        </div>
+        
+        <div id="content">
+            <h2>System Status</h2>
+            <p>Fetching data from API...</p>
+        </div>
+    </div>
+    
+    <script>
+        fetch('/api/status')
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('content').innerHTML = `
+                    <h2>System Status</h2>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            })
+            .catch(err => {
+                document.getElementById('content').innerHTML = `
+                    <h2>Error</h2>
+                    <p>${err.message}</p>
+                `;
+            });
+    </script>
+</body>
+</html>
+

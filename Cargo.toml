@@ -22,6 +22,19 @@ members = [
     # (it has its own workspace with core, adapters, demos)
 ]
 
+# NEW: UniBin configuration
+[[bin]]
+name = "petaltongue"
+path = "src/main.rs"
+
+[package]
+name = "petaltongue-workspace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
 [workspace.package]
 version = "1.3.0"
 edition = "2024"
@@ -89,3 +102,44 @@ bincode = "1.3"
 
 # Audio (placeholder - will use rodio or cpal in production)
 # For now, we'll design the API without actual audio output
+
+# UniBin dependencies (added for main.rs)
+[dependencies]
+# Core crates
+petal-tongue-core = { path = "crates/petal-tongue-core" }
+petal-tongue-discovery = { path = "crates/petal-tongue-discovery" }
+petal-tongue-tui = { path = "crates/petal-tongue-tui" }
+petal-tongue-headless = { path = "crates/petal-tongue-headless" }
+
+# Optional UI (can be disabled for minimal build)
+petal-tongue-ui = { path = "crates/petal-tongue-ui", optional = true }
+
+# Web server
+axum = { version = "0.7", features = ["tokio"] }
+tower-http = { version = "0.5", features = ["fs", "trace"] }
+tower = { version = "0.4", features = ["util"] }
+
+# Async runtime
+tokio = { workspace = true }
+
+# CLI
+clap = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# System info (Pure Rust!)
+num_cpus = "1.16"
+
+[features]
+default = ["ui"]  # Desktop users get GUI by default
+ui = ["petal-tongue-ui"]  # Can build without GUI for Pure Rust
