@@ -48,7 +48,18 @@ pub fn get_current_uid() -> u32 {
     // - Type-safe wrappers for Unix syscalls
     // - Better error handling
     // - Zero-cost abstractions
-    rustix::process::getuid().as_raw()
+    
+    #[cfg(unix)]
+    {
+        rustix::process::getuid().as_raw()
+    }
+    
+    #[cfg(not(unix))]
+    {
+        // On Windows, UID concept doesn't exist
+        // Return a placeholder value (0 = "system")
+        0
+    }
 }
 
 /// Get the standard runtime directory for the current user

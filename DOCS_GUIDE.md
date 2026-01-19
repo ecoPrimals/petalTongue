@@ -2,17 +2,19 @@
 
 **Last Updated**: January 19, 2026  
 **Version**: 1.3.0 (ecoBud)  
-**Status**: ✅ UniBin Complete, Production Ready
+**Status**: ✅ Clean & Organized
 
 ---
 
 ## 🎯 **Start Here**
 
+**NEW**: See **[ROOT_DOCS_INDEX.md](./ROOT_DOCS_INDEX.md)** for complete root documentation catalog!
+
 New to petalTongue? Read these in order:
 
 1. **[README.md](./README.md)** - Project overview & quick start
 2. **[START_HERE.md](./START_HERE.md)** - Detailed setup guide
-3. **[DEPLOYMENT_READY.md](./DEPLOYMENT_READY.md)** - Production deployment guide
+3. **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** - Current health & achievements
 
 ---
 
@@ -23,16 +25,32 @@ New to petalTongue? Read these in order:
 
 ---
 
+## 🏗️ **Architecture & Design** (Updated!)
+
+### **Current Architecture**
+- **[DATA_SERVICE_ARCHITECTURE.md](./DATA_SERVICE_ARCHITECTURE.md)** ⭐ **NEW!**
+  - Unified data layer (Jan 19, 2026)
+  - Single source of truth for all UI modes
+  - 5 sources → 1 (80% reduction)
+
+### **Future Plans**
+- **[ECOBLOSSOM_PHASE_2_PLAN.md](./ECOBLOSSOM_PHASE_2_PLAN.md)** - Pure Rust GUI roadmap
+- **[WEB_UI_EVOLUTION_PLAN.md](./WEB_UI_EVOLUTION_PLAN.md)** - Web UI enhancement
+- **[DUAL_UNIBIN_EXECUTION_PLAN.md](./DUAL_UNIBIN_EXECUTION_PLAN.md)** - UniBin strategy
+
+---
+
 ## 🌱 **UniBin Evolution** (Complete!)
 
-### **Implementation**
-- **[ECOBUD_PHASE_1_COMPLETE.md](./ECOBUD_PHASE_1_COMPLETE.md)** - Phase 1 details (UniBin + 80% ecoBin)
-- **[DUAL_UNIBIN_EXECUTION_PLAN.md](./DUAL_UNIBIN_EXECUTION_PLAN.md)** - Implementation plan
-- **[ECOBIN_MIGRATION_COMPLETE_JAN_18_2026.md](./ECOBIN_MIGRATION_COMPLETE_JAN_18_2026.md)** - ecoBin migration details
+See `archive/jan-19-2026-unibin-evolution/` for complete history:
+- UniBin: 3 binaries → 1 binary (5 modes)
+- ecoBin: 80% Pure Rust (4/5 modes)
+- Size: 38M+ → 5.5M (84% reduction)
 
-### **Future Vision**
-- **[ECOBLOSSOM_PHASE_2_PLAN.md](./ECOBLOSSOM_PHASE_2_PLAN.md)** - 100% Pure Rust GUI roadmap
-- **[UNIBIN_EVOLUTION_COMPLETE_JAN_19_2026.md](./UNIBIN_EVOLUTION_COMPLETE_JAN_19_2026.md)** - Final summary
+**Key Documents** (archived):
+- ECOBUD_PHASE_1_COMPLETE.md
+- UNIBIN_EVOLUTION_COMPLETE_JAN_19_2026.md
+- ECOBIN_MIGRATION_COMPLETE_JAN_18_2026.md
 
 ---
 
@@ -76,7 +94,33 @@ Organized by category:
 
 ---
 
-## 📦 **Archive**
+## 📦 **Session Archives** (Organized!)
+
+Complete history preserved and organized by date:
+
+### **January 19, 2026**
+- **[archive/jan-19-2026-unibin-evolution/](./archive/jan-19-2026-unibin-evolution/)** (34 docs)
+  - UniBin complete: 3 binaries → 1
+  - ecoBin: 80% Pure Rust achieved
+  
+- **[archive/jan-19-2026-data-unification/](./archive/jan-19-2026-data-unification/)** (9 docs)
+  - Data flow unified: 5 sources → 1
+  - Single source of truth achieved
+
+### **Earlier Sessions**
+- **jan-15-2026-** - Doom integration, panel system
+- **jan-13-2026-** - Audits, sessions, comprehensive work
+
+**Total**: 7 archives, 43+ documents organized
+
+---
+
+## 🗺️ **Navigation**
+
+- **[NAVIGATION.md](./NAVIGATION.md)** - Project structure and file locations
+- **[ROOT_DOCS_INDEX.md](./ROOT_DOCS_INDEX.md)** - Complete root documentation catalog
+
+---
 
 Historical documentation preserved for reference:
 
