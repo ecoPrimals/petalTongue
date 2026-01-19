@@ -1,8 +1,9 @@
 # 🌸 petalTongue - Project Status
 
 **Last Updated**: January 19, 2026  
-**Version**: 1.4.0 (ecoBlossom foundation!)  
-**Status**: ✅ **UniBin Complete! 85% Pure Rust! Backend Abstraction Ready!**
+**Version**: 1.4.0-ecoblossom-foundation  
+**Commit**: 221a910  
+**Status**: ✅ **Backend Abstraction Complete! 85% Pure Rust! Toadstool Handoff Ready!**
 
 ---
 
