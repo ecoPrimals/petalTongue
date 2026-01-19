@@ -1,268 +1,241 @@
-# 📚 Documentation Guide - petalTongue
+# 📚 petalTongue Documentation Guide
 
-**Last Updated**: January 15, 2026  
-**Version**: v2.3.0
-
-This guide helps you find the right documentation for your needs.
-
----
-
-## 🎯 I Want To...
-
-### **...Get Started Quickly**
-→ `START_HERE.md` - 3-step quick start
-
-### **...Understand What petalTongue Does**
-→ `README.md` - Complete overview
-→ `PROJECT_STATUS.md` - Current capabilities
-
-### **...Test Interactive Features**
-→ `INTERACTIVE_TESTING_GUIDE.md` - Step-by-step testing
-
-### **...Understand the Architecture**
-→ `sandbox/SENSORY_BENCHTOP_EVOLUTION.md` - Sensory architecture
-→ `SESSION_SUMMARY_FINAL_JAN_15_2026.md` - Complete session overview
-
-### **...Review Code Quality**
-→ `DEEP_DEBT_ANALYSIS_JAN_15_2026.md` - Audit (Grade A+)
-
-### **...See What Changed Recently**
-→ `SESSION_CLOSURE_JAN_15_2026.md` - Latest session
-→ `DEPLOYMENT_COMPLETE_JAN_15_2026.md` - v2.3.0 deployment
-
-### **...Understand Git History**
-→ `GIT_COMMIT_READY_JAN_15_2026.md` - Commit e97704b reference
+**Last Updated**: January 19, 2026  
+**Version**: 1.3.0 (ecoBud)  
+**Status**: ✅ UniBin Complete, Production Ready
 
 ---
 
-## 📂 Documentation Structure
+## 🎯 **Start Here**
+
+New to petalTongue? Read these in order:
+
+1. **[README.md](./README.md)** - Project overview & quick start
+2. **[START_HERE.md](./START_HERE.md)** - Detailed setup guide
+3. **[DEPLOYMENT_READY.md](./DEPLOYMENT_READY.md)** - Production deployment guide
+
+---
+
+## 📊 **Current Status**
+
+- **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** - Health metrics, recent achievements, roadmap
+- **[CHANGELOG.md](./CHANGELOG.md)** - Version history and changes
+
+---
+
+## 🌱 **UniBin Evolution** (Complete!)
+
+### **Implementation**
+- **[ECOBUD_PHASE_1_COMPLETE.md](./ECOBUD_PHASE_1_COMPLETE.md)** - Phase 1 details (UniBin + 80% ecoBin)
+- **[DUAL_UNIBIN_EXECUTION_PLAN.md](./DUAL_UNIBIN_EXECUTION_PLAN.md)** - Implementation plan
+- **[ECOBIN_MIGRATION_COMPLETE_JAN_18_2026.md](./ECOBIN_MIGRATION_COMPLETE_JAN_18_2026.md)** - ecoBin migration details
+
+### **Future Vision**
+- **[ECOBLOSSOM_PHASE_2_PLAN.md](./ECOBLOSSOM_PHASE_2_PLAN.md)** - 100% Pure Rust GUI roadmap
+- **[UNIBIN_EVOLUTION_COMPLETE_JAN_19_2026.md](./UNIBIN_EVOLUTION_COMPLETE_JAN_19_2026.md)** - Final summary
+
+---
+
+## 🚀 **Deployment & Operations**
+
+- **[DEPLOYMENT_READY.md](./DEPLOYMENT_READY.md)** - Production deployment guide
+- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Detailed deployment steps
+- **[DEMO_GUIDE.md](./DEMO_GUIDE.md)** - Demo scenarios and examples
+- **[ENV_VARS.md](./ENV_VARS.md)** - Environment variables
+
+---
+
+## 🔌 **Integration**
+
+- **[NEURAL_API_UI_QUICK_START.md](./NEURAL_API_UI_QUICK_START.md)** - Neural API integration guide
+
+---
+
+## 🗺️ **Navigation**
+
+- **[NAVIGATION.md](./NAVIGATION.md)** - Project structure and file locations
+
+---
+
+## 📁 **Detailed Documentation**
+
+### **specs/** - Technical Specifications
+Detailed architecture and design docs:
+- `SENSORY_CAPABILITY_ARCHITECTURE.md` - Capability-based UI system
+- `DYNAMIC_SCHEMA_SYSTEM.md` - Schema evolution
+- `STATE_SYNCHRONIZATION.md` - Cross-device state
+- And more...
+
+### **docs/** - Additional Documentation
+Organized by category:
+- `architecture/` - System architecture
+- `features/` - Feature documentation
+- `guides/` - How-to guides
+- `operations/` - Deployment and ops
+- `technical/` - Technical deep-dives
+
+---
+
+## 📦 **Archive**
+
+Historical documentation preserved for reference:
+
+### **archive/jan-19-2026-unibin-evolution/**
+Complete UniBin evolution journey:
+- Doom integration session docs
+- Platform evolution docs
+- UniBin planning documents
+- ecoBin migration plans
+- Pure Rust GUI research
+
+### **archive/jan-15-2026-*** (multiple folders)
+Previous sessions and achievements preserved as fossil record.
+
+---
+
+## 🎯 **Documentation by Purpose**
+
+### **I want to...**
+
+#### **...get started quickly**
+→ [README.md](./README.md) → [START_HERE.md](./START_HERE.md)
+
+#### **...deploy to production**
+→ [DEPLOYMENT_READY.md](./DEPLOYMENT_READY.md) → [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
+
+#### **...understand the architecture**
+→ [PROJECT_STATUS.md](./PROJECT_STATUS.md) → `specs/` directory
+
+#### **...integrate with Neural API**
+→ [NEURAL_API_UI_QUICK_START.md](./NEURAL_API_UI_QUICK_START.md)
+
+#### **...see what changed**
+→ [CHANGELOG.md](./CHANGELOG.md) → [PROJECT_STATUS.md](./PROJECT_STATUS.md)
+
+#### **...understand UniBin evolution**
+→ [ECOBUD_PHASE_1_COMPLETE.md](./ECOBUD_PHASE_1_COMPLETE.md) → [UNIBIN_EVOLUTION_COMPLETE_JAN_19_2026.md](./UNIBIN_EVOLUTION_COMPLETE_JAN_19_2026.md)
+
+#### **...see the future roadmap**
+→ [ECOBLOSSOM_PHASE_2_PLAN.md](./ECOBLOSSOM_PHASE_2_PLAN.md) → [PROJECT_STATUS.md](./PROJECT_STATUS.md)
+
+#### **...run a demo**
+→ [DEMO_GUIDE.md](./DEMO_GUIDE.md)
+
+#### **...find a specific file**
+→ [NAVIGATION.md](./NAVIGATION.md)
+
+---
+
+## 📊 **Documentation Statistics**
 
 ```
-petalTongue/
-├── START_HERE.md                    # 👈 Begin here!
-├── README.md                         # Complete documentation
-├── PROJECT_STATUS.md                 # Current status & quick ref
-├── INTERACTIVE_TESTING_GUIDE.md      # Testing guide
-│
-├── Session Docs (Jan 15, 2026):
-│   ├── SESSION_SUMMARY_FINAL_JAN_15_2026.md      # Comprehensive
-│   ├── SESSION_CLOSURE_JAN_15_2026.md            # Official closure
-│   ├── DEPLOYMENT_COMPLETE_JAN_15_2026.md        # Deployment
-│   └── GIT_COMMIT_READY_JAN_15_2026.md           # Git reference
-│
-├── Technical Reference:
-│   ├── DEEP_DEBT_ANALYSIS_JAN_15_2026.md         # Code audit
-│   ├── BUILD_INSTRUCTIONS.md                      # Build guide
-│   ├── DEMO_GUIDE.md                              # Demo instructions
-│   └── QUICK_START.md                             # Quick reference
-│
-├── Archive:
-│   └── archive/jan-15-2026-final-session/        # Session archives
-│       ├── RENDERING_PIPELINE_FIX_JAN_15_2026.md
-│       ├── PROPRIOCEPTION_FIX_JAN_15_2026.md
-│       ├── INTERACTIVE_PAINT_MODE_JAN_15_2026.md
-│       ├── MODULAR_UI_COMPLETE_JAN_15_2026.md
-│       └── [10 more archived docs]
-│
-└── Deep Dives:
-    ├── sandbox/SENSORY_BENCHTOP_EVOLUTION.md    # Architecture
-    ├── docs/                                     # Extended docs
-    └── specs/                                    # Specifications
+Root docs:            16 files
+Specs:                17 files
+Detailed docs:        ~200 files
+Archive:              ~300 files
+Total:                ~533 files
+
+Coverage:             Comprehensive ✅
+Up-to-date:           Yes ✅
+Organized:            Yes ✅
 ```
 
 ---
 
-## 🏃 Quick Paths
+## ✨ **Recent Updates (Jan 19, 2026)**
 
-### **For New Users**:
-1. `START_HERE.md` → Quick start
-2. `PROJECT_STATUS.md` → What works
-3. `INTERACTIVE_TESTING_GUIDE.md` → Try features
-
-### **For Developers**:
-1. `README.md` → Full overview
-2. `DEEP_DEBT_ANALYSIS_JAN_15_2026.md` → Code quality
-3. `SESSION_SUMMARY_FINAL_JAN_15_2026.md` → Latest changes
-4. `sandbox/SENSORY_BENCHTOP_EVOLUTION.md` → Architecture
-
-### **For Testers**:
-1. `INTERACTIVE_TESTING_GUIDE.md` → Testing scenarios
-2. `PROJECT_STATUS.md` → What to test
-3. `SESSION_CLOSURE_JAN_15_2026.md` → Success criteria
-
-### **For Integrators** (biomeOS):
-1. `README.md` → Overview
-2. `sandbox/SENSORY_BENCHTOP_EVOLUTION.md` → Architecture
-3. `SESSION_SUMMARY_FINAL_JAN_15_2026.md` → Capabilities
+1. ✅ **Cleaned up root** - Archived evolution docs
+2. ✅ **Updated all current docs** - Reflect UniBin architecture
+3. ✅ **Added deployment guide** - Production-ready instructions
+4. ✅ **Organized archive** - Historical docs preserved
 
 ---
 
-## 📖 Documentation by Topic
+## 🧬 **Documentation Principles**
 
-### **Interactive Features**:
-- `INTERACTIVE_TESTING_GUIDE.md` - Complete testing guide
-- `archive/jan-15-2026-final-session/INTERACTIVE_PAINT_MODE_JAN_15_2026.md` - Implementation
+Following TRUE PRIMAL philosophy:
 
-### **UI Modularity**:
-- `archive/jan-15-2026-final-session/MODULAR_UI_COMPLETE_JAN_15_2026.md` - Architecture
-- Scenario examples in `sandbox/scenarios/`
-
-### **Rendering**:
-- `archive/jan-15-2026-final-session/RENDERING_PIPELINE_FIX_JAN_15_2026.md` - Fix details
-- `archive/jan-15-2026-final-session/RENDERING_PIPELINE_DEEP_DEBT_JAN_15_2026.md` - Analysis
-
-### **Capability Validation**:
-- `SESSION_SUMMARY_FINAL_JAN_15_2026.md` - Overview (Section 4)
-- Code: `crates/petal-tongue-graph/src/capability_validator.rs`
-
-### **Sensory Architecture**:
-- `sandbox/SENSORY_BENCHTOP_EVOLUTION.md` - Complete architecture
-- `README.md` - Sensory capabilities section
+1. **Living Documentation**: Docs evolve with code
+2. **Fossil Record**: Archive preserves history
+3. **Self-Knowledge**: Docs describe reality, not plans
+4. **Graceful Degradation**: Multiple entry points
+5. **Zero Hardcoding**: Examples use real scenarios
 
 ---
 
-## 🗂️ Archives
+## 🤝 **Contributing to Docs**
 
-Session archives are organized by date in `archive/`:
+When adding/updating documentation:
 
-### **Latest** (Jan 15, 2026):
-- `archive/jan-15-2026-final-session/` - Today's session (14 docs)
-  - Rendering fixes
-  - Interactive features
-  - Modular UI
-  - Proprioception fixes
-
-### **Previous**:
-- `archive/jan-15-2026-sessions/` - Earlier sessions (43 docs)
-- `archive/jan-13-2026-sessions/` - Older sessions (61 docs)
-- `archive/jan-13-2026-audit/` - Audit reports (23 docs)
+1. ✅ **Keep root clean** - Only essential current docs
+2. ✅ **Archive completed work** - Preserve history
+3. ✅ **Update this guide** - Keep navigation current
+4. ✅ **Use clear structure** - Follow existing patterns
+5. ✅ **Date everything** - Track evolution
 
 ---
 
-## 📝 Document Types
+## 🔍 **Quick Reference**
 
-### **Session Reports**:
-Comprehensive summaries of development sessions
-- `SESSION_SUMMARY_FINAL_JAN_15_2026.md`
-- `SESSION_CLOSURE_JAN_15_2026.md`
-
-### **Technical Guides**:
-Implementation details and architecture
-- `INTERACTIVE_TESTING_GUIDE.md`
-- `sandbox/SENSORY_BENCHTOP_EVOLUTION.md`
-
-### **Reference**:
-Quick lookups and status
-- `PROJECT_STATUS.md`
-- `QUICK_START.md`
-
-### **Archives**:
-Historical records for reference
-- `archive/jan-15-2026-final-session/`
+| Need | Document |
+|------|----------|
+| **Overview** | README.md |
+| **Setup** | START_HERE.md |
+| **Status** | PROJECT_STATUS.md |
+| **Deploy** | DEPLOYMENT_READY.md |
+| **Integration** | NEURAL_API_UI_QUICK_START.md |
+| **Architecture** | specs/ directory |
+| **History** | CHANGELOG.md |
+| **Future** | ECOBLOSSOM_PHASE_2_PLAN.md |
 
 ---
 
-## 🔍 Finding Specific Information
+## 📖 **Reading Order Recommendations**
 
-### **Interactive Canvas**:
-- Overview: `SESSION_SUMMARY_FINAL_JAN_15_2026.md` (Section 2.3)
-- Testing: `INTERACTIVE_TESTING_GUIDE.md` (Scenario 1)
-- Implementation: `archive/.../INTERACTIVE_PAINT_MODE_JAN_15_2026.md`
+### **For New Users**
+1. README.md
+2. START_HERE.md
+3. DEPLOYMENT_READY.md
 
-### **Capability Validation**:
-- Overview: `SESSION_SUMMARY_FINAL_JAN_15_2026.md` (Section 2.4)
-- Code: `crates/petal-tongue-graph/src/capability_validator.rs`
-- Tests: 5 tests in same file
+### **For Developers**
+1. START_HERE.md
+2. PROJECT_STATUS.md
+3. specs/ directory
+4. ECOBUD_PHASE_1_COMPLETE.md
 
-### **Modular UI**:
-- Overview: `SESSION_SUMMARY_FINAL_JAN_15_2026.md` (Section 2.2)
-- Architecture: `archive/.../MODULAR_UI_COMPLETE_JAN_15_2026.md`
-- Tests: `crates/petal-tongue-ui/tests/scenario_tests.rs`
+### **For Operators**
+1. DEPLOYMENT_READY.md
+2. DEPLOYMENT_GUIDE.md
+3. ENV_VARS.md
+4. NEURAL_API_UI_QUICK_START.md
 
-### **Rendering Pipeline**:
-- Fix: `archive/.../RENDERING_PIPELINE_FIX_JAN_15_2026.md`
-- Analysis: `archive/.../RENDERING_PIPELINE_DEEP_DEBT_JAN_15_2026.md`
-
----
-
-## 🎯 Recommended Reading Order
-
-### **Day 1** (Getting Started):
-1. `START_HERE.md` (5 min)
-2. `PROJECT_STATUS.md` (10 min)
-3. `INTERACTIVE_TESTING_GUIDE.md` (30 min - hands-on!)
-
-### **Day 2** (Deep Dive):
-1. `README.md` (20 min)
-2. `SESSION_SUMMARY_FINAL_JAN_15_2026.md` (30 min)
-3. `DEEP_DEBT_ANALYSIS_JAN_15_2026.md` (15 min)
-
-### **Day 3** (Architecture):
-1. `sandbox/SENSORY_BENCHTOP_EVOLUTION.md` (45 min)
-2. `SESSION_CLOSURE_JAN_15_2026.md` (20 min)
-3. Archive docs as needed
+### **For Architects**
+1. ECOBUD_PHASE_1_COMPLETE.md
+2. ECOBLOSSOM_PHASE_2_PLAN.md
+3. specs/ directory
+4. docs/architecture/ directory
 
 ---
 
-## 📊 Documentation Statistics
+## 🎉 **Current State**
 
-| Category | Count | Lines |
-|----------|-------|-------|
-| Root Docs | 12 | ~15,000 |
-| Session Archives | 14 | ~4,000 |
-| Extended Docs | 100+ | ~85,000 |
-| **Total** | **126+** | **~104,000** |
+**petalTongue is:**
+- ✅ UniBin complete (1 binary, 5 modes)
+- ✅ 80% ecoBin compliant (4/5 modes Pure Rust)
+- ✅ Production ready
+- ✅ Fully documented
+- ✅ Ready to deploy
 
-**~100,000 words of comprehensive documentation!**
-
----
-
-## 🔗 External Resources
-
-### **biomeOS**:
-- Neural API integration details
-- NUCLEUS deployment guides
-- RootPulse architecture
-
-### **Specifications**:
-- `specs/` directory - Formal specs
-- `docs/` directory - Extended guides
+**Documentation is:**
+- ✅ Comprehensive
+- ✅ Up-to-date
+- ✅ Well-organized
+- ✅ Easy to navigate
 
 ---
 
-## ✅ Documentation Quality
+**Last Updated**: January 19, 2026  
+**Maintained By**: petalTongue Team  
+**Status**: ✅ Current
 
-All documentation follows TRUE PRIMAL principles:
-- ✅ Self-contained (minimal external dependencies)
-- ✅ Clear structure (easy navigation)
-- ✅ Comprehensive (all features covered)
-- ✅ Up-to-date (Jan 15, 2026)
-- ✅ Tested (all examples verified)
-
----
-
-## 🌸 Quick Reference
-
-**Just want to start?**
-→ `START_HERE.md`
-
-**Want to test?**
-→ `INTERACTIVE_TESTING_GUIDE.md`
-
-**Need status?**
-→ `PROJECT_STATUS.md`
-
-**Want everything?**
-→ `README.md`
-
-**Lost?**
-→ You're reading it! (`DOCS_GUIDE.md`)
-
----
-
-**Version**: v2.3.0  
-**Last Updated**: January 15, 2026  
-**Status**: ✅ Complete & Current
-
-🌸 **Happy reading!** 📚
-
+🌸 **Happy reading and building!** 🚀
