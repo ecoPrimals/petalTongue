@@ -30,6 +30,7 @@ pub mod config;
 #[cfg(test)]
 mod config_tests;
 pub mod error;
+pub mod platform_dirs; // Pure Rust directory resolution (zero deps!)
 #[cfg(test)]
 mod error_tests;
 pub mod graph_engine;

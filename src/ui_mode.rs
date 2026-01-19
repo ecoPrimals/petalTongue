@@ -3,10 +3,11 @@
 //! Platform dependencies: wayland-sys, x11-sys (acceptable for ecoBud)
 //! This is the 1 mode (out of 5) that has platform dependencies
 
-use anyhow::Result;
+use anyhow::{Result, Context};
+use std::sync::Arc;
 
 #[cfg(feature = "ui")]
-pub async fn run(scenario: Option<String>, no_audio: bool) -> Result<()> {
+pub async fn run(scenario: Option<String>, no_audio: bool, data_service: Arc<crate::data_service::DataService>) -> Result<()> {
     tracing::info!(
         scenario = ?scenario,
         no_audio,
@@ -15,14 +16,14 @@ pub async fn run(scenario: Option<String>, no_audio: bool) -> Result<()> {
     
     // Run in blocking context (egui is not async)
     tokio::task::spawn_blocking(move || {
-        run_ui_blocking(scenario, no_audio)
+        run_ui_blocking(scenario, no_audio, data_service)
     })
     .await
     .context("UI task panicked")?
 }
 
 #[cfg(feature = "ui")]
-fn run_ui_blocking(scenario: Option<String>, _no_audio: bool) -> Result<()> {
+fn run_ui_blocking(scenario: Option<String>, _no_audio: bool, data_service: Arc<crate::data_service::DataService>) -> Result<()> {
     use petal_tongue_ui::PetalTongueApp;
     use petal_tongue_core::{Instance, InstanceId, InstanceRegistry, RenderingCapabilities};
     use std::path::PathBuf;
@@ -38,30 +39,33 @@ fn run_ui_blocking(scenario: Option<String>, _no_audio: bool) -> Result<()> {
     let capabilities = RenderingCapabilities::detect();
     
     // Setup eframe options
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
+    let options = petal_tongue_ui::eframe::NativeOptions {
+        viewport: petal_tongue_ui::egui::ViewportBuilder::default()
             .with_inner_size([1400.0, 900.0])
             .with_min_inner_size([800.0, 600.0])
             .with_title("🌸 petalTongue - Universal Representation System")
             .with_visible(true)
-            .with_active(true)
-            .with_centered(),
+            .with_active(true),
         ..Default::default()
     };
     
     // Create and run app
-    eframe::run_native(
+    // IMPORTANT: We pass the shared graph from DataService directly
+    // This ensures the GUI uses the SAME data as all other modes
+    let shared_graph = data_service.graph();
+    
+    petal_tongue_ui::eframe::run_native(
         "petalTongue",
         options,
         Box::new(move |cc| {
-            Ok(Box::new(PetalTongueApp::new(cc, scenario_path, capabilities)))
+            Ok(Box::new(PetalTongueApp::new_with_shared_graph(cc, scenario_path, capabilities, shared_graph)))
         }),
     )
     .map_err(|e| anyhow::anyhow!("eframe error: {}", e))
 }
 
 #[cfg(not(feature = "ui"))]
-pub async fn run(_scenario: Option<String>, _no_audio: bool) -> Result<()> {
+pub async fn run(_scenario: Option<String>, _no_audio: bool, _data_service: std::sync::Arc<crate::data_service::DataService>) -> Result<()> {
     anyhow::bail!(
         "UI mode not available in this build\n\
         Tip: Rebuild with --features ui or use:\n\

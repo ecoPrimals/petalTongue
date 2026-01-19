@@ -9,11 +9,15 @@ use axum::{
     routing::get,
     response::{Html, IntoResponse},
     Json,
+    extract::State,
 };
 use std::net::SocketAddr;
+use std::sync::Arc;
 use tower_http::services::ServeDir;
 
-pub async fn run(bind: &str, scenario: Option<String>, workers: usize) -> Result<()> {
+use crate::data_service::DataService;
+
+pub async fn run(bind: &str, scenario: Option<String>, workers: usize, data_service: Arc<DataService>) -> Result<()> {
     tracing::info!(
         bind,
         scenario = ?scenario,
@@ -25,12 +29,17 @@ pub async fn run(bind: &str, scenario: Option<String>, workers: usize) -> Result
         .parse()
         .context("Failed to parse bind address")?;
     
-    // Build router
+    tracing::info!("✅ Using shared DataService (zero duplication!)");
+    
+    // Build router with shared state
     let app = Router::new()
         .route("/", get(index_handler))
+        .route("/health", get(health_handler))
         .route("/api/status", get(status_handler))
         .route("/api/primals", get(primals_handler))
-        .nest_service("/static", ServeDir::new("web/static"));
+        .route("/api/snapshot", get(snapshot_handler))
+        .nest_service("/static", ServeDir::new("web/static"))
+        .with_state(data_service);
     
     tracing::info!("🌐 Web UI server listening on http://{}", addr);
     
@@ -50,6 +59,12 @@ async fn index_handler() -> Html<&'static str> {
     Html(include_str!("../web/index.html"))
 }
 
+async fn health_handler() -> impl IntoResponse {
+    Json(serde_json::json!({
+        "status": "ok"
+    }))
+}
+
 async fn status_handler() -> impl IntoResponse {
     Json(serde_json::json!({
         "status": "ok",
@@ -59,11 +74,38 @@ async fn status_handler() -> impl IntoResponse {
     }))
 }
 
-async fn primals_handler() -> impl IntoResponse {
-    // TODO: Integrate with discovery system
-    Json(serde_json::json!({
-        "primals": []
-    }))
+async fn primals_handler(
+    State(service): State<Arc<DataService>>
+) -> impl IntoResponse {
+    // Get real data from unified service!
+    match service.snapshot().await {
+        Ok(snapshot) => Json(serde_json::json!({
+            "primals": snapshot.primals,
+            "timestamp": snapshot.timestamp,
+        })),
+        Err(e) => {
+            tracing::error!("Failed to get snapshot: {}", e);
+            Json(serde_json::json!({
+                "error": "Failed to fetch primals",
+                "primals": []
+            }))
+        }
+    }
+}
+
+async fn snapshot_handler(
+    State(service): State<Arc<DataService>>
+) -> impl IntoResponse {
+    // Full snapshot with all data
+    match service.snapshot().await {
+        Ok(snapshot) => Json(serde_json::json!(snapshot)),
+        Err(e) => {
+            tracing::error!("Failed to get snapshot: {}", e);
+            Json(serde_json::json!({
+                "error": e.to_string()
+            }))
+        }
+    }
 }
 
 #[cfg(test)]

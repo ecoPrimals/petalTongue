@@ -605,13 +605,12 @@ fn get_session_path(instance_id: &InstanceId) -> Result<PathBuf, SessionError> {
 }
 
 /// Get the base directory for petalTongue data
+///
+/// Uses platform-specific directory resolution (Pure Rust, zero deps!)
 fn get_base_dir() -> Result<PathBuf, SessionError> {
-    use etcetera::{choose_base_strategy, BaseStrategy};
-    
-    let strategy = choose_base_strategy()
-        .map_err(|e| SessionError::DirectoryError(format!("Could not determine data directory: {}", e)))?;
-    
-    Ok(strategy.data_dir().join("petaltongue"))
+    crate::platform_dirs::data_dir()
+        .map(|dir| dir.join("petaltongue"))
+        .map_err(|e| SessionError::DirectoryError(format!("Could not determine data directory: {}", e)))
 }
 
 #[cfg(test)]

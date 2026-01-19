@@ -75,9 +75,9 @@ struct DependencyInfo {
 /// Show system status
 /// 
 /// Fully concurrent - gathers system info in parallel
-pub async fn status(verbose: bool, format: &str) -> Result<()> {
+pub async fn status(verbose: bool, format: &str, data_service: Arc<crate::data_service::DataService>) -> Result<()> {
     // Gather system info concurrently (no blocking!)
-    let status = gather_status(verbose).await?;
+    let status = gather_status(verbose, &data_service).await?;
 
     // Output based on format
     match format {
@@ -97,7 +97,7 @@ pub async fn status(verbose: bool, format: &str) -> Result<()> {
 }
 
 /// Gather system status concurrently
-async fn gather_status(verbose: bool) -> Result<SystemStatus> {
+async fn gather_status(verbose: bool, data_service: &Arc<crate::data_service::DataService>) -> Result<SystemStatus> {
     // Use Arc<RwLock<>> for concurrent access
     let status = Arc::new(RwLock::new(SystemStatus {
         version: env!("CARGO_PKG_VERSION").to_string(),
@@ -157,6 +157,12 @@ async fn gather_status(verbose: bool) -> Result<SystemStatus> {
         status_guard.system.cpu_count = Some(cpu_count);
         status_guard.system.memory_total = memory_total;
     });
+
+    // Show data service info
+    tracing::info!("✅ Using shared DataService");
+    if let Ok(snapshot) = data_service.snapshot().await {
+        tracing::info!("📊 DataService has {} primals, {} edges", snapshot.primals.len(), snapshot.edges.len());
+    }
 
     // If verbose, gather detailed info concurrently
     if verbose {
@@ -388,7 +394,8 @@ mod tests {
     async fn test_gather_status_concurrent() {
         // Test runs in parallel with others
         // No sleeps needed - proper async
-        let status = gather_status(false).await.unwrap();
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let status = gather_status(false, &data_service).await.unwrap();
 
         assert_eq!(status.version, env!("CARGO_PKG_VERSION"));
         assert_eq!(status.unibin.binary_count, 1);
@@ -399,7 +406,8 @@ mod tests {
     #[tokio::test]
     async fn test_gather_status_verbose_concurrent() {
         // Verbose mode gathers more info concurrently
-        let status = gather_status(true).await.unwrap();
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let status = gather_status(true, &data_service).await.unwrap();
 
         assert!(status.detailed.is_some());
         let detailed = status.detailed.unwrap();
@@ -409,7 +417,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_json_output() {
-        let status = gather_status(false).await.unwrap();
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let status = gather_status(false, &data_service).await.unwrap();
         let json = serde_json::to_string(&status).unwrap();
 
         // Should be valid JSON

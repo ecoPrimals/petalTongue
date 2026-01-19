@@ -127,13 +127,12 @@ impl LocalStatePersistence {
     }
 
     /// Get default state directory
+    ///
+    /// Uses platform-specific directory resolution (Pure Rust, zero deps!)
     fn default_state_dir() -> Result<PathBuf> {
-        use etcetera::{choose_base_strategy, BaseStrategy};
-        
-        let strategy = choose_base_strategy()
-            .map_err(|e| anyhow::anyhow!("Could not determine config directory: {}", e))?;
-        
-        Ok(strategy.config_dir().join("petalTongue").join("state"))
+        crate::platform_dirs::config_dir()
+            .map(|dir| dir.join("petalTongue").join("state"))
+            .map_err(|e| anyhow::anyhow!("Could not determine config directory: {}", e))
     }
 
     /// Get state file path for device

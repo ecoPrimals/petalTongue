@@ -6,550 +6,100 @@
     <title>🌸 petalTongue Web UI</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         body {
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #e8e8e8;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .app-container {
-            display: grid;
-            grid-template-rows: auto 1fr;
-            height: 100vh;
-        }
-        
-        /* Top Menu Bar - matching GUI */
-        .top-bar {
-            background: rgba(26, 26, 46, 0.95);
-            border-bottom: 2px solid #4a90e2;
-            padding: 0.75rem 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            backdrop-filter: blur(10px);
-        }
-        
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .status-badges {
+            color: white;
+            min-height: 100vh;
             display: flex;
-            gap: 0.75rem;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
         }
-        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        .header h1 { font-size: 3rem; margin-bottom: 0.5rem; }
+        .header p { font-size: 1.2rem; opacity: 0.9; }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 1200px;
+            width: 100%;
+        }
+        .status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+        }
+        .card h3 { margin-bottom: 0.5rem; }
         .badge {
-            background: rgba(74, 144, 226, 0.2);
-            border: 1px solid #4a90e2;
+            display: inline-block;
+            background: rgba(0, 255, 0, 0.3);
+            color: #0f0;
             padding: 0.25rem 0.75rem;
             border-radius: 1rem;
             font-size: 0.875rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .badge.success { border-color: #10b981; background: rgba(16, 185, 129, 0.2); }
-        .badge.warning { border-color: #f59e0b; background: rgba(245, 158, 11, 0.2); }
-        
-        /* Main Layout */
-        .main-content {
-            display: grid;
-            grid-template-columns: 300px 1fr 350px;
-            gap: 1rem;
-            padding: 1rem;
-            height: calc(100vh - 60px);
-            overflow: hidden;
-        }
-        
-        /* Panels */
-        .panel {
-            background: rgba(26, 26, 46, 0.6);
-            border: 1px solid rgba(74, 144, 226, 0.3);
-            border-radius: 0.5rem;
-            padding: 1rem;
-            overflow-y: auto;
-            backdrop-filter: blur(10px);
-        }
-        
-        .panel-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgba(74, 144, 226, 0.3);
-            color: #4a90e2;
-        }
-        
-        /* Left Panel - Controls */
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        .control-section {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 0.25rem;
-            padding: 0.75rem;
-        }
-        
-        .control-section h3 {
-            font-size: 0.875rem;
-            color: #4a90e2;
-            margin-bottom: 0.5rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        
-        button {
-            width: 100%;
-            background: rgba(74, 144, 226, 0.2);
-            border: 1px solid #4a90e2;
-            color: #e8e8e8;
-            padding: 0.5rem 1rem;
-            border-radius: 0.25rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: inherit;
-            font-size: 0.875rem;
-        }
-        
-        button:hover {
-            background: rgba(74, 144, 226, 0.3);
-            transform: translateY(-1px);
-        }
-        
-        button:active {
-            transform: translateY(0);
-        }
-        
-        /* Center Panel - Graph Visualization */
-        .graph-container {
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-        
-        #graph-canvas {
-            flex: 1;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 0.25rem;
-            position: relative;
-        }
-        
-        /* Right Panel - Details */
-        .details {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        .metric-card {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 0.25rem;
-            padding: 0.75rem;
-        }
-        
-        .metric-card h4 {
-            font-size: 0.75rem;
-            color: #4a90e2;
-            margin-bottom: 0.5rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        
-        .metric-value {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #10b981;
-        }
-        
-        .metric-label {
-            font-size: 0.75rem;
-            color: #888;
-            margin-top: 0.25rem;
-        }
-        
-        /* Primal List */
-        .primal-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        
-        .primal-item {
-            background: rgba(0, 0, 0, 0.2);
-            border-left: 3px solid #10b981;
-            padding: 0.5rem;
-            border-radius: 0.25rem;
-            font-size: 0.875rem;
-        }
-        
-        .primal-item.offline {
-            border-left-color: #ef4444;
-            opacity: 0.6;
-        }
-        
-        .primal-name {
-            font-weight: 600;
-            color: #e8e8e8;
-        }
-        
-        .primal-status {
-            font-size: 0.75rem;
-            color: #888;
-        }
-        
-        /* Loading State */
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            font-size: 1.125rem;
-            color: #4a90e2;
-        }
-        
-        .spinner {
-            display: inline-block;
-            width: 1rem;
-            height: 1rem;
-            border: 2px solid rgba(74, 144, 226, 0.3);
-            border-top-color: #4a90e2;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-right: 0.5rem;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        /* Graph SVG Styles */
-        .node { cursor: pointer; }
-        .node circle { fill: #4a90e2; stroke: #667eea; stroke-width: 2; }
-        .node:hover circle { fill: #667eea; }
-        .node text { fill: #e8e8e8; font-size: 12px; font-family: inherit; }
-        .edge { stroke: rgba(74, 144, 226, 0.3); stroke-width: 2; }
-        
-        /* Responsive */
-        @media (max-width: 1200px) {
-            .main-content {
-                grid-template-columns: 250px 1fr;
-            }
-            .details {
-                display: none;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-            .controls {
-                display: none;
-            }
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Top Bar -->
-        <div class="top-bar">
-            <div class="logo">🌸 petalTongue</div>
-            <div class="status-badges">
-                <div class="badge success">
-                    <span>✅</span>
-                    <span id="mode-badge">Web Mode</span>
-                </div>
-                <div class="badge success">
-                    <span>🦀</span>
-                    <span>Pure Rust</span>
-                </div>
-                <div class="badge" id="connection-badge">
-                    <span class="spinner"></span>
-                    <span>Connecting...</span>
-                </div>
+    <div class="header">
+        <h1>🌸 petalTongue</h1>
+        <p>ecoBud Web UI (Pure Rust Backend!)</p>
+    </div>
+    
+    <div class="container">
+        <div class="status">
+            <div class="card">
+                <h3>UniBin</h3>
+                <span class="badge">✅ Active</span>
+                <p>1 binary, 5 modes</p>
+            </div>
+            <div class="card">
+                <h3>ecoBin</h3>
+                <span class="badge">✅ 80%</span>
+                <p>4/5 modes Pure Rust</p>
+            </div>
+            <div class="card">
+                <h3>Web Mode</h3>
+                <span class="badge">✅ Pure Rust</span>
+                <p>Zero C dependencies</p>
             </div>
         </div>
         
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Left Panel: Controls -->
-            <div class="panel controls">
-                <div class="panel-title">Controls</div>
-                
-                <div class="control-section">
-                    <h3>Layout</h3>
-                    <button onclick="setLayout('force-directed')">Force Directed</button>
-                    <button onclick="setLayout('hierarchical')">Hierarchical</button>
-                    <button onclick="setLayout('circular')">Circular</button>
-                </div>
-                
-                <div class="control-section">
-                    <h3>View</h3>
-                    <button onclick="refreshGraph()">🔄 Refresh Graph</button>
-                    <button onclick="toggleAnimation()">✨ Toggle Animation</button>
-                    <button onclick="centerGraph()">🎯 Center View</button>
-                </div>
-                
-                <div class="control-section">
-                    <h3>Discovered Primals</h3>
-                    <div class="primal-list" id="primal-list">
-                        <div class="loading">
-                            <span class="spinner"></span>
-                            <span>Discovering...</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Center Panel: Graph Visualization -->
-            <div class="panel graph-container">
-                <div class="panel-title">Graph Visualization</div>
-                <div id="graph-canvas">
-                    <svg id="graph-svg" width="100%" height="100%">
-                        <defs>
-                            <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-                                <polygon points="0 0, 10 3, 0 6" fill="#4a90e2" opacity="0.5" />
-                            </marker>
-                        </defs>
-                    </svg>
-                </div>
-            </div>
-            
-            <!-- Right Panel: Details -->
-            <div class="panel details">
-                <div class="panel-title">System Status</div>
-                
-                <div class="metric-card">
-                    <h4>UniBin Status</h4>
-                    <div class="metric-value">✅ Active</div>
-                    <div class="metric-label">1 binary, 5 modes</div>
-                </div>
-                
-                <div class="metric-card">
-                    <h4>ecoBin Compliance</h4>
-                    <div class="metric-value" id="ecobin-percent">80%</div>
-                    <div class="metric-label">4/5 modes Pure Rust</div>
-                </div>
-                
-                <div class="metric-card">
-                    <h4>Active Nodes</h4>
-                    <div class="metric-value" id="node-count">0</div>
-                    <div class="metric-label">In current graph</div>
-                </div>
-                
-                <div class="metric-card">
-                    <h4>Connections</h4>
-                    <div class="metric-value" id="edge-count">0</div>
-                    <div class="metric-label">Active edges</div>
-                </div>
-                
-                <div class="metric-card" id="proprioception-card" style="display: none;">
-                    <h4>Proprioception</h4>
-                    <div class="metric-value" id="health-percent">100%</div>
-                    <div class="metric-label">System health</div>
-                </div>
-            </div>
+        <div id="content">
+            <h2>System Status</h2>
+            <p>Fetching data from API...</p>
         </div>
     </div>
     
     <script>
-        // State
-        let currentLayout = 'force-directed';
-        let graphData = { nodes: [], edges: [] };
-        let animationEnabled = true;
-        
-        // Initialize
-        async function init() {
-            console.log('🌸 petalTongue Web UI initializing...');
-            await fetchSystemStatus();
-            await fetchPrimals();
-            await fetchGraphData();
-            startAutoRefresh();
-        }
-        
-        // Fetch system status
-        async function fetchSystemStatus() {
-            try {
-                const response = await fetch('/api/status');
-                const data = await response.json();
-                
-                document.getElementById('ecobin-percent').textContent = 
-                    `${data.ecobin_percent || 80}%`;
-                
-                updateConnectionBadge(true);
-            } catch (err) {
-                console.error('Failed to fetch status:', err);
-                updateConnectionBadge(false);
-            }
-        }
-        
-        // Fetch primals
-        async function fetchPrimals() {
-            try {
-                const response = await fetch('/api/primals');
-                const primals = await response.json();
-                
-                const container = document.getElementById('primal-list');
-                container.innerHTML = '';
-                
-                if (primals.length === 0) {
-                    container.innerHTML = '<div class="primal-item">No primals discovered yet</div>';
-                    return;
-                }
-                
-                primals.forEach(primal => {
-                    const item = document.createElement('div');
-                    item.className = `primal-item ${primal.status === 'offline' ? 'offline' : ''}`;
-                    item.innerHTML = `
-                        <div class="primal-name">${primal.name || primal.id}</div>
-                        <div class="primal-status">${primal.status || 'active'}</div>
-                    `;
-                    container.appendChild(item);
-                });
-            } catch (err) {
-                console.error('Failed to fetch primals:', err);
-                document.getElementById('primal-list').innerHTML = 
-                    '<div class="primal-item offline">Discovery unavailable</div>';
-            }
-        }
-        
-        // Fetch graph data
-        async function fetchGraphData() {
-            try {
-                // For now, create a demo graph
-                // TODO: Fetch from actual graph API
-                graphData = createDemoGraph();
-                renderGraph();
-            } catch (err) {
-                console.error('Failed to fetch graph:', err);
-            }
-        }
-        
-        // Create demo graph
-        function createDemoGraph() {
-            return {
-                nodes: [
-                    { id: 'petaltongue', x: 400, y: 300, label: 'petalTongue' },
-                    { id: 'beardog', x: 200, y: 200, label: 'BearDog' },
-                    { id: 'songbird', x: 600, y: 200, label: 'Songbird' },
-                    { id: 'toadstool', x: 400, y: 100, label: 'Toadstool' },
-                ],
-                edges: [
-                    { source: 'petaltongue', target: 'beardog' },
-                    { source: 'petaltongue', target: 'songbird' },
-                    { source: 'petaltongue', target: 'toadstool' },
-                ]
-            };
-        }
-        
-        // Render graph as SVG
-        function renderGraph() {
-            const svg = document.getElementById('graph-svg');
-            const bbox = svg.getBoundingClientRect();
-            
-            // Clear existing content
-            while (svg.childNodes.length > 1) { // Keep defs
-                svg.removeChild(svg.lastChild);
-            }
-            
-            // Draw edges
-            graphData.edges.forEach(edge => {
-                const source = graphData.nodes.find(n => n.id === edge.source);
-                const target = graphData.nodes.find(n => n.id === edge.target);
-                if (!source || !target) return;
-                
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('class', 'edge');
-                line.setAttribute('x1', source.x);
-                line.setAttribute('y1', source.y);
-                line.setAttribute('x2', target.x);
-                line.setAttribute('y2', target.y);
-                line.setAttribute('marker-end', 'url(#arrowhead)');
-                svg.appendChild(line);
+        fetch('/api/status')
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('content').innerHTML = `
+                    <h2>System Status</h2>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            })
+            .catch(err => {
+                document.getElementById('content').innerHTML = `
+                    <h2>Error</h2>
+                    <p>${err.message}</p>
+                `;
             });
-            
-            // Draw nodes
-            graphData.nodes.forEach(node => {
-                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                group.setAttribute('class', 'node');
-                group.setAttribute('transform', `translate(${node.x},${node.y})`);
-                
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('r', '30');
-                group.appendChild(circle);
-                
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('text-anchor', 'middle');
-                text.setAttribute('dy', '0.3em');
-                text.textContent = node.label;
-                group.appendChild(text);
-                
-                svg.appendChild(group);
-            });
-            
-            // Update counts
-            document.getElementById('node-count').textContent = graphData.nodes.length;
-            document.getElementById('edge-count').textContent = graphData.edges.length;
-        }
-        
-        // Update connection badge
-        function updateConnectionBadge(connected) {
-            const badge = document.getElementById('connection-badge');
-            if (connected) {
-                badge.className = 'badge success';
-                badge.innerHTML = '<span>✅</span><span>Connected</span>';
-            } else {
-                badge.className = 'badge warning';
-                badge.innerHTML = '<span>⚠️</span><span>Offline</span>';
-            }
-        }
-        
-        // Control functions
-        function setLayout(layout) {
-            currentLayout = layout;
-            console.log('Layout set to:', layout);
-            // TODO: Apply layout algorithm
-            renderGraph();
-        }
-        
-        function refreshGraph() {
-            console.log('Refreshing graph...');
-            fetchGraphData();
-            fetchPrimals();
-        }
-        
-        function toggleAnimation() {
-            animationEnabled = !animationEnabled;
-            console.log('Animation:', animationEnabled ? 'enabled' : 'disabled');
-        }
-        
-        function centerGraph() {
-            console.log('Centering graph...');
-            // TODO: Center and scale graph
-        }
-        
-        // Auto-refresh
-        function startAutoRefresh() {
-            setInterval(() => {
-                fetchSystemStatus();
-                fetchPrimals();
-            }, 5000); // Refresh every 5 seconds
-        }
-        
-        // Start the app
-        init();
     </script>
 </body>
 </html>
+

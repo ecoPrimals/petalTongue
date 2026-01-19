@@ -1,0 +1,22 @@
+//! # Data Source Module - **⚠️ DEPRECATED** 
+//!
+//! **This module is deprecated** in favor of the unified `src/data_service.rs`
+//!
+//! ## Why Deprecated?
+//! 
+//! This module created **duplicate data fetching logic** across UI modes.
+//! The new `DataService` provides a **single source of truth** for all modes (GUI, TUI, Web, etc.)
+//!
+//! ## Migration Path
+//!
+//! - DataService is initialized once at the binary level  
+//! - Shared across all UI modes via `Arc<DataService>`
+//! - Zero data duplication!
+//!
+//! ## Original File
+//!
+//! This file was `crates/petal-tongue-ui/src/data_source.rs`  
+//! Renamed to `.DEPRECATED` on January 19, 2026 as part of data flow unification.
+
+⚠️ USE `src/data_service::DataService` INSTEAD
+
