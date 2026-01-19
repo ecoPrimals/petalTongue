@@ -1,7 +1,8 @@
 # 🌸 petalTongue - Start Here
 
 **Last Updated**: January 19, 2026  
-**Status**: ✅ **UniBin Complete! ecoBud shipped, ecoBlossom evolving**
+**Version**: 1.4.0-ecoblossom-foundation  
+**Status**: ✅ **ecoBlossom Foundation Complete! Backend Abstraction Ready!**
 
 ---
 
