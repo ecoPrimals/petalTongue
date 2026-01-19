@@ -1,261 +1,187 @@
-# 🧭 petalTongue Navigation Guide
+# 🗺️ petalTongue Navigation
 
-**Quick Links**: [README](README.md) | [STATUS](STATUS.md) | [START HERE](START_HERE.md)
-
----
-
-## 🚀 Getting Started
-
-### New Users:
-1. **[README.md](README.md)** - Project overview & Audio Canvas breakthrough
-2. **[START_HERE.md](START_HERE.md)** - Detailed getting started guide
-3. **[QUICK_START.md](QUICK_START.md)** - Fast setup (< 5 minutes)
-
-### Developers:
-1. **[BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md)** - Build & dependencies
-2. **[STATUS.md](STATUS.md)** - Current status (A++ architecture!)
-3. **[DEMO_GUIDE.md](DEMO_GUIDE.md)** - Interactive demos
+**Quick reference for finding your way around the codebase**
 
 ---
 
-## 📊 Project Status
-
-### Current State:
-- **[STATUS.md](STATUS.md)** - Comprehensive project status (A++ grade)
-- **[COMPLETE.md](COMPLETE.md)** - Audio Canvas completion summary
-- **[HANDOFF_READY.md](HANDOFF_READY.md)** - Production readiness
-
-### Integration:
-- **[BIOMEOS_UI_FINAL_HANDOFF.md](BIOMEOS_UI_FINAL_HANDOFF.md)** ⭐ - biomeOS UI Integration handoff
-- **[BIOMEOS_HANDOFF_CHECKLIST.md](BIOMEOS_HANDOFF_CHECKLIST.md)** - Integration checklist
-- **[BIOMEOS_REQUESTS_STATUS.md](BIOMEOS_REQUESTS_STATUS.md)** - Request tracking
-- **[HANDOFF_READY.md](HANDOFF_READY.md)** - General handoff status
-
-### Completed Features (Archived):
-- **[docs/completed/](docs/completed/)** - Fossil record of completed features
-  - [JSON-RPC Evolution](docs/completed/jsonrpc/) - TRUE PRIMAL protocol
-  - [Audio Canvas](docs/completed/audio-canvas/) - Pure Rust audio
-  - [biomeOS UI](docs/completed/biomeos-ui/) - Device/niche management
-  - [Collaborative Intelligence](docs/completed/collaborative-intelligence/) - Human-AI collaboration
-
----
-
-## 🎵 Audio System
-
-### User Guides:
-- **[AUDIO_ENABLE_GUIDE.md](AUDIO_ENABLE_GUIDE.md)** - Setup instructions (5 minutes!)
-- **[AUDIO_SOVEREIGNTY_EVOLUTION.md](AUDIO_SOVEREIGNTY_EVOLUTION.md)** - Evolution path
-
-### Technical Documentation:
-- **[AUDIO_CANVAS_BREAKTHROUGH.md](AUDIO_CANVAS_BREAKTHROUGH.md)** - Technical deep dive
-- **[AUDIO_CANVAS_VERIFICATION.md](AUDIO_CANVAS_VERIFICATION.md)** - Verification report
-
-### Current Status:
-**Audio Canvas** (Production Ready):
-```
-Graphics (Toadstool):  /dev/dri/card0 → WGPU → Direct GPU
-Audio (petalTongue):   /dev/snd/pcmC0D0p → AudioCanvas → Direct Device
-```
-- 100% Pure Rust ✅
-- Requires: audio group (one-time)
-- Status: PRODUCTION READY
-
-**PipeWire Client** (Future Evolution):
-```
-Audio (Future):        /run/user/$UID/pipewire-0 → PipeWire → Device
-```
-- Pure Rust protocol implementation
-- No permissions needed
-- Timeline: 2-4 weeks
-- Status: DOCUMENTED
-
-**Result**: Production-ready audio TODAY, evolution path clear!
-
----
-
-## 🔌 JSON-RPC Protocol (TRUE PRIMAL!)
-
-### Core Protocol:
-- **[JSON-RPC Protocol Spec](specs/JSONRPC_PROTOCOL_SPECIFICATION.md)** ⭐ PRIMARY PROTOCOL
-- **[JSON-RPC Evolution Analysis](JSONRPC_PROTOCOL_EVOLUTION_ANALYSIS.md)** - Why & how
-- **[JSON-RPC Evolution Complete](JSONRPC_PROTOCOL_EVOLUTION_COMPLETE.md)** - Final summary
-- **[JSON-RPC Tracking](JSONRPC_PROTOCOL_EVOLUTION_TRACKING.md)** - Implementation progress
-
-### Key Points:
-- **JSON-RPC 2.0** over Unix sockets is PRIMARY protocol
-- 100x faster than HTTP (< 1ms latency)
-- Compatible with ALL primals (Songbird, BearDog, ToadStool, etc.)
-- Port-free, secure, auto-discovery
-- HTTP is FALLBACK only (external integrations)
-
----
-
-## 📚 Technical Documentation
-
-### Architecture:
-- **[specs/](specs/)** - Technical specifications
-  - [JSON-RPC Protocol](specs/JSONRPC_PROTOCOL_SPECIFICATION.md) ⭐ PRIMARY PROTOCOL
-  - [biomeOS UI Integration](specs/BIOMEOS_UI_INTEGRATION_ARCHITECTURE.md)
-  - [Collaborative Intelligence](specs/COLLABORATIVE_INTELLIGENCE_INTEGRATION.md)
-  - [Bidirectional UUI Architecture](specs/BIDIRECTIONAL_UUI_ARCHITECTURE.md)
-  - [Discovery Infrastructure](specs/DISCOVERY_INFRASTRUCTURE_EVOLUTION_SPECIFICATION.md)
-  - [Human Entropy Capture](specs/HUMAN_ENTROPY_CAPTURE_SPECIFICATION.md)
-  - [Pure Rust Display](specs/PURE_RUST_DISPLAY_ARCHITECTURE.md)
-
-### Implementation:
-- **[IPC_STATUS_REPORT.md](IPC_STATUS_REPORT.md)** - IPC implementation details
-- **[TARPC_IMPLEMENTATION_COMPLETE.md](TARPC_IMPLEMENTATION_COMPLETE.md)** - tarpc integration
-- **[ENV_VARS.md](ENV_VARS.md)** - Environment variables reference
-
-### Operations:
-- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Production deployment
-- **[BUILD_REQUIREMENTS.md](BUILD_REQUIREMENTS.md)** - Build requirements
-- **[USER_ACTION_REQUIRED.md](USER_ACTION_REQUIRED.md)** - User actions needed
-
----
-
-## 🔄 Development
-
-### Planning:
-- **[NEXT_EVOLUTIONS.md](NEXT_EVOLUTIONS.md)** - Future roadmap
-- **[CHANGELOG.md](CHANGELOG.md)** - Version history
-- **[RELEASE_NOTES_V1.3.0.md](RELEASE_NOTES_V1.3.0.md)** - Latest release
-
-### Reference:
-- **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Complete doc index
-
----
-
-## 📁 Directory Structure
+## 📦 **Root Structure**
 
 ```
 petalTongue/
-├── README.md                    # Project overview
-├── STATUS.md                    # Current status (A++ grade)
-├── START_HERE.md                # Getting started
+├── src/                    # UniBin entry point
+│   ├── main.rs            # Main entry, subcommand routing
+│   ├── ui_mode.rs         # Desktop GUI mode
+│   ├── tui_mode.rs        # Terminal UI mode (Pure Rust!)
+│   ├── web_mode.rs        # Web server mode (Pure Rust!)
+│   ├── headless_mode.rs   # Headless mode (Pure Rust!)
+│   └── cli_mode.rs        # Status command (Pure Rust!)
 │
-├── Audio Canvas (Innovation)
-│   ├── AUDIO_CANVAS_BREAKTHROUGH.md
-│   ├── AUDIO_CANVAS_VERIFICATION.md
-│   └── COMPLETE.md
+├── crates/                 # Workspace crates
+│   ├── petal-tongue-ui/          # Desktop UI (egui)
+│   ├── petal-tongue-tui/         # Terminal UI (ratatui)
+│   ├── petal-tongue-core/        # Core types & logic
+│   ├── petal-tongue-discovery/   # Primal discovery
+│   ├── petal-tongue-graph/       # Graph data structures
+│   ├── petal-tongue-ui-core/     # UI abstractions
+│   └── ...                       # Additional crates
 │
-├── Integration (biomeOS)
-│   ├── READY_FOR_BIOMEOS_HANDOFF.md
-│   ├── BIOMEOS_HANDOFF_CHECKLIST.md
-│   └── BIOMEOS_REQUESTS_STATUS.md
+├── web/                    # Web frontend
+│   └── index.html         # Modern responsive UI
 │
-├── User Guides
-│   ├── QUICK_START.md
-│   ├── DEMO_GUIDE.md
-│   └── DEPLOYMENT_GUIDE.md
+├── sandbox/                # Demo scenarios
+│   └── scenarios/         # JSON scenario configs
 │
-├── Technical Docs
-│   ├── BUILD_INSTRUCTIONS.md
-│   ├── BUILD_REQUIREMENTS.md
-│   ├── IPC_STATUS_REPORT.md
-│   └── TARPC_IMPLEMENTATION_COMPLETE.md
-│
-├── Planning
-│   ├── NEXT_EVOLUTIONS.md
-│   ├── CHANGELOG.md
-│   └── RELEASE_NOTES_V1.3.0.md
-│
-├── specs/                       # Technical specifications
-├── docs/                        # Additional documentation
-│   ├── architecture/            # Architecture docs
-│   ├── features/                # Feature docs
-│   ├── sessions/                # Session reports
-│   └── archive/                 # Historical docs (fossil record)
-│       ├── sessions-jan-2026/   # Jan 2026 sessions
-│       └── evolution-history/   # Evolution path
-│
-├── crates/                      # Rust crates
-├── examples/                    # Example code
-├── showcase/                    # Showcase demos
-└── sandbox/                     # Sandbox/testing
+├── specs/                  # Technical specifications
+├── docs/                   # Detailed documentation
+├── archive/                # Historical documentation
+├── tests/                  # Integration tests
+└── *.md                    # Root documentation
 ```
 
 ---
 
-## 🎯 Common Tasks
+## 📚 **Essential Documents**
 
-### I want to...
+### **Getting Started**
+- `README.md` - Project overview
+- `START_HERE.md` - Setup guide
+- `DEPLOYMENT_READY.md` - Deploy guide
 
-**...get started quickly**
-→ [QUICK_START.md](QUICK_START.md)
+### **Current Status**
+- `PROJECT_STATUS.md` - Health & metrics
+- `CHANGELOG.md` - Version history
 
-**...understand the project**
-→ [README.md](README.md) → [START_HERE.md](START_HERE.md)
-
-**...build from source**
-→ [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md)
-
-**...see current status**
-→ [STATUS.md](STATUS.md)
-
-**...understand Audio Canvas**
-→ [AUDIO_CANVAS_BREAKTHROUGH.md](AUDIO_CANVAS_BREAKTHROUGH.md)
-
-**...integrate with biomeOS**
-→ [READY_FOR_BIOMEOS_HANDOFF.md](READY_FOR_BIOMEOS_HANDOFF.md)
-
-**...deploy to production**
-→ [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
-
-**...run demos**
-→ [DEMO_GUIDE.md](DEMO_GUIDE.md)
-
-**...see what's next**
-→ [NEXT_EVOLUTIONS.md](NEXT_EVOLUTIONS.md)
-
-**...understand the architecture**
-→ [specs/](specs/) directory
+### **UniBin Evolution**
+- `ECOBUD_PHASE_1_COMPLETE.md` - Implementation
+- `ECOBLOSSOM_PHASE_2_PLAN.md` - Future vision
+- `UNIBIN_EVOLUTION_COMPLETE_JAN_19_2026.md` - Summary
 
 ---
 
-## 🏆 Key Achievements
+## 🗂️ **Crate Purposes**
 
-### Audio Canvas (A++ Architecture):
-- **External Dependencies**: 0 (14/14 eliminated)
-- **C Library Dependencies**: 0 (Audio Canvas!)
-- **Self-Stable**: 100% (works standalone)
-- **Pure Rust**: 100% (no C code)
+| Crate | Purpose | Pure Rust? |
+|-------|---------|------------|
+| `petal-tongue-ui` | Desktop GUI (egui) | ⚠️ No |
+| `petal-tongue-tui` | Terminal UI (ratatui) | ✅ Yes |
+| `petal-tongue-core` | Core types, traits | ✅ Yes |
+| `petal-tongue-discovery` | Primal discovery | ✅ Yes |
+| `petal-tongue-graph` | Graph engine | ✅ Yes |
+| `petal-tongue-ui-core` | UI abstractions | ✅ Yes |
+| `petal-tongue-adapters` | External integrations | ✅ Yes |
+| `petal-tongue-ipc` | Inter-process comm | ✅ Yes |
+| `petal-tongue-entropy` | Randomness/chaos | ✅ Yes |
+| `doom-core` | Doom integration | ✅ Yes |
 
-### Pattern:
-```
-Universal Direct Hardware Access:
-- Framebuffer: /dev/fb0 → Pixels
-- WGPU:        /dev/dri/card0 → GPU
-- AudioCanvas: /dev/snd/pcmC0D0p → Audio
+---
+
+## 🎯 **Common Tasks**
+
+### **Run petalTongue**
+```bash
+# From root
+./target/release/petaltongue <mode>
+
+# Or with cargo
+cargo run --bin petaltongue -- <mode>
 ```
 
+### **Build**
+```bash
+# Release build
+cargo build --release
+
+# Pure Rust build (no GUI)
+cargo build --release --no-default-features
+```
+
+### **Test**
+```bash
+# All tests
+cargo test
+
+# UniBin tests
+cargo test --bin petaltongue
+
+# Specific crate
+cargo test --package petal-tongue-core
+```
+
+### **Add a new mode**
+1. Create `src/my_mode.rs`
+2. Add to `src/main.rs` enum
+3. Implement handler
+4. Add tests
+
 ---
 
-## 📖 Historical Documentation
+## 🔍 **Finding Code**
 
-Historical documents (evolution path, session reports) are preserved in:
-- **[docs/archive/](docs/archive/)** - Fossil record
+### **UI Rendering**
+→ `crates/petal-tongue-ui/src/`
+→ `crates/petal-tongue-ui-core/src/`
 
-These documents show the journey to Audio Canvas sovereignty and are kept for reference.
+### **Graph Logic**
+→ `crates/petal-tongue-graph/src/`
+→ `crates/petal-tongue-core/src/graph.rs`
 
----
+### **Discovery**
+→ `crates/petal-tongue-discovery/src/`
 
-## 💡 Quick Reference
+### **Doom Integration**
+→ `crates/petal-tongue-ui/src/panels/doom_panel.rs`
+→ `crates/doom-core/src/`
 
-### Project Info:
-- **Version**: 1.3.0+
-- **Architecture Grade**: A++ (11/10)
-- **Status**: Production Ready
-- **Sovereignty**: ABSOLUTE (TRUE PRIMAL)
-
-### Links:
-- **GitHub**: (your repo URL)
-- **Documentation**: [docs/](docs/)
-- **Specifications**: [specs/](specs/)
-- **Examples**: [examples/](examples/)
+### **Web Server**
+→ `src/web_mode.rs`
+→ `web/index.html`
 
 ---
 
-**Need help?** Start with [README.md](README.md) or [START_HERE.md](START_HERE.md)!
+## 📖 **Documentation Locations**
 
-🎨 **Audio Canvas - Direct Hardware Access, Pure Rust, Absolute Control!** ✨
+### **Root**
+Current, essential documentation
+
+### **specs/**
+Technical specifications:
+- Architecture
+- Design decisions
+- Specifications
+
+### **docs/**
+Detailed documentation:
+- `architecture/` - System design
+- `features/` - Feature docs
+- `guides/` - How-to guides
+- `operations/` - Deployment
+- `sessions/` - Dev sessions
+
+### **archive/**
+Historical documentation:
+- Completed sessions
+- Evolution history
+- Fossil record
+
+---
+
+## 🚀 **Quick Links**
+
+| What | Where |
+|------|-------|
+| Main entry | `src/main.rs` |
+| UI mode | `src/ui_mode.rs` |
+| Web mode | `src/web_mode.rs` |
+| Core types | `crates/petal-tongue-core/src/lib.rs` |
+| Tests | `tests/` + `*/tests/` |
+| Scenarios | `sandbox/scenarios/` |
+| Web UI | `web/index.html` |
+| Docs | Root `*.md` + `docs/` |
+| Specs | `specs/` |
+
+---
+
+**Last Updated**: January 19, 2026  
+**Version**: 1.3.0 (ecoBud)
+
+🌸 Navigate with confidence! 🚀
