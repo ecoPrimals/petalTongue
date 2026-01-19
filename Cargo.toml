@@ -108,11 +108,13 @@ bincode = "1.3"
 # Core crates
 petal-tongue-core = { path = "crates/petal-tongue-core" }
 petal-tongue-discovery = { path = "crates/petal-tongue-discovery" }
-petal-tongue-tui = { path = "crates/petal-tongue-tui" }
-petal-tongue-headless = { path = "crates/petal-tongue-headless" }
+petal-tongue-ui-core = { path = "crates/petal-tongue-ui-core" }
+petal-tongue-graph = { path = "crates/petal-tongue-graph" }
 
 # Optional UI (can be disabled for minimal build)
 petal-tongue-ui = { path = "crates/petal-tongue-ui", optional = true }
+eframe = { workspace = true, optional = true }
+egui = { workspace = true, optional = true }
 
 # Web server
 axum = { version = "0.7", features = ["tokio"] }
