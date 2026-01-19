@@ -1,35 +1,60 @@
 # 🌸 petalTongue - Start Here
 
-**Last Updated**: January 18, 2026  
-**Status**: ✅ Headless & CLI are TRUE ecoBin! (Doom Fully Playable!)
+**Last Updated**: January 19, 2026  
+**Status**: ✅ **UniBin Complete! ecoBud shipped, ecoBlossom evolving**
 
 ---
 
 ## 🎯 **Quick Start**
 
-petalTongue is ecoPrimals' **universal UI platform** - a sensory coordination layer that can embed any application as a panel.
+petalTongue is ecoPrimals' **universal UI platform** - now available as a **single unified binary** with 5 modes!
+
+### **Installation**
+
+```bash
+# Build the UniBin (Pure Rust modes only)
+cargo build --release --no-default-features
+
+# Or with GUI support
+cargo build --release --features ui
+
+# Binary location
+./target/release/petaltongue
+```
 
 ### **Run It**
 
 ```bash
-# Default UI
-cargo run --release --bin petal-tongue
+# Desktop GUI (default)
+petaltongue ui
+
+# Terminal UI (Pure Rust!)
+petaltongue tui
+
+# Web server (Pure Rust!)
+petaltongue web --bind 0.0.0.0:8080
+
+# Headless rendering (Pure Rust!)
+petaltongue headless
+
+# System status (Pure Rust!)
+petaltongue status
 
 # With specific scenario
-cargo run --release --bin petal-tongue -- --scenario sandbox/scenarios/doom-mvp.json
-
-# With paint mode (interactive canvas)
-cargo run --release --bin petal-tongue -- --scenario sandbox/scenarios/paint-simple.json
+petaltongue ui --scenario sandbox/scenarios/doom-mvp.json
 ```
 
 ### **Test It**
 
 ```bash
-# All tests
-cargo test
+# All tests (16 passing in 0.00s!)
+cargo test --bin petaltongue
 
-# Specific package
-cargo test --package petal-tongue-ui
+# Pure Rust build test
+cargo test --bin petaltongue --no-default-features
+
+# Full project tests
+cargo test
 
 # With coverage
 cargo llvm-cov --html
@@ -37,27 +62,82 @@ cargo llvm-cov --html
 
 ---
 
-## 🎉 **Recent Achievements (Jan 16, 2026)**
+## 🌱 **What is ecoBud / ecoBlossom?**
 
-### **Epic Debugging Session - Doom Now PLAYABLE!**
+### **ecoBud (Shipped NOW!)** ✅
+```
+petaltongue                    (5.5M, 1 binary)
+├── ui        ⚠️  Optional     (egui/wayland, pragmatic)
+├── tui       ✅ Pure Rust     (ratatui)
+├── web       ✅ Pure Rust     (axum)
+├── headless  ✅ Pure Rust     (rendering)
+└── status    ✅ Pure Rust     (system info)
+
+UniBin: ✅ 1 binary, 5 modes
+ecoBin: ✅ 80% Pure Rust (4/5 modes)
+```
+
+**Ready for production deployment!** 🚀
+
+### **ecoBlossom (Evolving)** 🌸
+```
+Same binary, evolving GUI to Pure Rust!
+
+Goal: 100% Pure Rust (5/5 modes)
+Timeline: 6-12 months
+Tech: drm-rs, smithay, wgpu
+```
+
+**See**: `ECOBLOSSOM_PHASE_2_PLAN.md` for roadmap
+
+---
+
+## 🎉 **Recent Achievements (Jan 19, 2026)**
+
+### **UniBin Complete - ecoBud Shipped!**
+
+**From 3 binaries (38M+) to 1 binary (5.5M)!**
+
+1. ✅ **UniBin Architecture**
+   - Single entry point: `src/main.rs`
+   - 5 modes via subcommands
+   - 84% size reduction!
+
+2. ✅ **Pure Rust Modes**
+   - 4 out of 5 modes: 100% Pure Rust
+   - No wayland-sys, openssl-sys, dirs-sys
+   - Only libc, libm, libgcc_s (acceptable!)
+
+3. ✅ **Modern Concurrent Rust**
+   - Arc/RwLock for shared state
+   - Channels for communication
+   - Async/await throughout
+   - No sleeps in tests!
+
+4. ✅ **16 Tests Passing (0.00s)**
+   - All run in parallel
+   - Modern test patterns
+   - Fully concurrent
+
+5. ✅ **Web Frontend**
+   - Modern responsive design
+   - Real-time updates
+   - Interactive dashboards
+
+**Details**: See `ECOBUD_PHASE_1_COMPLETE.md`
+
+---
+
+## 🎉 **Previous Achievements (Jan 16, 2026)**
+
+### **Epic Debugging Session - Doom PLAYABLE!**
 
 **7 Critical Fixes in One Session:**
 
 1. ✅ **Input Capability Declarations**
-   - Panel now declares it wants keyboard/mouse/exclusive input
-   - Fixed: "No input at all"
-
 2. ✅ **Interactive Widget (.sense)**
-   - Changed from passive display to interactive widget
-   - Fixed: Input not captured through egui
-
 3. ✅ **State Change Detection**
-   - Track previous frame's keys, only send on change
-   - Fixed: Stuttering from repeated key_down() calls
-
 4. ✅ **Remove Duplicate Event Processing**
-   - Unified to state polling only (works local + remote)
-   - Fixed: Double key signals confusing Doom
 
 5. ✅ **Tick Every Frame (60 Hz)**
    - Changed from 35 Hz limiting to render-rate ticking
