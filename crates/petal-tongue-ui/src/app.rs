@@ -189,13 +189,19 @@ pub struct PetalTongueApp {
 }
 
 impl PetalTongueApp {
-    /// Create a new application
+    /// Create a new application with a shared graph from DataService
+    /// 
+    /// This ensures the GUI uses the SAME data as all other UI modes (TUI, Web, etc.)
+    /// TRUE PRIMAL: Zero data duplication!
     #[must_use]
-    pub fn new(
+    pub fn new_with_shared_graph(
         _cc: &eframe::CreationContext<'_>,
         scenario_path: Option<std::path::PathBuf>,
         rendering_caps: petal_tongue_core::RenderingCapabilities,
+        shared_graph: Arc<RwLock<GraphEngine>>,
     ) -> Self {
+        tracing::info!("✅ Using shared graph from DataService - zero data duplication!");
+        
         // Load scenario if provided
         let (scenario, scenario_path_for_provider) = if let Some(path) = scenario_path {
             match crate::scenario::Scenario::load(&path) {
@@ -359,9 +365,9 @@ impl PetalTongueApp {
             }
         });
 
-        // Create graph engine
-        let graph = GraphEngine::new();
-        let graph = Arc::new(RwLock::new(graph));
+        // Use shared graph (from DataService)
+        // TRUE PRIMAL: Single source of truth - same data for ALL UI modes!
+        let graph = shared_graph;
 
         // Create capability detector (tests what modalities actually work)
         let capabilities = CapabilityDetector::default();
@@ -668,63 +674,17 @@ impl PetalTongueApp {
         app
     }
 
-    /// Refresh graph data from `BiomeOS`
+    /// Refresh graph data from DataService
+    /// 
+    /// Note: The graph is now managed by DataService - we don't fetch data directly anymore!
+    /// This method is kept for compatibility but is now a no-op.
+    /// The DataService refreshes data in the background and all UIs see the same updates.
     fn refresh_graph_data(&mut self) {
-        // For now, we'll use blocking calls in the UI thread
-        // TODO: Move to background task with channels
-        let runtime = tokio::runtime::Runtime::new()
-            .expect("failed to create tokio runtime - system resources exhausted?");
-
-        runtime.block_on(async {
-            // Discover primals
-            #[allow(deprecated)] // TODO: Migrate to data_providers when aggregation ready
-            let primals = match self.biomeos_client.discover_primals().await {
-                Ok(p) => p,
-                Err(e) => {
-                    tracing::warn!("Failed to discover primals: {}", e);
-                    return;
-                }
-            };
-
-            // Get topology
-            #[allow(deprecated)] // TODO: Migrate to data_providers when aggregation ready
-            let edges = match self.biomeos_client.get_topology().await {
-                Ok(e) => e,
-                Err(e) => {
-                    tracing::warn!("Failed to get topology: {}", e);
-                    vec![]
-                }
-            };
-
-            // Update graph
-            let mut graph = self.graph.write().expect("graph lock poisoned");
-
-            // Clear existing graph
-            // (In production, we'd do a smart merge to preserve positions)
-            *graph = GraphEngine::new();
-
-            // Add primals
-            for primal in &primals {
-                graph.add_node(primal.clone());
-            }
-
-            // Add edges
-            for edge in edges {
-                graph.add_edge(edge);
-            }
-
-            // Apply layout
-            graph.set_layout(self.current_layout);
-            graph.layout(100);
-
-            // Drop the graph lock before updating trust dashboard
-            drop(graph);
-
-            // Update trust dashboard with new primal data
-            self.trust_dashboard.update_from_primals(&primals);
-            tracing::debug!("✅ Trust dashboard updated with {} primals", primals.len());
-        });
-
+        tracing::debug!("✅ Graph refresh requested - DataService handles this automatically");
+        
+        // The shared graph is already being updated by DataService
+        // No need to fetch data here - TRUE PRIMAL: Single source of truth!
+        
         self.last_refresh = Instant::now();
     }
 

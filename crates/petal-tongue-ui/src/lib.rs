@@ -6,10 +6,15 @@
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 
+// Re-export egui and eframe for use by parent crate
+pub use eframe;
+pub use egui;
+
 /// Accessibility features and compliance (WCAG, universal design)
 pub mod accessibility;
 pub mod accessibility_panel;
 pub mod app;
+pub mod backend;  // NEW: UI backend abstraction (ecoBlossom!)
 pub mod scenario;
 pub mod scenario_error;
 pub mod panels;

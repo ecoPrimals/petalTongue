@@ -42,12 +42,30 @@ petalTongue/
 
 ## 📚 **Essential Documents**
 
-### **Getting Started**
+### **Start Here**
+- `ROOT_DOCS_INDEX.md` - **NEW!** Complete root documentation index
 - `README.md` - Project overview
-- `START_HERE.md` - Setup guide
-- `DEPLOYMENT_READY.md` - Deploy guide
+- `START_HERE.md` - Setup guide & quick start
+- `PROJECT_STATUS.md` - Current health & metrics
 
-### **Current Status**
+### **Architecture & Design**
+- `DATA_SERVICE_ARCHITECTURE.md` - **NEW!** Unified data layer (Jan 19, 2026)
+- `ECOBLOSSOM_PHASE_2_PLAN.md` - Pure Rust GUI roadmap
+- `DUAL_UNIBIN_EXECUTION_PLAN.md` - UniBin strategy
+- `WEB_UI_EVOLUTION_PLAN.md` - Web enhancement plans
+
+### **Guides**
+- `DOCS_GUIDE.md` - Documentation index
+- `NAVIGATION.md` - This file!
+- `DEPLOYMENT_GUIDE.md` - Deployment instructions
+- `DEPLOYMENT_READY.md` - Readiness checklist
+- `DEMO_GUIDE.md` - Demo scenarios
+- `NEURAL_API_UI_QUICK_START.md` - Neural API quick start
+- `ENV_VARS.md` - Configuration
+
+### **Historical**
+- `CHANGELOG.md` - Version history
+- `archive/` - Session archives (40+ documents)
 - `PROJECT_STATUS.md` - Health & metrics
 - `CHANGELOG.md` - Version history
 

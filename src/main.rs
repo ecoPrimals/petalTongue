@@ -23,6 +23,13 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+mod cli_mode;
+mod data_service;
+mod headless_mode;
+mod tui_mode;
+mod ui_mode;
+mod web_mode;
+
 #[derive(Parser)]
 #[command(name = "petaltongue")]
 #[command(version, about = "🌸 petalTongue - Universal UI & Visualization System")]
@@ -117,18 +124,25 @@ async fn main() -> Result<()> {
         "🌸 petalTongue starting"
     );
 
+    // Initialize DataService ONCE (single source of truth for all modes)
+    tracing::info!("📊 Initializing unified DataService...");
+    let mut data_service = data_service::DataService::new();
+    data_service.init().await.context("Failed to initialize DataService")?;
+    let data_service = std::sync::Arc::new(data_service);
+    tracing::info!("✅ DataService initialized - all modes will use same data source");
+
     // Execute command (all modes are fully async)
     let result = match cli.command {
         Commands::Ui { scenario, no_audio } => {
             tracing::info!(mode = "ui", "Launching desktop GUI mode");
-            ui_mode::run(scenario, no_audio).await
+            ui_mode::run(scenario, no_audio, data_service).await
         }
         Commands::Tui {
             scenario,
             refresh_rate,
         } => {
             tracing::info!(mode = "tui", refresh_rate, "Launching terminal UI mode (Pure Rust!)");
-            tui_mode::run(scenario, refresh_rate).await
+            tui_mode::run(scenario, refresh_rate, data_service).await
         }
         Commands::Web {
             bind,
@@ -141,7 +155,7 @@ async fn main() -> Result<()> {
                 workers,
                 "Launching web UI server (Pure Rust!)"
             );
-            web_mode::run(&bind, scenario, workers).await
+            web_mode::run(&bind, scenario, workers, data_service).await
         }
         Commands::Headless { bind, workers } => {
             tracing::info!(
@@ -150,11 +164,11 @@ async fn main() -> Result<()> {
                 workers,
                 "Launching headless API server (Pure Rust!)"
             );
-            headless_mode::run(&bind, workers).await
+            headless_mode::run(&bind, workers, data_service).await
         }
         Commands::Status { verbose, format } => {
             tracing::info!(mode = "status", verbose, format, "Querying system status (Pure Rust!)");
-            cli_mode::status(verbose, &format).await
+            cli_mode::status(verbose, &format, data_service).await
         }
     };
 
@@ -213,12 +227,6 @@ fn init_tracing(level: &str, format: &str) -> Result<()> {
 
     Ok(())
 }
-
-mod ui_mode;
-mod tui_mode;
-mod web_mode;
-mod headless_mode;
-mod cli_mode;
 
 #[cfg(test)]
 mod tests {
