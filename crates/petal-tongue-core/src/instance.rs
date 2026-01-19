@@ -487,14 +487,11 @@ fn process_exists(pid: u32) -> bool {
 
 /// Get the base directory for petalTongue data
 ///
-/// Uses XDG Base Directory spec via etcetera (Pure Rust!)
+/// Uses platform-specific directory resolution (Pure Rust, zero deps!)
 fn get_base_dir() -> Result<PathBuf, InstanceError> {
-    use etcetera::{choose_base_strategy, BaseStrategy};
-    
-    let strategy = choose_base_strategy()
-        .map_err(|e| InstanceError::DirectoryError(format!("Could not determine data directory: {}", e)))?;
-    
-    Ok(strategy.data_dir().join("petaltongue"))
+    crate::platform_dirs::data_dir()
+        .map(|dir| dir.join("petaltongue"))
+        .map_err(|e| InstanceError::DirectoryError(format!("Could not determine data directory: {}", e)))
 }
 
 /// Get the socket directory

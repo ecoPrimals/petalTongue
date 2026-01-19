@@ -84,8 +84,16 @@ wasm-bindgen-futures = { version = "0.4", optional = true }
 web-sys = { version = "0.3", optional = true, features = ["Window", "Document", "Element", "HtmlCanvasElement", "CanvasRenderingContext2d"] }
 
 [features]
-default = ["external-display"]
-external-display = [] # For eframe/egui native window
+# Default: Auto-detect best backend (prefer Toadstool, fall back to eframe)
+default = ["ui-auto"]
+
+# Backend selection features (ecoBlossom evolution!)
+ui-auto = ["ui-eframe"]  # Auto-detect (currently just eframe, will add Toadstool)
+ui-eframe = []           # eframe backend (current, has C deps)
+ui-toadstool = []        # Toadstool backend (future, Pure Rust!)
+
+# Legacy features (maintained for compatibility)
+external-display = ["ui-eframe"]  # Alias for ui-eframe
 software-rendering = ["softbuffer", "pixels"]
 framebuffer-direct = ["nix", "dialoguer"]
 toadstool-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys"]
