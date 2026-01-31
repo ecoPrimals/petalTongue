@@ -702,6 +702,25 @@ impl PetalTongueApp {
         app
     }
 
+    /// Create a new application (compatibility wrapper for standalone binary)
+    ///
+    /// This creates its own graph instead of using a shared one.
+    /// Prefer `new_with_shared_graph` for multi-modality deployments.
+    #[must_use]
+    pub fn new(
+        cc: &eframe::CreationContext<'_>,
+        scenario_path: Option<std::path::PathBuf>,
+        rendering_caps: petal_tongue_core::RenderingCapabilities,
+    ) -> Self {
+        tracing::info!("⚠️  Creating standalone graph (not shared with DataService)");
+        
+        // Create a standalone graph
+        let shared_graph = Arc::new(RwLock::new(GraphEngine::new()));
+        
+        // Delegate to the shared graph constructor
+        Self::new_with_shared_graph(cc, scenario_path, rendering_caps, shared_graph)
+    }
+
     /// Refresh graph data from DataService
     ///
     /// Note: The graph is now managed by DataService - we don't fetch data directly anymore!

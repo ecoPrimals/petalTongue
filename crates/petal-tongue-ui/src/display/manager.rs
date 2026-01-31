@@ -191,7 +191,9 @@ impl DisplayManager {
     async fn fallback(&mut self) -> Result<()> {
         warn!("🔄 Attempting fallback to next display backend...");
 
-        let current_idx = self.active_backend_idx.unwrap();
+        let Some(current_idx) = self.active_backend_idx else {
+            return Err(anyhow::anyhow!("No active backend to fallback from"));
+        };
 
         // Try remaining backends
         for idx in (current_idx + 1)..self.backends.len() {

@@ -212,12 +212,6 @@ impl BiomeOSJsonRpcClient {
     }
 }
 
-impl Default for BiomeOSJsonRpcClient {
-    fn default() -> Self {
-        Self::new().expect("Failed to discover BiomeOS socket")
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -345,8 +345,8 @@ impl SongbirdClient {
         let last_seen = value["last_seen"].as_u64().unwrap_or_else(|| {
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_secs()
+                .map(|d| d.as_secs())
+                .unwrap_or(0) // Fallback to epoch if clock is broken
         });
 
         Ok(PrimalInfo::new(
