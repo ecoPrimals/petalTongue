@@ -27,20 +27,24 @@ impl DisplayManager {
 
         let mut backends = Vec::new();
 
-        // Tier 1: Try Toadstool WASM (highest priority - network effect!)
-        info!("🌸 Checking for Toadstool WASM rendering...");
-        match ToadstoolDisplay::discover().await {
-            Ok(toadstool) => {
-                info!("✅ Toadstool WASM rendering available");
-                backends.push(BackendEntry {
-                    backend: Box::new(toadstool),
-                    priority: BackendPriority::Toadstool,
-                    initialized: false,
-                });
+        // Tier 1: Try Toadstool (highest priority - network effect!)
+        info!("🌸 Checking for Toadstool display (via biomeOS)...");
+        if ToadstoolDisplay::is_available() {
+            match ToadstoolDisplay::new() {
+                Ok(toadstool) => {
+                    info!("✅ Toadstool display available via biomeOS");
+                    backends.push(BackendEntry {
+                        backend: Box::new(toadstool),
+                        priority: BackendPriority::Toadstool,
+                        initialized: false,
+                    });
+                }
+                Err(e) => {
+                    info!("⚠️  Toadstool initialization failed: {}", e);
+                }
             }
-            Err(e) => {
-                info!("⚠️  Toadstool not available: {}", e);
-            }
+        } else {
+            info!("⚠️  biomeOS socket not found, Toadstool unavailable");
         }
 
         // Tier 2: Try Software Rendering (always available)
