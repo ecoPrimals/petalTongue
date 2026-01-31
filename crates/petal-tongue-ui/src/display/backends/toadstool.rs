@@ -294,7 +294,9 @@ impl DisplayBackend for ToadstoolDisplay {
         self.buffer_handle = Some(window.buffer_handle);
         
         info!("✅ toadStool display backend initialized");
-        info!("   Window: {}", self.window_id.as_ref().unwrap());
+        if let Some(window_id) = &self.window_id {
+            info!("   Window: {}", window_id);
+        }
         info!("   Dimensions: {}x{}", self.width, self.height);
         
         // Note: Input subscription would happen here in a real implementation

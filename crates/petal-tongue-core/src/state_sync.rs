@@ -180,12 +180,6 @@ impl StatePersistence for LocalStatePersistence {
     }
 }
 
-impl Default for LocalStatePersistence {
-    fn default() -> Self {
-        Self::new().expect("Failed to create local state persistence")
-    }
-}
-
 /// State synchronization coordinator
 pub struct StateSync {
     /// Local persistence
@@ -246,12 +240,6 @@ impl StateSync {
     /// Get UI state value
     pub fn get_ui_state(&self, key: &str) -> Option<&DynamicValue> {
         self.current_state.as_ref()?.get_ui_state(key)
-    }
-}
-
-impl Default for StateSync {
-    fn default() -> Self {
-        Self::new().expect("Failed to create state sync")
     }
 }
 
