@@ -42,16 +42,16 @@ pub fn validate_connection(from: &PrimalInfo, to: &PrimalInfo) -> ValidationResu
 
     // Discover what capabilities the source provides
     let from_provides = discover_provided_capabilities(from);
-    
+
     // Discover what capabilities the target requires
     let to_requires = discover_required_capabilities(to);
-    
+
     // Check for capability matches
     let matches: Vec<&String> = from_provides
         .iter()
         .filter(|cap| to_requires.contains(cap))
         .collect();
-    
+
     if !matches.is_empty() {
         // Valid connection - source provides what target needs
         ValidationResult::Valid
@@ -59,7 +59,7 @@ pub fn validate_connection(from: &PrimalInfo, to: &PrimalInfo) -> ValidationResu
         // Check for bidirectional capabilities (coordination, discovery)
         let from_coord = has_coordination_capability(from);
         let to_coord = has_coordination_capability(to);
-        
+
         if from_coord || to_coord {
             // Coordination primals can connect to anything
             ValidationResult::Valid
@@ -76,10 +76,10 @@ pub fn validate_connection(from: &PrimalInfo, to: &PrimalInfo) -> ValidationResu
 /// Discover what capabilities a primal provides to others
 fn discover_provided_capabilities(primal: &PrimalInfo) -> Vec<String> {
     let mut provided = Vec::new();
-    
+
     for capability in &primal.capabilities {
         let cap_lower = capability.to_lowercase();
-        
+
         // Provider patterns (what this primal offers)
         if cap_lower.contains("provider")
             || cap_lower.contains("security")
@@ -91,17 +91,17 @@ fn discover_provided_capabilities(primal: &PrimalInfo) -> Vec<String> {
             provided.push(capability.clone());
         }
     }
-    
+
     provided
 }
 
 /// Discover what capabilities a primal requires from others
 fn discover_required_capabilities(primal: &PrimalInfo) -> Vec<String> {
     let mut required = Vec::new();
-    
+
     for capability in &primal.capabilities {
         let cap_lower = capability.to_lowercase();
-        
+
         // Consumer patterns (what this primal needs)
         if cap_lower.contains("consumer")
             || cap_lower.contains("client")
@@ -109,7 +109,7 @@ fn discover_required_capabilities(primal: &PrimalInfo) -> Vec<String> {
         {
             required.push(capability.clone());
         }
-        
+
         // Also match provider capabilities that this primal might consume
         // (e.g., a primal listing "security" might need to connect to security provider)
         if cap_lower.contains("security")
@@ -119,7 +119,7 @@ fn discover_required_capabilities(primal: &PrimalInfo) -> Vec<String> {
             required.push(capability.clone());
         }
     }
-    
+
     required
 }
 
@@ -172,7 +172,10 @@ mod tests {
         // Should allow - but might warn since capabilities don't exactly match
         let result = validate_connection(&provider, &consumer);
         assert!(
-            matches!(result, ValidationResult::Valid | ValidationResult::Warning(_)),
+            matches!(
+                result,
+                ValidationResult::Valid | ValidationResult::Warning(_)
+            ),
             "Provider should connect to consumer"
         );
     }
@@ -249,4 +252,3 @@ mod tests {
         );
     }
 }
-

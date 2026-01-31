@@ -160,11 +160,9 @@ impl DynamicValue {
         match self {
             DynamicValue::Null => serde_json::Value::Null,
             DynamicValue::Boolean(b) => serde_json::Value::Bool(*b),
-            DynamicValue::Number(n) => {
-                serde_json::Value::Number(
-                    serde_json::Number::from_f64(*n).unwrap_or_else(|| serde_json::Number::from(0))
-                )
-            }
+            DynamicValue::Number(n) => serde_json::Value::Number(
+                serde_json::Number::from_f64(*n).unwrap_or_else(|| serde_json::Number::from(0)),
+            ),
             DynamicValue::String(s) => serde_json::Value::String(s.clone()),
             DynamicValue::Array(arr) => {
                 serde_json::Value::Array(arr.iter().map(|v| v.to_json_value()).collect())
@@ -182,9 +180,7 @@ impl DynamicValue {
         match value {
             serde_json::Value::Null => DynamicValue::Null,
             serde_json::Value::Bool(b) => DynamicValue::Boolean(b),
-            serde_json::Value::Number(n) => {
-                DynamicValue::Number(n.as_f64().unwrap_or_default())
-            }
+            serde_json::Value::Number(n) => DynamicValue::Number(n.as_f64().unwrap_or_default()),
             serde_json::Value::String(s) => DynamicValue::String(s),
             serde_json::Value::Array(arr) => {
                 DynamicValue::Array(arr.into_iter().map(Self::from_json_value).collect())
@@ -295,7 +291,7 @@ pub trait SchemaMigration {
 
     /// Perform the migration
     fn migrate(&self, data: &mut DynamicData, from: SchemaVersion, to: SchemaVersion)
-        -> Result<()>;
+    -> Result<()>;
 }
 
 /// Migration registry for managing schema upgrades
@@ -335,11 +331,7 @@ impl MigrationRegistry {
             }
         }
 
-        anyhow::bail!(
-            "No migration found for {} → {}",
-            from,
-            to
-        )
+        anyhow::bail!("No migration found for {} → {}", from, to)
     }
 }
 
@@ -406,4 +398,3 @@ mod tests {
         assert_eq!(data2.get_str("name"), Some("Test"));
     }
 }
-

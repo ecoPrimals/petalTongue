@@ -6,7 +6,7 @@
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use petal_tongue_core::{PrimalInfo, TopologyEdge, PrimalHealthStatus};
+use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -46,16 +46,16 @@ impl NeuralApiProvider {
             let socket_path = base_path.join(&socket_name);
             if socket_path.exists() {
                 info!("🧠 Found Neural API at: {}", socket_path.display());
-                
+
                 // Test connectivity
                 let provider = Self {
                     socket_path: socket_path.clone(),
                     request_id: std::sync::atomic::AtomicU64::new(1),
                 };
-                
+
                 // Verify it responds
                 provider.health_check().await?;
-                
+
                 return Ok(provider);
             }
         }
@@ -88,7 +88,9 @@ impl NeuralApiProvider {
     /// Send JSON-RPC request to Neural API
     /// Call a Neural API method (public for graph client)
     pub async fn call_method(&self, method: &str, params: Option<Value>) -> Result<Value> {
-        let id = self.request_id.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let id = self
+            .request_id
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
         let request = json!({
             "jsonrpc": "2.0",
@@ -116,14 +118,17 @@ impl NeuralApiProvider {
         reader.read_line(&mut response_line).await?;
 
         // Parse response
-        let response: Value = serde_json::from_str(&response_line)
-            .context("Failed to parse Neural API response")?;
+        let response: Value =
+            serde_json::from_str(&response_line).context("Failed to parse Neural API response")?;
 
         // Check for JSON-RPC error
         if let Some(error) = response.get("error") {
             return Err(anyhow::anyhow!(
                 "Neural API error: {}",
-                error.get("message").and_then(|m| m.as_str()).unwrap_or("Unknown error")
+                error
+                    .get("message")
+                    .and_then(|m| m.as_str())
+                    .unwrap_or("Unknown error")
             ));
         }
 
@@ -138,12 +143,22 @@ impl NeuralApiProvider {
     fn parse_primal(primal: &Value) -> Result<PrimalInfo> {
         Ok(PrimalInfo {
             id: primal["id"].as_str().unwrap_or("unknown").to_string(),
-            name: primal["primal_type"].as_str().unwrap_or("unknown").to_string(),
-            primal_type: primal["primal_type"].as_str().unwrap_or("unknown").to_string(),
+            name: primal["primal_type"]
+                .as_str()
+                .unwrap_or("unknown")
+                .to_string(),
+            primal_type: primal["primal_type"]
+                .as_str()
+                .unwrap_or("unknown")
+                .to_string(),
             endpoint: primal["socket_path"].as_str().unwrap_or("").to_string(),
             capabilities: primal["capabilities"]
                 .as_array()
-                .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str().map(String::from))
+                        .collect()
+                })
                 .unwrap_or_default(),
             health: match primal["health"].as_str() {
                 Some("healthy") => PrimalHealthStatus::Healthy,
@@ -162,7 +177,9 @@ impl NeuralApiProvider {
 
     /// Get proprioception data from Neural API
     pub async fn get_proprioception(&self) -> Result<petal_tongue_core::ProprioceptionData> {
-        let result = self.call_method("neural_api.get_proprioception", None).await?;
+        let result = self
+            .call_method("neural_api.get_proprioception", None)
+            .await?;
         serde_json::from_value(result).context("Failed to parse proprioception data")
     }
 
@@ -176,9 +193,9 @@ impl NeuralApiProvider {
 impl VisualizationDataProvider for NeuralApiProvider {
     async fn get_primals(&self) -> Result<Vec<PrimalInfo>> {
         debug!("Querying Neural API for all primals");
-        
+
         let result = self.call_method("neural_api.get_primals", None).await?;
-        
+
         let primals_array = result["primals"]
             .as_array()
             .ok_or_else(|| anyhow::anyhow!("Expected primals array"))?;
@@ -196,9 +213,9 @@ impl VisualizationDataProvider for NeuralApiProvider {
 
     async fn get_topology(&self) -> Result<Vec<TopologyEdge>> {
         debug!("Querying Neural API for topology");
-        
+
         let result = self.call_method("neural_api.get_topology", None).await?;
-        
+
         let connections = result["connections"]
             .as_array()
             .ok_or_else(|| anyhow::anyhow!("Expected connections array"))?;
@@ -208,7 +225,10 @@ impl VisualizationDataProvider for NeuralApiProvider {
             edges.push(TopologyEdge {
                 from: conn["from"].as_str().unwrap_or("").to_string(),
                 to: conn["to"].as_str().unwrap_or("").to_string(),
-                edge_type: conn["connection_type"].as_str().unwrap_or("unknown").to_string(),
+                edge_type: conn["connection_type"]
+                    .as_str()
+                    .unwrap_or("unknown")
+                    .to_string(),
                 capability: None,
                 label: None,
                 metrics: None,
@@ -219,8 +239,10 @@ impl VisualizationDataProvider for NeuralApiProvider {
     }
 
     async fn health_check(&self) -> Result<String> {
-        let result = self.call_method("neural_api.get_proprioception", None).await?;
-        
+        let result = self
+            .call_method("neural_api.get_proprioception", None)
+            .await?;
+
         let health_status = result["health"]["status"]
             .as_str()
             .unwrap_or("unknown")
@@ -257,4 +279,3 @@ mod tests {
         assert!(paths.iter().any(|p| p.to_str() == Some("/tmp")));
     }
 }
-

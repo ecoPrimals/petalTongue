@@ -62,8 +62,7 @@ impl VisualGraph {
     pub fn remove_node(&mut self, node_id: &str) {
         self.nodes.retain(|n| n.id != node_id);
         // Remove all edges connected to this node
-        self.edges
-            .retain(|e| e.from != node_id && e.to != node_id);
+        self.edges.retain(|e| e.from != node_id && e.to != node_id);
         self.modified_at = Utc::now();
     }
 
@@ -130,7 +129,8 @@ impl VisualGraph {
         let mut rec_stack = HashSet::new();
 
         for node in &self.nodes {
-            if !visited.contains(&node.id) && self.has_cycle_util(&node.id, &mut visited, &mut rec_stack)
+            if !visited.contains(&node.id)
+                && self.has_cycle_util(&node.id, &mut visited, &mut rec_stack)
             {
                 return true;
             }
@@ -517,9 +517,7 @@ mod tests {
         graph
             .add_edge(GraphEdge::dependency(id2.clone(), id3.clone()))
             .unwrap();
-        graph
-            .add_edge(GraphEdge::dependency(id3, id1))
-            .unwrap();
+        graph.add_edge(GraphEdge::dependency(id3, id1)).unwrap();
 
         assert!(graph.has_cycle());
     }
@@ -604,4 +602,3 @@ mod tests {
         assert_eq!(snapped2, Vec2::new(0.0, 50.0));
     }
 }
-

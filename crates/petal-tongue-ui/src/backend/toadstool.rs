@@ -62,10 +62,10 @@ use petal_tongue_core::{GraphEngine, RenderingCapabilities};
 pub struct ToadstoolBackend {
     /// Toadstool display client (stub for now)
     client: Option<ToadstoolDisplayClient>,
-    
+
     /// Current window ID (if created)
     window: Option<WindowId>,
-    
+
     /// Whether backend is initialized
     initialized: bool,
 }
@@ -77,7 +77,7 @@ impl ToadstoolBackend {
     /// Returns error if Toadstool is not running or not available.
     pub async fn new() -> Result<Self> {
         tracing::info!("🍄 Creating Toadstool backend");
-        
+
         // TODO: Connect to Toadstool display service
         // For now, return stub
         Ok(Self {
@@ -101,11 +101,11 @@ impl UIBackend for ToadstoolBackend {
             tracing::info!("🍄 Toadstool stub mode enabled");
             return true;
         }
-        
+
         // Try to connect to Toadstool
         // TODO: Implement actual connection check
         tracing::debug!("Checking for Toadstool display service...");
-        
+
         // For now, not available (requires Toadstool implementation)
         false
     }
@@ -153,8 +153,11 @@ impl UIBackend for ToadstoolBackend {
 
         tracing::info!("🚀 Running Toadstool backend (stub)...");
         tracing::info!("   Scenario: {:?}", scenario);
-        tracing::info!("   Capabilities: device={}, complexity={:?}",
-            capabilities.device_type, capabilities.ui_complexity);
+        tracing::info!(
+            "   Capabilities: device={}, complexity={:?}",
+            capabilities.device_type,
+            capabilities.ui_complexity
+        );
         tracing::info!("   Using shared graph from DataService (TRUE PRIMAL!)");
 
         // TODO: Implement actual Toadstool integration
@@ -171,14 +174,16 @@ impl UIBackend for ToadstoolBackend {
         // For now, stub implementation
         if std::env::var("PETALTONGUE_TOADSTOOL_STUB").is_ok() {
             tracing::warn!("🍄 Toadstool STUB: Would create window and run UI here");
-            tracing::warn!("   Would use shared_graph ({} nodes) from DataService",
-                shared_graph.read().map(|g| g.nodes().len()).unwrap_or(0));
+            tracing::warn!(
+                "   Would use shared_graph ({} nodes) from DataService",
+                shared_graph.read().map(|g| g.nodes().len()).unwrap_or(0)
+            );
             tracing::warn!("   Actual implementation pending Toadstool display service");
             tracing::warn!("   See TOADSTOOL_DISPLAY_BACKEND_REQUEST.md for spec");
-            
+
             // Simulate running for a bit
             tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-            
+
             tracing::info!("✅ Toadstool backend finished (stub)");
             return Ok(());
         }
@@ -188,27 +193,27 @@ impl UIBackend for ToadstoolBackend {
 
     async fn shutdown(&mut self) -> Result<()> {
         tracing::info!("🛑 Shutting down Toadstool backend...");
-        
+
         // TODO: Clean up Toadstool resources
         // - Destroy window
         // - Close RPC connection
         // - Release input devices
-        
+
         self.window = None;
         self.client = None;
         self.initialized = false;
-        
+
         Ok(())
     }
 
     fn capabilities(&self) -> BackendCapabilities {
         BackendCapabilities {
-            has_gpu: true,            // Toadstool provides GPU via wgpu
-            multi_window: true,        // Toadstool will support multiple windows
-            custom_cursor: true,       // Will be supported
-            clipboard: false,          // TODO: Add clipboard support
-            pure_rust: true,           // ✅ 100% Pure Rust! (no C dependencies)
-            needs_privileges: true,    // Requires DRM/KMS access (or libseat)
+            has_gpu: true,          // Toadstool provides GPU via wgpu
+            multi_window: true,     // Toadstool will support multiple windows
+            custom_cursor: true,    // Will be supported
+            clipboard: false,       // TODO: Add clipboard support
+            pure_rust: true,        // ✅ 100% Pure Rust! (no C dependencies)
+            needs_privileges: true, // Requires DRM/KMS access (or libseat)
         }
     }
 }
@@ -259,7 +264,7 @@ mod tests {
         std::env::set_var("PETALTONGUE_TOADSTOOL_STUB", "1");
         let backend = ToadstoolBackend::new().await.unwrap();
         let caps = backend.capabilities();
-        
+
         assert!(caps.pure_rust); // ✅ Key feature!
         assert!(caps.has_gpu);
         assert!(caps.multi_window);
@@ -282,4 +287,3 @@ mod tests {
         assert!(!available);
     }
 }
-

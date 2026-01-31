@@ -12,19 +12,19 @@
 use crate::accessibility_panel::AccessibilityPanel;
 use crate::audio::AudioSystemV2; // NEW: Substrate-agnostic audio
 use crate::awakening_overlay::AwakeningOverlay;
-use crate::panel_registry::{PanelRegistry, PanelInstance};
+use crate::panel_registry::{PanelInstance, PanelRegistry};
 use crate::panels::create_doom_factory;
 // BingoCubeIntegration removed - it's a primalTool, discovered at runtime
+use crate::graph_canvas::GraphCanvas; // NEW: Graph Builder canvas (Phase 4.8)
+use crate::graph_manager::GraphManagerPanel; // NEW: Graph manager for save/load/execute
 use crate::graph_metrics_plotter::GraphMetricsPlotter;
 use crate::keyboard_shortcuts::KeyboardShortcuts;
 use crate::metrics_dashboard::MetricsDashboard; // NEW: Neural API metrics dashboard
-use crate::proprioception_panel::ProprioceptionPanel; // NEW: Neural API SAME DAVE panel
-use crate::graph_canvas::GraphCanvas; // NEW: Graph Builder canvas (Phase 4.8)
 use crate::node_palette::NodePalette; // NEW: Node palette for graph builder
-use crate::property_panel::PropertyPanel; // NEW: Property panel for node editing
-use crate::graph_manager::GraphManagerPanel; // NEW: Graph manager for save/load/execute
 use crate::process_viewer_integration::ProcessViewerTool;
+use crate::property_panel::PropertyPanel; // NEW: Property panel for node editing
 use crate::proprioception::{ProprioceptionSystem, initialize_standard_proprioception}; // v1.1.0: SAME DAVE integration
+use crate::proprioception_panel::ProprioceptionPanel; // NEW: Neural API SAME DAVE panel
 use crate::status_reporter::StatusReporter;
 use crate::system_dashboard::SystemDashboard;
 use crate::system_monitor_integration::SystemMonitorTool;
@@ -39,7 +39,9 @@ use petal_tongue_core::{
     CapabilityDetector, GraphEngine, InstanceId, LayoutAlgorithm, Modality, MotorCommand,
     RenderingAwareness, SensorEvent, SensorRegistry, SessionManager,
 };
-use petal_tongue_discovery::{NeuralApiProvider, VisualizationDataProvider, discover_visualization_providers};
+use petal_tongue_discovery::{
+    NeuralApiProvider, VisualizationDataProvider, discover_visualization_providers,
+};
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer, Visual2DRenderer};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
@@ -144,7 +146,7 @@ pub struct PetalTongueApp {
     // ===== v1.1.0: SAME DAVE Proprioception System =====
     /// Complete self-awareness system (output + input + bidirectional feedback)
     proprioception: ProprioceptionSystem,
-    
+
     // ===== v2.0: Neural API Integration =====
     /// Neural API provider (discovered at runtime)
     neural_api_provider: Option<Arc<NeuralApiProvider>>,
@@ -158,7 +160,7 @@ pub struct PetalTongueApp {
     show_neural_metrics: bool,
     /// Tokio runtime for async Neural API updates
     tokio_runtime: tokio::runtime::Runtime,
-    
+
     // ===== v2.0: Graph Builder (Phase 4.8) =====
     /// Graph Builder canvas (interactive visual graph construction)
     graph_canvas: GraphCanvas,
@@ -170,17 +172,17 @@ pub struct PetalTongueApp {
     graph_manager: GraphManagerPanel,
     /// Show Graph Builder window
     show_graph_builder: bool,
-    
+
     // ===== v2.1: Adaptive UI (device-specific rendering) =====
     /// Adaptive UI manager (device-specific rendering) - DEPRECATED
     adaptive_ui: crate::adaptive_ui::AdaptiveUIManager,
-    
+
     // ===== v2.2: Sensory UI (capability-based rendering) =====
     /// Sensory UI manager (capability-based rendering) - TRUE PRIMAL evolution
     sensory_ui: Option<crate::sensory_ui::SensoryUIManager>,
     /// Use sensory UI instead of adaptive UI (feature flag for migration)
     use_sensory_ui: bool,
-    
+
     // ===== v2.4: Panel System (Doom evolution) =====
     /// Panel registry for custom panel types (Doom, web, video, etc.)
     panel_registry: PanelRegistry,
@@ -190,7 +192,7 @@ pub struct PetalTongueApp {
 
 impl PetalTongueApp {
     /// Create a new application with a shared graph from DataService
-    /// 
+    ///
     /// This ensures the GUI uses the SAME data as all other UI modes (TUI, Web, etc.)
     /// TRUE PRIMAL: Zero data duplication!
     #[must_use]
@@ -201,7 +203,7 @@ impl PetalTongueApp {
         shared_graph: Arc<RwLock<GraphEngine>>,
     ) -> Self {
         tracing::info!("✅ Using shared graph from DataService - zero data duplication!");
-        
+
         // Load scenario if provided
         let (scenario, scenario_path_for_provider) = if let Some(path) = scenario_path {
             match crate::scenario::Scenario::load(&path) {
@@ -243,7 +245,9 @@ impl PetalTongueApp {
 
         let runtime = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
 
-        let data_providers = if let (Some(_scenario), Some(path)) = (&scenario, &scenario_path_for_provider) {
+        let data_providers = if let (Some(_scenario), Some(path)) =
+            (&scenario, &scenario_path_for_provider)
+        {
             // Scenario mode: Use DYNAMIC scenario provider (schema-agnostic!)
             tracing::info!("📋 Scenario mode: Loading primals with dynamic schema");
             match petal_tongue_discovery::DynamicScenarioProvider::from_file(path) {
@@ -251,18 +255,16 @@ impl PetalTongueApp {
                     if let Some(version) = provider.version() {
                         tracing::info!("   Schema version: {}", version);
                     }
-                    vec![
-                        Box::new(provider) as Box<dyn VisualizationDataProvider>
-                    ]
-                },
+                    vec![Box::new(provider) as Box<dyn VisualizationDataProvider>]
+                }
                 Err(e) => {
                     tracing::error!("Failed to create dynamic scenario provider: {}", e);
                     tracing::info!("Falling back to static provider...");
                     // Fallback to static provider
                     match petal_tongue_discovery::ScenarioVisualizationProvider::from_file(path) {
-                        Ok(provider) => vec![
-                            Box::new(provider) as Box<dyn VisualizationDataProvider>
-                        ],
+                        Ok(provider) => {
+                            vec![Box::new(provider) as Box<dyn VisualizationDataProvider>]
+                        }
                         Err(e2) => {
                             tracing::error!("Static provider also failed: {}", e2);
                             vec![]
@@ -425,11 +427,11 @@ impl PetalTongueApp {
         // Wire animation engine to visual renderer
         visual_renderer.set_animation_engine(Arc::clone(&animation_engine));
         visual_renderer.set_animation_enabled(true); // Enable by default
-        
+
         // Configure from scenario
         if let Some(ref s) = scenario {
             visual_renderer.set_show_stats(s.ui_config.show_panels.graph_stats);
-            
+
             // Enable interactive mode for paint-canvas layouts
             if s.ui_config.layout == "canvas-only" || s.mode.contains("paint") {
                 visual_renderer.set_interactive_mode(true);
@@ -463,39 +465,51 @@ impl PetalTongueApp {
 
         // Initialize audio system (EVOLVED: Substrate-agnostic with runtime discovery!)
         let audio_system = AudioSystemV2::new();
-        
+
         // ===== v2.4: Initialize Panel Registry (Doom evolution) =====
         let mut panel_registry = PanelRegistry::new();
-        
+
         // Register available panel types
         panel_registry.register(create_doom_factory());
-        
+
         // v2.5: Register Phase 1.4 stats panels
         panel_registry.register(Arc::new(crate::panels::MetricsPanelFactory::new()));
         panel_registry.register(Arc::new(crate::panels::ProprioceptionPanelFactory::new()));
         // Note: doom_stats panel requires DoomInstance coordination - will be added in future evolution
-        
+
         tracing::info!("✅ Panel registry initialized");
-        tracing::info!("   Available panel types: {:?}", panel_registry.available_types());
-        
+        tracing::info!(
+            "   Available panel types: {:?}",
+            panel_registry.available_types()
+        );
+
         // Create custom panels from scenario
         let mut custom_panels: Vec<Box<dyn PanelInstance>> = Vec::new();
         if let Some(ref s) = scenario {
             for panel_config in &s.ui_config.custom_panels {
                 match panel_registry.create(panel_config) {
                     Ok(panel) => {
-                        tracing::info!("✅ Created custom panel: {} (type: {})", 
-                            panel_config.title, panel_config.panel_type);
+                        tracing::info!(
+                            "✅ Created custom panel: {} (type: {})",
+                            panel_config.title,
+                            panel_config.panel_type
+                        );
                         custom_panels.push(panel);
                     }
                     Err(e) => {
-                        tracing::error!("❌ Failed to create panel '{}': {}", 
-                            panel_config.title, e);
+                        tracing::error!(
+                            "❌ Failed to create panel '{}': {}",
+                            panel_config.title,
+                            e
+                        );
                     }
                 }
             }
         }
-        tracing::info!("✅ Custom panels initialized: {} panels", custom_panels.len());
+        tracing::info!(
+            "✅ Custom panels initialized: {} panels",
+            custom_panels.len()
+        );
 
         // Log discovered audio backend for observability
         if let Some(backend) = audio_system.active_backend() {
@@ -547,9 +561,13 @@ impl PetalTongueApp {
             #[allow(deprecated)]
             biomeos_client,
             current_layout: LayoutAlgorithm::ForceDirected,
-            show_audio_panel: scenario.as_ref().map_or(true, |s| s.ui_config.show_panels.audio_panel),
+            show_audio_panel: scenario
+                .as_ref()
+                .map_or(true, |s| s.ui_config.show_panels.audio_panel),
             show_capability_panel: false,
-            show_controls: scenario.as_ref().map_or(true, |s| s.ui_config.show_panels.left_sidebar),
+            show_controls: scenario
+                .as_ref()
+                .map_or(true, |s| s.ui_config.show_panels.left_sidebar),
             show_animation: true,
             last_refresh: Instant::now(),
             auto_refresh: true,
@@ -560,13 +578,17 @@ impl PetalTongueApp {
 
             accessibility_panel: AccessibilityPanel::default(),
             system_dashboard: SystemDashboard::default(),
-            show_dashboard: scenario.as_ref().map_or(true, |s| s.ui_config.show_panels.system_dashboard),
+            show_dashboard: scenario
+                .as_ref()
+                .map_or(true, |s| s.ui_config.show_panels.system_dashboard),
             audio_system,
             status_reporter,
             keyboard_shortcuts: KeyboardShortcuts::default(),
             adapter_registry, // Universal property rendering
             trust_dashboard: TrustDashboard::new(),
-            show_trust_dashboard: scenario.as_ref().map_or(true, |s| s.ui_config.show_panels.trust_dashboard),
+            show_trust_dashboard: scenario
+                .as_ref()
+                .map_or(true, |s| s.ui_config.show_panels.trust_dashboard),
 
             // Awakening experience
             awakening_overlay: AwakeningOverlay::new(),
@@ -583,7 +605,7 @@ impl PetalTongueApp {
             last_display_verification: Instant::now(),
             // v1.1.0: SAME DAVE Proprioception
             proprioception: initialize_standard_proprioception(),
-            
+
             // v2.0: Neural API Integration
             neural_api_provider: neural_api_provider.clone(),
             neural_proprioception_panel: ProprioceptionPanel::new(),
@@ -591,21 +613,21 @@ impl PetalTongueApp {
             neural_metrics_dashboard: MetricsDashboard::new(),
             show_neural_metrics: false, // Toggle with 'M' key
             tokio_runtime: runtime,
-            
+
             // v2.0: Graph Builder (Phase 4.8)
             graph_canvas: GraphCanvas::new("New Graph".to_string()),
             node_palette: NodePalette::new(),
             property_panel: PropertyPanel::new(),
             graph_manager: GraphManagerPanel::new(),
             show_graph_builder: false, // Toggle with 'G' key
-            
+
             // v2.1: Adaptive UI (device-specific rendering) - DEPRECATED
             adaptive_ui: crate::adaptive_ui::AdaptiveUIManager::new(rendering_caps),
-            
+
             // v2.2: Sensory UI (capability-based rendering) - TRUE PRIMAL
             sensory_ui: crate::sensory_ui::SensoryUIManager::new().ok(),
             use_sensory_ui: true, // Enable sensory UI by default (zero hardcoding!)
-            
+
             // v2.4: Panel system
             panel_registry,
             custom_panels,
@@ -642,22 +664,28 @@ impl PetalTongueApp {
         // Priority: Scenario > Tutorial > Network Discovery > Fallback
         if let Some(ref loaded_scenario) = scenario {
             // Scenario mode: Load primals directly from scenario
-            tracing::info!("📋 Loading {} primals from scenario", loaded_scenario.primal_count());
+            tracing::info!(
+                "📋 Loading {} primals from scenario",
+                loaded_scenario.primal_count()
+            );
             let primals = loaded_scenario.to_primal_infos();
-            
+
             let mut graph = app.graph.write().expect("graph lock poisoned");
             // CRITICAL: Don't replace the graph instance - it breaks Arc references!
             // Just clear the existing graph and repopulate it
             graph.clear();
-            
+
             for primal in &primals {
                 graph.add_node(primal.clone());
             }
-            
+
             // CRITICAL: Scenarios have explicit positions - DON'T run force-directed layout!
             // The scenario JSON defines exact positions for demonstration purposes.
             // Running layout() would scatter nodes randomly, breaking the curated visualization.
-            tracing::info!("✅ Scenario primals loaded: {} nodes with explicit positions", primals.len());
+            tracing::info!(
+                "✅ Scenario primals loaded: {} nodes with explicit positions",
+                primals.len()
+            );
             drop(graph);
         } else if tutorial_mode.is_enabled() {
             tutorial_mode.load_into_graph(Arc::clone(&app.graph), app.current_layout);
@@ -675,16 +703,16 @@ impl PetalTongueApp {
     }
 
     /// Refresh graph data from DataService
-    /// 
+    ///
     /// Note: The graph is now managed by DataService - we don't fetch data directly anymore!
     /// This method is kept for compatibility but is now a no-op.
     /// The DataService refreshes data in the background and all UIs see the same updates.
     fn refresh_graph_data(&mut self) {
         tracing::debug!("✅ Graph refresh requested - DataService handles this automatically");
-        
+
         // The shared graph is already being updated by DataService
         // No need to fetch data here - TRUE PRIMAL: Single source of truth!
-        
+
         self.last_refresh = Instant::now();
     }
 
@@ -917,7 +945,7 @@ impl eframe::App for PetalTongueApp {
                     }
                 );
             }
-            
+
             // 'M' key: Toggle Neural API Metrics Dashboard
             if i.key_pressed(egui::Key::M) && !i.modifiers.ctrl && !i.modifiers.shift {
                 self.show_neural_metrics = !self.show_neural_metrics;
@@ -930,7 +958,7 @@ impl eframe::App for PetalTongueApp {
                     }
                 );
             }
-            
+
             // 'G' key: Toggle Graph Builder
             if i.key_pressed(egui::Key::G) && !i.modifiers.ctrl && !i.modifiers.shift {
                 self.show_graph_builder = !self.show_graph_builder;
@@ -1248,7 +1276,7 @@ impl eframe::App for PetalTongueApp {
                         ui.separator();
                         ui.label("Interactive visual graph construction for Neural API.");
                         ui.separator();
-                        
+
                         // Simplified initial implementation
                         // Full three-panel layout will be added in Phase 4.8.1
                         ui.horizontal(|ui| {
@@ -1256,12 +1284,12 @@ impl eframe::App for PetalTongueApp {
                             ui.vertical(|ui| {
                                 ui.heading("Canvas");
                                 ui.separator();
-                                
+
                                 // Render the graph canvas
                                 self.graph_canvas.render(ui, &palette);
                             });
                         });
-                        
+
                         ui.separator();
                         ui.label("💡 Coming soon: Node palette, property editor, and graph management.");
                     } else {
@@ -1285,7 +1313,7 @@ impl eframe::App for PetalTongueApp {
                     panel.render(ui);
                 });
         }
-        
+
         // Right side panel - Primal details (if node selected)
         let selected_id_clone = self
             .visual_renderer

@@ -13,48 +13,48 @@ pub enum ScenarioError {
         field: String,
         suggestion: Option<String>,
     },
-    
+
     #[error("Invalid field value: {field} = '{value}'")]
     InvalidValue {
         field: String,
         value: String,
         expected: String,
     },
-    
+
     #[error("Panel configuration error: {message}")]
     PanelConfig {
         message: String,
         panel_index: Option<usize>,
         panel_type: Option<String>,
     },
-    
+
     #[error("Capability validation error: {message}")]
     CapabilityError {
         message: String,
-        capability_type: String,  // "output" or "input"
+        capability_type: String, // "output" or "input"
         invalid_value: String,
         valid_options: Vec<String>,
     },
-    
+
     #[error("Sensory configuration error: {message}")]
     SensoryConfigError {
         message: String,
         field: String,
         suggestion: String,
     },
-    
+
     #[error("Unknown panel type '{panel_type}'")]
     UnknownPanelType {
         panel_type: String,
         available_types: Vec<String>,
     },
-    
+
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
-    
+
     #[error("JSON parsing error: {0}")]
     JsonError(#[from] serde_json::Error),
-    
+
     #[error("{0}")]
     Generic(String),
 }
@@ -67,7 +67,7 @@ impl ScenarioError {
             suggestion: suggestion.map(|s| s.into()),
         }
     }
-    
+
     /// Create an invalid value error
     pub fn invalid_value(
         field: impl Into<String>,
@@ -80,7 +80,7 @@ impl ScenarioError {
             expected: expected.into(),
         }
     }
-    
+
     /// Create a panel config error
     pub fn panel_config(
         message: impl Into<String>,
@@ -93,7 +93,7 @@ impl ScenarioError {
             panel_type: panel_type.map(|s| s.into()),
         }
     }
-    
+
     /// Create a capability error
     pub fn capability(
         message: impl Into<String>,
@@ -108,7 +108,7 @@ impl ScenarioError {
             valid_options: valid_options.into_iter().map(|s| s.into()).collect(),
         }
     }
-    
+
     /// Get user-friendly help text
     pub fn help_text(&self) -> Option<String> {
         match self {
@@ -119,24 +119,19 @@ impl ScenarioError {
                 }
                 Some(help)
             }
-            Self::InvalidValue { field, expected, .. } => {
-                Some(format!(
-                    "The '{}' field should be: {}",
-                    field, expected
-                ))
-            }
-            Self::UnknownPanelType { panel_type, available_types } => {
-                Some(format!(
-                    "Panel type '{}' is not registered.\n\nAvailable panel types:\n  {}",
-                    panel_type,
-                    available_types.join("\n  ")
-                ))
-            }
+            Self::InvalidValue {
+                field, expected, ..
+            } => Some(format!("The '{}' field should be: {}", field, expected)),
+            Self::UnknownPanelType {
+                panel_type,
+                available_types,
+            } => Some(format!(
+                "Panel type '{}' is not registered.\n\nAvailable panel types:\n  {}",
+                panel_type,
+                available_types.join("\n  ")
+            )),
             Self::CapabilityError { valid_options, .. } => {
-                Some(format!(
-                    "Valid options:\n  {}",
-                    valid_options.join("\n  ")
-                ))
+                Some(format!("Valid options:\n  {}", valid_options.join("\n  ")))
             }
             _ => None,
         }
@@ -146,44 +141,43 @@ impl ScenarioError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_missing_field_error() {
-        let err = ScenarioError::missing_field(
-            "mode",
-            Some(r#"  "mode": "doom-showcase""#)
-        );
-        
+        let err = ScenarioError::missing_field("mode", Some(r#"  "mode": "doom-showcase""#));
+
         assert!(err.to_string().contains("Missing required field 'mode'"));
         let help = err.help_text().unwrap();
         assert!(help.contains("Add the 'mode' field"));
         assert!(help.contains("doom-showcase"));
     }
-    
+
     #[test]
     fn test_invalid_value_error() {
         let err = ScenarioError::invalid_value(
             "complexity_hint",
             "invalid",
-            "one of: auto, minimal, simple, standard, rich, immersive"
+            "one of: auto, minimal, simple, standard, rich, immersive",
         );
-        
+
         assert!(err.to_string().contains("Invalid field value"));
         let help = err.help_text().unwrap();
         assert!(help.contains("should be"));
     }
-    
+
     #[test]
     fn test_unknown_panel_type() {
         let err = ScenarioError::UnknownPanelType {
             panel_type: "unknown_panel".to_string(),
             available_types: vec!["doom_game".to_string(), "web_view".to_string()],
         };
-        
-        assert!(err.to_string().contains("Unknown panel type 'unknown_panel'"));
+
+        assert!(
+            err.to_string()
+                .contains("Unknown panel type 'unknown_panel'")
+        );
         let help = err.help_text().unwrap();
         assert!(help.contains("doom_game"));
         assert!(help.contains("web_view"));
     }
 }
-

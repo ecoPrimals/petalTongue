@@ -230,7 +230,9 @@ impl RenderingCapabilities {
         } else {
             // No screen = CLI mode
             modalities.push(RenderingModality::CLI {
-                color: std::env::var("TERM").map(|t| t.contains("color")).unwrap_or(false),
+                color: std::env::var("TERM")
+                    .map(|t| t.contains("color"))
+                    .unwrap_or(false),
                 size: (80, 24), // Default terminal size
             });
         }
@@ -389,7 +391,7 @@ mod tests {
     #[test]
     fn test_rendering_capabilities_detection() {
         let caps = RenderingCapabilities::detect();
-        
+
         // Should have at least one modality
         assert!(!caps.modalities.is_empty());
 
@@ -403,4 +405,3 @@ mod tests {
         ));
     }
 }
-

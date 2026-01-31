@@ -21,7 +21,7 @@
 //!
 //! **Extracted**: Truly independent utilities moved to `color_utils` module.
 
-use crate::capability_validator::{validate_connection, ValidationResult};
+use crate::capability_validator::{ValidationResult, validate_connection};
 use crate::color_utils::hsv_to_rgb;
 use egui::{Color32, Pos2, Stroke, Vec2};
 use petal_tongue_animation::AnimationEngine;
@@ -79,7 +79,7 @@ impl Visual2DRenderer {
             _last_mouse_pos: None,
             animation_engine: None,
             animation_enabled: false,
-            show_stats: true, // Default: show (backward compatible)
+            show_stats: true,        // Default: show (backward compatible)
             interactive_mode: false, // Default: display-only (backward compatible)
             dragging_node: None,
             drawing_edge: None,
@@ -597,7 +597,7 @@ impl Visual2DRenderer {
         if self.interactive_mode && response.drag_started() {
             if let Some(mouse_pos) = response.interact_pointer_pos() {
                 let world_pos = self.screen_to_world(mouse_pos, screen_center);
-                
+
                 // Check if starting drag on a node
                 let graph = self.graph.read().expect("graph lock poisoned");
                 let node_under_cursor = graph.nodes().iter().find(|node| {
@@ -625,7 +625,8 @@ impl Visual2DRenderer {
                         });
                     } else if let Some(ref mut edge_draft) = self.drawing_edge {
                         // Update edge draft position
-                        edge_draft.current_pos = response.interact_pointer_pos().unwrap_or_default();
+                        edge_draft.current_pos =
+                            response.interact_pointer_pos().unwrap_or_default();
                     }
                 }
             } else {
@@ -643,13 +644,17 @@ impl Visual2DRenderer {
                 // Check if we released over a different node
                 if let Some(mouse_pos) = response.interact_pointer_pos() {
                     let world_pos = self.screen_to_world(mouse_pos, screen_center);
-                    
+
                     let target_id = {
                         let graph = self.graph.read().expect("graph lock poisoned");
-                        graph.nodes().iter().find(|node| {
-                            let distance = node.position.distance_to(world_pos);
-                            distance < 20.0 && node.info.id != edge_draft.from
-                        }).map(|node| node.info.id.clone())
+                        graph
+                            .nodes()
+                            .iter()
+                            .find(|node| {
+                                let distance = node.position.distance_to(world_pos);
+                                distance < 20.0 && node.info.id != edge_draft.from
+                            })
+                            .map(|node| node.info.id.clone())
                     }; // graph lock released here
 
                     if let Some(target) = target_id {
@@ -696,17 +701,17 @@ impl Visual2DRenderer {
     /// Create a new node at the given world position (interactive mode)
     fn create_node_at(&mut self, world_pos: Position) {
         let mut graph = self.graph.write().expect("graph lock poisoned");
-        
+
         let node_count = graph.nodes().len();
         let new_id = format!("interactive-node-{}", node_count + 1);
-        
+
         // Create a new primal with discovered capabilities
         let mut properties = Properties::new();
         properties.insert(
             "created_by".to_string(),
             PropertyValue::String("interactive-paint".to_string()),
         );
-        
+
         let new_primal = PrimalInfo {
             id: new_id.clone(),
             name: format!("Node {}", node_count + 1),
@@ -724,14 +729,14 @@ impl Visual2DRenderer {
             trust_level: None,
             family_id: Some("interactive".to_string()),
         };
-        
+
         graph.add_node(new_primal);
-        
+
         // Set the new node's position (must be done after adding to graph)
         if let Some(node) = graph.get_node_mut(&new_id) {
             node.position = world_pos;
         }
-        
+
         // Select the newly created node
         drop(graph);
         self.selected_node = Some(new_id);
@@ -740,25 +745,26 @@ impl Visual2DRenderer {
     /// Create an edge between two nodes (interactive mode)
     fn create_edge(&mut self, from: String, to: String) {
         use petal_tongue_core::TopologyEdge;
-        
+
         let graph = self.graph.read().expect("graph lock poisoned");
-        
+
         // Check if edge already exists
-        let edge_exists = graph.edges().iter().any(|e| {
-            (e.from == from && e.to == to) || (e.from == to && e.to == from)
-        });
-        
+        let edge_exists = graph
+            .edges()
+            .iter()
+            .any(|e| (e.from == from && e.to == to) || (e.from == to && e.to == from));
+
         if edge_exists {
             return; // Don't create duplicate
         }
-        
+
         // Validate connection based on capabilities (TRUE PRIMAL: no hardcoded types!)
         let from_node = graph.get_node(&from);
         let to_node = graph.get_node(&to);
-        
+
         if let (Some(from_primal), Some(to_primal)) = (from_node, to_node) {
             let validation = validate_connection(&from_primal.info, &to_primal.info);
-            
+
             match validation {
                 ValidationResult::Invalid(reason) => {
                     tracing::warn!("❌ Connection invalid: {}", reason);
@@ -773,9 +779,9 @@ impl Visual2DRenderer {
                 }
             }
         }
-        
+
         drop(graph); // Release read lock
-        
+
         let mut graph = self.graph.write().expect("graph lock poisoned");
         graph.add_edge(TopologyEdge {
             from,

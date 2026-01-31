@@ -13,22 +13,22 @@ use serde_json::json;
 pub struct GraphMetadata {
     /// Graph ID
     pub id: String,
-    
+
     /// Graph name
     pub name: String,
-    
+
     /// Description
     pub description: Option<String>,
-    
+
     /// Creation timestamp
     pub created_at: String,
-    
+
     /// Last modified timestamp
     pub modified_at: String,
-    
+
     /// Number of nodes
     pub node_count: usize,
-    
+
     /// Number of edges
     pub edge_count: usize,
 }
@@ -39,16 +39,16 @@ pub struct GraphMetadata {
 pub enum ExecutionStatus {
     /// Execution queued but not started
     Queued,
-    
+
     /// Currently executing
     Running,
-    
+
     /// Execution completed successfully
     Completed,
-    
+
     /// Execution failed
     Failed,
-    
+
     /// Execution was cancelled
     Cancelled,
 }
@@ -58,22 +58,22 @@ pub enum ExecutionStatus {
 pub struct ExecutionResult {
     /// Execution ID
     pub execution_id: String,
-    
+
     /// Graph ID that was executed
     pub graph_id: String,
-    
+
     /// Current status
     pub status: ExecutionStatus,
-    
+
     /// Start time
     pub started_at: Option<String>,
-    
+
     /// End time
     pub completed_at: Option<String>,
-    
+
     /// Error message if failed
     pub error: Option<String>,
-    
+
     /// Output from execution
     pub output: Option<serde_json::Value>,
 }
@@ -359,4 +359,3 @@ mod tests {
         }
     }
 }
-

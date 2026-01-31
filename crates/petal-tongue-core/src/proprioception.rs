@@ -15,22 +15,22 @@ use serde::{Deserialize, Serialize};
 pub struct ProprioceptionData {
     /// When this proprioception snapshot was taken
     pub timestamp: chrono::DateTime<chrono::Utc>,
-    
+
     /// Family ID this system belongs to
     pub family_id: String,
-    
+
     /// Overall health assessment
     pub health: HealthData,
-    
+
     /// System's confidence in its state (0.0-100.0)
     pub confidence: f32,
-    
+
     /// Sensory: What the system perceives
     pub sensory: SensoryData,
-    
+
     /// Awareness: What the system knows
     pub self_awareness: SelfAwarenessData,
-    
+
     /// Motor: What the system can do
     pub motor: MotorData,
 }
@@ -40,7 +40,7 @@ pub struct ProprioceptionData {
 pub struct HealthData {
     /// Health percentage (0.0-100.0)
     pub percentage: f32,
-    
+
     /// Qualitative health status
     pub status: HealthStatus,
 }
@@ -51,10 +51,10 @@ pub struct HealthData {
 pub enum HealthStatus {
     /// System is fully operational (100%)
     Healthy,
-    
+
     /// System is partially operational (50-99%)
     Degraded,
-    
+
     /// System is critically impaired (<50%)
     Critical,
 }
@@ -63,12 +63,12 @@ impl HealthStatus {
     /// Get color for UI rendering
     pub const fn color_rgb(&self) -> (u8, u8, u8) {
         match self {
-            Self::Healthy => (34, 197, 94),   // green-500
-            Self::Degraded => (234, 179, 8),  // yellow-500
-            Self::Critical => (239, 68, 68),  // red-500
+            Self::Healthy => (34, 197, 94),  // green-500
+            Self::Degraded => (234, 179, 8), // yellow-500
+            Self::Critical => (239, 68, 68), // red-500
         }
     }
-    
+
     /// Get emoji representation
     pub const fn emoji(&self) -> &'static str {
         match self {
@@ -84,7 +84,7 @@ impl HealthStatus {
 pub struct SensoryData {
     /// Number of active Unix sockets detected
     pub active_sockets: u32,
-    
+
     /// When the last socket scan occurred
     pub last_scan: chrono::DateTime<chrono::Utc>,
 }
@@ -94,16 +94,16 @@ pub struct SensoryData {
 pub struct SelfAwarenessData {
     /// Number of primals the system knows about
     pub knows_about: u32,
-    
+
     /// Can coordinate multiple primals
     pub can_coordinate: bool,
-    
+
     /// Has security capabilities (BearDog)
     pub has_security: bool,
-    
+
     /// Has discovery capabilities (Songbird)
     pub has_discovery: bool,
-    
+
     /// Has compute capabilities (ToadStool)
     pub has_compute: bool,
 }
@@ -113,10 +113,10 @@ pub struct SelfAwarenessData {
 pub struct MotorData {
     /// Can deploy new primals
     pub can_deploy: bool,
-    
+
     /// Can execute graphs
     pub can_execute_graphs: bool,
-    
+
     /// Can coordinate primals
     pub can_coordinate_primals: bool,
 }
@@ -152,19 +152,19 @@ impl ProprioceptionData {
             },
         }
     }
-    
+
     /// Check if the system is healthy (>= 80%)
     #[must_use]
     pub const fn is_healthy(&self) -> bool {
         self.health.percentage >= 80.0
     }
-    
+
     /// Check if the system is confident (>= 80%)
     #[must_use]
     pub const fn is_confident(&self) -> bool {
         self.confidence >= 80.0
     }
-    
+
     /// Get a human-readable summary string
     #[must_use]
     pub fn summary(&self) -> String {
@@ -176,13 +176,13 @@ impl ProprioceptionData {
             self.confidence
         )
     }
-    
+
     /// Get time since this proprioception was captured
     #[must_use]
     pub fn age(&self) -> chrono::Duration {
         chrono::Utc::now() - self.timestamp
     }
-    
+
     /// Check if this data is stale (> 30 seconds old)
     #[must_use]
     pub fn is_stale(&self) -> bool {
@@ -230,10 +230,10 @@ mod tests {
     #[test]
     fn test_proprioception_is_healthy() {
         let mut data = ProprioceptionData::empty("test");
-        
+
         data.health.percentage = 85.0;
         assert!(data.is_healthy());
-        
+
         data.health.percentage = 79.9;
         assert!(!data.is_healthy());
     }
@@ -241,10 +241,10 @@ mod tests {
     #[test]
     fn test_proprioception_is_confident() {
         let mut data = ProprioceptionData::empty("test");
-        
+
         data.confidence = 90.0;
         assert!(data.is_confident());
-        
+
         data.confidence = 75.0;
         assert!(!data.is_confident());
     }
@@ -255,7 +255,7 @@ mod tests {
         data.health.status = HealthStatus::Healthy;
         data.self_awareness.knows_about = 3;
         data.confidence = 95.5;
-        
+
         let summary = data.summary();
         assert!(summary.contains("💚"));
         assert!(summary.contains("Healthy"));
@@ -271,4 +271,3 @@ mod tests {
         assert_eq!(decoded.family_id, "test");
     }
 }
-

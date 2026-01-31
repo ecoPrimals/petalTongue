@@ -24,28 +24,28 @@
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 
+pub mod adaptive_rendering; // Adaptive rendering for multi-device support
 pub mod capabilities;
 pub mod common_config;
 pub mod config;
 #[cfg(test)]
 mod config_tests;
+pub mod dynamic_schema; // Dynamic schema system for live evolution
 pub mod error;
-pub mod platform_dirs; // Pure Rust directory resolution (zero deps!)
 #[cfg(test)]
 mod error_tests;
+pub mod graph_builder; // SAME DAVE proprioception data (Neural API)
 pub mod graph_engine;
+pub mod graph_validation; // Graph validation (cycle detection, dependencies)
 pub mod instance; // Instance management (Phase 1)
 pub mod lifecycle;
+pub mod metrics; // System metrics (CPU, memory, Neural API stats)
+pub mod platform_dirs; // Pure Rust directory resolution (zero deps!)
 pub mod primal_types;
 pub mod property; // Generic property system
 pub mod proprioception;
-pub mod graph_builder; // SAME DAVE proprioception data (Neural API)
-pub mod graph_validation; // Graph validation (cycle detection, dependencies)
-pub mod metrics; // System metrics (CPU, memory, Neural API stats)
-pub mod dynamic_schema; // Dynamic schema system for live evolution
-pub mod adaptive_rendering; // Adaptive rendering for multi-device support
-pub mod state_sync; // State synchronization across devices
 pub mod session; // Session state persistence (Phase 2)
+pub mod state_sync; // State synchronization across devices
 pub mod system_info; // System information utilities (safe FFI wrappers)
 pub mod types;
 #[cfg(test)]
@@ -118,7 +118,7 @@ pub use graph_validation::{GraphValidator, ValidationIssue, ValidationResult};
 
 /// Dynamic schema system (Live evolution, no recompilation)
 pub use dynamic_schema::{
-    DynamicData, DynamicValue, MigrationRegistry, SchemaVersion, SchemaMigration,
+    DynamicData, DynamicValue, MigrationRegistry, SchemaMigration, SchemaVersion,
 };
 
 /// Adaptive rendering (Multi-device support)
@@ -135,10 +135,9 @@ pub mod sensory_capabilities;
 pub mod sensory_discovery;
 pub use sensory_capabilities::{
     AudioInputCapability, AudioOutputCapability, CapabilityError, GestureInputCapability,
-    HapticOutputCapability, KeyboardInputCapability, NeuralInputCapability,
-    NeuralOutputCapability, PointerInputCapability, SensoryCapabilities, SmellOutputCapability,
-    TasteOutputCapability, TouchInputCapability, UIComplexity as SensoryUIComplexity,
-    VisualOutputCapability,
+    HapticOutputCapability, KeyboardInputCapability, NeuralInputCapability, NeuralOutputCapability,
+    PointerInputCapability, SensoryCapabilities, SmellOutputCapability, TasteOutputCapability,
+    TouchInputCapability, UIComplexity as SensoryUIComplexity, VisualOutputCapability,
 };
 
 /// Instance management (multi-instance support)

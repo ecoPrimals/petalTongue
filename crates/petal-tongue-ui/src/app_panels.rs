@@ -70,13 +70,25 @@ pub fn render_top_menu_bar(
         ui.checkbox(show_capability_panel, "Capabilities");
         ui.separator();
         ui.label(egui::RichText::new("Neural API Panels").strong());
-        if ui.checkbox(show_neural_proprioception, "🧠 Proprioception (P)").changed() {
-            tracing::info!("Neural proprioception panel toggled: {}", show_neural_proprioception);
+        if ui
+            .checkbox(show_neural_proprioception, "🧠 Proprioception (P)")
+            .changed()
+        {
+            tracing::info!(
+                "Neural proprioception panel toggled: {}",
+                show_neural_proprioception
+            );
         }
-        if ui.checkbox(show_neural_metrics, "📊 Metrics Dashboard (M)").changed() {
+        if ui
+            .checkbox(show_neural_metrics, "📊 Metrics Dashboard (M)")
+            .changed()
+        {
             tracing::info!("Neural metrics dashboard toggled: {}", show_neural_metrics);
         }
-        if ui.checkbox(show_graph_builder, "🎨 Graph Builder (G)").changed() {
+        if ui
+            .checkbox(show_graph_builder, "🎨 Graph Builder (G)")
+            .changed()
+        {
             tracing::info!("Graph Builder toggled: {}", show_graph_builder);
         }
     });

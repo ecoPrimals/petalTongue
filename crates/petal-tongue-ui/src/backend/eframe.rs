@@ -25,8 +25,8 @@ use async_trait::async_trait;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
-use crate::backend::{BackendCapabilities, UIBackend};
 use crate::PetalTongueApp;
+use crate::backend::{BackendCapabilities, UIBackend};
 use petal_tongue_core::{GraphEngine, RenderingCapabilities};
 
 /// eframe/egui backend implementation
@@ -42,9 +42,7 @@ impl EguiBackend {
     /// Create a new eframe backend
     pub fn new() -> Self {
         tracing::info!("🎨 Creating eframe backend");
-        Self {
-            initialized: false,
-        }
+        Self { initialized: false }
     }
 }
 
@@ -112,8 +110,11 @@ impl UIBackend for EguiBackend {
 
         tracing::info!("🚀 Running eframe backend...");
         tracing::info!("   Scenario: {:?}", scenario);
-        tracing::info!("   Capabilities: device={}, complexity={:?}",
-            capabilities.device_type, capabilities.ui_complexity);
+        tracing::info!(
+            "   Capabilities: device={}, complexity={:?}",
+            capabilities.device_type,
+            capabilities.ui_complexity
+        );
         tracing::info!("   Using shared graph from DataService (TRUE PRIMAL!)");
 
         // Create native options
@@ -127,22 +128,18 @@ impl UIBackend for EguiBackend {
 
         // Run eframe (this blocks until window is closed)
         tracing::info!("🪟 Creating window...");
-        
+
         crate::eframe::run_native(
             "petalTongue",
             native_options,
             Box::new(move |cc| {
                 tracing::info!("✅ eframe context created");
-                
+
                 // Create app with shared graph from DataService
                 // TRUE PRIMAL: Single source of truth across ALL UI modes!
-                let app = PetalTongueApp::new_with_shared_graph(
-                    cc,
-                    scenario,
-                    capabilities,
-                    shared_graph,
-                );
-                
+                let app =
+                    PetalTongueApp::new_with_shared_graph(cc, scenario, capabilities, shared_graph);
+
                 Ok(Box::new(app))
             }),
         )
@@ -160,12 +157,12 @@ impl UIBackend for EguiBackend {
 
     fn capabilities(&self) -> BackendCapabilities {
         BackendCapabilities {
-            has_gpu: true,            // eframe uses GPU via egui
-            multi_window: false,       // Current implementation is single-window
-            custom_cursor: true,       // Supported by egui
-            clipboard: true,           // Supported by egui
-            pure_rust: false,          // ❌ Has C dependencies (wayland-sys, x11rb)
-            needs_privileges: false,   // No special permissions needed
+            has_gpu: true,           // eframe uses GPU via egui
+            multi_window: false,     // Current implementation is single-window
+            custom_cursor: true,     // Supported by egui
+            clipboard: true,         // Supported by egui
+            pure_rust: false,        // ❌ Has C dependencies (wayland-sys, x11rb)
+            needs_privileges: false, // No special permissions needed
         }
     }
 }
@@ -180,7 +177,7 @@ fn load_icon() -> Arc<crate::egui::IconData> {
         // 32x32 pink flower icon (placeholder)
         let size = 32;
         let mut rgba = vec![0u8; size * size * 4];
-        
+
         // Simple pink color
         for pixel in rgba.chunks_exact_mut(4) {
             pixel[0] = 255; // R
@@ -188,7 +185,7 @@ fn load_icon() -> Arc<crate::egui::IconData> {
             pixel[2] = 193; // B (light pink)
             pixel[3] = 255; // A
         }
-        
+
         (rgba, size as u32, size as u32)
     };
 
@@ -222,7 +219,7 @@ mod tests {
     async fn test_eframe_capabilities() {
         let backend = EguiBackend::new();
         let caps = backend.capabilities();
-        
+
         assert!(caps.has_gpu);
         assert!(caps.clipboard);
         assert!(!caps.pure_rust); // Has C dependencies
@@ -234,4 +231,3 @@ mod tests {
         assert!(EguiBackend::is_available().await);
     }
 }
-

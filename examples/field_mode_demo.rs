@@ -5,7 +5,7 @@
 
 use anyhow::Result;
 use petal_tongue_core::{Key, SensorEvent};
-use petal_tongue_ui::{discover_all_sensors, AudioSensor, KeyboardSensor};
+use petal_tongue_ui::{AudioSensor, KeyboardSensor, discover_all_sensors};
 use std::time::Duration;
 use tokio::time::sleep;
 
@@ -49,7 +49,10 @@ async fn main() -> Result<()> {
     }
 
     println!("✅ Field mode requirements met!");
-    println!("   Keyboard: {}", if keyboard_available { "✓" } else { "✗" });
+    println!(
+        "   Keyboard: {}",
+        if keyboard_available { "✓" } else { "✗" }
+    );
     println!("   Audio: {}", if audio_available { "✓" } else { "✗" });
     println!();
 
@@ -162,4 +165,3 @@ async fn run_field_interface(
         sleep(Duration::from_millis(10)).await;
     }
 }
-

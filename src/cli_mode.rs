@@ -1,5 +1,5 @@
 //! CLI mode - System status and information
-//! 
+//!
 //! Pure Rust! ✅
 //! Fully concurrent, no blocking operations
 
@@ -73,9 +73,13 @@ struct DependencyInfo {
 }
 
 /// Show system status
-/// 
+///
 /// Fully concurrent - gathers system info in parallel
-pub async fn status(verbose: bool, format: &str, data_service: Arc<crate::data_service::DataService>) -> Result<()> {
+pub async fn status(
+    verbose: bool,
+    format: &str,
+    data_service: Arc<crate::data_service::DataService>,
+) -> Result<()> {
     // Gather system info concurrently (no blocking!)
     let status = gather_status(verbose, &data_service).await?;
 
@@ -97,7 +101,10 @@ pub async fn status(verbose: bool, format: &str, data_service: Arc<crate::data_s
 }
 
 /// Gather system status concurrently
-async fn gather_status(verbose: bool, data_service: &Arc<crate::data_service::DataService>) -> Result<SystemStatus> {
+async fn gather_status(
+    verbose: bool,
+    data_service: &Arc<crate::data_service::DataService>,
+) -> Result<SystemStatus> {
     // Use Arc<RwLock<>> for concurrent access
     let status = Arc::new(RwLock::new(SystemStatus {
         version: env!("CARGO_PKG_VERSION").to_string(),
@@ -161,7 +168,11 @@ async fn gather_status(verbose: bool, data_service: &Arc<crate::data_service::Da
     // Show data service info
     tracing::info!("✅ Using shared DataService");
     if let Ok(snapshot) = data_service.snapshot().await {
-        tracing::info!("📊 DataService has {} primals, {} edges", snapshot.primals.len(), snapshot.edges.len());
+        tracing::info!(
+            "📊 DataService has {} primals, {} edges",
+            snapshot.primals.len(),
+            snapshot.edges.len()
+        );
     }
 
     // If verbose, gather detailed info concurrently
@@ -443,4 +454,3 @@ mod tests {
 
     // All tests run in parallel - modern concurrent Rust!
 }
-

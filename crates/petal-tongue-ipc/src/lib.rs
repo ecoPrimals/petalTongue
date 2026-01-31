@@ -21,6 +21,28 @@
 //!    - TLS encrypted
 //!    - REST-like interface
 //!
+//! # Primal Registration
+//!
+//! Per PRIMAL_IPC_PROTOCOL.md, primals must register with Songbird on startup:
+//!
+//! ```rust,no_run
+//! use petal_tongue_ipc::primal_registration::{RegistrationManager, PrimalRegistration};
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     let registration = PrimalRegistration::petaltongue();
+//!     let manager = RegistrationManager::new(registration);
+//!     
+//!     // Register on startup (graceful if Songbird unavailable)
+//!     manager.register_on_startup().await;
+//!     
+//!     // Start heartbeat task
+//!     let _heartbeat_handle = manager.spawn_heartbeat_task();
+//!     
+//!     // ... rest of primal startup ...
+//! }
+//! ```
+//!
 //! # Architecture
 //!
 //! ```text
@@ -47,6 +69,7 @@
 
 pub mod client;
 pub mod json_rpc;
+pub mod primal_registration;
 pub mod protocol;
 pub mod server;
 pub mod socket_path;

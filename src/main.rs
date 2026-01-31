@@ -1,20 +1,20 @@
 //! petalTongue ecoBud - Production UniBin
-//! 
+//!
 //! # Architecture
-//! 
+//!
 //! UniBin: 1 binary, 5 modes
 //! ecoBin: 80% (4/5 modes Pure Rust)
-//! 
+//!
 //! # Concurrency
-//! 
+//!
 //! All modes are fully concurrent:
 //! - No blocking operations
 //! - Proper async/await patterns
 //! - Channel-based communication
 //! - Atomic synchronization
-//! 
+//!
 //! # Testing
-//! 
+//!
 //! - All tests run in parallel
 //! - No sleeps (use proper sync primitives)
 //! - Test failures = production issues
@@ -32,8 +32,13 @@ mod web_mode;
 
 #[derive(Parser)]
 #[command(name = "petaltongue")]
-#[command(version, about = "🌸 petalTongue - Universal UI & Visualization System")]
-#[command(long_about = "ecoBud v1.0: UniBin + 80% ecoBin\n\nFully concurrent, modern Rust architecture")]
+#[command(
+    version,
+    about = "🌸 petalTongue - Universal UI & Visualization System"
+)]
+#[command(
+    long_about = "ecoBud v1.0: UniBin + 80% ecoBin\n\nFully concurrent, modern Rust architecture"
+)]
 struct Cli {
     /// Log level (trace, debug, info, warn, error)
     #[arg(long, default_value = "info")]
@@ -127,7 +132,10 @@ async fn main() -> Result<()> {
     // Initialize DataService ONCE (single source of truth for all modes)
     tracing::info!("📊 Initializing unified DataService...");
     let mut data_service = data_service::DataService::new();
-    data_service.init().await.context("Failed to initialize DataService")?;
+    data_service
+        .init()
+        .await
+        .context("Failed to initialize DataService")?;
     let data_service = std::sync::Arc::new(data_service);
     tracing::info!("✅ DataService initialized - all modes will use same data source");
 
@@ -141,7 +149,11 @@ async fn main() -> Result<()> {
             scenario,
             refresh_rate,
         } => {
-            tracing::info!(mode = "tui", refresh_rate, "Launching terminal UI mode (Pure Rust!)");
+            tracing::info!(
+                mode = "tui",
+                refresh_rate,
+                "Launching terminal UI mode (Pure Rust!)"
+            );
             tui_mode::run(scenario, refresh_rate, data_service).await
         }
         Commands::Web {
@@ -167,7 +179,12 @@ async fn main() -> Result<()> {
             headless_mode::run(&bind, workers, data_service).await
         }
         Commands::Status { verbose, format } => {
-            tracing::info!(mode = "status", verbose, format, "Querying system status (Pure Rust!)");
+            tracing::info!(
+                mode = "status",
+                verbose,
+                format,
+                "Querying system status (Pure Rust!)"
+            );
             cli_mode::status(verbose, &format, data_service).await
         }
     };
@@ -188,8 +205,8 @@ async fn main() -> Result<()> {
 /// Initialize structured logging with proper filtering
 fn init_tracing(level: &str, format: &str) -> Result<()> {
     // Parse log level
-    let env_filter = tracing_subscriber::EnvFilter::try_new(level)
-        .context("Failed to parse log level")?;
+    let env_filter =
+        tracing_subscriber::EnvFilter::try_new(level).context("Failed to parse log level")?;
 
     // Build subscriber based on format
     match format {
@@ -265,4 +282,3 @@ mod tests {
     // All tests run in parallel (default)
     // No sleeps needed - tests are deterministic
 }
-

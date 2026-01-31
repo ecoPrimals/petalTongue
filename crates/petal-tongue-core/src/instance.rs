@@ -491,7 +491,9 @@ fn process_exists(pid: u32) -> bool {
 fn get_base_dir() -> Result<PathBuf, InstanceError> {
     crate::platform_dirs::data_dir()
         .map(|dir| dir.join("petaltongue"))
-        .map_err(|e| InstanceError::DirectoryError(format!("Could not determine data directory: {}", e)))
+        .map_err(|e| {
+            InstanceError::DirectoryError(format!("Could not determine data directory: {}", e))
+        })
 }
 
 /// Get the socket directory

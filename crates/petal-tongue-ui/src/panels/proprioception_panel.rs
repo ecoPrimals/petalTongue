@@ -6,9 +6,9 @@
 //! - Motor: What the system can do (deploy, execute, coordinate)
 //! - Evaluative: How confident the system is (health, confidence)
 
-use crate::panel_registry::{PanelInstance, PanelFactory};
+use crate::panel_registry::{PanelFactory, PanelInstance};
 use crate::scenario::CustomPanelConfig;
-use petal_tongue_core::proprioception::{ProprioceptionData, HealthStatus};
+use petal_tongue_core::proprioception::{HealthStatus, ProprioceptionData};
 use petal_tongue_discovery::NeuralApiProvider;
 use std::time::{Duration, Instant};
 
@@ -31,22 +31,25 @@ impl ProprioceptionPanel {
             error_message: None,
         }
     }
-    
-    fn render_health_indicator(ui: &mut egui::Ui, health: &petal_tongue_core::proprioception::HealthData) {
+
+    fn render_health_indicator(
+        ui: &mut egui::Ui,
+        health: &petal_tongue_core::proprioception::HealthData,
+    ) {
         let emoji = health.status.emoji();
         let (r, g, b) = health.status.color_rgb();
         let color = egui::Color32::from_rgb(r, g, b);
-        
+
         ui.horizontal(|ui| {
             ui.label(emoji);
             ui.colored_label(color, format!("Health: {:.1}%", health.percentage));
         });
-        
+
         // Health bar
         ui.add(
             egui::ProgressBar::new(health.percentage / 100.0)
                 .show_percentage()
-                .animate(true)
+                .animate(true),
         );
     }
 }
@@ -55,33 +58,32 @@ impl PanelInstance for ProprioceptionPanel {
     fn title(&self) -> &str {
         "System Health"
     }
-    
+
     fn on_open(&mut self) -> anyhow::Result<()> {
         tracing::info!("Proprioception Panel opened - discovering Neural API");
-        
+
         // Discover Neural API in blocking context
         let provider = tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current().block_on(async {
-                NeuralApiProvider::discover(None).await.ok()
-            })
+            tokio::runtime::Handle::current()
+                .block_on(async { NeuralApiProvider::discover(None).await.ok() })
         });
-        
+
         if provider.is_some() {
             tracing::info!("✅ Neural API discovered for proprioception panel");
         } else {
             tracing::warn!("⚠️  Neural API not available - proprioception will not update");
             self.error_message = Some("Neural API not available".to_string());
         }
-        
+
         self.provider = provider;
         Ok(())
     }
-    
+
     fn on_close(&mut self) -> anyhow::Result<()> {
         tracing::info!("Proprioception Panel closed");
         Ok(())
     }
-    
+
     fn render(&mut self, ui: &mut egui::Ui) {
         // Try to refresh if needed (blocking is acceptable in render since it's fast)
         if self.last_update.elapsed() > self.update_interval && self.provider.is_some() {
@@ -103,50 +105,56 @@ impl PanelInstance for ProprioceptionPanel {
                 })
             });
         }
-        
+
         ui.heading("🧠 NUCLEUS Proprioception");
         ui.separator();
-        
+
         if let Some(error) = &self.error_message {
             ui.colored_label(egui::Color32::RED, format!("⚠️  {}", error));
             ui.separator();
         }
-        
+
         if let Some(proprio) = &self.last_proprio {
             // Health section
             Self::render_health_indicator(ui, &proprio.health);
-            
+
             ui.add_space(4.0);
-            
+
             // Confidence
             ui.label(format!("Confidence: {:.0}%", proprio.confidence));
             ui.add(
                 egui::ProgressBar::new(proprio.confidence / 100.0)
                     .show_percentage()
-                    .animate(true)
+                    .animate(true),
             );
-            
+
             ui.separator();
-            
+
             // SAME DAVE dimensions
             ui.label("SAME DAVE Assessment:");
             ui.add_space(2.0);
-            
+
             // Sensory
             ui.label(format!("👁️ Sensory:"));
-            ui.label(format!("  {} active sockets detected", proprio.sensory.active_sockets));
-            
+            ui.label(format!(
+                "  {} active sockets detected",
+                proprio.sensory.active_sockets
+            ));
+
             ui.add_space(2.0);
-            
+
             // Awareness
             ui.label(format!("💭 Awareness:"));
-            ui.label(format!("  Knows about {} primals", proprio.self_awareness.knows_about));
+            ui.label(format!(
+                "  Knows about {} primals",
+                proprio.self_awareness.knows_about
+            ));
             if proprio.self_awareness.can_coordinate {
                 ui.label("  ✅ Can coordinate primals");
             }
-            
+
             ui.add_space(2.0);
-            
+
             // Motor
             ui.label(format!("💪 Motor:"));
             if proprio.motor.can_deploy {
@@ -158,34 +166,43 @@ impl PanelInstance for ProprioceptionPanel {
             if proprio.motor.can_coordinate_primals {
                 ui.label("  ✅ Can coordinate primals");
             }
-            
+
             ui.separator();
-            
+
             // Core Systems
             ui.label("Core Systems:");
             if proprio.self_awareness.has_security {
-                ui.colored_label(egui::Color32::from_rgb(34, 197, 94), "  ✅ Security (BearDog)");
+                ui.colored_label(
+                    egui::Color32::from_rgb(34, 197, 94),
+                    "  ✅ Security (BearDog)",
+                );
             } else {
                 ui.colored_label(egui::Color32::GRAY, "  ❌ Security (BearDog)");
             }
             if proprio.self_awareness.has_discovery {
-                ui.colored_label(egui::Color32::from_rgb(34, 197, 94), "  ✅ Discovery (Songbird)");
+                ui.colored_label(
+                    egui::Color32::from_rgb(34, 197, 94),
+                    "  ✅ Discovery (Songbird)",
+                );
             } else {
                 ui.colored_label(egui::Color32::GRAY, "  ❌ Discovery (Songbird)");
             }
             if proprio.self_awareness.has_compute {
-                ui.colored_label(egui::Color32::from_rgb(34, 197, 94), "  ✅ Compute (Toadstool)");
+                ui.colored_label(
+                    egui::Color32::from_rgb(34, 197, 94),
+                    "  ✅ Compute (Toadstool)",
+                );
             } else {
                 ui.colored_label(egui::Color32::GRAY, "  ❌ Compute (Toadstool)");
             }
-            
+
             ui.add_space(4.0);
-            
+
             // Family ID
             ui.label(format!("Family: {}", proprio.family_id));
-            
+
             ui.add_space(2.0);
-            
+
             // Last update time
             let age = self.last_update.elapsed().as_secs();
             if age < 10 {
@@ -201,11 +218,11 @@ impl PanelInstance for ProprioceptionPanel {
             ui.label("⏳ Connecting to Neural API...");
         }
     }
-    
+
     fn wants_keyboard_input(&self) -> bool {
         false
     }
-    
+
     fn wants_mouse_input(&self) -> bool {
         false
     }
@@ -230,11 +247,14 @@ impl PanelFactory for ProprioceptionPanelFactory {
     fn panel_type(&self) -> &str {
         "proprioception"
     }
-    
-    fn create(&self, _config: &CustomPanelConfig) -> crate::panel_registry::Result<Box<dyn PanelInstance>> {
+
+    fn create(
+        &self,
+        _config: &CustomPanelConfig,
+    ) -> crate::panel_registry::Result<Box<dyn PanelInstance>> {
         Ok(Box::new(ProprioceptionPanel::new()))
     }
-    
+
     fn description(&self) -> &str {
         "Displays SAME DAVE proprioception - the system's self-awareness"
     }
@@ -249,7 +269,7 @@ impl Default for ProprioceptionPanelFactory {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_proprioception_panel_creation() {
         let panel = ProprioceptionPanel::new();
@@ -257,13 +277,16 @@ mod tests {
         assert!(!panel.wants_keyboard_input());
         assert!(!panel.wants_mouse_input());
     }
-    
+
     #[test]
     fn test_proprioception_panel_factory() {
         let factory = ProprioceptionPanelFactory::new();
         assert_eq!(factory.panel_type(), "proprioception");
-        assert_eq!(factory.description(), "Displays SAME DAVE proprioception - the system's self-awareness");
-        
+        assert_eq!(
+            factory.description(),
+            "Displays SAME DAVE proprioception - the system's self-awareness"
+        );
+
         let config = CustomPanelConfig {
             panel_type: "proprioception".to_string(),
             title: "Test Proprio".to_string(),
@@ -275,14 +298,14 @@ mod tests {
         let panel = factory.create(&config);
         assert!(panel.is_ok());
     }
-    
+
     #[test]
     fn test_health_status_emoji() {
         assert_eq!(HealthStatus::Healthy.emoji(), "💚");
         assert_eq!(HealthStatus::Degraded.emoji(), "💛");
         assert_eq!(HealthStatus::Critical.emoji(), "❤️");
     }
-    
+
     #[test]
     fn test_health_status_color() {
         assert_eq!(HealthStatus::Healthy.color_rgb(), (34, 197, 94));
@@ -290,4 +313,3 @@ mod tests {
         assert_eq!(HealthStatus::Critical.color_rgb(), (239, 68, 68));
     }
 }
-

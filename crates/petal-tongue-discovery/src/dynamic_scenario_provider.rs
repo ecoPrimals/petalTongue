@@ -24,10 +24,10 @@ use std::path::Path;
 pub struct DynamicScenarioProvider {
     /// Scenario data (fully dynamic)
     scenario: DynamicData,
-    
+
     /// Extracted primals (for performance)
     primals: Vec<PrimalInfo>,
-    
+
     /// Schema version string (if present)
     version: Option<String>,
 }
@@ -36,18 +36,16 @@ impl DynamicScenarioProvider {
     /// Create from file (auto-detects and migrates schema)
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         let path = path.as_ref();
-        
+
         // Load JSON content
         let content = std::fs::read_to_string(path)
             .with_context(|| format!("Failed to read scenario file: {}", path.display()))?;
-        
+
         // Parse as DynamicData (flexible schema)
         let scenario = DynamicData::from_json_str(&content)?;
 
         // Extract schema version string (if present)
-        let version = scenario
-            .get_str("version")
-            .map(String::from);
+        let version = scenario.get_str("version").map(String::from);
 
         if let Some(ref v) = version {
             tracing::info!("📋 Scenario schema version: {}", v);
@@ -56,10 +54,7 @@ impl DynamicScenarioProvider {
         // Extract primals from dynamic data
         let primals = Self::extract_primals(&scenario)?;
 
-        tracing::info!(
-            "📋 Loaded dynamic scenario: {} primals",
-            primals.len()
-        );
+        tracing::info!("📋 Loaded dynamic scenario: {} primals", primals.len());
 
         Ok(Self {
             scenario,
@@ -89,12 +84,12 @@ impl DynamicScenarioProvider {
                 .with_context(|| format!("Primal {} is not an object", idx))?;
 
             // Required fields (graceful fallback if missing)
-            let id = Self::get_string(primal_obj, "id")
-                .unwrap_or_else(|| format!("primal-{}", idx));
+            let id =
+                Self::get_string(primal_obj, "id").unwrap_or_else(|| format!("primal-{}", idx));
             let name = Self::get_string(primal_obj, "name")
                 .unwrap_or_else(|| format!("Unknown Primal {}", idx));
-            let primal_type = Self::get_string(primal_obj, "type")
-                .unwrap_or_else(|| "Unknown".to_string());
+            let primal_type =
+                Self::get_string(primal_obj, "type").unwrap_or_else(|| "Unknown".to_string());
 
             // Health status (with fallback)
             let health = Self::get_string(primal_obj, "status")
@@ -150,7 +145,10 @@ impl DynamicScenarioProvider {
     }
 
     /// Get string from dynamic object (helper)
-    fn get_string(obj: &std::collections::HashMap<String, DynamicValue>, key: &str) -> Option<String> {
+    fn get_string(
+        obj: &std::collections::HashMap<String, DynamicValue>,
+        key: &str,
+    ) -> Option<String> {
         obj.get(key)?.as_str().map(String::from)
     }
 
@@ -161,18 +159,14 @@ impl DynamicScenarioProvider {
             DynamicValue::Number(n) => Some(PropertyValue::Number(*n)),
             DynamicValue::Boolean(b) => Some(PropertyValue::Boolean(*b)),
             DynamicValue::Array(arr) => {
-                let prop_arr: Vec<PropertyValue> = arr
-                    .iter()
-                    .filter_map(Self::dynamic_to_property)
-                    .collect();
+                let prop_arr: Vec<PropertyValue> =
+                    arr.iter().filter_map(Self::dynamic_to_property).collect();
                 Some(PropertyValue::Array(prop_arr))
             }
             DynamicValue::Object(obj) => {
                 let prop_obj: std::collections::HashMap<String, PropertyValue> = obj
                     .iter()
-                    .filter_map(|(k, v)| {
-                        Self::dynamic_to_property(v).map(|pv| (k.clone(), pv))
-                    })
+                    .filter_map(|(k, v)| Self::dynamic_to_property(v).map(|pv| (k.clone(), pv)))
                     .collect();
                 Some(PropertyValue::Object(prop_obj))
             }
@@ -286,14 +280,14 @@ mod tests {
 
         let provider = DynamicScenarioProvider::from_file(&temp_file).unwrap();
         assert_eq!(provider.name(), Some("Minimal Test"));
-        
+
         // Version is extracted as a string and parsed separately
         let version_str = provider.scenario.get_str("version");
         assert_eq!(version_str, Some("1.0.0"));
-        
+
         // Version is stored in fields, not in provider.version
         // (since DynamicData uses SchemaVersion which requires parsing)
-        
+
         assert_eq!(provider.primals.len(), 1);
         assert_eq!(provider.primals[0].name, "TEST");
 
@@ -375,4 +369,3 @@ mod tests {
         std::fs::remove_file(&temp_file).ok();
     }
 }
-

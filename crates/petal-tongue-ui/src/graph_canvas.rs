@@ -63,10 +63,7 @@ impl GraphCanvas {
 
     /// Render the canvas
     pub fn render(&mut self, ui: &mut Ui, palette: &ColorPalette) {
-        let (response, painter) = ui.allocate_painter(
-            ui.available_size(),
-            Sense::click_and_drag(),
-        );
+        let (response, painter) = ui.allocate_painter(ui.available_size(), Sense::click_and_drag());
 
         let canvas_rect = response.rect;
 
@@ -159,10 +156,7 @@ impl GraphCanvas {
             )
         } else if node.visual_state.has_error {
             // Error: Red
-            (
-                Color32::from_rgb(208, 2, 27),
-                Color32::from_rgb(150, 0, 20),
-            )
+            (Color32::from_rgb(208, 2, 27), Color32::from_rgb(150, 0, 20))
         } else {
             // Default: Blue
             (
@@ -188,7 +182,10 @@ impl GraphCanvas {
 
             // Icon
             painter.text(
-                Pos2::new(node_rect.center().x, node_rect.min.y + 15.0 * self.camera.zoom),
+                Pos2::new(
+                    node_rect.center().x,
+                    node_rect.min.y + 15.0 * self.camera.zoom,
+                ),
                 egui::Align2::CENTER_CENTER,
                 icon,
                 egui::FontId::proportional(text_size * 1.2),
@@ -197,7 +194,10 @@ impl GraphCanvas {
 
             // Label
             painter.text(
-                Pos2::new(node_rect.center().x, node_rect.max.y - 10.0 * self.camera.zoom),
+                Pos2::new(
+                    node_rect.center().x,
+                    node_rect.max.y - 10.0 * self.camera.zoom,
+                ),
                 egui::Align2::CENTER_CENTER,
                 name,
                 egui::FontId::proportional(text_size * 0.8),
@@ -309,7 +309,13 @@ impl GraphCanvas {
     }
 
     /// Draw selection box
-    fn draw_selection_box(&self, painter: &egui::Painter, start: Pos2, end: Pos2, palette: &ColorPalette) {
+    fn draw_selection_box(
+        &self,
+        painter: &egui::Painter,
+        start: Pos2,
+        end: Pos2,
+        palette: &ColorPalette,
+    ) {
         let rect = Rect::from_two_pos(start, end);
         painter.rect(
             rect,
@@ -410,10 +416,8 @@ impl GraphCanvas {
                     // Drag node
                     if let Some(node) = self.graph.get_node(hovered) {
                         let world_pos = self.screen_to_world(pointer_pos, canvas_rect);
-                        let offset = Vec2::new(
-                            node.position.x - world_pos.x,
-                            node.position.y - world_pos.y,
-                        );
+                        let offset =
+                            Vec2::new(node.position.x - world_pos.x, node.position.y - world_pos.y);
                         self.drag_state = Some(DragState::Node {
                             node_id: hovered.clone(),
                             offset,
@@ -439,15 +443,12 @@ impl GraphCanvas {
             if let Some(pointer_pos) = response.interact_pointer_pos() {
                 // Extract drag state to avoid borrow issues
                 let drag_state_clone = self.drag_state.clone();
-                
+
                 match drag_state_clone {
                     Some(DragState::Node { node_id, offset }) => {
                         // Move node
                         let world_pos = self.screen_to_world(pointer_pos, canvas_rect);
-                        let new_pos = Vec2::new(
-                            world_pos.x + offset.x,
-                            world_pos.y + offset.y,
-                        );
+                        let new_pos = Vec2::new(world_pos.x + offset.x, world_pos.y + offset.y);
                         let final_pos = if self.snap_to_grid {
                             new_pos.snap(self.grid_size)
                         } else {
@@ -478,8 +479,10 @@ impl GraphCanvas {
                     }
                     Some(DragState::Pan { start_camera_pos }) => {
                         // Pan camera
-                        self.camera.position.x = start_camera_pos.x - response.drag_delta().x / self.camera.zoom;
-                        self.camera.position.y = start_camera_pos.y - response.drag_delta().y / self.camera.zoom;
+                        self.camera.position.x =
+                            start_camera_pos.x - response.drag_delta().x / self.camera.zoom;
+                        self.camera.position.y =
+                            start_camera_pos.y - response.drag_delta().y / self.camera.zoom;
                     }
                     None => {}
                 }
@@ -497,10 +500,8 @@ impl GraphCanvas {
             if let Some(edge_state) = &self.drawing_edge {
                 if let Some(target_node) = &self.hovered_node {
                     // Create edge from source to target
-                    let edge = GraphEdge::dependency(
-                        edge_state.from_node.clone(),
-                        target_node.clone(),
-                    );
+                    let edge =
+                        GraphEdge::dependency(edge_state.from_node.clone(), target_node.clone());
                     if let Err(e) = self.graph.add_edge(edge) {
                         tracing::warn!("Failed to create edge: {}", e);
                     }
@@ -538,19 +539,19 @@ impl GraphCanvas {
 
     /// Convert world coordinates to screen coordinates
     fn world_to_screen(&self, world_pos: Vec2, canvas_rect: Rect) -> Pos2 {
-        let screen_x = canvas_rect.center().x
-            + (world_pos.x - self.camera.position.x) * self.camera.zoom;
-        let screen_y = canvas_rect.center().y
-            + (world_pos.y - self.camera.position.y) * self.camera.zoom;
+        let screen_x =
+            canvas_rect.center().x + (world_pos.x - self.camera.position.x) * self.camera.zoom;
+        let screen_y =
+            canvas_rect.center().y + (world_pos.y - self.camera.position.y) * self.camera.zoom;
         Pos2::new(screen_x, screen_y)
     }
 
     /// Convert screen coordinates to world coordinates
     fn screen_to_world(&self, screen_pos: Pos2, canvas_rect: Rect) -> Vec2 {
-        let world_x = self.camera.position.x
-            + (screen_pos.x - canvas_rect.center().x) / self.camera.zoom;
-        let world_y = self.camera.position.y
-            + (screen_pos.y - canvas_rect.center().y) / self.camera.zoom;
+        let world_x =
+            self.camera.position.x + (screen_pos.x - canvas_rect.center().x) / self.camera.zoom;
+        let world_y =
+            self.camera.position.y + (screen_pos.y - canvas_rect.center().y) / self.camera.zoom;
         Vec2::new(world_x, world_y)
     }
 
@@ -634,21 +635,13 @@ impl Default for Camera {
 #[derive(Clone, Debug)]
 enum DragState {
     /// Dragging a node
-    Node {
-        node_id: String,
-        offset: Vec2,
-    },
+    Node { node_id: String, offset: Vec2 },
 
     /// Drawing a selection box
-    SelectBox {
-        start: Pos2,
-        current: Pos2,
-    },
+    SelectBox { start: Pos2, current: Pos2 },
 
     /// Panning the canvas
-    Pan {
-        start_camera_pos: Vec2,
-    },
+    Pan { start_camera_pos: Vec2 },
 }
 
 /// State for drawing an edge
@@ -831,10 +824,9 @@ mod tests {
 
         // Position should be snapped to grid
         let pos = canvas.graph().nodes[0].position;
-        
+
         // Should be close to grid multiples
         assert!((pos.x % 50.0).abs() < 1.0 || (pos.x % 50.0 - 50.0).abs() < 1.0);
         assert!((pos.y % 50.0).abs() < 1.0 || (pos.y % 50.0 - 50.0).abs() < 1.0);
     }
 }
-

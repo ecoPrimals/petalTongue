@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["PetalTongue Team"]
 description = "Human entropy capture for petalTongue - multi-modal, accessible, sovereign"
-license = "MIT OR Apache-2.0"
+license = "AGPL-3.0"
 
 [dependencies]
 # Core

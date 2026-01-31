@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["petalTongue Evolution Team"]
 description = "Doom integration for petalTongue platform"
-license = "MIT"
+license = "AGPL-3.0"
 
 [dependencies]
 # Core dependencies

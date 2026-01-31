@@ -5,7 +5,9 @@
 use crate::accessibility::ColorPalette;
 use egui::{Color32, RichText, Ui};
 use petal_tongue_core::graph_builder::VisualGraph;
-use petal_tongue_discovery::{ExecutionStatus, GraphMetadata, NeuralApiProvider, NeuralGraphClient};
+use petal_tongue_discovery::{
+    ExecutionStatus, GraphMetadata, NeuralApiProvider, NeuralGraphClient,
+};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -13,24 +15,24 @@ use std::time::Instant;
 pub struct GraphManagerPanel {
     /// Available graphs from Neural API
     available_graphs: Vec<GraphMetadata>,
-    
+
     /// Last time graphs were refreshed
     last_refresh: Option<Instant>,
-    
+
     /// Selected graph for loading
     selected_graph_id: Option<String>,
-    
+
     /// Current execution ID (if running)
     current_execution: Option<String>,
-    
+
     /// Execution status message
     execution_status: Option<String>,
-    
+
     /// Save dialog state
     save_name: String,
     save_description: String,
     show_save_dialog: bool,
-    
+
     /// Error message
     error_message: Option<String>,
 }
@@ -153,7 +155,8 @@ impl GraphManagerPanel {
                     .show(ui, |ui| {
                         for graph_meta in &self.available_graphs {
                             ui.group(|ui| {
-                                let is_selected = self.selected_graph_id.as_ref() == Some(&graph_meta.id);
+                                let is_selected =
+                                    self.selected_graph_id.as_ref() == Some(&graph_meta.id);
 
                                 let bg_color = if is_selected {
                                     palette.accent.linear_multiply(0.2)
@@ -163,9 +166,7 @@ impl GraphManagerPanel {
 
                                 let response = ui.add(
                                     egui::Label::new(
-                                        RichText::new(&graph_meta.name)
-                                            .size(14.0)
-                                            .strong(),
+                                        RichText::new(&graph_meta.name).size(14.0).strong(),
                                     )
                                     .sense(egui::Sense::click()),
                                 );
@@ -176,9 +177,7 @@ impl GraphManagerPanel {
 
                                 if let Some(desc) = &graph_meta.description {
                                     ui.label(
-                                        RichText::new(desc)
-                                            .size(11.0)
-                                            .color(palette.text_dim),
+                                        RichText::new(desc).size(11.0).color(palette.text_dim),
                                     );
                                 }
 
@@ -197,11 +196,15 @@ impl GraphManagerPanel {
                                     ui.add_space(8.0);
                                     ui.horizontal(|ui| {
                                         if ui.button("📂 Load").clicked() {
-                                            action = Some(GraphManagerAction::Load(graph_meta.id.clone()));
+                                            action = Some(GraphManagerAction::Load(
+                                                graph_meta.id.clone(),
+                                            ));
                                         }
 
                                         if ui.button("🗑️ Delete").clicked() {
-                                            action = Some(GraphManagerAction::Delete(graph_meta.id.clone()));
+                                            action = Some(GraphManagerAction::Delete(
+                                                graph_meta.id.clone(),
+                                            ));
                                         }
                                     });
                                 }
@@ -231,10 +234,7 @@ impl GraphManagerPanel {
                 );
             }
         } else {
-            ui.label(
-                RichText::new("⚠️ Neural API not available")
-                    .color(palette.text_dim),
-            );
+            ui.label(RichText::new("⚠️ Neural API not available").color(palette.text_dim));
             ui.label("Start biomeOS nucleus serve to enable graph management.");
         }
 
@@ -244,7 +244,7 @@ impl GraphManagerPanel {
     /// Refresh the list of available graphs
     fn refresh_graphs(&mut self, provider: &NeuralApiProvider, runtime: &tokio::runtime::Runtime) {
         self.error_message = None;
-        
+
         let client = NeuralGraphClient::new(provider);
         match runtime.block_on(async { client.list_graphs().await }) {
             Ok(graphs) => {
@@ -295,13 +295,13 @@ pub enum GraphManagerAction {
         name: String,
         description: Option<String>,
     },
-    
+
     /// Load a graph by ID
     Load(String),
-    
+
     /// Execute the current graph
     Execute,
-    
+
     /// Delete a graph by ID
     Delete(String),
 }
@@ -321,7 +321,7 @@ mod tests {
     #[test]
     fn test_add_remove_graph() {
         let mut panel = GraphManagerPanel::new();
-        
+
         let metadata = GraphMetadata {
             id: "test-123".to_string(),
             name: "Test Graph".to_string(),
@@ -351,4 +351,3 @@ mod tests {
         assert!(panel.error_message.is_none());
     }
 }
-
