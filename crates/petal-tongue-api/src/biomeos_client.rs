@@ -94,7 +94,10 @@ impl BiomeOSClient {
             .http2_keep_alive_timeout(Duration::from_secs(10))
             .build()
             .unwrap_or_else(|e| {
-                tracing::warn!("Failed to build HTTP client with custom config: {}. Using default client.", e);
+                tracing::warn!(
+                    "Failed to build HTTP client with custom config: {}. Using default client.",
+                    e
+                );
                 reqwest::Client::new()
             });
 

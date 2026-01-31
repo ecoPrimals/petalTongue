@@ -5,7 +5,7 @@
 
 use anyhow::Result;
 use petal_tongue_core::{Key, SensorEvent};
-use petal_tongue_ui::{AudioSensor, KeyboardSensor, discover_all_sensors};
+use petal_tongue_ui::discover_all_sensors;
 use std::time::Duration;
 use tokio::time::sleep;
 
@@ -33,15 +33,13 @@ async fn main() -> Result<()> {
     println!();
 
     // Find keyboard and audio sensors
-    let keyboard_available = registry
+    let keyboard_available = !registry
         .sensors_by_type(petal_tongue_core::SensorType::Keyboard)
-        .first()
-        .is_some();
+        .is_empty();
 
-    let audio_available = registry
+    let audio_available = !registry
         .sensors_by_type(petal_tongue_core::SensorType::Audio)
-        .first()
-        .is_some();
+        .is_empty();
 
     if !keyboard_available {
         println!("❌ No keyboard detected. Cannot run field mode.");

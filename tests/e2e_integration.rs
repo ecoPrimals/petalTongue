@@ -112,7 +112,7 @@ fn test_state_persistence() {
     println!("  ✅ Session loaded successfully");
 
     // Verify state was restored (would check actual state if available)
-    assert!(new_mgr.has_unsaved_changes() == false);
+    assert!(!new_mgr.has_unsaved_changes());
     println!("  ✅ State restored correctly");
 
     println!("✅ State persistence test passed!");

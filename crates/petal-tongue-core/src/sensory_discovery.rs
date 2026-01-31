@@ -326,6 +326,7 @@ pub fn mock_capabilities(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sensory_capabilities::UIComplexity;
 
     #[test]
     fn test_discover_capabilities() {

@@ -30,7 +30,7 @@ fn run_ui_blocking(
     _no_audio: bool,
     data_service: Arc<crate::data_service::DataService>,
 ) -> Result<()> {
-    use petal_tongue_core::{Instance, InstanceId, InstanceRegistry, RenderingCapabilities};
+    use petal_tongue_core::{InstanceId, RenderingCapabilities};
     use petal_tongue_ui::PetalTongueApp;
     use std::path::PathBuf;
 
@@ -94,7 +94,6 @@ pub async fn run(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[tokio::test]
     #[cfg(feature = "ui")]

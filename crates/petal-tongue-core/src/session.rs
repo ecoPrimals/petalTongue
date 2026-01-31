@@ -544,7 +544,7 @@ impl SessionManager {
     }
 
     // Compatibility aliases for e2e tests
-    
+
     /// Check if session has unsaved changes (alias for is_dirty)
     #[must_use]
     pub fn has_unsaved_changes(&self) -> bool {
@@ -576,44 +576,46 @@ impl SessionManager {
     /// Returns error if merge fails
     pub fn merge_session(&mut self, path: &Path) -> Result<(), SessionError> {
         let other_state = SessionState::import(path)?;
-        
+
         if let Some(current_state) = &mut self.current_state {
             // Merge nodes (avoiding duplicates by ID)
-            let existing_ids: std::collections::HashSet<_> = 
+            let existing_ids: std::collections::HashSet<_> =
                 current_state.nodes.iter().map(|n| n.id.clone()).collect();
-            
+
             for node in other_state.nodes {
                 if !existing_ids.contains(&node.id) {
                     current_state.nodes.push(node);
                 }
             }
-            
+
             // Merge edges (avoiding duplicates)
-            let existing_edges: std::collections::HashSet<_> = 
-                current_state.edges.iter()
-                    .map(|e| (e.from.clone(), e.to.clone()))
-                    .collect();
-            
+            let existing_edges: std::collections::HashSet<_> = current_state
+                .edges
+                .iter()
+                .map(|e| (e.from.clone(), e.to.clone()))
+                .collect();
+
             for edge in other_state.edges {
                 let edge_key = (edge.from.clone(), edge.to.clone());
                 if !existing_edges.contains(&edge_key) {
                     current_state.edges.push(edge);
                 }
             }
-            
+
             // Merge node positions
-            current_state.node_positions.extend(other_state.node_positions);
-            
+            current_state
+                .node_positions
+                .extend(other_state.node_positions);
+
             // Merge panels
             current_state.panels_open.extend(other_state.panels_open);
-            
+
             self.dirty = true;
             Ok(())
         } else {
             Err(SessionError::NoState)
         }
     }
-
 }
 
 /// Errors that can occur during session management

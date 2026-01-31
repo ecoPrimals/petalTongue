@@ -713,10 +713,10 @@ impl PetalTongueApp {
         rendering_caps: petal_tongue_core::RenderingCapabilities,
     ) -> Self {
         tracing::info!("⚠️  Creating standalone graph (not shared with DataService)");
-        
+
         // Create a standalone graph
         let shared_graph = Arc::new(RwLock::new(GraphEngine::new()));
-        
+
         // Delegate to the shared graph constructor
         Self::new_with_shared_graph(cc, scenario_path, rendering_caps, shared_graph)
     }

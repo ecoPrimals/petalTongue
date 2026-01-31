@@ -143,9 +143,14 @@ tracing-subscriber = { workspace = true }
 # System info (Pure Rust!)
 num_cpus = "1.16"
 
+# Examples dependencies (optional, not in production)
+libc = { version = "0.2", optional = true }
+png = { version = "0.17", optional = true }
+
 [dev-dependencies]
 tempfile = "3.10"
 
 [features]
 default = ["ui"]  # Desktop users get GUI by default
 ui = ["petal-tongue-ui"]  # Can build without GUI for Pure Rust
+examples = ["libc", "png"]  # Example dependencies (not production)
