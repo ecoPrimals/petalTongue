@@ -177,9 +177,9 @@ impl TarpcClient {
         let ctx = tarpc::context::current();
 
         client
-            .get_capabilities(ctx)
+            .capabilities_list(ctx)  // Semantic naming
             .await
-            .map_err(|e| TarpcClientError::Rpc(format!("get_capabilities failed: {}", e)))
+            .map_err(|e| TarpcClientError::Rpc(format!("capabilities_list failed: {}", e)))
     }
 
     /// Discover primals by capability
@@ -201,9 +201,9 @@ impl TarpcClient {
         let ctx = tarpc::context::current();
 
         client
-            .discover_capability(ctx, capability.to_string())
+            .discovery_find_capability(ctx, capability.to_string())  // Semantic naming
             .await
-            .map_err(|e| TarpcClientError::Rpc(format!("discover_capability failed: {}", e)))
+            .map_err(|e| TarpcClientError::Rpc(format!("discovery_find_capability failed: {}", e)))
     }
 
     /// Get health status from remote primal
@@ -219,7 +219,7 @@ impl TarpcClient {
         let ctx = tarpc::context::current();
 
         client
-            .health(ctx)
+            .health_check(ctx)  // Semantic naming
             .await
             .map_err(|e| TarpcClientError::Rpc(format!("health check failed: {}", e)))
     }
@@ -237,7 +237,7 @@ impl TarpcClient {
         let ctx = tarpc::context::current();
 
         client
-            .version(ctx)
+            .version_get(ctx)  // Semantic naming
             .await
             .map_err(|e| TarpcClientError::Rpc(format!("version call failed: {}", e)))
     }
@@ -255,7 +255,7 @@ impl TarpcClient {
         let ctx = tarpc::context::current();
 
         client
-            .protocols(ctx)
+            .protocols_list(ctx)  // Semantic naming
             .await
             .map_err(|e| TarpcClientError::Rpc(format!("protocols call failed: {}", e)))
     }
@@ -276,9 +276,9 @@ impl TarpcClient {
         let ctx = tarpc::context::current();
 
         client
-            .render_graph(ctx, request)
+            .ui_render_graph(ctx, request)  // Semantic naming
             .await
-            .map_err(|e| TarpcClientError::Rpc(format!("render_graph failed: {}", e)))
+            .map_err(|e| TarpcClientError::Rpc(format!("ui_render_graph failed: {}", e)))
     }
 
     /// Get metrics from remote primal
@@ -294,9 +294,9 @@ impl TarpcClient {
         let ctx = tarpc::context::current();
 
         client
-            .get_metrics(ctx)
+            .metrics_get(ctx)  // Semantic naming
             .await
-            .map_err(|e| TarpcClientError::Rpc(format!("get_metrics failed: {}", e)))
+            .map_err(|e| TarpcClientError::Rpc(format!("metrics_get failed: {}", e)))
     }
 
     /// Call method with dynamic params (for adapter integration)
