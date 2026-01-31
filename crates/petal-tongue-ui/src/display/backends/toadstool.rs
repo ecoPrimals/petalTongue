@@ -1,30 +1,39 @@
 //! Toadstool Display Backend - Production Ready! 🌸🦈
 //!
-//! TRUE PRIMAL Architecture: petalTongue → biomeOS → toadStool
+//! TRUE PRIMAL Architecture: Discovery via biomeOS, Performance via tarpc
 //!
 //! # Architecture Principle
 //!
-//! **NEVER** talk directly to toadStool! Always go through biomeOS neuralAPI.
-//! This ensures proper orchestration and follows the symbiotic pattern.
+//! **Discovery Phase** (Once at startup):
+//! - petalTongue asks biomeOS: "Who provides 'display' capability?"
+//! - biomeOS responds with toadStool's tarpc endpoint
 //!
-//! # Flow (Per toadStool Handoff Document)
+//! **Performance Phase** (Continuous):
+//! - petalTongue ←─ tarpc ─→ toadStool (direct binary RPC)
+//! - Frame commits: 60 FPS (~5-8ms)
+//! - Input events: real-time (~2-5ms)
 //!
-//! 1. Connect to biomeOS (JSON-RPC over Unix socket)
-//! 2. Query display capabilities: `toadstool.display.query_capabilities`
-//! 3. Create window: `toadstool.display.create_window`
-//! 4. Subscribe to input: `toadstool.input.subscribe`
-//! 5. Render frames: `toadstool.display.commit_frame`
-//! 6. Optional GPU compute: `toadstool.gpu.execute`
+//! # Self-Knowledge
+//!
+//! petalTongue KNOWS:
+//! - I need: "display", "input", "gpu.compute" capabilities
+//! - I speak: JSON-RPC (discovery), tarpc (performance)
+//!
+//! petalTongue NEVER KNOWS:
+//! - That "toadStool" exists by name (discovers by capability)
+//! - Where toadStool is located (biomeOS provides endpoint)
 //!
 //! # Integration Status
 //!
+//! ✅ Discovery: Via biomeOS (JSON-RPC, capability-based)
+//! ✅ Performance: Via tarpc (direct, high-speed)
 //! ✅ Display Runtime - DRM-based, Pure Rust, ARM64 + x86_64
 //! ✅ Input System - Multi-touch (10+ fingers), Keyboard, Mouse
 //! ✅ GPU Compute - barraCUDA (183 operations, 73.2% CUDA parity)
 //!
 //! # Reference
 //!
-//! See toadStool Integration Handoff document (Jan 31, 2026)
+//! See specs/PETALTONGUE_TOADSTOOL_INTEGRATION_ARCHITECTURE.md
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
 use anyhow::{Result, anyhow};
