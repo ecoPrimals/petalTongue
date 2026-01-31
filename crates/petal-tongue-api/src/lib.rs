@@ -23,8 +23,8 @@
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::redundant_closure_for_method_calls)]
 
-pub mod biomeos_client;           // HTTP client (fallback for external use)
-pub mod biomeos_jsonrpc_client;   // JSON-RPC client (TRUE PRIMAL)
+pub mod biomeos_client; // HTTP client (fallback for external use)
+pub mod biomeos_jsonrpc_client; // JSON-RPC client (TRUE PRIMAL)
 
 pub use biomeos_client::{BiomeOSClient, DiscoveredPrimal, DiscoveryResponse};
 pub use biomeos_jsonrpc_client::BiomeOSJsonRpcClient;

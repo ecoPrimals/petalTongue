@@ -521,7 +521,7 @@ impl GraphValidator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graph_builder::Vec2;
+    use crate::graph_builder::{GraphEdge, GraphNode, NodeType, Vec2, VisualGraph};
 
     #[test]
     fn test_empty_graph_validation() {

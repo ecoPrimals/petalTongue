@@ -177,7 +177,7 @@ impl TarpcClient {
         let ctx = tarpc::context::current();
 
         client
-            .capabilities_list(ctx)  // Semantic naming
+            .capabilities_list(ctx) // Semantic naming
             .await
             .map_err(|e| TarpcClientError::Rpc(format!("capabilities_list failed: {}", e)))
     }
@@ -201,7 +201,7 @@ impl TarpcClient {
         let ctx = tarpc::context::current();
 
         client
-            .discovery_find_capability(ctx, capability.to_string())  // Semantic naming
+            .discovery_find_capability(ctx, capability.to_string()) // Semantic naming
             .await
             .map_err(|e| TarpcClientError::Rpc(format!("discovery_find_capability failed: {}", e)))
     }
@@ -219,7 +219,7 @@ impl TarpcClient {
         let ctx = tarpc::context::current();
 
         client
-            .health_check(ctx)  // Semantic naming
+            .health_check(ctx) // Semantic naming
             .await
             .map_err(|e| TarpcClientError::Rpc(format!("health check failed: {}", e)))
     }
@@ -237,7 +237,7 @@ impl TarpcClient {
         let ctx = tarpc::context::current();
 
         client
-            .version_get(ctx)  // Semantic naming
+            .version_get(ctx) // Semantic naming
             .await
             .map_err(|e| TarpcClientError::Rpc(format!("version call failed: {}", e)))
     }
@@ -255,7 +255,7 @@ impl TarpcClient {
         let ctx = tarpc::context::current();
 
         client
-            .protocols_list(ctx)  // Semantic naming
+            .protocols_list(ctx) // Semantic naming
             .await
             .map_err(|e| TarpcClientError::Rpc(format!("protocols call failed: {}", e)))
     }
@@ -276,7 +276,7 @@ impl TarpcClient {
         let ctx = tarpc::context::current();
 
         client
-            .ui_render_graph(ctx, request)  // Semantic naming
+            .ui_render_graph(ctx, request) // Semantic naming
             .await
             .map_err(|e| TarpcClientError::Rpc(format!("ui_render_graph failed: {}", e)))
     }
@@ -294,7 +294,7 @@ impl TarpcClient {
         let ctx = tarpc::context::current();
 
         client
-            .metrics_get(ctx)  // Semantic naming
+            .metrics_get(ctx) // Semantic naming
             .await
             .map_err(|e| TarpcClientError::Rpc(format!("metrics_get failed: {}", e)))
     }

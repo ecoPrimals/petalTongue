@@ -153,8 +153,21 @@ mod tests {
         let primals = provider.get_primals().await.unwrap();
         assert_eq!(primals.len(), 3);
         assert_eq!(primals[0].id, "mock-beardog-1");
-        assert_eq!(primals[0].trust_level, Some(3));
-        assert_eq!(primals[1].trust_level, Some(2));
+        // Use properties field instead of deprecated trust_level
+        assert_eq!(
+            primals[0]
+                .properties
+                .get("trust_level")
+                .and_then(|v| v.as_u8()),
+            Some(3)
+        );
+        assert_eq!(
+            primals[1]
+                .properties
+                .get("trust_level")
+                .and_then(|v| v.as_u8()),
+            Some(2)
+        );
 
         // Test topology
         let topology = provider.get_topology().await.unwrap();
