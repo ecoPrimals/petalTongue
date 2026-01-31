@@ -139,6 +139,10 @@ async fn main() -> Result<()> {
     let data_service = std::sync::Arc::new(data_service);
     tracing::info!("✅ DataService initialized - all modes will use same data source");
 
+    // Register with Songbird (primal discovery service)
+    tracing::info!("🎵 Registering with Songbird discovery service...");
+    register_with_songbird().await;
+
     // Execute command (all modes are fully async)
     let result = match cli.command {
         Commands::Ui { scenario, no_audio } => {
@@ -243,6 +247,37 @@ fn init_tracing(level: &str, format: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Register petalTongue with Songbird discovery service
+///
+/// This implements the `ipc.register` standard from PRIMAL_IPC_PROTOCOL.md.
+/// Gracefully handles Songbird unavailability (standalone mode).
+async fn register_with_songbird() {
+    use petal_tongue_ipc::primal_registration::{PrimalRegistration, RegistrationManager};
+
+    // Create petalTongue registration
+    let registration = PrimalRegistration::petaltongue();
+
+    tracing::debug!(
+        "📝 Registration: {} v{} with {} capabilities",
+        registration.name,
+        registration.version,
+        registration.capabilities.len()
+    );
+
+    // Create registration manager
+    let manager = RegistrationManager::new(registration);
+
+    // Attempt registration (gracefully handles failure)
+    manager.register_on_startup().await;
+
+    // Spawn heartbeat task (maintains discovery presence)
+    let _heartbeat_handle = manager.spawn_heartbeat_task();
+
+    // Note: Heartbeat task runs in background until process exit
+    // It automatically handles reconnection if Songbird restarts
+    tracing::debug!("✅ Primal registration complete (heartbeat task spawned)");
 }
 
 #[cfg(test)]

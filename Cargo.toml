@@ -110,6 +110,7 @@ petal-tongue-core = { path = "crates/petal-tongue-core" }
 petal-tongue-discovery = { path = "crates/petal-tongue-discovery" }
 petal-tongue-ui-core = { path = "crates/petal-tongue-ui-core" }
 petal-tongue-graph = { path = "crates/petal-tongue-graph" }
+petal-tongue-ipc = { path = "crates/petal-tongue-ipc" }
 
 # Optional UI (can be disabled for minimal build)
 petal-tongue-ui = { path = "crates/petal-tongue-ui", optional = true }
