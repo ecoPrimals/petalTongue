@@ -1,7 +1,7 @@
 # 🌸🦈 toadStool Integration Status
 
 **Date**: January 31, 2026  
-**Status**: ✅ **ARCHITECTURE ALIGNED** - Ready for testing with live biomeOS  
+**Status**: ✅ **ARCHITECTURE ALIGNED** - Discovery via biomeOS, Performance via tarpc  
 **For**: petalTongue Team  
 **From**: Evolution Session (Architecture Alignment)
 
@@ -9,36 +9,39 @@
 
 ## 🎯 **Summary**
 
-petalTongue's ToadstoolDisplay backend has been **completely refactored** to align with toadStool's production handoff specifications (Jan 31, 2026).
+petalTongue's ToadstoolDisplay backend has been aligned with the TRUE PRIMAL architecture:
 
-**Key Change**: **NEVER talk directly to toadStool**. Always go through biomeOS neuralAPI.
+**Discovery Phase**: biomeOS (JSON-RPC) → find toadStool by capability  
+**Performance Phase**: tarpc (direct) → high-speed binary RPC
+
+**Key Principle**: Primals maintain self-knowledge only. biomeOS routes, doesn't proxy.
 
 ---
 
-## ✅ **What Changed**
+## 🏗️ **Architecture (Correct)**
 
-### **Before (Incorrect Architecture)**
 ```
-petalTongue → tarpc (direct) → toadStool  ❌ WRONG!
+DISCOVERY (Once at startup):
+┌─────────────────────────────────────────┐
+│ petalTongue → biomeOS (JSON-RPC):      │
+│   "Who provides 'display' capability?"  │
+│              ↓                          │
+│   biomeOS responds:                     │
+│   {                                     │
+│     "name": "toadstool",                │
+│     "tarpc": "tarpc://unix:/run/..."   │
+│   }                                     │
+└─────────────────────────────────────────┘
+                 ↓
+PERFORMANCE (Continuous):
+┌─────────────────────────────────────────┐
+│ petalTongue ←─ tarpc ─→ toadStool       │
+│   (direct high-speed binary RPC)        │
+│   • Frame commits: 60 FPS (~5-8ms)      │
+│   • Input events: real-time (~2-5ms)    │
+│   • GPU compute: as needed (~10-20ms)   │
+└─────────────────────────────────────────┘
 ```
-
-**Problems**:
-- Violated symbiotic architecture principle
-- Bypassed biomeOS orchestration
-- Direct primal-to-primal communication
-- No proper discovery/health checking
-
-### **After (Correct Architecture)**  
-```
-petalTongue → biomeOS (JSON-RPC) → toadStool  ✅ CORRECT!
-```
-
-**Benefits**:
-- ✅ TRUE PRIMAL architecture
-- ✅ Proper orchestration through biomeOS
-- ✅ Follows ecosystem standards
-- ✅ Graceful degradation (checks biomeOS availability)
-- ✅ Aligns with handoff specifications
 
 ---
 
@@ -49,37 +52,65 @@ petalTongue → biomeOS (JSON-RPC) → toadStool  ✅ CORRECT!
 
 ### **Communication Protocol**
 
-**JSON-RPC 2.0 over Unix Sockets** (per PRIMAL_IPC_PROTOCOL.md)
+**Discovery Phase** (biomeOS JSON-RPC):
+1. Query: `discovery.query({ capability: "display" })`
+2. Response: `{ name: "toadstool", tarpc: "tarpc://unix:..." }`
+3. Connect: Direct tarpc connection to endpoint
 
-1. **Socket Discovery** (automatic):
-   - Environment variable: `$BIOMEOS_SOCKET`
-   - XDG runtime: `$XDG_RUNTIME_DIR/biomeos-neural-api.sock`
-   - Fallback: `/tmp/biomeos-neural-api.sock`
+**Performance Phase** (tarpc - direct):
+1. `capabilities_list()` - Query display info
+2. `display_create_window()` - Create rendering window
+3. `display_commit_frame()` - Present RGBA8 frames (60 FPS)
+4. `input_subscribe()` - Receive input events stream
 
-2. **Initialization Flow**:
-   ```rust
-   // 1. Query capabilities
-   toadstool.display.query_capabilities
-   
-   // 2. Create window
-   toadstool.display.create_window {
-       "title": "petalTongue UI",
-       "width": 1920,
-       "height": 1080
-   }
-   
-   // 3. Commit frames
-   toadstool.display.commit_frame {
-       "window_id": "window-abc123",
-       "format": "rgba8",
-       "data": "<base64-encoded pixel buffer>"
-   }
-   ```
+**Why this architecture**:
+- **biomeOS**: Discovery & routing (JSON-RPC, ~50ms, once)
+- **tarpc**: Data transfer (binary, ~5-8ms, continuous)
+- **Best of both**: Proper discovery + high performance
 
-3. **Graceful Degradation**:
-   - Checks socket existence before initialization
-   - Fallback to other display backends if biomeOS unavailable
-   - No panics, only proper `Result` propagation
+---
+
+## 🔑 **Key Design Decisions**
+
+### **1. Self-Knowledge Only**
+
+petalTongue ONLY knows:
+- ✅ I need: `["display", "input", "gpu.compute"]` capabilities
+- ✅ I speak: JSON-RPC (discovery), tarpc (performance)
+- ✅ I discover: Via biomeOS at runtime
+
+petalTongue NEVER knows:
+- ❌ That "toadStool" exists by name
+- ❌ Where toadStool is located
+- ❌ toadStool's internal implementation
+
+### **2. biomeOS Routes, Doesn't Proxy**
+
+biomeOS provides:
+- ✅ Discovery: "Who has capability X?"
+- ✅ Routing: "toadStool is at tarpc://..."
+- ✅ Health: Monitor availability
+
+biomeOS does NOT:
+- ❌ Proxy frame buffers (after discovery)
+- ❌ Parse pixel data
+- ❌ Slow down performance
+
+### **3. Graceful Degradation**
+
+```rust
+// Try capability discovery
+match discover_display_primal().await {
+    Ok(tarpc_client) => {
+        // Use toadStool via tarpc (fast!)
+        ToadstoolDisplay::with_client(tarpc_client)
+    }
+    Err(_) => {
+        // Fallback to software renderer
+        SoftwareDisplay::new()
+    }
+}
+```
 
 ---
 
