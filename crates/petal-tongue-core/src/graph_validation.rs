@@ -2,7 +2,7 @@
 //!
 //! TRUE PRIMAL: Zero hardcoding, capability-based validation.
 
-use crate::graph_builder::{GraphEdge, GraphNode, NodeType, VisualGraph};
+use crate::graph_builder::{NodeType, VisualGraph};
 use std::collections::{HashMap, HashSet, VecDeque};
 
 /// Validation error severity

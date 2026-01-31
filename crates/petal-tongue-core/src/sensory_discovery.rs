@@ -23,7 +23,7 @@
 use crate::sensory_capabilities::{
     AudioInputCapability, AudioOutputCapability, CapabilityError, GestureInputCapability,
     HapticOutputCapability, KeyboardInputCapability, PointerInputCapability, SensoryCapabilities,
-    TouchInputCapability, UIComplexity, VisualOutputCapability,
+    TouchInputCapability, VisualOutputCapability,
 };
 
 impl SensoryCapabilities {
