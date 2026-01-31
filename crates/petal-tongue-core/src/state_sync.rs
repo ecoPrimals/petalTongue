@@ -17,7 +17,7 @@
 //! that can be serialized, transferred, and deserialized on any device.
 
 use crate::adaptive_rendering::DeviceType;
-use crate::dynamic_schema::{DynamicData, DynamicValue};
+use crate::dynamic_schema::DynamicValue;
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

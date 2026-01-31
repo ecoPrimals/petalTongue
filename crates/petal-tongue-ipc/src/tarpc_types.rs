@@ -368,10 +368,12 @@ mod tests {
     fn test_render_request() {
         let request = RenderRequest {
             topology: vec![1, 2, 3, 4],
+            data: Vec::new(), // Empty for topology rendering
             width: 1920,
             height: 1080,
             format: "png".to_string(),
             settings: HashMap::new(),
+            metadata: None,
         };
 
         assert_eq!(request.width, 1920);

@@ -214,17 +214,26 @@ mod tests {
     #[test]
     fn test_linux_respects_xdg() {
         // If XDG vars are set, they should be used
-        std::env::set_var("XDG_DATA_HOME", "/custom/data");
+        // SAFETY: Test-only environment variable manipulation
+        unsafe {
+            std::env::set_var("XDG_DATA_HOME", "/custom/data");
+        }
         let data = data_dir().expect("Should get data dir");
         assert_eq!(data, PathBuf::from("/custom/data"));
 
-        std::env::set_var("XDG_CONFIG_HOME", "/custom/config");
+        // SAFETY: Test-only environment variable manipulation
+        unsafe {
+            std::env::set_var("XDG_CONFIG_HOME", "/custom/config");
+        }
         let config = config_dir().expect("Should get config dir");
         assert_eq!(config, PathBuf::from("/custom/config"));
 
         // Cleanup
-        std::env::remove_var("XDG_DATA_HOME");
-        std::env::remove_var("XDG_CONFIG_HOME");
+        // SAFETY: Test-only environment variable manipulation
+        unsafe {
+            std::env::remove_var("XDG_DATA_HOME");
+            std::env::remove_var("XDG_CONFIG_HOME");
+        }
     }
 
     #[cfg(target_os = "windows")]
