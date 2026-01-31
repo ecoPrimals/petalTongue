@@ -182,11 +182,9 @@ impl UnixSocketServer {
         }
     }
 
-    // ===== biomeOS Integration Methods =====
+    // ===== biomeOS Integration Methods (Semantic Naming) =====
 
-    /// biomeOS API: health_check
-    ///
-    /// Returns health status following biomeOS convention.
+    /// health.check - Returns health status following biomeOS convention
     ///
     /// # Response Format
     ///

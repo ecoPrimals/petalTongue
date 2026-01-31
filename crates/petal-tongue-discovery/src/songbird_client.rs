@@ -114,10 +114,13 @@ impl SongbirdClient {
         &self.socket_path
     }
 
-    /// Discover primals by capability
+    /// Discover primals by capability (semantic: discovery.query)
     ///
     /// Queries Songbird for all registered primals with the given capability.
     /// Returns list of primals that can provide this capability.
+    ///
+    /// # Semantic Method Name
+    /// Calls `discovery.query` per SEMANTIC_METHOD_NAMING_STANDARD.md
     ///
     /// # Example Capabilities
     /// - "visualization" - primals that provide UI/visualization
@@ -130,7 +133,7 @@ impl SongbirdClient {
 
         let request = json!({
             "jsonrpc": "2.0",
-            "method": "discover_by_capability",
+            "method": "discovery.query",  // Semantic naming
             "params": {
                 "capability": capability
             },
@@ -168,14 +171,14 @@ impl SongbirdClient {
     /// Get all registered primals
     ///
     /// Returns the complete list of primals known to Songbird.
-    /// Uses discover_by_capability("*") to get all registered primals.
+    /// Uses discovery.query("*") to get all registered primals.
     pub async fn get_all_primals(&self) -> Result<Vec<PrimalInfo>> {
         debug!("🔍 Querying Songbird for all registered primals");
 
-        // Songbird's API uses discover_by_capability with "*" to get all primals
+        // Songbird's API uses discovery.query with "*" to get all primals
         let request = json!({
             "jsonrpc": "2.0",
-            "method": "discover_by_capability",
+            "method": "discovery.query",  // Semantic naming
             "params": {
                 "capability": "*"
             },
@@ -209,11 +212,11 @@ impl SongbirdClient {
         Ok(primal_infos)
     }
 
-    /// Health check - verify Songbird is responding
+    /// Health check - verify Songbird is responding (semantic: health.check)
     pub async fn health_check(&self) -> Result<String> {
         let request = json!({
             "jsonrpc": "2.0",
-            "method": "health_check",
+            "method": "health.check",  // Semantic naming
             "params": {},
             "id": 1
         });

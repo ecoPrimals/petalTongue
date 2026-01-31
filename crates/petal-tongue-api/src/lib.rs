@@ -1,6 +1,13 @@
 //! # petal-tongue-api
 //!
-//! API client for connecting to `BiomeOS` and other data sources
+//! API clients for petalTongue integration
+//!
+//! # TRUE PRIMAL Architecture
+//!
+//! Per PRIMAL_IPC_PROTOCOL.md, inter-primal communication should use:
+//! 1. **JSON-RPC 2.0** over Unix sockets (PRIMARY) - Use `BiomeOSJsonRpcClient`
+//! 2. **tarpc** for high-performance needs (SECONDARY)
+//! 3. **HTTP/REST** only for external/browser access (FALLBACK) - Use `BiomeOSClient`
 
 #![warn(missing_docs)]
 #![warn(clippy::all)]
@@ -16,6 +23,8 @@
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::redundant_closure_for_method_calls)]
 
-pub mod biomeos_client;
+pub mod biomeos_client;           // HTTP client (fallback for external use)
+pub mod biomeos_jsonrpc_client;   // JSON-RPC client (TRUE PRIMAL)
 
 pub use biomeos_client::{BiomeOSClient, DiscoveredPrimal, DiscoveryResponse};
+pub use biomeos_jsonrpc_client::BiomeOSJsonRpcClient;
