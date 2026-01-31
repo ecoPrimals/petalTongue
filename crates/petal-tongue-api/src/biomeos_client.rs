@@ -83,18 +83,24 @@ pub struct DiscoveredPrimal {
 impl BiomeOSClient {
     /// Create a new `BiomeOS` client
     pub fn new(base_url: impl Into<String>) -> Self {
+        // Build HTTP client with robust configuration
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(30)) // Increased timeout
+            .connect_timeout(Duration::from_secs(10)) // Separate connect timeout
+            .pool_idle_timeout(Duration::from_secs(90)) // Keep connections alive longer
+            .pool_max_idle_per_host(10) // More idle connections
+            .tcp_keepalive(Duration::from_secs(60)) // TCP keep-alive
+            .http2_keep_alive_interval(Some(Duration::from_secs(30))) // HTTP/2 keep-alive
+            .http2_keep_alive_timeout(Duration::from_secs(10))
+            .build()
+            .unwrap_or_else(|e| {
+                tracing::warn!("Failed to build HTTP client with custom config: {}. Using default client.", e);
+                reqwest::Client::new()
+            });
+
         Self {
             base_url: base_url.into(),
-            client: reqwest::Client::builder()
-                .timeout(Duration::from_secs(30)) // Increased timeout
-                .connect_timeout(Duration::from_secs(10)) // Separate connect timeout
-                .pool_idle_timeout(Duration::from_secs(90)) // Keep connections alive longer
-                .pool_max_idle_per_host(10) // More idle connections
-                .tcp_keepalive(Duration::from_secs(60)) // TCP keep-alive
-                .http2_keep_alive_interval(Some(Duration::from_secs(30))) // HTTP/2 keep-alive
-                .http2_keep_alive_timeout(Duration::from_secs(10))
-                .build()
-                .expect("Failed to build HTTP client"),
+            client,
             mock_mode: false,
         }
     }

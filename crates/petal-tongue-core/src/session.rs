@@ -410,8 +410,8 @@ impl SessionManager {
             self.dirty = true;
         }
 
-        // SAFETY: current_state is guaranteed to be Some after the branches above
-        Ok(self.current_state.as_ref().unwrap())
+        // Return current state - guaranteed to be Some after branches above
+        self.current_state.as_ref().ok_or(SessionError::NoState)
     }
 
     /// Get the current session state
@@ -656,11 +656,15 @@ pub enum SessionError {
 // ===== Helper Functions =====
 
 /// Get the current Unix timestamp
+/// Get current Unix timestamp
 fn current_timestamp() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards")
-        .as_secs()
+        .map(|d| d.as_secs())
+        .unwrap_or_else(|_| {
+            tracing::warn!("System time is before Unix epoch, using 0 as fallback");
+            0
+        })
 }
 
 /// Get the session file path for an instance
