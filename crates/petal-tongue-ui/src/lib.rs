@@ -13,19 +13,19 @@ pub use egui;
 /// Accessibility features and compliance (WCAG, universal design)
 pub mod accessibility;
 pub mod accessibility_panel;
-pub mod app;
-pub mod backend;  // NEW: UI backend abstraction (ecoBlossom!)
-pub mod scenario;
-pub mod scenario_error;
-pub mod panels;
-pub mod panel_registry;
-pub mod focus_manager;
 pub mod adaptive_ui;
-pub mod sensory_ui;
+pub mod app;
 pub mod app_panels;
 pub mod awakening_overlay;
+pub mod backend; // NEW: UI backend abstraction (ecoBlossom!)
 pub mod event_loop;
+pub mod focus_manager;
+pub mod panel_registry;
+pub mod panels;
+pub mod scenario;
+pub mod scenario_error;
 pub mod sensor_discovery;
+pub mod sensory_ui;
 pub mod startup_audio;
 pub mod tutorial_mode;
 // Smart refactoring modules (app.rs → modular architecture) - TEMPORARILY DISABLED FOR INCREMENTAL REFACTORING
@@ -47,26 +47,26 @@ pub mod device_panel; // Device Management UI - Phase 2
 pub mod display; // Pure Rust display system
 pub mod display_pure_rust;
 pub mod display_verification; // Phase 4: Active display visibility verification
+pub mod graph_canvas; // Graph builder canvas - visual graph construction (Neural API Phase 4)
 pub mod graph_editor; // Collaborative Intelligence - Interactive graph editing
+pub mod graph_manager; // Graph manager - save/load/execute via Neural API
 pub mod graph_metrics_plotter;
 pub mod human_entropy_window;
 pub mod input_verification; // Universal input verification (keyboard, pointer, etc.)
 pub mod keyboard_shortcuts;
 pub mod live_data;
+pub mod metrics_dashboard; // System metrics dashboard with sparklines (Neural API)
 pub mod mock_device_provider; // Mock provider for testing & graceful degradation
 /// Multimodal data streaming (audio, visual, haptic, etc.)
 pub mod multimodal_stream;
 pub mod niche_designer; // Niche Designer UI - Phase 4
+pub mod node_palette; // Node palette - available node types for graph builder
 pub mod output_verification; // Universal output verification (visual, audio, haptic, etc.)
 pub mod primal_panel; // Primal Status UI - Phase 3
 pub mod process_viewer_integration;
-pub mod proprioception_panel; // SAME DAVE self-awareness visualization (Neural API)
-pub mod metrics_dashboard; // System metrics dashboard with sparklines (Neural API)
-pub mod graph_canvas; // Graph builder canvas - visual graph construction (Neural API Phase 4)
-pub mod node_palette; // Node palette - available node types for graph builder
 pub mod property_panel; // Property panel - node parameter editor
-pub mod graph_manager; // Graph manager - save/load/execute via Neural API
 pub mod proprioception; // SAME DAVE - Complete sensory-motor self-awareness
+pub mod proprioception_panel; // SAME DAVE self-awareness visualization (Neural API)
 pub mod protocol_selection; // Protocol priority: tarpc PRIMARY, JSON-RPC SECONDARY, HTTPS FALLBACK
 pub mod sensors;
 pub mod ui_events; // Event-driven architecture for real-time updates // Sensor implementations (bidirectional UUI)

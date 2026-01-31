@@ -69,18 +69,19 @@ impl VisualOutputCapability {
     pub fn pixel_count(&self) -> u32 {
         match self {
             Self::TwoD { resolution, .. } => resolution.0 * resolution.1,
-            Self::ThreeD { resolution_per_eye, .. } => {
-                resolution_per_eye.0 * resolution_per_eye.1 * 2
-            }
+            Self::ThreeD {
+                resolution_per_eye, ..
+            } => resolution_per_eye.0 * resolution_per_eye.1 * 2,
         }
     }
 
     /// Calculate diagonal size in millimeters (if known)
     pub fn diagonal_mm(&self) -> Option<f32> {
         match self {
-            Self::TwoD { size_mm: Some((w, h)), .. } => {
-                Some(((*w as f32).powi(2) + (*h as f32).powi(2)).sqrt())
-            }
+            Self::TwoD {
+                size_mm: Some((w, h)),
+                ..
+            } => Some(((*w as f32).powi(2) + (*h as f32).powi(2)).sqrt()),
             _ => None,
         }
     }
@@ -94,9 +95,9 @@ impl VisualOutputCapability {
     pub fn is_high_resolution(&self) -> bool {
         match self {
             Self::TwoD { resolution, .. } => resolution.0 >= 1920 && resolution.1 >= 1080,
-            Self::ThreeD { resolution_per_eye, .. } => {
-                resolution_per_eye.0 >= 1920 && resolution_per_eye.1 >= 1080
-            }
+            Self::ThreeD {
+                resolution_per_eye, ..
+            } => resolution_per_eye.0 >= 1920 && resolution_per_eye.1 >= 1080,
         }
     }
 }
@@ -133,8 +134,14 @@ impl AudioOutputCapability {
     /// Determine if this is high quality audio (>= 48kHz, >= 16-bit)
     pub fn is_high_quality(&self) -> bool {
         match self {
-            Self::Mono { sample_rate, bit_depth }
-            | Self::Stereo { sample_rate, bit_depth } => *sample_rate >= 48000 && *bit_depth >= 16,
+            Self::Mono {
+                sample_rate,
+                bit_depth,
+            }
+            | Self::Stereo {
+                sample_rate,
+                bit_depth,
+            } => *sample_rate >= 48000 && *bit_depth >= 16,
             Self::Spatial { sample_rate, .. } => *sample_rate >= 48000,
         }
     }
@@ -451,10 +458,7 @@ impl SensoryCapabilities {
         }
 
         // Check for high-resolution 2D visual
-        let has_high_res = self
-            .visual_outputs
-            .iter()
-            .any(|v| v.is_high_resolution());
+        let has_high_res = self.visual_outputs.iter().any(|v| v.is_high_resolution());
 
         // Check for precision pointer (mouse-level)
         let has_precision_pointer = self.pointer_inputs.iter().any(|p| p.is_precision());
@@ -527,9 +531,11 @@ impl SensoryCapabilities {
 
         // Describe visual outputs
         if !self.visual_outputs.is_empty() {
-            let visual_desc = if self.visual_outputs.iter().any(|v| {
-                matches!(v, VisualOutputCapability::ThreeD { .. })
-            }) {
+            let visual_desc = if self
+                .visual_outputs
+                .iter()
+                .any(|v| matches!(v, VisualOutputCapability::ThreeD { .. }))
+            {
                 "3D visual"
             } else {
                 "2D visual"
@@ -539,9 +545,11 @@ impl SensoryCapabilities {
 
         // Describe audio outputs
         if !self.audio_outputs.is_empty() {
-            let audio_desc = if self.audio_outputs.iter().any(|a| {
-                matches!(a, AudioOutputCapability::Spatial { .. })
-            }) {
+            let audio_desc = if self
+                .audio_outputs
+                .iter()
+                .any(|a| matches!(a, AudioOutputCapability::Spatial { .. }))
+            {
                 "spatial audio"
             } else {
                 "audio"
@@ -773,4 +781,3 @@ mod tests {
         assert!(desc.contains("keyboard"));
     }
 }
-

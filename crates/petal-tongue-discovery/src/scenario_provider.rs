@@ -4,10 +4,10 @@
 //! demonstrations of petalTongue capabilities.
 
 use crate::traits::VisualizationDataProvider;
-use petal_tongue_core::{PrimalInfo, Properties, PropertyValue, TopologyEdge};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use petal_tongue_core::PrimalHealthStatus;
+use petal_tongue_core::{PrimalInfo, Properties, PropertyValue, TopologyEdge};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -77,8 +77,14 @@ impl ScenarioVisualizationProvider {
                 );
 
                 if let Some(pos) = p.position {
-                    properties.insert("position_x".to_string(), PropertyValue::Number(pos.x as f64));
-                    properties.insert("position_y".to_string(), PropertyValue::Number(pos.y as f64));
+                    properties.insert(
+                        "position_x".to_string(),
+                        PropertyValue::Number(pos.x as f64),
+                    );
+                    properties.insert(
+                        "position_y".to_string(),
+                        PropertyValue::Number(pos.y as f64),
+                    );
                 }
 
                 PrimalInfo {
@@ -151,7 +157,10 @@ impl VisualizationDataProvider for ScenarioVisualizationProvider {
     }
 
     async fn health_check(&self) -> Result<String> {
-        Ok(format!("Scenario provider with {} primals", self.primals.len()))
+        Ok(format!(
+            "Scenario provider with {} primals",
+            self.primals.len()
+        ))
     }
 
     fn get_metadata(&self) -> crate::traits::ProviderMetadata {
@@ -198,4 +207,3 @@ mod tests {
         std::fs::remove_file(&temp_file).ok();
     }
 }
-

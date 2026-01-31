@@ -22,8 +22,8 @@
 
 use crate::sensory_capabilities::{
     AudioInputCapability, AudioOutputCapability, CapabilityError, GestureInputCapability,
-    HapticOutputCapability, KeyboardInputCapability, PointerInputCapability,
-    SensoryCapabilities, TouchInputCapability, UIComplexity, VisualOutputCapability,
+    HapticOutputCapability, KeyboardInputCapability, PointerInputCapability, SensoryCapabilities,
+    TouchInputCapability, UIComplexity, VisualOutputCapability,
 };
 
 impl SensoryCapabilities {
@@ -92,13 +92,13 @@ impl SensoryCapabilities {
     fn discover_visual() -> Result<Vec<VisualOutputCapability>, CapabilityError> {
         // For now, we'll use egui/winit to detect the primary display
         // In a full implementation, we'd enumerate all displays
-        
+
         #[cfg(target_arch = "wasm32")]
         {
             // Web platform: use window.screen
             Self::discover_visual_web()
         }
-        
+
         #[cfg(not(target_arch = "wasm32"))]
         {
             // Native platforms: use winit or platform APIs
@@ -122,7 +122,7 @@ impl SensoryCapabilities {
     fn discover_visual_native() -> Result<Vec<VisualOutputCapability>, CapabilityError> {
         // On native platforms, we'll use a simple heuristic based on window size
         // Full implementation would use winit::monitor::MonitorHandle or platform APIs
-        
+
         // For now, return a sensible default based on common desktop resolutions
         // Real implementation would enumerate monitors and get actual capabilities
         Ok(vec![VisualOutputCapability::TwoD {
@@ -140,7 +140,7 @@ impl SensoryCapabilities {
     fn discover_audio() -> Result<Vec<AudioOutputCapability>, CapabilityError> {
         // Use cpal or platform APIs to detect audio devices
         // For now, assume stereo output is available
-        
+
         Ok(vec![AudioOutputCapability::Stereo {
             sample_rate: 48000,
             bit_depth: 16,
@@ -157,7 +157,7 @@ impl SensoryCapabilities {
         // - Game controllers with rumble
         // - VR controllers
         // - Mobile device vibration
-        
+
         Ok(vec![]) // No haptics by default
     }
 
@@ -168,7 +168,7 @@ impl SensoryCapabilities {
     fn discover_pointer() -> Result<Vec<PointerInputCapability>, CapabilityError> {
         // Check for mouse, touchpad, or VR controllers
         // For now, assume mouse is available on desktop platforms
-        
+
         #[cfg(target_arch = "wasm32")]
         {
             // Web: assume mouse or touch
@@ -179,7 +179,7 @@ impl SensoryCapabilities {
                 button_count: 3,
             }])
         }
-        
+
         #[cfg(not(target_arch = "wasm32"))]
         {
             // Native: assume mouse
@@ -199,7 +199,7 @@ impl SensoryCapabilities {
     fn discover_keyboard() -> Result<Vec<KeyboardInputCapability>, CapabilityError> {
         // Check for physical or virtual keyboard
         // For now, assume physical keyboard on desktop platforms
-        
+
         #[cfg(target_arch = "wasm32")]
         {
             // Web: virtual keyboard likely
@@ -209,7 +209,7 @@ impl SensoryCapabilities {
                 supports_swipe: false,
             }])
         }
-        
+
         #[cfg(not(target_arch = "wasm32"))]
         {
             // Native: physical keyboard likely
@@ -228,14 +228,14 @@ impl SensoryCapabilities {
     fn discover_touch() -> Result<Vec<TouchInputCapability>, CapabilityError> {
         // Check for touchscreen
         // Would use platform APIs to detect touch capability
-        
+
         #[cfg(target_arch = "wasm32")]
         {
             // Web: check navigator.maxTouchPoints
             // For now, assume no touch unless on mobile
             Ok(vec![])
         }
-        
+
         #[cfg(not(target_arch = "wasm32"))]
         {
             // Native: would check for touch devices
@@ -251,7 +251,7 @@ impl SensoryCapabilities {
     fn discover_audio_input() -> Result<Vec<AudioInputCapability>, CapabilityError> {
         // Check for microphone
         // For now, assume microphone is available
-        
+
         Ok(vec![AudioInputCapability {
             sample_rate: 48000,
             channels: 1, // Mono microphone
@@ -267,7 +267,7 @@ impl SensoryCapabilities {
     fn discover_gesture() -> Result<Vec<GestureInputCapability>, CapabilityError> {
         // Check for cameras, depth sensors, VR tracking
         // Most systems don't have gesture input
-        
+
         Ok(vec![]) // No gesture input by default
     }
 }
@@ -331,15 +331,15 @@ mod tests {
     fn test_discover_capabilities() {
         // This will use actual platform detection
         let result = SensoryCapabilities::discover();
-        
+
         // Should succeed (at least audio should be detected)
         assert!(result.is_ok());
-        
+
         let caps = result.unwrap();
-        
+
         // Should have some output capability
         assert!(caps.has_minimal_output());
-        
+
         // Should determine some UI complexity
         let complexity = caps.determine_ui_complexity();
         println!("Detected complexity: {}", complexity);
@@ -413,10 +413,6 @@ mod tests {
             button_count: 4,
         }];
 
-        assert_eq!(
-            caps.determine_ui_complexity(),
-            UIComplexity::Immersive
-        );
+        assert_eq!(caps.determine_ui_complexity(), UIComplexity::Immersive);
     }
 }
-

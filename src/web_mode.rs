@@ -1,15 +1,14 @@
 //! Web mode - HTTP/WebSocket server
-//! 
+//!
 //! Pure Rust! ✅
 //! Dependencies: axum, tower-http (100% Pure Rust)
 
 use anyhow::{Context, Result};
 use axum::{
-    Router,
-    routing::get,
-    response::{Html, IntoResponse},
-    Json,
+    Json, Router,
     extract::State,
+    response::{Html, IntoResponse},
+    routing::get,
 };
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -17,20 +16,23 @@ use tower_http::services::ServeDir;
 
 use crate::data_service::DataService;
 
-pub async fn run(bind: &str, scenario: Option<String>, workers: usize, data_service: Arc<DataService>) -> Result<()> {
+pub async fn run(
+    bind: &str,
+    scenario: Option<String>,
+    workers: usize,
+    data_service: Arc<DataService>,
+) -> Result<()> {
     tracing::info!(
         bind,
         scenario = ?scenario,
         workers,
         "Starting web UI server (Pure Rust!)"
     );
-    
-    let addr: SocketAddr = bind
-        .parse()
-        .context("Failed to parse bind address")?;
-    
+
+    let addr: SocketAddr = bind.parse().context("Failed to parse bind address")?;
+
     tracing::info!("✅ Using shared DataService (zero duplication!)");
-    
+
     // Build router with shared state
     let app = Router::new()
         .route("/", get(index_handler))
@@ -40,18 +42,18 @@ pub async fn run(bind: &str, scenario: Option<String>, workers: usize, data_serv
         .route("/api/snapshot", get(snapshot_handler))
         .nest_service("/static", ServeDir::new("web/static"))
         .with_state(data_service);
-    
+
     tracing::info!("🌐 Web UI server listening on http://{}", addr);
-    
+
     // Start server (fully concurrent!)
     let listener = tokio::net::TcpListener::bind(&addr)
         .await
         .context("Failed to bind to address")?;
-    
+
     axum::serve(listener, app)
         .await
         .context("Web server error")?;
-    
+
     Ok(())
 }
 
@@ -74,9 +76,7 @@ async fn status_handler() -> impl IntoResponse {
     }))
 }
 
-async fn primals_handler(
-    State(service): State<Arc<DataService>>
-) -> impl IntoResponse {
+async fn primals_handler(State(service): State<Arc<DataService>>) -> impl IntoResponse {
     // Get real data from unified service!
     match service.snapshot().await {
         Ok(snapshot) => Json(serde_json::json!({
@@ -93,9 +93,7 @@ async fn primals_handler(
     }
 }
 
-async fn snapshot_handler(
-    State(service): State<Arc<DataService>>
-) -> impl IntoResponse {
+async fn snapshot_handler(State(service): State<Arc<DataService>>) -> impl IntoResponse {
     // Full snapshot with all data
     match service.snapshot().await {
         Ok(snapshot) => Json(serde_json::json!(snapshot)),
@@ -120,8 +118,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_primals_endpoint() {
-        let response = primals_handler().await.into_response();
+        let data_service = Arc::new(DataService::new());
+        let response = primals_handler(State(data_service)).await.into_response();
         assert_eq!(response.status(), 200);
     }
 }
-

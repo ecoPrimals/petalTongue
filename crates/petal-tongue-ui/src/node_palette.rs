@@ -69,8 +69,13 @@ impl NodePalette {
                 if self.search.is_empty() {
                     true
                 } else {
-                    info.name.to_lowercase().contains(&self.search.to_lowercase())
-                        || info.description.to_lowercase().contains(&self.search.to_lowercase())
+                    info.name
+                        .to_lowercase()
+                        .contains(&self.search.to_lowercase())
+                        || info
+                            .description
+                            .to_lowercase()
+                            .contains(&self.search.to_lowercase())
                 }
             })
             .cloned()
@@ -83,10 +88,7 @@ impl NodePalette {
         }
 
         if self.node_types.is_empty() {
-            ui.label(
-                RichText::new("No nodes available")
-                    .color(palette.text_dim),
-            );
+            ui.label(RichText::new("No nodes available").color(palette.text_dim));
         }
     }
 
@@ -98,16 +100,17 @@ impl NodePalette {
             Color32::from_rgb(74, 144, 226) // Default: Blue
         };
 
-        let response = ui.add(
-            egui::Button::new(
-                RichText::new(format!("{} {}", info.icon, info.name))
-                    .size(14.0)
-                    .color(Color32::WHITE),
+        let response = ui
+            .add(
+                egui::Button::new(
+                    RichText::new(format!("{} {}", info.icon, info.name))
+                        .size(14.0)
+                        .color(Color32::WHITE),
+                )
+                .fill(button_color)
+                .min_size(egui::Vec2::new(ui.available_width(), 40.0)),
             )
-            .fill(button_color)
-            .min_size(egui::Vec2::new(ui.available_width(), 40.0)),
-        )
-        .on_hover_text(&info.description); // Capture returned response
+            .on_hover_text(&info.description); // Capture returned response
 
         // Handle drag start
         if response.drag_started() {
@@ -209,10 +212,18 @@ mod tests {
         assert_eq!(node_types.len(), 4);
 
         // Verify we have all expected types
-        let has_primal_start = node_types.iter().any(|n| matches!(n.node_type, NodeType::PrimalStart));
-        let has_verification = node_types.iter().any(|n| matches!(n.node_type, NodeType::Verification));
-        let has_wait_for = node_types.iter().any(|n| matches!(n.node_type, NodeType::WaitFor));
-        let has_conditional = node_types.iter().any(|n| matches!(n.node_type, NodeType::Conditional));
+        let has_primal_start = node_types
+            .iter()
+            .any(|n| matches!(n.node_type, NodeType::PrimalStart));
+        let has_verification = node_types
+            .iter()
+            .any(|n| matches!(n.node_type, NodeType::Verification));
+        let has_wait_for = node_types
+            .iter()
+            .any(|n| matches!(n.node_type, NodeType::WaitFor));
+        let has_conditional = node_types
+            .iter()
+            .any(|n| matches!(n.node_type, NodeType::Conditional));
 
         assert!(has_primal_start);
         assert!(has_verification);
@@ -229,7 +240,11 @@ mod tests {
         let filtered: Vec<_> = palette
             .node_types
             .iter()
-            .filter(|info| info.name.to_lowercase().contains(&palette.search.to_lowercase()))
+            .filter(|info| {
+                info.name
+                    .to_lowercase()
+                    .contains(&palette.search.to_lowercase())
+            })
             .collect();
 
         assert_eq!(filtered.len(), 1);
@@ -260,4 +275,3 @@ mod tests {
         assert_eq!(info.required_params.len(), 2); // primal_name, family_id
     }
 }
-

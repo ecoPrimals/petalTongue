@@ -1,21 +1,21 @@
 //! Headless mode - Pure Rust rendering without GUI
-//! 
+//!
 //! Pure Rust! ✅
 //! No GUI dependencies
 
+use crate::data_service::DataService;
 use anyhow::Result;
 use std::sync::Arc;
-use crate::data_service::DataService;
 
 pub async fn run(_bind: &str, _workers: usize, data_service: Arc<DataService>) -> Result<()> {
     tracing::info!("Starting headless rendering mode (Pure Rust!)");
-    
+
     tracing::info!("✅ Using shared DataService (zero duplication!)");
-    
+
     // Output minimal info
     println!("🌸 petalTongue headless mode (Pure Rust!)");
     println!("Headless mode active - Pure Rust rendering ready");
-    
+
     // Show data from DataService
     match data_service.snapshot().await {
         Ok(snapshot) => {
@@ -27,7 +27,7 @@ pub async fn run(_bind: &str, _workers: usize, data_service: Arc<DataService>) -
             tracing::warn!("Failed to get snapshot: {}", e);
         }
     }
-    
+
     tracing::info!("Headless mode started successfully");
     Ok(())
 }
@@ -55,11 +55,9 @@ mod tests {
                 })
             })
             .collect();
-        
+
         for handle in handles {
             assert!(handle.await.is_ok());
         }
     }
 }
-
-

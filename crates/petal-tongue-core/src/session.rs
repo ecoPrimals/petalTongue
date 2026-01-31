@@ -542,6 +542,78 @@ impl SessionManager {
         self.dirty = true;
         Ok(())
     }
+
+    // Compatibility aliases for e2e tests
+    
+    /// Check if session has unsaved changes (alias for is_dirty)
+    #[must_use]
+    pub fn has_unsaved_changes(&self) -> bool {
+        self.is_dirty()
+    }
+
+    /// Export current session to a path (alias for export)
+    ///
+    /// # Errors
+    ///
+    /// Returns error if export fails
+    pub fn export_session(&self, path: &Path) -> Result<(), SessionError> {
+        self.export(path)
+    }
+
+    /// Import session from a path (alias for import)
+    ///
+    /// # Errors
+    ///
+    /// Returns error if import fails
+    pub fn import_session(&mut self, path: &Path) -> Result<(), SessionError> {
+        self.import(path)
+    }
+
+    /// Merge another session into the current one
+    ///
+    /// # Errors
+    ///
+    /// Returns error if merge fails
+    pub fn merge_session(&mut self, path: &Path) -> Result<(), SessionError> {
+        let other_state = SessionState::import(path)?;
+        
+        if let Some(current_state) = &mut self.current_state {
+            // Merge nodes (avoiding duplicates by ID)
+            let existing_ids: std::collections::HashSet<_> = 
+                current_state.nodes.iter().map(|n| n.id.clone()).collect();
+            
+            for node in other_state.nodes {
+                if !existing_ids.contains(&node.id) {
+                    current_state.nodes.push(node);
+                }
+            }
+            
+            // Merge edges (avoiding duplicates)
+            let existing_edges: std::collections::HashSet<_> = 
+                current_state.edges.iter()
+                    .map(|e| (e.from.clone(), e.to.clone()))
+                    .collect();
+            
+            for edge in other_state.edges {
+                let edge_key = (edge.from.clone(), edge.to.clone());
+                if !existing_edges.contains(&edge_key) {
+                    current_state.edges.push(edge);
+                }
+            }
+            
+            // Merge node positions
+            current_state.node_positions.extend(other_state.node_positions);
+            
+            // Merge panels
+            current_state.panels_open.extend(other_state.panels_open);
+            
+            self.dirty = true;
+            Ok(())
+        } else {
+            Err(SessionError::NoState)
+        }
+    }
+
 }
 
 /// Errors that can occur during session management
@@ -610,7 +682,9 @@ fn get_session_path(instance_id: &InstanceId) -> Result<PathBuf, SessionError> {
 fn get_base_dir() -> Result<PathBuf, SessionError> {
     crate::platform_dirs::data_dir()
         .map(|dir| dir.join("petaltongue"))
-        .map_err(|e| SessionError::DirectoryError(format!("Could not determine data directory: {}", e)))
+        .map_err(|e| {
+            SessionError::DirectoryError(format!("Could not determine data directory: {}", e))
+        })
 }
 
 #[cfg(test)]

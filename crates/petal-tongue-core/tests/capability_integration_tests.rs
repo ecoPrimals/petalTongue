@@ -165,7 +165,9 @@ fn test_audio_pure_rust_implementation() {
 
     // Reason should mention the implementation
     assert!(
-        audio_cap.reason.contains("AudioCanvas") || audio_cap.reason.contains("/dev/snd") || audio_cap.reason.contains("pure Rust"),
+        audio_cap.reason.contains("AudioCanvas")
+            || audio_cap.reason.contains("/dev/snd")
+            || audio_cap.reason.contains("pure Rust"),
         "Reason should mention AudioCanvas or /dev/snd: {}",
         audio_cap.reason
     );

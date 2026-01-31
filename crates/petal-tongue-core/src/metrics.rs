@@ -17,10 +17,10 @@ const MAX_HISTORY_POINTS: usize = 30;
 pub struct SystemMetrics {
     /// When this metrics snapshot was taken
     pub timestamp: chrono::DateTime<chrono::Utc>,
-    
+
     /// System resource metrics (CPU, memory, uptime)
     pub system: SystemResourceMetrics,
-    
+
     /// Neural API specific metrics
     pub neural_api: NeuralApiMetrics,
 }
@@ -30,16 +30,16 @@ pub struct SystemMetrics {
 pub struct SystemResourceMetrics {
     /// CPU usage percentage (0.0-100.0)
     pub cpu_percent: f32,
-    
+
     /// Memory used in megabytes
     pub memory_used_mb: u64,
-    
+
     /// Total memory in megabytes
     pub memory_total_mb: u64,
-    
+
     /// Memory usage percentage (0.0-100.0)
     pub memory_percent: f32,
-    
+
     /// System uptime in seconds
     pub uptime_seconds: u64,
 }
@@ -49,13 +49,13 @@ pub struct SystemResourceMetrics {
 pub struct NeuralApiMetrics {
     /// Family ID
     pub family_id: String,
-    
+
     /// Number of active primals in the ecosystem
     pub active_primals: u32,
-    
+
     /// Number of available graphs
     pub graphs_available: u32,
-    
+
     /// Number of currently executing graphs
     pub active_executions: u32,
 }
@@ -65,7 +65,7 @@ pub struct NeuralApiMetrics {
 pub struct CpuHistory {
     /// Ring buffer of CPU percentages (newest at the back)
     values: VecDeque<f32>,
-    
+
     /// Maximum number of points to retain
     max_points: usize,
 }
@@ -79,7 +79,7 @@ impl CpuHistory {
             max_points: MAX_HISTORY_POINTS,
         }
     }
-    
+
     /// Create with custom max points
     #[must_use]
     pub fn with_capacity(max_points: usize) -> Self {
@@ -88,7 +88,7 @@ impl CpuHistory {
             max_points,
         }
     }
-    
+
     /// Add a new CPU percentage value
     pub fn push(&mut self, cpu_percent: f32) {
         if self.values.len() >= self.max_points {
@@ -96,19 +96,19 @@ impl CpuHistory {
         }
         self.values.push_back(cpu_percent);
     }
-    
+
     /// Get all values as a slice (for plotting)
     #[must_use]
     pub fn values(&self) -> Vec<f32> {
         self.values.iter().copied().collect()
     }
-    
+
     /// Get the most recent value
     #[must_use]
     pub fn current(&self) -> Option<f32> {
         self.values.back().copied()
     }
-    
+
     /// Get the average over all recorded values
     #[must_use]
     pub fn average(&self) -> f32 {
@@ -118,24 +118,24 @@ impl CpuHistory {
             self.values.iter().sum::<f32>() / self.values.len() as f32
         }
     }
-    
+
     /// Get the maximum value in history
     #[must_use]
     pub fn max(&self) -> f32 {
         self.values.iter().copied().fold(0.0, f32::max)
     }
-    
+
     /// Get the minimum value in history
     #[must_use]
     pub fn min(&self) -> f32 {
         self.values.iter().copied().fold(100.0, f32::min)
     }
-    
+
     /// Clear all history
     pub fn clear(&mut self) {
         self.values.clear();
     }
-    
+
     /// Check if there's enough data for a meaningful sparkline (at least 3 points)
     #[must_use]
     pub fn has_sufficient_data(&self) -> bool {
@@ -154,7 +154,7 @@ impl Default for CpuHistory {
 pub struct MemoryHistory {
     /// Ring buffer of memory percentages (newest at the back)
     values: VecDeque<f32>,
-    
+
     /// Maximum number of points to retain
     max_points: usize,
 }
@@ -168,7 +168,7 @@ impl MemoryHistory {
             max_points: MAX_HISTORY_POINTS,
         }
     }
-    
+
     /// Add a new memory percentage value
     pub fn push(&mut self, memory_percent: f32) {
         if self.values.len() >= self.max_points {
@@ -176,13 +176,13 @@ impl MemoryHistory {
         }
         self.values.push_back(memory_percent);
     }
-    
+
     /// Get all values as a slice (for plotting)
     #[must_use]
     pub fn values(&self) -> Vec<f32> {
         self.values.iter().copied().collect()
     }
-    
+
     /// Get the most recent value
     #[must_use]
     pub fn current(&self) -> Option<f32> {
@@ -217,13 +217,13 @@ impl SystemMetrics {
             },
         }
     }
-    
+
     /// Get formatted uptime string (e.g., "1d 2h 34m")
     #[must_use]
     pub fn uptime_formatted(&self) -> String {
         format_uptime(self.system.uptime_seconds)
     }
-    
+
     /// Get CPU threshold level for color coding
     #[must_use]
     pub const fn cpu_threshold(&self) -> ThresholdLevel {
@@ -233,7 +233,7 @@ impl SystemMetrics {
             _ => ThresholdLevel::High,
         }
     }
-    
+
     /// Get memory threshold level for color coding
     #[must_use]
     pub const fn memory_threshold(&self) -> ThresholdLevel {
@@ -250,10 +250,10 @@ impl SystemMetrics {
 pub enum ThresholdLevel {
     /// Low usage (<50%)
     Low,
-    
+
     /// Medium usage (50-80%)
     Medium,
-    
+
     /// High usage (>80%)
     High,
 }
@@ -275,7 +275,7 @@ fn format_uptime(seconds: u64) -> String {
     let days = seconds / 86_400;
     let hours = (seconds % 86_400) / 3_600;
     let minutes = (seconds % 3_600) / 60;
-    
+
     if days > 0 {
         format!("{}d {}h {}m", days, hours, minutes)
     } else if hours > 0 {
@@ -295,7 +295,7 @@ mod tests {
         history.push(10.0);
         history.push(20.0);
         history.push(30.0);
-        
+
         assert_eq!(history.values(), vec![10.0, 20.0, 30.0]);
         assert_eq!(history.current(), Some(30.0));
     }
@@ -307,7 +307,7 @@ mod tests {
         history.push(20.0);
         history.push(30.0);
         history.push(40.0); // Should evict 10.0
-        
+
         assert_eq!(history.values(), vec![20.0, 30.0, 40.0]);
     }
 
@@ -317,7 +317,7 @@ mod tests {
         history.push(10.0);
         history.push(20.0);
         history.push(30.0);
-        
+
         assert_eq!(history.average(), 20.0);
         assert_eq!(history.max(), 30.0);
         assert_eq!(history.min(), 10.0);
@@ -350,7 +350,7 @@ mod tests {
                 active_executions: 1,
             },
         };
-        
+
         assert_eq!(metrics.cpu_threshold(), ThresholdLevel::Low);
         assert_eq!(metrics.memory_threshold(), ThresholdLevel::Medium);
     }
@@ -363,4 +363,3 @@ mod tests {
         assert_eq!(decoded.neural_api.family_id, "test");
     }
 }
-

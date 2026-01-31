@@ -53,9 +53,9 @@ pub mod toadstool;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use petal_tongue_core::{GraphEngine, RenderingCapabilities};
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
-use petal_tongue_core::{GraphEngine, RenderingCapabilities};
 
 /// UI Backend trait - abstraction over different rendering strategies
 ///
@@ -193,9 +193,7 @@ impl BackendChoice {
 /// // Force Toadstool
 /// let backend = create_backend(Some(BackendChoice::Toadstool)).await?;
 /// ```
-pub async fn create_backend(
-    choice: Option<BackendChoice>,
-) -> Result<Box<dyn UIBackend>> {
+pub async fn create_backend(choice: Option<BackendChoice>) -> Result<Box<dyn UIBackend>> {
     let choice = choice.unwrap_or(BackendChoice::Auto);
 
     tracing::info!("🎨 Creating UI backend (choice: {:?})", choice);
@@ -238,15 +236,16 @@ async fn create_eframe_backend() -> Result<Box<dyn UIBackend>> {
     {
         use crate::backend::eframe::EguiBackend;
         let mut backend = EguiBackend::new();
-        backend.init().await.context("Failed to initialize eframe backend")?;
+        backend
+            .init()
+            .await
+            .context("Failed to initialize eframe backend")?;
         Ok(Box::new(backend))
     }
 
     #[cfg(not(feature = "ui-eframe"))]
     {
-        anyhow::bail!(
-            "eframe backend not available (compile with --features ui-eframe)"
-        )
+        anyhow::bail!("eframe backend not available (compile with --features ui-eframe)")
     }
 }
 
@@ -255,17 +254,19 @@ async fn create_toadstool_backend() -> Result<Box<dyn UIBackend>> {
     #[cfg(feature = "ui-toadstool")]
     {
         use crate::backend::toadstool::ToadstoolBackend;
-        let mut backend = ToadstoolBackend::new().await
+        let mut backend = ToadstoolBackend::new()
+            .await
             .context("Failed to create Toadstool backend")?;
-        backend.init().await.context("Failed to initialize Toadstool backend")?;
+        backend
+            .init()
+            .await
+            .context("Failed to initialize Toadstool backend")?;
         Ok(Box::new(backend))
     }
 
     #[cfg(not(feature = "ui-toadstool"))]
     {
-        anyhow::bail!(
-            "Toadstool backend not available (compile with --features ui-toadstool)"
-        )
+        anyhow::bail!("Toadstool backend not available (compile with --features ui-toadstool)")
     }
 }
 
@@ -287,10 +288,19 @@ mod tests {
     #[test]
     fn test_backend_choice_parsing() {
         assert_eq!(BackendChoice::from_str("auto"), Some(BackendChoice::Auto));
-        assert_eq!(BackendChoice::from_str("eframe"), Some(BackendChoice::Eframe));
+        assert_eq!(
+            BackendChoice::from_str("eframe"),
+            Some(BackendChoice::Eframe)
+        );
         assert_eq!(BackendChoice::from_str("egui"), Some(BackendChoice::Eframe));
-        assert_eq!(BackendChoice::from_str("toadstool"), Some(BackendChoice::Toadstool));
-        assert_eq!(BackendChoice::from_str("pure-rust"), Some(BackendChoice::Toadstool));
+        assert_eq!(
+            BackendChoice::from_str("toadstool"),
+            Some(BackendChoice::Toadstool)
+        );
+        assert_eq!(
+            BackendChoice::from_str("pure-rust"),
+            Some(BackendChoice::Toadstool)
+        );
         assert_eq!(BackendChoice::from_str("invalid"), None);
     }
 
@@ -302,4 +312,3 @@ mod tests {
         assert!(!caps.pure_rust);
     }
 }
-

@@ -16,8 +16,8 @@
 //! Don't tie state to a device. Use device-agnostic data structures
 //! that can be serialized, transferred, and deserialized on any device.
 
-use crate::dynamic_schema::{DynamicData, DynamicValue};
 use crate::adaptive_rendering::DeviceType;
+use crate::dynamic_schema::{DynamicData, DynamicValue};
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -144,8 +144,7 @@ impl LocalStatePersistence {
 impl StatePersistence for LocalStatePersistence {
     fn save(&self, state: &DeviceState) -> Result<()> {
         let path = self.state_file(&state.device_id);
-        let json = serde_json::to_string_pretty(state)
-            .context("Failed to serialize state")?;
+        let json = serde_json::to_string_pretty(state).context("Failed to serialize state")?;
 
         std::fs::write(&path, json)
             .with_context(|| format!("Failed to write state file: {}", path.display()))?;
@@ -163,8 +162,8 @@ impl StatePersistence for LocalStatePersistence {
         let contents = std::fs::read_to_string(&path)
             .with_context(|| format!("Failed to read state file: {}", path.display()))?;
 
-        let state: DeviceState = serde_json::from_str(&contents)
-            .context("Failed to deserialize state")?;
+        let state: DeviceState =
+            serde_json::from_str(&contents).context("Failed to deserialize state")?;
 
         Ok(Some(state))
     }
@@ -264,13 +263,21 @@ mod tests {
     fn test_device_state() {
         let mut state = DeviceState::new("test-device".to_string(), DeviceType::Desktop);
 
-        state.set_ui_state("selected_primal".to_string(), DynamicValue::String("beardog".to_string()));
+        state.set_ui_state(
+            "selected_primal".to_string(),
+            DynamicValue::String("beardog".to_string()),
+        );
         assert_eq!(
-            state.get_ui_state("selected_primal").and_then(|v| v.as_str()),
+            state
+                .get_ui_state("selected_primal")
+                .and_then(|v| v.as_str()),
             Some("beardog")
         );
 
-        state.set_preference("theme".to_string(), DynamicValue::String("dark".to_string()));
+        state.set_preference(
+            "theme".to_string(),
+            DynamicValue::String("dark".to_string()),
+        );
         assert_eq!(
             state.get_preference("theme").and_then(|v| v.as_str()),
             Some("dark")
@@ -280,10 +287,16 @@ mod tests {
     #[test]
     fn test_state_merge() {
         let mut state1 = DeviceState::new("device1".to_string(), DeviceType::Desktop);
-        state1.set_ui_state("key1".to_string(), DynamicValue::String("value1".to_string()));
+        state1.set_ui_state(
+            "key1".to_string(),
+            DynamicValue::String("value1".to_string()),
+        );
 
         let mut state2 = DeviceState::new("device2".to_string(), DeviceType::Phone);
-        state2.set_ui_state("key2".to_string(), DynamicValue::String("value2".to_string()));
+        state2.set_ui_state(
+            "key2".to_string(),
+            DynamicValue::String("value2".to_string()),
+        );
         state2.last_updated = Utc::now(); // Make state2 newer
 
         state1.merge(&state2);
@@ -293,4 +306,3 @@ mod tests {
         assert!(state1.get_ui_state("key2").is_some());
     }
 }
-

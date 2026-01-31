@@ -97,9 +97,7 @@ pub fn data_dir() -> Result<PathBuf, DirError> {
 
         // Fallback to constructing from USERPROFILE
         if let Ok(profile) = std::env::var("USERPROFILE") {
-            return Ok(PathBuf::from(profile)
-                .join("AppData")
-                .join("Roaming"));
+            return Ok(PathBuf::from(profile).join("AppData").join("Roaming"));
         }
 
         Err(DirError::new(
@@ -190,20 +188,14 @@ mod tests {
     fn test_data_dir_returns_path() {
         // Should always return a path on supported platforms
         let dir = data_dir().expect("Should get data dir on this platform");
-        assert!(
-            dir.as_os_str().len() > 0,
-            "Data dir should not be empty"
-        );
+        assert!(dir.as_os_str().len() > 0, "Data dir should not be empty");
     }
 
     #[test]
     fn test_config_dir_returns_path() {
         // Should always return a path on supported platforms
         let dir = config_dir().expect("Should get config dir on this platform");
-        assert!(
-            dir.as_os_str().len() > 0,
-            "Config dir should not be empty"
-        );
+        assert!(dir.as_os_str().len() > 0, "Config dir should not be empty");
     }
 
     #[test]
@@ -247,4 +239,3 @@ mod tests {
         std::env::remove_var("APPDATA");
     }
 }
-

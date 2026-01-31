@@ -193,7 +193,9 @@ impl GraphValidator {
                             missing.join(", ")
                         ),
                     )
-                    .with_suggestion("Fill in all required parameters in the Property Panel".to_string()),
+                    .with_suggestion(
+                        "Fill in all required parameters in the Property Panel".to_string(),
+                    ),
                 );
             }
 
@@ -264,11 +266,10 @@ impl GraphValidator {
             // Check for self-loops
             if edge.from == edge.to {
                 result.add_issue(
-                    ValidationIssue::warning(format!(
-                        "Node '{}' has a self-loop edge",
-                        edge.from
-                    ))
-                    .with_suggestion("Remove self-loop edges - they may cause infinite loops".to_string()),
+                    ValidationIssue::warning(format!("Node '{}' has a self-loop edge", edge.from))
+                        .with_suggestion(
+                            "Remove self-loop edges - they may cause infinite loops".to_string(),
+                        ),
                 );
             }
         }
@@ -302,7 +303,8 @@ impl GraphValidator {
                             node_id
                         ))
                         .with_suggestion(
-                            "Remove edges to break the cycle - graphs must be acyclic (DAG)".to_string(),
+                            "Remove edges to break the cycle - graphs must be acyclic (DAG)"
+                                .to_string(),
                         ),
                     );
                     return; // Report first cycle only
@@ -363,7 +365,8 @@ impl GraphValidator {
                     "No start nodes found - all nodes have incoming edges".to_string(),
                 )
                 .with_suggestion(
-                    "Add a PrimalStart node or ensure at least one node has no dependencies".to_string(),
+                    "Add a PrimalStart node or ensure at least one node has no dependencies"
+                        .to_string(),
                 ),
             );
             return;
@@ -406,9 +409,7 @@ impl GraphValidator {
                         node.id.clone(),
                         format!("Node '{}' is unreachable", node.id),
                     )
-                    .with_suggestion(
-                        "Connect this node to the graph or remove it".to_string(),
-                    ),
+                    .with_suggestion("Connect this node to the graph or remove it".to_string()),
                 );
             }
         }
@@ -577,10 +578,7 @@ mod tests {
         let result = GraphValidator::validate(&graph);
         assert!(!result.is_valid());
         assert!(result.has_errors());
-        assert!(result
-            .errors()
-            .iter()
-            .any(|e| e.message.contains("cycle")));
+        assert!(result.errors().iter().any(|e| e.message.contains("cycle")));
     }
 
     #[test]
@@ -598,7 +596,7 @@ mod tests {
         let mut node3 = GraphNode::new(NodeType::WaitFor, Vec2::zero());
         node3.set_parameter("condition".to_string(), "test".to_string());
         node3.set_parameter("timeout".to_string(), "30".to_string());
-        
+
         let mut node4 = GraphNode::new(NodeType::Conditional, Vec2::zero());
         node4.set_parameter("condition".to_string(), "test2".to_string());
 
@@ -619,12 +617,15 @@ mod tests {
         graph.add_edge(GraphEdge::dependency(id3, id4)); // Make node4 have incoming edge
 
         let result = GraphValidator::validate(&graph);
-        
+
         // Debug: print warnings
         if !result.has_warnings() {
-            println!("Expected warnings but got none. Issues: {:?}", result.issues);
+            println!(
+                "Expected warnings but got none. Issues: {:?}",
+                result.issues
+            );
         }
-        
+
         // Actually, in a valid DAG, multiple disconnected subgraphs are fine!
         // Each subgraph can execute independently. So this shouldn't generate warnings.
         // Let me change the test - we want a node that has incoming edges but is disconnected
@@ -707,10 +708,11 @@ mod tests {
 
         let result = GraphValidator::validate(&graph);
         assert!(result.has_warnings());
-        assert!(result
-            .warnings()
-            .iter()
-            .any(|w| w.message.contains("self-loop")));
+        assert!(
+            result
+                .warnings()
+                .iter()
+                .any(|w| w.message.contains("self-loop"))
+        );
     }
 }
-

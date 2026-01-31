@@ -67,10 +67,7 @@ impl PropertyPanel {
                 self.editing_node = None;
             }
         } else {
-            ui.label(
-                RichText::new("No node selected")
-                    .color(palette.text_dim),
-            );
+            ui.label(RichText::new("No node selected").color(palette.text_dim));
             ui.add_space(8.0);
             ui.label("Select a node to edit its properties");
         }
@@ -81,7 +78,11 @@ impl PropertyPanel {
         // Node type (read-only)
         ui.horizontal(|ui| {
             ui.label(RichText::new("Type:").strong());
-            ui.label(format!("{} {}", node.node_type.icon(), node.node_type.display_name()));
+            ui.label(format!(
+                "{} {}",
+                node.node_type.icon(),
+                node.node_type.display_name()
+            ));
         });
 
         ui.add_space(8.0);
@@ -99,7 +100,7 @@ impl PropertyPanel {
 
         // Required parameters (discovered from node type!)
         let required_params = node.node_type.required_parameters();
-        
+
         if required_params.is_empty() {
             ui.label("No parameters required");
         } else {
@@ -137,13 +138,14 @@ impl PropertyPanel {
     fn render_parameter_field(&mut self, ui: &mut Ui, param_name: &str, palette: &ColorPalette) {
         ui.horizontal(|ui| {
             // Label
-            ui.label(
-                RichText::new(format!("{}:", param_name))
-                    .size(13.0),
-            );
+            ui.label(RichText::new(format!("{}:", param_name)).size(13.0));
 
             // Get or create temp value
-            let current_value = self.temp_params.get(param_name).cloned().unwrap_or_default();
+            let current_value = self
+                .temp_params
+                .get(param_name)
+                .cloned()
+                .unwrap_or_default();
             let mut new_value = current_value.clone();
 
             // Input field
@@ -151,22 +153,17 @@ impl PropertyPanel {
 
             // Update temp params if changed
             if response.changed() {
-                self.temp_params.insert(param_name.to_string(), new_value.clone());
+                self.temp_params
+                    .insert(param_name.to_string(), new_value.clone());
                 // Clear error for this field
                 self.errors.remove(param_name);
             }
 
             // Show error indicator
             if self.errors.contains_key(param_name) {
-                ui.label(
-                    RichText::new("❌")
-                        .color(Color32::from_rgb(208, 2, 27)),
-                );
+                ui.label(RichText::new("❌").color(Color32::from_rgb(208, 2, 27)));
             } else if !new_value.is_empty() {
-                ui.label(
-                    RichText::new("✅")
-                        .color(Color32::from_rgb(40, 180, 40)),
-                );
+                ui.label(RichText::new("✅").color(Color32::from_rgb(40, 180, 40)));
             }
         });
 
@@ -200,12 +197,8 @@ impl PropertyPanel {
             let apply_enabled = self.editing_node.is_some();
             let apply_button = ui.add_enabled(
                 apply_enabled,
-                egui::Button::new(
-                    RichText::new("✅ Apply")
-                        .size(14.0)
-                        .color(Color32::WHITE),
-                )
-                .fill(Color32::from_rgb(40, 180, 40)),
+                egui::Button::new(RichText::new("✅ Apply").size(14.0).color(Color32::WHITE))
+                    .fill(Color32::from_rgb(40, 180, 40)),
             );
 
             if apply_button.clicked() {
@@ -215,11 +208,7 @@ impl PropertyPanel {
             // Reset button
             let reset_button = ui.add_enabled(
                 apply_enabled,
-                egui::Button::new(
-                    RichText::new("↻ Reset")
-                        .size(14.0),
-                )
-                .fill(palette.background_alt),
+                egui::Button::new(RichText::new("↻ Reset").size(14.0)).fill(palette.background_alt),
             );
 
             if reset_button.clicked() {
@@ -288,7 +277,8 @@ impl PropertyPanel {
                 } else {
                     // Set error state
                     node.visual_state.has_error = true;
-                    node.visual_state.error_message = Some("Missing required parameters".to_string());
+                    node.visual_state.error_message =
+                        Some("Missing required parameters".to_string());
                 }
             }
         }
@@ -363,7 +353,10 @@ mod tests {
         panel.set_editing_node(Some(node_id.clone()), &graph);
 
         assert_eq!(panel.editing_node, Some(node_id));
-        assert_eq!(panel.temp_params.get("primal_name"), Some(&"beardog".to_string()));
+        assert_eq!(
+            panel.temp_params.get("primal_name"),
+            Some(&"beardog".to_string())
+        );
     }
 
     #[test]
@@ -376,13 +369,20 @@ mod tests {
         graph.add_node(node);
 
         panel.set_editing_node(Some(node_id.clone()), &graph);
-        panel.temp_params.insert("primal_name".to_string(), "beardog".to_string());
-        panel.temp_params.insert("family_id".to_string(), "nat0".to_string());
+        panel
+            .temp_params
+            .insert("primal_name".to_string(), "beardog".to_string());
+        panel
+            .temp_params
+            .insert("family_id".to_string(), "nat0".to_string());
 
         panel.apply_changes(&mut graph);
 
         let node = graph.get_node(&node_id).unwrap();
-        assert_eq!(node.get_parameter("primal_name"), Some(&"beardog".to_string()));
+        assert_eq!(
+            node.get_parameter("primal_name"),
+            Some(&"beardog".to_string())
+        );
         assert_eq!(node.get_parameter("family_id"), Some(&"nat0".to_string()));
         assert!(!node.visual_state.has_error);
     }
@@ -416,11 +416,16 @@ mod tests {
         graph.add_node(node);
 
         panel.set_editing_node(Some(node_id.clone()), &graph);
-        panel.temp_params.insert("primal_name".to_string(), "modified".to_string());
+        panel
+            .temp_params
+            .insert("primal_name".to_string(), "modified".to_string());
 
         panel.reset_changes(&graph);
 
-        assert_eq!(panel.temp_params.get("primal_name"), Some(&"original".to_string()));
+        assert_eq!(
+            panel.temp_params.get("primal_name"),
+            Some(&"original".to_string())
+        );
     }
 
     #[test]
@@ -436,8 +441,9 @@ mod tests {
         panel.set_editing_node(Some(node_id), &graph);
         assert!(!panel.has_unsaved_changes(&graph));
 
-        panel.temp_params.insert("primal_name".to_string(), "modified".to_string());
+        panel
+            .temp_params
+            .insert("primal_name".to_string(), "modified".to_string());
         assert!(panel.has_unsaved_changes(&graph));
     }
 }
-

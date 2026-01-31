@@ -6,7 +6,7 @@
 [![Tests](https://img.shields.io/badge/tests-16%2F16-brightgreen.svg)](./tests)
 [![UniBin](https://img.shields.io/badge/UniBin-✅-brightgreen.svg)](./ECOBUD_PHASE_1_COMPLETE.md)
 [![ecoBin](https://img.shields.io/badge/ecoBin-85%25-green.svg)](./READY_FOR_NEXT_SESSION.md)
-[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](./LICENSE)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./LICENSE)
 
 > **"A sensory coordination layer that composes primal capabilities into coherent experiences"**
 

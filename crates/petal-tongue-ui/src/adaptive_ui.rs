@@ -72,24 +72,37 @@ impl AdaptiveUIManager {
 
     /// Render primal list with device-specific optimizations
     pub fn render_primal_list(&self, ui: &mut egui::Ui, primals: &[PrimalInfo]) {
-        self.renderer.render_primal_list(ui, primals, &self.capabilities);
+        self.renderer
+            .render_primal_list(ui, primals, &self.capabilities);
     }
 
     /// Render topology view with device-specific optimizations
     pub fn render_topology(&self, ui: &mut egui::Ui, primals: &[PrimalInfo]) {
-        self.renderer.render_topology(ui, primals, &self.capabilities);
+        self.renderer
+            .render_topology(ui, primals, &self.capabilities);
     }
 
     /// Render metrics with device-specific optimizations
     pub fn render_metrics(&self, ui: &mut egui::Ui, metrics_data: &str) {
-        self.renderer.render_metrics(ui, metrics_data, &self.capabilities);
+        self.renderer
+            .render_metrics(ui, metrics_data, &self.capabilities);
     }
 }
 
 /// Trait for device-specific UI renderers
 trait AdaptiveUIRenderer: Send + Sync {
-    fn render_primal_list(&self, ui: &mut egui::Ui, primals: &[PrimalInfo], caps: &RenderingCapabilities);
-    fn render_topology(&self, ui: &mut egui::Ui, primals: &[PrimalInfo], caps: &RenderingCapabilities);
+    fn render_primal_list(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        caps: &RenderingCapabilities,
+    );
+    fn render_topology(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        caps: &RenderingCapabilities,
+    );
     fn render_metrics(&self, ui: &mut egui::Ui, metrics_data: &str, caps: &RenderingCapabilities);
 }
 
@@ -106,7 +119,12 @@ impl DesktopUIRenderer {
 }
 
 impl AdaptiveUIRenderer for DesktopUIRenderer {
-    fn render_primal_list(&self, ui: &mut egui::Ui, primals: &[PrimalInfo], _caps: &RenderingCapabilities) {
+    fn render_primal_list(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        _caps: &RenderingCapabilities,
+    ) {
         // Desktop: Full feature set with detailed cards
         ui.heading("🌸 Primals");
         ui.separator();
@@ -153,7 +171,12 @@ impl AdaptiveUIRenderer for DesktopUIRenderer {
         });
     }
 
-    fn render_topology(&self, ui: &mut egui::Ui, primals: &[PrimalInfo], _caps: &RenderingCapabilities) {
+    fn render_topology(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        _caps: &RenderingCapabilities,
+    ) {
         // Desktop: Full graph visualization
         ui.heading("🕸️ Topology");
         ui.separator();
@@ -182,7 +205,12 @@ impl PhoneUIRenderer {
 }
 
 impl AdaptiveUIRenderer for PhoneUIRenderer {
-    fn render_primal_list(&self, ui: &mut egui::Ui, primals: &[PrimalInfo], _caps: &RenderingCapabilities) {
+    fn render_primal_list(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        _caps: &RenderingCapabilities,
+    ) {
         // Phone: Simplified list, touch-optimized
         ui.heading("🌸 Primals");
 
@@ -191,12 +219,20 @@ impl AdaptiveUIRenderer for PhoneUIRenderer {
                 ui.horizontal(|ui| {
                     // Larger touch targets
                     let (color, icon) = match primal.health {
-                        petal_tongue_core::PrimalHealthStatus::Healthy => (egui::Color32::GREEN, "✅"),
-                        petal_tongue_core::PrimalHealthStatus::Warning => (egui::Color32::YELLOW, "⚠️"),
-                        petal_tongue_core::PrimalHealthStatus::Critical => (egui::Color32::RED, "❌"),
-                        petal_tongue_core::PrimalHealthStatus::Unknown => (egui::Color32::GRAY, "❓"),
+                        petal_tongue_core::PrimalHealthStatus::Healthy => {
+                            (egui::Color32::GREEN, "✅")
+                        }
+                        petal_tongue_core::PrimalHealthStatus::Warning => {
+                            (egui::Color32::YELLOW, "⚠️")
+                        }
+                        petal_tongue_core::PrimalHealthStatus::Critical => {
+                            (egui::Color32::RED, "❌")
+                        }
+                        petal_tongue_core::PrimalHealthStatus::Unknown => {
+                            (egui::Color32::GRAY, "❓")
+                        }
                     };
-                    
+
                     ui.colored_label(color, icon);
                     ui.label(&primal.name);
                 });
@@ -205,13 +241,23 @@ impl AdaptiveUIRenderer for PhoneUIRenderer {
         });
     }
 
-    fn render_topology(&self, ui: &mut egui::Ui, primals: &[PrimalInfo], _caps: &RenderingCapabilities) {
+    fn render_topology(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        _caps: &RenderingCapabilities,
+    ) {
         // Phone: Simple count, tap for details
         ui.label(format!("📱 {} primals connected", primals.len()));
         ui.small("Tap primal for details");
     }
 
-    fn render_metrics(&self, ui: &mut egui::Ui, _metrics_data: &str, _caps: &RenderingCapabilities) {
+    fn render_metrics(
+        &self,
+        ui: &mut egui::Ui,
+        _metrics_data: &str,
+        _caps: &RenderingCapabilities,
+    ) {
         // Phone: Key metrics only
         ui.label("📊 Metrics");
         ui.small("(Simplified view)");
@@ -231,9 +277,17 @@ impl WatchUIRenderer {
 }
 
 impl AdaptiveUIRenderer for WatchUIRenderer {
-    fn render_primal_list(&self, ui: &mut egui::Ui, primals: &[PrimalInfo], _caps: &RenderingCapabilities) {
+    fn render_primal_list(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        _caps: &RenderingCapabilities,
+    ) {
         // Watch: Glanceable summary only
-        let healthy = primals.iter().filter(|p| matches!(p.health, petal_tongue_core::PrimalHealthStatus::Healthy)).count();
+        let healthy = primals
+            .iter()
+            .filter(|p| matches!(p.health, petal_tongue_core::PrimalHealthStatus::Healthy))
+            .count();
         let total = primals.len();
 
         if healthy == total {
@@ -243,12 +297,22 @@ impl AdaptiveUIRenderer for WatchUIRenderer {
         }
     }
 
-    fn render_topology(&self, ui: &mut egui::Ui, primals: &[PrimalInfo], _caps: &RenderingCapabilities) {
+    fn render_topology(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        _caps: &RenderingCapabilities,
+    ) {
         // Watch: Icon + count only
         ui.label(format!("🕸️ {}", primals.len()));
     }
 
-    fn render_metrics(&self, ui: &mut egui::Ui, _metrics_data: &str, _caps: &RenderingCapabilities) {
+    fn render_metrics(
+        &self,
+        ui: &mut egui::Ui,
+        _metrics_data: &str,
+        _caps: &RenderingCapabilities,
+    ) {
         // Watch: Single most important metric
         ui.label("📊 OK");
     }
@@ -267,7 +331,12 @@ impl CliUIRenderer {
 }
 
 impl AdaptiveUIRenderer for CliUIRenderer {
-    fn render_primal_list(&self, ui: &mut egui::Ui, primals: &[PrimalInfo], _caps: &RenderingCapabilities) {
+    fn render_primal_list(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        _caps: &RenderingCapabilities,
+    ) {
         // CLI: Plain text list
         for primal in primals {
             let status = match primal.health {
@@ -280,7 +349,12 @@ impl AdaptiveUIRenderer for CliUIRenderer {
         }
     }
 
-    fn render_topology(&self, ui: &mut egui::Ui, primals: &[PrimalInfo], _caps: &RenderingCapabilities) {
+    fn render_topology(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        _caps: &RenderingCapabilities,
+    ) {
         ui.monospace(format!("Topology: {} nodes", primals.len()));
     }
 
@@ -302,15 +376,22 @@ impl TabletUIRenderer {
 }
 
 impl AdaptiveUIRenderer for TabletUIRenderer {
-    fn render_primal_list(&self, ui: &mut egui::Ui, primals: &[PrimalInfo], _caps: &RenderingCapabilities) {
+    fn render_primal_list(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        _caps: &RenderingCapabilities,
+    ) {
         // Tablet: Similar to desktop but with larger touch targets
         ui.heading("🌸 Primals");
-        
+
         egui::ScrollArea::vertical().show(ui, |ui| {
             for primal in primals {
                 ui.horizontal(|ui| {
                     let (color, text) = match primal.health {
-                        petal_tongue_core::PrimalHealthStatus::Healthy => (egui::Color32::GREEN, "●"),
+                        petal_tongue_core::PrimalHealthStatus::Healthy => {
+                            (egui::Color32::GREEN, "●")
+                        }
                         _ => (egui::Color32::GRAY, "○"),
                     };
                     ui.colored_label(color, text);
@@ -322,7 +403,12 @@ impl AdaptiveUIRenderer for TabletUIRenderer {
         });
     }
 
-    fn render_topology(&self, ui: &mut egui::Ui, primals: &[PrimalInfo], _caps: &RenderingCapabilities) {
+    fn render_topology(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        _caps: &RenderingCapabilities,
+    ) {
         ui.heading("🕸️ Topology");
         ui.label(format!("{} primals", primals.len()));
     }
@@ -346,11 +432,16 @@ impl TvUIRenderer {
 }
 
 impl AdaptiveUIRenderer for TvUIRenderer {
-    fn render_primal_list(&self, ui: &mut egui::Ui, primals: &[PrimalInfo], _caps: &RenderingCapabilities) {
+    fn render_primal_list(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        _caps: &RenderingCapabilities,
+    ) {
         // TV: Large text, high contrast, 10-foot UI
         ui.heading(egui::RichText::new("🌸 PRIMALS").size(32.0));
         ui.add_space(20.0);
-        
+
         for primal in primals {
             ui.horizontal(|ui| {
                 let (color, text) = match primal.health {
@@ -364,7 +455,12 @@ impl AdaptiveUIRenderer for TvUIRenderer {
         }
     }
 
-    fn render_topology(&self, ui: &mut egui::Ui, primals: &[PrimalInfo], _caps: &RenderingCapabilities) {
+    fn render_topology(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        _caps: &RenderingCapabilities,
+    ) {
         ui.heading(egui::RichText::new("🕸️ TOPOLOGY").size(32.0));
         ui.label(egui::RichText::new(format!("{} PRIMALS", primals.len())).size(24.0));
     }
@@ -423,4 +519,3 @@ mod tests {
         // Should not panic, defaults to desktop
     }
 }
-

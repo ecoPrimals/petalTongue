@@ -12,9 +12,7 @@
 //! - **Hot-reload** when capabilities change (VR headset plugged in)
 
 use eframe::egui;
-use petal_tongue_core::{
-    CapabilityError, SensoryCapabilities,
-};
+use petal_tongue_core::{CapabilityError, SensoryCapabilities};
 // Import as SensoryUIComplexity to avoid conflict with adaptive_rendering::UIComplexity
 use petal_tongue_core::sensory_capabilities::UIComplexity as SensoryUIComplexity;
 use std::time::Instant;
@@ -144,7 +142,11 @@ pub trait SensoryUIRenderer: Send {
     fn render_topology(&mut self, ui: &mut egui::Ui, graph_engine: &petal_tongue_core::GraphEngine);
 
     /// Render the metrics panel
-    fn render_metrics(&mut self, ui: &mut egui::Ui, metrics: Option<&petal_tongue_core::SystemMetrics>);
+    fn render_metrics(
+        &mut self,
+        ui: &mut egui::Ui,
+        metrics: Option<&petal_tongue_core::SystemMetrics>,
+    );
 
     /// Render the proprioception panel
     fn render_proprioception(
@@ -175,12 +177,23 @@ impl SensoryUIRenderer for MinimalSensoryUI {
         }
     }
 
-    fn render_topology(&mut self, ui: &mut egui::Ui, graph_engine: &petal_tongue_core::GraphEngine) {
+    fn render_topology(
+        &mut self,
+        ui: &mut egui::Ui,
+        graph_engine: &petal_tongue_core::GraphEngine,
+    ) {
         let stats = graph_engine.stats();
-        ui.label(format!("Topology: {} nodes, {} edges", stats.node_count, stats.edge_count));
+        ui.label(format!(
+            "Topology: {} nodes, {} edges",
+            stats.node_count, stats.edge_count
+        ));
     }
 
-    fn render_metrics(&mut self, ui: &mut egui::Ui, metrics: Option<&petal_tongue_core::SystemMetrics>) {
+    fn render_metrics(
+        &mut self,
+        ui: &mut egui::Ui,
+        metrics: Option<&petal_tongue_core::SystemMetrics>,
+    ) {
         if let Some(m) = metrics {
             ui.label(format!("CPU: {:.1}%", m.system.cpu_percent));
             ui.label(format!("Memory: {:.1}%", m.system.memory_percent));
@@ -223,7 +236,11 @@ impl SensoryUIRenderer for SimpleSensoryUI {
         }
     }
 
-    fn render_topology(&mut self, ui: &mut egui::Ui, graph_engine: &petal_tongue_core::GraphEngine) {
+    fn render_topology(
+        &mut self,
+        ui: &mut egui::Ui,
+        graph_engine: &petal_tongue_core::GraphEngine,
+    ) {
         let stats = graph_engine.stats();
         ui.group(|ui| {
             ui.label(egui::RichText::new("Topology").heading());
@@ -232,12 +249,16 @@ impl SensoryUIRenderer for SimpleSensoryUI {
         });
     }
 
-    fn render_metrics(&mut self, ui: &mut egui::Ui, metrics: Option<&petal_tongue_core::SystemMetrics>) {
+    fn render_metrics(
+        &mut self,
+        ui: &mut egui::Ui,
+        metrics: Option<&petal_tongue_core::SystemMetrics>,
+    ) {
         if let Some(m) = metrics {
             ui.group(|ui| {
                 ui.label(format!("CPU {:.1}%", m.system.cpu_percent));
                 ui.add(egui::ProgressBar::new(m.system.cpu_percent / 100.0));
-                
+
                 ui.label(format!("Mem {:.1}%", m.system.memory_percent));
                 ui.add(egui::ProgressBar::new(m.system.memory_percent / 100.0));
             });
@@ -284,7 +305,11 @@ impl SensoryUIRenderer for StandardSensoryUI {
         });
     }
 
-    fn render_topology(&mut self, ui: &mut egui::Ui, graph_engine: &petal_tongue_core::GraphEngine) {
+    fn render_topology(
+        &mut self,
+        ui: &mut egui::Ui,
+        graph_engine: &petal_tongue_core::GraphEngine,
+    ) {
         let stats = graph_engine.stats();
         ui.vertical(|ui| {
             ui.label(egui::RichText::new("Topology").heading());
@@ -294,14 +319,18 @@ impl SensoryUIRenderer for StandardSensoryUI {
         });
     }
 
-    fn render_metrics(&mut self, ui: &mut egui::Ui, metrics: Option<&petal_tongue_core::SystemMetrics>) {
+    fn render_metrics(
+        &mut self,
+        ui: &mut egui::Ui,
+        metrics: Option<&petal_tongue_core::SystemMetrics>,
+    ) {
         if let Some(m) = metrics {
             ui.vertical(|ui| {
                 ui.label(egui::RichText::new("System Metrics").heading());
-                
+
                 ui.label(format!("CPU: {:.1}%", m.system.cpu_percent));
                 ui.add(egui::ProgressBar::new(m.system.cpu_percent / 100.0).show_percentage());
-                
+
                 ui.label(format!("Memory: {:.1}%", m.system.memory_percent));
                 ui.add(egui::ProgressBar::new(m.system.memory_percent / 100.0).show_percentage());
             });
@@ -339,36 +368,42 @@ impl RichSensoryUI {
 impl SensoryUIRenderer for RichSensoryUI {
     fn render_primal_list(&mut self, ui: &mut egui::Ui, primals: &[petal_tongue_core::PrimalInfo]) {
         egui::ScrollArea::vertical().show(ui, |ui| {
-            egui::Grid::new("primals_grid").striped(true).show(ui, |ui| {
-                ui.label(egui::RichText::new("Name").strong());
-                ui.label(egui::RichText::new("Type").strong());
-                ui.label(egui::RichText::new("Capabilities").strong());
-                ui.end_row();
-
-                for primal in primals {
-                    ui.label(&primal.name);
-                    ui.label(&primal.primal_type);
-                    ui.label(format!("{} caps", primal.capabilities.len()));
+            egui::Grid::new("primals_grid")
+                .striped(true)
+                .show(ui, |ui| {
+                    ui.label(egui::RichText::new("Name").strong());
+                    ui.label(egui::RichText::new("Type").strong());
+                    ui.label(egui::RichText::new("Capabilities").strong());
                     ui.end_row();
-                }
-            });
+
+                    for primal in primals {
+                        ui.label(&primal.name);
+                        ui.label(&primal.primal_type);
+                        ui.label(format!("{} caps", primal.capabilities.len()));
+                        ui.end_row();
+                    }
+                });
         });
     }
 
-    fn render_topology(&mut self, ui: &mut egui::Ui, graph_engine: &petal_tongue_core::GraphEngine) {
+    fn render_topology(
+        &mut self,
+        ui: &mut egui::Ui,
+        graph_engine: &petal_tongue_core::GraphEngine,
+    ) {
         let stats = graph_engine.stats();
         ui.vertical(|ui| {
             ui.label(egui::RichText::new("Network Topology").heading());
-            
+
             egui::Grid::new("topology_stats").show(ui, |ui| {
                 ui.label("Nodes:");
                 ui.label(stats.node_count.to_string());
                 ui.end_row();
-                
+
                 ui.label("Edges:");
                 ui.label(stats.edge_count.to_string());
                 ui.end_row();
-                
+
                 ui.label("Avg Degree:");
                 ui.label(format!("{:.1}", stats.avg_degree));
                 ui.end_row();
@@ -376,23 +411,31 @@ impl SensoryUIRenderer for RichSensoryUI {
         });
     }
 
-    fn render_metrics(&mut self, ui: &mut egui::Ui, metrics: Option<&petal_tongue_core::SystemMetrics>) {
+    fn render_metrics(
+        &mut self,
+        ui: &mut egui::Ui,
+        metrics: Option<&petal_tongue_core::SystemMetrics>,
+    ) {
         if let Some(m) = metrics {
             ui.vertical(|ui| {
                 ui.label(egui::RichText::new("System Metrics").heading());
-                
+
                 egui::Grid::new("metrics_grid").show(ui, |ui| {
                     ui.label("CPU:");
-                    ui.add(egui::ProgressBar::new(m.system.cpu_percent / 100.0)
-                        .show_percentage()
-                        .desired_width(150.0));
+                    ui.add(
+                        egui::ProgressBar::new(m.system.cpu_percent / 100.0)
+                            .show_percentage()
+                            .desired_width(150.0),
+                    );
                     ui.label(format!("{:.1}%", m.system.cpu_percent));
                     ui.end_row();
-                    
+
                     ui.label("Memory:");
-                    ui.add(egui::ProgressBar::new(m.system.memory_percent / 100.0)
-                        .show_percentage()
-                        .desired_width(150.0));
+                    ui.add(
+                        egui::ProgressBar::new(m.system.memory_percent / 100.0)
+                            .show_percentage()
+                            .desired_width(150.0),
+                    );
                     ui.label(format!("{:.1}%", m.system.memory_percent));
                     ui.end_row();
                 });
@@ -408,19 +451,23 @@ impl SensoryUIRenderer for RichSensoryUI {
         if let Some(p) = proprioception {
             ui.vertical(|ui| {
                 ui.label(egui::RichText::new("SAME DAVE Proprioception").heading());
-                
+
                 egui::Grid::new("proprio_grid").show(ui, |ui| {
                     ui.label("Health:");
-                    ui.add(egui::ProgressBar::new(p.health.percentage / 100.0)
-                        .show_percentage()
-                        .desired_width(150.0));
+                    ui.add(
+                        egui::ProgressBar::new(p.health.percentage / 100.0)
+                            .show_percentage()
+                            .desired_width(150.0),
+                    );
                     ui.label(format!("{:?}", p.health.status));
                     ui.end_row();
-                    
+
                     ui.label("Confidence:");
-                    ui.add(egui::ProgressBar::new(p.confidence / 100.0)
-                        .show_percentage()
-                        .desired_width(150.0));
+                    ui.add(
+                        egui::ProgressBar::new(p.confidence / 100.0)
+                            .show_percentage()
+                            .desired_width(150.0),
+                    );
                     ui.label(format!("{:.0}%", p.confidence));
                     ui.end_row();
                 });
@@ -447,24 +494,38 @@ impl SensoryUIRenderer for ImmersiveSensoryUI {
         // For now, use rich 2D rendering
         ui.label(egui::RichText::new("🌌 Immersive Mode").heading());
         ui.label("(3D spatial rendering would appear here)");
-        
+
         for primal in primals {
             ui.label(format!("🔮 {}", primal.name));
         }
     }
 
-    fn render_topology(&mut self, ui: &mut egui::Ui, graph_engine: &petal_tongue_core::GraphEngine) {
+    fn render_topology(
+        &mut self,
+        ui: &mut egui::Ui,
+        graph_engine: &petal_tongue_core::GraphEngine,
+    ) {
         let stats = graph_engine.stats();
         ui.label(egui::RichText::new("🕸️ 3D Topology").heading());
         ui.label("(3D graph rendering would appear here)");
-        ui.label(format!("Nodes: {} • Edges: {}", stats.node_count, stats.edge_count));
+        ui.label(format!(
+            "Nodes: {} • Edges: {}",
+            stats.node_count, stats.edge_count
+        ));
     }
 
-    fn render_metrics(&mut self, ui: &mut egui::Ui, metrics: Option<&petal_tongue_core::SystemMetrics>) {
+    fn render_metrics(
+        &mut self,
+        ui: &mut egui::Ui,
+        metrics: Option<&petal_tongue_core::SystemMetrics>,
+    ) {
         if let Some(m) = metrics {
             ui.label(egui::RichText::new("📊 Spatial Metrics").heading());
             ui.label("(Floating 3D metrics panels would appear here)");
-            ui.label(format!("CPU: {:.1}% | Memory: {:.1}%", m.system.cpu_percent, m.system.memory_percent));
+            ui.label(format!(
+                "CPU: {:.1}% | Memory: {:.1}%",
+                m.system.cpu_percent, m.system.memory_percent
+            ));
         }
     }
 
@@ -476,8 +537,10 @@ impl SensoryUIRenderer for ImmersiveSensoryUI {
         if let Some(p) = proprioception {
             ui.label(egui::RichText::new("🧠 Holographic Health").heading());
             ui.label("(3D health visualization would appear here)");
-            ui.label(format!("Health: {:.0}% | Confidence: {:.0}%", p.health.percentage, p.confidence));
+            ui.label(format!(
+                "Health: {:.0}% | Confidence: {:.0}%",
+                p.health.percentage, p.confidence
+            ));
         }
     }
 }
-

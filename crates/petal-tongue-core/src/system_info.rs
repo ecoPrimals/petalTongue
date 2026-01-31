@@ -48,12 +48,12 @@ pub fn get_current_uid() -> u32 {
     // - Type-safe wrappers for Unix syscalls
     // - Better error handling
     // - Zero-cost abstractions
-    
+
     #[cfg(unix)]
     {
         rustix::process::getuid().as_raw()
     }
-    
+
     #[cfg(not(unix))]
     {
         // On Windows, UID concept doesn't exist
