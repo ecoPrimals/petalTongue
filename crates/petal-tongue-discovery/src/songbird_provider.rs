@@ -39,7 +39,7 @@ impl SongbirdVisualizationProvider {
             client: Arc::new(RwLock::new(client)),
             metadata: ProviderMetadata {
                 name: "Songbird Registry".to_string(),
-                endpoint: socket_path.clone(),
+                endpoint: socket_path,
                 protocol: "unix+jsonrpc".to_string(),
                 capabilities: vec![
                     "primal-discovery".to_string(),
@@ -58,7 +58,7 @@ impl SongbirdVisualizationProvider {
             client: Arc::new(RwLock::new(client)),
             metadata: ProviderMetadata {
                 name: "Songbird Registry".to_string(),
-                endpoint: socket_path.clone(),
+                endpoint: socket_path,
                 protocol: "unix+jsonrpc".to_string(),
                 capabilities: vec![
                     "primal-discovery".to_string(),

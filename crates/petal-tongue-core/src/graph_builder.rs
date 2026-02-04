@@ -338,6 +338,7 @@ impl GraphEdge {
     }
 }
 
+/// Type of relationship between graph nodes
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum EdgeType {
     /// Node B depends on Node A (execution order)
@@ -378,19 +379,23 @@ impl Default for GraphLayout {
     }
 }
 
-/// 2D vector for positions
+/// 2D vector for positions and offsets
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Vec2 {
+    /// X coordinate (horizontal position)
     pub x: f32,
+    /// Y coordinate (vertical position)
     pub y: f32,
 }
 
 impl Vec2 {
+    /// Create a new 2D vector with the given coordinates
     #[must_use]
     pub const fn new(x: f32, y: f32) -> Self {
         Self { x, y }
     }
 
+    /// Create a zero vector (origin point)
     #[must_use]
     pub const fn zero() -> Self {
         Self { x: 0.0, y: 0.0 }

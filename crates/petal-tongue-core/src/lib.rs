@@ -25,9 +25,12 @@
 #![warn(clippy::pedantic)]
 
 pub mod adaptive_rendering; // Adaptive rendering for multi-device support
+pub mod biomeos_discovery; // biomeOS discovery backend
 pub mod capabilities;
+pub mod capability_discovery; // NEW: Capability-based discovery (TRUE PRIMAL)
 pub mod common_config;
 pub mod config;
+pub mod config_system; // NEW: Platform-agnostic configuration (XDG-compliant)
 #[cfg(test)]
 mod config_tests;
 pub mod dynamic_schema; // Dynamic schema system for live evolution

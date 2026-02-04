@@ -166,7 +166,7 @@ impl FocusManager {
     /// Update panel preferences
     pub fn update_preferences(&mut self, id: &str, prefs: PanelInputPreferences) {
         if let Some(existing) = self.panel_preferences.get_mut(id) {
-            *existing = prefs.clone();
+            *existing = prefs;
 
             // Re-sort focus stack by priority
             self.focus_stack.sort_by(|a, b| {

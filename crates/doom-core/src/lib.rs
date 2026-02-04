@@ -349,10 +349,8 @@ impl DoomInstance {
             if let Some(renderer) = &self.raycast_renderer {
                 return renderer.framebuffer();
             }
-        } else {
-            if let Some(renderer) = &self.map_renderer {
-                return renderer.framebuffer();
-            }
+        } else if let Some(renderer) = &self.map_renderer {
+            return renderer.framebuffer();
         }
 
         // Fallback: empty buffer
@@ -516,6 +514,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "Requires WAD file (doom1.wad or freedoom1.wad) - run with --ignored"]
     fn test_doom_initialization() {
         let mut doom = DoomInstance::new(640, 480).unwrap();
         doom.init().unwrap();
@@ -534,7 +533,21 @@ mod tests {
 
     #[test]
     fn test_framebuffer_size() {
+        // Framebuffer is empty until init() is called with a valid WAD
+        // This tests the uninitialized state correctly returns empty buffer
         let doom = DoomInstance::new(320, 240).unwrap();
+        assert_eq!(
+            doom.framebuffer().len(),
+            0,
+            "Uninitialized instance should have empty framebuffer"
+        );
+    }
+
+    #[test]
+    #[ignore = "Requires WAD file (doom1.wad or freedoom1.wad) - run with --ignored"]
+    fn test_framebuffer_size_with_wad() {
+        let mut doom = DoomInstance::new(320, 240).unwrap();
+        doom.init().unwrap();
         assert_eq!(doom.framebuffer().len(), 320 * 240 * 4);
     }
 }

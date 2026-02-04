@@ -16,25 +16,39 @@ use std::time::{Duration, Instant};
 /// System metrics from Neural API
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemMetrics {
+    /// ISO 8601 timestamp when metrics were collected
     pub timestamp: String,
+    /// System-level statistics (CPU, memory, uptime)
     pub system: SystemStats,
+    /// Neural API specific statistics
     pub neural_api: NeuralApiStats,
 }
 
+/// System-level statistics
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemStats {
+    /// CPU usage percentage (0-100)
     pub cpu_percent: f64,
+    /// Memory currently in use (megabytes)
     pub memory_used_mb: u64,
+    /// Total system memory (megabytes)
     pub memory_total_mb: u64,
+    /// Memory usage percentage (0-100)
     pub memory_percent: f64,
+    /// System uptime in seconds
     pub uptime_seconds: u64,
 }
 
+/// Neural API specific statistics
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NeuralApiStats {
+    /// Family identifier for this primal cluster
     pub family_id: String,
+    /// Number of currently active primals
     pub active_primals: u64,
+    /// Number of graphs available for execution
     pub graphs_available: u64,
+    /// Number of graphs currently executing
     pub active_executions: u64,
 }
 
@@ -48,6 +62,7 @@ pub struct MetricsPanel {
 }
 
 impl MetricsPanel {
+    /// Create a new metrics panel (provider connected later)
     pub fn new() -> Self {
         Self {
             provider: None,
@@ -253,6 +268,7 @@ impl Default for MetricsPanel {
 pub struct MetricsPanelFactory;
 
 impl MetricsPanelFactory {
+    /// Create a new factory for metrics panels
     pub fn new() -> Self {
         Self
     }

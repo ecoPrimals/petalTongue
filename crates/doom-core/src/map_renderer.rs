@@ -199,10 +199,17 @@ mod tests {
     #[test]
     fn test_world_to_screen() {
         let renderer = MapRenderer::new(640, 480);
+        // With default scale=0.1 and offset=0, (0,0) maps to (0,0)
+        // Test that the transform is mathematically correct
         let (x, y) = renderer.world_to_screen(0, 0);
-        // Should be somewhere in the middle (exact values depend on scale/offset)
-        assert!(x > 0 && x < 640);
-        assert!(y > 0 && y < 480);
+        assert_eq!(x, 0, "Origin should map to screen origin with zero offset");
+        assert_eq!(y, 0, "Origin should map to screen origin with zero offset");
+
+        // Test with non-zero coordinates
+        let (x, y) = renderer.world_to_screen(1000, 500);
+        // scale=0.1: x = 1000 * 0.1 + 0 = 100, y = -500 * 0.1 + 0 = -50
+        assert_eq!(x, 100);
+        assert_eq!(y, -50); // Y is flipped
     }
 
     #[test]

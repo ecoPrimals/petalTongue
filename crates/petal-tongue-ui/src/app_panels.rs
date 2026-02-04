@@ -598,11 +598,15 @@ pub fn render_primal_details_panel(
                 .fill(egui::Color32::from_rgb(40, 40, 45))
                 .inner_margin(12.0)
                 .show(ui, |ui| {
-                    adapter_registry.render_property(
-                        "trust_level",
-                        properties.get("trust_level").unwrap(),
-                        ui,
-                    );
+                    // Safe property access with fallback
+                    if let Some(trust_value) = properties.get("trust_level") {
+                        adapter_registry.render_property("trust_level", trust_value, ui);
+                    } else {
+                        ui.label(
+                            egui::RichText::new("Trust level not available")
+                                .color(egui::Color32::GRAY),
+                        );
+                    }
                 });
 
             ui.add_space(12.0);
@@ -618,11 +622,15 @@ pub fn render_primal_details_panel(
                 .fill(egui::Color32::from_rgb(30, 40, 60))
                 .inner_margin(12.0)
                 .show(ui, |ui| {
-                    adapter_registry.render_property(
-                        "family_id",
-                        properties.get("family_id").unwrap(),
-                        ui,
-                    );
+                    // Safe property access with fallback
+                    if let Some(family_value) = properties.get("family_id") {
+                        adapter_registry.render_property("family_id", family_value, ui);
+                    } else {
+                        ui.label(
+                            egui::RichText::new("Family ID not available")
+                                .color(egui::Color32::GRAY),
+                        );
+                    }
                 });
 
             ui.add_space(12.0);
@@ -665,11 +673,15 @@ pub fn render_primal_details_panel(
             egui::ScrollArea::vertical()
                 .max_height(200.0)
                 .show(ui, |ui| {
-                    adapter_registry.render_property(
-                        "capabilities",
-                        properties.get("capabilities").unwrap(),
-                        ui,
-                    );
+                    // Safe property access with fallback
+                    if let Some(caps_value) = properties.get("capabilities") {
+                        adapter_registry.render_property("capabilities", caps_value, ui);
+                    } else {
+                        ui.label(
+                            egui::RichText::new("Capabilities not available")
+                                .color(egui::Color32::GRAY),
+                        );
+                    }
                 });
         }
 

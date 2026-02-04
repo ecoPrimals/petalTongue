@@ -233,7 +233,7 @@ impl UnixSocketProvider {
             .to_string();
 
         Ok(PrimalInfo::new(
-            node_id.clone(),
+            node_id,
             name,
             primal_type,
             format!("unix://{}", path.display()),

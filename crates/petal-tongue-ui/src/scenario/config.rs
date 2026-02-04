@@ -6,19 +6,25 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-/// UI configuration
+/// UI configuration settings for a scenario
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct UiConfig {
+    /// Theme name (e.g., "dark", "light", "system")
     #[serde(default)]
     pub theme: String,
+    /// Layout mode: "canvas-only", "dashboard-centered", "full-dashboard"
     #[serde(default)]
-    pub layout: String, // "canvas-only", "dashboard-centered", "full-dashboard"
+    pub layout: String,
+    /// Which panels are visible
     #[serde(default)]
     pub show_panels: PanelVisibility,
+    /// Animation settings
     #[serde(default)]
     pub animations: AnimationConfig,
+    /// Performance tuning settings
     #[serde(default)]
     pub performance: PerformanceConfig,
+    /// Feature flags for optional functionality
     #[serde(default)]
     pub features: FeatureFlags,
     /// Custom panels (e.g., Doom, web browser, video player)
@@ -55,17 +61,25 @@ impl UiConfig {
     }
 }
 
-/// Panel visibility settings
+/// Panel visibility settings - controls which UI panels are shown
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct PanelVisibility {
+    /// Show left sidebar with navigation
     pub left_sidebar: bool,
+    /// Show right sidebar with details
     pub right_sidebar: bool,
+    /// Show top menu bar
     pub top_menu: bool,
+    /// Show system metrics dashboard
     pub system_dashboard: bool,
+    /// Show audio controls panel
     pub audio_panel: bool,
+    /// Show trust relationship dashboard
     pub trust_dashboard: bool,
+    /// Show proprioception (self-awareness) panel
     pub proprioception: bool,
+    /// Show graph statistics panel
     pub graph_stats: bool,
 }
 
@@ -89,9 +103,13 @@ impl Default for PanelVisibility {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct FeatureFlags {
+    /// Enable audio sonification of graph events
     pub audio_sonification: bool,
+    /// Automatically refresh data from providers
     pub auto_refresh: bool,
+    /// Enable Neural API integration for metrics
     pub neural_api: bool,
+    /// Enable tutorial/demo mode with guided interactions
     pub tutorial_mode: bool,
 }
 
@@ -180,17 +198,22 @@ impl CustomPanelConfig {
     }
 }
 
-/// Animation configuration
+/// Animation configuration for UI effects
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AnimationConfig {
+    /// Master switch for all animations
     #[serde(default)]
     pub enabled: bool,
+    /// Animate nodes with subtle breathing effect
     #[serde(default)]
     pub breathing_nodes: bool,
+    /// Animate connection lines with pulse effects
     #[serde(default)]
     pub connection_pulses: bool,
+    /// Smooth transitions between UI states
     #[serde(default)]
     pub smooth_transitions: bool,
+    /// Celebratory effects for achievements
     #[serde(default)]
     pub celebration_effects: bool,
 }

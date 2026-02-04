@@ -272,10 +272,16 @@ fn get_current_uid() -> Result<u32> {
 mod tests {
     use super::*;
     use std::env;
+    use std::sync::Mutex;
+
+    // Mutex for serializing tests that modify environment variables
+    // This prevents race conditions in parallel test execution
+    static ENV_MUTEX: Mutex<()> = Mutex::new(());
 
     #[test]
     fn test_default_family_id() {
-        // SAFETY: Test-only environment variable modification
+        let _lock = ENV_MUTEX.lock().unwrap();
+        // SAFETY: Test-only environment variable modification, serialized by mutex
         unsafe {
             env::remove_var("FAMILY_ID");
         }
@@ -284,8 +290,8 @@ mod tests {
 
     #[test]
     fn test_custom_family_id() {
-        // SAFETY: Test-only environment variable modification
-        // Note: This test may be affected by concurrent test execution
+        let _lock = ENV_MUTEX.lock().unwrap();
+        // SAFETY: Test-only environment variable modification, serialized by mutex
         unsafe {
             env::set_var("FAMILY_ID", "test-family");
         }
@@ -293,40 +299,40 @@ mod tests {
         unsafe {
             env::remove_var("FAMILY_ID");
         }
-        // Allow either test-family (if env var was set) or nat0 (if concurrent test interfered)
-        assert!(
-            result == "test-family" || result == "nat0",
-            "Expected 'test-family' or 'nat0', got '{}'",
-            result
-        );
+        assert_eq!(result, "test-family");
     }
 
     #[test]
     fn test_petaltongue_socket_path_format() {
-        // SAFETY: Test-only environment variable modification
+        let _lock = ENV_MUTEX.lock().unwrap();
+        // SAFETY: Test-only environment variable modification, serialized by mutex
         unsafe {
             env::remove_var("FAMILY_ID");
             env::remove_var("PETALTONGUE_NODE_ID");
             env::remove_var("PETALTONGUE_SOCKET");
+            env::remove_var("XDG_RUNTIME_DIR");
         }
 
-        // This test assumes /run/user/<uid> exists
+        // This test uses fallback path since we cleared XDG_RUNTIME_DIR
         if let Ok(path) = get_petaltongue_socket_path() {
             let path_str = path.to_string_lossy();
-            // Should now include node ID: petaltongue-nat0-default.sock
+            // Should include node ID: petaltongue-nat0-default.sock
             assert!(
-                path_str.contains("petaltongue-nat0-default.sock")
-                    || path_str.contains("/tmp/petaltongue-nat0-default.sock")
+                path_str.contains("petaltongue-nat0-default.sock"),
+                "Expected path to contain 'petaltongue-nat0-default.sock', got: {}",
+                path_str
             );
         }
     }
 
     #[test]
     fn test_discover_primal_socket() {
-        // SAFETY: Test-only environment variable modification
+        let _lock = ENV_MUTEX.lock().unwrap();
+        // SAFETY: Test-only environment variable modification, serialized by mutex
         unsafe {
             env::remove_var("FAMILY_ID");
             env::remove_var("BEARDOG_SOCKET");
+            env::remove_var("XDG_RUNTIME_DIR");
         }
 
         if let Ok(path) = discover_primal_socket("beardog", None, None) {
@@ -337,6 +343,7 @@ mod tests {
 
     #[test]
     fn test_discover_primal_socket_custom_family() {
+        // This test uses explicit parameters, no env vars needed
         if let Ok(path) = discover_primal_socket("songbird", Some("staging"), Some("node1")) {
             let path_str = path.to_string_lossy();
             assert!(path_str.contains("songbird-staging-node1.sock"));
@@ -345,22 +352,31 @@ mod tests {
 
     #[test]
     fn test_petaltongue_socket_override() {
-        // SAFETY: Test-only environment variable modification
+        let _lock = ENV_MUTEX.lock().unwrap();
+        // SAFETY: Test-only environment variable modification, serialized by mutex
+        // Clear any potentially interfering vars first
         unsafe {
+            env::remove_var("XDG_RUNTIME_DIR");
             env::set_var("PETALTONGUE_SOCKET", "/tmp/custom-petaltongue.sock");
         }
 
         let path = get_petaltongue_socket_path().unwrap();
-        assert_eq!(path, PathBuf::from("/tmp/custom-petaltongue.sock"));
 
         unsafe {
             env::remove_var("PETALTONGUE_SOCKET");
         }
+
+        assert_eq!(
+            path,
+            PathBuf::from("/tmp/custom-petaltongue.sock"),
+            "PETALTONGUE_SOCKET override should take priority"
+        );
     }
 
     #[test]
     fn test_node_id() {
-        // SAFETY: Test-only environment variable modification
+        let _lock = ENV_MUTEX.lock().unwrap();
+        // SAFETY: Test-only environment variable modification, serialized by mutex
         unsafe {
             env::remove_var("PETALTONGUE_NODE_ID");
         }
@@ -378,32 +394,36 @@ mod tests {
 
     #[test]
     fn test_primal_socket_env_override() {
-        // SAFETY: Test-only environment variable modification
+        let _lock = ENV_MUTEX.lock().unwrap();
+        // SAFETY: Test-only environment variable modification, serialized by mutex
         unsafe {
             env::set_var("SONGBIRD_SOCKET", "/tmp/custom-songbird.sock");
         }
 
         let path = discover_primal_socket("songbird", None, None).unwrap();
-        assert_eq!(path, PathBuf::from("/tmp/custom-songbird.sock"));
 
         unsafe {
             env::remove_var("SONGBIRD_SOCKET");
         }
+
+        assert_eq!(path, PathBuf::from("/tmp/custom-songbird.sock"));
     }
 
     #[test]
     fn test_runtime_dir_from_xdg() {
+        let _lock = ENV_MUTEX.lock().unwrap();
         let test_dir = "/tmp/test-runtime";
-        // SAFETY: Test-only environment variable modification
+        // SAFETY: Test-only environment variable modification, serialized by mutex
         unsafe {
             env::set_var("XDG_RUNTIME_DIR", test_dir);
         }
 
         let runtime_dir = get_runtime_dir().unwrap();
-        assert_eq!(runtime_dir, PathBuf::from(test_dir));
 
         unsafe {
             env::remove_var("XDG_RUNTIME_DIR");
         }
+
+        assert_eq!(runtime_dir, PathBuf::from(test_dir));
     }
 }

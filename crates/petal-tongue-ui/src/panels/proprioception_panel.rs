@@ -22,6 +22,7 @@ pub struct ProprioceptionPanel {
 }
 
 impl ProprioceptionPanel {
+    /// Create a new proprioception panel (provider connected later)
     pub fn new() -> Self {
         Self {
             provider: None,
@@ -238,6 +239,7 @@ impl Default for ProprioceptionPanel {
 pub struct ProprioceptionPanelFactory;
 
 impl ProprioceptionPanelFactory {
+    /// Create a new factory for proprioception (self-awareness) panels
     pub fn new() -> Self {
         Self
     }

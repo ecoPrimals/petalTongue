@@ -80,7 +80,7 @@ pub mod status_reporter;
 pub mod system_dashboard;
 pub mod system_monitor_integration;
 pub mod timeline_view;
-pub mod toadstool_bridge;
+// pub mod toadstool_bridge; // REMOVED: Deprecated Python bridge, superseded by tarpc integration (toadstool_v2.rs)
 pub mod tool_integration;
 pub mod traffic_view;
 pub mod trust_dashboard;

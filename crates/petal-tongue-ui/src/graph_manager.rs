@@ -292,7 +292,9 @@ impl Default for GraphManagerPanel {
 pub enum GraphManagerAction {
     /// Save current graph with given name and description
     Save {
+        /// Name for the saved graph
         name: String,
+        /// Optional description of the graph
         description: Option<String>,
     },
 

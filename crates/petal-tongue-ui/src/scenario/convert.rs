@@ -212,9 +212,11 @@ mod tests {
         assert!(matches!(info.health, PrimalHealthStatus::Healthy));
 
         // Check properties
-        let props = info.properties.unwrap();
+        let props = &info.properties;
         assert_eq!(
-            props.get("cpu_percent").and_then(|v| v.as_number()),
+            props
+                .get("cpu_percent")
+                .and_then(|v: &PropertyValue| v.as_number()),
             Some(25.5)
         );
     }

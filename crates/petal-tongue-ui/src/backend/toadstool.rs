@@ -1,39 +1,28 @@
-//! Toadstool Backend - Future Pure Rust GUI
+//! Toadstool Backend - Legacy Stub (DEPRECATED)
 //!
-//! This backend connects to Toadstool display service for 100% Pure Rust GUI.
-//! Currently a stub implementation, ready for Toadstool team integration.
+//! **⚠️ DEPRECATED**: Use `crate::display::backends::toadstool_v2` instead!
 //!
-//! # Status
+//! The new `toadstool_v2` module provides a complete tarpc implementation with:
+//! - Capability-based discovery via biomeOS
+//! - High-performance tarpc binary RPC
+//! - Zero hardcoded primal names (TRUE PRIMAL compliant)
+//! - Complete DisplayBackend trait implementation
 //!
-//! - 🔬 **STUB IMPLEMENTATION** (ready for integration)
-//! - ✅ Will be 100% Pure Rust (no C dependencies!)
-//! - ⏱️ Timeline: 4-6 weeks (Toadstool team implementation)
-//! - 🍄 Requires Toadstool display service running
+//! # Migration Guide
 //!
-//! # Architecture
+//! ```rust
+//! // OLD (this module - deprecated)
+//! use crate::backend::toadstool::ToadstoolBackend;
 //!
-//! ```text
-//! petalTongue
-//!     ↓
-//! ToadstoolBackend (this module)
-//!     ↓ RPC (tarpc)
-//! Toadstool Display Service
-//!     ↓
-//! DRM/KMS (drm-rs) + evdev (evdev-rs) + wgpu
-//!     ↓
-//! Hardware (100% Pure Rust!)
+//! // NEW (recommended)
+//! use crate::display::backends::toadstool_v2::ToadstoolDisplay;
 //! ```
 //!
-//! # When Ready
+//! This module is retained for backward compatibility but will be removed
+//! in a future version.
 //!
-//! Once Toadstool team implements display backend:
-//! 1. Replace stub methods with actual RPC calls
-//! 2. Implement event streaming
-//! 3. Add framebuffer management
-//! 4. Enable feature flag in CI
-//! 5. Update documentation
-//!
-//! See `TOADSTOOL_DISPLAY_BACKEND_REQUEST.md` for full specification.
+//! See `crates/petal-tongue-ui/src/display/backends/toadstool_v2.rs` for the
+//! complete implementation.
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;

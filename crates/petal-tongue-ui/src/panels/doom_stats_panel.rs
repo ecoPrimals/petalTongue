@@ -19,6 +19,7 @@ pub struct DoomStatsPanel {
 }
 
 impl DoomStatsPanel {
+    /// Create a new Doom stats panel connected to a Doom instance
     pub fn new(doom: Arc<RwLock<DoomInstance>>) -> Self {
         Self {
             doom,
@@ -130,6 +131,7 @@ pub struct DoomStatsPanelFactory {
 }
 
 impl DoomStatsPanelFactory {
+    /// Create a new factory that produces Doom stats panels
     pub fn new(doom: Arc<RwLock<DoomInstance>>) -> Self {
         Self { doom }
     }

@@ -58,7 +58,7 @@ fn main() -> anyhow::Result<()> {
     });
 
     // Register this instance
-    if let Err(e) = registry.register(instance.clone()) {
+    if let Err(e) = registry.register(instance) {
         tracing::error!("Failed to register instance: {}", e);
     } else {
         tracing::info!("✅ Instance registered in registry");
