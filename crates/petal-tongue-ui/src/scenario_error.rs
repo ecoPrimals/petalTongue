@@ -8,53 +8,79 @@ use thiserror::Error;
 /// Scenario-specific errors with rich context
 #[derive(Debug, Error)]
 pub enum ScenarioError {
+    /// A required field is missing from the scenario JSON
     #[error("Missing required field '{field}' in scenario")]
     MissingField {
+        /// Name of the missing field
         field: String,
+        /// Suggestion for how to fix the error
         suggestion: Option<String>,
     },
 
+    /// A field has an invalid or unexpected value
     #[error("Invalid field value: {field} = '{value}'")]
     InvalidValue {
+        /// Name of the field with invalid value
         field: String,
+        /// The invalid value that was provided
         value: String,
+        /// Description of what was expected
         expected: String,
     },
 
+    /// Panel configuration is invalid or incomplete
     #[error("Panel configuration error: {message}")]
     PanelConfig {
+        /// Description of the configuration error
         message: String,
+        /// Index of the panel with the error (if applicable)
         panel_index: Option<usize>,
+        /// Type of the panel with the error (if applicable)
         panel_type: Option<String>,
     },
 
+    /// Capability validation failed (input/output modality)
     #[error("Capability validation error: {message}")]
     CapabilityError {
+        /// Description of the capability error
         message: String,
-        capability_type: String, // "output" or "input"
+        /// Type of capability ("output" or "input")
+        capability_type: String,
+        /// The invalid capability value that was provided
         invalid_value: String,
+        /// List of valid capability options
         valid_options: Vec<String>,
     },
 
+    /// Sensory system configuration is invalid
     #[error("Sensory configuration error: {message}")]
     SensoryConfigError {
+        /// Description of the sensory config error
         message: String,
+        /// Name of the misconfigured field
         field: String,
+        /// Suggestion for fixing the error
         suggestion: String,
     },
 
+    /// The specified panel type is not registered
     #[error("Unknown panel type '{panel_type}'")]
     UnknownPanelType {
+        /// The unrecognized panel type name
         panel_type: String,
+        /// List of available/registered panel types
         available_types: Vec<String>,
     },
 
+    /// File system I/O error during scenario loading
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
 
+    /// JSON parsing error during scenario deserialization
     #[error("JSON parsing error: {0}")]
     JsonError(#[from] serde_json::Error),
 
+    /// Generic error for unclassified issues
     #[error("{0}")]
     Generic(String),
 }

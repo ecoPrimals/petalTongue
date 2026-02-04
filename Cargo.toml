@@ -84,7 +84,8 @@ petgraph = "0.6"
 
 # HTTP client (Pure Rust TLS via rustls - NO OpenSSL!)
 # TRUE PRIMAL: 100% pure Rust networking stack
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "charset", "http2"] }
+# CRITICAL: Explicitly use rustls-tls and exclude any native-tls features
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "charset", "http2", "stream", "__rustls"] }
 base64 = "0.21"
 
 # Time and dates

@@ -3,7 +3,7 @@
 //! Renders Doom maps from a first-person perspective using raycasting.
 //! This is simpler than full BSP rendering but gets us visible results quickly!
 
-use crate::wad_loader::{LineDef, MapData, Vertex};
+use crate::wad_loader::{MapData, Vertex};
 use std::f32::consts::PI;
 
 /// First-person raycasting renderer
@@ -194,8 +194,8 @@ impl RaycastRenderer {
         let u = ((ray_x - x1) * ray_dy - (ray_y - y1) * ray_dx) / denominator;
         let t = ((ray_x - x1) * line_dy - (ray_y - y1) * line_dx) / denominator;
 
-        // Check if intersection is on both line segment and ray
-        if u >= 0.0 && u <= 1.0 && t >= 0.0 {
+        // Check if intersection is on both line segment and ray (idiomatic range check)
+        if (0.0..=1.0).contains(&u) && t >= 0.0 {
             Some(t)
         } else {
             None
@@ -266,7 +266,6 @@ impl RaycastRenderer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::wad_loader::{LineDef, Thing};
 
     #[test]
     fn test_renderer_creation() {

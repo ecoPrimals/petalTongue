@@ -141,12 +141,11 @@ impl PropertyPanel {
             ui.label(RichText::new(format!("{}:", param_name)).size(13.0));
 
             // Get or create temp value
-            let current_value = self
+            let mut new_value = self
                 .temp_params
                 .get(param_name)
                 .cloned()
                 .unwrap_or_default();
-            let mut new_value = current_value.clone();
 
             // Input field
             let response = ui.text_edit_singleline(&mut new_value);

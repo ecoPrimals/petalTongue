@@ -1,10 +1,17 @@
 //! Display Manager
 //!
-//! Manages multiple display backends, handles fallback, and coordinates rendering.
+//! Manages multiple display backends with capability-based discovery.
+//!
+//! TRUE PRIMAL Evolution:
+//! - Discovers backends via capabilities (no hardcoded names)
+//! - Automatic fallback on failure
+//! - Priority-based selection
 
 use crate::display::prompt::prompt_for_display_server;
 use crate::display::traits::{BackendPriority, DisplayBackend};
-use crate::display::{ExternalDisplay, FramebufferDisplay, SoftwareDisplay, ToadstoolDisplay};
+use crate::display::{
+    ExternalDisplay, FramebufferDisplay, SoftwareDisplay, ToadstoolDisplay, ToadstoolDisplayV2,
+};
 use anyhow::{Result, anyhow};
 use tracing::{info, warn};
 
@@ -23,28 +30,47 @@ struct BackendEntry {
 impl DisplayManager {
     /// Initialize display manager and discover available backends
     pub async fn init() -> Result<Self> {
-        info!("🌸 Discovering display backends...");
+        info!("🌸 Discovering display backends via capabilities...");
 
         let mut backends = Vec::new();
 
-        // Tier 1: Try Toadstool (highest priority - network effect!)
-        info!("🌸 Checking for Toadstool display (via biomeOS)...");
-        if ToadstoolDisplay::is_available() {
-            match ToadstoolDisplay::new() {
-                Ok(toadstool) => {
-                    info!("✅ Toadstool display available via biomeOS");
-                    backends.push(BackendEntry {
-                        backend: Box::new(toadstool),
-                        priority: BackendPriority::Toadstool,
-                        initialized: false,
-                    });
-                }
-                Err(e) => {
-                    info!("⚠️  Toadstool initialization failed: {}", e);
+        // Tier 1: Try Toadstool V2 (tarpc) via capability discovery (highest priority)
+        // Discovery happens at runtime - no hardcoded primal names!
+        info!("🌸 Discovering 'display' capability provider (tarpc)...");
+        match ToadstoolDisplayV2::new() {
+            Ok(toadstool_v2) => {
+                info!("✅ Display capability provider discovered via tarpc (high-performance)");
+                backends.push(BackendEntry {
+                    backend: Box::new(toadstool_v2),
+                    priority: BackendPriority::Toadstool,
+                    initialized: false,
+                });
+            }
+            Err(e) => {
+                info!("⚠️  tarpc display capability discovery failed: {}", e);
+                info!("    Trying JSON-RPC fallback...");
+
+                // Fallback to JSON-RPC version
+                if ToadstoolDisplay::is_available() {
+                    match ToadstoolDisplay::new() {
+                        Ok(toadstool) => {
+                            info!("✅ Display capability provider discovered (JSON-RPC fallback)");
+                            backends.push(BackendEntry {
+                                backend: Box::new(toadstool),
+                                priority: BackendPriority::Toadstool,
+                                initialized: false,
+                            });
+                        }
+                        Err(e) => {
+                            info!("⚠️  JSON-RPC display capability also failed: {}", e);
+                            info!("    (This is OK - will try other backends)");
+                        }
+                    }
+                } else {
+                    info!("⚠️  No display capability provider available");
+                    info!("    (This is OK - will try other backends)");
                 }
             }
-        } else {
-            info!("⚠️  biomeOS socket not found, Toadstool unavailable");
         }
 
         // Tier 2: Try Software Rendering (always available)

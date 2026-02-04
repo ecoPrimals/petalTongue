@@ -246,7 +246,7 @@ impl NicheDesigner {
                 ui.painter()
                     .rect_stroke(highlight_rect, 4.0, (2.0, Color32::LIGHT_BLUE));
 
-                slot_response.clone().on_hover_text(format!(
+                slot_response.on_hover_text(format!(
                     "Drop primal here to assign to {} capability",
                     capability
                 ));

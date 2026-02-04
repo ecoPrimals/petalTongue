@@ -318,9 +318,7 @@ impl PrimalPanel {
                     .rect_stroke(highlight_rect, 4.0, (2.0, Color32::LIGHT_BLUE));
 
                 // Show drop hint
-                response
-                    .clone()
-                    .on_hover_text(format!("Drop device here to assign to {}", primal.name));
+                response.on_hover_text(format!("Drop device here to assign to {}", primal.name));
 
                 // Handle drop
                 if !ui.input(|i| i.pointer.is_decidedly_dragging()) {

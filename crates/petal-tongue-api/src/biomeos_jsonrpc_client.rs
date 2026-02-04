@@ -57,11 +57,29 @@ impl BiomeOSJsonRpcClient {
         }
     }
 
-    /// Discover BiomeOS socket path
+    /// Discover BiomeOS socket path using capability-based discovery
+    ///
+    /// # Socket Discovery Priority (TRUE PRIMAL compliant)
+    /// 1. `BIOMEOS_SOCKET` or `BIOMEOS_NEURAL_API_SOCKET` - explicit override
+    /// 2. `$XDG_RUNTIME_DIR/biomeos-neural-api.sock` - XDG standard
+    /// 3. `/run/user/<uid>/biomeos-neural-api.sock` - user runtime directory
+    /// 4. `/tmp/biomeos-neural-api.sock` - legacy fallback
+    ///
+    /// Returns error if no socket found (graceful degradation over silent failure)
     fn discover_socket_path() -> Result<PathBuf> {
-        // 1. Check environment variable
-        if let Ok(path) = std::env::var("BIOMEOS_SOCKET") {
-            return Ok(PathBuf::from(path));
+        // 1. Check environment variables (explicit override - highest priority)
+        for env_var in ["BIOMEOS_SOCKET", "BIOMEOS_NEURAL_API_SOCKET"] {
+            if let Ok(path) = std::env::var(env_var) {
+                let socket_path = PathBuf::from(&path);
+                if socket_path.exists() {
+                    return Ok(socket_path);
+                }
+                tracing::debug!(
+                    "{}={} but socket not found, continuing discovery",
+                    env_var,
+                    path
+                );
+            }
         }
 
         // 2. Check XDG runtime directory
@@ -80,14 +98,18 @@ impl BiomeOSJsonRpcClient {
             }
         }
 
-        // 4. Fallback to /tmp
+        // 4. Fallback to /tmp (legacy support)
         let fallback = PathBuf::from("/tmp/biomeos-neural-api.sock");
         if fallback.exists() {
             return Ok(fallback);
         }
 
-        // No socket found - return default and let connection fail with helpful error
-        Ok(PathBuf::from("/tmp/biomeos-neural-api.sock"))
+        // No socket found - return helpful error instead of silent default
+        anyhow::bail!(
+            "biomeOS socket not found. Set BIOMEOS_SOCKET env var or ensure biomeOS is running. \
+            Checked: $BIOMEOS_SOCKET, $XDG_RUNTIME_DIR/biomeos-neural-api.sock, \
+            /run/user/$UID/biomeos-neural-api.sock, /tmp/biomeos-neural-api.sock"
+        )
     }
 
     /// Check if BiomeOS is available

@@ -33,7 +33,8 @@ use tracing::{info, warn};
 pub struct BiomeOSUIManager {
     /// Provider for data (BiomeOS or Mock)
     biomeos_provider: Option<BiomeOSProvider>,
-    mock_provider: MockDeviceProvider,
+    /// Mock provider - lazily initialized only when needed for graceful degradation
+    mock_provider: Option<MockDeviceProvider>,
     use_mock: bool,
 
     /// Event handler
@@ -82,7 +83,12 @@ impl BiomeOSUIManager {
             info!("✅ Connected to biomeOS");
         }
 
-        let mock_provider = MockDeviceProvider::new();
+        // Lazy initialization: only create mock provider when needed for graceful degradation
+        let mock_provider = if use_mock {
+            Some(MockDeviceProvider::new())
+        } else {
+            None
+        };
 
         Self {
             biomeos_provider,
@@ -106,10 +112,20 @@ impl BiomeOSUIManager {
 
         let (devices, primals, templates) = if self.use_mock {
             // Use mock provider (methods are not async)
-            let devices = self.mock_provider.get_devices();
-            let primals = self.mock_provider.get_primals_extended();
-            let templates = self.mock_provider.get_niche_templates();
-            (devices, primals, templates)
+            // Lazily create mock provider if not already initialized
+            if self.mock_provider.is_none() {
+                self.mock_provider = Some(MockDeviceProvider::new());
+            }
+
+            if let Some(mock) = &self.mock_provider {
+                let devices = mock.get_devices();
+                let primals = mock.get_primals_extended();
+                let templates = mock.get_niche_templates();
+                (devices, primals, templates)
+            } else {
+                warn!("Mock provider not available");
+                return Ok(());
+            }
         } else if let Some(provider) = &self.biomeos_provider {
             // Use biomeOS provider (methods are async)
             let devices = provider.get_devices().await?;
@@ -269,7 +285,12 @@ impl BiomeOSUIRPC {
     pub async fn get_devices(&self) -> Result<Vec<Device>> {
         let manager = self.manager.read().await;
         if manager.use_mock {
-            Ok(manager.mock_provider.get_devices())
+            // Use mock provider for graceful degradation
+            Ok(manager
+                .mock_provider
+                .as_ref()
+                .map(|m| m.get_devices())
+                .unwrap_or_default())
         } else if let Some(provider) = &manager.biomeos_provider {
             provider.get_devices().await
         } else {
@@ -281,7 +302,12 @@ impl BiomeOSUIRPC {
     pub async fn get_primals_extended(&self) -> Result<Vec<Primal>> {
         let manager = self.manager.read().await;
         if manager.use_mock {
-            Ok(manager.mock_provider.get_primals_extended())
+            // Use mock provider for graceful degradation
+            Ok(manager
+                .mock_provider
+                .as_ref()
+                .map(|m| m.get_primals_extended())
+                .unwrap_or_default())
         } else if let Some(provider) = &manager.biomeos_provider {
             provider.get_primals_extended().await
         } else {
@@ -293,7 +319,12 @@ impl BiomeOSUIRPC {
     pub async fn get_niche_templates(&self) -> Result<Vec<NicheTemplate>> {
         let manager = self.manager.read().await;
         if manager.use_mock {
-            Ok(manager.mock_provider.get_niche_templates())
+            // Use mock provider for graceful degradation
+            Ok(manager
+                .mock_provider
+                .as_ref()
+                .map(|m| m.get_niche_templates())
+                .unwrap_or_default())
         } else if let Some(provider) = &manager.biomeos_provider {
             provider.get_niche_templates().await
         } else {

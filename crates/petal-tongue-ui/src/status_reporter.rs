@@ -289,7 +289,7 @@ impl StatusReporter {
             let state = ModalityState {
                 available,
                 tested,
-                reason: reason.clone(),
+                reason,
                 last_used: if available {
                     Some(chrono::Utc::now().to_rfc3339())
                 } else {

@@ -2,18 +2,22 @@
 //!
 //! Tests verify discovery logic, environment handling, and provider selection.
 //!
-//! **NOTE**: These tests manipulate environment variables and should be run with
-//! `--test-threads=1` to avoid conflicts:
-//! ```bash
-//! cargo test --package petal-tongue-discovery -- --test-threads=1
-//! ```
+//! **NOTE**: These tests manipulate environment variables. A static mutex is used
+//! to serialize tests that modify environment variables.
 
 use petal_tongue_discovery::discover_visualization_providers;
+use std::sync::Mutex;
+
+// Mutex for serializing tests that modify environment variables
+// This prevents race conditions in parallel test execution
+static ENV_MUTEX: Mutex<()> = Mutex::new(());
 
 #[tokio::test]
 async fn test_discover_with_mock_mode() {
+    let _lock = ENV_MUTEX.lock().unwrap();
+
     // Clean up any existing env vars first
-    // SAFETY: Test-only env var manipulation in isolated test
+    // SAFETY: Test-only env var manipulation, serialized by mutex
     unsafe {
         std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
         std::env::remove_var("BIOMEOS_URL");
@@ -25,21 +29,23 @@ async fn test_discover_with_mock_mode() {
 
     let providers = discover_visualization_providers().await;
 
-    assert!(providers.is_ok(), "Should discover mock provider");
-    let providers = providers.unwrap();
-    assert_eq!(providers.len(), 1, "Should have exactly 1 mock provider");
-
-    // Clean up
-    // SAFETY: Test-only env var manipulation in isolated test
+    // Clean up BEFORE assertion (ensures cleanup even on failure)
+    // SAFETY: Test-only env var manipulation, serialized by mutex
     unsafe {
         std::env::remove_var("PETALTONGUE_MOCK_MODE");
     }
+
+    assert!(providers.is_ok(), "Should discover mock provider");
+    let providers = providers.unwrap();
+    assert_eq!(providers.len(), 1, "Should have exactly 1 mock provider");
 }
 
 #[tokio::test]
 async fn test_discover_without_hints() {
+    let _lock = ENV_MUTEX.lock().unwrap();
+
     // Make sure no hints are set
-    // SAFETY: Test-only env var manipulation in isolated test
+    // SAFETY: Test-only env var manipulation, serialized by mutex
     unsafe {
         std::env::remove_var("PETALTONGUE_MOCK_MODE");
         std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
@@ -62,25 +68,29 @@ async fn test_discover_without_hints() {
 
 #[tokio::test]
 async fn test_mock_mode_case_insensitive() {
+    let _lock = ENV_MUTEX.lock().unwrap();
+
     // Test various capitalizations
     for value in &["true", "True", "TRUE", "TrUe"] {
-        // SAFETY: Test-only env var manipulation in isolated test
+        // SAFETY: Test-only env var manipulation, serialized by mutex
         unsafe {
             std::env::set_var("PETALTONGUE_MOCK_MODE", value);
         }
 
         let providers = discover_visualization_providers().await;
-        assert!(providers.is_ok(), "Should work with {}", value);
 
-        // SAFETY: Test-only env var manipulation in isolated test
+        // Clean up before assertion
         unsafe {
             std::env::remove_var("PETALTONGUE_MOCK_MODE");
         }
+
+        assert!(providers.is_ok(), "Should work with {}", value);
     }
 }
 
 #[tokio::test]
 async fn test_mock_mode_false() {
+    let _lock = ENV_MUTEX.lock().unwrap();
     // SAFETY: Test-only env var manipulation in isolated test
     unsafe {
         std::env::set_var("PETALTONGUE_MOCK_MODE", "false");
@@ -103,8 +113,10 @@ async fn test_mock_mode_false() {
 
 #[tokio::test]
 async fn test_discovery_hints_parsing() {
+    let _lock = ENV_MUTEX.lock().unwrap();
+
     // Set discovery hints
-    // SAFETY: Test-only env var manipulation in isolated test
+    // SAFETY: Test-only env var manipulation, serialized by mutex
     unsafe {
         std::env::set_var(
             "PETALTONGUE_DISCOVERY_HINTS",
@@ -115,22 +127,24 @@ async fn test_discovery_hints_parsing() {
 
     let providers = discover_visualization_providers().await;
 
+    // Clean up before assertion
+    unsafe {
+        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+    }
+
     // Should attempt to discover from hints
     // May fail if servers don't exist, but shouldn't panic
     assert!(
         providers.is_ok() || providers.is_err(),
         "Discovery completes"
     );
-
-    // SAFETY: Test-only env var manipulation in isolated test
-    unsafe {
-        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
-    }
 }
 
 #[tokio::test]
 async fn test_legacy_biomeos_url() {
-    // SAFETY: Test-only env var manipulation in isolated test
+    let _lock = ENV_MUTEX.lock().unwrap();
+
+    // SAFETY: Test-only env var manipulation, serialized by mutex
     unsafe {
         std::env::set_var("BIOMEOS_URL", "http://legacy:3000");
         std::env::remove_var("PETALTONGUE_MOCK_MODE");
@@ -139,22 +153,24 @@ async fn test_legacy_biomeos_url() {
 
     let providers = discover_visualization_providers().await;
 
+    // Clean up before assertion
+    unsafe {
+        std::env::remove_var("BIOMEOS_URL");
+    }
+
     // Should attempt legacy discovery
     assert!(
         providers.is_ok() || providers.is_err(),
         "Legacy discovery completes"
     );
-
-    // SAFETY: Test-only env var manipulation in isolated test
-    unsafe {
-        std::env::remove_var("BIOMEOS_URL");
-    }
 }
 
 #[tokio::test]
 async fn test_discovery_priority() {
+    let _lock = ENV_MUTEX.lock().unwrap();
+
     // Clean up first to avoid test interference
-    // SAFETY: Test-only env var manipulation in isolated test
+    // SAFETY: Test-only env var manipulation, serialized by mutex
     unsafe {
         std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
         std::env::remove_var("BIOMEOS_URL");
@@ -185,7 +201,9 @@ async fn test_discovery_priority() {
 
 #[tokio::test]
 async fn test_empty_discovery_hints() {
-    // SAFETY: Test-only env var manipulation in isolated test
+    let _lock = ENV_MUTEX.lock().unwrap();
+
+    // SAFETY: Test-only env var manipulation, serialized by mutex
     unsafe {
         std::env::set_var("PETALTONGUE_DISCOVERY_HINTS", "");
         std::env::remove_var("PETALTONGUE_MOCK_MODE");
@@ -193,21 +211,23 @@ async fn test_empty_discovery_hints() {
 
     let providers = discover_visualization_providers().await;
 
+    // Clean up before assertion
+    unsafe {
+        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+    }
+
     // Empty hints should be handled gracefully
     assert!(
         providers.is_ok() || providers.is_err(),
         "Empty hints handled"
     );
-
-    // SAFETY: Test-only env var manipulation in isolated test
-    unsafe {
-        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
-    }
 }
 
 #[tokio::test]
 async fn test_malformed_hints() {
-    // SAFETY: Test-only env var manipulation in isolated test
+    let _lock = ENV_MUTEX.lock().unwrap();
+
+    // SAFETY: Test-only env var manipulation, serialized by mutex
     unsafe {
         std::env::set_var("PETALTONGUE_DISCOVERY_HINTS", "not-a-url,also not a url");
         std::env::remove_var("PETALTONGUE_MOCK_MODE");
@@ -215,21 +235,23 @@ async fn test_malformed_hints() {
 
     let providers = discover_visualization_providers().await;
 
+    // Clean up before assertion
+    unsafe {
+        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
+    }
+
     // Malformed hints should be handled gracefully (likely fail or skip)
     assert!(
         providers.is_ok() || providers.is_err(),
         "Malformed hints handled"
     );
-
-    // SAFETY: Test-only env var manipulation in isolated test
-    unsafe {
-        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
-    }
 }
 
 #[tokio::test]
 async fn test_concurrent_discovery_attempts() {
-    // SAFETY: Test-only env var manipulation in isolated test
+    let _lock = ENV_MUTEX.lock().unwrap();
+
+    // SAFETY: Test-only env var manipulation, serialized by mutex
     unsafe {
         std::env::set_var("PETALTONGUE_MOCK_MODE", "true");
     }
@@ -247,7 +269,7 @@ async fn test_concurrent_discovery_attempts() {
         assert!(result.is_ok(), "Concurrent discovery should work");
     }
 
-    // SAFETY: Test-only env var manipulation in isolated test
+    // Clean up
     unsafe {
         std::env::remove_var("PETALTONGUE_MOCK_MODE");
     }

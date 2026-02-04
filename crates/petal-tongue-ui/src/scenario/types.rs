@@ -12,17 +12,24 @@ use crate::scenario::config::{
 use crate::scenario::ecosystem::{Ecosystem, PrimalDefinition};
 use crate::scenario::sensory::{CapabilityRequirements, SensoryConfig};
 
-/// Complete scenario definition
+/// Complete scenario definition for benchTop demonstrations
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Scenario {
+    /// Human-readable name for the scenario
     pub name: String,
+    /// Description of what this scenario demonstrates
     pub description: String,
+    /// Semantic version of the scenario format (e.g., "2.0.0")
     pub version: String,
+    /// Scenario mode (e.g., "doom-showcase", "live-ecosystem")
     pub mode: String,
+    /// UI configuration (panels, theme, layout)
     #[serde(default)]
     pub ui_config: UiConfig,
+    /// Ecosystem definition (primals, families)
     #[serde(default)]
     pub ecosystem: Ecosystem,
+    /// Neural API integration settings
     #[serde(default)]
     pub neural_api: NeuralApiConfig,
     /// Sensory capability configuration (v2.2.0)
@@ -114,22 +121,27 @@ pub struct SelfAwareness {
     pub has_compute: bool,
 }
 
-/// Motor capabilities
+/// Motor capabilities - actions this primal can perform
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Motor {
+    /// Can deploy niches and resources
     #[serde(default)]
     pub can_deploy: bool,
+    /// Can execute computational graphs
     #[serde(default)]
     pub can_execute_graphs: bool,
+    /// Can coordinate other primals in the ecosystem
     #[serde(default)]
     pub can_coordinate_primals: bool,
 }
 
-/// Sensory capabilities
+/// Sensory capabilities for input/output detection
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Sensory {
+    /// Number of currently active socket connections for sensory input
     #[serde(default)]
     pub active_sockets: usize,
+    /// Timestamp of the last sensory capability scan (ISO 8601 format)
     #[serde(default)]
     pub last_scan: Option<String>,
 }

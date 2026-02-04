@@ -403,7 +403,7 @@ impl PetalTongueApp {
                 // Get capability info to extract reason
                 let reason_string = capabilities
                     .get_status(*modality)
-                    .map_or_else(|| "Not tested".to_string(), |c| c.reason.clone());
+                    .map_or_else(|| "Not tested".to_string(), |c| c.reason);
                 let modality_name = match modality {
                     Modality::Visual2D => "visual2d",
                     Modality::Audio => "audio",
@@ -607,7 +607,7 @@ impl PetalTongueApp {
             proprioception: initialize_standard_proprioception(),
 
             // v2.0: Neural API Integration
-            neural_api_provider: neural_api_provider.clone(),
+            neural_api_provider,
             neural_proprioception_panel: ProprioceptionPanel::new(),
             show_neural_proprioception: false, // Toggle with 'P' key
             neural_metrics_dashboard: MetricsDashboard::new(),

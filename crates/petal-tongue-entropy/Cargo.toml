@@ -19,7 +19,8 @@ tokio = { version = "1", features = ["full"] }
 async-trait = "0.1"
 
 # Streaming & Encryption
-reqwest = { version = "0.12", features = ["json", "stream"] }
+# Use workspace reqwest (rustls-tls, NO native-tls/OpenSSL!)
+reqwest = { workspace = true }
 aes-gcm = "0.10"  # AES-256-GCM authenticated encryption
 rand = "0.8"  # For nonce generation
 zeroize = { version = "1", features = ["derive"] }  # Secure memory clearing

@@ -29,7 +29,7 @@ pub mod traits;
 
 pub use backends::{
     external::ExternalDisplay, framebuffer::FramebufferDisplay, software::SoftwareDisplay,
-    toadstool::ToadstoolDisplay,
+    toadstool::ToadstoolDisplay, toadstool_v2::ToadstoolDisplay as ToadstoolDisplayV2,
 };
 pub use manager::DisplayManager;
 pub use prompt::prompt_for_display_server;

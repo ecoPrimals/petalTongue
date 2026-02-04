@@ -190,16 +190,19 @@ impl Visual2DRenderer {
 
         // Draw edge being drafted (if in interactive mode)
         if let Some(ref edge_draft) = self.drawing_edge {
-            painter.line_segment(
-                [
-                    self.world_to_screen(
-                        graph.get_node(&edge_draft.from).unwrap().position,
-                        screen_center,
-                    ),
-                    edge_draft.current_pos,
-                ],
-                Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
-            );
+            // Safe node access - only draw if source node exists
+            if let Some(source_node) = graph.get_node(&edge_draft.from) {
+                painter.line_segment(
+                    [
+                        self.world_to_screen(source_node.position, screen_center),
+                        edge_draft.current_pos,
+                    ],
+                    Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
+                );
+            } else {
+                // Source node no longer exists - clear draft
+                self.drawing_edge = None;
+            }
         }
 
         // Draw stats in corner (if enabled)

@@ -21,6 +21,7 @@
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
+use petal_tongue_core::config_system::Config;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod cli_mode;
@@ -79,9 +80,9 @@ enum Commands {
 
     /// Launch web UI server (Pure Rust backend! ✅)
     Web {
-        /// Bind address
-        #[arg(long, default_value = "0.0.0.0:3000")]
-        bind: String,
+        /// Bind address (default: from config or 0.0.0.0:<web_port>)
+        #[arg(long)]
+        bind: Option<String>,
 
         /// Scenario JSON file to load
         #[arg(long)]
@@ -94,9 +95,9 @@ enum Commands {
 
     /// Run headless API server (Pure Rust! ✅)
     Headless {
-        /// Bind address
-        #[arg(long, default_value = "0.0.0.0:8080")]
-        bind: String,
+        /// Bind address (default: from config or 0.0.0.0:<headless_port>)
+        #[arg(long)]
+        bind: Option<String>,
 
         /// Number of worker threads
         #[arg(long, default_value = "4")]
@@ -129,6 +130,15 @@ async fn main() -> Result<()> {
         "🌸 petalTongue starting"
     );
 
+    // Load configuration (environment-driven, XDG-compliant)
+    tracing::info!("⚙️ Loading configuration from environment...");
+    let config = Config::from_env().context("Failed to load configuration")?;
+    tracing::info!(
+        web_port = config.network.web_port,
+        headless_port = config.network.headless_port,
+        "✅ Configuration loaded"
+    );
+
     // Initialize DataService ONCE (single source of truth for all modes)
     tracing::info!("📊 Initializing unified DataService...");
     let mut data_service = data_service::DataService::new();
@@ -139,9 +149,9 @@ async fn main() -> Result<()> {
     let data_service = std::sync::Arc::new(data_service);
     tracing::info!("✅ DataService initialized - all modes will use same data source");
 
-    // Register with Songbird (primal discovery service)
-    tracing::info!("🎵 Registering with Songbird discovery service...");
-    register_with_songbird().await;
+    // Register with ecosystem discovery service (capability-based, no hardcoded primal names)
+    tracing::info!("🔍 Registering with ecosystem discovery service...");
+    register_with_discovery_service().await;
 
     // Execute command (all modes are fully async)
     let result = match cli.command {
@@ -165,22 +175,29 @@ async fn main() -> Result<()> {
             scenario,
             workers,
         } => {
+            // Use explicit bind address or fall back to config (capability-based, no hardcoding)
+            let bind_addr = bind.unwrap_or_else(|| format!("0.0.0.0:{}", config.network.web_port));
+
             tracing::info!(
                 mode = "web",
-                bind,
+                bind = %bind_addr,
                 workers,
                 "Launching web UI server (Pure Rust!)"
             );
-            web_mode::run(&bind, scenario, workers, data_service).await
+            web_mode::run(&bind_addr, scenario, workers, data_service).await
         }
         Commands::Headless { bind, workers } => {
+            // Use explicit bind address or fall back to config (capability-based, no hardcoding)
+            let bind_addr =
+                bind.unwrap_or_else(|| format!("0.0.0.0:{}", config.network.headless_port));
+
             tracing::info!(
                 mode = "headless",
-                bind,
+                bind = %bind_addr,
                 workers,
                 "Launching headless API server (Pure Rust!)"
             );
-            headless_mode::run(&bind, workers, data_service).await
+            headless_mode::run(&bind_addr, workers, data_service).await
         }
         Commands::Status { verbose, format } => {
             tracing::info!(
@@ -249,14 +266,20 @@ fn init_tracing(level: &str, format: &str) -> Result<()> {
     Ok(())
 }
 
-/// Register petalTongue with Songbird discovery service
+/// Register petalTongue with the ecosystem discovery service
 ///
-/// This implements the `ipc.register` standard from PRIMAL_IPC_PROTOCOL.md.
-/// Gracefully handles Songbird unavailability (standalone mode).
-async fn register_with_songbird() {
+/// This implements the `ipc.register` standard from `PRIMAL_IPC_PROTOCOL.md`.
+/// Uses capability-based discovery to find the registration service (could be Songbird
+/// or any other primal providing the "discovery" capability).
+///
+/// # TRUE PRIMAL: Capability-Based Registration
+/// - Discovers the registration service at runtime (no hardcoded primal name)
+/// - Gracefully handles service unavailability (standalone mode works fine)
+/// - Self-knowledge only: petalTongue knows its own capabilities, not others
+async fn register_with_discovery_service() {
     use petal_tongue_ipc::primal_registration::{PrimalRegistration, RegistrationManager};
 
-    // Create petalTongue registration
+    // Create petalTongue registration (self-knowledge only)
     let registration = PrimalRegistration::petaltongue();
 
     tracing::debug!(
@@ -266,17 +289,17 @@ async fn register_with_songbird() {
         registration.capabilities.len()
     );
 
-    // Create registration manager
+    // Create registration manager (handles discovery service lookup)
     let manager = RegistrationManager::new(registration);
 
-    // Attempt registration (gracefully handles failure)
+    // Attempt registration with discovered service (gracefully handles failure)
     manager.register_on_startup().await;
 
     // Spawn heartbeat task (maintains discovery presence)
     let _heartbeat_handle = manager.spawn_heartbeat_task();
 
     // Note: Heartbeat task runs in background until process exit
-    // It automatically handles reconnection if Songbird restarts
+    // It automatically handles reconnection if discovery service restarts
     tracing::debug!("✅ Primal registration complete (heartbeat task spawned)");
 }
 

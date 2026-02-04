@@ -27,16 +27,20 @@ pub enum PanelAction {
 /// Error type for panel operations
 #[derive(Debug, thiserror::Error)]
 pub enum PanelError {
+    /// The requested panel type is not registered in the registry
     #[error("Unknown panel type: {0}")]
     UnknownType(String),
 
+    /// Panel instantiation failed (e.g., missing resources, initialization error)
     #[error("Panel creation failed: {0}")]
     CreationFailed(String),
 
+    /// The panel configuration is invalid or missing required fields
     #[error("Invalid configuration: {0}")]
     InvalidConfig(String),
 }
 
+/// Result type for panel operations
 pub type Result<T> = std::result::Result<T, PanelError>;
 
 /// Factory for creating panel instances

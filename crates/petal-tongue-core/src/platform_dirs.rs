@@ -180,6 +180,50 @@ pub fn config_dir() -> Result<PathBuf, DirError> {
     }
 }
 
+/// Get platform-specific runtime directory
+///
+/// Returns the appropriate directory for runtime files (sockets, PIDs) based on platform:
+/// - **Linux**: `$XDG_RUNTIME_DIR` or `/run/user/$UID`
+/// - **macOS**: `/tmp`
+/// - **Windows**: `%TEMP%`
+pub fn runtime_dir() -> Result<PathBuf, DirError> {
+    #[cfg(target_os = "linux")]
+    {
+        // XDG Base Directory Specification - runtime dir
+        if let Ok(xdg_runtime) = std::env::var("XDG_RUNTIME_DIR") {
+            return Ok(PathBuf::from(xdg_runtime));
+        }
+
+        // Fallback: /run/user/$UID
+        if let Ok(uid) = std::env::var("UID") {
+            return Ok(PathBuf::from(format!("/run/user/{}", uid)));
+        }
+
+        // Last resort: /tmp
+        return Ok(PathBuf::from("/tmp"));
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        // macOS doesn't have XDG_RUNTIME_DIR, use /tmp
+        Ok(PathBuf::from("/tmp"))
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // Windows: use TEMP
+        if let Ok(temp) = std::env::var("TEMP") {
+            return Ok(PathBuf::from(temp));
+        }
+        Ok(PathBuf::from("C:\\Windows\\Temp"))
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    Err(DirError::new(
+        "Runtime directory not available on this platform",
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

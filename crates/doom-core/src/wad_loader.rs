@@ -27,26 +27,57 @@ struct WadHeader {
     dir_offset: i32,
 }
 
-/// WAD type (IWAD or PWAD)
+/// WAD type (Iwad or Pwad)
+///
+/// Idiomatic Rust: Acronyms in type names use lowercase except initial letter.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum WadType {
-    IWAD, // Official game data
-    PWAD, // Patch WAD (custom levels)
+    Iwad, // Official game data (IWAD)
+    Pwad, // Patch WAD (custom levels) (PWAD)
 }
 
 /// A lump (data chunk) in the WAD
+///
+/// Lumps contain raw data that can be accessed for resource loading.
 #[derive(Debug, Clone)]
-struct Lump {
+pub struct Lump {
     name: String,
     offset: i32,
     size: i32,
     data: Vec<u8>,
 }
 
+impl Lump {
+    /// Get the lump name
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Get the lump data
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+}
+
 /// A loaded WAD file with parsed data
 pub struct WadData {
+    /// Internal lumps storage for accessing raw WAD data
+    /// Used by map parsing and resource loading
     lumps: Vec<Lump>,
+    /// Parsed map data ready for rendering
     pub maps: Vec<MapData>,
+}
+
+impl WadData {
+    /// Access a lump by name (used for resource loading)
+    pub fn get_lump(&self, name: &str) -> Option<&Lump> {
+        self.lumps.iter().find(|lump| lump.name == name)
+    }
+
+    /// Access all lumps (used for advanced WAD manipulation)
+    pub fn lumps(&self) -> &[Lump] {
+        &self.lumps
+    }
 }
 
 /// Map geometry data
@@ -167,8 +198,8 @@ impl WadData {
         let type_str = std::str::from_utf8(&header_bytes[0..4]).context("Invalid WAD type")?;
 
         let wad_type = match type_str {
-            "IWAD" => WadType::IWAD,
-            "PWAD" => WadType::PWAD,
+            "IWAD" => WadType::Iwad,
+            "PWAD" => WadType::Pwad,
             _ => bail!("Unknown WAD type: {}", type_str),
         };
 
