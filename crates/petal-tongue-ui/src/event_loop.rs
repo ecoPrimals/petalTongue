@@ -1,18 +1,17 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Sensory Event Loop
 //!
-//! Continuously polls sensors and feeds events to RenderingAwareness.
+//! Continuously polls sensors and feeds events to `RenderingAwareness`.
 //! Completes the bidirectional feedback loop.
 
 use anyhow::Result;
 use petal_tongue_core::{RenderingAwareness, SensorRegistry};
 use std::sync::{Arc, RwLock};
-use std::time::Duration;
 
 /// Start the sensory event loop (background task)
 /// NOTE: Currently disabled - egui already provides perfect sensory feedback!
-/// The bidirectional loop works via egui input events in the update() loop.
+/// The bidirectional loop works via egui input events in the `update()` loop.
 /// This function is here for future async sensor support (camera, network sensors, etc.)
-#[allow(dead_code)]
 pub fn start_event_loop(
     _sensor_registry: Arc<RwLock<SensorRegistry>>,
     _rendering_awareness: Arc<RwLock<RenderingAwareness>>,
@@ -37,11 +36,11 @@ pub async fn poll_sensors_once(
         let events = registry.poll_all().await?;
         event_count = events.len();
 
-        if !events.is_empty() {
-            if let Ok(mut awareness) = rendering_awareness.write() {
-                for event in events {
-                    awareness.sensory_feedback(&event);
-                }
+        if !events.is_empty()
+            && let Ok(mut awareness) = rendering_awareness.write()
+        {
+            for event in events {
+                awareness.sensory_feedback(&event);
             }
         }
     }
@@ -53,6 +52,7 @@ pub async fn poll_sensors_once(
 mod tests {
     use super::*;
     use petal_tongue_core::MotorCommand;
+    use tokio::time::Duration;
 
     #[tokio::test]
     async fn test_poll_sensors_once() {
@@ -73,11 +73,13 @@ mod tests {
         // Start event loop (currently a placeholder that completes immediately)
         let handle = start_event_loop(Arc::clone(&registry), Arc::clone(&awareness));
 
-        // Let task complete (placeholder completes immediately)
-        tokio::time::sleep(Duration::from_millis(10)).await;
-
-        // Placeholder task should complete (sensory feedback happens via egui)
-        assert!(handle.is_finished() || handle.await.is_ok());
+        // Placeholder task completes immediately - await with timeout to avoid blocking forever
+        let result = tokio::time::timeout(Duration::from_secs(1), handle).await;
+        assert!(result.is_ok(), "Task should complete within timeout");
+        assert!(
+            result.expect("already asserted ok").is_ok(),
+            "Task should not panic"
+        );
     }
 
     #[tokio::test]

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Niche Designer - Visual Niche Editor & Deployment UI
 //!
 //! Provides a visual interface for designing, validating, and deploying niches.
@@ -49,7 +50,7 @@ pub struct NicheDesigner {
     selected_template: Option<NicheTemplate>,
     /// Available primals (for assignment)
     available_primals: Vec<Primal>,
-    /// Assigned primals (capability -> primal_id)
+    /// Assigned primals (capability -> `primal_id`)
     assigned_primals: std::collections::HashMap<String, String>,
     /// Validation result
     validation: ValidationResult,
@@ -154,8 +155,7 @@ impl NicheDesigner {
             let selected_name = self
                 .selected_template
                 .as_ref()
-                .map(|t| t.name.clone())
-                .unwrap_or_else(|| "Select a template...".to_string());
+                .map_or_else(|| "Select a template...".to_string(), |t| t.name.clone());
 
             egui::ComboBox::from_id_source("template_selector")
                 .selected_text(selected_name)
@@ -164,8 +164,7 @@ impl NicheDesigner {
                         let is_selected = self
                             .selected_template
                             .as_ref()
-                            .map(|t| t.id == template.id)
-                            .unwrap_or(false);
+                            .is_some_and(|t| t.id == template.id);
 
                         if ui.selectable_label(is_selected, &template.name).clicked() {
                             self.select_template(template.clone());
@@ -213,7 +212,7 @@ impl NicheDesigner {
             .group(|ui| {
                 ui.horizontal(|ui| {
                     // Capability label
-                    ui.label(format!("{}:", capability));
+                    ui.label(format!("{capability}:"));
 
                     // Assignment status
                     if let Some(primal) = &assigned_primal {
@@ -239,31 +238,30 @@ impl NicheDesigner {
         let dragged_primal_id =
             ui.memory(|mem| mem.data.get_temp::<String>(egui::Id::new("dragged_primal")));
 
-        if let Some(_primal_id) = dragged_primal_id {
-            if slot_response.hovered() {
-                // Highlight as drop zone
-                let highlight_rect = slot_response.rect.expand(2.0);
-                ui.painter()
-                    .rect_stroke(highlight_rect, 4.0, (2.0, Color32::LIGHT_BLUE));
+        if let Some(_primal_id) = dragged_primal_id
+            && slot_response.hovered()
+        {
+            // Highlight as drop zone
+            let highlight_rect = slot_response.rect.expand(2.0);
+            ui.painter()
+                .rect_stroke(highlight_rect, 4.0, (2.0, Color32::LIGHT_BLUE));
 
-                slot_response.on_hover_text(format!(
-                    "Drop primal here to assign to {} capability",
-                    capability
-                ));
+            slot_response.on_hover_text(format!(
+                "Drop primal here to assign to {capability} capability"
+            ));
 
-                // Handle drop
-                if !ui.input(|i| i.pointer.is_decidedly_dragging()) {
-                    // Drag ended
-                    if let Some(primal_id_final) = ui.memory_mut(|mem| {
-                        mem.data
-                            .remove_temp::<String>(egui::Id::new("dragged_primal"))
-                    }) {
-                        info!(
-                            "🎯 Primal {} dropped on capability {}",
-                            primal_id_final, capability
-                        );
-                        self.assign_primal(capability.to_string(), primal_id_final);
-                    }
+            // Handle drop
+            if !ui.input(|i| i.pointer.is_decidedly_dragging()) {
+                // Drag ended
+                if let Some(primal_id_final) = ui.memory_mut(|mem| {
+                    mem.data
+                        .remove_temp::<String>(egui::Id::new("dragged_primal"))
+                }) {
+                    info!(
+                        "🎯 Primal {} dropped on capability {}",
+                        primal_id_final, capability
+                    );
+                    self.assign_primal(capability.to_string(), primal_id_final);
                 }
             }
         }
@@ -287,12 +285,12 @@ impl NicheDesigner {
                         );
                     }
                     ValidationResult::InsufficientResources(msg) => {
-                        ui.colored_label(Color32::YELLOW, format!("⚠ {}", msg));
+                        ui.colored_label(Color32::YELLOW, format!("⚠ {msg}"));
                     }
                     ValidationResult::Conflicts(conflicts) => {
                         ui.colored_label(Color32::RED, "✖ Conflicts detected:");
                         for conflict in conflicts {
-                            ui.label(format!("  • {}", conflict));
+                            ui.label(format!("  • {conflict}"));
                         }
                     }
                 }
@@ -370,11 +368,11 @@ impl NicheDesigner {
                 .cloned()
                 .collect();
 
-            if !missing.is_empty() {
-                self.validation = ValidationResult::MissingRequirements(missing);
-            } else {
+            if missing.is_empty() {
                 // All requirements met
                 self.validation = ValidationResult::Valid;
+            } else {
+                self.validation = ValidationResult::MissingRequirements(missing);
             }
         } else {
             self.validation = ValidationResult::Valid;
@@ -403,11 +401,13 @@ impl NicheDesigner {
     }
 
     /// Get validation result
+    #[must_use]
     pub fn validation_result(&self) -> &ValidationResult {
         &self.validation
     }
 
     /// Get assigned primals
+    #[must_use]
     pub fn assigned_primals(&self) -> &std::collections::HashMap<String, String> {
         &self.assigned_primals
     }

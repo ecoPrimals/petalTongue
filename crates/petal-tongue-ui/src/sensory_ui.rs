@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Sensory-Based Adaptive UI System
 //!
 //! This module replaces device-type based rendering with capability-based
@@ -56,11 +57,13 @@ impl SensoryUIManager {
     }
 
     /// Get current UI complexity
+    #[must_use]
     pub fn ui_complexity(&self) -> SensoryUIComplexity {
         self.ui_complexity
     }
 
     /// Get capabilities description
+    #[must_use]
     pub fn capabilities_description(&self) -> String {
         self.capabilities.describe()
     }

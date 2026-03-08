@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Tests for types module
 
 #[cfg(test)]
@@ -46,7 +47,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)]
+    #[expect(deprecated)]
     fn test_primal_info_creation() {
         let info = PrimalInfo {
             id: "test-1".to_string(),
@@ -73,7 +74,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)]
+    #[expect(deprecated)]
     fn test_primal_info_clone() {
         let info = PrimalInfo {
             id: "test-1".to_string(),
@@ -131,7 +132,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)]
+    #[expect(deprecated)]
     fn test_topology_graph() {
         let primal1 = PrimalInfo {
             id: "primal-1".to_string(),
@@ -247,7 +248,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)]
+    #[expect(deprecated)]
     fn test_primal_info_serialization() {
         let info = PrimalInfo {
             id: "test-1".to_string(),

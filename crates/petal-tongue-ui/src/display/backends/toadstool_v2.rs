@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Toadstool Display Backend - Complete tarpc Implementation 🌸🦈
 //!
 //! TRUE PRIMAL Evolution: Discovery via capability system, Performance via tarpc
@@ -5,14 +6,14 @@
 //! # Two-Phase Architecture
 //!
 //! **Phase 1 - Discovery** (Once at startup, ~50ms):
-//! ```
+//! ```text
 //! petalTongue → CapabilityDiscovery → biomeOS
 //!   Query: "Who provides 'display' capability?"
 //!   Response: PrimalEndpoint { tarpc: "tarpc://unix:/run/toadstool.sock" }
 //! ```
 //!
 //! **Phase 2 - Performance** (Continuous, ~5-8ms):
-//! ```
+//! ```text
 //! petalTongue ←─ tarpc (binary RPC) ─→ toadStool
 //!   • Frame commits: 60 FPS
 //!   • Input events: real-time
@@ -104,7 +105,7 @@ impl ToadstoolDisplay {
     pub fn new() -> Result<Self> {
         // Create discovery system with biomeOS backend
         let backend = BiomeOsBackend::from_env()
-            .map_err(|e| anyhow!("Failed to create biomeOS discovery backend: {}", e))?;
+            .map_err(|e| anyhow!("Failed to create biomeOS discovery backend: {e}"))?;
 
         let discovery = CapabilityDiscovery::new(Box::new(backend));
 
@@ -118,6 +119,7 @@ impl ToadstoolDisplay {
     }
 
     /// Create with explicit tarpc client (for testing)
+    #[must_use]
     pub fn with_client(client: TarpcClient) -> Self {
         Self {
             discovery: None,
@@ -143,13 +145,12 @@ impl ToadstoolDisplay {
             .await
             .map_err(|e| {
                 anyhow!(
-                    "Failed to discover display capability: {}\n\
+                    "Failed to discover display capability: {e}\n\
                 \n\
                 Troubleshooting:\n\
                 - Ensure biomeOS nucleus is running\n\
                 - Ensure toadStool is registered with display capability\n\
-                - Check biomeOS discovery logs",
-                    e
+                - Check biomeOS discovery logs"
                 )
             })?;
 
@@ -167,7 +168,7 @@ impl ToadstoolDisplay {
         // Connect via tarpc for high-performance communication
         // Note: TarpcClient::new() creates client with lazy connection
         let client = TarpcClient::new(&tarpc_endpoint)
-            .map_err(|e| anyhow!("Failed to create tarpc client: {}", e))?;
+            .map_err(|e| anyhow!("Failed to create tarpc client: {e}"))?;
 
         self.tarpc_client = Some(client);
 
@@ -191,10 +192,10 @@ impl ToadstoolDisplay {
             .client()?
             .call_method("display.query_capabilities", Some(serde_json::json!({})))
             .await
-            .map_err(|e| anyhow!("Failed to query capabilities: {}", e))?;
+            .map_err(|e| anyhow!("Failed to query capabilities: {e}"))?;
 
         let caps: DisplayCapabilitiesResponse = serde_json::from_value(result)
-            .map_err(|e| anyhow!("Failed to parse display capabilities: {}", e))?;
+            .map_err(|e| anyhow!("Failed to parse display capabilities: {e}"))?;
 
         info!(
             "✅ Found {} displays, {} input devices",
@@ -224,10 +225,10 @@ impl ToadstoolDisplay {
             .client()?
             .call_method("display.create_window", Some(params))
             .await
-            .map_err(|e| anyhow!("Failed to create window: {}", e))?;
+            .map_err(|e| anyhow!("Failed to create window: {e}"))?;
 
         let window: WindowResponse = serde_json::from_value(result)
-            .map_err(|e| anyhow!("Failed to parse window response: {}", e))?;
+            .map_err(|e| anyhow!("Failed to parse window response: {e}"))?;
 
         info!("✅ Window created: {}", window.window_id);
 
@@ -259,7 +260,7 @@ impl ToadstoolDisplay {
         self.client()?
             .call_method("display.commit_frame", Some(params))
             .await
-            .map_err(|e| anyhow!("Failed to commit frame: {}", e))?;
+            .map_err(|e| anyhow!("Failed to commit frame: {e}"))?;
 
         debug!("✅ Frame committed");
 
@@ -336,7 +337,7 @@ impl DisplayBackend for ToadstoolDisplay {
         BiomeOsBackend::from_env().is_ok()
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "toadStool Display (tarpc)"
     }
 
@@ -366,7 +367,10 @@ impl DisplayBackend for ToadstoolDisplay {
                 });
 
                 // Best-effort window destruction (don't fail shutdown if this fails)
-                match client.call_method("display.destroy_window", Some(params)).await {
+                match client
+                    .call_method("display.destroy_window", Some(params))
+                    .await
+                {
                     Ok(_) => info!("   ✅ Window destroyed"),
                     Err(e) => warn!("   ⚠️ Failed to destroy window (non-fatal): {}", e),
                 }

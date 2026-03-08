@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Display backend traits and types
 
 use anyhow::Result;
@@ -65,6 +66,7 @@ pub struct DisplayCapabilities {
 
 impl DisplayCapabilities {
     /// Toadstool WASM capabilities
+    #[must_use]
     pub fn toadstool() -> Self {
         Self {
             requires_network: true,
@@ -79,6 +81,7 @@ impl DisplayCapabilities {
     }
 
     /// Software rendering capabilities
+    #[must_use]
     pub fn software() -> Self {
         Self {
             requires_network: false,
@@ -93,6 +96,7 @@ impl DisplayCapabilities {
     }
 
     /// Framebuffer direct capabilities
+    #[must_use]
     pub fn framebuffer() -> Self {
         Self {
             requires_network: false,
@@ -107,6 +111,7 @@ impl DisplayCapabilities {
     }
 
     /// External display server capabilities
+    #[must_use]
     pub fn external() -> Self {
         Self {
             requires_network: false,

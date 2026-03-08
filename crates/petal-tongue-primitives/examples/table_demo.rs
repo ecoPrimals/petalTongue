@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Table Primitive Demo
 //!
 //! Demonstrates the table primitive with sample data.
@@ -160,7 +161,7 @@ fn print_table<T>(table: &Table<T>) {
             if col.is_visible() {
                 let width = col.column_width().unwrap_or(15);
                 let value = col.extract(row_data);
-                print!("{:<width$}  ", value, width = width);
+                print!("{value:<width$}  ");
             }
         }
         println!();
@@ -197,7 +198,7 @@ fn print_table_with_selection<T>(table: &Table<T>) {
             if col.is_visible() {
                 let width = col.column_width().unwrap_or(15);
                 let value = col.extract(row_data);
-                print!("{:<width$}  ", value, width = width);
+                print!("{value:<width$}  ");
             }
         }
         println!();

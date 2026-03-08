@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Neural API Graph Client
 //!
 //! Client for saving, loading, and executing graphs via Neural API.

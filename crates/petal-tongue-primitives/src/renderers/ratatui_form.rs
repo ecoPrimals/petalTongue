@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 // Ratatui Form Renderer - TUI form rendering
 //
 // Deep Debt Principles:

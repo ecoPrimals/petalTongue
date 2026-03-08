@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Tests for config module
 
 #[cfg(test)]
@@ -40,14 +41,11 @@ mod tests {
         let config = PetalTongueConfig::default();
 
         // biomeos_url is Option<String>, can be Some or None
-        match &config.biomeos_url {
-            Some(url) => {
-                // If set, should be a valid URL format
-                assert!(url.starts_with("http://") || url.starts_with("https://"));
-            }
-            None => {
-                // None is valid - will use Songbird auto-discovery
-            }
+        if let Some(url) = &config.biomeos_url {
+            // If set, should be a valid URL format
+            assert!(url.starts_with("http://") || url.starts_with("https://"));
+        } else {
+            // None is valid - will use Songbird auto-discovery
         }
     }
 

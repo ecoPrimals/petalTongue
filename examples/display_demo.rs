@@ -1,10 +1,12 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Pure Rust Display System Demo
 //!
 //! Demonstrates the four-tier display architecture.
 
 use petal_tongue_ui::display::prompt::prompt_for_display_server;
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     println!("\n🌸 petalTongue Pure Rust Display System Demo\n");
 
     // Check display availability
@@ -40,10 +42,10 @@ fn main() -> anyhow::Result<()> {
 
         // Show the prompt
         println!("Demonstrating display server prompt...\n");
-        match prompt_for_display_server() {
-            Ok(true) => println!("\n✅ Display server became available!"),
-            Ok(false) => println!("\n📦 Continuing with Pure Rust rendering"),
-            Err(e) => println!("\n⚠️  Prompt error: {}", e),
+        match prompt_for_display_server().await {
+            Ok(true) => println!("\nDisplay server became available!"),
+            Ok(false) => println!("\nContinuing with Pure Rust rendering"),
+            Err(e) => println!("\nPrompt error: {e}"),
         }
     }
 

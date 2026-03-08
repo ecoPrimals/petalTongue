@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Panel Layout Primitive
 //!
 //! Flexible panel layout system with splits, tabs, and docking.
@@ -141,6 +142,7 @@ impl<T> Panel<T> {
     }
 
     /// Create a tab group
+    #[must_use]
     pub fn tabs(panels: Vec<PanelContent<T>>, active_index: usize) -> Self {
         Panel::Tabs {
             panels,
@@ -309,7 +311,7 @@ impl<T> PanelLayout<T> {
         let id = id.into();
 
         // Unfocus all panels
-        self.root.visit(&mut |panel: &PanelContent<T>| {
+        self.root.visit(&mut |_panel: &PanelContent<T>| {
             // Note: We can't mutate here, need a separate method
         });
 

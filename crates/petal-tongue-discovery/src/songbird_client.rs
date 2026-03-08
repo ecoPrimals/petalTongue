@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Songbird discovery client
 //!
 //! Queries Songbird primal for capability-based discovery of other primals.
@@ -55,7 +56,7 @@ impl SongbirdClient {
             .or_else(|| std::env::var("FAMILY_ID").ok())
             .unwrap_or_else(|| "nat0".to_string());
 
-        let socket_name = format!("songbird-{}.sock", family);
+        let socket_name = format!("songbird-{family}.sock");
 
         // Try XDG_RUNTIME_DIR first
         let search_paths = Self::get_search_paths();
@@ -77,8 +78,7 @@ impl SongbirdClient {
         }
 
         Err(anyhow::anyhow!(
-            "Songbird not found. Is it running? (looking for {})",
-            socket_name
+            "Songbird not found. Is it running? (looking for {socket_name})"
         ))
     }
 
@@ -94,7 +94,7 @@ impl SongbirdClient {
         // Priority 2: /run/user/<uid>
         // EVOLVED: Now using safe rustix-based function from core (was unsafe libc::getuid())
         let uid = petal_tongue_core::system_info::get_current_uid();
-        paths.push(PathBuf::from(format!("/run/user/{}", uid)));
+        paths.push(PathBuf::from(format!("/run/user/{uid}")));
 
         // Priority 3: /tmp (development)
         paths.push(PathBuf::from("/tmp"));

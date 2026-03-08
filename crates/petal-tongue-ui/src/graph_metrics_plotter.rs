@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Graph Metrics Plotter Integration
 //!
 //! Visualizes graph metrics over time (node count, edge count, updates).
@@ -12,7 +13,7 @@ use std::time::Instant;
 /// Metrics snapshot
 #[derive(Clone, Debug)]
 struct MetricsSnapshot {
-    #[allow(dead_code)] // TODO: Use for time axis labels
+    #[expect(dead_code)] // TODO: Use for time axis labels
     timestamp: Instant,
     node_count: usize,
     edge_count: usize,
@@ -26,7 +27,7 @@ pub struct GraphMetricsPlotter {
     show_panel: bool,
     history: VecDeque<MetricsSnapshot>,
     max_history: usize,
-    #[allow(dead_code)] // TODO: Use for time-based x-axis
+    #[expect(dead_code)] // TODO: Use for time-based x-axis
     start_time: Instant,
 }
 

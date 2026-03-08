@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Graph Node
 //!
 //! Represents a single node in the execution graph.

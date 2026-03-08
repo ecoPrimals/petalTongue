@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Renderer Implementations
 //!
 //! This module contains the actual renderer implementations for different modalities.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 // DNS packet parsing utilities for mDNS
 //
 // Simplified DNS parser focused on service discovery (RFC 1035, RFC 6762, RFC 6763)
@@ -7,7 +8,7 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 
 /// DNS record type
 #[derive(Debug, Clone, Copy, PartialEq)]
-#[allow(dead_code, clippy::upper_case_acronyms)]
+#[expect(clippy::upper_case_acronyms)]
 pub enum RecordType {
     A = 1,     // IPv4 address
     NS = 2,    // Name server
@@ -35,14 +36,14 @@ impl RecordType {
 
 /// DNS class
 #[derive(Debug, Clone, Copy, PartialEq)]
-#[allow(dead_code)]
+#[expect(dead_code)]
 pub enum RecordClass {
     IN = 1, // Internet
 }
 
 /// Parsed DNS header
 #[derive(Debug)]
-#[allow(dead_code)] // Some fields are parsed but not yet used
+#[expect(dead_code)] // Some fields are parsed but not yet used
 pub struct DnsHeader {
     pub transaction_id: u16,
     pub flags: u16,
@@ -150,7 +151,7 @@ impl<'a> NameParser<'a> {
 
 /// SRV record data
 #[derive(Debug, Clone)]
-#[allow(dead_code)] // priority and weight are parsed but not yet used in routing logic
+#[expect(dead_code)] // priority and weight are parsed but not yet used in routing logic
 pub struct SrvRecord {
     pub priority: u16,
     pub weight: u16,
@@ -240,13 +241,12 @@ impl ARecord {
 
 /// AAAA record data (IPv6)
 #[derive(Debug, Clone)]
-#[allow(dead_code)] // Currently unused but kept for future IPv6 support
+#[expect(dead_code)] // Currently unused but kept for future IPv6 support
 pub struct AaaaRecord {
     pub addr: Ipv6Addr,
 }
 
 impl AaaaRecord {
-    #[allow(dead_code)] // Reserved for future IPv6 support
     pub fn parse(rdata: &[u8]) -> Result<Self> {
         if rdata.len() != 16 {
             anyhow::bail!("AAAA record must be 16 bytes");
@@ -265,7 +265,7 @@ impl AaaaRecord {
 
 /// Generic DNS resource record
 #[derive(Debug)]
-#[allow(dead_code)] // rclass and ttl are parsed but not currently used in routing decisions
+#[expect(dead_code)] // rclass and ttl are parsed but not currently used in routing decisions
 pub struct ResourceRecord {
     pub name: String,
     pub rtype: u16,
@@ -330,7 +330,7 @@ impl ResourceRecord {
     }
 
     /// Parse as AAAA record
-    #[allow(dead_code)] // Reserved for future IPv6 support
+    #[expect(dead_code)] // Reserved for future IPv6 support
     pub fn as_aaaa(&self) -> Result<AaaaRecord> {
         AaaaRecord::parse(&self.rdata)
     }

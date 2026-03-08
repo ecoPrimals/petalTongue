@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Pure Rust platform directory resolution
 //!
 //! Zero dependencies, maximum portability, TRUE PRIMAL compliant.
 //!
 //! This module provides cross-platform directory resolution using ONLY
-//! Rust stdlib (std::env + std::path). No external dependencies, works
+//! Rust stdlib (`std::env` + `std::path`). No external dependencies, works
 //! with ANY toolchain (MSVC, MinGW, musl, ARM64, etc.).
 //!
 //! # Design
@@ -122,7 +123,7 @@ pub fn data_dir() -> Result<PathBuf, DirError> {
 ///
 /// Returns the appropriate directory for application configuration based on platform:
 /// - **Linux**: `$XDG_CONFIG_HOME` or `$HOME/.config`
-/// - **macOS**: `$HOME/Library/Application Support` (same as data_dir on macOS)
+/// - **macOS**: `$HOME/Library/Application Support` (same as `data_dir` on macOS)
 /// - **Windows**: Same as `data_dir()` (config and data are not separated on Windows)
 ///
 /// # Examples
@@ -196,11 +197,11 @@ pub fn runtime_dir() -> Result<PathBuf, DirError> {
 
         // Fallback: /run/user/$UID
         if let Ok(uid) = std::env::var("UID") {
-            return Ok(PathBuf::from(format!("/run/user/{}", uid)));
+            return Ok(PathBuf::from(format!("/run/user/{uid}")));
         }
 
         // Last resort: /tmp
-        return Ok(PathBuf::from("/tmp"));
+        Ok(PathBuf::from("/tmp"))
     }
 
     #[cfg(target_os = "macos")]
@@ -232,14 +233,17 @@ mod tests {
     fn test_data_dir_returns_path() {
         // Should always return a path on supported platforms
         let dir = data_dir().expect("Should get data dir on this platform");
-        assert!(dir.as_os_str().len() > 0, "Data dir should not be empty");
+        assert!(!dir.as_os_str().is_empty(), "Data dir should not be empty");
     }
 
     #[test]
     fn test_config_dir_returns_path() {
         // Should always return a path on supported platforms
         let dir = config_dir().expect("Should get config dir on this platform");
-        assert!(dir.as_os_str().len() > 0, "Config dir should not be empty");
+        assert!(
+            !dir.as_os_str().is_empty(),
+            "Config dir should not be empty"
+        );
     }
 
     #[test]

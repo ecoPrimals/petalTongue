@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! petalTongue ecoBud - Production UniBin
 //!
 //! # Architecture

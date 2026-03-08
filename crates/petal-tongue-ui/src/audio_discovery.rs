@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Audio Discovery - Runtime detection of audio capabilities
 //!
 //! TRUE PRIMAL approach: Discovers what audio systems are available at runtime
@@ -5,8 +6,8 @@
 //!
 //! # Discovery Chain
 //!
-//! 1. **PipeWire** (preferred) - Modern, user-level, no permissions
-//! 2. **PulseAudio** (fallback) - Legacy, user-level, no permissions
+//! 1. **`PipeWire`** (preferred) - Modern, user-level, no permissions
+//! 2. **`PulseAudio`** (fallback) - Legacy, user-level, no permissions
 //! 3. **Direct ALSA** (fallback) - Requires audio group
 //! 4. **Silent Mode** (graceful) - No audio, visual-only
 //!
@@ -24,9 +25,9 @@ use tracing::{debug, info};
 /// Audio backend type discovered
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AudioBackendType {
-    /// PipeWire (modern, preferred)
+    /// `PipeWire` (modern, preferred)
     PipeWire,
-    /// PulseAudio (legacy, fallback)
+    /// `PulseAudio` (legacy, fallback)
     PulseAudio,
     /// Direct ALSA device access
     DirectALSA,
@@ -48,7 +49,7 @@ pub struct AudioSocket {
 /// Audio discovery results
 #[derive(Debug, Clone)]
 pub struct AudioDiscovery {
-    /// Available audio sockets (PipeWire, PulseAudio)
+    /// Available audio sockets (`PipeWire`, `PulseAudio`)
     pub sockets: Vec<AudioSocket>,
     /// Available direct ALSA devices
     pub direct_devices: Vec<PathBuf>,
@@ -67,7 +68,6 @@ impl AudioDiscovery {
         info!("🎵 Discovering audio capabilities (TRUE PRIMAL)...");
 
         let mut sockets = Vec::new();
-        let direct_devices;
 
         // 1. Try PipeWire (preferred - modern, user-level)
         if let Some(socket) = Self::discover_pipewire() {
@@ -82,7 +82,7 @@ impl AudioDiscovery {
         }
 
         // 3. Try direct ALSA devices (fallback - requires audio group)
-        direct_devices = Self::discover_direct_alsa();
+        let direct_devices = Self::discover_direct_alsa();
         if !direct_devices.is_empty() {
             info!(
                 "✅ Direct ALSA devices discovered: {} device(s)",
@@ -102,9 +102,9 @@ impl AudioDiscovery {
         }
     }
 
-    /// Discover PipeWire socket
+    /// Discover `PipeWire` socket
     ///
-    /// PipeWire is the modern Linux audio/video server.
+    /// `PipeWire` is the modern Linux audio/video server.
     /// It exposes a Unix socket at /run/user/$UID/pipewire-0
     fn discover_pipewire() -> Option<AudioSocket> {
         debug!("🔍 Searching for PipeWire socket...");
@@ -139,9 +139,9 @@ impl AudioDiscovery {
         }
     }
 
-    /// Discover PulseAudio socket
+    /// Discover `PulseAudio` socket
     ///
-    /// PulseAudio is the legacy Linux audio server.
+    /// `PulseAudio` is the legacy Linux audio server.
     /// It exposes a Unix socket at /run/user/$UID/pulse/native
     fn discover_pulseaudio() -> Option<AudioSocket> {
         debug!("🔍 Searching for PulseAudio socket...");
@@ -196,7 +196,7 @@ impl AudioDiscovery {
 
                 // Find PCM playback devices (format: pcmC0D0p)
                 // 'p' suffix = playback, 'c' suffix = capture
-                if name.starts_with("pcm") && name.ends_with("p") {
+                if name.starts_with("pcm") && name.ends_with('p') {
                     debug!("Found ALSA device: {}", path.display());
                     devices.push(path);
                 }
@@ -237,11 +237,13 @@ impl AudioDiscovery {
     }
 
     /// Check if audio is available
+    #[must_use]
     pub fn is_available(&self) -> bool {
         self.preferred != AudioBackendType::Silent
     }
 
     /// Get human-readable status
+    #[must_use]
     pub fn status_message(&self) -> String {
         match self.preferred {
             AudioBackendType::PipeWire => {

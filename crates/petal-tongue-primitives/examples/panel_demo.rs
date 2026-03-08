@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Panel Layout Demo
 //!
 //! Demonstrates the panel layout system with splits and tabs.
@@ -135,7 +136,7 @@ fn main() {
     );
 
     // Map numbers to strings
-    let string_layout = numeric_layout.map(&|n: i32| format!("Value: {}", n));
+    let string_layout = numeric_layout.map(&|n: i32| format!("Value: {n}"));
 
     if let Some(left) = string_layout.find_panel("left") {
         println!("Left panel content: {}", left.content);
@@ -155,7 +156,7 @@ fn print_panel_structure<T: std::fmt::Display>(panel: &Panel<T>, indent: usize) 
         Panel::Leaf(content) => {
             println!("{}├─ Leaf: {} (\"{}\")", prefix, content.id, content.title);
             let preview: String = content.content.to_string().chars().take(40).collect();
-            println!("{}   Content: {}...", prefix, preview);
+            println!("{prefix}   Content: {preview}...");
         }
         Panel::Split {
             direction,

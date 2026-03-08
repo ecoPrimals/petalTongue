@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Egui Pixel Renderer
 //!
 //! Renders egui UI to a pixel buffer (RGBA8) for display via backends.
@@ -35,6 +36,7 @@ pub struct EguiPixelRenderer {
 
 impl EguiPixelRenderer {
     /// Create new egui pixel renderer
+    #[must_use]
     pub fn new(width: u32, height: u32) -> Self {
         Self {
             width,
@@ -165,18 +167,18 @@ impl EguiPixelRenderer {
         // Layout: 0xAABBGGRR (little-endian) = RGBA in memory
         let png_data = pixmap
             .encode_png()
-            .map_err(|e| anyhow!("Failed to encode PNG: {}", e))?;
+            .map_err(|e| anyhow!("Failed to encode PNG: {e}"))?;
 
         // Decode PNG to get RGBA8
         let decoder = png::Decoder::new(png_data.as_slice());
         let mut reader = decoder
             .read_info()
-            .map_err(|e| anyhow!("Failed to decode PNG: {}", e))?;
+            .map_err(|e| anyhow!("Failed to decode PNG: {e}"))?;
 
         let mut buffer = vec![0u8; reader.output_buffer_size()];
         let info = reader
             .next_frame(&mut buffer)
-            .map_err(|e| anyhow!("Failed to read PNG frame: {}", e))?;
+            .map_err(|e| anyhow!("Failed to read PNG frame: {e}"))?;
 
         // Ensure we have RGBA8
         buffer.truncate(info.buffer_size());
@@ -255,6 +257,7 @@ impl EguiPixelRenderer {
     }
 
     /// Get dimensions
+    #[must_use]
     pub fn dimensions(&self) -> (u32, u32) {
         (self.width, self.height)
     }

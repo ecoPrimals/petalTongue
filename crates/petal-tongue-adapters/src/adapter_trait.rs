@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Property adapter trait for ecosystem-specific rendering
 //!
 //! This trait allows ecosystem-specific adapters to interpret and render

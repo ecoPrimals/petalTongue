@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Audio entropy capture (singing, speaking)
 //!
 //! Captures voice/audio with timing, pitch dynamics, and spectral patterns.

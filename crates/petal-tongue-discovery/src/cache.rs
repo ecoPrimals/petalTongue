@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Provider caching layer
 //!
 //! Implements intelligent caching to reduce API calls and improve performance.
@@ -19,23 +20,21 @@ use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 
 /// Cached entry with expiration
+/// Stores data in Arc for zero-copy cache hits (Arc::clone instead of deep clone)
 #[derive(Debug, Clone)]
-#[allow(dead_code)] // Reserved for future use when caching is enabled
 struct CachedEntry<T> {
-    data: T,
+    data: Arc<T>,
     expires_at: Instant,
 }
 
 impl<T> CachedEntry<T> {
-    #[allow(dead_code)] // Reserved for future use when caching is enabled
     fn new(data: T, ttl: Duration) -> Self {
         Self {
-            data,
+            data: Arc::new(data),
             expires_at: Instant::now() + ttl,
         }
     }
 
-    #[allow(dead_code)] // Reserved for future use when caching is enabled
     fn is_expired(&self) -> bool {
         Instant::now() >= self.expires_at
     }
@@ -43,7 +42,6 @@ impl<T> CachedEntry<T> {
 
 /// Cache key for different data types
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-#[allow(dead_code)] // Reserved for future use when caching is enabled
 pub(crate) enum CacheKey {
     Primals,
     Topology,
@@ -56,7 +54,6 @@ pub(crate) enum CacheKey {
 ///
 /// ASYNC-SAFE: Uses tokio::sync::RwLock to prevent deadlocks in async context.
 #[derive(Debug)]
-#[allow(dead_code)] // Reserved for future use when caching is enabled
 pub struct ProviderCache<T> {
     cache: Arc<RwLock<LruCache<CacheKey, CachedEntry<T>>>>,
     primals_ttl: Duration,
@@ -67,9 +64,9 @@ pub struct ProviderCache<T> {
     misses: Arc<RwLock<u64>>,
 }
 
-impl<T: Clone> ProviderCache<T> {
+impl<T> ProviderCache<T> {
     /// Create a new cache with specified capacity
-    #[allow(dead_code)] // Reserved for future use when caching is enabled
+    #[expect(dead_code)] // Reserved for future use when caching is enabled
     pub fn new(capacity: usize) -> Self {
         Self {
             cache: Arc::new(RwLock::new(LruCache::new(
@@ -102,8 +99,8 @@ impl<T: Clone> ProviderCache<T> {
         }
     }
 
-    /// Get primals from cache
-    pub async fn get_primals(&self) -> Option<T> {
+    /// Get primals from cache (returns Arc for zero-copy sharing)
+    pub async fn get_primals(&self) -> Option<Arc<T>> {
         self.get(CacheKey::Primals).await
     }
 
@@ -112,8 +109,8 @@ impl<T: Clone> ProviderCache<T> {
         self.put(CacheKey::Primals, data, self.primals_ttl).await;
     }
 
-    /// Get topology from cache
-    pub async fn get_topology(&self) -> Option<T> {
+    /// Get topology from cache (returns Arc for zero-copy sharing)
+    pub async fn get_topology(&self) -> Option<Arc<T>> {
         self.get(CacheKey::Topology).await
     }
 
@@ -122,8 +119,8 @@ impl<T: Clone> ProviderCache<T> {
         self.put(CacheKey::Topology, data, self.topology_ttl).await;
     }
 
-    /// Get health from cache
-    pub async fn get_health(&self) -> Option<T> {
+    /// Get health from cache (returns Arc for zero-copy sharing)
+    pub async fn get_health(&self) -> Option<Arc<T>> {
         self.get(CacheKey::Health).await
     }
 
@@ -133,7 +130,8 @@ impl<T: Clone> ProviderCache<T> {
     }
 
     /// Get from cache (generic) - ASYNC-SAFE
-    async fn get(&self, key: CacheKey) -> Option<T> {
+    /// Returns Arc::clone for zero-copy cache hits (no deep clone)
+    async fn get(&self, key: CacheKey) -> Option<Arc<T>> {
         let mut cache = self.cache.write().await;
 
         if let Some(entry) = cache.get(&key) {
@@ -144,10 +142,10 @@ impl<T: Clone> ProviderCache<T> {
                 tracing::debug!("Cache MISS (expired): {:?}", key);
                 None
             } else {
-                // Cache hit!
+                // Cache hit! Arc::clone is cheap (no deep clone)
                 *self.hits.write().await += 1;
                 tracing::debug!("Cache HIT: {:?}", key);
-                Some(entry.data.clone())
+                Some(Arc::clone(&entry.data))
             }
         } else {
             // Cache miss
@@ -259,7 +257,7 @@ mod tests {
         let retrieved = cache.get_primals().await;
 
         assert!(retrieved.is_some());
-        assert_eq!(retrieved.unwrap(), data);
+        assert_eq!(*retrieved.unwrap(), data);
     }
 
     #[tokio::test]

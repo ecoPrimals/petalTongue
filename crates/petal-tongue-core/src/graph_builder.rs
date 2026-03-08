@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Graph Builder Core Types
 //!
 //! Visual graph representation for Neural API graph construction.
@@ -188,7 +189,7 @@ pub struct GraphNode {
     /// Unique node ID (within this graph)
     pub id: String,
 
-    /// Node type (primal_start, verification, wait_for, conditional)
+    /// Node type (`primal_start`, verification, `wait_for`, conditional)
     pub node_type: NodeType,
 
     /// Display position on canvas

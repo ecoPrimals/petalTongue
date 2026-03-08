@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! TUI Widgets
 //!
 //! Reusable widgets for the TUI.

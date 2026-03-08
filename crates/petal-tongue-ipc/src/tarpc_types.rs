@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # 🚀 tarpc Types and Traits for petalTongue
 //!
 //! **HIGH-PERFORMANCE PRIMAL-TO-PRIMAL RPC**
@@ -25,6 +26,7 @@
 //! No manual memory manipulation or unsafe operations are performed.
 //! The generated client/server implementations use only safe Rust abstractions.
 
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -221,11 +223,11 @@ pub struct ProtocolInfo {
 pub struct RenderRequest {
     /// Graph topology data (JSON or binary) - for graph rendering
     #[serde(default)]
-    pub topology: Vec<u8>,
+    pub topology: Bytes,
 
     /// Raw pixel data - for frame buffer rendering (e.g., RGBA8)
     #[serde(default)]
-    pub data: Vec<u8>,
+    pub data: Bytes,
 
     /// Render width in pixels
     pub width: u32,
@@ -259,7 +261,7 @@ pub struct RenderResponse {
     /// - For graph rendering: PNG/SVG/JPG encoded data
     /// - For frame buffer: RGBA8 pixel data (optional, may be displayed remotely)
     #[serde(default)]
-    pub data: Vec<u8>,
+    pub data: Bytes,
 
     /// Output width in pixels
     pub width: u32,
@@ -367,8 +369,8 @@ mod tests {
     #[test]
     fn test_render_request() {
         let request = RenderRequest {
-            topology: vec![1, 2, 3, 4],
-            data: Vec::new(), // Empty for topology rendering
+            topology: Bytes::from_static(&[1, 2, 3, 4]),
+            data: Bytes::new(), // Empty for topology rendering
             width: 1920,
             height: 1080,
             format: "png".to_string(),

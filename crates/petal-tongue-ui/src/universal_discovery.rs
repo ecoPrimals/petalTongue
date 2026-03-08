@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Universal Discovery System
 //!
 //! **ZERO HARDCODED KNOWLEDGE** - Infant Discovery Pattern
@@ -81,6 +82,7 @@ pub enum DiscoveryMethod {
 
 impl UniversalDiscovery {
     /// Create new universal discovery with default methods
+    #[must_use]
     pub fn new() -> Self {
         Self {
             service_mesh_providers: Vec::new(),
@@ -178,7 +180,7 @@ impl UniversalDiscovery {
     /// Discover via environment variables (AGNOSTIC)
     ///
     /// Looks for patterns like:
-    /// - `{CAPABILITY}_ENDPOINT` (e.g., GPU_RENDERING_ENDPOINT)
+    /// - `{CAPABILITY}_ENDPOINT` (e.g., `GPU_RENDERING_ENDPOINT`)
     /// - `SERVICE_MESH_ENDPOINT` (generic discovery service)
     async fn discover_via_environment(&self, capability: &str) -> Result<Vec<DiscoveredService>> {
         debug!("Checking environment for capability: {}", capability);
@@ -186,12 +188,12 @@ impl UniversalDiscovery {
         let mut services = Vec::new();
 
         // Try capability-specific env var
-        let env_key = format!("{}_ENDPOINT", capability.to_uppercase().replace("-", "_"));
+        let env_key = format!("{}_ENDPOINT", capability.to_uppercase().replace('-', "_"));
         if let Ok(endpoint) = std::env::var(&env_key) {
             info!("✅ Found direct endpoint via {}: {}", env_key, endpoint);
 
             services.push(DiscoveredService {
-                id: format!("env-{}", capability),
+                id: format!("env-{capability}"),
                 capabilities: vec![capability.to_string()],
                 endpoint,
                 protocol: "auto".to_string(), // Auto-detect
@@ -261,16 +263,16 @@ impl UniversalDiscovery {
         for base_path in socket_paths {
             if let Ok(entries) = std::fs::read_dir(base_path) {
                 for entry in entries.flatten() {
-                    if let Some(path) = entry.path().to_str() {
-                        if path.ends_with(".sock") {
-                            // Try to query this socket
-                            let endpoint = format!("unix://{}", path);
+                    if let Some(path) = entry.path().to_str()
+                        && path.ends_with(".sock")
+                    {
+                        // Try to query this socket
+                        let endpoint = format!("unix://{path}");
 
-                            if let Ok(socket_services) =
-                                self.query_generic_endpoint(&endpoint, capability).await
-                            {
-                                services.extend(socket_services);
-                            }
+                        if let Ok(socket_services) =
+                            self.query_generic_endpoint(&endpoint, capability).await
+                        {
+                            services.extend(socket_services);
                         }
                     }
                 }
@@ -290,7 +292,7 @@ impl UniversalDiscovery {
         debug!("Querying mDNS for capability: {}", capability);
 
         // Convert capability to mDNS service type
-        let service_type = format!("_{}._tcp.local", capability);
+        let _service_type = format!("_{capability}._tcp.local");
 
         // TODO: Implement mDNS query
         // This would use multicast DNS to find services advertising this capability
@@ -301,7 +303,7 @@ impl UniversalDiscovery {
     /// Discover via HTTP probing (AGNOSTIC)
     ///
     /// Probes ports WITHOUT assumptions:
-    /// - Reads DISCOVERY_PORTS env var if provided
+    /// - Reads `DISCOVERY_PORTS` env var if provided
     /// - Falls back to common service port range
     /// - Checks /capabilities, /health, /api/v1/capabilities endpoints
     async fn discover_via_http(&self, capability: &str) -> Result<Vec<DiscoveredService>> {
@@ -321,7 +323,7 @@ impl UniversalDiscovery {
         let mut services = Vec::new();
 
         for port in ports {
-            let endpoint = format!("http://localhost:{}", port);
+            let endpoint = format!("http://localhost:{port}");
 
             if let Ok(http_services) = self.query_generic_endpoint(&endpoint, capability).await {
                 services.extend(http_services);
@@ -347,16 +349,14 @@ impl UniversalDiscovery {
         ];
 
         for path in api_paths {
-            let url = format!("{}{}", endpoint, path);
+            let url = format!("{endpoint}{path}");
 
-            if let Ok(response) = reqwest::get(&url).await {
-                if response.status().is_success() {
-                    if let Ok(services) = response.json::<Vec<DiscoveredService>>().await {
-                        if !services.is_empty() {
-                            return Ok(services);
-                        }
-                    }
-                }
+            if let Ok(response) = reqwest::get(&url).await
+                && response.status().is_success()
+                && let Ok(services) = response.json::<Vec<DiscoveredService>>().await
+                && !services.is_empty()
+            {
+                return Ok(services);
             }
         }
 
@@ -398,7 +398,7 @@ impl UniversalDiscovery {
     async fn query_unix_socket(
         &self,
         endpoint: &str,
-        capability: &str,
+        _capability: &str,
     ) -> Result<Vec<DiscoveredService>> {
         debug!("Querying Unix socket: {}", endpoint);
 

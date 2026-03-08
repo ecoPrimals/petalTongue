@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 // ! Display Visibility Verification
 //!
 //! This module implements active verification that the display substrate
@@ -87,6 +88,7 @@ pub struct DisplayVerification {
 
 impl DisplayVerification {
     /// Create a "unknown" verification result
+    #[must_use]
     pub fn unknown() -> Self {
         Self {
             display_server_available: false,
@@ -105,6 +107,7 @@ impl DisplayVerification {
     }
 
     /// Create a "confirmed visible" verification result
+    #[must_use]
     pub fn confirmed_visible() -> Self {
         Self {
             display_server_available: true,
@@ -124,6 +127,7 @@ impl DisplayVerification {
     }
 
     /// Create a "probable" verification result (window exists but can't fully confirm)
+    #[must_use]
     pub fn probable(topology: DisplayTopology, evidence: Vec<String>) -> Self {
         Self {
             display_server_available: true,
@@ -142,6 +146,7 @@ impl DisplayVerification {
     }
 
     /// Create a "failed" verification result
+    #[must_use]
     pub fn failed(reason: &str) -> Self {
         Self {
             display_server_available: false,
@@ -154,7 +159,7 @@ impl DisplayVerification {
             viewer_location: ViewerLocation::Unknown,
             output_reaches_viewer: false,
             topology_evidence: vec![reason.to_string()],
-            status_message: format!("Display verification failed: {}", reason),
+            status_message: format!("Display verification failed: {reason}"),
             suggested_action: Some(
                 "Check DISPLAY environment variable and display server".to_string(),
             ),
@@ -163,6 +168,7 @@ impl DisplayVerification {
 }
 
 /// Detect display topology (agnostic - no vendor names)
+#[must_use]
 pub fn detect_display_topology() -> (DisplayTopology, Vec<String>) {
     let mut evidence = Vec::new();
 
@@ -177,7 +183,7 @@ pub fn detect_display_topology() -> (DisplayTopology, Vec<String>) {
 
     // Check if DISPLAY suggests forwarding
     if let Ok(display) = std::env::var("DISPLAY") {
-        evidence.push(format!("DISPLAY={}", display));
+        evidence.push(format!("DISPLAY={display}"));
 
         // localhost:XX.X suggests X11 forwarding
         if display.starts_with("localhost:") {
@@ -249,11 +255,11 @@ pub fn verify_display_substrate(window_title: &str) -> DisplayVerification {
 
     // Step 3: Check if window manager is responsive
     let wm_responsive = check_window_manager();
-    if !wm_responsive {
+    if wm_responsive {
+        evidence.push("Window manager responsive".to_string());
+    } else {
         warn!("⚠️  Window manager not responsive (may be OK for forwarded displays)");
         evidence.push("Window manager tools unavailable".to_string());
-    } else {
-        evidence.push("Window manager responsive".to_string());
     }
 
     // Step 4: Try to find our window
@@ -274,7 +280,7 @@ pub fn verify_display_substrate(window_title: &str) -> DisplayVerification {
             verif
         }
         // Forwarded/nested - can't confirm without user interaction
-        (_, _, DisplayTopology::Forwarded) | (_, _, DisplayTopology::Nested) => {
+        (_, _, DisplayTopology::Forwarded | DisplayTopology::Nested) => {
             warn!("⚠️  Forwarded/nested display - cannot confirm viewer can see output");
             let mut verif = DisplayVerification::probable(topology.clone(), evidence);
             verif.status_message = format!(
@@ -344,19 +350,19 @@ fn check_window_manager() -> bool {
     }
 
     // Try wmctrl (legacy fallback)
-    if let Ok(output) = Command::new("wmctrl").arg("-m").output() {
-        if output.status.success() {
-            debug!("✅ wmctrl available");
-            return true;
-        }
+    if let Ok(output) = Command::new("wmctrl").arg("-m").output()
+        && output.status.success()
+    {
+        debug!("✅ wmctrl available");
+        return true;
     }
 
     // Try xwininfo
-    if let Ok(output) = Command::new("xwininfo").arg("-root").arg("-tree").output() {
-        if output.status.success() {
-            debug!("✅ xwininfo available");
-            return true;
-        }
+    if let Ok(output) = Command::new("xwininfo").arg("-root").arg("-tree").output()
+        && output.status.success()
+    {
+        debug!("✅ xwininfo available");
+        return true;
     }
 
     // On Windows/macOS, assume window manager is responsive if we get here
@@ -389,27 +395,23 @@ fn find_window_by_title(title: &str) -> bool {
     }
 
     // Fallback: Try wmctrl (legacy)
-    if let Ok(output) = Command::new("wmctrl").arg("-l").output() {
-        if output.status.success() {
-            if let Ok(stdout) = String::from_utf8(output.stdout) {
-                if stdout.contains(title) {
-                    debug!("✅ Found window via wmctrl");
-                    return true;
-                }
-            }
-        }
+    if let Ok(output) = Command::new("wmctrl").arg("-l").output()
+        && output.status.success()
+        && let Ok(stdout) = String::from_utf8(output.stdout)
+        && stdout.contains(title)
+    {
+        debug!("✅ Found window via wmctrl");
+        return true;
     }
 
     // Try xwininfo
-    if let Ok(output) = Command::new("xwininfo").arg("-root").arg("-tree").output() {
-        if output.status.success() {
-            if let Ok(stdout) = String::from_utf8(output.stdout) {
-                if stdout.contains(title) {
-                    debug!("✅ Found window via xwininfo");
-                    return true;
-                }
-            }
-        }
+    if let Ok(output) = Command::new("xwininfo").arg("-root").arg("-tree").output()
+        && output.status.success()
+        && let Ok(stdout) = String::from_utf8(output.stdout)
+        && stdout.contains(title)
+    {
+        debug!("✅ Found window via xwininfo");
+        return true;
     }
 
     debug!("❓ Could not find window with title: {}", title);
@@ -417,6 +419,7 @@ fn find_window_by_title(title: &str) -> bool {
 }
 
 /// Continuously verify display visibility (for use in app loop)
+#[must_use]
 pub fn continuous_verification(
     window_title: &str,
     last_interaction_secs: f32,
@@ -459,8 +462,7 @@ pub fn continuous_verification(
         };
         verification.suggested_action = None; // No action needed, it's working!
         verification.topology_evidence.push(format!(
-            "User interaction within last {:.1}s confirms output reaches viewer",
-            last_interaction_secs
+            "User interaction within last {last_interaction_secs:.1}s confirms output reaches viewer"
         ));
     } else if verification.interactivity == InteractivityState::Recent {
         // Recent interaction - probably still visible

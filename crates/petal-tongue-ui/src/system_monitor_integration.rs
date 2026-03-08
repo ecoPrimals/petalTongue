@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! System Monitor Integration
 //!
 //! Real-time system resource monitoring using sysinfo.
@@ -243,7 +244,7 @@ impl SystemMonitorTool {
             .iter()
             .enumerate()
             .map(|(i, &value)| {
-                #[allow(clippy::cast_precision_loss)]
+                #[expect(clippy::cast_precision_loss)]
                 let x = rect.left() + (i as f32 / (data.len() - 1).max(1) as f32) * rect.width();
                 let y = rect.bottom() - (value / max_value).min(1.0) * rect.height();
                 Pos2::new(x, y)
@@ -320,13 +321,13 @@ impl ToolPanel for SystemMonitorTool {
 
     fn status_message(&self) -> Option<String> {
         let cpus = self.system.cpus();
-        #[allow(clippy::cast_precision_loss)]
+        #[expect(clippy::cast_precision_loss)]
         let cpu = if cpus.is_empty() {
             0.0
         } else {
             cpus.iter().map(sysinfo::Cpu::cpu_usage).sum::<f32>() / cpus.len() as f32
         };
-        #[allow(clippy::cast_precision_loss)]
+        #[expect(clippy::cast_precision_loss)]
         let mem = if self.system.total_memory() > 0 {
             (self.system.used_memory() as f64 / self.system.total_memory() as f64) * 100.0
         } else {

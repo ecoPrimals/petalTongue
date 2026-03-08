@@ -1,10 +1,11 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Panel Registry - Dynamic panel type registration and instantiation
 //!
 //! This module provides the infrastructure for registering custom panel types
 //! and creating panel instances from scenario configuration.
 //!
 //! # Evolution Note
-//! This system emerged from implementing Doom (Gap #1 in DOOM_GAP_LOG.md).
+//! This system emerged from implementing Doom (Gap #1 in `DOOM_GAP_LOG.md`).
 //! We needed a way to map `"doom_game"` in JSON to `DoomPanel` creation.
 
 use crate::scenario::CustomPanelConfig;
@@ -48,14 +49,14 @@ pub type Result<T> = std::result::Result<T, PanelError>;
 /// Each custom panel type implements this trait to enable
 /// registration and instantiation from scenarios.
 pub trait PanelFactory: Send + Sync {
-    /// Get the panel type identifier (e.g., "doom_game")
+    /// Get the panel type identifier (e.g., "`doom_game`")
     fn panel_type(&self) -> &str;
 
     /// Create a new panel instance from configuration
     fn create(&self, config: &CustomPanelConfig) -> Result<Box<dyn PanelInstance>>;
 
     /// Get human-readable description
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Custom panel"
     }
 }
@@ -100,13 +101,13 @@ pub trait PanelInstance: Send {
     }
 
     /// Handle keyboard event
-    /// Returns InputAction indicating if input was consumed
+    /// Returns `InputAction` indicating if input was consumed
     fn on_keyboard_event(&mut self, _ctx: &egui::Context) -> crate::focus_manager::InputAction {
         crate::focus_manager::InputAction::Ignored
     }
 
     /// Handle mouse event
-    /// Returns InputAction indicating if input was consumed
+    /// Returns `InputAction` indicating if input was consumed
     fn on_mouse_event(&mut self, _ctx: &egui::Context) -> crate::focus_manager::InputAction {
         crate::focus_manager::InputAction::Ignored
     }
@@ -138,7 +139,7 @@ pub trait PanelInstance: Send {
     }
 
     /// Called when panel encounters an error
-    /// Return PanelAction to indicate what should happen next
+    /// Return `PanelAction` to indicate what should happen next
     fn on_error(&mut self, error: &anyhow::Error) -> PanelAction {
         tracing::error!("Panel '{}' error: {}", self.title(), error);
         PanelAction::Continue // Default: log and continue
@@ -157,13 +158,13 @@ pub trait PanelInstance: Send {
     }
 
     /// Save panel state to JSON
-    /// Only called if can_save_state() returns true
+    /// Only called if `can_save_state()` returns true
     fn save_state(&self) -> anyhow::Result<serde_json::Value> {
         Ok(serde_json::Value::Null)
     }
 
     /// Restore panel state from JSON
-    /// Only called if can_restore_state() returns true
+    /// Only called if `can_restore_state()` returns true
     fn restore_state(&mut self, _state: serde_json::Value) -> anyhow::Result<()> {
         Ok(())
     }
@@ -188,6 +189,7 @@ pub struct PanelRegistry {
 
 impl PanelRegistry {
     /// Create a new panel registry
+    #[must_use]
     pub fn new() -> Self {
         Self {
             factories: HashMap::new(),
@@ -221,11 +223,16 @@ impl PanelRegistry {
     }
 
     /// Get list of registered panel types
+    #[must_use]
     pub fn available_types(&self) -> Vec<&str> {
-        self.factories.keys().map(|s| s.as_str()).collect()
+        self.factories
+            .keys()
+            .map(std::string::String::as_str)
+            .collect()
     }
 
     /// Check if a panel type is registered
+    #[must_use]
     pub fn has_type(&self, panel_type: &str) -> bool {
         self.factories.contains_key(panel_type)
     }

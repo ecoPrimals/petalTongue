@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! External Display Server Prompt
 //!
 //! Prompts user to start display server if not available.
@@ -6,32 +7,30 @@
 use anyhow::Result;
 use std::env;
 use std::io::{self, Write};
-use std::thread;
 use std::time::Duration;
 use tracing::info;
 
-/// Prompt user to start display server with sudo
+/// Prompt user to start display server with sudo.
 ///
 /// Returns:
 /// - `Ok(true)` if display server became available
 /// - `Ok(false)` if user declined or timeout
-/// - `Err(_)` on IO error
-pub fn prompt_for_display_server() -> Result<bool> {
-    // Check if display is already available
+///
+/// # Errors
+///
+/// Returns an error on I/O failure.
+pub async fn prompt_for_display_server() -> Result<bool> {
     if is_display_available() {
         return Ok(true);
     }
 
-    // Check if we're in non-interactive mode
     if is_non_interactive() {
         info!("Non-interactive mode detected, skipping display server prompt");
         return Ok(false);
     }
 
-    // Show prompt
     print_prompt();
 
-    // Wait for user input
     print!("\nPress Enter to continue with Pure Rust rendering...\n");
     print!("(or start a display server in another terminal)\n\n");
     io::stdout().flush()?;
@@ -39,18 +38,17 @@ pub fn prompt_for_display_server() -> Result<bool> {
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
 
-    // Give user time to start display server
-    info!("⏳ Checking for display server (5 seconds)...");
+    info!("Checking for display server (5 seconds)...");
     for i in 1..=5 {
-        thread::sleep(Duration::from_secs(1));
+        tokio::time::sleep(Duration::from_secs(1)).await;
         if is_display_available() {
-            info!("✅ Display server detected!");
+            info!("Display server detected!");
             return Ok(true);
         }
-        info!("⏳ {}...", 6 - i);
+        info!("{}...", 6 - i);
     }
 
-    info!("📦 No display server found. Continuing with Pure Rust rendering.");
+    info!("No display server found. Continuing with Pure Rust rendering.");
     Ok(false)
 }
 

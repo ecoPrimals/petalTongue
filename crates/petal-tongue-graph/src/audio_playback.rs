@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Audio Playback Engine
 //!
 //! Generates and plays actual sounds through speakers.
@@ -135,10 +136,9 @@ impl AudioPlaybackEngine {
             return Ok(());
         }
 
-        // Play each tone with slight delay to avoid overwhelming the output
-        for (i, (_id, attrs)) in attributes.iter().enumerate() {
-            // Add small delay between tones (50ms per primal)
-            std::thread::sleep(Duration::from_millis(i as u64 * 50));
+        // Play each tone - play_tone uses sink.detach() so playback is non-blocking.
+        // No delay needed; tones play in background without overwhelming the output.
+        for (_id, attrs) in attributes.iter() {
             self.play_tone(attrs)?;
         }
 

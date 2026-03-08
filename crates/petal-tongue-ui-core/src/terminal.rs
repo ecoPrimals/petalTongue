@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Terminal UI (TUI) implementation
 //!
 //! Interactive terminal interface using crossterm (pure Rust, cross-platform).
@@ -93,11 +94,7 @@ impl TerminalUI {
                 };
 
                 output.push_str(&format!(
-                    "  {} {:<width$} Health: {}%\n",
-                    health_icon,
-                    name,
-                    health_pct,
-                    width = name_width
+                    "  {health_icon} {name:<name_width$} Health: {health_pct}%\n"
                 ));
             }
         }
@@ -137,7 +134,7 @@ impl TerminalUI {
                     to_name.to_string()
                 };
 
-                output.push_str(&format!("  {} ──→ {}\n", from, to));
+                output.push_str(&format!("  {from} ──→ {to}\n"));
             }
         }
 

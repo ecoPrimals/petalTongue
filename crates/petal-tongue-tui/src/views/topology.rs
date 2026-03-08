@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Topology View
 //!
 //! ASCII art graph visualization of primal connections.
@@ -262,7 +263,7 @@ fn render_details(
                 Span::raw("  • "),
                 Span::styled(edge_type, Style::default().fg(Color::Yellow)),
                 Span::raw(": "),
-                Span::styled(format!("{}", count), Style::default().fg(Color::Green)),
+                Span::styled(format!("{count}"), Style::default().fg(Color::Green)),
             ])));
         }
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Ratatui Table Renderer
 //!
 //! Renders tables in a terminal UI (TUI) context.

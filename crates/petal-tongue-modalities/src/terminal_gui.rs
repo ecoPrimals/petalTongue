@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Terminal GUI Modality
 //!
 //! ASCII-based terminal visualization (Tier 1: Always Available).

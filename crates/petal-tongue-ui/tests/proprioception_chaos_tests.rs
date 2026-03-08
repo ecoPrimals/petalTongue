@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Chaos tests for SAME DAVE proprioception system
 //!
 //! These tests verify the system handles failures gracefully:
@@ -11,7 +12,6 @@
 //! Removed blocking sleeps - testing failure detection, not waiting for timeouts.
 
 use petal_tongue_ui::{input_verification::*, output_verification::*, proprioception::*};
-use std::thread;
 use std::time::Duration;
 
 /// Chaos Scenario: All outputs fail simultaneously
@@ -347,15 +347,15 @@ fn chaos_health_calculation_edge_cases() {
 }
 
 /// Chaos Scenario: Confidence calculation with no recent activity
-#[test]
-fn chaos_confidence_no_recent_activity() {
+#[tokio::test]
+async fn chaos_confidence_no_recent_activity() {
     let mut system = initialize_standard_proprioception();
 
     // Old activity
     system.input_received(&InputModality::Keyboard);
 
-    // Wait briefly
-    thread::sleep(Duration::from_millis(50));
+    // Yield to executor (non-blocking alternative to sleep - tests valid range, not timing)
+    tokio::task::yield_now().await;
 
     // Assess
     let state = system.assess();

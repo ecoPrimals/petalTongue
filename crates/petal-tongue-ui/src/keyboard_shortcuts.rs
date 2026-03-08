@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Keyboard Shortcuts System
 //!
 //! Comprehensive keyboard navigation for accessibility

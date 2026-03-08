@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Visualization capability definitions
 //!
 //! These capabilities define what data a primal must provide to support
@@ -82,6 +83,6 @@ mod tests {
     #[test]
     fn test_display() {
         let cap = VisualizationCapability::PrimalProvider;
-        assert_eq!(format!("{}", cap), "visualization.primal-provider");
+        assert_eq!(format!("{cap}"), "visualization.primal-provider");
     }
 }

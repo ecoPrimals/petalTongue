@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Fault Injection Tests for biomeOS UI
 //!
 //! These tests verify error handling, recovery, and resilience

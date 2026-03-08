@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Narrative entropy capture (storytelling, typing)
 //!
 //! Captures keystroke dynamics, typing rhythm, and content uniqueness.
@@ -6,7 +7,87 @@ use crate::quality::{shannon_entropy, timing_entropy, weighted_quality};
 use crate::types::*;
 use std::time::{Duration, Instant};
 
-/// Narrative entropy capturer (stub for Phase 4)
+/// Compute Shannon entropy over character frequencies in the input text.
+///
+/// H = -Σ p(x) * log2(p(x)) where p(x) is the probability of each character.
+/// Returns raw bits of entropy (not normalized). Empty input returns 0.0.
+///
+/// # Arguments
+/// * `text` - Input text to analyze
+///
+/// # Returns
+/// Shannon entropy in bits, or 0.0 for empty input
+pub fn compute_text_entropy(text: &str) -> f64 {
+    if text.is_empty() {
+        return 0.0;
+    }
+
+    let chars: Vec<char> = text.chars().collect();
+    let total = chars.len() as f64;
+
+    let mut counts: std::collections::HashMap<char, usize> = std::collections::HashMap::new();
+    for c in &chars {
+        *counts.entry(*c).or_insert(0) += 1;
+    }
+
+    let entropy: f64 = counts
+        .values()
+        .map(|&count| {
+            let p = count as f64 / total;
+            -p * p.log2()
+        })
+        .sum();
+
+    entropy
+}
+
+/// Quantify narrative complexity from vocabulary diversity, average sentence length,
+/// and punctuation density.
+///
+/// # Arguments
+/// * `text` - Input text to analyze
+///
+/// # Returns
+/// Complexity score [0.0-1.0], or 0.0 for empty input
+pub fn narrative_complexity(text: &str) -> f64 {
+    if text.is_empty() {
+        return 0.0;
+    }
+
+    let words: Vec<&str> = text.split_whitespace().filter(|s| !s.is_empty()).collect();
+    let total_words = words.len();
+    if total_words == 0 {
+        return 0.0;
+    }
+
+    // 1. Vocabulary diversity: unique words / total words
+    let unique_words: std::collections::HashSet<&str> = words.iter().copied().collect();
+    let vocab_diversity = unique_words.len() as f64 / total_words as f64;
+
+    // 2. Average sentence length (words per sentence)
+    let sentences: Vec<&str> = text
+        .split(|c| c == '.' || c == '!' || c == '?')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect();
+    let num_sentences = sentences.len().max(1);
+    let avg_sentence_len = total_words as f64 / num_sentences as f64;
+    // Normalize: typical sentence 5-20 words → 0.2-0.8
+    let sentence_component = (avg_sentence_len / 25.0).min(1.0);
+
+    // 3. Punctuation density
+    let punct_count = text.chars().filter(|c| ".,!?;:-\"'".contains(*c)).count();
+    let punct_density = punct_count as f64 / text.len() as f64;
+    let punct_component = (punct_density * 10.0).min(1.0);
+
+    let complexity = (vocab_diversity * 0.5 + sentence_component * 0.25 + punct_component * 0.25)
+        .min(1.0)
+        .max(0.0);
+
+    complexity
+}
+
+/// Narrative entropy capturer
 pub struct NarrativeEntropyCapture {
     text: String,
     keystroke_timings: Vec<Duration>,
@@ -90,32 +171,48 @@ impl NarrativeEntropyCapture {
     }
 
     fn calculate_pause_entropy(&self) -> f64 {
-        // Stub: Analyze long pauses (thinking time)
-        0.7 // Placeholder
+        let long_pauses: Vec<Duration> = self
+            .keystroke_timings
+            .iter()
+            .filter(|d| d.as_millis() > 500)
+            .copied()
+            .collect();
+        if long_pauses.len() < 2 {
+            return if long_pauses.is_empty() { 0.0 } else { 0.5 };
+        }
+        timing_entropy(&long_pauses)
     }
 
     fn calculate_correction_entropy(&self) -> f64 {
-        // Stub: Analyze backspace patterns
         if self.backspace_events.is_empty() {
-            0.5
-        } else {
-            0.7
+            return 0.0;
         }
+        let positions: Vec<usize> = self.backspace_events.iter().map(|e| e.position).collect();
+        let buckets = crate::quality::create_histogram_buckets(
+            &positions.iter().map(|&p| p as f64).collect::<Vec<_>>(),
+            10,
+        );
+        if buckets.is_empty() {
+            return 0.5;
+        }
+        shannon_entropy(&buckets)
     }
 
     fn calculate_content_entropy(&self) -> f64 {
-        // Stub: Calculate character bigram entropy
+        if self.text.is_empty() {
+            return 0.0;
+        }
         let chars: Vec<char> = self.text.chars().collect();
         if chars.len() < 2 {
             return 0.0;
         }
-
-        let bigrams: Vec<String> = chars
-            .windows(2)
-            .map(|w| format!("{}{}", w[0], w[1]))
-            .collect();
-
-        shannon_entropy(&bigrams)
+        let num_unique = chars.iter().collect::<std::collections::HashSet<_>>().len();
+        if num_unique <= 1 {
+            return 0.0;
+        }
+        let raw_entropy = compute_text_entropy(&self.text);
+        let max_entropy = (num_unique as f64).log2();
+        (raw_entropy / max_entropy).min(1.0)
     }
 
     /// Finalize and create entropy data
@@ -170,5 +267,48 @@ mod tests {
         let capture = NarrativeEntropyCapture::new();
         let quality = capture.assess_quality();
         assert_eq!(quality.overall_quality, 0.0);
+    }
+
+    #[test]
+    fn test_compute_text_entropy_empty() {
+        assert_eq!(compute_text_entropy(""), 0.0);
+    }
+
+    #[test]
+    fn test_compute_text_entropy_single_char() {
+        assert_eq!(compute_text_entropy("a"), 0.0);
+    }
+
+    #[test]
+    fn test_compute_text_entropy_uniform() {
+        let text = "abcd";
+        let entropy = compute_text_entropy(text);
+        assert!((entropy - 2.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_compute_text_entropy_repeated() {
+        let text = "aaaa";
+        assert_eq!(compute_text_entropy(text), 0.0);
+    }
+
+    #[test]
+    fn test_narrative_complexity_empty() {
+        assert_eq!(narrative_complexity(""), 0.0);
+    }
+
+    #[test]
+    fn test_narrative_complexity_simple() {
+        let text = "Hello world.";
+        let complexity = narrative_complexity(text);
+        assert!(complexity > 0.0 && complexity <= 1.0);
+    }
+
+    #[test]
+    fn test_narrative_complexity_diverse() {
+        let text =
+            "The quick brown fox jumps over the lazy dog. What a wonderful day! How are you?";
+        let complexity = narrative_complexity(text);
+        assert!(complexity > 0.0 && complexity <= 1.0);
     }
 }

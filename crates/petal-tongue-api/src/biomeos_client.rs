@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! `BiomeOS` API Client
 //!
 //! Connects to BiomeOS/Songbird for live primal discovery and health monitoring.
@@ -252,9 +253,9 @@ impl BiomeOSClient {
                 endpoints: None,
                 metadata: None,
                 properties: Properties::new(), // Generic properties
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: None,
             },
             PrimalInfo {
@@ -271,9 +272,9 @@ impl BiomeOSClient {
                 endpoints: None,
                 metadata: None,
                 properties: Properties::new(),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: None,
             },
             PrimalInfo {
@@ -290,9 +291,9 @@ impl BiomeOSClient {
                 endpoints: None,
                 metadata: None,
                 properties: Properties::new(),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: None,
             },
             PrimalInfo {
@@ -310,9 +311,9 @@ impl BiomeOSClient {
                 endpoints: None,
                 metadata: None,
                 properties: Properties::new(),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: None,
             },
             PrimalInfo {
@@ -326,9 +327,9 @@ impl BiomeOSClient {
                 endpoints: None,
                 metadata: None,
                 properties: Properties::new(),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: None,
             },
         ]
@@ -400,9 +401,9 @@ impl From<DiscoveredPrimal> for PrimalInfo {
             endpoints: None,
             metadata: None,
             properties: Properties::new(), // Start with empty properties
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             trust_level: None,
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             family_id: None,
         }
     }
@@ -411,7 +412,6 @@ impl From<DiscoveredPrimal> for PrimalInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use petal_tongue_core::test_fixtures::endpoints;
 
     #[tokio::test]
     async fn test_mock_mode() {

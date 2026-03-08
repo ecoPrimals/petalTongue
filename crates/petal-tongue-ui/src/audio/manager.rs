@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Audio Manager - Substrate-Agnostic Audio Coordination
 //!
 //! Discovers ALL available audio backends at runtime and manages playback.
-//! Mirrors the DisplayManager pattern (proven success!).
+//! Mirrors the `DisplayManager` pattern (proven success!).
 
 use super::backends::{DirectBackend, SilentBackend, SocketBackend, SoftwareBackend};
 use super::traits::AudioBackend;
@@ -107,9 +108,8 @@ impl AudioManager {
                         continue;
                     }
                 }
-            } else {
-                info!("⏭️  Backend {} not available", meta.name);
             }
+            info!("⏭️  Backend {} not available", meta.name);
         }
 
         Err(anyhow!("No audio backend could be initialized"))
@@ -152,6 +152,7 @@ impl AudioManager {
     }
 
     /// Get active backend metadata (for display only!)
+    #[must_use]
     pub fn active_backend_metadata(&self) -> Option<super::traits::BackendMetadata> {
         self.active_backend_idx
             .and_then(|idx| self.backends.get(idx))
@@ -159,6 +160,7 @@ impl AudioManager {
     }
 
     /// Get all available backends (for display/debugging)
+    #[must_use]
     pub fn available_backends(&self) -> Vec<super::traits::BackendMetadata> {
         self.backends.iter().map(|b| b.metadata()).collect()
     }
@@ -171,9 +173,9 @@ mod tests {
     #[tokio::test]
     async fn test_audio_manager_init() {
         // Should not panic and should find at least silent backend
-        let manager = AudioManager::init()
-            .await
-            .expect("Failed to initialize AudioManager");
+        let manager = AudioManager::init().await.unwrap_or_else(|e| {
+            panic!("Failed to initialize AudioManager in test: {}", e);
+        });
 
         assert!(
             !manager.backends.is_empty(),
@@ -190,9 +192,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_audio_manager_play() {
-        let mut manager = AudioManager::init()
-            .await
-            .expect("Failed to initialize AudioManager");
+        let mut manager = AudioManager::init().await.unwrap_or_else(|e| {
+            panic!("Failed to initialize AudioManager in test: {}", e);
+        });
 
         // Generate test tone (440 Hz A4, 0.1 seconds)
         let sample_rate = 44100;
@@ -210,7 +212,9 @@ mod tests {
         manager
             .play_samples(&samples, sample_rate)
             .await
-            .expect("Failed to play samples");
+            .unwrap_or_else(|e| {
+                panic!("Failed to play samples in test: {}", e);
+            });
 
         // Should have selected a backend
         assert!(

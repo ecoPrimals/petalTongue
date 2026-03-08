@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+#![forbid(unsafe_code)]
 //! Capability-Based Discovery for Visualization Data Providers
 //!
 //! This crate enables petalTongue to discover ANY primal that provides
@@ -77,6 +79,7 @@ pub use errors::{DiscoveryError, DiscoveryFailure, DiscoveryResult};
 pub use retry::RetryPolicy;
 
 use anyhow::Result;
+use petal_tongue_core::constants;
 
 /// Discover all available visualization data providers
 ///
@@ -275,10 +278,11 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
             3. Auto-discovery: PETALTONGUE_ENABLE_MDNS=true (default)\n\
             \n\
             Fallback options (external only):\n\
-            4. HTTP fallback: BIOMEOS_URL=http://localhost:3000\n\
+            4. HTTP fallback: BIOMEOS_URL=http://localhost:{}\n\
             5. Development: PETALTONGUE_MOCK_MODE=true\n\
             \n\
-            💡 GUI will start with tutorial mode as graceful fallback"
+            💡 GUI will start with tutorial mode as graceful fallback",
+            constants::DEFAULT_WEB_PORT
         );
         // Return empty vec - GUI will handle this with tutorial mode
         return Ok(vec![]);
@@ -305,7 +309,7 @@ async fn try_connect_jsonrpc(socket_path: &str) -> Result<Box<dyn VisualizationD
 /// ⚠️  HTTP is the FALLBACK protocol for external integrations only.
 /// Prefer JSON-RPC over Unix sockets for TRUE PRIMAL architecture!
 async fn try_connect_http(url: &str) -> Result<Box<dyn VisualizationDataProvider>> {
-    let provider = HttpVisualizationProvider::new(url);
+    let provider = HttpVisualizationProvider::new(url)?;
 
     // Test connection with health check
     provider.health_check().await?;

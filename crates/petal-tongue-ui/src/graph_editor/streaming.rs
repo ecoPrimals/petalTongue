@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Real-Time Streaming for Graph Execution
 //!
 //! Provides WebSocket-based streaming for live graph execution updates,
@@ -163,7 +164,7 @@ pub struct Alternative {
 pub struct Pattern {
     /// Pattern description
     pub description: String,
-    /// Pattern source (user_history, community, system)
+    /// Pattern source (`user_history`, community, system)
     pub source: String,
     /// Relevance score (0.0 - 1.0)
     pub relevance: f32,
@@ -239,7 +240,7 @@ pub struct StreamHandler {
     /// Broadcast channel for sending messages to all subscribers
     tx: broadcast::Sender<StreamMessage>,
 
-    /// Active graph executions (graph_id -> execution state)
+    /// Active graph executions (`graph_id` -> execution state)
     executions: Arc<RwLock<std::collections::HashMap<String, ExecutionState>>>,
 }
 
@@ -273,6 +274,7 @@ impl StreamHandler {
     /// Subscribe to stream updates
     ///
     /// Returns a receiver that will receive all future messages.
+    #[must_use]
     pub fn subscribe(&self) -> broadcast::Receiver<StreamMessage> {
         self.tx.subscribe()
     }
@@ -328,32 +330,30 @@ impl StreamHandler {
 
     /// Update execution state based on message
     async fn update_execution_state(&self, message: &StreamMessage) -> Result<()> {
-        match message {
-            StreamMessage::NodeStatus {
-                graph_id,
-                node_id,
-                status,
-                ..
-            } => {
-                let mut executions = self.executions.write().await;
-                if let Some(state) = executions.get_mut(graph_id) {
-                    match status {
-                        NodeStatus::Running { .. } => {
-                            state.current_node = Some(node_id.clone());
-                        }
-                        NodeStatus::Completed => {
-                            state.completed_nodes.push(node_id.clone());
-                            state.current_node = None;
-                        }
-                        NodeStatus::Failed { .. } => {
-                            state.failed_nodes.push(node_id.clone());
-                            state.current_node = None;
-                        }
-                        _ => {}
+        if let StreamMessage::NodeStatus {
+            graph_id,
+            node_id,
+            status,
+            ..
+        } = message
+        {
+            let mut executions = self.executions.write().await;
+            if let Some(state) = executions.get_mut(graph_id) {
+                match status {
+                    NodeStatus::Running { .. } => {
+                        state.current_node = Some(node_id.clone());
                     }
+                    NodeStatus::Completed => {
+                        state.completed_nodes.push(node_id.clone());
+                        state.current_node = None;
+                    }
+                    NodeStatus::Failed { .. } => {
+                        state.failed_nodes.push(node_id.clone());
+                        state.current_node = None;
+                    }
+                    _ => {}
                 }
             }
-            _ => {}
         }
 
         Ok(())
@@ -435,6 +435,7 @@ impl Default for StreamHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     #[tokio::test]
     async fn test_stream_handler_creation() {
@@ -460,13 +461,14 @@ mod tests {
             .unwrap();
 
         // Receive message
-        let msg = rx.recv().await.unwrap();
-        match msg {
-            StreamMessage::NodeStatus { node_id, .. } => {
-                assert_eq!(node_id, "node-1");
-            }
-            _ => panic!("Expected NodeStatus message"),
-        }
+        let msg = tokio::time::timeout(Duration::from_secs(1), rx.recv())
+            .await
+            .expect("recv timed out")
+            .expect("recv failed");
+        assert!(
+            matches!(msg, StreamMessage::NodeStatus { node_id, .. } if node_id == "node-1"),
+            "Expected NodeStatus message with node_id node-1"
+        );
     }
 
     #[tokio::test]
@@ -526,16 +528,21 @@ mod tests {
             .await
             .unwrap();
 
-        let msg = rx.recv().await.unwrap();
-        match msg {
-            StreamMessage::Progress {
-                progress, message, ..
-            } => {
-                assert_eq!(progress, 0.75);
-                assert_eq!(message, "Processing...");
-            }
-            _ => panic!("Expected Progress message"),
-        }
+        let msg = tokio::time::timeout(Duration::from_secs(1), rx.recv())
+            .await
+            .expect("recv timed out")
+            .expect("recv failed");
+        assert!(
+            matches!(
+                msg,
+                StreamMessage::Progress {
+                    progress,
+                    message,
+                    ..
+                } if progress == 0.75 && message == "Processing..."
+            ),
+            "Expected Progress message with progress 0.75 and message Processing..."
+        );
     }
 
     #[tokio::test]
@@ -568,14 +575,18 @@ mod tests {
             .await
             .unwrap();
 
-        let msg = rx.recv().await.unwrap();
-        match msg {
-            StreamMessage::Reasoning { reasoning: r, .. } => {
-                assert_eq!(r.decision, reasoning.decision);
-                assert_eq!(r.confidence, reasoning.confidence);
-            }
-            _ => panic!("Expected Reasoning message"),
-        }
+        let msg = tokio::time::timeout(Duration::from_secs(1), rx.recv())
+            .await
+            .expect("recv timed out")
+            .expect("recv failed");
+        assert!(
+            matches!(
+                msg,
+                StreamMessage::Reasoning { reasoning: r, .. }
+                    if r.decision == reasoning.decision && r.confidence == reasoning.confidence
+            ),
+            "Expected Reasoning message"
+        );
     }
 
     #[tokio::test]
@@ -600,14 +611,18 @@ mod tests {
             .await
             .unwrap();
 
-        let msg = rx.recv().await.unwrap();
-        match msg {
-            StreamMessage::Error { error: e, .. } => {
-                assert_eq!(e.message, error.message);
-                assert!(e.recoverable);
-            }
-            _ => panic!("Expected Error message"),
-        }
+        let msg = tokio::time::timeout(Duration::from_secs(1), rx.recv())
+            .await
+            .expect("recv timed out")
+            .expect("recv failed");
+        assert!(
+            matches!(
+                msg,
+                StreamMessage::Error { error: e, .. }
+                    if e.message == error.message && e.recoverable
+            ),
+            "Expected Error message"
+        );
     }
 
     #[tokio::test]
@@ -628,14 +643,24 @@ mod tests {
             .unwrap();
 
         // Both subscribers should receive the message
-        let msg1 = rx1.recv().await.unwrap();
-        let msg2 = rx2.recv().await.unwrap();
+        let msg1 = tokio::time::timeout(Duration::from_secs(1), rx1.recv())
+            .await
+            .expect("recv timed out")
+            .expect("recv failed");
+        let msg2 = tokio::time::timeout(Duration::from_secs(1), rx2.recv())
+            .await
+            .expect("recv timed out")
+            .expect("recv failed");
 
-        match (&msg1, &msg2) {
-            (StreamMessage::NodeStatus { .. }, StreamMessage::NodeStatus { .. }) => {
-                // Both received NodeStatus
-            }
-            _ => panic!("Both subscribers should receive NodeStatus"),
-        }
+        assert!(
+            matches!(
+                (&msg1, &msg2),
+                (
+                    StreamMessage::NodeStatus { .. },
+                    StreamMessage::NodeStatus { .. }
+                )
+            ),
+            "Both subscribers should receive NodeStatus"
+        );
     }
 }

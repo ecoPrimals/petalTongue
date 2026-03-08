@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # petalTongue Rich TUI
 //!
 //! **Universal Terminal User Interface** for biomeOS and ecoPrimals.
@@ -28,7 +29,7 @@
 //! - **Universal**: Works in any computational universe
 
 #![warn(missing_docs)]
-#![deny(unsafe_code)]
+#![forbid(unsafe_code)]
 
 /// Application core
 pub mod app;

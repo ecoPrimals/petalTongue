@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Pure Rust Audio Generation
 //!
 //! Provides simple audio generation without external dependencies.

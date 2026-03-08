@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Chaos and fault tolerance tests for discovery system
 //!
 //! Tests system behavior under adverse conditions:
@@ -27,7 +28,7 @@ async fn test_songbird_missing_socket() {
     assert!(result.is_err());
 
     // Error message should be informative
-    let err = format!("{:?}", result);
+    let err = format!("{result:?}");
     assert!(err.contains("Songbird not found") || err.contains("not found"));
 }
 
@@ -149,9 +150,7 @@ async fn test_concurrent_songbird_discovery() {
     // Multiple concurrent attempts to find Songbird
     let tasks: Vec<_> = (0..10)
         .map(|i| {
-            tokio::spawn(
-                async move { SongbirdClient::discover(Some(&format!("test-family-{}", i))) },
-            )
+            tokio::spawn(async move { SongbirdClient::discover(Some(&format!("test-family-{i}"))) })
         })
         .collect();
 

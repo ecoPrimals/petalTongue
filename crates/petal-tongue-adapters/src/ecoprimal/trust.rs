@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! ecoPrimals-specific trust adapter
 //!
 //! This adapter knows how to render trust levels from the ecoPrimals ecosystem.
@@ -76,7 +77,6 @@ impl EcoPrimalTrustAdapter {
     }
 
     /// Create from ecosystem capability spec (future)
-    #[allow(dead_code)]
     pub fn from_capability_spec(spec: &serde_json::Value) -> Option<Self> {
         // Parse spec into TrustConfig
         serde_json::from_value(spec.clone())
@@ -120,13 +120,13 @@ impl PropertyAdapter for EcoPrimalTrustAdapter {
 
                     // Level number (subtle)
                     ui.label(
-                        egui::RichText::new(format!("({})", level))
+                        egui::RichText::new(format!("({level})"))
                             .color(Color32::DARK_GRAY)
                             .small(),
                     );
                 });
             } else {
-                ui.label(format!("Unknown trust level: {}", level));
+                ui.label(format!("Unknown trust level: {level}"));
             }
         } else {
             ui.label("Invalid trust level value");

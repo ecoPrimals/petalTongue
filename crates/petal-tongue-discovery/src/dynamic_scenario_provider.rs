@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Dynamic scenario provider using schema-agnostic data structures
 //!
 //! This provider replaces the static, brittle scenario_provider.rs with
@@ -16,7 +17,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use petal_tongue_core::{
     DynamicData, DynamicValue, PrimalHealthStatus, PrimalInfo, Properties, PropertyValue,
-    SchemaVersion, TopologyEdge,
+    TopologyEdge,
 };
 use std::path::Path;
 
@@ -81,13 +82,12 @@ impl DynamicScenarioProvider {
         for (idx, primal_value) in primals_array.iter().enumerate() {
             let primal_obj = primal_value
                 .as_object()
-                .with_context(|| format!("Primal {} is not an object", idx))?;
+                .with_context(|| format!("Primal {idx} is not an object"))?;
 
             // Required fields (graceful fallback if missing)
-            let id =
-                Self::get_string(primal_obj, "id").unwrap_or_else(|| format!("primal-{}", idx));
+            let id = Self::get_string(primal_obj, "id").unwrap_or_else(|| format!("primal-{idx}"));
             let name = Self::get_string(primal_obj, "name")
-                .unwrap_or_else(|| format!("Unknown Primal {}", idx));
+                .unwrap_or_else(|| format!("Unknown Primal {idx}"));
             let primal_type =
                 Self::get_string(primal_obj, "type").unwrap_or_else(|| "Unknown".to_string());
 
@@ -127,16 +127,16 @@ impl DynamicScenarioProvider {
                 id,
                 name,
                 primal_type,
-                endpoint: format!("scenario://dynamic"),
+                endpoint: "scenario://dynamic".to_string(),
                 capabilities,
                 health,
                 last_seen: now,
                 endpoints: None,
                 metadata: None,
                 properties,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id,
             });
         }
@@ -245,7 +245,7 @@ impl VisualizationDataProvider for DynamicScenarioProvider {
     fn get_metadata(&self) -> ProviderMetadata {
         let name = self.name().unwrap_or("Dynamic Scenario");
         ProviderMetadata {
-            name: format!("Dynamic Scenario: {}", name),
+            name: format!("Dynamic Scenario: {name}"),
             endpoint: "scenario://dynamic".to_string(),
             protocol: "dynamic".to_string(),
             capabilities: vec!["visualization".to_string(), "topology".to_string()],
@@ -258,7 +258,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore] // TODO: Fix version field handling (DynamicData uses SchemaVersion type)
     fn test_dynamic_scenario_minimal() {
         let json = r#"{
             "name": "Minimal Test",
@@ -281,12 +280,12 @@ mod tests {
         let provider = DynamicScenarioProvider::from_file(&temp_file).unwrap();
         assert_eq!(provider.name(), Some("Minimal Test"));
 
-        // Version is extracted as a string and parsed separately
-        let version_str = provider.scenario.get_str("version");
-        assert_eq!(version_str, Some("1.0.0"));
-
-        // Version is stored in fields, not in provider.version
-        // (since DynamicData uses SchemaVersion which requires parsing)
+        let version = provider
+            .scenario
+            .version
+            .as_ref()
+            .expect("version should be parsed");
+        assert_eq!(version.to_string(), "1.0.0");
 
         assert_eq!(provider.primals.len(), 1);
         assert_eq!(provider.primals[0].name, "TEST");

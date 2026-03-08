@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! JSON-RPC 2.0 protocol types
 //!
 //! Implements the JSON-RPC 2.0 specification for inter-primal communication.
@@ -108,7 +109,6 @@ pub struct JsonRpcError {
 }
 
 /// Standard JSON-RPC 2.0 error codes
-#[allow(dead_code)]
 pub mod error_codes {
     /// Invalid JSON was received by the server
     pub const PARSE_ERROR: i32 = -32700;

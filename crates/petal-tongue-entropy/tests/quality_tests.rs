@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Comprehensive tests for quality assessment
 //!
 //! Tests verify Shannon entropy, variance, and histogram algorithms.
@@ -13,8 +14,7 @@ fn test_shannon_entropy_uniform() {
     // Should be close to 1.0 (maximum for uniform distribution)
     assert!(
         entropy > 0.9,
-        "Uniform distribution should have high entropy: {}",
-        entropy
+        "Uniform distribution should have high entropy: {entropy}"
     );
 }
 
@@ -44,8 +44,7 @@ fn test_shannon_entropy_binary() {
     // Should be 1.0 for perfectly balanced binary
     assert!(
         (entropy - 1.0).abs() < 0.01,
-        "Binary distribution entropy: {}",
-        entropy
+        "Binary distribution entropy: {entropy}"
     );
 }
 
@@ -57,8 +56,7 @@ fn test_shannon_entropy_skewed() {
 
     assert!(
         entropy < 0.7,
-        "Skewed distribution should have low entropy: {}",
-        entropy
+        "Skewed distribution should have low entropy: {entropy}"
     );
 }
 
@@ -71,8 +69,7 @@ fn test_variance_zero() {
     // Should be very close to 0.5 (sigmoid of 0)
     assert!(
         (var - 0.5).abs() < 0.1,
-        "No variance should give ~0.5: {}",
-        var
+        "No variance should give ~0.5: {var}"
     );
 }
 
@@ -83,7 +80,7 @@ fn test_variance_high() {
     let var = variance(&values);
 
     // Should be close to 1.0 (high variance after sigmoid)
-    assert!(var > 0.9, "High variance should give high score: {}", var);
+    assert!(var > 0.9, "High variance should give high score: {var}");
 }
 
 #[test]
@@ -119,8 +116,7 @@ fn test_variance_normalization() {
 
     assert!(
         (0.0..=1.0).contains(&var),
-        "Variance should be normalized: {}",
-        var
+        "Variance should be normalized: {var}"
     );
 }
 
@@ -250,7 +246,7 @@ fn test_shannon_entropy_large_dataset() {
     let entropy = shannon_entropy(&values);
 
     // Should have high entropy (10 unique values repeated)
-    assert!(entropy > 0.8, "Large dataset entropy: {}", entropy);
+    assert!(entropy > 0.8, "Large dataset entropy: {entropy}");
 }
 
 #[test]
@@ -261,8 +257,7 @@ fn test_variance_floating_point_precision() {
     // Very small differences should give low variance
     assert!(
         var < 0.6,
-        "Tiny differences should have low variance: {}",
-        var
+        "Tiny differences should have low variance: {var}"
     );
 }
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Integration tests for JSON-RPC provider
 //!
 //! These tests verify the JSON-RPC provider works correctly with
@@ -210,7 +211,7 @@ async fn test_jsonrpc_concurrent_requests() {
     let socket_path = "/tmp/test-jsonrpc-integration-concurrent.sock";
     let _server = create_mock_server(socket_path).await.unwrap();
 
-    let provider = JsonRpcProvider::new(socket_path);
+    let _provider = JsonRpcProvider::new(socket_path);
 
     // Make 10 concurrent requests
     let mut handles = vec![];
@@ -236,7 +237,7 @@ async fn test_jsonrpc_error_response() {
     let socket_path = "/tmp/test-jsonrpc-integration-error.sock";
     let _server = create_mock_server(socket_path).await.unwrap();
 
-    let provider = JsonRpcProvider::new(socket_path);
+    let _provider = JsonRpcProvider::new(socket_path);
 
     // Call a method that returns an error (we'll need to modify call to be public for this)
     // For now, we test that unknown methods fail gracefully

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Proprioception - Complete Sensory-Motor Self-Awareness
 //!
 //! Like humans knowing their body position without light through feedback,
@@ -73,11 +74,13 @@ pub struct ProprioceptiveState {
 
 impl ProprioceptiveState {
     /// Check if we're healthy
+    #[must_use]
     pub fn is_healthy(&self) -> bool {
         self.motor_functional && self.sensory_functional && self.loop_complete && self.health > 0.7
     }
 
     /// Check if we're confident in our state
+    #[must_use]
     pub fn is_confident(&self) -> bool {
         self.confidence > 0.7
     }
@@ -273,6 +276,7 @@ impl ProprioceptionSystem {
     }
 
     /// Get recent diagnostic events (for debugging)
+    #[must_use]
     pub fn get_diagnostic_events(&self, count: usize) -> Vec<(Duration, String, String)> {
         let now = Instant::now();
         self.diagnostic_events
@@ -356,17 +360,12 @@ impl ProprioceptionSystem {
             .iter()
             .filter(|v| {
                 v.last_confirmed
-                    .map(|t| t.elapsed() < recent_threshold)
-                    .unwrap_or(false)
+                    .is_some_and(|t| t.elapsed() < recent_threshold)
             })
             .count();
         let recent_inputs = input_verifications
             .iter()
-            .filter(|v| {
-                v.last_input
-                    .map(|t| t.elapsed() < recent_threshold)
-                    .unwrap_or(false)
-            })
+            .filter(|v| v.last_input.is_some_and(|t| t.elapsed() < recent_threshold))
             .count();
 
         let confidence = if total_modalities > 0 {
@@ -400,13 +399,11 @@ impl ProprioceptionSystem {
             )
         } else if health >= 0.9 {
             format!(
-                "Proprioception excellent - {} outputs confirmed, {} inputs active, {:.1} FPS",
-                outputs_confirmed, inputs_active, frame_rate
+                "Proprioception excellent - {outputs_confirmed} outputs confirmed, {inputs_active} inputs active, {frame_rate:.1} FPS"
             )
         } else if health >= 0.7 {
             format!(
-                "Proprioception good - {} outputs confirmed, {} inputs active, {:.1} FPS",
-                outputs_confirmed, inputs_active, frame_rate
+                "Proprioception good - {outputs_confirmed} outputs confirmed, {inputs_active} inputs active, {frame_rate:.1} FPS"
             )
         } else if health >= 0.5 {
             format!(
@@ -419,8 +416,7 @@ impl ProprioceptionSystem {
             )
         } else {
             format!(
-                "Proprioception impaired - limited sensory-motor awareness, {:.1} FPS",
-                frame_rate
+                "Proprioception impaired - limited sensory-motor awareness, {frame_rate:.1} FPS"
             )
         };
 
@@ -463,21 +459,25 @@ impl ProprioceptionSystem {
     }
 
     /// Get current proprioceptive state (cached, fast)
+    #[must_use]
     pub fn get_state(&self) -> &ProprioceptiveState {
         &self.last_state
     }
 
     /// Get detailed status for all outputs
+    #[must_use]
     pub fn get_output_status(&self) -> String {
         self.output_system.get_status_summary()
     }
 
     /// Get detailed status for all inputs
+    #[must_use]
     pub fn get_input_status(&self) -> String {
         self.input_system.get_status_summary()
     }
 
     /// Get comprehensive diagnostic report
+    #[must_use]
     pub fn get_diagnostic_report(&self) -> String {
         let mut report = String::new();
 

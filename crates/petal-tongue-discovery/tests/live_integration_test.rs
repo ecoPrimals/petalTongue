@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 // Integration test for petalTongue with live biomeOS API
 //
 // This test validates that petalTongue can discover primals from a running biomeOS API server
@@ -13,10 +14,10 @@ async fn test_live_biomeos_integration() {
     let biomeos_url =
         std::env::var("BIOMEOS_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
 
-    println!("Testing against biomeOS API at: {}", biomeos_url);
+    println!("Testing against biomeOS API at: {biomeos_url}");
 
     // Create HTTP provider for biomeOS
-    let provider = HttpVisualizationProvider::new(&biomeos_url);
+    let provider = HttpVisualizationProvider::new(&biomeos_url).unwrap();
 
     // Test 1: Health check
     println!("\n1. Testing health endpoint...");
@@ -112,7 +113,6 @@ async fn test_biomeos_api_contract() {
     // Test that we can handle the biomeOS API response format
     // This uses mock data in the same format as the real API
 
-    use petal_tongue_core::{PrimalHealthStatus, PrimalInfo};
     use serde_json::json;
 
     // Mock response in biomeOS format

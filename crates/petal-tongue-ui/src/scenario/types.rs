@@ -1,16 +1,14 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Core scenario types for benchTop demonstrations
 //!
 //! This module defines the main Scenario structure and related types
 //! for loading and managing UI demonstration scenarios.
 
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::scenario::config::{
-    AnimationConfig, CustomPanelConfig, FeatureFlags, PanelVisibility, PerformanceConfig, UiConfig,
-};
-use crate::scenario::ecosystem::{Ecosystem, PrimalDefinition};
-use crate::scenario::sensory::{CapabilityRequirements, SensoryConfig};
+use crate::scenario::config::UiConfig;
+use crate::scenario::ecosystem::Ecosystem;
+use crate::scenario::sensory::SensoryConfig;
 
 /// Complete scenario definition for benchTop demonstrations
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -39,6 +37,7 @@ pub struct Scenario {
 
 impl Scenario {
     /// Get number of primals in scenario
+    #[must_use]
     pub fn primal_count(&self) -> usize {
         self.ecosystem.primals.len()
     }

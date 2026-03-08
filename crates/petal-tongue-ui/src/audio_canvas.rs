@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Audio Canvas - Direct Hardware Access (Pure Rust!)
 //!
 //! Inspired by Toadstool's WGPU pattern and framebuffer direct access.
@@ -42,7 +43,7 @@ impl AudioCanvas {
 
             // Find PCM playback devices (format: pcmC0D0p)
             // 'p' suffix = playback, 'c' suffix = capture
-            if name.starts_with("pcm") && name.ends_with("p") {
+            if name.starts_with("pcm") && name.ends_with('p') {
                 debug!("Found audio device: {}", path.display());
                 devices.push(path);
             }
@@ -129,16 +130,19 @@ impl AudioCanvas {
     }
 
     /// Get device path
+    #[must_use]
     pub fn device_path(&self) -> &Path {
         &self.device_path
     }
 
     /// Get sample rate
+    #[must_use]
     pub fn sample_rate(&self) -> u32 {
         self.sample_rate
     }
 
     /// Get number of channels
+    #[must_use]
     pub fn channels(&self) -> u8 {
         self.channels
     }
@@ -148,6 +152,7 @@ impl AudioCanvas {
 #[cfg(target_os = "linux")]
 impl AudioCanvas {
     /// Check if audio canvas is available on this platform
+    #[must_use]
     pub fn is_available() -> bool {
         Path::new("/dev/snd").exists()
     }

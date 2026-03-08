@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Quality assessment algorithms
 
 use std::collections::HashMap;

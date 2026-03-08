@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Test audio discovery
 
 use petal_tongue_ui::audio_discovery::AudioDiscovery;

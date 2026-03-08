@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Primal Registration with Songbird
 //!
 //! Implements the `ipc.register` and `ipc.heartbeat` standards from PRIMAL_IPC_PROTOCOL.md.
@@ -170,7 +171,7 @@ impl SongbirdClient {
         // Send request (line-delimited JSON-RPC)
         let request_str = serde_json::to_string(request)?;
         stream
-            .write_all(format!("{}\n", request_str).as_bytes())
+            .write_all(format!("{request_str}\n").as_bytes())
             .await?;
         stream.flush().await?;
 
@@ -190,7 +191,7 @@ impl SongbirdClient {
 
         // Check for JSON-RPC error
         if let Some(error) = response.get("error") {
-            anyhow::bail!("Songbird returned error: {}", error);
+            anyhow::bail!("Songbird returned error: {error}");
         }
 
         Ok(())

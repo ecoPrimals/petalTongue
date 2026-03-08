@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Core types for petalTongue visualization system
 
 use crate::property::Properties;
@@ -138,9 +139,9 @@ impl PrimalInfo {
             endpoints: None,
             metadata: None,
             properties: Properties::new(),
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             trust_level: None,
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             family_id: None,
         }
     }
@@ -153,7 +154,7 @@ impl PrimalInfo {
     /// Also migrates biomeOS metadata fields to properties.
     ///
     /// Call this after deserializing from JSON to ensure backward compatibility.
-    #[allow(deprecated)]
+    #[expect(deprecated)]
     pub fn migrate_deprecated_fields(&mut self) {
         use crate::property::PropertyValue;
 
@@ -224,7 +225,7 @@ impl PrimalInfo {
     /// ```
     #[deprecated(note = "Use properties field directly instead")]
     #[must_use]
-    #[allow(deprecated)]
+    #[expect(deprecated)]
     pub fn with_trust(mut self, trust_level: u8, family_id: Option<String>) -> Self {
         use crate::property::PropertyValue;
 

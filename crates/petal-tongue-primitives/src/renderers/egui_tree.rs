@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Egui Tree Renderer
 //!
 //! Renders trees in an egui GUI context.

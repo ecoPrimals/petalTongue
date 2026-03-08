@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Layout Management
 //!
 //! Manages responsive layouts for all views.

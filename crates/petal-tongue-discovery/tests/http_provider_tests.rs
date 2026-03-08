@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Comprehensive tests for HTTP provider
 //!
 //! Tests verify HTTP discovery, error handling, and capability-based routing.
@@ -8,7 +9,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 #[tokio::test]
 async fn test_http_provider_creation() {
-    let _provider = HttpVisualizationProvider::new("http://test:3000");
+    let _provider = HttpVisualizationProvider::new("http://test:3000").unwrap();
     // Provider should be created successfully
     assert!(true, "HTTP provider created");
 }
@@ -46,7 +47,7 @@ async fn test_get_primals_success() {
         .mount(&mock_server)
         .await;
 
-    let provider = HttpVisualizationProvider::new(&mock_server.uri());
+    let provider = HttpVisualizationProvider::new(mock_server.uri()).unwrap();
     let primals = provider.get_primals().await;
 
     assert!(primals.is_ok(), "Should fetch primals successfully");
@@ -70,7 +71,7 @@ async fn test_get_primals_empty_response() {
         .mount(&mock_server)
         .await;
 
-    let provider = HttpVisualizationProvider::new(&mock_server.uri());
+    let provider = HttpVisualizationProvider::new(mock_server.uri()).unwrap();
     let primals = provider.get_primals().await;
 
     assert!(primals.is_ok(), "Should handle empty response");
@@ -87,7 +88,7 @@ async fn test_get_primals_http_error() {
         .mount(&mock_server)
         .await;
 
-    let provider = HttpVisualizationProvider::new(&mock_server.uri());
+    let provider = HttpVisualizationProvider::new(mock_server.uri()).unwrap();
     let primals = provider.get_primals().await;
 
     assert!(primals.is_err(), "Should fail on HTTP 500");
@@ -103,7 +104,7 @@ async fn test_get_primals_invalid_json() {
         .mount(&mock_server)
         .await;
 
-    let provider = HttpVisualizationProvider::new(&mock_server.uri());
+    let provider = HttpVisualizationProvider::new(mock_server.uri()).unwrap();
     let primals = provider.get_primals().await;
 
     assert!(primals.is_err(), "Should fail on invalid JSON");
@@ -130,7 +131,7 @@ async fn test_get_topology_success() {
         .mount(&mock_server)
         .await;
 
-    let provider = HttpVisualizationProvider::new(&mock_server.uri());
+    let provider = HttpVisualizationProvider::new(mock_server.uri()).unwrap();
     let topology = provider.get_topology().await;
 
     assert!(topology.is_ok(), "Should fetch topology successfully");
@@ -150,7 +151,7 @@ async fn test_get_topology_not_found() {
         .mount(&mock_server)
         .await;
 
-    let provider = HttpVisualizationProvider::new(&mock_server.uri());
+    let provider = HttpVisualizationProvider::new(mock_server.uri()).unwrap();
     let topology = provider.get_topology().await;
 
     // Should return empty topology on 404 (graceful degradation)
@@ -168,7 +169,7 @@ async fn test_health_check_success() {
         .mount(&mock_server)
         .await;
 
-    let provider = HttpVisualizationProvider::new(&mock_server.uri());
+    let provider = HttpVisualizationProvider::new(mock_server.uri()).unwrap();
     let health = provider.health_check().await;
 
     assert!(health.is_ok(), "Health check should succeed");
@@ -189,7 +190,7 @@ async fn test_health_check_failure() {
         .mount(&mock_server)
         .await;
 
-    let provider = HttpVisualizationProvider::new(&mock_server.uri());
+    let provider = HttpVisualizationProvider::new(mock_server.uri()).unwrap();
     let health = provider.health_check().await;
 
     // Health check returns Err on unhealthy status
@@ -201,7 +202,7 @@ async fn test_health_check_failure() {
 
 #[tokio::test]
 async fn test_get_metadata() {
-    let provider = HttpVisualizationProvider::new("http://test:3000");
+    let provider = HttpVisualizationProvider::new("http://test:3000").unwrap();
     let metadata = provider.get_metadata();
 
     assert_eq!(metadata.name, "HTTP Provider");
@@ -236,7 +237,7 @@ async fn test_multiple_requests_same_provider() {
         .mount(&mock_server)
         .await;
 
-    let provider = HttpVisualizationProvider::new(&mock_server.uri());
+    let provider = HttpVisualizationProvider::new(mock_server.uri()).unwrap();
 
     // Make multiple requests
     for _ in 0..3 {
@@ -253,7 +254,7 @@ async fn test_timeout_handling() {
     // Note: This test is limited because we can't easily simulate timeouts with wiremock
     // In production, the client has a 30s timeout configured
 
-    let provider = HttpVisualizationProvider::new(&mock_server.uri());
+    let provider = HttpVisualizationProvider::new(mock_server.uri()).unwrap();
 
     // Try to access non-existent endpoint
     let result = provider.get_primals().await;
@@ -303,7 +304,7 @@ async fn test_primal_health_status_mapping() {
         .mount(&mock_server)
         .await;
 
-    let provider = HttpVisualizationProvider::new(&mock_server.uri());
+    let provider = HttpVisualizationProvider::new(mock_server.uri()).unwrap();
     let primals = provider.get_primals().await.unwrap();
 
     assert_eq!(primals.len(), 3);
@@ -334,7 +335,7 @@ async fn test_capability_parsing() {
         .mount(&mock_server)
         .await;
 
-    let provider = HttpVisualizationProvider::new(&mock_server.uri());
+    let provider = HttpVisualizationProvider::new(mock_server.uri()).unwrap();
     let primals = provider.get_primals().await.unwrap();
 
     assert_eq!(primals.len(), 1);

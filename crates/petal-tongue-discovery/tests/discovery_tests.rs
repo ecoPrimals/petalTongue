@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Comprehensive tests for discovery module
 //!
 //! Tests verify discovery logic, environment handling, and provider selection.
@@ -100,7 +101,7 @@ async fn test_mock_mode_false() {
         std::env::remove_var("BIOMEOS_URL");
     }
 
-    let providers = discover_visualization_providers().await;
+    let _providers = discover_visualization_providers().await;
 
     // With mock mode explicitly false and no other config,
     // discovery behavior is undefined (could succeed with fallback or fail)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Unit Tests for petalTongue Rich TUI
 //!
 //! Comprehensive unit testing for all TUI components.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! End-to-End Tests for petalTongue Rich TUI
 //!
 //! Tests complete workflows and user interactions.

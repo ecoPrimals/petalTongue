@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Toadstool Backend - Legacy Stub (DEPRECATED)
 //!
 //! **⚠️ DEPRECATED**: Use `crate::display::backends::toadstool_v2` instead!

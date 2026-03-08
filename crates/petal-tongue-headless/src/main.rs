@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+#![forbid(unsafe_code)]
 //! Headless petalTongue - Pure Rust UI (no GUI dependencies)
 //!
 //! This binary demonstrates petalTongue's self-sovereignty:
@@ -13,6 +15,7 @@
 
 use anyhow::Result;
 use petal_tongue_core::GraphEngine;
+use petal_tongue_core::constants;
 use petal_tongue_ui_core::{
     CanvasUI, ExportFormat, SvgUI, TerminalUI, TextUI, UIMode, UniversalUI, detect_best_ui_mode,
 };
@@ -204,7 +207,9 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
     // For now, create a simple example topology
     tracing::info!("📚 Loading demonstration topology");
 
-    let mut g = graph.write().unwrap();
+    let mut g = graph
+        .write()
+        .map_err(|e| anyhow::anyhow!("graph lock poisoned: {e}"))?;
 
     // Create some example primals
     let primals = vec![
@@ -212,24 +217,24 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
             "petaltongue-headless",
             "petalTongue Headless",
             "Visualization",
-            "http://localhost:8080",
+            format!("http://localhost:{}", constants::DEFAULT_HEADLESS_PORT),
             vec!["visualization".to_string(), "export".to_string()],
             PrimalHealthStatus::Healthy,
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_default()
                 .as_secs(),
         ),
         PrimalInfo::new(
             "biomeos-1",
             "biomeOS",
             "Health Monitoring",
-            "http://localhost:3000",
+            format!("http://localhost:{}", constants::DEFAULT_WEB_PORT),
             vec!["health".to_string(), "monitoring".to_string()],
             PrimalHealthStatus::Healthy,
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_default()
                 .as_secs(),
         ),
         PrimalInfo::new(
@@ -241,7 +246,7 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
             PrimalHealthStatus::Warning,
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_default()
                 .as_secs(),
         ),
     ];

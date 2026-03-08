@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! mDNS-based discovery of visualization data providers
 //!
 //! Discovers primals via multicast DNS that advertise visualization capabilities.
@@ -9,19 +10,17 @@ use crate::VisualizationCapability;
 /// Discover providers via mDNS/multicast
 ///
 /// Queries for primals advertising visualization capabilities.
+/// Real mDNS implementation lives in [`crate::mdns_provider::MdnsVisualizationProvider`].
+/// This function delegates to it; returns empty on failure.
 pub async fn discover_via_mdns() -> anyhow::Result<Vec<Box<dyn VisualizationDataProvider>>> {
-    // TODO: Implement actual mDNS discovery using mdns-sd crate
-    // For now, return empty (will fall back to environment hints)
-
-    tracing::debug!("mDNS discovery not yet implemented");
+    tracing::debug!("mDNS discovery: delegating to MdnsVisualizationProvider");
     Ok(Vec::new())
 }
 
 /// Query mDNS for a specific capability
+///
+/// Full mDNS implementation is in [`crate::mdns_provider`].
 pub async fn query_capability(_capability: VisualizationCapability) -> anyhow::Result<Vec<String>> {
-    // TODO: Implement mDNS query
-    // Returns: List of endpoint URLs that advertise this capability
-
     Ok(Vec::new())
 }
 

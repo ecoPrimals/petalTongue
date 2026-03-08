@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Integration tests for SAME DAVE proprioception system
 //!
 //! Tests the complete sensory-motor self-awareness system including:

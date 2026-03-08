@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Capability-Based Discovery System
 //!
 //! TRUE PRIMAL principle: Primals have self-knowledge only.
@@ -33,18 +34,21 @@ impl Capability {
     }
 
     /// Set specific operation
+    #[must_use]
     pub fn with_operation(mut self, operation: impl Into<String>) -> Self {
         self.operation = Some(operation.into());
         self
     }
 
     /// Set version requirement
+    #[must_use]
     pub fn with_version(mut self, version: impl Into<String>) -> Self {
         self.version = version.into();
         self
     }
 
     /// Check if this capability matches a query
+    #[must_use]
     pub fn matches(&self, query: &CapabilityQuery) -> bool {
         // Domain must match
         if self.domain != query.domain {
@@ -52,10 +56,10 @@ impl Capability {
         }
 
         // If query specifies operation, it must match
-        if let Some(ref query_op) = query.operation {
-            if self.operation.as_ref() != Some(query_op) {
-                return false;
-            }
+        if let Some(ref query_op) = query.operation
+            && self.operation.as_ref() != Some(query_op)
+        {
+            return false;
         }
 
         // TODO: Add version compatibility check (semver)
@@ -85,6 +89,7 @@ impl CapabilityQuery {
     }
 
     /// Query for specific operation
+    #[must_use]
     pub fn with_operation(mut self, operation: impl Into<String>) -> Self {
         self.operation = Some(operation.into());
         self
@@ -177,6 +182,7 @@ pub enum DiscoveryError {
 
 impl CapabilityDiscovery {
     /// Create a new capability discovery service
+    #[must_use]
     pub fn new(backend: Box<dyn DiscoveryBackend>) -> Self {
         Self {
             cache: Arc::new(RwLock::new(HashMap::new())),
@@ -196,10 +202,10 @@ impl CapabilityDiscovery {
         let cache_key = format!("{}:{:?}", query.domain, query.operation);
         {
             let cache = self.cache.read().await;
-            if let Some(endpoint) = cache.get(&cache_key) {
-                if endpoint.health == PrimalHealth::Healthy {
-                    return Ok(endpoint.clone());
-                }
+            if let Some(endpoint) = cache.get(&cache_key)
+                && endpoint.health == PrimalHealth::Healthy
+            {
+                return Ok(endpoint.clone());
             }
         }
 

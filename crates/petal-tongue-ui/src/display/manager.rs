@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Display Manager
 //!
 //! Manages multiple display backends with capability-based discovery.
@@ -114,7 +115,7 @@ impl DisplayManager {
         } else {
             // Prompt user to start display server
             info!("⚠️  No external display server detected");
-            if prompt_for_display_server()? {
+            if prompt_for_display_server().await? {
                 // User may have started display server
                 if ExternalDisplay::is_available() {
                     info!("✅ External display server now available");
@@ -187,6 +188,7 @@ impl DisplayManager {
     }
 
     /// Get dimensions of active backend
+    #[must_use]
     pub fn dimensions(&self) -> Option<(u32, u32)> {
         self.active_backend_idx
             .and_then(|idx| self.backends.get(idx))
@@ -251,6 +253,7 @@ impl DisplayManager {
     }
 
     /// Get name of active backend
+    #[must_use]
     pub fn active_backend_name(&self) -> Option<&str> {
         self.active_backend_idx
             .and_then(|idx| self.backends.get(idx))
@@ -261,10 +264,10 @@ impl DisplayManager {
     pub async fn shutdown(&mut self) -> Result<()> {
         info!("🌸 Shutting down display manager...");
         for entry in &mut self.backends {
-            if entry.initialized {
-                if let Err(e) = entry.backend.shutdown().await {
-                    warn!("Failed to shutdown {}: {}", entry.backend.name(), e);
-                }
+            if entry.initialized
+                && let Err(e) = entry.backend.shutdown().await
+            {
+                warn!("Failed to shutdown {}: {}", entry.backend.name(), e);
             }
         }
         Ok(())

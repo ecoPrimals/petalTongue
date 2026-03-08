@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Unix socket discovery provider
 //!
 //! Discovers primals via Unix domain sockets by scanning for .sock files
@@ -65,7 +66,7 @@ impl UnixSocketProvider {
         // Priority 2: /run/user/<uid> (fallback if XDG not set)
         // EVOLVED: Now using safe rustix-based function from core (was unsafe libc::getuid())
         let uid = petal_tongue_core::system_info::get_current_uid();
-        search_paths.push(PathBuf::from(format!("/run/user/{}", uid)));
+        search_paths.push(PathBuf::from(format!("/run/user/{uid}")));
 
         // Priority 3: /tmp (development fallback)
         search_paths.push(PathBuf::from("/tmp"));

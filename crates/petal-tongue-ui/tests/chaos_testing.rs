@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Chaos Testing Framework
 //!
 //! Provides fault injection and resilience testing for petalTongue.
@@ -113,9 +114,9 @@ impl ChaosTestRunner {
                         endpoints: None,
                         metadata: None,
                         properties: petal_tongue_core::Properties::new(),
-                        #[allow(deprecated)]
+                        #[expect(deprecated)]
                         trust_level: None,
-                        #[allow(deprecated)]
+                        #[expect(deprecated)]
                         family_id: None,
                         last_seen: 0,
                     });
@@ -181,9 +182,9 @@ impl ChaosTestRunner {
                     endpoints: None,
                     metadata: None,
                     properties: petal_tongue_core::Properties::new(),
-                    #[allow(deprecated)]
+                    #[expect(deprecated)]
                     trust_level: None,
-                    #[allow(deprecated)]
+                    #[expect(deprecated)]
                     family_id: None,
                     last_seen: 0,
                 });
@@ -245,9 +246,9 @@ impl ChaosTestRunner {
                     endpoints: None,
                     metadata: None,
                     properties: petal_tongue_core::Properties::new(),
-                    #[allow(deprecated)]
+                    #[expect(deprecated)]
                     trust_level: None,
-                    #[allow(deprecated)]
+                    #[expect(deprecated)]
                     family_id: None,
                     last_seen: 0,
                 });
@@ -312,9 +313,9 @@ impl ChaosTestRunner {
                         endpoints: None,
                         metadata: None,
                         properties: petal_tongue_core::Properties::new(),
-                        #[allow(deprecated)]
+                        #[expect(deprecated)]
                         trust_level: None,
-                        #[allow(deprecated)]
+                        #[expect(deprecated)]
                         family_id: None,
                         last_seen: 0,
                     });

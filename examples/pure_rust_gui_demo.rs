@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Pure Rust GUI Demo
 //!
 //! Demonstrates the complete Pure Rust rendering pipeline:

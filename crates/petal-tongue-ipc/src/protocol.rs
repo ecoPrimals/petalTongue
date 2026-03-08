@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! IPC protocol definitions
 //!
 //! Defines the commands and responses used for inter-instance communication.

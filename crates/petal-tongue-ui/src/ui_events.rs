@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! UI Events - Event-Driven Architecture for Real-Time Updates
 //!
 //! Defines all events that can occur in the device/niche management UI
@@ -36,41 +37,41 @@ pub enum UIEvent {
     // Device events
     /// New device discovered
     DeviceDiscovered(Device),
-    /// Device removed (device_id)
+    /// Device removed (`device_id`)
     DeviceRemoved(String),
-    /// Device status changed (device_id, new_status)
+    /// Device status changed (`device_id`, `new_status`)
     DeviceStatusChanged(String, DeviceStatus),
-    /// Device usage changed (device_id, new_usage 0.0-1.0)
+    /// Device usage changed (`device_id`, `new_usage` 0.0-1.0)
     DeviceUsageChanged(String, f64),
 
     // Primal events
     /// New primal discovered
     PrimalDiscovered(Primal),
-    /// Primal removed (primal_id)
+    /// Primal removed (`primal_id`)
     PrimalRemoved(String),
-    /// Primal health changed (primal_id, new_health)
+    /// Primal health changed (`primal_id`, `new_health`)
     PrimalHealthChanged(String, Health),
-    /// Primal load changed (primal_id, new_load 0.0-1.0)
+    /// Primal load changed (`primal_id`, `new_load` 0.0-1.0)
     PrimalLoadChanged(String, f64),
 
     // Assignment events
-    /// Device assigned to primal (device_id, primal_id)
+    /// Device assigned to primal (`device_id`, `primal_id`)
     DeviceAssigned(String, String),
-    /// Device unassigned from primal (device_id, primal_id)
+    /// Device unassigned from primal (`device_id`, `primal_id`)
     DeviceUnassigned(String, String),
 
     // Niche events
-    /// Niche deployed (niche_id, template)
+    /// Niche deployed (`niche_id`, template)
     NicheDeployed(String, NicheTemplate),
-    /// Niche removed (niche_id)
+    /// Niche removed (`niche_id`)
     NicheRemoved(String),
 
     // AI suggestion events
     /// AI generated a suggestion
     AISuggestion(Suggestion),
-    /// User accepted suggestion (suggestion_id)
+    /// User accepted suggestion (`suggestion_id`)
     SuggestionAccepted(String),
-    /// User rejected suggestion (suggestion_id)
+    /// User rejected suggestion (`suggestion_id`)
     SuggestionRejected(String),
 }
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Integration tests for capability detection
 //!
 //! These tests verify that petalTongue honestly reports what it can actually do.
@@ -10,28 +11,24 @@ fn test_capability_detection_is_honest() {
     let detector = CapabilityDetector::default();
 
     // Visual should always be available (we can render egui windows)
-    assert_eq!(
+    assert!(
         detector.is_available(Modality::Visual2D),
-        true,
         "Visual2D should always be available"
     );
 
     // Text should always be available
-    assert_eq!(
+    assert!(
         detector.is_available(Modality::TextDescription),
-        true,
         "TextDescription should always be available"
     );
 
     // Haptic and VR should be unavailable (not implemented)
-    assert_eq!(
-        detector.is_available(Modality::Haptic),
-        false,
+    assert!(
+        !detector.is_available(Modality::Haptic),
         "Haptic should be unavailable (not implemented)"
     );
-    assert_eq!(
-        detector.is_available(Modality::VR3D),
-        false,
+    assert!(
+        !detector.is_available(Modality::VR3D),
         "VR3D should be unavailable (not implemented)"
     );
 

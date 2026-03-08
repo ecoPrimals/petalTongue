@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # petalTongue Primitives
 //!
 //! Universal UI rendering primitives for the petalTongue UI infrastructure.
@@ -35,7 +36,10 @@
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
-#![deny(unsafe_code)] // 100% safe Rust in primitives
+#![allow(clippy::must_use_candidate)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::doc_markdown)]
+#![forbid(unsafe_code)] // 100% safe Rust in primitives
 
 /// Command palette primitive
 pub mod command_palette;
@@ -80,7 +84,7 @@ pub mod common {
     impl std::fmt::Display for Icon {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
-                Icon::Emoji(s) | Icon::NerdFont(s) | Icon::Custom(s) => write!(f, "{}", s),
+                Icon::Emoji(s) | Icon::NerdFont(s) | Icon::Custom(s) => write!(f, "{s}"),
                 Icon::None => Ok(()),
             }
         }
@@ -101,11 +105,13 @@ pub mod common {
 
     impl Color {
         /// Create a new color
+        #[must_use]
         pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
             Self { r, g, b, a: 255 }
         }
 
         /// Create a new color with alpha
+        #[must_use]
         pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
             Self { r, g, b, a }
         }

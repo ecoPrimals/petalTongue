@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Graph Manager Panel
 //!
 //! UI for saving, loading, and executing graphs via Neural API.
@@ -5,9 +6,7 @@
 use crate::accessibility::ColorPalette;
 use egui::{Color32, RichText, Ui};
 use petal_tongue_core::graph_builder::VisualGraph;
-use petal_tongue_discovery::{
-    ExecutionStatus, GraphMetadata, NeuralApiProvider, NeuralGraphClient,
-};
+use petal_tongue_discovery::{GraphMetadata, NeuralApiProvider, NeuralGraphClient};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -39,6 +38,7 @@ pub struct GraphManagerPanel {
 
 impl GraphManagerPanel {
     /// Create a new graph manager panel
+    #[must_use]
     pub fn new() -> Self {
         Self {
             available_graphs: Vec::new(),
@@ -158,7 +158,7 @@ impl GraphManagerPanel {
                                 let is_selected =
                                     self.selected_graph_id.as_ref() == Some(&graph_meta.id);
 
-                                let bg_color = if is_selected {
+                                let _bg_color = if is_selected {
                                     palette.accent.linear_multiply(0.2)
                                 } else {
                                     palette.background_alt
@@ -220,7 +220,7 @@ impl GraphManagerPanel {
                 ui.add_space(12.0);
                 ui.separator();
                 ui.label(
-                    RichText::new(format!("Execution: {}", status))
+                    RichText::new(format!("Execution: {status}"))
                         .color(Color32::from_rgb(40, 180, 40)),
                 );
             }
@@ -228,10 +228,7 @@ impl GraphManagerPanel {
             // Error message
             if let Some(error) = &self.error_message {
                 ui.add_space(12.0);
-                ui.colored_label(
-                    Color32::from_rgb(208, 2, 27),
-                    format!("❌ Error: {}", error),
-                );
+                ui.colored_label(Color32::from_rgb(208, 2, 27), format!("❌ Error: {error}"));
             }
         } else {
             ui.label(RichText::new("⚠️ Neural API not available").color(palette.text_dim));
@@ -252,7 +249,7 @@ impl GraphManagerPanel {
                 self.last_refresh = Some(Instant::now());
             }
             Err(e) => {
-                self.error_message = Some(format!("Failed to refresh: {}", e));
+                self.error_message = Some(format!("Failed to refresh: {e}"));
             }
         }
     }

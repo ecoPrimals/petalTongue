@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! eframe Backend - Current GUI using egui/eframe
 //!
 //! This backend wraps the existing eframe-based GUI implementation.
@@ -20,7 +21,7 @@
 //!
 //! These dependencies will be eliminated in ecoBlossom via Toadstool backend.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
@@ -31,8 +32,8 @@ use petal_tongue_core::{GraphEngine, RenderingCapabilities};
 
 /// eframe/egui backend implementation
 ///
-/// This wraps the existing PetalTongueApp and eframe integration,
-/// providing the UIBackend trait interface.
+/// This wraps the existing `PetalTongueApp` and eframe integration,
+/// providing the `UIBackend` trait interface.
 pub struct EguiBackend {
     /// Whether backend has been initialized
     initialized: bool,
@@ -130,20 +131,24 @@ impl UIBackend for EguiBackend {
         tracing::info!("🪟 Creating window...");
 
         crate::eframe::run_native(
-            "petalTongue",
+            petal_tongue_core::constants::PRIMAL_NAME,
             native_options,
             Box::new(move |cc| {
                 tracing::info!("✅ eframe context created");
 
                 // Create app with shared graph from DataService
                 // TRUE PRIMAL: Single source of truth across ALL UI modes!
-                let app =
-                    PetalTongueApp::new_with_shared_graph(cc, scenario, capabilities, shared_graph);
+                let app = PetalTongueApp::new_with_shared_graph(
+                    cc,
+                    scenario,
+                    capabilities,
+                    shared_graph,
+                )?;
 
                 Ok(Box::new(app))
             }),
         )
-        .map_err(|e| anyhow::anyhow!("eframe::run_native failed: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("eframe::run_native failed: {e}"))?;
 
         tracing::info!("✅ eframe backend finished");
         Ok(())

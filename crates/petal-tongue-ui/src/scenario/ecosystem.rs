@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Ecosystem and primal definition types
 //!
 //! Defines structures for primals in the ecosystem including their

@@ -1,14 +1,12 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Human Entropy Capture UI
 //!
 //! Provides a user-friendly interface for multi-modal entropy capture.
 
-// TODO: Define 'audio' feature in Cargo.toml when audio entropy capture is implemented
 #![allow(unexpected_cfgs)]
 
 use eframe::egui;
 use petal_tongue_entropy::prelude::*;
-// use std::sync::{Arc, Mutex}; // TODO: Needed for future audio entropy capture state
-// use petal_tongue_entropy::audio::AudioEntropyCapture; // TODO: When audio implementation ready
 use std::time::{Duration, Instant};
 use tracing::{info, warn};
 
@@ -415,14 +413,19 @@ impl HumanEntropyWindow {
             #[cfg(feature = "audio")]
             EntropyModality::Audio => {
                 if let Some(capturer) = &self.audio_capturer {
-                    let mut cap = capturer.lock().unwrap();
-                    if let Err(e) = cap.stop() {
-                        tracing::error!("Failed to stop audio capture: {}", e);
-                        self.status_message = format!("Error stopping: {}", e);
-                        return;
+                    match capturer.lock() {
+                        Ok(mut cap) => {
+                            if let Err(e) = cap.stop() {
+                                tracing::error!("Failed to stop audio capture: {}", e);
+                                self.status_message = format!("Error stopping: {}", e);
+                                return;
+                            }
+                            self.current_quality = Some(cap.assess_quality().overall_quality);
+                        }
+                        Err(e) => {
+                            warn!("Audio capturer lock poisoned: {}", e);
+                        }
                     }
-
-                    self.current_quality = Some(cap.assess_quality().overall_quality);
                 }
             }
 
@@ -449,17 +452,22 @@ impl HumanEntropyWindow {
             #[cfg(feature = "audio")]
             EntropyModality::Audio => {
                 if let Some(capturer) = self.audio_capturer.take() {
-                    let cap = capturer
-                        .lock()
-                        .expect("SAFETY: Audio capturer lock poisoned");
-                    // Note: This consumes the capturer
-                    Some(cap.finalize())
+                    match capturer.lock() {
+                        Ok(cap) => Some(cap.finalize()),
+                        Err(e) => {
+                            warn!("Audio capturer lock poisoned: {}", e);
+                            None
+                        }
+                    }
                 } else {
                     None
                 }
             }
 
-            EntropyModality::Narrative => self.narrative_capturer.take().map(|c| c.finalize()),
+            EntropyModality::Narrative => self
+                .narrative_capturer
+                .take()
+                .map(petal_tongue_entropy::narrative::NarrativeEntropyCapture::finalize),
 
             _ => None,
         };
@@ -512,9 +520,9 @@ impl HumanEntropyWindow {
         }
     }
 
-    /// Discover BearDog endpoint via capability-based discovery
+    /// Discover `BearDog` endpoint via capability-based discovery
     ///
-    /// TRUE PRIMAL: We don't hardcode BearDog's location. We discover it.
+    /// TRUE PRIMAL: We don't hardcode `BearDog`'s location. We discover it.
     fn discover_beardog_endpoint(&self) -> Option<String> {
         // Try environment variable first (manual configuration)
         if let Ok(endpoint) = std::env::var("BEARDOG_ENTROPY_ENDPOINT") {
@@ -529,7 +537,7 @@ impl HumanEntropyWindow {
                 // Check if this primal advertises entropy ingestion capability
                 if self.check_entropy_capability(hint) {
                     info!("Discovered BearDog at: {}", hint);
-                    return Some(format!("{}/api/v1/entropy", hint));
+                    return Some(format!("{hint}/api/v1/entropy"));
                 }
             }
         }
@@ -549,7 +557,7 @@ impl HumanEntropyWindow {
         false
     }
 
-    /// Stream entropy to BearDog asynchronously
+    /// Stream entropy to `BearDog` asynchronously
     ///
     /// This is a fire-and-forget operation. In production, you'd want to track
     /// the task and report completion/errors back to the UI.
@@ -566,10 +574,16 @@ impl HumanEntropyWindow {
         // Spawn async task (fire and forget for now)
         // Production: Should track status and retry
         tokio::spawn(async move {
-            let client = reqwest::Client::builder()
+            let client = match reqwest::Client::builder()
                 .timeout(Duration::from_secs(30))
                 .build()
-                .expect("Failed to create HTTP client");
+            {
+                Ok(c) => c,
+                Err(e) => {
+                    warn!("Failed to create HTTP client for entropy streaming: {}", e);
+                    return;
+                }
+            };
 
             match client
                 .post(&endpoint)
@@ -628,11 +642,12 @@ impl HumanEntropyWindow {
             #[cfg(feature = "audio")]
             EntropyModality::Audio => {
                 if let Some(capturer) = &self.audio_capturer {
-                    let cap = capturer.lock().unwrap();
-                    let quality = cap.assess_quality();
-                    self.current_quality = Some(quality.overall_quality);
+                    if let Ok(cap) = capturer.lock() {
+                        let quality = cap.assess_quality();
+                        self.current_quality = Some(quality.overall_quality);
 
-                    // TODO: Update waveform buffer for visualization
+                        // TODO: Update waveform buffer for visualization
+                    }
                 }
             }
 

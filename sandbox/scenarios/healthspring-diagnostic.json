@@ -1,0 +1,281 @@
+{
+  "name": "healthSpring Diagnostic Pipeline",
+  "description": "Human health diagnostic: PK/PD + microbiome + biosignal + endocrine → composite risk",
+  "version": "2.0.0",
+  "mode": "live-ecosystem",
+  "sensory_config": {
+    "required_capabilities": {
+      "outputs": ["visual", "audio"],
+      "inputs": []
+    },
+    "optional_capabilities": {
+      "outputs": ["haptic"],
+      "inputs": ["mouse", "keyboard"]
+    },
+    "complexity_hint": "complex"
+  },
+  "ui_config": {
+    "show_panels": {
+      "left_sidebar": true,
+      "right_sidebar": true,
+      "top_menu": true,
+      "bottom_bar": true,
+      "system_dashboard": true,
+      "audio_panel": true,
+      "trust_dashboard": true,
+      "graph_stats": true
+    },
+    "features": {
+      "audio_sonification": true,
+      "auto_refresh": true,
+      "neural_api": false,
+      "tutorial_mode": false
+    },
+    "theme": "clinical-dark",
+    "animations": {
+      "enabled": true,
+      "breathing_nodes": true,
+      "connection_pulses": true,
+      "smooth_transitions": true,
+      "celebration_effects": false
+    },
+    "performance": {
+      "target_fps": 60,
+      "vsync": true,
+      "hardware_acceleration": true
+    }
+  },
+  "ecosystem": {
+    "primals": [
+      {
+        "id": "pk",
+        "name": "PK/PD Engine",
+        "primal_type": "compute",
+        "family": "healthspring",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 100,
+        "position": { "x": 160.0, "y": 280.0 },
+        "capabilities": [
+          "science.pkpd.hill_dose_response",
+          "science.pkpd.one_compartment_pk",
+          "science.pkpd.two_compartment_pk"
+        ],
+        "metrics": {
+          "cpu_percent": 12.0,
+          "memory_mb": 64,
+          "uptime_seconds": 3600,
+          "requests_per_second": 42,
+          "active_primals": 5,
+          "graphs_available": 1,
+          "active_executions": 1
+        },
+        "data_channels": [
+          {
+            "channel_type": "timeseries",
+            "id": "pk_curve",
+            "label": "Oral PK Concentration",
+            "x_label": "Time (hr)",
+            "y_label": "Concentration (mg/L)",
+            "unit": "mg/L",
+            "x_values": [0.0, 0.5, 1.0, 2.0, 4.0, 6.0, 8.0, 12.0, 24.0],
+            "y_values": [0.0, 2.1, 4.8, 7.2, 5.1, 3.4, 2.2, 1.0, 0.15]
+          },
+          {
+            "channel_type": "gauge",
+            "id": "bioavailability",
+            "label": "Bioavailability",
+            "value": 0.72,
+            "min": 0.0,
+            "max": 1.0,
+            "unit": "fraction",
+            "normal_range": [0.6, 0.95],
+            "warning_range": [0.3, 0.6]
+          }
+        ],
+        "clinical_ranges": [
+          { "label": "Therapeutic window", "min": 2.0, "max": 8.0, "status": "normal" },
+          { "label": "Sub-therapeutic", "min": 0.0, "max": 2.0, "status": "warning" },
+          { "label": "Toxic", "min": 8.0, "max": 20.0, "status": "critical" }
+        ]
+      },
+      {
+        "id": "microbiome",
+        "name": "Microbiome Analysis",
+        "primal_type": "compute",
+        "family": "healthspring",
+        "status": "healthy",
+        "health": 92,
+        "confidence": 88,
+        "position": { "x": 400.0, "y": 180.0 },
+        "capabilities": [
+          "science.microbiome.shannon_index",
+          "science.microbiome.simpson_index",
+          "science.microbiome.bray_curtis"
+        ],
+        "metrics": {
+          "cpu_percent": 8.0,
+          "memory_mb": 128,
+          "uptime_seconds": 3600,
+          "requests_per_second": 15,
+          "active_primals": 5,
+          "graphs_available": 1,
+          "active_executions": 0
+        },
+        "data_channels": [
+          {
+            "channel_type": "bar",
+            "id": "gut_abundances",
+            "label": "Gut Microbiome Abundances",
+            "categories": ["Bacteroidetes", "Firmicutes", "Proteobacteria", "Actinobacteria", "Verrucomicrobia"],
+            "values": [0.35, 0.30, 0.15, 0.12, 0.08],
+            "unit": "relative abundance"
+          },
+          {
+            "channel_type": "gauge",
+            "id": "shannon_diversity",
+            "label": "Shannon Diversity Index",
+            "value": 3.2,
+            "min": 0.0,
+            "max": 5.0,
+            "unit": "bits",
+            "normal_range": [2.5, 4.0],
+            "warning_range": [1.5, 2.5]
+          }
+        ],
+        "clinical_ranges": [
+          { "label": "Shannon healthy", "min": 2.5, "max": 4.0, "status": "normal" },
+          { "label": "Shannon low", "min": 1.5, "max": 2.5, "status": "warning" },
+          { "label": "Shannon dysbiotic", "min": 0.0, "max": 1.5, "status": "critical" }
+        ]
+      },
+      {
+        "id": "biosignal",
+        "name": "Biosignal Processor",
+        "primal_type": "compute",
+        "family": "healthspring",
+        "status": "healthy",
+        "health": 97,
+        "confidence": 95,
+        "position": { "x": 400.0, "y": 380.0 },
+        "capabilities": [
+          "science.biosignal.pan_tompkins",
+          "science.biosignal.hrv_metrics",
+          "science.biosignal.ppg_spo2"
+        ],
+        "metrics": {
+          "cpu_percent": 22.0,
+          "memory_mb": 96,
+          "uptime_seconds": 3600,
+          "requests_per_second": 60,
+          "active_primals": 5,
+          "graphs_available": 1,
+          "active_executions": 1
+        },
+        "data_channels": [
+          {
+            "channel_type": "timeseries",
+            "id": "rr_tachogram",
+            "label": "RR Tachogram",
+            "x_label": "Beat #",
+            "y_label": "RR interval (ms)",
+            "unit": "ms",
+            "x_values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+            "y_values": [820, 835, 812, 845, 798, 850, 825, 808, 840, 815, 832, 822]
+          },
+          {
+            "channel_type": "gauge",
+            "id": "heart_rate",
+            "label": "Heart Rate",
+            "value": 72.0,
+            "min": 40.0,
+            "max": 140.0,
+            "unit": "bpm",
+            "normal_range": [60.0, 100.0],
+            "warning_range": [40.0, 60.0]
+          }
+        ],
+        "clinical_ranges": [
+          { "label": "HR normal", "min": 60.0, "max": 100.0, "status": "normal" },
+          { "label": "HR bradycardia", "min": 40.0, "max": 60.0, "status": "warning" },
+          { "label": "HR tachycardia", "min": 100.0, "max": 140.0, "status": "warning" }
+        ]
+      },
+      {
+        "id": "diagnostic",
+        "name": "Composite Diagnostic",
+        "primal_type": "compute",
+        "family": "healthspring",
+        "status": "healthy",
+        "health": 95,
+        "confidence": 90,
+        "position": { "x": 640.0, "y": 280.0 },
+        "capabilities": [
+          "science.diagnostic.assess_patient",
+          "science.diagnostic.composite_risk"
+        ],
+        "metrics": {
+          "cpu_percent": 5.0,
+          "memory_mb": 48,
+          "uptime_seconds": 3600,
+          "requests_per_second": 8,
+          "active_primals": 5,
+          "graphs_available": 1,
+          "active_executions": 0
+        },
+        "data_channels": [
+          {
+            "channel_type": "distribution",
+            "id": "risk_distribution",
+            "label": "Population Risk Distribution",
+            "unit": "composite score",
+            "values": [0.32, 0.35, 0.33, 0.37, 0.36, 0.34, 0.38, 0.31, 0.36, 0.35, 0.39, 0.33, 0.34, 0.37, 0.36, 0.35, 0.38, 0.34, 0.36, 0.33],
+            "mean": 0.353,
+            "std": 0.022,
+            "patient_value": 0.43
+          },
+          {
+            "channel_type": "gauge",
+            "id": "composite_risk",
+            "label": "Composite Risk Score",
+            "value": 0.43,
+            "min": 0.0,
+            "max": 1.0,
+            "unit": "score",
+            "normal_range": [0.0, 0.3],
+            "warning_range": [0.3, 0.6]
+          }
+        ],
+        "clinical_ranges": [
+          { "label": "Low risk", "min": 0.0, "max": 0.3, "status": "normal" },
+          { "label": "Moderate risk", "min": 0.3, "max": 0.6, "status": "warning" },
+          { "label": "High risk", "min": 0.6, "max": 1.0, "status": "critical" }
+        ]
+      },
+      {
+        "id": "petaltongue-viz",
+        "name": "petalTongue Visualization",
+        "primal_type": "visualization",
+        "family": "petaltongue",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 100,
+        "position": { "x": 820.0, "y": 280.0 },
+        "capabilities": [
+          "ui.scenario.render",
+          "ui.graph.display",
+          "ui.audio.sonify"
+        ],
+        "metrics": {
+          "cpu_percent": 3.0,
+          "memory_mb": 256,
+          "uptime_seconds": 3600,
+          "requests_per_second": 60,
+          "active_primals": 5,
+          "graphs_available": 1,
+          "active_executions": 1
+        }
+      }
+    ]
+  }
+}

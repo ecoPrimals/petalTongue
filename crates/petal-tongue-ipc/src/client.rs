@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! IPC client implementation
 //!
 //! Client for connecting to and communicating with petalTongue instances.
@@ -46,40 +47,40 @@ impl IpcClient {
         // Connect to socket
         let stream = UnixStream::connect(&self.socket_path)
             .await
-            .map_err(|e| IpcClientError::ConnectionError(format!("Failed to connect: {}", e)))?;
+            .map_err(|e| IpcClientError::ConnectionError(format!("Failed to connect: {e}")))?;
 
         let (reader, mut writer) = stream.into_split();
         let mut reader = BufReader::new(reader);
 
         // Serialize and send command
         let command_json = serde_json::to_string(&command)
-            .map_err(|e| IpcClientError::SerializeError(format!("Failed to serialize: {}", e)))?;
+            .map_err(|e| IpcClientError::SerializeError(format!("Failed to serialize: {e}")))?;
 
         writer
             .write_all(command_json.as_bytes())
             .await
-            .map_err(|e| IpcClientError::IoError(format!("Failed to write: {}", e)))?;
+            .map_err(|e| IpcClientError::IoError(format!("Failed to write: {e}")))?;
 
         writer
             .write_all(b"\n")
             .await
-            .map_err(|e| IpcClientError::IoError(format!("Failed to write newline: {}", e)))?;
+            .map_err(|e| IpcClientError::IoError(format!("Failed to write newline: {e}")))?;
 
         writer
             .flush()
             .await
-            .map_err(|e| IpcClientError::IoError(format!("Failed to flush: {}", e)))?;
+            .map_err(|e| IpcClientError::IoError(format!("Failed to flush: {e}")))?;
 
         // Read response
         let mut line = String::new();
         reader
             .read_line(&mut line)
             .await
-            .map_err(|e| IpcClientError::IoError(format!("Failed to read response: {}", e)))?;
+            .map_err(|e| IpcClientError::IoError(format!("Failed to read response: {e}")))?;
 
         // Parse response
         let response: IpcResponse = serde_json::from_str(&line)
-            .map_err(|e| IpcClientError::ParseError(format!("Failed to parse response: {}", e)))?;
+            .map_err(|e| IpcClientError::ParseError(format!("Failed to parse response: {e}")))?;
 
         Ok(response)
     }
@@ -143,17 +144,20 @@ pub enum IpcClientError {
 
 /// Get socket path for an instance
 fn get_socket_path(instance_id: &InstanceId) -> Result<PathBuf, IpcClientError> {
-    // Try /run/user/{uid}/petaltongue first
+    use petal_tongue_core::constants::APP_DIR_NAME;
+
+    // Try /run/user/{uid}/{app_dir} first
     if let Ok(uid) = std::env::var("UID") {
-        let run_dir = PathBuf::from(format!("/run/user/{}/petaltongue", uid));
+        let run_dir = PathBuf::from(format!("/run/user/{uid}/{APP_DIR_NAME}"));
         if run_dir.exists() {
             return Ok(run_dir.join(format!("{}.sock", instance_id.as_str())));
         }
     }
 
-    // Fall back to /tmp/petaltongue
+    // Fall back to /tmp/{app_dir}
     Ok(PathBuf::from(format!(
-        "/tmp/petaltongue/{}.sock",
+        "/tmp/{}/{}.sock",
+        APP_DIR_NAME,
         instance_id.as_str()
     )))
 }

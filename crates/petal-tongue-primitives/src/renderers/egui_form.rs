@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 // Egui Form Renderer - GUI form rendering
 //
 // Deep Debt Principles:

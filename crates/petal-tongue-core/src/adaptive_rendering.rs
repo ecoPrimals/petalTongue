@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Adaptive rendering system for multi-device support
 //!
 //! This module enables petalTongue to adapt its UI based on device capabilities:
@@ -37,6 +38,7 @@ pub enum DeviceType {
 
 impl DeviceType {
     /// Detect device type from screen size and input methods
+    #[must_use]
     pub fn detect(screen_size: Option<(f32, f32)>, has_mouse: bool, has_touch: bool) -> Self {
         match screen_size {
             Some((w, h)) => {
@@ -71,13 +73,13 @@ impl DeviceType {
     }
 
     /// Get recommended UI complexity for this device type
+    #[must_use]
     pub fn recommended_complexity(&self) -> UIComplexity {
         match self {
             Self::Desktop | Self::TV => UIComplexity::Full,
             Self::Tablet => UIComplexity::Simplified,
-            Self::Phone => UIComplexity::Minimal,
+            Self::Phone | Self::Unknown => UIComplexity::Minimal,
             Self::Watch | Self::CLI => UIComplexity::Essential,
-            Self::Unknown => UIComplexity::Minimal,
         }
     }
 }
@@ -210,6 +212,7 @@ pub struct RenderingCapabilities {
 
 impl RenderingCapabilities {
     /// Detect capabilities from environment
+    #[must_use]
     pub fn detect() -> Self {
         let screen_size = Self::detect_screen_size();
         let has_mouse = Self::has_mouse();
@@ -251,9 +254,8 @@ impl RenderingCapabilities {
         // Performance tier (basic heuristic)
         let performance_tier = match device_type {
             DeviceType::Desktop | DeviceType::TV => PerformanceTier::High,
-            DeviceType::Tablet | DeviceType::Phone => PerformanceTier::Medium,
+            DeviceType::Tablet | DeviceType::Phone | DeviceType::Unknown => PerformanceTier::Medium,
             DeviceType::Watch | DeviceType::CLI => PerformanceTier::Low,
-            DeviceType::Unknown => PerformanceTier::Medium,
         };
 
         Self {
@@ -269,19 +271,19 @@ impl RenderingCapabilities {
     /// Detect screen size from environment
     fn detect_screen_size() -> Option<(f32, f32)> {
         // Try to get from DISPLAY environment variable
-        if let Ok(display) = std::env::var("DISPLAY") {
-            if !display.is_empty() {
-                // Assume desktop resolution for now
-                // TODO: Query actual screen size via winit or X11
-                return Some((1400.0, 900.0));
-            }
+        if let Ok(display) = std::env::var("DISPLAY")
+            && !display.is_empty()
+        {
+            // Assume desktop resolution for now
+            // TODO: Query actual screen size via winit or X11
+            return Some((1400.0, 900.0));
         }
 
         // Try Wayland
-        if let Ok(wayland) = std::env::var("WAYLAND_DISPLAY") {
-            if !wayland.is_empty() {
-                return Some((1400.0, 900.0));
-            }
+        if let Ok(wayland) = std::env::var("WAYLAND_DISPLAY")
+            && !wayland.is_empty()
+        {
+            return Some((1400.0, 900.0));
         }
 
         // No display detected
@@ -313,21 +315,25 @@ impl RenderingCapabilities {
     }
 
     /// Check if this device supports visual rendering
+    #[must_use]
     pub fn has_visual(&self) -> bool {
         self.supports_modality(|m| matches!(m, RenderingModality::Visual2D { .. }))
     }
 
     /// Check if this device supports audio
+    #[must_use]
     pub fn has_audio(&self) -> bool {
         self.supports_modality(|m| matches!(m, RenderingModality::Audio { .. }))
     }
 
     /// Check if this device supports haptics
+    #[must_use]
     pub fn has_haptic(&self) -> bool {
         self.supports_modality(|m| matches!(m, RenderingModality::Haptic { .. }))
     }
 
     /// Get visual resolution, if available
+    #[must_use]
     pub fn visual_resolution(&self) -> Option<(f32, f32)> {
         for modality in &self.modalities {
             if let RenderingModality::Visual2D { resolution, .. } = modality {

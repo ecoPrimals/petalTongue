@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Direct Device Backend - Runtime Discovery of Audio Hardware
 //!
 //! Discovers direct audio devices at runtime:
@@ -44,6 +45,7 @@ pub struct DirectBackend {
 
 impl DirectBackend {
     /// Create from discovered device
+    #[must_use]
     pub fn new(device: DiscoveredDevice) -> Self {
         Self { device, file: None }
     }
@@ -73,20 +75,20 @@ impl DirectBackend {
         let mut devices = Vec::new();
 
         // Pattern 1: Linux /dev/snd/pcmC*D*p (ALSA PCM devices)
-        if Path::new("/dev/snd").exists() {
-            if let Ok(entries) = std::fs::read_dir("/dev/snd") {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        if Path::new("/dev/snd").exists()
+            && let Ok(entries) = std::fs::read_dir("/dev/snd")
+        {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
-                    // Find PCM playback devices (format: pcmC0D0p)
-                    // 'p' suffix = playback, 'c' suffix = capture
-                    if name.starts_with("pcm") && name.ends_with("p") {
-                        devices.push(DiscoveredDevice {
-                            path,
-                            device_type: DeviceType::Pcm,
-                        });
-                    }
+                // Find PCM playback devices (format: pcmC0D0p)
+                // 'p' suffix = playback, 'c' suffix = capture
+                if name.starts_with("pcm") && name.ends_with('p') {
+                    devices.push(DiscoveredDevice {
+                        path,
+                        device_type: DeviceType::Pcm,
+                    });
                 }
             }
         }
@@ -104,7 +106,7 @@ impl DirectBackend {
             let path = if i == 0 {
                 PathBuf::from("/dev/dsp")
             } else {
-                PathBuf::from(format!("/dev/dsp{}", i))
+                PathBuf::from(format!("/dev/dsp{i}"))
             };
 
             if path.exists() {
@@ -120,7 +122,7 @@ impl DirectBackend {
         devices
     }
 
-    /// Write samples to device (like AudioCanvas!)
+    /// Write samples to device (like `AudioCanvas`!)
     fn write_samples_to_device(file: &mut File, samples: &[f32]) -> Result<()> {
         // Convert f32 [-1.0, 1.0] to i16 PCM [-32768, 32767]
         let i16_samples: Vec<i16> = samples

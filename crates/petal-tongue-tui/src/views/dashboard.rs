@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Dashboard View
 //!
 //! System overview showing primals, topology, and status.
@@ -123,7 +124,7 @@ fn render_primal_list(frame: &mut Frame, area: Rect, state: &TUIState) {
                 };
 
                 ListItem::new(Line::from(vec![
-                    Span::raw(format!("{} ", health_icon)),
+                    Span::raw(format!("{health_icon} ")),
                     Span::styled(&primal.name, Style::default().fg(Color::Cyan)),
                     Span::raw(" ("),
                     Span::styled(&primal.primal_type, Style::default().fg(Color::Magenta)),

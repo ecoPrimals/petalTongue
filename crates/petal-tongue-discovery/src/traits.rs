@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Traits for visualization data providers
 //!
 //! Any primal can implement `VisualizationDataProvider` to provide data
@@ -58,5 +59,5 @@ pub trait VisualizationDataProvider: Send + Sync {
 }
 
 // Keep DiscoveredProvider as an alias for backward compatibility
-#[allow(dead_code)] // Kept for backward compatibility but not actively used
+#[expect(dead_code)] // Kept for backward compatibility but not actively used
 pub type DiscoveredProvider = ProviderMetadata;

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Generic property system for universal node representation
 //!
 //! This module provides a completely generic property system that makes
@@ -54,7 +55,7 @@ impl PropertyValue {
         self.as_number().and_then(|n| {
             if (0.0..=255.0).contains(&n) {
                 // Range is already validated, so cast is safe
-                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
                 let value = n as u8;
                 Some(value)
             } else {

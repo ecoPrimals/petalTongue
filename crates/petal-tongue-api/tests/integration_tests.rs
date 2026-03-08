@@ -1,8 +1,8 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Integration tests for BiomeOS API client
 
 use petal_tongue_api::BiomeOSClient;
 use petal_tongue_core::test_fixtures::endpoints;
-use tokio;
 
 #[tokio::test]
 async fn test_client_creation() {

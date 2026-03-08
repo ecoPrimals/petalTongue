@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Graph Validation
 //!
 //! Validates graphs, nodes, and edges to ensure correctness.

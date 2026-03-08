@@ -21,6 +21,7 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 egui = { workspace = true }
 egui_extras = { workspace = true }
+egui_plot = { workspace = true }
 anyhow = { workspace = true }
 
 # Pure Rust audio file generation (no system dependencies - always available)

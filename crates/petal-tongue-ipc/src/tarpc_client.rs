@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # 🚀 tarpc Client for petalTongue
 //!
 //! **HIGH-PERFORMANCE PRIMAL-TO-PRIMAL RPC CLIENT**
@@ -179,7 +180,7 @@ impl TarpcClient {
         client
             .capabilities_list(ctx) // Semantic naming
             .await
-            .map_err(|e| TarpcClientError::Rpc(format!("capabilities_list failed: {}", e)))
+            .map_err(|e| TarpcClientError::Rpc(format!("capabilities_list failed: {e}")))
     }
 
     /// Discover primals by capability
@@ -203,7 +204,7 @@ impl TarpcClient {
         client
             .discovery_find_capability(ctx, capability.to_string()) // Semantic naming
             .await
-            .map_err(|e| TarpcClientError::Rpc(format!("discovery_find_capability failed: {}", e)))
+            .map_err(|e| TarpcClientError::Rpc(format!("discovery_find_capability failed: {e}")))
     }
 
     /// Get health status from remote primal
@@ -221,7 +222,7 @@ impl TarpcClient {
         client
             .health_check(ctx) // Semantic naming
             .await
-            .map_err(|e| TarpcClientError::Rpc(format!("health check failed: {}", e)))
+            .map_err(|e| TarpcClientError::Rpc(format!("health check failed: {e}")))
     }
 
     /// Get version information from remote primal
@@ -239,7 +240,7 @@ impl TarpcClient {
         client
             .version_get(ctx) // Semantic naming
             .await
-            .map_err(|e| TarpcClientError::Rpc(format!("version call failed: {}", e)))
+            .map_err(|e| TarpcClientError::Rpc(format!("version call failed: {e}")))
     }
 
     /// Get available protocols from remote primal
@@ -257,7 +258,7 @@ impl TarpcClient {
         client
             .protocols_list(ctx) // Semantic naming
             .await
-            .map_err(|e| TarpcClientError::Rpc(format!("protocols call failed: {}", e)))
+            .map_err(|e| TarpcClientError::Rpc(format!("protocols call failed: {e}")))
     }
 
     /// Render graph topology (requires "visualization" or "gpu-rendering" capability)
@@ -278,7 +279,7 @@ impl TarpcClient {
         client
             .ui_render_graph(ctx, request) // Semantic naming
             .await
-            .map_err(|e| TarpcClientError::Rpc(format!("ui_render_graph failed: {}", e)))
+            .map_err(|e| TarpcClientError::Rpc(format!("ui_render_graph failed: {e}")))
     }
 
     /// Get metrics from remote primal
@@ -296,7 +297,7 @@ impl TarpcClient {
         client
             .metrics_get(ctx) // Semantic naming
             .await
-            .map_err(|e| TarpcClientError::Rpc(format!("metrics_get failed: {}", e)))
+            .map_err(|e| TarpcClientError::Rpc(format!("metrics_get failed: {e}")))
     }
 
     /// Call method with dynamic params (for adapter integration)
@@ -320,7 +321,7 @@ impl TarpcClient {
             "get_capabilities" => {
                 let result = self.get_capabilities().await?;
                 serde_json::to_value(result).map_err(|e| {
-                    TarpcClientError::Serialization(format!("Failed to serialize: {}", e))
+                    TarpcClientError::Serialization(format!("Failed to serialize: {e}"))
                 })
             }
             "discover_capability" => {
@@ -335,47 +336,46 @@ impl TarpcClient {
 
                 let result = self.discover_capability(&capability).await?;
                 serde_json::to_value(result).map_err(|e| {
-                    TarpcClientError::Serialization(format!("Failed to serialize: {}", e))
+                    TarpcClientError::Serialization(format!("Failed to serialize: {e}"))
                 })
             }
             "health" => {
                 let result = self.health().await?;
                 serde_json::to_value(result).map_err(|e| {
-                    TarpcClientError::Serialization(format!("Failed to serialize: {}", e))
+                    TarpcClientError::Serialization(format!("Failed to serialize: {e}"))
                 })
             }
             "version" => {
                 let result = self.version().await?;
                 serde_json::to_value(result).map_err(|e| {
-                    TarpcClientError::Serialization(format!("Failed to serialize: {}", e))
+                    TarpcClientError::Serialization(format!("Failed to serialize: {e}"))
                 })
             }
             "protocols" => {
                 let result = self.protocols().await?;
                 serde_json::to_value(result).map_err(|e| {
-                    TarpcClientError::Serialization(format!("Failed to serialize: {}", e))
+                    TarpcClientError::Serialization(format!("Failed to serialize: {e}"))
                 })
             }
             "render_graph" => {
                 let request: RenderRequest = serde_json::from_value(params.ok_or_else(|| {
                     TarpcClientError::Configuration("Missing request parameter".to_string())
                 })?)
-                .map_err(|e| TarpcClientError::Serialization(format!("Invalid request: {}", e)))?;
+                .map_err(|e| TarpcClientError::Serialization(format!("Invalid request: {e}")))?;
 
                 let result = self.render_graph(request).await?;
                 serde_json::to_value(result).map_err(|e| {
-                    TarpcClientError::Serialization(format!("Failed to serialize: {}", e))
+                    TarpcClientError::Serialization(format!("Failed to serialize: {e}"))
                 })
             }
             "get_metrics" => {
                 let result = self.get_metrics().await?;
                 serde_json::to_value(result).map_err(|e| {
-                    TarpcClientError::Serialization(format!("Failed to serialize: {}", e))
+                    TarpcClientError::Serialization(format!("Failed to serialize: {e}"))
                 })
             }
             _ => Err(TarpcClientError::Configuration(format!(
-                "Unknown method: {}",
-                method
+                "Unknown method: {method}"
             ))),
         }
     }
@@ -474,8 +474,7 @@ impl TarpcClient {
         // Remove tarpc:// prefix
         let addr_str = endpoint.strip_prefix("tarpc://").ok_or_else(|| {
             TarpcClientError::Configuration(format!(
-                "Invalid tarpc endpoint (expected tarpc://host:port): {}",
-                endpoint
+                "Invalid tarpc endpoint (expected tarpc://host:port): {endpoint}"
             ))
         })?;
 
@@ -489,15 +488,14 @@ impl TarpcClient {
         // Split host:port
         let (host, port) = addr_str.rsplit_once(':').ok_or_else(|| {
             TarpcClientError::Configuration(format!(
-                "Invalid tarpc endpoint (missing port): {}",
-                addr_str
+                "Invalid tarpc endpoint (missing port): {addr_str}"
             ))
         })?;
 
         // Parse port
-        let port: u16 = port.parse().map_err(|e| {
-            TarpcClientError::Configuration(format!("Invalid port '{}': {}", port, e))
-        })?;
+        let port: u16 = port
+            .parse()
+            .map_err(|e| TarpcClientError::Configuration(format!("Invalid port '{port}': {e}")))?;
 
         // Resolve common hostnames (localhost aliases)
         let ip = match host {
@@ -511,8 +509,7 @@ impl TarpcClient {
                     // For unknown hostnames, provide helpful error
                     warn!("Cannot resolve hostname '{}': {}. Use IP address or set up DNS/hosts entry.", host, e);
                     TarpcClientError::Configuration(format!(
-                        "Invalid hostname or IP '{}': {}. tarpc requires IP addresses or 'localhost'. Use env vars like GPU_RENDERER_ENDPOINT to configure.",
-                        host, e
+                        "Invalid hostname or IP '{host}': {e}. tarpc requires IP addresses or 'localhost'. Use env vars like GPU_RENDERER_ENDPOINT to configure."
                     ))
                 })?
             }
@@ -598,7 +595,7 @@ mod tests {
     #[test]
     fn test_debug_impl() {
         let client = TarpcClient::new("tarpc://localhost:9001").unwrap();
-        let debug_str = format!("{:?}", client);
+        let debug_str = format!("{client:?}");
         assert!(debug_str.contains("TarpcClient"));
         assert!(debug_str.contains("localhost:9001"));
     }

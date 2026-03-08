@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Software Synthesis Backend - Pure Rust Audio Generation
 //!
 //! 100% Pure Rust, works everywhere!
@@ -16,6 +17,7 @@ pub struct SoftwareBackend {
 
 impl SoftwareBackend {
     /// Create a new software synthesis backend
+    #[must_use]
     pub fn new() -> Self {
         Self {
             sample_buffer: Vec::new(),

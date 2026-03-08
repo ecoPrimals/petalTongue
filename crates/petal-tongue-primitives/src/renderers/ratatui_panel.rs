@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Ratatui Panel Renderer
 //!
 //! Renders panel layouts in a terminal UI (TUI) context.

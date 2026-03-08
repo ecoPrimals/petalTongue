@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Silent Backend - Graceful Degradation
 //!
 //! Always available, never fails.
@@ -13,6 +14,7 @@ pub struct SilentBackend;
 
 impl SilentBackend {
     /// Create a new silent backend
+    #[must_use]
     pub fn new() -> Self {
         Self
     }

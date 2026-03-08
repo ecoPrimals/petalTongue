@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Audio sensor - Bidirectional I/O (speaker + microphone)
 //!
 //! Discovers audio capabilities for both output and input.
@@ -17,6 +18,7 @@ pub struct AudioSensor {
 
 impl AudioSensor {
     /// Create new audio sensor
+    #[must_use]
     pub fn new(has_output: bool, has_input: bool) -> Self {
         let bidirectional = has_output && has_input;
 
@@ -41,47 +43,44 @@ impl AudioSensor {
 
     /// Play a tone (minimal output)
     ///
-    /// EVOLVED: Capability-based audio using AudioCanvas (direct hardware)
+    /// EVOLVED: Capability-based audio using `AudioCanvas` (direct hardware)
     /// Primals discover audio capability at runtime rather than compile-time features
     pub async fn beep(&mut self, frequency: f32, duration_ms: u64) -> Result<()> {
         if !self.has_output {
             return Ok(());
         }
 
-        // Try AudioCanvas (direct /dev/snd access - pure Rust, no ALSA library!)
-        match Self::beep_audio_canvas(frequency, duration_ms) {
+        // /dev/snd access is blocking I/O -- move to blocking thread pool
+        let result =
+            tokio::task::spawn_blocking(move || Self::beep_audio_canvas(frequency, duration_ms))
+                .await
+                .map_err(|e| anyhow::anyhow!("beep task panicked: {e}"))?;
+
+        match result {
             Ok(()) => {
                 self.last_audio_event = Some(Instant::now());
                 return Ok(());
             }
             Err(e) => {
-                tracing::debug!("AudioCanvas unavailable: {}", e);
+                tracing::debug!("AudioCanvas unavailable: {e}");
             }
         }
 
-        // Fallback: Terminal bell (always works)
-        tracing::info!("🔔 Audio Canvas unavailable, using terminal bell");
-        println!("\x07"); // Bell character
+        tracing::info!("Audio Canvas unavailable, using terminal bell");
+        println!("\x07");
 
         self.last_audio_event = Some(Instant::now());
         Ok(())
     }
 
-    /// Try to beep using AudioCanvas (pure Rust, no C dependencies)
     fn beep_audio_canvas(frequency: f32, duration_ms: u64) -> Result<()> {
         use crate::audio_canvas::AudioCanvas;
         use crate::audio_pure_rust::{Waveform, generate_tone};
 
-        // Generate pure Rust tone (duration in seconds)
+        #[expect(clippy::cast_precision_loss, reason = "ms value is small")]
         let duration_secs = duration_ms as f32 / 1000.0;
-        let samples = generate_tone(
-            frequency,
-            duration_secs,
-            Waveform::Sine,
-            0.2, // amplitude
-        );
+        let samples = generate_tone(frequency, duration_secs, Waveform::Sine, 0.2);
 
-        // Write directly to /dev/snd (like framebuffer!)
         let mut canvas = AudioCanvas::open_default()?;
         canvas.write_samples(&samples)?;
 
@@ -183,9 +182,20 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_audio_beep() {
-        let mut sensor = AudioSensor::new(true, false);
+    async fn test_audio_beep_no_output() {
+        let mut sensor = AudioSensor::new(false, false);
         let result = sensor.beep(440.0, 100).await;
+        assert!(result.is_ok(), "beep with no output should be a no-op");
+    }
+
+    #[tokio::test]
+    #[ignore = "requires audio hardware (/dev/snd)"]
+    async fn test_audio_beep_hardware() {
+        let mut sensor = AudioSensor::new(true, false);
+        let result =
+            tokio::time::timeout(std::time::Duration::from_secs(5), sensor.beep(440.0, 100))
+                .await
+                .expect("beep should complete within 5s");
         assert!(result.is_ok());
     }
 }

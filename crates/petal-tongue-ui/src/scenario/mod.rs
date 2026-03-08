@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Scenario loading and management for benchTop demonstrations
 //!
 //! This module provides the core scenario system that allows petalTongue
@@ -14,7 +15,7 @@
 //! - **`ecosystem`**: Primal definitions, positions, and metrics
 //! - **`sensory`**: Sensory capability configuration for adaptive rendering
 //! - **`loader`**: Loading and validation logic
-//! - **`convert`**: Type conversions to core PrimalInfo
+//! - **`convert`**: Type conversions to core `PrimalInfo`
 //! - **`fixtures`**: Test fixtures (test-only)
 //!
 //! ## Architecture
@@ -27,21 +28,20 @@
 //!
 //! ## Usage
 //!
-//! ```rust
+//! ```rust,no_run
 //! use petal_tongue_ui::scenario::Scenario;
 //!
+//! # fn main() -> anyhow::Result<()> {
 //! // Load a scenario from JSON
 //! let scenario = Scenario::load("scenarios/demo.json")?;
 //!
-//! // Validate against device capabilities
-//! let caps = discover_sensory_capabilities();
-//! scenario.validate_capabilities(&caps)?;
-//!
-//! // Determine UI complexity for this device
-//! let complexity = scenario.determine_complexity(&caps);
+//! // Validate scenario configuration
+//! scenario.validate()?;
 //!
 //! // Convert to graph data
 //! let primals = scenario.to_primal_infos();
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! ## Design Philosophy

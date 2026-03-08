@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! System Metrics - Real-time system resource and Neural API metrics
 //!
 //! This module provides data structures for real-time system metrics including:
@@ -277,11 +278,11 @@ fn format_uptime(seconds: u64) -> String {
     let minutes = (seconds % 3_600) / 60;
 
     if days > 0 {
-        format!("{}d {}h {}m", days, hours, minutes)
+        format!("{days}d {hours}h {minutes}m")
     } else if hours > 0 {
-        format!("{}h {}m", hours, minutes)
+        format!("{hours}h {minutes}m")
     } else {
-        format!("{}m", minutes)
+        format!("{minutes}m")
     }
 }
 

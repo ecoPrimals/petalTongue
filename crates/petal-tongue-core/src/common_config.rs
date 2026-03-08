@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Common configuration for primals.
 //!
 //! Previously sourced from sourdough-core, now self-contained for independence.

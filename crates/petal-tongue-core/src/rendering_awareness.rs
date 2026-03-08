@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Rendering awareness - petalTongue's self-knowledge of its display state
 //!
 //! This is the "central nervous system" - motor (output) + sensory (input) awareness.
@@ -23,6 +24,7 @@ pub struct RenderingAwareness {
 
 impl RenderingAwareness {
     /// Create new rendering awareness system
+    #[must_use]
     pub fn new() -> Self {
         Self {
             motor: MotorState::new(),
@@ -60,6 +62,7 @@ impl RenderingAwareness {
     }
 
     /// Assess complete state (motor + sensory)
+    #[must_use]
     pub fn assess_self(&self) -> SelfAssessment {
         let motor_working = self.motor.is_functional();
         let sensory_working = self.sensory.is_functional();
@@ -115,16 +118,17 @@ impl RenderingAwareness {
     }
 
     /// Get metrics
+    #[must_use]
     pub fn metrics(&self) -> &RenderingMetrics {
         &self.metrics
     }
 
     /// Get time since last user interaction (for display verification)
+    #[must_use]
     pub fn time_since_last_interaction(&self) -> Duration {
         self.sensory
             .last_user_interaction
-            .map(|t| t.elapsed())
-            .unwrap_or_else(|| Duration::from_secs(9999))
+            .map_or_else(|| Duration::from_secs(9999), |t| t.elapsed())
     }
 }
 
@@ -198,21 +202,11 @@ impl SensoryState {
 }
 
 /// Substrate health monitoring
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 struct SubstrateHealth {
     responsive: bool,
     last_heartbeat: Option<Instant>,
     latency: Option<Duration>,
-}
-
-impl Default for SubstrateHealth {
-    fn default() -> Self {
-        Self {
-            responsive: false,
-            last_heartbeat: None,
-            latency: None,
-        }
-    }
 }
 
 /// Validation pipeline - tracks frame confirmation
@@ -322,7 +316,7 @@ pub struct SelfAssessment {
     // Bidirectional
     /// Whether the bidirectional loop is complete
     pub is_complete_loop: bool,
-    /// Rate of sensory confirmation (frames_confirmed / frames_sent)
+    /// Rate of sensory confirmation (`frames_confirmed` / `frames_sent`)
     pub confirmation_rate: f32,
 
     // User state
@@ -338,11 +332,13 @@ pub struct SelfAssessment {
 
 impl SelfAssessment {
     /// Check if everything is working
+    #[must_use]
     pub fn is_healthy(&self) -> bool {
         self.can_render && self.can_sense && self.is_complete_loop && self.substrate_responsive
     }
 
     /// Get overall health percentage
+    #[must_use]
     pub fn health_percentage(&self) -> f32 {
         let mut score = 0.0;
 
@@ -498,6 +494,6 @@ mod tests {
         let health = assessment.health_percentage();
 
         // Should be near 100% (all checks pass)
-        assert!(health > 95.0, "Health was {}", health);
+        assert!(health > 95.0, "Health was {health}");
     }
 }

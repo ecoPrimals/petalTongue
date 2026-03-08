@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Mock Provider - Testing and Graceful Degradation
 //!
 //! Provides demo device/primal/niche data for:
@@ -8,7 +9,7 @@
 //! # Mocks vs Production
 //!
 //! **IMPORTANT**: Mocks are ONLY for testing! This provider should never be
-//! used in production unless explicitly requested (SHOWCASE_MODE=true) or as
+//! used in production unless explicitly requested (`SHOWCASE_MODE=true`) or as
 //! a graceful fallback when the real provider is unavailable.
 
 use super::biomeos_integration::{Device, DeviceStatus, DeviceType, Health, NicheTemplate, Primal};
@@ -42,6 +43,7 @@ impl MockDeviceProvider {
     }
 
     /// Check if mock mode is requested
+    #[must_use]
     pub fn is_mock_mode_requested() -> bool {
         std::env::var("SHOWCASE_MODE")
             .unwrap_or_else(|_| "false".to_string())
@@ -50,16 +52,19 @@ impl MockDeviceProvider {
     }
 
     /// Get demo devices
+    #[must_use]
     pub fn get_devices(&self) -> Vec<Device> {
         self.devices.clone()
     }
 
     /// Get demo primals
+    #[must_use]
     pub fn get_primals_extended(&self) -> Vec<Primal> {
         self.primals.clone()
     }
 
     /// Get demo niche templates
+    #[must_use]
     pub fn get_niche_templates(&self) -> Vec<NicheTemplate> {
         self.templates.clone()
     }
@@ -304,7 +309,7 @@ impl Default for MockDeviceProvider {
     }
 }
 
-/// Implement VisualizationDataProvider for backward compatibility
+/// Implement `VisualizationDataProvider` for backward compatibility
 #[async_trait]
 impl VisualizationDataProvider for MockDeviceProvider {
     async fn get_primals(&self) -> Result<Vec<PrimalInfo>> {

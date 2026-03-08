@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! System Dashboard Sidebar
 //!
 //! Compact live system metrics always visible in the main UI
@@ -260,7 +261,7 @@ impl SystemDashboard {
 
             ui.add(
                 egui::ProgressBar::new(state.health)
-                    .text(format!("Health: {:.0}%", health_pct))
+                    .text(format!("Health: {health_pct:.0}%"))
                     .fill(health_color),
             );
 
@@ -268,7 +269,7 @@ impl SystemDashboard {
             let conf_pct = state.confidence * 100.0;
             ui.add(
                 egui::ProgressBar::new(state.confidence)
-                    .text(format!("Confidence: {:.0}%", conf_pct))
+                    .text(format!("Confidence: {conf_pct:.0}%"))
                     .fill(if conf_pct > 70.0 {
                         egui::Color32::from_rgb(100, 149, 237) // Cornflower blue
                     } else {
@@ -322,8 +323,7 @@ impl SystemDashboard {
 
             ui.label(
                 egui::RichText::new(format!(
-                    "{} Motor | {} Sensory | {} Loop",
-                    motor_icon, sensory_icon, loop_icon
+                    "{motor_icon} Motor | {sensory_icon} Sensory | {loop_icon} Loop"
                 ))
                 .size(10.0 * font_scale)
                 .color(palette.text_dim),
@@ -334,13 +334,13 @@ impl SystemDashboard {
             let input_status = proprioception.get_input_status();
 
             ui.label(
-                egui::RichText::new(format!("📤 {}", output_status))
+                egui::RichText::new(format!("📤 {output_status}"))
                     .size(9.0 * font_scale)
                     .color(palette.text_dim),
             );
 
             ui.label(
-                egui::RichText::new(format!("📥 {}", input_status))
+                egui::RichText::new(format!("📥 {input_status}"))
                     .size(9.0 * font_scale)
                     .color(palette.text_dim),
             );
@@ -430,7 +430,7 @@ impl SystemDashboard {
                 let health_pct = assessment.health_percentage();
                 ui.add(
                     egui::ProgressBar::new(health_pct / 100.0)
-                        .text(format!("{:.0}% Healthy", health_pct))
+                        .text(format!("{health_pct:.0}% Healthy"))
                         .fill(if health_pct > 80.0 {
                             egui::Color32::from_rgb(0, 200, 83) // Green
                         } else if health_pct > 50.0 {
@@ -621,14 +621,13 @@ mod tests {
     #[test]
     fn test_refresh_updates_metrics() {
         let mut dashboard = SystemDashboard::default();
+        // Force refresh interval to zero so no sleep is needed
+        dashboard.refresh_interval = Duration::ZERO;
+        dashboard.last_refresh = Instant::now() - Duration::from_secs(10);
         let initial_count = dashboard.cpu_history.len();
 
-        // Wait a bit to ensure refresh interval passes
-        std::thread::sleep(Duration::from_millis(1100));
+        dashboard.refresh(None);
 
-        dashboard.refresh(None); // No audio system in tests
-
-        // Should have added data
-        assert!(dashboard.cpu_history.len() >= initial_count);
+        assert!(dashboard.cpu_history.len() > initial_count);
     }
 }

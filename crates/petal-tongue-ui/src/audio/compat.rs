@@ -1,7 +1,8 @@
-//! Compatibility Layer - AudioSystemV2
+// SPDX-License-Identifier: AGPL-3.0-only
+//! Compatibility Layer - `AudioSystemV2`
 //!
 //! Provides backward-compatible synchronous API over the new substrate-agnostic
-//! AudioManager. This allows gradual migration of existing code.
+//! `AudioManager`. This allows gradual migration of existing code.
 
 use super::manager::AudioManager;
 use crate::audio_pure_rust::{SAMPLE_RATE, Waveform, generate_tone};
@@ -11,10 +12,10 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::{error, info};
 
-/// AudioSystemV2 - Backward-compatible wrapper around AudioManager
+/// `AudioSystemV2` - Backward-compatible wrapper around `AudioManager`
 ///
-/// Provides the same synchronous API as the old AudioSystem,
-/// but uses the new substrate-agnostic AudioManager internally.
+/// Provides the same synchronous API as the old `AudioSystem`,
+/// but uses the new substrate-agnostic `AudioManager` internally.
 pub struct AudioSystemV2 {
     manager: Arc<Mutex<AudioManager>>,
     runtime: tokio::runtime::Handle,
@@ -24,24 +25,27 @@ impl AudioSystemV2 {
     /// Create new audio system (blocking initialization)
     ///
     /// This is synchronous for backward compatibility, but internally
-    /// uses async AudioManager.
+    /// uses async `AudioManager`.
     pub fn new() -> Self {
         info!("🎵 Initializing AudioSystemV2 (substrate-agnostic)...");
 
         // Get or create tokio runtime
         let runtime = tokio::runtime::Handle::try_current().unwrap_or_else(|_| {
-            // Create a new runtime if not in async context
             tokio::runtime::Runtime::new()
-                .expect("Failed to create tokio runtime")
+                .unwrap_or_else(|e| {
+                    error!("Failed to create tokio runtime for audio: {}", e);
+                    panic!("Cannot initialize audio: tokio runtime creation failed");
+                })
                 .handle()
                 .clone()
         });
 
-        // Initialize AudioManager
+        // Initialize AudioManager (logs and panics on failure - no fallback available)
         let manager = runtime.block_on(async {
-            AudioManager::init()
-                .await
-                .expect("Failed to initialize AudioManager")
+            AudioManager::init().await.unwrap_or_else(|e| {
+                error!("Failed to initialize AudioManager: {}", e);
+                panic!("Cannot initialize audio: AudioManager failed");
+            })
         });
 
         info!("✅ AudioSystemV2 initialized");
@@ -97,6 +101,7 @@ impl AudioSystemV2 {
     }
 
     /// Get active backend name (for display)
+    #[must_use]
     pub fn active_backend(&self) -> Option<String> {
         self.runtime.block_on(async {
             let mgr = self.manager.lock().await;
@@ -105,6 +110,7 @@ impl AudioSystemV2 {
     }
 
     /// Get all available backends (for diagnostics)
+    #[must_use]
     pub fn available_backends(&self) -> Vec<String> {
         self.runtime.block_on(async {
             let mgr = self.manager.lock().await;
@@ -130,7 +136,7 @@ impl AudioSystemV2 {
     /// Each tuple: (frequency, volume, waveform)
     pub fn play_polyphonic(&self, tones: &[(f64, f32, Waveform)], duration: f64) -> Result<()> {
         // For compatibility, just play the first tone
-        if let Some((freq, vol, wave)) = tones.first() {
+        if let Some((freq, _vol, wave)) = tones.first() {
             self.play_tone(*wave, *freq as f32, duration as f32);
         }
         Ok(())

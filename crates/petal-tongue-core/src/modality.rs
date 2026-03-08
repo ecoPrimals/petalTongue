@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Modality System
 //!
 //! Defines the trait and types for GUI modalities.
@@ -65,7 +66,7 @@ pub struct AccessibilityFeatures {
 }
 
 /// What a modality can do
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ModalityCapabilities {
     /// Can handle user input (interactive)
     pub interactive: bool,
@@ -93,22 +94,6 @@ pub struct ModalityCapabilities {
 
     /// Accessibility features
     pub accessibility: AccessibilityFeatures,
-}
-
-impl Default for ModalityCapabilities {
-    fn default() -> Self {
-        Self {
-            interactive: false,
-            realtime: false,
-            export: false,
-            animation: false,
-            three_d: false,
-            audio: false,
-            haptic: false,
-            max_nodes: None,
-            accessibility: AccessibilityFeatures::default(),
-        }
-    }
 }
 
 /// Universal GUI Modality
@@ -152,6 +137,7 @@ pub struct ModalityRegistry {
 
 impl ModalityRegistry {
     /// Create new empty registry
+    #[must_use]
     pub fn new() -> Self {
         Self {
             modalities: indexmap::IndexMap::new(),
@@ -165,13 +151,15 @@ impl ModalityRegistry {
     }
 
     /// Check if a modality is registered
+    #[must_use]
     pub fn has(&self, name: &str) -> bool {
         self.modalities.contains_key(name)
     }
 
     /// Get a modality by name
+    #[must_use]
     pub fn get(&self, name: &str) -> Option<&dyn GUIModality> {
-        self.modalities.get(name).map(|m| m.as_ref())
+        self.modalities.get(name).map(std::convert::AsRef::as_ref)
     }
 
     /// Get mutable modality
@@ -179,7 +167,8 @@ impl ModalityRegistry {
         self.modalities.get_mut(name)
     }
 
-    /// Get all available modalities (filtered by is_available)
+    /// Get all available modalities (filtered by `is_available`)
+    #[must_use]
     pub fn available(&self) -> Vec<&str> {
         self.modalities
             .values()
@@ -189,6 +178,7 @@ impl ModalityRegistry {
     }
 
     /// Get all modalities by tier
+    #[must_use]
     pub fn by_tier(&self, tier: ModalityTier) -> Vec<&str> {
         self.modalities
             .values()
@@ -198,6 +188,7 @@ impl ModalityRegistry {
     }
 
     /// Auto-select best modality for environment
+    #[must_use]
     pub fn auto_select(&self) -> Option<&str> {
         // Try in order of preference:
         // 1. Tier 3 (Enhancement) - interactive GUI
@@ -213,10 +204,10 @@ impl ModalityRegistry {
             if !available.is_empty() {
                 // Prefer interactive modalities
                 for name in &available {
-                    if let Some(modality) = self.get(name) {
-                        if modality.capabilities().interactive {
-                            return Some(name);
-                        }
+                    if let Some(modality) = self.get(name)
+                        && modality.capabilities().interactive
+                    {
+                        return Some(name);
                     }
                 }
                 // Otherwise return first available

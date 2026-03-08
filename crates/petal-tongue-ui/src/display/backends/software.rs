@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Software Rendering Backend
 //!
 //! Pure Rust software rendering using softbuffer or pixels.
@@ -26,13 +27,10 @@ pub struct SoftwareDisplay {
 /// Software rendering backend type
 enum SoftwareBackend {
     /// VNC server (remote access)
-    #[allow(dead_code)]
     Vnc,
     /// WebSocket streaming (browser access)
-    #[allow(dead_code)]
     WebSocket,
     /// Window display (if available)
-    #[allow(dead_code)]
     Window,
     /// Memory buffer only (for testing/headless)
     Memory,
@@ -40,11 +38,13 @@ enum SoftwareBackend {
 
 impl SoftwareDisplay {
     /// Create new software display with default dimensions
+    #[must_use]
     pub fn new() -> Self {
         Self::with_dimensions(1920, 1080)
     }
 
     /// Create new software display with specific dimensions
+    #[must_use]
     pub fn with_dimensions(width: u32, height: u32) -> Self {
         let buffer_size = (width * height * 4) as usize;
         Self {
@@ -74,9 +74,8 @@ impl SoftwareDisplay {
                 drop(listener);
                 tracing::info!("✅ VNC backend available (port 5900 bindable)");
                 return true;
-            } else {
-                tracing::warn!("VNC port 5900 already in use");
             }
+            tracing::warn!("VNC port 5900 already in use");
         }
         false
     }
@@ -93,13 +92,12 @@ impl SoftwareDisplay {
                 .and_then(|p| p.parse().ok())
                 .unwrap_or(8765);
 
-            if let Ok(listener) = std::net::TcpListener::bind(format!("127.0.0.1:{}", port)) {
+            if let Ok(listener) = std::net::TcpListener::bind(format!("127.0.0.1:{port}")) {
                 drop(listener);
                 tracing::info!("✅ WebSocket backend available (port {} bindable)", port);
                 return true;
-            } else {
-                tracing::warn!("WebSocket port {} already in use", port);
             }
+            tracing::warn!("WebSocket port {} already in use", port);
         }
         false
     }
@@ -128,7 +126,7 @@ impl SoftwareDisplay {
         // VNC servers like x11vnc can monitor this file for updates
         if let Ok(vnc_output) = std::env::var("VNC_FRAME_OUTPUT") {
             match std::fs::write(&vnc_output, buffer) {
-                Ok(_) => {
+                Ok(()) => {
                     tracing::info!("✅ VNC frame written to {}", vnc_output);
                 }
                 Err(e) => {
@@ -177,7 +175,7 @@ impl SoftwareDisplay {
             let json_str = serde_json::to_string(&message).unwrap_or_else(|_| "{}".to_string());
 
             match std::fs::write(&ws_output, json_str) {
-                Ok(_) => {
+                Ok(()) => {
                     tracing::info!("✅ WebSocket frame written to {}", ws_output);
                 }
                 Err(e) => {

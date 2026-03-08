@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Retry logic with exponential backoff and jitter
 //!
 //! Modern async retry patterns for transient failures.
@@ -97,7 +98,9 @@ impl RetryPolicy {
             }
         }
 
-        Err(last_error.expect("last_error should be Some after loop"))
+        Err(last_error.unwrap_or_else(|| {
+            unreachable!("last_error is always Some after loop exhausts all attempts with failures")
+        }))
     }
 
     /// Execute with timeout per attempt
@@ -132,7 +135,7 @@ impl RetryPolicy {
         self.execute(|| async {
             tokio::time::timeout(timeout, f())
                 .await
-                .map_err(|_| anyhow::anyhow!("Operation timed out after {:?}", timeout))?
+                .map_err(|_| anyhow::anyhow!("Operation timed out after {timeout:?}"))?
                 .map_err(|e| anyhow::anyhow!(e))
         })
         .await

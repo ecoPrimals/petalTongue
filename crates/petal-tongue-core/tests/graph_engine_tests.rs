@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Comprehensive tests for graph_engine module
 //!
 //! Tests verify the core graph structure, layout algorithms, and node positioning.
@@ -26,8 +27,7 @@ fn test_position_distance() {
     let distance = pos1.distance_to(pos2);
     assert!(
         (distance - 5.0).abs() < 0.001,
-        "Expected distance 5.0, got {}",
-        distance
+        "Expected distance 5.0, got {distance}"
     );
 }
 
@@ -259,7 +259,7 @@ fn test_layout_algorithm_force_directed() {
 fn test_layout_algorithm_circular() {
     let mut graph = GraphEngine::new();
     for i in 0..5 {
-        let primal = create_test_primal(&format!("primal-{}", i), &format!("Primal {}", i));
+        let primal = create_test_primal(&format!("primal-{i}"), &format!("Primal {i}"));
         graph.add_node(primal);
     }
 
@@ -268,8 +268,8 @@ fn test_layout_algorithm_circular() {
 
     // Verify all nodes exist
     for i in 0..5 {
-        let node = graph.get_node(&format!("primal-{}", i));
-        assert!(node.is_some(), "Node {} should exist", i);
+        let node = graph.get_node(&format!("primal-{i}"));
+        assert!(node.is_some(), "Node {i} should exist");
     }
 }
 
@@ -395,7 +395,7 @@ fn test_complex_topology() {
     graph.add_node(center.clone());
 
     for i in 0..5 {
-        let primal = create_test_primal(&format!("node-{}", i), &format!("Node {}", i));
+        let primal = create_test_primal(&format!("node-{i}"), &format!("Node {i}"));
         graph.add_node(primal.clone());
         graph.add_edge(TopologyEdge {
             from: center.id.clone(),
@@ -420,7 +420,7 @@ fn create_test_primal(id: &str, name: &str) -> PrimalInfo {
         id,
         name,
         "test",
-        format!("http://test-{}:8080", id),
+        format!("http://test-{id}:8080"),
         vec![],
         PrimalHealthStatus::Healthy,
         0,

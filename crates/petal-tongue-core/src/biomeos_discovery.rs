@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! biomeOS Discovery Backend
 //!
 //! Implements capability-based discovery via biomeOS Neural API.
@@ -31,7 +32,7 @@ impl BiomeOsBackend {
         }
     }
 
-    /// Try to create from environment (XDG_RUNTIME_DIR or fallback)
+    /// Try to create from environment (`XDG_RUNTIME_DIR` or fallback)
     /// Create from environment with capability-based discovery
     ///
     /// # Socket Discovery Priority
@@ -58,14 +59,15 @@ impl BiomeOsBackend {
 
         // Priority 2: XDG runtime directory
         if let Ok(runtime_dir) = platform_dirs::runtime_dir() {
-            let socket_path = runtime_dir.join("biomeos").join("neural-api.sock");
+            let socket_path =
+                runtime_dir.join(format!("{}.sock", crate::constants::BIOMEOS_SOCKET_NAME));
             if socket_path.exists() {
                 return Ok(Self::new(socket_path.to_string_lossy().to_string()));
             }
         }
 
         // Priority 3: Legacy /tmp fallback
-        let fallback = std::path::PathBuf::from("/tmp/biomeos-neural-api.sock");
+        let fallback = crate::constants::biomeos_legacy_socket();
         if fallback.exists() {
             return Ok(Self::new(fallback.to_string_lossy().to_string()));
         }
@@ -114,10 +116,10 @@ impl DiscoveryBackend for BiomeOsBackend {
 
         // Parse primals from result
         let primals: Vec<BiomeOsPrimal> = serde_json::from_value(result)
-            .map_err(|e| DiscoveryError::CommunicationError(format!("Parse error: {}", e)))?;
+            .map_err(|e| DiscoveryError::CommunicationError(format!("Parse error: {e}")))?;
 
         // Convert to PrimalEndpoint
-        Ok(primals.into_iter().map(|p| p.into()).collect())
+        Ok(primals.into_iter().map(std::convert::Into::into).collect())
     }
 
     async fn subscribe(&self, _query: &CapabilityQuery) -> Result<(), DiscoveryError> {
@@ -161,11 +163,11 @@ struct JsonRpcRequest {
 /// JSON-RPC response
 #[derive(Deserialize)]
 struct JsonRpcResponse {
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     jsonrpc: String,
     result: Option<Value>,
     error: Option<JsonRpcError>,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     id: u64,
 }
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Simple audio test - generates and saves a WAV file
 
 use petal_tongue_ui::audio_pure_rust::{SAMPLE_RATE, Waveform, export_wav, generate_tone};

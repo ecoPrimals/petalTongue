@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Integration tests for Songbird discovery
 //!
 //! Tests the complete flow from Songbird client to visualization provider.

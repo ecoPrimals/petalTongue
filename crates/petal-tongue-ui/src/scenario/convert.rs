@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Type conversions for scenarios
 //!
 //! Converts scenario definitions to core types used by the visualization system.
@@ -9,21 +10,23 @@ use crate::scenario::ecosystem::PrimalDefinition;
 use crate::scenario::types::Scenario;
 
 impl Scenario {
-    /// Convert scenario primals to PrimalInfo for the graph system
+    /// Convert scenario primals to `PrimalInfo` for the graph system
     ///
-    /// Maps the scenario's primal definitions to the core PrimalInfo type
+    /// Maps the scenario's primal definitions to the core `PrimalInfo` type
     /// used by the visualization and graph systems.
+    #[must_use]
     pub fn to_primal_infos(&self) -> Vec<PrimalInfo> {
         self.ecosystem
             .primals
             .iter()
-            .map(|p| p.to_primal_info())
+            .map(super::ecosystem::PrimalDefinition::to_primal_info)
             .collect()
     }
 }
 
 impl PrimalDefinition {
-    /// Convert a scenario primal to core PrimalInfo
+    /// Convert a scenario primal to core `PrimalInfo`
+    #[must_use]
     pub fn to_primal_info(&self) -> PrimalInfo {
         let mut properties = HashMap::new();
 

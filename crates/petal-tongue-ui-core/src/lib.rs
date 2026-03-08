@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+#![forbid(unsafe_code)]
 //! Pure Rust UI generation for petalTongue
 //!
 //! This crate provides platform-agnostic UI generation with ZERO native dependencies.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Scenario-based visualization provider for benchTop demonstrations
 //!
 //! This provider loads data from JSON scenario files for rich, pre-defined
@@ -98,9 +99,9 @@ impl ScenarioVisualizationProvider {
                     endpoints: None,
                     metadata: None,
                     properties,
-                    #[allow(deprecated)]
+                    #[expect(deprecated)]
                     trust_level: None,
-                    #[allow(deprecated)]
+                    #[expect(deprecated)]
                     family_id: Some(p.family),
                 }
             })

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # petalTongue Modalities
 //!
 //! Concrete implementations of GUI modalities for petalTongue.
@@ -22,7 +23,7 @@
 //! independently or simultaneously.
 
 #![warn(missing_docs)]
-#![deny(unsafe_code)]
+#![forbid(unsafe_code)]
 
 pub mod png_gui;
 pub mod svg_gui;

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Unix socket JSON-RPC server for petalTongue
 //!
 //! Provides a port-free, file-system-based IPC mechanism for local inter-primal
@@ -135,7 +136,7 @@ impl UnixSocketServer {
                     JsonRpcResponse::error(
                         json!(null),
                         error_codes::PARSE_ERROR,
-                        format!("Parse error: {}", e),
+                        format!("Parse error: {e}"),
                     )
                 }
             };
@@ -313,14 +314,14 @@ impl UnixSocketServer {
                     Err(e) => JsonRpcResponse::error(
                         request.id.clone(),
                         error_codes::INTERNAL_ERROR,
-                        format!("Render error: {}", e),
+                        format!("Render error: {e}"),
                     ),
                 }
             }
             _ => JsonRpcResponse::error(
                 request.id.clone(),
                 error_codes::INVALID_PARAMS,
-                format!("Unsupported content_type: {}", content_type),
+                format!("Unsupported content_type: {content_type}"),
             ),
         }
     }
@@ -590,7 +591,7 @@ impl UnixSocketServer {
             _ => JsonRpcResponse::error(
                 id,
                 error_codes::INVALID_PARAMS,
-                format!("Unsupported format: {}", format),
+                format!("Unsupported format: {format}"),
             ),
         }
     }
@@ -633,13 +634,11 @@ mod tests {
         let socket_str = server.socket_path.to_str().unwrap();
         assert!(
             socket_str.ends_with("petaltongue-test-family-default.sock"),
-            "Socket path should end with family and node ID, got: {}",
-            socket_str
+            "Socket path should end with family and node ID, got: {socket_str}"
         );
         assert!(
             socket_str.contains("/tmp") || socket_str.contains("/run/user"),
-            "Socket path should use XDG runtime directory, got: {}",
-            socket_str
+            "Socket path should use XDG runtime directory, got: {socket_str}"
         );
 
         // Clean up
@@ -731,7 +730,7 @@ mod tests {
         let result = response.result.unwrap();
         assert!(result["capabilities"].is_array());
         let caps = result["capabilities"].as_array().unwrap();
-        assert!(caps.len() > 0);
+        assert!(!caps.is_empty());
 
         unsafe {
             std::env::remove_var("XDG_RUNTIME_DIR");

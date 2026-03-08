@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Rich error types for scenario loading and validation
 //!
 //! This module provides context-rich error types that help users understand
@@ -90,7 +91,7 @@ impl ScenarioError {
     pub fn missing_field(field: impl Into<String>, suggestion: Option<impl Into<String>>) -> Self {
         Self::MissingField {
             field: field.into(),
-            suggestion: suggestion.map(|s| s.into()),
+            suggestion: suggestion.map(std::convert::Into::into),
         }
     }
 
@@ -116,7 +117,7 @@ impl ScenarioError {
         Self::PanelConfig {
             message: message.into(),
             panel_index,
-            panel_type: panel_type.map(|s| s.into()),
+            panel_type: panel_type.map(std::convert::Into::into),
         }
     }
 
@@ -131,23 +132,27 @@ impl ScenarioError {
             message: message.into(),
             capability_type: capability_type.into(),
             invalid_value: invalid_value.into(),
-            valid_options: valid_options.into_iter().map(|s| s.into()).collect(),
+            valid_options: valid_options
+                .into_iter()
+                .map(std::convert::Into::into)
+                .collect(),
         }
     }
 
     /// Get user-friendly help text
+    #[must_use]
     pub fn help_text(&self) -> Option<String> {
         match self {
             Self::MissingField { field, suggestion } => {
-                let mut help = format!("Add the '{}' field to your scenario JSON.", field);
+                let mut help = format!("Add the '{field}' field to your scenario JSON.");
                 if let Some(sug) = suggestion {
-                    help.push_str(&format!("\n\nExample:\n{}", sug));
+                    help.push_str(&format!("\n\nExample:\n{sug}"));
                 }
                 Some(help)
             }
             Self::InvalidValue {
                 field, expected, ..
-            } => Some(format!("The '{}' field should be: {}", field, expected)),
+            } => Some(format!("The '{field}' field should be: {expected}")),
             Self::UnknownPanelType {
                 panel_type,
                 available_types,

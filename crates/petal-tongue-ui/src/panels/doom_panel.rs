@@ -1,10 +1,11 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Doom Panel - Embeds Doom within petalTongue
 //!
 //! This is our first test of the panel system. As we implement this,
 //! we'll discover gaps in petalTongue's architecture and evolve to fill them.
 
-use doom_core::{DoomInstance, DoomKey, DoomState, Result};
-use egui::{ColorImage, Key, TextureHandle, Ui, Vec2};
+use doom_core::{DoomInstance, DoomKey, Result};
+use egui::{ColorImage, Key, TextureHandle, Ui};
 use std::collections::HashSet;
 use std::time::Instant;
 
@@ -39,6 +40,7 @@ pub struct DoomPanel {
 
 impl DoomPanel {
     /// Create a new Doom panel
+    #[must_use]
     pub fn new() -> Self {
         Self {
             doom: None,
@@ -68,7 +70,7 @@ impl DoomPanel {
     /// Update game logic
     fn update(&mut self) {
         if let Some(doom) = &mut self.doom {
-            let elapsed = self.last_update.elapsed();
+            let _elapsed = self.last_update.elapsed();
 
             // 🎮 FIX: Tick every frame for smooth movement!
             // Original Doom ran at 35 Hz, but modern games tick at render rate
@@ -99,7 +101,7 @@ impl DoomPanel {
         if let Err(e) = self.ensure_initialized(640, 480) {
             ui.colored_label(
                 egui::Color32::RED,
-                format!("Doom initialization failed: {}", e),
+                format!("Doom initialization failed: {e}"),
             );
             return;
         }
@@ -193,21 +195,21 @@ impl DoomPanel {
 
             // Send key_down for newly pressed keys
             for key in &current_keys {
-                if !self.prev_keys_down.contains(key) {
-                    if let Some(doom_key) = Self::egui_to_doom_key_static(*key) {
-                        doom.key_down(doom_key);
-                        tracing::debug!("🎮 Key DOWN: {:?}", key);
-                    }
+                if !self.prev_keys_down.contains(key)
+                    && let Some(doom_key) = Self::egui_to_doom_key_static(*key)
+                {
+                    doom.key_down(doom_key);
+                    tracing::debug!("🎮 Key DOWN: {:?}", key);
                 }
             }
 
             // Send key_up for newly released keys
             for key in &self.prev_keys_down {
-                if !current_keys.contains(key) {
-                    if let Some(doom_key) = Self::egui_to_doom_key_static(*key) {
-                        doom.key_up(doom_key);
-                        tracing::debug!("🎮 Key UP: {:?}", key);
-                    }
+                if !current_keys.contains(key)
+                    && let Some(doom_key) = Self::egui_to_doom_key_static(*key)
+                {
+                    doom.key_up(doom_key);
+                    tracing::debug!("🎮 Key UP: {:?}", key);
                 }
             }
 

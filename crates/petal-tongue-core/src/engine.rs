@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Universal Rendering Engine
 //!
 //! Core engine that manages topology state and coordinates modalities.
@@ -120,21 +121,25 @@ impl UniversalRenderingEngine {
     }
 
     /// Get state (read-only)
+    #[must_use]
     pub fn state(&self) -> Arc<RwLock<EngineState>> {
         self.state.clone()
     }
 
     /// Get event bus
+    #[must_use]
     pub fn events(&self) -> Arc<EventBus> {
         self.events.clone()
     }
 
     /// Get modalities (read-only)
+    #[must_use]
     pub fn modalities(&self) -> Arc<RwLock<ModalityRegistry>> {
         self.modalities.clone()
     }
 
     /// Get compute providers (read-only)
+    #[must_use]
     pub fn compute(&self) -> Arc<RwLock<ComputeRegistry>> {
         self.compute.clone()
     }
@@ -215,7 +220,7 @@ impl UniversalRenderingEngine {
 
         let modality = registry
             .get_mut(modality_name)
-            .ok_or_else(|| anyhow::anyhow!("Modality not found: {}", modality_name))?;
+            .ok_or_else(|| anyhow::anyhow!("Modality not found: {modality_name}"))?;
 
         // Initialize
         modality.initialize(self.clone()).await?;
@@ -264,11 +269,7 @@ impl UniversalRenderingEngine {
     }
 }
 
-impl Default for UniversalRenderingEngine {
-    fn default() -> Self {
-        Self::new().expect("Failed to create engine")
-    }
-}
+// Default impl removed: use UniversalRenderingEngine::new()? for proper error handling.
 
 #[cfg(test)]
 mod tests {

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Instance management for petalTongue
 //!
 //! This module provides the foundation for managing multiple petalTongue instances,
@@ -36,7 +37,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 use uuid::Uuid;
@@ -241,7 +242,7 @@ impl InstanceRegistry {
         }
     }
 
-    /// Load registry from disk
+    /// Load registry from the default platform path.
     ///
     /// Creates a new empty registry if the file doesn't exist.
     ///
@@ -249,28 +250,41 @@ impl InstanceRegistry {
     ///
     /// Returns error if file cannot be read or parsed
     pub fn load() -> Result<Self, InstanceError> {
-        let path = get_registry_path()?;
+        Self::load_from(&get_registry_path()?)
+    }
 
+    /// Load registry from an explicit path.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if file cannot be read or parsed
+    pub fn load_from(path: &Path) -> Result<Self, InstanceError> {
         if !path.exists() {
             return Ok(Self::new());
         }
 
-        let contents = fs::read_to_string(&path)
+        let contents = fs::read_to_string(path)
             .map_err(|e| InstanceError::IoError(format!("Failed to read registry: {e}")))?;
 
         ron::from_str(&contents)
             .map_err(|e| InstanceError::ParseError(format!("Failed to parse registry: {e}")))
     }
 
-    /// Save registry to disk
+    /// Save registry to the default platform path.
     ///
     /// # Errors
     ///
     /// Returns error if file cannot be written
     pub fn save(&self) -> Result<(), InstanceError> {
-        let path = get_registry_path()?;
+        self.save_to(&get_registry_path()?)
+    }
 
-        // Ensure directory exists
+    /// Save registry to an explicit path.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if file cannot be written
+    pub fn save_to(&self, path: &Path) -> Result<(), InstanceError> {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).map_err(|e| {
                 InstanceError::IoError(format!("Failed to create registry directory: {e}"))
@@ -280,7 +294,7 @@ impl InstanceRegistry {
         let contents = ron::ser::to_string_pretty(self, ron::ser::PrettyConfig::default())
             .map_err(|e| InstanceError::SerializeError(format!("Failed to serialize: {e}")))?;
 
-        fs::write(&path, contents)
+        fs::write(path, contents)
             .map_err(|e| InstanceError::IoError(format!("Failed to write registry: {e}")))?;
 
         Ok(())
@@ -470,7 +484,7 @@ fn process_exists(pid: u32) -> bool {
 
         // SAFETY: Converting u32 PID to i32. PIDs are typically small positive numbers.
         // On Linux, max PID is ~4M by default (well within i32 range).
-        #[allow(clippy::cast_possible_wrap)]
+        #[expect(clippy::cast_possible_wrap)]
         match kill(Pid::from_raw(pid as i32), None) {
             Ok(()) | Err(nix::errno::Errno::EPERM) => true, // Process exists (with or without permission)
             Err(nix::errno::Errno::ESRCH | _) => false, // No such process or other error, assume dead
@@ -490,9 +504,9 @@ fn process_exists(pid: u32) -> bool {
 /// Uses platform-specific directory resolution (Pure Rust, zero deps!)
 fn get_base_dir() -> Result<PathBuf, InstanceError> {
     crate::platform_dirs::data_dir()
-        .map(|dir| dir.join("petaltongue"))
+        .map(|dir| dir.join(crate::constants::APP_DIR_NAME))
         .map_err(|e| {
-            InstanceError::DirectoryError(format!("Could not determine data directory: {}", e))
+            InstanceError::DirectoryError(format!("Could not determine data directory: {e}"))
         })
 }
 
@@ -502,18 +516,21 @@ fn get_base_dir() -> Result<PathBuf, InstanceError> {
 ///
 /// Currently always succeeds, but returns Result for future extensibility
 /// (e.g., permission checks, validation)
-#[allow(clippy::unnecessary_wraps)]
+#[expect(clippy::unnecessary_wraps)]
 fn get_socket_dir() -> Result<PathBuf, InstanceError> {
-    // Try /run/user/{uid}/petaltongue first (more secure)
+    // Try /run/user/{uid}/{app_dir} first (more secure)
     if let Ok(uid) = std::env::var("UID") {
-        let run_dir = PathBuf::from(format!("/run/user/{uid}/petaltongue"));
+        let run_dir = PathBuf::from(format!(
+            "/run/user/{uid}/{}",
+            crate::constants::APP_DIR_NAME
+        ));
         if run_dir.parent().is_some_and(std::path::Path::exists) {
             return Ok(run_dir);
         }
     }
 
-    // Fall back to /tmp/petaltongue
-    Ok(PathBuf::from("/tmp/petaltongue"))
+    // Fall back to /tmp/{app_dir}
+    Ok(PathBuf::from(crate::constants::LEGACY_TMP_PREFIX).join(crate::constants::APP_DIR_NAME))
 }
 
 /// Get the path to the instance registry file
@@ -568,15 +585,11 @@ mod tests {
         // Heartbeat should never decrease (monotonic)
         assert!(
             second_heartbeat >= first_heartbeat,
-            "Heartbeat should update timestamp (first: {}, second: {})",
-            first_heartbeat,
-            second_heartbeat
+            "Heartbeat should update timestamp (first: {first_heartbeat}, second: {second_heartbeat})"
         );
         assert!(
             third_heartbeat >= second_heartbeat,
-            "Heartbeat should maintain monotonicity (second: {}, third: {})",
-            second_heartbeat,
-            third_heartbeat
+            "Heartbeat should maintain monotonicity (second: {second_heartbeat}, third: {third_heartbeat})"
         );
     }
 
@@ -629,11 +642,11 @@ mod tests {
 
         // Age should be 0 or very small (< 1 second)
         let age = instance.age_seconds();
-        assert!(age < 2, "Age should be very small at creation: {}", age);
+        assert!(age < 2, "Age should be very small at creation: {age}");
     }
 
     #[test]
-    #[allow(clippy::similar_names)]
+    #[expect(clippy::similar_names)]
     fn test_registry_multiple_instances() {
         let mut registry = InstanceRegistry::new();
 
@@ -669,10 +682,10 @@ mod tests {
         let mut instance = match instance_result {
             Ok(i) => i,
             Err(InstanceError::IoError(msg)) if msg.contains("Permission denied") => {
-                eprintln!("Skipping test_registry_find_by_window: {}", msg);
+                eprintln!("Skipping test_registry_find_by_window: {msg}");
                 return; // Skip test in restricted environments
             }
-            Err(e) => panic!("Unexpected error: {:?}", e),
+            Err(e) => panic!("Unexpected error: {e:?}"),
         };
 
         instance.set_window_id(0x0012_3456);
@@ -779,7 +792,7 @@ mod tests {
     #[test]
     fn test_instance_id_display() {
         let id = InstanceId::new();
-        let displayed = format!("{}", id);
+        let displayed = format!("{id}");
         let as_str = id.as_str();
 
         assert_eq!(displayed, as_str);

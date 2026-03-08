@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # SVG GUI Modality
 //!
 //! Vector export to SVG files (Tier 1: Always Available).

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Graph Canvas - Interactive Visual Graph Editor
 //!
 //! Provides a canvas for building Neural API graphs through drag-and-drop interactions.
@@ -402,95 +403,95 @@ impl GraphCanvas {
         }
 
         // Handle drag start
-        if response.drag_started() {
-            if let Some(pointer_pos) = response.interact_pointer_pos() {
-                if ctrl_held {
-                    // Ctrl+Drag: Start drawing edge
-                    if let Some(hovered) = &self.hovered_node {
-                        self.drawing_edge = Some(EdgeDrawState {
-                            from_node: hovered.clone(),
-                            current_pos: pointer_pos,
-                        });
-                    }
-                } else if let Some(hovered) = &self.hovered_node {
-                    // Drag node
-                    if let Some(node) = self.graph.get_node(hovered) {
-                        let world_pos = self.screen_to_world(pointer_pos, canvas_rect);
-                        let offset =
-                            Vec2::new(node.position.x - world_pos.x, node.position.y - world_pos.y);
-                        self.drag_state = Some(DragState::Node {
-                            node_id: hovered.clone(),
-                            offset,
-                        });
-                    }
-                } else if shift_held {
-                    // Shift+Drag: Pan camera
-                    self.drag_state = Some(DragState::Pan {
-                        start_camera_pos: self.camera.position,
-                    });
-                } else {
-                    // Drag on empty space: Selection box
-                    self.drag_state = Some(DragState::SelectBox {
-                        start: pointer_pos,
-                        current: pointer_pos,
+        if response.drag_started()
+            && let Some(pointer_pos) = response.interact_pointer_pos()
+        {
+            if ctrl_held {
+                // Ctrl+Drag: Start drawing edge
+                if let Some(hovered) = &self.hovered_node {
+                    self.drawing_edge = Some(EdgeDrawState {
+                        from_node: hovered.clone(),
+                        current_pos: pointer_pos,
                     });
                 }
+            } else if let Some(hovered) = &self.hovered_node {
+                // Drag node
+                if let Some(node) = self.graph.get_node(hovered) {
+                    let world_pos = self.screen_to_world(pointer_pos, canvas_rect);
+                    let offset =
+                        Vec2::new(node.position.x - world_pos.x, node.position.y - world_pos.y);
+                    self.drag_state = Some(DragState::Node {
+                        node_id: hovered.clone(),
+                        offset,
+                    });
+                }
+            } else if shift_held {
+                // Shift+Drag: Pan camera
+                self.drag_state = Some(DragState::Pan {
+                    start_camera_pos: self.camera.position,
+                });
+            } else {
+                // Drag on empty space: Selection box
+                self.drag_state = Some(DragState::SelectBox {
+                    start: pointer_pos,
+                    current: pointer_pos,
+                });
             }
         }
 
         // Handle dragging
-        if response.dragged() {
-            if let Some(pointer_pos) = response.interact_pointer_pos() {
-                // Extract drag state to avoid borrow issues
-                let drag_state_clone = self.drag_state.clone();
+        if response.dragged()
+            && let Some(pointer_pos) = response.interact_pointer_pos()
+        {
+            // Extract drag state to avoid borrow issues
+            let drag_state_clone = self.drag_state.clone();
 
-                match drag_state_clone {
-                    Some(DragState::Node { node_id, offset }) => {
-                        // Move node
-                        let world_pos = self.screen_to_world(pointer_pos, canvas_rect);
-                        let new_pos = Vec2::new(world_pos.x + offset.x, world_pos.y + offset.y);
-                        let final_pos = if self.snap_to_grid {
-                            new_pos.snap(self.grid_size)
-                        } else {
-                            new_pos
-                        };
+            match drag_state_clone {
+                Some(DragState::Node { node_id, offset }) => {
+                    // Move node
+                    let world_pos = self.screen_to_world(pointer_pos, canvas_rect);
+                    let new_pos = Vec2::new(world_pos.x + offset.x, world_pos.y + offset.y);
+                    let final_pos = if self.snap_to_grid {
+                        new_pos.snap(self.grid_size)
+                    } else {
+                        new_pos
+                    };
 
-                        if let Some(node) = self.graph.get_node_mut(&node_id) {
-                            node.position = final_pos;
-                        }
+                    if let Some(node) = self.graph.get_node_mut(&node_id) {
+                        node.position = final_pos;
                     }
-                    Some(DragState::SelectBox { start, mut current }) => {
-                        // Update selection box
-                        current = pointer_pos;
-                        self.drag_state = Some(DragState::SelectBox { start, current });
-
-                        // Select nodes in box
-                        let box_rect = Rect::from_two_pos(start, current);
-                        if !ctrl_held {
-                            self.clear_selection();
-                        }
-
-                        for node in &self.graph.nodes {
-                            let node_screen = self.world_to_screen(node.position, canvas_rect);
-                            if box_rect.contains(node_screen) {
-                                self.selected_nodes.insert(node.id.clone());
-                            }
-                        }
-                    }
-                    Some(DragState::Pan { start_camera_pos }) => {
-                        // Pan camera
-                        self.camera.position.x =
-                            start_camera_pos.x - response.drag_delta().x / self.camera.zoom;
-                        self.camera.position.y =
-                            start_camera_pos.y - response.drag_delta().y / self.camera.zoom;
-                    }
-                    None => {}
                 }
+                Some(DragState::SelectBox { start, mut current }) => {
+                    // Update selection box
+                    current = pointer_pos;
+                    self.drag_state = Some(DragState::SelectBox { start, current });
 
-                // Update edge drawing position
-                if let Some(edge_state) = &mut self.drawing_edge {
-                    edge_state.current_pos = pointer_pos;
+                    // Select nodes in box
+                    let box_rect = Rect::from_two_pos(start, current);
+                    if !ctrl_held {
+                        self.clear_selection();
+                    }
+
+                    for node in &self.graph.nodes {
+                        let node_screen = self.world_to_screen(node.position, canvas_rect);
+                        if box_rect.contains(node_screen) {
+                            self.selected_nodes.insert(node.id.clone());
+                        }
+                    }
                 }
+                Some(DragState::Pan { start_camera_pos }) => {
+                    // Pan camera
+                    self.camera.position.x =
+                        start_camera_pos.x - response.drag_delta().x / self.camera.zoom;
+                    self.camera.position.y =
+                        start_camera_pos.y - response.drag_delta().y / self.camera.zoom;
+                }
+                None => {}
+            }
+
+            // Update edge drawing position
+            if let Some(edge_state) = &mut self.drawing_edge {
+                edge_state.current_pos = pointer_pos;
             }
         }
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! ecoPrimals-specific family/lineage adapter
 //!
 //! This adapter knows how to render genetic lineage (family_id, DNA) from
@@ -107,7 +108,7 @@ impl PropertyAdapter for EcoPrimalFamilyAdapter {
                 badge: None,
                 fill_color: None,
                 ring_color: Some(color), // Ring color shows family
-                tooltip: Some(format!("Family: {}", family_id)),
+                tooltip: Some(format!("Family: {family_id}")),
             });
         }
         None

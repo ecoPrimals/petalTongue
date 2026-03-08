@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Songbird-based visualization data provider
 //!
 //! Wraps SongbirdClient to implement the VisualizationDataProvider trait.

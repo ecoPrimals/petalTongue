@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Awakening Overlay for Egui
 //!
 //! Full-screen awakening experience with visual flower animation.
@@ -27,6 +28,7 @@ pub struct AwakeningOverlay {
 
 impl AwakeningOverlay {
     /// Create new awakening overlay
+    #[must_use]
     pub fn new() -> Self {
         Self {
             flower_renderer: VisualFlowerRenderer::new(),
@@ -47,11 +49,13 @@ impl AwakeningOverlay {
     }
 
     /// Check if active
+    #[must_use]
     pub fn is_active(&self) -> bool {
         self.active
     }
 
     /// Check if should transition to tutorial
+    #[must_use]
     pub fn should_transition_to_tutorial(&self) -> bool {
         self.transition_to_tutorial
     }

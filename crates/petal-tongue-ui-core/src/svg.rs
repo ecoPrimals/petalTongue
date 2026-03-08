@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Pure Rust SVG generation
 //!
 //! Generates SVG visualizations of primal topologies without any native dependencies.
@@ -5,7 +6,7 @@
 
 use crate::trait_def::{ExportFormat, UICapability, UniversalUI};
 /// Utility functions for health visualization
-use crate::utils::{health_to_color, health_to_percentage};
+use crate::utils::health_to_color;
 use anyhow::Result;
 use petal_tongue_core::GraphEngine;
 use std::sync::{Arc, RwLock};

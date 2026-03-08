@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Dynamic schema system for live-evolving data structures
 //!
 //! This module provides schema-agnostic data handling that enables petalTongue
@@ -30,9 +31,39 @@
 //! ```
 
 use anyhow::{Context, Result};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use std::fmt;
+
+/// Deserialize `SchemaVersion` from either a string ("2.0.0") or struct { major, minor, patch }
+fn deserialize_version<'de, D>(deserializer: D) -> Result<Option<SchemaVersion>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum VersionInput {
+        String(String),
+        Struct { major: u32, minor: u32, patch: u32 },
+    }
+
+    let input: Option<VersionInput> = Option::deserialize(deserializer)?;
+    match input {
+        None => Ok(None),
+        Some(VersionInput::String(s)) => SchemaVersion::parse(&s)
+            .map(Some)
+            .map_err(serde::de::Error::custom),
+        Some(VersionInput::Struct {
+            major,
+            minor,
+            patch,
+        }) => Ok(Some(SchemaVersion {
+            major,
+            minor,
+            patch,
+        })),
+    }
+}
 
 /// Schema version for backward/forward compatibility
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -47,6 +78,7 @@ pub struct SchemaVersion {
 
 impl SchemaVersion {
     /// Create a new schema version
+    #[must_use]
     pub const fn new(major: u32, minor: u32, patch: u32) -> Self {
         Self {
             major,
@@ -59,7 +91,7 @@ impl SchemaVersion {
     pub fn parse(s: &str) -> Result<Self> {
         let parts: Vec<&str> = s.split('.').collect();
         if parts.len() != 3 {
-            anyhow::bail!("Invalid version format: {}", s);
+            anyhow::bail!("Invalid version format: {s}");
         }
 
         Ok(Self {
@@ -74,6 +106,7 @@ impl SchemaVersion {
     /// Compatible means:
     /// - Same major version (no breaking changes)
     /// - This version >= other version (forward compatible)
+    #[must_use]
     pub fn is_compatible_with(&self, other: &Self) -> bool {
         self.major == other.major && self >= other
     }
@@ -111,6 +144,7 @@ pub enum DynamicValue {
 
 impl DynamicValue {
     /// Get value as string, if possible
+    #[must_use]
     pub fn as_str(&self) -> Option<&str> {
         match self {
             DynamicValue::String(s) => Some(s),
@@ -119,6 +153,7 @@ impl DynamicValue {
     }
 
     /// Get value as number, if possible
+    #[must_use]
     pub fn as_f64(&self) -> Option<f64> {
         match self {
             DynamicValue::Number(n) => Some(*n),
@@ -127,6 +162,7 @@ impl DynamicValue {
     }
 
     /// Get value as boolean, if possible
+    #[must_use]
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             DynamicValue::Boolean(b) => Some(*b),
@@ -135,6 +171,7 @@ impl DynamicValue {
     }
 
     /// Get value as array, if possible
+    #[must_use]
     pub fn as_array(&self) -> Option<&[DynamicValue]> {
         match self {
             DynamicValue::Array(arr) => Some(arr),
@@ -143,6 +180,7 @@ impl DynamicValue {
     }
 
     /// Get value as object, if possible
+    #[must_use]
     pub fn as_object(&self) -> Option<&HashMap<String, DynamicValue>> {
         match self {
             DynamicValue::Object(obj) => Some(obj),
@@ -151,11 +189,13 @@ impl DynamicValue {
     }
 
     /// Check if value is null
+    #[must_use]
     pub fn is_null(&self) -> bool {
         matches!(self, DynamicValue::Null)
     }
 
-    /// Convert to serde_json::Value for compatibility
+    /// Convert to `serde_json::Value` for compatibility
+    #[must_use]
     pub fn to_json_value(&self) -> serde_json::Value {
         match self {
             DynamicValue::Null => serde_json::Value::Null,
@@ -165,7 +205,7 @@ impl DynamicValue {
             ),
             DynamicValue::String(s) => serde_json::Value::String(s.clone()),
             DynamicValue::Array(arr) => {
-                serde_json::Value::Array(arr.iter().map(|v| v.to_json_value()).collect())
+                serde_json::Value::Array(arr.iter().map(DynamicValue::to_json_value).collect())
             }
             DynamicValue::Object(obj) => serde_json::Value::Object(
                 obj.iter()
@@ -175,7 +215,7 @@ impl DynamicValue {
         }
     }
 
-    /// Create from serde_json::Value
+    /// Create from `serde_json::Value`
     pub fn from_json_value(value: serde_json::Value) -> Self {
         match value {
             serde_json::Value::Null => DynamicValue::Null,
@@ -210,7 +250,12 @@ impl From<DynamicValue> for serde_json::Value {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DynamicData {
     /// Schema version (if present)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Accepts both string ("2.0.0") and struct { major, minor, patch } formats
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_version"
+    )]
     pub version: Option<SchemaVersion>,
 
     /// All fields as dynamic values
@@ -220,6 +265,7 @@ pub struct DynamicData {
 
 impl DynamicData {
     /// Create empty dynamic data
+    #[must_use]
     pub fn new() -> Self {
         Self {
             version: None,
@@ -228,6 +274,7 @@ impl DynamicData {
     }
 
     /// Create with schema version
+    #[must_use]
     pub fn with_version(version: SchemaVersion) -> Self {
         Self {
             version: Some(version),
@@ -236,21 +283,25 @@ impl DynamicData {
     }
 
     /// Get a field value
+    #[must_use]
     pub fn get(&self, key: &str) -> Option<&DynamicValue> {
         self.fields.get(key)
     }
 
     /// Get a field value as string
+    #[must_use]
     pub fn get_str(&self, key: &str) -> Option<&str> {
         self.get(key)?.as_str()
     }
 
     /// Get a field value as number
+    #[must_use]
     pub fn get_f64(&self, key: &str) -> Option<f64> {
         self.get(key)?.as_f64()
     }
 
     /// Get a field value as boolean
+    #[must_use]
     pub fn get_bool(&self, key: &str) -> Option<bool> {
         self.get(key)?.as_bool()
     }
@@ -302,6 +353,7 @@ pub struct MigrationRegistry {
 
 impl MigrationRegistry {
     /// Create a new migration registry
+    #[must_use]
     pub fn new() -> Self {
         Self {
             migrations: Vec::new(),
@@ -331,7 +383,7 @@ impl MigrationRegistry {
             }
         }
 
-        anyhow::bail!("No migration found for {} → {}", from, to)
+        anyhow::bail!("No migration found for {from} → {to}")
     }
 }
 

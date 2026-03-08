@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Event System
 //!
 //! Coordinates events across multiple modalities.
@@ -125,6 +126,7 @@ pub struct EventBus {
 
 impl EventBus {
     /// Create new event bus
+    #[must_use]
     pub fn new() -> Self {
         let (tx, _rx) = broadcast::channel(1000);
         Self {
@@ -152,7 +154,7 @@ impl EventBus {
     pub async fn broadcast(&self, event: EngineEvent) -> Result<usize, String> {
         self.tx
             .send(event)
-            .map_err(|e| format!("Failed to broadcast event: {}", e))
+            .map_err(|e| format!("Failed to broadcast event: {e}"))
     }
 
     /// Get subscriber count
@@ -170,6 +172,7 @@ impl Default for EventBus {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     #[tokio::test]
     async fn test_event_broadcast() {
@@ -193,11 +196,16 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 2); // 2 receivers
 
-        // Both receivers should get the event
-        let received1 = rx1.recv().await.unwrap();
-        let received2 = rx2.recv().await.unwrap();
+        // Both receivers should get the event (with timeout to prevent hangs)
+        let received1 = tokio::time::timeout(Duration::from_secs(1), rx1.recv())
+            .await
+            .expect("recv timed out")
+            .expect("recv failed");
+        let received2 = tokio::time::timeout(Duration::from_secs(1), rx2.recv())
+            .await
+            .expect("recv timed out")
+            .expect("recv failed");
 
-        // Verify events match
         match (&received1, &received2) {
             (
                 EngineEvent::GraphUpdated {
@@ -210,7 +218,7 @@ mod tests {
                 assert_eq!(a1, a2);
                 assert_eq!(a1.len(), 1);
             }
-            _ => panic!("Unexpected event type"),
+            _ => unreachable!("expected GraphUpdated events"),
         }
     }
 
@@ -244,13 +252,16 @@ mod tests {
         };
         bus.broadcast(event).await.unwrap();
 
-        let received = rx.recv().await.unwrap();
+        let received = tokio::time::timeout(Duration::from_secs(1), rx.recv())
+            .await
+            .expect("recv timed out")
+            .expect("recv failed");
         match received {
             EngineEvent::SelectionChanged { selected: s } => {
                 assert_eq!(s.len(), 1);
                 assert!(s.contains("node1"));
             }
-            _ => panic!("Wrong event type"),
+            _ => unreachable!("expected SelectionChanged event"),
         }
     }
 }

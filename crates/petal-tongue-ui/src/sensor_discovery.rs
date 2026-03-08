@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Runtime Sensor Discovery
 //!
 //! Discovers available input/output peripherals at startup.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Web mode - HTTP/WebSocket server
 //!
 //! Pure Rust! ✅

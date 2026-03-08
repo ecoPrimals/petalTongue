@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Socket Audio Backend - Runtime Discovery of Socket-Based Audio Servers
 //!
 //! Discovers socket-based audio servers at runtime:
-//! - PipeWire (modern Linux)
-//! - PulseAudio (legacy Linux)
+//! - `PipeWire` (modern Linux)
+//! - `PulseAudio` (legacy Linux)
 //! - Future systems we don't know about yet!
 //!
 //! NO hardcoding - just discovers whatever socket-based audio exists!
@@ -28,6 +29,7 @@ pub struct SocketBackend {
 
 impl SocketBackend {
     /// Create from discovered socket
+    #[must_use]
     pub fn new(socket: DiscoveredSocket) -> Self {
         Self {
             socket,
@@ -99,9 +101,8 @@ impl SocketBackend {
 
                 // Check accessibility
                 let mode = metadata.permissions().mode();
-                let accessible = (mode & 0o600) != 0 || (mode & 0o006) != 0;
 
-                accessible
+                (mode & 0o600) != 0 || (mode & 0o006) != 0
             }
             #[cfg(not(unix))]
             {

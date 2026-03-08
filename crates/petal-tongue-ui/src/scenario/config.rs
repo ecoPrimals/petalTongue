@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! UI configuration types for scenarios
 //!
 //! Defines UI-related configuration structures including panels,
@@ -39,7 +40,7 @@ impl UiConfig {
         for (idx, panel) in self.custom_panels.iter().enumerate() {
             panel
                 .validate()
-                .with_context(|| format!("Custom panel {} validation failed", idx))?;
+                .with_context(|| format!("Custom panel {idx} validation failed"))?;
         }
 
         // Validate performance config
@@ -128,7 +129,7 @@ impl Default for FeatureFlags {
 /// Custom panel configuration (for embedded apps like Doom, web browsers, etc.)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CustomPanelConfig {
-    /// Panel type identifier (e.g., "doom_game", "web_view", "video_player")
+    /// Panel type identifier (e.g., "`doom_game`", "`web_view`", "`video_player`")
     #[serde(rename = "type")]
     pub panel_type: String,
 

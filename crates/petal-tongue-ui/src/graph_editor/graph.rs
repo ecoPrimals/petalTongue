@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Graph Data Structure
 //!
 //! Core graph representation for collaborative intelligence.
@@ -14,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use tracing::debug;
 
-use super::edge::{DependencyType, GraphEdge};
+use super::edge::GraphEdge;
 use super::node::GraphNode;
 use super::validation::GraphValidator;
 
@@ -107,7 +108,7 @@ impl Graph {
     pub fn remove_node(&mut self, node_id: &str) -> Result<Vec<String>> {
         // Check node exists
         if !self.nodes.contains_key(node_id) {
-            anyhow::bail!("Node with id '{}' not found", node_id);
+            anyhow::bail!("Node with id '{node_id}' not found");
         }
 
         // Remove node
@@ -138,7 +139,7 @@ impl Graph {
     pub fn modify_node(&mut self, node_id: &str, updated_node: GraphNode) -> Result<()> {
         // Check node exists
         if !self.nodes.contains_key(node_id) {
-            anyhow::bail!("Node with id '{}' not found", node_id);
+            anyhow::bail!("Node with id '{node_id}' not found");
         }
 
         // Validate updated node
@@ -201,7 +202,7 @@ impl Graph {
         self.edges.retain(|edge| edge.id != edge_id);
 
         if self.edges.len() == initial_len {
-            anyhow::bail!("Edge with id '{}' not found", edge_id);
+            anyhow::bail!("Edge with id '{edge_id}' not found");
         }
 
         debug!("Removed edge '{}'", edge_id);
@@ -448,6 +449,7 @@ pub struct GraphStats {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::graph_editor::DependencyType;
 
     #[test]
     fn test_create_empty_graph() {
