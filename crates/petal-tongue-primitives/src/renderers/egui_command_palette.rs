@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Egui Command Palette Renderer
 
 use crate::command_palette::CommandPalette;

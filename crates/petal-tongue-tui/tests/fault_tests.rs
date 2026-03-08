@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Fault Injection Tests for petalTongue Rich TUI
 //!
 //! Tests error handling and graceful degradation

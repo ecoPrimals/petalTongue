@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Runtime Sensory Capability Discovery
 //!
 //! This module implements platform-specific detection of available
@@ -9,7 +10,7 @@
 //! - **Linux**: X11/Wayland display detection, ALSA/PulseAudio, input devices
 //! - **Windows**: Win32 APIs for display, audio, input
 //! - **macOS**: Core Graphics, Core Audio, HID
-//! - **Web**: WebGL, WebAudio, Pointer Events, Touch Events
+//! - **Web**: WebGL, `WebAudio`, Pointer Events, Touch Events
 //!
 //! # Discovery Process
 //!
@@ -277,6 +278,7 @@ impl SensoryCapabilities {
 /// This is useful for testing different UI complexity levels without
 /// actual hardware detection.
 #[cfg(test)]
+#[must_use]
 pub fn mock_capabilities(
     visual: Option<VisualOutputCapability>,
     has_keyboard: bool,
@@ -343,7 +345,7 @@ mod tests {
 
         // Should determine some UI complexity
         let complexity = caps.determine_ui_complexity();
-        println!("Detected complexity: {}", complexity);
+        println!("Detected complexity: {complexity}");
     }
 
     #[test]

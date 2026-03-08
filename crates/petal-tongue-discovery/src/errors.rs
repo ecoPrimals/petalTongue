@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Rich error types for discovery operations
 //!
 //! Modern, idiomatic error handling with `thiserror` and full context chains.
@@ -198,7 +199,7 @@ mod tests {
             attempted: 2,
             sources: "test".to_string(),
         };
-        let debug_str = format!("{:?}", err);
+        let debug_str = format!("{err:?}");
         assert!(debug_str.contains("NoProvidersFound"));
         assert!(debug_str.contains("attempted"));
     }

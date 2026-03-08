@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Screen sensor - Display output with verification
 //!
 //! Discovers display capabilities and provides verification of visibility.
@@ -32,6 +33,7 @@ pub struct ScreenSensor {
 
 impl ScreenSensor {
     /// Create new screen sensor
+    #[must_use]
     pub fn new(display_type: DisplayType, width: usize, height: usize) -> Self {
         let capabilities = SensorCapabilities {
             sensor_type: SensorType::Screen,
@@ -61,18 +63,15 @@ impl ScreenSensor {
 
     /// Send heartbeat to check if display is responsive
     pub async fn send_heartbeat(&mut self) -> Result<()> {
-        match self.display_type {
-            DisplayType::Terminal => {
-                // Query cursor position as heartbeat
-                print!("\x1b[6n");
-                self.last_heartbeat = Some(Instant::now());
-                Ok(())
-            }
-            _ => {
-                // For other displays, assume responsive if we got here
-                self.last_heartbeat = Some(Instant::now());
-                Ok(())
-            }
+        if self.display_type == DisplayType::Terminal {
+            // Query cursor position as heartbeat
+            print!("\x1b[6n");
+            self.last_heartbeat = Some(Instant::now());
+            Ok(())
+        } else {
+            // For other displays, assume responsive if we got here
+            self.last_heartbeat = Some(Instant::now());
+            Ok(())
         }
     }
 }
@@ -139,11 +138,11 @@ pub enum DisplayType {
 /// Discover screen capabilities
 pub async fn discover() -> Option<ScreenSensor> {
     // Method 1: Terminal
-    if atty::is(atty::Stream::Stdout) {
-        if let Some((width, height)) = term_size::dimensions() {
-            tracing::debug!("Discovered terminal screen: {}x{}", width, height);
-            return Some(ScreenSensor::new(DisplayType::Terminal, width, height));
-        }
+    if atty::is(atty::Stream::Stdout)
+        && let Some((width, height)) = term_size::dimensions()
+    {
+        tracing::debug!("Discovered terminal screen: {}x{}", width, height);
+        return Some(ScreenSensor::new(DisplayType::Terminal, width, height));
     }
 
     // Method 2: Framebuffer (discover actual dimensions)
@@ -151,10 +150,9 @@ pub async fn discover() -> Option<ScreenSensor> {
         if let Ok((width, height)) = query_framebuffer_dimensions("/dev/fb0") {
             tracing::debug!("Discovered framebuffer screen: {}x{}", width, height);
             return Some(ScreenSensor::new(DisplayType::Framebuffer, width, height));
-        } else {
-            tracing::warn!("Framebuffer exists but couldn't read dimensions, using defaults");
-            return Some(ScreenSensor::new(DisplayType::Framebuffer, 1920, 1080));
         }
+        tracing::warn!("Framebuffer exists but couldn't read dimensions, using defaults");
+        return Some(ScreenSensor::new(DisplayType::Framebuffer, 1920, 1080));
     }
 
     // Method 3: Window (discover actual dimensions from environment)
@@ -167,10 +165,9 @@ pub async fn discover() -> Option<ScreenSensor> {
         if let Some((width, height)) = query_display_dimensions() {
             tracing::debug!("Discovered window screen: {}x{}", width, height);
             return Some(ScreenSensor::new(DisplayType::Window, width, height));
-        } else {
-            tracing::debug!("Window display detected, using default dimensions");
-            return Some(ScreenSensor::new(DisplayType::Window, 1400, 900));
         }
+        tracing::debug!("Window display detected, using default dimensions");
+        return Some(ScreenSensor::new(DisplayType::Window, 1400, 900));
     }
 
     None
@@ -203,7 +200,7 @@ impl FbVarScreeninfo {
     }
 }
 
-/// FBIOGET_VSCREENINFO ioctl command number
+/// `FBIOGET_VSCREENINFO` ioctl command number
 /// This is the Linux framebuffer ioctl for querying screen info
 const FBIOGET_VSCREENINFO: u32 = 0x4600;
 
@@ -218,7 +215,7 @@ const FBIOGET_VSCREENINFO: u32 = 0x4600;
 /// 4. Properly validated (checks return codes)
 fn query_framebuffer_dimensions(fb_path: &str) -> Result<(usize, usize)> {
     use std::fs::File;
-    use std::os::unix::io::{AsFd, AsRawFd};
+    use std::os::unix::io::AsRawFd;
 
     let file = File::open(fb_path)?;
     let fd = file.as_raw_fd();
@@ -246,8 +243,8 @@ fn query_framebuffer_dimensions(fb_path: &str) -> Result<(usize, usize)> {
     // Used by production systems: mpv, mplayer, kmscon, and many more.
     let result = unsafe {
         // Using libc directly is standard for ioctl - even rustix uses unsafe for this
-        let libc_result = libc::ioctl(fd, FBIOGET_VSCREENINFO as _, &mut var_info);
-        libc_result
+
+        libc::ioctl(fd, FBIOGET_VSCREENINFO.into(), &mut var_info)
     };
 
     if result == 0 {
@@ -265,10 +262,10 @@ fn query_display_dimensions() -> Option<(usize, usize)> {
     // Try multiple methods in priority order
 
     // Method 1: X11 (if DISPLAY is set)
-    if std::env::var("DISPLAY").is_ok() {
-        if let Some(dims) = query_x11_dimensions() {
-            return Some(dims);
-        }
+    if std::env::var("DISPLAY").is_ok()
+        && let Some(dims) = query_x11_dimensions()
+    {
+        return Some(dims);
     }
 
     // Method 2: Wayland (if WAYLAND_DISPLAY is set)
@@ -328,7 +325,7 @@ fn query_x11_dimensions() -> Option<(usize, usize)> {
 }
 
 /// Query X11 display dimensions (DEPRECATED - kept for compatibility)
-#[allow(dead_code)]
+#[expect(dead_code)]
 fn query_x11_dimensions_legacy() -> Option<(usize, usize)> {
     // DEPRECATED: This function used external commands (xrandr, xdpyinfo)
     // Now replaced with pure Rust (winit) via query_x11_dimensions()
@@ -336,53 +333,43 @@ fn query_x11_dimensions_legacy() -> Option<(usize, usize)> {
 
     use std::process::Command;
 
-    if let Ok(output) = Command::new("xrandr").arg("--current").output() {
-        if let Ok(stdout) = String::from_utf8(output.stdout) {
-            // Parse xrandr output for current resolution
-            // Look for lines like: "1920x1080    60.00*+"
-            for line in stdout.lines() {
-                if line.contains('*') {
-                    // Current mode has asterisk
-                    if let Some(resolution) = line.split_whitespace().next() {
-                        if let Some((w, h)) = resolution.split_once('x') {
-                            if let (Ok(width), Ok(height)) =
-                                (w.parse::<usize>(), h.parse::<usize>())
-                            {
-                                tracing::debug!(
-                                    "Discovered X11 dimensions via xrandr: {}x{}",
-                                    width,
-                                    height
-                                );
-                                return Some((width, height));
-                            }
-                        }
-                    }
+    if let Ok(output) = Command::new("xrandr").arg("--current").output()
+        && let Ok(stdout) = String::from_utf8(output.stdout)
+    {
+        // Parse xrandr output for current resolution
+        // Look for lines like: "1920x1080    60.00*+"
+        for line in stdout.lines() {
+            if line.contains('*') {
+                // Current mode has asterisk
+                if let Some(resolution) = line.split_whitespace().next()
+                    && let Some((w, h)) = resolution.split_once('x')
+                    && let (Ok(width), Ok(height)) = (w.parse::<usize>(), h.parse::<usize>())
+                {
+                    tracing::debug!("Discovered X11 dimensions via xrandr: {}x{}", width, height);
+                    return Some((width, height));
                 }
             }
         }
     }
 
     // Fallback: Try xdpyinfo
-    if let Ok(output) = Command::new("xdpyinfo").output() {
-        if let Ok(stdout) = String::from_utf8(output.stdout) {
-            // Look for "dimensions:    1920x1080 pixels"
-            for line in stdout.lines() {
-                if line.trim().starts_with("dimensions:") {
-                    let parts: Vec<&str> = line.split_whitespace().collect();
-                    if parts.len() >= 2 {
-                        if let Some((w, h)) = parts[1].split_once('x') {
-                            if let (Ok(width), Ok(height)) =
-                                (w.parse::<usize>(), h.parse::<usize>())
-                            {
-                                tracing::debug!(
-                                    "Discovered X11 dimensions via xdpyinfo: {}x{}",
-                                    width,
-                                    height
-                                );
-                                return Some((width, height));
-                            }
-                        }
-                    }
+    if let Ok(output) = Command::new("xdpyinfo").output()
+        && let Ok(stdout) = String::from_utf8(output.stdout)
+    {
+        // Look for "dimensions:    1920x1080 pixels"
+        for line in stdout.lines() {
+            if line.trim().starts_with("dimensions:") {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() >= 2
+                    && let Some((w, h)) = parts[1].split_once('x')
+                    && let (Ok(width), Ok(height)) = (w.parse::<usize>(), h.parse::<usize>())
+                {
+                    tracing::debug!(
+                        "Discovered X11 dimensions via xdpyinfo: {}x{}",
+                        width,
+                        height
+                    );
+                    return Some((width, height));
                 }
             }
         }

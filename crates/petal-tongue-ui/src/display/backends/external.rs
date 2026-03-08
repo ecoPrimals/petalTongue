@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! External Display Server Backend
 //!
 //! Traditional display server support (X11/Wayland/Windows/macOS).
@@ -38,6 +39,7 @@ pub enum ExternalDisplayType {
 
 impl ExternalDisplay {
     /// Create new external display backend
+    #[must_use]
     pub fn new() -> Self {
         Self {
             width: 1920,
@@ -47,6 +49,7 @@ impl ExternalDisplay {
     }
 
     /// Create external display with specific dimensions
+    #[must_use]
     pub fn with_dimensions(width: u32, height: u32) -> Self {
         Self {
             width,

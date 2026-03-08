@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Egui Table Renderer
 //!
 //! Renders tables in an egui GUI context.

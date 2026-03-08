@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Universal UI trait definition
 //!
 //! Defines the platform-agnostic interface that all UI implementations must satisfy.

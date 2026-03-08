@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Process Viewer Integration
 //!
 //! Real-time process monitoring using sysinfo.
@@ -30,7 +31,7 @@ pub struct ProcessViewerTool {
     processes: Vec<ProcessInfo>,
     filter_text: String,
     sort_by: SortColumn,
-    #[allow(dead_code)] // TODO: Add toggle for showing system processes
+    #[expect(dead_code)] // TODO: Add toggle for showing system processes
     show_all: bool, // Show all processes or only user processes
     max_display: usize,
 }

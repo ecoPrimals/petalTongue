@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Socket path resolution for ecoPrimals ecosystem
 //!
 //! Provides capability-based socket path resolution following the biomeOS convention:
@@ -6,6 +7,7 @@
 //! This enables zero-configuration discovery and inter-primal communication.
 
 use anyhow::Result;
+use petal_tongue_core::constants::APP_DIR_NAME;
 use std::env;
 use std::path::PathBuf;
 
@@ -80,7 +82,7 @@ pub fn get_petaltongue_socket_path() -> Result<PathBuf> {
 
     match get_runtime_dir() {
         Ok(runtime_dir) => {
-            let path = runtime_dir.join(format!("petaltongue-{}-{}.sock", family_id, node_id));
+            let path = runtime_dir.join(format!("{APP_DIR_NAME}-{family_id}-{node_id}.sock"));
 
             // Ensure runtime directory exists
             std::fs::create_dir_all(&runtime_dir)?;
@@ -89,7 +91,7 @@ pub fn get_petaltongue_socket_path() -> Result<PathBuf> {
         }
         Err(_) => {
             // Priority 3: Fallback to /tmp (last resort)
-            let path = PathBuf::from(format!("/tmp/petaltongue-{}-{}.sock", family_id, node_id));
+            let path = PathBuf::from(format!("/tmp/{APP_DIR_NAME}-{family_id}-{node_id}.sock"));
 
             // Ensure /tmp exists (it should, but be defensive)
             std::fs::create_dir_all("/tmp")?;
@@ -146,7 +148,7 @@ pub fn get_runtime_dir() -> Result<PathBuf> {
     // Try XDG_RUNTIME_DIR first (standard)
     if let Ok(dir) = env::var("XDG_RUNTIME_DIR") {
         let path = PathBuf::from(dir);
-        if path.exists() || path.parent().map_or(false, |p| p.exists()) {
+        if path.exists() || path.parent().is_some_and(std::path::Path::exists) {
             return Ok(path);
         }
     }
@@ -154,10 +156,10 @@ pub fn get_runtime_dir() -> Result<PathBuf> {
     // Fallback to /run/user/<uid>
     // Use `id -u` command to get UID in a portable way
     let uid = get_current_uid()?;
-    let runtime_dir = PathBuf::from(format!("/run/user/{}", uid));
+    let runtime_dir = PathBuf::from(format!("/run/user/{uid}"));
 
     // Check if directory exists (don't require it, caller will create)
-    if runtime_dir.exists() || runtime_dir.parent().map_or(false, |p| p.exists()) {
+    if runtime_dir.exists() || runtime_dir.parent().is_some_and(std::path::Path::exists) {
         Ok(runtime_dir)
     } else {
         anyhow::bail!(
@@ -224,13 +226,12 @@ pub fn discover_primal_socket(
 
     // Priority 2: XDG runtime directory
     if let Ok(runtime_dir) = get_runtime_dir() {
-        return Ok(runtime_dir.join(format!("{}-{}-{}.sock", primal_name, family, node)));
+        return Ok(runtime_dir.join(format!("{primal_name}-{family}-{node}.sock")));
     }
 
     // Priority 3: Fallback to /tmp
     Ok(PathBuf::from(format!(
-        "/tmp/{}-{}-{}.sock",
-        primal_name, family, node
+        "/tmp/{primal_name}-{family}-{node}.sock"
     )))
 }
 
@@ -253,19 +254,19 @@ fn get_current_uid() -> Result<u32> {
     let output = Command::new("id")
         .arg("-u")
         .output()
-        .map_err(|e| anyhow::anyhow!("Failed to run 'id -u': {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Failed to run 'id -u': {e}"))?;
 
     if !output.status.success() {
         anyhow::bail!("'id -u' command failed");
     }
 
     let uid_str = String::from_utf8(output.stdout)
-        .map_err(|e| anyhow::anyhow!("Invalid UTF-8 from 'id -u': {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Invalid UTF-8 from 'id -u': {e}"))?;
 
     uid_str
         .trim()
         .parse::<u32>()
-        .map_err(|e| anyhow::anyhow!("Failed to parse UID: {}", e))
+        .map_err(|e| anyhow::anyhow!("Failed to parse UID: {e}"))
 }
 
 #[cfg(test)]
@@ -319,8 +320,7 @@ mod tests {
             // Should include node ID: petaltongue-nat0-default.sock
             assert!(
                 path_str.contains("petaltongue-nat0-default.sock"),
-                "Expected path to contain 'petaltongue-nat0-default.sock', got: {}",
-                path_str
+                "Expected path to contain 'petaltongue-nat0-default.sock', got: {path_str}"
             );
         }
     }

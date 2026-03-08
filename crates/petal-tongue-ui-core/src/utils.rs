@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Utility functions for UI rendering
 
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo};
@@ -33,31 +34,31 @@ pub fn health_to_emoji(health: &PrimalHealthStatus) -> &'static str {
 }
 
 /// Get trust level from primal info (from properties or deprecated field)
-#[allow(deprecated)]
+#[expect(deprecated)]
 pub fn get_trust_level(info: &PrimalInfo) -> String {
     // Try properties first
-    if let Some(trust) = info.properties.get("trust_level") {
-        if let Some(num) = trust.as_number() {
-            return format!("{}", num as u8);
-        }
+    if let Some(trust) = info.properties.get("trust_level")
+        && let Some(num) = trust.as_number()
+    {
+        return format!("{}", num as u8);
     }
 
     // Fall back to deprecated field
     if let Some(trust) = info.trust_level {
-        return format!("{}", trust);
+        return format!("{trust}");
     }
 
     "unknown".to_string()
 }
 
 /// Get family lineage from primal info (from properties or deprecated field)
-#[allow(deprecated)]
+#[expect(deprecated)]
 pub fn get_family_lineage(info: &PrimalInfo) -> String {
     // Try properties first
-    if let Some(family) = info.properties.get("family_id") {
-        if let Some(s) = family.as_string() {
-            return s.to_string();
-        }
+    if let Some(family) = info.properties.get("family_id")
+        && let Some(s) = family.as_string()
+    {
+        return s.to_string();
     }
 
     // Fall back to deprecated field

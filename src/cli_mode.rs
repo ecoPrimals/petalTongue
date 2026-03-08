@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! CLI mode - System status and information
 //!
 //! Pure Rust! ✅

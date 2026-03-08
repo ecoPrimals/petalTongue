@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Sensor abstraction layer - Universal input system
 //!
 //! petalTongue discovers sensors at runtime and understands their capabilities.
@@ -56,6 +57,7 @@ pub struct SensorCapabilities {
 
 impl SensorCapabilities {
     /// Check if sensor has a specific capability
+    #[must_use]
     pub fn has_capability(&self, capability: SensorCapability) -> bool {
         match capability {
             SensorCapability::Input => self.input,
@@ -246,6 +248,7 @@ pub enum SensorEvent {
 
 impl SensorEvent {
     /// Get timestamp of this event
+    #[must_use]
     pub fn timestamp(&self) -> Instant {
         match self {
             SensorEvent::Position { timestamp, .. } => *timestamp,
@@ -264,6 +267,7 @@ impl SensorEvent {
     }
 
     /// Check if this is a user interaction event
+    #[must_use]
     pub fn is_user_interaction(&self) -> bool {
         matches!(
             self,
@@ -275,6 +279,7 @@ impl SensorEvent {
     }
 
     /// Check if this is a confirmation event
+    #[must_use]
     pub fn is_confirmation(&self) -> bool {
         matches!(
             self,
@@ -351,6 +356,7 @@ pub struct Modifiers {
 
 impl Modifiers {
     /// No modifiers pressed
+    #[must_use]
     pub fn none() -> Self {
         Self {
             ctrl: false,
@@ -361,6 +367,7 @@ impl Modifiers {
     }
 
     /// Only Ctrl modifier pressed
+    #[must_use]
     pub fn ctrl() -> Self {
         Self {
             ctrl: true,
@@ -377,6 +384,7 @@ pub struct SensorRegistry {
 
 impl SensorRegistry {
     /// Create new empty registry
+    #[must_use]
     pub fn new() -> Self {
         Self {
             sensors: Vec::new(),
@@ -390,11 +398,13 @@ impl SensorRegistry {
     }
 
     /// Get all sensors
+    #[must_use]
     pub fn sensors(&self) -> &[Box<dyn Sensor>] {
         &self.sensors
     }
 
     /// Get sensors by type
+    #[must_use]
     pub fn sensors_by_type(&self, sensor_type: SensorType) -> Vec<&Box<dyn Sensor>> {
         self.sensors
             .iter()
@@ -403,6 +413,7 @@ impl SensorRegistry {
     }
 
     /// Check if we have a sensor with specific capability
+    #[must_use]
     pub fn has_capability(&self, capability: SensorCapability) -> bool {
         self.sensors
             .iter()
@@ -429,11 +440,13 @@ impl SensorRegistry {
     }
 
     /// Get count of active sensors
+    #[must_use]
     pub fn active_count(&self) -> usize {
         self.sensors.iter().filter(|s| s.is_available()).count()
     }
 
     /// Get sensor statistics
+    #[must_use]
     pub fn stats(&self) -> SensorStats {
         let total = self.sensors.len();
         let active = self.active_count();

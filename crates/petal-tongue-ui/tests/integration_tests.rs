@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Integration tests for petalTongue UI components
 //!
 //! Tests the state management, data source, and integration between modules.
@@ -20,7 +21,7 @@ fn test_graph_engine_integration() {
         endpoint: "http://test:8080".to_string(),
         health: PrimalHealthStatus::Healthy,
         properties: petal_tongue_core::Properties::new(),
-        #[allow(deprecated)]
+        #[expect(deprecated)]
         trust_level: None,
         family_id: None,
         capabilities: vec!["capability-1".to_string()],
@@ -53,7 +54,7 @@ fn test_graph_with_edges() {
         endpoint: "http://a:8080".to_string(),
         health: PrimalHealthStatus::Healthy,
         properties: petal_tongue_core::Properties::new(),
-        #[allow(deprecated)]
+        #[expect(deprecated)]
         trust_level: None,
         family_id: None,
         capabilities: vec![],
@@ -69,7 +70,7 @@ fn test_graph_with_edges() {
         endpoint: "http://b:8080".to_string(),
         health: PrimalHealthStatus::Healthy,
         properties: petal_tongue_core::Properties::new(),
-        #[allow(deprecated)]
+        #[expect(deprecated)]
         trust_level: None,
         family_id: None,
         capabilities: vec![],
@@ -112,7 +113,7 @@ fn test_multiple_primals_different_health() {
             endpoint: "http://h1:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
             properties: petal_tongue_core::Properties::new(),
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             trust_level: None,
             family_id: None,
             capabilities: vec![],
@@ -127,7 +128,7 @@ fn test_multiple_primals_different_health() {
             endpoint: "http://w1:8080".to_string(),
             health: PrimalHealthStatus::Warning,
             properties: petal_tongue_core::Properties::new(),
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             trust_level: None,
             family_id: None,
             capabilities: vec![],
@@ -142,7 +143,7 @@ fn test_multiple_primals_different_health() {
             endpoint: "http://c1:8080".to_string(),
             health: PrimalHealthStatus::Critical,
             properties: petal_tongue_core::Properties::new(),
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             trust_level: None,
             family_id: None,
             capabilities: vec![],
@@ -188,7 +189,7 @@ fn test_graph_clear() {
                 endpoint: format!("http://p{}:8080", i),
                 health: PrimalHealthStatus::Healthy,
                 properties: petal_tongue_core::Properties::new(),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
                 family_id: None,
                 capabilities: vec![],
@@ -230,7 +231,7 @@ fn test_primal_with_capabilities() {
         endpoint: "http://capable:8080".to_string(),
         health: PrimalHealthStatus::Healthy,
         properties: petal_tongue_core::Properties::new(),
-        #[allow(deprecated)]
+        #[expect(deprecated)]
         trust_level: None,
         family_id: None,
         capabilities: vec![
@@ -272,7 +273,7 @@ fn test_edge_with_label() {
             endpoint: "http://source:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
             properties: petal_tongue_core::Properties::new(),
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             trust_level: None,
             family_id: None,
             capabilities: vec![],
@@ -288,7 +289,7 @@ fn test_edge_with_label() {
             endpoint: "http://target:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
             properties: petal_tongue_core::Properties::new(),
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             trust_level: None,
             family_id: None,
             capabilities: vec![],
@@ -327,7 +328,7 @@ fn test_concurrent_access() {
             endpoint: "http://initial:8080".to_string(),
             health: PrimalHealthStatus::Healthy,
             properties: petal_tongue_core::Properties::new(),
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             trust_level: None,
             family_id: None,
             capabilities: vec![],
@@ -376,7 +377,7 @@ fn test_graph_stats() {
                 endpoint: format!("http://p{}:8080", i),
                 health: PrimalHealthStatus::Healthy,
                 properties: petal_tongue_core::Properties::new(),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
                 family_id: None,
                 capabilities: vec![],
@@ -439,7 +440,7 @@ fn test_remove_node_removes_edges() {
                 endpoint: format!("http://p{}:8080", i),
                 health: PrimalHealthStatus::Healthy,
                 properties: petal_tongue_core::Properties::new(),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
                 family_id: None,
                 capabilities: vec![],

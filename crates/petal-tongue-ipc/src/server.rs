@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Isomorphic IPC server implementation - Unix sockets with TCP fallback
 //!
 //! TRUE PRIMAL Evolution: Try → Detect → Adapt → Succeed
@@ -48,7 +49,7 @@ impl std::fmt::Display for IpcTransport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             IpcTransport::Unix(path) => write!(f, "unix:{}", path.display()),
-            IpcTransport::Tcp(addr) => write!(f, "tcp:{}", addr),
+            IpcTransport::Tcp(addr) => write!(f, "tcp:{addr}"),
         }
     }
 }
@@ -82,7 +83,7 @@ impl IpcServer {
     ///
     /// Returns error only if BOTH Unix and TCP fail
     pub async fn start(instance: &Instance) -> Result<Self, IpcServerError> {
-        let instance_id = instance.id.clone();
+        let _instance_id = instance.id.clone();
 
         // Phase 1: Try Unix sockets (optimal path)
         if let Ok(server) = Self::start_unix(instance).await {
@@ -118,14 +119,13 @@ impl IpcServer {
         // Remove old socket if it exists
         if socket_path.exists() {
             std::fs::remove_file(&socket_path).map_err(|e| {
-                IpcServerError::SocketError(format!("Failed to remove old socket: {}", e))
+                IpcServerError::SocketError(format!("Failed to remove old socket: {e}"))
             })?;
         }
 
         // Create Unix listener
-        let listener = UnixListener::bind(&socket_path).map_err(|e| {
-            IpcServerError::SocketError(format!("Failed to bind Unix socket: {}", e))
-        })?;
+        let listener = UnixListener::bind(&socket_path)
+            .map_err(|e| IpcServerError::SocketError(format!("Failed to bind Unix socket: {e}")))?;
 
         debug!("Unix socket bound at: {}", socket_path.display());
 
@@ -151,14 +151,14 @@ impl IpcServer {
         let instance_id = _instance.id.clone();
 
         // Bind to any available port on localhost
-        let listener = TcpListener::bind("127.0.0.1:0").await.map_err(|e| {
-            IpcServerError::SocketError(format!("Failed to bind TCP socket: {}", e))
-        })?;
+        let listener = TcpListener::bind("127.0.0.1:0")
+            .await
+            .map_err(|e| IpcServerError::SocketError(format!("Failed to bind TCP socket: {e}")))?;
 
         // Get the assigned port
         let addr = listener
             .local_addr()
-            .map_err(|e| IpcServerError::SocketError(format!("Failed to get local addr: {}", e)))?;
+            .map_err(|e| IpcServerError::SocketError(format!("Failed to get local addr: {e}")))?;
 
         debug!("TCP socket bound at: {}", addr);
 
@@ -204,12 +204,11 @@ impl IpcServer {
 impl Drop for IpcServer {
     fn drop(&mut self) {
         // Clean up socket file if Unix
-        if let IpcTransport::Unix(path) = &self.transport {
-            if path.exists() {
-                if let Err(e) = std::fs::remove_file(path) {
-                    warn!("Failed to remove socket file: {}", e);
-                }
-            }
+        if let IpcTransport::Unix(path) = &self.transport
+            && path.exists()
+            && let Err(e) = std::fs::remove_file(path)
+        {
+            warn!("Failed to remove socket file: {}", e);
         }
 
         // Clean up discovery file
@@ -319,11 +318,11 @@ where
     reader
         .read_line(&mut line)
         .await
-        .map_err(|e| IpcServerError::IoError(format!("Failed to read command: {}", e)))?;
+        .map_err(|e| IpcServerError::IoError(format!("Failed to read command: {e}")))?;
 
     // Parse command
     let command: IpcCommand = serde_json::from_str(&line)
-        .map_err(|e| IpcServerError::ParseError(format!("Failed to parse command: {}", e)))?;
+        .map_err(|e| IpcServerError::ParseError(format!("Failed to parse command: {e}")))?;
 
     debug!("Received IPC command: {}", command.name());
 
@@ -343,23 +342,23 @@ where
 
     // Send response (JSON line)
     let response_json = serde_json::to_string(&response).map_err(|e| {
-        IpcServerError::SerializeError(format!("Failed to serialize response: {}", e))
+        IpcServerError::SerializeError(format!("Failed to serialize response: {e}"))
     })?;
 
     writer
         .write_all(response_json.as_bytes())
         .await
-        .map_err(|e| IpcServerError::IoError(format!("Failed to write response: {}", e)))?;
+        .map_err(|e| IpcServerError::IoError(format!("Failed to write response: {e}")))?;
 
     writer
         .write_all(b"\n")
         .await
-        .map_err(|e| IpcServerError::IoError(format!("Failed to write newline: {}", e)))?;
+        .map_err(|e| IpcServerError::IoError(format!("Failed to write newline: {e}")))?;
 
     writer
         .flush()
         .await
-        .map_err(|e| IpcServerError::IoError(format!("Failed to flush: {}", e)))?;
+        .map_err(|e| IpcServerError::IoError(format!("Failed to flush: {e}")))?;
 
     Ok(())
 }
@@ -372,7 +371,7 @@ where
 fn write_discovery_file(transport: &IpcTransport) -> Result<(), IpcServerError> {
     // Get runtime directory (XDG-compliant)
     let runtime_dir = platform_dirs::runtime_dir()
-        .map_err(|e| IpcServerError::DiscoveryError(format!("Failed to get runtime dir: {}", e)))?;
+        .map_err(|e| IpcServerError::DiscoveryError(format!("Failed to get runtime dir: {e}")))?;
 
     // Discovery file path
     let discovery_file = runtime_dir.join("petaltongue-ipc-port");
@@ -380,14 +379,14 @@ fn write_discovery_file(transport: &IpcTransport) -> Result<(), IpcServerError> 
     // Create parent directory if needed
     if let Some(parent) = discovery_file.parent() {
         std::fs::create_dir_all(parent).map_err(|e| {
-            IpcServerError::DiscoveryError(format!("Failed to create runtime dir: {}", e))
+            IpcServerError::DiscoveryError(format!("Failed to create runtime dir: {e}"))
         })?;
     }
 
     // Write transport info
     let content = transport.to_string();
     std::fs::write(&discovery_file, content).map_err(|e| {
-        IpcServerError::DiscoveryError(format!("Failed to write discovery file: {}", e))
+        IpcServerError::DiscoveryError(format!("Failed to write discovery file: {e}"))
     })?;
 
     info!("📝 Discovery file written: {}", discovery_file.display());
@@ -402,7 +401,7 @@ fn remove_discovery_file() -> Result<(), IpcServerError> {
         let discovery_file = runtime_dir.join("petaltongue-ipc-port");
         if discovery_file.exists() {
             std::fs::remove_file(&discovery_file).map_err(|e| {
-                IpcServerError::DiscoveryError(format!("Failed to remove discovery file: {}", e))
+                IpcServerError::DiscoveryError(format!("Failed to remove discovery file: {e}"))
             })?;
         }
     }

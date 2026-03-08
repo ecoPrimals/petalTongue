@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! End-to-end tests for petal-tongue-headless binary
 
 use assert_cmd::Command;

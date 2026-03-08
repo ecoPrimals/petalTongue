@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Primal lifecycle traits.
 //!
 //! These traits define the lifecycle and health management for petalTongue.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Table Primitive
 //!
 //! Generic table data structure with sorting, filtering, and pagination.
@@ -100,6 +101,7 @@ impl<T> Column<T> {
     }
 
     /// Get column name
+    #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -110,16 +112,19 @@ impl<T> Column<T> {
     }
 
     /// Get column width
+    #[must_use]
     pub fn column_width(&self) -> Option<usize> {
         self.width
     }
 
     /// Is column sortable?
+    #[must_use]
     pub fn is_sortable(&self) -> bool {
         self.sortable
     }
 
     /// Is column visible?
+    #[must_use]
     pub fn is_visible(&self) -> bool {
         self.visible
     }
@@ -137,6 +142,7 @@ pub struct Pagination {
 
 impl Pagination {
     /// Create new pagination
+    #[must_use]
     pub fn new(page_size: usize) -> Self {
         Self {
             current_page: 0,
@@ -145,20 +151,23 @@ impl Pagination {
     }
 
     /// Get total pages for given row count
+    #[must_use]
     pub fn total_pages(&self, total_rows: usize) -> usize {
         if total_rows == 0 || self.page_size == 0 {
             1
         } else {
-            (total_rows + self.page_size - 1) / self.page_size
+            total_rows.div_ceil(self.page_size)
         }
     }
 
     /// Get start index for current page
+    #[must_use]
     pub fn start_index(&self) -> usize {
         self.current_page * self.page_size
     }
 
     /// Get end index for current page
+    #[must_use]
     pub fn end_index(&self, total_rows: usize) -> usize {
         ((self.current_page + 1) * self.page_size).min(total_rows)
     }
@@ -217,6 +226,7 @@ pub enum SortDirection {
 
 impl SortDirection {
     /// Toggle direction
+    #[must_use]
     pub fn toggle(self) -> Self {
         match self {
             Self::Ascending => Self::Descending,
@@ -227,6 +237,7 @@ impl SortDirection {
 
 impl<T> Table<T> {
     /// Create a new empty table
+    #[must_use]
     pub fn new() -> Self {
         Self {
             columns: Vec::new(),
@@ -276,16 +287,19 @@ impl<T> Table<T> {
     }
 
     /// Get columns
+    #[must_use]
     pub fn columns(&self) -> &[Column<T>] {
         &self.columns
     }
 
     /// Get all row data
+    #[must_use]
     pub fn data(&self) -> &[T] {
         &self.data
     }
 
     /// Get visible rows (respects pagination)
+    #[must_use]
     pub fn visible_rows(&self) -> &[T] {
         if let Some(pagination) = &self.pagination {
             let start = pagination.start_index();
@@ -297,16 +311,19 @@ impl<T> Table<T> {
     }
 
     /// Get row count
+    #[must_use]
     pub fn row_count(&self) -> usize {
         self.data.len()
     }
 
     /// Get column count
+    #[must_use]
     pub fn column_count(&self) -> usize {
         self.columns.len()
     }
 
     /// Get pagination state
+    #[must_use]
     pub fn pagination(&self) -> Option<&Pagination> {
         self.pagination.as_ref()
     }
@@ -317,6 +334,7 @@ impl<T> Table<T> {
     }
 
     /// Get selected row index
+    #[must_use]
     pub fn selected_row(&self) -> Option<usize> {
         self.selected_row
     }
@@ -334,6 +352,7 @@ impl<T> Table<T> {
     }
 
     /// Get cell value at (row, col)
+    #[must_use]
     pub fn get_cell(&self, row: usize, col: usize) -> Option<String> {
         if row < self.data.len() && col < self.columns.len() {
             Some(self.columns[col].extract(&self.data[row]))
@@ -375,6 +394,7 @@ impl<T> Table<T> {
     }
 
     /// Get current sort state
+    #[must_use]
     pub fn sort_state(&self) -> Option<(usize, SortDirection)> {
         self.sort_state
     }

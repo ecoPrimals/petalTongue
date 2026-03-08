@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Protocol selection logic for inter-primal communication
 //!
 //! Implements ecosystem-standard protocol priority:
@@ -31,7 +32,7 @@ pub struct DetectedProtocol {
 /// Detect protocol from endpoint string
 ///
 /// # Arguments
-/// * `endpoint` - Endpoint URL (e.g., "tarpc://localhost:9001", "unix:///tmp/service.sock")
+/// * `endpoint` - Endpoint URL (e.g., "<tarpc://localhost:9001>", "<unix:///tmp/service.sock>")
 ///
 /// # Returns
 /// Detected protocol or HTTPS as fallback

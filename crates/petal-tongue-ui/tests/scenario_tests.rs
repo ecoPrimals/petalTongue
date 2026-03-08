@@ -1,12 +1,27 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Unit tests for scenario loading and parsing
 //!
 //! Tests the modular UI control system introduced in v2.2.0
 
 use petal_tongue_ui::scenario::{FeatureFlags, PanelVisibility, Scenario};
+use std::path::PathBuf;
+
+fn workspace_root() -> PathBuf {
+    // CARGO_MANIFEST_DIR points to the crate dir; go up two levels for workspace root
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(|p| p.parent())
+        .expect("failed to resolve workspace root")
+        .to_path_buf()
+}
+
+fn scenario_path(name: &str) -> PathBuf {
+    workspace_root().join("sandbox/scenarios").join(name)
+}
 
 #[test]
 fn test_paint_simple_scenario_loads() {
-    let scenario = Scenario::load("sandbox/scenarios/paint-simple.json")
+    let scenario = Scenario::load(scenario_path("paint-simple.json"))
         .expect("Failed to load paint-simple.json");
 
     assert_eq!(scenario.name, "Paint Test - Ultra Simple");
@@ -17,7 +32,7 @@ fn test_paint_simple_scenario_loads() {
 
 #[test]
 fn test_paint_simple_panel_visibility() {
-    let scenario = Scenario::load("sandbox/scenarios/paint-simple.json")
+    let scenario = Scenario::load(scenario_path("paint-simple.json"))
         .expect("Failed to load paint-simple.json");
 
     let panels = &scenario.ui_config.show_panels;
@@ -46,7 +61,7 @@ fn test_paint_simple_panel_visibility() {
 
 #[test]
 fn test_paint_simple_features() {
-    let scenario = Scenario::load("sandbox/scenarios/paint-simple.json")
+    let scenario = Scenario::load(scenario_path("paint-simple.json"))
         .expect("Failed to load paint-simple.json");
 
     let features = &scenario.ui_config.features;
@@ -65,7 +80,7 @@ fn test_paint_simple_features() {
 
 #[test]
 fn test_full_dashboard_scenario_loads() {
-    let scenario = Scenario::load("sandbox/scenarios/full-dashboard.json")
+    let scenario = Scenario::load(scenario_path("full-dashboard.json"))
         .expect("Failed to load full-dashboard.json");
 
     assert_eq!(scenario.name, "Full Dashboard - All Subsystems");
@@ -75,7 +90,7 @@ fn test_full_dashboard_scenario_loads() {
 
 #[test]
 fn test_full_dashboard_panel_visibility() {
-    let scenario = Scenario::load("sandbox/scenarios/full-dashboard.json")
+    let scenario = Scenario::load(scenario_path("full-dashboard.json"))
         .expect("Failed to load full-dashboard.json");
 
     let panels = &scenario.ui_config.show_panels;
@@ -103,7 +118,7 @@ fn test_full_dashboard_panel_visibility() {
 
 #[test]
 fn test_full_dashboard_features() {
-    let scenario = Scenario::load("sandbox/scenarios/full-dashboard.json")
+    let scenario = Scenario::load(scenario_path("full-dashboard.json"))
         .expect("Failed to load full-dashboard.json");
 
     let features = &scenario.ui_config.features;
@@ -142,7 +157,7 @@ fn test_default_feature_flags() {
 
 #[test]
 fn test_scenario_to_primal_infos() {
-    let scenario = Scenario::load("sandbox/scenarios/paint-simple.json")
+    let scenario = Scenario::load(scenario_path("paint-simple.json"))
         .expect("Failed to load paint-simple.json");
 
     let primals = scenario.to_primal_infos();
@@ -164,7 +179,7 @@ fn test_scenario_to_primal_infos() {
 
 #[test]
 fn test_sensory_config_validation() {
-    let scenario = Scenario::load("sandbox/scenarios/paint-simple.json")
+    let scenario = Scenario::load(scenario_path("paint-simple.json"))
         .expect("Failed to load paint-simple.json");
 
     // Paint mode requires only visual output
@@ -183,7 +198,7 @@ fn test_sensory_config_validation() {
 
 #[test]
 fn test_primal_positions_from_scenario() {
-    let scenario = Scenario::load("sandbox/scenarios/paint-simple.json")
+    let scenario = Scenario::load(scenario_path("paint-simple.json"))
         .expect("Failed to load paint-simple.json");
 
     // Verify explicit positions are in the scenario

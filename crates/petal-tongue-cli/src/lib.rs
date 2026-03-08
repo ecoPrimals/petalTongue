@@ -1,12 +1,17 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+#![forbid(unsafe_code)]
 //! petalTongue CLI - Manage petalTongue instances from the command line
+//!
+//! Library crate providing CLI instance management. Consumed by the
+//! petalTongue UniBin via the `status` / `cli` mode.
 //!
 //! # Commands
 //!
-//! - `petaltongue list` - List all running instances
-//! - `petaltongue show <id>` - Show details of an instance
-//! - `petaltongue raise <id>` - Bring an instance window to front
-//! - `petaltongue ping <id>` - Check if instance is responsive
-//! - `petaltongue gc` - Clean up dead instances from registry
+//! - `list` - List all running instances
+//! - `show <id>` - Show details of an instance
+//! - `raise <id>` - Bring an instance window to front
+//! - `ping <id>` - Check if instance is responsive
+//! - `gc` - Clean up dead instances from registry
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
@@ -14,17 +19,19 @@ use colored::*;
 use petal_tongue_core::{InstanceId, InstanceRegistry};
 use petal_tongue_ipc::{IpcClient, IpcCommand, IpcResponse};
 
+/// CLI argument parser for petalTongue instance management.
 #[derive(Parser)]
 #[command(name = "petaltongue")]
 #[command(about = "petalTongue instance manager", long_about = None)]
 #[command(version)]
-struct Cli {
+pub struct Cli {
     #[command(subcommand)]
-    command: Commands,
+    pub command: Commands,
 }
 
+/// Available CLI subcommands.
 #[derive(Subcommand)]
-enum Commands {
+pub enum Commands {
     /// List all running instances
     List,
 
@@ -60,11 +67,14 @@ enum Commands {
     Status,
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    let cli = Cli::parse();
-
-    match cli.command {
+/// Execute a CLI command.
+///
+/// # Errors
+///
+/// Returns an error if the command fails (registry unavailable,
+/// instance not found, IPC failure, etc.).
+pub async fn run(command: Commands) -> Result<()> {
+    match command {
         Commands::List => list_instances().await,
         Commands::Show { instance_id } => show_instance(&instance_id).await,
         Commands::Raise { instance_id } => raise_instance(&instance_id).await,
@@ -97,17 +107,17 @@ async fn list_instances() -> Result<()> {
             "  {} {} {}",
             status_icon,
             instance.id.as_str().bright_blue(),
-            format!("({})", status_text).dimmed()
+            format!("({status_text})").dimmed()
         );
 
         if let Some(name) = &instance.name {
-            println!("     Name: {}", name);
+            println!("     Name: {name}");
         }
 
         println!("     PID:  {}", instance.pid);
 
         if let Some(wid) = instance.window_id {
-            println!("     Window: 0x{:x}", wid);
+            println!("     Window: 0x{wid:x}");
         }
 
         println!(
@@ -158,11 +168,11 @@ async fn show_instance(instance_id_str: &str) -> Result<()> {
             );
 
             if let Some(name) = status.name {
-                println!("  Name:     {}", name);
+                println!("  Name:     {name}");
             }
 
             if let Some(wid) = status.window_id {
-                println!("  Window ID: 0x{:x}", wid);
+                println!("  Window ID: 0x{wid:x}");
             }
 
             if !status.metadata.is_empty() {
@@ -234,7 +244,7 @@ async fn ping_instance(instance_id_str: &str) -> Result<()> {
                 instance_id.as_str().bright_blue(),
                 "unresponsive".red()
             );
-            println!("   Error: {}", e);
+            println!("   Error: {e}");
         }
     }
 
@@ -314,7 +324,7 @@ async fn status_instances() -> Result<()> {
                         status.node_count,
                         status.edge_count,
                         if let Some(name) = &status.name {
-                            format!(" | {}", name)
+                            format!(" | {name}")
                         } else {
                             String::new()
                         }
@@ -349,7 +359,7 @@ fn resolve_instance_id(id_str: &str) -> Result<InstanceId> {
     if let Ok(uuid) = uuid::Uuid::parse_str(id_str) {
         let id_string = uuid.to_string();
         return InstanceId::parse(&id_string)
-            .map_err(|e| anyhow::anyhow!("Invalid instance ID: {}", e));
+            .map_err(|e| anyhow::anyhow!("Invalid instance ID: {e}"));
     }
 
     // Try prefix match
@@ -362,7 +372,7 @@ fn resolve_instance_id(id_str: &str) -> Result<InstanceId> {
         .collect();
 
     match matches.len() {
-        0 => anyhow::bail!("No instance found matching '{}'", id_str),
+        0 => anyhow::bail!("No instance found matching '{id_str}'"),
         1 => Ok(matches[0].id.clone()),
         _ => anyhow::bail!(
             "Ambiguous instance ID '{}' matches {} instances",

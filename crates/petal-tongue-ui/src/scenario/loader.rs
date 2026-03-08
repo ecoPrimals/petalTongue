@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Scenario loader and validation logic
 //!
 //! Handles loading scenario JSON files and validating their contents.

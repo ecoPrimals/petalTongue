@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Comprehensive tests for session module
 //!
 //! Tests verify session state persistence, saving, loading, and XDG compliance.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Graph Validation - Ensure graph correctness before execution
 //!
 //! TRUE PRIMAL: Zero hardcoding, capability-based validation.
@@ -33,6 +34,7 @@ pub struct ValidationIssue {
 
 impl ValidationIssue {
     /// Create an error
+    #[must_use]
     pub fn error(message: String) -> Self {
         Self {
             severity: ValidationSeverity::Error,
@@ -44,6 +46,7 @@ impl ValidationIssue {
     }
 
     /// Create an error for a specific node
+    #[must_use]
     pub fn node_error(node_id: String, message: String) -> Self {
         Self {
             severity: ValidationSeverity::Error,
@@ -55,6 +58,7 @@ impl ValidationIssue {
     }
 
     /// Create a warning
+    #[must_use]
     pub fn warning(message: String) -> Self {
         Self {
             severity: ValidationSeverity::Warning,
@@ -66,6 +70,7 @@ impl ValidationIssue {
     }
 
     /// Create a warning for a specific node
+    #[must_use]
     pub fn node_warning(node_id: String, message: String) -> Self {
         Self {
             severity: ValidationSeverity::Warning,
@@ -77,6 +82,7 @@ impl ValidationIssue {
     }
 
     /// Add a suggestion
+    #[must_use]
     pub fn with_suggestion(mut self, suggestion: String) -> Self {
         self.suggestion = Some(suggestion);
         self
@@ -92,6 +98,7 @@ pub struct ValidationResult {
 
 impl ValidationResult {
     /// Create a new validation result
+    #[must_use]
     pub fn new() -> Self {
         Self { issues: Vec::new() }
     }
@@ -102,6 +109,7 @@ impl ValidationResult {
     }
 
     /// Check if there are any errors
+    #[must_use]
     pub fn has_errors(&self) -> bool {
         self.issues
             .iter()
@@ -109,6 +117,7 @@ impl ValidationResult {
     }
 
     /// Check if there are any warnings
+    #[must_use]
     pub fn has_warnings(&self) -> bool {
         self.issues
             .iter()
@@ -116,11 +125,13 @@ impl ValidationResult {
     }
 
     /// Check if validation passed (no errors)
+    #[must_use]
     pub fn is_valid(&self) -> bool {
         !self.has_errors()
     }
 
     /// Get all errors
+    #[must_use]
     pub fn errors(&self) -> Vec<&ValidationIssue> {
         self.issues
             .iter()
@@ -129,6 +140,7 @@ impl ValidationResult {
     }
 
     /// Get all warnings
+    #[must_use]
     pub fn warnings(&self) -> Vec<&ValidationIssue> {
         self.issues
             .iter()
@@ -148,6 +160,7 @@ pub struct GraphValidator;
 
 impl GraphValidator {
     /// Validate a graph
+    #[must_use]
     pub fn validate(graph: &VisualGraph) -> ValidationResult {
         let mut result = ValidationResult::new();
 
@@ -295,20 +308,19 @@ impl GraphValidator {
 
         for node in &graph.nodes {
             let node_id = &node.id;
-            if !visited.contains(node_id) {
-                if Self::dfs_has_cycle(node_id, &adj_list, &mut visited, &mut rec_stack) {
-                    result.add_issue(
-                        ValidationIssue::error(format!(
-                            "Graph contains a cycle involving node '{}'",
-                            node_id
-                        ))
-                        .with_suggestion(
-                            "Remove edges to break the cycle - graphs must be acyclic (DAG)"
-                                .to_string(),
-                        ),
-                    );
-                    return; // Report first cycle only
-                }
+            if !visited.contains(node_id)
+                && Self::dfs_has_cycle(node_id, &adj_list, &mut visited, &mut rec_stack)
+            {
+                result.add_issue(
+                    ValidationIssue::error(format!(
+                        "Graph contains a cycle involving node '{node_id}'"
+                    ))
+                    .with_suggestion(
+                        "Remove edges to break the cycle - graphs must be acyclic (DAG)"
+                            .to_string(),
+                    ),
+                );
+                return; // Report first cycle only
             }
         }
     }
@@ -467,6 +479,7 @@ impl GraphValidator {
 
     /// Get execution order (topological sort)
     /// Returns None if graph has cycles
+    #[must_use]
     pub fn get_execution_order(graph: &VisualGraph) -> Option<Vec<String>> {
         // Build in-degree map
         let mut in_degree: HashMap<String, usize> = HashMap::new();

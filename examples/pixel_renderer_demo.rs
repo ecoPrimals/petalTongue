@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Egui Pixel Renderer Demo
 //!
 //! Demonstrates the EguiPixelRenderer converting egui UI to RGBA8 pixels.

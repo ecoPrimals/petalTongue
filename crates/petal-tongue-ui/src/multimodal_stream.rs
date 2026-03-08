@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 // Multimodal data stream rendering
 // Converts any data stream into multiple output modalities
 // Vision: ONE UI with pluggable I/O for true universal accessibility

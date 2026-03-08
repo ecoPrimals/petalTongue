@@ -1,15 +1,15 @@
 [package]
 name = "petal-tongue-cli"
-description = "Command-line interface for managing petalTongue instances"
+description = "Command-line interface library for managing petalTongue instances"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
-[[bin]]
-name = "petaltongue"
-path = "src/main.rs"
+[lib]
+name = "petal_tongue_cli"
+path = "src/lib.rs"
 
 [dependencies]
 petal-tongue-core = { path = "../petal-tongue-core" }

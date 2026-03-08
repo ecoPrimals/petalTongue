@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Comprehensive tests for mock provider
 //!
 //! Tests verify mock data generation and test isolation.

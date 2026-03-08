@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Proprioception Panel - Display SAME DAVE self-awareness
 //!
 //! Phase 1.4: Shows the system's self-knowledge using the SAME DAVE framework:
@@ -8,7 +9,7 @@
 
 use crate::panel_registry::{PanelFactory, PanelInstance};
 use crate::scenario::CustomPanelConfig;
-use petal_tongue_core::proprioception::{HealthStatus, ProprioceptionData};
+use petal_tongue_core::proprioception::ProprioceptionData;
 use petal_tongue_discovery::NeuralApiProvider;
 use std::time::{Duration, Instant};
 
@@ -23,6 +24,7 @@ pub struct ProprioceptionPanel {
 
 impl ProprioceptionPanel {
     /// Create a new proprioception panel (provider connected later)
+    #[must_use]
     pub fn new() -> Self {
         Self {
             provider: None,
@@ -56,7 +58,7 @@ impl ProprioceptionPanel {
 }
 
 impl PanelInstance for ProprioceptionPanel {
-    fn title(&self) -> &str {
+    fn title(&self) -> &'static str {
         "System Health"
     }
 
@@ -98,12 +100,12 @@ impl PanelInstance for ProprioceptionPanel {
                                 self.error_message = None;
                             }
                             Err(e) => {
-                                self.error_message = Some(format!("API error: {}", e));
+                                self.error_message = Some(format!("API error: {e}"));
                                 tracing::warn!("Failed to get proprioception: {}", e);
                             }
                         }
                     }
-                })
+                });
             });
         }
 
@@ -111,7 +113,7 @@ impl PanelInstance for ProprioceptionPanel {
         ui.separator();
 
         if let Some(error) = &self.error_message {
-            ui.colored_label(egui::Color32::RED, format!("⚠️  {}", error));
+            ui.colored_label(egui::Color32::RED, format!("⚠️  {error}"));
             ui.separator();
         }
 
@@ -136,7 +138,7 @@ impl PanelInstance for ProprioceptionPanel {
             ui.add_space(2.0);
 
             // Sensory
-            ui.label(format!("👁️ Sensory:"));
+            ui.label("👁️ Sensory:".to_string());
             ui.label(format!(
                 "  {} active sockets detected",
                 proprio.sensory.active_sockets
@@ -145,7 +147,7 @@ impl PanelInstance for ProprioceptionPanel {
             ui.add_space(2.0);
 
             // Awareness
-            ui.label(format!("💭 Awareness:"));
+            ui.label("💭 Awareness:".to_string());
             ui.label(format!(
                 "  Knows about {} primals",
                 proprio.self_awareness.knows_about
@@ -157,7 +159,7 @@ impl PanelInstance for ProprioceptionPanel {
             ui.add_space(2.0);
 
             // Motor
-            ui.label(format!("💪 Motor:"));
+            ui.label("💪 Motor:".to_string());
             if proprio.motor.can_deploy {
                 ui.label("  ✅ Can deploy primals");
             }
@@ -207,9 +209,9 @@ impl PanelInstance for ProprioceptionPanel {
             // Last update time
             let age = self.last_update.elapsed().as_secs();
             if age < 10 {
-                ui.label(format!("📡 Updated {}s ago", age));
+                ui.label(format!("📡 Updated {age}s ago"));
             } else {
-                ui.colored_label(egui::Color32::YELLOW, format!("⏳ Updated {}s ago", age));
+                ui.colored_label(egui::Color32::YELLOW, format!("⏳ Updated {age}s ago"));
             }
         } else if self.provider.is_none() {
             ui.label("⏳ Neural API not available");
@@ -240,13 +242,14 @@ pub struct ProprioceptionPanelFactory;
 
 impl ProprioceptionPanelFactory {
     /// Create a new factory for proprioception (self-awareness) panels
+    #[must_use]
     pub fn new() -> Self {
         Self
     }
 }
 
 impl PanelFactory for ProprioceptionPanelFactory {
-    fn panel_type(&self) -> &str {
+    fn panel_type(&self) -> &'static str {
         "proprioception"
     }
 
@@ -257,7 +260,7 @@ impl PanelFactory for ProprioceptionPanelFactory {
         Ok(Box::new(ProprioceptionPanel::new()))
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Displays SAME DAVE proprioception - the system's self-awareness"
     }
 }
@@ -271,6 +274,7 @@ impl Default for ProprioceptionPanelFactory {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use petal_tongue_core::proprioception::HealthStatus;
 
     #[test]
     fn test_proprioception_panel_creation() {

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! RPC Methods for Graph Editor
 //!
 //! Implements the 8 JSON-RPC methods for collaborative intelligence.
@@ -28,10 +29,10 @@ use super::node::GraphNode;
 ///
 /// Manages graphs and provides RPC methods for manipulation.
 pub struct GraphEditorService {
-    /// Active graphs (graph_id -> Graph)
+    /// Active graphs (`graph_id` -> Graph)
     graphs: Arc<RwLock<HashMap<String, Graph>>>,
 
-    /// Templates (template_id -> Graph)
+    /// Templates (`template_id` -> Graph)
     templates: Arc<RwLock<HashMap<String, GraphTemplate>>>,
 }
 
@@ -318,11 +319,11 @@ impl GraphEditorService {
             .context("Node not found")?;
 
         // Apply changes (merge JSON)
-        if let serde_json::Value::Object(changes) = req.changes {
-            if let serde_json::Value::Object(ref mut props) = node.properties {
-                for (key, value) in changes {
-                    props.insert(key, value);
-                }
+        if let serde_json::Value::Object(changes) = req.changes
+            && let serde_json::Value::Object(ref mut props) = node.properties
+        {
+            for (key, value) in changes {
+                props.insert(key, value);
             }
         }
 
@@ -361,7 +362,7 @@ impl GraphEditorService {
                 success: true,
                 affected_edges,
             }),
-            Err(e) => anyhow::bail!("Failed to remove node: {}", e),
+            Err(e) => anyhow::bail!("Failed to remove node: {e}"),
         }
     }
 

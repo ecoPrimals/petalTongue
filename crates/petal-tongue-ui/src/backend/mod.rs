@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! UI Backend Abstraction Layer
 //!
 //! This module provides a trait-based abstraction for different UI backends,
@@ -23,8 +24,8 @@
 //!
 //! # Backends
 //!
-//! - **EguiBackend**: Current backend using eframe/winit (has C dependencies)
-//! - **ToadstoolBackend**: Future Pure Rust backend via Toadstool display service
+//! - **`EguiBackend`**: Current backend using eframe/winit (has C dependencies)
+//! - **`ToadstoolBackend`**: Future Pure Rust backend via Toadstool display service
 //!
 //! # Feature Flags
 //!
@@ -35,13 +36,16 @@
 //! # Examples
 //!
 //! ```no_run
-//! use petal_tongue_ui::backend::{UIBackend, create_backend};
+//! use petal_tongue_ui::backend::{BackendChoice, UIBackend, create_backend};
 //!
+//! # async fn example() -> anyhow::Result<()> {
 //! // Auto-detect best backend
 //! let backend = create_backend(None).await?;
 //!
 //! // Force specific backend
 //! let backend = create_backend(Some(BackendChoice::Toadstool)).await?;
+//! # Ok(())
+//! # }
 //! ```
 
 // Backend implementations
@@ -98,7 +102,7 @@ pub trait UIBackend: Send + Sync {
     ///
     /// - `scenario`: Optional path to scenario file
     /// - `capabilities`: Detected rendering capabilities
-    /// - `shared_graph`: Shared graph engine from DataService (TRUE PRIMAL: single source of truth!)
+    /// - `shared_graph`: Shared graph engine from `DataService` (TRUE PRIMAL: single source of truth!)
     async fn run(
         &mut self,
         scenario: Option<PathBuf>,
@@ -158,6 +162,7 @@ pub enum BackendChoice {
 
 impl BackendChoice {
     /// Parse from string (e.g., from env var or CLI)
+    #[must_use]
     pub fn from_str(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "auto" => Some(Self::Auto),
@@ -187,11 +192,16 @@ impl BackendChoice {
 /// # Examples
 ///
 /// ```no_run
+/// use petal_tongue_ui::backend::{BackendChoice, create_backend};
+///
+/// # async fn example() -> anyhow::Result<()> {
 /// // Auto-detect
 /// let backend = create_backend(None).await?;
 ///
 /// // Force Toadstool
 /// let backend = create_backend(Some(BackendChoice::Toadstool)).await?;
+/// # Ok(())
+/// # }
 /// ```
 pub async fn create_backend(choice: Option<BackendChoice>) -> Result<Box<dyn UIBackend>> {
     let choice = choice.unwrap_or(BackendChoice::Auto);
@@ -275,6 +285,7 @@ async fn create_toadstool_backend() -> Result<Box<dyn UIBackend>> {
 /// Checks `PETALTONGUE_UI_BACKEND` environment variable.
 ///
 /// Valid values: "auto", "eframe", "egui", "toadstool", "pure-rust"
+#[must_use]
 pub fn backend_from_env() -> Option<BackendChoice> {
     std::env::var("PETALTONGUE_UI_BACKEND")
         .ok()

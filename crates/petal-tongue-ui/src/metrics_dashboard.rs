@@ -1,10 +1,11 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Metrics Dashboard - Real-time System and Neural API Metrics
 //!
 //! Displays CPU, memory, uptime, and Neural API statistics with sparklines.
 //! Updates automatically every 5 seconds with fresh data from Neural API.
 
 use egui::{Color32, ProgressBar, RichText, Stroke, Ui, Vec2};
-use petal_tongue_core::{CpuHistory, MemoryHistory, SystemMetrics, ThresholdLevel};
+use petal_tongue_core::{CpuHistory, MemoryHistory, SystemMetrics};
 use petal_tongue_discovery::NeuralApiProvider;
 use std::time::{Duration, Instant};
 use tracing::{debug, warn};
@@ -38,7 +39,7 @@ impl MetricsDashboard {
             data: None,
             cpu_history: CpuHistory::new(),
             memory_history: MemoryHistory::new(),
-            last_update: Instant::now() - REFRESH_INTERVAL, // Trigger immediate fetch
+            last_update: Instant::now().checked_sub(REFRESH_INTERVAL).unwrap(), // Trigger immediate fetch
             fetching: false,
         }
     }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Web Audio API - Universal Audio Abstraction
 //!
 //! TRUE PRIMAL sovereignty through web standards!

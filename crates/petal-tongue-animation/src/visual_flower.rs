@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Visual Flower Rendering
 //!
 //! High-quality visual flower animation for egui-based awakening experience.
@@ -18,7 +19,6 @@ pub struct VisualFlowerRenderer {
     current_time: f32,
 
     /// Base color (hue in HSV) - reserved for future color customization
-    #[allow(dead_code)]
     base_hue: f32,
 }
 
@@ -56,7 +56,7 @@ impl VisualFlowerRenderer {
         if progress < 0.1 {
             FlowerState::Closed
         } else if progress < 0.9 {
-            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
             let percent = ((progress - 0.1) / 0.8 * 100.0) as u8;
             FlowerState::Opening(percent)
         } else {
@@ -65,7 +65,6 @@ impl VisualFlowerRenderer {
     }
 
     /// Get opening percentage (0.0 to 1.0) - reserved for future use in custom renderers
-    #[allow(dead_code, clippy::unused_self)]
     fn opening_percent(&self) -> f32 {
         match self.current_state() {
             FlowerState::Closed => 0.0,
@@ -114,7 +113,7 @@ mod egui_rendering {
 
         /// Render stem
         // Graphics helper - self not needed but kept for consistency with other render methods
-        #[allow(clippy::unused_self)]
+        #[expect(clippy::unused_self)]
         fn render_stem(&self, painter: &egui::Painter, center: Pos2, size: f32) {
             let stem_start = center + Vec2::new(0.0, size * 0.3);
             let stem_end = center + Vec2::new(0.0, size * 0.8);
@@ -140,7 +139,7 @@ mod egui_rendering {
 
         /// Render single leaf
         // Graphics helper - self not needed but kept for consistency with other render methods
-        #[allow(clippy::unused_self)]
+        #[expect(clippy::unused_self)]
         fn render_leaf(
             &self,
             painter: &egui::Painter,
@@ -169,7 +168,7 @@ mod egui_rendering {
             let spread = progress * 0.8; // Petals spread as they open
 
             // Graphics calculations - precision loss acceptable for visual rendering
-            #[allow(clippy::cast_precision_loss)]
+            #[expect(clippy::cast_precision_loss)]
             for i in 0..num_petals {
                 let base_angle = (i as f32 / num_petals as f32) * 2.0 * PI;
                 let angle = base_angle + spread * (i as f32 - num_petals as f32 / 2.0) * 0.1;
@@ -213,7 +212,7 @@ mod egui_rendering {
 
         /// Render flower center (pistil/stamen)
         // Graphics helper - self not needed but kept for consistency with other render methods
-        #[allow(clippy::unused_self)]
+        #[expect(clippy::unused_self)]
         fn render_center(&self, painter: &egui::Painter, center: Pos2, size: f32, progress: f32) {
             let center_size = size * 0.08 * progress;
 
@@ -226,7 +225,7 @@ mod egui_rendering {
                 let dot_count = 12;
                 let dot_radius = center_size * 0.6;
                 // Graphics calculations - precision loss acceptable for visual rendering
-                #[allow(clippy::cast_precision_loss)]
+                #[expect(clippy::cast_precision_loss)]
                 for i in 0..dot_count {
                     let angle = (i as f32 / dot_count as f32) * 2.0 * PI;
                     let dot_pos =
@@ -238,11 +237,11 @@ mod egui_rendering {
 
         /// Render glow effect
         // Graphics helper - self not needed but kept for consistency with other render methods
-        #[allow(clippy::unused_self)]
+        #[expect(clippy::unused_self)]
         fn render_glow(&self, painter: &egui::Painter, center: Pos2, size: f32) {
             // Multiple layers of glow with decreasing alpha
             // Graphics calculations - casts are intentional for color values
-            #[allow(
+            #[expect(
                 clippy::cast_precision_loss,
                 clippy::cast_possible_truncation,
                 clippy::cast_sign_loss
@@ -259,7 +258,7 @@ mod egui_rendering {
         // Standard HSV to RGB conversion algorithm
         // Single-letter variable names are standard notation in color science
         // Float to u8 casts are intentional for color conversion (0.0-1.0 → 0-255)
-        #[allow(
+        #[expect(
             clippy::many_single_char_names,
             clippy::cast_possible_truncation,
             clippy::cast_sign_loss

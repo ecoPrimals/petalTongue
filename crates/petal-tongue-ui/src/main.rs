@@ -1,7 +1,10 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Main entry point for petalTongue desktop UI
 
 use clap::Parser;
-use petal_tongue_core::{Instance, InstanceId, InstanceRegistry, RenderingCapabilities};
+use petal_tongue_core::{
+    Instance, InstanceId, InstanceRegistry, RenderingCapabilities, constants::PRIMAL_NAME,
+};
 use petal_tongue_ui::PetalTongueApp;
 use petal_tongue_ui::display::prompt::prompt_for_display_server;
 use std::path::PathBuf;
@@ -48,8 +51,7 @@ fn main() -> anyhow::Result<()> {
     tracing::info!("🌸 Starting petalTongue instance: {}", id_str);
 
     // Create instance metadata
-    let instance = Instance::new(instance_id.clone(), Some("petalTongue".to_string()))
-        .expect("Failed to create instance");
+    let instance = Instance::new(instance_id.clone(), Some(PRIMAL_NAME.to_string()))?;
 
     // Load/create instance registry
     let mut registry = InstanceRegistry::load().unwrap_or_else(|e| {
@@ -126,7 +128,8 @@ fn main() -> anyhow::Result<()> {
         tracing::info!("   - Toadstool WASM (if available)");
 
         // Prompt user about display server
-        match prompt_for_display_server() {
+        let rt = tokio::runtime::Runtime::new()?;
+        match rt.block_on(prompt_for_display_server()) {
             Ok(true) => tracing::info!("✅ Display server now available"),
             Ok(false) => tracing::info!("📦 Continuing without display server"),
             Err(e) => tracing::warn!("⚠️  Prompt error: {}", e),
@@ -178,7 +181,10 @@ fn run_with_eframe(
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1400.0, 900.0])
             .with_min_inner_size([800.0, 900.0])
-            .with_title("🌸 petalTongue - Universal Representation System")
+            .with_title(format!(
+                "🌸 {} - Universal Representation System",
+                PRIMAL_NAME
+            ))
             .with_visible(true) // FIX: Explicitly show window (critical for headless+remote setups!)
             .with_active(true), // 🖥️ REMOTE DESKTOP FIX: Request active/focused state
         // 🖥️ CRITICAL: Always request input focus (for remote desktop)
@@ -192,14 +198,14 @@ fn run_with_eframe(
     }
 
     let result = eframe::run_native(
-        "petalTongue",
+        PRIMAL_NAME,
         options,
         Box::new(move |cc| {
             if diagnostic_enabled {
                 tracing::info!("🎨 DIAGNOSTIC: Inside app creation callback");
                 tracing::info!("🎨 DIAGNOSTIC: Creating PetalTongueApp...");
             }
-            let app = PetalTongueApp::new(cc, scenario_path, rendering_caps.clone());
+            let app = PetalTongueApp::new(cc, scenario_path, rendering_caps.clone())?;
             if diagnostic_enabled {
                 tracing::info!("🎨 DIAGNOSTIC: PetalTongueApp created successfully");
             }

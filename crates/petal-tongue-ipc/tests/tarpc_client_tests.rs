@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Integration tests for tarpc client
 //!
 //! These tests verify the tarpc client functionality.
@@ -76,7 +77,7 @@ async fn test_connection_timeout() {
 #[test]
 fn test_debug_impl() {
     let client = TarpcClient::new("tarpc://localhost:9001").unwrap();
-    let debug_str = format!("{:?}", client);
+    let debug_str = format!("{client:?}");
 
     assert!(debug_str.contains("TarpcClient"));
     assert!(debug_str.contains("localhost:9001"));

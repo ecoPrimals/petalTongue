@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+#![forbid(unsafe_code)]
 //! Real-time telemetry and event streaming
 //!
 //! This crate provides telemetry collection, aggregation, and event streaming
@@ -26,6 +28,10 @@
 //!        ├──> Aggregator
 //!        └──> Subscribers
 //! ```
+
+#![allow(clippy::must_use_candidate)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::doc_markdown)]
 
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, RwLock};
@@ -180,9 +186,10 @@ impl TelemetryCollector {
     pub fn push_event(&self, event: TelemetryEvent) {
         // Add to buffer
         {
-            let mut buffer = self.buffer.write().expect(
-                "SAFETY: Telemetry buffer lock poisoned - indicates panic in telemetry thread",
-            );
+            let Ok(mut buffer) = self.buffer.write() else {
+                tracing::error!("Telemetry buffer lock poisoned");
+                return;
+            };
             buffer.push_back(event.clone());
 
             // Trim buffer if too large
@@ -193,9 +200,10 @@ impl TelemetryCollector {
 
         // Notify subscribers
         {
-            let mut subscribers = self.subscribers.write().expect(
-                "SAFETY: Telemetry subscribers lock poisoned - indicates panic in subscriber",
-            );
+            let Ok(mut subscribers) = self.subscribers.write() else {
+                tracing::error!("Telemetry subscribers lock poisoned");
+                return;
+            };
             for subscriber in subscribers.iter_mut() {
                 subscriber.on_event(&event);
             }
@@ -226,16 +234,19 @@ impl TelemetryCollector {
     /// Get recent events from buffer
     #[must_use]
     pub fn get_recent_events(&self, count: usize) -> Vec<TelemetryEvent> {
-        let buffer = self
-            .buffer
-            .read()
-            .expect("SAFETY: Telemetry buffer lock poisoned - indicates panic in telemetry thread");
+        let Ok(buffer) = self.buffer.read() else {
+            tracing::error!("Telemetry buffer lock poisoned");
+            return Vec::new();
+        };
         buffer.iter().rev().take(count).cloned().collect()
     }
 
     /// Update aggregated metrics based on event
     fn update_metrics(&self, event: &TelemetryEvent) {
-        let mut metrics = self.metrics.write().expect("SAFETY: Lock poisoned");
+        let Ok(mut metrics) = self.metrics.write() else {
+            tracing::error!("Telemetry metrics lock poisoned");
+            return;
+        };
 
         match event {
             TelemetryEvent::PrimalDiscovered { primal_id, .. } => {
@@ -300,7 +311,10 @@ impl TelemetryCollector {
 
     /// Clear all buffered events
     pub fn clear(&self) {
-        let mut buffer = self.buffer.write().expect("SAFETY: Lock poisoned");
+        let Ok(mut buffer) = self.buffer.write() else {
+            tracing::error!("Telemetry buffer lock poisoned");
+            return;
+        };
         buffer.clear();
     }
 

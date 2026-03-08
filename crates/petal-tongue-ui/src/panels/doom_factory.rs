@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Doom Panel Factory - Registers Doom as an available panel type
 
 use super::doom_panel::DoomPanel;
-use crate::panel_registry::{PanelError, PanelFactory, PanelInstance, Result};
+use crate::panel_registry::{PanelFactory, PanelInstance, Result};
 use crate::scenario::CustomPanelConfig;
 use std::sync::Arc;
 
@@ -9,7 +10,7 @@ use std::sync::Arc;
 pub struct DoomPanelFactory;
 
 impl PanelFactory for DoomPanelFactory {
-    fn panel_type(&self) -> &str {
+    fn panel_type(&self) -> &'static str {
         "doom_game"
     }
 
@@ -17,13 +18,13 @@ impl PanelFactory for DoomPanelFactory {
         tracing::info!("Creating Doom panel: {}", config.title);
 
         // Extract width/height from config, with defaults
-        let width = config.width.unwrap_or(640);
-        let height = config.height.unwrap_or(480);
+        let _width = config.width.unwrap_or(640);
+        let _height = config.height.unwrap_or(480);
 
         // Parse panel-specific config (optional)
         let show_debug = if let Some(cfg) = config.config.as_object() {
             cfg.get("show_debug")
-                .and_then(|v| v.as_bool())
+                .and_then(serde_json::Value::as_bool)
                 .unwrap_or(true)
         } else {
             true
@@ -40,12 +41,12 @@ impl PanelFactory for DoomPanelFactory {
         }))
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Classic Doom game (1993) - Platform capability test"
     }
 }
 
-/// Wrapper to adapt DoomPanel to PanelInstance trait
+/// Wrapper to adapt `DoomPanel` to `PanelInstance` trait
 struct DoomPanelWrapper {
     panel: DoomPanel,
     title: String,
@@ -79,6 +80,7 @@ impl PanelInstance for DoomPanelWrapper {
 }
 
 /// Convenience function to create a Doom panel factory
+#[must_use]
 pub fn create_doom_factory() -> Arc<dyn PanelFactory> {
     Arc::new(DoomPanelFactory)
 }

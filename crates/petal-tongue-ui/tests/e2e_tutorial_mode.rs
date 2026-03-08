@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! E2E Tests for Tutorial Mode
 //!
 //! Tests the full tutorial mode workflow including:

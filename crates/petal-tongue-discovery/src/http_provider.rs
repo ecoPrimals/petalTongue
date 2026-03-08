@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! HTTP-based visualization data provider
 //!
 //! ⚠️  **DEPRECATED AS PRIMARY PROTOCOL** ⚠️
@@ -82,8 +83,8 @@ impl HttpVisualizationProvider {
     /// ⚠️  **DEPRECATED**: Use `JsonRpcProvider` for TRUE PRIMAL protocol!
     ///
     /// This is for external integrations only (web APIs, remote access).
-    #[allow(deprecated)]
-    pub fn new(endpoint: impl Into<String>) -> Self {
+    #[expect(deprecated)]
+    pub fn new(endpoint: impl Into<String>) -> anyhow::Result<Self> {
         let endpoint_str = endpoint.into();
 
         // Log deprecation warning
@@ -93,19 +94,20 @@ impl HttpVisualizationProvider {
         );
         tracing::info!("Using HTTP provider at: {}", endpoint_str);
 
-        Self {
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(30)) // Increased timeout
+            .connect_timeout(Duration::from_secs(10)) // Separate connect timeout
+            .pool_idle_timeout(Duration::from_secs(90)) // Keep connections alive longer
+            .pool_max_idle_per_host(10) // More idle connections
+            .tcp_keepalive(Duration::from_secs(60)) // TCP keep-alive
+            .http2_keep_alive_interval(Some(Duration::from_secs(30))) // HTTP/2 keep-alive
+            .http2_keep_alive_timeout(Duration::from_secs(10))
+            .build()?;
+
+        Ok(Self {
             endpoint: endpoint_str,
-            client: reqwest::Client::builder()
-                .timeout(Duration::from_secs(30)) // Increased timeout
-                .connect_timeout(Duration::from_secs(10)) // Separate connect timeout
-                .pool_idle_timeout(Duration::from_secs(90)) // Keep connections alive longer
-                .pool_max_idle_per_host(10) // More idle connections
-                .tcp_keepalive(Duration::from_secs(60)) // TCP keep-alive
-                .http2_keep_alive_interval(Some(Duration::from_secs(30))) // HTTP/2 keep-alive
-                .http2_keep_alive_timeout(Duration::from_secs(10))
-                .build()
-                .expect("Failed to build HTTP client"),
-        }
+            client,
+        })
     }
 }
 
@@ -125,7 +127,11 @@ impl VisualizationDataProvider for HttpVisualizationProvider {
 
         let discovery: DiscoveryResponse = response.json().await?;
 
-        Ok(discovery.primals.into_iter().map(|p| p.into()).collect())
+        Ok(discovery
+            .primals
+            .into_iter()
+            .map(std::convert::Into::into)
+            .collect())
     }
 
     async fn get_topology(&self) -> anyhow::Result<Vec<TopologyEdge>> {
@@ -138,7 +144,7 @@ impl VisualizationDataProvider for HttpVisualizationProvider {
                     #[derive(serde::Deserialize)]
                     struct TopologyResponse {
                         edges: Vec<TopologyEdge>,
-                        #[allow(dead_code)]
+                        #[expect(dead_code)]
                         nodes: Option<serde_json::Value>, // Optional nodes field
                     }
 
@@ -174,7 +180,7 @@ impl VisualizationDataProvider for HttpVisualizationProvider {
                     ))
                 }
             }
-            Err(e) => Err(anyhow::anyhow!("Health check failed: {}", e)),
+            Err(e) => Err(anyhow::anyhow!("Health check failed: {e}")),
         }
     }
 
@@ -210,10 +216,10 @@ impl From<DiscoveredPrimal> for PrimalInfo {
             endpoints: None,
             metadata: None,
             properties: petal_tongue_core::Properties::new(), // Start with empty properties
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             trust_level: None, // Will be enriched from topology data
-            #[allow(deprecated)]
-            family_id: None,  // Will be enriched from topology data
+            #[expect(deprecated)]
+            family_id: None, // Will be enriched from topology data
         }
     }
 }
@@ -224,7 +230,7 @@ mod tests {
 
     #[test]
     fn test_provider_creation() {
-        let provider = HttpVisualizationProvider::new("http://test:9000");
+        let provider = HttpVisualizationProvider::new("http://test:9000").unwrap();
         let metadata = provider.get_metadata();
         assert_eq!(metadata.endpoint, "http://test:9000");
         assert_eq!(metadata.protocol, "http");
@@ -249,7 +255,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_health_check_with_invalid_endpoint() {
-        let provider = HttpVisualizationProvider::new("http://nonexistent:99999");
+        let provider = HttpVisualizationProvider::new("http://nonexistent:99999").unwrap();
         let health = provider.health_check().await;
         assert!(health.is_err(), "Invalid endpoint should fail health check");
     }

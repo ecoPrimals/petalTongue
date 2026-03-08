@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Audio Backend Traits - Universal Audio Interface
 //!
 //! Defines WHAT we need from audio, not HOW to do it!
@@ -8,22 +9,22 @@ use async_trait::async_trait;
 /// Universal audio backend trait
 ///
 /// Any audio provider implements this - we don't care HOW!
-/// - ToadStool (network synthesis)
+/// - `ToadStool` (network synthesis)
 /// - Software (pure Rust generation)
-/// - Socket servers (PipeWire, PulseAudio, etc. discovered at runtime)
+/// - Socket servers (`PipeWire`, `PulseAudio`, etc. discovered at runtime)
 /// - Direct devices (/dev/snd, /dev/audio, etc. discovered at runtime)
 /// - Silent (graceful degradation)
 #[async_trait]
 pub trait AudioBackend: Send + Sync {
     /// Get backend metadata (for display only!)
     ///
-    /// **NEVER use for routing logic** - use capabilities() instead
+    /// **NEVER use for routing logic** - use `capabilities()` instead
     fn metadata(&self) -> BackendMetadata;
 
     /// Get priority (lower = preferred)
     ///
     /// Priority order:
-    /// - 10: Network (ToadStool)
+    /// - 10: Network (`ToadStool`)
     /// - 30: Socket (PipeWire/PulseAudio/etc.)
     /// - 40: Direct (/dev/snd, /dev/audio, etc.)
     /// - 50: Software (pure Rust synthesis)
@@ -68,7 +69,7 @@ pub struct BackendMetadata {
 /// Backend type (categorization only)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BackendType {
-    /// Network audio (ToadStool primal)
+    /// Network audio (`ToadStool` primal)
     Network,
     /// Pure Rust software synthesis
     Software,
@@ -81,7 +82,7 @@ pub enum BackendType {
 }
 
 /// Audio capabilities (what can this backend do?)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct AudioCapabilities {
     /// Can play audio
     pub can_play: bool,
@@ -93,16 +94,4 @@ pub struct AudioCapabilities {
     pub max_channels: u8,
     /// Estimated latency (milliseconds)
     pub latency_estimate_ms: u32,
-}
-
-impl Default for AudioCapabilities {
-    fn default() -> Self {
-        Self {
-            can_play: false,
-            can_record: false,
-            max_sample_rate: 0,
-            max_channels: 0,
-            latency_estimate_ms: 0,
-        }
-    }
 }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Graph Canvas Widget
 //!
 //! Interactive egui-based canvas for graph editing.
@@ -81,7 +82,7 @@ impl GraphCanvas {
         self.draw_grid(&painter, rect);
 
         // Draw edges
-        for edge in self.graph.edges.iter() {
+        for edge in &self.graph.edges {
             self.draw_edge(&painter, rect, edge);
         }
 
@@ -193,14 +194,15 @@ impl GraphCanvas {
         }
 
         // Handle node dragging
-        if let Some(dragging_id) = &self.dragging_node {
-            if dragging_id == &node.id && response.dragged() {
-                // Update node position
-                if let Some(node_mut) = self.graph.nodes.get_mut(&node.id) {
-                    let delta = response.drag_delta() / self.zoom;
-                    node_mut.position.0 += delta.x;
-                    node_mut.position.1 += delta.y;
-                }
+        if let Some(dragging_id) = &self.dragging_node
+            && dragging_id == &node.id
+            && response.dragged()
+        {
+            // Update node position
+            if let Some(node_mut) = self.graph.nodes.get_mut(&node.id) {
+                let delta = response.drag_delta() / self.zoom;
+                node_mut.position.0 += delta.x;
+                node_mut.position.1 += delta.y;
             }
         }
 
@@ -255,7 +257,6 @@ impl GraphCanvas {
     }
 
     /// Convert screen coordinates to world coordinates
-    #[allow(dead_code)]
     fn screen_to_world(&self, screen_pos: Pos2, rect: Rect) -> Pos2 {
         let world_x = (screen_pos.x - rect.left() - self.pan.x) / self.zoom;
         let world_y = (screen_pos.y - rect.top() - self.pan.y) / self.zoom;

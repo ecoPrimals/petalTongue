@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Modality Capability Detection System
 //!
 //! petalTongue must be self-aware about what it can actually do.
@@ -135,8 +136,8 @@ impl CapabilityDetector {
         });
     }
 
-    /// Detect audio capability by checking for AudioCanvas support
-    /// NOTE: Audio is now handled by AudioCanvas in petal-tongue-ui (pure Rust /dev/snd access)
+    /// Detect audio capability by checking for `AudioCanvas` support
+    /// NOTE: Audio is now handled by `AudioCanvas` in petal-tongue-ui (pure Rust /dev/snd access)
     fn detect_audio() -> ModalityCapability {
         // AudioCanvas is always available on Linux (direct /dev/snd access)
         // No feature flags needed - pure Rust implementation

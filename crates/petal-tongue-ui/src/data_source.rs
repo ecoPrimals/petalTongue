@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Data source management for topology and primal discovery
 //!
 //! This module handles fetching topology data from `BiomeOS` via capability-based discovery.

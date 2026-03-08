@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Session state management for petalTongue
 //!
 //! This module provides comprehensive state persistence, enabling petalTongue to:
@@ -374,7 +375,29 @@ impl SessionManager {
             current_state: None,
             auto_save_enabled: true,
             last_save: current_timestamp(),
-            auto_save_interval: 30, // 30 seconds
+            auto_save_interval: 30,
+            dirty: false,
+        })
+    }
+
+    /// Create a `SessionManager` that stores its session at an explicit path
+    /// (no reliance on environment variables).
+    ///
+    /// # Errors
+    ///
+    /// Returns error if the parent directory cannot be created.
+    pub fn with_session_path(session_path: PathBuf) -> Result<Self, SessionError> {
+        if let Some(parent) = session_path.parent() {
+            fs::create_dir_all(parent).map_err(|e| {
+                SessionError::IoError(format!("Failed to create session directory: {e}"))
+            })?;
+        }
+        Ok(Self {
+            session_path,
+            current_state: None,
+            auto_save_enabled: true,
+            last_save: current_timestamp(),
+            auto_save_interval: 30,
             dirty: false,
         })
     }
@@ -545,7 +568,7 @@ impl SessionManager {
 
     // Compatibility aliases for e2e tests
 
-    /// Check if session has unsaved changes (alias for is_dirty)
+    /// Check if session has unsaved changes (alias for `is_dirty`)
     #[must_use]
     pub fn has_unsaved_changes(&self) -> bool {
         self.is_dirty()
@@ -689,7 +712,7 @@ fn get_base_dir() -> Result<PathBuf, SessionError> {
     crate::platform_dirs::data_dir()
         .map(|dir| dir.join("petaltongue"))
         .map_err(|e| {
-            SessionError::DirectoryError(format!("Could not determine data directory: {}", e))
+            SessionError::DirectoryError(format!("Could not determine data directory: {e}"))
         })
 }
 

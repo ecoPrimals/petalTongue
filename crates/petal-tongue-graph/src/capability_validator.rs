@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Capability-based edge validation
 //!
 //! Validates connections between primals based on their capabilities,
@@ -52,10 +53,7 @@ pub fn validate_connection(from: &PrimalInfo, to: &PrimalInfo) -> ValidationResu
         .filter(|cap| to_requires.contains(cap))
         .collect();
 
-    if !matches.is_empty() {
-        // Valid connection - source provides what target needs
-        ValidationResult::Valid
-    } else {
+    if matches.is_empty() {
         // Check for bidirectional capabilities (coordination, discovery)
         let from_coord = has_coordination_capability(from);
         let to_coord = has_coordination_capability(to);
@@ -70,6 +68,9 @@ pub fn validate_connection(from: &PrimalInfo, to: &PrimalInfo) -> ValidationResu
                 from.name, to.name
             ))
         }
+    } else {
+        // Valid connection - source provides what target needs
+        ValidationResult::Valid
     }
 }
 
@@ -145,7 +146,10 @@ mod tests {
             name: name.to_string(),
             primal_type: "test".to_string(),
             endpoint: format!("test://{}", id),
-            capabilities: capabilities.iter().map(|s| s.to_string()).collect(),
+            capabilities: capabilities
+                .iter()
+                .map(std::string::ToString::to_string)
+                .collect(),
             health: PrimalHealthStatus::Healthy,
             last_seen: 0,
             endpoints: None,

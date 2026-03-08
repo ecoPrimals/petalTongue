@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Logs View
 //!
 //! Real-time log streaming from all primals.
@@ -85,7 +86,7 @@ fn render_log_list(
                 let source = log
                     .source
                     .as_ref()
-                    .map(|s| format!("[{}]", s))
+                    .map(|s| format!("[{s}]"))
                     .unwrap_or_else(|| "[system]".to_string());
 
                 let is_selected = idx == logs.len() - 1 - selected;
@@ -97,9 +98,9 @@ fn render_log_list(
                 };
 
                 ListItem::new(Line::from(vec![
-                    Span::styled(format!("{} ", level_icon), style.fg(level_color)),
-                    Span::styled(format!("[{}] ", timestamp), style.fg(Color::DarkGray)),
-                    Span::styled(format!("{} ", source), style.fg(Color::Magenta)),
+                    Span::styled(format!("{level_icon} "), style.fg(level_color)),
+                    Span::styled(format!("[{timestamp}] "), style.fg(Color::DarkGray)),
+                    Span::styled(format!("{source} "), style.fg(Color::Magenta)),
                     Span::styled(&log.message, style.fg(Color::White)),
                 ]))
                 .style(style)

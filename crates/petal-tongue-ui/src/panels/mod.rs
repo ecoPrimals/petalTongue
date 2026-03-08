@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Panel implementations for petalTongue
 //!
 //! This module contains embeddable panels that can be composed into different UIs.

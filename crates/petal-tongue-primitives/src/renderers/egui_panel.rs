@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Egui Panel Renderer
 //!
 //! Renders panel layouts in an egui GUI context.

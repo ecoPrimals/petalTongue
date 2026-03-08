@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Color Utilities
 //!
 //! Pure functions for color space conversions and manipulation.
-//! Extracted from visual_2d.rs for reusability.
+//! Extracted from `visual_2d.rs` for reusability.
 
 /// Convert HSV to RGB color space
 ///
@@ -25,8 +26,8 @@
 /// let (r, g, b) = hsv_to_rgb(120.0, 1.0, 1.0);
 /// assert_eq!((r, g, b), (0, 255, 0));
 /// ```
-#[allow(clippy::many_single_char_names)] // Standard HSV→RGB notation: h,s,v,r,g,b,c,x,m
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // Values clamped to [0,255]
+#[expect(clippy::many_single_char_names)] // Standard HSV→RGB notation: h,s,v,r,g,b,c,x,m
+#[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // Values clamped to [0,255]
 #[must_use]
 pub fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
     let c = v * s;
@@ -166,9 +167,9 @@ mod tests {
         assert_eq!(hsv_to_rgb(0.0, 0.0, 0.0), (0, 0, 0));
         // Gray (no saturation, half value)
         let (r, g, b) = hsv_to_rgb(0.0, 0.0, 0.5);
-        assert!((r as i16 - 127).abs() <= 1);
-        assert!((g as i16 - 127).abs() <= 1);
-        assert!((b as i16 - 127).abs() <= 1);
+        assert!((i16::from(r) - 127).abs() <= 1);
+        assert!((i16::from(g) - 127).abs() <= 1);
+        assert!((i16::from(b) - 127).abs() <= 1);
     }
 
     #[test]
@@ -179,19 +180,19 @@ mod tests {
             let (h, s, v) = rgb_to_hsv(r, g, b);
             let (r2, g2, b2) = hsv_to_rgb(h, s, v);
             assert!(
-                (r as i16 - r2 as i16).abs() <= 1,
+                (i16::from(r) - i16::from(r2)).abs() <= 1,
                 "Red mismatch: {} vs {}",
                 r,
                 r2
             );
             assert!(
-                (g as i16 - g2 as i16).abs() <= 1,
+                (i16::from(g) - i16::from(g2)).abs() <= 1,
                 "Green mismatch: {} vs {}",
                 g,
                 g2
             );
             assert!(
-                (b as i16 - b2 as i16).abs() <= 1,
+                (i16::from(b) - i16::from(b2)).abs() <= 1,
                 "Blue mismatch: {} vs {}",
                 b,
                 b2

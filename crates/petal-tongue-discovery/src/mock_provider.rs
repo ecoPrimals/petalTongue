@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Mock visualization data provider for development/testing
 
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
@@ -60,9 +61,9 @@ impl VisualizationDataProvider for MockVisualizationProvider {
                 endpoints: None,
                 metadata: None,
                 properties: beardog_props,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: Some(3), // Keep for backward compatibility
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: Some("mock-family".to_string()),
             },
             PrimalInfo {
@@ -79,9 +80,9 @@ impl VisualizationDataProvider for MockVisualizationProvider {
                 endpoints: None,
                 metadata: None,
                 properties: songbird_props,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: Some(2),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: Some("mock-family".to_string()),
             },
             PrimalInfo {
@@ -98,9 +99,9 @@ impl VisualizationDataProvider for MockVisualizationProvider {
                 endpoints: None,
                 metadata: None,
                 properties: toadstool_props,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: Some(1),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: None,
             },
         ])
@@ -158,14 +159,14 @@ mod tests {
             primals[0]
                 .properties
                 .get("trust_level")
-                .and_then(|v| v.as_u8()),
+                .and_then(petal_tongue_core::PropertyValue::as_u8),
             Some(3)
         );
         assert_eq!(
             primals[1]
                 .properties
                 .get("trust_level")
-                .and_then(|v| v.as_u8()),
+                .and_then(petal_tongue_core::PropertyValue::as_u8),
             Some(2)
         );
 

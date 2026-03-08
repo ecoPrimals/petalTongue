@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Platform-Agnostic Configuration System
 //!
 //! TRUE PRIMAL principle: Zero hardcoding, XDG-compliant, environment-driven
@@ -5,6 +6,7 @@
 //! This module provides comprehensive configuration management that adapts
 //! to the host environment without hardcoded assumptions.
 
+use crate::constants::{DEFAULT_HEADLESS_PORT, DEFAULT_WEB_PORT};
 use serde::{Deserialize, Serialize};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
@@ -32,7 +34,7 @@ pub enum ConfigError {
 }
 
 /// Complete petalTongue configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     /// Network configuration (ports, bindings)
     pub network: NetworkConfig,
@@ -55,7 +57,7 @@ impl Config {
     ///
     /// Priority:
     /// 1. Environment variables (highest)
-    /// 2. Config file (if specified via PETALTONGUE_CONFIG)
+    /// 2. Config file (if specified via `PETALTONGUE_CONFIG`)
     /// 3. XDG config dir (~/.config/petaltongue/config.toml)
     /// 4. Defaults (lowest)
     pub fn from_env() -> Result<Self, ConfigError> {
@@ -64,10 +66,10 @@ impl Config {
         // Try to load from file (if specified or in XDG config dir)
         if let Ok(path) = std::env::var("PETALTONGUE_CONFIG") {
             config = config.merge(Self::from_file(&path)?);
-        } else if let Ok(xdg_config) = Self::xdg_config_path() {
-            if xdg_config.exists() {
-                config = config.merge(Self::from_file(&xdg_config)?);
-            }
+        } else if let Ok(xdg_config) = Self::xdg_config_path()
+            && xdg_config.exists()
+        {
+            config = config.merge(Self::from_file(&xdg_config)?);
         }
 
         // Override with environment variables
@@ -92,10 +94,13 @@ impl Config {
         let config_dir =
             platform_dirs::config_dir().map_err(|e| ConfigError::EnvError(e.to_string()))?;
 
-        Ok(config_dir.join("petaltongue").join("config.toml"))
+        Ok(config_dir
+            .join(crate::constants::APP_DIR_NAME)
+            .join("config.toml"))
     }
 
     /// Merge configurations (other overrides self)
+    #[must_use]
     pub fn merge(mut self, other: Self) -> Self {
         self.network = self.network.merge(other.network);
         self.paths = self.paths.merge(other.paths);
@@ -134,7 +139,9 @@ impl Config {
     fn validate(&self) -> Result<(), ConfigError> {
         // Validate ports are in valid range (u16 already guarantees <= 65535)
         if self.network.web_port == 0 {
-            return Err(ConfigError::ValidationError("Invalid web_port: cannot be 0".to_string()));
+            return Err(ConfigError::ValidationError(
+                "Invalid web_port: cannot be 0".to_string(),
+            ));
         }
 
         // Validate thresholds are percentages
@@ -145,18 +152,6 @@ impl Config {
         }
 
         Ok(())
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            network: NetworkConfig::default(),
-            paths: PathsConfig::default(),
-            discovery: DiscoveryConfig::default(),
-            thresholds: ThresholdsConfig::default(),
-            performance: PerformanceConfig::default(),
-        }
     }
 }
 
@@ -183,11 +178,13 @@ impl NetworkConfig {
     }
 
     /// Get web socket address
+    #[must_use]
     pub fn web_addr(&self) -> SocketAddr {
         SocketAddr::new(self.web_bind, self.web_port)
     }
 
     /// Get headless socket address
+    #[must_use]
     pub fn headless_addr(&self) -> SocketAddr {
         SocketAddr::new(self.headless_bind, self.headless_port)
     }
@@ -196,28 +193,28 @@ impl NetworkConfig {
 impl Default for NetworkConfig {
     fn default() -> Self {
         Self {
-            web_bind: IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
-            web_port: 3000,
-            headless_bind: IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
-            headless_port: 8080,
+            web_bind: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+            web_port: DEFAULT_WEB_PORT,
+            headless_bind: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+            headless_port: DEFAULT_HEADLESS_PORT,
             workers: 4,
         }
     }
 }
 
 /// Path configuration (XDG-compliant)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PathsConfig {
-    /// Runtime directory for sockets (XDG_RUNTIME_DIR)
+    /// Runtime directory for sockets (`XDG_RUNTIME_DIR`)
     pub runtime_dir: Option<PathBuf>,
 
-    /// Data directory for persistent storage (XDG_DATA_HOME)
+    /// Data directory for persistent storage (`XDG_DATA_HOME`)
     pub data_dir: Option<PathBuf>,
 
-    /// Config directory (XDG_CONFIG_HOME)
+    /// Config directory (`XDG_CONFIG_HOME`)
     pub config_dir: Option<PathBuf>,
 
-    /// Cache directory (XDG_CACHE_HOME)
+    /// Cache directory (`XDG_CACHE_HOME`)
     pub cache_dir: Option<PathBuf>,
 }
 
@@ -249,17 +246,6 @@ impl PathsConfig {
 
         use crate::platform_dirs;
         platform_dirs::data_dir().map_err(|e| ConfigError::EnvError(e.to_string()))
-    }
-}
-
-impl Default for PathsConfig {
-    fn default() -> Self {
-        Self {
-            runtime_dir: None, // Will use XDG at runtime
-            data_dir: None,
-            config_dir: None,
-            cache_dir: None,
-        }
     }
 }
 

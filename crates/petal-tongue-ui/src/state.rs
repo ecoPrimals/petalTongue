@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Application state management
 //!
 //! This module contains the application state struct and initialization logic.
@@ -20,7 +21,7 @@ use std::time::Instant;
 /// - Rendering engines (visual, audio, animation)
 /// - `BiomeOS` client for live data
 /// - UI state (panels, controls)
-/// - PrimalTools discovered at runtime via IPC (no compile-time dependencies)
+/// - `PrimalTools` discovered at runtime via IPC (no compile-time dependencies)
 pub struct AppState {
     // Core rendering engines
     /// Capability detector (knows what modalities are actually available)

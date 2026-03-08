@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+#![forbid(unsafe_code)]
 //! # petal-tongue-graph
 //!
 //! Graph rendering implementations (visual, VR, AR, etc.)
@@ -23,6 +25,8 @@
 pub mod audio_export;
 pub mod audio_sonification;
 pub mod capability_validator;
+pub mod chart_renderer;
+pub mod clinical_theme;
 pub mod color_utils;
 pub mod visual_2d;
 
@@ -38,6 +42,11 @@ pub mod visual_2d;
 
 pub use audio_export::{AudioFileGenerator, AudioFormat, AudioQuality};
 pub use audio_sonification::{AudioAttributes, AudioSonificationRenderer, Instrument};
+pub use chart_renderer::{NodeDetail, draw_channel, draw_node_detail};
+pub use clinical_theme::{
+    BG_CARD, BG_PANEL, CRITICAL, HEALTHY, INFO, POPULATION, TEXT_DIM, TEXT_PRIMARY, WARNING,
+    health_color,
+};
 pub use color_utils::{hsv_to_rgb, lerp_hsv, rgb_to_hsv};
 pub use visual_2d::Visual2DRenderer;
 

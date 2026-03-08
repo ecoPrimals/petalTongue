@@ -108,28 +108,7 @@ toadstool-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys"]
 [[bin]]
 name = "petal-tongue"
 path = "src/main.rs"
-
-[[example]]
-name = "display_demo"
-path = "../../examples/display_demo.rs"
-
-[[example]]
-name = "pixel_renderer_demo"
-path = "../../examples/pixel_renderer_demo.rs"
-
-[[example]]
-name = "pure_rust_gui_demo"
-path = "../../examples/pure_rust_gui_demo.rs"
-
-[[example]]
-name = "awakening_pure_rust"
-path = "../../examples/awakening_pure_rust.rs"
-required-features = ["software-rendering"]
-
-[[example]]
-name = "framebuffer_demo"
-path = "../../examples/framebuffer_demo.rs"
-required-features = ["framebuffer-direct"]
+doc = false
 
 # BingoCube demo moved to bingoCube/demos
 # [[bin]]

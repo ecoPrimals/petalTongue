@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Tutorial Mode - Demonstration & Graceful Degradation
 //!
 //! Provides standalone demonstration data and scenarios when:
-//! - SHOWCASE_MODE=true (explicit tutorial/demo mode)
+//! - `SHOWCASE_MODE=true` (explicit tutorial/demo mode)
 //! - No real primals are discovered (graceful fallback)
 //! - Testing/development without full ecosystem
 //!
@@ -209,9 +210,9 @@ impl TutorialMode {
                 );
                 props
             },
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             trust_level: None,
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             family_id: None,
         });
 
@@ -234,9 +235,9 @@ impl TutorialMode {
             endpoints: None,
             metadata: None,
             properties: Properties::new(),
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             trust_level: None,
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             family_id: None,
         });
 
@@ -258,9 +259,9 @@ impl TutorialMode {
             endpoints: None,
             metadata: None,
             properties: Properties::new(),
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             trust_level: None,
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             family_id: None,
         });
 

@@ -1,30 +1,30 @@
-//! BiomeOS API Client (JSON-RPC over Unix Sockets)
+// SPDX-License-Identifier: AGPL-3.0-only
+//! `BiomeOS` API Client (JSON-RPC over Unix Sockets)
 //!
 //! TRUE PRIMAL architecture: Uses JSON-RPC 2.0 over Unix sockets,
-//! not HTTP/REST. Connects to BiomeOS via the Neural API provider.
+//! not HTTP/REST. Connects to `BiomeOS` via the Neural API provider.
 //!
 //! # Migration from HTTP
 //!
-//! This module replaces the HTTP-based BiomeOSClient with a proper
-//! JSON-RPC implementation per PRIMAL_IPC_PROTOCOL.md.
+//! This module replaces the HTTP-based `BiomeOSClient` with a proper
+//! JSON-RPC implementation per `PRIMAL_IPC_PROTOCOL.md`.
 //!
 //! # Standards Compliance
 //!
 //! - Protocol: JSON-RPC 2.0 over Unix sockets
-//! - Transport: tokio::net::UnixStream
-//! - Methods: Semantic naming (neural_api.*)
+//! - Transport: `tokio::net::UnixStream`
+//! - Methods: Semantic naming (`neural_api`.*)
 //! - Discovery: Capability-based, no hardcoding
 
 use anyhow::{Context, Result};
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
-use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
-/// BiomeOS JSON-RPC client (TRUE PRIMAL architecture)
+/// `BiomeOS` JSON-RPC client (TRUE PRIMAL architecture)
 pub struct BiomeOSJsonRpcClient {
     /// Socket path (e.g., /run/user/1000/biomeos-neural-api.sock)
     socket_path: PathBuf,
@@ -57,7 +57,7 @@ impl BiomeOSJsonRpcClient {
         }
     }
 
-    /// Discover BiomeOS socket path using capability-based discovery
+    /// Discover `BiomeOS` socket path using capability-based discovery
     ///
     /// # Socket Discovery Priority (TRUE PRIMAL compliant)
     /// 1. `BIOMEOS_SOCKET` or `BIOMEOS_NEURAL_API_SOCKET` - explicit override
@@ -92,7 +92,7 @@ impl BiomeOSJsonRpcClient {
 
         // 3. Try user runtime directory
         if let Ok(uid) = std::env::var("UID") {
-            let path = PathBuf::from(format!("/run/user/{}/biomeos-neural-api.sock", uid));
+            let path = PathBuf::from(format!("/run/user/{uid}/biomeos-neural-api.sock"));
             if path.exists() {
                 return Ok(path);
             }
@@ -112,7 +112,7 @@ impl BiomeOSJsonRpcClient {
         )
     }
 
-    /// Check if BiomeOS is available
+    /// Check if `BiomeOS` is available
     pub async fn is_available(&self) -> bool {
         match tokio::time::timeout(
             std::time::Duration::from_millis(100),
@@ -125,7 +125,7 @@ impl BiomeOSJsonRpcClient {
         }
     }
 
-    /// Health check (semantic: neural_api.health)
+    /// Health check (semantic: `neural_api.health`)
     pub async fn health_check(&self) -> Result<bool> {
         let request = json!({
             "jsonrpc": "2.0",
@@ -140,7 +140,7 @@ impl BiomeOSJsonRpcClient {
         }
     }
 
-    /// Discover primals (semantic: neural_api.get_primals)
+    /// Discover primals (semantic: `neural_api.get_primals`)
     pub async fn discover_primals(&self) -> Result<Vec<PrimalInfo>> {
         let request = json!({
             "jsonrpc": "2.0",
@@ -162,7 +162,7 @@ impl BiomeOSJsonRpcClient {
         Ok(primals)
     }
 
-    /// Get topology (semantic: neural_api.get_topology)
+    /// Get topology (semantic: `neural_api.get_topology`)
     pub async fn get_topology(&self) -> Result<Vec<TopologyEdge>> {
         let request = json!({
             "jsonrpc": "2.0",
@@ -205,7 +205,7 @@ impl BiomeOSJsonRpcClient {
         // Send request (line-delimited JSON-RPC)
         let request_str = serde_json::to_string(request)?;
         stream
-            .write_all(format!("{}\n", request_str).as_bytes())
+            .write_all(format!("{request_str}\n").as_bytes())
             .await?;
         stream.flush().await?;
 
@@ -226,10 +226,9 @@ impl BiomeOSJsonRpcClient {
         // Check for JSON-RPC error
         if let Some(error) = response.get("error") {
             anyhow::bail!(
-                "BiomeOS returned JSON-RPC error: {}\n\
+                "BiomeOS returned JSON-RPC error: {error}\n\
                 \n\
-                This indicates BiomeOS received the request but encountered an error.",
-                error
+                This indicates BiomeOS received the request but encountered an error."
             );
         }
 

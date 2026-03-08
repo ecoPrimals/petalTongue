@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Pure Rust Display Detection
 //!
 //! TRUE PRIMAL display detection using environment and system APIs (no external commands).
@@ -23,11 +24,11 @@ pub fn get_display_dimensions_pure_rust() -> Option<(u32, u32)> {
     info!("🖥️  Detecting display dimensions (pure Rust)...");
 
     // Method 1: Check for common resolution environment variables
-    if let Ok(res) = std::env::var("RESOLUTION") {
-        if let Some((w, h)) = parse_resolution(&res) {
-            info!("✅ Display dimensions from RESOLUTION env: {}x{}", w, h);
-            return Some((w, h));
-        }
+    if let Ok(res) = std::env::var("RESOLUTION")
+        && let Some((w, h)) = parse_resolution(&res)
+    {
+        info!("✅ Display dimensions from RESOLUTION env: {}x{}", w, h);
+        return Some((w, h));
     }
 
     // Method 2: Sensible defaults based on display type
@@ -61,11 +62,11 @@ pub fn get_display_dimensions_pure_rust() -> Option<(u32, u32)> {
 
 /// Parse resolution string (e.g., "1920x1080" or "1920*1080")
 fn parse_resolution(s: &str) -> Option<(u32, u32)> {
-    let parts: Vec<&str> = s.split(|c| c == 'x' || c == '*' || c == 'X').collect();
-    if parts.len() == 2 {
-        if let (Ok(w), Ok(h)) = (parts[0].parse(), parts[1].parse()) {
-            return Some((w, h));
-        }
+    let parts: Vec<&str> = s.split(['x', '*', 'X']).collect();
+    if parts.len() == 2
+        && let (Ok(w), Ok(h)) = (parts[0].parse(), parts[1].parse())
+    {
+        return Some((w, h));
     }
     None
 }
@@ -77,11 +78,11 @@ pub fn is_virtual_display() -> bool {
     // Check for common virtual display indicators
 
     // 1. Check for Xvfb via DISPLAY variable
-    if let Ok(display_var) = std::env::var("DISPLAY") {
-        if display_var.starts_with(":99") || display_var.contains("xvfb") {
-            debug!("Virtual display detected via DISPLAY={}", display_var);
-            return true;
-        }
+    if let Ok(display_var) = std::env::var("DISPLAY")
+        && (display_var.starts_with(":99") || display_var.contains("xvfb"))
+    {
+        debug!("Virtual display detected via DISPLAY={}", display_var);
+        return true;
     }
 
     // 2. Check for headless environment variables
@@ -130,7 +131,7 @@ pub struct MonitorInfo {
     pub width: u32,
     /// Height in pixels
     pub height: u32,
-    /// Scale factor (HiDPI support)
+    /// Scale factor (`HiDPI` support)
     pub scale_factor: f64,
     /// Whether this is the primary monitor
     pub is_primary: bool,

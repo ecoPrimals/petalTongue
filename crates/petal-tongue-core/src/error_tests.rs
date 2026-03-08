@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Tests for error module
 
 #[cfg(test)]
@@ -7,7 +8,7 @@ mod tests {
     #[test]
     fn test_config_error() {
         let err = PetalTongueError::Config("test config error".to_string());
-        let msg = format!("{}", err);
+        let msg = format!("{err}");
         assert!(msg.contains("configuration error"));
         assert!(msg.contains("test config error"));
     }
@@ -15,7 +16,7 @@ mod tests {
     #[test]
     fn test_graph_engine_error() {
         let err = PetalTongueError::GraphEngine("test graph error".to_string());
-        let msg = format!("{}", err);
+        let msg = format!("{err}");
         assert!(msg.contains("graph engine error"));
         assert!(msg.contains("test graph error"));
     }
@@ -23,7 +24,7 @@ mod tests {
     #[test]
     fn test_renderer_error() {
         let err = PetalTongueError::Renderer("test render error".to_string());
-        let msg = format!("{}", err);
+        let msg = format!("{err}");
         assert!(msg.contains("renderer error"));
         assert!(msg.contains("test render error"));
     }
@@ -31,7 +32,7 @@ mod tests {
     #[test]
     fn test_discovery_error() {
         let err = PetalTongueError::Discovery("test discovery error".to_string());
-        let msg = format!("{}", err);
+        let msg = format!("{err}");
         assert!(msg.contains("primal discovery failed"));
         assert!(msg.contains("test discovery error"));
     }
@@ -39,7 +40,7 @@ mod tests {
     #[test]
     fn test_lock_poisoned_error() {
         let err = PetalTongueError::LockPoisoned("test lock error".to_string());
-        let msg = format!("{}", err);
+        let msg = format!("{err}");
         assert!(msg.contains("lock poisoned"));
         assert!(msg.contains("test lock error"));
     }
@@ -47,7 +48,7 @@ mod tests {
     #[test]
     fn test_audio_error() {
         let err = PetalTongueError::Audio("test audio error".to_string());
-        let msg = format!("{}", err);
+        let msg = format!("{err}");
         assert!(msg.contains("audio system error"));
         assert!(msg.contains("test audio error"));
     }
@@ -55,7 +56,7 @@ mod tests {
     #[test]
     fn test_telemetry_error() {
         let err = PetalTongueError::Telemetry("test telemetry error".to_string());
-        let msg = format!("{}", err);
+        let msg = format!("{err}");
         assert!(msg.contains("telemetry error"));
         assert!(msg.contains("test telemetry error"));
     }
@@ -63,7 +64,7 @@ mod tests {
     #[test]
     fn test_internal_error() {
         let err = PetalTongueError::Internal("test internal error".to_string());
-        let msg = format!("{}", err);
+        let msg = format!("{err}");
         assert!(msg.contains("internal error"));
         assert!(msg.contains("test internal error"));
     }
@@ -72,14 +73,14 @@ mod tests {
     fn test_io_error_conversion() {
         let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
         let err: PetalTongueError = io_err.into();
-        let msg = format!("{}", err);
+        let msg = format!("{err}");
         assert!(msg.contains("IO error"));
     }
 
     #[test]
     fn test_error_debug() {
         let err = PetalTongueError::Config("test".to_string());
-        let debug_str = format!("{:?}", err);
+        let debug_str = format!("{err:?}");
         assert!(debug_str.contains("Config"));
     }
 
@@ -110,7 +111,7 @@ mod tests {
         ];
 
         for err in errors {
-            let msg = format!("{}", err);
+            let msg = format!("{err}");
             assert!(!msg.is_empty());
         }
     }
@@ -137,7 +138,7 @@ mod tests {
         // Convert to PetalTongueError
         let poison_err = result.unwrap_err();
         let err: PetalTongueError = poison_err.into();
-        let msg = format!("{}", err);
+        let msg = format!("{err}");
         assert!(msg.contains("lock poisoned"));
     }
 }

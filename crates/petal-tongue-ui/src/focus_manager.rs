@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Input focus management for panels
 //!
 //! This module provides explicit input routing to panels, solving the problem
@@ -5,7 +6,7 @@
 //!
 //! ## Architecture
 //!
-//! - **FocusManager**: Tracks which panel has focus
+//! - **`FocusManager`**: Tracks which panel has focus
 //! - **Focus Stack**: Priority-based input routing
 //! - **Input Actions**: Panels declare if they consumed input
 //! - **Exclusive Mode**: Games can request exclusive input
@@ -69,6 +70,7 @@ impl Default for PanelInputPreferences {
 
 impl FocusManager {
     /// Create a new focus manager
+    #[must_use]
     pub fn new() -> Self {
         Self {
             focused_panel: None,
@@ -86,8 +88,7 @@ impl FocusManager {
             .position(|panel_id| {
                 self.panel_preferences
                     .get(panel_id)
-                    .map(|p| p.priority < prefs.priority)
-                    .unwrap_or(true)
+                    .is_none_or(|p| p.priority < prefs.priority)
             })
             .unwrap_or(self.focus_stack.len());
 
@@ -111,39 +112,41 @@ impl FocusManager {
     }
 
     /// Get currently focused panel
+    #[must_use]
     pub fn focused_panel(&self) -> Option<&str> {
         self.focused_panel.as_deref()
     }
 
     /// Get panels that want keyboard input (in priority order)
+    #[must_use]
     pub fn keyboard_interested_panels(&self) -> Vec<&str> {
         self.focus_stack
             .iter()
             .filter(|id| {
                 self.panel_preferences
                     .get(*id)
-                    .map(|p| p.wants_keyboard)
-                    .unwrap_or(false)
+                    .is_some_and(|p| p.wants_keyboard)
             })
-            .map(|s| s.as_str())
+            .map(std::string::String::as_str)
             .collect()
     }
 
     /// Get panels that want mouse input (in priority order)
+    #[must_use]
     pub fn mouse_interested_panels(&self) -> Vec<&str> {
         self.focus_stack
             .iter()
             .filter(|id| {
                 self.panel_preferences
                     .get(*id)
-                    .map(|p| p.wants_mouse)
-                    .unwrap_or(false)
+                    .is_some_and(|p| p.wants_mouse)
             })
-            .map(|s| s.as_str())
+            .map(std::string::String::as_str)
             .collect()
     }
 
     /// Check if any panel wants exclusive input
+    #[must_use]
     pub fn has_exclusive_panel(&self) -> bool {
         self.panel_preferences
             .values()
@@ -151,16 +154,16 @@ impl FocusManager {
     }
 
     /// Get exclusive panel (if any)
+    #[must_use]
     pub fn exclusive_panel(&self) -> Option<&str> {
         self.focus_stack
             .iter()
             .find(|id| {
                 self.panel_preferences
                     .get(*id)
-                    .map(|p| p.wants_exclusive)
-                    .unwrap_or(false)
+                    .is_some_and(|p| p.wants_exclusive)
             })
-            .map(|s| s.as_str())
+            .map(std::string::String::as_str)
     }
 
     /// Update panel preferences
@@ -170,16 +173,8 @@ impl FocusManager {
 
             // Re-sort focus stack by priority
             self.focus_stack.sort_by(|a, b| {
-                let a_priority = self
-                    .panel_preferences
-                    .get(a)
-                    .map(|p| p.priority)
-                    .unwrap_or(0);
-                let b_priority = self
-                    .panel_preferences
-                    .get(b)
-                    .map(|p| p.priority)
-                    .unwrap_or(0);
+                let a_priority = self.panel_preferences.get(a).map_or(0, |p| p.priority);
+                let b_priority = self.panel_preferences.get(b).map_or(0, |p| p.priority);
                 b_priority.cmp(&a_priority) // Higher priority first
             });
         }

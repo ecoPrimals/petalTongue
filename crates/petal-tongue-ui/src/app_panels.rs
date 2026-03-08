@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! UI Panel Rendering for petalTongue
 //!
 //! Extracted from app.rs to reduce complexity and improve maintainability.
@@ -13,7 +14,9 @@ use crate::accessibility::ColorPalette;
 use crate::accessibility_panel::AccessibilityPanel;
 use crate::tool_integration::ToolManager;
 use petal_tongue_adapters::AdapterRegistry;
-use petal_tongue_core::{GraphEngine, LayoutAlgorithm, Modality, PrimalHealthStatus};
+use petal_tongue_core::{
+    GraphEngine, LayoutAlgorithm, Modality, PrimalHealthStatus, constants::PRIMAL_NAME,
+};
 use petal_tongue_graph::Visual2DRenderer;
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer};
 use std::sync::{Arc, RwLock};
@@ -97,7 +100,7 @@ pub fn render_top_menu_bar(
 
     ui.label("Layout:");
     egui::ComboBox::from_id_salt("layout_selector")
-        .selected_text(format!("{:?}", current_layout))
+        .selected_text(format!("{current_layout:?}"))
         .show_ui(ui, |ui| {
             if ui
                 .selectable_value(
@@ -107,7 +110,10 @@ pub fn render_top_menu_bar(
                 )
                 .clicked()
             {
-                let mut g = graph.write().expect("graph lock poisoned");
+                let Ok(mut g) = graph.write() else {
+                    tracing::error!("graph lock poisoned");
+                    return;
+                };
                 g.set_layout(LayoutAlgorithm::ForceDirected);
                 g.layout(100);
             }
@@ -119,7 +125,10 @@ pub fn render_top_menu_bar(
                 )
                 .clicked()
             {
-                let mut g = graph.write().expect("graph lock poisoned");
+                let Ok(mut g) = graph.write() else {
+                    tracing::error!("graph lock poisoned");
+                    return;
+                };
                 g.set_layout(LayoutAlgorithm::Hierarchical);
                 g.layout(1);
             }
@@ -127,7 +136,10 @@ pub fn render_top_menu_bar(
                 .selectable_value(current_layout, LayoutAlgorithm::Circular, "Circular")
                 .clicked()
             {
-                let mut g = graph.write().expect("graph lock poisoned");
+                let Ok(mut g) = graph.write() else {
+                    tracing::error!("graph lock poisoned");
+                    return;
+                };
                 g.set_layout(LayoutAlgorithm::Circular);
                 g.layout(1);
             }
@@ -243,10 +255,9 @@ pub fn render_controls_panel(
 }
 
 /// Render the audio information panel (right side)
-#[allow(clippy::too_many_arguments)]
 pub fn render_audio_panel(
     ui: &mut egui::Ui,
-    palette: &ColorPalette,
+    _palette: &ColorPalette,
     _accessibility_panel: &AccessibilityPanel,
     audio_renderer: &mut AudioSonificationRenderer,
     audio_generator: &AudioFileGenerator,
@@ -497,6 +508,86 @@ pub fn render_audio_panel(
     );
 }
 
+/// Render the capability panel (modality status window)
+pub fn render_capability_panel(
+    ctx: &egui::Context,
+    _palette: &ColorPalette,
+    capabilities: &petal_tongue_core::CapabilityDetector,
+) {
+    egui::Window::new("🔍 Modality Capabilities")
+        .default_width(500.0)
+        .default_pos([400.0, 100.0])
+        .show(ctx, |ui| {
+            ui.heading(
+                egui::RichText::new(format!("{PRIMAL_NAME} Self-Awareness")).size(16.0),
+            );
+            ui.add_space(8.0);
+            ui.label("This system knows what it can actually do:");
+            ui.add_space(12.0);
+            ui.separator();
+            ui.add_space(12.0);
+
+            for cap in capabilities.get_all() {
+                let (icon, color) = match cap.status {
+                    petal_tongue_core::ModalityStatus::Available => {
+                        ("✅", egui::Color32::from_rgb(100, 255, 100))
+                    }
+                    petal_tongue_core::ModalityStatus::NotInitialized => {
+                        ("⚠️", egui::Color32::from_rgb(255, 200, 100))
+                    }
+                    petal_tongue_core::ModalityStatus::Unavailable => {
+                        ("❌", egui::Color32::from_rgb(255, 100, 100))
+                    }
+                    petal_tongue_core::ModalityStatus::Disabled => {
+                        ("🔇", egui::Color32::from_rgb(150, 150, 150))
+                    }
+                };
+
+                let tested_text = if cap.tested { "tested" } else { "not tested" };
+
+                egui::Frame::none()
+                    .fill(egui::Color32::from_rgb(40, 40, 45))
+                    .stroke(egui::Stroke::new(1.0, color))
+                    .inner_margin(10.0)
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label(egui::RichText::new(icon).size(24.0));
+                            ui.vertical(|ui| {
+                                ui.label(
+                                    egui::RichText::new(format!("{:?}", cap.modality))
+                                        .size(14.0)
+                                        .strong()
+                                        .color(color),
+                                );
+                                ui.label(
+                                    egui::RichText::new(format!(
+                                        "{:?} ({})",
+                                        cap.status, tested_text
+                                    ))
+                                    .size(11.0)
+                                    .color(egui::Color32::GRAY),
+                                );
+                            });
+                        });
+                        ui.add_space(6.0);
+                        ui.label(
+                            egui::RichText::new(&cap.reason)
+                                .size(12.0)
+                                .color(egui::Color32::from_rgb(200, 200, 200)),
+                        );
+                    });
+                ui.add_space(8.0);
+            }
+
+            ui.add_space(12.0);
+            ui.separator();
+            ui.add_space(8.0);
+            ui.label(egui::RichText::new("💡 Why This Matters").size(14.0).strong());
+            ui.add_space(4.0);
+            ui.label("In critical situations (wartime AR, disaster response, accessibility),\nfalse capability claims are dangerous. This system is honest about what it can do.");
+        });
+}
+
 /// Render the primal details panel for a selected node
 pub fn render_primal_details_panel(
     ui: &mut egui::Ui,
@@ -512,7 +603,11 @@ pub fn render_primal_details_panel(
     ui.add_space(8.0);
 
     // Get primal info from graph
-    let graph = graph.read().expect("graph lock poisoned");
+    let Ok(graph) = graph.read() else {
+        tracing::error!("graph lock poisoned");
+        ui.label(egui::RichText::new("Failed to access graph").color(egui::Color32::RED));
+        return;
+    };
     let primal_node = graph.nodes().iter().find(|n| n.info.id == selected_id);
 
     if let Some(node) = primal_node {
@@ -557,7 +652,7 @@ pub fn render_primal_details_panel(
             use petal_tongue_core::{Properties, PropertyValue};
             let mut props = Properties::new();
 
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             if let Some(trust_level) = info.trust_level {
                 props.insert(
                     "trust_level".to_string(),
@@ -565,7 +660,7 @@ pub fn render_primal_details_panel(
                 );
             }
 
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             if let Some(family_id) = &info.family_id {
                 props.insert(
                     "family_id".to_string(),

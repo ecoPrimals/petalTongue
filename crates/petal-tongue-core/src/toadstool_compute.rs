@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Toadstool Compute Provider
 //!
 //! GPU compute acceleration via Toadstool primal (discovered at runtime).
@@ -103,7 +104,7 @@ impl ToadstoolCompute {
         anyhow::bail!("No GPU compute provider discovered")
     }
 
-    /// Parse capability strings into ComputeCapability enum
+    /// Parse capability strings into `ComputeCapability` enum
     fn parse_capabilities(caps: &[String]) -> Vec<ComputeCapability> {
         let mut result = Vec::new();
 
@@ -134,6 +135,7 @@ impl ToadstoolCompute {
     }
 
     /// Get service info
+    #[must_use]
     pub fn service(&self) -> Option<&ToadstoolServiceInfo> {
         self.service.as_ref()
     }
@@ -141,7 +143,7 @@ impl ToadstoolCompute {
 
 #[async_trait]
 impl ComputeProvider for ToadstoolCompute {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         // Return generic name (not "Toadstool")
         "GPU Compute Provider"
     }
@@ -187,6 +189,7 @@ pub struct CPUFallbackCompute {
 
 impl CPUFallbackCompute {
     /// Create new CPU fallback provider
+    #[must_use]
     pub fn new() -> Self {
         Self {
             capabilities: vec![
@@ -205,7 +208,7 @@ impl Default for CPUFallbackCompute {
 
 #[async_trait]
 impl ComputeProvider for CPUFallbackCompute {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "CPU Fallback"
     }
 

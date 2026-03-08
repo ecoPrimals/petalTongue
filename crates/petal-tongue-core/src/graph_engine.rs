@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Graph Engine - Core topology representation
 //!
 //! This module provides the modality-agnostic graph structure.
@@ -119,13 +120,38 @@ impl GraphEngine {
     }
 
     /// Add a node to the graph
+    ///
+    /// If the primal has position data in properties ("x"/"y" or "`position_x"/"position_y`"),
+    /// that position is used. Otherwise the node is placed at (0, 0) for layout algorithms.
     pub fn add_node(&mut self, info: PrimalInfo) {
-        let node = Node::new(info);
+        let position = Self::extract_position_from_primal(&info);
+        let node = Node::with_position(info, position);
         // OPTIMIZATION: Clone ID after moving info into node, not before
         let node_id = node.info.id.clone();
 
         self.node_index.insert(node_id, self.nodes.len());
         self.nodes.push(node);
+    }
+
+    /// Extract position from primal properties if present.
+    /// Supports "x"/"y" (scenario convert) and "`position_x"/"position_y`" (scenario provider).
+    fn extract_position_from_primal(info: &PrimalInfo) -> Position {
+        let get_f32 = |key: &str| {
+            info.properties
+                .get(key)
+                .and_then(super::property::PropertyValue::as_number)
+                .map(|n| n as f32)
+        };
+
+        let (x, y) = if let (Some(x), Some(y)) = (get_f32("x"), get_f32("y")) {
+            (x, y)
+        } else if let (Some(x), Some(y)) = (get_f32("position_x"), get_f32("position_y")) {
+            (x, y)
+        } else {
+            (0.0, 0.0)
+        };
+
+        Position::new_2d(x, y)
     }
 
     /// Remove a node from the graph
@@ -257,7 +283,7 @@ impl GraphEngine {
     pub fn stats(&self) -> GraphStats {
         // Note: Precision loss is acceptable for large graphs (>16M nodes)
         // as avg_degree is a statistical approximation
-        #[allow(clippy::cast_precision_loss)]
+        #[expect(clippy::cast_precision_loss)]
         let avg_degree = if self.nodes.is_empty() {
             0.0
         } else {
@@ -434,7 +460,7 @@ fn hierarchical_layout(nodes: &mut [Node], edges: &[TopologyEdge]) {
         let level = levels.get(&idx).copied().unwrap_or(0);
         let count = level_counts.entry(level).or_insert(0);
 
-        #[allow(clippy::cast_precision_loss)]
+        #[expect(clippy::cast_precision_loss)]
         {
             node.position.x = (*count as f32) * 150.0;
             node.position.y = (level as f32) * 150.0;
@@ -445,7 +471,7 @@ fn hierarchical_layout(nodes: &mut [Node], edges: &[TopologyEdge]) {
 }
 
 /// Circular layout (nodes arranged in a circle)
-#[allow(clippy::cast_precision_loss)] // Precision loss acceptable for layout
+#[expect(clippy::cast_precision_loss)] // Precision loss acceptable for layout
 fn circular_layout(nodes: &mut [Node]) {
     let radius = 300.0;
     let angle_step = 2.0 * std::f32::consts::PI / nodes.len() as f32;
@@ -458,7 +484,7 @@ fn circular_layout(nodes: &mut [Node]) {
 }
 
 /// Random layout (for testing)
-#[allow(clippy::cast_precision_loss)] // Precision loss acceptable for layout
+#[expect(clippy::cast_precision_loss)] // Precision loss acceptable for layout
 fn random_layout(nodes: &mut [Node]) {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};

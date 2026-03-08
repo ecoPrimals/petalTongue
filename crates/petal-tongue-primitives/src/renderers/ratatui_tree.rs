@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Ratatui Tree Renderer
 //!
 //! Renders trees in a terminal UI (TUI) context.

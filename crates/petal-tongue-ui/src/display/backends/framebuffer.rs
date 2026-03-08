@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Framebuffer Direct Rendering Backend
 //!
 //! Writes directly to Linux framebuffer (/dev/fb0) for console-mode GUI.
@@ -24,7 +25,7 @@
 //! - All buffers are allocated with correct sizes (width * height * 4 bytes)
 //! - No manual pointer arithmetic
 //! - All writes are bounds-checked by Rust's standard library
-//! - File writes use safe std::io::Write trait methods
+//! - File writes use safe `std::io::Write` trait methods
 //!
 //! ## Platform Safety:
 //! - Only compiled on Linux (cfg gate)
@@ -95,7 +96,7 @@ impl FramebufferDisplay {
             .write(true)
             .read(true)
             .open("/dev/fb0")
-            .map_err(|e| anyhow!("Failed to open /dev/fb0: {}", e))?;
+            .map_err(|e| anyhow!("Failed to open /dev/fb0: {e}"))?;
 
         self.fb_device = Some(fb_device);
         Ok(())
@@ -195,11 +196,11 @@ impl DisplayBackend for FramebufferDisplay {
             // Seek to beginning for each frame
             fb_device
                 .seek(SeekFrom::Start(0))
-                .map_err(|e| anyhow!("Failed to seek framebuffer: {}", e))?;
+                .map_err(|e| anyhow!("Failed to seek framebuffer: {e}"))?;
 
             fb_device
                 .write_all(buffer)
-                .map_err(|e| anyhow!("Failed to write to framebuffer: {}", e))?;
+                .map_err(|e| anyhow!("Failed to write to framebuffer: {e}"))?;
             fb_device.flush()?;
 
             tracing::trace!("Presented {} bytes to framebuffer", buffer.len());
@@ -214,7 +215,7 @@ impl DisplayBackend for FramebufferDisplay {
         Self::check_framebuffer()
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Framebuffer Direct (/dev/fb0)"
     }
 

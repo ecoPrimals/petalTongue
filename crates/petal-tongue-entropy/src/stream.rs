@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Entropy streaming to biomeOS/BearDog
 
 use crate::types::EntropyCapture;
@@ -106,7 +107,7 @@ pub async fn stream_entropy(entropy: EntropyCapture, endpoint: &str) -> Result<S
     let status = response.status();
     if !status.is_success() {
         let error_body = response.text().await.unwrap_or_default();
-        anyhow::bail!("Server rejected entropy: {} - {}", status, error_body);
+        anyhow::bail!("Server rejected entropy: {status} - {error_body}");
     }
 
     let confirmation: StreamConfirmation = response
@@ -175,7 +176,7 @@ fn encrypt_entropy(plaintext: &[u8]) -> Result<EncryptedEntropy> {
     // Encrypt with authenticated encryption
     let ciphertext = cipher
         .encrypt(nonce, plaintext)
-        .map_err(|e| anyhow::anyhow!("Encryption failed: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Encryption failed: {e}"))?;
 
     tracing::debug!(
         "Encrypted {} bytes → {} bytes (includes 16-byte auth tag)",
@@ -193,7 +194,7 @@ fn encrypt_entropy(plaintext: &[u8]) -> Result<EncryptedEntropy> {
 ///
 /// In production, only biomeOS/BearDog would decrypt (using their private key).
 #[cfg(test)]
-#[allow(dead_code)] // Used in future streaming implementation
+#[expect(dead_code)] // Used in future streaming implementation
 fn decrypt_entropy(encrypted: &EncryptedEntropy, key: &[u8; 32]) -> Result<Vec<u8>> {
     let cipher = Aes256Gcm::new(key.into());
     let nonce = GenericArray::from_slice(&encrypted.nonce);
@@ -269,6 +270,7 @@ mod tests {
     #[tokio::test]
     #[ignore] // Requires live server
     async fn test_stream_entropy_integration() {
+        use petal_tongue_core::constants;
         use std::time::Duration;
 
         let audio_data = AudioEntropyData {
@@ -295,7 +297,14 @@ mod tests {
         let entropy = EntropyCapture::Audio(audio_data);
 
         // This would fail without a live server
-        let result = stream_entropy(entropy, "http://localhost:3000/api/v1/entropy/stream").await;
+        let result = stream_entropy(
+            entropy,
+            &format!(
+                "http://localhost:{}/api/v1/entropy/stream",
+                constants::DEFAULT_WEB_PORT
+            ),
+        )
+        .await;
         assert!(result.is_err()); // Expected to fail in test environment
     }
 }

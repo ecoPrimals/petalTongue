@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Accessibility Settings Panel UI
 //!
 //! Panel for users to customize accessibility settings

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Sandbox Mock Data Provider
 //!
 //! Loads mock data from sandbox/scenarios/ for demonstrations and testing
@@ -166,9 +167,9 @@ pub fn get_default_scenario() -> SandboxScenario {
                 endpoints: None,
                 metadata: None,
                 properties: Properties::new(),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: None,
             },
             PrimalInfo {
@@ -182,9 +183,9 @@ pub fn get_default_scenario() -> SandboxScenario {
                 endpoints: None,
                 metadata: None,
                 properties: Properties::new(),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: None,
             },
             PrimalInfo {
@@ -198,9 +199,9 @@ pub fn get_default_scenario() -> SandboxScenario {
                 endpoints: None,
                 metadata: None,
                 properties: Properties::new(),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: None,
             },
         ],

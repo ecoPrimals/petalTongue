@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Awakening Audio Layers
 //!
 //! Multi-layered audio for the awakening experience.
@@ -243,7 +244,7 @@ pub fn mix_layers(layers: Vec<Vec<f32>>) -> Vec<f32> {
     }
 
     // Find longest layer
-    let max_len = layers.iter().map(|l| l.len()).max().unwrap_or(0);
+    let max_len = layers.iter().map(std::vec::Vec::len).max().unwrap_or(0);
 
     let mut mixed = vec![0.0; max_len];
 

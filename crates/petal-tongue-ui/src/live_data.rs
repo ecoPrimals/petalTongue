@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Live Data Indicator Components
 //!
 //! Visual components that prove data is LIVE with timestamps, badges, and source labels

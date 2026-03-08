@@ -1,5 +1,7 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Header Widget
 
+use petal_tongue_core::constants::PRIMAL_NAME;
 use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
@@ -19,7 +21,7 @@ impl Header {
         let title = vec![
             Span::raw("🌸 "),
             Span::styled(
-                "petalTongue",
+                PRIMAL_NAME,
                 Style::default()
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),

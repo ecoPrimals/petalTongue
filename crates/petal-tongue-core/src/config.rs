@@ -1,6 +1,8 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! petalTongue configuration.
 
 use crate::common_config::CommonConfig;
+use crate::constants::PRIMAL_NAME;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -41,7 +43,7 @@ impl Default for PetalTongueConfig {
     fn default() -> Self {
         Self {
             common: CommonConfig {
-                name: "petalTongue".to_string(),
+                name: PRIMAL_NAME.to_string(),
                 ..CommonConfig::default()
             },
             biomeos_url: None,

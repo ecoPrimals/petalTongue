@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! neuralAPI View
 //!
 //! Graph orchestration management for biomeOS.

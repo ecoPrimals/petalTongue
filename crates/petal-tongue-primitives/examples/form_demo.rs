@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 // Form Primitive Demo
 //
 // Demonstrates the Form primitive with validation across different field types

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+#![cfg_attr(not(test), forbid(unsafe_code))]
 //! petalTongue Core
 //!
 //! Core graph engine and types for multi-modal primal visualization.
@@ -23,6 +25,10 @@
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
+#![allow(clippy::must_use_candidate)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::doc_markdown)]
+#![allow(clippy::unused_async)]
 
 pub mod adaptive_rendering; // Adaptive rendering for multi-device support
 pub mod biomeos_discovery; // biomeOS discovery backend
@@ -33,6 +39,8 @@ pub mod config;
 pub mod config_system; // NEW: Platform-agnostic configuration (XDG-compliant)
 #[cfg(test)]
 mod config_tests;
+pub mod constants; // Centralized constants (self-knowledge only)
+pub mod data_channel; // DataChannel and ClinicalRange (healthSpring schema)
 pub mod dynamic_schema; // Dynamic schema system for live evolution
 pub mod error;
 #[cfg(test)]
@@ -118,6 +126,9 @@ pub use graph_builder::{
 
 /// Graph validation types (Cycle detection, dependency resolution)
 pub use graph_validation::{GraphValidator, ValidationIssue, ValidationResult};
+
+/// Data channel types (healthSpring schema)
+pub use data_channel::{ClinicalRange, DataChannel};
 
 /// Dynamic schema system (Live evolution, no recompilation)
 pub use dynamic_schema::{
@@ -253,7 +264,9 @@ impl PrimalHealth for PetalTongue {
     }
 
     async fn health_check(&self) -> Result<HealthReport, PrimalError> {
-        Ok(HealthReport::new("petalTongue", env!("CARGO_PKG_VERSION"))
-            .with_status(self.health_status()))
+        Ok(
+            HealthReport::new(crate::constants::PRIMAL_NAME, env!("CARGO_PKG_VERSION"))
+                .with_status(self.health_status()),
+        )
     }
 }

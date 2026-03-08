@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Headless mode - Pure Rust rendering without GUI
 //!
 //! Pure Rust! ✅
@@ -5,6 +6,7 @@
 
 use crate::data_service::DataService;
 use anyhow::Result;
+use petal_tongue_core::constants;
 use std::sync::Arc;
 
 pub async fn run(_bind: &str, _workers: usize, data_service: Arc<DataService>) -> Result<()> {
@@ -39,7 +41,7 @@ mod tests {
     #[tokio::test]
     async fn test_headless_mode() {
         let data_service = Arc::new(DataService::new());
-        let result = run("0.0.0.0:8080", 4, data_service).await;
+        let result = run(&constants::default_headless_bind(), 4, data_service).await;
         assert!(result.is_ok());
     }
 

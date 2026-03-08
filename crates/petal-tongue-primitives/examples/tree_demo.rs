@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Tree Primitive Demo
 //!
 //! Demonstrates the tree primitive with a file system example.
@@ -50,7 +51,7 @@ fn main() {
 
     // Display the tree (uses Display trait)
     println!("File System Tree:");
-    println!("{}", project);
+    println!("{project}");
     println!();
 
     // Demonstrate tree statistics
@@ -69,7 +70,7 @@ fn main() {
     // Demonstrate filtering (find all Rust files)
     println!("Filtering for .rs files:");
     if let Some(filtered) = project.filter(|name| name.ends_with(".rs")) {
-        println!("{}", filtered);
+        println!("{filtered}");
     }
 
     // Demonstrate visiting
@@ -77,14 +78,14 @@ fn main() {
     let mut count = 0;
     project.visit(&mut |name| {
         count += 1;
-        println!("  {}. {}", count, name);
+        println!("  {count}. {name}");
     });
     println!();
 
     // Demonstrate mapping (transform to uppercase)
     println!("Transformed tree (uppercase):");
     let uppercase_tree = project.clone().map(|name| name.to_uppercase());
-    println!("{}", uppercase_tree);
+    println!("{uppercase_tree}");
 
     println!("✅ Demo complete!");
 }

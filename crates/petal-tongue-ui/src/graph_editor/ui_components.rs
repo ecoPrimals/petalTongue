@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! UI Components for Collaborative Intelligence
 //!
 //! Provides egui widgets for displaying:
@@ -23,7 +24,7 @@ impl StatusDisplay {
                 NodeStatus::Pending => ("⚪", Color32::GRAY, "Pending"),
                 NodeStatus::Running { progress } => {
                     let color = Color32::from_rgb(0, 128, 255);
-                    let text = format!("Running ({}%)", progress);
+                    let text = format!("Running ({progress}%)");
                     ("🔵", color, text.leak() as &str)
                 }
                 NodeStatus::Completed => ("✅", Color32::GREEN, "Completed"),
@@ -113,7 +114,7 @@ impl StatusDisplay {
                 ui.colored_label(Color32::from_rgb(255, 165, 0), "⚠️ Recoverable error");
 
                 if let Some(action) = &error.suggested_action {
-                    ui.colored_label(Color32::YELLOW, format!("💡 Suggestion: {}", action));
+                    ui.colored_label(Color32::YELLOW, format!("💡 Suggestion: {action}"));
                 }
             } else {
                 ui.colored_label(Color32::RED, "❌ Non-recoverable error");
@@ -193,7 +194,7 @@ impl ReasoningDisplay {
                         ui.label(RichText::new("Data Sources:").strong());
                         ui.horizontal_wrapped(|ui| {
                             for source in &reasoning.data_sources {
-                                ui.label(format!("  • {}", source));
+                                ui.label(format!("  • {source}"));
                             }
                         });
                         ui.add_space(8.0);

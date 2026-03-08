@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Proprioception (SAME DAVE) data structures
 //!
 //! This module defines the types for system self-awareness, following the SAME DAVE model:
@@ -61,6 +62,7 @@ pub enum HealthStatus {
 
 impl HealthStatus {
     /// Get color for UI rendering
+    #[must_use]
     pub const fn color_rgb(&self) -> (u8, u8, u8) {
         match self {
             Self::Healthy => (34, 197, 94),  // green-500
@@ -70,6 +72,7 @@ impl HealthStatus {
     }
 
     /// Get emoji representation
+    #[must_use]
     pub const fn emoji(&self) -> &'static str {
         match self {
             Self::Healthy => "💚",
@@ -98,13 +101,13 @@ pub struct SelfAwarenessData {
     /// Can coordinate multiple primals
     pub can_coordinate: bool,
 
-    /// Has security capabilities (BearDog)
+    /// Has security capabilities (`BearDog`)
     pub has_security: bool,
 
     /// Has discovery capabilities (Songbird)
     pub has_discovery: bool,
 
-    /// Has compute capabilities (ToadStool)
+    /// Has compute capabilities (`ToadStool`)
     pub has_compute: bool,
 }
 

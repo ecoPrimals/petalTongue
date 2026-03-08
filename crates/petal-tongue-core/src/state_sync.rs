@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! State synchronization across devices
 //!
 //! This module enables petalTongue to maintain consistent state across
@@ -48,6 +49,7 @@ pub struct DeviceState {
 
 impl DeviceState {
     /// Create a new device state
+    #[must_use]
     pub fn new(device_id: String, device_type: DeviceType) -> Self {
         Self {
             device_id,
@@ -66,6 +68,7 @@ impl DeviceState {
     }
 
     /// Get UI state value
+    #[must_use]
     pub fn get_ui_state(&self, key: &str) -> Option<&DynamicValue> {
         self.ui_state.get(key)
     }
@@ -77,6 +80,7 @@ impl DeviceState {
     }
 
     /// Get preference
+    #[must_use]
     pub fn get_preference(&self, key: &str) -> Option<&DynamicValue> {
         self.preferences.get(key)
     }
@@ -132,12 +136,12 @@ impl LocalStatePersistence {
     fn default_state_dir() -> Result<PathBuf> {
         crate::platform_dirs::config_dir()
             .map(|dir| dir.join("petalTongue").join("state"))
-            .map_err(|e| anyhow::anyhow!("Could not determine config directory: {}", e))
+            .map_err(|e| anyhow::anyhow!("Could not determine config directory: {e}"))
     }
 
     /// Get state file path for device
     fn state_file(&self, device_id: &str) -> PathBuf {
-        self.base_dir.join(format!("{}.json", device_id))
+        self.base_dir.join(format!("{device_id}.json"))
     }
 }
 
@@ -217,6 +221,7 @@ impl StateSync {
     }
 
     /// Get current state
+    #[must_use]
     pub fn current(&self) -> Option<&DeviceState> {
         self.current_state.as_ref()
     }
@@ -238,6 +243,7 @@ impl StateSync {
     }
 
     /// Get UI state value
+    #[must_use]
     pub fn get_ui_state(&self, key: &str) -> Option<&DynamicValue> {
         self.current_state.as_ref()?.get_ui_state(key)
     }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Toadstool Display Backend - Production Ready! 🌸🦈
 //!
 //! TRUE PRIMAL Architecture: Discovery via biomeOS, Performance via tarpc
@@ -27,22 +28,22 @@
 //!
 //! ✅ Discovery: Via biomeOS (JSON-RPC, capability-based)
 //! ✅ Performance: Via tarpc (direct, high-speed)
-//! ✅ Display Runtime - DRM-based, Pure Rust, ARM64 + x86_64
+//! ✅ Display Runtime - DRM-based, Pure Rust, ARM64 + `x86_64`
 //! ✅ Input System - Multi-touch (10+ fingers), Keyboard, Mouse
 //! ✅ GPU Compute - barraCUDA (183 operations, 73.2% CUDA parity)
 //!
 //! # Reference
 //!
-//! See specs/PETALTONGUE_TOADSTOOL_INTEGRATION_ARCHITECTURE.md
+//! See `specs/PETALTONGUE_TOADSTOOL_INTEGRATION_ARCHITECTURE.md`
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 /// Toadstool display backend (via biomeOS neuralAPI)
 ///
@@ -51,7 +52,7 @@ use tracing::{debug, info, warn};
 pub struct ToadstoolDisplay {
     /// biomeOS socket path
     biomeos_socket: std::path::PathBuf,
-    /// Window ID (from toadstool.display.create_window)
+    /// Window ID (from `toadstool.display.create_window`)
     window_id: Option<String>,
     /// Buffer handle (from toadstool)
     buffer_handle: Option<String>,
@@ -174,7 +175,7 @@ impl ToadstoolDisplay {
         // Send request (line-delimited JSON-RPC)
         let request_str = serde_json::to_string(&request)?;
         stream
-            .write_all(format!("{}\n", request_str).as_bytes())
+            .write_all(format!("{request_str}\n").as_bytes())
             .await?;
         stream.flush().await?;
 
@@ -186,15 +187,15 @@ impl ToadstoolDisplay {
         reader
             .read_line(&mut response_line)
             .await
-            .map_err(|e| anyhow!("Failed to read response from biomeOS: {}", e))?;
+            .map_err(|e| anyhow!("Failed to read response from biomeOS: {e}"))?;
 
         // Parse response
         let response: Value = serde_json::from_str(&response_line)
-            .map_err(|e| anyhow!("Failed to parse JSON-RPC response: {}", e))?;
+            .map_err(|e| anyhow!("Failed to parse JSON-RPC response: {e}"))?;
 
         // Check for error
         if let Some(error) = response.get("error") {
-            anyhow::bail!("biomeOS returned error: {}", error);
+            anyhow::bail!("biomeOS returned error: {error}");
         }
 
         // Extract result
@@ -219,7 +220,7 @@ impl ToadstoolDisplay {
             .await?;
 
         let caps: DisplayCapabilitiesResponse = serde_json::from_value(result)
-            .map_err(|e| anyhow!("Failed to parse display capabilities: {}", e))?;
+            .map_err(|e| anyhow!("Failed to parse display capabilities: {e}"))?;
 
         info!(
             "✅ Found {} displays, {} input devices",
@@ -253,7 +254,7 @@ impl ToadstoolDisplay {
             .await?;
 
         let window: WindowResponse = serde_json::from_value(result)
-            .map_err(|e| anyhow!("Failed to parse window response: {}", e))?;
+            .map_err(|e| anyhow!("Failed to parse window response: {e}"))?;
 
         info!("✅ Window created: {}", window.window_id);
 
@@ -376,7 +377,7 @@ impl DisplayBackend for ToadstoolDisplay {
         socket_paths.iter().any(|p| p.exists())
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "toadStool Display (via biomeOS)"
     }
 
@@ -411,17 +412,18 @@ impl DisplayBackend for ToadstoolDisplay {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use petal_tongue_core::constants;
 
     #[tokio::test]
     async fn test_toadstool_display_creation() {
-        let display = ToadstoolDisplay::with_socket("/tmp/biomeos-neural-api.sock");
+        let display = ToadstoolDisplay::with_socket(constants::biomeos_legacy_socket());
         assert_eq!(display.name(), "toadStool Display (via biomeOS)");
         assert_eq!(display.dimensions(), (1920, 1080));
     }
 
     #[test]
     fn test_toadstool_capabilities() {
-        let display = ToadstoolDisplay::with_socket("/tmp/biomeos-neural-api.sock");
+        let display = ToadstoolDisplay::with_socket(constants::biomeos_legacy_socket());
         let caps = display.capabilities();
         assert!(!caps.requires_network); // Unix socket is local
         assert!(!caps.requires_gpu); // toadStool handles GPU

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Doom Stats Panel - Display game metrics
 //!
 //! Phase 1.4: Shows real-time Doom game statistics including:
@@ -7,7 +8,7 @@
 //! - Frame count
 //! - Game state
 
-use crate::panel_registry::{PanelAction, PanelFactory, PanelInstance};
+use crate::panel_registry::{PanelFactory, PanelInstance};
 use crate::scenario::CustomPanelConfig;
 use doom_core::{DoomInstance, DoomState, GameStats, ViewMode};
 use std::sync::{Arc, RwLock};
@@ -35,7 +36,7 @@ impl DoomStatsPanel {
 }
 
 impl PanelInstance for DoomStatsPanel {
-    fn title(&self) -> &str {
+    fn title(&self) -> &'static str {
         "Game Stats"
     }
 
@@ -71,13 +72,13 @@ impl PanelInstance for DoomStatsPanel {
                 DoomState::Paused => "⏸️ Paused",
                 DoomState::Error => "❌ Error",
             };
-            ui.label(format!("State: {}", state_text));
+            ui.label(format!("State: {state_text}"));
 
             ui.separator();
 
             // Map info
             if let Some(map_name) = &stats.current_map {
-                ui.label(format!("Map: {} (Hangar)", map_name));
+                ui.label(format!("Map: {map_name} (Hangar)"));
             } else {
                 ui.label("Map: None");
             }
@@ -87,7 +88,7 @@ impl PanelInstance for DoomStatsPanel {
                 ViewMode::FirstPerson => "First-Person (3D)",
                 ViewMode::TopDown => "Top-Down (2D)",
             };
-            ui.label(format!("View: {}", view_text));
+            ui.label(format!("View: {view_text}"));
 
             ui.separator();
 
@@ -96,8 +97,8 @@ impl PanelInstance for DoomStatsPanel {
                 (stats.player_x, stats.player_y, stats.player_angle)
             {
                 ui.label("Player Position:");
-                ui.label(format!("  X: {:.0}", x));
-                ui.label(format!("  Y: {:.0}", y));
+                ui.label(format!("  X: {x:.0}"));
+                ui.label(format!("  Y: {y:.0}"));
                 ui.label(format!("  Angle: {:.0}°", angle.to_degrees()));
             } else {
                 ui.label("Player: Not initialized");
@@ -138,7 +139,7 @@ impl DoomStatsPanelFactory {
 }
 
 impl PanelFactory for DoomStatsPanelFactory {
-    fn panel_type(&self) -> &str {
+    fn panel_type(&self) -> &'static str {
         "doom_stats"
     }
 
@@ -149,7 +150,7 @@ impl PanelFactory for DoomStatsPanelFactory {
         Ok(Box::new(DoomStatsPanel::new(Arc::clone(&self.doom))))
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Displays real-time Doom game statistics"
     }
 }

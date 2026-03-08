@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Primal Panel - Primal Status Management UI
 //!
 //! Displays all discovered primals with their health, capabilities, load, and device assignments.
@@ -209,13 +210,13 @@ impl PrimalPanel {
             .count();
 
         ui.horizontal(|ui| {
-            ui.label(format!("Total: {}", total));
+            ui.label(format!("Total: {total}"));
             ui.separator();
-            ui.colored_label(Color32::GREEN, format!("Healthy: {}", healthy));
+            ui.colored_label(Color32::GREEN, format!("Healthy: {healthy}"));
             ui.separator();
-            ui.colored_label(Color32::YELLOW, format!("Degraded: {}", degraded));
+            ui.colored_label(Color32::YELLOW, format!("Degraded: {degraded}"));
             ui.separator();
-            ui.colored_label(Color32::RED, format!("Error: {}", error));
+            ui.colored_label(Color32::RED, format!("Error: {error}"));
         });
     }
 
@@ -378,6 +379,7 @@ impl PrimalPanel {
     }
 
     /// Get selected primal
+    #[must_use]
     pub fn selected_primal(&self) -> Option<&Primal> {
         self.selected
             .as_ref()

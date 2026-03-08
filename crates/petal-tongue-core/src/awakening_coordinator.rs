@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Awakening Coordinator
 //!
 //! Coordinates visual, audio, and text across the 4-stage awakening timeline.
@@ -81,6 +82,7 @@ pub struct AwakeningTimeline {
 
 impl AwakeningTimeline {
     /// Create standard awakening timeline
+    #[must_use]
     pub fn standard(config: &AwakeningConfig) -> Self {
         let mut events = Vec::new();
         let mut time = 0.0;
@@ -184,7 +186,7 @@ impl AwakeningTimeline {
                 time: discovery_time,
                 stage: AwakeningStage::Discovery,
                 event_type: TimelineEventType::Discovery {
-                    primal: format!("primal-{}", i),
+                    primal: format!("primal-{i}"),
                     index: i as u32,
                 },
             });
@@ -194,7 +196,7 @@ impl AwakeningTimeline {
                     time: discovery_time,
                     stage: AwakeningStage::Discovery,
                     event_type: TimelineEventType::AudioStart {
-                        layer: format!("chime-{}", i),
+                        layer: format!("chime-{i}"),
                     },
                 });
             }
@@ -249,16 +251,19 @@ impl AwakeningTimeline {
     }
 
     /// Get all events
+    #[must_use]
     pub fn events(&self) -> &[TimelineEvent] {
         &self.events
     }
 
     /// Get total duration
+    #[must_use]
     pub fn duration(&self) -> f32 {
         self.duration
     }
 
     /// Get events for a specific time range
+    #[must_use]
     pub fn events_in_range(&self, start: f32, end: f32) -> Vec<&TimelineEvent> {
         self.events
             .iter()
@@ -289,6 +294,7 @@ pub struct AwakeningCoordinator {
 
 impl AwakeningCoordinator {
     /// Create new coordinator
+    #[must_use]
     pub fn new(engine: Arc<UniversalRenderingEngine>, config: AwakeningConfig) -> Self {
         let timeline = AwakeningTimeline::standard(&config);
 

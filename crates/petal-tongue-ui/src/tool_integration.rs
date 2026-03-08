@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Generic tool integration system for petalTongue
 //!
 //! This module provides a capability-based system for integrating external tools
@@ -133,7 +134,6 @@ impl ToolManager {
     }
 
     /// Find a tool by name (mutable)
-    #[allow(clippy::borrowed_box)]
     pub fn find_tool_mut(&mut self, name: &str) -> Option<&mut Box<dyn ToolPanel>> {
         self.tools.iter_mut().find(|t| t.metadata().name == name)
     }

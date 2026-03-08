@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Keyboard sensor - Discrete input device
 //!
 //! Discovers keyboard capabilities and provides key press events.
@@ -17,6 +18,7 @@ pub struct KeyboardSensor {
 
 impl KeyboardSensor {
     /// Create new keyboard sensor
+    #[must_use]
     pub fn new(input_type: InputType) -> Self {
         let capabilities = SensorCapabilities {
             sensor_type: SensorType::Keyboard,
@@ -54,20 +56,20 @@ impl Sensor for KeyboardSensor {
         // Non-blocking poll with very short timeout
         match self.input_type {
             InputType::Terminal => {
-                if event::poll(Duration::from_millis(1))? {
-                    if let Event::Key(key_event) = event::read()? {
-                        let timestamp = Instant::now();
-                        self.last_key_press = Some(timestamp);
+                if event::poll(Duration::from_millis(1))?
+                    && let Event::Key(key_event) = event::read()?
+                {
+                    let timestamp = Instant::now();
+                    self.last_key_press = Some(timestamp);
 
-                        let key = map_keycode(key_event.code);
-                        let modifiers = map_modifiers(key_event.modifiers);
+                    let key = map_keycode(key_event.code);
+                    let modifiers = map_modifiers(key_event.modifiers);
 
-                        events.push(SensorEvent::KeyPress {
-                            key,
-                            modifiers,
-                            timestamp,
-                        });
-                    }
+                    events.push(SensorEvent::KeyPress {
+                        key,
+                        modifiers,
+                        timestamp,
+                    });
                 }
             }
         }

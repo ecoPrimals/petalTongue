@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Command Palette Demo
 //!
 //! Demonstrates the command palette with fuzzy search.
@@ -191,7 +192,7 @@ fn print_commands(commands: &[Command<String>]) {
 }
 
 fn print_command(cmd: &Command<String>) {
-    let icon = cmd.icon.as_ref().map(|s| s.as_str()).unwrap_or(" ");
+    let icon = cmd.icon.as_deref().unwrap_or(" ");
     let kb = cmd
         .keybinding
         .as_ref()
@@ -211,12 +212,7 @@ fn print_results(results: &[petal_tongue_primitives::command_palette::SearchResu
 
     println!("  Found {} result(s):\n", results.len());
     for (i, result) in results.iter().enumerate() {
-        let icon = result
-            .command
-            .icon
-            .as_ref()
-            .map(|s| s.as_str())
-            .unwrap_or(" ");
+        let icon = result.command.icon.as_deref().unwrap_or(" ");
         let kb = result
             .command
             .keybinding

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Simple TUI Demo
 //!
 //! Demonstrates the Rich TUI in action.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! JSON-RPC Provider Demo
 //!
 //! Demonstrates connecting to a JSON-RPC provider (like biomeOS)
@@ -31,8 +32,8 @@ async fn main() -> anyhow::Result<()> {
             // Health check
             println!("\n🏥 Health Check:");
             match provider.health_check().await {
-                Ok(status) => println!("   ✅ {}", status),
-                Err(e) => println!("   ❌ Error: {}", e),
+                Ok(status) => println!("   ✅ {status}"),
+                Err(e) => println!("   ❌ Error: {e}"),
             }
 
             // Get primals
@@ -44,7 +45,7 @@ async fn main() -> anyhow::Result<()> {
                         println!("   • {} ({}) - {:?}", primal.name, primal.id, primal.health);
                     }
                 }
-                Err(e) => println!("   ❌ Error: {}", e),
+                Err(e) => println!("   ❌ Error: {e}"),
             }
 
             // Get topology
@@ -60,7 +61,7 @@ async fn main() -> anyhow::Result<()> {
                         }
                     }
                 }
-                Err(e) => println!("   ❌ Error: {}", e),
+                Err(e) => println!("   ❌ Error: {e}"),
             }
         }
         Err(e) => {
@@ -72,7 +73,7 @@ async fn main() -> anyhow::Result<()> {
             println!("   2. Or set BIOMEOS_URL:");
             println!("      $ BIOMEOS_URL=unix:///run/user/$UID/biomeos-device-management.sock cargo run");
             println!();
-            println!("Error: {}", e);
+            println!("Error: {e}");
         }
     }
 

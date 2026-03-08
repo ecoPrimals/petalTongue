@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Mock biomeOS Topology Server
 //!
 //! Serves biomeOS-formatted topology data for testing petalTongue integration

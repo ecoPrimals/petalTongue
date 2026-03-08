@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Tree Primitive
 //!
 //! Render hierarchical data in a tree structure.
@@ -336,15 +337,15 @@ impl<T: fmt::Display> fmt::Display for TreeNode<T> {
             is_last: bool,
         ) -> fmt::Result {
             // Draw the branch
-            write!(f, "{}", prefix)?;
+            write!(f, "{prefix}")?;
             write!(f, "{}", if is_last { "└── " } else { "├── " })?;
 
             // Draw icon if present
             if let Some(icon) = &node.icon {
                 match icon {
-                    Icon::Emoji(emoji) => write!(f, "{} ", emoji)?,
-                    Icon::NerdFont(icon) => write!(f, "{} ", icon)?,
-                    Icon::Custom(icon) => write!(f, "{} ", icon)?,
+                    Icon::Emoji(emoji) => write!(f, "{emoji} ")?,
+                    Icon::NerdFont(icon) => write!(f, "{icon} ")?,
+                    Icon::Custom(icon) => write!(f, "{icon} ")?,
                     Icon::None => {}
                 }
             }
@@ -469,7 +470,7 @@ mod tests {
             .with_child(TreeNode::new("child1"))
             .with_child(TreeNode::new("child2"));
 
-        let output = format!("{}", tree);
+        let output = format!("{tree}");
         assert!(output.contains("root"));
         assert!(output.contains("child1"));
         assert!(output.contains("child2"));

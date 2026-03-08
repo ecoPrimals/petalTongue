@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Compute Provider System
 //!
 //! Optional GPU compute acceleration (e.g., Toadstool).
@@ -55,6 +56,7 @@ pub struct ComputeRegistry {
 
 impl ComputeRegistry {
     /// Create new empty registry
+    #[must_use]
     pub fn new() -> Self {
         Self {
             providers: HashMap::new(),
@@ -68,8 +70,9 @@ impl ComputeRegistry {
     }
 
     /// Get provider by name
+    #[must_use]
     pub fn get(&self, name: &str) -> Option<&dyn ComputeProvider> {
-        self.providers.get(name).map(|p| p.as_ref())
+        self.providers.get(name).map(std::convert::AsRef::as_ref)
     }
 
     /// Get mutable provider

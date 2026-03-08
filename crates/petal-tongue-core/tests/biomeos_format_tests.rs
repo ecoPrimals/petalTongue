@@ -1,12 +1,10 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Tests for biomeOS topology format compatibility
 //!
 //! Verifies that petalTongue can correctly parse and handle topology data
 //! in the biomeOS format (Unix sockets, metadata, connection metrics).
 
-use petal_tongue_core::{
-    ConnectionMetrics, PrimalEndpoints, PrimalHealthStatus, PrimalInfo, PrimalMetadata,
-    TopologyEdge, TopologyGraph,
-};
+use petal_tongue_core::{PrimalInfo, TopologyEdge};
 
 #[test]
 fn test_parse_biomeos_primal_format() {

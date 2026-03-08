@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Adapter registry for runtime composition of ecosystem-specific UI
 //!
 //! The registry holds adapters and routes property rendering to the
@@ -121,7 +122,7 @@ impl AdapterRegistry {
     fn render_generic_property(&self, key: &str, value: &PropertyValue, ui: &mut Ui) {
         ui.horizontal(|ui| {
             // Key in gray
-            ui.label(egui::RichText::new(format!("{}: ", key)).color(Color32::GRAY));
+            ui.label(egui::RichText::new(format!("{key}: ")).color(Color32::GRAY));
 
             // Value based on type
             match value {
@@ -129,7 +130,7 @@ impl AdapterRegistry {
                     ui.label(s);
                 }
                 PropertyValue::Number(n) => {
-                    ui.label(format!("{}", n));
+                    ui.label(format!("{n}"));
                 }
                 PropertyValue::Boolean(b) => {
                     ui.label(if *b { "✓ true" } else { "✗ false" });

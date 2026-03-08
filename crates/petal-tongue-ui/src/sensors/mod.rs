@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Concrete sensor implementations
 //!
 //! Platform-specific implementations of the Sensor trait.
@@ -13,7 +14,7 @@ pub use mouse::MouseSensor;
 pub use screen::ScreenSensor;
 
 use anyhow::Result;
-use petal_tongue_core::{SensorRegistry, SensorType};
+use petal_tongue_core::SensorRegistry;
 
 /// Discover all available sensors at runtime
 pub async fn discover_all_sensors() -> Result<SensorRegistry> {
@@ -62,7 +63,7 @@ pub async fn discover_all_sensors() -> Result<SensorRegistry> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use petal_tongue_core::Sensor;
+    use petal_tongue_core::{Sensor, SensorType};
 
     #[tokio::test]
     async fn test_discover_all_sensors() {
@@ -132,8 +133,6 @@ mod tests {
     #[test]
     fn test_sensor_types() {
         // Verify all sensor types are unique
-        use petal_tongue_core::SensorType;
-
         let types = vec![
             SensorType::Audio,
             SensorType::Keyboard,

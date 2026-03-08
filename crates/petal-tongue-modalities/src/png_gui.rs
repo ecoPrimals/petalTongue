@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # PNG GUI Modality
 //!
 //! Raster export to PNG files (Tier 2: Default Available).

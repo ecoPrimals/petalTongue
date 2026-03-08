@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Unified Data Service
 //!
 //! Single source of truth for all UI modes (GUI, TUI, Web, Headless)
@@ -197,6 +198,7 @@ impl Default for DataService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     #[tokio::test]
     async fn test_data_service_creation() {
@@ -220,8 +222,11 @@ mod tests {
         // Send update
         let _ = service.update_tx.send(DataUpdate::TopologyUpdated);
 
-        // Should receive it
-        let update = rx.recv().await.unwrap();
+        // Should receive it (with timeout to avoid blocking forever)
+        let update = tokio::time::timeout(Duration::from_secs(1), rx.recv())
+            .await
+            .expect("recv timed out")
+            .expect("recv failed");
         assert!(matches!(update, DataUpdate::TopologyUpdated));
     }
 }

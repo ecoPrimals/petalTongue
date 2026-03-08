@@ -1,10 +1,12 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+#![forbid(unsafe_code)]
 //! # petal-tongue-api
 //!
 //! API clients for petalTongue integration
 //!
 //! # TRUE PRIMAL Architecture
 //!
-//! Per PRIMAL_IPC_PROTOCOL.md, inter-primal communication should use:
+//! Per `PRIMAL_IPC_PROTOCOL.md`, inter-primal communication should use:
 //! 1. **JSON-RPC 2.0** over Unix sockets (PRIMARY) - Use `BiomeOSJsonRpcClient`
 //! 2. **tarpc** for high-performance needs (SECONDARY)
 //! 3. **HTTP/REST** only for external/browser access (FALLBACK) - Use `BiomeOSClient`

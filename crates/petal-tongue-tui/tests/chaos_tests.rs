@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Chaos Tests for petalTongue Rich TUI
 //!
 //! Tests system behavior under chaotic conditions

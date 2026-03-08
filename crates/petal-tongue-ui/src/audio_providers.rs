@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! DEPRECATED: Legacy Audio Provider System
 //!
 //! **STATUS**: This module is DEPRECATED as of January 13, 2026
@@ -48,12 +49,12 @@ fn play_samples(samples: &[f32], _sample_rate: u32) -> Result<(), String> {
 
     // Open audio canvas (direct hardware access!)
     let mut canvas =
-        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {}", e))?;
+        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {e}"))?;
 
     // Write samples directly to hardware!
     canvas
         .write_samples(samples)
-        .map_err(|e| format!("Failed to write samples: {}", e))?;
+        .map_err(|e| format!("Failed to write samples: {e}"))?;
 
     info!("✅ Audio playback complete (Audio Canvas)");
 
@@ -68,20 +69,20 @@ fn play_file(path: &Path) -> Result<(), String> {
     info!("🎨 Playing audio file: {} (Audio Canvas)", path.display());
 
     // Read file
-    let data = fs::read(path).map_err(|e| format!("Failed to read audio file: {}", e))?;
+    let data = fs::read(path).map_err(|e| format!("Failed to read audio file: {e}"))?;
 
     // Decode with symphonia (pure Rust!)
     let decoded = crate::startup_audio::decode_audio_symphonia(&data)
-        .map_err(|e| format!("Failed to decode audio: {}", e))?;
+        .map_err(|e| format!("Failed to decode audio: {e}"))?;
 
     // Open audio canvas
     let mut canvas =
-        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {}", e))?;
+        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {e}"))?;
 
     // Write samples directly to hardware!
     canvas
         .write_samples(&decoded.samples)
-        .map_err(|e| format!("Failed to write samples: {}", e))?;
+        .map_err(|e| format!("Failed to write samples: {e}"))?;
 
     info!("✅ Audio file playback complete (Audio Canvas)");
 
@@ -338,7 +339,7 @@ impl ToadstoolAudioProvider {
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(30))
             .build()
-            .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+            .map_err(|e| format!("Failed to create HTTP client: {e}"))?;
 
         #[derive(serde::Serialize)]
         struct SynthesisRequest {
@@ -358,7 +359,7 @@ impl ToadstoolAudioProvider {
             .json(&request)
             .send()
             .await
-            .map_err(|e| format!("HTTP request failed: {}", e))?;
+            .map_err(|e| format!("HTTP request failed: {e}"))?;
 
         if !response.status().is_success() {
             return Err(format!(
@@ -372,7 +373,7 @@ impl ToadstoolAudioProvider {
         let audio_bytes = response
             .bytes()
             .await
-            .map_err(|e| format!("Failed to read audio data: {}", e))?;
+            .map_err(|e| format!("Failed to read audio data: {e}"))?;
 
         info!(
             "✅ Received {} bytes of audio from Toadstool",
@@ -415,7 +416,7 @@ impl AudioProvider for ToadstoolAudioProvider {
                     .build();
 
                 if let Ok(client) = client {
-                    let url = format!("{}/api/v1/audio/play", ep);
+                    let url = format!("{ep}/api/v1/audio/play");
 
                     #[derive(serde::Serialize)]
                     struct PlayRequest {
@@ -465,7 +466,7 @@ impl AudioProvider for ToadstoolAudioProvider {
                     .build();
 
                 if let Ok(client) = client {
-                    let url = format!("{}/api/v1/audio/stop", ep);
+                    let url = format!("{ep}/api/v1/audio/stop");
 
                     match client.post(&url).send().await {
                         Ok(response) if response.status().is_success() => {
@@ -515,7 +516,7 @@ impl AudioSystem {
     /// **DEPRECATED**: Use `crate::audio::AudioSystemV2` instead
     ///
     /// This method is kept for backward compatibility but will be removed.
-    /// The new AudioSystemV2 provides true substrate agnosticism.
+    /// The new `AudioSystemV2` provides true substrate agnosticism.
     #[deprecated(
         since = "1.4.0",
         note = "Use `crate::audio::AudioSystemV2` for substrate-agnostic audio"

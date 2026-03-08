@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Sensory Capability System - Runtime I/O Discovery
 //!
 //! This module implements TRUE PRIMAL capability discovery by detecting
@@ -66,6 +67,7 @@ pub enum VisualOutputCapability {
 
 impl VisualOutputCapability {
     /// Calculate total pixel count for capability comparison
+    #[must_use]
     pub fn pixel_count(&self) -> u32 {
         match self {
             Self::TwoD { resolution, .. } => resolution.0 * resolution.1,
@@ -76,6 +78,7 @@ impl VisualOutputCapability {
     }
 
     /// Calculate diagonal size in millimeters (if known)
+    #[must_use]
     pub fn diagonal_mm(&self) -> Option<f32> {
         match self {
             Self::TwoD {
@@ -87,11 +90,13 @@ impl VisualOutputCapability {
     }
 
     /// Determine if this is a small screen (< 6 inches diagonal)
+    #[must_use]
     pub fn is_small_screen(&self) -> bool {
-        self.diagonal_mm().map_or(false, |d| d < 150.0)
+        self.diagonal_mm().is_some_and(|d| d < 150.0)
     }
 
     /// Determine if this is high resolution (>= 1080p)
+    #[must_use]
     pub fn is_high_resolution(&self) -> bool {
         match self {
             Self::TwoD { resolution, .. } => resolution.0 >= 1920 && resolution.1 >= 1080,
@@ -132,6 +137,7 @@ pub enum AudioOutputCapability {
 
 impl AudioOutputCapability {
     /// Determine if this is high quality audio (>= 48kHz, >= 16-bit)
+    #[must_use]
     pub fn is_high_quality(&self) -> bool {
         match self {
             Self::Mono {
@@ -229,6 +235,7 @@ pub enum PointerInputCapability {
 
 impl PointerInputCapability {
     /// Determine if this is a precision pointer (mouse-level)
+    #[must_use]
     pub fn is_precision(&self) -> bool {
         match self {
             Self::TwoD { precision, .. } => *precision >= 1.0,
@@ -280,6 +287,7 @@ pub struct TouchInputCapability {
 
 impl TouchInputCapability {
     /// Determine if this is multitouch capable
+    #[must_use]
     pub fn is_multitouch(&self) -> bool {
         self.max_touch_points > 1
     }
@@ -436,6 +444,7 @@ impl SensoryCapabilities {
     /// - **Standard**: 2D display + basic input
     /// - **Simple**: Small screen or limited input (phone, watch)
     /// - **Minimal**: Very limited capabilities (audio-only, accessibility)
+    #[must_use]
     pub fn determine_ui_complexity(&self) -> UIComplexity {
         // Check for 3D visual output (VR/AR)
         let has_3d_visual = self
@@ -458,10 +467,16 @@ impl SensoryCapabilities {
         }
 
         // Check for high-resolution 2D visual
-        let has_high_res = self.visual_outputs.iter().any(|v| v.is_high_resolution());
+        let has_high_res = self
+            .visual_outputs
+            .iter()
+            .any(VisualOutputCapability::is_high_resolution);
 
         // Check for precision pointer (mouse-level)
-        let has_precision_pointer = self.pointer_inputs.iter().any(|p| p.is_precision());
+        let has_precision_pointer = self
+            .pointer_inputs
+            .iter()
+            .any(PointerInputCapability::is_precision);
 
         // Check for keyboard
         let has_keyboard = !self.keyboard_inputs.is_empty();
@@ -480,7 +495,10 @@ impl SensoryCapabilities {
         let has_touch = !self.touch_inputs.is_empty();
 
         // Check for small screen
-        let has_small_screen = self.visual_outputs.iter().any(|v| v.is_small_screen());
+        let has_small_screen = self
+            .visual_outputs
+            .iter()
+            .any(VisualOutputCapability::is_small_screen);
 
         // Simple: Small screen or limited input
         if has_small_screen || (has_touch && !has_keyboard) {
@@ -497,11 +515,13 @@ impl SensoryCapabilities {
     }
 
     /// Check if system has minimal viable output for UI
+    #[must_use]
     pub fn has_minimal_output(&self) -> bool {
         !self.visual_outputs.is_empty() || !self.audio_outputs.is_empty()
     }
 
     /// Check if system has minimal viable input for UI
+    #[must_use]
     pub fn has_minimal_input(&self) -> bool {
         !self.pointer_inputs.is_empty()
             || !self.keyboard_inputs.is_empty()
@@ -511,21 +531,25 @@ impl SensoryCapabilities {
     }
 
     /// Check if system has visual output capability
+    #[must_use]
     pub fn has_visual_output(&self) -> bool {
         !self.visual_outputs.is_empty()
     }
 
     /// Check if system has audio output capability
+    #[must_use]
     pub fn has_audio_output(&self) -> bool {
         !self.audio_outputs.is_empty()
     }
 
     /// Check if system has haptic output capability
+    #[must_use]
     pub fn has_haptic_output(&self) -> bool {
         !self.haptic_outputs.is_empty()
     }
 
     /// Get a human-readable description of capabilities
+    #[must_use]
     pub fn describe(&self) -> String {
         let mut parts = Vec::new();
 

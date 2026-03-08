@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! TUI Views
 //!
 //! All 8 interactive views for the TUI.

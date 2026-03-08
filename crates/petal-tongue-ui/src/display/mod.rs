@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Pure Rust Display System
 //!
 //! Provides multiple display backends for rendering the GUI without requiring

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Text/JSON/DOT export
 //!
 //! Exports primal topologies in text-based formats for APIs, automation, and tools.
@@ -109,7 +110,7 @@ impl TextUI {
         output.push_str(&format!("  Total connections: {}\n", edges.len()));
 
         let timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC");
-        output.push_str(&format!("  Generated: {}\n", timestamp));
+        output.push_str(&format!("  Generated: {timestamp}\n"));
 
         Ok(output)
     }

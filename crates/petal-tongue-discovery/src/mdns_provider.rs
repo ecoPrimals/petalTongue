@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 // mDNS-based visualization provider discovery
 //
 // This module implements network-based discovery of visualization data providers
@@ -354,7 +355,7 @@ impl MdnsVisualizationProvider {
                 anyhow::bail!("No port advertised in mDNS service - refusing to assume default");
             }
         };
-        let endpoint = format!("http://{}:{}", ip, port);
+        let endpoint = format!("http://{ip}:{port}");
 
         // Extract capabilities from TXT records
         let mut capabilities = vec![

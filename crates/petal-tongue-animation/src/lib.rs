@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+#![forbid(unsafe_code)]
 //! # petal-tongue-animation
 //!
 //! Flow animation and data visualization for petalTongue.
@@ -13,6 +15,8 @@
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
+#![allow(clippy::must_use_candidate)]
+#![allow(clippy::missing_errors_doc)]
 
 pub mod flower;
 pub mod visual_flower;

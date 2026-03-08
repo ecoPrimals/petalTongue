@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! UI mode - Desktop GUI
 //!
 //! Platform dependencies: wayland-sys, x11-sys (acceptable for ecoBud)
 //! This is the 1 mode (out of 5) that has platform dependencies
 
 use anyhow::{Context, Result};
+use petal_tongue_core::constants::PRIMAL_NAME;
 use std::sync::Arc;
 
 #[cfg(feature = "ui")]
@@ -37,7 +39,8 @@ fn run_ui_blocking(
     // Create instance
     let instance_id = InstanceId::new();
     tracing::info!(
-        "🌸 Starting petalTongue UI instance: {}",
+        "🌸 Starting {} UI instance: {}",
+        PRIMAL_NAME,
         instance_id.as_str()
     );
 
@@ -52,7 +55,10 @@ fn run_ui_blocking(
         viewport: petal_tongue_ui::egui::ViewportBuilder::default()
             .with_inner_size([1400.0, 900.0])
             .with_min_inner_size([800.0, 600.0])
-            .with_title("🌸 petalTongue - Universal Representation System")
+            .with_title(format!(
+                "🌸 {} - Universal Representation System",
+                PRIMAL_NAME
+            ))
             .with_visible(true)
             .with_active(true),
         ..Default::default()
@@ -64,15 +70,16 @@ fn run_ui_blocking(
     let shared_graph = data_service.graph();
 
     petal_tongue_ui::eframe::run_native(
-        "petalTongue",
+        PRIMAL_NAME,
         options,
         Box::new(move |cc| {
-            Ok(Box::new(PetalTongueApp::new_with_shared_graph(
+            let app = PetalTongueApp::new_with_shared_graph(
                 cc,
                 scenario_path,
                 capabilities,
                 shared_graph,
-            )))
+            )?;
+            Ok(Box::new(app))
         }),
     )
     .map_err(|e| anyhow::anyhow!("eframe error: {}", e))

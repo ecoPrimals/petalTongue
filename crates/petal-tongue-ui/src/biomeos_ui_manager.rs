@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! biomeOS UI Integration Module
 //!
-//! This module wires together all the UI components (DevicePanel, PrimalPanel,
-//! NicheDesigner) and provides a unified interface for biomeOS integration.
+//! This module wires together all the UI components (`DevicePanel`, `PrimalPanel`,
+//! `NicheDesigner`) and provides a unified interface for biomeOS integration.
 //!
 //! # Architecture
 //!
@@ -31,7 +32,7 @@ use tracing::{info, warn};
 
 /// biomeOS UI Manager - Main integration point
 pub struct BiomeOSUIManager {
-    /// Provider for data (BiomeOS or Mock)
+    /// Provider for data (`BiomeOS` or Mock)
     biomeos_provider: Option<BiomeOSProvider>,
     /// Mock provider - lazily initialized only when needed for graceful degradation
     mock_provider: Option<MockDeviceProvider>,
@@ -219,26 +220,31 @@ impl BiomeOSUIManager {
     }
 
     /// Get reference to device panel
+    #[must_use]
     pub fn device_panel(&self) -> &DevicePanel {
         &self.device_panel
     }
 
     /// Get reference to primal panel
+    #[must_use]
     pub fn primal_panel(&self) -> &PrimalPanel {
         &self.primal_panel
     }
 
     /// Get reference to niche designer
+    #[must_use]
     pub fn niche_designer(&self) -> &NicheDesigner {
         &self.niche_designer
     }
 
     /// Check if using mock mode
+    #[must_use]
     pub fn is_mock_mode(&self) -> bool {
         self.use_mock
     }
 
     /// Get current tab
+    #[must_use]
     pub fn current_tab(&self) -> UITab {
         self.current_tab
     }
@@ -289,7 +295,7 @@ impl BiomeOSUIRPC {
             Ok(manager
                 .mock_provider
                 .as_ref()
-                .map(|m| m.get_devices())
+                .map(super::mock_device_provider::MockDeviceProvider::get_devices)
                 .unwrap_or_default())
         } else if let Some(provider) = &manager.biomeos_provider {
             provider.get_devices().await
@@ -306,7 +312,7 @@ impl BiomeOSUIRPC {
             Ok(manager
                 .mock_provider
                 .as_ref()
-                .map(|m| m.get_primals_extended())
+                .map(super::mock_device_provider::MockDeviceProvider::get_primals_extended)
                 .unwrap_or_default())
         } else if let Some(provider) = &manager.biomeos_provider {
             provider.get_primals_extended().await
@@ -323,7 +329,7 @@ impl BiomeOSUIRPC {
             Ok(manager
                 .mock_provider
                 .as_ref()
-                .map(|m| m.get_niche_templates())
+                .map(super::mock_device_provider::MockDeviceProvider::get_niche_templates)
                 .unwrap_or_default())
         } else if let Some(provider) = &manager.biomeos_provider {
             provider.get_niche_templates().await

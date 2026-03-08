@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! System Metrics Panel - Display real-time system and biomeOS metrics
 //!
 //! Phase 1.4: Integrates with Neural API to show:
@@ -7,7 +8,7 @@
 //! - Active primals count
 //! - Available graphs
 
-use crate::panel_registry::{PanelAction, PanelFactory, PanelInstance};
+use crate::panel_registry::{PanelFactory, PanelInstance};
 use crate::scenario::CustomPanelConfig;
 use petal_tongue_discovery::NeuralApiProvider;
 use serde::{Deserialize, Serialize};
@@ -63,6 +64,7 @@ pub struct MetricsPanel {
 
 impl MetricsPanel {
     /// Create a new metrics panel (provider connected later)
+    #[must_use]
     pub fn new() -> Self {
         Self {
             provider: None,
@@ -85,13 +87,13 @@ impl MetricsPanel {
                             self.error_message = None;
                         }
                         Err(e) => {
-                            self.error_message = Some(format!("Parse error: {}", e));
+                            self.error_message = Some(format!("Parse error: {e}"));
                             tracing::warn!("Failed to parse metrics: {}", e);
                         }
                     }
                 }
                 Err(e) => {
-                    self.error_message = Some(format!("API error: {}", e));
+                    self.error_message = Some(format!("API error: {e}"));
                     tracing::warn!("Failed to get metrics: {}", e);
                 }
             }
@@ -104,17 +106,17 @@ impl MetricsPanel {
         let minutes = (seconds % 3600) / 60;
 
         if days > 0 {
-            format!("{}d {}h {}m", days, hours, minutes)
+            format!("{days}d {hours}h {minutes}m")
         } else if hours > 0 {
-            format!("{}h {}m", hours, minutes)
+            format!("{hours}h {minutes}m")
         } else {
-            format!("{}m", minutes)
+            format!("{minutes}m")
         }
     }
 }
 
 impl PanelInstance for MetricsPanel {
-    fn title(&self) -> &str {
+    fn title(&self) -> &'static str {
         "System Metrics"
     }
 
@@ -153,17 +155,15 @@ impl PanelInstance for MetricsPanel {
         if self.last_update.elapsed() > self.update_interval && self.provider.is_some() {
             tokio::task::block_in_place(|| {
                 tokio::runtime::Handle::current().block_on(async {
-                    if let Some(provider) = &self.provider {
-                        if let Ok(json_value) = provider.get_metrics().await {
-                            if let Ok(metrics) = serde_json::from_value::<SystemMetrics>(json_value)
-                            {
-                                self.last_metrics = Some(metrics);
-                                self.last_update = Instant::now();
-                                self.error_message = None;
-                            }
-                        }
+                    if let Some(provider) = &self.provider
+                        && let Ok(json_value) = provider.get_metrics().await
+                        && let Ok(metrics) = serde_json::from_value::<SystemMetrics>(json_value)
+                    {
+                        self.last_metrics = Some(metrics);
+                        self.last_update = Instant::now();
+                        self.error_message = None;
                     }
-                })
+                });
             });
         }
 
@@ -171,7 +171,7 @@ impl PanelInstance for MetricsPanel {
         ui.separator();
 
         if let Some(error) = &self.error_message {
-            ui.colored_label(egui::Color32::RED, format!("⚠️  {}", error));
+            ui.colored_label(egui::Color32::RED, format!("⚠️  {error}"));
             ui.separator();
         }
 
@@ -182,7 +182,7 @@ impl PanelInstance for MetricsPanel {
             // CPU bar
             let cpu = metrics.system.cpu_percent;
             ui.horizontal(|ui| {
-                ui.label(format!("CPU: {:.1}%", cpu));
+                ui.label(format!("CPU: {cpu:.1}%"));
             });
             ui.add(
                 egui::ProgressBar::new((cpu / 100.0) as f32)
@@ -195,7 +195,7 @@ impl PanelInstance for MetricsPanel {
             // Memory bar
             let mem = metrics.system.memory_percent;
             ui.horizontal(|ui| {
-                ui.label(format!("Memory: {:.1}%", mem));
+                ui.label(format!("Memory: {mem:.1}%"));
             });
             ui.label(format!(
                 "  {} / {} MB",
@@ -211,7 +211,7 @@ impl PanelInstance for MetricsPanel {
 
             // Uptime
             let uptime_str = Self::format_uptime(metrics.system.uptime_seconds);
-            ui.label(format!("Uptime: {}", uptime_str));
+            ui.label(format!("Uptime: {uptime_str}"));
 
             ui.separator();
 
@@ -236,9 +236,9 @@ impl PanelInstance for MetricsPanel {
             // Last update time
             let age = self.last_update.elapsed().as_secs();
             if age < 5 {
-                ui.label(format!("📡 Updated {}s ago", age));
+                ui.label(format!("📡 Updated {age}s ago"));
             } else {
-                ui.colored_label(egui::Color32::YELLOW, format!("⏳ Updated {}s ago", age));
+                ui.colored_label(egui::Color32::YELLOW, format!("⏳ Updated {age}s ago"));
             }
         } else if self.provider.is_none() {
             ui.label("⏳ Neural API not available");
@@ -269,13 +269,14 @@ pub struct MetricsPanelFactory;
 
 impl MetricsPanelFactory {
     /// Create a new factory for metrics panels
+    #[must_use]
     pub fn new() -> Self {
         Self
     }
 }
 
 impl PanelFactory for MetricsPanelFactory {
-    fn panel_type(&self) -> &str {
+    fn panel_type(&self) -> &'static str {
         "metrics"
     }
 
@@ -286,7 +287,7 @@ impl PanelFactory for MetricsPanelFactory {
         Ok(Box::new(MetricsPanel::new()))
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> &'static str {
         "Displays real-time system and biomeOS metrics from Neural API"
     }
 }

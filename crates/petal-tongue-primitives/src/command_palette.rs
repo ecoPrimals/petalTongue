@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Command Palette Primitive
 //!
 //! Universal command/action system with fuzzy search and keybindings.
@@ -148,6 +149,7 @@ pub struct CommandPalette<T> {
 
 impl<T: Clone> CommandPalette<T> {
     /// Create a new command palette
+    #[must_use]
     pub fn new() -> Self {
         Self {
             commands: Vec::new(),
@@ -176,11 +178,13 @@ impl<T: Clone> CommandPalette<T> {
     }
 
     /// Get all commands
+    #[must_use]
     pub fn commands(&self) -> &[Command<T>] {
         &self.commands
     }
 
     /// Get command by ID
+    #[must_use]
     pub fn get_command(&self, id: &str) -> Option<&Command<T>> {
         self.commands.iter().find(|c| c.id == id)
     }
@@ -195,6 +199,7 @@ impl<T: Clone> CommandPalette<T> {
     }
 
     /// Get commands by category
+    #[must_use]
     pub fn commands_by_category(&self, category: &str) -> Vec<&Command<T>> {
         self.commands
             .iter()
@@ -203,6 +208,7 @@ impl<T: Clone> CommandPalette<T> {
     }
 
     /// Get all categories
+    #[must_use]
     pub fn categories(&self) -> Vec<Category> {
         let mut cats: Vec<_> = self.commands.iter().map(|c| c.category.clone()).collect();
         cats.sort();
@@ -211,6 +217,7 @@ impl<T: Clone> CommandPalette<T> {
     }
 
     /// Search commands (fuzzy matching)
+    #[must_use]
     pub fn search(&self, query: &str) -> Vec<SearchResult<T>> {
         if query.is_empty() {
             // Return all enabled commands
@@ -329,16 +336,19 @@ impl<T: Clone> CommandPalette<T> {
     }
 
     /// Get current search query
+    #[must_use]
     pub fn query(&self) -> &str {
         &self.search_query
     }
 
     /// Get search results for current query
+    #[must_use]
     pub fn results(&self) -> Vec<SearchResult<T>> {
         self.search(&self.search_query)
     }
 
     /// Get selected index
+    #[must_use]
     pub fn selected_index(&self) -> usize {
         self.selected_index
     }
@@ -364,6 +374,7 @@ impl<T: Clone> CommandPalette<T> {
     }
 
     /// Get selected command (if any)
+    #[must_use]
     pub fn selected_command(&self) -> Option<Command<T>> {
         self.results()
             .get(self.selected_index)

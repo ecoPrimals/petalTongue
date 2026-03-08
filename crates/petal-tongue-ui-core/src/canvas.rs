@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Canvas/PNG rendering (pure Rust)
 //!
 //! Pixel-perfect rendering using tiny-skia (no native dependencies).

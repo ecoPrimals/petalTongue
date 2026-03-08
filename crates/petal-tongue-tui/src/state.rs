@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! TUI State Management
 //!
 //! Central state for the Rich TUI. All state is managed here,
@@ -360,7 +361,7 @@ mod tests {
                     timestamp: Utc::now(),
                     source: None,
                     level: LogLevel::Info,
-                    message: format!("Log {}", i),
+                    message: format!("Log {i}"),
                 })
                 .await;
         }

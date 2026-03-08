@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! End-to-End Test Framework
 //!
 //! Provides infrastructure for full-stack integration testing of petalTongue.
@@ -170,9 +171,9 @@ impl E2ETestRunner {
                 capabilities: vec!["test".to_string()],
                 health: PrimalHealthStatus::Healthy,
                 properties: petal_tongue_core::Properties::new(),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: None,
                 last_seen: 0,
                 endpoints: None,
@@ -238,9 +239,9 @@ impl E2ETestRunner {
                     capabilities: vec![],
                     health: PrimalHealthStatus::Healthy,
                     properties: petal_tongue_core::Properties::new(),
-                    #[allow(deprecated)]
+                    #[expect(deprecated)]
                     trust_level: None,
-                    #[allow(deprecated)]
+                    #[expect(deprecated)]
                     family_id: None,
                     last_seen: 0,
                     endpoints: None,
@@ -308,9 +309,9 @@ impl E2ETestRunner {
                 capabilities: vec![],
                 health: PrimalHealthStatus::Healthy,
                 properties: petal_tongue_core::Properties::new(),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: None,
                 last_seen: 0,
                 endpoints: None,
@@ -324,9 +325,9 @@ impl E2ETestRunner {
                 capabilities: vec![],
                 health: PrimalHealthStatus::Healthy,
                 properties: petal_tongue_core::Properties::new(),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: None,
                 last_seen: 0,
                 endpoints: None,

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! End-to-End Integration Tests for biomeOS UI
 //!
 //! These tests verify the complete flow from provider discovery through

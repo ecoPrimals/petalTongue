@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Devices View
 //!
 //! Device management and assignment.
@@ -96,7 +97,7 @@ fn render_device_list(frame: &mut Frame, area: Rect, status: &crate::state::Syst
         // Show discovered devices
         let mut items = vec![
             ListItem::new(Line::from(vec![Span::styled(
-                format!("Discovered {} devices:", device_count),
+                format!("Discovered {device_count} devices:"),
                 Style::default()
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
@@ -108,7 +109,7 @@ fn render_device_list(frame: &mut Frame, area: Rect, status: &crate::state::Syst
         for i in 1..=device_count.min(10) {
             items.push(ListItem::new(Line::from(vec![
                 Span::styled("📱 ", Style::default().fg(Color::Cyan)),
-                Span::raw(format!("Device {}", i)),
+                Span::raw(format!("Device {i}")),
                 Span::raw(" ("),
                 Span::styled("Available", Style::default().fg(Color::Green)),
                 Span::raw(")"),

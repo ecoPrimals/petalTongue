@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! System Information Utilities
 //!
 //! Safe wrappers around system calls for discovering runtime information.
@@ -72,7 +73,7 @@ pub fn get_current_uid() -> u32 {
 /// # Platform Support
 ///
 /// - **Linux**: ✅ `/run/user/{uid}` (systemd standard)
-/// - **macOS**: ⚠️  No standard, uses XDG_RUNTIME_DIR or `/tmp`
+/// - **macOS**: ⚠️  No standard, uses `XDG_RUNTIME_DIR` or `/tmp`
 /// - **Windows**: ❌ Not applicable
 ///
 /// # Examples
@@ -96,7 +97,7 @@ pub fn get_user_runtime_dir() -> PathBuf {
         .map(PathBuf::from)
         .unwrap_or_else(|_| {
             let uid = get_current_uid();
-            PathBuf::from(format!("/run/user/{}", uid))
+            PathBuf::from(format!("/run/user/{uid}"))
         })
 }
 
@@ -109,7 +110,7 @@ mod tests {
         let uid = get_current_uid();
         // UID should be a reasonable value (0 for root, >0 for users)
         // On Unix systems, UIDs are typically 0-65535, but can go higher
-        assert!(uid < 1_000_000, "UID should be reasonable: {}", uid);
+        assert!(uid < 1_000_000, "UID should be reasonable: {uid}");
     }
 
     #[test]
@@ -123,7 +124,7 @@ mod tests {
             assert_eq!(path_str, xdg, "Should use XDG_RUNTIME_DIR when set");
         } else {
             let uid = get_current_uid();
-            let expected = format!("/run/user/{}", uid);
+            let expected = format!("/run/user/{uid}");
             assert_eq!(path_str, expected, "Should construct /run/user/{{uid}}");
         }
     }

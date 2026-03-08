@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Output Verification - Universal awareness of output reaching end state
 //!
 //! This generalizes display verification to ALL outputs:
@@ -107,6 +108,7 @@ pub struct OutputVerification {
 
 impl OutputVerification {
     /// Create a new unverified output
+    #[must_use]
     pub fn unverified(modality: OutputModality) -> Self {
         Self {
             modality,
@@ -149,7 +151,7 @@ impl OutputVerification {
             self.modality, device_info
         );
         self.evidence
-            .push(format!("Device acknowledgment: {}", device_info));
+            .push(format!("Device acknowledgment: {device_info}"));
     }
 
     /// Update with echo/reflection (output came back as input)
@@ -162,14 +164,13 @@ impl OutputVerification {
             "{:?} output confirmed via echo/reflection: {}",
             self.modality, echo_info
         );
-        self.evidence.push(format!("Echo detected: {}", echo_info));
+        self.evidence.push(format!("Echo detected: {echo_info}"));
     }
 
     /// Check if confirmation is stale (no recent confirmation)
+    #[must_use]
     pub fn is_stale(&self, max_age: Duration) -> bool {
-        self.last_confirmed
-            .map(|t| t.elapsed() > max_age)
-            .unwrap_or(true)
+        self.last_confirmed.is_none_or(|t| t.elapsed() > max_age)
     }
 }
 
@@ -184,6 +185,7 @@ pub struct OutputVerificationSystem {
 
 impl OutputVerificationSystem {
     /// Create a new output verification system
+    #[must_use]
     pub fn new() -> Self {
         Self {
             verifications: std::collections::HashMap::new(),
@@ -226,21 +228,25 @@ impl OutputVerificationSystem {
     }
 
     /// Get verification for a specific modality
+    #[must_use]
     pub fn get_verification(&self, modality: &OutputModality) -> Option<&OutputVerification> {
         self.verifications.get(modality)
     }
 
     /// Get all output verifications
+    #[must_use]
     pub fn get_all_verifications(&self) -> Vec<&OutputVerification> {
         self.verifications.values().collect()
     }
 
     /// Check if any outputs are unconfirmed
+    #[must_use]
     pub fn has_unconfirmed_outputs(&self) -> bool {
         self.verifications.values().any(|v| !v.reaches_user)
     }
 
     /// Get status summary
+    #[must_use]
     pub fn get_status_summary(&self) -> String {
         let total = self.verifications.len();
         let confirmed = self
@@ -254,10 +260,7 @@ impl OutputVerificationSystem {
             .filter(|v| v.is_stale(Duration::from_secs(30)))
             .count();
 
-        format!(
-            "Outputs: {}/{} confirmed, {} stale",
-            confirmed, total, stale
-        )
+        format!("Outputs: {confirmed}/{total} confirmed, {stale} stale")
     }
 
     /// Perform periodic verification update
@@ -281,8 +284,7 @@ impl OutputVerificationSystem {
                 );
                 verification.state = VisibilityState::Uncertain;
                 verification.status_message = format!(
-                    "{:?} output: No recent confirmation, cannot verify user perception",
-                    modality
+                    "{modality:?} output: No recent confirmation, cannot verify user perception"
                 );
                 verification.suggested_action = Some(
                     "Interact with the application to confirm you can perceive this output"
@@ -300,6 +302,7 @@ impl Default for OutputVerificationSystem {
 }
 
 /// Detect visual output topology (using existing display verification logic)
+#[must_use]
 pub fn detect_visual_topology() -> (OutputTopology, Vec<String>) {
     // Import from display_verification
     let (topo, evidence) = crate::display_verification::detect_display_topology();
@@ -316,13 +319,16 @@ pub fn detect_visual_topology() -> (OutputTopology, Vec<String>) {
 }
 
 /// Detect audio output topology (agnostic)
+#[must_use]
 pub fn detect_audio_topology() -> (OutputTopology, Vec<String>) {
     let mut evidence = Vec::new();
 
     // EVOLVED: Audio Canvas - direct device detection!
     // Check /dev/snd for audio devices (Linux)
     if let Ok(devices) = crate::audio_canvas::AudioCanvas::discover() {
-        if !devices.is_empty() {
+        if devices.is_empty() {
+            evidence.push("No audio devices found in /dev/snd".to_string());
+        } else {
             evidence.push(format!(
                 "Audio Canvas: {} device(s) found in /dev/snd (100% pure Rust!)",
                 devices.len()
@@ -343,8 +349,6 @@ pub fn detect_audio_topology() -> (OutputTopology, Vec<String>) {
             }
 
             return (OutputTopology::Direct, evidence);
-        } else {
-            evidence.push("No audio devices found in /dev/snd".to_string());
         }
     } else {
         evidence.push("Failed to scan /dev/snd for audio devices".to_string());
@@ -364,13 +368,14 @@ pub fn detect_audio_topology() -> (OutputTopology, Vec<String>) {
 }
 
 /// Detect haptic output topology (agnostic)
+#[must_use]
 pub fn detect_haptic_topology() -> (OutputTopology, Vec<String>) {
     let mut evidence = Vec::new();
 
     // Check for input devices that support force feedback
     if let Ok(entries) = std::fs::read_dir("/dev/input") {
         let ff_devices: Vec<_> = entries
-            .filter_map(|e| e.ok())
+            .filter_map(std::result::Result::ok)
             .filter(|e| e.file_name().to_string_lossy().starts_with("event"))
             .collect();
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Event System
 //!
 //! Handles keyboard, mouse, and async events for the TUI.

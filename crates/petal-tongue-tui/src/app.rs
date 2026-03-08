@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Main TUI Application
 //!
 //! Core application logic for the Rich TUI.
@@ -206,7 +207,7 @@ impl RichTUI {
     async fn handle_external_event(&mut self, event: ExternalEvent) -> Result<()> {
         match event {
             ExternalEvent::PrimalDiscovered { name } => {
-                self.add_log(format!("Discovered primal: {}", name)).await;
+                self.add_log(format!("Discovered primal: {name}")).await;
             }
             ExternalEvent::PrimalStatusChanged { name, healthy } => {
                 self.add_log(format!(
@@ -217,7 +218,7 @@ impl RichTUI {
                 .await;
             }
             ExternalEvent::LogMessage { source, message } => {
-                self.add_log(format!("[{}] {}", source, message)).await;
+                self.add_log(format!("[{source}] {message}")).await;
             }
             ExternalEvent::TopologyChanged => {
                 // Refresh topology data
@@ -250,7 +251,7 @@ impl RichTUI {
                             all_primals.extend(primals);
                         }
                         Err(e) => {
-                            self.add_log(format!("Failed to get primals: {}", e)).await;
+                            self.add_log(format!("Failed to get primals: {e}")).await;
                         }
                     }
                 }
@@ -274,8 +275,7 @@ impl RichTUI {
                 // Discovery failed - standalone mode
                 self.state.set_standalone_mode(true).await;
                 self.add_log(format!(
-                    "Discovery failed: {}. Running in standalone mode.",
-                    e
+                    "Discovery failed: {e}. Running in standalone mode."
                 ))
                 .await;
             }

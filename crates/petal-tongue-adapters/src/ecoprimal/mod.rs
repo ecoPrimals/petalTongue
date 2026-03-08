@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! ecoPrimals-specific adapters module
 
 pub mod capabilities;

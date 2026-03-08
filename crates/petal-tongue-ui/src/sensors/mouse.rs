@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Mouse sensor - Spatial input device
 //!
 //! Discovers mouse capabilities and provides click/movement events.
@@ -18,6 +19,7 @@ pub struct MouseSensor {
 
 impl MouseSensor {
     /// Create new mouse sensor
+    #[must_use]
     pub fn new(pointer_type: PointerType) -> Self {
         let capabilities = SensorCapabilities {
             sensor_type: SensorType::Mouse,
@@ -56,45 +58,45 @@ impl Sensor for MouseSensor {
         // Non-blocking poll with very short timeout
         match self.pointer_type {
             PointerType::TerminalMouse => {
-                if event::poll(Duration::from_millis(1))? {
-                    if let Event::Mouse(mouse_event) = event::read()? {
-                        let timestamp = Instant::now();
-                        let x = mouse_event.column as f32;
-                        let y = mouse_event.row as f32;
+                if event::poll(Duration::from_millis(1))?
+                    && let Event::Mouse(mouse_event) = event::read()?
+                {
+                    let timestamp = Instant::now();
+                    let x = f32::from(mouse_event.column);
+                    let y = f32::from(mouse_event.row);
 
-                        match mouse_event.kind {
-                            MouseEventKind::Down(btn) => {
-                                self.last_click = Some(timestamp);
-                                self.last_position = Some((x, y));
+                    match mouse_event.kind {
+                        MouseEventKind::Down(btn) => {
+                            self.last_click = Some(timestamp);
+                            self.last_position = Some((x, y));
 
-                                events.push(SensorEvent::Click {
-                                    x,
-                                    y,
-                                    button: map_button(btn),
-                                    timestamp,
-                                });
-                            }
-                            MouseEventKind::Moved => {
-                                self.last_position = Some((x, y));
-
-                                events.push(SensorEvent::Position { x, y, timestamp });
-                            }
-                            MouseEventKind::ScrollDown => {
-                                events.push(SensorEvent::Scroll {
-                                    delta_x: 0.0,
-                                    delta_y: -1.0,
-                                    timestamp,
-                                });
-                            }
-                            MouseEventKind::ScrollUp => {
-                                events.push(SensorEvent::Scroll {
-                                    delta_x: 0.0,
-                                    delta_y: 1.0,
-                                    timestamp,
-                                });
-                            }
-                            _ => {}
+                            events.push(SensorEvent::Click {
+                                x,
+                                y,
+                                button: map_button(btn),
+                                timestamp,
+                            });
                         }
+                        MouseEventKind::Moved => {
+                            self.last_position = Some((x, y));
+
+                            events.push(SensorEvent::Position { x, y, timestamp });
+                        }
+                        MouseEventKind::ScrollDown => {
+                            events.push(SensorEvent::Scroll {
+                                delta_x: 0.0,
+                                delta_y: -1.0,
+                                timestamp,
+                            });
+                        }
+                        MouseEventKind::ScrollUp => {
+                            events.push(SensorEvent::Scroll {
+                                delta_x: 0.0,
+                                delta_y: 1.0,
+                                timestamp,
+                            });
+                        }
+                        _ => {}
                     }
                 }
             }
@@ -121,7 +123,7 @@ pub enum PointerType {
     TerminalMouse,
 }
 
-/// Map crossterm button to our MouseButton enum
+/// Map crossterm button to our `MouseButton` enum
 fn map_button(btn: CrosstermButton) -> MouseButton {
     match btn {
         CrosstermButton::Left => MouseButton::Left,

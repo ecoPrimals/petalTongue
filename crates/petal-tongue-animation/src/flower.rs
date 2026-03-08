@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Flower Animation
 //!
 //! ASCII and high-quality flower opening animation for awakening experience.
@@ -65,14 +66,14 @@ impl FlowerAnimation {
             return None;
         }
 
-        #[allow(clippy::cast_precision_loss)]
+        #[expect(clippy::cast_precision_loss)]
         let progress = (self.frame_index as f32) / (self.total_frames as f32);
         let state = Self::calculate_state(progress);
         let ascii = Self::generate_ascii(state);
 
         self.frame_index += 1;
 
-        #[allow(clippy::cast_precision_loss)]
+        #[expect(clippy::cast_precision_loss)]
         let duration = Duration::from_secs_f32(1.0 / self.fps as f32);
 
         Some(FlowerFrame {
@@ -92,7 +93,7 @@ impl FlowerAnimation {
         if progress < 0.1 {
             FlowerState::Closed
         } else if progress < 0.9 {
-            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
             let percent = ((progress - 0.1) / 0.8 * 100.0) as u8;
             FlowerState::Opening(percent)
         } else {
@@ -199,7 +200,7 @@ pub fn generate_awakening_sequence(fps: u32) -> Vec<FlowerFrame> {
     }
 
     // Stage 2: Self-Knowledge (3-6s) - Glowing
-    #[allow(clippy::cast_precision_loss)]
+    #[expect(clippy::cast_precision_loss)]
     let frame_duration = Duration::from_secs_f32(1.0 / fps as f32);
 
     for _ in 0..(fps * 3) {

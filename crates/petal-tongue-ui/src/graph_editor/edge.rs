@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Graph Edge
 //!
 //! Represents dependencies between nodes in the execution graph.

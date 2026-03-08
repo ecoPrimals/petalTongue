@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Audio System - Substrate-Agnostic Architecture
 //!
 //! TRUE PRIMAL approach: Discover audio capabilities at runtime,
-//! never hardcode external systems (PipeWire, CoreAudio, WASAPI, etc.)
+//! never hardcode external systems (`PipeWire`, `CoreAudio`, WASAPI, etc.)
 //!
 //! # Architecture
 //!

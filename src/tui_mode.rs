@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! TUI mode - Terminal User Interface
 //!
 //! Pure Rust! ✅

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Startup Audio System
 //!
 //! Plays signature audio tone followed by startup music when petalTongue launches.
@@ -29,12 +30,12 @@ fn play_audio_pure_rust(samples: &[f32]) -> Result<(), String> {
 
     // Open audio device directly (like opening framebuffer!)
     let mut canvas =
-        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {}", e))?;
+        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {e}"))?;
 
     // Write samples directly to hardware!
     canvas
         .write_samples(samples)
-        .map_err(|e| format!("Failed to write samples: {}", e))?;
+        .map_err(|e| format!("Failed to write samples: {e}"))?;
 
     Ok(())
 }
@@ -45,16 +46,16 @@ fn play_embedded_mp3_pure_rust(mp3_data: &[u8]) -> Result<(), String> {
 
     // Decode MP3 with symphonia (pure Rust!)
     let decoded =
-        decode_audio_symphonia(mp3_data).map_err(|e| format!("Failed to decode MP3: {}", e))?;
+        decode_audio_symphonia(mp3_data).map_err(|e| format!("Failed to decode MP3: {e}"))?;
 
     // Open audio canvas
     let mut canvas =
-        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {}", e))?;
+        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {e}"))?;
 
     // Write samples directly to hardware!
     canvas
         .write_samples(&decoded.samples)
-        .map_err(|e| format!("Failed to write samples: {}", e))?;
+        .map_err(|e| format!("Failed to write samples: {e}"))?;
 
     Ok(())
 }
@@ -83,14 +84,14 @@ pub fn decode_audio_symphonia(audio_data: &[u8]) -> Result<DecodedAudio, String>
             &FormatOptions::default(),
             &MetadataOptions::default(),
         )
-        .map_err(|e| format!("Probe failed: {}", e))?;
+        .map_err(|e| format!("Probe failed: {e}"))?;
 
     let mut format = probed.format;
     let track = format.default_track().ok_or("No default track")?;
 
     let mut decoder = symphonia::default::get_codecs()
         .make(&track.codec_params, &DecoderOptions::default())
-        .map_err(|e| format!("Decoder creation failed: {}", e))?;
+        .map_err(|e| format!("Decoder creation failed: {e}"))?;
 
     let sample_rate = track.codec_params.sample_rate.ok_or("No sample rate")? as f32;
 
@@ -143,20 +144,20 @@ fn play_file_pure_rust(path: &Path) -> Result<(), String> {
     use std::fs;
 
     // Read file
-    let data = fs::read(path).map_err(|e| format!("Failed to read audio file: {}", e))?;
+    let data = fs::read(path).map_err(|e| format!("Failed to read audio file: {e}"))?;
 
     // Decode with symphonia
     let decoded =
-        decode_audio_symphonia(&data).map_err(|e| format!("Failed to decode audio: {}", e))?;
+        decode_audio_symphonia(&data).map_err(|e| format!("Failed to decode audio: {e}"))?;
 
     // Open audio canvas
     let mut canvas =
-        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {}", e))?;
+        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {e}"))?;
 
     // Write samples directly to hardware!
     canvas
         .write_samples(&decoded.samples)
-        .map_err(|e| format!("Failed to write samples: {}", e))?;
+        .map_err(|e| format!("Failed to write samples: {e}"))?;
 
     Ok(())
 }
@@ -222,12 +223,11 @@ impl StartupAudio {
                     path.display()
                 );
                 return Some(path);
-            } else {
-                warn!(
-                    "🎵 PETALTONGUE_STARTUP_MUSIC set but file not found: {}",
-                    path.display()
-                );
             }
+            warn!(
+                "🎵 PETALTONGUE_STARTUP_MUSIC set but file not found: {}",
+                path.display()
+            );
         }
 
         None

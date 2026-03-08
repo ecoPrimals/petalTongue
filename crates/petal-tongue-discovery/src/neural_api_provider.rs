@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Neural API-based visualization data provider
 //!
 //! Connects to biomeOS Neural API for unified primal discovery and proprioception.
@@ -37,7 +38,7 @@ impl NeuralApiProvider {
             .or_else(|| std::env::var("FAMILY_ID").ok())
             .unwrap_or_else(|| "nat0".to_string());
 
-        let socket_name = format!("biomeos-neural-api-{}.sock", family);
+        let socket_name = format!("biomeos-neural-api-{family}.sock");
 
         // Search in standard locations
         let search_paths = Self::get_search_paths();
@@ -61,8 +62,7 @@ impl NeuralApiProvider {
         }
 
         Err(anyhow::anyhow!(
-            "Neural API not found. Is biomeOS nucleus serve running? (looking for {})",
-            socket_name
+            "Neural API not found. Is biomeOS nucleus serve running? (looking for {socket_name})"
         ))
     }
 
@@ -77,7 +77,7 @@ impl NeuralApiProvider {
 
         // Priority 2: /run/user/<uid>
         let uid = petal_tongue_core::system_info::get_current_uid();
-        paths.push(PathBuf::from(format!("/run/user/{}", uid)));
+        paths.push(PathBuf::from(format!("/run/user/{uid}")));
 
         // Priority 3: /tmp (development)
         paths.push(PathBuf::from("/tmp"));
@@ -168,9 +168,9 @@ impl NeuralApiProvider {
             endpoints: None,
             metadata: None,
             properties: Default::default(),
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             trust_level: None,
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             family_id: None,
         })
     }
@@ -248,7 +248,7 @@ impl VisualizationDataProvider for NeuralApiProvider {
             .unwrap_or("unknown")
             .to_string();
 
-        Ok(format!("Neural API: {}", health_status))
+        Ok(format!("Neural API: {health_status}"))
     }
 
     fn get_metadata(&self) -> ProviderMetadata {

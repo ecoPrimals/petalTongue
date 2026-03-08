@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Adaptive UI components that respond to device capabilities
 //!
 //! This module implements the `AdaptiveRenderer` trait for different device types,
@@ -27,9 +28,7 @@
 //! // UI automatically adapts to device!
 //! ```
 
-use petal_tongue_core::{
-    AdaptiveRenderer, DeviceType, PrimalInfo, RenderingCapabilities, UIComplexity,
-};
+use petal_tongue_core::{DeviceType, PrimalInfo, RenderingCapabilities, UIComplexity};
 
 /// Manages adaptive UI rendering across different devices
 pub struct AdaptiveUIManager {
@@ -61,11 +60,13 @@ impl AdaptiveUIManager {
     }
 
     /// Get current device type
+    #[must_use]
     pub fn device_type(&self) -> DeviceType {
         self.capabilities.device_type
     }
 
     /// Get UI complexity level
+    #[must_use]
     pub fn ui_complexity(&self) -> UIComplexity {
         self.capabilities.ui_complexity
     }
@@ -159,7 +160,7 @@ impl AdaptiveUIRenderer for DesktopUIRenderer {
                                 ui.horizontal_wrapped(|ui| {
                                     ui.label("Capabilities:");
                                     for cap in &primal.capabilities {
-                                        ui.small(format!("🔹 {}", cap));
+                                        ui.small(format!("🔹 {cap}"));
                                     }
                                 });
                             }
@@ -291,9 +292,9 @@ impl AdaptiveUIRenderer for WatchUIRenderer {
         let total = primals.len();
 
         if healthy == total {
-            ui.colored_label(egui::Color32::GREEN, format!("✅ {}/{} OK", healthy, total));
+            ui.colored_label(egui::Color32::GREEN, format!("✅ {healthy}/{total} OK"));
         } else {
-            ui.colored_label(egui::Color32::YELLOW, format!("⚠️ {}/{}", healthy, total));
+            ui.colored_label(egui::Color32::YELLOW, format!("⚠️ {healthy}/{total}"));
         }
     }
 
@@ -359,7 +360,7 @@ impl AdaptiveUIRenderer for CliUIRenderer {
     }
 
     fn render_metrics(&self, ui: &mut egui::Ui, metrics_data: &str, _caps: &RenderingCapabilities) {
-        ui.monospace(format!("Metrics: {}", metrics_data));
+        ui.monospace(format!("Metrics: {metrics_data}"));
     }
 }
 

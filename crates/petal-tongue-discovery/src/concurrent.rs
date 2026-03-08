@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Concurrent discovery coordinator
 //!
 //! Modern async patterns for parallel provider discovery with timeout protection.
@@ -64,10 +65,7 @@ where
                 match timeout(timeout_duration, fut).await {
                     Ok(Ok(providers)) => Ok((name, providers)),
                     Ok(Err(e)) => Err((name, e)),
-                    Err(_) => Err((
-                        name,
-                        anyhow::anyhow!("Timeout after {:?}", timeout_duration),
-                    )),
+                    Err(_) => Err((name, anyhow::anyhow!("Timeout after {timeout_duration:?}"))),
                 }
             }
         })
@@ -357,8 +355,7 @@ mod tests {
         assert_eq!(health.len(), 3);
         assert!(
             elapsed < Duration::from_millis(500),
-            "Parallel execution should be fast, took {:?}",
-            elapsed
+            "Parallel execution should be fast, took {elapsed:?}"
         );
     }
 }

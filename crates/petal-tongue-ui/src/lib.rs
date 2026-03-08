@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # petal-tongue-ui
 //!
 //! Desktop UI application for petalTongue
@@ -5,6 +6,11 @@
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
+#![allow(clippy::must_use_candidate)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::doc_markdown)]
+#![allow(clippy::missing_doc_inline_errors)]
+#![allow(clippy::unused_async)]
 
 // Re-export egui and eframe for use by parent crate
 pub use eframe;

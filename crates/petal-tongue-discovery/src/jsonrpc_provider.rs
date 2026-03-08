@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! JSON-RPC 2.0 Provider - PRIMARY PRIMAL PROTOCOL
 //!
 //! Line-delimited JSON-RPC 2.0 over Unix sockets for fast, secure, port-free
@@ -172,9 +173,9 @@ impl JsonRpcProvider {
         let uid = petal_tongue_core::system_info::get_current_uid();
 
         Ok(vec![
-            PathBuf::from(format!("/run/user/{}/biomeos-device-management.sock", uid)),
-            PathBuf::from(format!("/run/user/{}/biomeos-ui.sock", uid)),
-            PathBuf::from(format!("/run/user/{}/songbird-discovery.sock", uid)),
+            PathBuf::from(format!("/run/user/{uid}/biomeos-device-management.sock")),
+            PathBuf::from(format!("/run/user/{uid}/biomeos-ui.sock")),
+            PathBuf::from(format!("/run/user/{uid}/songbird-discovery.sock")),
             PathBuf::from("/tmp/biomeos.sock"),
         ])
     }
@@ -237,13 +238,13 @@ impl JsonRpcProvider {
         let mut line = String::new();
         tokio::time::timeout(self.timeout, reader.read_line(&mut line))
             .await
-            .map_err(|_| anyhow::anyhow!("Response timeout: {}", method))??;
+            .map_err(|_| anyhow::anyhow!("Response timeout: {method}"))??;
 
         debug!("← JSON-RPC response ({} bytes)", line.len());
 
         // Parse response
         let response: JsonRpcResponse = serde_json::from_str(&line)
-            .map_err(|e| anyhow::anyhow!("Invalid JSON-RPC response: {}", e))?;
+            .map_err(|e| anyhow::anyhow!("Invalid JSON-RPC response: {e}"))?;
 
         // Verify request ID matches
         if response.id != id {
@@ -258,7 +259,7 @@ impl JsonRpcProvider {
                 error.message,
                 error
                     .data
-                    .map(|d| format!(" (data: {})", d))
+                    .map(|d| format!(" (data: {d})"))
                     .unwrap_or_default()
             );
         }
@@ -316,7 +317,7 @@ impl VisualizationDataProvider for JsonRpcProvider {
 
         // Parse as Vec<PrimalInfo>
         let primals: Vec<PrimalInfo> = serde_json::from_value(result)
-            .map_err(|e| anyhow::anyhow!("Failed to parse primals: {}", e))?;
+            .map_err(|e| anyhow::anyhow!("Failed to parse primals: {e}"))?;
 
         debug!("✓ Received {} primals", primals.len());
         Ok(primals)
@@ -329,7 +330,7 @@ impl VisualizationDataProvider for JsonRpcProvider {
         match self.call("get_topology", None).await {
             Ok(result) => {
                 let topology: Vec<TopologyEdge> = serde_json::from_value(result)
-                    .map_err(|e| anyhow::anyhow!("Failed to parse topology: {}", e))?;
+                    .map_err(|e| anyhow::anyhow!("Failed to parse topology: {e}"))?;
                 debug!("✓ Received {} edges", topology.len());
                 Ok(topology)
             }
@@ -374,7 +375,7 @@ impl VisualizationDataProvider for JsonRpcProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
+
     use tokio::io::AsyncWriteExt;
     use tokio::net::{UnixListener, UnixStream};
 

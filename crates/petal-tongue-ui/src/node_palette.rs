@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Node Palette - Available Node Types for Graph Builder
 //!
 //! Displays all available node types that can be added to a graph.
@@ -31,7 +32,7 @@ impl NodePalette {
     }
 
     /// Discover available node types (capability-based, zero hardcoding!)
-    /// TRUE PRIMAL: This queries the NodeType enum for what's available
+    /// TRUE PRIMAL: This queries the `NodeType` enum for what's available
     fn discover_node_types() -> Vec<NodeTypeInfo> {
         vec![
             NodeTypeInfo::from_node_type(NodeType::PrimalStart),
@@ -178,7 +179,7 @@ struct NodeTypeInfo {
 }
 
 impl NodeTypeInfo {
-    /// Create from a NodeType (TRUE PRIMAL: queries the type for its own metadata!)
+    /// Create from a `NodeType` (TRUE PRIMAL: queries the type for its own metadata!)
     fn from_node_type(node_type: NodeType) -> Self {
         Self {
             name: node_type.display_name().to_string(),

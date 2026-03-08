@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Device Panel - Device Management UI
 //!
 //! Displays all discovered devices in a tree view with filtering, status indicators,
@@ -205,11 +206,11 @@ impl DevicePanel {
             .count();
 
         ui.horizontal(|ui| {
-            ui.label(format!("Total: {}", total));
+            ui.label(format!("Total: {total}"));
             ui.separator();
-            ui.colored_label(Color32::GREEN, format!("Online: {}", online));
+            ui.colored_label(Color32::GREEN, format!("Online: {online}"));
             ui.separator();
-            ui.label(format!("Assigned: {}", assigned));
+            ui.label(format!("Assigned: {assigned}"));
         });
     }
 
@@ -247,7 +248,7 @@ impl DevicePanel {
                             // Assignment status
                             if let Some(primal_id) = &device.assigned_to {
                                 ui.separator();
-                                ui.label(format!("→ {}", primal_id));
+                                ui.label(format!("→ {primal_id}"));
                             }
                         });
                     });
@@ -327,6 +328,7 @@ impl DevicePanel {
     }
 
     /// Get selected device
+    #[must_use]
     pub fn selected_device(&self) -> Option<&Device> {
         self.selected
             .as_ref()

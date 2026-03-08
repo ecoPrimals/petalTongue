@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Audio Sonification Renderer
 //!
 //! Renders graph topology as audio soundscape.

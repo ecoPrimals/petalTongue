@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Primal Type System - Capability-Based
 //!
 //! This module provides capability-based primal identification.
@@ -121,7 +122,7 @@ mod tests {
     use super::*;
     use crate::PrimalHealthStatus;
 
-    #[allow(deprecated)]
+    #[expect(deprecated)]
     fn test_primal(capabilities: Vec<String>) -> PrimalInfo {
         PrimalInfo {
             id: "test".to_string(),

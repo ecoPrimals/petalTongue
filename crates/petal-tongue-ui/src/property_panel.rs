@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Property Panel - Node Parameter Editor
 //!
 //! Provides forms for editing node parameters based on node type.
@@ -5,7 +6,7 @@
 
 use crate::accessibility::ColorPalette;
 use egui::{Color32, RichText, Ui};
-use petal_tongue_core::graph_builder::{GraphNode, NodeType, VisualGraph};
+use petal_tongue_core::graph_builder::{GraphNode, VisualGraph};
 use std::collections::HashMap;
 
 /// Property panel for editing selected node
@@ -38,11 +39,11 @@ impl PropertyPanel {
         self.errors.clear();
 
         // Load current parameters
-        if let Some(id) = &node_id {
-            if let Some(node) = graph.get_node(id) {
-                for (key, value) in &node.parameters {
-                    self.temp_params.insert(key.clone(), value.clone());
-                }
+        if let Some(id) = &node_id
+            && let Some(node) = graph.get_node(id)
+        {
+            for (key, value) in &node.parameters {
+                self.temp_params.insert(key.clone(), value.clone());
             }
         }
     }
@@ -126,7 +127,7 @@ impl PropertyPanel {
 
             for (field, error) in &self.errors {
                 ui.label(
-                    RichText::new(format!("• {}: {}", field, error))
+                    RichText::new(format!("• {field}: {error}"))
                         .size(12.0)
                         .color(Color32::from_rgb(208, 2, 27)),
                 );
@@ -138,7 +139,7 @@ impl PropertyPanel {
     fn render_parameter_field(&mut self, ui: &mut Ui, param_name: &str, palette: &ColorPalette) {
         ui.horizontal(|ui| {
             // Label
-            ui.label(RichText::new(format!("{}:", param_name)).size(13.0));
+            ui.label(RichText::new(format!("{param_name}:")).size(13.0));
 
             // Get or create temp value
             let mut new_value = self
@@ -218,20 +219,20 @@ impl PropertyPanel {
         ui.add_space(8.0);
 
         // Show validation status
-        if let Some(node_id) = &self.editing_node {
-            if let Some(node) = graph.get_node(node_id) {
-                if node.has_all_required_parameters() {
-                    ui.label(
-                        RichText::new("✅ All required parameters set")
-                            .color(Color32::from_rgb(40, 180, 40)),
-                    );
-                } else {
-                    let missing = node.missing_parameters();
-                    ui.label(
-                        RichText::new(format!("❌ Missing: {}", missing.join(", ")))
-                            .color(Color32::from_rgb(208, 2, 27)),
-                    );
-                }
+        if let Some(node_id) = &self.editing_node
+            && let Some(node) = graph.get_node(node_id)
+        {
+            if node.has_all_required_parameters() {
+                ui.label(
+                    RichText::new("✅ All required parameters set")
+                        .color(Color32::from_rgb(40, 180, 40)),
+                );
+            } else {
+                let missing = node.missing_parameters();
+                ui.label(
+                    RichText::new(format!("❌ Missing: {}", missing.join(", ")))
+                        .color(Color32::from_rgb(208, 2, 27)),
+                );
             }
         }
     }
@@ -240,45 +241,44 @@ impl PropertyPanel {
     fn apply_changes(&mut self, graph: &mut VisualGraph) {
         self.errors.clear();
 
-        if let Some(node_id) = &self.editing_node {
-            if let Some(node) = graph.get_node_mut(node_id) {
-                // Validate all required parameters are filled
-                let required_params = node.node_type.required_parameters();
-                let mut has_errors = false;
+        if let Some(node_id) = &self.editing_node
+            && let Some(node) = graph.get_node_mut(node_id)
+        {
+            // Validate all required parameters are filled
+            let required_params = node.node_type.required_parameters();
+            let mut has_errors = false;
 
-                for param_name in required_params {
-                    if let Some(value) = self.temp_params.get(*param_name) {
-                        if value.trim().is_empty() {
-                            self.errors.insert(
-                                param_name.to_string(),
-                                "Required field cannot be empty".to_string(),
-                            );
-                            has_errors = true;
-                        }
-                    } else {
+            for param_name in required_params {
+                if let Some(value) = self.temp_params.get(*param_name) {
+                    if value.trim().is_empty() {
                         self.errors.insert(
                             param_name.to_string(),
-                            "Required field is missing".to_string(),
+                            "Required field cannot be empty".to_string(),
                         );
                         has_errors = true;
                     }
-                }
-
-                if !has_errors {
-                    // Apply all parameters
-                    for (key, value) in &self.temp_params {
-                        node.set_parameter(key.clone(), value.clone());
-                    }
-
-                    // Clear error state
-                    node.visual_state.has_error = false;
-                    node.visual_state.error_message = None;
                 } else {
-                    // Set error state
-                    node.visual_state.has_error = true;
-                    node.visual_state.error_message =
-                        Some("Missing required parameters".to_string());
+                    self.errors.insert(
+                        param_name.to_string(),
+                        "Required field is missing".to_string(),
+                    );
+                    has_errors = true;
                 }
+            }
+
+            if has_errors {
+                // Set error state
+                node.visual_state.has_error = true;
+                node.visual_state.error_message = Some("Missing required parameters".to_string());
+            } else {
+                // Apply all parameters
+                for (key, value) in &self.temp_params {
+                    node.set_parameter(key.clone(), value.clone());
+                }
+
+                // Clear error state
+                node.visual_state.has_error = false;
+                node.visual_state.error_message = None;
             }
         }
     }
@@ -288,11 +288,11 @@ impl PropertyPanel {
         self.temp_params.clear();
         self.errors.clear();
 
-        if let Some(node_id) = &self.editing_node {
-            if let Some(node) = graph.get_node(node_id) {
-                for (key, value) in &node.parameters {
-                    self.temp_params.insert(key.clone(), value.clone());
-                }
+        if let Some(node_id) = &self.editing_node
+            && let Some(node) = graph.get_node(node_id)
+        {
+            for (key, value) in &node.parameters {
+                self.temp_params.insert(key.clone(), value.clone());
             }
         }
     }
@@ -306,13 +306,13 @@ impl PropertyPanel {
     /// Check if panel has unsaved changes
     #[must_use]
     pub fn has_unsaved_changes(&self, graph: &VisualGraph) -> bool {
-        if let Some(node_id) = &self.editing_node {
-            if let Some(node) = graph.get_node(node_id) {
-                // Check if temp params differ from node params
-                for (key, value) in &self.temp_params {
-                    if node.get_parameter(key) != Some(value) {
-                        return true;
-                    }
+        if let Some(node_id) = &self.editing_node
+            && let Some(node) = graph.get_node(node_id)
+        {
+            // Check if temp params differ from node params
+            for (key, value) in &self.temp_params {
+                if node.get_parameter(key) != Some(value) {
+                    return true;
                 }
             }
         }
@@ -329,6 +329,7 @@ impl Default for PropertyPanel {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use petal_tongue_core::NodeType;
     use petal_tongue_core::graph_builder::Vec2;
 
     #[test]

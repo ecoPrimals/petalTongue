@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Integration tests for petal-tongue-ui-core
 
 use anyhow::Result;

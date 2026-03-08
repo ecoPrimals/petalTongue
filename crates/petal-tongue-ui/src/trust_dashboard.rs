@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Trust Status Dashboard
 //!
 //! Provides rich visualization of trust relationships and status across the primal network.
@@ -85,7 +86,7 @@ impl TrustDashboard {
                 *summary.trust_distribution.entry(trust_label).or_insert(0) += 1;
             } else {
                 // Check deprecated field for backward compatibility
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 if let Some(trust_level) = primal.trust_level {
                     trust_values.push(f64::from(trust_level));
                     let trust_label = match trust_level {
@@ -107,7 +108,7 @@ impl TrustDashboard {
                 }
             } else {
                 // Check deprecated field for backward compatibility
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 if let Some(family_id) = &primal.family_id {
                     families.insert(family_id.clone());
                     summary.family_count += 1;
@@ -250,7 +251,7 @@ impl TrustDashboard {
                     0 => "error",
                     _ => "notification",
                 };
-                let _ = audio.play(sound);
+                let () = audio.play(sound);
             }
 
             ui.add_space(12.0);
@@ -375,9 +376,9 @@ mod tests {
             endpoints: None,
             metadata: None,
             properties: props,
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             trust_level: trust,
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             family_id: family.map(String::from),
         }
     }

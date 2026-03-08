@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Graph Editor - Interactive Collaborative Intelligence
 //!
 //! Enables human-AI collaboration through interactive graph editing.

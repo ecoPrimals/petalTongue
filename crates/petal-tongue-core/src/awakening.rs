@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Awakening Experience
 //!
 //! The default touchpoint: flower opening to sunrise, leading to tutorial.
@@ -91,6 +92,7 @@ impl Default for AwakeningConfig {
 
 impl AwakeningExperience {
     /// Create new awakening experience
+    #[must_use]
     pub fn new(engine: Arc<UniversalRenderingEngine>) -> Self {
         Self {
             engine,
@@ -100,6 +102,7 @@ impl AwakeningExperience {
     }
 
     /// Create with custom config
+    #[must_use]
     pub fn with_config(engine: Arc<UniversalRenderingEngine>, config: AwakeningConfig) -> Self {
         Self {
             engine,
@@ -168,8 +171,8 @@ impl AwakeningExperience {
         }
 
         // Coordinate modalities
-        if self.config.visual_enabled {
-            if let Err(e) = self
+        if self.config.visual_enabled
+            && let Err(e) = self
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningVisual {
@@ -177,13 +180,12 @@ impl AwakeningExperience {
                     frame: 0,
                 })
                 .await
-            {
-                tracing::warn!("Failed to broadcast visual: {}", e);
-            }
+        {
+            tracing::warn!("Failed to broadcast visual: {}", e);
         }
 
-        if self.config.audio_enabled {
-            if let Err(e) = self
+        if self.config.audio_enabled
+            && let Err(e) = self
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningAudio {
@@ -191,22 +193,20 @@ impl AwakeningExperience {
                     action: "start".to_string(),
                 })
                 .await
-            {
-                tracing::warn!("Failed to broadcast audio: {}", e);
-            }
+        {
+            tracing::warn!("Failed to broadcast audio: {}", e);
         }
 
-        if self.config.text_enabled {
-            if let Err(e) = self
+        if self.config.text_enabled
+            && let Err(e) = self
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningText {
                     message: "Awakening...".to_string(),
                 })
                 .await
-            {
-                tracing::warn!("Failed to broadcast text: {}", e);
-            }
+        {
+            tracing::warn!("Failed to broadcast text: {}", e);
         }
 
         tokio::time::sleep(Duration::from_secs(self.config.stage_1_duration)).await;
@@ -237,8 +237,8 @@ impl AwakeningExperience {
         }
 
         // Coordinate modalities
-        if self.config.visual_enabled {
-            if let Err(e) = self
+        if self.config.visual_enabled
+            && let Err(e) = self
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningVisual {
@@ -246,13 +246,12 @@ impl AwakeningExperience {
                     frame: 0,
                 })
                 .await
-            {
-                tracing::warn!("Failed to broadcast visual: {}", e);
-            }
+        {
+            tracing::warn!("Failed to broadcast visual: {}", e);
         }
 
-        if self.config.audio_enabled {
-            if let Err(e) = self
+        if self.config.audio_enabled
+            && let Err(e) = self
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningAudio {
@@ -260,22 +259,20 @@ impl AwakeningExperience {
                     action: "start".to_string(),
                 })
                 .await
-            {
-                tracing::warn!("Failed to broadcast audio: {}", e);
-            }
+        {
+            tracing::warn!("Failed to broadcast audio: {}", e);
         }
 
-        if self.config.text_enabled {
-            if let Err(e) = self
+        if self.config.text_enabled
+            && let Err(e) = self
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningText {
                     message: "I am petalTongue. I know myself.".to_string(),
                 })
                 .await
-            {
-                tracing::warn!("Failed to broadcast text: {}", e);
-            }
+        {
+            tracing::warn!("Failed to broadcast text: {}", e);
         }
 
         tokio::time::sleep(Duration::from_secs(self.config.stage_2_duration)).await;
@@ -306,8 +303,8 @@ impl AwakeningExperience {
         }
 
         // Coordinate modalities
-        if self.config.visual_enabled {
-            if let Err(e) = self
+        if self.config.visual_enabled
+            && let Err(e) = self
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningVisual {
@@ -315,13 +312,12 @@ impl AwakeningExperience {
                     frame: 0,
                 })
                 .await
-            {
-                tracing::warn!("Failed to broadcast visual: {}", e);
-            }
+        {
+            tracing::warn!("Failed to broadcast visual: {}", e);
         }
 
-        if self.config.audio_enabled {
-            if let Err(e) = self
+        if self.config.audio_enabled
+            && let Err(e) = self
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningAudio {
@@ -329,14 +325,13 @@ impl AwakeningExperience {
                     action: "start".to_string(),
                 })
                 .await
-            {
-                tracing::warn!("Failed to broadcast audio: {}", e);
-            }
+        {
+            tracing::warn!("Failed to broadcast audio: {}", e);
         }
 
         // Discover compute providers and broadcast discoveries
         match self.engine.discover_compute().await {
-            Ok(_) => {
+            Ok(()) => {
                 // Discovery complete, broadcast generic success
                 tracing::info!("Compute providers discovered");
             }
@@ -373,8 +368,8 @@ impl AwakeningExperience {
         }
 
         // Coordinate modalities
-        if self.config.visual_enabled {
-            if let Err(e) = self
+        if self.config.visual_enabled
+            && let Err(e) = self
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningVisual {
@@ -382,13 +377,12 @@ impl AwakeningExperience {
                     frame: 0,
                 })
                 .await
-            {
-                tracing::warn!("Failed to broadcast visual: {}", e);
-            }
+        {
+            tracing::warn!("Failed to broadcast visual: {}", e);
         }
 
-        if self.config.audio_enabled {
-            if let Err(e) = self
+        if self.config.audio_enabled
+            && let Err(e) = self
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningAudio {
@@ -396,22 +390,20 @@ impl AwakeningExperience {
                     action: "start".to_string(),
                 })
                 .await
-            {
-                tracing::warn!("Failed to broadcast audio: {}", e);
-            }
+        {
+            tracing::warn!("Failed to broadcast audio: {}", e);
         }
 
-        if self.config.text_enabled {
-            if let Err(e) = self
+        if self.config.text_enabled
+            && let Err(e) = self
                 .engine
                 .events()
                 .broadcast(crate::event::EngineEvent::AwakeningText {
                     message: "Ready. Let me show you.".to_string(),
                 })
                 .await
-            {
-                tracing::warn!("Failed to broadcast text: {}", e);
-            }
+        {
+            tracing::warn!("Failed to broadcast text: {}", e);
         }
 
         tokio::time::sleep(Duration::from_secs(self.config.stage_4_duration)).await;

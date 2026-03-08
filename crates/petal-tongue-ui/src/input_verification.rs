@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Input Verification - Universal awareness of input reaching our sensors
 //!
 //! Parallel to output verification - for ALL inputs:
@@ -107,6 +108,7 @@ pub struct InputVerification {
 
 impl InputVerification {
     /// Create a new unverified input
+    #[must_use]
     pub fn unverified(modality: InputModality) -> Self {
         Self {
             modality,
@@ -134,10 +136,9 @@ impl InputVerification {
     }
 
     /// Check if input is stale (no recent input)
+    #[must_use]
     pub fn is_stale(&self, max_age: Duration) -> bool {
-        self.last_input
-            .map(|t| t.elapsed() > max_age)
-            .unwrap_or(true)
+        self.last_input.is_none_or(|t| t.elapsed() > max_age)
     }
 
     /// Update interactivity based on recency
@@ -170,6 +171,7 @@ pub struct InputVerificationSystem {
 
 impl InputVerificationSystem {
     /// Create a new input verification system
+    #[must_use]
     pub fn new() -> Self {
         Self {
             verifications: std::collections::HashMap::new(),
@@ -201,21 +203,25 @@ impl InputVerificationSystem {
     }
 
     /// Get verification for a specific modality
+    #[must_use]
     pub fn get_verification(&self, modality: &InputModality) -> Option<&InputVerification> {
         self.verifications.get(modality)
     }
 
     /// Get all input verifications
+    #[must_use]
     pub fn get_all_verifications(&self) -> Vec<&InputVerification> {
         self.verifications.values().collect()
     }
 
     /// Check if any inputs are inactive
+    #[must_use]
     pub fn has_inactive_inputs(&self) -> bool {
         self.verifications.values().any(|v| !v.input_active)
     }
 
     /// Get most recent interaction time across all inputs
+    #[must_use]
     pub fn most_recent_interaction(&self) -> Option<Instant> {
         self.verifications
             .values()
@@ -224,6 +230,7 @@ impl InputVerificationSystem {
     }
 
     /// Get status summary
+    #[must_use]
     pub fn get_status_summary(&self) -> String {
         let total = self.verifications.len();
         let active = self
@@ -237,7 +244,7 @@ impl InputVerificationSystem {
             .filter(|v| v.is_stale(Duration::from_secs(30)))
             .count();
 
-        format!("Inputs: {}/{} active, {} stale", active, total, stale)
+        format!("Inputs: {active}/{total} active, {stale} stale")
     }
 
     /// Perform periodic verification update
@@ -259,10 +266,9 @@ impl InputVerificationSystem {
             if verification.is_stale(Duration::from_secs(300)) {
                 warn!("⚠️  {:?} input is stale (no recent input)", modality);
                 verification.status_message =
-                    format!("{:?} input: No recent activity detected", modality);
+                    format!("{modality:?} input: No recent activity detected");
                 verification.suggested_action = Some(format!(
-                    "Try using {:?} input to confirm it's working",
-                    modality
+                    "Try using {modality:?} input to confirm it's working"
                 ));
             }
         }
@@ -276,6 +282,7 @@ impl Default for InputVerificationSystem {
 }
 
 /// Detect keyboard input topology
+#[must_use]
 pub fn detect_keyboard_topology() -> (InputTopology, Vec<String>) {
     let mut evidence = Vec::new();
 
@@ -288,7 +295,7 @@ pub fn detect_keyboard_topology() -> (InputTopology, Vec<String>) {
     // Check for physical keyboards
     if let Ok(entries) = std::fs::read_dir("/dev/input") {
         let kbd_devices: Vec<_> = entries
-            .filter_map(|e| e.ok())
+            .filter_map(std::result::Result::ok)
             .filter(|e| e.file_name().to_string_lossy().starts_with("event"))
             .collect();
 
@@ -306,6 +313,7 @@ pub fn detect_keyboard_topology() -> (InputTopology, Vec<String>) {
 }
 
 /// Detect pointer input topology
+#[must_use]
 pub fn detect_pointer_topology() -> (InputTopology, Vec<String>) {
     let mut evidence = Vec::new();
 

@@ -1,13 +1,11 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Proprioception Panel - SAME DAVE Self-Awareness Visualization
 //!
 //! Displays Neural API proprioception data (system self-awareness) in an egui panel.
 //! Updates automatically every 5 seconds with fresh data from Neural API.
 
 use egui::{Color32, ProgressBar, RichText, Ui};
-use petal_tongue_core::{
-    MotorData, ProprioceptionData, ProprioceptionHealthStatus as HealthStatus, SelfAwarenessData,
-    SensoryData,
-};
+use petal_tongue_core::{MotorData, ProprioceptionData, SelfAwarenessData, SensoryData};
 use petal_tongue_discovery::NeuralApiProvider;
 use std::time::{Duration, Instant};
 use tracing::{debug, warn};
@@ -33,7 +31,7 @@ impl ProprioceptionPanel {
     pub fn new() -> Self {
         Self {
             data: None,
-            last_update: Instant::now() - REFRESH_INTERVAL, // Trigger immediate fetch
+            last_update: Instant::now().checked_sub(REFRESH_INTERVAL).unwrap(), // Trigger immediate fetch
             fetching: false,
         }
     }
@@ -177,7 +175,7 @@ impl ProprioceptionPanel {
         // Show scan recency
         let age = (chrono::Utc::now() - sensory.last_scan).num_seconds();
         ui.label(
-            RichText::new(format!("  Last scan: {}s ago", age))
+            RichText::new(format!("  Last scan: {age}s ago"))
                 .color(Color32::from_rgb(156, 163, 175)),
         ); // gray-400
     }
@@ -258,7 +256,7 @@ impl ProprioceptionPanel {
     fn render_timestamp(&self, ui: &mut Ui, data: &ProprioceptionData) {
         let age_secs = data.age().num_seconds();
         let age_text = if age_secs < 60 {
-            format!("{}s ago", age_secs)
+            format!("{age_secs}s ago")
         } else {
             format!("{}m ago", age_secs / 60)
         };
@@ -284,7 +282,7 @@ impl ProprioceptionPanel {
             .saturating_sub(self.last_update.elapsed().as_secs());
         if next_refresh > 0 {
             ui.label(
-                RichText::new(format!("Next refresh in {}s", next_refresh))
+                RichText::new(format!("Next refresh in {next_refresh}s"))
                     .color(Color32::from_rgb(156, 163, 175)),
             ); // gray-400
         } else if self.fetching {

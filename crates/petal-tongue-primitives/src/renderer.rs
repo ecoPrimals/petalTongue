@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! # Renderer Traits
 //!
 //! Capability-based renderer traits for UI primitives.
@@ -115,6 +116,7 @@ pub enum Modality {
 
 impl Modality {
     /// Check if this is an interactive modality
+    #[must_use]
     pub fn is_interactive(&self) -> bool {
         matches!(self, Self::VisualGUI | Self::TerminalTUI | Self::Audio)
     }

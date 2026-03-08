@@ -46,6 +46,9 @@ authors = ["ecoPrimals Project"]
 # Async runtime
 tokio = { version = "1.40", features = ["full"] }
 
+# Zero-copy byte buffers (Bytes implements Serialize/Deserialize with serde feature)
+bytes = { version = "1", features = ["serde"] }
+
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -80,6 +83,7 @@ egui_extras = "0.29"
 
 # Graph visualization
 egui_graphs = "0.22"
+egui_plot = "0.29"
 petgraph = "0.6"
 
 # HTTP client (Pure Rust TLS via rustls - NO OpenSSL!)
@@ -152,6 +156,29 @@ png = { version = "0.17", optional = true }
 tempfile = "3.10"
 
 [features]
-default = ["ui"]  # Desktop users get GUI by default
-ui = ["petal-tongue-ui"]  # Can build without GUI for Pure Rust
-examples = ["libc", "png"]  # Example dependencies (not production)
+default = ["ui"]
+ui = ["petal-tongue-ui", "dep:eframe", "dep:egui"]
+examples = ["libc", "png"]
+
+[[example]]
+name = "awakening_pure_rust"
+required-features = ["ui"]
+
+[[example]]
+name = "framebuffer_demo"
+required-features = ["ui", "examples"]
+
+[[example]]
+name = "display_demo"
+required-features = ["ui"]
+
+[[example]]
+name = "pixel_renderer_demo"
+required-features = ["ui", "examples"]
+
+[[example]]
+name = "pure_rust_gui_demo"
+required-features = ["ui"]
+
+[[example]]
+name = "field_mode_demo"

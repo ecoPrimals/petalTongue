@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Capability taxonomy for ecoPrimals ecosystem
 //!
 //! Defines the standard capability taxonomy that enables capability-based
@@ -143,6 +144,7 @@ impl CapabilityTaxonomy {
     /// Convert capability to string representation
     ///
     /// Returns the dot-notation string (e.g., "ui.render")
+    #[must_use]
     pub fn as_str(&self) -> &'static str {
         match self {
             // UI Capabilities
@@ -176,6 +178,7 @@ impl CapabilityTaxonomy {
     /// Get all UI-related capabilities
     ///
     /// Returns capabilities in the "ui.*" domain
+    #[must_use]
     pub fn ui_capabilities() -> Vec<Self> {
         vec![
             Self::UIRender,
@@ -190,6 +193,7 @@ impl CapabilityTaxonomy {
     /// Get all input-related capabilities
     ///
     /// Returns capabilities in the "ui.input.*" domain
+    #[must_use]
     pub fn input_capabilities() -> Vec<Self> {
         vec![
             Self::UIInputKeyboard,
@@ -201,6 +205,7 @@ impl CapabilityTaxonomy {
     /// Get all discovery-related capabilities
     ///
     /// Returns capabilities in the "discovery.*" domain
+    #[must_use]
     pub fn discovery_capabilities() -> Vec<Self> {
         vec![Self::DiscoveryMDNS, Self::DiscoveryHTTP]
     }
@@ -208,6 +213,7 @@ impl CapabilityTaxonomy {
     /// Get all storage-related capabilities
     ///
     /// Returns capabilities in the "storage.*" domain
+    #[must_use]
     pub fn storage_capabilities() -> Vec<Self> {
         vec![Self::StoragePersistent, Self::StorageCache]
     }
@@ -215,11 +221,13 @@ impl CapabilityTaxonomy {
     /// Get all IPC-related capabilities
     ///
     /// Returns capabilities in the "ipc.*" domain
+    #[must_use]
     pub fn ipc_capabilities() -> Vec<Self> {
         vec![Self::IpcTarpc, Self::IpcJsonRpc, Self::IpcUnixSocket]
     }
 
     /// Check if this is a UI capability
+    #[must_use]
     pub fn is_ui(&self) -> bool {
         matches!(
             self,
@@ -233,6 +241,7 @@ impl CapabilityTaxonomy {
     }
 
     /// Check if this is an input capability
+    #[must_use]
     pub fn is_input(&self) -> bool {
         matches!(
             self,
@@ -278,7 +287,7 @@ impl FromStr for CapabilityTaxonomy {
             "ipc.json-rpc" => Ok(Self::IpcJsonRpc),
             "ipc.unix-socket" => Ok(Self::IpcUnixSocket),
 
-            _ => Err(format!("Unknown capability: {}", s)),
+            _ => Err(format!("Unknown capability: {s}")),
         }
     }
 }
@@ -316,7 +325,7 @@ mod tests {
     #[test]
     fn test_display_formatting() {
         let cap = CapabilityTaxonomy::UIRender;
-        assert_eq!(format!("{}", cap), "ui.render");
+        assert_eq!(format!("{cap}"), "ui.render");
     }
 
     #[test]

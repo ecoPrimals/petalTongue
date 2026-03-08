@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+#![cfg_attr(not(test), forbid(unsafe_code))]
 //! Inter-process communication for petalTongue
 //!
 //! This crate enables communication between petalTongue instances and other primals.

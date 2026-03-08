@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 //! Common test utilities for petalTongue TUI tests
 
 use chrono::Utc;
