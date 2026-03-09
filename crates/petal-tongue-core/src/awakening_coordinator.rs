@@ -81,117 +81,91 @@ pub struct AwakeningTimeline {
 }
 
 impl AwakeningTimeline {
+    fn add_stage_events(
+        events: &mut Vec<TimelineEvent>,
+        time: f32,
+        stage: AwakeningStage,
+        audio_layer: Option<&str>,
+        text_message: Option<&str>,
+        config: &AwakeningConfig,
+    ) {
+        events.push(TimelineEvent {
+            time,
+            stage,
+            event_type: TimelineEventType::StageTransition { stage },
+        });
+        if config.modality.audio_enabled && let Some(layer) = audio_layer {
+            events.push(TimelineEvent {
+                time,
+                stage,
+                event_type: TimelineEventType::AudioStart {
+                    layer: layer.to_string(),
+                },
+            });
+        }
+        if config.modality.text_enabled && let Some(message) = text_message {
+            events.push(TimelineEvent {
+                time,
+                stage,
+                event_type: TimelineEventType::TextMessage {
+                    message: message.to_string(),
+                },
+            });
+        }
+    }
+
+    #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+    fn add_duration(time: &mut f32, duration: u64) {
+        *time += duration as f64 as f32;
+    }
+
     /// Create standard awakening timeline
     #[must_use]
     pub fn standard(config: &AwakeningConfig) -> Self {
         let mut events = Vec::new();
         let mut time = 0.0;
 
-        // Stage 1: Awakening (0-3s)
-        events.push(TimelineEvent {
-            time: 0.0,
-            stage: AwakeningStage::Awakening,
-            event_type: TimelineEventType::StageTransition {
-                stage: AwakeningStage::Awakening,
-            },
-        });
+        Self::add_stage_events(
+            &mut events,
+            0.0,
+            AwakeningStage::Awakening,
+            Some("signature-tone"),
+            Some("Awakening..."),
+            config,
+        );
+        Self::add_duration(&mut time, config.stage_1_duration);
 
-        if config.audio_enabled {
-            events.push(TimelineEvent {
-                time: 0.0,
-                stage: AwakeningStage::Awakening,
-                event_type: TimelineEventType::AudioStart {
-                    layer: "signature-tone".to_string(),
-                },
-            });
-        }
-
-        if config.text_enabled {
-            events.push(TimelineEvent {
-                time: 0.0,
-                stage: AwakeningStage::Awakening,
-                event_type: TimelineEventType::TextMessage {
-                    message: "Awakening...".to_string(),
-                },
-            });
-        }
-
-        time += config.stage_1_duration as f32;
-
-        // Stage 2: Self-Knowledge (3-6s)
-        events.push(TimelineEvent {
+        Self::add_stage_events(
+            &mut events,
             time,
-            stage: AwakeningStage::SelfKnowledge,
-            event_type: TimelineEventType::StageTransition {
-                stage: AwakeningStage::SelfKnowledge,
-            },
-        });
+            AwakeningStage::SelfKnowledge,
+            Some("heartbeat"),
+            Some("I am petalTongue. I know myself."),
+            config,
+        );
+        Self::add_duration(&mut time, config.stage_2_duration);
 
-        if config.audio_enabled {
-            events.push(TimelineEvent {
-                time,
-                stage: AwakeningStage::SelfKnowledge,
-                event_type: TimelineEventType::AudioStart {
-                    layer: "heartbeat".to_string(),
-                },
-            });
-        }
-
-        if config.text_enabled {
-            events.push(TimelineEvent {
-                time,
-                stage: AwakeningStage::SelfKnowledge,
-                event_type: TimelineEventType::TextMessage {
-                    message: "I am petalTongue. I know myself.".to_string(),
-                },
-            });
-        }
-
-        time += config.stage_2_duration as f32;
-
-        // Stage 3: Discovery (6-10s)
-        events.push(TimelineEvent {
+        Self::add_stage_events(
+            &mut events,
             time,
-            stage: AwakeningStage::Discovery,
-            event_type: TimelineEventType::StageTransition {
-                stage: AwakeningStage::Discovery,
-            },
-        });
+            AwakeningStage::Discovery,
+            Some("wind"),
+            Some("Discovering..."),
+            config,
+        );
 
-        if config.audio_enabled {
-            events.push(TimelineEvent {
-                time,
-                stage: AwakeningStage::Discovery,
-                event_type: TimelineEventType::AudioStart {
-                    layer: "wind".to_string(),
-                },
-            });
-        }
-
-        if config.text_enabled {
-            events.push(TimelineEvent {
-                time,
-                stage: AwakeningStage::Discovery,
-                event_type: TimelineEventType::TextMessage {
-                    message: "Discovering...".to_string(),
-                },
-            });
-        }
-
-        // Discovery events at 1s intervals (simulated)
-        // In real implementation, these would be triggered by actual discoveries
-        for i in 0..3 {
-            let discovery_time = time + (i as f32 + 1.0);
+        #[allow(clippy::cast_possible_truncation)]
+        for i in 0u32..3 {
+            let discovery_time = time + (f64::from(i) as f32 + 1.0);
             events.push(TimelineEvent {
                 time: discovery_time,
                 stage: AwakeningStage::Discovery,
                 event_type: TimelineEventType::Discovery {
                     primal: format!("primal-{i}"),
-                    index: i as u32,
+                    index: i,
                 },
             });
-
-            if config.audio_enabled {
+            if config.modality.audio_enabled {
                 events.push(TimelineEvent {
                     time: discovery_time,
                     stage: AwakeningStage::Discovery,
@@ -201,41 +175,18 @@ impl AwakeningTimeline {
                 });
             }
         }
+        Self::add_duration(&mut time, config.stage_3_duration);
 
-        time += config.stage_3_duration as f32;
-
-        // Stage 4: Tutorial (10-12s)
-        events.push(TimelineEvent {
+        Self::add_stage_events(
+            &mut events,
             time,
-            stage: AwakeningStage::Tutorial,
-            event_type: TimelineEventType::StageTransition {
-                stage: AwakeningStage::Tutorial,
-            },
-        });
+            AwakeningStage::Tutorial,
+            Some("completion"),
+            Some("Ready. Let me show you."),
+            config,
+        );
+        Self::add_duration(&mut time, config.stage_4_duration);
 
-        if config.audio_enabled {
-            events.push(TimelineEvent {
-                time,
-                stage: AwakeningStage::Tutorial,
-                event_type: TimelineEventType::AudioStart {
-                    layer: "completion".to_string(),
-                },
-            });
-        }
-
-        if config.text_enabled {
-            events.push(TimelineEvent {
-                time,
-                stage: AwakeningStage::Tutorial,
-                event_type: TimelineEventType::TextMessage {
-                    message: "Ready. Let me show you.".to_string(),
-                },
-            });
-        }
-
-        time += config.stage_4_duration as f32;
-
-        // Final event: Complete
         events.push(TimelineEvent {
             time,
             stage: AwakeningStage::Complete,

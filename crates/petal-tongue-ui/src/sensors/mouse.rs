@@ -161,4 +161,20 @@ mod tests {
         assert_eq!(map_button(CrosstermButton::Right), MouseButton::Right);
         assert_eq!(map_button(CrosstermButton::Middle), MouseButton::Middle);
     }
+
+    #[test]
+    fn test_mouse_sensor_name() {
+        let sensor = MouseSensor::new(PointerType::TerminalMouse);
+        assert_eq!(sensor.name(), "Terminal Mouse");
+    }
+
+    #[test]
+    fn test_mouse_sensor_capabilities() {
+        let sensor = MouseSensor::new(PointerType::TerminalMouse);
+        let caps = sensor.capabilities();
+        assert!(caps.spatial);
+        assert!(caps.temporal);
+        assert!(caps.continuous);
+        assert!(caps.discrete);
+    }
 }

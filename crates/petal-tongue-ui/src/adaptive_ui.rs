@@ -519,4 +519,30 @@ mod tests {
         let _manager = AdaptiveUIManager::new(caps);
         // Should not panic, defaults to desktop
     }
+
+    #[test]
+    fn test_tablet_renderer_selection() {
+        let mut caps = RenderingCapabilities::detect();
+        caps.device_type = DeviceType::Tablet;
+        let manager = AdaptiveUIManager::new(caps);
+        assert_eq!(manager.device_type(), DeviceType::Tablet);
+    }
+
+    #[test]
+    fn test_cli_renderer_selection() {
+        let mut caps = RenderingCapabilities::detect();
+        caps.device_type = DeviceType::CLI;
+        caps.ui_complexity = UIComplexity::Essential;
+        let manager = AdaptiveUIManager::new(caps);
+        assert_eq!(manager.device_type(), DeviceType::CLI);
+        assert_eq!(manager.ui_complexity(), UIComplexity::Essential);
+    }
+
+    #[test]
+    fn test_tv_renderer_selection() {
+        let mut caps = RenderingCapabilities::detect();
+        caps.device_type = DeviceType::TV;
+        let manager = AdaptiveUIManager::new(caps);
+        assert_eq!(manager.device_type(), DeviceType::TV);
+    }
 }

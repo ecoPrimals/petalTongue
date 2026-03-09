@@ -51,6 +51,14 @@ impl PrimalDefinition {
             "confidence".to_string(),
             PropertyValue::Number(f64::from(self.confidence)),
         );
+        properties.insert(
+            "trust_level".to_string(),
+            PropertyValue::Number(f64::from(self.confidence)),
+        );
+        properties.insert(
+            "family_id".to_string(),
+            PropertyValue::String(self.family.clone()),
+        );
 
         // Add position
         properties.insert(
@@ -161,14 +169,12 @@ impl PrimalDefinition {
         };
 
         PrimalInfo {
-            id: self.id.clone(),
+            id: self.id.clone().into(),
             name: self.name.clone(),
-            family_id: Some(self.family.clone()), // Use family as family_id
             primal_type: self.primal_type.clone(),
             endpoint: format!("scenario://{}", self.id), // Synthetic endpoint for scenarios
             capabilities: self.capabilities.clone(),
             health,
-            trust_level: Some(self.confidence), // Use confidence as trust level
             last_seen: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
@@ -176,6 +182,10 @@ impl PrimalDefinition {
             endpoints: None,
             metadata: None,
             properties,
+            #[allow(deprecated)]
+            trust_level: None,
+            #[allow(deprecated)]
+            family_id: None,
         }
     }
 }

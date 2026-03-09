@@ -281,4 +281,32 @@ mod tests {
         let audio_tools = manager.tools_with_capability(&ToolCapability::Audio);
         assert_eq!(audio_tools.len(), 0);
     }
+
+    #[test]
+    fn test_toggle_visibility() {
+        let mut tool = MockTool::new("TestTool");
+        assert!(!tool.is_visible());
+        tool.toggle_visibility();
+        assert!(tool.is_visible());
+        tool.toggle_visibility();
+        assert!(!tool.is_visible());
+    }
+
+    #[test]
+    fn test_handle_action_default() {
+        let mut tool = MockTool::new("TestTool");
+        assert!(tool.handle_action("unknown_action").is_ok());
+    }
+
+    #[test]
+    fn test_visible_tool() {
+        let mut manager = ToolManager::new();
+        manager.register_tool(Box::new(MockTool::new("Tool1")));
+        assert!(manager.visible_tool().is_none());
+
+        let mut tool = MockTool::new("VisibleTool");
+        tool.toggle_visibility();
+        manager.register_tool(Box::new(tool));
+        assert!(manager.visible_tool().is_some());
+    }
 }

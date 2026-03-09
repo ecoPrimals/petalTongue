@@ -4,6 +4,7 @@
 #[cfg(test)]
 mod tests {
     use super::super::types::*;
+    use crate::PrimalId;
 
     #[test]
     fn test_primal_health_status_variants() {
@@ -50,7 +51,7 @@ mod tests {
     #[expect(deprecated)]
     fn test_primal_info_creation() {
         let info = PrimalInfo {
-            id: "test-1".to_string(),
+            id: PrimalId::from("test-1"),
             name: "Test Primal".to_string(),
             primal_type: "compute".to_string(),
             endpoint: "http://test:8080".to_string(),
@@ -64,7 +65,7 @@ mod tests {
             properties: Default::default(),
         };
 
-        assert_eq!(info.id, "test-1");
+        assert_eq!(info.id.as_str(), "test-1");
         assert_eq!(info.name, "Test Primal");
         assert_eq!(info.primal_type, "compute");
         assert_eq!(info.endpoint, "http://test:8080");
@@ -77,7 +78,7 @@ mod tests {
     #[expect(deprecated)]
     fn test_primal_info_clone() {
         let info = PrimalInfo {
-            id: "test-1".to_string(),
+            id: PrimalId::from("test-1"),
             name: "Test Primal".to_string(),
             primal_type: "compute".to_string(),
             endpoint: "http://test:8080".to_string(),
@@ -92,7 +93,7 @@ mod tests {
         };
 
         let cloned = info.clone();
-        assert_eq!(info.id, cloned.id);
+        assert_eq!(info.id.as_str(), cloned.id.as_str());
         assert_eq!(info.name, cloned.name);
         assert_eq!(info.capabilities, cloned.capabilities);
         assert_eq!(info.last_seen, cloned.last_seen);
@@ -101,16 +102,16 @@ mod tests {
     #[test]
     fn test_topology_edge_creation() {
         let edge = TopologyEdge {
-            from: "primal-a".to_string(),
-            to: "primal-b".to_string(),
+            from: PrimalId::from("primal-a"),
+            to: PrimalId::from("primal-b"),
             edge_type: "capability".to_string(),
             label: Some("test-label".to_string()),
             capability: None,
             metrics: None,
         };
 
-        assert_eq!(edge.from, "primal-a");
-        assert_eq!(edge.to, "primal-b");
+        assert_eq!(edge.from.as_str(), "primal-a");
+        assert_eq!(edge.to.as_str(), "primal-b");
         assert_eq!(edge.edge_type, "capability");
         assert_eq!(edge.label, Some("test-label".to_string()));
     }
@@ -118,16 +119,16 @@ mod tests {
     #[test]
     fn test_topology_edge_without_label() {
         let edge = TopologyEdge {
-            from: "primal-a".to_string(),
-            to: "primal-b".to_string(),
+            from: PrimalId::from("primal-a"),
+            to: PrimalId::from("primal-b"),
             edge_type: "capability".to_string(),
             label: None,
             capability: None,
             metrics: None,
         };
 
-        assert_eq!(edge.from, "primal-a");
-        assert_eq!(edge.to, "primal-b");
+        assert_eq!(edge.from.as_str(), "primal-a");
+        assert_eq!(edge.to.as_str(), "primal-b");
         assert!(edge.label.is_none());
     }
 
@@ -135,7 +136,7 @@ mod tests {
     #[expect(deprecated)]
     fn test_topology_graph() {
         let primal1 = PrimalInfo {
-            id: "primal-1".to_string(),
+            id: PrimalId::from("primal-1"),
             name: "Primal 1".to_string(),
             primal_type: "compute".to_string(),
             endpoint: "http://p1:8080".to_string(),
@@ -150,7 +151,7 @@ mod tests {
         };
 
         let primal2 = PrimalInfo {
-            id: "primal-2".to_string(),
+            id: PrimalId::from("primal-2"),
             name: "Primal 2".to_string(),
             primal_type: "storage".to_string(),
             endpoint: "http://p2:8080".to_string(),
@@ -165,8 +166,8 @@ mod tests {
         };
 
         let edge = TopologyEdge {
-            from: "primal-1".to_string(),
-            to: "primal-2".to_string(),
+            from: PrimalId::from("primal-1"),
+            to: PrimalId::from("primal-2"),
             edge_type: "api_call".to_string(),
             label: None,
             capability: None,
@@ -216,25 +217,25 @@ mod tests {
     #[test]
     fn test_flow_event() {
         let event = FlowEvent {
-            id: "event-1".to_string(),
-            from: "primal-a".to_string(),
-            to: "primal-b".to_string(),
+            id: PrimalId::from("event-1"),
+            from: PrimalId::from("primal-a"),
+            to: PrimalId::from("primal-b"),
             message_type: "api_call".to_string(),
             timestamp: 1_234_567_890,
             metadata: Some(serde_json::json!({"key": "value"})),
         };
 
-        assert_eq!(event.id, "event-1");
-        assert_eq!(event.from, "primal-a");
-        assert_eq!(event.to, "primal-b");
+        assert_eq!(event.id.as_str(), "event-1");
+        assert_eq!(event.from.as_str(), "primal-a");
+        assert_eq!(event.to.as_str(), "primal-b");
         assert!(event.metadata.is_some());
     }
 
     #[test]
     fn test_traffic_stats() {
         let stats = TrafficStats {
-            from: "primal-a".to_string(),
-            to: "primal-b".to_string(),
+            from: PrimalId::from("primal-a"),
+            to: PrimalId::from("primal-b"),
             message_count: 100,
             bytes_transferred: 10240,
             avg_latency_ms: 12.5,
@@ -251,7 +252,7 @@ mod tests {
     #[expect(deprecated)]
     fn test_primal_info_serialization() {
         let info = PrimalInfo {
-            id: "test-1".to_string(),
+            id: PrimalId::from("test-1"),
             name: "Test Primal".to_string(),
             primal_type: "compute".to_string(),
             endpoint: "http://test:8080".to_string(),
@@ -270,15 +271,15 @@ mod tests {
         assert!(json.contains("Test Primal"));
 
         let deserialized: PrimalInfo = serde_json::from_str(&json).expect("Failed to deserialize");
-        assert_eq!(deserialized.id, info.id);
+        assert_eq!(deserialized.id.as_str(), info.id.as_str());
         assert_eq!(deserialized.name, info.name);
     }
 
     #[test]
     fn test_topology_edge_serialization() {
         let edge = TopologyEdge {
-            from: "primal-a".to_string(),
-            to: "primal-b".to_string(),
+            from: PrimalId::from("primal-a"),
+            to: PrimalId::from("primal-b"),
             edge_type: "capability".to_string(),
             label: Some("test".to_string()),
             capability: None,
@@ -292,7 +293,7 @@ mod tests {
 
         let deserialized: TopologyEdge =
             serde_json::from_str(&json).expect("Failed to deserialize");
-        assert_eq!(deserialized.from, edge.from);
-        assert_eq!(deserialized.to, edge.to);
+        assert_eq!(deserialized.from.as_str(), edge.from.as_str());
+        assert_eq!(deserialized.to.as_str(), edge.to.as_str());
     }
 }

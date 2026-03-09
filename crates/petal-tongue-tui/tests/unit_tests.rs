@@ -4,7 +4,6 @@
 //! Comprehensive unit testing for all TUI components.
 
 use chrono::Utc;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use petal_tongue_tui::state::{LogLevel, LogMessage, TUIState, View};
 use std::time::Duration;
 
@@ -275,5 +274,74 @@ mod log_level_tests {
         let level = LogLevel::Info;
         let cloned = level;
         assert_eq!(level, cloned);
+    }
+}
+
+/// Test suite for TUI view data preparation and layout
+/// Note: Full render tests with TestBackend require running outside tokio runtime
+/// due to block_on in view render callbacks. These tests verify state and layout logic.
+mod view_rendering_tests {
+    use super::*;
+    use petal_tongue_core::PrimalHealthStatus;
+    use ratatui::layout::Rect;
+
+    #[tokio::test]
+    async fn test_dashboard_state_preparation() {
+        let state = TUIState::new();
+        state.set_standalone_mode(true).await;
+        state.set_view(petal_tongue_tui::state::View::Dashboard).await;
+
+        assert!(state.is_standalone().await);
+        assert_eq!(state.get_view().await, petal_tongue_tui::state::View::Dashboard);
+    }
+
+    #[tokio::test]
+    async fn test_dashboard_state_with_primals() {
+        let state = TUIState::new();
+        state.set_standalone_mode(false).await;
+
+        let primals = vec![
+            common::create_test_primal_with_health("songbird", "songbird", PrimalHealthStatus::Healthy),
+            common::create_test_primal_with_health("toadstool", "toadstool", PrimalHealthStatus::Warning),
+        ];
+        state.update_primals(primals).await;
+
+        let fetched = state.get_primals().await;
+        assert_eq!(fetched.len(), 2);
+        assert_eq!(fetched[0].name, "songbird");
+    }
+
+    #[tokio::test]
+    async fn test_topology_state_with_edges() {
+        let state = TUIState::new();
+        state.set_standalone_mode(false).await;
+
+        let primals = vec![
+            common::create_test_primal("songbird", "songbird"),
+            common::create_test_primal("toadstool", "toadstool"),
+        ];
+        state.update_primals(primals).await;
+
+        let edges = vec![common::create_test_edge("songbird", "toadstool", "data")];
+        state.update_topology(edges).await;
+
+        let topology = state.get_topology().await;
+        assert_eq!(topology.len(), 1);
+        assert_eq!(topology[0].edge_type, "data");
+    }
+
+    #[tokio::test]
+    async fn test_tui_config_default() {
+        let config = petal_tongue_tui::TUIConfig::default();
+        assert_eq!(config.tick_rate, Duration::from_millis(100));
+        assert!(!config.mouse_support);
+        assert!(!config.standalone);
+    }
+
+    #[test]
+    fn test_layout_rect_bounds() {
+        let area = Rect::new(0, 0, 80, 24);
+        assert_eq!(area.width, 80);
+        assert_eq!(area.height, 24);
     }
 }

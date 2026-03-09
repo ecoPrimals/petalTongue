@@ -482,3 +482,226 @@ impl Default for StatusReporter {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_status_reporter_creation() {
+        let reporter = StatusReporter::new();
+        let status = reporter.get_status();
+        assert_eq!(status.health, "initializing");
+        assert!(!status.modalities.visual2d.available);
+        assert!(!status.audio.initialized);
+        assert_eq!(status.ui.active_view, "initializing");
+    }
+
+    #[test]
+    fn test_update_modality() {
+        let reporter = StatusReporter::new();
+        reporter.update_modality(
+            "visual2d",
+            true,
+            true,
+            "Test passed".to_string(),
+        );
+        let status = reporter.get_status();
+        assert!(status.modalities.visual2d.available);
+        assert!(status.modalities.visual2d.tested);
+        assert_eq!(status.modalities.visual2d.reason, "Test passed");
+        assert!(status.modalities.visual2d.last_used.is_some());
+    }
+
+    #[test]
+    fn test_update_modality_unknown() {
+        let reporter = StatusReporter::new();
+        reporter.update_modality("unknown_mod", true, false, "test".to_string());
+        // Should not panic - unknown modality is logged
+        let _ = reporter.get_status();
+    }
+
+    #[test]
+    fn test_report_audio_event_success() {
+        let reporter = StatusReporter::new();
+        reporter.report_audio_event("startup", "rodio", true, None);
+        let status = reporter.get_status();
+        assert!(status.audio.last_sound.is_some());
+        let event = status.audio.last_sound.as_ref().unwrap();
+        assert_eq!(event.sound_name, "startup");
+        assert_eq!(event.provider, "rodio");
+        assert!(event.success);
+        assert!(status.audio.recent_failures.is_empty());
+    }
+
+    #[test]
+    fn test_report_audio_event_failure() {
+        let reporter = StatusReporter::new();
+        reporter.report_audio_event(
+            "startup",
+            "rodio",
+            false,
+            Some("Device not found".to_string()),
+        );
+        let status = reporter.get_status();
+        assert!(status.audio.last_sound.is_some());
+        let event = status.audio.last_sound.as_ref().unwrap();
+        assert!(!event.success);
+        assert_eq!(event.error_message.as_deref(), Some("Device not found"));
+        assert!(!status.audio.recent_failures.is_empty());
+        assert!(!status.issues.is_empty());
+    }
+
+    #[test]
+    fn test_update_health() {
+        let reporter = StatusReporter::new();
+        reporter.update_health("healthy");
+        assert!(reporter.is_healthy());
+        reporter.update_health("degraded");
+        assert!(!reporter.is_healthy());
+    }
+
+    #[test]
+    fn test_get_critical_issues() {
+        let reporter = StatusReporter::new();
+        reporter.report_audio_event("x", "y", false, Some("err".to_string()));
+        let issues = reporter.get_critical_issues();
+        assert!(!issues.is_empty());
+        assert_eq!(issues[0].severity, "error");
+        assert_eq!(issues[0].category, "audio");
+    }
+
+    #[test]
+    fn test_get_status_json() {
+        let reporter = StatusReporter::new();
+        let json = reporter.get_status_json().unwrap();
+        assert!(json.contains("\"health\""));
+        assert!(json.contains("initializing"));
+    }
+
+    #[test]
+    fn test_update_audio_system() {
+        let reporter = StatusReporter::new();
+        reporter.update_audio_system(
+            "rodio".to_string(),
+            vec![AudioProviderInfo {
+                name: "rodio".to_string(),
+                available: true,
+                sounds_count: 5,
+                description: "Pure Rust".to_string(),
+            }],
+            vec!["aplay".to_string()],
+        );
+        let status = reporter.get_status();
+        assert!(status.audio.initialized);
+        assert_eq!(status.audio.current_provider, "rodio");
+        assert_eq!(status.audio.available_providers.len(), 1);
+        assert_eq!(status.audio.system_players.len(), 1);
+    }
+
+    #[test]
+    fn test_default_impl() {
+        let reporter = StatusReporter::default();
+        let _ = reporter.get_status();
+    }
+
+    #[test]
+    fn test_all_modality_updates() {
+        let reporter = StatusReporter::new();
+        for modality in ["visual2d", "audio", "animation", "text_description", "haptic", "vr3d"] {
+            reporter.update_modality(modality, true, true, "Test".to_string());
+        }
+        let status = reporter.get_status();
+        assert!(status.modalities.visual2d.available);
+        assert!(status.modalities.audio.available);
+        assert!(status.modalities.animation.available);
+        assert!(status.modalities.text_description.available);
+        assert!(status.modalities.haptic.available);
+        assert!(status.modalities.vr3d.available);
+    }
+
+    #[test]
+    fn test_update_modality_unavailable() {
+        let reporter = StatusReporter::new();
+        reporter.update_modality("visual2d", false, true, "Test failed".to_string());
+        let status = reporter.get_status();
+        assert!(!status.modalities.visual2d.available);
+        assert!(status.modalities.visual2d.last_used.is_none());
+    }
+
+    #[test]
+    fn test_report_audio_event_failure_no_message() {
+        let reporter = StatusReporter::new();
+        reporter.report_audio_event("x", "y", false, None);
+        let status = reporter.get_status();
+        assert!(!status.audio.last_sound.as_ref().unwrap().success);
+        assert_eq!(status.audio.last_sound.as_ref().unwrap().error_message, None);
+        assert!(!status.audio.recent_failures.is_empty());
+    }
+
+    #[test]
+    fn test_serde_roundtrip_system_status() {
+        let reporter = StatusReporter::new();
+        reporter.update_health("healthy");
+        let status = reporter.get_status();
+        let json = serde_json::to_string(&status).unwrap();
+        let restored: SystemStatus = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored.health, status.health);
+        assert_eq!(restored.modalities.visual2d.available, status.modalities.visual2d.available);
+    }
+
+    #[test]
+    fn test_serde_roundtrip_issue() {
+        let issue = Issue {
+            severity: "error".to_string(),
+            category: "audio".to_string(),
+            message: "Test".to_string(),
+            suggested_action: Some("Fix it".to_string()),
+            timestamp: chrono::Utc::now().to_rfc3339(),
+        };
+        let json = serde_json::to_string(&issue).unwrap();
+        let restored: Issue = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored.severity, issue.severity);
+    }
+
+    #[test]
+    fn test_serde_roundtrip_status_event() {
+        let event = StatusEvent {
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            category: "modality".to_string(),
+            severity: "info".to_string(),
+            message: "Test event".to_string(),
+        };
+        let json = serde_json::to_string(&event).unwrap();
+        let restored: StatusEvent = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored.message, event.message);
+    }
+
+    #[test]
+    fn test_get_critical_issues_filters_warning() {
+        let reporter = StatusReporter::new();
+        // Add a warning - should NOT be in critical issues
+        let mut status = reporter.status.lock().unwrap();
+        status.issues.push(Issue {
+            severity: "warning".to_string(),
+            category: "test".to_string(),
+            message: "Warning".to_string(),
+            suggested_action: None,
+            timestamp: chrono::Utc::now().to_rfc3339(),
+        });
+        drop(status);
+        let issues = reporter.get_critical_issues();
+        assert!(issues.is_empty());
+    }
+
+    #[test]
+    fn test_enable_status_file() {
+        let mut reporter = StatusReporter::new();
+        let temp = std::env::temp_dir().join("petaltongue_status_test.json");
+        reporter.enable_status_file(temp.clone());
+        reporter.update_health("healthy");
+        reporter.force_write();
+        assert!(temp.exists());
+        let _ = std::fs::remove_file(temp);
+    }
+}

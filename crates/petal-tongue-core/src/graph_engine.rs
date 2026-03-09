@@ -4,7 +4,7 @@
 //! This module provides the modality-agnostic graph structure.
 //! Renderers consume this graph and represent it in their own way.
 
-use crate::types::{PrimalInfo, TopologyEdge};
+use crate::types::{PrimalId, PrimalInfo, TopologyEdge};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -102,7 +102,7 @@ pub struct GraphEngine {
     /// All edges in the graph
     edges: Vec<TopologyEdge>,
     /// Index mapping node ID to position in nodes vec
-    node_index: HashMap<String, usize>,
+    node_index: HashMap<PrimalId, usize>,
     /// Current layout algorithm
     layout: LayoutAlgorithm,
 }
@@ -126,15 +126,14 @@ impl GraphEngine {
     pub fn add_node(&mut self, info: PrimalInfo) {
         let position = Self::extract_position_from_primal(&info);
         let node = Node::with_position(info, position);
-        // OPTIMIZATION: Clone ID after moving info into node, not before
-        let node_id = node.info.id.clone();
-
-        self.node_index.insert(node_id, self.nodes.len());
+        // PrimalId clone is cheap (Arc)
+        self.node_index.insert(node.info.id.clone(), self.nodes.len());
         self.nodes.push(node);
     }
 
     /// Extract position from primal properties if present.
     /// Supports "x"/"y" (scenario convert) and "`position_x"/"position_y`" (scenario provider).
+    #[allow(clippy::cast_possible_truncation)]
     fn extract_position_from_primal(info: &PrimalInfo) -> Position {
         let get_f32 = |key: &str| {
             info.properties
@@ -159,9 +158,9 @@ impl GraphEngine {
         if let Some(index) = self.node_index.remove(node_id) {
             self.nodes.remove(index);
 
-            // Remove all edges connected to this node
+            // Remove all edges connected to this node (PrimalId implements PartialEq<str>)
             self.edges
-                .retain(|edge| edge.from != node_id && edge.to != node_id);
+                .retain(|edge| edge.from.as_str() != node_id && edge.to.as_str() != node_id);
 
             // Rebuild index
             self.rebuild_index();
@@ -174,8 +173,10 @@ impl GraphEngine {
 
     /// Add an edge to the graph
     pub fn add_edge(&mut self, edge: TopologyEdge) {
-        // Verify both nodes exist
-        if self.node_index.contains_key(&edge.from) && self.node_index.contains_key(&edge.to) {
+        // Verify both nodes exist (PrimalId implements Borrow<str> for lookup)
+        if self.node_index.contains_key(edge.from.as_str())
+            && self.node_index.contains_key(edge.to.as_str())
+        {
             self.edges.push(edge);
         }
     }
@@ -184,7 +185,7 @@ impl GraphEngine {
     pub fn remove_edge(&mut self, from: &str, to: &str) -> bool {
         let initial_len = self.edges.len();
         self.edges
-            .retain(|edge| !(edge.from == from && edge.to == to));
+            .retain(|edge| !(edge.from.as_str() == from && edge.to.as_str() == to));
         self.edges.len() != initial_len
     }
 
@@ -223,10 +224,10 @@ impl GraphEngine {
         self.edges
             .iter()
             .filter_map(|edge| {
-                if edge.from == node_id {
-                    self.get_node(&edge.to)
-                } else if edge.to == node_id {
-                    self.get_node(&edge.from)
+                if edge.from.as_str() == node_id {
+                    self.get_node(edge.to.as_str())
+                } else if edge.to.as_str() == node_id {
+                    self.get_node(edge.from.as_str())
                 } else {
                     None
                 }
@@ -541,8 +542,8 @@ mod tests {
         graph.add_node(create_test_primal("2", "Node 2"));
 
         graph.add_edge(TopologyEdge {
-            from: "1".to_string(),
-            to: "2".to_string(),
+            from: PrimalId::from("1"),
+            to: PrimalId::from("2"),
             edge_type: "test".to_string(),
             label: None,
             capability: None,
@@ -559,8 +560,8 @@ mod tests {
         graph.add_node(create_test_primal("1", "Node 1"));
         graph.add_node(create_test_primal("2", "Node 2"));
         graph.add_edge(TopologyEdge {
-            from: "1".to_string(),
-            to: "2".to_string(),
+            from: PrimalId::from("1"),
+            to: PrimalId::from("2"),
             edge_type: "test".to_string(),
             label: None,
             capability: None,
@@ -581,16 +582,16 @@ mod tests {
         graph.add_node(create_test_primal("3", "Node 3"));
 
         graph.add_edge(TopologyEdge {
-            from: "1".to_string(),
-            to: "2".to_string(),
+            from: PrimalId::from("1"),
+            to: PrimalId::from("2"),
             edge_type: "test".to_string(),
             label: None,
             capability: None,
             metrics: None,
         });
         graph.add_edge(TopologyEdge {
-            from: "1".to_string(),
-            to: "3".to_string(),
+            from: PrimalId::from("1"),
+            to: PrimalId::from("3"),
             edge_type: "test".to_string(),
             label: None,
             capability: None,
@@ -609,16 +610,16 @@ mod tests {
         graph.add_node(create_test_primal("2", "Node 2"));
         graph.add_node(create_test_primal("3", "Node 3"));
         graph.add_edge(TopologyEdge {
-            from: "1".to_string(),
-            to: "2".to_string(),
+            from: PrimalId::from("1"),
+            to: PrimalId::from("2"),
             edge_type: "test".to_string(),
             label: None,
             capability: None,
             metrics: None,
         });
         graph.add_edge(TopologyEdge {
-            from: "2".to_string(),
-            to: "3".to_string(),
+            from: PrimalId::from("2"),
+            to: PrimalId::from("3"),
             edge_type: "test".to_string(),
             label: None,
             capability: None,
@@ -677,16 +678,16 @@ mod tests {
         graph.add_node(create_test_primal("3", "Node 3"));
 
         graph.add_edge(TopologyEdge {
-            from: "1".to_string(),
-            to: "2".to_string(),
+            from: PrimalId::from("1"),
+            to: PrimalId::from("2"),
             edge_type: "test".to_string(),
             label: None,
             capability: None,
             metrics: None,
         });
         graph.add_edge(TopologyEdge {
-            from: "2".to_string(),
-            to: "3".to_string(),
+            from: PrimalId::from("2"),
+            to: PrimalId::from("3"),
             edge_type: "test".to_string(),
             label: None,
             capability: None,

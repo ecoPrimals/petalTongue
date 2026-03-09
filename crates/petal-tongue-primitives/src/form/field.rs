@@ -210,12 +210,14 @@ impl<T> Field<T> {
     }
 
     /// Add help text
+    #[must_use]
     pub fn with_help(mut self, help: impl Into<String>) -> Self {
         self.help_text = Some(help.into());
         self
     }
 
     /// Add value extractor
+    #[must_use]
     pub fn with_extractor(mut self, extractor: fn(&T) -> String) -> Self {
         self.extractor = Some(extractor);
         self

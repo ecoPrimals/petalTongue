@@ -32,7 +32,7 @@ async fn test_discover_primals_mock() {
 
     // Verify primal structure
     for primal in &primals {
-        assert!(!primal.id.is_empty());
+        assert!(!primal.id.as_str().is_empty());
         assert!(!primal.name.is_empty());
         assert!(!primal.endpoint.is_empty());
     }
@@ -49,8 +49,8 @@ async fn test_get_topology_mock() {
 
     // Verify edge structure
     for edge in &edges {
-        assert!(!edge.from.is_empty());
-        assert!(!edge.to.is_empty());
+        assert!(!edge.from.as_str().is_empty());
+        assert!(!edge.to.as_str().is_empty());
     }
 }
 

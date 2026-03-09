@@ -32,9 +32,11 @@ use tracing::{debug, info};
 #[derive(Debug, Clone)]
 pub struct UniversalDiscovery {
     /// Discovered service mesh providers (if any)
+    #[allow(dead_code)]
     service_mesh_providers: Vec<DiscoveredService>,
 
     /// Direct service connections (from env/config)
+    #[allow(dead_code)]
     direct_services: HashMap<String, DiscoveredService>,
 
     /// Discovery methods to try
@@ -263,11 +265,13 @@ impl UniversalDiscovery {
         for base_path in socket_paths {
             if let Ok(entries) = std::fs::read_dir(base_path) {
                 for entry in entries.flatten() {
-                    if let Some(path) = entry.path().to_str()
-                        && path.ends_with(".sock")
+                    let path = entry.path();
+                    if path
+                        .extension()
+                        .is_some_and(|ext| ext.eq_ignore_ascii_case("sock"))
                     {
                         // Try to query this socket
-                        let endpoint = format!("unix://{path}");
+                        let endpoint = format!("unix://{}", path.display());
 
                         if let Ok(socket_services) =
                             self.query_generic_endpoint(&endpoint, capability).await
@@ -444,27 +448,23 @@ mod tests {
 
     #[tokio::test]
     async fn test_environment_discovery() {
-        // Set up test environment
-        // SAFETY: Test-only code. std::env::set_var is unsafe due to potential data races
-        // in multithreaded contexts. This is acceptable in single-threaded test execution.
-        unsafe {
-            std::env::set_var("GPU_RENDERING_ENDPOINT", "tarpc://localhost:9001");
-        }
+        use petal_tongue_core::test_fixtures::env_test_helpers;
 
-        let discovery = UniversalDiscovery::new();
-        let results = discovery
-            .discover_capability("gpu-rendering")
-            .await
-            .unwrap();
+        env_test_helpers::with_env_var_async(
+            "GPU_RENDERING_ENDPOINT",
+            "tarpc://localhost:9001",
+            || async {
+                let discovery = UniversalDiscovery::new();
+                let results = discovery
+                    .discover_capability("gpu-rendering")
+                    .await
+                    .unwrap();
 
-        assert!(!results.is_empty());
-        assert_eq!(results[0].capabilities[0], "gpu-rendering");
-
-        // Cleanup
-        // SAFETY: Test-only cleanup. See safety comment above for std::env operations.
-        unsafe {
-            std::env::remove_var("GPU_RENDERING_ENDPOINT");
-        }
+                assert!(!results.is_empty());
+                assert_eq!(results[0].capabilities[0], "gpu-rendering");
+            },
+        )
+        .await;
     }
 
     #[test]

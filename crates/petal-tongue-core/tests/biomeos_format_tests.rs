@@ -30,7 +30,7 @@ fn test_parse_biomeos_primal_format() {
 
     let primal: PrimalInfo = serde_json::from_str(json).expect("Failed to parse biomeOS format");
 
-    assert_eq!(primal.id, "beardog-node-alpha");
+    assert_eq!(primal.id.as_str(), "beardog-node-alpha");
     assert_eq!(primal.name, "BearDog Alpha");
     assert_eq!(primal.primal_type, "beardog");
     assert_eq!(primal.capabilities.len(), 3);
@@ -70,8 +70,8 @@ fn test_parse_biomeos_connection_format() {
     let edge: TopologyEdge =
         serde_json::from_str(json).expect("Failed to parse biomeOS connection format");
 
-    assert_eq!(edge.from, "songbird-node-alpha");
-    assert_eq!(edge.to, "beardog-node-alpha");
+    assert_eq!(edge.from.as_str(), "songbird-node-alpha");
+    assert_eq!(edge.to.as_str(), "beardog-node-alpha");
     assert_eq!(edge.edge_type, "capability_invocation");
     assert_eq!(edge.capability, Some("encryption".to_string()));
 
@@ -260,8 +260,8 @@ fn test_connection_metrics_optional() {
     let edge: TopologyEdge =
         serde_json::from_str(json).expect("Failed to parse minimal connection");
 
-    assert_eq!(edge.from, "primal-a");
-    assert_eq!(edge.to, "primal-b");
+    assert_eq!(edge.from.as_str(), "primal-a");
+    assert_eq!(edge.to.as_str(), "primal-b");
     assert_eq!(edge.edge_type, "connection");
     assert!(edge.metrics.is_none());
     assert!(edge.capability.is_none());

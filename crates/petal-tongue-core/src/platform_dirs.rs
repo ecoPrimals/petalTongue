@@ -261,38 +261,31 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_linux_respects_xdg() {
-        // If XDG vars are set, they should be used
-        // SAFETY: Test-only environment variable manipulation
-        unsafe {
-            std::env::set_var("XDG_DATA_HOME", "/custom/data");
-        }
-        let data = data_dir().expect("Should get data dir");
-        assert_eq!(data, PathBuf::from("/custom/data"));
+        use crate::test_fixtures::env_test_helpers;
 
-        // SAFETY: Test-only environment variable manipulation
-        unsafe {
-            std::env::set_var("XDG_CONFIG_HOME", "/custom/config");
-        }
-        let config = config_dir().expect("Should get config dir");
-        assert_eq!(config, PathBuf::from("/custom/config"));
+        env_test_helpers::with_env_vars(
+            &[
+                ("XDG_DATA_HOME", Some("/custom/data")),
+                ("XDG_CONFIG_HOME", Some("/custom/config")),
+            ],
+            || {
+                let data = data_dir().expect("Should get data dir");
+                assert_eq!(data, PathBuf::from("/custom/data"));
 
-        // Cleanup
-        // SAFETY: Test-only environment variable manipulation
-        unsafe {
-            std::env::remove_var("XDG_DATA_HOME");
-            std::env::remove_var("XDG_CONFIG_HOME");
-        }
+                let config = config_dir().expect("Should get config dir");
+                assert_eq!(config, PathBuf::from("/custom/config"));
+            },
+        );
     }
 
     #[cfg(target_os = "windows")]
     #[test]
     fn test_windows_respects_appdata() {
-        // If APPDATA is set, it should be used
-        std::env::set_var("APPDATA", "C:\\Custom\\AppData");
-        let data = data_dir().expect("Should get data dir");
-        assert_eq!(data, PathBuf::from("C:\\Custom\\AppData"));
+        use crate::test_fixtures::env_test_helpers;
 
-        // Cleanup
-        std::env::remove_var("APPDATA");
+        env_test_helpers::with_env_var("APPDATA", "C:\\Custom\\AppData", || {
+            let data = data_dir().expect("Should get data dir");
+            assert_eq!(data, PathBuf::from("C:\\Custom\\AppData"));
+        });
     }
 }

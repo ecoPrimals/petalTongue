@@ -48,7 +48,7 @@ impl VisualizationDataProvider for MockVisualizationProvider {
 
         Ok(vec![
             PrimalInfo {
-                id: "mock-beardog-1".to_string(),
+                id: "mock-beardog-1".into(),
                 name: "BearDog Security (Mock)".to_string(),
                 primal_type: "Security".to_string(),
                 endpoint: "http://mock-beardog:9000".to_string(),
@@ -67,7 +67,7 @@ impl VisualizationDataProvider for MockVisualizationProvider {
                 family_id: Some("mock-family".to_string()),
             },
             PrimalInfo {
-                id: "mock-songbird-1".to_string(),
+                id: "mock-songbird-1".into(),
                 name: "Songbird Discovery (Mock)".to_string(),
                 primal_type: "Discovery".to_string(),
                 endpoint: "http://mock-songbird:8080".to_string(),
@@ -86,7 +86,7 @@ impl VisualizationDataProvider for MockVisualizationProvider {
                 family_id: Some("mock-family".to_string()),
             },
             PrimalInfo {
-                id: "mock-toadstool-1".to_string(),
+                id: "mock-toadstool-1".into(),
                 name: "ToadStool Compute (Mock)".to_string(),
                 primal_type: "Compute".to_string(),
                 endpoint: "http://mock-toadstool:8002".to_string(),
@@ -110,16 +110,16 @@ impl VisualizationDataProvider for MockVisualizationProvider {
     async fn get_topology(&self) -> anyhow::Result<Vec<TopologyEdge>> {
         Ok(vec![
             TopologyEdge {
-                from: "mock-beardog-1".to_string(),
-                to: "mock-songbird-1".to_string(),
+                from: "mock-beardog-1".into(),
+                to: "mock-songbird-1".into(),
                 edge_type: "trust".to_string(),
                 capability: None,
                 metrics: None,
                 label: Some("Trusted".to_string()),
             },
             TopologyEdge {
-                from: "mock-songbird-1".to_string(),
-                to: "mock-toadstool-1".to_string(),
+                from: "mock-songbird-1".into(),
+                to: "mock-toadstool-1".into(),
                 edge_type: "orchestrates".to_string(),
                 label: None,
                 capability: None,

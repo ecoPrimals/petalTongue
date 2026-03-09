@@ -217,6 +217,10 @@ impl<T: Clone> CommandPalette<T> {
     }
 
     /// Search commands (fuzzy matching)
+    ///
+    /// # Panics
+    ///
+    /// Panics if any command's match score is NaN (e.g. from invalid fuzzy match).
     #[must_use]
     pub fn search(&self, query: &str) -> Vec<SearchResult<T>> {
         if query.is_empty() {
@@ -238,7 +242,7 @@ impl<T: Clone> CommandPalette<T> {
             .iter()
             .filter(|c| c.enabled)
             .filter_map(|c| {
-                let score = self.calculate_match_score(&query_lower, c);
+                let score = Self::calculate_match_score(&query_lower, c);
                 if score > 0.0 {
                     Some(SearchResult {
                         command: c.clone(),
@@ -257,7 +261,7 @@ impl<T: Clone> CommandPalette<T> {
     }
 
     /// Calculate match score for a command
-    fn calculate_match_score(&self, query: &str, command: &Command<T>) -> f32 {
+    fn calculate_match_score(query: &str, command: &Command<T>) -> f32 {
         let name_lower = command.name.to_lowercase();
         let id_lower = command.id.to_lowercase();
 
@@ -293,7 +297,7 @@ impl<T: Clone> CommandPalette<T> {
         }
 
         // Fuzzy match (basic - could be improved)
-        let fuzzy_score = self.fuzzy_match(query, &name_lower);
+        let fuzzy_score = Self::fuzzy_match(query, &name_lower);
         if fuzzy_score > 0.3 {
             return fuzzy_score;
         }
@@ -302,10 +306,10 @@ impl<T: Clone> CommandPalette<T> {
     }
 
     /// Basic fuzzy matching (character sequence)
-    fn fuzzy_match(&self, query: &str, text: &str) -> f32 {
+    fn fuzzy_match(query: &str, text: &str) -> f32 {
         let mut query_chars = query.chars();
         let mut current_char = query_chars.next();
-        let mut matches = 0;
+        let mut matches: usize = 0;
 
         if current_char.is_none() {
             return 0.0;
@@ -323,7 +327,15 @@ impl<T: Clone> CommandPalette<T> {
 
         if current_char.is_none() {
             // All query chars matched
-            matches as f32 / text.len() as f32
+            let len = text.len();
+            if len == 0 {
+                0.0
+            } else {
+                #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+                {
+                    (matches as f64 / len as f64) as f32
+                }
+            }
         } else {
             0.0
         }

@@ -343,9 +343,9 @@ impl<T: fmt::Display> fmt::Display for TreeNode<T> {
             // Draw icon if present
             if let Some(icon) = &node.icon {
                 match icon {
-                    Icon::Emoji(emoji) => write!(f, "{emoji} ")?,
-                    Icon::NerdFont(icon) => write!(f, "{icon} ")?,
-                    Icon::Custom(icon) => write!(f, "{icon} ")?,
+                    Icon::Emoji(emoji) | Icon::NerdFont(emoji) | Icon::Custom(emoji) => {
+                        write!(f, "{emoji} ")?;
+                    }
                     Icon::None => {}
                 }
             }

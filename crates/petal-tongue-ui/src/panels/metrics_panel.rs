@@ -75,6 +75,7 @@ impl MetricsPanel {
         }
     }
 
+    #[allow(dead_code)]
     async fn refresh_metrics(&mut self) {
         if let Some(provider) = &self.provider {
             match provider.get_metrics().await {

@@ -112,7 +112,11 @@ async fn test_chaos_interleaved_operations() {
 async fn test_chaos_manager_churn() {
     for _ in 0..100 {
         let manager = BiomeOSUIManager::new().await;
+        // Mock mode only when mock feature enabled and biomeOS unavailable
+        #[cfg(feature = "mock")]
         assert!(manager.is_mock_mode());
+        #[cfg(not(feature = "mock"))]
+        assert!(!manager.is_mock_mode());
         drop(manager);
     }
 }

@@ -193,7 +193,7 @@ fn render_primal_details(
             ]),
             Line::from(vec![
                 Span::raw("ID: "),
-                Span::styled(&primal.id, Style::default().fg(Color::Gray)),
+                Span::styled(primal.id.as_str(), Style::default().fg(Color::Gray)),
             ]),
             Line::from(""),
             Line::from(vec![Span::styled(

@@ -119,7 +119,7 @@ impl NodePalette {
         }
 
         // Handle drag released
-        if response.drag_released() {
+        if response.drag_stopped() {
             self.dragging = None;
         }
 

@@ -256,8 +256,9 @@ impl ValidationPipeline {
         let unconfirmed = self.sent_frames.len();
         let total_sent = unconfirmed + self.confirmed_frames.len();
 
+        #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
         let confirmation_rate = if total_sent > 0 {
-            (self.confirmed_frames.len() as f32 / total_sent as f32) * 100.0
+            (self.confirmed_frames.len() as f64 / total_sent as f64) as f32 * 100.0
         } else {
             0.0
         };

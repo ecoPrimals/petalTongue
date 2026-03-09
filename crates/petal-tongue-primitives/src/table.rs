@@ -402,6 +402,7 @@ impl<T> Table<T> {
 
 impl<T: Clone> Table<T> {
     /// Filter rows by predicate (returns new table)
+    #[must_use]
     pub fn filter<F>(&self, predicate: F) -> Self
     where
         F: Fn(&T) -> bool,

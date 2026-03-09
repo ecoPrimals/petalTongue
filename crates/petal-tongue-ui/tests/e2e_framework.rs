@@ -164,7 +164,7 @@ impl E2ETestRunner {
             // Step 1: Create graph with test data
             let mut graph = GraphEngine::new();
             graph.add_node(PrimalInfo {
-                id: "test1".to_string(),
+                id: "test1".into(),
                 name: "Test Primal 1".to_string(),
                 primal_type: "TestType".to_string(),
                 endpoint: "http://test:8080".to_string(),
@@ -183,8 +183,8 @@ impl E2ETestRunner {
 
             // Step 2: Add edge
             graph.add_edge(TopologyEdge {
-                from: "test1".to_string(),
-                to: "test1".to_string(),
+                from: "test1".into(),
+                to: "test1".into(),
                 edge_type: "self".to_string(),
                 label: None,
                 capability: None,
@@ -232,7 +232,7 @@ impl E2ETestRunner {
             {
                 let mut g = graph.write().unwrap();
                 g.add_node(PrimalInfo {
-                    id: "test1".to_string(),
+                    id: "test1".into(),
                     name: "Test".to_string(),
                     primal_type: "Test".to_string(),
                     endpoint: "http://test:8080".to_string(),
@@ -302,7 +302,7 @@ impl E2ETestRunner {
             // Step 1: Create graph with nodes
             let mut graph = GraphEngine::new();
             graph.add_node(PrimalInfo {
-                id: "node1".to_string(),
+                id: "node1".into(),
                 name: "Node 1".to_string(),
                 primal_type: "Test".to_string(),
                 endpoint: "http://test:8080".to_string(),
@@ -318,7 +318,7 @@ impl E2ETestRunner {
                 metadata: None,
             });
             graph.add_node(PrimalInfo {
-                id: "node2".to_string(),
+                id: "node2".into(),
                 name: "Node 2".to_string(),
                 primal_type: "Test".to_string(),
                 endpoint: "http://test:8081".to_string(),
@@ -337,8 +337,8 @@ impl E2ETestRunner {
 
             // Step 2: Add edge
             graph.add_edge(TopologyEdge {
-                from: "node1".to_string(),
-                to: "node2".to_string(),
+                from: "node1".into(),
+                to: "node2".into(),
                 edge_type: "test".to_string(),
                 label: Some("test edge".to_string()),
                 capability: None,

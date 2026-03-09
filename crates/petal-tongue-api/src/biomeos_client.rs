@@ -234,15 +234,15 @@ impl BiomeOSClient {
         Ok(topology.edges)
     }
 
-    /// Mock primal discovery (for development)
+    /// Mock primal discovery (for development/testing only - generic names, no sovereignty violations)
     fn mock_discover_primals(&self) -> Vec<PrimalInfo> {
         let now = chrono::Utc::now().timestamp() as u64;
         vec![
             PrimalInfo {
-                id: "beardog-1".to_string(),
-                name: "BearDog Security".to_string(),
+                id: "primal-alpha".into(),
+                name: "Security Primal".to_string(),
                 primal_type: "Security".to_string(),
-                endpoint: "http://mock-beardog:8001".to_string(),
+                endpoint: "http://mock-primal-alpha:8001".to_string(),
                 capabilities: vec![
                     "authentication".to_string(),
                     "authorization".to_string(),
@@ -259,10 +259,10 @@ impl BiomeOSClient {
                 family_id: None,
             },
             PrimalInfo {
-                id: "toadstool-1".to_string(),
-                name: "ToadStool Compute".to_string(),
+                id: "primal-beta".into(),
+                name: "Compute Primal".to_string(),
                 primal_type: "Compute".to_string(),
-                endpoint: "http://mock-toadstool:8002".to_string(),
+                endpoint: "http://mock-primal-beta:8002".to_string(),
                 capabilities: vec![
                     "container_runtime".to_string(),
                     "workload_execution".to_string(),
@@ -278,10 +278,10 @@ impl BiomeOSClient {
                 family_id: None,
             },
             PrimalInfo {
-                id: "songbird-1".to_string(),
-                name: "Songbird Discovery".to_string(),
+                id: "primal-gamma".into(),
+                name: "Discovery Primal".to_string(),
                 primal_type: "Discovery".to_string(),
-                endpoint: "http://mock-songbird:8003".to_string(),
+                endpoint: "http://mock-primal-gamma:8003".to_string(),
                 capabilities: vec![
                     "service_discovery".to_string(),
                     "capability_matching".to_string(),
@@ -297,10 +297,10 @@ impl BiomeOSClient {
                 family_id: None,
             },
             PrimalInfo {
-                id: "nestgate-1".to_string(),
-                name: "NestGate Storage".to_string(),
+                id: "primal-delta".into(),
+                name: "Storage Primal".to_string(),
                 primal_type: "Storage".to_string(),
-                endpoint: "http://mock-nestgate:8004".to_string(),
+                endpoint: "http://mock-primal-delta:8004".to_string(),
                 capabilities: vec![
                     "permanent_storage".to_string(),
                     "content_addressing".to_string(),
@@ -317,10 +317,10 @@ impl BiomeOSClient {
                 family_id: None,
             },
             PrimalInfo {
-                id: "squirrel-1".to_string(),
-                name: "Squirrel AI".to_string(),
+                id: "primal-epsilon".into(),
+                name: "AI Primal".to_string(),
                 primal_type: "AI".to_string(),
-                endpoint: "http://mock-squirrel:8005".to_string(),
+                endpoint: "http://mock-primal-epsilon:8005".to_string(),
                 capabilities: vec!["intent_parsing".to_string(), "task_planning".to_string()],
                 health: PrimalHealthStatus::Critical,
                 last_seen: now,
@@ -335,44 +335,44 @@ impl BiomeOSClient {
         ]
     }
 
-    /// Mock topology (for development)
+    /// Mock topology (for development/testing only - generic primal IDs)
     fn mock_topology(&self) -> Vec<TopologyEdge> {
         vec![
             TopologyEdge {
-                from: "beardog-1".to_string(),
-                to: "toadstool-1".to_string(),
+                from: "primal-alpha".into(),
+                to: "primal-beta".into(),
                 edge_type: "authenticates".to_string(),
                 capability: None,
                 metrics: None,
                 label: Some("Auth Flow".to_string()),
             },
             TopologyEdge {
-                from: "songbird-1".to_string(),
-                to: "beardog-1".to_string(),
+                from: "primal-gamma".into(),
+                to: "primal-alpha".into(),
                 edge_type: "discovers".to_string(),
                 capability: None,
                 metrics: None,
                 label: None,
             },
             TopologyEdge {
-                from: "toadstool-1".to_string(),
-                to: "nestgate-1".to_string(),
+                from: "primal-beta".into(),
+                to: "primal-delta".into(),
                 edge_type: "stores_to".to_string(),
                 capability: None,
                 metrics: None,
                 label: Some("Data Flow".to_string()),
             },
             TopologyEdge {
-                from: "squirrel-1".to_string(),
-                to: "songbird-1".to_string(),
+                from: "primal-epsilon".into(),
+                to: "primal-gamma".into(),
                 edge_type: "queries".to_string(),
                 capability: None,
                 metrics: None,
                 label: None,
             },
             TopologyEdge {
-                from: "squirrel-1".to_string(),
-                to: "toadstool-1".to_string(),
+                from: "primal-epsilon".into(),
+                to: "primal-beta".into(),
                 edge_type: "orchestrates".to_string(),
                 capability: None,
                 metrics: None,
@@ -386,7 +386,7 @@ impl BiomeOSClient {
 impl From<DiscoveredPrimal> for PrimalInfo {
     fn from(primal: DiscoveredPrimal) -> Self {
         Self {
-            id: primal.id,
+            id: primal.id.into(),
             name: primal.name,
             primal_type: primal.primal_type,
             endpoint: primal.endpoint,
@@ -419,7 +419,7 @@ mod tests {
 
         let primals = client.discover_primals().await.unwrap();
         assert_eq!(primals.len(), 5);
-        assert_eq!(primals[0].id, "beardog-1");
+        assert_eq!(primals[0].id, "primal-alpha");
 
         let topology = client.get_topology().await.unwrap();
         assert_eq!(topology.len(), 5);

@@ -12,12 +12,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// biomeOS discovery backend
+#[derive(Debug)]
 pub struct BiomeOsBackend {
     /// JSON-RPC client for biomeOS Neural API
     client: BiomeOsClient,
 }
 
 /// Simple JSON-RPC client for biomeOS
+#[derive(Debug)]
 struct BiomeOsClient {
     socket_path: String,
 }
@@ -60,7 +62,7 @@ impl BiomeOsBackend {
         // Priority 2: XDG runtime directory
         if let Ok(runtime_dir) = platform_dirs::runtime_dir() {
             let socket_path =
-                runtime_dir.join(format!("{}.sock", crate::constants::BIOMEOS_SOCKET_NAME));
+                runtime_dir.join(format!("{}.sock", crate::constants::biomeos_socket_name()));
             if socket_path.exists() {
                 return Ok(Self::new(socket_path.to_string_lossy().to_string()));
             }
@@ -222,9 +224,48 @@ impl From<BiomeOsPrimal> for PrimalEndpoint {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_fixtures::env_test_helpers;
 
     #[test]
-    fn test_biomeos_primal_conversion() {
+    fn test_biomeos_backend_new() {
+        let backend = BiomeOsBackend::new("/tmp/custom.sock");
+        // Just verify it constructs - we can't call query without a real socket
+        drop(backend);
+    }
+
+    #[test]
+    fn test_biomeos_from_env_explicit_socket() {
+        let temp = std::env::temp_dir().join("biomeos-test-socket");
+        std::fs::create_dir_all(temp.parent().unwrap()).unwrap();
+        std::fs::write(&temp, "").unwrap();
+
+        env_test_helpers::with_env_var("BIOMEOS_NEURAL_API_SOCKET", temp.to_str().unwrap(), || {
+            let backend = BiomeOsBackend::from_env().unwrap();
+            drop(backend);
+        });
+
+        let _ = std::fs::remove_file(&temp);
+    }
+
+    #[test]
+    fn test_biomeos_from_env_socket_not_found() {
+        env_test_helpers::with_env_var(
+            "BIOMEOS_NEURAL_API_SOCKET",
+            "/nonexistent/path/neural-api.sock",
+            || {
+                let result = BiomeOsBackend::from_env();
+                assert!(result.is_err());
+                if let Err(DiscoveryError::BackendUnavailable(_)) = result {
+                    // Expected
+                } else {
+                    panic!("Expected BackendUnavailable error");
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_biomeos_primal_conversion_healthy() {
         let biomeos_primal = BiomeOsPrimal {
             id: "test-primal-1".to_string(),
             capabilities: vec!["crypto.encrypt".to_string(), "crypto.decrypt".to_string()],
@@ -237,5 +278,61 @@ mod tests {
         assert_eq!(endpoint.id, "test-primal-1");
         assert_eq!(endpoint.capabilities.len(), 2);
         assert_eq!(endpoint.health, PrimalHealth::Healthy);
+    }
+
+    #[test]
+    fn test_biomeos_primal_conversion_degraded() {
+        let biomeos_primal = BiomeOsPrimal {
+            id: "degraded-primal".to_string(),
+            capabilities: vec!["storage.cache".to_string()],
+            tarpc_endpoint: None,
+            jsonrpc_endpoint: Some("/run/degraded.sock".to_string()),
+            health: "degraded".to_string(),
+        };
+
+        let endpoint: PrimalEndpoint = biomeos_primal.into();
+        assert_eq!(endpoint.health, PrimalHealth::Degraded);
+    }
+
+    #[test]
+    fn test_biomeos_primal_conversion_unavailable() {
+        let biomeos_primal = BiomeOsPrimal {
+            id: "unavail-primal".to_string(),
+            capabilities: vec![],
+            tarpc_endpoint: None,
+            jsonrpc_endpoint: None,
+            health: "unavailable".to_string(),
+        };
+
+        let endpoint: PrimalEndpoint = biomeos_primal.into();
+        assert_eq!(endpoint.health, PrimalHealth::Unavailable);
+    }
+
+    #[test]
+    fn test_biomeos_primal_conversion_unknown_health() {
+        let biomeos_primal = BiomeOsPrimal {
+            id: "unknown-primal".to_string(),
+            capabilities: vec!["ui.render".to_string()],
+            tarpc_endpoint: None,
+            jsonrpc_endpoint: None,
+            health: "unknown-status".to_string(),
+        };
+
+        let endpoint: PrimalEndpoint = biomeos_primal.into();
+        assert_eq!(endpoint.health, PrimalHealth::Unavailable);
+    }
+
+    #[test]
+    fn test_biomeos_primal_conversion_single_part_capability() {
+        let biomeos_primal = BiomeOsPrimal {
+            id: "legacy-primal".to_string(),
+            capabilities: vec!["legacy".to_string()],
+            tarpc_endpoint: None,
+            jsonrpc_endpoint: None,
+            health: "healthy".to_string(),
+        };
+
+        let endpoint: PrimalEndpoint = biomeos_primal.into();
+        assert_eq!(endpoint.capabilities.len(), 1);
     }
 }

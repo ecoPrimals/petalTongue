@@ -130,6 +130,12 @@ impl LocalStatePersistence {
         Ok(Self { base_dir })
     }
 
+    /// Create with explicit base directory (for testing)
+    #[cfg(test)]
+    pub fn with_base_dir(base_dir: PathBuf) -> Self {
+        Self { base_dir }
+    }
+
     /// Get default state directory
     ///
     /// Uses platform-specific directory resolution (Pure Rust, zero deps!)
@@ -202,6 +208,15 @@ impl StateSync {
         })
     }
 
+    /// Create with custom persistence (for testing)
+    #[cfg(test)]
+    pub fn with_persistence(persistence: Box<dyn StatePersistence>) -> Self {
+        Self {
+            persistence,
+            current_state: None,
+        }
+    }
+
     /// Initialize state for this device
     pub fn init(&mut self, device_id: String, device_type: DeviceType) -> Result<DeviceState> {
         // Try to load existing state
@@ -252,9 +267,64 @@ impl StateSync {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
+    use std::sync::Mutex;
+
+    /// In-memory StatePersistence for deterministic tests
+    struct InMemoryPersistence {
+        storage: std::sync::Arc<Mutex<HashMap<String, DeviceState>>>,
+    }
+
+    impl InMemoryPersistence {
+        fn new() -> Self {
+            Self {
+                storage: std::sync::Arc::new(Mutex::new(HashMap::new())),
+            }
+        }
+
+        /// Create a pair that shares storage (for tests that need to verify persistence)
+        fn shared() -> (Self, Self) {
+            let storage = std::sync::Arc::new(Mutex::new(HashMap::new()));
+            (
+                Self {
+                    storage: std::sync::Arc::clone(&storage),
+                },
+                Self { storage },
+            )
+        }
+    }
+
+    impl StatePersistence for InMemoryPersistence {
+        fn save(&self, state: &DeviceState) -> Result<()> {
+            self.storage
+                .lock()
+                .unwrap()
+                .insert(state.device_id.clone(), state.clone());
+            Ok(())
+        }
+
+        fn load(&self, device_id: &str) -> Result<Option<DeviceState>> {
+            Ok(self.storage.lock().unwrap().get(device_id).cloned())
+        }
+
+        fn delete(&self, device_id: &str) -> Result<()> {
+            self.storage.lock().unwrap().remove(device_id);
+            Ok(())
+        }
+    }
 
     #[test]
-    fn test_device_state() {
+    fn test_device_state_new() {
+        let state = DeviceState::new("dev-1".to_string(), DeviceType::Phone);
+        assert_eq!(state.device_id, "dev-1");
+        assert_eq!(state.device_type, DeviceType::Phone);
+        assert!(state.ui_state.is_empty());
+        assert!(state.preferences.is_empty());
+        assert!(state.metadata.is_empty());
+    }
+
+    #[test]
+    fn test_device_state_ui_state() {
         let mut state = DeviceState::new("test-device".to_string(), DeviceType::Desktop);
 
         state.set_ui_state(
@@ -268,6 +338,16 @@ mod tests {
             Some("beardog")
         );
 
+        state.set_ui_state("count".to_string(), DynamicValue::Number(42.0));
+        assert_eq!(state.get_ui_state("count").and_then(|v| v.as_f64()), Some(42.0));
+
+        assert!(state.get_ui_state("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_device_state_preferences() {
+        let mut state = DeviceState::new("test-device".to_string(), DeviceType::Desktop);
+
         state.set_preference(
             "theme".to_string(),
             DynamicValue::String("dark".to_string()),
@@ -276,10 +356,15 @@ mod tests {
             state.get_preference("theme").and_then(|v| v.as_str()),
             Some("dark")
         );
+
+        state.set_preference("volume".to_string(), DynamicValue::Number(0.8));
+        assert_eq!(state.get_preference("volume").and_then(|v| v.as_f64()), Some(0.8));
+
+        assert!(state.get_preference("missing").is_none());
     }
 
     #[test]
-    fn test_state_merge() {
+    fn test_state_merge_newer_wins() {
         let mut state1 = DeviceState::new("device1".to_string(), DeviceType::Desktop);
         state1.set_ui_state(
             "key1".to_string(),
@@ -295,8 +380,163 @@ mod tests {
 
         state1.merge(&state2);
 
-        // Should have both keys
+        // Should have both keys (state2 is newer, so its UI state merges)
         assert!(state1.get_ui_state("key1").is_some());
         assert!(state1.get_ui_state("key2").is_some());
+    }
+
+    #[test]
+    fn test_state_merge_older_ignored() {
+        let mut state1 = DeviceState::new("device1".to_string(), DeviceType::Desktop);
+        state1.set_ui_state(
+            "key1".to_string(),
+            DynamicValue::String("value1".to_string()),
+        );
+        state1.last_updated = Utc::now();
+
+        let mut state2 = DeviceState::new("device2".to_string(), DeviceType::Phone);
+        state2.set_ui_state(
+            "key2".to_string(),
+            DynamicValue::String("value2".to_string()),
+        );
+        state2.last_updated = state1.last_updated - chrono::Duration::seconds(1);
+
+        state1.merge(&state2);
+
+        // state2 is older - UI state from state2 should NOT be merged
+        assert!(state1.get_ui_state("key1").is_some());
+        assert!(state1.get_ui_state("key2").is_none());
+    }
+
+    #[test]
+    fn test_state_merge_preferences_always() {
+        let mut state1 = DeviceState::new("device1".to_string(), DeviceType::Desktop);
+        state1.set_preference("theme".to_string(), DynamicValue::String("light".to_string()));
+
+        let mut state2 = DeviceState::new("device2".to_string(), DeviceType::Phone);
+        state2.set_preference("theme".to_string(), DynamicValue::String("dark".to_string()));
+        state2.last_updated = state1.last_updated - chrono::Duration::seconds(1);
+
+        state1.merge(&state2);
+
+        // Preferences always merge (other wins on conflict)
+        assert_eq!(
+            state1.get_preference("theme").and_then(|v| v.as_str()),
+            Some("dark")
+        );
+    }
+
+    #[test]
+    fn test_state_sync_with_persistence_init_new() {
+        let persistence = InMemoryPersistence::new();
+        let mut sync = StateSync::with_persistence(Box::new(persistence));
+
+        let state = sync
+            .init("device-1".to_string(), DeviceType::Desktop)
+            .unwrap();
+
+        assert_eq!(state.device_id, "device-1");
+        assert_eq!(state.device_type, DeviceType::Desktop);
+        assert!(sync.current().is_some());
+        assert_eq!(sync.current().unwrap().device_id, "device-1");
+    }
+
+    #[test]
+    fn test_state_sync_init_loads_existing() {
+        let persistence = InMemoryPersistence::new();
+        let mut existing = DeviceState::new("device-1".to_string(), DeviceType::Phone);
+        existing.set_ui_state("saved".to_string(), DynamicValue::String("value".to_string()));
+        persistence.save(&existing).unwrap();
+
+        let mut sync = StateSync::with_persistence(Box::new(persistence));
+        let state = sync.init("device-1".to_string(), DeviceType::Desktop).unwrap();
+
+        assert_eq!(state.device_id, "device-1");
+        assert_eq!(state.device_type, DeviceType::Desktop); // Updated
+        assert_eq!(
+            state.get_ui_state("saved").and_then(|v| v.as_str()),
+            Some("value")
+        );
+    }
+
+    #[test]
+    fn test_state_sync_update() {
+        let (persistence, persistence_reader) = InMemoryPersistence::shared();
+        let mut sync = StateSync::with_persistence(Box::new(persistence));
+        sync.init("device-1".to_string(), DeviceType::Desktop).unwrap();
+
+        let mut state = sync.current().unwrap().clone();
+        state.set_ui_state("key".to_string(), DynamicValue::String("val".to_string()));
+
+        sync.update(state).unwrap();
+
+        let loaded = persistence_reader.load("device-1").unwrap().unwrap();
+        assert_eq!(loaded.get_ui_state("key").and_then(|v| v.as_str()), Some("val"));
+    }
+
+    #[test]
+    fn test_state_sync_set_get_ui_state() {
+        let persistence = InMemoryPersistence::new();
+        let mut sync = StateSync::with_persistence(Box::new(persistence));
+        sync.init("device-1".to_string(), DeviceType::Desktop).unwrap();
+
+        sync.set_ui_state("k1".to_string(), DynamicValue::String("v1".to_string()))
+            .unwrap();
+        assert_eq!(sync.get_ui_state("k1").and_then(|v| v.as_str()), Some("v1"));
+
+        sync.set_ui_state("k2".to_string(), DynamicValue::Number(99.0))
+            .unwrap();
+        assert_eq!(sync.get_ui_state("k2").and_then(|v| v.as_f64()), Some(99.0));
+    }
+
+    #[test]
+    fn test_state_sync_set_ui_state_no_current() {
+        let persistence = InMemoryPersistence::new();
+        let mut sync = StateSync::with_persistence(Box::new(persistence));
+
+        sync.set_ui_state("k".to_string(), DynamicValue::String("v".to_string()))
+            .unwrap();
+        assert!(sync.get_ui_state("k").is_none());
+    }
+
+    #[test]
+    fn test_state_sync_current_none() {
+        let persistence = InMemoryPersistence::new();
+        let sync = StateSync::with_persistence(Box::new(persistence));
+        assert!(sync.current().is_none());
+    }
+
+    #[test]
+    fn test_local_persistence_save_load_delete() {
+        let temp = std::env::temp_dir().join("petal-state-test");
+        let _ = std::fs::remove_dir_all(&temp);
+        std::fs::create_dir_all(&temp).unwrap();
+
+        let persistence = LocalStatePersistence::with_base_dir(temp.clone());
+
+        let mut state = DeviceState::new("test-dev".to_string(), DeviceType::Desktop);
+        state.set_ui_state("x".to_string(), DynamicValue::String("y".to_string()));
+
+        persistence.save(&state).unwrap();
+        let loaded = persistence.load("test-dev").unwrap().unwrap();
+        assert_eq!(loaded.device_id, "test-dev");
+        assert_eq!(loaded.get_ui_state("x").and_then(|v| v.as_str()), Some("y"));
+
+        persistence.delete("test-dev").unwrap();
+        assert!(persistence.load("test-dev").unwrap().is_none());
+
+        let _ = std::fs::remove_dir_all(&temp);
+    }
+
+    #[test]
+    fn test_local_persistence_load_nonexistent() {
+        let temp = std::env::temp_dir().join("petal-state-nonexistent");
+        let _ = std::fs::remove_dir_all(&temp);
+        std::fs::create_dir_all(&temp).unwrap();
+
+        let persistence = LocalStatePersistence::with_base_dir(temp.clone());
+        assert!(persistence.load("no-such-device").unwrap().is_none());
+
+        let _ = std::fs::remove_dir_all(&temp);
     }
 }

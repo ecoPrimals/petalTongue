@@ -69,6 +69,7 @@ pub trait TreeRenderer<T>: Send + Sync {
 
 /// Renderer capabilities (for capability-based discovery)
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct RendererCapabilities {
     /// Modality this renderer provides
     pub modality: Modality,

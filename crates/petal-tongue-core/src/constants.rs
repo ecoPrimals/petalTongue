@@ -20,7 +20,10 @@ pub const DEFAULT_WEB_PORT: u16 = 3000;
 pub const DEFAULT_HEADLESS_PORT: u16 = 8080;
 
 /// biomeOS socket name template (discovered, not hardcoded to a port)
-pub const BIOMEOS_SOCKET_NAME: &str = "biomeos-neural-api";
+/// Overridable via BIOMEOS_SOCKET_NAME env var for custom deployments
+pub fn biomeos_socket_name() -> String {
+    std::env::var("BIOMEOS_SOCKET_NAME").unwrap_or_else(|_| "biomeos-neural-api".to_string())
+}
 
 /// Max FPS for rendering (overridable via config)
 pub const DEFAULT_MAX_FPS: u32 = 60;
@@ -44,9 +47,10 @@ pub fn default_headless_bind() -> String {
 }
 
 /// Build a legacy biomeOS socket path (/tmp/biomeos-neural-api.sock)
+/// Uses BIOMEOS_SOCKET_NAME env var if set
 #[must_use]
 pub fn biomeos_legacy_socket() -> std::path::PathBuf {
-    std::path::PathBuf::from(LEGACY_TMP_PREFIX).join(format!("{BIOMEOS_SOCKET_NAME}.sock"))
+    std::path::PathBuf::from(LEGACY_TMP_PREFIX).join(format!("{}.sock", biomeos_socket_name()))
 }
 
 /// Health check thresholds

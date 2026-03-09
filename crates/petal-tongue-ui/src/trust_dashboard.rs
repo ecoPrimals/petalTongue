@@ -366,7 +366,7 @@ mod tests {
         }
 
         PrimalInfo {
-            id: id.to_string(),
+            id: id.to_string().into(),
             name: format!("Test Primal {}", id),
             primal_type: "Test".to_string(),
             endpoint: "http://test".to_string(),
@@ -452,5 +452,76 @@ mod tests {
         assert_eq!(dashboard.trust_summary.family_count, 0);
         assert_eq!(dashboard.trust_summary.unique_families, 0);
         assert!(dashboard.trust_summary.average_trust.is_none());
+    }
+
+    #[test]
+    fn test_trust_string_property() {
+        let mut dashboard = TrustDashboard::new();
+        let mut props = Properties::new();
+        props.insert(
+            "trust_level".to_string(),
+            PropertyValue::String("Custom".to_string()),
+        );
+        let primals = vec![PrimalInfo {
+            id: "p1".to_string().into(),
+            name: "Test".to_string(),
+            primal_type: "Test".to_string(),
+            endpoint: "http://test".to_string(),
+            capabilities: vec![],
+            health: PrimalHealthStatus::Healthy,
+            last_seen: 0,
+            endpoints: None,
+            metadata: None,
+            properties: props,
+            #[expect(deprecated)]
+            trust_level: None,
+            #[expect(deprecated)]
+            family_id: None,
+        }];
+        dashboard.update_from_primals(&primals);
+        assert_eq!(dashboard.trust_summary.total_primals, 1);
+        assert_eq!(
+            dashboard.trust_summary.trust_distribution.get("Custom"),
+            Some(&1)
+        );
+    }
+
+    #[test]
+    fn test_trust_unknown_level() {
+        let mut dashboard = TrustDashboard::new();
+        let mut props = Properties::new();
+        props.insert("trust_level".to_string(), PropertyValue::Number(99.0));
+        let primals = vec![PrimalInfo {
+            id: "p1".to_string().into(),
+            name: "Test".to_string(),
+            primal_type: "Test".to_string(),
+            endpoint: "http://test".to_string(),
+            capabilities: vec![],
+            health: PrimalHealthStatus::Healthy,
+            last_seen: 0,
+            endpoints: None,
+            metadata: None,
+            properties: props,
+            #[expect(deprecated)]
+            trust_level: None,
+            #[expect(deprecated)]
+            family_id: None,
+        }];
+        dashboard.update_from_primals(&primals);
+        assert!(dashboard.trust_summary.trust_distribution.contains_key("Unknown (99)"));
+    }
+
+    #[test]
+    fn test_trust_dashboard_visible_toggle() {
+        let mut dashboard = TrustDashboard::new();
+        assert!(!dashboard.visible);
+        dashboard.visible = true;
+        assert!(dashboard.visible);
+    }
+
+    #[test]
+    fn test_trust_dashboard_default() {
+        let dashboard = TrustDashboard::default();
+        assert!(!dashboard.visible);
     }
 }

@@ -651,4 +651,36 @@ mod tests {
         assert_eq!(resp.execution_order.len(), 2);
         assert!(resp.validation_warnings.is_empty());
     }
+
+    #[tokio::test]
+    async fn test_modify_node() {
+        let service = GraphEditorService::new();
+
+        let node = GraphNode::new("node-1".to_string(), "test-type".to_string())
+            .with_properties(serde_json::json!({"key": "original"}));
+        service
+            .add_node(AddNodeRequest {
+                graph_id: "test-graph".to_string(),
+                node,
+            })
+            .await
+            .unwrap();
+
+        let changes = serde_json::json!({"key": "modified", "new_key": "value"});
+        let req = ModifyNodeRequest {
+            graph_id: "test-graph".to_string(),
+            node_id: "node-1".to_string(),
+            changes,
+        };
+        let resp = service.modify_node(req).await.unwrap();
+        assert!(resp.success);
+        assert!(resp.validation.valid);
+    }
+
+    #[tokio::test]
+    async fn test_list_templates() {
+        let service = GraphEditorService::new();
+        let templates = service.list_templates().await;
+        assert!(templates.is_empty());
+    }
 }

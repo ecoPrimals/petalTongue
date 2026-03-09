@@ -115,7 +115,7 @@ impl JsonRpcProvider {
     /// Scans for sockets in standard locations:
     /// - `/run/user/{uid}/biomeos-device-management.sock`
     /// - `/run/user/{uid}/biomeos-ui.sock`
-    /// - `/run/user/{uid}/songbird-discovery.sock`
+    /// - `/run/user/{uid}/discovery-service.sock`
     /// - `/tmp/biomeos.sock`
     ///
     /// # Environment Variables
@@ -160,7 +160,7 @@ impl JsonRpcProvider {
             Tried standard paths:\n\
             - /run/user/{{uid}}/biomeos-device-management.sock\n\
             - /run/user/{{uid}}/biomeos-ui.sock\n\
-            - /run/user/{{uid}}/songbird-discovery.sock\n\
+            - /run/user/{{uid}}/discovery-service.sock\n\
             - /tmp/biomeos.sock\n\
             \n\
             💡 Set BIOMEOS_URL=unix:///path/to/socket for custom path"
@@ -175,7 +175,7 @@ impl JsonRpcProvider {
         Ok(vec![
             PathBuf::from(format!("/run/user/{uid}/biomeos-device-management.sock")),
             PathBuf::from(format!("/run/user/{uid}/biomeos-ui.sock")),
-            PathBuf::from(format!("/run/user/{uid}/songbird-discovery.sock")),
+            PathBuf::from(format!("/run/user/{uid}/discovery-service.sock")),
             PathBuf::from("/tmp/biomeos.sock"),
         ])
     }
@@ -558,5 +558,49 @@ mod tests {
         assert!(paths
             .iter()
             .any(|p| p.to_string_lossy().contains("biomeos")));
+    }
+
+    #[tokio::test]
+    async fn test_jsonrpc_discover_with_biomeos_url() {
+        let socket_path = "/tmp/test-jsonrpc-discover.sock";
+        let _ = std::fs::remove_file(socket_path);
+        let _server = create_mock_server(socket_path).await.unwrap();
+
+        let result = petal_tongue_core::test_fixtures::env_test_helpers::with_env_var_async(
+            "BIOMEOS_URL",
+            &format!("unix://{socket_path}"),
+            || async {
+                JsonRpcProvider::discover().await
+            },
+        )
+        .await;
+
+        assert!(result.is_ok());
+        let provider = result.unwrap();
+        assert!(provider.get_metadata().endpoint.contains("test-jsonrpc-discover"));
+
+        let _ = std::fs::remove_file(socket_path);
+    }
+
+    #[tokio::test]
+    async fn test_jsonrpc_get_topology_method_not_found() {
+        let socket_path = "/tmp/test-jsonrpc-topology-nf.sock";
+        let _ = std::fs::remove_file(socket_path);
+        let _server = create_mock_server(socket_path).await.unwrap();
+
+        let provider = JsonRpcProvider::new(socket_path);
+        let topology = provider.get_topology().await.unwrap();
+
+        assert_eq!(topology.len(), 0);
+
+        let _ = std::fs::remove_file(socket_path);
+    }
+
+    #[tokio::test]
+    async fn test_jsonrpc_provider_construction() {
+        let provider = JsonRpcProvider::new("/nonexistent/socket.sock");
+        let metadata = provider.get_metadata();
+        assert_eq!(metadata.name, "JSON-RPC Provider");
+        assert!(metadata.endpoint.contains("nonexistent"));
     }
 }

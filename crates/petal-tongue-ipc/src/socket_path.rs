@@ -9,7 +9,7 @@
 use anyhow::Result;
 use petal_tongue_core::constants::APP_DIR_NAME;
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Get the socket path for this petalTongue instance
 ///
@@ -241,7 +241,7 @@ pub fn discover_primal_socket(
 ///
 /// This function checks if a socket exists WITHOUT assuming it SHOULD exist.
 /// This enables graceful degradation when primals are not available.
-pub fn socket_exists(socket_path: &PathBuf) -> bool {
+pub fn socket_exists(socket_path: &Path) -> bool {
     socket_path.exists() && socket_path.is_file()
 }
 
@@ -272,73 +272,56 @@ fn get_current_uid() -> Result<u32> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
-    use std::sync::Mutex;
-
-    // Mutex for serializing tests that modify environment variables
-    // This prevents race conditions in parallel test execution
-    static ENV_MUTEX: Mutex<()> = Mutex::new(());
+    use petal_tongue_core::test_fixtures::env_test_helpers;
 
     #[test]
     fn test_default_family_id() {
-        let _lock = ENV_MUTEX.lock().unwrap();
-        // SAFETY: Test-only environment variable modification, serialized by mutex
-        unsafe {
-            env::remove_var("FAMILY_ID");
-        }
-        assert_eq!(get_family_id(), "nat0");
+        env_test_helpers::with_env_var_removed("FAMILY_ID", || assert_eq!(get_family_id(), "nat0"));
     }
 
     #[test]
     fn test_custom_family_id() {
-        let _lock = ENV_MUTEX.lock().unwrap();
-        // SAFETY: Test-only environment variable modification, serialized by mutex
-        unsafe {
-            env::set_var("FAMILY_ID", "test-family");
-        }
-        let result = get_family_id();
-        unsafe {
-            env::remove_var("FAMILY_ID");
-        }
-        assert_eq!(result, "test-family");
+        env_test_helpers::with_env_var("FAMILY_ID", "test-family", || {
+            assert_eq!(get_family_id(), "test-family");
+        });
     }
 
     #[test]
     fn test_petaltongue_socket_path_format() {
-        let _lock = ENV_MUTEX.lock().unwrap();
-        // SAFETY: Test-only environment variable modification, serialized by mutex
-        unsafe {
-            env::remove_var("FAMILY_ID");
-            env::remove_var("PETALTONGUE_NODE_ID");
-            env::remove_var("PETALTONGUE_SOCKET");
-            env::remove_var("XDG_RUNTIME_DIR");
-        }
-
-        // This test uses fallback path since we cleared XDG_RUNTIME_DIR
-        if let Ok(path) = get_petaltongue_socket_path() {
-            let path_str = path.to_string_lossy();
-            // Should include node ID: petaltongue-nat0-default.sock
-            assert!(
-                path_str.contains("petaltongue-nat0-default.sock"),
-                "Expected path to contain 'petaltongue-nat0-default.sock', got: {path_str}"
-            );
-        }
+        env_test_helpers::with_env_vars(
+            &[
+                ("FAMILY_ID", None),
+                ("PETALTONGUE_NODE_ID", None),
+                ("PETALTONGUE_SOCKET", None),
+                ("XDG_RUNTIME_DIR", None),
+            ],
+            || {
+                if let Ok(path) = get_petaltongue_socket_path() {
+                    let path_str = path.to_string_lossy();
+                    assert!(
+                        path_str.contains("petaltongue-nat0-default.sock"),
+                        "Expected path to contain 'petaltongue-nat0-default.sock', got: {path_str}"
+                    );
+                }
+            },
+        );
     }
 
     #[test]
     fn test_discover_primal_socket() {
-        let _lock = ENV_MUTEX.lock().unwrap();
-        // SAFETY: Test-only environment variable modification, serialized by mutex
-        unsafe {
-            env::remove_var("FAMILY_ID");
-            env::remove_var("BEARDOG_SOCKET");
-            env::remove_var("XDG_RUNTIME_DIR");
-        }
-
-        if let Ok(path) = discover_primal_socket("beardog", None, None) {
-            let path_str = path.to_string_lossy();
-            assert!(path_str.contains("beardog-nat0-default.sock"));
-        }
+        env_test_helpers::with_env_vars(
+            &[
+                ("FAMILY_ID", None),
+                ("BEARDOG_SOCKET", None),
+                ("XDG_RUNTIME_DIR", None),
+            ],
+            || {
+                if let Ok(path) = discover_primal_socket("beardog", None, None) {
+                    let path_str = path.to_string_lossy();
+                    assert!(path_str.contains("beardog-nat0-default.sock"));
+                }
+            },
+        );
     }
 
     #[test]
@@ -352,78 +335,46 @@ mod tests {
 
     #[test]
     fn test_petaltongue_socket_override() {
-        let _lock = ENV_MUTEX.lock().unwrap();
-        // SAFETY: Test-only environment variable modification, serialized by mutex
-        // Clear any potentially interfering vars first
-        unsafe {
-            env::remove_var("XDG_RUNTIME_DIR");
-            env::set_var("PETALTONGUE_SOCKET", "/tmp/custom-petaltongue.sock");
-        }
-
-        let path = get_petaltongue_socket_path().unwrap();
-
-        unsafe {
-            env::remove_var("PETALTONGUE_SOCKET");
-        }
-
-        assert_eq!(
-            path,
-            PathBuf::from("/tmp/custom-petaltongue.sock"),
-            "PETALTONGUE_SOCKET override should take priority"
+        env_test_helpers::with_env_vars(
+            &[
+                ("XDG_RUNTIME_DIR", None),
+                ("PETALTONGUE_SOCKET", Some("/tmp/custom-petaltongue.sock")),
+            ],
+            || {
+                let path = get_petaltongue_socket_path().unwrap();
+                assert_eq!(
+                    path,
+                    PathBuf::from("/tmp/custom-petaltongue.sock"),
+                    "PETALTONGUE_SOCKET override should take priority"
+                );
+            },
         );
     }
 
     #[test]
     fn test_node_id() {
-        let _lock = ENV_MUTEX.lock().unwrap();
-        // SAFETY: Test-only environment variable modification, serialized by mutex
-        unsafe {
-            env::remove_var("PETALTONGUE_NODE_ID");
-        }
-        assert_eq!(get_node_id(), "default");
-
-        unsafe {
-            env::set_var("PETALTONGUE_NODE_ID", "node1");
-        }
-        assert_eq!(get_node_id(), "node1");
-
-        unsafe {
-            env::remove_var("PETALTONGUE_NODE_ID");
-        }
+        env_test_helpers::with_env_var_removed("PETALTONGUE_NODE_ID", || {
+            assert_eq!(get_node_id(), "default");
+        });
+        env_test_helpers::with_env_var("PETALTONGUE_NODE_ID", "node1", || {
+            assert_eq!(get_node_id(), "node1");
+        });
     }
 
     #[test]
     fn test_primal_socket_env_override() {
-        let _lock = ENV_MUTEX.lock().unwrap();
-        // SAFETY: Test-only environment variable modification, serialized by mutex
-        unsafe {
-            env::set_var("SONGBIRD_SOCKET", "/tmp/custom-songbird.sock");
-        }
-
-        let path = discover_primal_socket("songbird", None, None).unwrap();
-
-        unsafe {
-            env::remove_var("SONGBIRD_SOCKET");
-        }
-
-        assert_eq!(path, PathBuf::from("/tmp/custom-songbird.sock"));
+        env_test_helpers::with_env_var("SONGBIRD_SOCKET", "/tmp/custom-songbird.sock", || {
+            let path = discover_primal_socket("songbird", None, None).unwrap();
+            assert_eq!(path, PathBuf::from("/tmp/custom-songbird.sock"));
+        });
     }
 
     #[test]
     fn test_runtime_dir_from_xdg() {
-        let _lock = ENV_MUTEX.lock().unwrap();
         let test_dir = "/tmp/test-runtime";
-        // SAFETY: Test-only environment variable modification, serialized by mutex
-        unsafe {
-            env::set_var("XDG_RUNTIME_DIR", test_dir);
-        }
-
-        let runtime_dir = get_runtime_dir().unwrap();
-
-        unsafe {
-            env::remove_var("XDG_RUNTIME_DIR");
-        }
-
-        assert_eq!(runtime_dir, PathBuf::from(test_dir));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", test_dir, || {
+            let runtime_dir = get_runtime_dir().unwrap();
+            assert_eq!(runtime_dir, PathBuf::from(test_dir));
+        });
     }
 }

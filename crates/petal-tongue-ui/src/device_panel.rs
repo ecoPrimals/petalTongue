@@ -147,7 +147,7 @@ impl DevicePanel {
 
         // Device list
         egui::ScrollArea::vertical()
-            .id_source("device_list")
+            .id_salt("device_list")
             .show(ui, |ui| {
                 // Clone devices to avoid borrow checker issues with mutable UI rendering
                 let filtered_devices: Vec<Device> =

@@ -225,9 +225,9 @@ fn render_topology_summary(frame: &mut Frame, area: Rect, state: &TUIState) {
         for edge in topology.iter().take(5) {
             lines.push(Line::from(vec![
                 Span::raw("  "),
-                Span::styled(&edge.from, Style::default().fg(Color::Cyan)),
+                Span::styled(edge.from.as_str(), Style::default().fg(Color::Cyan)),
                 Span::raw(" → "),
-                Span::styled(&edge.to, Style::default().fg(Color::Magenta)),
+                Span::styled(edge.to.as_str(), Style::default().fg(Color::Magenta)),
                 Span::raw(" ("),
                 Span::styled(&edge.edge_type, Style::default().fg(Color::Gray)),
                 Span::raw(")"),

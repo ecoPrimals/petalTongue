@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["ecoPrimals Project"]
 description = "Ecosystem-specific adapters for petalTongue universal visualization"
-license = "AGPL-3.0"
+license = "AGPL-3.0-only"
 
 [dependencies]
 # Core dependencies

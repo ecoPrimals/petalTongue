@@ -161,7 +161,7 @@ impl AudioBackend for SocketBackend {
         AudioCapabilities {
             can_play: true,
             can_record: true,
-            max_sample_rate: 192000,
+            max_sample_rate: 192_000,
             max_channels: 8,
             latency_estimate_ms: 20,
         }

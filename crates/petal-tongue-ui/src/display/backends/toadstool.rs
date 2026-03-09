@@ -71,6 +71,7 @@ struct DisplayCapabilitiesResponse {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 struct DisplayInfo {
     id: String,
     connector: String,
@@ -86,6 +87,7 @@ struct Resolution {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 struct InputDeviceInfo {
     id: String,
     name: String,

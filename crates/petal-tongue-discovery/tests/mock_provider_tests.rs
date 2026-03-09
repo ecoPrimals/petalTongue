@@ -28,7 +28,7 @@ async fn test_mock_get_primals() {
 
     // Verify primals have required fields
     for primal in &primals {
-        assert!(!primal.id.is_empty(), "Primal should have ID");
+        assert!(!primal.id.as_str().is_empty(), "Primal should have ID");
         assert!(!primal.name.is_empty(), "Primal should have name");
         assert!(!primal.endpoint.is_empty(), "Primal should have endpoint");
     }
@@ -45,8 +45,8 @@ async fn test_mock_get_topology() {
     // Mock topology should have some edges
     // Verify edges have required fields
     for edge in &edges {
-        assert!(!edge.from.is_empty(), "Edge should have from");
-        assert!(!edge.to.is_empty(), "Edge should have to");
+        assert!(!edge.from.as_str().is_empty(), "Edge should have from");
+        assert!(!edge.to.as_str().is_empty(), "Edge should have to");
         assert!(!edge.edge_type.is_empty(), "Edge should have type");
     }
 }
@@ -114,7 +114,7 @@ async fn test_mock_realistic_data() {
     for primal in &primals {
         // IDs should be meaningful
         assert!(
-            primal.id.starts_with("mock-"),
+            primal.id.as_str().starts_with("mock-"),
             "Mock IDs should be prefixed"
         );
 

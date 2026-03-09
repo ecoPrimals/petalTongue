@@ -3,6 +3,90 @@
 
 use crate::property::Properties;
 use serde::{Deserialize, Serialize};
+use std::borrow::Borrow;
+use std::sync::Arc;
+
+/// Zero-copy primal identifier.
+///
+/// Wraps `Arc<str>` for cheap cloning when IDs are passed around.
+/// Implements `Borrow<str>` for HashMap lookups and `PartialEq<str>` for comparisons.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct PrimalId(Arc<str>);
+
+impl PrimalId {
+    /// Create a new PrimalId from any string-like type.
+    #[must_use]
+    pub fn new(id: impl Into<Arc<str>>) -> Self {
+        Self(id.into())
+    }
+
+    /// Get the underlying string slice.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Borrow<str> for PrimalId {
+    fn borrow(&self) -> &str {
+        &self.0
+    }
+}
+
+impl PartialEq<str> for PrimalId {
+    fn eq(&self, other: &str) -> bool {
+        self.0.as_ref() == other
+    }
+}
+
+impl PartialEq<&str> for PrimalId {
+    fn eq(&self, other: &&str) -> bool {
+        self.0.as_ref() == *other
+    }
+}
+
+impl PartialEq<PrimalId> for str {
+    fn eq(&self, other: &PrimalId) -> bool {
+        other == self
+    }
+}
+
+impl std::fmt::Display for PrimalId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl Serialize for PrimalId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.0)
+    }
+}
+
+impl<'de> Deserialize<'de> for PrimalId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Ok(Self(Arc::from(s)))
+    }
+}
+
+impl From<&str> for PrimalId {
+    fn from(s: &str) -> Self {
+        Self(Arc::from(s))
+    }
+}
+
+impl From<String> for PrimalId {
+    fn from(s: String) -> Self {
+        Self(Arc::from(s))
+    }
+}
 
 // OPTIMIZATION: Common property keys as static constants to avoid allocations
 const PROP_TRUST_LEVEL: &str = "trust_level";
@@ -56,7 +140,7 @@ pub struct ConnectionMetrics {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrimalInfo {
     /// Unique identifier for the primal
-    pub id: String,
+    pub id: PrimalId,
     /// Human-readable name
     pub name: String,
     /// Type of primal (e.g., "Compute", "Storage", "Security")
@@ -96,7 +180,7 @@ pub struct PrimalInfo {
     // === DEPRECATED FIELDS (kept temporarily for backward compatibility) ===
     /// Trust level (0-3: None, Limited, Elevated, Full)
     ///
-    /// DEPRECATED: Use properties[`trust_level`] instead
+    /// DEPRECATED: Use `properties["trust_level"]` instead.
     /// This field is kept temporarily for backward compatibility and will be removed
     /// once all data sources migrate to the properties field.
     #[deprecated(note = "Use properties field instead - this will be removed in a future version")]
@@ -105,7 +189,7 @@ pub struct PrimalInfo {
 
     /// Family ID (genetic lineage)
     ///
-    /// DEPRECATED: Use properties[`family_id`] instead
+    /// DEPRECATED: Use `properties["family_id"]` instead.
     /// This field is kept temporarily for backward compatibility and will be removed
     /// once all data sources migrate to the properties field.
     #[deprecated(note = "Use properties field instead - this will be removed in a future version")]
@@ -120,7 +204,7 @@ impl PrimalInfo {
     /// or the deprecated `with_trust` method for backward compatibility.
     #[must_use]
     pub fn new(
-        id: impl Into<String>,
+        id: impl Into<PrimalId>,
         name: impl Into<String>,
         primal_type: impl Into<String>,
         endpoint: impl Into<String>,
@@ -327,9 +411,9 @@ pub struct TopologyGraph {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TopologyEdge {
     /// Source primal ID
-    pub from: String,
+    pub from: PrimalId,
     /// Target primal ID
-    pub to: String,
+    pub to: PrimalId,
     /// Type of relationship (e.g., `api_call`, `capability`, `capability_invocation`)
     #[serde(default = "default_edge_type", alias = "type")]
     pub edge_type: String,
@@ -354,11 +438,11 @@ fn default_edge_type() -> String {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FlowEvent {
     /// Event ID
-    pub id: String,
+    pub id: PrimalId,
     /// Source primal ID
-    pub from: String,
+    pub from: PrimalId,
     /// Target primal ID
-    pub to: String,
+    pub to: PrimalId,
     /// Type of message
     pub message_type: String,
     /// When the event occurred (Unix timestamp)
@@ -371,9 +455,9 @@ pub struct FlowEvent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TrafficStats {
     /// Source primal ID
-    pub from: String,
+    pub from: PrimalId,
     /// Target primal ID
-    pub to: String,
+    pub to: PrimalId,
     /// Number of messages
     pub message_count: u64,
     /// Total bytes transferred

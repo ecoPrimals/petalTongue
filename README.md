@@ -1,10 +1,10 @@
 # petalTongue
 
-**The Universal Representation System for ecoPrimals**
+**The Universal Representation Primal for ecoPrimals**
 
-[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./LICENSE)
+[![License: AGPL-3.0-only](https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg)](./LICENSE)
 
-> A sensory coordination layer that composes primal capabilities into coherent experiences.
+> Makes data human-understandable across every sensory modality.
 
 ---
 
@@ -13,11 +13,11 @@
 ```bash
 cargo build --release
 
-./target/release/petaltongue ui          # Desktop GUI
-./target/release/petaltongue tui         # Terminal UI (Pure Rust)
-./target/release/petaltongue web         # Web server (Pure Rust)
-./target/release/petaltongue headless    # Headless rendering
-./target/release/petaltongue status      # System status
+petaltongue ui          # Desktop GUI (egui)
+petaltongue tui         # Terminal UI (ratatui)
+petaltongue web         # Web server (axum)
+petaltongue headless    # Headless rendering (SVG/PNG/JSON)
+petaltongue status      # System status
 ```
 
 See [START_HERE.md](./START_HERE.md) for configuration and development setup.
@@ -26,113 +26,135 @@ See [START_HERE.md](./START_HERE.md) for configuration and development setup.
 
 ## What is petalTongue?
 
-petalTongue is ecoPrimals' universal UI platform -- a single unified binary (UniBin) with 5 modes:
+petalTongue is ecoPrimals' universal user interface -- a single UniBin binary
+that renders ecosystem state across every available modality. It is evolving
+from fixed-widget rendering toward a composable **Grammar of Graphics** engine
+where any primal can send a declarative grammar expression and petalTongue
+compiles it to the best available output.
 
 ```
 petaltongue
-├── ui        Desktop GUI (egui, pluggable backend abstraction)
-├── tui       Terminal UI (ratatui -- Pure Rust)
-├── web       Web server (axum -- Pure Rust)
-├── headless  Batch rendering to SVG/PNG/JSON/DOT (Pure Rust)
-└── status    System info (Pure Rust)
+├── ui        Desktop GUI (egui, pluggable backend)
+├── tui       Terminal UI (ratatui)
+├── web       Web server (axum)
+├── headless  Batch rendering (SVG/PNG/JSON)
+└── status    System info
 ```
 
 ### Architecture
 
 - **JSON-RPC 2.0** over Unix sockets (primary IPC)
-- **tarpc** for high-performance binary RPC (secondary, 5-10x faster)
-- **HTTP** for external/browser clients only (fallback)
-- **Capability-based discovery** -- zero hardcoded primal names, ports, or paths
-- **Self-knowledge only** -- discovers other primals at runtime
+- **tarpc** binary RPC with `bytes::Bytes` zero-copy (secondary)
+- **HTTP** for browser/external clients only (fallback)
+- **Capability-based discovery** via Songbird (zero hardcoded primal names)
+- **Self-knowledge only** -- other primals discovered at runtime
 - **Graceful degradation** -- works standalone or in full ecosystem
+- **Grammar of Graphics** -- composable data→visualization pipeline (design phase)
+- **Tufte constraints** -- machine-checked visualization quality (design phase)
 
 ### Crates (17)
 
 | Crate | Purpose |
 |-------|---------|
 | `petal-tongue-core` | Graph engine, capabilities, config, constants, data channels |
-| `petal-tongue-graph` | 2D visual rendering, chart rendering, clinical theme, audio sonification |
-| `petal-tongue-ui` | Desktop GUI (egui/eframe), panels, scenarios, biomeOS integration |
+| `petal-tongue-graph` | 2D rendering, charts, clinical theme, audio sonification |
+| `petal-tongue-ui` | Desktop GUI (egui/eframe), panels, scenarios, biomeOS |
 | `petal-tongue-tui` | Terminal UI (ratatui) |
-| `petal-tongue-ipc` | Unix socket + TCP fallback IPC, tarpc types |
-| `petal-tongue-discovery` | Provider discovery (HTTP, JSON-RPC, mDNS, dynamic scenarios) |
+| `petal-tongue-ipc` | Unix socket + TCP IPC, JSON-RPC server, tarpc types |
+| `petal-tongue-discovery` | Provider discovery (JSON-RPC, HTTP, mDNS, scenarios) |
 | `petal-tongue-entropy` | Human entropy capture (gesture, narrative, visual, audio) |
 | `petal-tongue-animation` | Flower/visual animations |
 | `petal-tongue-adapters` | EcoPrimal adapter traits |
-| `petal-tongue-primitives` | UI primitives (forms, tables, trees, panels) |
+| `petal-tongue-primitives` | UI primitives (forms, tables, trees, panels, command palette) |
 | `petal-tongue-modalities` | SVG/PNG GUI modalities |
 | `petal-tongue-telemetry` | Telemetry and metrics |
-| `petal-tongue-headless` | Headless binary (Pure Rust, zero GUI deps) |
+| `petal-tongue-headless` | Headless binary (zero GUI deps) |
 | `petal-tongue-ui-core` | Universal UI traits and headless renderers |
 | `petal-tongue-api` | biomeOS JSON-RPC client |
 | `petal-tongue-cli` | CLI argument parsing |
-| `doom-core` | Doom WAD renderer (demonstration) |
+| `doom-core` | Doom WAD renderer (platform testing) |
 
 ---
 
 ## Quality
 
-| Metric | Status |
-|--------|--------|
-| Tests | 1,300+ passing, 0 failures |
-| Build | `cargo check --workspace` clean |
-| Clippy | Pedantic, 0 errors |
-| Docs | `cargo doc --workspace` clean |
+| Metric | Actual Status |
+|--------|---------------|
+| Tests | 1,309 passing, 0 failures, 23 ignored |
 | Formatting | `cargo fmt --check` clean |
-| Unsafe | `#![forbid(unsafe_code)]` on 16/17 crates |
-| License | AGPL-3.0 on all crates |
-| Files | All under 1,000 lines |
-| Constants | Centralized, zero hardcoding |
+| Clippy | 76 errors (missing docs), 487 warnings -- needs pedantic config |
+| Docs | 141 warnings (missing field docs, deprecated API) |
+| Coverage | 54.10% line (target: 90%) |
+| Unsafe | `#![forbid(unsafe_code)]` on 5/17 crates |
+| License | AGPL-3.0-only, SPDX headers on 289+ files |
+| Files | All under 1,000 lines (max: 833) |
+| Edition | 2024 |
 
 ---
 
 ## Development
 
 ```bash
-# Prerequisites: Rust 1.75+
-cargo build --workspace            # Build all crates
-cargo test --workspace             # Run all tests
-cargo clippy --workspace -- -W clippy::pedantic   # Lint
-cargo fmt --check                  # Check formatting
-cargo doc --workspace --no-deps    # Build docs
+# Prerequisites: Rust nightly (edition 2024)
+cargo build --workspace
+cargo test --workspace
+cargo clippy --workspace -- -D warnings
+cargo fmt --check
+cargo doc --workspace --no-deps
+cargo llvm-cov --workspace --summary-only   # Coverage
 ```
 
 ### Configuration
 
-Environment variables (highest priority):
+Priority: Environment > Config file > Defaults.
+
 ```bash
 export PETALTONGUE_WEB_PORT=8080
 export PETALTONGUE_HEADLESS_PORT=9000
 export BIOMEOS_NEURAL_API_SOCKET=/run/user/$(id -u)/biomeos-neural-api.sock
 ```
 
-Config file (`$XDG_CONFIG_HOME/petaltongue/config.toml`):
-```toml
-[network]
-web_port = 8080
-headless_port = 9000
-
-[discovery]
-timeout_ms = 5000
-```
-
 See [ENV_VARS.md](./ENV_VARS.md) for the full reference.
+
+---
+
+## Specs
+
+Architectural specifications live in `specs/`:
+
+| Spec | Purpose |
+|------|---------|
+| `GRAMMAR_OF_GRAPHICS_ARCHITECTURE.md` | Composable grammar type system |
+| `UNIVERSAL_VISUALIZATION_PIPELINE.md` | End-to-end data→render pipeline, barraCuda integration |
+| `TUFTE_CONSTRAINT_SYSTEM.md` | Machine-checked visualization quality |
+| `BIDIRECTIONAL_UUI_ARCHITECTURE.md` | SAME DAVE cognitive model |
+| `UNIVERSAL_USER_INTERFACE_SPECIFICATION.md` | UUI for any universe and user |
+| `JSONRPC_PROTOCOL_SPECIFICATION.md` | JSON-RPC 2.0 IPC protocol |
+
+---
+
+## Cross-Primal Integration
+
+See `ecoPrimals/wateringHole/petaltongue/` for inter-primal standards:
+- `VISUALIZATION_INTEGRATION_GUIDE.md` -- How other primals send data to petalTongue
+- `BIOMEOS_API_SPECIFICATION.md` -- biomeOS API contract
+- `QUICK_START_FOR_BIOMEOS.md` -- 5-minute integration guide
 
 ---
 
 ## Contributing
 
-Follow TRUE PRIMAL principles:
-- Discover capabilities at runtime, never hardcode
-- Pure Rust, modern idioms (`async`/`await`, `Arc`/`RwLock`)
+- Discover capabilities at runtime, never hardcode primal names
+- Pure Rust, edition 2024, `async`/`await`, `Arc`/`RwLock`
 - Proper error handling (`Result<T>`, no `unwrap()` in production)
-- Concurrent testing (no sleeps, no serial except chaos tests)
-- `#![forbid(unsafe_code)]` unless FFI is unavoidable
-- Semantic naming (`domain.operation`)
-- JSON-RPC/tarpc first, HTTP fallback
+- `#![forbid(unsafe_code)]` unless hardware FFI is unavoidable
+- Semantic method naming (`domain.operation`)
+- JSON-RPC + tarpc first, HTTP fallback only
+- All files under 1,000 lines
+- SPDX headers on all source files
 
 ---
 
 ## License
 
-AGPL-3.0 -- See [LICENSE](./LICENSE) for full text.
+AGPL-3.0-only -- See [LICENSE](./LICENSE).

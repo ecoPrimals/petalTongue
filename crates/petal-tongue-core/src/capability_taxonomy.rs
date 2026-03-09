@@ -372,4 +372,65 @@ mod tests {
         let cap: CapabilityTaxonomy = serde_json::from_str(json).unwrap();
         assert_eq!(cap, CapabilityTaxonomy::UIRender);
     }
+
+    #[test]
+    fn test_input_capabilities() {
+        let caps = CapabilityTaxonomy::input_capabilities();
+        assert_eq!(caps.len(), 3);
+        assert!(caps.contains(&CapabilityTaxonomy::UIInputKeyboard));
+        assert!(caps.contains(&CapabilityTaxonomy::UIInputMouse));
+        assert!(caps.contains(&CapabilityTaxonomy::UIInputTouch));
+    }
+
+    #[test]
+    fn test_discovery_capabilities() {
+        let caps = CapabilityTaxonomy::discovery_capabilities();
+        assert_eq!(caps.len(), 2);
+        assert!(caps.contains(&CapabilityTaxonomy::DiscoveryMDNS));
+        assert!(caps.contains(&CapabilityTaxonomy::DiscoveryHTTP));
+    }
+
+    #[test]
+    fn test_storage_capabilities() {
+        let caps = CapabilityTaxonomy::storage_capabilities();
+        assert_eq!(caps.len(), 2);
+        assert!(caps.contains(&CapabilityTaxonomy::StoragePersistent));
+        assert!(caps.contains(&CapabilityTaxonomy::StorageCache));
+    }
+
+    #[test]
+    fn test_ipc_capabilities() {
+        let caps = CapabilityTaxonomy::ipc_capabilities();
+        assert_eq!(caps.len(), 3);
+        assert!(caps.contains(&CapabilityTaxonomy::IpcTarpc));
+        assert!(caps.contains(&CapabilityTaxonomy::IpcJsonRpc));
+        assert!(caps.contains(&CapabilityTaxonomy::IpcUnixSocket));
+    }
+
+    #[test]
+    fn test_from_str_all_variants() {
+        let cases = [
+            ("ui.render", CapabilityTaxonomy::UIRender),
+            ("ui.visualization", CapabilityTaxonomy::UIVisualization),
+            ("ui.framebuffer", CapabilityTaxonomy::UIFramebuffer),
+            ("ui.input.keyboard", CapabilityTaxonomy::UIInputKeyboard),
+            ("ui.input.touch", CapabilityTaxonomy::UIInputTouch),
+            ("discovery.mdns", CapabilityTaxonomy::DiscoveryMDNS),
+            ("storage.persistent", CapabilityTaxonomy::StoragePersistent),
+            ("ipc.tarpc", CapabilityTaxonomy::IpcTarpc),
+            ("ipc.unix-socket", CapabilityTaxonomy::IpcUnixSocket),
+        ];
+        for (s, expected) in cases {
+            let cap: CapabilityTaxonomy = s.parse().unwrap();
+            assert_eq!(cap, expected, "Failed for {s}");
+        }
+    }
+
+    #[test]
+    fn test_as_str_all_ui() {
+        for cap in CapabilityTaxonomy::ui_capabilities() {
+            let s = cap.as_str();
+            assert!(s.starts_with("ui."), "{s} should start with ui.");
+        }
+    }
 }

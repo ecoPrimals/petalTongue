@@ -84,6 +84,7 @@ struct EventStream {
 }
 
 /// WebSocket connection wrapper for biomeOS events
+#[allow(dead_code)]
 struct WebSocketConnection {
     /// WebSocket endpoint URL (e.g., "<ws://localhost:8080/events>")
     endpoint: String,
@@ -153,6 +154,7 @@ impl EventStream {
     }
 
     /// Check if connected
+    #[allow(dead_code)]
     fn is_connected(&self) -> bool {
         self.ws_connection
             .as_ref()
@@ -160,6 +162,7 @@ impl EventStream {
     }
 
     /// Disconnect from WebSocket
+    #[allow(dead_code)]
     fn disconnect(&mut self) {
         if self.ws_connection.is_some() {
             info!("🔌 Disconnecting from biomeOS event stream");
@@ -593,7 +596,7 @@ impl VisualizationDataProvider for BiomeOSProvider {
         Ok(primals
             .into_iter()
             .map(|p| PrimalInfo {
-                id: p.id.clone(),
+                id: p.id.clone().into(),
                 name: p.name.clone(),
                 primal_type: "device-managed".to_string(),
                 endpoint: format!(
@@ -614,7 +617,9 @@ impl VisualizationDataProvider for BiomeOSProvider {
                 endpoints: None,
                 metadata: None,
                 properties: Default::default(),
+                #[allow(deprecated)]
                 trust_level: None,
+                #[allow(deprecated)]
                 family_id: None,
             })
             .collect())
@@ -655,17 +660,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_biomeos_provider_discovery_none() {
-        // Without DEVICE_MANAGEMENT_ENDPOINT, should return None
-        unsafe {
-            // SAFETY: Test isolation - we control environment in tests
-            std::env::remove_var("DEVICE_MANAGEMENT_ENDPOINT");
-        }
+        use petal_tongue_core::test_fixtures::env_test_helpers;
 
-        let provider = BiomeOSProvider::discover().await.unwrap();
-        assert!(
-            provider.is_none(),
-            "Should return None when no provider found"
-        );
+        env_test_helpers::with_env_var_removed_async("DEVICE_MANAGEMENT_ENDPOINT", || async {
+            let provider = BiomeOSProvider::discover().await.unwrap();
+            assert!(
+                provider.is_none(),
+                "Should return None when no provider found"
+            );
+        })
+        .await;
     }
 
     #[tokio::test]
@@ -711,5 +715,56 @@ mod tests {
             }
             Err(_) => {} // Connection failure is expected without a live socket
         }
+    }
+
+    #[test]
+    fn test_biomeos_event_serialization() {
+        let event = BiomeOSEvent::DeviceAdded {
+            device: Device {
+                id: "dev1".to_string(),
+                name: "Test Device".to_string(),
+                device_type: DeviceType::GPU,
+                status: DeviceStatus::Online,
+                resource_usage: 0.5,
+                assigned_to: None,
+                metadata: serde_json::json!({}),
+            },
+        };
+        let json = serde_json::to_string(&event).unwrap();
+        assert!(json.contains("DeviceAdded"));
+        assert!(json.contains("dev1"));
+    }
+
+    #[test]
+    fn test_device_type_variants() {
+        assert_ne!(DeviceType::GPU, DeviceType::CPU);
+        assert_ne!(DeviceType::Storage, DeviceType::Network);
+    }
+
+    #[test]
+    fn test_device_status_variants() {
+        assert_ne!(DeviceStatus::Online, DeviceStatus::Offline);
+        assert_ne!(DeviceStatus::Busy, DeviceStatus::Error);
+    }
+
+    #[test]
+    fn test_health_variants() {
+        assert_ne!(Health::Healthy, Health::Degraded);
+        assert_ne!(Health::Degraded, Health::Offline);
+    }
+
+    #[test]
+    fn test_niche_template_structure() {
+        let template = NicheTemplate {
+            id: "niche1".to_string(),
+            name: "Test Niche".to_string(),
+            description: "A test niche".to_string(),
+            required_primals: vec!["songbird".to_string()],
+            optional_primals: vec!["toadstool".to_string()],
+            metadata: serde_json::json!({}),
+        };
+        assert_eq!(template.id, "niche1");
+        assert_eq!(template.required_primals.len(), 1);
+        assert_eq!(template.optional_primals.len(), 1);
     }
 }

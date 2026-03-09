@@ -93,7 +93,7 @@ impl TrafficView {
     pub fn set_primals(&mut self, primals: Vec<PrimalInfo>) {
         self.primals.clear();
         for primal in primals {
-            self.primals.insert(primal.id.clone(), primal);
+            self.primals.insert(primal.id.as_str().to_string(), primal);
         }
     }
 
@@ -101,6 +101,18 @@ impl TrafficView {
     pub fn clear(&mut self) {
         self.flows.clear();
         self.selected_flow = None;
+    }
+
+    /// Get number of flows (for testing)
+    #[must_use]
+    pub fn flow_count(&self) -> usize {
+        self.flows.len()
+    }
+
+    /// Get number of primals (for testing)
+    #[must_use]
+    pub fn primal_count(&self) -> usize {
+        self.primals.len()
     }
 
     /// Update traffic metrics from topology edges
@@ -111,12 +123,12 @@ impl TrafficView {
             // Create flow with default metrics
             // In production, these would come from telemetry
             let flow = TrafficFlow {
-                from: edge.from.clone(),
-                to: edge.to.clone(),
+                from: edge.from.as_str().to_string(),
+                to: edge.to.as_str().to_string(),
                 metrics: TrafficMetrics {
-                    bytes_per_second: 1000 + (edge.from.len() * 100) as u64,
-                    requests_per_second: 10.0 + (edge.to.len() as f64 * 0.5),
-                    avg_latency_ms: 5.0 + (edge.from.len() as f64 * 0.2),
+                    bytes_per_second: 1000 + (edge.from.as_str().len() * 100) as u64,
+                    requests_per_second: 10.0 + (edge.to.as_str().len() as f64 * 0.5),
+                    avg_latency_ms: 5.0 + (edge.from.as_str().len() as f64 * 0.2),
                     error_rate: 0.01, // 1% default
                 },
                 color: Self::calculate_flow_color(&TrafficMetrics::default(), ColorScheme::Volume),
@@ -564,5 +576,75 @@ mod tests {
 
         // Higher volume should have wider flow
         assert!(width2 > width1);
+    }
+
+    #[test]
+    fn test_update_from_topology() {
+        use petal_tongue_core::{PrimalId, TopologyEdge};
+
+        let mut view = TrafficView::new();
+        let edges = vec![
+            TopologyEdge {
+                from: PrimalId::from("a"),
+                to: PrimalId::from("b"),
+                edge_type: "connection".to_string(),
+                label: None,
+                capability: None,
+                metrics: None,
+            },
+            TopologyEdge {
+                from: PrimalId::from("b"),
+                to: PrimalId::from("c"),
+                edge_type: "connection".to_string(),
+                label: None,
+                capability: None,
+                metrics: None,
+            },
+        ];
+        view.update_from_topology(&edges);
+        assert_eq!(view.flow_count(), 2);
+    }
+
+    #[test]
+    fn test_set_primals() {
+        use petal_tongue_core::{PrimalHealthStatus, PrimalId, PrimalInfo};
+
+        let mut view = TrafficView::new();
+        let primals = vec![
+            PrimalInfo {
+                id: PrimalId::from("p1"),
+                name: "Primal 1".to_string(),
+                primal_type: "Test".to_string(),
+                endpoint: "http://test".to_string(),
+                capabilities: vec![],
+                health: PrimalHealthStatus::Healthy,
+                last_seen: 0,
+                endpoints: None,
+                metadata: None,
+                properties: Default::default(),
+                #[expect(deprecated)]
+                trust_level: None,
+                #[expect(deprecated)]
+                family_id: None,
+            },
+            PrimalInfo {
+                id: PrimalId::from("p2"),
+                name: "Primal 2".to_string(),
+                primal_type: "Test".to_string(),
+                endpoint: "http://test".to_string(),
+                capabilities: vec![],
+                health: PrimalHealthStatus::Healthy,
+                last_seen: 0,
+                endpoints: None,
+                metadata: None,
+                properties: Default::default(),
+                #[expect(deprecated)]
+                trust_level: None,
+                #[expect(deprecated)]
+                family_id: None,
+            },
+        ];
+        view.set_primals(primals);
+        assert_eq!(view.primal_count(), 2);
     }
 }

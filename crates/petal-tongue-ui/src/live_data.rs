@@ -334,4 +334,36 @@ mod tests {
         status.mark_disconnected();
         assert!(!status.connected);
     }
+
+    #[test]
+    fn test_live_badge_mark_updated() {
+        let mut badge = LiveBadge::new("test".to_string(), 1.0);
+        badge.mark_updated();
+        assert!(badge.indicator.is_live);
+    }
+
+    #[test]
+    fn test_live_graph_header_creation() {
+        let mut header = LiveGraphHeader::new(
+            "Test".to_string(),
+            "source".to_string(),
+            1.0,
+        );
+        header.mark_updated();
+        // Just verify no panic
+    }
+
+    #[test]
+    fn test_live_metric_without_unit() {
+        let mut metric = LiveMetric::new("Test".to_string(), "src".to_string(), 1.0);
+        metric.update("42".to_string(), None);
+        assert_eq!(metric.value, "42");
+        assert_eq!(metric.unit, None);
+    }
+
+    #[test]
+    fn test_connection_status_target() {
+        let status = ConnectionStatus::new("biomeOS:3000".to_string());
+        assert_eq!(status.target, "biomeOS:3000");
+    }
 }

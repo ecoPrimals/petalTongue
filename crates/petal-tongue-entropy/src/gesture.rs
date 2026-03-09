@@ -140,11 +140,7 @@ pub fn gesture_complexity(points: &[Point2D], timestamps: &[Duration]) -> f64 {
     };
 
     // Weighted combination
-    let complexity = (path_component * 0.3 + direction_component * 0.4 + speed_component * 0.3)
-        .min(1.0)
-        .max(0.0);
-
-    complexity
+    (path_component * 0.3 + direction_component * 0.4 + speed_component * 0.3).clamp(0.0, 1.0)
 }
 
 /// Gesture entropy capturer

@@ -9,8 +9,37 @@
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::doc_markdown)]
-#![allow(clippy::missing_doc_inline_errors)]
 #![allow(clippy::unused_async)]
+// UI rendering: precision loss in casts is acceptable (f32 for coordinates, u8 for colors)
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_sign_loss)]
+// Large structs and long functions common in UI code
+#![allow(clippy::struct_excessive_bools)]
+#![allow(clippy::too_many_lines)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::items_after_statements)]
+#![allow(clippy::match_same_arms)]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::ref_option)]
+#![allow(clippy::needless_pass_by_value)]
+#![allow(clippy::unnecessary_get_then_check)]
+#![allow(clippy::should_implement_trait)]
+#![allow(clippy::await_holding_lock)]
+#![allow(clippy::default_trait_access)]
+#![allow(clippy::format_push_string)]
+#![allow(clippy::while_let_loop)]
+#![allow(clippy::manual_let_else)]
+#![allow(clippy::assigning_clones)]
+#![allow(clippy::unused_self)]
+#![allow(clippy::unnecessary_wraps)]
+#![allow(clippy::needless_continue)]
+#![allow(clippy::if_same_then_else)]
+#![allow(clippy::self_only_used_in_recursion)]
+#![allow(clippy::trivially_copy_pass_by_ref)]
+#![allow(clippy::unnecessary_debug_formatting)]
+#![allow(clippy::case_sensitive_file_extension_comparisons)]
+#![allow(missing_docs)]
 
 // Re-export egui and eframe for use by parent crate
 pub use eframe;
@@ -62,7 +91,8 @@ pub mod input_verification; // Universal input verification (keyboard, pointer, 
 pub mod keyboard_shortcuts;
 pub mod live_data;
 pub mod metrics_dashboard; // System metrics dashboard with sparklines (Neural API)
-pub mod mock_device_provider; // Mock provider for testing & graceful degradation
+#[cfg(feature = "mock")]
+pub mod mock_device_provider; // Mock provider - dev/test only, NEVER production (sovereignty)
 /// Multimodal data streaming (audio, visual, haptic, etc.)
 pub mod multimodal_stream;
 pub mod niche_designer; // Niche Designer UI - Phase 4

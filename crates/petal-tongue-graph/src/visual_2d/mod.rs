@@ -13,11 +13,13 @@ use petal_tongue_core::GraphEngine;
 use petal_tongue_core::graph_engine::Position;
 use std::sync::{Arc, RwLock};
 
+use petal_tongue_core::PrimalId;
+
 /// Edge being drafted (during drag-to-connect)
 #[derive(Debug, Clone)]
 pub(crate) struct EdgeDraft {
     /// Source node ID
-    pub from: String,
+    pub from: PrimalId,
     /// Current cursor position
     pub current_pos: Pos2,
 }
@@ -31,7 +33,7 @@ pub struct Visual2DRenderer {
     /// Zoom level (1.0 = normal, 2.0 = 2x zoom)
     pub(crate) zoom: f32,
     /// Selected node ID
-    pub(crate) selected_node: Option<String>,
+    pub(crate) selected_node: Option<PrimalId>,
     /// Is user currently dragging
     pub(crate) is_dragging: bool,
     /// Last mouse position (for drag delta)
@@ -45,7 +47,7 @@ pub struct Visual2DRenderer {
     /// Interactive mode enabled (allows creating/editing nodes)
     pub(crate) interactive_mode: bool,
     /// Currently dragging a node (for moving)
-    pub(crate) dragging_node: Option<String>,
+    pub(crate) dragging_node: Option<PrimalId>,
     /// Edge being drawn (for connecting nodes)
     pub(crate) drawing_edge: Option<EdgeDraft>,
 }
@@ -129,7 +131,7 @@ impl Visual2DRenderer {
         // Render edges first (so they appear behind nodes)
         for edge in graph.edges() {
             if let (Some(from_node), Some(to_node)) =
-                (graph.get_node(&edge.from), graph.get_node(&edge.to))
+                (graph.get_node(edge.from.as_str()), graph.get_node(edge.to.as_str()))
             {
                 let from_pos = self.world_to_screen(from_node.position, screen_center);
                 let to_pos = self.world_to_screen(to_node.position, screen_center);
@@ -151,7 +153,10 @@ impl Visual2DRenderer {
                 continue;
             }
 
-            let is_selected = self.selected_node.as_ref() == Some(&node.info.id);
+            let is_selected = self
+                .selected_node
+                .as_ref()
+                .is_some_and(|id| id.as_str() == node.info.id.as_str());
 
             nodes::draw_node(&painter, node, screen_pos, is_selected, self.zoom);
         }
@@ -167,7 +172,7 @@ impl Visual2DRenderer {
 
         // Draw edge being drafted (if in interactive mode)
         if let Some(ref edge_draft) = self.drawing_edge {
-            if let Some(source_node) = graph.get_node(&edge_draft.from) {
+            if let Some(source_node) = graph.get_node(edge_draft.from.as_str()) {
                 painter.line_segment(
                     [
                         self.world_to_screen(source_node.position, screen_center),
@@ -296,7 +301,7 @@ impl Visual2DRenderer {
                     ui.add_space(4.0);
                     ui.label(egui::RichText::new("Selected:").weak());
                     ui.label(
-                        egui::RichText::new(selected_id)
+                        egui::RichText::new(selected_id.as_str())
                             .color(egui::Color32::from_rgb(255, 230, 150)),
                     );
                 }
@@ -311,12 +316,12 @@ impl Visual2DRenderer {
 
     /// Get selected node ID
     pub fn selected_node(&self) -> Option<&str> {
-        self.selected_node.as_deref()
+        self.selected_node.as_ref().map(PrimalId::as_str)
     }
 
     /// Set selected node
     pub fn set_selected_node(&mut self, node_id: Option<String>) {
-        self.selected_node = node_id;
+        self.selected_node = node_id.map(PrimalId::from);
     }
 }
 
@@ -341,8 +346,8 @@ mod tests {
         graph.add_node(node2);
 
         graph.add_edge(TopologyEdge {
-            from: "node1".to_string(),
-            to: "node2".to_string(),
+            from: "node1".into(),
+            to: "node2".into(),
             edge_type: "test".to_string(),
             label: None,
             capability: None,
@@ -578,8 +583,8 @@ mod tests {
 
         for i in 0..9 {
             graph.add_edge(TopologyEdge {
-                from: format!("node{i}"),
-                to: format!("node{}", i + 1),
+                from: format!("node{i}").into(),
+                to: format!("node{}", i + 1).into(),
                 edge_type: "test".to_string(),
                 label: None,
                 capability: None,
@@ -674,24 +679,24 @@ mod tests {
         }
 
         graph.add_edge(TopologyEdge {
-            from: "node1".to_string(),
-            to: "node2".to_string(),
+            from: "node1".into(),
+            to: "node2".into(),
             edge_type: "connection".to_string(),
             label: Some("Edge 1-2".to_string()),
             capability: None,
             metrics: None,
         });
         graph.add_edge(TopologyEdge {
-            from: "node2".to_string(),
-            to: "node3".to_string(),
+            from: "node2".into(),
+            to: "node3".into(),
             edge_type: "connection".to_string(),
             label: Some("Edge 2-3".to_string()),
             capability: None,
             metrics: None,
         });
         graph.add_edge(TopologyEdge {
-            from: "node1".to_string(),
-            to: "node3".to_string(),
+            from: "node1".into(),
+            to: "node3".into(),
             edge_type: "connection".to_string(),
             label: Some("Edge 1-3".to_string()),
             capability: None,

@@ -4,7 +4,7 @@
 //! Tests verify the core graph structure, layout algorithms, and node positioning.
 
 use petal_tongue_core::{
-    GraphEngine, PrimalHealthStatus, PrimalInfo, TopologyEdge, graph_engine::Position,
+    GraphEngine, PrimalHealthStatus, PrimalId, PrimalInfo, TopologyEdge, graph_engine::Position,
 };
 
 #[test]
@@ -54,7 +54,7 @@ fn test_add_node() {
 
     graph.add_node(primal.clone());
     assert_eq!(graph.nodes().len(), 1);
-    assert!(graph.get_node(&primal.id).is_some());
+    assert!(graph.get_node(primal.id.as_str()).is_some());
 }
 
 #[test]
@@ -76,10 +76,10 @@ fn test_remove_node() {
     graph.add_node(primal.clone());
     assert_eq!(graph.nodes().len(), 1);
 
-    let removed = graph.remove_node(&primal.id);
+    let removed = graph.remove_node(primal.id.as_str());
     assert!(removed);
     assert_eq!(graph.nodes().len(), 0);
-    assert!(graph.get_node(&primal.id).is_none());
+    assert!(graph.get_node(primal.id.as_str()).is_none());
 }
 
 #[test]
@@ -109,8 +109,8 @@ fn test_add_edge_without_nodes() {
     let mut graph = GraphEngine::new();
 
     let edge = TopologyEdge {
-        from: "non-existent-1".to_string(),
-        to: "non-existent-2".to_string(),
+        from: PrimalId::from("non-existent-1"),
+        to: PrimalId::from("non-existent-2"),
         edge_type: "connection".to_string(),
         label: None,
         capability: None,
@@ -143,7 +143,7 @@ fn test_remove_edge() {
     graph.add_edge(edge.clone());
     assert_eq!(graph.edges().len(), 1);
 
-    let removed = graph.remove_edge(&edge.from, &edge.to);
+    let removed = graph.remove_edge(edge.from.as_str(), edge.to.as_str());
     assert!(removed);
     assert_eq!(graph.edges().len(), 0);
 }
@@ -179,7 +179,7 @@ fn test_get_node() {
 
     graph.add_node(primal.clone());
 
-    let retrieved = graph.get_node(&primal.id);
+    let retrieved = graph.get_node(primal.id.as_str());
     assert!(retrieved.is_some());
     assert_eq!(retrieved.unwrap().info.id, primal.id);
 }
@@ -220,7 +220,7 @@ fn test_neighbors() {
         metrics: None,
     });
 
-    let neighbors = graph.neighbors(&primal1.id);
+    let neighbors = graph.neighbors(primal1.id.as_str());
     assert_eq!(neighbors.len(), 2);
 
     let neighbor_ids: Vec<_> = neighbors.iter().map(|n| &n.info.id).collect();
@@ -249,8 +249,8 @@ fn test_layout_algorithm_force_directed() {
     graph.layout(50);
 
     // Verify nodes have positions after layout
-    let node1 = graph.get_node(&primal1.id);
-    let node2 = graph.get_node(&primal2.id);
+    let node1 = graph.get_node(primal1.id.as_str());
+    let node2 = graph.get_node(primal2.id.as_str());
     assert!(node1.is_some(), "Node 1 should exist after layout");
     assert!(node2.is_some(), "Node 2 should exist after layout");
 }
@@ -305,7 +305,7 @@ fn test_layout_algorithm_hierarchical() {
     graph.layout(50);
 
     // Verify node exists
-    assert!(graph.get_node(&primal1.id).is_some());
+    assert!(graph.get_node(primal1.id.as_str()).is_some());
 }
 
 #[test]
@@ -316,11 +316,11 @@ fn test_set_custom_position() {
     graph.add_node(primal.clone());
 
     let custom_pos = Position::new_2d(100.0, 200.0);
-    if let Some(node) = graph.get_node_mut(&primal.id) {
+    if let Some(node) = graph.get_node_mut(primal.id.as_str()) {
         node.position = custom_pos;
     }
 
-    let retrieved_node = graph.get_node(&primal.id);
+    let retrieved_node = graph.get_node(primal.id.as_str());
     assert!(retrieved_node.is_some());
     let pos = retrieved_node.unwrap().position;
     assert_eq!(pos.x, 100.0);
@@ -371,11 +371,11 @@ fn test_update_node() {
     graph.add_node(primal.clone());
 
     // Update the primal's health
-    if let Some(node) = graph.get_node_mut(&primal.id) {
+    if let Some(node) = graph.get_node_mut(primal.id.as_str()) {
         node.info.health = PrimalHealthStatus::Critical;
     }
 
-    let retrieved = graph.get_node(&primal.id).unwrap();
+    let retrieved = graph.get_node(primal.id.as_str()).unwrap();
     assert_eq!(retrieved.info.health, PrimalHealthStatus::Critical);
 }
 
@@ -410,7 +410,7 @@ fn test_complex_topology() {
     assert_eq!(graph.nodes().len(), 6);
     assert_eq!(graph.edges().len(), 5);
 
-    let center_neighbors = graph.neighbors(&center.id);
+    let center_neighbors = graph.neighbors(center.id.as_str());
     assert_eq!(center_neighbors.len(), 5);
 }
 

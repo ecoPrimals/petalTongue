@@ -258,16 +258,16 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
 
     // Add some connections
     g.add_edge(TopologyEdge {
-        from: "biomeos-1".to_string(),
-        to: "petaltongue-headless".to_string(),
+        from: "biomeos-1".into(),
+        to: "petaltongue-headless".into(),
         edge_type: "monitors".to_string(),
         label: Some("Health Monitoring".to_string()),
         capability: None,
         metrics: None,
     });
     g.add_edge(TopologyEdge {
-        from: "songbird-1".to_string(),
-        to: "petaltongue-headless".to_string(),
+        from: "songbird-1".into(),
+        to: "petaltongue-headless".into(),
         edge_type: "sends_data".to_string(),
         label: Some("Encrypted Messages".to_string()),
         capability: None,

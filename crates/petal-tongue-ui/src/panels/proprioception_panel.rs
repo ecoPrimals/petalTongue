@@ -177,26 +177,26 @@ impl PanelInstance for ProprioceptionPanel {
             if proprio.self_awareness.has_security {
                 ui.colored_label(
                     egui::Color32::from_rgb(34, 197, 94),
-                    "  ✅ Security (BearDog)",
+                    "  ✅ Security (Entropy Source)",
                 );
             } else {
-                ui.colored_label(egui::Color32::GRAY, "  ❌ Security (BearDog)");
+                ui.colored_label(egui::Color32::GRAY, "  ❌ Security (Entropy Source)");
             }
             if proprio.self_awareness.has_discovery {
                 ui.colored_label(
                     egui::Color32::from_rgb(34, 197, 94),
-                    "  ✅ Discovery (Songbird)",
+                    "  ✅ Discovery (Discovery Service)",
                 );
             } else {
-                ui.colored_label(egui::Color32::GRAY, "  ❌ Discovery (Songbird)");
+                ui.colored_label(egui::Color32::GRAY, "  ❌ Discovery (Discovery Service)");
             }
             if proprio.self_awareness.has_compute {
                 ui.colored_label(
                     egui::Color32::from_rgb(34, 197, 94),
-                    "  ✅ Compute (Toadstool)",
+                    "  ✅ Compute (Compute Backend)",
                 );
             } else {
-                ui.colored_label(egui::Color32::GRAY, "  ❌ Compute (Toadstool)");
+                ui.colored_label(egui::Color32::GRAY, "  ❌ Compute (Compute Backend)");
             }
 
             ui.add_space(4.0);

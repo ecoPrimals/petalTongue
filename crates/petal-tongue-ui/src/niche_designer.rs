@@ -157,7 +157,7 @@ impl NicheDesigner {
                 .as_ref()
                 .map_or_else(|| "Select a template...".to_string(), |t| t.name.clone());
 
-            egui::ComboBox::from_id_source("template_selector")
+            egui::ComboBox::from_id_salt("template_selector")
                 .selected_text(selected_name)
                 .show_ui(ui, |ui| {
                     for template in &self.templates.clone() {
