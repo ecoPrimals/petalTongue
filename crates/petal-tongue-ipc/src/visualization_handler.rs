@@ -10,6 +10,29 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tracing::warn;
 
+/// UI configuration preset pushed from springs alongside data.
+///
+/// Allows springs to drive petalTongue panel visibility, mode, and zoom
+/// without compile-time coupling (healthSpring V9 SAME DAVE motor channel).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct UiConfig {
+    /// Panel visibility (e.g., "left_sidebar", "audio_panel", "trust_dashboard")
+    #[serde(default)]
+    pub show_panels: HashMap<String, bool>,
+    /// Initial mode (e.g., "clinical", "research", "monitoring")
+    #[serde(default)]
+    pub mode: Option<String>,
+    /// Zoom preset (e.g., "fit", "1.0", "2.0")
+    #[serde(default)]
+    pub initial_zoom: Option<String>,
+    /// Whether to show the awakening sequence
+    #[serde(default)]
+    pub awakening_enabled: Option<bool>,
+    /// Theme override (e.g., "clinical-dark", "ecology-light")
+    #[serde(default)]
+    pub theme: Option<String>,
+}
+
 /// Request payload for visualization.render
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VisualizationRenderRequest {
@@ -25,6 +48,9 @@ pub struct VisualizationRenderRequest {
     /// Domain hint for theme selection (e.g., "health", "physics", "ecology")
     #[serde(default)]
     pub domain: Option<String>,
+    /// Optional UI configuration preset from the pushing spring
+    #[serde(default)]
+    pub ui_config: Option<UiConfig>,
 }
 
 /// Response for visualization.render
@@ -93,19 +119,18 @@ pub struct VisualizationState {
 
 /// A single visualization session with its bindings and metadata
 pub struct RenderSession {
-    /// Human-readable title for the visualization (for RPC consumers / renderers)
-    #[expect(dead_code)]
-    pub(crate) title: String,
+    /// Human-readable title for the visualization
+    pub title: String,
     /// Data bindings to render
-    pub(crate) bindings: Vec<DataBinding>,
-    /// Optional threshold ranges for status coloring (for RPC consumers / renderers)
-    #[expect(dead_code)]
-    pub(crate) thresholds: Vec<ThresholdRange>,
-    /// Domain hint for theme selection (for RPC consumers / renderers)
-    #[expect(dead_code)]
-    pub(crate) domain: Option<String>,
+    pub bindings: Vec<DataBinding>,
+    /// Optional threshold ranges for status coloring
+    pub thresholds: Vec<ThresholdRange>,
+    /// Domain hint for theme selection
+    pub domain: Option<String>,
+    /// UI configuration preset from the pushing spring
+    pub ui_config: Option<UiConfig>,
     /// Last update timestamp
-    updated_at: std::time::Instant,
+    pub updated_at: std::time::Instant,
 }
 
 impl VisualizationState {
@@ -130,6 +155,7 @@ impl VisualizationState {
                 bindings: req.bindings,
                 thresholds: req.thresholds,
                 domain: req.domain,
+                ui_config: req.ui_config,
                 updated_at: std::time::Instant::now(),
             },
         );
