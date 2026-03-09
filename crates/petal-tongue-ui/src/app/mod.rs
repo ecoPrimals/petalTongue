@@ -121,6 +121,8 @@ pub struct PetalTongueApp {
     rendering_awareness: Arc<RwLock<RenderingAwareness>>,
     /// Sensor registry - discovered input peripherals
     sensor_registry: Arc<RwLock<SensorRegistry>>,
+    /// Channel registry - local self-awareness of signal channels (SAME DAVE)
+    channel_registry: Arc<RwLock<petal_tongue_core::channel::ChannelRegistry>>,
     /// Frame counter for tracking motor commands
     frame_count: u64,
     /// Last display verification time (Phase 4)
@@ -235,6 +237,7 @@ impl PetalTongueApp {
 
     /// Apply a single motor command to UI state (efferent signal → effector).
     fn apply_motor_command(&mut self, cmd: MotorCommand) {
+        let cmd_description = format!("{cmd:?}");
         match cmd {
             MotorCommand::RenderFrame { .. }
             | MotorCommand::UpdateDisplay
@@ -290,6 +293,7 @@ impl PetalTongueApp {
             }
             MotorCommand::SetMode { ref mode } => {
                 tracing::info!("Motor: SetMode({mode})");
+                self.neural_proprioception_panel.set_current_mode(mode);
                 let commands = crate::mode_presets::commands_for_mode(mode);
                 for sub_cmd in commands {
                     self.apply_motor_command(sub_cmd);
@@ -305,6 +309,8 @@ impl PetalTongueApp {
                 tracing::info!("Motor: LoadScenario({path})");
             }
         }
+        self.neural_proprioception_panel
+            .record_motor_command(&cmd_description);
     }
 }
 
@@ -322,6 +328,25 @@ impl eframe::App for PetalTongueApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         sensory::process_sensory_feedback(self, ctx);
         self.drain_motor_commands();
+
+        if let Ok(mut reg) = self.channel_registry.write() {
+            if ctx.input(|i| !i.events.is_empty()) {
+                if let Some(ch) = reg.get_mut("keyboard-afferent") {
+                    ch.record_signal_in();
+                    ch.record_signal_out();
+                }
+            }
+            if ctx.input(|i| i.pointer.any_click() || i.pointer.any_down()) {
+                if let Some(ch) = reg.get_mut("pointer-afferent") {
+                    ch.record_signal_in();
+                    ch.record_signal_out();
+                }
+            }
+            if let Some(ch) = reg.get_mut("visual-efferent") {
+                ch.record_signal_in();
+                ch.record_signal_out();
+            }
+        }
 
         if self.awakening_overlay.is_active() {
             let delta_time = ctx.input(|i| i.stable_dt);
@@ -531,6 +556,21 @@ impl eframe::App for PetalTongueApp {
         }
 
         if self.show_neural_proprioception {
+            if let Ok(reg) = self.channel_registry.read() {
+                let snapshots = reg.snapshots();
+                let afferent: Vec<_> = snapshots
+                    .iter()
+                    .filter(|s| s.direction == petal_tongue_core::ChannelDirection::Afferent)
+                    .cloned()
+                    .collect();
+                let efferent: Vec<_> = snapshots
+                    .iter()
+                    .filter(|s| s.direction == petal_tongue_core::ChannelDirection::Efferent)
+                    .cloned()
+                    .collect();
+                self.neural_proprioception_panel
+                    .merge_local_channels(afferent, efferent);
+            }
             egui::Window::new("🧠 Neural API Proprioception")
                 .default_width(500.0)
                 .default_height(600.0)
@@ -544,8 +584,7 @@ impl eframe::App for PetalTongueApp {
                         });
                         self.neural_proprioception_panel.render(ui);
                     } else {
-                        ui.label("❌ Neural API not available");
-                        ui.label("Start biomeOS nucleus to enable proprioception data.");
+                        self.neural_proprioception_panel.render(ui);
                     }
                 });
         }

@@ -11,7 +11,7 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 1,816 passing, 0 failures, 3 ignored |
+| Tests | 1,896 passing, 0 failures, 3 ignored |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings, pedantic enabled (`clippy::pedantic` via workspace lints) |
 | Rustdoc | Clean (`RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps`) |
@@ -19,7 +19,7 @@
 | Unsafe | `#![forbid(unsafe_code)]` workspace-wide, zero C deps, zero `unsafe` blocks |
 | Files | All production files under 650 lines |
 | License | AGPL-3.0-only, SPDX on all source and config files |
-| Edition | 2024 (all 15 crates) |
+| Edition | 2024 (all 16 crates) |
 | External C deps | None (`ring` eliminated, `libc`/`nix`/`atty` removed, using `rustix`) |
 | ecoBin | Compliant (no ring, aws-lc-sys, openssl-sys, native-tls, zstd-sys) |
 | Coverage | 63% line / 67% function (llvm-cov, workspace) |
@@ -57,19 +57,22 @@
 
 ## Known Debt
 
-### Stubs and TODOs (~35 items)
+### Stubs and TODOs (~47 items)
 
 Major incomplete work (delegated to other primals or future phases):
 - mDNS full DNS packet building (delegate to songbird)
 - HTTPS client connection (delegate to beardog/songbird via IPC)
-- Video entropy modality
+- Video/Visual/Gesture entropy modalities (phases 3-6)
 - WebSocket subscription for biomeOS events
 - Canvas rendering with tiny-skia
 - Windows audio direct access
+- Audio socket/software backend completion (ToadStool integration)
+- CSV export for timeline view
+- TUI force-directed layout
 
 ### Test Coverage Gap
 
-Current: 63% line coverage, 67% function coverage (1,816 tests).
+Current: 63% line coverage, 67% function coverage (1,896 tests).
 Target: 90%.
 
 Well-covered areas (>80%):
@@ -109,20 +112,33 @@ screenshot-based testing (future infrastructure).
 
 ---
 
-## Grammar of Graphics Evolution (Design Phase)
+## Scene Engine (petal-tongue-scene)
 
-Three new specs define the next evolution:
+The `petal-tongue-scene` crate implements the declarative visualization layer
+defined in specs. This is the bridge between grammar expressions and rendered
+output.
 
-1. `specs/GRAMMAR_OF_GRAPHICS_ARCHITECTURE.md` -- Composable type-safe grammar
-2. `specs/UNIVERSAL_VISUALIZATION_PIPELINE.md` -- End-to-end pipeline + barraCuda
-3. `specs/TUFTE_CONSTRAINT_SYSTEM.md` -- Machine-checked visualization quality
+| Module | Purpose |
+|--------|---------|
+| `primitive.rs` | Atomic rendering primitives (Point, Line, Rect, Text, Polygon, Arc, BezierPath, Mesh) |
+| `transform.rs` | 2D affine and 3D transforms |
+| `scene_graph.rs` | Hierarchical scene graph (SceneNode, flatten, find_by_data_id) |
+| `animation.rs` | Easing functions, AnimationTarget, Sequence (Sequential/Parallel/Group) |
+| `math_objects.rs` | Manim-style math objects (NumberLine, Axes, FunctionPlot, ParametricCurve, VectorField) |
+| `grammar.rs` | Grammar of Graphics expression types (GrammarExpr, VariableBinding, scales, facets) |
+| `tufte.rs` | Machine-checkable Tufte constraints (Data-Ink Ratio, Lie Factor, Chartjunk, Accessibility) |
+| `compiler.rs` | Grammar compiler (GrammarExpr + data to SceneGraph, with constraint evaluation) |
+| `modality.rs` | Modality compilers (SvgCompiler, AudioCompiler, DescriptionCompiler) |
+| `physics.rs` | Physics bridge (PhysicsWorld, IPC serialization for barraCuda N-body/molecular dynamics) |
 
-Phase 1 (foundation): `petal-tongue-grammar` crate with core traits.
-See specs for full evolution path.
+Related specs:
+- `specs/GRAMMAR_OF_GRAPHICS_ARCHITECTURE.md` -- Composable type-safe grammar
+- `specs/UNIVERSAL_VISUALIZATION_PIPELINE.md` -- End-to-end pipeline + barraCuda
+- `specs/TUFTE_CONSTRAINT_SYSTEM.md` -- Machine-checked visualization quality
 
 ---
 
-## Crate Map (15 crates)
+## Crate Map (16 crates)
 
 ```
 petaltongue (workspace root -- UniBin entry point)
@@ -132,6 +148,7 @@ petaltongue (workspace root -- UniBin entry point)
 ├── petal-tongue-tui          Terminal UI (ratatui)
 ├── petal-tongue-ipc          Unix socket IPC, JSON-RPC server, visualization handler
 ├── petal-tongue-discovery    Provider discovery (JSON-RPC, mDNS, Unix socket)
+├── petal-tongue-scene        Scene graph, animation, grammar compiler, Tufte constraints
 ├── petal-tongue-entropy      Human entropy capture
 ├── petal-tongue-animation    Visual animations
 ├── petal-tongue-adapters     EcoPrimal adapter traits

@@ -1,113 +1,68 @@
-# 🚀 Quick Start - petalTongue
+# Quick Start -- petalTongue
 
-**Last Updated**: December 25, 2025  
-**Status**: Production Ready (95/100)
-
----
-
-## ⚡ **Fastest Start**
-
-```bash
-# Run petalTongue UI
-cargo run --release -p petal-tongue-ui
-
-# Run BingoCube demo
-cd bingoCube/demos && cargo run --release
-```
+**Last Updated**: March 9, 2026
+**Version**: 1.4.3
 
 ---
 
-## 📦 **Installation**
+## Build & Run
 
-### Prerequisites:
-- Rust 1.75+ (2021 edition or later)
-- Cargo
-- Linux/macOS/Windows
-
-### Build:
 ```bash
-# Clone (if needed)
-cd /path/to/petalTongue
+cargo build --release
 
-# Build everything
-cargo build --all --release
-
-# Test everything
-cargo test --all
+petaltongue ui          # Desktop GUI (egui)
+petaltongue tui         # Terminal UI (ratatui)
+petaltongue web         # Web server (axum)
+petaltongue headless    # Headless rendering (SVG/PNG/JSON)
+petaltongue status      # System status
 ```
+
+## Development
+
+```bash
+cargo test --workspace                          # 1,896 tests
+cargo clippy --workspace -- -D warnings         # Lint (pedantic, clean)
+cargo fmt --check                               # Format check (clean)
+cargo doc --workspace --no-deps                 # Docs (clean)
+```
+
+## With Scenarios
+
+```bash
+petaltongue ui --scenario sandbox/scenarios/paint-simple.json
+petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
+```
+
+## Configuration
+
+Priority: Environment > Config file > Defaults.
+
+```bash
+export PETALTONGUE_WEB_PORT=8080
+export BIOMEOS_NEURAL_API_SOCKET=/run/user/$(id -u)/biomeos-neural-api.sock
+```
+
+See [ENV_VARS.md](../../ENV_VARS.md) for full reference.
 
 ---
 
-## 🎯 **Common Commands**
-
-### Run petalTongue:
-```bash
-cargo run --release -p petal-tongue-ui
-
-# With BiomeOS integration
-BIOMEOS_URL=http://localhost:3000 cargo run --release -p petal-tongue-ui
-```
-
-### Run BingoCube:
-```bash
-# Interactive demo
-cd bingoCube/demos
-cargo run --release
-
-# Run tests
-cd bingoCube
-cargo test --all
-```
-
-### Development:
-```bash
-# Format code
-cargo fmt --all
-
-# Run linter
-cargo clippy --all
-
-# Check formatting
-cargo fmt --all --check
-
-# Build documentation
-cargo doc --no-deps --open
-```
-
----
-
-## 📚 **Next Steps**
-
-- **New Users**: Read `README.md` for overview
-- **Developers**: See `START_HERE.md` for navigation
-- **Status**: Check `STATUS.md` for current metrics
-- **Architecture**: Review `specs/` directory
-
----
-
-## 🗂️ **Project Structure**
+## Project Structure
 
 ```
 petalTongue/
-├── crates/              # petalTongue source code
-├── bingoCube/           # Standalone BingoCube tool
-├── showcase/            # Demonstrations
-├── specs/               # Technical specifications
-└── docs at root         # You are here!
+├── crates/          # 16 Rust crates
+├── specs/           # Architectural specifications
+├── sandbox/         # Scenarios, scripts, mock server
+├── archive/         # Fossil record (archived code, docs)
+└── docs/            # Supplementary documentation
 ```
+
+## Key Documentation
+
+- [README.md](../../README.md) -- Project overview
+- [START_HERE.md](../../START_HERE.md) -- Development guide
+- [PROJECT_STATUS.md](../../PROJECT_STATUS.md) -- Current metrics
 
 ---
 
-## ✅ **Verify Installation**
-
-```bash
-# Should all pass:
-cargo build --all --release   # ✅ ~2.61s
-cargo test --all               # ✅ 53 tests
-cd bingoCube && cargo test     # ✅ 9 tests
-```
-
----
-
-**Need help?** See `START_HERE.md` for role-based navigation.
-
+**License**: AGPL-3.0-only

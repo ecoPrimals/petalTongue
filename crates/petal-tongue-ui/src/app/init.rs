@@ -34,6 +34,7 @@ use petal_tongue_animation::AnimationEngine;
 use petal_tongue_api::BiomeOSClient;
 use petal_tongue_core::{
     CapabilityDetector, GraphEngine, LayoutAlgorithm, Modality,
+    channel::standard_channels,
     constants::{self, APP_DIR_NAME},
 };
 use petal_tongue_discovery::{
@@ -125,6 +126,8 @@ pub(super) fn create_app(
 
     let (rendering_awareness, sensor_registry) = initialize_central_nervous_system(&runtime);
 
+    let channel_registry = Arc::new(RwLock::new(standard_channels()));
+
     let (motor_tx, motor_rx) = mpsc::channel();
 
     let mut app = PetalTongueApp {
@@ -168,6 +171,7 @@ pub(super) fn create_app(
         instance_id: None,
         rendering_awareness,
         sensor_registry,
+        channel_registry,
         frame_count: 0,
         last_display_verification: Instant::now(),
         proprioception: initialize_standard_proprioception(),

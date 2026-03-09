@@ -218,6 +218,84 @@ impl Default for VisualizationState {
     }
 }
 
+/// Poll-based registry for interaction event subscribers.
+///
+/// Springs call `interaction.subscribe` to register, then `interaction.poll`
+/// to drain queued interaction events.
+#[derive(Default)]
+pub struct InteractionSubscriberRegistry {
+    subscribers: HashMap<String, InteractionSubscriber>,
+}
+
+struct InteractionSubscriber {
+    queue: Vec<InteractionEventNotification>,
+    #[expect(dead_code)]
+    subscribed_at: std::time::Instant,
+}
+
+/// A queued interaction event ready for IPC delivery.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InteractionEventNotification {
+    /// Semantic event type (e.g. "select", "inspect", "navigate").
+    pub event_type: String,
+    /// Resolved data-space target identifiers.
+    pub targets: Vec<String>,
+    /// ISO 8601 timestamp of the event.
+    pub timestamp: String,
+    /// Perspective that originated the event, if any.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub perspective_id: Option<u64>,
+}
+
+impl InteractionSubscriberRegistry {
+    /// Create a new empty registry.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Register a subscriber. Returns `true` if newly registered.
+    pub fn subscribe(&mut self, subscriber_id: &str) -> bool {
+        use std::collections::hash_map::Entry;
+        match self.subscribers.entry(subscriber_id.to_string()) {
+            Entry::Occupied(_) => false,
+            Entry::Vacant(e) => {
+                e.insert(InteractionSubscriber {
+                    queue: Vec::new(),
+                    subscribed_at: std::time::Instant::now(),
+                });
+                true
+            }
+        }
+    }
+
+    /// Remove a subscriber. Returns `true` if the subscriber existed.
+    pub fn unsubscribe(&mut self, subscriber_id: &str) -> bool {
+        self.subscribers.remove(subscriber_id).is_some()
+    }
+
+    /// Push an event to all active subscribers.
+    pub fn broadcast(&mut self, event: InteractionEventNotification) {
+        for sub in self.subscribers.values_mut() {
+            sub.queue.push(event.clone());
+        }
+    }
+
+    /// Drain queued events for a subscriber, returning them.
+    pub fn poll(&mut self, subscriber_id: &str) -> Vec<InteractionEventNotification> {
+        self.subscribers
+            .get_mut(subscriber_id)
+            .map(|sub| std::mem::take(&mut sub.queue))
+            .unwrap_or_default()
+    }
+
+    /// Number of active subscribers.
+    #[must_use]
+    pub fn subscriber_count(&self) -> usize {
+        self.subscribers.len()
+    }
+}
+
 /// Extract the `id` field from any `DataBinding` variant
 #[must_use]
 pub fn binding_id(binding: &DataBinding) -> &str {

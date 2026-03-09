@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Proprioception Panel - SAME DAVE Self-Awareness Visualization
 //!
+//! SAME DAVE is neuroanatomy, not AI — the channel model maps specialized
+//! unidirectional pathways analogous to the spinal cord's dorsal/ventral roots.
+//! Sensory Afferent pathways carry input TO the proprioception core. Motor
+//! Efferent pathways carry commands FROM the core to effectors. Classification
+//! nodes along each channel act like nodes of Ranvier, enabling saltatory
+//! signal routing.
+//!
 //! Displays Neural API proprioception data (system self-awareness) in an egui panel.
 //! Updates automatically every 5 seconds with fresh data from Neural API.
 
@@ -12,6 +19,12 @@ use petal_tongue_core::{
 use petal_tongue_discovery::NeuralApiProvider;
 use std::time::{Duration, Instant};
 use tracing::{debug, warn};
+
+#[derive(Debug, Clone)]
+pub struct MotorHistoryEntry {
+    pub command: String,
+    pub timestamp: Instant,
+}
 
 /// Auto-refresh interval for proprioception data (5 seconds)
 const REFRESH_INTERVAL: Duration = Duration::from_secs(5);
@@ -26,6 +39,10 @@ pub struct ProprioceptionPanel {
 
     /// Whether data is currently being fetched
     fetching: bool,
+
+    pub(crate) motor_history: Vec<MotorHistoryEntry>,
+    pub(crate) current_mode: String,
+    pub(crate) session_domain: Option<String>,
 }
 
 impl ProprioceptionPanel {
@@ -38,6 +55,9 @@ impl ProprioceptionPanel {
                 .checked_sub(REFRESH_INTERVAL)
                 .unwrap_or_else(Instant::now),
             fetching: false,
+            motor_history: Vec::new(),
+            current_mode: "default".to_string(),
+            session_domain: None,
         }
     }
 
@@ -72,6 +92,61 @@ impl ProprioceptionPanel {
         self.fetching = false;
     }
 
+    /// Merge local channel snapshots into proprioception data.
+    pub fn merge_local_channels(
+        &mut self,
+        afferent: impl IntoIterator<Item = ChannelSnapshot>,
+        efferent: impl IntoIterator<Item = ChannelSnapshot>,
+    ) {
+        let afferent: Vec<_> = afferent.into_iter().collect();
+        let efferent: Vec<_> = efferent.into_iter().collect();
+        if afferent.is_empty() && efferent.is_empty() {
+            return;
+        }
+        if let Some(data) = &mut self.data {
+            for snap in afferent {
+                if let Some(existing) = data.afferent_channels.iter_mut().find(|c| c.id == snap.id)
+                {
+                    *existing = snap;
+                } else {
+                    data.afferent_channels.push(snap);
+                }
+            }
+            for snap in efferent {
+                if let Some(existing) = data.efferent_channels.iter_mut().find(|c| c.id == snap.id)
+                {
+                    *existing = snap;
+                } else {
+                    data.efferent_channels.push(snap);
+                }
+            }
+        } else {
+            let mut data = ProprioceptionData::empty("local");
+            data.afferent_channels = afferent;
+            data.efferent_channels = efferent;
+            self.data = Some(data);
+        }
+    }
+
+    pub fn record_motor_command(&mut self, description: &str) {
+        const MAX_HISTORY: usize = 20;
+        self.motor_history.push(MotorHistoryEntry {
+            command: description.to_string(),
+            timestamp: Instant::now(),
+        });
+        if self.motor_history.len() > MAX_HISTORY {
+            self.motor_history.remove(0);
+        }
+    }
+
+    pub fn set_current_mode(&mut self, mode: &str) {
+        self.current_mode = mode.to_string();
+    }
+
+    pub fn set_session_domain(&mut self, domain: Option<String>) {
+        self.session_domain = domain;
+    }
+
     /// Render the proprioception panel
     pub fn render(&self, ui: &mut Ui) {
         ui.heading("🧠 SAME DAVE Proprioception");
@@ -100,6 +175,9 @@ impl ProprioceptionPanel {
             );
             ui.label("Waiting for Neural API...");
         }
+
+        ui.add_space(8.0);
+        self.render_motor_status(ui);
     }
 
     /// Render health indicator with color coding
@@ -370,6 +448,53 @@ impl ProprioceptionPanel {
             ui.label(RichText::new("Fetching...").color(Color32::from_rgb(59, 130, 246))); // blue-500
         }
     }
+
+    fn render_motor_status(&self, ui: &mut Ui) {
+        ui.group(|ui| {
+            ui.label(RichText::new("Motor Status").strong().size(14.0));
+            ui.separator();
+
+            ui.horizontal(|ui| {
+                ui.label(RichText::new("Mode:").strong());
+                ui.label(&self.current_mode);
+            });
+
+            if let Some(ref domain) = self.session_domain {
+                ui.horizontal(|ui| {
+                    ui.label(RichText::new("Domain:").strong());
+                    ui.label(domain);
+                });
+            }
+
+            if self.motor_history.is_empty() {
+                ui.label(
+                    RichText::new("No motor commands received")
+                        .color(Color32::from_rgb(156, 163, 175)),
+                );
+            } else {
+                ui.label(RichText::new("Recent Commands").strong());
+                let display_count = self.motor_history.len().min(8);
+                for entry in self.motor_history.iter().rev().take(display_count) {
+                    let age = entry.timestamp.elapsed().as_secs();
+                    let age_text = if age < 60 {
+                        format!("{age}s ago")
+                    } else {
+                        format!("{}m ago", age / 60)
+                    };
+                    ui.horizontal(|ui| {
+                        ui.label(
+                            RichText::new(&entry.command).color(Color32::from_rgb(156, 163, 175)),
+                        );
+                        ui.label(
+                            RichText::new(age_text)
+                                .color(Color32::from_rgb(107, 114, 128))
+                                .small(),
+                        );
+                    });
+                }
+            }
+        });
+    }
 }
 
 impl Default for ProprioceptionPanel {
@@ -401,5 +526,38 @@ mod tests {
 
         assert!(panel.data.is_some());
         assert!(panel.data.as_ref().unwrap().is_healthy());
+    }
+
+    #[test]
+    fn test_motor_history_recording() {
+        let mut panel = ProprioceptionPanel::new();
+        panel.record_motor_command("SetMode(clinical)");
+        panel.record_motor_command("FitToView");
+        assert_eq!(panel.motor_history.len(), 2);
+    }
+
+    #[test]
+    fn test_motor_history_max_entries() {
+        let mut panel = ProprioceptionPanel::new();
+        for i in 0..25 {
+            panel.record_motor_command(&format!("Command {i}"));
+        }
+        assert_eq!(panel.motor_history.len(), 20);
+    }
+
+    #[test]
+    fn test_current_mode() {
+        let mut panel = ProprioceptionPanel::new();
+        assert_eq!(panel.current_mode, "default");
+        panel.set_current_mode("clinical");
+        assert_eq!(panel.current_mode, "clinical");
+    }
+
+    #[test]
+    fn test_session_domain() {
+        let mut panel = ProprioceptionPanel::new();
+        assert!(panel.session_domain.is_none());
+        panel.set_session_domain(Some("health".to_string()));
+        assert_eq!(panel.session_domain.as_deref(), Some("health"));
     }
 }

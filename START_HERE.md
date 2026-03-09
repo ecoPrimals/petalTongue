@@ -43,11 +43,11 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace                          # 1,816 tests
+cargo test --workspace                          # 1,896 tests
 cargo clippy --workspace -- -D warnings         # Lint (clean)
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
-cargo llvm-cov --workspace --summary-only       # Coverage (63% line / 67% function, target 90%)
+cargo llvm-cov --workspace --summary-only       # Coverage (target 90%)
 ```
 
 ### Scenarios

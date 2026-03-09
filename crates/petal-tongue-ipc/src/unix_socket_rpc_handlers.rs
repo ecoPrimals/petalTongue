@@ -23,6 +23,9 @@ pub struct RpcHandlers {
     pub viz_state: Arc<RwLock<VisualizationState>>,
     /// Motor command sender for UI-controlling IPC commands (efferent bridge)
     pub motor_tx: Option<std::sync::mpsc::Sender<petal_tongue_core::MotorCommand>>,
+    /// Interaction event subscriber registry (poll-based IPC subscriptions)
+    pub interaction_subscribers:
+        Arc<RwLock<crate::visualization_handler::InteractionSubscriberRegistry>>,
 }
 
 impl RpcHandlers {
@@ -38,6 +41,9 @@ impl RpcHandlers {
             start_time: SystemTime::now(),
             viz_state,
             motor_tx: None,
+            interaction_subscribers: Arc::new(RwLock::new(
+                crate::visualization_handler::InteractionSubscriberRegistry::new(),
+            )),
         }
     }
 
@@ -60,6 +66,9 @@ impl RpcHandlers {
             "visualization.render" => self.handle_visualization_render(req),
             "visualization.render.stream" => self.handle_visualization_stream(req),
             "visualization.capabilities" => self.handle_visualization_capabilities(req.id),
+            "interaction.subscribe" => self.handle_interaction_subscribe(req),
+            "interaction.poll" => self.handle_interaction_poll(req),
+            "interaction.unsubscribe" => self.handle_interaction_unsubscribe(req),
 
             // Motor commands (IPC afferent → UI efferent bridge)
             "motor.set_panel" | "motor.set_zoom" | "motor.fit_to_view" | "motor.set_mode"
@@ -266,6 +275,7 @@ impl RpcHandlers {
             id,
             json!({
                 "capabilities": [
+                    "interaction.subscribe",
                     "ui.desktop-interface",
                     "ui.primal-interaction",
                     "visualization.graph-rendering",
@@ -393,6 +403,85 @@ impl RpcHandlers {
         }
     }
 
+    fn handle_interaction_subscribe(&self, req: JsonRpcRequest) -> JsonRpcResponse {
+        let subscriber_id = req.params["subscriber_id"]
+            .as_str()
+            .unwrap_or("")
+            .to_string();
+        if subscriber_id.is_empty() {
+            return JsonRpcResponse::error(
+                req.id,
+                error_codes::INVALID_PARAMS,
+                "subscriber_id is required",
+            );
+        }
+        let is_new = self
+            .interaction_subscribers
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .subscribe(&subscriber_id);
+        JsonRpcResponse::success(
+            req.id,
+            json!({
+                "subscribed": true,
+                "subscriber_id": subscriber_id,
+                "is_new": is_new,
+            }),
+        )
+    }
+
+    fn handle_interaction_poll(&self, req: JsonRpcRequest) -> JsonRpcResponse {
+        let subscriber_id = req.params["subscriber_id"]
+            .as_str()
+            .unwrap_or("")
+            .to_string();
+        if subscriber_id.is_empty() {
+            return JsonRpcResponse::error(
+                req.id,
+                error_codes::INVALID_PARAMS,
+                "subscriber_id is required",
+            );
+        }
+        let events = self
+            .interaction_subscribers
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .poll(&subscriber_id);
+        JsonRpcResponse::success(
+            req.id,
+            json!({
+                "subscriber_id": subscriber_id,
+                "events": events,
+            }),
+        )
+    }
+
+    fn handle_interaction_unsubscribe(&self, req: JsonRpcRequest) -> JsonRpcResponse {
+        let subscriber_id = req.params["subscriber_id"]
+            .as_str()
+            .unwrap_or("")
+            .to_string();
+        if subscriber_id.is_empty() {
+            return JsonRpcResponse::error(
+                req.id,
+                error_codes::INVALID_PARAMS,
+                "subscriber_id is required",
+            );
+        }
+        let was_subscribed = self
+            .interaction_subscribers
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .unsubscribe(&subscriber_id);
+        JsonRpcResponse::success(
+            req.id,
+            json!({
+                "unsubscribed": was_subscribed,
+                "subscriber_id": subscriber_id,
+            }),
+        )
+    }
+
     /// Bridge a JSON-RPC motor command to the UI efferent channel.
     fn handle_motor_command(&self, req: JsonRpcRequest) -> JsonRpcResponse {
         use petal_tongue_core::{MotorCommand, PanelId};
@@ -461,5 +550,132 @@ impl RpcHandlers {
                 format!("Unknown motor method: {}", req.method),
             ),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::json_rpc::JsonRpcRequest;
+
+    fn test_handlers() -> RpcHandlers {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let viz_state = Arc::new(RwLock::new(VisualizationState::new()));
+        RpcHandlers::new(graph, "test".to_string(), viz_state)
+    }
+
+    #[test]
+    fn subscribe_new_subscriber() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "interaction.subscribe",
+            json!({"subscriber_id": "spring-1"}),
+            json!(1),
+        );
+        let resp = h.handle_interaction_subscribe(req);
+        assert!(resp.result.is_some());
+        let r = resp.result.unwrap();
+        assert_eq!(r["subscribed"], true);
+        assert_eq!(r["is_new"], true);
+    }
+
+    #[test]
+    fn subscribe_duplicate_subscriber() {
+        let h = test_handlers();
+        let req1 = JsonRpcRequest::new(
+            "interaction.subscribe",
+            json!({"subscriber_id": "spring-1"}),
+            json!(1),
+        );
+        h.handle_interaction_subscribe(req1);
+        let req2 = JsonRpcRequest::new(
+            "interaction.subscribe",
+            json!({"subscriber_id": "spring-1"}),
+            json!(2),
+        );
+        let resp = h.handle_interaction_subscribe(req2);
+        assert_eq!(resp.result.unwrap()["is_new"], false);
+    }
+
+    #[test]
+    fn subscribe_missing_id_returns_error() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("interaction.subscribe", json!({}), json!(1));
+        let resp = h.handle_interaction_subscribe(req);
+        assert!(resp.error.is_some());
+    }
+
+    #[test]
+    fn poll_empty_returns_no_events() {
+        let h = test_handlers();
+        let sub = JsonRpcRequest::new(
+            "interaction.subscribe",
+            json!({"subscriber_id": "s1"}),
+            json!(1),
+        );
+        h.handle_interaction_subscribe(sub);
+        let poll =
+            JsonRpcRequest::new("interaction.poll", json!({"subscriber_id": "s1"}), json!(2));
+        let resp = h.handle_interaction_poll(poll);
+        let r = resp.result.unwrap();
+        assert!(r["events"].as_array().unwrap().is_empty());
+    }
+
+    #[test]
+    fn broadcast_and_poll_events() {
+        let h = test_handlers();
+        let sub = JsonRpcRequest::new(
+            "interaction.subscribe",
+            json!({"subscriber_id": "s1"}),
+            json!(1),
+        );
+        h.handle_interaction_subscribe(sub);
+
+        h.interaction_subscribers.write().unwrap().broadcast(
+            crate::visualization_handler::InteractionEventNotification {
+                event_type: "select".to_string(),
+                targets: vec!["node-1".to_string()],
+                timestamp: "2026-03-09T00:00:00Z".to_string(),
+                perspective_id: Some(1),
+            },
+        );
+
+        let poll =
+            JsonRpcRequest::new("interaction.poll", json!({"subscriber_id": "s1"}), json!(3));
+        let resp = h.handle_interaction_poll(poll);
+        let events = resp.result.unwrap()["events"].as_array().unwrap().clone();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0]["event_type"], "select");
+    }
+
+    #[test]
+    fn unsubscribe_removes_subscriber() {
+        let h = test_handlers();
+        let sub = JsonRpcRequest::new(
+            "interaction.subscribe",
+            json!({"subscriber_id": "s1"}),
+            json!(1),
+        );
+        h.handle_interaction_subscribe(sub);
+        let unsub = JsonRpcRequest::new(
+            "interaction.unsubscribe",
+            json!({"subscriber_id": "s1"}),
+            json!(2),
+        );
+        let resp = h.handle_interaction_unsubscribe(unsub);
+        assert_eq!(resp.result.unwrap()["unsubscribed"], true);
+    }
+
+    #[tokio::test]
+    async fn dispatch_interaction_subscribe() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "interaction.subscribe",
+            json!({"subscriber_id": "test-spring"}),
+            json!(1),
+        );
+        let resp = h.handle_request(req).await;
+        assert!(resp.result.is_some());
+        assert_eq!(resp.result.unwrap()["subscribed"], true);
     }
 }

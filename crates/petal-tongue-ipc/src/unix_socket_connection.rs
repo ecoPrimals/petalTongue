@@ -11,7 +11,7 @@ use tracing::{debug, error};
 /// Handle a single Unix socket connection: read JSON-RPC requests, dispatch to handlers, write responses
 pub async fn handle_connection(handler: &RpcHandlers, stream: UnixStream) -> Result<()> {
     let (reader, mut writer) = stream.into_split();
-    let mut reader = BufReader::new(reader);
+    let mut reader = BufReader::with_capacity(65_536, reader);
     let mut line = String::new();
 
     loop {

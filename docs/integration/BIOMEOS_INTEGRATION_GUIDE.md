@@ -401,7 +401,7 @@ echo '{"jsonrpc":"2.0","method":"health_check","params":{},"id":1}' | \
 
 ### **Documentation**:
 - Main: `README.md`
-- Status: `STATUS.md`
+- Status: `PROJECT_STATUS.md`
 - Audit: `COMPREHENSIVE_AUDIT_REPORT_JAN_10_2026.md`
 - Tracking: `BIOMEOS_INTEGRATION_TRACKING.md`
 

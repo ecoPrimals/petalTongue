@@ -27,10 +27,12 @@ See [START_HERE.md](./START_HERE.md) for configuration and development setup.
 ## What is petalTongue?
 
 petalTongue is ecoPrimals' universal user interface -- a single UniBin binary
-that renders ecosystem state across every available modality. It is evolving
-from fixed-widget rendering toward a composable **Grammar of Graphics** engine
-where any primal can send a declarative grammar expression and petalTongue
-compiles it to the best available output.
+that renders ecosystem state across every available modality. It combines a
+composable **Grammar of Graphics** engine with a **declarative scene graph**
+and **Manim-style animation system**, allowing any primal to send a grammar
+expression that petalTongue compiles to the best available output. Heavy
+compute (GPU shaders, physics simulations) is delegated to barraCuda,
+Toadstool, and coralReef via IPC.
 
 ```
 petaltongue
@@ -54,7 +56,7 @@ petaltongue
 - **Domain-aware rendering** -- automatic palette selection per domain (health, physics, ecology...)
 - **Spring IPC** -- springs push data via `visualization.render`, petalTongue renders with `UiConfig`
 
-### Crates (15)
+### Crates (16)
 
 | Crate | Purpose |
 |-------|---------|
@@ -64,6 +66,7 @@ petaltongue
 | `petal-tongue-tui` | Terminal UI (ratatui) |
 | `petal-tongue-ipc` | Unix socket IPC, JSON-RPC server, tarpc client, visualization handler |
 | `petal-tongue-discovery` | Provider discovery (JSON-RPC, mDNS, Unix socket, scenarios) |
+| `petal-tongue-scene` | Declarative scene graph, animation, grammar compiler, Tufte constraints, modality compilers, physics bridge |
 | `petal-tongue-entropy` | Human entropy capture (gesture, narrative, visual, audio) |
 | `petal-tongue-animation` | Flower/visual animations |
 | `petal-tongue-adapters` | EcoPrimal adapter traits |
@@ -80,7 +83,7 @@ petaltongue
 
 | Metric | Actual Status |
 |--------|---------------|
-| Tests | 1,816 passing, 0 failures, 3 ignored |
+| Tests | 1,896 passing, 0 failures, 3 ignored |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings, pedantic enabled (`clippy::pedantic` via `[workspace.lints.clippy]`) |
 | Coverage | 63% line / 67% function (llvm-cov) |
