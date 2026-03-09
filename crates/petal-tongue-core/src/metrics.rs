@@ -320,9 +320,9 @@ mod tests {
         history.push(20.0);
         history.push(30.0);
 
-        assert_eq!(history.average(), 20.0);
-        assert_eq!(history.max(), 30.0);
-        assert_eq!(history.min(), 10.0);
+        assert!((history.average() - 20.0).abs() < f32::EPSILON);
+        assert!((history.max() - 30.0).abs() < f32::EPSILON);
+        assert!((history.min() - 10.0).abs() < f32::EPSILON);
     }
 
     #[test]

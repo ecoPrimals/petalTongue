@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! ecoPrimals-specific family/lineage adapter
 //!
-//! This adapter knows how to render genetic lineage (family_id, DNA) from
+//! This adapter knows how to render genetic lineage (`family_id`, DNA) from
 //! the ecoPrimals ecosystem.
 
 use crate::adapter_trait::{NodeDecoration, PropertyAdapter};
@@ -10,7 +10,7 @@ use petal_tongue_core::property::{Properties, PropertyValue};
 
 /// ecoPrimals family lineage adapter
 ///
-/// Renders family_id with ring colors and DNA information.
+/// Renders `family_id` with ring colors and DNA information.
 /// In the future, this will get configuration from the ecosystem's
 /// genetic-lineage capability spec.
 pub struct EcoPrimalFamilyAdapter {
@@ -19,16 +19,17 @@ pub struct EcoPrimalFamilyAdapter {
 
 impl EcoPrimalFamilyAdapter {
     /// Create adapter
+    #[must_use]
     pub fn new() -> Self {
         Self {}
     }
 
-    /// Generate a deterministic color from family_id string
+    /// Generate a deterministic color from `family_id` string
     fn family_id_to_color(family_id: &str) -> Color32 {
         // Hash the family_id to get a consistent color
-        let hash = family_id
-            .bytes()
-            .fold(0u32, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u32));
+        let hash = family_id.bytes().fold(0u32, |acc, b| {
+            acc.wrapping_mul(31).wrapping_add(u32::from(b))
+        });
 
         // Generate RGB from hash
         let r = ((hash >> 16) & 0xFF) as u8;
@@ -52,7 +53,7 @@ impl Default for EcoPrimalFamilyAdapter {
 }
 
 impl PropertyAdapter for EcoPrimalFamilyAdapter {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "ecoprimal-family"
     }
 

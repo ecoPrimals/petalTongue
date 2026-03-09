@@ -446,4 +446,107 @@ mod tests {
             .insert("primal_name".to_string(), "modified".to_string());
         assert!(panel.has_unsaved_changes(&graph));
     }
+
+    #[test]
+    fn test_default_impl() {
+        let panel = PropertyPanel::default();
+        assert!(panel.editing_node.is_none());
+        assert!(panel.temp_params.is_empty());
+    }
+
+    #[test]
+    fn test_set_editing_node_none_clears() {
+        let mut panel = PropertyPanel::new();
+        let mut graph = VisualGraph::new("test".to_string());
+        let node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        let node_id = node.id.clone();
+        graph.add_node(node);
+
+        panel.set_editing_node(Some(node_id.clone()), &graph);
+        panel
+            .temp_params
+            .insert("extra".to_string(), "value".to_string());
+
+        panel.set_editing_node(None, &graph);
+        assert!(panel.editing_node.is_none());
+        assert!(panel.temp_params.is_empty());
+        assert!(panel.errors.is_empty());
+    }
+
+    #[test]
+    fn test_property_extraction_field_ordering() {
+        let mut panel = PropertyPanel::new();
+        let mut graph = VisualGraph::new("test".to_string());
+        let mut node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        node.set_parameter("family_id".to_string(), "nat0".to_string());
+        node.set_parameter("primal_name".to_string(), "beardog".to_string());
+        let node_id = node.id.clone();
+        graph.add_node(node);
+
+        panel.set_editing_node(Some(node_id), &graph);
+
+        assert_eq!(
+            panel.temp_params.get("primal_name"),
+            Some(&"beardog".to_string())
+        );
+        assert_eq!(
+            panel.temp_params.get("family_id"),
+            Some(&"nat0".to_string())
+        );
+        let required = NodeType::PrimalStart.required_parameters();
+        assert_eq!(required, &["primal_name", "family_id"]);
+    }
+
+    #[test]
+    fn test_verification_node_params() {
+        let mut panel = PropertyPanel::new();
+        let mut graph = VisualGraph::new("test".to_string());
+        let mut node = GraphNode::new(NodeType::Verification, Vec2::zero());
+        node.set_parameter("primal_name".to_string(), "p1".to_string());
+        node.set_parameter("timeout".to_string(), "30".to_string());
+        let node_id = node.id.clone();
+        graph.add_node(node);
+
+        panel.set_editing_node(Some(node_id.clone()), &graph);
+        panel.apply_changes(&mut graph);
+
+        let node = graph.get_node(&node_id).unwrap();
+        assert!(!node.visual_state.has_error);
+        assert_eq!(node.get_parameter("primal_name"), Some(&"p1".to_string()));
+        assert_eq!(node.get_parameter("timeout"), Some(&"30".to_string()));
+    }
+
+    #[test]
+    fn test_apply_empty_string_validation() {
+        let mut panel = PropertyPanel::new();
+        let mut graph = VisualGraph::new("test".to_string());
+        let node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        let node_id = node.id.clone();
+        graph.add_node(node);
+
+        panel.set_editing_node(Some(node_id.clone()), &graph);
+        panel
+            .temp_params
+            .insert("primal_name".to_string(), "  ".to_string());
+        panel
+            .temp_params
+            .insert("family_id".to_string(), "nat0".to_string());
+
+        panel.apply_changes(&mut graph);
+
+        assert!(panel.errors.contains_key("primal_name"));
+    }
+
+    #[test]
+    fn test_get_editing_node() {
+        let mut panel = PropertyPanel::new();
+        let mut graph = VisualGraph::new("test".to_string());
+        let node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        let node_id = node.id.clone();
+        graph.add_node(node);
+
+        assert!(panel.get_editing_node().is_none());
+        panel.set_editing_node(Some(node_id.clone()), &graph);
+        assert_eq!(panel.get_editing_node(), Some(&node_id));
+    }
 }

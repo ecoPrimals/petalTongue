@@ -179,3 +179,106 @@ impl NicheDesigner {
         &self.assigned_primals
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::biomeos_integration::{Health, NicheTemplate, Primal};
+    use crate::ui_events::UIEventHandler;
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
+
+    fn make_event_handler() -> Arc<RwLock<UIEventHandler>> {
+        Arc::new(RwLock::new(UIEventHandler::new()))
+    }
+
+    fn make_template(required: Vec<&str>) -> NicheTemplate {
+        NicheTemplate {
+            id: "t1".to_string(),
+            name: "Test".to_string(),
+            description: "Desc".to_string(),
+            required_primals: required.into_iter().map(String::from).collect(),
+            optional_primals: vec![],
+            metadata: serde_json::json!({}),
+        }
+    }
+
+    fn make_primal(id: &str, caps: Vec<&str>) -> Primal {
+        Primal {
+            id: id.to_string(),
+            name: id.to_string(),
+            health: Health::Healthy,
+            capabilities: caps.into_iter().map(String::from).collect(),
+            load: 0.0,
+            assigned_devices: vec![],
+            metadata: serde_json::json!({}),
+        }
+    }
+
+    #[tokio::test]
+    async fn validation_result_getter() {
+        let handler = make_event_handler();
+        let mut designer = NicheDesigner::new(handler);
+        assert!(matches!(
+            designer.validation_result(),
+            ValidationResult::Valid
+        ));
+
+        designer.select_template(make_template(vec!["compute"]));
+        match designer.validation_result() {
+            ValidationResult::MissingRequirements(m) => assert_eq!(m, &["compute".to_string()]),
+            _ => panic!("expected MissingRequirements"),
+        }
+    }
+
+    #[tokio::test]
+    async fn assigned_primals_getter() {
+        let handler = make_event_handler();
+        let mut designer = NicheDesigner::new(handler);
+        designer
+            .refresh(
+                vec![make_template(vec!["compute"])],
+                vec![make_primal("p1", vec!["compute"])],
+            )
+            .await;
+        designer.select_template(make_template(vec!["compute"]));
+        designer.assign_primal("compute".to_string(), "p1".to_string());
+
+        let assigned = designer.assigned_primals();
+        assert_eq!(assigned.get("compute"), Some(&"p1".to_string()));
+    }
+
+    #[tokio::test]
+    async fn no_template_valid() {
+        let handler = make_event_handler();
+        let designer = NicheDesigner::new(handler);
+        assert!(matches!(
+            designer.validation_result(),
+            ValidationResult::Valid
+        ));
+    }
+
+    #[tokio::test]
+    async fn select_template_clears_assigned() {
+        let handler = make_event_handler();
+        let mut designer = NicheDesigner::new(handler);
+        designer
+            .refresh(
+                vec![
+                    make_template(vec!["compute"]),
+                    make_template(vec!["storage"]),
+                ],
+                vec![
+                    make_primal("p1", vec!["compute"]),
+                    make_primal("p2", vec!["storage"]),
+                ],
+            )
+            .await;
+        designer.select_template(make_template(vec!["compute"]));
+        designer.assign_primal("compute".to_string(), "p1".to_string());
+        assert_eq!(designer.assigned_primals().len(), 1);
+
+        designer.select_template(make_template(vec!["storage"]));
+        assert!(designer.assigned_primals().is_empty());
+    }
+}

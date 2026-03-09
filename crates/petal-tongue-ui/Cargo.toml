@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+[lints]
+workspace = true
+
 [package]
 name = "petal-tongue-ui"
 description = "Desktop UI application providing real-time visualization of ecoPrimals ecosystem"

@@ -47,41 +47,41 @@ impl RpcHandlers {
 
     /// Dispatch JSON-RPC request to the appropriate handler
     pub async fn handle_request(&self, req: JsonRpcRequest) -> JsonRpcResponse {
-        match req.method.as_str() {
-            "health_check" => self.handle_health_check(&req),
-            "announce_capabilities" => self.handle_announce_capabilities(&req),
-            "ui.render" => self.handle_ui_render(&req).await,
-            "ui.display_status" => self.handle_ui_display_status(&req),
-            "get_capabilities" => self.get_capabilities(req.id),
-            "render_graph" => self.render_graph(req.params, req.id).await,
-            "get_health" => self.get_health(req.id),
-            "get_topology" => self.get_topology(req.id),
-            "visualization.render" => self.handle_visualization_render(&req),
-            "visualization.render.stream" => self.handle_visualization_stream(&req),
+        let method = req.method.as_str();
+        match method {
+            "health.check" => self.handle_health_check(req),
+            "capability.announce" => self.handle_announce_capabilities(req),
+            "ui.render" => self.handle_ui_render(req).await,
+            "ui.display_status" => self.handle_ui_display_status(req),
+            "capability.list" => self.get_capabilities(req.id),
+            "visualization.render_graph" => self.render_graph(req.params, req.id).await,
+            "health.get" => self.get_health(req.id),
+            "topology.get" => self.get_topology(req.id),
+            "visualization.render" => self.handle_visualization_render(req),
+            "visualization.render.stream" => self.handle_visualization_stream(req),
             "visualization.capabilities" => self.handle_visualization_capabilities(req.id),
 
             // Motor commands (IPC afferent → UI efferent bridge)
             "motor.set_panel" | "motor.set_zoom" | "motor.fit_to_view" | "motor.set_mode"
-            | "motor.navigate" => self.handle_motor_command(&req),
+            | "motor.navigate" => self.handle_motor_command(req),
             _ => {
-                warn!("Unknown method: {}", req.method);
+                warn!("Unknown method: {}", method);
                 JsonRpcResponse::error(
                     req.id,
                     error_codes::METHOD_NOT_FOUND,
-                    format!("Method not found: {}", req.method),
+                    format!("Method not found: {method}"),
                 )
             }
         }
     }
 
     /// Handle visualization.render: create or replace a visualization session
-    fn handle_visualization_render(&self, req: &JsonRpcRequest) -> JsonRpcResponse {
-        let params = match serde_json::from_value::<VisualizationRenderRequest>(req.params.clone())
-        {
+    fn handle_visualization_render(&self, req: JsonRpcRequest) -> JsonRpcResponse {
+        let params = match serde_json::from_value::<VisualizationRenderRequest>(req.params) {
             Ok(p) => p,
             Err(e) => {
                 return JsonRpcResponse::error(
-                    req.id.clone(),
+                    req.id,
                     error_codes::INVALID_PARAMS,
                     format!("Invalid params: {e}"),
                 );
@@ -90,21 +90,28 @@ impl RpcHandlers {
         let response = self
             .viz_state
             .write()
-            .expect("SAFETY: Viz lock poisoned")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .handle_render(params);
-        JsonRpcResponse::success(
-            req.id.clone(),
-            serde_json::to_value(&response).expect("response serialization"),
-        )
+        let value = match serde_json::to_value(&response) {
+            Ok(v) => v,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INTERNAL_ERROR,
+                    format!("Serialization failed: {e}"),
+                );
+            }
+        };
+        JsonRpcResponse::success(req.id, value)
     }
 
     /// Handle visualization.render.stream: incremental update to a binding
-    fn handle_visualization_stream(&self, req: &JsonRpcRequest) -> JsonRpcResponse {
-        let params = match serde_json::from_value::<StreamUpdateRequest>(req.params.clone()) {
+    fn handle_visualization_stream(&self, req: JsonRpcRequest) -> JsonRpcResponse {
+        let params = match serde_json::from_value::<StreamUpdateRequest>(req.params) {
             Ok(p) => p,
             Err(e) => {
                 return JsonRpcResponse::error(
-                    req.id.clone(),
+                    req.id,
                     error_codes::INVALID_PARAMS,
                     format!("Invalid params: {e}"),
                 );
@@ -113,15 +120,23 @@ impl RpcHandlers {
         let response = self
             .viz_state
             .write()
-            .expect("SAFETY: Viz lock poisoned")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .handle_stream_update(params);
-        JsonRpcResponse::success(
-            req.id.clone(),
-            serde_json::to_value(&response).expect("response serialization"),
-        )
+        let value = match serde_json::to_value(&response) {
+            Ok(v) => v,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INTERNAL_ERROR,
+                    format!("Serialization failed: {e}"),
+                );
+            }
+        };
+        JsonRpcResponse::success(req.id, value)
     }
 
-    /// Handle visualization.capabilities: return supported DataBinding variant names
+    /// Handle visualization.capabilities: return supported `DataBinding` variant names
+    #[allow(clippy::unused_self)]
     fn handle_visualization_capabilities(&self, id: Value) -> JsonRpcResponse {
         let variants = [
             "TimeSeries",
@@ -141,12 +156,13 @@ impl RpcHandlers {
         )
     }
 
-    /// Handle health_check: return status, version, uptime, and modalities
-    pub fn handle_health_check(&self, request: &JsonRpcRequest) -> JsonRpcResponse {
+    /// Handle `health_check`: return status, version, uptime, and modalities
+    #[must_use]
+    pub fn handle_health_check(&self, request: JsonRpcRequest) -> JsonRpcResponse {
         let modalities = capability_detection::detect_active_modalities();
 
         JsonRpcResponse::success(
-            request.id.clone(),
+            request.id,
             json!({
                 "status": "healthy",
                 "version": env!("CARGO_PKG_VERSION"),
@@ -157,12 +173,13 @@ impl RpcHandlers {
         )
     }
 
-    /// Handle announce_capabilities: return detected capabilities
-    pub fn handle_announce_capabilities(&self, request: &JsonRpcRequest) -> JsonRpcResponse {
+    /// Handle `announce_capabilities`: return detected capabilities
+    #[must_use]
+    pub fn handle_announce_capabilities(&self, request: JsonRpcRequest) -> JsonRpcResponse {
         let capabilities = capability_detection::detect_capabilities();
 
         JsonRpcResponse::success(
-            request.id.clone(),
+            request.id,
             json!({
                 "capabilities": capabilities,
             }),
@@ -170,16 +187,13 @@ impl RpcHandlers {
     }
 
     /// Handle ui.render: render content by type (graph, etc.)
-    pub async fn handle_ui_render(&self, request: &JsonRpcRequest) -> JsonRpcResponse {
-        let params = match request.params.as_object() {
-            Some(p) => p,
-            None => {
-                return JsonRpcResponse::error(
-                    request.id.clone(),
-                    error_codes::INVALID_PARAMS,
-                    "params must be an object",
-                );
-            }
+    pub async fn handle_ui_render(&self, request: JsonRpcRequest) -> JsonRpcResponse {
+        let Some(params) = request.params.as_object() else {
+            return JsonRpcResponse::error(
+                request.id,
+                error_codes::INVALID_PARAMS,
+                "params must be an object",
+            );
         };
 
         let content_type = params
@@ -194,8 +208,8 @@ impl RpcHandlers {
                 let result = self.render_graph_data(data).await;
 
                 match result {
-                    Ok(_) => JsonRpcResponse::success(
-                        request.id.clone(),
+                    Ok(()) => JsonRpcResponse::success(
+                        request.id,
                         json!({
                             "rendered": true,
                             "modality": "visual",
@@ -203,31 +217,28 @@ impl RpcHandlers {
                         }),
                     ),
                     Err(e) => JsonRpcResponse::error(
-                        request.id.clone(),
+                        request.id,
                         error_codes::INTERNAL_ERROR,
                         format!("Render error: {e}"),
                     ),
                 }
             }
             _ => JsonRpcResponse::error(
-                request.id.clone(),
+                request.id,
                 error_codes::INVALID_PARAMS,
                 format!("Unsupported content_type: {content_type}"),
             ),
         }
     }
 
-    /// Handle ui.display_status: update status for a primal
-    pub fn handle_ui_display_status(&self, request: &JsonRpcRequest) -> JsonRpcResponse {
-        let params = match request.params.as_object() {
-            Some(p) => p,
-            None => {
-                return JsonRpcResponse::error(
-                    request.id.clone(),
-                    error_codes::INVALID_PARAMS,
-                    "params must be an object",
-                );
-            }
+    /// Handle `ui.display_status`: update status for a primal
+    pub fn handle_ui_display_status(&self, request: JsonRpcRequest) -> JsonRpcResponse {
+        let Some(params) = request.params.as_object() else {
+            return JsonRpcResponse::error(
+                request.id,
+                error_codes::INVALID_PARAMS,
+                "params must be an object",
+            );
         };
 
         let primal_name = params
@@ -240,7 +251,7 @@ impl RpcHandlers {
         debug!("Status update for {}: {:?}", primal_name, status);
 
         JsonRpcResponse::success(
-            request.id.clone(),
+            request.id,
             json!({
                 "updated": true,
                 "primal": primal_name,
@@ -248,7 +259,8 @@ impl RpcHandlers {
         )
     }
 
-    /// Handle get_capabilities: return supported capabilities and protocol info
+    /// Handle `get_capabilities`: return supported capabilities and protocol info
+    #[must_use]
     pub fn get_capabilities(&self, id: Value) -> JsonRpcResponse {
         JsonRpcResponse::success(
             id,
@@ -274,12 +286,12 @@ impl RpcHandlers {
         )
     }
 
-    /// Handle get_health: return health status and graph stats
+    /// Handle `get_health`: return health status and graph stats
     pub fn get_health(&self, id: Value) -> JsonRpcResponse {
         let graph = self
             .graph
             .read()
-            .expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let node_count = graph.nodes().len();
         let edge_count = graph.edges().len();
@@ -298,12 +310,12 @@ impl RpcHandlers {
         )
     }
 
-    /// Handle get_topology: return graph nodes and edges
+    /// Handle `get_topology`: return graph nodes and edges
     pub fn get_topology(&self, id: Value) -> JsonRpcResponse {
         let graph = self
             .graph
             .read()
-            .expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let topology = json!({
             "nodes": graph.nodes().iter().map(|node| {
@@ -332,12 +344,14 @@ impl RpcHandlers {
         JsonRpcResponse::success(id, topology)
     }
 
+    #[allow(clippy::unused_async)]
     async fn render_graph_data(&self, data: Value) -> anyhow::Result<()> {
         debug!("Rendering graph data: {:?}", data);
         Ok(())
     }
 
-    /// Handle render_graph: render graph to specified format (svg, png, terminal)
+    /// Handle `render_graph`: render graph to specified format (svg, png, terminal)
+    #[allow(clippy::unused_async)]
     pub async fn render_graph(&self, params: Value, id: Value) -> JsonRpcResponse {
         let format = params["format"].as_str().unwrap_or("svg");
 
@@ -380,12 +394,12 @@ impl RpcHandlers {
     }
 
     /// Bridge a JSON-RPC motor command to the UI efferent channel.
-    fn handle_motor_command(&self, req: &JsonRpcRequest) -> JsonRpcResponse {
+    fn handle_motor_command(&self, req: JsonRpcRequest) -> JsonRpcResponse {
         use petal_tongue_core::{MotorCommand, PanelId};
 
         let Some(ref tx) = self.motor_tx else {
             return JsonRpcResponse::error(
-                req.id.clone(),
+                req.id,
                 error_codes::INTERNAL_ERROR,
                 "Motor channel not connected",
             );
@@ -432,17 +446,17 @@ impl RpcHandlers {
         match cmd {
             Some(motor_cmd) => {
                 if tx.send(motor_cmd).is_ok() {
-                    JsonRpcResponse::success(req.id.clone(), json!({ "ok": true }))
+                    JsonRpcResponse::success(req.id, json!({ "ok": true }))
                 } else {
                     JsonRpcResponse::error(
-                        req.id.clone(),
+                        req.id,
                         error_codes::INTERNAL_ERROR,
                         "Motor channel disconnected",
                     )
                 }
             }
             None => JsonRpcResponse::error(
-                req.id.clone(),
+                req.id,
                 error_codes::METHOD_NOT_FOUND,
                 format!("Unknown motor method: {}", req.method),
             ),

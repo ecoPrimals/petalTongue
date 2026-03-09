@@ -7,7 +7,7 @@
 //! when performance optimization becomes a priority.
 //!
 //! MODERN IDIOMATIC RUST:
-//! - Uses tokio::sync::RwLock for async compatibility (no deadlocks!)
+//! - Uses `tokio::sync::RwLock` for async compatibility (no deadlocks!)
 //! - Fully concurrent, lock-free reads
 //! - No blocking operations in async context
 
@@ -20,7 +20,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 
 /// Cached entry with expiration
-/// Stores data in Arc for zero-copy cache hits (Arc::clone instead of deep clone)
+/// Stores data in Arc for zero-copy cache hits (`Arc::clone` instead of deep clone)
 #[derive(Debug, Clone)]
 struct CachedEntry<T> {
     data: Arc<T>,
@@ -52,7 +52,7 @@ pub(crate) enum CacheKey {
 ///
 /// Uses LRU eviction when cache is full.
 ///
-/// ASYNC-SAFE: Uses tokio::sync::RwLock to prevent deadlocks in async context.
+/// ASYNC-SAFE: Uses `tokio::sync::RwLock` to prevent deadlocks in async context.
 #[derive(Debug)]
 pub struct ProviderCache<T> {
     cache: Arc<RwLock<LruCache<CacheKey, CachedEntry<T>>>>,
@@ -66,11 +66,10 @@ pub struct ProviderCache<T> {
 
 impl<T> ProviderCache<T> {
     /// Create a new cache with specified capacity
-    #[expect(dead_code)]
     pub fn new(capacity: usize) -> Self {
         Self {
             cache: Arc::new(RwLock::new(LruCache::new(
-                NonZeroUsize::new(capacity.max(1)).expect("max(1) guarantees non-zero"),
+                NonZeroUsize::new(capacity.max(1)).unwrap_or(NonZeroUsize::MIN),
             ))),
             primals_ttl: Duration::from_secs(30),
             topology_ttl: Duration::from_secs(60),
@@ -89,7 +88,7 @@ impl<T> ProviderCache<T> {
     ) -> Self {
         Self {
             cache: Arc::new(RwLock::new(LruCache::new(
-                NonZeroUsize::new(capacity.max(1)).expect("max(1) guarantees non-zero"),
+                NonZeroUsize::new(capacity.max(1)).unwrap_or(NonZeroUsize::MIN),
             ))),
             primals_ttl,
             topology_ttl,
@@ -130,7 +129,7 @@ impl<T> ProviderCache<T> {
     }
 
     /// Get from cache (generic) - ASYNC-SAFE
-    /// Returns Arc::clone for zero-copy cache hits (no deep clone)
+    /// Returns `Arc::clone` for zero-copy cache hits (no deep clone)
     async fn get(&self, key: CacheKey) -> Option<Arc<T>> {
         let mut cache = self.cache.write().await;
 

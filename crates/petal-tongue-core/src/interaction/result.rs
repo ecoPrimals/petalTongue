@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Interaction results and state changes.
 //!
-//! When an [`InteractionIntent`](super::intent::InteractionIntent) is resolved,
+//! When an [`InteractionIntent`] is resolved,
 //! the engine produces an [`InteractionResult`] describing what happened. This
 //! result is broadcast to all local modalities and IPC subscribers.
 

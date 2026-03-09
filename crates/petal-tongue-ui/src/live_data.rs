@@ -281,19 +281,22 @@ impl ConnectionStatus {
     }
 }
 
+fn format_age_for_display(age_secs: f32) -> String {
+    if age_secs < 1.0 {
+        "Just now".to_string()
+    } else if age_secs < 60.0 {
+        format!("{age_secs:.1}s ago")
+    } else if age_secs < 3600.0 {
+        format!("{:.1}m ago", age_secs / 60.0)
+    } else {
+        format!("{:.1}h ago", age_secs / 3600.0)
+    }
+}
+
 /// Helper function to render a timestamp
 pub fn render_timestamp(ui: &mut Ui, instant: Instant) {
     let age = instant.elapsed().as_secs_f32();
-    let text = if age < 1.0 {
-        "Just now".to_string()
-    } else if age < 60.0 {
-        format!("{age:.1}s ago")
-    } else if age < 3600.0 {
-        format!("{:.1}m ago", age / 60.0)
-    } else {
-        format!("{:.1}h ago", age / 3600.0)
-    };
-
+    let text = format_age_for_display(age);
     ui.label(RichText::new(text).size(10.0).color(Color32::GRAY));
 }
 
@@ -361,5 +364,15 @@ mod tests {
     fn test_connection_status_target() {
         let status = ConnectionStatus::new("biomeOS:3000".to_string());
         assert_eq!(status.target, "biomeOS:3000");
+    }
+
+    #[test]
+    fn test_format_age_for_display() {
+        assert_eq!(format_age_for_display(0.5), "Just now");
+        assert_eq!(format_age_for_display(1.0), "1.0s ago");
+        assert_eq!(format_age_for_display(30.0), "30.0s ago");
+        assert_eq!(format_age_for_display(90.0), "1.5m ago");
+        assert_eq!(format_age_for_display(3600.0), "1.0h ago");
+        assert_eq!(format_age_for_display(7200.0), "2.0h ago");
     }
 }

@@ -5,10 +5,26 @@ use super::layout;
 use crate::accessibility::ColorPalette;
 use crate::accessibility_panel::AccessibilityPanel;
 use crate::tool_integration::ToolManager;
+use petal_tongue_core::ModalityStatus;
 use petal_tongue_core::{GraphEngine, LayoutAlgorithm, Modality, constants::PRIMAL_NAME};
 use petal_tongue_graph::Visual2DRenderer;
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer};
 use std::sync::{Arc, RwLock};
+
+#[must_use]
+fn modality_status_icon_and_color(status: ModalityStatus) -> (&'static str, egui::Color32) {
+    match status {
+        ModalityStatus::Available => ("✅", egui::Color32::from_rgb(100, 255, 100)),
+        ModalityStatus::NotInitialized => ("⚠️", egui::Color32::from_rgb(255, 200, 100)),
+        ModalityStatus::Unavailable => ("❌", egui::Color32::from_rgb(255, 100, 100)),
+        ModalityStatus::Disabled => ("🔇", egui::Color32::from_rgb(150, 150, 150)),
+    }
+}
+
+#[must_use]
+fn modality_tested_text(tested: bool) -> &'static str {
+    if tested { "tested" } else { "not tested" }
+}
 
 /// Render the top menu bar
 /// Returns true if refresh was clicked
@@ -472,22 +488,8 @@ pub fn render_capability_panel(
             ui.add_space(12.0);
 
             for cap in capabilities.get_all() {
-                let (icon, color) = match cap.status {
-                    petal_tongue_core::ModalityStatus::Available => {
-                        ("✅", egui::Color32::from_rgb(100, 255, 100))
-                    }
-                    petal_tongue_core::ModalityStatus::NotInitialized => {
-                        ("⚠️", egui::Color32::from_rgb(255, 200, 100))
-                    }
-                    petal_tongue_core::ModalityStatus::Unavailable => {
-                        ("❌", egui::Color32::from_rgb(255, 100, 100))
-                    }
-                    petal_tongue_core::ModalityStatus::Disabled => {
-                        ("🔇", egui::Color32::from_rgb(150, 150, 150))
-                    }
-                };
-
-                let tested_text = if cap.tested { "tested" } else { "not tested" };
+                let (icon, color) = modality_status_icon_and_color(cap.status);
+                let tested_text = modality_tested_text(cap.tested);
 
                 egui::Frame::none()
                     .fill(egui::Color32::from_rgb(40, 40, 45))
@@ -533,3 +535,37 @@ pub fn render_capability_panel(
 }
 
 pub use super::primal_details::render_primal_details_panel;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use petal_tongue_core::ModalityStatus;
+
+    #[test]
+    fn modality_status_icon_available() {
+        let (icon, _) = modality_status_icon_and_color(ModalityStatus::Available);
+        assert_eq!(icon, "✅");
+    }
+
+    #[test]
+    fn modality_status_icon_unavailable() {
+        let (icon, _) = modality_status_icon_and_color(ModalityStatus::Unavailable);
+        assert_eq!(icon, "❌");
+    }
+
+    #[test]
+    fn modality_status_icon_disabled() {
+        let (icon, _) = modality_status_icon_and_color(ModalityStatus::Disabled);
+        assert_eq!(icon, "🔇");
+    }
+
+    #[test]
+    fn modality_tested_text_true() {
+        assert_eq!(modality_tested_text(true), "tested");
+    }
+
+    #[test]
+    fn modality_tested_text_false() {
+        assert_eq!(modality_tested_text(false), "not tested");
+    }
+}

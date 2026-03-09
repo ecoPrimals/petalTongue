@@ -80,3 +80,28 @@ pub(super) fn load_session<T: DeserializeOwned + validation::SessionStateLike>(
     tracing::debug!("Session loaded from: {}", path.display());
     Ok(session)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::instance::InstanceId;
+    use crate::session::state::SessionState;
+
+    #[test]
+    fn test_serialization_roundtrip() {
+        let id = InstanceId::new();
+        let state = SessionState::new(id);
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("persist.ron");
+        save_session(&state, &path).unwrap();
+        let loaded: SessionState = load_session(&path).unwrap();
+        assert_eq!(loaded.version, state.version);
+    }
+
+    #[test]
+    fn test_load_nonexistent_returns_not_found() {
+        let path = std::path::Path::new("/nonexistent/session.ron");
+        let result: Result<SessionState, _> = load_session(path);
+        assert!(result.is_err());
+    }
+}

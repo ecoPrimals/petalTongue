@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Data-space interaction targets.
 //!
-//! All interaction resolution converges to [`DataTarget`] values that are
+//! All interaction resolution converges to [`DataObjectId`] values that are
 //! perspective-invariant: the same data row has the same identity regardless
 //! of which modality resolved it.
 

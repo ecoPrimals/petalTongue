@@ -2,7 +2,7 @@
 //! Concrete input adapter implementations.
 //!
 //! These bridge the existing [`Sensor`](petal_tongue_core::Sensor) system to
-//! the [`InputAdapter`] trait from the interaction engine.
+//! the [`InputAdapter`](petal_tongue_core::interaction::InputAdapter) trait from the interaction engine.
 
 pub mod keyboard_adapter;
 pub mod pointer_adapter;

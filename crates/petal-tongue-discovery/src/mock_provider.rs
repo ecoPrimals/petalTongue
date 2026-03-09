@@ -15,6 +15,7 @@ pub struct MockVisualizationProvider;
 
 impl MockVisualizationProvider {
     /// Create a new mock provider
+    #[must_use]
     pub fn new() -> Self {
         Self
     }

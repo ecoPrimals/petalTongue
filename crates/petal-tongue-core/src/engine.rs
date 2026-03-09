@@ -307,8 +307,8 @@ mod tests {
         let _ = engine.set_viewport(100.0, 200.0, 1.5).await;
 
         let state = engine.state.read().await;
-        assert_eq!(state.viewport.center_x, 100.0);
-        assert_eq!(state.viewport.center_y, 200.0);
-        assert_eq!(state.viewport.zoom, 1.5);
+        assert!((state.viewport.center_x - 100.0).abs() < f32::EPSILON);
+        assert!((state.viewport.center_y - 200.0).abs() < f32::EPSILON);
+        assert!((state.viewport.zoom - 1.5).abs() < f32::EPSILON);
     }
 }

@@ -289,8 +289,8 @@ mod tests {
             } => {
                 assert_eq!(id, "heart_rate");
                 assert!((*value - 72.0).abs() < 1e-9);
-                assert_eq!(normal_range[0], 60.0);
-                assert_eq!(normal_range[1], 100.0);
+                assert!((normal_range[0] - 60.0).abs() < f64::EPSILON);
+                assert!((normal_range[1] - 100.0).abs() < f64::EPSILON);
             }
             _ => panic!("expected Gauge"),
         }
@@ -303,8 +303,8 @@ mod tests {
         assert_eq!(thresholds.len(), 3, "expected 3 ThresholdRange items");
 
         assert_eq!(thresholds[0].label, "Cmax therapeutic");
-        assert_eq!(thresholds[0].min, 0.05);
-        assert_eq!(thresholds[0].max, 0.3);
+        assert!((thresholds[0].min - 0.05).abs() < f64::EPSILON);
+        assert!((thresholds[0].max - 0.3).abs() < f64::EPSILON);
         assert_eq!(thresholds[0].status, "normal");
 
         assert_eq!(thresholds[1].status, "warning");

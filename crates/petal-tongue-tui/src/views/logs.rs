@@ -2,7 +2,7 @@
 //! Logs View
 //!
 //! Real-time log streaming from all primals.
-//! Leverages Songbird event stream if available.
+//! Leverages discovery provider event stream if available.
 
 use ratatui::{
     Frame,
@@ -85,9 +85,7 @@ fn render_log_list(
 
                 let source = log
                     .source
-                    .as_ref()
-                    .map(|s| format!("[{s}]"))
-                    .unwrap_or_else(|| "[system]".to_string());
+                    .as_ref().map_or_else(|| "[system]".to_string(), |s| format!("[{s}]"));
 
                 let is_selected = idx == logs.len() - 1 - selected;
 

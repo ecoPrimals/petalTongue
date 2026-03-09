@@ -13,6 +13,26 @@ use std::sync::{Arc, RwLock};
 
 use super::state::SystemDashboard;
 
+const BYTES_PER_GB: f64 = 1_073_741_824.0;
+
+#[must_use]
+fn memory_percent(used: u64, total: u64) -> f64 {
+    if total > 0 {
+        (used as f64 / total as f64) * 100.0
+    } else {
+        0.0
+    }
+}
+
+#[must_use]
+fn format_memory_gb(used: u64, total: u64) -> String {
+    format!(
+        "Used: {:.1} / {:.1} GB",
+        used as f64 / BYTES_PER_GB,
+        total as f64 / BYTES_PER_GB
+    )
+}
+
 impl SystemDashboard {
     /// Render compact dashboard (for sidebar)
     pub fn render_compact(
@@ -107,17 +127,9 @@ impl SystemDashboard {
 
             let used = self.system.used_memory();
             let total = self.system.total_memory();
-            let percent = if total > 0 {
-                (used as f64 / total as f64) * 100.0
-            } else {
-                0.0
-            };
+            let percent = memory_percent(used, total);
 
-            ui.label(format!(
-                "Used: {:.1} / {:.1} GB",
-                used as f64 / 1_073_741_824.0,
-                total as f64 / 1_073_741_824.0
-            ));
+            ui.label(format_memory_gb(used, total));
 
             ui.add(
                 egui::ProgressBar::new(percent as f32 / 100.0)
@@ -433,5 +445,35 @@ impl SystemDashboard {
                 );
             }
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn memory_percent_zero_total() {
+        assert!((memory_percent(100, 0) - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn memory_percent_half() {
+        assert!((memory_percent(512, 1024) - 50.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn memory_percent_full() {
+        assert!((memory_percent(1024, 1024) - 100.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn format_memory_gb_display() {
+        let used = 2 * 1_073_741_824;
+        let total = 8 * 1_073_741_824;
+        let s = format_memory_gb(used, total);
+        assert!(s.contains("2.0"));
+        assert!(s.contains("8.0"));
+        assert!(s.starts_with("Used:"));
     }
 }

@@ -90,7 +90,7 @@ pub async fn status(
             // JSON output for programmatic use
             let json = serde_json::to_string_pretty(&status)
                 .context("Failed to serialize status to JSON")?;
-            println!("{}", json);
+            println!("{json}");
         }
         _ => {
             // Human-readable text output
@@ -312,7 +312,7 @@ fn print_status_text(status: &SystemStatus) {
     println!("  OS: {}", status.system.os);
     println!("  Arch: {}", status.system.arch);
     if let Some(cpus) = status.system.cpu_count {
-        println!("  CPUs: {}", cpus);
+        println!("  CPUs: {cpus}");
     }
     if let Some(mem) = status.system.memory_total {
         println!("  Memory: {} GB", mem / 1024 / 1024 / 1024);
@@ -331,7 +331,7 @@ fn print_status_text(status: &SystemStatus) {
         println!();
         println!("Features:");
         for feature in &detailed.features {
-            println!("  ✅ {}", feature);
+            println!("  ✅ {feature}");
         }
 
         println!();

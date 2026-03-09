@@ -112,7 +112,7 @@ impl DataService {
                 let mut graph = self
                     .graph
                     .write()
-                    .map_err(|e| anyhow::anyhow!("Graph lock poisoned: {}", e))?;
+                    .map_err(|e| anyhow::anyhow!("Graph lock poisoned: {e}"))?;
 
                 // Clear and rebuild
                 *graph = GraphEngine::new();
@@ -131,7 +131,7 @@ impl DataService {
                 let mut last_refresh = self
                     .last_refresh
                     .write()
-                    .map_err(|e| anyhow::anyhow!("Refresh time lock poisoned: {}", e))?;
+                    .map_err(|e| anyhow::anyhow!("Refresh time lock poisoned: {e}"))?;
                 *last_refresh = std::time::Instant::now();
             }
 
@@ -151,7 +151,7 @@ impl DataService {
             let graph = self
                 .graph
                 .read()
-                .map_err(|e| anyhow::anyhow!("Graph lock poisoned: {}", e))?;
+                .map_err(|e| anyhow::anyhow!("Graph lock poisoned: {e}"))?;
 
             // Extract PrimalInfo from Node wrappers
             let primals = graph.nodes().iter().map(|node| node.info.clone()).collect();

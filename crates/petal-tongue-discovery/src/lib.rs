@@ -95,7 +95,7 @@ use petal_tongue_core::constants;
 ///
 /// # Caching
 ///
-/// Note: Caching is now built into HttpVisualizationProvider (see cache.rs).
+/// Note: Caching is now built into `HttpVisualizationProvider` (see cache.rs).
 /// Each provider has its own cache with configurable TTLs. This provides
 /// better performance without wrapper complexity.
 ///
@@ -105,6 +105,7 @@ use petal_tongue_core::constants;
 ///
 /// **NOTE**: Mock providers are NOT used in production. Use explicit
 /// `PETALTONGUE_MOCK_MODE=true` if you need mock data for testing.
+#[allow(clippy::too_many_lines)]
 pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn VisualizationDataProvider>>> {
     let mut providers: Vec<Box<dyn VisualizationDataProvider>> = Vec::new();
 
@@ -191,11 +192,11 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
         tracing::info!("Attempting mDNS auto-discovery...");
         match MdnsVisualizationProvider::discover().await {
             Ok(mdns_providers) => {
-                if !mdns_providers.is_empty() {
+                if mdns_providers.is_empty() {
+                    tracing::debug!("mDNS discovery found no providers");
+                } else {
                     tracing::info!("mDNS discovered {} provider(s)", mdns_providers.len());
                     providers.extend(mdns_providers);
-                } else {
-                    tracing::debug!("mDNS discovery found no providers");
                 }
             }
             Err(e) => {
@@ -213,7 +214,7 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
             let hint = hint.trim();
 
             // Try JSON-RPC first if it looks like a Unix socket
-            if hint.starts_with("unix://") || hint.starts_with("/") {
+            if hint.starts_with("unix://") || hint.starts_with('/') {
                 let socket_path = hint.strip_prefix("unix://").unwrap_or(hint);
                 match try_connect_jsonrpc(socket_path).await {
                     Ok(provider) => {
@@ -259,7 +260,7 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
         tracing::info!("Trying legacy BIOMEOS_URL: {}", biomeos_url);
 
         // Try JSON-RPC first if it's a Unix socket
-        if biomeos_url.starts_with("unix://") || biomeos_url.starts_with("/") {
+        if biomeos_url.starts_with("unix://") || biomeos_url.starts_with('/') {
             let socket_path = biomeos_url.strip_prefix("unix://").unwrap_or(&biomeos_url);
             match try_connect_jsonrpc(socket_path).await {
                 Ok(provider) => {
@@ -358,6 +359,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    #[allow(clippy::large_futures)]
     async fn test_discover_returns_empty_without_config() {
         use petal_tongue_core::test_fixtures::env_test_helpers;
 
@@ -379,11 +381,11 @@ mod tests {
                             );
                         },
                     )
-                    .await
+                    .await;
                 })
-                .await
+                .await;
             })
-            .await
+            .await;
         })
         .await;
     }

@@ -128,13 +128,13 @@ impl TarpcClient {
         debug!("Calling method: {} with params: {:?}", method, params);
 
         match method {
-            "get_capabilities" => {
+            "capability.list" | "get_capabilities" => {
                 let result = self.get_capabilities().await?;
                 serde_json::to_value(result).map_err(|e| {
                     TarpcClientError::Serialization(format!("Failed to serialize: {e}"))
                 })
             }
-            "discover_capability" => {
+            "discovery.find_capability" | "discover_capability" => {
                 let capability = params
                     .as_ref()
                     .and_then(|v| v.get("capability"))
@@ -149,25 +149,25 @@ impl TarpcClient {
                     TarpcClientError::Serialization(format!("Failed to serialize: {e}"))
                 })
             }
-            "health" => {
+            "health.check" | "health.get" | "health" => {
                 let result = self.health().await?;
                 serde_json::to_value(result).map_err(|e| {
                     TarpcClientError::Serialization(format!("Failed to serialize: {e}"))
                 })
             }
-            "version" => {
+            "version.get" | "version" => {
                 let result = self.version().await?;
                 serde_json::to_value(result).map_err(|e| {
                     TarpcClientError::Serialization(format!("Failed to serialize: {e}"))
                 })
             }
-            "protocols" => {
+            "protocols.list" | "protocols" => {
                 let result = self.protocols().await?;
                 serde_json::to_value(result).map_err(|e| {
                     TarpcClientError::Serialization(format!("Failed to serialize: {e}"))
                 })
             }
-            "render_graph" => {
+            "visualization.render_graph" | "render_graph" => {
                 let request: RenderRequest = serde_json::from_value(params.ok_or_else(|| {
                     TarpcClientError::Configuration("Missing request parameter".to_string())
                 })?)
@@ -178,7 +178,7 @@ impl TarpcClient {
                     TarpcClientError::Serialization(format!("Failed to serialize: {e}"))
                 })
             }
-            "get_metrics" => {
+            "metrics.get" | "get_metrics" => {
                 let result = self.get_metrics().await?;
                 serde_json::to_value(result).map_err(|e| {
                     TarpcClientError::Serialization(format!("Failed to serialize: {e}"))
@@ -230,7 +230,7 @@ impl TarpcClient {
             tokio_serde::formats::Bincode::default(),
         );
 
-        let client = PetalTongueRpcClient::new(Default::default(), transport).spawn();
+        let client = PetalTongueRpcClient::new(tarpc::client::Config::default(), transport).spawn();
 
         info!("🚀 tarpc client ready for {}", self.endpoint);
 
@@ -280,16 +280,19 @@ impl TarpcClient {
     }
 
     #[doc(hidden)]
+    #[must_use]
     pub fn endpoint(&self) -> &str {
         &self.endpoint
     }
 
     #[doc(hidden)]
+    #[must_use]
     pub fn addr(&self) -> SocketAddr {
         self.addr
     }
 
     #[doc(hidden)]
+    #[must_use]
     pub fn timeout(&self) -> Duration {
         self.timeout
     }

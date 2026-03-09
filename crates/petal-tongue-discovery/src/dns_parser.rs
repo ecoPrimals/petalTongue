@@ -86,7 +86,7 @@ impl<'a> NameParser<'a> {
 
     /// Parse a DNS name starting at offset
     ///
-    /// Returns (name, bytes_consumed)
+    /// Returns (name, `bytes_consumed`)
     pub fn parse_name(&self, mut offset: usize) -> Result<(String, usize)> {
         let start_offset = offset;
         let mut name = String::new();
@@ -188,6 +188,7 @@ pub struct TxtRecord {
 }
 
 impl TxtRecord {
+    #[allow(clippy::unnecessary_wraps)]
     pub fn parse(rdata: &[u8]) -> Result<Self> {
         let mut attributes = Vec::new();
         let mut offset = 0;
@@ -277,7 +278,7 @@ pub struct ResourceRecord {
 impl ResourceRecord {
     /// Parse a resource record starting at offset
     ///
-    /// Returns (record, bytes_consumed)
+    /// Returns (record, `bytes_consumed`)
     pub fn parse(data: &[u8], offset: usize) -> Result<(Self, usize)> {
         let parser = NameParser::new(data);
         let (name, name_len) = parser.parse_name(offset)?;

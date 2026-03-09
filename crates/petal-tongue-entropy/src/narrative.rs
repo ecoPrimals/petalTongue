@@ -4,7 +4,7 @@
 //! Captures keystroke dynamics, typing rhythm, and content uniqueness.
 
 use crate::quality::{shannon_entropy, timing_entropy, weighted_quality};
-use crate::types::*;
+use crate::types::{BackspaceEvent, NarrativeEntropyData, NarrativeQualityMetrics};
 use std::time::{Duration, Instant};
 
 /// Compute Shannon entropy over character frequencies in the input text.
@@ -17,6 +17,7 @@ use std::time::{Duration, Instant};
 ///
 /// # Returns
 /// Shannon entropy in bits, or 0.0 for empty input
+#[must_use]
 pub fn compute_text_entropy(text: &str) -> f64 {
     if text.is_empty() {
         return 0.0;
@@ -49,6 +50,7 @@ pub fn compute_text_entropy(text: &str) -> f64 {
 ///
 /// # Returns
 /// Complexity score [0.0-1.0], or 0.0 for empty input
+#[must_use]
 pub fn narrative_complexity(text: &str) -> f64 {
     if text.is_empty() {
         return 0.0;
@@ -67,7 +69,7 @@ pub fn narrative_complexity(text: &str) -> f64 {
     // 2. Average sentence length (words per sentence)
     let sentences: Vec<&str> = text
         .split(|c: char| ['.', '!', '?'].contains(&c))
-        .map(|s| s.trim())
+        .map(str::trim)
         .filter(|s| !s.is_empty())
         .collect();
     let num_sentences = sentences.len().max(1);
@@ -76,7 +78,7 @@ pub fn narrative_complexity(text: &str) -> f64 {
     let sentence_component = (avg_sentence_len / 25.0).min(1.0);
 
     // 3. Punctuation density
-    let punct_count = text.chars().filter(|c| c.is_ascii_punctuation()).count();
+    let punct_count = text.chars().filter(char::is_ascii_punctuation).count();
     let punct_density = punct_count as f64 / text.len() as f64;
     let punct_component = (punct_density * 10.0).min(1.0);
 
@@ -94,6 +96,7 @@ pub struct NarrativeEntropyCapture {
 
 impl NarrativeEntropyCapture {
     /// Create a new narrative entropy capturer
+    #[must_use]
     pub fn new() -> Self {
         Self {
             text: String::new(),
@@ -134,6 +137,7 @@ impl NarrativeEntropyCapture {
     }
 
     /// Assess current quality
+    #[must_use]
     pub fn assess_quality(&self) -> NarrativeQualityMetrics {
         if self.text.is_empty() {
             return NarrativeQualityMetrics {
@@ -241,6 +245,7 @@ impl Default for NarrativeEntropyCapture {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::float_cmp)]
     use super::*;
 
     #[test]

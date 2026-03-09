@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! LiveSpore View
+//! `LiveSpore` View
 //!
-//! Live deployment management for biomeOS.
+//! Live deployment management for the orchestration runtime.
 //! Shows deployment pipeline and node status.
 
 use ratatui::{
@@ -14,7 +14,7 @@ use ratatui::{
 
 use crate::state::TUIState;
 
-/// Render LiveSpore view
+/// Render `LiveSpore` view
 pub fn render(frame: &mut Frame, area: Rect, state: &TUIState) {
     let standalone = tokio::runtime::Handle::current().block_on(state.is_standalone());
 
@@ -44,7 +44,7 @@ fn render_deployment_pipeline(frame: &mut Frame, area: Rect, standalone: bool) {
                 Style::default().fg(Color::Yellow),
             )])),
             ListItem::new(Line::from("")),
-            ListItem::new(Line::from("LiveSpore requires biomeOS.")),
+            ListItem::new(Line::from("LiveSpore requires the orchestration runtime.")),
         ]
     } else {
         vec![
@@ -62,16 +62,16 @@ fn render_deployment_pipeline(frame: &mut Frame, area: Rect, standalone: bool) {
             )])),
             ListItem::new(Line::from("")),
             ListItem::new(Line::from("Deployments will appear here")),
-            ListItem::new(Line::from("when initiated via biomeOS.")),
+            ListItem::new(Line::from("when initiated via the orchestration runtime.")),
             ListItem::new(Line::from("")),
             ListItem::new(Line::from(vec![Span::styled(
                 "💡 Deployment Types:",
                 Style::default().fg(Color::Cyan),
             )])),
             ListItem::new(Line::from("")),
-            ListItem::new(Line::from("  • Tower (BearDog + Songbird)")),
-            ListItem::new(Line::from("  • Node (Tower + ToadStool)")),
-            ListItem::new(Line::from("  • Nest (Tower + NestGate)")),
+            ListItem::new(Line::from("  • Tower (compute + discovery)")),
+            ListItem::new(Line::from("  • Node (Tower + layout)")),
+            ListItem::new(Line::from("  • Nest (Tower + gateway)")),
             ListItem::new(Line::from("  • NUCLEUS (All atomics)")),
         ]
     };
@@ -98,7 +98,7 @@ fn render_node_status(frame: &mut Frame, area: Rect, standalone: bool) {
                     .add_modifier(Modifier::BOLD),
             )]),
             Line::from(""),
-            Line::from("LiveSpore is biomeOS's live"),
+            Line::from("LiveSpore is the orchestration runtime's live"),
             Line::from("deployment system."),
             Line::from(""),
             Line::from("It manages:"),

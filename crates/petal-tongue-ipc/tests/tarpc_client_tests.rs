@@ -97,7 +97,7 @@ mod live_tests {
     }
 
     #[tokio::test]
-    #[ignore] // Run with: cargo test --features integration-tests -- --ignored
+    #[ignore = "Run with: cargo test --features integration-tests -- --ignored"]
     async fn test_live_health_check() {
         let endpoint = get_test_endpoint().expect("TARPC_TEST_ENDPOINT not set");
         let client = TarpcClient::new(&endpoint).unwrap();
@@ -111,7 +111,7 @@ mod live_tests {
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "Requires live tarpc server"]
     async fn test_live_get_capabilities() {
         let endpoint = get_test_endpoint().expect("TARPC_TEST_ENDPOINT not set");
         let client = TarpcClient::new(&endpoint).unwrap();
@@ -128,7 +128,7 @@ mod live_tests {
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "Requires live tarpc server"]
     async fn test_live_version() {
         let endpoint = get_test_endpoint().expect("TARPC_TEST_ENDPOINT not set");
         let client = TarpcClient::new(&endpoint).unwrap();
@@ -142,7 +142,7 @@ mod live_tests {
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "Requires live tarpc server"]
     async fn test_live_protocols() {
         let endpoint = get_test_endpoint().expect("TARPC_TEST_ENDPOINT not set");
         let client = TarpcClient::new(&endpoint).unwrap();

@@ -2,13 +2,10 @@
 //! Integration tests for petal-tongue-ui-core
 
 use anyhow::Result;
-use petal_tongue_core::{
-    GraphEngine, LayoutAlgorithm, PrimalHealthStatus, PrimalInfo, TopologyEdge,
-};
+use petal_tongue_core::{GraphEngine, PrimalHealthStatus, PrimalInfo, TopologyEdge};
 use petal_tongue_ui_core::{
     CanvasUI, ExportFormat, SvgUI, TerminalUI, TextUI, UIMode, UniversalUI, detect_best_ui_mode,
 };
-use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 /// Create a test graph with sample data
@@ -25,7 +22,7 @@ fn create_test_graph() -> Arc<RwLock<GraphEngine>> {
             "http://localhost:8001",
             vec!["compute".to_string(), "test".to_string()],
             PrimalHealthStatus::Healthy,
-            1704571200,
+            1_704_571_200,
         ),
         PrimalInfo::new(
             "test-2",
@@ -34,7 +31,7 @@ fn create_test_graph() -> Arc<RwLock<GraphEngine>> {
             "http://localhost:8002",
             vec!["storage".to_string(), "test".to_string()],
             PrimalHealthStatus::Warning,
-            1704571200,
+            1_704_571_200,
         ),
         PrimalInfo::new(
             "test-3",
@@ -43,7 +40,7 @@ fn create_test_graph() -> Arc<RwLock<GraphEngine>> {
             "http://localhost:8003",
             vec!["security".to_string(), "test".to_string()],
             PrimalHealthStatus::Critical,
-            1704571200,
+            1_704_571_200,
         ),
     ];
 
@@ -143,6 +140,7 @@ fn test_text_ui_dot_integration() -> Result<()> {
 }
 
 #[test]
+#[allow(clippy::unnecessary_wraps)]
 fn test_canvas_ui_integration() -> Result<()> {
     let graph = create_test_graph();
     let ui = CanvasUI::new(graph, 800, 600);
@@ -275,10 +273,10 @@ fn test_large_graph_rendering() -> Result<()> {
     // Create 20 primals
     for i in 0..20 {
         let primal = PrimalInfo::new(
-            format!("primal-{}", i),
-            format!("Primal {}", i),
+            format!("primal-{i}"),
+            format!("Primal {i}"),
             "Test",
-            format!("http://localhost:800{}", i),
+            format!("http://localhost:800{i}"),
             vec!["test".to_string()],
             if i % 3 == 0 {
                 PrimalHealthStatus::Healthy
@@ -287,7 +285,7 @@ fn test_large_graph_rendering() -> Result<()> {
             } else {
                 PrimalHealthStatus::Critical
             },
-            1704571200,
+            1_704_571_200,
         );
         g.add_node(primal);
     }
@@ -295,10 +293,10 @@ fn test_large_graph_rendering() -> Result<()> {
     // Create edges
     for i in 0..19 {
         g.add_edge(TopologyEdge {
-            from: format!("primal-{}", i).into(),
+            from: format!("primal-{i}").into(),
             to: format!("primal-{}", i + 1).into(),
             edge_type: "connects".to_string(),
-            label: Some(format!("Connection {}", i)),
+            label: Some(format!("Connection {i}")),
             capability: None,
             metrics: None,
         });
@@ -321,6 +319,7 @@ fn test_large_graph_rendering() -> Result<()> {
 }
 
 #[test]
+#[allow(clippy::unnecessary_wraps)]
 fn test_health_status_colors() -> Result<()> {
     use petal_tongue_ui_core::{health_to_color, health_to_emoji, health_to_percentage};
 

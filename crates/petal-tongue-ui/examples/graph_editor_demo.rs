@@ -192,7 +192,7 @@ async fn main() -> Result<()> {
                     "demo-graph".to_string(),
                     node_id.clone(),
                     progress as f32 / 100.0,
-                    format!("Processing... {}%", progress),
+                    format!("Processing... {progress}%"),
                 )
                 .await?;
         }

@@ -11,8 +11,6 @@ use petal_tongue_discovery::{MockVisualizationProvider, VisualizationDataProvide
 #[tokio::test]
 async fn test_mock_provider_creation() {
     let _provider = MockVisualizationProvider::new();
-    // Should create without error
-    assert!(true, "Mock provider created successfully");
 }
 
 #[tokio::test]
@@ -105,7 +103,6 @@ async fn test_mock_no_side_effects() {
     }
 
     // Should complete without panics or errors
-    assert!(true, "Mock provider has no side effects");
 }
 
 #[tokio::test]

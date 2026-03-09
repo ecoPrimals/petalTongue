@@ -28,12 +28,13 @@ pub enum View {
     NeuralAPI,
     /// NUCLEUS secure discovery
     Nucleus,
-    /// LiveSpore live deployment
+    /// `LiveSpore` live deployment
     LiveSpore,
 }
 
 impl View {
     /// Get the keyboard shortcut for this view
+    #[must_use]
     pub const fn shortcut(&self) -> char {
         match self {
             Self::Dashboard => '1',
@@ -48,6 +49,7 @@ impl View {
     }
 
     /// Get the display name for this view
+    #[must_use]
     pub const fn name(&self) -> &'static str {
         match self {
             Self::Dashboard => "Dashboard",
@@ -62,6 +64,7 @@ impl View {
     }
 
     /// Get all views
+    #[must_use]
     pub const fn all() -> [Self; 8] {
         [
             Self::Dashboard,
@@ -161,6 +164,7 @@ pub struct TUIState {
 
 impl TUIState {
     /// Create new TUI state
+    #[must_use]
     pub fn new() -> Self {
         Self {
             view: Arc::new(RwLock::new(View::Dashboard)),
@@ -271,14 +275,15 @@ impl TUIState {
     }
 
     /// Check if primal has capability
+    #[must_use]
     pub fn has_capability(&self, primal: &str, capability: &str) -> bool {
         self.capabilities
             .get(primal)
-            .map(|caps| caps.iter().any(|c| c == capability))
-            .unwrap_or(false)
+            .is_some_and(|caps| caps.iter().any(|c| c == capability))
     }
 
     /// Get all capabilities for a primal
+    #[must_use]
     pub fn get_capabilities(&self, primal: &str) -> Option<Vec<String>> {
         self.capabilities.get(primal).map(|caps| caps.clone())
     }

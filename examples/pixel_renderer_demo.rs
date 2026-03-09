@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Egui Pixel Renderer Demo
 //!
-//! Demonstrates the EguiPixelRenderer converting egui UI to RGBA8 pixels.
+//! Demonstrates the `EguiPixelRenderer` converting egui UI to RGBA8 pixels.
 //! This is a proof-of-concept for the Pure Rust Display System.
 
 use anyhow::Result;
@@ -60,16 +60,16 @@ fn main() -> Result<()> {
     // Save as PNG for verification
     let output_path = "/tmp/petaltongue_pixel_render_demo.png";
     save_as_png(&buffer, 800, 600, output_path)?;
-    println!("✅ Saved to: {}", output_path);
+    println!("✅ Saved to: {output_path}");
 
     println!("\n════════════════════════════════════════════════════════════");
     println!("   🏆 SUCCESS! Egui → Pixels Working!");
     println!("════════════════════════════════════════════════════════════\n");
 
     println!("The rendered UI has been saved to:");
-    println!("  {}", output_path);
+    println!("  {output_path}");
     println!("\nYou can view it with:");
-    println!("  xdg-open {}", output_path);
+    println!("  xdg-open {output_path}");
     println!("\nThis demonstrates that petalTongue can render its full UI");
     println!("to a pixel buffer without OpenGL or a display server! 🌸");
 

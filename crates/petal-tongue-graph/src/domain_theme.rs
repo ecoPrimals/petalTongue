@@ -153,3 +153,105 @@ pub fn palette_for_domain(domain: &str) -> &'static DomainPalette {
         _ => &DEFAULT,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn palette_health() {
+        let p = palette_for_domain("health");
+        assert_eq!(p.primary, HEALTH.primary);
+    }
+
+    #[test]
+    fn palette_clinical() {
+        let p = palette_for_domain("clinical");
+        assert_eq!(p.primary, HEALTH.primary);
+    }
+
+    #[test]
+    fn palette_physics() {
+        let p = palette_for_domain("physics");
+        assert_eq!(p.primary, PHYSICS.primary);
+    }
+
+    #[test]
+    fn palette_plasma() {
+        let p = palette_for_domain("plasma");
+        assert_eq!(p.primary, PHYSICS.primary);
+    }
+
+    #[test]
+    fn palette_nuclear() {
+        let p = palette_for_domain("nuclear");
+        assert_eq!(p.primary, PHYSICS.primary);
+    }
+
+    #[test]
+    fn palette_ecology() {
+        let p = palette_for_domain("ecology");
+        assert_eq!(p.primary, ECOLOGY.primary);
+    }
+
+    #[test]
+    fn palette_metagenomics() {
+        let p = palette_for_domain("metagenomics");
+        assert_eq!(p.primary, ECOLOGY.primary);
+    }
+
+    #[test]
+    fn palette_chemistry() {
+        let p = palette_for_domain("chemistry");
+        assert_eq!(p.primary, ECOLOGY.primary);
+    }
+
+    #[test]
+    fn palette_atmospheric() {
+        let p = palette_for_domain("atmospheric");
+        assert_eq!(p.primary, ATMOSPHERIC.primary);
+    }
+
+    #[test]
+    fn palette_measurement() {
+        let p = palette_for_domain("measurement");
+        assert_eq!(p.primary, MEASUREMENT.primary);
+    }
+
+    #[test]
+    fn palette_neural() {
+        let p = palette_for_domain("neural");
+        assert_eq!(p.primary, NEURAL.primary);
+    }
+
+    #[test]
+    fn palette_ml() {
+        let p = palette_for_domain("ml");
+        assert_eq!(p.primary, NEURAL.primary);
+    }
+
+    #[test]
+    fn palette_unknown_returns_default() {
+        let p = palette_for_domain("unknown_domain_xyz");
+        assert_eq!(p.primary, DEFAULT.primary);
+    }
+
+    #[test]
+    fn palette_finance_returns_default() {
+        let p = palette_for_domain("finance");
+        assert_eq!(p.primary, DEFAULT.primary);
+    }
+
+    #[test]
+    fn palette_network_returns_default() {
+        let p = palette_for_domain("network");
+        assert_eq!(p.primary, DEFAULT.primary);
+    }
+
+    #[test]
+    fn palette_case_insensitive() {
+        assert_eq!(palette_for_domain("HEALTH").primary, HEALTH.primary);
+        assert_eq!(palette_for_domain("Physics").primary, PHYSICS.primary);
+        assert_eq!(palette_for_domain("ECOLOGY").primary, ECOLOGY.primary);
+    }
+}

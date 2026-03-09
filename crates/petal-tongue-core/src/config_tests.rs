@@ -54,7 +54,7 @@ mod tests {
         let config = PetalTongueConfig::default();
         // mock_mode should be a boolean
         // Mock mode can be either true or false
-        assert!(config.mock_mode || true);
+        assert!(matches!(config.mock_mode, true | false));
     }
 
     #[test]
@@ -62,16 +62,15 @@ mod tests {
         let config = PetalTongueConfig::default();
         // audio_enabled should be a boolean
         // Audio can be enabled or disabled
-        assert!(config.audio_enabled || true);
+        assert!(matches!(config.audio_enabled, true | false));
     }
 
     #[test]
     fn test_biomeos_url_optional() {
         let config = PetalTongueConfig::default();
         // biomeos_url is Option, so it can be Some or None
-        match config.biomeos_url {
-            Some(url) => assert!(!url.is_empty()),
-            None => {} // None is valid for Songbird auto-discovery
+        if let Some(url) = config.biomeos_url {
+            assert!(!url.is_empty());
         }
     }
 }

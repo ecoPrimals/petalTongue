@@ -4,7 +4,7 @@
 //! Captures sensor data (accelerometer, gyroscope) and touch patterns.
 
 use crate::quality::{create_histogram_buckets, shannon_entropy, variance, weighted_quality};
-use crate::types::*;
+use crate::types::{GestureEntropyData, GestureQualityMetrics, Point2D, TouchEvent, Vec3};
 use std::f64::consts::PI;
 use std::time::Duration;
 
@@ -18,16 +18,18 @@ use std::time::Duration;
 ///
 /// # Returns
 /// Shannon entropy [0.0-1.0], or 0.0 for empty or single-point input
+#[must_use]
 pub fn analyze_gesture_entropy(points: &[Point2D]) -> f64 {
+    const NUM_BUCKETS: usize = 16;
+
     if points.len() < 2 {
         return 0.0;
     }
 
-    // Compute movement angles from deltas
     let mut angles: Vec<f64> = Vec::with_capacity(points.len() - 1);
     for i in 0..points.len() - 1 {
-        let dx = (points[i + 1].x - points[i].x) as f64;
-        let dy = (points[i + 1].y - points[i].y) as f64;
+        let dx = f64::from(points[i + 1].x - points[i].x);
+        let dy = f64::from(points[i + 1].y - points[i].y);
 
         // Skip zero-length segments (no movement)
         if dx.abs() < 1e-10 && dy.abs() < 1e-10 {
@@ -48,8 +50,6 @@ pub fn analyze_gesture_entropy(points: &[Point2D]) -> f64 {
         return 0.0;
     }
 
-    // Histogram into 16 direction buckets (22.5° each)
-    const NUM_BUCKETS: usize = 16;
     let buckets = create_histogram_buckets(&angles, NUM_BUCKETS);
 
     if buckets.is_empty() {
@@ -72,20 +72,21 @@ pub fn analyze_gesture_entropy(points: &[Point2D]) -> f64 {
 ///
 /// # Returns
 /// Complexity score [0.0-1.0], or 0.0 for empty/single-point input
+#[must_use]
 pub fn gesture_complexity(points: &[Point2D], timestamps: &[Duration]) -> f64 {
+    const ANGLE_THRESHOLD: f64 = 0.5;
+
     if points.len() < 2 {
         return 0.0;
     }
 
-    // 1. Path length (sum of segment lengths)
     let mut path_length = 0.0_f64;
     let mut direction_changes = 0_usize;
     let mut prev_angle: Option<f64> = None;
-    const ANGLE_THRESHOLD: f64 = 0.5; // ~29° change to count as direction change
 
     for i in 0..points.len() - 1 {
-        let dx = (points[i + 1].x - points[i].x) as f64;
-        let dy = (points[i + 1].y - points[i].y) as f64;
+        let dx = f64::from(points[i + 1].x - points[i].x);
+        let dy = f64::from(points[i + 1].y - points[i].y);
         let seg_len = (dx * dx + dy * dy).sqrt();
         path_length += seg_len;
 
@@ -124,8 +125,8 @@ pub fn gesture_complexity(points: &[Point2D], timestamps: &[Duration]) -> f64 {
                 .as_secs_f64()
                 * 1000.0;
             if dt_ms > 1e-6 {
-                let dx = (points[i + 1].x - points[i].x) as f64;
-                let dy = (points[i + 1].y - points[i].y) as f64;
+                let dx = f64::from(points[i + 1].x - points[i].x);
+                let dy = f64::from(points[i + 1].y - points[i].y);
                 let dist = (dx * dx + dy * dy).sqrt();
                 speeds.push(dist / dt_ms);
             }
@@ -153,6 +154,7 @@ pub struct GestureEntropyCapture {
 
 impl GestureEntropyCapture {
     /// Create a new gesture entropy capturer
+    #[must_use]
     pub fn new() -> Self {
         Self {
             accelerometer: Vec::new(),
@@ -175,6 +177,7 @@ impl GestureEntropyCapture {
     }
 
     /// Assess current quality
+    #[must_use]
     pub fn assess_quality(&self) -> GestureQualityMetrics {
         if self.accelerometer.is_empty() && self.touch_events.is_empty() {
             return GestureQualityMetrics {
@@ -216,7 +219,7 @@ impl GestureEntropyCapture {
         let magnitudes: Vec<f64> = self
             .accelerometer
             .iter()
-            .map(|v| ((v.x * v.x + v.y * v.y + v.z * v.z) as f64).sqrt())
+            .map(|v| f64::from(v.x * v.x + v.y * v.y + v.z * v.z).sqrt())
             .collect();
 
         variance(&magnitudes)
@@ -255,7 +258,7 @@ impl GestureEntropyCapture {
             count += 1;
         }
 
-        count as f64 / 3.0 // Normalize to [0.0-1.0]
+        f64::from(count) / 3.0 // Normalize to [0.0-1.0]
     }
 
     /// Finalize and create entropy data
@@ -280,6 +283,8 @@ impl Default for GestureEntropyCapture {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::float_cmp)]
+
     use super::*;
 
     #[test]

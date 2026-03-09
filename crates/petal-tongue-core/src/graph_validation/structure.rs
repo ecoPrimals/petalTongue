@@ -242,3 +242,100 @@ pub(super) fn get_execution_order(graph: &VisualGraph) -> Option<Vec<String>> {
         None // Cycle detected
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::graph_builder::{GraphEdge, GraphNode, NodeType, Vec2, VisualGraph};
+
+    #[test]
+    fn test_get_execution_order_linear() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        n1.set_parameter("primal_name".to_string(), "a".to_string());
+        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        let id1 = n1.id.clone();
+        let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
+        n2.set_parameter("primal_name".to_string(), "b".to_string());
+        n2.set_parameter("timeout".to_string(), "30".to_string());
+        let id2 = n2.id.clone();
+        graph.add_node(n1);
+        graph.add_node(n2);
+        graph
+            .add_edge(GraphEdge::dependency(id1.clone(), id2.clone()))
+            .unwrap();
+        let order = get_execution_order(&graph).unwrap();
+        assert_eq!(order.len(), 2);
+        assert_eq!(order[0], id1);
+        assert_eq!(order[1], id2);
+    }
+
+    #[test]
+    fn test_get_execution_order_cycle_returns_none() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        n1.set_parameter("primal_name".to_string(), "a".to_string());
+        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        let id1 = n1.id.clone();
+        let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
+        n2.set_parameter("primal_name".to_string(), "b".to_string());
+        n2.set_parameter("timeout".to_string(), "30".to_string());
+        let id2 = n2.id.clone();
+        graph.add_node(n1);
+        graph.add_node(n2);
+        graph
+            .add_edge(GraphEdge::dependency(id1.clone(), id2.clone()))
+            .unwrap();
+        graph.add_edge(GraphEdge::dependency(id2, id1)).unwrap();
+        let order = get_execution_order(&graph);
+        assert!(order.is_none());
+    }
+
+    #[test]
+    fn test_check_cycles_detects_cycle() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        n1.set_parameter("primal_name".to_string(), "a".to_string());
+        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        let id1 = n1.id.clone();
+        let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
+        n2.set_parameter("primal_name".to_string(), "b".to_string());
+        n2.set_parameter("timeout".to_string(), "30".to_string());
+        let id2 = n2.id.clone();
+        graph.add_node(n1);
+        graph.add_node(n2);
+        graph
+            .add_edge(GraphEdge::dependency(id1.clone(), id2.clone()))
+            .unwrap();
+        graph.add_edge(GraphEdge::dependency(id2, id1)).unwrap();
+        let mut result = crate::graph_validation::types::ValidationResult::new();
+        check_cycles(&graph, &mut result);
+        assert!(result.has_errors());
+        assert!(result.errors().iter().any(|e| e.message.contains("cycle")));
+    }
+
+    #[test]
+    fn test_check_unreachable_nodes() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        n1.set_parameter("primal_name".to_string(), "a".to_string());
+        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        let id1 = n1.id.clone();
+        let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
+        n2.set_parameter("primal_name".to_string(), "b".to_string());
+        n2.set_parameter("timeout".to_string(), "30".to_string());
+        let id2 = n2.id.clone();
+        let mut n3 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        n3.set_parameter("primal_name".to_string(), "orphan".to_string());
+        n3.set_parameter("family_id".to_string(), "f1".to_string());
+        let id3 = n3.id.clone();
+        graph.add_node(n1);
+        graph.add_node(n2);
+        graph.add_node(n3);
+        graph.add_edge(GraphEdge::dependency(id1, id2)).unwrap();
+        graph.edges.push(GraphEdge::dependency(id3.clone(), id3));
+        let mut result = crate::graph_validation::types::ValidationResult::new();
+        check_unreachable_nodes(&graph, &mut result);
+        assert!(result.has_warnings());
+    }
+}

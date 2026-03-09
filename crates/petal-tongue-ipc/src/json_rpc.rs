@@ -85,6 +85,7 @@ pub struct JsonRpcResponse {
 
 impl JsonRpcResponse {
     /// Create a successful response
+    #[must_use]
     pub fn success(id: Value, result: Value) -> Self {
         Self {
             jsonrpc: "2.0".to_string(),
@@ -168,11 +169,11 @@ mod tests {
 
     #[test]
     fn test_json_rpc_request_serialization() {
-        let request = JsonRpcRequest::new("get_capabilities", json!({}), json!(1));
+        let request = JsonRpcRequest::new("capability.list", json!({}), json!(1));
 
         let json = serde_json::to_string(&request).expect("request serialization");
         assert!(json.contains("\"jsonrpc\":\"2.0\""));
-        assert!(json.contains("\"method\":\"get_capabilities\""));
+        assert!(json.contains("\"method\":\"capability.list\""));
         assert!(json.contains("\"id\":1"));
     }
 
@@ -205,14 +206,14 @@ mod tests {
     fn test_json_rpc_request_deserialization() {
         let json = r#"{
             "jsonrpc": "2.0",
-            "method": "get_health",
+            "method": "health.get",
             "params": {},
             "id": 42
         }"#;
 
         let request: JsonRpcRequest = serde_json::from_str(json).expect("request deserialization");
         assert_eq!(request.jsonrpc, "2.0");
-        assert_eq!(request.method, "get_health");
+        assert_eq!(request.method, "health.get");
         assert_eq!(request.id, json!(42));
     }
 

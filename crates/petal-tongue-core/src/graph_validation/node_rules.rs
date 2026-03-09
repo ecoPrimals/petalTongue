@@ -68,3 +68,62 @@ pub(super) fn validate_nodes(graph: &VisualGraph, result: &mut ValidationResult)
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::graph_builder::{GraphNode, NodeType, Vec2, VisualGraph};
+    use crate::graph_validation::types::ValidationResult;
+
+    #[test]
+    fn test_valid_primal_start() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        node.set_parameter("primal_name".to_string(), "x".to_string());
+        node.set_parameter("family_id".to_string(), "f1".to_string());
+        graph.add_node(node);
+        let mut result = ValidationResult::new();
+        validate_nodes(&graph, &mut result);
+        assert!(result.is_valid());
+    }
+
+    #[test]
+    fn test_invalid_primal_start_missing_params() {
+        let mut graph = VisualGraph::new("g".to_string());
+        graph.add_node(GraphNode::new(NodeType::PrimalStart, Vec2::zero()));
+        let mut result = ValidationResult::new();
+        validate_nodes(&graph, &mut result);
+        assert!(!result.is_valid());
+    }
+
+    #[test]
+    fn test_verification_requires_primal_name() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut node = GraphNode::new(NodeType::Verification, Vec2::zero());
+        node.set_parameter("timeout".to_string(), "30".to_string());
+        graph.add_node(node);
+        let mut result = ValidationResult::new();
+        validate_nodes(&graph, &mut result);
+        assert!(!result.is_valid());
+    }
+
+    #[test]
+    fn test_waitfor_requires_condition() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut node = GraphNode::new(NodeType::WaitFor, Vec2::zero());
+        node.set_parameter("timeout".to_string(), "30".to_string());
+        graph.add_node(node);
+        let mut result = ValidationResult::new();
+        validate_nodes(&graph, &mut result);
+        assert!(!result.is_valid());
+    }
+
+    #[test]
+    fn test_conditional_requires_condition() {
+        let mut graph = VisualGraph::new("g".to_string());
+        graph.add_node(GraphNode::new(NodeType::Conditional, Vec2::zero()));
+        let mut result = ValidationResult::new();
+        validate_nodes(&graph, &mut result);
+        assert!(!result.is_valid());
+    }
+}

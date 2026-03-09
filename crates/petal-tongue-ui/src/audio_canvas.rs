@@ -217,7 +217,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Requires audio hardware
+    #[ignore = "Requires audio hardware"]
     fn test_open_and_write() {
         let devices = AudioCanvas::discover().expect("Failed to discover devices");
 

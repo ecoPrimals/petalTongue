@@ -143,6 +143,7 @@ pub enum IpcClientError {
 }
 
 /// Get socket path for an instance
+#[allow(clippy::unnecessary_wraps)]
 fn get_socket_path(instance_id: &InstanceId) -> Result<PathBuf, IpcClientError> {
     use petal_tongue_core::constants::APP_DIR_NAME;
 

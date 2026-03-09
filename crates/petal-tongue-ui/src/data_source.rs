@@ -105,8 +105,70 @@ mod tests {
     async fn test_data_source_creation() {
         let client = BiomeOSClient::new("http://test:3000").with_mock_mode(true);
         let data_source = DataSource::new(client);
-        // Just verify it constructs
         assert!(std::mem::size_of_val(&data_source) > 0);
+    }
+
+    #[test]
+    fn test_update_graph_manual_data() {
+        use petal_tongue_core::{PrimalHealthStatus, PrimalId};
+
+        let client = BiomeOSClient::new("http://test:3000").with_mock_mode(true);
+        let data_source = DataSource::new(client);
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+
+        let primals = vec![PrimalInfo::new(
+            PrimalId::from("p1"),
+            "TestPrimal",
+            "Compute",
+            "http://test",
+            vec![],
+            PrimalHealthStatus::Healthy,
+            0,
+        )];
+        let edges = vec![TopologyEdge {
+            from: PrimalId::from("p1"),
+            to: PrimalId::from("p1"),
+            edge_type: "loop".to_string(),
+            label: None,
+            capability: None,
+            metrics: None,
+        }];
+
+        let result = data_source.update_graph(&graph, primals, edges);
+        assert!(result.is_ok());
+
+        let g = graph
+            .read()
+            .expect("SAFETY: Lock poisoned - indicates panic in concurrent thread");
+        assert_eq!(g.nodes().len(), 1);
+    }
+
+    #[test]
+    fn test_update_graph_clears_existing() {
+        use petal_tongue_core::{PrimalHealthStatus, PrimalId};
+
+        let client = BiomeOSClient::new("http://test:3000").with_mock_mode(true);
+        let data_source = DataSource::new(client);
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+
+        let primals1 = vec![PrimalInfo::new(
+            PrimalId::from("p1"),
+            "P1",
+            "T",
+            "http://a",
+            vec![],
+            PrimalHealthStatus::Healthy,
+            0,
+        )];
+        data_source.update_graph(&graph, primals1, vec![]).unwrap();
+
+        let primals2: Vec<PrimalInfo> = vec![];
+        data_source.update_graph(&graph, primals2, vec![]).unwrap();
+
+        let g = graph
+            .read()
+            .expect("SAFETY: Lock poisoned - indicates panic in concurrent thread");
+        assert_eq!(g.nodes().len(), 0);
     }
 
     #[cfg(feature = "mock")]

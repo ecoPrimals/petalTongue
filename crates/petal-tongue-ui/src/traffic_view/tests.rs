@@ -60,10 +60,66 @@ fn test_color_schemes() {
     let latency_color = TrafficView::calculate_flow_color(&metrics, ColorScheme::Latency);
     let error_color = TrafficView::calculate_flow_color(&metrics, ColorScheme::ErrorRate);
 
-    // Colors should be different
     assert_ne!(volume_color, latency_color);
     assert_ne!(volume_color, error_color);
     assert_ne!(latency_color, error_color);
+}
+
+#[test]
+fn test_flow_color_volume_bounds() {
+    let low = TrafficView::calculate_flow_color(
+        &TrafficMetrics {
+            bytes_per_second: 0,
+            ..Default::default()
+        },
+        ColorScheme::Volume,
+    );
+    let high = TrafficView::calculate_flow_color(
+        &TrafficMetrics {
+            bytes_per_second: 200_000,
+            ..Default::default()
+        },
+        ColorScheme::Volume,
+    );
+    assert_ne!(low, high);
+}
+
+#[test]
+fn test_flow_color_latency_bounds() {
+    let low = TrafficView::calculate_flow_color(
+        &TrafficMetrics {
+            avg_latency_ms: 0.0,
+            ..Default::default()
+        },
+        ColorScheme::Latency,
+    );
+    let high = TrafficView::calculate_flow_color(
+        &TrafficMetrics {
+            avg_latency_ms: 150.0,
+            ..Default::default()
+        },
+        ColorScheme::Latency,
+    );
+    assert_ne!(low, high);
+}
+
+#[test]
+fn test_flow_color_error_bounds() {
+    let low = TrafficView::calculate_flow_color(
+        &TrafficMetrics {
+            error_rate: 0.0,
+            ..Default::default()
+        },
+        ColorScheme::ErrorRate,
+    );
+    let high = TrafficView::calculate_flow_color(
+        &TrafficMetrics {
+            error_rate: 0.5,
+            ..Default::default()
+        },
+        ColorScheme::ErrorRate,
+    );
+    assert_ne!(low, high);
 }
 
 #[test]

@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+[lints]
+workspace = true
+
 [package]
 name = "petal-tongue-ipc"
 description = "Inter-process communication for petalTongue instances"
@@ -28,6 +32,8 @@ bincode = { workspace = true }
 default = []
 # Test helpers (env var manipulation, etc.) - only for cargo test --features test-fixtures
 test-fixtures = ["petal-tongue-core/test-fixtures"]
+# Live integration tests with running tarpc server
+integration-tests = []
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util", "macros"] }

@@ -63,3 +63,36 @@ impl EventStatus {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn event_status_color_all_variants() {
+        assert_eq!(
+            EventStatus::Success.color(),
+            Color32::from_rgb(100, 255, 100)
+        );
+        assert_eq!(
+            EventStatus::Failure.color(),
+            Color32::from_rgb(255, 100, 100)
+        );
+        assert_eq!(
+            EventStatus::InProgress.color(),
+            Color32::from_rgb(255, 200, 100)
+        );
+        assert_eq!(
+            EventStatus::Timeout.color(),
+            Color32::from_rgb(200, 100, 255)
+        );
+    }
+
+    #[test]
+    fn event_status_icon_all_variants() {
+        assert_eq!(EventStatus::Success.icon(), "✅");
+        assert_eq!(EventStatus::Failure.icon(), "❌");
+        assert_eq!(EventStatus::InProgress.icon(), "⏳");
+        assert_eq!(EventStatus::Timeout.icon(), "⏱️");
+    }
+}

@@ -119,7 +119,9 @@ impl TutorialMode {
             };
 
             // Update graph with scenario data
-            let mut graph = graph.write().expect("graph lock poisoned");
+            let mut graph = graph
+                .write()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             *graph = GraphEngine::new();
 
             info!(
@@ -157,7 +159,9 @@ impl TutorialMode {
         {
             warn!("📚 Tutorial mode: mock feature disabled - using minimal example");
             info!("💡 Start with --features mock for sandbox scenarios");
-            let mut graph = graph.write().expect("graph lock poisoned");
+            let mut graph = graph
+                .write()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             *graph = GraphEngine::new();
             Self::populate_minimal_example(&mut graph);
             graph.set_layout(layout);
@@ -176,7 +180,9 @@ impl TutorialMode {
         info!("💡 Loading minimal tutorial scenario so you can explore petalTongue");
         info!("📚 To see your real primals, ensure they're running and discoverable");
 
-        let mut graph = graph.write().expect("graph lock poisoned");
+        let mut graph = graph
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         *graph = GraphEngine::new();
 
         // Create minimal example with 3 primals

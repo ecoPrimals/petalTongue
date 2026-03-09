@@ -52,7 +52,7 @@ async fn handle_mock_connection(stream: UnixStream) {
                     error: None,
                     id: request.id,
                 },
-                "get_topology" => JsonRpcResponse {
+                "topology.get" | "get_topology" => JsonRpcResponse {
                     jsonrpc: "2.0".to_string(),
                     result: Some(serde_json::json!([])),
                     error: None,

@@ -600,4 +600,113 @@ mod tests {
             std::mem::discriminant(&ViewMode::TopDown)
         );
     }
+
+    #[test]
+    fn test_doom_key_all_codes() {
+        assert_eq!(DoomKey::Down.to_doom_code(), 0xAF);
+        assert_eq!(DoomKey::Left.to_doom_code(), 0xAC);
+        assert_eq!(DoomKey::Right.to_doom_code(), 0xAD);
+        assert_eq!(DoomKey::StrafeLeft.to_doom_code(), i32::from(b','));
+        assert_eq!(DoomKey::StrafeRight.to_doom_code(), i32::from(b'.'));
+        assert_eq!(DoomKey::Use.to_doom_code(), i32::from(b' '));
+        assert_eq!(DoomKey::Run.to_doom_code(), 0x9E);
+        assert_eq!(DoomKey::Weapon1.to_doom_code(), i32::from(b'1'));
+        assert_eq!(DoomKey::Weapon7.to_doom_code(), i32::from(b'7'));
+        assert_eq!(DoomKey::Map.to_doom_code(), i32::from(b'\t'));
+    }
+
+    #[test]
+    fn test_doom_error_display() {
+        let e = DoomError::WadNotFound("test".to_string());
+        assert!(e.to_string().contains("test"));
+        let e2 = DoomError::InvalidWad("bad".to_string());
+        assert!(e2.to_string().contains("bad"));
+        let e3 = DoomError::EngineError("err".to_string());
+        assert!(e3.to_string().contains("err"));
+    }
+
+    #[test]
+    fn test_doom_state_variants() {
+        assert!(matches!(DoomState::Uninitialized, DoomState::Uninitialized));
+        assert!(matches!(DoomState::Loading, DoomState::Loading));
+        assert!(matches!(DoomState::Menu, DoomState::Menu));
+        assert!(matches!(DoomState::Playing, DoomState::Playing));
+        assert!(matches!(DoomState::Paused, DoomState::Paused));
+        assert!(matches!(DoomState::Error, DoomState::Error));
+    }
+
+    #[test]
+    fn test_game_stats_view_mode() {
+        let doom = DoomInstance::new(320, 240).unwrap();
+        let stats = doom.stats();
+        assert_eq!(stats.view_mode, ViewMode::FirstPerson);
+    }
+
+    #[test]
+    fn test_load_map_with_wad() {
+        let wad_bytes = create_minimal_wad_bytes();
+        let path = std::env::temp_dir().join("petaltongue_doom_loadmap_test.wad");
+        std::fs::write(&path, &wad_bytes).unwrap();
+        let mut doom = DoomInstance::new(320, 240).unwrap();
+        doom.init_with_wad(Some(&path)).unwrap();
+        std::fs::remove_file(&path).ok();
+        assert!(doom.load_map("E1M1").is_ok());
+        assert_eq!(doom.current_map(), Some("E1M1"));
+    }
+
+    #[expect(
+        clippy::cast_possible_wrap,
+        reason = "WAD test offsets are small and fit in i32"
+    )]
+    fn dir_entry(off: u32, size: i32, name: &str) -> [u8; 16] {
+        let mut bytes = [0u8; 16];
+        bytes[0..4].copy_from_slice(&(off as i32).to_le_bytes());
+        bytes[4..8].copy_from_slice(&size.to_le_bytes());
+        let name_bytes = name.as_bytes();
+        bytes[8..8 + name_bytes.len().min(8)].copy_from_slice(name_bytes);
+        bytes
+    }
+
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        clippy::cast_sign_loss,
+        reason = "WAD test data uses small known sizes"
+    )]
+    fn create_minimal_wad_bytes() -> Vec<u8> {
+        let mut wad = Vec::new();
+        let data_start = 12u32;
+        let vertex_data = [0i16, 0i16, 100i16, 100i16];
+        let vertex_bytes: Vec<u8> = vertex_data.iter().flat_map(|v| v.to_le_bytes()).collect();
+        let vertex_size = vertex_bytes.len() as i32;
+        let linedef_data: [u8; 14] = [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let linedef_size = 14i32;
+        let mut sector_data = [0u8; 26];
+        sector_data[0..2].copy_from_slice(&0i16.to_le_bytes());
+        sector_data[2..4].copy_from_slice(&128i16.to_le_bytes());
+        sector_data[4..12].copy_from_slice(b"FLOOR4_6");
+        sector_data[12..20].copy_from_slice(b"CEIL3_5 ");
+        sector_data[20..22].copy_from_slice(&160u16.to_le_bytes());
+        let sector_size = 26i32;
+        let thing_data: [u8; 10] = [50, 0, 50, 0, 0, 0, 1, 0, 0, 0];
+        let thing_size = 10i32;
+        let vertex_offset = data_start;
+        let linedef_offset = data_start + vertex_size as u32;
+        let sector_offset = linedef_offset + linedef_size as u32;
+        let thing_offset = sector_offset + sector_size as u32;
+        let dir_offset = thing_offset + thing_size as u32;
+        wad.extend_from_slice(b"IWAD");
+        wad.extend_from_slice(&5i32.to_le_bytes());
+        wad.extend_from_slice(&dir_offset.to_le_bytes());
+        wad.extend_from_slice(&vertex_bytes);
+        wad.extend_from_slice(&linedef_data);
+        wad.extend_from_slice(&sector_data);
+        wad.extend_from_slice(&thing_data);
+        wad.extend_from_slice(&dir_entry(vertex_offset, 0, "E1M1"));
+        wad.extend_from_slice(&dir_entry(vertex_offset, vertex_size, "VERTEXES"));
+        wad.extend_from_slice(&dir_entry(linedef_offset, linedef_size, "LINEDEFS"));
+        wad.extend_from_slice(&dir_entry(sector_offset, sector_size, "SECTORS"));
+        wad.extend_from_slice(&dir_entry(thing_offset, thing_size, "THINGS"));
+        wad
+    }
 }

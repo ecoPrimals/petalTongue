@@ -342,7 +342,7 @@ mod tests {
             ChannelDirection::Afferent,
             ChannelModality::Keyboard,
         );
-        assert_eq!(ch.throughput(), 0.0);
+        assert!((ch.throughput() - 0.0).abs() < f32::EPSILON);
 
         for _ in 0..10 {
             ch.record_signal_in();

@@ -3,7 +3,7 @@
 //!
 //! These methods allow springs and other primals to push data for rendering
 //! without compile-time coupling -- they discover petalTongue at runtime and
-//! send DataBinding payloads via JSON-RPC.
+//! send `DataBinding` payloads via JSON-RPC.
 
 use petal_tongue_core::{DataBinding, ThresholdRange};
 use serde::{Deserialize, Serialize};
@@ -16,7 +16,7 @@ use tracing::warn;
 /// without compile-time coupling (healthSpring V9 SAME DAVE motor channel).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct UiConfig {
-    /// Panel visibility (e.g., "left_sidebar", "audio_panel", "trust_dashboard")
+    /// Panel visibility (e.g., "`left_sidebar`", "`audio_panel`", "`trust_dashboard`")
     #[serde(default)]
     pub show_panels: HashMap<String, bool>,
     /// Initial mode (e.g., "clinical", "research", "monitoring")
@@ -79,12 +79,12 @@ pub struct StreamUpdateRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum StreamOperation {
-    /// Append new data points to a TimeSeries or Spectrum
+    /// Append new data points to a `TimeSeries` or Spectrum
     #[serde(rename = "append")]
     Append {
-        /// X-axis values (timestamps for TimeSeries, frequencies for Spectrum)
+        /// X-axis values (timestamps for `TimeSeries`, frequencies for Spectrum)
         x_values: Vec<f64>,
-        /// Y-axis values (measurements for TimeSeries, amplitudes for Spectrum)
+        /// Y-axis values (measurements for `TimeSeries`, amplitudes for Spectrum)
         y_values: Vec<f64>,
     },
     /// Replace the current value of a Gauge
@@ -93,7 +93,7 @@ pub enum StreamOperation {
         /// New gauge value
         value: f64,
     },
-    /// Replace the full binding (for Heatmap, FieldMap, etc.)
+    /// Replace the full binding (for Heatmap, `FieldMap`, etc.)
     #[serde(rename = "replace")]
     Replace {
         /// Replacement binding
@@ -218,18 +218,18 @@ impl Default for VisualizationState {
     }
 }
 
-/// Extract the `id` field from any DataBinding variant
+/// Extract the `id` field from any `DataBinding` variant
 #[must_use]
 pub fn binding_id(binding: &DataBinding) -> &str {
     match binding {
-        DataBinding::TimeSeries { id, .. } => id,
-        DataBinding::Distribution { id, .. } => id,
-        DataBinding::Bar { id, .. } => id,
-        DataBinding::Gauge { id, .. } => id,
-        DataBinding::Heatmap { id, .. } => id,
-        DataBinding::Scatter3D { id, .. } => id,
-        DataBinding::FieldMap { id, .. } => id,
-        DataBinding::Spectrum { id, .. } => id,
+        DataBinding::TimeSeries { id, .. }
+        | DataBinding::Distribution { id, .. }
+        | DataBinding::Bar { id, .. }
+        | DataBinding::Gauge { id, .. }
+        | DataBinding::Heatmap { id, .. }
+        | DataBinding::Scatter3D { id, .. }
+        | DataBinding::FieldMap { id, .. }
+        | DataBinding::Spectrum { id, .. } => id,
     }
 }
 

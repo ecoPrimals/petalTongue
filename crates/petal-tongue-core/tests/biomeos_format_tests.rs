@@ -4,7 +4,7 @@
 //! Verifies that petalTongue can correctly parse and handle topology data
 //! in the biomeOS format (Unix sockets, metadata, connection metrics).
 
-use petal_tongue_core::{PrimalInfo, TopologyEdge};
+use petal_tongue_core::{PrimalInfo, TopologyEdge, property::PropertyValue};
 
 #[test]
 fn test_parse_biomeos_primal_format() {
@@ -165,8 +165,6 @@ fn test_migrate_biomeos_metadata_to_properties() {
     assert!(primal.properties.contains_key("family_id"));
     assert!(primal.properties.contains_key("node_id"));
 
-    // Verify values
-    use petal_tongue_core::property::PropertyValue;
     assert_eq!(
         primal.properties.get("version"),
         Some(&PropertyValue::String("v0.15.2".to_string()))

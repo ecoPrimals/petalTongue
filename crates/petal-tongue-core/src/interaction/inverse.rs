@@ -4,7 +4,7 @@
 //! The forward pipeline maps data to modality output (pixels, tones, cells).
 //! The inverse pipeline maps interactions BACK to data. Each output modality
 //! has its own inverse path, but all converge to the same
-//! [`DataObjectId`](super::target::DataObjectId).
+//! [`DataObjectId`].
 
 use crate::sensor::SensorEvent;
 
@@ -14,7 +14,7 @@ use super::target::{DataObjectId, DataRow, InteractionTarget, PrimitiveId};
 
 /// Resolves modality-specific interaction positions to data-space targets.
 ///
-/// Each [`ModalityCompiler`] in the Grammar of Graphics pipeline produces
+/// Each modality compiler in the Grammar of Graphics pipeline produces
 /// a corresponding `InversePipeline`. The compiler knows the forward mapping;
 /// the inverse is its mirror.
 ///

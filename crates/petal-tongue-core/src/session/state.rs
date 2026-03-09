@@ -210,3 +210,125 @@ impl SessionStateLike for SessionState {
         self.version
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{PrimalHealthStatus, PrimalId, PrimalInfo, TopologyEdge};
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_session_state_new() {
+        let id = InstanceId::new();
+        let state = SessionState::new(id.clone());
+        assert_eq!(state.version, SessionState::VERSION);
+        assert_eq!(state.instance_id, id);
+        assert!(state.nodes.is_empty());
+        assert!(state.edges.is_empty());
+        assert!((state.zoom_level - 1.0).abs() < f32::EPSILON);
+        assert!((state.pan_offset.0 - 0.0).abs() < f32::EPSILON);
+        assert!((state.pan_offset.1 - 0.0).abs() < f32::EPSILON);
+        assert!(state.auto_refresh);
+    }
+
+    #[test]
+    fn test_accessibility_settings_default() {
+        let settings = AccessibilitySettings::default();
+        assert_eq!(settings.color_scheme, "standard");
+        assert!((settings.font_size - 1.0).abs() < f32::EPSILON);
+        assert!(!settings.audio_enabled);
+        assert!((settings.audio_volume - 0.7).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_trust_summary_default() {
+        let summary = TrustSummary::default();
+        assert_eq!(summary.total_primals, 0);
+        assert!(summary.trust_distribution.is_empty());
+        assert!(summary.unique_families.is_empty());
+        assert!((summary.average_trust - 0.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_merge_graph_nodes() {
+        let id1 = InstanceId::new();
+        let id2 = InstanceId::new();
+        let mut state1 = SessionState::new(id1);
+        let mut state2 = SessionState::new(id2);
+        state1.nodes.push(PrimalInfo::new(
+            "a",
+            "A",
+            "T1",
+            "http://localhost:1",
+            vec![],
+            PrimalHealthStatus::Healthy,
+            0,
+        ));
+        state2.nodes.push(PrimalInfo::new(
+            "b",
+            "B",
+            "T2",
+            "http://localhost:2",
+            vec![],
+            PrimalHealthStatus::Healthy,
+            0,
+        ));
+        state1.merge_graph(&state2);
+        assert_eq!(state1.nodes.len(), 2);
+    }
+
+    #[test]
+    fn test_merge_graph_edges_dedup() {
+        let id1 = InstanceId::new();
+        let id2 = InstanceId::new();
+        let mut state1 = SessionState::new(id1);
+        let mut state2 = SessionState::new(id2);
+        state1.edges.push(TopologyEdge {
+            from: PrimalId::from("a"),
+            to: PrimalId::from("b"),
+            edge_type: "conn".to_string(),
+            label: None,
+            capability: None,
+            metrics: None,
+        });
+        state2.edges.push(TopologyEdge {
+            from: PrimalId::from("a"),
+            to: PrimalId::from("b"),
+            edge_type: "conn".to_string(),
+            label: None,
+            capability: None,
+            metrics: None,
+        });
+        state1.merge_graph(&state2);
+        assert_eq!(state1.edges.len(), 1);
+    }
+
+    #[test]
+    fn test_merge_graph_node_positions() {
+        let id1 = InstanceId::new();
+        let id2 = InstanceId::new();
+        let mut state1 = SessionState::new(id1);
+        let mut state2 = SessionState::new(id2);
+        state2.node_positions.insert("n1".to_string(), (10.0, 20.0));
+        state1.merge_graph(&state2);
+        assert_eq!(state1.node_positions.get("n1"), Some(&(10.0, 20.0)));
+    }
+
+    #[test]
+    fn test_save_load_roundtrip() {
+        let id = InstanceId::new();
+        let state = SessionState::new(id);
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("session.ron");
+        state.save(&path).unwrap();
+        let loaded = SessionState::load(&path).unwrap();
+        assert_eq!(loaded.version, state.version);
+        assert_eq!(loaded.instance_id, state.instance_id);
+    }
+
+    #[test]
+    fn test_load_nonexistent() {
+        let result = SessionState::load(PathBuf::from("/nonexistent/path.ron").as_path());
+        assert!(result.is_err());
+    }
+}

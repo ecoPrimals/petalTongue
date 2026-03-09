@@ -79,6 +79,7 @@ pub struct EventHandler {
 
 impl EventHandler {
     /// Create new event handler
+    #[must_use]
     pub fn new(tick_rate: Duration) -> Self {
         let (tx, rx) = mpsc::unbounded_channel();
 
@@ -86,6 +87,7 @@ impl EventHandler {
     }
 
     /// Get event sender (for external events)
+    #[must_use]
     pub fn sender(&self) -> mpsc::UnboundedSender<TUIEvent> {
         self.tx.clone()
     }
@@ -115,7 +117,7 @@ impl EventHandler {
                                     break;
                                 }
                             }
-                            Ok(None) => continue,
+                            Ok(None) => {}
                             Err(_) => break,
                         }
                     }
@@ -125,6 +127,7 @@ impl EventHandler {
     }
 
     /// Read terminal event (async)
+    #[allow(clippy::unused_async)]
     async fn read_terminal_event() -> Result<Option<TUIEvent>> {
         // Poll for event with timeout
         if crossterm::event::poll(Duration::from_millis(100))? {
@@ -153,11 +156,12 @@ impl EventHandler {
 }
 
 /// Parse key event into action
+#[must_use]
 pub fn parse_key_event(key: KeyEvent) -> KeyAction {
     match (key.code, key.modifiers) {
-        // Quit
-        (KeyCode::Char('q'), KeyModifiers::NONE) => KeyAction::Quit,
-        (KeyCode::Char('c'), KeyModifiers::CONTROL) => KeyAction::Quit,
+        (KeyCode::Char('q'), KeyModifiers::NONE) | (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
+            KeyAction::Quit
+        }
 
         // View switching (1-8)
         (KeyCode::Char('1'), KeyModifiers::NONE) => KeyAction::SwitchView(0),
@@ -169,17 +173,10 @@ pub fn parse_key_event(key: KeyEvent) -> KeyAction {
         (KeyCode::Char('7'), KeyModifiers::NONE) => KeyAction::SwitchView(6),
         (KeyCode::Char('8'), KeyModifiers::NONE) => KeyAction::SwitchView(7),
 
-        // Navigation (arrows)
-        (KeyCode::Up, _) => KeyAction::SelectPrevious,
-        (KeyCode::Down, _) => KeyAction::SelectNext,
-        (KeyCode::Left, _) => KeyAction::ScrollLeft,
-        (KeyCode::Right, _) => KeyAction::ScrollRight,
-
-        // Navigation (vim-style)
-        (KeyCode::Char('k'), KeyModifiers::NONE) => KeyAction::SelectPrevious,
-        (KeyCode::Char('j'), KeyModifiers::NONE) => KeyAction::SelectNext,
-        (KeyCode::Char('h'), KeyModifiers::NONE) => KeyAction::ScrollLeft,
-        (KeyCode::Char('l'), KeyModifiers::NONE) => KeyAction::ScrollRight,
+        (KeyCode::Up, _) | (KeyCode::Char('k'), KeyModifiers::NONE) => KeyAction::SelectPrevious,
+        (KeyCode::Down, _) | (KeyCode::Char('j'), KeyModifiers::NONE) => KeyAction::SelectNext,
+        (KeyCode::Left, _) | (KeyCode::Char('h'), KeyModifiers::NONE) => KeyAction::ScrollLeft,
+        (KeyCode::Right, _) | (KeyCode::Char('l'), KeyModifiers::NONE) => KeyAction::ScrollRight,
 
         // Page navigation
         (KeyCode::PageUp, _) => KeyAction::PageUp,

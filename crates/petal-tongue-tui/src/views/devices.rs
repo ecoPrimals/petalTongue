@@ -2,7 +2,7 @@
 //! Devices View
 //!
 //! Device management and assignment.
-//! Leverages Songbird for device discovery.
+//! Leverages discovery provider for device discovery.
 
 use ratatui::{
     Frame,
@@ -52,7 +52,7 @@ fn render_standalone_message(frame: &mut Frame, area: Rect) {
                 .add_modifier(Modifier::BOLD),
         )]),
         Line::from(""),
-        Line::from("Device discovery requires Songbird."),
+        Line::from("Device discovery requires the discovery provider."),
         Line::from(""),
         Line::from(vec![Span::styled(
             "💡 Tip:",
@@ -60,7 +60,7 @@ fn render_standalone_message(frame: &mut Frame, area: Rect) {
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
         )]),
-        Line::from("Start Songbird to discover devices."),
+        Line::from("Start the discovery provider to discover devices."),
         Line::from(""),
         Line::from("Press 'r' to refresh discovery."),
         Line::from("Press '1' to return to Dashboard."),
@@ -89,7 +89,7 @@ fn render_device_list(frame: &mut Frame, area: Rect, status: &crate::state::Syst
             )])),
             ListItem::new(Line::from("")),
             ListItem::new(Line::from("Devices will appear here once")),
-            ListItem::new(Line::from("discovered by Songbird.")),
+            ListItem::new(Line::from("discovered by the discovery provider.")),
             ListItem::new(Line::from("")),
             ListItem::new(Line::from("Press 'r' to refresh.")),
         ]
@@ -170,7 +170,7 @@ fn render_device_details(frame: &mut Frame, area: Rect, status: &crate::state::S
             Style::default().fg(Color::Yellow),
         )]),
         Line::from("Device assignment requires"),
-        Line::from("integration with Songbird."),
+        Line::from("integration with the discovery provider."),
     ];
 
     let paragraph = Paragraph::new(lines).block(

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! End-to-end tests for petal-tongue-headless binary
 
+#![allow(deprecated)]
+
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;
@@ -290,7 +292,7 @@ fn test_concurrent_exports() {
 
     let temp_dir = std::env::temp_dir();
     let files: Vec<PathBuf> = (0..5)
-        .map(|i| temp_dir.join(format!("concurrent_test_{}.svg", i)))
+        .map(|i| temp_dir.join(format!("concurrent_test_{i}.svg")))
         .collect();
 
     // Remove existing files

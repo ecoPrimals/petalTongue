@@ -5,7 +5,7 @@
 //! and querying their capabilities via JSON-RPC.
 //!
 //! MODERN IDIOMATIC RUST:
-//! - Fully async/await (no blocking std::fs operations)
+//! - Fully async/await (no blocking `std::fs` operations)
 //! - Concurrent socket probing for performance
 //! - Non-blocking directory traversal
 //! - Aggressive timeouts to prevent hanging on unresponsive sockets
@@ -52,9 +52,10 @@ impl UnixSocketProvider {
     /// Create a new Unix socket provider
     ///
     /// Searches for Unix sockets in:
-    /// 1. $XDG_RUNTIME_DIR (e.g., /run/user/1000) - biomeOS convention
+    /// 1. $`XDG_RUNTIME_DIR` (e.g., /run/user/1000) - biomeOS convention
     /// 2. /tmp - fallback for development
     /// 3. /var/run/ecoPrimals - alternative runtime directory
+    #[must_use]
     pub fn new() -> Self {
         let mut search_paths = Vec::new();
 
@@ -154,31 +155,47 @@ impl UnixSocketProvider {
             }
         };
 
-        // Send get_capabilities JSON-RPC request
         let request = json!({
             "jsonrpc": "2.0",
-            "method": "get_capabilities",
+            "method": "capability.list",
             "params": {},
             "id": 1
         });
 
-        // CRITICAL: Wrap entire request/response in timeout
         let rpc_timeout = Duration::from_millis(200);
 
-        let response =
-            match tokio::time::timeout(rpc_timeout, self.send_request(stream, request)).await {
-                Ok(Ok(response)) => response,
-                Ok(Err(e)) => {
+        let response = match tokio::time::timeout(rpc_timeout, self.send_request(stream, request))
+            .await
+        {
+            Ok(Ok(response)) => response,
+            Ok(Err(e)) => {
+                let err_str = e.to_string();
+                if err_str.contains("-32601") || err_str.contains("Method not found") {
+                    let stream = tokio::time::timeout(connect_timeout, UnixStream::connect(path))
+                        .await
+                        .map_err(|_| anyhow::anyhow!("Connection timeout"))?
+                        .map_err(|e| anyhow::anyhow!("Connection failed: {e}"))?;
+                    let legacy_request = json!({
+                        "jsonrpc": "2.0",
+                        "method": "get_capabilities",
+                        "params": {},
+                        "id": 1
+                    });
+                    tokio::time::timeout(rpc_timeout, self.send_request(stream, legacy_request))
+                        .await
+                        .map_err(|_| anyhow::anyhow!("RPC timeout"))?
+                        .map_err(|e| anyhow::anyhow!("Legacy get_capabilities failed: {e}"))?
+                } else {
                     debug!("RPC request failed for {}: {}", path.display(), e);
                     return Err(e);
                 }
-                Err(_) => {
-                    debug!("RPC request timeout for {}", path.display());
-                    return Err(anyhow::anyhow!("RPC timeout"));
-                }
-            };
+            }
+            Err(_) => {
+                debug!("RPC request timeout for {}", path.display());
+                return Err(anyhow::anyhow!("RPC timeout"));
+            }
+        };
 
-        // Parse response into PrimalInfo
         self.parse_capabilities_response(path, response)
     }
 
@@ -209,7 +226,8 @@ impl UnixSocketProvider {
             .ok_or_else(|| anyhow::anyhow!("No result in response"))
     }
 
-    /// Parse capabilities response into PrimalInfo
+    /// Parse capabilities response into `PrimalInfo`
+    #[allow(clippy::needless_pass_by_value, clippy::unnecessary_wraps)]
     fn parse_capabilities_response(&self, path: &Path, result: Value) -> Result<PrimalInfo> {
         let capabilities: Vec<String> = result["capabilities"]
             .as_array()
@@ -251,6 +269,7 @@ impl UnixSocketProvider {
     ///
     /// We infer the primal's role from its capabilities, not from hardcoded names.
     /// This allows ANY primal to provide ANY capability without our prior knowledge.
+    #[allow(clippy::unused_self)]
     fn infer_primal_type(&self, path: &Path, capabilities: &[String]) -> String {
         // CAPABILITY-BASED INFERENCE (no hardcoded primal names!)
         // We derive type from the socket filename, which the primal itself chose.
@@ -263,8 +282,8 @@ impl UnixSocketProvider {
 
         // Extract the base name (before the first hyphen or dot)
         // Examples:
-        //   "beardog-nat0.sock" → "beardog"
-        //   "songbird-family1.sock" → "songbird"
+        //   "primal-a-instance0.sock" → "primal"
+        //   "provider-b-family1.sock" → "provider"
         //   "custom-primal-123.sock" → "custom"
         let primal_type = socket_name
             .split(['-', '.'].as_ref())
@@ -398,5 +417,68 @@ mod tests {
         // Should use socket name, not capability
         let primal_type = provider.infer_primal_type(&path, &capabilities);
         assert_eq!(primal_type, "my"); // First part of hyphenated name
+    }
+
+    #[test]
+    fn test_unix_socket_provider_default() {
+        let provider = UnixSocketProvider::default();
+        assert!(provider.search_paths.len() >= 3);
+        assert!(provider.search_paths.iter().any(|p| p.ends_with("tmp")));
+    }
+
+    #[test]
+    fn test_infer_primal_type_visualization_capability() {
+        let provider = UnixSocketProvider::new();
+        let path = PathBuf::from("/tmp/unknown.sock");
+        let capabilities = vec!["visualization.graph".to_string()];
+        let primal_type = provider.infer_primal_type(&path, &capabilities);
+        assert_eq!(primal_type, "ui-provider");
+    }
+
+    #[test]
+    fn test_infer_primal_type_dot_in_socket_name() {
+        let provider = UnixSocketProvider::new();
+        let path = PathBuf::from("/tmp/foo.bar-baz.sock");
+        let primal_type = provider.infer_primal_type(&path, &[]);
+        assert_eq!(primal_type, "foo");
+    }
+
+    #[test]
+    fn test_infer_primal_type_unknown_no_capabilities() {
+        let provider = UnixSocketProvider::new();
+        let path = PathBuf::from("/tmp/unknown.sock");
+        let capabilities: Vec<String> = vec![];
+        let primal_type = provider.infer_primal_type(&path, &capabilities);
+        assert_eq!(primal_type, "unknown");
+    }
+
+    #[test]
+    fn test_search_paths_include_var_run_ecoprimals() {
+        let provider = UnixSocketProvider::new();
+        assert!(
+            provider
+                .search_paths
+                .iter()
+                .any(|p| p.to_string_lossy().contains("ecoPrimals"))
+        );
+    }
+
+    #[test]
+    fn test_search_paths_include_run_user() {
+        let provider = UnixSocketProvider::new();
+        assert!(
+            provider
+                .search_paths
+                .iter()
+                .any(|p| p.to_string_lossy().contains("/run/user/"))
+        );
+    }
+
+    #[test]
+    fn test_infer_primal_type_single_segment_name() {
+        let provider = UnixSocketProvider::new();
+        let path = PathBuf::from("/tmp/beardog.sock");
+        let primal_type = provider.infer_primal_type(&path, &[]);
+        assert_eq!(primal_type, "beardog");
     }
 }

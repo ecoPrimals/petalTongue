@@ -26,7 +26,7 @@
 //!
 //! # Primal Registration
 //!
-//! Per PRIMAL_IPC_PROTOCOL.md, primals must register with Songbird on startup:
+//! Per `PRIMAL_IPC_PROTOCOL.md`, primals must register with Songbird on startup:
 //!
 //! ```rust,no_run
 //! use petal_tongue_ipc::primal_registration::{RegistrationManager, PrimalRegistration};

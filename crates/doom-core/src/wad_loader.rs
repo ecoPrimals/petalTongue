@@ -428,24 +428,38 @@ mod tests {
         assert!(!is_map_marker("MAP"));
     }
 
-    /// Create a minimal valid WAD file in memory for testing
+    #[expect(
+        clippy::cast_possible_wrap,
+        reason = "WAD test offsets are small and fit in i32"
+    )]
+    fn dir_entry(off: u32, size: i32, name: &str) -> [u8; 16] {
+        let mut bytes = [0u8; 16];
+        bytes[0..4].copy_from_slice(&(off as i32).to_le_bytes());
+        bytes[4..8].copy_from_slice(&size.to_le_bytes());
+        let name_bytes = name.as_bytes();
+        bytes[8..8 + name_bytes.len().min(8)].copy_from_slice(name_bytes);
+        bytes
+    }
+
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        clippy::cast_sign_loss,
+        reason = "WAD test data uses small known sizes that fit in all integer widths"
+    )]
     fn create_minimal_wad_bytes() -> Vec<u8> {
         let mut wad = Vec::new();
 
-        // WAD structure: header (12) + lump data + directory
         let data_start = 12u32;
 
-        // E1M1 marker (empty lump)
         let e1m1_offset = data_start;
         let e1m1_size = 0i32;
 
-        // VERTEXES: 2 vertices = 8 bytes
         let vertex_data = [0i16, 0i16, 100i16, 100i16];
         let vertex_bytes: Vec<u8> = vertex_data.iter().flat_map(|v| v.to_le_bytes()).collect();
         let vertex_offset = data_start;
         let vertex_size = vertex_bytes.len() as i32;
 
-        // LINEDEFS: 1 linedef = 14 bytes (start, end, flags, type, tag, right, left)
         let linedef_data: [u8; 14] = [
             0, 0, 1, 0, // start_vertex=0, end_vertex=1
             0, 0, // flags
@@ -457,7 +471,6 @@ mod tests {
         let linedef_offset = data_start + vertex_size as u32;
         let linedef_size = 14i32;
 
-        // SECTORS: 1 sector = 26 bytes
         let mut sector_data = [0u8; 26];
         sector_data[0..2].copy_from_slice(&0i16.to_le_bytes());
         sector_data[2..4].copy_from_slice(&128i16.to_le_bytes());
@@ -467,32 +480,19 @@ mod tests {
         let sector_offset = linedef_offset + linedef_size as u32;
         let sector_size = 26i32;
 
-        // THINGS: 1 thing = 10 bytes
         let thing_data: [u8; 10] = [50, 0, 50, 0, 0, 0, 1, 0, 0, 0];
         let thing_offset = sector_offset + sector_size as u32;
         let thing_size = 10i32;
 
-        // Build file: header + data + directory
         wad.extend_from_slice(b"IWAD");
         let dir_offset = thing_offset + thing_size as u32;
         wad.extend_from_slice(&5i32.to_le_bytes());
         wad.extend_from_slice(&dir_offset.to_le_bytes());
 
-        // Lump data
         wad.extend_from_slice(&vertex_bytes);
         wad.extend_from_slice(&linedef_data);
         wad.extend_from_slice(&sector_data);
         wad.extend_from_slice(&thing_data);
-
-        // Directory (16 bytes per entry: offset, size, 8-char name)
-        fn dir_entry(off: u32, size: i32, name: &str) -> [u8; 16] {
-            let mut bytes = [0u8; 16];
-            bytes[0..4].copy_from_slice(&(off as i32).to_le_bytes());
-            bytes[4..8].copy_from_slice(&size.to_le_bytes());
-            let name_bytes = name.as_bytes();
-            bytes[8..8 + name_bytes.len().min(8)].copy_from_slice(name_bytes);
-            bytes
-        }
 
         wad.extend_from_slice(&dir_entry(e1m1_offset, e1m1_size, "E1M1"));
         wad.extend_from_slice(&dir_entry(vertex_offset, vertex_size, "VERTEXES"));
@@ -580,5 +580,106 @@ mod tests {
         assert_eq!(map.vertices[0].y, 0);
         assert_eq!(map.vertices[1].x, 100);
         assert_eq!(map.vertices[1].y, 100);
+    }
+
+    #[test]
+    fn test_wad_invalid_header_type() {
+        let mut bad_wad = vec![0u8; 12];
+        bad_wad[0..4].copy_from_slice(b"XXXX");
+        bad_wad[4..8].copy_from_slice(&0i32.to_le_bytes());
+        bad_wad[8..12].copy_from_slice(&12i32.to_le_bytes());
+        let path = std::env::temp_dir().join("petaltongue_test_badtype.wad");
+        std::fs::write(&path, &bad_wad).unwrap();
+        let result = WadData::load(&path);
+        std::fs::remove_file(&path).ok();
+        if let Err(e) = result {
+            assert!(e.to_string().contains("Unknown WAD type"));
+        } else {
+            panic!("expected error");
+        }
+    }
+
+    #[test]
+    fn test_wad_truncated_header() {
+        let bad_wad = vec![0u8; 8];
+        let path = std::env::temp_dir().join("petaltongue_test_truncated.wad");
+        std::fs::write(&path, &bad_wad).unwrap();
+        let result = WadData::load(&path);
+        std::fs::remove_file(&path).ok();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_wad_pwad_type() {
+        let mut wad = create_minimal_wad_bytes();
+        wad[0..4].copy_from_slice(b"PWAD");
+        let path = std::env::temp_dir().join("petaltongue_test_pwad.wad");
+        std::fs::write(&path, &wad).unwrap();
+        let result = WadData::load(&path);
+        std::fs::remove_file(&path).ok();
+        assert!(result.is_ok());
+        assert!(!result.unwrap().maps.is_empty());
+    }
+
+    #[test]
+    fn test_wad_no_maps() {
+        let mut wad = Vec::new();
+        wad.extend_from_slice(b"IWAD");
+        wad.extend_from_slice(&1i32.to_le_bytes());
+        wad.extend_from_slice(&12i32.to_le_bytes());
+        let mut entry = [0u8; 16];
+        entry[0..4].copy_from_slice(&12i32.to_le_bytes());
+        entry[4..8].copy_from_slice(&0i32.to_le_bytes());
+        entry[8..16].copy_from_slice(b"DATA    ");
+        wad.extend_from_slice(&entry);
+        let path = std::env::temp_dir().join("petaltongue_test_nomaps.wad");
+        std::fs::write(&path, &wad).unwrap();
+        let result = WadData::load(&path);
+        std::fs::remove_file(&path).ok();
+        if let Err(e) = result {
+            assert!(e.to_string().contains("No valid maps"));
+        } else {
+            panic!("expected error");
+        }
+    }
+
+    #[test]
+    fn test_map_data_structures() {
+        let wad_bytes = create_minimal_wad_bytes();
+        let path = std::env::temp_dir().join("petaltongue_test_structs.wad");
+        std::fs::write(&path, &wad_bytes).unwrap();
+        let wad = WadData::load(&path).unwrap();
+        std::fs::remove_file(&path).ok();
+        let map = wad.first_map().unwrap();
+        assert_eq!(map.linedefs[0].start_vertex, 0);
+        assert_eq!(map.linedefs[0].end_vertex, 1);
+        assert_eq!(map.linedefs[0].flags, 0);
+        assert_eq!(map.linedefs[0].line_type, 0);
+        assert_eq!(map.linedefs[0].sector_tag, 0);
+        assert_eq!(map.sectors[0].floor_height, 0);
+        assert_eq!(map.sectors[0].ceiling_height, 128);
+        assert_eq!(map.sectors[0].floor_texture, "FLOOR4_6");
+        assert_eq!(map.sectors[0].ceiling_texture, "CEIL3_5 ");
+        assert_eq!(map.sectors[0].light_level, 160);
+        assert_eq!(map.things[0].x, 50);
+        assert_eq!(map.things[0].y, 50);
+        assert_eq!(map.things[0].angle, 0);
+        assert_eq!(map.things[0].thing_type, 1);
+        assert_eq!(map.things[0].flags, 0);
+    }
+
+    #[test]
+    fn test_lump_extraction() {
+        let wad_bytes = create_minimal_wad_bytes();
+        let path = std::env::temp_dir().join("petaltongue_test_lump.wad");
+        std::fs::write(&path, &wad_bytes).unwrap();
+        let wad = WadData::load(&path).unwrap();
+        std::fs::remove_file(&path).ok();
+        let lumps = wad.lumps();
+        assert_eq!(lumps.len(), 5);
+        assert_eq!(lumps[0].name(), "E1M1");
+        assert_eq!(lumps[0].data().len(), 0);
+        assert_eq!(lumps[1].name(), "VERTEXES");
+        assert_eq!(lumps[1].data().len(), 8);
     }
 }

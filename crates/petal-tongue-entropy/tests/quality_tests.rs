@@ -3,6 +3,12 @@
 //!
 //! Tests verify Shannon entropy, variance, and histogram algorithms.
 
+#![allow(
+    clippy::float_cmp,
+    clippy::unreadable_literal,
+    clippy::redundant_closure
+)]
+
 use petal_tongue_entropy::quality::{create_histogram_buckets, shannon_entropy, variance};
 
 #[test]
@@ -162,7 +168,7 @@ fn test_create_histogram_buckets_zero_buckets() {
 
 #[test]
 fn test_create_histogram_buckets_distribution() {
-    let values: Vec<f64> = (0..100).map(|i| i as f64).collect();
+    let values: Vec<f64> = (0..100).map(f64::from).collect();
     let buckets = create_histogram_buckets(&values, 10);
 
     assert_eq!(buckets.len(), 100);
@@ -251,7 +257,7 @@ fn test_shannon_entropy_large_dataset() {
 
 #[test]
 fn test_variance_floating_point_precision() {
-    let values = vec![1.0, 1.0000001, 1.0000002];
+    let values = vec![1.0, 1.000_000_1, 1.000_000_2];
     let var = variance(&values);
 
     // Very small differences should give low variance
@@ -263,7 +269,7 @@ fn test_variance_floating_point_precision() {
 
 #[test]
 fn test_histogram_many_buckets() {
-    let values: Vec<f64> = (0..100).map(|i| i as f64).collect();
+    let values: Vec<f64> = (0..100).map(f64::from).collect();
     let buckets = create_histogram_buckets(&values, 100);
 
     assert_eq!(buckets.len(), 100);

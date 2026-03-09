@@ -215,7 +215,7 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
     } else {
         tracing::info!("🔍 Production mode: Discovering primals...");
         
-        // TODO: Implement actual discovery
+        // TODO: Implement actual discovery (delegated to discovery provider)
         // For now, use tutorial as fallback
         let tutorial = crate::tutorial_mode::TutorialMode::new();
         if tutorial.should_fallback(0) {

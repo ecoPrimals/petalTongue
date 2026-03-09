@@ -57,3 +57,49 @@ pub fn describe(caps: &SensoryCapabilities) -> String {
         parts.join(" + ")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::sensory_capabilities::{
+        AudioOutputCapability, GestureInputCapability, HapticOutputCapability, SensoryCapabilities,
+        VisualOutputCapability,
+    };
+
+    #[test]
+    fn test_describe_empty() {
+        let caps = SensoryCapabilities::default();
+        assert_eq!(describe(&caps), "no capabilities detected");
+    }
+
+    #[test]
+    fn test_describe_3d_visual_spatial_audio() {
+        let caps = SensoryCapabilities {
+            visual_outputs: vec![VisualOutputCapability::ThreeD {
+                resolution_per_eye: (1920, 1080),
+                field_of_view: (110.0, 90.0),
+                refresh_rate: 90,
+                has_depth_tracking: true,
+                has_hand_tracking: true,
+            }],
+            audio_outputs: vec![AudioOutputCapability::Spatial {
+                channels: 8,
+                sample_rate: 48000,
+                has_head_tracking: true,
+            }],
+            haptic_outputs: vec![HapticOutputCapability::SimpleVibration {
+                intensity_levels: 10,
+            }],
+            gesture_inputs: vec![GestureInputCapability::Hand {
+                tracking_points: 21,
+                precision: 2.0,
+            }],
+            ..Default::default()
+        };
+        let desc = describe(&caps);
+        assert!(desc.contains("3D visual"));
+        assert!(desc.contains("spatial audio"));
+        assert!(desc.contains("haptics"));
+        assert!(desc.contains("gesture"));
+    }
+}

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! JSON-RPC 2.0 client for petalTongue IPC
 //!
-//! Per wateringHole UNIVERSAL_IPC_STANDARD_V3.md, JSON-RPC 2.0 is the PRIMARY protocol
+//! Per wateringHole `UNIVERSAL_IPC_STANDARD_V3.md`, JSON-RPC 2.0 is the PRIMARY protocol
 //! for local IPC. This client connects to Unix domain sockets and communicates
 //! using the JSON-RPC 2.0 specification.
 //!
@@ -11,7 +11,7 @@
 //! - JSON-RPC 2.0 request/response protocol
 //! - Semantic method naming: `{domain}.{operation}`
 //! - Timeout configuration
-//! - Zero-copy where possible (bytes::Bytes for payloads)
+//! - Zero-copy where possible (`bytes::Bytes` for payloads)
 //! - Async (tokio-based)
 //! - Proper error handling (no panics)
 //!
@@ -22,7 +22,7 @@
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! let client = JsonRpcClient::new("/tmp/petaltongue-nat0-default.sock")?;
-//! let health = client.call("health_check", serde_json::json!({})).await?;
+//! let health = client.call("health.check", serde_json::json!({})).await?;
 //! println!("Health: {:?}", health);
 //! # Ok(())
 //! # }
@@ -79,9 +79,9 @@ pub enum JsonRpcClientError {
 /// Result type for JSON-RPC client operations
 pub type JsonRpcResult<T> = Result<T, JsonRpcClientError>;
 
-/// Topology data returned by get_topology
+/// Topology data returned by `get_topology`
 ///
-/// Matches the format returned by the Unix socket server's get_topology method.
+/// Matches the format returned by the Unix socket server's `get_topology` method.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TopologyData {
     /// Graph nodes with position info
@@ -151,7 +151,7 @@ impl JsonRpcClient {
     /// Send a JSON-RPC call and receive response
     ///
     /// # Arguments
-    /// * `method` - Method name (e.g., "health_check", "get_topology")
+    /// * `method` - Method name (e.g., "health.check", "topology.get")
     /// * `params` - Method parameters as JSON value
     ///
     /// # Returns
@@ -195,7 +195,7 @@ impl JsonRpcClient {
     /// Discover primals (semantic: discovery.primals)
     ///
     /// Calls the discovery service to get a list of registered primals.
-    /// Returns METHOD_NOT_FOUND if the server doesn't support this method
+    /// Returns `METHOD_NOT_FOUND` if the server doesn't support this method
     /// (e.g., when connecting to petalTongue's own socket).
     pub async fn discover_primals(&self) -> JsonRpcResult<Vec<PrimalInfo>> {
         let result = match self.call("discovery.primals", serde_json::json!({})).await {
@@ -212,16 +212,19 @@ impl JsonRpcClient {
         Ok(primals)
     }
 
-    /// Get topology (semantic: graph.get_topology)
+    /// Get topology (semantic: topology.get)
     ///
     /// Returns the current graph topology from the server.
     pub async fn get_topology(&self) -> JsonRpcResult<TopologyData> {
-        let result = match self.call("get_topology", serde_json::json!({})).await {
+        let result = match self.call("topology.get", serde_json::json!({})).await {
             Ok(r) => r,
-            Err(_) => {
-                self.call("neural_api.get_topology", serde_json::json!({}))
-                    .await?
-            }
+            Err(_) => match self.call("get_topology", serde_json::json!({})).await {
+                Ok(r) => r,
+                Err(_) => {
+                    self.call("neural_api.get_topology", serde_json::json!({}))
+                        .await?
+                }
+            },
         };
 
         // Parse as TopologyData (flexible format)
@@ -233,20 +236,32 @@ impl JsonRpcClient {
 
     /// Health check (semantic: health.check)
     pub async fn health_check(&self) -> JsonRpcResult<Value> {
-        match self.call("health_check", serde_json::json!({})).await {
+        match self.call("health.check", serde_json::json!({})).await {
             Ok(r) => Ok(r),
-            Err(_) => self.call("get_health", serde_json::json!({})).await,
+            Err(_) => match self.call("health_check", serde_json::json!({})).await {
+                Ok(r) => Ok(r),
+                Err(_) => self.call("health.get", serde_json::json!({})).await,
+            },
         }
     }
 
-    /// Get capabilities (semantic: capabilities.announce)
+    /// Get capabilities (semantic: capability.list)
     pub async fn get_capabilities(&self) -> JsonRpcResult<Value> {
-        match self
-            .call("announce_capabilities", serde_json::json!({}))
-            .await
-        {
+        match self.call("capability.list", serde_json::json!({})).await {
             Ok(r) => Ok(r),
-            Err(_) => self.call("get_capabilities", serde_json::json!({})).await,
+            Err(_) => match self
+                .call("capability.announce", serde_json::json!({}))
+                .await
+            {
+                Ok(r) => Ok(r),
+                Err(_) => match self.call("get_capabilities", serde_json::json!({})).await {
+                    Ok(r) => Ok(r),
+                    Err(_) => {
+                        self.call("announce_capabilities", serde_json::json!({}))
+                            .await
+                    }
+                },
+            },
         }
     }
 
@@ -341,6 +356,7 @@ impl JsonRpcClient {
         Ok(())
     }
 
+    #[allow(clippy::unused_self)]
     fn extract_result(&self, response: JsonRpcResponse, _expected_id: u64) -> JsonRpcResult<Value> {
         response.result.ok_or_else(|| {
             JsonRpcClientError::InvalidResponse("Response has no result field".to_string())
@@ -353,6 +369,7 @@ impl std::fmt::Debug for JsonRpcClient {
         f.debug_struct("JsonRpcClient")
             .field("socket_path", &self.socket_path)
             .field("timeout", &self.timeout)
+            .field("request_id", &self.request_id)
             .finish()
     }
 }
@@ -392,7 +409,7 @@ mod tests {
     #[tokio::test]
     async fn test_call_nonexistent_socket() {
         let client = JsonRpcClient::new("/tmp/nonexistent-jsonrpc-test-12345.sock").unwrap();
-        let result = client.call("health_check", serde_json::json!({})).await;
+        let result = client.call("health.check", serde_json::json!({})).await;
         assert!(result.is_err());
     }
 

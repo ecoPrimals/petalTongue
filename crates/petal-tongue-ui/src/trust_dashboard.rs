@@ -42,6 +42,16 @@ impl Default for TrustDashboard {
     }
 }
 
+fn trust_level_number_to_label(n: i32) -> String {
+    match n {
+        0 => "None (0)".to_string(),
+        1 => "Limited (1)".to_string(),
+        2 => "Elevated (2)".to_string(),
+        3 => "Full (3)".to_string(),
+        _ => format!("Unknown ({n})"),
+    }
+}
+
 impl TrustDashboard {
     /// Create a new trust dashboard
     #[must_use]
@@ -72,13 +82,7 @@ impl TrustDashboard {
                 let trust_label = match trust_value {
                     PropertyValue::Number(n) => {
                         trust_values.push(*n);
-                        match n.round() as i32 {
-                            0 => "None (0)".to_string(),
-                            1 => "Limited (1)".to_string(),
-                            2 => "Elevated (2)".to_string(),
-                            3 => "Full (3)".to_string(),
-                            _ => format!("Unknown ({n})"),
-                        }
+                        trust_level_number_to_label(n.round() as i32)
                     }
                     PropertyValue::String(s) => s.clone(),
                     _ => "Unknown".to_string(),
@@ -89,13 +93,7 @@ impl TrustDashboard {
                 #[expect(deprecated)]
                 if let Some(trust_level) = primal.trust_level {
                     trust_values.push(f64::from(trust_level));
-                    let trust_label = match trust_level {
-                        0 => "None (0)".to_string(),
-                        1 => "Limited (1)".to_string(),
-                        2 => "Elevated (2)".to_string(),
-                        3 => "Full (3)".to_string(),
-                        _ => format!("Unknown ({trust_level})"),
-                    };
+                    let trust_label = trust_level_number_to_label(trust_level as i32);
                     *summary.trust_distribution.entry(trust_label).or_insert(0) += 1;
                 }
             }
@@ -528,5 +526,15 @@ mod tests {
     fn test_trust_dashboard_default() {
         let dashboard = TrustDashboard::default();
         assert!(!dashboard.visible);
+    }
+
+    #[test]
+    fn test_trust_level_number_to_label() {
+        assert_eq!(trust_level_number_to_label(0), "None (0)");
+        assert_eq!(trust_level_number_to_label(1), "Limited (1)");
+        assert_eq!(trust_level_number_to_label(2), "Elevated (2)");
+        assert_eq!(trust_level_number_to_label(3), "Full (3)");
+        assert_eq!(trust_level_number_to_label(4), "Unknown (4)");
+        assert_eq!(trust_level_number_to_label(99), "Unknown (99)");
     }
 }

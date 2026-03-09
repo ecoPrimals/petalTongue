@@ -3,7 +3,7 @@
 //! petalTongue CLI - Manage petalTongue instances from the command line
 //!
 //! Library crate providing CLI instance management. Consumed by the
-//! petalTongue UniBin via the `status` / `cli` mode.
+//! petalTongue `UniBin` via the `status` / `cli` mode.
 //!
 //! # Commands
 //!
@@ -15,7 +15,7 @@
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use colored::*;
+use colored::Colorize;
 use petal_tongue_core::{InstanceId, InstanceRegistry};
 use petal_tongue_ipc::{IpcClient, IpcCommand, IpcResponse};
 
@@ -84,6 +84,7 @@ pub async fn run(command: Commands) -> Result<()> {
     }
 }
 
+#[allow(clippy::unused_async)]
 async fn list_instances() -> Result<()> {
     let registry = InstanceRegistry::load().context("Failed to load instance registry")?;
 
@@ -251,6 +252,7 @@ async fn ping_instance(instance_id_str: &str) -> Result<()> {
     Ok(())
 }
 
+#[allow(clippy::unused_async)]
 async fn gc_instances(force: bool) -> Result<()> {
     let mut registry = InstanceRegistry::load().context("Failed to load instance registry")?;
 
@@ -466,7 +468,7 @@ mod tests {
         let err = result.expect_err("--version should produce Err with version");
         let version = err.to_string();
         assert!(version.contains("petaltongue"));
-        assert!(version.contains(".") || version.chars().any(|c| c.is_ascii_digit()));
+        assert!(version.contains('.') || version.chars().any(|c| c.is_ascii_digit()));
     }
 
     #[test]
@@ -483,6 +485,73 @@ mod tests {
         match &cmd {
             Commands::Gc { force } => assert!(*force),
             _ => panic!("Expected Gc command"),
+        }
+    }
+
+    #[test]
+    fn test_parse_args_missing_subcommand_fails() {
+        let result = parse_args(&["petaltongue"]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_args_unknown_subcommand_fails() {
+        let result = parse_args(&["petaltongue", "unknown-cmd"]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_args_show_with_empty_id() {
+        let cmd = parse_args(&["petaltongue", "show", ""]).unwrap();
+        match &cmd {
+            Commands::Show { instance_id } => assert_eq!(instance_id, ""),
+            _ => panic!("Expected Show command"),
+        }
+    }
+
+    #[test]
+    fn test_parse_args_raise_with_uuid() {
+        let uuid = "550e8400-e29b-41d4-a716-446655440000";
+        let cmd = parse_args(&["petaltongue", "raise", uuid]).unwrap();
+        match &cmd {
+            Commands::Raise { instance_id } => assert_eq!(instance_id, uuid),
+            _ => panic!("Expected Raise command"),
+        }
+    }
+
+    #[test]
+    fn test_parse_args_ping_with_short_prefix() {
+        let cmd = parse_args(&["petaltongue", "ping", "550e"]).unwrap();
+        match &cmd {
+            Commands::Ping { instance_id } => assert_eq!(instance_id, "550e"),
+            _ => panic!("Expected Ping command"),
+        }
+    }
+
+    #[test]
+    fn test_run_command_dispatch_list() {
+        let cmd = parse_args(&["petaltongue", "list"]).unwrap();
+        assert!(matches!(cmd, Commands::List));
+    }
+
+    #[test]
+    fn test_run_command_dispatch_status() {
+        let cmd = parse_args(&["petaltongue", "status"]).unwrap();
+        assert!(matches!(cmd, Commands::Status));
+    }
+
+    #[test]
+    fn test_cli_struct_has_command_field() {
+        let cli = Cli::try_parse_from(["petaltongue", "list"]).unwrap();
+        assert!(matches!(cli.command, Commands::List));
+    }
+
+    #[test]
+    fn test_show_subcommand_accepts_instance_id_arg() {
+        let cmd = parse_args(&["petaltongue", "show", "my-instance-123"]).unwrap();
+        match &cmd {
+            Commands::Show { instance_id } => assert_eq!(instance_id, "my-instance-123"),
+            _ => panic!("Expected Show"),
         }
     }
 }

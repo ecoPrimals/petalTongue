@@ -60,11 +60,13 @@ impl EcoPrimalTrustAdapter {
     /// Create adapter with default configuration
     ///
     /// This is temporary - in the future, config will come from ecosystem discovery
+    #[must_use]
     pub fn new() -> Self {
         Self::from_config(TrustConfig::default())
     }
 
     /// Create adapter from trust configuration
+    #[must_use]
     pub fn from_config(config: TrustConfig) -> Self {
         // Parse hex colors to egui Color32
         let colors = config
@@ -100,7 +102,7 @@ impl Default for EcoPrimalTrustAdapter {
 }
 
 impl PropertyAdapter for EcoPrimalTrustAdapter {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "ecoprimal-trust"
     }
 

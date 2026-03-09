@@ -89,3 +89,57 @@ pub fn determine_ui_complexity(caps: &SensoryCapabilities) -> UIComplexity {
 
     UIComplexity::Standard
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::sensory_capabilities::types::KeyboardInputCapability;
+
+    #[test]
+    fn test_ui_complexity_display() {
+        assert_eq!(UIComplexity::Minimal.to_string(), "Minimal");
+        assert_eq!(UIComplexity::Simple.to_string(), "Simple");
+        assert_eq!(UIComplexity::Standard.to_string(), "Standard");
+        assert_eq!(UIComplexity::Rich.to_string(), "Rich");
+        assert_eq!(UIComplexity::Immersive.to_string(), "Immersive");
+    }
+
+    #[test]
+    fn test_ui_complexity_standard_high_res_only() {
+        let caps = SensoryCapabilities {
+            visual_outputs: vec![VisualOutputCapability::TwoD {
+                resolution: (1920, 1080),
+                refresh_rate: 60,
+                color_depth: 8,
+                size_mm: None,
+            }],
+            ..Default::default()
+        };
+        assert_eq!(determine_ui_complexity(&caps), UIComplexity::Standard);
+    }
+
+    #[test]
+    fn test_ui_complexity_standard_keyboard_pointer() {
+        let caps = SensoryCapabilities {
+            visual_outputs: vec![VisualOutputCapability::TwoD {
+                resolution: (800, 600),
+                refresh_rate: 60,
+                color_depth: 8,
+                size_mm: None,
+            }],
+            pointer_inputs: vec![PointerInputCapability::TwoD {
+                precision: 1.5,
+                has_wheel: true,
+                has_pressure: false,
+                button_count: 3,
+            }],
+            keyboard_inputs: vec![KeyboardInputCapability::Physical {
+                layout: "QWERTY".to_string(),
+                has_numpad: false,
+                modifier_keys: 3,
+            }],
+            ..Default::default()
+        };
+        assert_eq!(determine_ui_complexity(&caps), UIComplexity::Standard);
+    }
+}

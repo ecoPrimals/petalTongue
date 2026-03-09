@@ -11,6 +11,11 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
 use tracing::{debug, info, warn};
 
+use petal_tongue_core::constants::{
+    biomeos_device_management_socket_name, biomeos_legacy_socket_name, biomeos_ui_socket_name,
+    discovery_service_socket_name,
+};
+
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 
 use super::types::{JsonRpcProvider, JsonRpcRequest, JsonRpcResponse};
@@ -36,12 +41,11 @@ impl JsonRpcProvider {
             if tokio::fs::metadata(socket_path).await.is_ok() {
                 info!("✅ Found JSON-RPC provider at {}", socket_path);
                 return Ok(Self::new(socket_path));
-            } else {
-                warn!(
-                    "❌ Socket specified in BIOMEOS_URL not found: {}",
-                    socket_path
-                );
             }
+            warn!(
+                "❌ Socket specified in BIOMEOS_URL not found: {}",
+                socket_path
+            );
         }
 
         let standard_paths = Self::get_standard_socket_paths()?;
@@ -60,12 +64,16 @@ impl JsonRpcProvider {
             "No JSON-RPC providers found!\n\
             \n\
             Tried standard paths:\n\
-            - /run/user/{{uid}}/biomeos-device-management.sock\n\
-            - /run/user/{{uid}}/biomeos-ui.sock\n\
-            - /run/user/{{uid}}/discovery-service.sock\n\
-            - /tmp/biomeos.sock\n\
+            - /run/user/{{uid}}/{}.sock\n\
+            - /run/user/{{uid}}/{}.sock\n\
+            - /run/user/{{uid}}/{}.sock\n\
+            - /tmp/{}.sock\n\
             \n\
-            💡 Set BIOMEOS_URL=unix:///path/to/socket for custom path"
+            💡 Set BIOMEOS_URL=unix:///path/to/socket for custom path",
+            biomeos_device_management_socket_name(),
+            biomeos_ui_socket_name(),
+            discovery_service_socket_name(),
+            biomeos_legacy_socket_name()
         )
     }
 
@@ -75,10 +83,16 @@ impl JsonRpcProvider {
         let uid = petal_tongue_core::system_info::get_current_uid();
 
         Ok(vec![
-            PathBuf::from(format!("/run/user/{uid}/biomeos-device-management.sock")),
-            PathBuf::from(format!("/run/user/{uid}/biomeos-ui.sock")),
-            PathBuf::from(format!("/run/user/{uid}/discovery-service.sock")),
-            PathBuf::from("/tmp/biomeos.sock"),
+            PathBuf::from(format!(
+                "/run/user/{uid}/{}.sock",
+                biomeos_device_management_socket_name()
+            )),
+            PathBuf::from(format!("/run/user/{uid}/{}.sock", biomeos_ui_socket_name())),
+            PathBuf::from(format!(
+                "/run/user/{uid}/{}.sock",
+                discovery_service_socket_name()
+            )),
+            PathBuf::from(format!("/tmp/{}.sock", biomeos_legacy_socket_name())),
         ])
     }
 
@@ -199,9 +213,20 @@ impl VisualizationDataProvider for JsonRpcProvider {
     }
 
     async fn get_topology(&self) -> anyhow::Result<Vec<TopologyEdge>> {
-        debug!("Calling get_topology via JSON-RPC");
+        debug!("Calling topology.get via JSON-RPC");
 
-        match self.call("get_topology", None).await {
+        let result = self.call("topology.get", None).await;
+        let result = match result {
+            Ok(r) => Ok(r),
+            Err(e)
+                if e.to_string().contains("-32601")
+                    || e.to_string().contains("Method not found") =>
+            {
+                self.call("get_topology", None).await
+            }
+            Err(e) => Err(e),
+        };
+        match result {
             Ok(result) => {
                 let topology: Vec<TopologyEdge> = serde_json::from_value(result)
                     .map_err(|e| anyhow::anyhow!("Failed to parse topology: {e}"))?;

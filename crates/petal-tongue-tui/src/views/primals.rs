@@ -2,7 +2,7 @@
 //! Primals View
 //!
 //! Detailed primal status and health monitoring.
-//! Leverages Songbird for primal discovery.
+//! Leverages discovery provider for primal discovery.
 
 use ratatui::{
     Frame,

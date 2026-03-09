@@ -58,10 +58,6 @@
         "status": "critical",
         "health": 40,
         "confidence": 90,
-        "position": {
-          "x": 400.0,
-          "y": 50.0
-        },
         "capabilities": [
           "clinical.assessment.testosterone",
           "clinical.assessment.age_projection"
@@ -1362,10 +1358,6 @@
         "status": "healthy",
         "health": 100,
         "confidence": 95,
-        "position": {
-          "x": 400.0,
-          "y": 200.0
-        },
         "capabilities": [
           "clinical.treatment.testosterone_pk"
         ],
@@ -2562,10 +2554,6 @@
         "status": "healthy",
         "health": 100,
         "confidence": 95,
-        "position": {
-          "x": 700.0,
-          "y": 200.0
-        },
         "capabilities": [
           "clinical.population.pk_comparison"
         ],
@@ -2716,10 +2704,6 @@
         "status": "healthy",
         "health": 100,
         "confidence": 95,
-        "position": {
-          "x": 100.0,
-          "y": 400.0
-        },
         "capabilities": [
           "clinical.outcome.weight",
           "clinical.outcome.waist",
@@ -6392,10 +6376,6 @@
         "status": "healthy",
         "health": 100,
         "confidence": 95,
-        "position": {
-          "x": 400.0,
-          "y": 400.0
-        },
         "capabilities": [
           "clinical.outcome.lipids",
           "clinical.outcome.bp",
@@ -11317,10 +11297,6 @@
         "status": "healthy",
         "health": 100,
         "confidence": 95,
-        "position": {
-          "x": 700.0,
-          "y": 400.0
-        },
         "capabilities": [
           "clinical.outcome.hba1c",
           "clinical.outcome.homa"
@@ -12355,10 +12331,6 @@
         "status": "healthy",
         "health": 100,
         "confidence": 95,
-        "position": {
-          "x": 400.0,
-          "y": 600.0
-        },
         "capabilities": [
           "clinical.monitor.hrv",
           "clinical.monitor.cardiac_risk"
@@ -12913,10 +12885,6 @@
         "status": "healthy",
         "health": 100,
         "confidence": 95,
-        "position": {
-          "x": 100.0,
-          "y": 600.0
-        },
         "capabilities": [
           "clinical.predictor.gut_diversity",
           "clinical.predictor.metabolic_response"

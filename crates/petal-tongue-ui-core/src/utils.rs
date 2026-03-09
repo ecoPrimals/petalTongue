@@ -4,6 +4,7 @@
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo};
 
 /// Convert health status to percentage (for UI display)
+#[must_use]
 pub fn health_to_percentage(health: &PrimalHealthStatus) -> u8 {
     match health {
         PrimalHealthStatus::Healthy => 100,
@@ -14,6 +15,7 @@ pub fn health_to_percentage(health: &PrimalHealthStatus) -> u8 {
 }
 
 /// Convert health status to color (hex)
+#[must_use]
 pub fn health_to_color(health: &PrimalHealthStatus) -> &'static str {
     match health {
         PrimalHealthStatus::Healthy => "#4ade80",  // green-400
@@ -24,6 +26,7 @@ pub fn health_to_color(health: &PrimalHealthStatus) -> &'static str {
 }
 
 /// Convert health status to emoji
+#[must_use]
 pub fn health_to_emoji(health: &PrimalHealthStatus) -> &'static str {
     match health {
         PrimalHealthStatus::Healthy => "🟢",
@@ -35,6 +38,7 @@ pub fn health_to_emoji(health: &PrimalHealthStatus) -> &'static str {
 
 /// Get trust level from primal info (from properties or deprecated field)
 #[expect(deprecated)]
+#[must_use]
 pub fn get_trust_level(info: &PrimalInfo) -> String {
     // Try properties first
     if let Some(trust) = info.properties.get("trust_level")
@@ -53,6 +57,7 @@ pub fn get_trust_level(info: &PrimalInfo) -> String {
 
 /// Get family lineage from primal info (from properties or deprecated field)
 #[expect(deprecated)]
+#[must_use]
 pub fn get_family_lineage(info: &PrimalInfo) -> String {
     // Try properties first
     if let Some(family) = info.properties.get("family_id")

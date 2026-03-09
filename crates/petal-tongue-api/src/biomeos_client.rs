@@ -256,7 +256,7 @@ impl BiomeOSClient {
     }
 
     /// Mock primal discovery (TEST/DEV ONLY - never in production)
-    /// Gated behind test-fixtures feature. Production builds return error when mock_mode is requested.
+    /// Gated behind test-fixtures feature. Production builds return error when `mock_mode` is requested.
     #[cfg(any(test, feature = "test-fixtures"))]
     fn mock_discover_primals(&self) -> Vec<PrimalInfo> {
         let now = chrono::Utc::now().timestamp() as u64;

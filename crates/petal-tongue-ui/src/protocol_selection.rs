@@ -106,7 +106,7 @@ pub async fn connect_with_priority(endpoint: &str) -> TarpcResult<PrimalConnecti
         }
         Protocol::Https => {
             info!("🌐 Using HTTPS (FALLBACK) for {}", endpoint);
-            // TODO: Implement HTTPS client connection
+            // TODO: Implement HTTPS client connection (delegated to beardog/songbird via IPC)
             Err(petal_tongue_ipc::TarpcClientError::Configuration(
                 "HTTPS client not yet implemented for primal-to-primal".to_string(),
             ))
@@ -137,7 +137,7 @@ pub enum PrimalConnection {
     /// JSON-RPC connection (SECONDARY)
     JsonRpc(JsonRpcClient),
     /// HTTPS connection (FALLBACK)
-    Https(/* TODO */),
+    Https(/* TODO: delegated to beardog/songbird via IPC */),
 }
 
 impl PrimalConnection {

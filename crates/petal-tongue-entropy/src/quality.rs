@@ -57,6 +57,7 @@ pub fn shannon_entropy<T: std::hash::Hash + Eq + Clone>(values: &[T]) -> f64 {
 /// # Returns
 ///
 /// Variance as f64, normalized to [0.0-1.0] using sigmoid(σ/4)
+#[must_use]
 pub fn variance(values: &[f64]) -> f64 {
     if values.len() < 2 {
         return 0.0;
@@ -96,8 +97,8 @@ pub fn create_histogram_buckets(values: &[f64], num_buckets: usize) -> Vec<usize
         return vec![];
     }
 
-    let min = values.iter().cloned().fold(f64::INFINITY, f64::min);
-    let max = values.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+    let min = values.iter().copied().fold(f64::INFINITY, f64::min);
+    let max = values.iter().copied().fold(f64::NEG_INFINITY, f64::max);
 
     if (max - min).abs() < f64::EPSILON {
         // All values are the same
@@ -125,6 +126,7 @@ pub fn create_histogram_buckets(values: &[f64], num_buckets: usize) -> Vec<usize
 /// # Returns
 ///
 /// Timing entropy [0.0-1.0]
+#[must_use]
 pub fn timing_entropy(durations: &[Duration]) -> f64 {
     if durations.len() < 2 {
         return 0.0;
@@ -150,6 +152,7 @@ pub fn timing_entropy(durations: &[Duration]) -> f64 {
 /// # Returns
 ///
 /// Weighted average [0.0-1.0]
+#[must_use]
 pub fn weighted_quality(components: &[(f64, f64)]) -> f64 {
     if components.is_empty() {
         return 0.0;

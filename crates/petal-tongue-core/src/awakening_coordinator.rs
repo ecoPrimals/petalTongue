@@ -466,7 +466,7 @@ mod tests {
         let timeline = AwakeningTimeline::standard(&config);
 
         assert!(!timeline.events().is_empty());
-        assert_eq!(timeline.duration(), 12.0); // 3+3+4+2 = 12 seconds
+        assert!((timeline.duration() - 12.0).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -535,19 +535,113 @@ mod tests {
         let config = AwakeningConfig::default();
         let coordinator = AwakeningCoordinator::new(engine, config);
 
-        assert_eq!(coordinator.current_time().await, 0.0);
+        assert!((coordinator.current_time().await - 0.0).abs() < f32::EPSILON);
         assert_eq!(coordinator.current_stage().await, AwakeningStage::Awakening);
     }
 
     #[tokio::test]
     async fn test_coordinator_disabled() {
         let engine = Arc::new(UniversalRenderingEngine::new().unwrap());
-        let mut config = AwakeningConfig::default();
-        config.enabled = false;
+        let config = AwakeningConfig {
+            enabled: false,
+            ..Default::default()
+        };
 
         let coordinator = AwakeningCoordinator::new(engine, config);
 
         let result = coordinator.run().await;
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_timeline_events_in_range_empty() {
+        let config = AwakeningConfig::default();
+        let timeline = AwakeningTimeline::standard(&config);
+        let events = timeline.events_in_range(1000.0, 2000.0);
+        assert!(events.is_empty());
+    }
+
+    #[test]
+    fn test_timeline_events_in_range_boundary() {
+        let config = AwakeningConfig::default();
+        let timeline = AwakeningTimeline::standard(&config);
+        let events = timeline.events_in_range(0.0, 0.001);
+        assert!(!events.is_empty());
+        for e in events {
+            assert!(e.time >= 0.0 && e.time < 0.001);
+        }
+    }
+
+    #[test]
+    fn test_timeline_discovery_events() {
+        let config = AwakeningConfig::default();
+        let timeline = AwakeningTimeline::standard(&config);
+        let discoveries: Vec<_> = timeline
+            .events()
+            .iter()
+            .filter(|e| matches!(e.event_type, TimelineEventType::Discovery { .. }))
+            .collect();
+        assert_eq!(discoveries.len(), 3);
+    }
+
+    #[test]
+    fn test_timeline_events_ordered_by_time() {
+        let config = AwakeningConfig::default();
+        let timeline = AwakeningTimeline::standard(&config);
+        let events = timeline.events();
+        for i in 1..events.len() {
+            assert!(events[i].time >= events[i - 1].time);
+        }
+    }
+
+    #[test]
+    fn test_timeline_audio_disabled() {
+        let config = AwakeningConfig {
+            modality: crate::awakening::AwakeningModalityFlags {
+                visual_enabled: true,
+                audio_enabled: false,
+                text_enabled: true,
+            },
+            ..Default::default()
+        };
+        let timeline = AwakeningTimeline::standard(&config);
+        let audio_starts: Vec<_> = timeline
+            .events()
+            .iter()
+            .filter(|e| matches!(e.event_type, TimelineEventType::AudioStart { .. }))
+            .collect();
+        assert!(audio_starts.is_empty());
+    }
+
+    #[test]
+    fn test_timeline_text_disabled() {
+        let config = AwakeningConfig {
+            modality: crate::awakening::AwakeningModalityFlags {
+                visual_enabled: true,
+                audio_enabled: true,
+                text_enabled: false,
+            },
+            ..Default::default()
+        };
+        let timeline = AwakeningTimeline::standard(&config);
+        let text_events: Vec<_> = timeline
+            .events()
+            .iter()
+            .filter(|e| matches!(e.event_type, TimelineEventType::TextMessage { .. }))
+            .collect();
+        assert!(text_events.is_empty());
+    }
+
+    #[test]
+    fn test_timeline_duration_sum() {
+        let config = AwakeningConfig {
+            stage_1_duration: 1,
+            stage_2_duration: 1,
+            stage_3_duration: 1,
+            stage_4_duration: 1,
+            ..Default::default()
+        };
+        let timeline = AwakeningTimeline::standard(&config);
+        assert!((timeline.duration() - 4.0).abs() < f32::EPSILON);
     }
 }

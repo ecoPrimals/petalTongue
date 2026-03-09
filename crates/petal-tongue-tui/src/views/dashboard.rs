@@ -2,7 +2,7 @@
 //! Dashboard View
 //!
 //! System overview showing primals, topology, and status.
-//! Leverages Songbird if available, graceful degradation to standalone.
+//! Leverages discovery provider if available, graceful degradation to standalone.
 
 use ratatui::{
     Frame,

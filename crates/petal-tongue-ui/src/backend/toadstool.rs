@@ -25,7 +25,7 @@
 //! See `crates/petal-tongue-ui/src/display/backends/toadstool_v2.rs` for the
 //! complete implementation.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
@@ -188,6 +188,7 @@ struct ToadstoolDisplayClient {
 ///
 /// This will be the actual window handle from Toadstool.
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 struct WindowId(u64);
 
 #[cfg(test)]

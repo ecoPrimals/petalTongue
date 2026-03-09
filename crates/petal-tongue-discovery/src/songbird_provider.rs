@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Songbird-based visualization data provider
 //!
-//! Wraps SongbirdClient to implement the VisualizationDataProvider trait.
+//! Wraps `SongbirdClient` to implement the `VisualizationDataProvider` trait.
 //! This allows Songbird to be used as a first-class provider in the discovery system.
 
 use crate::songbird_client::SongbirdClient;
@@ -52,6 +52,7 @@ impl SongbirdVisualizationProvider {
     }
 
     /// Create from existing client (for testing)
+    #[must_use]
     pub fn from_client(client: SongbirdClient) -> Self {
         let socket_path = format!("{}", client.socket_path().display());
 

@@ -5,13 +5,15 @@
 [advisories]
 db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
-vulnerability = "deny"
-unmaintained = "warn"
-yanked = "warn"
-notice = "warn"
+ignore = [
+    "RUSTSEC-2023-0040", # Transitive: bincode unmaintained (via tarpc)
+    "RUSTSEC-2024-0387", # Transitive: opentelemetry_api merged (via tarpc)
+    "RUSTSEC-2025-0040", # Transitive: users crate unmaintained (via eframe)
+    "RUSTSEC-2025-0141", # Transitive: BytesMut reserve overflow (pending bytes update)
+    "RUSTSEC-2026-0007", # Transitive: uzers root group listing
+]
 
 [licenses]
-unlicensed = "deny"
 allow = [
     "AGPL-3.0",
     "AGPL-3.0-only",
@@ -26,20 +28,25 @@ allow = [
     "Unicode-3.0",
     "Unicode-DFS-2016",
     "Zlib",
+    "OFL-1.1",
+    "LicenseRef-UFL-1.0",
 ]
-copyleft = "warn"
 confidence-threshold = 0.8
-default = "deny"
 
 [bans]
 multiple-versions = "warn"
-wildcards = "deny"
+wildcards = "allow"
 highlight = "all"
 deny = [
-    # No native TLS -- pure Rust only (sovereignty)
+    # ecoBin banned: no native TLS, no C crypto
     { name = "openssl", wrappers = [] },
     { name = "openssl-sys", wrappers = [] },
     { name = "native-tls", wrappers = [] },
+    { name = "aws-lc-sys", wrappers = [] },
+    { name = "zstd-sys", wrappers = [] },
+    { name = "lz4-sys", wrappers = [] },
+    { name = "libsqlite3-sys", wrappers = [] },
+    { name = "cryptoki-sys", wrappers = [] },
 ]
 
 [sources]

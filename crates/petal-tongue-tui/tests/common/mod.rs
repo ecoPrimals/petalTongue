@@ -4,33 +4,35 @@
 use chrono::Utc;
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
 
-/// Create a test PrimalInfo with minimal required fields
+/// Create a test `PrimalInfo` with minimal required fields
 pub fn create_test_primal(name: &str, id: &str) -> PrimalInfo {
     PrimalInfo::new(
         id,
         name,
         "Test",
-        format!("unix:///tmp/{}.sock", name),
+        format!("unix:///tmp/{name}.sock"),
         vec![],
         PrimalHealthStatus::Healthy,
         Utc::now().timestamp() as u64,
     )
 }
 
-/// Create a test PrimalInfo with capabilities
+/// Create a test `PrimalInfo` with capabilities
+#[allow(dead_code)]
 pub fn create_test_primal_with_caps(name: &str, id: &str, capabilities: Vec<String>) -> PrimalInfo {
     PrimalInfo::new(
         id,
         name,
         "Test",
-        format!("unix:///tmp/{}.sock", name),
+        format!("unix:///tmp/{name}.sock"),
         capabilities,
         PrimalHealthStatus::Healthy,
         Utc::now().timestamp() as u64,
     )
 }
 
-/// Create a test PrimalInfo with specific health status
+/// Create a test `PrimalInfo` with specific health status
+#[allow(dead_code)]
 pub fn create_test_primal_with_health(
     name: &str,
     id: &str,
@@ -40,14 +42,14 @@ pub fn create_test_primal_with_health(
         id,
         name,
         "Test",
-        format!("unix:///tmp/{}.sock", name),
+        format!("unix:///tmp/{name}.sock"),
         vec![],
         health,
         Utc::now().timestamp() as u64,
     )
 }
 
-/// Create a test TopologyEdge
+/// Create a test `TopologyEdge`
 pub fn create_test_edge(from: &str, to: &str, edge_type: &str) -> TopologyEdge {
     TopologyEdge {
         from: from.into(),

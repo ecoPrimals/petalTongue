@@ -128,9 +128,7 @@ mod tests {
 
         // Should have registered something (at least in test env)
         if let Ok(reg) = registry.read() {
-            let stats = reg.stats();
-            // In CI, might be 0, but shouldn't panic
-            assert!(stats.total >= 0);
+            let _stats = reg.stats();
         }
     }
 

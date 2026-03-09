@@ -3,6 +3,7 @@
 //!
 //! Loads mock data from sandbox/scenarios/ for demonstrations and testing
 
+use petal_tongue_core::constants::{DEFAULT_SANDBOX_DISCOVERY_PORT, DEFAULT_SANDBOX_SECURITY_PORT};
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, Properties};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -179,8 +180,9 @@ pub fn get_default_scenario() -> SandboxScenario {
                 id: "security".into(),
                 name: "Security".to_string(),
                 primal_type: "Security".to_string(),
-                endpoint: std::env::var("PETALTONGUE_SANDBOX_SECURITY_ENDPOINT")
-                    .unwrap_or_else(|_| "http://localhost:9000".to_string()),
+                endpoint: std::env::var("PETALTONGUE_SANDBOX_SECURITY_ENDPOINT").unwrap_or_else(
+                    |_| format!("http://localhost:{DEFAULT_SANDBOX_SECURITY_PORT}"),
+                ),
                 capabilities: vec!["authentication".to_string(), "encryption".to_string()],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: chrono::Utc::now().timestamp() as u64,
@@ -196,8 +198,9 @@ pub fn get_default_scenario() -> SandboxScenario {
                 id: "discovery".into(),
                 name: "Discovery".to_string(),
                 primal_type: "Orchestration".to_string(),
-                endpoint: std::env::var("PETALTONGUE_SANDBOX_DISCOVERY_ENDPOINT")
-                    .unwrap_or_else(|_| "http://localhost:8080".to_string()),
+                endpoint: std::env::var("PETALTONGUE_SANDBOX_DISCOVERY_ENDPOINT").unwrap_or_else(
+                    |_| format!("http://localhost:{DEFAULT_SANDBOX_DISCOVERY_PORT}"),
+                ),
                 capabilities: vec!["discovery".to_string(), "coordination".to_string()],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: chrono::Utc::now().timestamp() as u64,

@@ -51,6 +51,7 @@ impl TextUI {
     }
 
     /// Set export format
+    #[must_use]
     pub fn with_format(mut self, format: ExportFormat) -> Self {
         self.format = format;
         self
@@ -70,7 +71,7 @@ impl TextUI {
         // Primals
         output.push_str("PRIMALS:\n");
         output.push_str("--------\n");
-        for node in nodes.iter() {
+        for node in nodes {
             let health_pct = health_to_percentage(&node.info.health);
             let trust = get_trust_level(&node.info);
             let family = get_family_lineage(&node.info);
@@ -84,17 +85,15 @@ impl TextUI {
         // Connections
         output.push_str("CONNECTIONS:\n");
         output.push_str("------------\n");
-        for edge in edges.iter() {
+        for edge in edges {
             let from_name = nodes
                 .iter()
                 .find(|n| n.info.id == edge.from)
-                .map(|n| n.info.name.as_str())
-                .unwrap_or("unknown");
+                .map_or("unknown", |n| n.info.name.as_str());
             let to_name = nodes
                 .iter()
                 .find(|n| n.info.id == edge.to)
-                .map(|n| n.info.name.as_str())
-                .unwrap_or("unknown");
+                .map_or("unknown", |n| n.info.name.as_str());
 
             output.push_str(&format!(
                 "  • {} → {} ({})\n",
@@ -174,7 +173,7 @@ impl TextUI {
 
         // Nodes
         dot.push_str("  // Primals\n");
-        for node in nodes.iter() {
+        for node in nodes {
             let color = health_to_color(&node.info.health);
             let health_pct = health_to_percentage(&node.info.health);
 
@@ -185,7 +184,7 @@ impl TextUI {
         }
 
         dot.push_str("\n  // Connections\n");
-        for edge in edges.iter() {
+        for edge in edges {
             dot.push_str(&format!(
                 "  \"{}\" -> \"{}\" [label=\"{}\"];\n",
                 edge.from, edge.to, edge.edge_type
@@ -201,7 +200,6 @@ impl TextUI {
 impl UniversalUI for TextUI {
     fn mode_name(&self) -> &str {
         match self.format {
-            ExportFormat::Text => "Text",
             ExportFormat::Json => "JSON",
             ExportFormat::Dot => "DOT",
             _ => "Text",

@@ -58,13 +58,13 @@ impl Drop for EncryptedEntropy {
 /// - Uses TLS for transport (defense in depth)
 /// - Generates fresh random key per session (ephemeral, secure for current use case)
 /// - GCM tag prevents tampering
-/// - Ready for evolution to BearDog key exchange when API available
+/// - Ready for evolution to `BearDog` key exchange when API available
 ///
 /// # Note
 ///
 /// This implementation uses a randomly generated key for demonstration.
 /// In production, the key should be derived from:
-/// - BearDog's public key (for key exchange)
+/// - `BearDog`'s public key (for key exchange)
 /// - Or a pre-shared key established during primal handshake
 /// - Or ephemeral keys via ECDH
 pub async fn stream_entropy(entropy: EntropyCapture, endpoint: &str) -> Result<StreamConfirmation> {
@@ -136,15 +136,15 @@ pub async fn stream_entropy(entropy: EntropyCapture, endpoint: &str) -> Result<S
 /// - ✅ Authentication (GCM tag)
 /// - ✅ Defense in depth (with TLS)
 ///
-/// ## Future Evolution Path (when BearDog key exchange is available):
+/// ## Future Evolution Path (when `BearDog` key exchange is available):
 ///
 /// 1. **ECDH Key Exchange** (preferred):
-///    - Request BearDog's public key via `/api/v1/public-key`
+///    - Request `BearDog`'s public key via `/api/v1/public-key`
 ///    - Perform ECDH to establish shared secret
 ///    - Derive AES key using HKDF with context binding
 ///
 /// 2. **Pre-shared Key** (fallback):
-///    - Retrieve family-specific key from BearDog during handshake
+///    - Retrieve family-specific key from `BearDog` during handshake
 ///    - Use HKDF to derive session-specific keys
 ///
 /// 3. **Key Rotation** (future):
@@ -157,7 +157,7 @@ pub async fn stream_entropy(entropy: EntropyCapture, endpoint: &str) -> Result<S
 /// - GCM tag prevents tampering
 /// - Random key ensures confidentiality
 ///
-/// When BearDog provides key exchange API, this can be evolved without
+/// When `BearDog` provides key exchange API, this can be evolved without
 /// breaking existing entropy capture flows.
 fn encrypt_entropy(plaintext: &[u8]) -> Result<EncryptedEntropy> {
     // Generate random encryption key (32 bytes for AES-256)
@@ -201,7 +201,7 @@ fn decrypt_entropy(encrypted: &EncryptedEntropy, key: &[u8; 32]) -> Result<Vec<u
 
     let plaintext = cipher
         .decrypt(nonce, encrypted.ciphertext.as_ref())
-        .map_err(|e| anyhow::anyhow!("Decryption failed: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Decryption failed: {e}"))?;
 
     Ok(plaintext)
 }
@@ -268,7 +268,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore] // Requires live server
+    #[ignore = "Requires live server"]
     async fn test_stream_entropy_integration() {
         use petal_tongue_core::constants;
         use std::time::Duration;

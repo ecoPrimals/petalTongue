@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! petalTongue ecoBud - Production UniBin
+//! petalTongue ecoBud - Production `UniBin`
 //!
 //! # Architecture
 //!
-//! UniBin: 1 binary, 5 modes
+//! `UniBin`: 1 binary, 5 modes
 //! ecoBin: 80% (4/5 modes Pure Rust)
 //!
 //! # Concurrency
@@ -81,7 +81,7 @@ enum Commands {
 
     /// Launch web UI server (Pure Rust backend! ✅)
     Web {
-        /// Bind address (default: from config or 0.0.0.0:<web_port>)
+        /// Bind address (default: from config or 0.0.0.0:<`web_port`>)
         #[arg(long)]
         bind: Option<String>,
 
@@ -96,7 +96,7 @@ enum Commands {
 
     /// Run headless API server (Pure Rust! ✅)
     Headless {
-        /// Bind address (default: from config or 0.0.0.0:<headless_port>)
+        /// Bind address (default: from config or 0.0.0.0:<`headless_port`>)
         #[arg(long)]
         bind: Option<String>,
 

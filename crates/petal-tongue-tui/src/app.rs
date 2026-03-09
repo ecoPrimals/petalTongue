@@ -13,7 +13,14 @@ use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
 use std::time::Duration;
 
-use crate::{events::*, state::*, views::*};
+use crate::{
+    events::{EventHandler, ExternalEvent, KeyAction, TUIEvent, parse_key_event},
+    state::{TUIState, View},
+    views::{
+        render_dashboard, render_devices, render_livespore, render_logs, render_neural_api,
+        render_nucleus, render_primals, render_topology,
+    },
+};
 
 /// TUI configuration
 #[derive(Debug, Clone)]
@@ -192,12 +199,7 @@ impl RichTUI {
             KeyAction::Refresh => {
                 self.discover_primals().await?;
             }
-            KeyAction::Help => {
-                // TODO: Show help overlay
-            }
-            _ => {
-                // Other actions handled by specific views
-            }
+            KeyAction::Help | _ => {}
         }
 
         Ok(())
@@ -287,18 +289,15 @@ impl RichTUI {
     /// Refresh topology data
     async fn refresh_topology(&mut self) -> Result<()> {
         // Try to get topology from discovered providers
-        match petal_tongue_discovery::discover_visualization_providers().await {
-            Ok(providers) => {
-                for provider in providers {
-                    if let Ok(topology) = provider.get_topology().await {
-                        self.state.update_topology(topology).await;
-                        break;
-                    }
+        if let Ok(providers) = petal_tongue_discovery::discover_visualization_providers().await {
+            for provider in providers {
+                if let Ok(topology) = provider.get_topology().await {
+                    self.state.update_topology(topology).await;
+                    break;
                 }
             }
-            Err(_) => {
-                // No topology available
-            }
+        } else {
+            // No topology available
         }
 
         Ok(())
@@ -344,5 +343,27 @@ impl RichTUI {
 impl Drop for RichTUI {
     fn drop(&mut self) {
         let _ = self.cleanup();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tui_config_default_values() {
+        let config = TUIConfig::default();
+        assert_eq!(config.tick_rate, Duration::from_millis(100));
+        assert!(!config.mouse_support);
+        assert!(!config.standalone);
+    }
+
+    #[test]
+    fn view_all_returns_all_views() {
+        let views = crate::state::View::all();
+        assert_eq!(views.len(), 8);
+        assert_eq!(views[0].shortcut(), '1');
+        assert_eq!(views[0].name(), "Dashboard");
+        assert_eq!(views[0], crate::state::View::Dashboard);
     }
 }

@@ -3,9 +3,11 @@
 //!
 //! Tests verify session state persistence, saving, loading, and XDG compliance.
 
+#![allow(clippy::float_cmp)]
+
 use petal_tongue_core::{
     InstanceId, LayoutAlgorithm, PrimalHealthStatus, PrimalInfo, SessionError, SessionManager,
-    SessionState,
+    SessionState, property::PropertyValue,
 };
 use std::fs;
 use tempfile::TempDir;
@@ -34,7 +36,7 @@ fn test_session_state_with_graph_data() {
         "http://localhost:8080",
         vec![],
         PrimalHealthStatus::Healthy,
-        1234567890,
+        1_234_567_890,
     ));
 
     assert_eq!(state.nodes.len(), 1);
@@ -159,7 +161,7 @@ fn test_session_export_import() {
             "http://localhost:8080",
             vec![],
             PrimalHealthStatus::Healthy,
-            1234567890,
+            1_234_567_890,
         ));
     }
     manager.save().unwrap();
@@ -197,7 +199,7 @@ fn test_session_merge() {
         "http://localhost:8001",
         vec![],
         PrimalHealthStatus::Healthy,
-        1234567890,
+        1_234_567_890,
     ));
 
     state2.nodes.push(PrimalInfo::new(
@@ -207,7 +209,7 @@ fn test_session_merge() {
         "http://localhost:8002",
         vec![],
         PrimalHealthStatus::Healthy,
-        1234567890,
+        1_234_567_890,
     ));
 
     // Merge state2 into state1
@@ -276,11 +278,9 @@ fn test_session_with_properties() {
         "http://localhost:9000",
         vec!["capability1".to_string()],
         PrimalHealthStatus::Healthy,
-        1234567890,
+        1_234_567_890,
     );
 
-    // Use the properties field (modern API)
-    use petal_tongue_core::property::PropertyValue;
     primal
         .properties
         .insert("trust_level".to_string(), PropertyValue::Number(2.0));
@@ -485,7 +485,7 @@ fn test_session_merge_deduplication() {
         "http://localhost:8000",
         vec![],
         PrimalHealthStatus::Healthy,
-        1234567890,
+        1_234_567_890,
     );
 
     state1.nodes.push(same_primal.clone());
@@ -499,7 +499,7 @@ fn test_session_merge_deduplication() {
         "http://localhost:8001",
         vec![],
         PrimalHealthStatus::Healthy,
-        1234567890,
+        1_234_567_890,
     ));
 
     // Merge should deduplicate

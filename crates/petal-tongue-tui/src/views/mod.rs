@@ -139,7 +139,7 @@ pub fn render_nucleus(frame: &mut Frame, state: &TUIState) {
     Footer::render(frame, layout.footer, standalone);
 }
 
-/// Render LiveSpore view
+/// Render `LiveSpore` view
 pub fn render_livespore(frame: &mut Frame, state: &TUIState) {
     let layout = StandardLayout::new(frame);
     let view = block_on(state.get_view());

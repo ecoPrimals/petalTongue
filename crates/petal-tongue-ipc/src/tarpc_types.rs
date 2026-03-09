@@ -41,7 +41,7 @@ use std::collections::HashMap;
 /// 3. **HTTPS** (OPTIONAL) - External/browser access
 ///
 /// # Semantic Naming Convention
-/// All methods follow the `domain.operation` pattern per SEMANTIC_METHOD_NAMING_STANDARD.md:
+/// All methods follow the `domain.operation` pattern per `SEMANTIC_METHOD_NAMING_STANDARD.md`:
 /// - `discovery.*` - Service discovery operations
 /// - `health.*` - Health monitoring operations
 /// - `capabilities.*` - Capability queries
@@ -64,7 +64,7 @@ pub trait PetalTongueRpc {
     /// List of capability strings this primal offers
     async fn capabilities_list() -> Vec<String>;
 
-    /// Discover services by capability (semantic: discovery.find_capability)
+    /// Discover services by capability (semantic: `discovery.find_capability`)
     ///
     /// Query for primals that provide a specific capability.
     ///
@@ -99,7 +99,7 @@ pub trait PetalTongueRpc {
     /// List of protocol info (tarpc, jsonrpc, https)
     async fn protocols_list() -> Vec<ProtocolInfo>;
 
-    /// Render graph topology (semantic: ui.render_graph)
+    /// Render graph topology (semantic: `ui.render_graph`)
     ///
     /// Renders a graph topology visualization.
     /// Only available if primal has "visualization" capability.
@@ -131,7 +131,7 @@ pub struct PrimalEndpoint {
     /// Human-readable primal name (optional)
     pub name: Option<String>,
 
-    /// Endpoint URL (e.g., "tarpc://hostname:9001")
+    /// Endpoint URL (e.g., "<tarpc://hostname:9001>")
     pub endpoint: String,
 
     /// Capabilities this primal provides
@@ -199,7 +199,7 @@ pub struct ProtocolInfo {
     /// Protocol name ("tarpc", "jsonrpc", "https")
     pub name: String,
 
-    /// Endpoint (e.g., "tarpc://localhost:9001", "unix:///tmp/petaltongue.sock")
+    /// Endpoint (e.g., "<tarpc://localhost:9001>", "<unix:///tmp/petaltongue.sock>")
     pub endpoint: String,
 
     /// Whether this protocol is currently enabled
@@ -390,7 +390,7 @@ mod tests {
             is_hanging: false,
             total_frames: 1000,
             cpu_usage: Some(25.5),
-            memory_usage: Some(104857600), // 100 MB
+            memory_usage: Some(104_857_600),
             uptime_seconds: 3600,
             custom: HashMap::new(),
         };

@@ -11,7 +11,7 @@
 //! - 100x faster (Unix sockets vs TCP/IP)
 //! - Port-free architecture
 //! - Secure by default (file permissions)
-//! - Compatible with all primals (Songbird, BearDog, ToadStool, etc.)
+//! - Compatible with all primals (Songbird, `BearDog`, `ToadStool`, etc.)
 //!
 //! # When to Use HTTP
 //!
@@ -199,7 +199,7 @@ impl VisualizationDataProvider for HttpVisualizationProvider {
     }
 }
 
-/// Convert discovered primal to PrimalInfo
+/// Convert discovered primal to `PrimalInfo`
 #[allow(deprecated)]
 impl From<DiscoveredPrimal> for PrimalInfo {
     fn from(primal: DiscoveredPrimal) -> Self {
@@ -249,7 +249,7 @@ mod tests {
             endpoint: "http://test:8000".to_string(),
             capabilities: vec!["test".to_string()],
             health: "healthy".to_string(),
-            last_seen: 1234567890,
+            last_seen: 1_234_567_890,
         };
 
         let primal_info: PrimalInfo = discovered.into();

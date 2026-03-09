@@ -277,3 +277,117 @@ impl Default for HumanEntropyWindow {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::super::types::{CaptureWindowState, EntropyModality};
+    use super::*;
+
+    #[test]
+    fn new_creates_default_state() {
+        let w = HumanEntropyWindow::new();
+        assert_eq!(w.modality, EntropyModality::Audio);
+        assert_eq!(w.state, CaptureWindowState::Idle);
+        assert!(w.narrative_capturer.is_none());
+        assert!(w.current_quality.is_none());
+        assert!(w.capture_start.is_none());
+        assert!(w.waveform_buffer.is_empty());
+        assert_eq!(w.status_message, "Ready to capture human entropy");
+    }
+
+    #[test]
+    fn default_equals_new() {
+        let w1 = HumanEntropyWindow::new();
+        let w2 = HumanEntropyWindow::default();
+        assert_eq!(w1.modality, w2.modality);
+        assert_eq!(w1.state, w2.state);
+    }
+
+    #[test]
+    fn start_capture_narrative_transitions_to_recording() {
+        let mut w = HumanEntropyWindow::new();
+        w.modality = EntropyModality::Narrative;
+        w.start_capture();
+        assert_eq!(w.state, CaptureWindowState::Recording);
+        assert!(w.narrative_capturer.is_some());
+        assert!(w.capture_start.is_some());
+        assert_eq!(w.status_message, "Type your story...");
+    }
+
+    #[test]
+    fn start_capture_unimplemented_modality_sets_status() {
+        let mut w = HumanEntropyWindow::new();
+        w.modality = EntropyModality::Audio;
+        w.start_capture();
+        assert_eq!(w.status_message, "Modality not yet implemented");
+    }
+
+    #[test]
+    fn stop_capture_transitions_to_stopped() {
+        let mut w = HumanEntropyWindow::new();
+        w.modality = EntropyModality::Narrative;
+        w.start_capture();
+        w.stop_capture();
+        assert_eq!(w.state, CaptureWindowState::Stopped);
+        assert_eq!(
+            w.status_message,
+            "Capture stopped. Ready to send or discard."
+        );
+    }
+
+    #[test]
+    fn reset_clears_state() {
+        let mut w = HumanEntropyWindow::new();
+        w.modality = EntropyModality::Narrative;
+        w.start_capture();
+        w.reset();
+        assert!(w.narrative_capturer.is_none());
+        assert!(w.current_quality.is_none());
+        assert!(w.capture_start.is_none());
+        assert!(w.waveform_buffer.is_empty());
+        assert_eq!(w.state, CaptureWindowState::Idle);
+    }
+
+    #[test]
+    fn discard_resets_and_sets_status() {
+        let mut w = HumanEntropyWindow::new();
+        w.modality = EntropyModality::Narrative;
+        w.start_capture();
+        w.discard();
+        assert_eq!(w.state, CaptureWindowState::Idle);
+        assert_eq!(w.status_message, "Entropy discarded and zeroized.");
+    }
+
+    #[test]
+    fn update_noop_when_not_recording() {
+        let mut w = HumanEntropyWindow::new();
+        w.state = CaptureWindowState::Idle;
+        w.update();
+        assert!(w.current_quality.is_none());
+    }
+
+    #[test]
+    fn entropy_modality_names() {
+        assert!(EntropyModality::Audio.name().contains("Audio"));
+        assert!(EntropyModality::Narrative.name().contains("Narrative"));
+    }
+
+    #[test]
+    fn entropy_modality_descriptions() {
+        assert!(!EntropyModality::Audio.description().is_empty());
+        assert!(EntropyModality::Narrative.description().contains("story"));
+    }
+
+    #[test]
+    fn entropy_modality_availability() {
+        assert!(!EntropyModality::Audio.is_available());
+        assert!(EntropyModality::Narrative.is_available());
+    }
+
+    #[test]
+    fn capture_window_state_variants() {
+        assert_ne!(CaptureWindowState::Idle, CaptureWindowState::Recording);
+        assert_ne!(CaptureWindowState::Recording, CaptureWindowState::Stopped);
+        assert_ne!(CaptureWindowState::Stopped, CaptureWindowState::Processing);
+    }
+}

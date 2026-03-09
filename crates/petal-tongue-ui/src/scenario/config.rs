@@ -239,3 +239,106 @@ pub struct PerformanceConfig {
     #[serde(default)]
     pub hardware_acceleration: bool,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ui_config_default() {
+        let c = UiConfig::default();
+        assert!(c.theme.is_empty());
+        assert!(c.layout.is_empty());
+        assert!(c.initial_zoom.is_empty());
+    }
+
+    #[test]
+    fn panel_visibility_default() {
+        let p = PanelVisibility::default();
+        assert!(p.left_sidebar);
+        assert!(p.right_sidebar);
+        assert!(p.top_menu);
+        assert!(p.system_dashboard);
+    }
+
+    #[test]
+    fn feature_flags_default() {
+        let f = FeatureFlags::default();
+        assert!(f.audio_sonification);
+        assert!(f.auto_refresh);
+        assert!(!f.neural_api);
+        assert!(!f.tutorial_mode);
+    }
+
+    #[test]
+    fn ui_config_validate_ok() {
+        let c = UiConfig::default();
+        assert!(c.validate().is_ok());
+    }
+
+    #[test]
+    fn custom_panel_validate_empty_type_fails() {
+        let p = CustomPanelConfig {
+            panel_type: "".to_string(),
+            title: "T".to_string(),
+            width: None,
+            height: None,
+            fullscreen: false,
+            config: serde_json::Value::Null,
+        };
+        assert!(p.validate().is_err());
+    }
+
+    #[test]
+    fn custom_panel_validate_empty_title_fails() {
+        let p = CustomPanelConfig {
+            panel_type: "doom".to_string(),
+            title: "".to_string(),
+            width: None,
+            height: None,
+            fullscreen: false,
+            config: serde_json::Value::Null,
+        };
+        assert!(p.validate().is_err());
+    }
+
+    #[test]
+    fn custom_panel_validate_zero_width_fails() {
+        let p = CustomPanelConfig {
+            panel_type: "doom".to_string(),
+            title: "Doom".to_string(),
+            width: Some(0),
+            height: None,
+            fullscreen: false,
+            config: serde_json::Value::Null,
+        };
+        assert!(p.validate().is_err());
+    }
+
+    #[test]
+    fn custom_panel_validate_ok() {
+        let p = CustomPanelConfig {
+            panel_type: "doom_game".to_string(),
+            title: "Doom".to_string(),
+            width: Some(320),
+            height: Some(200),
+            fullscreen: false,
+            config: serde_json::Value::Null,
+        };
+        assert!(p.validate().is_ok());
+    }
+
+    #[test]
+    fn animation_config_default() {
+        let a = AnimationConfig::default();
+        assert!(!a.enabled);
+        assert!(!a.breathing_nodes);
+    }
+
+    #[test]
+    fn performance_config_default() {
+        let p = PerformanceConfig::default();
+        assert_eq!(p.target_fps, 0);
+        assert!(!p.vsync);
+    }
+}

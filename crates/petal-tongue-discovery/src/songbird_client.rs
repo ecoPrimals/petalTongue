@@ -49,7 +49,7 @@ pub struct SongbirdClient {
 impl SongbirdClient {
     /// Discover Songbird's Unix socket
     ///
-    /// Searches in biomeOS-standard locations for songbird-<family_id>.sock
+    /// Searches in biomeOS-standard locations for songbird-<`family_id>.sock`
     pub fn discover(family_id: Option<&str>) -> Result<Self> {
         let family = family_id
             .map(String::from)
@@ -120,13 +120,13 @@ impl SongbirdClient {
     /// Returns list of primals that can provide this capability.
     ///
     /// # Semantic Method Name
-    /// Calls `discovery.query` per SEMANTIC_METHOD_NAMING_STANDARD.md
+    /// Calls `discovery.query` per `SEMANTIC_METHOD_NAMING_STANDARD.md`
     ///
     /// # Example Capabilities
     /// - "visualization" - primals that provide UI/visualization
-    /// - "encryption" - primals that provide encryption (BearDog)
-    /// - "storage" - primals that provide persistent storage (NestGate)
-    /// - "compute" - primals that provide execution (ToadStool)
+    /// - "encryption" - primals that provide encryption (`BearDog`)
+    /// - "storage" - primals that provide persistent storage (`NestGate`)
+    /// - "compute" - primals that provide execution (`ToadStool`)
     /// - "ai" - primals that provide AI inference (Squirrel)
     pub async fn discover_by_capability(&self, capability: &str) -> Result<Vec<PrimalInfo>> {
         debug!("🔍 Querying Songbird for capability: {}", capability);
@@ -300,6 +300,7 @@ impl SongbirdClient {
     }
 
     /// Parse a primal from Songbird's JSON response
+    #[allow(clippy::unused_self)]
     fn parse_primal(&self, value: &Value) -> Result<PrimalInfo> {
         let id = value["id"]
             .as_str()
@@ -385,7 +386,7 @@ mod tests {
             "endpoint": "unix:///run/user/1000/beardog-nat0.sock",
             "capabilities": ["encryption", "identity"],
             "health": "healthy",
-            "last_seen": 1234567890
+            "last_seen": 1_234_567_890
         });
 
         let primal = client.parse_primal(&json).unwrap();

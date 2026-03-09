@@ -32,6 +32,7 @@ impl VisualizationCapability {
     /// Get the capability string for discovery
     ///
     /// This is what we query for in mDNS or capability registries.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         match self {
             Self::PrimalProvider => "visualization.primal-provider",
@@ -42,6 +43,7 @@ impl VisualizationCapability {
     }
 
     /// Get all visualization capabilities
+    #[must_use]
     pub fn all() -> &'static [VisualizationCapability] {
         &[
             Self::PrimalProvider,

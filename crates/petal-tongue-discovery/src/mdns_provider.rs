@@ -60,6 +60,7 @@ pub struct MdnsVisualizationProvider {
 
 impl MdnsVisualizationProvider {
     /// Create a new mDNS provider from discovered endpoint
+    #[must_use]
     pub fn new(endpoint: String, metadata: ProviderMetadata) -> Self {
         Self {
             endpoint,
@@ -334,26 +335,22 @@ impl MdnsVisualizationProvider {
         }
 
         // Build provider from parsed data
-        let ip = if !a_records.is_empty() {
-            a_records[0].to_string()
-        } else {
+        let ip = if a_records.is_empty() {
             // Fall back to response address
             match addr {
                 SocketAddr::V4(v4) => v4.ip().to_string(),
                 SocketAddr::V6(v6) => format!("[{}]", v6.ip()),
             }
+        } else {
+            a_records[0].to_string()
         };
 
-        // TRUE PRIMAL: No port assumption - skip if no port advertised
-        let port = match service_port {
-            Some(p) => p,
-            None => {
-                tracing::warn!(
-                    "mDNS service at {} has no SRV port record - skipping (no port assumptions)",
-                    ip
-                );
-                anyhow::bail!("No port advertised in mDNS service - refusing to assume default");
-            }
+        let Some(port) = service_port else {
+            tracing::warn!(
+                "mDNS service at {} has no SRV port record - skipping (no port assumptions)",
+                ip
+            );
+            anyhow::bail!("No port advertised in mDNS service - refusing to assume default");
         };
         let endpoint = format!("http://{ip}:{port}");
 
@@ -397,7 +394,11 @@ impl MdnsVisualizationProvider {
 #[async_trait]
 impl VisualizationDataProvider for MdnsVisualizationProvider {
     async fn get_primals(&self) -> Result<Vec<PrimalInfo>> {
-        // Query the discovered endpoint
+        #[derive(serde::Deserialize)]
+        struct PrimalsResponse {
+            primals: Vec<PrimalInfo>,
+        }
+
         let url = format!("{}/api/v1/primals/discovered", self.endpoint);
 
         let response = self
@@ -412,11 +413,6 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
             anyhow::bail!("Provider returned error status: {}", response.status());
         }
 
-        #[derive(serde::Deserialize)]
-        struct PrimalsResponse {
-            primals: Vec<PrimalInfo>,
-        }
-
         let data: PrimalsResponse = response
             .json()
             .await
@@ -426,6 +422,11 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
     }
 
     async fn get_topology(&self) -> Result<Vec<TopologyEdge>> {
+        #[derive(serde::Deserialize)]
+        struct TopologyResponse {
+            edges: Vec<TopologyEdge>,
+        }
+
         let url = format!("{}/api/v1/topology", self.endpoint);
 
         let response = self
@@ -438,11 +439,6 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
 
         if !response.status().is_success() {
             anyhow::bail!("Provider returned error status: {}", response.status());
-        }
-
-        #[derive(serde::Deserialize)]
-        struct TopologyResponse {
-            edges: Vec<TopologyEdge>,
         }
 
         let data: TopologyResponse = response

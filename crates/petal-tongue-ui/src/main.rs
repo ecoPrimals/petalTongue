@@ -121,7 +121,9 @@ fn main() -> anyhow::Result<()> {
         || cfg!(target_os = "windows")
         || cfg!(target_os = "macos");
 
-    if !has_display {
+    if has_display {
+        tracing::info!("✅ Display server detected");
+    } else {
         tracing::info!("🪟 No display server detected");
         tracing::info!("   Pure Rust display backends:");
         tracing::info!("   - TerminalGUI (ASCII art topology)");
@@ -136,8 +138,6 @@ fn main() -> anyhow::Result<()> {
             Ok(false) => tracing::info!("📦 Continuing without display server"),
             Err(e) => tracing::warn!("⚠️  Prompt error: {}", e),
         }
-    } else {
-        tracing::info!("✅ Display server detected");
     }
 
     // Try to run with eframe
@@ -159,7 +159,7 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
-    result.map_err(|e| anyhow::anyhow!("eframe error: {:?}", e))
+    result.map_err(|e| anyhow::anyhow!("eframe error: {e:?}"))
 }
 
 /// Run with traditional eframe
@@ -183,8 +183,7 @@ fn run_with_eframe(
             .with_inner_size([1400.0, 900.0])
             .with_min_inner_size([800.0, 900.0])
             .with_title(format!(
-                "🌸 {} - Universal Representation System",
-                PRIMAL_NAME
+                "🌸 {PRIMAL_NAME} - Universal Representation System"
             ))
             .with_visible(true)
             .with_active(true),
