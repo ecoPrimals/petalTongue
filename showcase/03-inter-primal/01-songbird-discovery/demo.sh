@@ -1,167 +1,74 @@
 #!/usr/bin/env bash
-# 🎵 Songbird Discovery Demo
-# Demonstrates petalTongue visualizing songbird federation
+# SPDX-License-Identifier: AGPL-3.0-only
+# Demo: Songbird Discovery
+# Duration: ~30 seconds
+# Prerequisites: petalTongue built
+# External deps: Songbird (optional - graceful skip)
 
 set -euo pipefail
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/../../scripts/common.sh"
 
-# Configuration
-BIOMEOS_URL="${BIOMEOS_URL:-http://localhost:3000}"
-PETALTONGUE_BIN="${PETALTONGUE_BIN:-../../../target/release/petal-tongue}"
-DEMO_DURATION="${DEMO_DURATION:-300}" # 5 minutes default
+print_header "Songbird Discovery Integration"
+print_version_info
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🌸 petalTongue Showcase: Songbird Discovery"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
+step 1 "Prerequisites"
+require_petaltongue
 
-# Check prerequisites
-echo -e "${BLUE}[00:00]${NC} Checking prerequisites..."
-
-# Check if petalTongue is built
-if [ ! -f "$PETALTONGUE_BIN" ]; then
-    echo -e "${RED}❌ petalTongue not built${NC}"
-    echo ""
-    echo "Build it first:"
-    echo "  cd /path/to/petalTongue"
-    echo "  cargo build --release"
-    exit 1
-fi
-
-# Check if BiomeOS is running
-echo -e "${BLUE}[00:01]${NC} Checking if BiomeOS is running..."
-if ! curl -s -f "${BIOMEOS_URL}/api/v1/health" > /dev/null 2>&1; then
-    echo -e "${YELLOW}⚠️  BiomeOS not detected at ${BIOMEOS_URL}${NC}"
-    echo ""
-    echo "BiomeOS is required to aggregate primal discovery."
-    echo "Start BiomeOS first, which will discover songbird automatically."
-    echo ""
-    echo "Expected BiomeOS at: ${BIOMEOS_URL}"
-    echo ""
-    read -p "Press Enter once BiomeOS is running, or Ctrl+C to exit..."
-    
-    # Check again
-    if ! curl -s -f "${BIOMEOS_URL}/api/v1/health" > /dev/null 2>&1; then
-        echo -e "${RED}❌ Still can't reach BiomeOS${NC}"
-        exit 1
-    fi
-fi
-
-echo -e "${GREEN}✅ BiomeOS running at ${BIOMEOS_URL}${NC}"
-echo ""
-
-# Get BiomeOS info
-echo -e "${BLUE}[00:02]${NC} Checking BiomeOS health..."
-BIOMEOS_INFO=$(curl -s "${BIOMEOS_URL}/api/v1/health" 2>/dev/null || echo '{}')
-echo "$BIOMEOS_INFO" | jq '.' 2>/dev/null || echo "  (Could not parse JSON)"
-echo ""
-
-# Check for discovered primals
-echo -e "${BLUE}[00:03]${NC} Checking for discovered primals..."
-PRIMALS=$(curl -s "${BIOMEOS_URL}/api/v1/primals" 2>/dev/null || echo '{"primals":[]}')
-PRIMAL_COUNT=$(echo "$PRIMALS" | jq '.primals | length' 2>/dev/null || echo "0")
-
-if [ "$PRIMAL_COUNT" -eq 0 ]; then
-    echo -e "${YELLOW}⚠️  No primals discovered yet${NC}"
-    echo ""
-    echo "BiomeOS hasn't discovered any primals yet."
-    echo "Make sure songbird is running and BiomeOS can discover it."
-    echo ""
-    echo "Expected: songbird running on port 8080"
-    echo ""
+step 2 "Check for Songbird"
+print_info "Probing for Songbird discovery service..."
+if check_songbird_running; then
+    SONGBIRD_AVAILABLE=true
+    record_pass "Songbird is running"
 else
-    echo -e "${GREEN}✅ Found $PRIMAL_COUNT primal(s) discovered by BiomeOS${NC}"
-    
-    # Check if songbird is among them
-    SONGBIRD_FOUND=$(echo "$PRIMALS" | jq '.primals[] | select(.primal_type == "orchestration" or .name == "Songbird" or .name == "songbird")' 2>/dev/null || echo "")
-    if [ -n "$SONGBIRD_FOUND" ]; then
-        echo -e "${GREEN}✅ Songbird discovered!${NC}"
-        echo "$SONGBIRD_FOUND" | jq '.' 2>/dev/null | head -15
-    else
-        echo -e "${YELLOW}⚠️  Songbird not yet discovered${NC}"
-        echo "BiomeOS found primals, but songbird isn't among them yet."
-        echo "This demo works with any discovered primals, continuing..."
-    fi
-    echo ""
+    SONGBIRD_AVAILABLE=false
+    record_skip "Songbird not running"
+    print_info "Songbird provides service discovery for the ecosystem."
+    print_info "To run this demo fully, start Songbird first:"
+    print_info ""
+    print_command "cd ../songbird && cargo run --release"
+    print_info ""
 fi
 
-# Explain what we're about to do
-echo -e "${BLUE}[00:04]${NC} ${GREEN}What you'll see:${NC}"
-echo "  📊 Visual: Graph of ecosystem topology (via BiomeOS)"
-echo "  🎵 Audio: Piano for discovery, strings for connections"
-echo "  🎨 Colors: Green=healthy, Yellow=warning, Gray=unknown"
-echo "  ⚡ Animation: Flow particles showing data flow"
-echo ""
+step 3 "petalTongue registration"
+if [[ "$SONGBIRD_AVAILABLE" == "true" ]]; then
+    print_info "petalTongue auto-registers on startup via ipc.register"
+    print_command "petaltongue status --format json"
+    STATUS=$("${PETALTONGUE_BIN}" --log-level error status --format json 2>&1)
+    if check_json_valid "$STATUS"; then
+        record_pass "Status shows registration info"
+    else
+        record_fail "Could not get status"
+    fi
+else
+    print_info "When Songbird runs, petalTongue automatically:"
+    print_info "  1. Discovers the registration service (capability-based)"
+    print_info "  2. Sends ipc.register with its capabilities"
+    print_info "  3. Spawns a heartbeat task"
+    print_info "  4. Appears in Songbird's service mesh"
+    print_info ""
+    print_info "petalTongue capabilities registered:"
+    print_info "  - visualization.render"
+    print_info "  - visualization.render.stream"
+    print_info "  - visualization.export"
+    print_info "  - visualization.validate"
+    print_info "  - visualization.capabilities"
+    print_info "  - visualization.interact"
+    print_info "  - health.check"
+    record_skip "Registration demo requires Songbird"
+fi
 
-echo -e "${BLUE}[00:05]${NC} ${GREEN}What you can do:${NC}"
-echo "  🖱️  Drag nodes to reposition"
-echo "  🔍 Scroll to zoom in/out"
-echo "  ⌨️  Press L to cycle layouts (Force/Circular/Hierarchical/Grid)"
-echo "  ⌨️  Press C to show capabilities panel"
-echo "  ⌨️  Press A to toggle audio"
-echo "  ⌨️  Press R to refresh discovery"
-echo "  ⌨️  Press ESC to exit"
-echo ""
+step 4 "Discovery protocol reference"
+print_info "Discovery flow (from wateringHole/PRIMAL_IPC_PROTOCOL.md):"
+print_info "  1. Primal starts -> probes for discovery service"
+print_info "  2. Finds socket via XDG_RUNTIME_DIR convention"
+print_info "  3. Sends JSON-RPC: ipc.register {name, version, capabilities}"
+print_info "  4. Discovery service responds with ecosystem state"
+print_info "  5. Heartbeat maintains presence (configurable interval)"
+print_info ""
+print_info "No hardcoded primal names or ports - pure capability discovery."
 
-echo -e "${BLUE}[00:06]${NC} Starting petalTongue (will run for ${DEMO_DURATION}s)..."
-echo ""
-
-# Set up environment for petalTongue
-export RUST_LOG="${RUST_LOG:-info}"
-export BIOMEOS_URL="$BIOMEOS_URL"  # Point to BiomeOS aggregator
-export AUTO_DISCOVER=1
-export AUDIO_ENABLED=1
-
-# Run petalTongue
-echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}🌸 Launching petalTongue...${NC}"
-echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
-
-# Run with timeout
-timeout "${DEMO_DURATION}s" "$PETALTONGUE_BIN" || true
-
-echo ""
-echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}✅ Demo complete!${NC}"
-echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
-
-# Summary
-echo -e "${BLUE}📊 Demo Summary:${NC}"
-echo "  Duration: ${DEMO_DURATION}s"
-echo "  BiomeOS URL: ${BIOMEOS_URL}"
-echo "  Discovery: Automatic via BiomeOS aggregator"
-echo "  Primals shown: $PRIMAL_COUNT"
-echo "  Modalities: Visual + Audio"
-echo ""
-
-echo -e "${BLUE}🎓 What you learned:${NC}"
-echo "  ✅ petalTongue discovers primals via BiomeOS aggregator"
-echo "  ✅ BiomeOS aggregates discovery from all primals"
-echo "  ✅ Songbird/beardog/etc are shown in single topology"
-echo "  ✅ Protocol escalation is visualized"
-echo "  ✅ Real-time updates work"
-echo ""
-
-echo -e "${BLUE}🚀 What's next:${NC}"
-echo "  Try: ../02-beardog-security/demo.sh (key lineage visualization)"
-echo "  Try: ../04-toadstool-compute/demo.sh (compute mesh)"
-echo "  Try: ../07-full-ecosystem/demo.sh (all primals together)"
-echo ""
-
-echo -e "${BLUE}💡 Pro Tips:${NC}"
-echo "  • Add more towers for richer visualization"
-echo "  • Try different layouts (press L)"
-echo "  • Listen to audio patterns (protocol escalation)"
-echo "  • Check songbird's showcase for federation setup"
-echo ""
-
-echo "Done! 🌸🎵"
-
+echo
+print_results || true
+demo_complete "02-biomeos-topology"

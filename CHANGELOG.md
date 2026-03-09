@@ -2,6 +2,59 @@
 
 All notable changes to petalTongue will be documented in this file.
 
+## [1.4.0] - 2026-03-09
+
+### Added - Interaction Engine, Spring Integration & Deep Debt Evolution
+- **Interaction Engine** (`crates/petal-tongue-core/src/interaction/`):
+  Bidirectional, modality-agnostic interaction system with semantic intents,
+  perspective-invariant data targeting, input adapters, inverse pipelines,
+  and multi-user collaboration protocol.
+- **Spring Integration**: IPC visualization handler (`visualization.render`,
+  `visualization.render.stream`, `visualization.capabilities`), `ScenarioBuilder`
+  trait, `DomainPalette` system for domain-specific color themes.
+- **healthSpring IPC Push Client**: `PetalTonguePushClient` for live data push
+  from springs via Unix socket JSON-RPC.
+- **Schema round-trip tests**: Verified healthSpring JSON compatibility with
+  `DataBinding`/`ThresholdRange` types.
+- **New DataBinding variants**: `Heatmap`, `Scatter3D`, `FieldMap`, `Spectrum`
+  for diverse scientific data from springs.
+
+### Changed - Deep Debt Evolution
+- **Edition 2024**: All 15 crates now on Rust edition 2024 (was 2021 for 4).
+- **Zero C dependencies**: Removed `libc`, `nix`, `atty`, `term_size`.
+  Using `rustix`, `std::io::IsTerminal`, `terminal_size`, sysfs reads.
+- **Zero clippy warnings**: `cargo clippy --all-targets -- -D warnings` clean.
+- **Zero production `unwrap()`**: All replaced with `expect()` or error handling.
+- **`#[allow]` → `#[expect]`**: 47 lint suppressions evolved for auto-cleanup.
+- **Capability-based discovery**: Hardcoded primal names replaced with capability
+  strings. Hardcoded `localhost` endpoints replaced with env var discovery.
+- **Mock isolation**: All mock code gated behind `#[cfg(test)]` or feature flags.
+- **Socket path compatibility**: XDG socket now uses `petaltongue/` subdirectory,
+  matching healthSpring's discovery pattern.
+- **Let-chain patterns**: Collapsible `if` statements evolved to edition 2024
+  `if ... && let Some(x) = ...` syntax.
+
+### Refactored - Large File Modernization
+- `timeline_view.rs` → `timeline_view/` module (types, filtering, view, tests)
+- `niche_designer.rs` → `niche_designer/` module (types, state, rendering, tests)
+- `system_dashboard.rs` → `system_dashboard/` module (state, panels, tests)
+- `proprioception.rs` → `proprioception/` module (types, tracker, tests)
+- `human_entropy_window.rs` → `human_entropy_window/` module (types, state, rendering)
+- `traffic_view.rs` → `traffic_view/` module (types, view, tests)
+- `unix_socket_server.rs` → split into capability_detection, connection, rpc_handlers
+- `biomeos_integration.rs` → split into types, events, provider, provider_trait
+- `status_reporter.rs` → split into types, reporter
+- `graph_validation.rs` → split into types, node_rules, edge_rules, structure
+- `visual_2d.rs` → split into types, drawing, animation, stats, renderer
+
+### Removed
+- `petal-tongue-primitives` and `petal-tongue-modalities` (archived)
+- `libc`, `nix`, `atty`, `term_size` dependencies
+- `songbird-universal`, `songbird-types` path dependencies
+- Stale TODO comments in legacy-gated modules
+
+---
+
 ## [1.3.1] - 2026-03-08
 
 ### Added - Grammar of Graphics Architecture & Comprehensive Audit

@@ -6,6 +6,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use petal_tongue_core::TopologyEdge;
+
 use crate::scenario::config::UiConfig;
 use crate::scenario::ecosystem::Ecosystem;
 use crate::scenario::sensory::SensoryConfig;
@@ -33,6 +35,9 @@ pub struct Scenario {
     /// Sensory capability configuration (v2.2.0)
     #[serde(default)]
     pub sensory_config: SensoryConfig,
+    /// Topology edges between primals (optional, used by healthSpring clinical scenarios)
+    #[serde(default)]
+    pub edges: Vec<TopologyEdge>,
 }
 
 impl Scenario {
@@ -40,6 +45,12 @@ impl Scenario {
     #[must_use]
     pub fn primal_count(&self) -> usize {
         self.ecosystem.primals.len()
+    }
+
+    /// Get number of edges in scenario
+    #[must_use]
+    pub fn edge_count(&self) -> usize {
+        self.edges.len()
     }
 
     /// Validate scenario configuration

@@ -33,11 +33,12 @@ use petal_tongue_adapters::AdapterRegistry;
 use petal_tongue_animation::AnimationEngine;
 use petal_tongue_api::BiomeOSClient;
 use petal_tongue_core::{
-    CapabilityDetector, GraphEngine, InstanceId, LayoutAlgorithm, RenderingAwareness,
-    SensorRegistry, SessionManager,
+    CapabilityDetector, GraphEngine, InstanceId, LayoutAlgorithm, MotorCommand, PanelId,
+    RenderingAwareness, SensorRegistry, SessionManager,
 };
 use petal_tongue_discovery::{NeuralApiProvider, VisualizationDataProvider};
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer, Visual2DRenderer};
+use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 
@@ -61,7 +62,7 @@ pub struct PetalTongueApp {
     data_providers: Vec<Box<dyn VisualizationDataProvider>>,
     /// Legacy `BiomeOS` client (DEPRECATED - kept for backward compatibility)
     #[deprecated(note = "Use data_providers instead - biomeOS is just another primal!")]
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     biomeos_client: BiomeOSClient,
     /// Current layout algorithm
     current_layout: LayoutAlgorithm,
@@ -143,33 +144,43 @@ pub struct PetalTongueApp {
     /// Graph Builder canvas (interactive visual graph construction)
     graph_canvas: GraphCanvas,
     /// Node palette (available node types)
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     node_palette: NodePalette,
     /// Property panel (node parameter editor)
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     property_panel: PropertyPanel,
     /// Graph manager (save/load/execute via Neural API)
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     graph_manager: GraphManagerPanel,
     /// Show Graph Builder window
     show_graph_builder: bool,
 
     /// Adaptive UI manager (device-specific rendering) - DEPRECATED
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     adaptive_ui: crate::adaptive_ui::AdaptiveUIManager,
 
     /// Sensory UI manager (capability-based rendering)
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     sensory_ui: Option<crate::sensory_ui::SensoryUIManager>,
     /// Use sensory UI instead of adaptive UI (feature flag for migration)
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     use_sensory_ui: bool,
 
     /// Panel registry for custom panel types (Doom, web, video, etc.)
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     panel_registry: PanelRegistry,
     /// Active custom panels
     custom_panels: Vec<Box<dyn PanelInstance>>,
+
+    // === SAME DAVE: Efferent motor command channel ===
+    /// Receiver for motor commands (efferent channel sink).
+    /// Drained every frame in `update()` to apply UI state changes.
+    motor_rx: mpsc::Receiver<MotorCommand>,
+    /// Sender for motor commands (efferent channel source).
+    /// Cloned to IPC server, scenario loader, mode presets, etc.
+    motor_tx: mpsc::Sender<MotorCommand>,
+    /// Show top menu bar (controllable via motor commands)
+    show_top_menu: bool,
 }
 
 impl PetalTongueApp {
@@ -202,12 +213,111 @@ impl PetalTongueApp {
         tracing::debug!("✅ Graph refresh requested - DataService handles this automatically");
         self.last_refresh = Instant::now();
     }
+
+    /// Get a clone of the motor command sender (for IPC, init, external control).
+    #[must_use]
+    pub fn motor_sender(&self) -> mpsc::Sender<MotorCommand> {
+        self.motor_tx.clone()
+    }
+
+    /// Get a handle to the shared graph engine (for IPC server).
+    #[must_use]
+    pub fn graph_handle(&self) -> Arc<RwLock<petal_tongue_core::GraphEngine>> {
+        Arc::clone(&self.graph)
+    }
+
+    /// Drain all pending motor commands and apply them to UI state.
+    fn drain_motor_commands(&mut self) {
+        while let Ok(cmd) = self.motor_rx.try_recv() {
+            self.apply_motor_command(cmd);
+        }
+    }
+
+    /// Apply a single motor command to UI state (efferent signal → effector).
+    fn apply_motor_command(&mut self, cmd: MotorCommand) {
+        match cmd {
+            MotorCommand::RenderFrame { .. }
+            | MotorCommand::UpdateDisplay
+            | MotorCommand::ClearDisplay => {
+                // Rendering commands handled by the existing awareness system
+            }
+            MotorCommand::SetPanelVisibility { panel, visible } => {
+                match panel {
+                    PanelId::LeftSidebar => self.show_controls = visible,
+                    PanelId::RightSidebar => {
+                        self.show_audio_panel = visible;
+                        self.show_dashboard = visible;
+                        self.show_trust_dashboard = visible;
+                    }
+                    PanelId::TopMenu => self.show_top_menu = visible,
+                    PanelId::SystemDashboard => self.show_dashboard = visible,
+                    PanelId::AudioPanel => self.show_audio_panel = visible,
+                    PanelId::TrustDashboard => self.show_trust_dashboard = visible,
+                    PanelId::Proprioception => self.show_neural_proprioception = visible,
+                    PanelId::GraphStats => self.visual_renderer.set_show_stats(visible),
+                    PanelId::Custom(_) => {}
+                }
+                tracing::debug!("Motor: SetPanelVisibility({panel:?}, {visible})");
+            }
+            MotorCommand::SetZoom { level } => {
+                self.visual_renderer.set_zoom(level);
+                tracing::debug!("Motor: SetZoom({level})");
+            }
+            MotorCommand::FitToView => {
+                self.visual_renderer.fit_to_view(&self.graph);
+                tracing::debug!("Motor: FitToView");
+            }
+            MotorCommand::Navigate { ref target_node } => {
+                self.visual_renderer
+                    .navigate_to_node(target_node, &self.graph);
+                tracing::debug!("Motor: Navigate({target_node})");
+            }
+            MotorCommand::SelectNode { ref node_id } => {
+                if let Some(id) = node_id {
+                    self.visual_renderer.select_node(Some(id));
+                } else {
+                    self.visual_renderer.select_node(None::<&str>);
+                }
+                tracing::debug!("Motor: SelectNode({node_id:?})");
+            }
+            MotorCommand::SetLayout { ref algorithm } => {
+                let layout = match algorithm.as_str() {
+                    "Hierarchical" => LayoutAlgorithm::Hierarchical,
+                    "Circular" => LayoutAlgorithm::Circular,
+                    "Random" => LayoutAlgorithm::Random,
+                    _ => LayoutAlgorithm::ForceDirected,
+                };
+                self.current_layout = layout;
+                if let Ok(mut graph) = self.graph.write() {
+                    graph.set_layout(layout);
+                }
+                tracing::debug!("Motor: SetLayout({algorithm})");
+            }
+            MotorCommand::SetMode { ref mode } => {
+                tracing::info!("Motor: SetMode({mode})");
+                let commands = crate::mode_presets::commands_for_mode(mode);
+                for sub_cmd in commands {
+                    self.apply_motor_command(sub_cmd);
+                }
+            }
+            MotorCommand::SetAwakening { enabled } => {
+                if !enabled {
+                    self.awakening_overlay.skip();
+                }
+                tracing::debug!("Motor: SetAwakening({enabled})");
+            }
+            MotorCommand::LoadScenario { ref path } => {
+                tracing::info!("Motor: LoadScenario({path})");
+            }
+        }
+    }
 }
 
 impl eframe::App for PetalTongueApp {
     #[expect(clippy::too_many_lines)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         sensory::process_sensory_feedback(self, ctx);
+        self.drain_motor_commands();
 
         if self.awakening_overlay.is_active() {
             let delta_time = ctx.input(|i| i.stable_dt);
@@ -281,36 +391,38 @@ impl eframe::App for PetalTongueApp {
         style.visuals.panel_fill = palette.background_alt;
         ctx.set_style(style);
 
-        egui::TopBottomPanel::top("top_panel")
-            .frame(
-                egui::Frame::none()
-                    .fill(palette.background)
-                    .inner_margin(8.0),
-            )
-            .show(ctx, |ui| {
-                let refresh_clicked = egui::menu::bar(ui, |ui| {
-                    crate::app_panels::render_top_menu_bar(
-                        ui,
-                        &palette,
-                        &mut self.accessibility_panel,
-                        &mut self.visual_renderer,
-                        &mut self.tools,
-                        &mut self.current_layout,
-                        &self.graph,
-                        &mut self.show_dashboard,
-                        &mut self.show_controls,
-                        &mut self.show_audio_panel,
-                        &mut self.show_capability_panel,
-                        &mut self.show_neural_proprioception,
-                        &mut self.show_neural_metrics,
-                        &mut self.show_graph_builder,
-                    )
-                })
-                .inner;
-                if refresh_clicked {
-                    self.refresh_graph_data();
-                }
-            });
+        if self.show_top_menu {
+            egui::TopBottomPanel::top("top_panel")
+                .frame(
+                    egui::Frame::none()
+                        .fill(palette.background)
+                        .inner_margin(8.0),
+                )
+                .show(ctx, |ui| {
+                    let refresh_clicked = egui::menu::bar(ui, |ui| {
+                        crate::app_panels::render_top_menu_bar(
+                            ui,
+                            &palette,
+                            &mut self.accessibility_panel,
+                            &mut self.visual_renderer,
+                            &mut self.tools,
+                            &mut self.current_layout,
+                            &self.graph,
+                            &mut self.show_dashboard,
+                            &mut self.show_controls,
+                            &mut self.show_audio_panel,
+                            &mut self.show_capability_panel,
+                            &mut self.show_neural_proprioception,
+                            &mut self.show_neural_metrics,
+                            &mut self.show_graph_builder,
+                        )
+                    })
+                    .inner;
+                    if refresh_clicked {
+                        self.refresh_graph_data();
+                    }
+                });
+        } // show_top_menu
 
         if self.show_controls {
             egui::SidePanel::left("controls_panel")

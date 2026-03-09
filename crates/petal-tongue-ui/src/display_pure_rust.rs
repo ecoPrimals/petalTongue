@@ -44,10 +44,12 @@ pub fn get_display_dimensions_pure_rust() -> Option<(u32, u32)> {
     }
 
     // Method 3: Terminal dimensions (for headless/SSH)
-    if let Some((term_w, term_h)) = term_size::dimensions() {
+    if let Some((terminal_size::Width(term_w), terminal_size::Height(term_h))) =
+        terminal_size::terminal_size()
+    {
         // Estimate pixel dimensions (assume 80x24 terminal = 1280x720)
-        let pixel_w = (term_w * 16).max(800) as u32;
-        let pixel_h = (term_h * 30).max(600) as u32;
+        let pixel_w = (term_w as usize * 16).max(800) as u32;
+        let pixel_h = (term_h as usize * 30).max(600) as u32;
         debug!(
             "Terminal dimensions: {}x{} chars → {}x{} pixels",
             term_w, term_h, pixel_w, pixel_h

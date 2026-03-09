@@ -150,7 +150,14 @@ impl GraphCanvas {
                 EdgeType::DataFlow => Color32::from_rgb(150, 150, 150),
             };
 
-            draw_arrow(painter, from_pos, to_pos, edge_color, &edge.edge_type, self.camera.zoom);
+            draw_arrow(
+                painter,
+                from_pos,
+                to_pos,
+                edge_color,
+                &edge.edge_type,
+                self.camera.zoom,
+            );
         }
     }
 

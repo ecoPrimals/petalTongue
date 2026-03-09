@@ -3,12 +3,13 @@
 //
 // This test validates that petalTongue can discover primals from a running biomeOS API server
 
-use petal_tongue_discovery::{
-    discover_visualization_providers, HttpVisualizationProvider, VisualizationDataProvider,
-};
+#[cfg(feature = "legacy-http")]
+use petal_tongue_discovery::HttpVisualizationProvider;
+use petal_tongue_discovery::{VisualizationDataProvider, discover_visualization_providers};
 
 #[tokio::test]
 #[ignore] // Only run when biomeOS API is actually running
+#[cfg(feature = "legacy-http")]
 async fn test_live_biomeos_integration() {
     // This test expects biomeOS API running on localhost:3000
     let biomeos_url =
@@ -53,7 +54,10 @@ async fn test_live_biomeos_integration() {
         println!("       Last seen: {}", primal.last_seen);
 
         // Validate required fields
-        assert!(!primal.id.as_str().is_empty(), "Primal ID should not be empty");
+        assert!(
+            !primal.id.as_str().is_empty(),
+            "Primal ID should not be empty"
+        );
         assert!(!primal.name.is_empty(), "Primal name should not be empty");
         assert!(
             !primal.endpoint.is_empty(),

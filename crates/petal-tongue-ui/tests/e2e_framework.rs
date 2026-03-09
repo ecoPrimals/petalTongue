@@ -484,6 +484,7 @@ mod tests {
         assert_eq!(runner.results.len(), 0);
     }
 
+    #[cfg(feature = "mock")]
     #[tokio::test]
     async fn test_e2e_runner_with_mock() {
         let config = E2ETestConfig {

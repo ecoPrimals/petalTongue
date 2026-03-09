@@ -1,99 +1,80 @@
 #!/usr/bin/env bash
-# Quick start script for petalTongue showcase
-# Runs the first 3 demos for a fast introduction
+# SPDX-License-Identifier: AGPL-3.0-only
+# petalTongue Showcase - Automated Tour
+# Runs all local demos (01-local-primal + 02-ipc-protocol) end-to-end.
+# No external dependencies required.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/scripts/common.sh"
 
-clear
-echo "════════════════════════════════════════════════════════════"
-echo "  🌸 petalTongue Showcase - Quick Start"
-echo "════════════════════════════════════════════════════════════"
-echo
-echo "This quick start will run 3 essential demos:"
-echo "  1. Hello petalTongue (5 min) - First visualization"
-echo "  2. Graph Engine (10 min) - Layout algorithms"
-echo "  3. Visual 2D (10 min) - Interactive controls"
-echo
-echo "Total time: ~25 minutes"
-echo
-echo "These demos give you a solid foundation."
-echo "After this, explore the full showcase at your own pace!"
-echo
-read -p "Press Enter to begin, or Ctrl+C to cancel..."
+print_header "petalTongue Showcase - Automated Tour"
+print_version_info
+
+echo -e "${BOLD}This tour runs all local demos (~8 minutes).${NC}"
+echo -e "${DIM}Set PAUSE_DURATION=0 for faster runs (CI mode).${NC}"
 echo
 
-demos=(
-    "01-local-primal/00-hello-petaltongue"
-    "01-local-primal/01-graph-engine"
-    "01-local-primal/02-visual-2d"
-)
+require_petaltongue
+echo
 
-total=${#demos[@]}
-current=0
+TOTAL_PASS=0
+TOTAL_FAIL=0
+TOTAL_SKIP=0
 
-for demo in "${demos[@]}"; do
-    ((current++))
-    
-    echo
-    echo "════════════════════════════════════════════════════════════"
-    echo "  Demo ${current}/${total}: ${demo}"
-    echo "════════════════════════════════════════════════════════════"
-    echo
-    
-    demo_path="${SCRIPT_DIR}/${demo}"
-    
-    if [[ ! -d "$demo_path" ]]; then
-        echo "⚠️  Demo directory not found: $demo_path"
-        echo "Skipping..."
-        continue
+run_demo() {
+    local dir=$1
+    local name=$2
+    local demo="${SCRIPT_DIR}/${dir}/demo.sh"
+
+    if [[ ! -x "$demo" ]]; then
+        print_skip "Not found: $demo"
+        TOTAL_SKIP=$((TOTAL_SKIP + 1))
+        return
     fi
-    
-    if [[ ! -f "$demo_path/demo.sh" ]]; then
-        echo "⚠️  Demo script not found: $demo_path/demo.sh"
-        echo "Skipping..."
-        continue
-    fi
-    
-    if cd "$demo_path" && bash demo.sh; then
-        echo "✅ Demo completed"
+
+    echo
+    echo -e "${CYAN}--- ${name} ---${NC}"
+    if PAUSE_DURATION=0 bash "$demo"; then
+        TOTAL_PASS=$((TOTAL_PASS + 1))
+        print_success "$name completed"
     else
-        exit_code=$?
-        if [[ $exit_code -eq 130 ]]; then
-            echo "⏭️  Demo interrupted, moving to next..."
-        else
-            echo "❌ Demo failed with exit code: $exit_code"
-            exit 1
-        fi
+        TOTAL_FAIL=$((TOTAL_FAIL + 1))
+        print_fail "$name had failures (non-fatal)"
     fi
-    
-    if [[ $current -lt $total ]]; then
-        echo
-        read -p "Press Enter for next demo, or Ctrl+C to stop..."
-        clear
-    fi
-done
+}
 
-echo
-echo "════════════════════════════════════════════════════════════"
-echo "  🎉 Quick Start Complete!"
-echo "════════════════════════════════════════════════════════════"
-echo
-echo "Great job! You've experienced the core of petalTongue."
-echo
-echo "What you've learned:"
-echo "  ✓ Basic graph visualization"
-echo "  ✓ Multiple layout algorithms"
-echo "  ✓ Interactive zoom, pan, selection"
-echo
-echo "Continue your journey:"
-echo "  • Audio sonification: cd 01-local-primal/03-audio-sonification/"
-echo "  • Animation system: cd 01-local-primal/04-animation-flow/"
-echo "  • Full Phase 1: ./RUN_ALL_LOCAL.sh"
-echo "  • Explore all: See 00_SHOWCASE_INDEX.md"
-echo
-echo "Time spent: ~25 minutes"
-echo "Time well invested! 🌸"
-echo
+# 01-local-primal
+run_demo "01-local-primal/00-hello-petaltongue" "Hello petalTongue"
+run_demo "01-local-primal/01-unibin-modes" "UniBin Modes"
+run_demo "01-local-primal/02-scenario-loading" "Scenario Loading"
+run_demo "01-local-primal/03-web-server" "Web Server"
+run_demo "01-local-primal/04-headless-api" "Headless API"
+run_demo "01-local-primal/05-tui-dashboard" "TUI Dashboard"
+run_demo "01-local-primal/06-audio-export" "Audio Export"
+run_demo "01-local-primal/07-graph-layouts" "Graph Layouts"
+run_demo "01-local-primal/08-clinical-data" "Clinical Data"
 
+# 02-ipc-protocol
+run_demo "02-ipc-protocol/01-unix-socket-server" "Unix Socket Server"
+run_demo "02-ipc-protocol/02-jsonrpc-methods" "JSON-RPC Methods"
+run_demo "02-ipc-protocol/03-health-monitoring" "Health Monitoring"
+
+# Summary
+echo
+echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${BOLD}${CYAN}  Showcase Tour Complete${NC}"
+echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo
+echo -e "  ${GREEN}Passed: ${TOTAL_PASS}${NC}  ${RED}Failed: ${TOTAL_FAIL}${NC}  ${YELLOW}Skipped: ${TOTAL_SKIP}${NC}"
+echo
+if [[ $TOTAL_FAIL -eq 0 ]]; then
+    echo -e "  ${GREEN}All demos passed.${NC}"
+else
+    echo -e "  ${YELLOW}Some demos had failures. Review output above.${NC}"
+fi
+echo
+echo -e "  ${DIM}Next: Run inter-primal demos with other primals running:${NC}"
+echo -e "  ${DIM}  cd 03-inter-primal/01-songbird-discovery/ && ./demo.sh${NC}"
+echo

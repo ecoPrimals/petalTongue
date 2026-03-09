@@ -110,17 +110,9 @@ impl FramebufferDisplay {
         // Try to get actual dimensions from framebuffer device
         if self.fb_device.is_some() {
             let fb_path = "/dev/fb0";
-            // Future: Use nix or libc crate for proper ioctl calls
-            // Example:
-            // use nix::ioctl_read;
-            // ioctl_read!(fbioget_vscreeninfo, b'F', 0x00, fb_var_screeninfo);
-            //
-            // let mut info: fb_var_screeninfo = unsafe { std::mem::zeroed() };
-            // if let Ok(fd) = std::fs::File::open(fb_path) {
-            //     if fbioget_vscreeninfo(fd.as_raw_fd(), &mut info).is_ok() {
-            //         return Ok((info.xres, info.yres));
-            //     }
-            // }
+            // Dimensions: screen.rs uses sysfs (/sys/class/graphics/fb0/virtual_size)
+            // for discovery. Here we use configured dimensions as fallback.
+            // Future: rustix ioctl if needed (petal-tongue-core has rustix).
 
             tracing::debug!(
                 "📺 Framebuffer device: {} (using configured dimensions)",

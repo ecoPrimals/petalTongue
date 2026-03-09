@@ -8,7 +8,7 @@ mod complexity;
 mod display;
 mod types;
 
-pub use complexity::{determine_ui_complexity, UIComplexity};
+pub use complexity::{UIComplexity, determine_ui_complexity};
 pub use types::*;
 
 use serde::{Deserialize, Serialize};

@@ -51,8 +51,9 @@ impl VisualOutputCapability {
             Self::TwoD {
                 size_mm: Some((w, h)),
                 ..
-            } => {
-                #[allow(clippy::cast_possible_truncation)]
+            } =>
+            {
+                #[expect(clippy::cast_possible_truncation)]
                 Some((f64::from(*w).powi(2) + f64::from(*h).powi(2)).sqrt() as f32)
             }
             _ => None,

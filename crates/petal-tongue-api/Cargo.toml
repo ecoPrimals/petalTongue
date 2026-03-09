@@ -18,6 +18,10 @@ reqwest = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
 
+[features]
+# Mock/test data - Run tests with: cargo test --features test-fixtures
+test-fixtures = []
+
 [dev-dependencies]
 petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
 tokio = { workspace = true, features = ["test-util", "macros"] }

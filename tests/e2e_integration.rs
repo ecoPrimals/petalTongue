@@ -11,7 +11,7 @@
 //! Run with: cargo test --test e2e_integration
 
 use petal_tongue_core::{
-    test_fixtures::env_test_helpers, Instance, InstanceId, InstanceRegistry, SessionManager,
+    Instance, InstanceId, InstanceRegistry, SessionManager, test_fixtures::env_test_helpers,
 };
 use tempfile::TempDir;
 
@@ -37,27 +37,27 @@ fn test_multi_instance_lifecycle() {
     env_test_helpers::with_env_var("XDG_DATA_HOME", temp_dir.path().to_str().unwrap(), || {
         let mut registry = InstanceRegistry::new();
 
-    let id_a = InstanceId::new();
-    let instance_a = Instance::new(id_a.clone(), Some("instance-a".to_string())).unwrap();
-    registry.register(instance_a).unwrap();
-    assert_eq!(registry.list().len(), 1);
+        let id_a = InstanceId::new();
+        let instance_a = Instance::new(id_a.clone(), Some("instance-a".to_string())).unwrap();
+        registry.register(instance_a).unwrap();
+        assert_eq!(registry.list().len(), 1);
 
-    let id_b = InstanceId::new();
-    let instance_b = Instance::new(id_b.clone(), Some("instance-b".to_string())).unwrap();
-    registry.register(instance_b).unwrap();
-    assert_eq!(registry.list().len(), 2);
+        let id_b = InstanceId::new();
+        let instance_b = Instance::new(id_b.clone(), Some("instance-b".to_string())).unwrap();
+        registry.register(instance_b).unwrap();
+        assert_eq!(registry.list().len(), 2);
 
-    assert!(registry.get(&id_a).is_some());
-    assert!(registry.get(&id_b).is_some());
+        assert!(registry.get(&id_a).is_some());
+        assert!(registry.get(&id_b).is_some());
 
-    registry.unregister(&id_a).unwrap();
-    assert_eq!(registry.list().len(), 1);
-    assert!(registry.get(&id_a).is_none());
-    assert!(registry.get(&id_b).is_some());
+        registry.unregister(&id_a).unwrap();
+        assert_eq!(registry.list().len(), 1);
+        assert!(registry.get(&id_a).is_none());
+        assert!(registry.get(&id_b).is_some());
 
-    registry.save_to(&reg_path).unwrap();
-    let loaded_registry = InstanceRegistry::load_from(&reg_path).unwrap();
-    assert_eq!(loaded_registry.list().len(), 1);
+        registry.save_to(&reg_path).unwrap();
+        let loaded_registry = InstanceRegistry::load_from(&reg_path).unwrap();
+        assert_eq!(loaded_registry.list().len(), 1);
     });
 }
 
@@ -85,19 +85,19 @@ fn test_registry_garbage_collection() {
     env_test_helpers::with_env_var("XDG_DATA_HOME", temp_dir.path().to_str().unwrap(), || {
         let mut registry = InstanceRegistry::new();
 
-    let live_id = InstanceId::new();
-    let live_instance = Instance::new(live_id.clone(), Some("live".to_string())).unwrap();
-    registry.register(live_instance).unwrap();
+        let live_id = InstanceId::new();
+        let live_instance = Instance::new(live_id.clone(), Some("live".to_string())).unwrap();
+        registry.register(live_instance).unwrap();
 
-    let dead_id = InstanceId::new();
-    let mut dead_instance = Instance::new(dead_id.clone(), Some("dead".to_string())).unwrap();
-    dead_instance.pid = 999_999;
-    registry.register(dead_instance).unwrap();
+        let dead_id = InstanceId::new();
+        let mut dead_instance = Instance::new(dead_id.clone(), Some("dead".to_string())).unwrap();
+        dead_instance.pid = 999_999;
+        registry.register(dead_instance).unwrap();
 
-    assert_eq!(registry.list().len(), 2);
-    let _cleaned = registry.gc().unwrap();
-    assert_eq!(registry.list_alive().len(), 1);
-    assert!(registry.get(&live_id).is_some());
+        assert_eq!(registry.list().len(), 2);
+        let _cleaned = registry.gc().unwrap();
+        assert_eq!(registry.list_alive().len(), 1);
+        assert!(registry.get(&live_id).is_some());
     });
 }
 
@@ -171,16 +171,16 @@ fn test_concurrent_registry_access() {
     let reg_path = registry_path(&temp_dir);
     env_test_helpers::with_env_var("XDG_DATA_HOME", temp_dir.path().to_str().unwrap(), || {
         let mut registry = InstanceRegistry::new();
-    let id = InstanceId::new();
-    let instance = Instance::new(id.clone(), Some("concurrent-test".to_string())).unwrap();
-    registry.register(instance).unwrap();
-    registry.save_to(&reg_path).unwrap();
+        let id = InstanceId::new();
+        let instance = Instance::new(id.clone(), Some("concurrent-test".to_string())).unwrap();
+        registry.register(instance).unwrap();
+        registry.save_to(&reg_path).unwrap();
 
-    let registry_1 = InstanceRegistry::load_from(&reg_path).unwrap();
-    let registry_2 = InstanceRegistry::load_from(&reg_path).unwrap();
+        let registry_1 = InstanceRegistry::load_from(&reg_path).unwrap();
+        let registry_2 = InstanceRegistry::load_from(&reg_path).unwrap();
 
-    assert_eq!(registry_1.list().len(), 1);
-    assert_eq!(registry_2.list().len(), 1);
+        assert_eq!(registry_1.list().len(), 1);
+        assert_eq!(registry_2.list().len(), 1);
     });
 }
 

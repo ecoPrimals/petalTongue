@@ -93,8 +93,12 @@ impl GraphCanvas {
             } else if let Some(hovered) = &self.hovered_node {
                 // Drag node
                 if let Some(node) = self.graph.get_node(hovered) {
-                    let world_pos =
-                        layout::screen_to_world(pointer_pos, canvas_rect, &self.camera.position, self.camera.zoom);
+                    let world_pos = layout::screen_to_world(
+                        pointer_pos,
+                        canvas_rect,
+                        &self.camera.position,
+                        self.camera.zoom,
+                    );
                     let offset =
                         Vec2::new(node.position.x - world_pos.x, node.position.y - world_pos.y);
                     self.drag_state = Some(DragState::Node {
@@ -126,8 +130,12 @@ impl GraphCanvas {
             match drag_state_clone {
                 Some(DragState::Node { node_id, offset }) => {
                     // Move node
-                    let world_pos =
-                        layout::screen_to_world(pointer_pos, canvas_rect, &self.camera.position, self.camera.zoom);
+                    let world_pos = layout::screen_to_world(
+                        pointer_pos,
+                        canvas_rect,
+                        &self.camera.position,
+                        self.camera.zoom,
+                    );
                     let new_pos = Vec2::new(world_pos.x + offset.x, world_pos.y + offset.y);
                     let final_pos = if self.snap_to_grid {
                         new_pos.snap(self.grid_size)
@@ -153,8 +161,12 @@ impl GraphCanvas {
                     }
 
                     for node in &self.graph.nodes {
-                        let node_screen =
-                            layout::world_to_screen(node.position, canvas_rect, &self.camera.position, self.camera.zoom);
+                        let node_screen = layout::world_to_screen(
+                            node.position,
+                            canvas_rect,
+                            &self.camera.position,
+                            self.camera.zoom,
+                        );
                         if box_rect.contains(node_screen) {
                             self.selected_nodes.insert(node.id.clone());
                         }
@@ -201,8 +213,12 @@ impl GraphCanvas {
         self.hovered_node = None;
 
         if let Some(pointer_pos) = response.hover_pos() {
-            let world_pos =
-                layout::screen_to_world(pointer_pos, response.rect, &self.camera.position, self.camera.zoom);
+            let world_pos = layout::screen_to_world(
+                pointer_pos,
+                response.rect,
+                &self.camera.position,
+                self.camera.zoom,
+            );
 
             for node in &self.graph.nodes {
                 let dx = (node.position.x - world_pos.x).abs();

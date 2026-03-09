@@ -1,0 +1,244 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+//! Graph structure validation: cycles, reachability, and topological sort.
+
+use crate::graph_builder::VisualGraph;
+use std::collections::{HashMap, HashSet, VecDeque};
+
+use super::types::{ValidationIssue, ValidationResult};
+
+/// Check for cycles using DFS.
+pub(super) fn check_cycles(graph: &VisualGraph, result: &mut ValidationResult) {
+    // Build adjacency list
+    let mut adj_list: HashMap<String, Vec<String>> = HashMap::new();
+    for node in &graph.nodes {
+        adj_list.insert(node.id.clone(), Vec::new());
+    }
+    for edge in &graph.edges {
+        adj_list
+            .entry(edge.from.clone())
+            .or_default()
+            .push(edge.to.clone());
+    }
+
+    // DFS cycle detection
+    let mut visited = HashSet::new();
+    let mut rec_stack = HashSet::new();
+
+    for node in &graph.nodes {
+        let node_id = &node.id;
+        if !visited.contains(node_id)
+            && dfs_has_cycle(node_id, &adj_list, &mut visited, &mut rec_stack)
+        {
+            result.add_issue(
+                ValidationIssue::error(format!(
+                    "Graph contains a cycle involving node '{node_id}'"
+                ))
+                .with_suggestion(
+                    "Remove edges to break the cycle - graphs must be acyclic (DAG)".to_string(),
+                ),
+            );
+            return; // Report first cycle only
+        }
+    }
+}
+
+/// DFS helper for cycle detection.
+fn dfs_has_cycle(
+    node: &str,
+    adj_list: &HashMap<String, Vec<String>>,
+    visited: &mut HashSet<String>,
+    rec_stack: &mut HashSet<String>,
+) -> bool {
+    visited.insert(node.to_string());
+    rec_stack.insert(node.to_string());
+
+    if let Some(neighbors) = adj_list.get(node) {
+        for neighbor in neighbors {
+            if !visited.contains(neighbor) {
+                if dfs_has_cycle(neighbor, adj_list, visited, rec_stack) {
+                    return true;
+                }
+            } else if rec_stack.contains(neighbor) {
+                return true; // Cycle detected
+            }
+        }
+    }
+
+    rec_stack.remove(node);
+    false
+}
+
+/// Check for unreachable nodes.
+pub(super) fn check_unreachable_nodes(graph: &VisualGraph, result: &mut ValidationResult) {
+    if graph.nodes.is_empty() {
+        return;
+    }
+
+    // Find all nodes with no incoming edges (potential start nodes)
+    let mut has_incoming = HashSet::new();
+    for edge in &graph.edges {
+        has_incoming.insert(edge.to.clone());
+    }
+
+    let start_nodes: Vec<_> = graph
+        .nodes
+        .iter()
+        .map(|n| &n.id)
+        .filter(|id| !has_incoming.contains(*id))
+        .cloned()
+        .collect();
+
+    if start_nodes.is_empty() {
+        result.add_issue(
+            ValidationIssue::warning(
+                "No start nodes found - all nodes have incoming edges".to_string(),
+            )
+            .with_suggestion(
+                "Add a PrimalStart node or ensure at least one node has no dependencies"
+                    .to_string(),
+            ),
+        );
+        return;
+    }
+
+    // BFS to find all reachable nodes
+    let mut reachable = HashSet::new();
+    let mut queue = VecDeque::new();
+
+    for start in &start_nodes {
+        queue.push_back(start.clone());
+        reachable.insert(start.clone());
+    }
+
+    // Build adjacency list
+    let mut adj_list: HashMap<String, Vec<String>> = HashMap::new();
+    for edge in &graph.edges {
+        adj_list
+            .entry(edge.from.clone())
+            .or_default()
+            .push(edge.to.clone());
+    }
+
+    while let Some(node) = queue.pop_front() {
+        if let Some(neighbors) = adj_list.get(&node) {
+            for neighbor in neighbors {
+                if !reachable.contains(neighbor) {
+                    reachable.insert(neighbor.clone());
+                    queue.push_back(neighbor.clone());
+                }
+            }
+        }
+    }
+
+    // Report unreachable nodes
+    for node in &graph.nodes {
+        if !reachable.contains(&node.id) {
+            result.add_issue(
+                ValidationIssue::node_warning(
+                    node.id.clone(),
+                    format!("Node '{}' is unreachable", node.id),
+                )
+                .with_suggestion("Connect this node to the graph or remove it".to_string()),
+            );
+        }
+    }
+}
+
+/// Validate execution order (topological sort). Used internally during validation.
+pub(super) fn validate_execution_order(graph: &VisualGraph, _result: &mut ValidationResult) {
+    // Build in-degree map
+    let mut in_degree: HashMap<String, usize> = HashMap::new();
+    for node in &graph.nodes {
+        in_degree.insert(node.id.clone(), 0);
+    }
+    for edge in &graph.edges {
+        *in_degree.entry(edge.to.clone()).or_insert(0) += 1;
+    }
+
+    // Build adjacency list
+    let mut adj_list: HashMap<String, Vec<String>> = HashMap::new();
+    for edge in &graph.edges {
+        adj_list
+            .entry(edge.from.clone())
+            .or_default()
+            .push(edge.to.clone());
+    }
+
+    // Kahn's algorithm for topological sort
+    let mut queue = VecDeque::new();
+    for (node_id, &degree) in &in_degree {
+        if degree == 0 {
+            queue.push_back(node_id.clone());
+        }
+    }
+
+    let mut _sorted_count = 0;
+    while let Some(node) = queue.pop_front() {
+        _sorted_count += 1;
+
+        if let Some(neighbors) = adj_list.get(&node) {
+            for neighbor in neighbors {
+                if let Some(degree) = in_degree.get_mut(neighbor) {
+                    *degree -= 1;
+                    if *degree == 0 {
+                        queue.push_back(neighbor.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    // If we couldn't sort all nodes, there's a cycle (already caught above)
+}
+
+/// Compute execution order (topological sort). Returns `None` if graph has cycles.
+#[must_use]
+pub(super) fn get_execution_order(graph: &VisualGraph) -> Option<Vec<String>> {
+    // Build in-degree map
+    let mut in_degree: HashMap<String, usize> = HashMap::new();
+    for node in &graph.nodes {
+        in_degree.insert(node.id.clone(), 0);
+    }
+    for edge in &graph.edges {
+        *in_degree.entry(edge.to.clone()).or_insert(0) += 1;
+    }
+
+    // Build adjacency list
+    let mut adj_list: HashMap<String, Vec<String>> = HashMap::new();
+    for edge in &graph.edges {
+        adj_list
+            .entry(edge.from.clone())
+            .or_default()
+            .push(edge.to.clone());
+    }
+
+    // Kahn's algorithm
+    let mut queue = VecDeque::new();
+    for (node_id, &degree) in &in_degree {
+        if degree == 0 {
+            queue.push_back(node_id.clone());
+        }
+    }
+
+    let mut order = Vec::new();
+    while let Some(node) = queue.pop_front() {
+        order.push(node.clone());
+
+        if let Some(neighbors) = adj_list.get(&node) {
+            for neighbor in neighbors {
+                if let Some(degree) = in_degree.get_mut(neighbor) {
+                    *degree -= 1;
+                    if *degree == 0 {
+                        queue.push_back(neighbor.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    if order.len() == graph.nodes.len() {
+        Some(order)
+    } else {
+        None // Cycle detected
+    }
+}

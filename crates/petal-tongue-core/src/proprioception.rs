@@ -1,14 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Proprioception (SAME DAVE) data structures
 //!
-//! This module defines the types for system self-awareness, following the SAME DAVE model:
-//! - **S**ensory: What the system perceives (active sockets, connections)
-//! - **A**wareness: What the system knows (discovered primals, capabilities)
-//! - **M**otor: What the system can do (deploy, execute, coordinate)
-//! - **E**valuative: How the system assesses itself (health, confidence)
+//! # Neuroanatomy Model
 //!
-//! These structures are populated by Neural API and visualized by the UI.
+//! SAME DAVE is a spinal-cord pathway mnemonic:
+//!
+//! - **SAME**: **S**ensory **A**fferent, **M**otor **E**fferent
+//! - **DAVE**: **D**orsal **A**fferent, **V**entral **E**fferent
+//!
+//! Afferent channels carry sensory input *toward* the proprioception core.
+//! Efferent channels carry motor commands *from* the core to effectors.
+//! Bidirectional self-awareness (proprioception) emerges from the paired
+//! operation of these unidirectional channels.
+//!
+//! The types in this module are **snapshots** of channel and system state,
+//! populated by the Neural API or local introspection and visualized by the UI.
 
+use crate::channel::ChannelSnapshot;
 use serde::{Deserialize, Serialize};
 
 /// Complete proprioception data from Neural API
@@ -26,14 +34,22 @@ pub struct ProprioceptionData {
     /// System's confidence in its state (0.0-100.0)
     pub confidence: f32,
 
-    /// Sensory: What the system perceives
+    /// Sensory: What the system perceives (afferent channel state)
     pub sensory: SensoryData,
 
-    /// Awareness: What the system knows
+    /// Awareness: What the system knows about its ecosystem
     pub self_awareness: SelfAwarenessData,
 
-    /// Motor: What the system can do
+    /// Motor: What the system can do (efferent channel state)
     pub motor: MotorData,
+
+    /// Afferent (sensory) channel health snapshots
+    #[serde(default)]
+    pub afferent_channels: Vec<ChannelSnapshot>,
+
+    /// Efferent (motor) channel health snapshots
+    #[serde(default)]
+    pub efferent_channels: Vec<ChannelSnapshot>,
 }
 
 /// Health assessment data
@@ -82,7 +98,7 @@ impl HealthStatus {
     }
 }
 
-/// Sensory data: What the system perceives
+/// Sensory (afferent) snapshot: What the system perceives via input channels.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SensoryData {
     /// Number of active Unix sockets detected
@@ -92,7 +108,7 @@ pub struct SensoryData {
     pub last_scan: chrono::DateTime<chrono::Utc>,
 }
 
-/// Self-awareness data: What the system knows
+/// Self-awareness data: What the system knows about its ecosystem.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SelfAwarenessData {
     /// Number of primals the system knows about
@@ -111,7 +127,7 @@ pub struct SelfAwarenessData {
     pub has_compute: bool,
 }
 
-/// Motor data: What the system can do
+/// Motor (efferent) snapshot: What the system can do via output channels.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MotorData {
     /// Can deploy new primals
@@ -153,6 +169,8 @@ impl ProprioceptionData {
                 can_execute_graphs: false,
                 can_coordinate_primals: false,
             },
+            afferent_channels: Vec::new(),
+            efferent_channels: Vec::new(),
         }
     }
 

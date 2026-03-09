@@ -8,7 +8,7 @@ use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::path::PathBuf;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
@@ -151,7 +151,11 @@ impl NeuralApiProvider {
     /// Parse primal from Neural API format to PrimalInfo
     fn parse_primal(primal: &Value) -> Result<PrimalInfo> {
         Ok(PrimalInfo {
-            id: primal["id"].as_str().unwrap_or("unknown").to_string().into(),
+            id: primal["id"]
+                .as_str()
+                .unwrap_or("unknown")
+                .to_string()
+                .into(),
             name: primal["primal_type"]
                 .as_str()
                 .unwrap_or("unknown")
@@ -295,7 +299,10 @@ mod tests {
             "/custom/runtime",
             || {
                 let paths = NeuralApiProvider::get_search_paths();
-                assert_eq!(paths.first().and_then(|p| p.to_str()), Some("/custom/runtime"));
+                assert_eq!(
+                    paths.first().and_then(|p| p.to_str()),
+                    Some("/custom/runtime")
+                );
             },
         );
     }
@@ -308,7 +315,15 @@ mod tests {
         assert_eq!(metadata.name, "Neural API (Central Coordinator)");
         assert!(metadata.endpoint.contains("test.sock"));
         assert_eq!(metadata.protocol, "unix+jsonrpc");
-        assert!(metadata.capabilities.contains(&"primal-discovery".to_string()));
-        assert!(metadata.capabilities.contains(&"proprioception".to_string()));
+        assert!(
+            metadata
+                .capabilities
+                .contains(&"primal-discovery".to_string())
+        );
+        assert!(
+            metadata
+                .capabilities
+                .contains(&"proprioception".to_string())
+        );
     }
 }

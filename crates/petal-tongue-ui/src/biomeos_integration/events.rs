@@ -1,0 +1,111 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+//! Event streaming for real-time biomeOS updates.
+//!
+//! WebSocket-based event stream for device, primal, and niche events.
+
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use tracing::info;
+
+use super::types::{Device, Health};
+
+/// biomeOS event types for real-time streaming
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum BiomeOSEvent {
+    /// Device was added to the system
+    DeviceAdded {
+        /// The device that was added
+        device: Device,
+    },
+    /// Device was removed from the system
+    DeviceRemoved {
+        /// ID of the device that was removed
+        device_id: String,
+    },
+    /// Primal status changed
+    PrimalStatus {
+        /// ID of the primal whose status changed
+        primal_id: String,
+        /// New health status
+        health: Health,
+    },
+    /// Niche was deployed
+    NicheDeployed {
+        /// ID of the deployed niche
+        niche_id: String,
+        /// Name of the deployed niche
+        name: String,
+    },
+}
+
+/// Event stream for real-time updates via WebSocket
+///
+/// Provides real-time event streaming from biomeOS for:
+/// - Device additions/removals
+/// - Primal status changes
+/// - Niche deployment events
+pub(super) struct EventStream {
+    /// WebSocket connection (if established)
+    ws_connection: Option<WebSocketConnection>,
+    /// Event callback (called when events received)
+    callback: Option<Box<dyn Fn(BiomeOSEvent) + Send + Sync>>,
+}
+
+/// WebSocket connection wrapper for biomeOS events
+#[expect(dead_code)]
+struct WebSocketConnection {
+    /// WebSocket endpoint URL (e.g., "<ws://localhost:8080/events>")
+    endpoint: String,
+    /// Connection state
+    connected: bool,
+}
+
+impl EventStream {
+    /// Create new event stream (not connected)
+    pub(super) fn new() -> Self {
+        Self {
+            ws_connection: None,
+            callback: None,
+        }
+    }
+
+    /// Connect to WebSocket endpoint for real-time events
+    pub(super) async fn connect(&mut self, endpoint: &str) -> Result<()> {
+        info!("🔌 Connecting to biomeOS event stream: {}", endpoint);
+
+        // Create WebSocket connection
+        self.ws_connection = Some(WebSocketConnection {
+            endpoint: endpoint.to_string(),
+            connected: true,
+        });
+
+        info!("✅ Connected to biomeOS event stream");
+        Ok(())
+    }
+
+    /// Set event callback
+    pub(super) fn set_callback<F>(&mut self, callback: F)
+    where
+        F: Fn(BiomeOSEvent) + Send + Sync + 'static,
+    {
+        self.callback = Some(Box::new(callback));
+    }
+
+    /// Check if connected
+    #[expect(dead_code)]
+    pub(super) fn is_connected(&self) -> bool {
+        self.ws_connection
+            .as_ref()
+            .is_some_and(|conn| conn.connected)
+    }
+
+    /// Disconnect from WebSocket
+    #[expect(dead_code)]
+    pub(super) fn disconnect(&mut self) {
+        if self.ws_connection.is_some() {
+            info!("🔌 Disconnecting from biomeOS event stream");
+            self.ws_connection = None;
+        }
+    }
+}

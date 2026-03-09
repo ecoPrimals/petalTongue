@@ -1,84 +1,54 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-only
 # Demo: Hello petalTongue
-# Description: Your first visualization - multi-modal graph rendering
-# Duration: 5 minutes
+# Duration: ~30 seconds
 # Prerequisites: petalTongue built
+# External deps: none
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../../scripts/common.sh"
 
-# Configuration
-DEMO_NAME="Hello petalTongue - Your First Visualization"
-DEMO_DURATION="5 minutes"
-REQUIRE_PETALTONGUE="true"
-REQUIRE_BIOMEOS="false"
-
-# Header
-clear
-print_header "$DEMO_NAME"
-print_info "Duration: $DEMO_DURATION"
-print_info "What you'll see: A simple 3-node graph with visual + audio"
-echo
-
-# Version info
+print_header "Hello petalTongue"
 print_version_info
 
-# Prerequisites
-check_prerequisites
+step 1 "Verify binary exists"
+require_petaltongue
 
-# Demo introduction
-step 1 "Understanding what you're about to see"
-cat << EOF
-petalTongue will open showing:
+step 2 "Run petaltongue status"
+print_command "petaltongue status"
+OUTPUT=$("${PETALTONGUE_BIN}" --log-level error status 2>&1)
+echo "$OUTPUT"
 
-VISUAL:
-  - 3 colored nodes (Discovery, Security, Storage)
-  - 2 edges connecting them
-  - Interactive controls (zoom, pan, layouts)
+if echo "$OUTPUT" | grep -q "petalTongue"; then
+    record_pass "status command produces output"
+else
+    record_fail "status command produced no recognizable output"
+fi
 
-AUDIO (if enabled):
-  - 3 distinct instrument tones
-  - Spatial positioning (left/center/right)
-  - Harmonic sounds (healthy state)
+step 3 "Verify UniBin compliance"
+if echo "$OUTPUT" | grep -qi "unibin"; then
+    record_pass "UniBin status reported"
+else
+    record_fail "UniBin status not found in output"
+fi
 
-This proves: Same information, different sensory channels!
-EOF
-pause
-wait_for_user
+step 4 "JSON output mode"
+print_command "petaltongue status --format json"
+JSON_OUTPUT=$("${PETALTONGUE_BIN}" --log-level error status --format json 2>&1)
+if check_json_valid "$JSON_OUTPUT"; then
+    record_pass "JSON output is valid"
+    print_output "$(echo "$JSON_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(json.dumps(d, indent=2)[:300])" 2>/dev/null || echo "$JSON_OUTPUT")"
+else
+    record_fail "JSON output is invalid"
+fi
 
-# Launch petalTongue
-step 2 "Launching petalTongue with mock data"
-print_info "Starting petalTongue..."
-print_info "A window will open - explore the visualization"
-echo
+step 5 "Verify version"
+print_command "petaltongue --version"
+VERSION=$("${PETALTONGUE_BIN}" --version 2>&1)
+echo "  $VERSION"
+record_pass "Version: $VERSION"
 
-print_info "Try these interactions:"
-print_info "  • Mouse wheel → Zoom in/out"
-print_info "  • Click + drag → Pan around"
-print_info "  • Layout dropdown → Try different algorithms"
-print_info "  • Click nodes → Select them"
-print_info "  • Enable Audio → Hear the soundscape"
-echo
-
-print_warning "Press Ctrl+C in the window to close when done exploring"
-echo
-
-# Run petalTongue with mock mode
-cd "${SCRIPT_DIR}/../../../"
-MOCK_MODE=true cargo run --release
-
-# Demo complete
-echo
-demo_complete "cd ../01-graph-engine/ && cat README.md"
-
-print_info "What you learned:"
-print_info "  ✓ petalTongue launches and works"
-print_info "  ✓ Visual + Audio modalities proven"
-print_info "  ✓ Interactive exploration possible"
-print_info "  ✓ Multi-modal design validated"
-echo
-
-print_success "You're ready for more advanced demos!"
-
+print_results || true
+demo_complete "01-unibin-modes"

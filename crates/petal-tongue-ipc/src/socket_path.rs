@@ -13,7 +13,8 @@ use std::path::{Path, PathBuf};
 
 /// Get the socket path for this petalTongue instance
 ///
-/// Path format: `/run/user/<uid>/petaltongue-<family>-<node>.sock`
+/// Path format: `/run/user/<uid>/petaltongue/petaltongue-<family>-<node>.sock`
+/// (Uses `petaltongue/` subdirectory so healthSpring discovery finds it.)
 ///
 /// # Environment Variables (Priority Order)
 ///
@@ -82,10 +83,12 @@ pub fn get_petaltongue_socket_path() -> Result<PathBuf> {
 
     match get_runtime_dir() {
         Ok(runtime_dir) => {
-            let path = runtime_dir.join(format!("{APP_DIR_NAME}-{family_id}-{node_id}.sock"));
+            // healthSpring discovers at XDG_RUNTIME_DIR/petaltongue/*.sock (subdirectory)
+            let sock_dir = runtime_dir.join(APP_DIR_NAME);
+            let path = sock_dir.join(format!("{APP_DIR_NAME}-{family_id}-{node_id}.sock"));
 
-            // Ensure runtime directory exists
-            std::fs::create_dir_all(&runtime_dir)?;
+            // Ensure petaltongue subdirectory exists
+            std::fs::create_dir_all(&sock_dir)?;
 
             Ok(path)
         }

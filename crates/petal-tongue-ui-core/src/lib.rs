@@ -39,6 +39,8 @@
 //! # }
 //! ```
 
+use std::io::IsTerminal;
+
 pub mod canvas;
 pub mod svg;
 pub mod terminal;
@@ -60,7 +62,7 @@ pub fn detect_best_ui_mode() -> UIMode {
         || std::env::var("WAYLAND_DISPLAY").is_ok()
         || cfg!(target_os = "windows");
 
-    let is_terminal = atty::is(atty::Stream::Stdout);
+    let is_terminal = std::io::stdout().is_terminal();
     let is_headless = std::env::var("HEADLESS").is_ok()
         || std::env::var("CI").is_ok()
         || std::env::var("PETALTONGUE_HEADLESS").is_ok();

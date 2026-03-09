@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Mock visualization data provider for development/testing
+//!
+//! **ISOLATED**: This module is only compiled when `test-fixtures` feature is enabled
+//! or when running tests. Production builds (default) do NOT include this code.
 
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 use async_trait::async_trait;

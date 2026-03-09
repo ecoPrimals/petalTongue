@@ -28,8 +28,7 @@ tracing = { workspace = true }
 
 # Terminal UI (pure Rust, cross-platform)
 crossterm = "0.27"
-atty = "0.2"
-term_size = "0.3"
+terminal_size = "0.4"
 
 # 2D rendering (pure Rust, no native deps)
 tiny-skia = "0.11"

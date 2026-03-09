@@ -289,10 +289,15 @@ mod view_rendering_tests {
     async fn test_dashboard_state_preparation() {
         let state = TUIState::new();
         state.set_standalone_mode(true).await;
-        state.set_view(petal_tongue_tui::state::View::Dashboard).await;
+        state
+            .set_view(petal_tongue_tui::state::View::Dashboard)
+            .await;
 
         assert!(state.is_standalone().await);
-        assert_eq!(state.get_view().await, petal_tongue_tui::state::View::Dashboard);
+        assert_eq!(
+            state.get_view().await,
+            petal_tongue_tui::state::View::Dashboard
+        );
     }
 
     #[tokio::test]
@@ -301,8 +306,16 @@ mod view_rendering_tests {
         state.set_standalone_mode(false).await;
 
         let primals = vec![
-            common::create_test_primal_with_health("songbird", "songbird", PrimalHealthStatus::Healthy),
-            common::create_test_primal_with_health("toadstool", "toadstool", PrimalHealthStatus::Warning),
+            common::create_test_primal_with_health(
+                "songbird",
+                "songbird",
+                PrimalHealthStatus::Healthy,
+            ),
+            common::create_test_primal_with_health(
+                "toadstool",
+                "toadstool",
+                PrimalHealthStatus::Warning,
+            ),
         ];
         state.update_primals(primals).await;
 

@@ -2,6 +2,9 @@
 //! Comprehensive tests for HTTP provider
 //!
 //! Tests verify HTTP discovery, error handling, and capability-based routing.
+//! Requires `--features legacy-http` to run.
+
+#![cfg(feature = "legacy-http")]
 
 use petal_tongue_discovery::{HttpVisualizationProvider, VisualizationDataProvider};
 use wiremock::matchers::{method, path};
@@ -207,9 +210,11 @@ async fn test_get_metadata() {
 
     assert_eq!(metadata.name, "HTTP Provider");
     assert_eq!(metadata.protocol, "http");
-    assert!(metadata
-        .capabilities
-        .contains(&"visualization.primal-provider".to_string()));
+    assert!(
+        metadata
+            .capabilities
+            .contains(&"visualization.primal-provider".to_string())
+    );
 }
 
 #[tokio::test]

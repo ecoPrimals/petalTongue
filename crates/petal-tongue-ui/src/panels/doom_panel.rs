@@ -21,7 +21,7 @@ pub struct DoomPanel {
     last_update: Instant,
 
     /// Target frame time (35 FPS = ~28.57ms per frame)
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     target_frame_time_ms: f32,
 
     /// Show debug overlay?

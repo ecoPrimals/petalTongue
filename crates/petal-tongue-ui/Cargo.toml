@@ -8,8 +8,8 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
-petal-tongue-graph = { path = "../petal-tongue-graph" }
+petal-tongue-core = { path = "../petal-tongue-core" }
+petal-tongue-graph = { path = "../petal-tongue-graph", features = ["egui-render"] }
 petal-tongue-api = { path = "../petal-tongue-api" }
 petal-tongue-animation = { path = "../petal-tongue-animation", features = ["egui"] }
 petal-tongue-telemetry = { path = "../petal-tongue-telemetry" }
@@ -17,11 +17,11 @@ petal-tongue-discovery = { path = "../petal-tongue-discovery" }
 petal-tongue-entropy = { path = "../petal-tongue-entropy" }
 petal-tongue-adapters = { path = "../petal-tongue-adapters" }  # NEW: Adapter system
 petal-tongue-ipc = { path = "../petal-tongue-ipc" }  # IPC with tarpc PRIMARY
-doom-core = { path = "../doom-core" }  # Doom integration for platform testing
+doom-core = { path = "../doom-core", optional = true }  # Doom integration for platform testing
 
-# Songbird for capability-based discovery (TRUE PRIMAL integration)
-songbird-universal = { path = "../../../../phase1/songbird/crates/songbird-universal" }
-songbird-types = { path = "../../../../phase1/songbird/crates/songbird-types" }
+# Songbird is discovered at runtime via IPC (Unix sockets, JSON-RPC)
+# through petal-tongue-discovery::SongbirdClient.
+# NO compile-time dependency - TRUE PRIMAL sovereignty!
 
 # BingoCube is a primalTool (ecoPrimals/primalTools/bingoCube)
 # Discovered at runtime via capability-based discovery (like Songbird, ToadStool)
@@ -42,9 +42,8 @@ chrono = { workspace = true }
 eframe = { workspace = true }
 egui = { workspace = true }
 egui_extras = { workspace = true }  # For table widgets in process viewer
-# NOTE: libc only used for framebuffer ioctl (1 unsafe block, optional feature)
-# This is standard for direct hardware access - even safe wrappers use unsafe internally
-libc = "0.2"  # For framebuffer ioctl (optional, well-documented unsafe)
+# EVOLVED: libc removed - framebuffer uses sysfs for dimensions (100% safe Rust)
+# system_info uses rustix (petal-tongue-core)
 uuid = { version = "1.7", features = ["v4", "serde"] }  # For graph node IDs
 users = "0.11"  # For user ID detection (Unix sockets)
 
@@ -64,9 +63,8 @@ winit = "0.30"  # Pure Rust windowing (for display detection)
 sysinfo = "0.30"  # System monitoring tool
 
 # Pure Rust display system
-atty = "0.2"  # Terminal detection for display prompts
 crossterm = "0.27"  # Terminal input/output for sensors
-term_size = "0.3"  # Terminal dimensions for screen sensor
+terminal_size = "0.4"  # Terminal dimensions for screen sensor
 async-trait = "0.1"  # For DisplayBackend trait
 tiny-skia = "0.11"  # For egui → pixel rendering
 epaint = { version = "0.29", default-features = false }  # For egui tessellation
@@ -75,8 +73,8 @@ png = "0.17"  # For pixel buffer conversion
 # Pure Rust Display Backends
 softbuffer = { version = "0.4", optional = true }
 pixels = { version = "0.13", optional = true }
-nix = { version = "0.28", optional = true, features = ["process"] } # For framebuffer
-dialoguer = { version = "0.11", optional = true } # For external display prompt
+# EVOLVED: nix removed - framebuffer uses configured dimensions + sysfs (screen.rs)
+# No ioctl needed; rustix available in core if future ioctl required
 
 # For Toadstool WASM integration
 wasm-bindgen = { version = "0.2", optional = true }
@@ -91,20 +89,27 @@ default = ["ui-auto"]
 # Backend selection features (ecoBlossom evolution!)
 ui-auto = ["ui-eframe"]  # Auto-detect (currently just eframe, will add Toadstool)
 ui-eframe = []           # eframe backend (current, has C deps)
-ui-toadstool = []        # Toadstool backend (future, Pure Rust!)
+ui-toadstool = ["legacy-toadstool"]  # Alias for legacy-toadstool (use display/backends/toadstool_v2 for modern)
+
+# Test helpers (env var manipulation, etc.) - only for cargo test --features test-fixtures
+test-fixtures = ["petal-tongue-core/test-fixtures"]
 
 # Optional feature flags used in cfg (allow cfg checks to pass)
 audio = []   # Audio sensor/provider features
 window = []  # Window-related display features
+doom = ["dep:doom-core"]  # Doom integration for platform testing
 
 # Mock provider for dev/test only - NEVER use in production (sovereignty compliance)
 # When disabled: biomeOS unavailable → empty panels. When enabled: graceful degradation with demo data.
-mock = []
+# Enables MockVisualizationProvider, MockDeviceProvider, and BiomeOSClient mock mode.
+mock = ["petal-tongue-discovery/test-fixtures", "petal-tongue-api/test-fixtures", "petal-tongue-core/test-fixtures"]
 
 # Legacy features (maintained for compatibility)
 external-display = ["ui-eframe"]  # Alias for ui-eframe
+legacy-audio = []       # Legacy audio_providers backend (use crate::audio::AudioSystemV2)
+legacy-toadstool = []   # Legacy direct toadstool UIBackend (use display/backends/toadstool_v2)
 software-rendering = ["softbuffer", "pixels"]
-framebuffer-direct = ["nix", "dialoguer"]
+framebuffer-direct = []  # Marker: framebuffer backend (no extra deps; uses sysfs)
 toadstool-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys"]
 
 # ✅ EVOLUTION COMPLETE: Audio is now pure Rust via AudioCanvas
@@ -125,6 +130,6 @@ doc = false
 # path = "src/bingocube_main.rs"
 
 [dev-dependencies]
-petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
+petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }  # For tests that use test_fixtures (run: cargo test --features test-fixtures or --features mock)
 tokio = { workspace = true, features = ["test-util", "macros"] }
 tempfile = "3.10"

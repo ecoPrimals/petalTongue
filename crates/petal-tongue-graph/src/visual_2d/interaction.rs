@@ -204,11 +204,10 @@ fn create_edge(renderer: &mut Visual2DRenderer, from: PrimalId, to: PrimalId) {
         return;
     };
 
-    let edge_exists = graph
-        .edges()
-        .iter()
-        .any(|e| (e.from.as_str() == from.as_str() && e.to.as_str() == to.as_str())
-            || (e.from.as_str() == to.as_str() && e.to.as_str() == from.as_str()));
+    let edge_exists = graph.edges().iter().any(|e| {
+        (e.from.as_str() == from.as_str() && e.to.as_str() == to.as_str())
+            || (e.from.as_str() == to.as_str() && e.to.as_str() == from.as_str())
+    });
 
     if edge_exists {
         return;

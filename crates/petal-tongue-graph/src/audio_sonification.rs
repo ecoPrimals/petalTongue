@@ -86,11 +86,11 @@ impl AudioSonificationRenderer {
     /// Map primal type to instrument
     fn map_primal_to_instrument(&self, primal_type: &str) -> Instrument {
         match primal_type.to_lowercase().as_str() {
-            "security" | "beardog" => Instrument::Bass,
-            "compute" | "toadstool" => Instrument::Drums,
-            "discovery" | "songbird" => Instrument::Chimes,
-            "storage" | "nestgate" => Instrument::Strings,
-            "ai" | "squirrel" => Instrument::Synth,
+            "security" => Instrument::Bass,
+            "compute" => Instrument::Drums,
+            "discovery" => Instrument::Chimes,
+            "storage" => Instrument::Strings,
+            "ai" => Instrument::Synth,
             _ => Instrument::Default,
         }
     }

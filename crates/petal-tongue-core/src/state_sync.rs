@@ -339,7 +339,10 @@ mod tests {
         );
 
         state.set_ui_state("count".to_string(), DynamicValue::Number(42.0));
-        assert_eq!(state.get_ui_state("count").and_then(|v| v.as_f64()), Some(42.0));
+        assert_eq!(
+            state.get_ui_state("count").and_then(|v| v.as_f64()),
+            Some(42.0)
+        );
 
         assert!(state.get_ui_state("nonexistent").is_none());
     }
@@ -358,7 +361,10 @@ mod tests {
         );
 
         state.set_preference("volume".to_string(), DynamicValue::Number(0.8));
-        assert_eq!(state.get_preference("volume").and_then(|v| v.as_f64()), Some(0.8));
+        assert_eq!(
+            state.get_preference("volume").and_then(|v| v.as_f64()),
+            Some(0.8)
+        );
 
         assert!(state.get_preference("missing").is_none());
     }
@@ -411,10 +417,16 @@ mod tests {
     #[test]
     fn test_state_merge_preferences_always() {
         let mut state1 = DeviceState::new("device1".to_string(), DeviceType::Desktop);
-        state1.set_preference("theme".to_string(), DynamicValue::String("light".to_string()));
+        state1.set_preference(
+            "theme".to_string(),
+            DynamicValue::String("light".to_string()),
+        );
 
         let mut state2 = DeviceState::new("device2".to_string(), DeviceType::Phone);
-        state2.set_preference("theme".to_string(), DynamicValue::String("dark".to_string()));
+        state2.set_preference(
+            "theme".to_string(),
+            DynamicValue::String("dark".to_string()),
+        );
         state2.last_updated = state1.last_updated - chrono::Duration::seconds(1);
 
         state1.merge(&state2);
@@ -445,11 +457,16 @@ mod tests {
     fn test_state_sync_init_loads_existing() {
         let persistence = InMemoryPersistence::new();
         let mut existing = DeviceState::new("device-1".to_string(), DeviceType::Phone);
-        existing.set_ui_state("saved".to_string(), DynamicValue::String("value".to_string()));
+        existing.set_ui_state(
+            "saved".to_string(),
+            DynamicValue::String("value".to_string()),
+        );
         persistence.save(&existing).unwrap();
 
         let mut sync = StateSync::with_persistence(Box::new(persistence));
-        let state = sync.init("device-1".to_string(), DeviceType::Desktop).unwrap();
+        let state = sync
+            .init("device-1".to_string(), DeviceType::Desktop)
+            .unwrap();
 
         assert_eq!(state.device_id, "device-1");
         assert_eq!(state.device_type, DeviceType::Desktop); // Updated
@@ -463,7 +480,8 @@ mod tests {
     fn test_state_sync_update() {
         let (persistence, persistence_reader) = InMemoryPersistence::shared();
         let mut sync = StateSync::with_persistence(Box::new(persistence));
-        sync.init("device-1".to_string(), DeviceType::Desktop).unwrap();
+        sync.init("device-1".to_string(), DeviceType::Desktop)
+            .unwrap();
 
         let mut state = sync.current().unwrap().clone();
         state.set_ui_state("key".to_string(), DynamicValue::String("val".to_string()));
@@ -471,14 +489,18 @@ mod tests {
         sync.update(state).unwrap();
 
         let loaded = persistence_reader.load("device-1").unwrap().unwrap();
-        assert_eq!(loaded.get_ui_state("key").and_then(|v| v.as_str()), Some("val"));
+        assert_eq!(
+            loaded.get_ui_state("key").and_then(|v| v.as_str()),
+            Some("val")
+        );
     }
 
     #[test]
     fn test_state_sync_set_get_ui_state() {
         let persistence = InMemoryPersistence::new();
         let mut sync = StateSync::with_persistence(Box::new(persistence));
-        sync.init("device-1".to_string(), DeviceType::Desktop).unwrap();
+        sync.init("device-1".to_string(), DeviceType::Desktop)
+            .unwrap();
 
         sync.set_ui_state("k1".to_string(), DynamicValue::String("v1".to_string()))
             .unwrap();

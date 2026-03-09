@@ -100,7 +100,7 @@ impl GraphCanvas {
     }
 
     /// Convert world coordinates to screen coordinates
-    #[allow(dead_code)] // Used by tests
+    #[expect(dead_code)] // Used by tests
     fn world_to_screen(&self, world_pos: Vec2, canvas_rect: Rect) -> Pos2 {
         layout::world_to_screen(
             world_pos,

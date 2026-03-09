@@ -7,6 +7,7 @@ use petal_tongue_core::test_fixtures::env_test_helpers;
 use petal_tongue_discovery::discover_visualization_providers;
 
 #[tokio::test]
+#[cfg(feature = "test-fixtures")]
 async fn test_discover_with_mock_mode() {
     env_test_helpers::with_env_vars_async(
         &[
@@ -26,6 +27,12 @@ async fn test_discover_with_mock_mode() {
         },
     )
     .await;
+}
+
+#[tokio::test]
+#[cfg(not(feature = "test-fixtures"))]
+async fn test_discover_with_mock_mode_skipped() {
+    // Mock mode tests require --features test-fixtures
 }
 
 #[tokio::test]
@@ -49,6 +56,7 @@ async fn test_discover_without_hints() {
 }
 
 #[tokio::test]
+#[cfg(feature = "test-fixtures")]
 async fn test_mock_mode_case_insensitive() {
     for value in &["true", "True", "TRUE", "TrUe"] {
         env_test_helpers::with_env_vars_async(
@@ -89,7 +97,10 @@ async fn test_discovery_hints_parsing() {
         ],
         || async {
             let providers = discover_visualization_providers().await;
-            assert!(providers.is_ok() || providers.is_err(), "Discovery completes");
+            assert!(
+                providers.is_ok() || providers.is_err(),
+                "Discovery completes"
+            );
         },
     )
     .await;
@@ -114,6 +125,7 @@ async fn test_legacy_biomeos_url() {
     .await;
 }
 
+#[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_discovery_priority() {
     env_test_helpers::with_env_vars_async(
@@ -145,7 +157,10 @@ async fn test_empty_discovery_hints() {
         ],
         || async {
             let providers = discover_visualization_providers().await;
-            assert!(providers.is_ok() || providers.is_err(), "Empty hints handled");
+            assert!(
+                providers.is_ok() || providers.is_err(),
+                "Empty hints handled"
+            );
         },
     )
     .await;
@@ -174,19 +189,16 @@ async fn test_malformed_hints() {
 
 #[tokio::test]
 async fn test_concurrent_discovery_attempts() {
-    env_test_helpers::with_env_vars_async(
-        &[("PETALTONGUE_MOCK_MODE", Some("true"))],
-        || async {
-            let mut handles = vec![];
-            for _ in 0..5 {
-                let handle = tokio::spawn(async { discover_visualization_providers().await });
-                handles.push(handle);
-            }
-            for handle in handles {
-                let result = handle.await;
-                assert!(result.is_ok(), "Concurrent discovery should work");
-            }
-        },
-    )
+    env_test_helpers::with_env_vars_async(&[("PETALTONGUE_MOCK_MODE", Some("true"))], || async {
+        let mut handles = vec![];
+        for _ in 0..5 {
+            let handle = tokio::spawn(async { discover_visualization_providers().await });
+            handles.push(handle);
+        }
+        for handle in handles {
+            let result = handle.await;
+            assert!(result.is_ok(), "Concurrent discovery should work");
+        }
+    })
     .await;
 }

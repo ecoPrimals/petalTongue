@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Capability descriptions and display formatting.
 
-use super::types::{AudioOutputCapability, VisualOutputCapability};
 use super::SensoryCapabilities;
+use super::types::{AudioOutputCapability, VisualOutputCapability};
 
 /// Get a human-readable description of capabilities
 #[must_use]

@@ -2,6 +2,9 @@
 //! Comprehensive tests for mock provider
 //!
 //! Tests verify mock data generation and test isolation.
+//! Only compiled with the `test-fixtures` feature.
+
+#![cfg(feature = "test-fixtures")]
 
 use petal_tongue_discovery::{MockVisualizationProvider, VisualizationDataProvider};
 

@@ -1,23 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Integration tests for BiomeOS API client
+//! Integration tests for BiomeOS API client.
+//!
+//! Mock-dependent tests require the `test-fixtures` feature:
+//!   cargo test -p petal-tongue-api --features test-fixtures
 
+#[cfg(feature = "test-fixtures")]
 use petal_tongue_api::BiomeOSClient;
+#[cfg(feature = "test-fixtures")]
 use petal_tongue_core::test_fixtures::endpoints;
 
+#[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_client_creation() {
     let _client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS);
-    // Client created successfully
-    assert!(true);
 }
 
+#[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_client_with_mock_mode() {
     let _client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
-    // Mock mode enabled successfully
-    assert!(true);
 }
 
+#[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_discover_primals_mock() {
     let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
@@ -38,6 +42,7 @@ async fn test_discover_primals_mock() {
     }
 }
 
+#[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_get_topology_mock() {
     let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
@@ -54,6 +59,7 @@ async fn test_get_topology_mock() {
     }
 }
 
+#[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_discover_primals_with_unreachable_endpoint() {
     // Use unreachable IP to test error handling (no automatic fallback in production)
@@ -69,6 +75,7 @@ async fn test_discover_primals_with_unreachable_endpoint() {
     );
 }
 
+#[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_get_topology_with_unreachable_endpoint() {
     let client = BiomeOSClient::new("http://test-unreachable:9999").with_mock_mode(false);
@@ -83,6 +90,7 @@ async fn test_get_topology_with_unreachable_endpoint() {
     );
 }
 
+#[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_primal_types_in_mock_data() {
     let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
@@ -97,6 +105,7 @@ async fn test_primal_types_in_mock_data() {
     );
 }
 
+#[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_primal_health_states() {
     let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
@@ -110,6 +119,7 @@ async fn test_primal_health_states() {
     assert!(has_healthy, "Mock data should include healthy primals");
 }
 
+#[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_primal_capabilities() {
     let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
@@ -121,6 +131,7 @@ async fn test_primal_capabilities() {
     assert!(has_capabilities, "Mock primals should have capabilities");
 }
 
+#[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_topology_connectivity() {
     let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
@@ -139,6 +150,7 @@ async fn test_topology_connectivity() {
     }
 }
 
+#[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_concurrent_requests() {
     let client =
@@ -157,6 +169,7 @@ async fn test_concurrent_requests() {
     }
 }
 
+#[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_client_timeout_handling() {
     let client = BiomeOSClient::new("http://test-timeout:1").with_mock_mode(false);

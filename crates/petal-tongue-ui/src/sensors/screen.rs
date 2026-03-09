@@ -19,15 +19,16 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use petal_tongue_core::{Sensor, SensorCapabilities, SensorEvent, SensorType};
+use std::io::IsTerminal;
 use std::time::Instant;
 
 /// Screen sensor implementation
 pub struct ScreenSensor {
     capabilities: SensorCapabilities,
     display_type: DisplayType,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     width: usize,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     height: usize,
     last_heartbeat: Option<Instant>,
     frames_sent: u64,
@@ -140,11 +141,16 @@ pub enum DisplayType {
 /// Discover screen capabilities
 pub async fn discover() -> Option<ScreenSensor> {
     // Method 1: Terminal
-    if atty::is(atty::Stream::Stdout)
-        && let Some((width, height)) = term_size::dimensions()
+    if std::io::stdout().is_terminal()
+        && let Some((terminal_size::Width(width), terminal_size::Height(height))) =
+            terminal_size::terminal_size()
     {
         tracing::debug!("Discovered terminal screen: {}x{}", width, height);
-        return Some(ScreenSensor::new(DisplayType::Terminal, width, height));
+        return Some(ScreenSensor::new(
+            DisplayType::Terminal,
+            width as usize,
+            height as usize,
+        ));
     }
 
     // Method 2: Framebuffer (discover actual dimensions)
@@ -175,85 +181,36 @@ pub async fn discover() -> Option<ScreenSensor> {
     None
 }
 
-/// Framebuffer variable screen info structure (Linux fbdev)
+/// Query framebuffer dimensions via sysfs (100% safe Rust).
 ///
-/// This matches the kernel's `fb_var_screeninfo` structure.
-/// We only care about xres and yres, but must match the full struct layout.
-#[repr(C)]
-#[derive(Debug, Clone, Copy)]
-struct FbVarScreeninfo {
-    xres: u32,
-    yres: u32,
-    // Full struct is ~160 bytes, we only need first 8
-    _padding: [u8; 152],
-}
-
-impl FbVarScreeninfo {
-    /// Create a zeroed instance safely
-    ///
-    /// # Safety
-    /// All-zero is a valid state for this C struct
-    fn zeroed() -> Self {
-        Self {
-            xres: 0,
-            yres: 0,
-            _padding: [0; 152],
-        }
-    }
-}
-
-/// `FBIOGET_VSCREENINFO` ioctl command number
-/// This is the Linux framebuffer ioctl for querying screen info
-const FBIOGET_VSCREENINFO: u32 = 0x4600;
-
-/// Query framebuffer dimensions from device
-///
-/// # Safety Encapsulation
-/// This function encapsulates all unsafe ioctl operations in a safe interface.
-/// The unsafe code is:
-/// 1. Minimal (only the ioctl call itself)
-/// 2. Necessary (no safe alternative for hardware queries)
-/// 3. Well-tested (standard Linux fbdev interface)
-/// 4. Properly validated (checks return codes)
+/// Reads `/sys/class/graphics/{fb}/virtual_size` which exports the
+/// framebuffer resolution as a text file. 100% safe Rust, no ioctl.
 fn query_framebuffer_dimensions(fb_path: &str) -> Result<(usize, usize)> {
-    use std::fs::File;
-    use std::os::unix::io::AsRawFd;
+    // Extract device name from path (e.g. "/dev/fb0" -> "fb0")
+    let fb_name = std::path::Path::new(fb_path)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("fb0");
 
-    let file = File::open(fb_path)?;
-    let fd = file.as_raw_fd();
+    let sysfs_path = format!("/sys/class/graphics/{fb_name}/virtual_size");
 
-    let mut var_info = FbVarScreeninfo::zeroed();
+    let content = std::fs::read_to_string(&sysfs_path)
+        .map_err(|e| anyhow::anyhow!("Cannot read framebuffer sysfs at {sysfs_path}: {e}"))?;
 
-    // NOTE: ioctl is an inherently unsafe syscall for hardware queries.
-    // This is necessary for framebuffer detection - there is no safe alternative
-    // to directly querying hardware capabilities.
-    //
-    // SAFETY: All preconditions verified:
-    // 1. fd is a valid file descriptor (from File::open, still in scope)
-    // 2. FBIOGET_VSCREENINFO (0x4600) is the standard Linux fbdev ioctl number
-    // 3. var_info is properly initialized (zeroed) with correct struct layout
-    // 4. The ioctl is read-only (FBIOGET = get, not set - no memory corruption)
-    // 5. Kernel validates the request and returns errors safely (errno on failure)
-    //
-    // This unsafe block is:
-    // - Minimal (only the ioctl call itself)
-    // - Necessary (no safe alternative for hardware queries)
-    // - Well-tested (standard Linux fbdev interface, decades old)
-    // - Properly validated (checks return codes and errno)
-    // - Optional (framebuffer feature, graceful degradation if disabled)
-    //
-    // Used by production systems: mpv, mplayer, kmscon, and many more.
-    //
-    // SAFETY: fd is valid (from File::open), var_info has correct layout (FBIOGET_VSCREENINFO
-    // read-only), kernel validates request. ioctl is read-only.
-    let result = unsafe { libc::ioctl(fd, FBIOGET_VSCREENINFO.into(), &mut var_info) };
-
-    if result == 0 {
-        Ok((var_info.xres as usize, var_info.yres as usize))
+    // Format: "WIDTH,HEIGHT\n"
+    let parts: Vec<&str> = content.trim().split(',').collect();
+    if parts.len() >= 2 {
+        let width: usize = parts[0]
+            .parse()
+            .map_err(|e| anyhow::anyhow!("Invalid framebuffer width '{}': {e}", parts[0]))?;
+        let height: usize = parts[1]
+            .parse()
+            .map_err(|e| anyhow::anyhow!("Invalid framebuffer height '{}': {e}", parts[1]))?;
+        Ok((width, height))
     } else {
         anyhow::bail!(
-            "ioctl(FBIOGET_VSCREENINFO) failed: {}",
-            std::io::Error::last_os_error()
+            "Unexpected sysfs format in {sysfs_path}: '{}'",
+            content.trim()
         )
     }
 }
@@ -308,15 +265,17 @@ fn query_x11_dimensions() -> Option<(usize, usize)> {
     }
 
     // Fallback: Try terminal dimensions if display detection fails
-    if let Some((term_width, term_height)) = term_size::dimensions() {
+    if let Some((terminal_size::Width(term_width), terminal_size::Height(term_height))) =
+        terminal_size::terminal_size()
+    {
         tracing::debug!(
             "Using terminal dimensions as fallback: {}x{}",
             term_width,
             term_height
         );
         // Estimate pixel dimensions (assume 80x24 terminal = 1280x720)
-        let pixel_width = (term_width * 16).max(800);
-        let pixel_height = (term_height * 30).max(600);
+        let pixel_width = (term_width as usize * 16).max(800);
+        let pixel_height = (term_height as usize * 30).max(600);
         return Some((pixel_width, pixel_height));
     }
 

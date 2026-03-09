@@ -1,283 +1,111 @@
-# 🌸 petalTongue Showcase
+# petalTongue Showcase
 
 **Progressive demonstrations from local primal to full ecosystem**
 
+SPDX-License-Identifier: AGPL-3.0-only
+
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### **New to petalTongue?** Start here:
-
-```bash
-cd 01-local-primal/00-hello-petaltongue/
-cat README.md      # Read about it
-./demo.sh          # Run it!
-```
-
-**5 minutes** to your first visualization.
-
-### **Complete local showcase:**
+Build first:
 
 ```bash
-cd 01-local-primal/
-./RUN_ALL_LOCAL.sh
+cargo build --release   # or cargo build (debug is fine)
 ```
 
-**75 minutes** to master petalTongue's capabilities.
-
-### **Want everything?**
+Run the 5-minute automated tour:
 
 ```bash
 ./QUICK_START.sh
 ```
 
-One command, complete experience.
+Or start with hello:
 
----
-
-## 📁 Showcase Structure
-
-### **Phase 1: Local Primal** ✅ (petalTongue BY ITSELF)
-
-Learn petalTongue without any external dependencies:
-
-| # | Demo | What You'll Learn | Time |
-|---|------|------------------|------|
-| 00 | [hello-petaltongue](01-local-primal/00-hello-petaltongue/) | First visualization | 5 min |
-| 01 | [graph-engine](01-local-primal/01-graph-engine/) | 4 layout algorithms | 10 min |
-| 02 | [visual-2d](01-local-primal/02-visual-2d/) | Interactive visualization | 10 min |
-| 03 | [audio-sonification](01-local-primal/03-audio-sonification/) | 5 instruments, spatial | 10 min |
-| 04 | [animation-flow](01-local-primal/04-animation-flow/) | Flow particles, pulses | 10 min |
-| 05 | [dual-modality](01-local-primal/05-dual-modality/) | Visual + Audio together | 10 min |
-| 06 | [capability-detection](01-local-primal/06-capability-detection/) | Self-awareness | 5 min |
-| 07 | [audio-export](01-local-primal/07-audio-export/) | Pure Rust WAV | 5 min |
-| 08 | [tool-integration](01-local-primal/08-tool-integration/) | System monitor, metrics | 10 min |
-
-**Total**: 75 minutes | **Status**: ✅ Ready to build
-
----
-
-### **Phase 2: BiomeOS Integration** (With orchestration)
-
-Learn integration with BiomeOS orchestration:
-
-| # | Demo | What You'll Learn | Time |
-|---|------|------------------|------|
-| 01 | [single-primal](02-biomeos-integration/01-single-primal/) | One primal viz | 5 min |
-| 02 | [primal-discovery](02-biomeos-integration/02-primal-discovery/) | Dynamic discovery | 10 min |
-| 03 | [topology-viz](02-biomeos-integration/03-topology-viz/) | Full graph | 10 min |
-| 04 | [health-monitoring](02-biomeos-integration/04-health-monitoring/) | Health states | 10 min |
-| 05 | [real-time-updates](02-biomeos-integration/05-real-time-updates/) | Live changes | 10 min |
-
-**Total**: 45 minutes | **Status**: 🚧 Enhancing existing
-
----
-
-### **Phase 3: Inter-Primal** 📋 (Cross-primal integration)
-
-Learn integration with other primals (Future):
-
-- Songbird multi-tower federation
-- ToadStool compute mesh
-- LoamSpine permanence visualization
-- RhizoCrypt DAG visualization  
-- Full ecosystem demonstration
-
-**Status**: Planned for future sessions
-
----
-
-### **Phase 4-6: Advanced** 📋 (Future)
-
-- Accessibility validation
-- Production scenarios
-- Performance benchmarking
-
----
-
-## 🎯 Learning Paths
-
-### **For New Users** (2 hours)
 ```bash
-cd 01-local-primal/
-./00-hello-petaltongue/demo.sh      # 5 min - First viz
-./01-graph-engine/demo.sh           # 10 min - Layouts
-./02-visual-2d/demo.sh              # 10 min - Interaction
-./03-audio-sonification/demo.sh     # 10 min - Audio
-./05-dual-modality/demo.sh          # 10 min - Both together
+cd 01-local-primal/00-hello-petaltongue/
+./demo.sh
 ```
 
-### **For Accessibility Specialists** (1 hour)
+---
+
+## Structure
+
+### 01-local-primal/ (petalTongue standalone, no external deps)
+
+| # | Demo | What it proves | Time |
+|---|------|---------------|------|
+| 00 | [hello-petaltongue](01-local-primal/00-hello-petaltongue/) | status, version, JSON output | 30s |
+| 01 | [unibin-modes](01-local-primal/01-unibin-modes/) | All 5 modes exist and run | 60s |
+| 02 | [scenario-loading](01-local-primal/02-scenario-loading/) | Load 3 scenarios via web mode | 60s |
+| 03 | [web-server](01-local-primal/03-web-server/) | HTTP endpoints, HTML dashboard | 60s |
+| 04 | [headless-api](01-local-primal/04-headless-api/) | Headless rendering pipeline | 30s |
+| 05 | [tui-dashboard](01-local-primal/05-tui-dashboard/) | Terminal UI (ratatui, Pure Rust) | 15s |
+| 06 | [audio-export](01-local-primal/06-audio-export/) | Pure Rust WAV generation (hound) | 30s |
+| 07 | [graph-layouts](01-local-primal/07-graph-layouts/) | Layout algorithms via topologies | 60s |
+| 08 | [clinical-data](01-local-primal/08-clinical-data/) | healthSpring DataChannel rendering | 45s |
+
+**Total**: ~6 minutes | **Dependencies**: none
+
+### 02-ipc-protocol/ (JSON-RPC, local only)
+
+| # | Demo | What it proves | Time |
+|---|------|---------------|------|
+| 01 | [unix-socket-server](02-ipc-protocol/01-unix-socket-server/) | IPC over Unix domain sockets | 45s |
+| 02 | [jsonrpc-methods](02-ipc-protocol/02-jsonrpc-methods/) | All supported JSON-RPC methods | 30s |
+| 03 | [health-monitoring](02-ipc-protocol/03-health-monitoring/) | Health check protocol stability | 30s |
+
+**Total**: ~2 minutes | **Dependencies**: curl
+
+### 03-inter-primal/ (with other primals running)
+
+| # | Demo | What it proves | Requires |
+|---|------|---------------|----------|
+| 01 | [songbird-discovery](03-inter-primal/01-songbird-discovery/) | Capability-based registration | Songbird (graceful skip) |
+| 02 | [biomeos-topology](03-inter-primal/02-biomeos-topology/) | Topology visualization | biomeOS (graceful skip) |
+| 03 | [ecosystem-health](03-inter-primal/03-ecosystem-health/) | Health dashboard | Any primal (graceful skip) |
+| 04 | [multi-primal-tui](03-inter-primal/04-multi-primal-tui/) | TUI with ecosystem data | Any primal (graceful skip) |
+| 05 | [full-ecosystem](03-inter-primal/05-full-ecosystem/) | All primals together | Multiple (graceful skip) |
+
+**Total**: ~3 minutes | **Dependencies**: other primals (all gracefully skip if absent)
+
+---
+
+## Principles
+
+1. **Real commands, no mocks**: Every demo runs actual `petaltongue` subcommands
+2. **Verifiable output**: Exit codes, JSON validation, HTTP status checks
+3. **Progressive complexity**: local -> IPC -> inter-primal
+4. **Graceful degradation**: Inter-primal demos skip cleanly if deps are absent
+5. **Scenario-driven data**: Uses `sandbox/scenarios/*.json` (17 scenarios)
+6. **No hardcoded ports**: Demos use high ephemeral ports to avoid conflicts
+
+---
+
+## Prerequisites
+
 ```bash
-./05-dual-modality/demo.sh          # Multi-modal proof
-./06-capability-detection/demo.sh   # Self-awareness
-./07-audio-export/demo.sh           # Pure Rust audio
-# Future: Phase 4 accessibility demos
-```
+# Required
+cargo build --release    # petalTongue binary
+curl                     # HTTP probing (most demos)
+python3                  # JSON validation
 
-### **For Operators** (1.5 hours)
-```bash
-cd 02-biomeos-integration/
-./01-single-primal/demo.sh          # Basic setup
-./02-primal-discovery/demo.sh       # Discovery
-./03-topology-viz/demo.sh           # Full graph
-./04-health-monitoring/demo.sh      # Health monitoring
-```
-
-### **For Integrators** (2 hours)
-```bash
-cd 01-local-primal/08-tool-integration/
-./demo.sh                           # Tool patterns
-# Future: Phase 3 inter-primal demos
+# Optional
+socat                    # Unix socket communication
+aplay / paplay           # Audio playback
 ```
 
 ---
 
-## 📚 Documentation
+## Environment Variables
 
-- **[00_SHOWCASE_INDEX.md](00_SHOWCASE_INDEX.md)** - Complete navigation guide
-- **[SHOWCASE_PRINCIPLES.md](SHOWCASE_PRINCIPLES.md)** - Philosophy and standards
-- **[SHOWCASE_ENHANCEMENT_PLAN.md](SHOWCASE_ENHANCEMENT_PLAN.md)** - Build strategy
-- **Individual READMEs** - Every demo has detailed documentation
-
----
-
-## 🌟 What Makes This Showcase Special
-
-### **1. Multi-Modal Throughout**
-
-Unlike other primals, **every demo** shows:
-- 🎨 Visual representation
-- 🎵 Audio sonification
-- ✨ Both working together
-
-**Proves**: Universal design works in practice.
-
-### **2. Progressive Learning**
-
-```
-Simple (1 node)
-  ↓
-Medium (3-5 nodes)
-  ↓
-Complex (Full ecosystem)
-```
-
-Each step builds on previous knowledge.
-
-### **3. Real Operations**
-
-- ✅ No mocks (where possible)
-- ✅ Actual code paths
-- ✅ Production patterns
-- ✅ Real primals (Phase 2+)
-
-### **4. Accessibility Focus**
-
-- Audio-first demonstrations
-- Screen reader validation (Phase 4)
-- Keyboard navigation
-- Multi-sensory experiences
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PETALTONGUE_BIN` | auto-detected | Path to petaltongue binary |
+| `PAUSE_DURATION` | 1 | Seconds between steps (0 for CI) |
+| `VERBOSE` | false | Extra debug output |
+| `DEMO_OUTPUT_DIR` | /tmp/petaltongue-showcase | Artifact output dir |
 
 ---
 
-## 🛠️ Prerequisites
-
-### **Phase 1 (Local)**
-```bash
-# Build petalTongue
-cargo build --release
-```
-
-### **Phase 2 (BiomeOS)**
-```bash
-# Build BiomeOS
-cd ../../biomeOS
-cargo build --release
-
-# Launch BiomeOS
-./bin/biomeos
-```
-
-### **Phase 3 (Inter-Primal)**
-See individual demo prerequisites.
-
----
-
-## 📊 Current Status
-
-| Phase | Complete | In Progress | Planned | Total |
-|-------|----------|-------------|---------|-------|
-| Phase 1: Local | 0 | 1 🚧 | 8 📋 | 9 |
-| Phase 2: BiomeOS | 4 ✅ | 1 🚧 | 0 | 5 |
-| Phase 3: Inter-Primal | 0 | 0 | 7 📋 | 7 |
-| Phase 4-6: Advanced | 0 | 0 | 13 📋 | 13 |
-| **Total** | **4** | **2** | **28** | **34** |
-
-**Completion**: 12% (4/34 demos complete)  
-**Active Work**: Phase 1 (Building foundation)
-
----
-
-## 🎓 Philosophy
-
-**From SHOWCASE_PRINCIPLES.md:**
-
-1. ✅ Real operations, no mocks
-2. ✅ Progressive complexity
-3. ✅ Multi-modal throughout
-4. ✅ Self-contained demos
-5. ✅ Production-ready patterns
-6. ✅ Comprehensive documentation
-7. ✅ Capability-based design
-8. ✅ Accessibility first
-
-**Goal**: Anyone can master petalTongue in 2-3 hours.
-
----
-
-## 🚀 Next Steps
-
-### **This Session**:
-- ✅ Showcase structure created
-- ✅ Principles documented
-- ✅ Common scripts written
-- ✅ First demo created (00-hello-petaltongue)
-- 🚧 Building remaining Phase 1 demos
-
-### **Next Session**:
-- Enhance Phase 2 (BiomeOS integration)
-- Build Phase 3 (Inter-primal demos)
-- Add Phase 4 (Accessibility validation)
-
----
-
-## 📞 Support
-
-- **Issues**: Document in [GAPS.md](local/GAPS.md)
-- **Questions**: See main [README](../README.md)
-- **Contributions**: Follow showcase principles
-
----
-
-## ✨ Success Criteria
-
-A showcase is successful when:
-
-1. ✅ New users master petalTongue in 2-3 hours
-2. ✅ All demos run without errors
-3. ✅ Multi-modal design is proven
-4. ✅ Accessibility is validated
-5. ✅ Production patterns are clear
-6. ✅ Inter-primal integration works
-7. ✅ Documentation is comprehensive
-
----
-
-**Status**: Building Phase 1 🚧  
-**Last Updated**: December 27, 2025  
-**Version**: 1.0
-
----
-
-*"A great showcase is the best onboarding."* 🌸
+Last updated: March 2026

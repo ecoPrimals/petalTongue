@@ -15,6 +15,7 @@ use crate::keyboard_shortcuts::KeyboardShortcuts;
 use crate::metrics_dashboard::MetricsDashboard;
 use crate::node_palette::NodePalette;
 use crate::panel_registry::{PanelInstance, PanelRegistry};
+#[cfg(feature = "doom")]
 use crate::panels::create_doom_factory;
 use crate::process_viewer_integration::ProcessViewerTool;
 use crate::property_panel::PropertyPanel;
@@ -39,6 +40,7 @@ use petal_tongue_discovery::{
     NeuralApiProvider, VisualizationDataProvider, discover_visualization_providers,
 };
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer, Visual2DRenderer};
+use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::time::Instant;
 
@@ -123,6 +125,8 @@ pub(super) fn create_app(
 
     let (rendering_awareness, sensor_registry) = initialize_central_nervous_system(&runtime);
 
+    let (motor_tx, motor_rx) = mpsc::channel();
+
     let mut app = PetalTongueApp {
         capabilities,
         graph,
@@ -183,6 +187,9 @@ pub(super) fn create_app(
         use_sensory_ui: true,
         panel_registry,
         custom_panels,
+        motor_rx,
+        motor_tx,
+        show_top_menu: true,
     };
 
     finalize_app_startup(&mut app, &scenario, &tutorial_mode, needs_fallback);
@@ -219,10 +226,18 @@ fn discover_data_providers(
         }
     } else if tutorial_mode.is_enabled() {
         tracing::info!("📚 Tutorial mode: Using demonstration data");
-        vec![
-            Box::new(petal_tongue_discovery::MockVisualizationProvider::new())
-                as Box<dyn VisualizationDataProvider>,
-        ]
+        #[cfg(feature = "mock")]
+        {
+            vec![
+                Box::new(petal_tongue_discovery::MockVisualizationProvider::new())
+                    as Box<dyn VisualizationDataProvider>,
+            ]
+        }
+        #[cfg(not(feature = "mock"))]
+        {
+            tracing::info!("💡 Mock feature disabled - start with --features mock for demo data");
+            vec![]
+        }
     } else {
         runtime.block_on(async {
             match discover_visualization_providers().await {
@@ -230,11 +245,19 @@ fn discover_data_providers(
                     if providers.is_empty() {
                         tracing::warn!("No visualization providers discovered");
                         if crate::tutorial_mode::should_fallback(0) {
-                            tracing::info!("💡 Using tutorial data as graceful fallback");
-                            vec![
-                                Box::new(petal_tongue_discovery::MockVisualizationProvider::new())
-                                    as Box<dyn VisualizationDataProvider>,
-                            ]
+                            #[cfg(feature = "mock")]
+                            {
+                                tracing::info!("💡 Using tutorial data as graceful fallback");
+                                vec![Box::new(
+                                    petal_tongue_discovery::MockVisualizationProvider::new(),
+                                )
+                                    as Box<dyn VisualizationDataProvider>]
+                            }
+                            #[cfg(not(feature = "mock"))]
+                            {
+                                tracing::info!("💡 Use --features mock for demo data fallback");
+                                vec![]
+                            }
                         } else {
                             vec![]
                         }
@@ -258,11 +281,19 @@ fn discover_data_providers(
                 Err(e) => {
                     tracing::error!("Provider discovery failed: {}", e);
                     if crate::tutorial_mode::should_fallback(0) {
-                        tracing::info!("💡 Using tutorial data as graceful fallback");
-                        vec![
-                            Box::new(petal_tongue_discovery::MockVisualizationProvider::new())
-                                as Box<dyn VisualizationDataProvider>,
-                        ]
+                        #[cfg(feature = "mock")]
+                        {
+                            tracing::info!("💡 Using tutorial data as graceful fallback");
+                            vec![
+                                Box::new(petal_tongue_discovery::MockVisualizationProvider::new())
+                                    as Box<dyn VisualizationDataProvider>,
+                            ]
+                        }
+                        #[cfg(not(feature = "mock"))]
+                        {
+                            tracing::info!("💡 Use --features mock for demo data fallback");
+                            vec![]
+                        }
                     } else {
                         vec![]
                     }
@@ -274,10 +305,13 @@ fn discover_data_providers(
 
 fn create_biomeos_client() -> BiomeOSClient {
     let biomeos_url = std::env::var("BIOMEOS_URL").ok();
+    #[cfg(feature = "mock")]
     let mock_mode_requested = std::env::var("PETALTONGUE_MOCK_MODE")
         .unwrap_or_else(|_| "false".to_string())
         .to_lowercase()
         == "true";
+    #[cfg(not(feature = "mock"))]
+    let mock_mode_requested = false;
 
     let biomeos_url = biomeos_url.unwrap_or_else(|| {
         tracing::info!("No BIOMEOS_URL provided - will discover BiomeOS capability at runtime");
@@ -398,6 +432,7 @@ fn create_panel_registry_and_panels(
     scenario: &Option<crate::scenario::Scenario>,
 ) -> (PanelRegistry, Vec<Box<dyn PanelInstance>>) {
     let mut panel_registry = PanelRegistry::new();
+    #[cfg(feature = "doom")]
     panel_registry.register(create_doom_factory());
     panel_registry.register(Arc::new(crate::panels::MetricsPanelFactory::new()));
     panel_registry.register(Arc::new(crate::panels::ProprioceptionPanelFactory::new()));
@@ -466,10 +501,14 @@ fn finalize_app_startup(
     tutorial_mode: &crate::tutorial_mode::TutorialMode,
     needs_fallback: bool,
 ) {
-    let awakening_enabled = std::env::var("AWAKENING_ENABLED")
+    use petal_tongue_core::MotorCommand;
+
+    // Awakening: respect env var, then scenario config
+    let env_awakening = std::env::var("AWAKENING_ENABLED")
         .ok()
-        .and_then(|v| v.parse::<bool>().ok())
-        .unwrap_or(true);
+        .and_then(|v| v.parse::<bool>().ok());
+    let scenario_awakening = scenario.as_ref().map(|s| s.ui_config.awakening_enabled);
+    let awakening_enabled = env_awakening.unwrap_or_else(|| scenario_awakening.unwrap_or(true));
 
     if awakening_enabled {
         tracing::info!("🌸 Awakening experience enabled");
@@ -492,8 +531,9 @@ fn finalize_app_startup(
 
     if let Some(loaded_scenario) = scenario {
         tracing::info!(
-            "📋 Loading {} primals from scenario",
-            loaded_scenario.primal_count()
+            "📋 Loading {} primals and {} edges from scenario",
+            loaded_scenario.primal_count(),
+            loaded_scenario.edge_count()
         );
         let primals = loaded_scenario.to_primal_infos();
         let Ok(mut graph) = app.graph.write() else {
@@ -504,11 +544,43 @@ fn finalize_app_startup(
         for primal in &primals {
             graph.add_node(primal.clone());
         }
+        for edge in &loaded_scenario.edges {
+            graph.add_edge(edge.clone());
+        }
         tracing::info!(
-            "✅ Scenario primals loaded: {} nodes with explicit positions",
-            primals.len()
+            "✅ Scenario loaded: {} nodes, {} edges",
+            primals.len(),
+            loaded_scenario.edge_count()
         );
         drop(graph);
+
+        // Wire remaining PanelVisibility fields via motor commands
+        let panels = &loaded_scenario.ui_config.show_panels;
+        app.show_top_menu = panels.top_menu;
+        app.show_neural_proprioception = panels.proprioception && app.show_neural_proprioception;
+
+        // Apply scenario mode through the motor channel (efferent)
+        let mode = &loaded_scenario.mode;
+        if !mode.is_empty() && mode != "live-ecosystem" && mode != "doom-showcase" {
+            let cmds = crate::mode_presets::commands_for_mode(mode);
+            if !cmds.is_empty() {
+                tracing::info!(
+                    "🎛️  Applying scenario mode '{mode}' ({} commands)",
+                    cmds.len()
+                );
+                for cmd in cmds {
+                    app.apply_motor_command(cmd);
+                }
+            }
+        }
+
+        // Apply initial zoom via motor command
+        let zoom_str = &loaded_scenario.ui_config.initial_zoom;
+        if zoom_str == "fit" {
+            app.apply_motor_command(MotorCommand::FitToView);
+        } else if let Ok(level) = zoom_str.parse::<f32>() {
+            app.apply_motor_command(MotorCommand::SetZoom { level });
+        }
     } else if tutorial_mode.is_enabled() {
         tutorial_mode.load_into_graph(Arc::clone(&app.graph), app.current_layout);
     } else if needs_fallback {

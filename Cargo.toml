@@ -12,8 +12,6 @@ members = [
     "crates/petal-tongue-ipc",       # Phase 3: IPC
     "crates/petal-tongue-cli",       # Phase 3: CLI tools
     "crates/petal-tongue-ui-core",   # NEW: Pure Rust UI (Tier 1)
-    "crates/petal-tongue-modalities", # NEW: Modality implementations
-    "crates/petal-tongue-primitives", # NEW: UI infrastructure primitives (v2.0)
     "crates/petal-tongue-ui",        # Tier 2: Native GUI (egui)
     "crates/petal-tongue-tui",       # NEW: Rich TUI (Terminal UI)
     "crates/petal-tongue-headless",  # NEW: Headless binary (Tier 1 only)
@@ -149,7 +147,7 @@ tracing-subscriber = { workspace = true }
 num_cpus = "1.16"
 
 # Examples dependencies (optional, not in production)
-libc = { version = "0.2", optional = true }
+# EVOLVED: libc removed - framebuffer_demo uses rustix (via petal-tongue-core)
 png = { version = "0.17", optional = true }
 
 [dev-dependencies]
@@ -159,7 +157,7 @@ tempfile = "3.10"
 [features]
 default = ["ui"]
 ui = ["petal-tongue-ui", "dep:eframe", "dep:egui"]
-examples = ["libc", "png"]
+examples = ["png"]
 
 [[example]]
 name = "awakening_pure_rust"

@@ -14,7 +14,7 @@ This document describes all environment variables used by petalTongue.
 
 **biomeOS Socket Standard**:
 - Priority 1: `PETALTONGUE_SOCKET` (explicit override)
-- Priority 2: `/run/user/<uid>/petaltongue-<family>-<node>.sock` (XDG)
+- Priority 2: `/run/user/<uid>/petaltongue/petaltongue-<family>-<node>.sock` (XDG)
 - Priority 3: `/tmp/petaltongue-<family>-<node>.sock` (fallback)
 
 **Use Cases**:
@@ -33,8 +33,8 @@ This document describes all environment variables used by petalTongue.
 Family identifier for this petalTongue instance. Used in socket path construction.
 
 **Socket Path Impact**:
-- `FAMILY_ID=nat0` → `/run/user/1000/petaltongue-nat0-default.sock`
-- `FAMILY_ID=staging` → `/run/user/1000/petaltongue-staging-default.sock`
+- `FAMILY_ID=nat0` → `/run/user/1000/petaltongue/petaltongue-nat0-default.sock`
+- `FAMILY_ID=staging` → `/run/user/1000/petaltongue/petaltongue-staging-default.sock`
 
 **Atomic Architecture**:
 Multiple families can run on the same machine without conflict.
@@ -50,9 +50,9 @@ Multiple families can run on the same machine without conflict.
 Node identifier for multi-instance deployments. Enables multiple petalTongue instances in the same family.
 
 **Socket Path Impact**:
-- `NODE_ID=default` → `/run/user/1000/petaltongue-nat0-default.sock`
-- `NODE_ID=node1` → `/run/user/1000/petaltongue-nat0-node1.sock`
-- `NODE_ID=node2` → `/run/user/1000/petaltongue-nat0-node2.sock`
+- `NODE_ID=default` → `/run/user/1000/petaltongue/petaltongue-nat0-default.sock`
+- `NODE_ID=node1` → `/run/user/1000/petaltongue/petaltongue-nat0-node1.sock`
+- `NODE_ID=node2` → `/run/user/1000/petaltongue/petaltongue-nat0-node2.sock`
 
 **Use Cases**:
 - Running multiple visualization instances
@@ -429,11 +429,10 @@ Before deploying to production:
 - [README.md](README.md) - Project overview
 - [START_HERE.md](START_HERE.md) - Getting started guide
 - [docs/operations/QUICK_START.md](docs/operations/QUICK_START.md) - Quick start instructions
-- [AUDIT_REPORTS_INDEX.md](AUDIT_REPORTS_INDEX.md) - Audit reports
 
 ---
 
-**Last Updated**: January 3, 2026 (Self-Awareness Session)  
+**Last Updated**: March 9, 2026  
 **Maintainer**: ecoPrimals Project  
-**License**: AGPL-3.0
+**License**: AGPL-3.0-only
 

@@ -40,7 +40,12 @@ mod tests {
     #[tokio::test]
     async fn test_headless_mode() {
         let data_service = Arc::new(DataService::new());
-        let result = run(&petal_tongue_core::constants::default_headless_bind(), 4, data_service).await;
+        let result = run(
+            &petal_tongue_core::constants::default_headless_bind(),
+            4,
+            data_service,
+        )
+        .await;
         assert!(result.is_ok());
     }
 

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #![cfg_attr(not(test), forbid(unsafe_code))]
+#![warn(missing_docs)]
 //! Inter-process communication for petalTongue
 //!
 //! This crate enables communication between petalTongue instances and other primals.
@@ -69,6 +70,8 @@
 //! └─────────────────────────────────────────────────────────────┘
 //! ```
 
+/// Runtime capability detection for display modalities
+pub mod capability_detection;
 pub mod client;
 pub mod json_rpc;
 pub mod json_rpc_client;
@@ -78,17 +81,25 @@ pub mod server;
 pub mod socket_path;
 pub mod tarpc_client;
 pub mod tarpc_types;
+/// Unix socket connection handling (JSON-RPC over newline-delimited JSON)
+pub mod unix_socket_connection;
+/// JSON-RPC method dispatch and handlers
+pub mod unix_socket_rpc_handlers;
+/// Unix socket server for petalTongue IPC
 pub mod unix_socket_server;
+pub mod visualization_handler;
 
 // JSON-RPC (SECONDARY - local IPC)
 pub use client::{IpcClient, IpcClientError};
 pub use json_rpc::{JsonRpcError, JsonRpcRequest, JsonRpcResponse};
-pub use json_rpc_client::{
-    JsonRpcClient, JsonRpcClientError, JsonRpcResult, TopologyData,
-};
+pub use json_rpc_client::{JsonRpcClient, JsonRpcClientError, JsonRpcResult, TopologyData};
 pub use protocol::{InstanceStatus, IpcCommand, IpcResponse};
 pub use server::{IpcServer, IpcServerError};
 pub use unix_socket_server::UnixSocketServer;
+pub use visualization_handler::{
+    StreamOperation, StreamUpdateRequest, StreamUpdateResponse, VisualizationRenderRequest,
+    VisualizationRenderResponse, VisualizationState,
+};
 
 // tarpc (PRIMARY - primal-to-primal)
 pub use tarpc_client::{TarpcClient, TarpcClientError, TarpcResult};

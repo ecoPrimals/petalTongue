@@ -10,7 +10,7 @@ use serde_json::Value;
 
 /// Serde helper for base64-encoded Bytes
 mod base64_bytes {
-    use base64::{engine::general_purpose::STANDARD, Engine};
+    use base64::{Engine, engine::general_purpose::STANDARD};
     use bytes::Bytes;
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -21,9 +21,7 @@ mod base64_bytes {
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Bytes, D::Error> {
         let s = String::deserialize(d)?;
-        let buf = STANDARD
-            .decode(&s)
-            .map_err(serde::de::Error::custom)?;
+        let buf = STANDARD.decode(&s).map_err(serde::de::Error::custom)?;
         Ok(Bytes::from(buf))
     }
 }
@@ -159,6 +157,7 @@ pub mod error_codes {
     /// Reserved for implementation-defined server-errors
     /// Range: -32000 to -32099
     pub const SERVER_ERROR_START: i32 = -32000;
+    /// Upper bound of the server error range
     pub const SERVER_ERROR_END: i32 = -32099;
 }
 
@@ -171,7 +170,7 @@ mod tests {
     fn test_json_rpc_request_serialization() {
         let request = JsonRpcRequest::new("get_capabilities", json!({}), json!(1));
 
-        let json = serde_json::to_string(&request).unwrap();
+        let json = serde_json::to_string(&request).expect("request serialization");
         assert!(json.contains("\"jsonrpc\":\"2.0\""));
         assert!(json.contains("\"method\":\"get_capabilities\""));
         assert!(json.contains("\"id\":1"));
@@ -195,7 +194,9 @@ mod tests {
         assert!(response.result.is_none());
         assert!(response.error.is_some());
 
-        let error = response.error.unwrap();
+        let error = response
+            .error
+            .expect("error response should have error field");
         assert_eq!(error.code, error_codes::METHOD_NOT_FOUND);
         assert_eq!(error.message, "Method not found");
     }
@@ -209,7 +210,7 @@ mod tests {
             "id": 42
         }"#;
 
-        let request: JsonRpcRequest = serde_json::from_str(json).unwrap();
+        let request: JsonRpcRequest = serde_json::from_str(json).expect("request deserialization");
         assert_eq!(request.jsonrpc, "2.0");
         assert_eq!(request.method, "get_health");
         assert_eq!(request.id, json!(42));
@@ -223,9 +224,9 @@ mod tests {
             data: bytes::Bytes::from_static(b"hello binary"),
             content_type: "application/octet-stream".to_string(),
         };
-        let json = serde_json::to_string(&payload).unwrap();
+        let json = serde_json::to_string(&payload).expect("payload serialization");
         assert!(json.contains("content_type"));
-        let restored: BinaryPayload = serde_json::from_str(&json).unwrap();
+        let restored: BinaryPayload = serde_json::from_str(&json).expect("payload deserialization");
         assert_eq!(restored.data.as_ref(), b"hello binary");
         assert_eq!(restored.content_type, "application/octet-stream");
     }
@@ -238,7 +239,8 @@ mod tests {
             "id": 1
         }"#;
 
-        let response: JsonRpcResponse = serde_json::from_str(json).unwrap();
+        let response: JsonRpcResponse =
+            serde_json::from_str(json).expect("response deserialization");
         assert_eq!(response.jsonrpc, "2.0");
         assert!(response.result.is_some());
         assert!(response.error.is_none());

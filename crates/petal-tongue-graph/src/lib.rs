@@ -25,9 +25,15 @@
 pub mod audio_export;
 pub mod audio_sonification;
 pub mod capability_validator;
-pub mod chart_renderer;
-pub mod clinical_theme;
 pub mod color_utils;
+
+#[cfg(feature = "egui-render")]
+pub mod chart_renderer;
+#[cfg(feature = "egui-render")]
+pub mod clinical_theme;
+#[cfg(feature = "egui-render")]
+pub mod domain_theme;
+#[cfg(feature = "egui-render")]
 pub mod visual_2d;
 
 // REMOVED: audio_playback module (was using rodio/ALSA)
@@ -42,12 +48,15 @@ pub mod visual_2d;
 
 pub use audio_export::{AudioFileGenerator, AudioFormat, AudioQuality};
 pub use audio_sonification::{AudioAttributes, AudioSonificationRenderer, Instrument};
+#[cfg(feature = "egui-render")]
 pub use chart_renderer::{NodeDetail, draw_channel, draw_node_detail};
+#[cfg(feature = "egui-render")]
 pub use clinical_theme::{
     BG_CARD, BG_PANEL, CRITICAL, HEALTHY, INFO, POPULATION, TEXT_DIM, TEXT_PRIMARY, WARNING,
     health_color,
 };
 pub use color_utils::{hsv_to_rgb, lerp_hsv, rgb_to_hsv};
+#[cfg(feature = "egui-render")]
 pub use visual_2d::Visual2DRenderer;
 
 // REMOVED: AudioPlaybackEngine export (was requiring ALSA/rodio)

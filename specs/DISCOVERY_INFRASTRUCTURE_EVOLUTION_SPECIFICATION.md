@@ -621,7 +621,7 @@ failsafe = "1.2"          # Circuit breaker
 ### Specifications
 - This document (specification)
 - `DISCOVERY_INFRASTRUCTURE_COMPARISON_JAN_3_2026.md` (analysis)
-- `specs/PETALTONGUE_UI_AND_VISUALIZATION_SPECIFICATION.md` (core spec)
+- `specs/archive/PETALTONGUE_UI_AND_VISUALIZATION_SPECIFICATION.md` (archived; superseded by GRAMMAR_OF_GRAPHICS_ARCHITECTURE.md and UNIVERSAL_VISUALIZATION_PIPELINE.md)
 
 ### Implementation
 - `crates/petal-tongue-discovery/` (current implementation)

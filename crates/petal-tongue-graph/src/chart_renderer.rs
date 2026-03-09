@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Rendering functions for diagnostic data channels using egui.
+//! Rendering functions for data bindings using egui.
 //!
-//! Each function takes an `egui::Ui` and a `DataChannel` and draws the
-//! appropriate visualization. Absorbed from healthSpring petaltongue-health.
+//! Each function takes an `egui::Ui` and a `DataBinding` and draws the
+//! appropriate visualization.
 //!
 //! Rendering code necessarily converts between f64 domain values and f32
 //! pixel coordinates; these truncations are intentional and harmless.
@@ -16,12 +16,12 @@
 use crate::clinical_theme;
 use egui::{RichText, Ui};
 use egui_plot::{Bar, BarChart, Line, Plot, PlotPoints, VLine};
-use petal_tongue_core::DataChannel;
+use petal_tongue_core::DataBinding;
 
-/// Draw a single data channel.
-pub fn draw_channel(ui: &mut Ui, channel: &DataChannel) {
-    match channel {
-        DataChannel::TimeSeries {
+/// Draw a single data binding.
+pub fn draw_channel(ui: &mut Ui, binding: &DataBinding) {
+    match binding {
+        DataBinding::TimeSeries {
             label,
             x_label,
             y_label,
@@ -29,21 +29,21 @@ pub fn draw_channel(ui: &mut Ui, channel: &DataChannel) {
             y_values,
             ..
         } => draw_timeseries(ui, label, x_label, y_label, x_values, y_values),
-        DataChannel::Distribution {
+        DataBinding::Distribution {
             label,
             values,
             mean,
             std,
-            patient_value,
+            comparison_value,
             ..
-        } => draw_distribution(ui, label, values, *mean, *std, *patient_value),
-        DataChannel::Bar {
+        } => draw_distribution(ui, label, values, *mean, *std, *comparison_value),
+        DataBinding::Bar {
             label,
             categories,
             values,
             ..
         } => draw_bar_chart(ui, label, categories, values),
-        DataChannel::Gauge {
+        DataBinding::Gauge {
             label,
             value,
             min,
@@ -62,6 +62,45 @@ pub fn draw_channel(ui: &mut Ui, channel: &DataChannel) {
             normal_range,
             warning_range,
         ),
+        DataBinding::Heatmap {
+            label,
+            x_labels,
+            y_labels,
+            values,
+            unit,
+            ..
+        } => {
+            draw_heatmap(ui, label, x_labels, y_labels, values, unit);
+        }
+        DataBinding::Scatter3D {
+            label,
+            x,
+            y,
+            z,
+            unit,
+            ..
+        } => {
+            draw_scatter3d(ui, label, x, y, z, unit);
+        }
+        DataBinding::FieldMap {
+            label,
+            grid_x,
+            grid_y,
+            values,
+            unit,
+            ..
+        } => {
+            draw_fieldmap(ui, label, grid_x, grid_y, values, unit);
+        }
+        DataBinding::Spectrum {
+            label,
+            frequencies,
+            amplitudes,
+            unit,
+            ..
+        } => {
+            draw_spectrum(ui, label, frequencies, amplitudes, unit);
+        }
     }
 }
 
@@ -101,7 +140,7 @@ fn draw_distribution(
     values: &[f64],
     mean: f64,
     std: f64,
-    patient_value: f64,
+    comparison_value: f64,
 ) {
     ui.label(
         RichText::new(label)
@@ -161,11 +200,11 @@ fn draw_distribution(
                     .color(clinical_theme::TEXT_DIM)
                     .name("-1 SD"),
             );
-            if patient_value > 0.0 {
+            if comparison_value > 0.0 {
                 plot_ui.vline(
-                    VLine::new(lo + patient_value * (hi - lo))
+                    VLine::new(lo + comparison_value * (hi - lo))
                         .color(clinical_theme::WARNING)
-                        .name("Patient"),
+                        .name("Value"),
                 );
             }
         });
@@ -202,7 +241,7 @@ fn draw_bar_chart(ui: &mut Ui, label: &str, categories: &[String], values: &[f64
 
 #[expect(
     clippy::too_many_arguments,
-    reason = "matches DataChannel::Gauge fields"
+    reason = "matches DataBinding::Gauge fields"
 )]
 fn draw_gauge(
     ui: &mut Ui,
@@ -258,9 +297,9 @@ fn draw_gauge(
 
 /// Node data for rendering a detail panel.
 ///
-/// Used by `draw_node_detail` to render a full node with all its data channels.
-/// Adapters can convert from `PrimalInfo` (with `data_channels` in properties)
-/// or from scenario formats like healthSpring's `ScenarioNode`.
+/// Used by `draw_node_detail` to render a full node with all its data bindings.
+/// Adapters can convert from `PrimalInfo` (with `data_bindings` in properties)
+/// or from scenario formats.
 #[derive(Debug, Clone, Default)]
 pub struct NodeDetail {
     /// Display name
@@ -271,11 +310,11 @@ pub struct NodeDetail {
     pub status: String,
     /// Capability identifiers
     pub capabilities: Vec<String>,
-    /// Data channels to render
-    pub data_channels: Vec<DataChannel>,
+    /// Data bindings to render
+    pub data_bindings: Vec<DataBinding>,
 }
 
-/// Draw a node detail panel with all its data channels.
+/// Draw a node detail panel with all its data bindings.
 pub fn draw_node_detail(ui: &mut Ui, node: &NodeDetail) {
     let color = clinical_theme::health_color(node.health);
 
@@ -309,10 +348,163 @@ pub fn draw_node_detail(ui: &mut Ui, node: &NodeDetail) {
 
     ui.separator();
 
-    for channel in &node.data_channels {
-        draw_channel(ui, channel);
+    for binding in &node.data_bindings {
+        draw_channel(ui, binding);
         ui.add_space(8.0);
     }
+}
+
+fn draw_heatmap(
+    ui: &mut Ui,
+    label: &str,
+    x_labels: &[String],
+    y_labels: &[String],
+    values: &[f64],
+    unit: &str,
+) {
+    ui.label(
+        RichText::new(format!("{label} ({unit})"))
+            .strong()
+            .color(clinical_theme::TEXT_DIM),
+    );
+
+    let cols = x_labels.len();
+    let rows = y_labels.len();
+    if cols == 0 || rows == 0 || values.len() != cols * rows {
+        ui.label(RichText::new("(invalid heatmap dimensions)").color(clinical_theme::WARNING));
+        return;
+    }
+
+    let (vmin, vmax) = values
+        .iter()
+        .fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), &v| {
+            (lo.min(v), hi.max(v))
+        });
+    let range = (vmax - vmin).max(f64::EPSILON);
+    let cell_w = (ui.available_width().min(320.0) / cols as f32).max(8.0);
+    let cell_h = 14.0_f32;
+
+    for (row, y_label) in y_labels.iter().enumerate() {
+        ui.horizontal(|ui| {
+            ui.label(
+                RichText::new(y_label)
+                    .small()
+                    .color(clinical_theme::TEXT_DIM),
+            );
+            for col in 0..cols {
+                let t = ((values[row * cols + col] - vmin) / range) as f32;
+                let color = clinical_theme::HEALTHY.linear_multiply(t.max(0.15));
+                let (rect, _) =
+                    ui.allocate_exact_size(egui::vec2(cell_w, cell_h), egui::Sense::hover());
+                ui.painter().rect_filled(rect, 2.0, color);
+            }
+        });
+    }
+}
+
+fn draw_scatter3d(ui: &mut Ui, label: &str, x: &[f64], y: &[f64], z: &[f64], unit: &str) {
+    ui.label(
+        RichText::new(format!("{label} ({unit}) — {n} points", n = x.len()))
+            .strong()
+            .color(clinical_theme::TEXT_DIM),
+    );
+
+    if x.len() != y.len() || x.len() != z.len() || x.is_empty() {
+        ui.label(RichText::new("(invalid scatter3d data)").color(clinical_theme::WARNING));
+        return;
+    }
+
+    let points: PlotPoints = x.iter().zip(y.iter()).map(|(&xi, &yi)| [xi, yi]).collect();
+    Plot::new(format!("{label}_scatter3d"))
+        .height(160.0)
+        .show_axes(true)
+        .show(ui, |plot_ui| {
+            plot_ui.line(
+                Line::new(points)
+                    .name(label)
+                    .style(egui_plot::LineStyle::dotted_dense()),
+            );
+        });
+    ui.label(
+        RichText::new("(z-axis projected; full 3D requires GPU renderer)")
+            .small()
+            .color(clinical_theme::TEXT_DIM),
+    );
+}
+
+fn draw_fieldmap(
+    ui: &mut Ui,
+    label: &str,
+    grid_x: &[f64],
+    grid_y: &[f64],
+    values: &[f64],
+    unit: &str,
+) {
+    let cols = grid_x.len();
+    let rows = grid_y.len();
+    ui.label(
+        RichText::new(format!("{label} ({unit}) — {rows}x{cols} grid"))
+            .strong()
+            .color(clinical_theme::TEXT_DIM),
+    );
+
+    if cols == 0 || rows == 0 || values.len() != cols * rows {
+        ui.label(RichText::new("(invalid fieldmap dimensions)").color(clinical_theme::WARNING));
+        return;
+    }
+
+    let (vmin, vmax) = values
+        .iter()
+        .fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), &v| {
+            (lo.min(v), hi.max(v))
+        });
+    let range = (vmax - vmin).max(f64::EPSILON);
+    let cell_w = (ui.available_width().min(320.0) / cols as f32).max(4.0);
+    let cell_h = (160.0_f32 / rows as f32).max(4.0);
+
+    for row in 0..rows {
+        ui.horizontal(|ui| {
+            for col in 0..cols {
+                let t = ((values[row * cols + col] - vmin) / range) as f32;
+                let color = clinical_theme::INFO.linear_multiply(t.max(0.1));
+                let (rect, _) =
+                    ui.allocate_exact_size(egui::vec2(cell_w, cell_h), egui::Sense::hover());
+                ui.painter().rect_filled(rect, 1.0, color);
+            }
+        });
+    }
+}
+
+fn draw_spectrum(ui: &mut Ui, label: &str, frequencies: &[f64], amplitudes: &[f64], unit: &str) {
+    ui.label(
+        RichText::new(format!("{label} ({unit})"))
+            .strong()
+            .color(clinical_theme::TEXT_DIM),
+    );
+
+    if frequencies.len() != amplitudes.len() || frequencies.is_empty() {
+        ui.label(RichText::new("(invalid spectrum data)").color(clinical_theme::WARNING));
+        return;
+    }
+
+    let points: PlotPoints = frequencies
+        .iter()
+        .zip(amplitudes.iter())
+        .map(|(&f, &a)| [f, a])
+        .collect();
+    Plot::new(format!("{label}_spectrum"))
+        .height(120.0)
+        .x_axis_label("Frequency")
+        .y_axis_label("Amplitude")
+        .show_axes(true)
+        .show(ui, |plot_ui| {
+            plot_ui.line(
+                Line::new(points)
+                    .name(label)
+                    .fill(0.0)
+                    .color(clinical_theme::INFO),
+            );
+        });
 }
 
 #[cfg(test)]
@@ -326,7 +518,7 @@ mod tests {
         assert_eq!(node.health, 0);
         assert!(node.status.is_empty());
         assert!(node.capabilities.is_empty());
-        assert!(node.data_channels.is_empty());
+        assert!(node.data_bindings.is_empty());
     }
 
     #[test]
@@ -336,7 +528,7 @@ mod tests {
             health: 95,
             status: "Active".to_string(),
             capabilities: vec!["ui.render".to_string(), "ui.graph".to_string()],
-            data_channels: vec![],
+            data_bindings: vec![],
         };
         assert_eq!(node.name, "Test Node");
         assert_eq!(node.health, 95);

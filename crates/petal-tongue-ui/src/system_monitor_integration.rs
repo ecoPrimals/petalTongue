@@ -349,7 +349,10 @@ mod tests {
         assert_eq!(meta.name, "System Monitor");
         assert!(meta.description.contains("Real-time"));
         assert!(meta.capabilities.contains(&ToolCapability::Visual));
-        assert!(meta.capabilities.contains(&ToolCapability::Custom("RealTime".to_string())));
+        assert!(
+            meta.capabilities
+                .contains(&ToolCapability::Custom("RealTime".to_string()))
+        );
     }
 
     #[test]

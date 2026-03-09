@@ -1,12 +1,12 @@
 [package]
 name = "petal-tongue-discovery"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
 license = "AGPL-3.0-only"
 
 [dependencies]
 # Core dependencies
-petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
+petal-tongue-core = { path = "../petal-tongue-core" }
 async-trait = "0.1"
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
@@ -42,6 +42,9 @@ rand = "0.8"     # For jitter in retry logic
 [features]
 default = []
 mdns = ["mdns-sd"]
+legacy-http = []  # Legacy HTTP provider (prefer JSON-RPC/Unix sockets)
+# Mock provider - Run tests with: cargo test --features test-fixtures
+test-fixtures = ["petal-tongue-core/test-fixtures"]
 
 [dev-dependencies]
 tokio-test = "0.4"

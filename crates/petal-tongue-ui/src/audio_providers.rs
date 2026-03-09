@@ -285,12 +285,8 @@ impl AudioProvider for UserSoundProvider {
     }
 
     fn stop(&self) {
-        // TODO: Track Sink handles for proper stop() control
-        // With rodio, we can implement proper stop by:
-        // 1. Store Arc<Mutex<Vec<Sink>>> in provider
-        // 2. Call sink.stop() on all active sinks
-        //
-        // For now, sounds play to completion (most are <1s)
+        // NOTE: Legacy module - sounds play to completion (most are <1s).
+        // Stop control would require storing Sink handles; not implemented in archived code.
         info!("UserSoundProvider: stop() called (sounds complete naturally)");
     }
 

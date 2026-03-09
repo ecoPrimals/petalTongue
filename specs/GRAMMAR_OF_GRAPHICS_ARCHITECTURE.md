@@ -49,7 +49,7 @@ system lets petalTongue do all three.
 ┌──────────────────────────────────────────────────────────────┐
 │                      Grammar Expression                       │
 │  GrammarExpr { data, variables, scales, stat, geom, coord,   │
-│                aesthetics, facets, interaction }               │
+│                aesthetics, facets, perspective }               │
 ├──────────────────────────────────────────────────────────────┤
 │                      Grammar Compiler                         │
 │  Validates expression, resolves defaults, applies Tufte       │
@@ -80,7 +80,7 @@ pub struct GrammarExpr {
     pub coordinates: CoordSpec,
     pub aesthetics: Vec<AestheticBinding>,
     pub facets: Option<FacetSpec>,
-    pub interaction: Vec<InteractionSpec>,
+    pub perspective: Option<Perspective>,
     pub constraints: TufteConstraints,
 }
 ```
@@ -313,21 +313,41 @@ enable comparison; free scales enable detail.
 
 #### Interaction
 
+> **Full specification**: See `INTERACTION_ENGINE_ARCHITECTURE.md`
+>
+> Interaction is a full subsystem -- not a field on the grammar expression.
+> The Interaction Engine defines semantic intents (Select, Inspect, Navigate,
+> Manipulate, Annotate, Command) that are modality-agnostic. Any input device
+> produces the same `InteractionIntent`; the generalized inverse pipeline
+> resolves it to `DataTarget` via per-modality `InversePipeline` implementations.
+
+The grammar expression no longer carries an `InteractionSpec` enum. Instead:
+
+1. Each `ModalityCompiler` produces a corresponding `InversePipeline` that
+   maps modality-native events back to data space.
+2. The `Perspective` on the grammar expression defines viewport, filters,
+   orientation, and synchronization mode for multi-user collaboration.
+3. `Scale::inverse` remains the core mechanism for mapping rendered
+   coordinates back to data values within any modality.
+
 ```rust
-pub enum InteractionSpec {
-    Hover { tooltip: bool, highlight: bool },
-    Click { select: SelectionType },
-    Brush { selection: BrushType },
-    Zoom { axis: ZoomAxis },
-    Pan { constrained: bool },
-    Drag { snap: bool },
-    Lasso { mode: SelectionMode },
+pub struct Perspective {
+    pub id: PerspectiveId,
+    pub active_modalities: Vec<ModalityConfig>,
+    pub viewport: Viewport,
+    pub filters: Vec<FilterExpr>,
+    pub orientation: Orientation,
+    pub selection: Vec<DataObjectId>,
+    pub focus: Option<DataObjectId>,
+    pub sync_mode: PerspectiveSync,
+    pub user: Option<String>,
 }
 ```
 
-Interaction flows backward through inverse scales. A brush selection in screen
-coordinates becomes a data range via `Scale::inverse`. This data range can be
-sent to other primals as a filter.
+Perspective enables the "6 vs 9" solution: the same `DataObject` rendered
+through different perspectives produces different but valid representations.
+Selection and focus operate on `DataObjectId` (perspective-invariant), not on
+rendered primitives. See `INTERACTION_ENGINE_ARCHITECTURE.md` §5 for details.
 
 ---
 
@@ -359,7 +379,8 @@ Compilation phases:
 7. **Constraint Checking**: Evaluate Tufte constraints (data-ink ratio, lie
    factor, redundancy). Emit warnings or auto-correct.
 
-8. **Interaction Wiring**: Attach inverse scale mappings to interaction handlers.
+8. **Interaction Wiring**: Produce `InversePipeline` metadata for each
+   modality compiler. See `INTERACTION_ENGINE_ARCHITECTURE.md` §4.
 
 Output: a `RenderPlan` containing `Vec<Primitive>` plus scale metadata, labels,
 legends, interaction handlers, and constraint diagnostics.
@@ -469,7 +490,7 @@ crates/
       coord.rs                   # CoordinateSystem trait + built-ins
       aesthetic.rs               # AestheticRole, AestheticBinding
       facet.rs                   # FacetSpec, small multiples
-      interaction.rs             # InteractionSpec, inverse mapping
+      interaction.rs             # Perspective, InversePipeline trait (see INTERACTION_ENGINE_ARCHITECTURE.md)
       primitive.rs               # Primitive enum (abstract output)
       compiler.rs                # Grammar → RenderPlan
       render_plan.rs             # RenderPlan struct
@@ -528,12 +549,14 @@ pub trait VisualizationService {
 - Faceting (small multiples)
 - Port remaining ad-hoc views to grammar
 
-### Phase 3: Interaction + Inverse Mapping
+### Phase 3: Interaction Engine (see `INTERACTION_ENGINE_ARCHITECTURE.md`)
 
-- Full inverse scale pipeline
-- Brush, lasso, zoom interaction
-- Cross-panel linked selection
-- Data filtering via interaction events sent over IPC
+- Semantic intent model (modality-agnostic Select, Inspect, Navigate, etc.)
+- InputAdapter trait + PointerAdapter, KeyboardAdapter implementations
+- Generalized InversePipeline per ModalityCompiler
+- Perspective system for multi-user, multi-modality collaboration
+- IPC interaction protocol: `visualization.interact`, `.subscribe`, `.apply`
+- Cross-panel linked selection via shared `DataObjectId`
 
 ### Phase 4: 3D + barraCuda
 

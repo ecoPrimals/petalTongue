@@ -4,6 +4,7 @@
 //! Defines structures for primals in the ecosystem including their
 //! positions, metrics, and proprioception data.
 
+use petal_tongue_core::{DataBinding, ThresholdRange};
 use serde::{Deserialize, Serialize};
 
 use crate::scenario::types::ScenarioProprioception;
@@ -33,6 +34,10 @@ pub struct PrimalDefinition {
     pub metrics: PrimalMetrics,
     #[serde(default)]
     pub proprioception: Option<ScenarioProprioception>,
+    #[serde(default, rename = "data_bindings", alias = "data_channels")]
+    pub data_bindings: Vec<DataBinding>,
+    #[serde(default, rename = "threshold_ranges", alias = "clinical_ranges")]
+    pub threshold_ranges: Vec<ThresholdRange>,
 }
 
 /// 2D position in scenario

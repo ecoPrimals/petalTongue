@@ -3,11 +3,13 @@
 
 use clap::Parser;
 use petal_tongue_core::{
-    Instance, InstanceId, InstanceRegistry, RenderingCapabilities, constants::PRIMAL_NAME,
+    GraphEngine, Instance, InstanceId, InstanceRegistry, MotorCommand, RenderingCapabilities,
+    constants::PRIMAL_NAME,
 };
 use petal_tongue_ui::PetalTongueApp;
 use petal_tongue_ui::display::prompt::prompt_for_display_server;
 use std::path::PathBuf;
+use std::sync::{Arc, RwLock};
 
 #[derive(Parser)]
 #[command(name = "petal-tongue")]
@@ -165,7 +167,6 @@ fn run_with_eframe(
     scenario_path: Option<PathBuf>,
     rendering_caps: RenderingCapabilities,
 ) -> Result<(), eframe::Error> {
-    // v1.2.0: Conditional diagnostic logging (set PETALTONGUE_DIAG=1 to enable)
     let diagnostic_enabled = std::env::var("PETALTONGUE_DIAG").is_ok();
 
     if diagnostic_enabled {
@@ -185,9 +186,8 @@ fn run_with_eframe(
                 "🌸 {} - Universal Representation System",
                 PRIMAL_NAME
             ))
-            .with_visible(true) // FIX: Explicitly show window (critical for headless+remote setups!)
-            .with_active(true), // 🖥️ REMOTE DESKTOP FIX: Request active/focused state
-        // 🖥️ CRITICAL: Always request input focus (for remote desktop)
+            .with_visible(true)
+            .with_active(true),
         centered: true,
         ..Default::default()
     };
@@ -202,19 +202,57 @@ fn run_with_eframe(
         options,
         Box::new(move |cc| {
             if diagnostic_enabled {
-                tracing::info!("🎨 DIAGNOSTIC: Inside app creation callback");
                 tracing::info!("🎨 DIAGNOSTIC: Creating PetalTongueApp...");
             }
             let app = PetalTongueApp::new(cc, scenario_path, rendering_caps.clone())?;
+
+            // Start IPC server in background thread with motor channel bridge
+            start_ipc_server(app.graph_handle(), app.motor_sender());
+
             if diagnostic_enabled {
                 tracing::info!("🎨 DIAGNOSTIC: PetalTongueApp created successfully");
             }
             Ok(Box::new(app))
         }),
     );
-
     if diagnostic_enabled {
         tracing::info!("🎬 DIAGNOSTIC: eframe::run_native returned: {:?}", result);
     }
     result
+}
+
+/// Start the IPC Unix socket server in a background thread.
+fn start_ipc_server(
+    graph: Arc<RwLock<GraphEngine>>,
+    motor_tx: std::sync::mpsc::Sender<MotorCommand>,
+) {
+    std::thread::Builder::new()
+        .name("ipc-server".into())
+        .spawn(move || {
+            let rt = match tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+            {
+                Ok(rt) => rt,
+                Err(e) => {
+                    tracing::error!("Failed to create IPC runtime: {e}");
+                    return;
+                }
+            };
+            rt.block_on(async {
+                match petal_tongue_ipc::UnixSocketServer::new(graph) {
+                    Ok(server) => {
+                        let server = Arc::new(server.with_motor_sender(motor_tx));
+                        tracing::info!("🔌 IPC server starting with motor channel bridge");
+                        if let Err(e) = server.start().await {
+                            tracing::error!("IPC server error: {e}");
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!("IPC server not started: {e}");
+                    }
+                }
+            });
+        })
+        .ok();
 }

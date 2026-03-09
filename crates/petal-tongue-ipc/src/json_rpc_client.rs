@@ -50,7 +50,14 @@ pub enum JsonRpcClientError {
 
     /// JSON-RPC protocol error
     #[error("JSON-RPC error (code {code}): {message}")]
-    RpcError { code: i32, message: String, data: Option<Value> },
+    RpcError {
+        /// JSON-RPC error code
+        code: i32,
+        /// Human-readable error message
+        message: String,
+        /// Optional additional error data
+        data: Option<Value>,
+    },
 
     /// Serialization/deserialization failed
     #[error("Serialization failed: {0}")]
@@ -174,10 +181,7 @@ impl JsonRpcClient {
     ///
     /// # Returns
     /// Vector of responses (one per request, in order)
-    pub async fn batch(
-        &self,
-        requests: Vec<(&str, Value)>,
-    ) -> JsonRpcResult<Vec<JsonRpcResponse>> {
+    pub async fn batch(&self, requests: Vec<(&str, Value)>) -> JsonRpcResult<Vec<JsonRpcResponse>> {
         let mut responses = Vec::with_capacity(requests.len());
         for (method, params) in requests {
             let id = self.next_id();
@@ -196,7 +200,10 @@ impl JsonRpcClient {
     pub async fn discover_primals(&self) -> JsonRpcResult<Vec<PrimalInfo>> {
         let result = match self.call("discovery.primals", serde_json::json!({})).await {
             Ok(r) => r,
-            Err(_) => self.call("neural_api.get_primals", serde_json::json!({})).await?,
+            Err(_) => {
+                self.call("neural_api.get_primals", serde_json::json!({}))
+                    .await?
+            }
         };
 
         let primals: Vec<PrimalInfo> = serde_json::from_value(result).map_err(|e| {
@@ -211,7 +218,10 @@ impl JsonRpcClient {
     pub async fn get_topology(&self) -> JsonRpcResult<TopologyData> {
         let result = match self.call("get_topology", serde_json::json!({})).await {
             Ok(r) => r,
-            Err(_) => self.call("neural_api.get_topology", serde_json::json!({})).await?,
+            Err(_) => {
+                self.call("neural_api.get_topology", serde_json::json!({}))
+                    .await?
+            }
         };
 
         // Parse as TopologyData (flexible format)
@@ -231,7 +241,10 @@ impl JsonRpcClient {
 
     /// Get capabilities (semantic: capabilities.announce)
     pub async fn get_capabilities(&self) -> JsonRpcResult<Value> {
-        match self.call("announce_capabilities", serde_json::json!({})).await {
+        match self
+            .call("announce_capabilities", serde_json::json!({}))
+            .await
+        {
             Ok(r) => Ok(r),
             Err(_) => self.call("get_capabilities", serde_json::json!({})).await,
         }
@@ -242,23 +255,20 @@ impl JsonRpcClient {
     }
 
     async fn send_request(&self, request: &JsonRpcRequest) -> JsonRpcResult<JsonRpcResponse> {
-        let stream = timeout(
-            self.timeout,
-            UnixStream::connect(&self.socket_path),
-        )
-        .await
-        .map_err(|_| {
-            JsonRpcClientError::Timeout(format!(
-                "Connection timeout to {}",
-                self.socket_path.display()
-            ))
-        })?
-        .map_err(|e| {
-            JsonRpcClientError::Connection(format!(
-                "Failed to connect to {}: {e}",
-                self.socket_path.display()
-            ))
-        })?;
+        let stream = timeout(self.timeout, UnixStream::connect(&self.socket_path))
+            .await
+            .map_err(|_| {
+                JsonRpcClientError::Timeout(format!(
+                    "Connection timeout to {}",
+                    self.socket_path.display()
+                ))
+            })?
+            .map_err(|e| {
+                JsonRpcClientError::Connection(format!(
+                    "Failed to connect to {}: {e}",
+                    self.socket_path.display()
+                ))
+            })?;
 
         let (reader, mut writer) = stream.into_split();
         let mut reader = BufReader::new(reader);
@@ -303,23 +313,20 @@ impl JsonRpcClient {
     }
 
     async fn send_request_no_response(&self, request: &JsonRpcRequest) -> JsonRpcResult<()> {
-        let stream = timeout(
-            self.timeout,
-            UnixStream::connect(&self.socket_path),
-        )
-        .await
-        .map_err(|_| {
-            JsonRpcClientError::Timeout(format!(
-                "Connection timeout to {}",
-                self.socket_path.display()
-            ))
-        })?
-        .map_err(|e| {
-            JsonRpcClientError::Connection(format!(
-                "Failed to connect to {}: {e}",
-                self.socket_path.display()
-            ))
-        })?;
+        let stream = timeout(self.timeout, UnixStream::connect(&self.socket_path))
+            .await
+            .map_err(|_| {
+                JsonRpcClientError::Timeout(format!(
+                    "Connection timeout to {}",
+                    self.socket_path.display()
+                ))
+            })?
+            .map_err(|e| {
+                JsonRpcClientError::Connection(format!(
+                    "Failed to connect to {}: {e}",
+                    self.socket_path.display()
+                ))
+            })?;
 
         let (_reader, mut writer) = stream.into_split();
         let request_json = serde_json::to_string(request)
@@ -369,11 +376,8 @@ mod tests {
 
     #[test]
     fn test_with_timeout() {
-        let client = JsonRpcClient::with_timeout(
-            "/tmp/test.sock",
-            Duration::from_secs(10),
-        )
-        .unwrap();
+        let client =
+            JsonRpcClient::with_timeout("/tmp/test.sock", Duration::from_secs(10)).unwrap();
         assert_eq!(client.timeout(), Duration::from_secs(10));
     }
 

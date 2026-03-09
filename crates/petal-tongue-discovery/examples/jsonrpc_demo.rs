@@ -71,7 +71,9 @@ async fn main() -> anyhow::Result<()> {
             println!("      $ cargo run --bin device_management_server");
             println!();
             println!("   2. Or set BIOMEOS_URL:");
-            println!("      $ BIOMEOS_URL=unix:///run/user/$UID/biomeos-device-management.sock cargo run");
+            println!(
+                "      $ BIOMEOS_URL=unix:///run/user/$UID/biomeos-device-management.sock cargo run"
+            );
             println!();
             println!("Error: {e}");
         }

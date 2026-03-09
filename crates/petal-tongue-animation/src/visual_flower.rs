@@ -19,7 +19,6 @@ pub struct VisualFlowerRenderer {
     current_time: f32,
 
     /// Base color (hue in HSV) - reserved for future color customization
-    #[allow(dead_code)]
     base_hue: f32,
 }
 
@@ -66,7 +65,6 @@ impl VisualFlowerRenderer {
     }
 
     /// Get opening percentage (0.0 to 1.0) - reserved for future use in custom renderers
-    #[allow(dead_code)]
     fn opening_percent(&self) -> f32 {
         match self.current_state() {
             FlowerState::Closed => 0.0,

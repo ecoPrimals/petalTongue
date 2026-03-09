@@ -42,8 +42,8 @@ impl TerminalUI {
     /// Create a new Terminal UI
     pub fn new(graph: Arc<RwLock<GraphEngine>>) -> Self {
         // Try to detect terminal width
-        let width = term_size::dimensions()
-            .map(|(w, _)| w)
+        let width = terminal_size::terminal_size()
+            .map(|(terminal_size::Width(w), _)| w as usize)
             .unwrap_or(80)
             .min(120); // Cap at 120 for readability
 
@@ -71,7 +71,7 @@ impl TerminalUI {
         output.push('\n');
 
         // Get graph data
-        let graph = self.graph.read().unwrap();
+        let graph = self.graph.read().unwrap_or_else(|e| e.into_inner());
         let nodes = graph.nodes();
         let edges = graph.edges();
 

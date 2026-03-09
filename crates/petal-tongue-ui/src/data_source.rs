@@ -109,6 +109,7 @@ mod tests {
         assert!(std::mem::size_of_val(&data_source) > 0);
     }
 
+    #[cfg(feature = "mock")]
     #[tokio::test]
     async fn test_refresh_topology_mock() {
         let client = BiomeOSClient::new("http://test:3000").with_mock_mode(true);
@@ -122,6 +123,7 @@ mod tests {
         assert!(!edges.is_empty(), "Mock data should provide edges");
     }
 
+    #[cfg(feature = "mock")]
     #[tokio::test]
     async fn test_update_graph() {
         let client = BiomeOSClient::new("http://test:3000").with_mock_mode(true);
@@ -134,7 +136,6 @@ mod tests {
 
         assert!(result.is_ok());
 
-        // Verify graph was updated
         let graph = graph
             .read()
             .expect("SAFETY: Lock poisoned - indicates panic in concurrent thread");
@@ -142,6 +143,7 @@ mod tests {
         assert!(node_count > 0, "Graph should have nodes after update");
     }
 
+    #[cfg(feature = "mock")]
     #[tokio::test]
     async fn test_refresh_and_update() {
         let client = BiomeOSClient::new("http://test:3000").with_mock_mode(true);

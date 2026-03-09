@@ -18,9 +18,11 @@ async fn test_songbird_provider_creation() {
     let metadata = provider.get_metadata();
     assert_eq!(metadata.name, "Songbird Registry");
     assert_eq!(metadata.protocol, "unix+jsonrpc");
-    assert!(metadata
-        .capabilities
-        .contains(&"primal-discovery".to_string()));
+    assert!(
+        metadata
+            .capabilities
+            .contains(&"primal-discovery".to_string())
+    );
 }
 
 #[tokio::test]
