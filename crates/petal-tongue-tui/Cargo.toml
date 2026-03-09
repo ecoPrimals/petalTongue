@@ -15,6 +15,7 @@ license = "AGPL-3.0-only"
 petal-tongue-core = { path = "../petal-tongue-core" }
 petal-tongue-discovery = { path = "../petal-tongue-discovery" }
 petal-tongue-ipc = { path = "../petal-tongue-ipc" }
+petal-tongue-scene = { path = "../petal-tongue-scene" }
 
 # TUI Framework
 ratatui = "0.28"

@@ -1,60 +1,27 @@
 # PetalTongue Documentation Manifest
-# Generated: January 13, 2026
-# Status: Clean and Organized
+# Updated: March 9, 2026
+# Version: 1.4.4
 
-## Core Documentation (7 files)
+## Core Documentation
 README.md
 START_HERE.md
-STATUS.md
-HANDOFF_NEXT_SESSION.md
+PROJECT_STATUS.md
 CHANGELOG.md
-DOCS_INDEX.md
-NAVIGATION.md
-
-## Audio System (14 files)
-README_AUDIO_EVOLUTION.md
-MISSION_ACCOMPLISHED_JAN_13_2026.md
-AUDIO_SUBSTRATE_AGNOSTIC_ARCHITECTURE.md
-SUBSTRATE_AGNOSTIC_AUDIO_SUMMARY.md
-AUDIO_BIOMEOS_HANDOFF.md
-RUNTIME_VERIFICATION_JAN_13_2026.md
-IMPLEMENTATION_COMPLETE_JAN_13_2026.md
-AUDIO_MIGRATION_PLAN.md
-AUDIO_EVOLUTION_COMPLETE_JAN_13_2026.md
-SUBSTRATE_AGNOSTIC_COMPLETE.md
-AUDIO_CROSS_PLATFORM_VERIFICATION.md
-AUDIO_ROBUSTNESS_PROPOSAL.md
-AUDIO_SOLUTION_SUMMARY.md
-ALSA_RUNTIME_DISCOVERY.md
-
-## Build & Deployment (3 files)
-BUILD_INSTRUCTIONS.md
-BUILD_REQUIREMENTS.md
-DEPLOYMENT_GUIDE.md
-
-## Integration Guides (6 files)
-AUDIO_BIOMEOS_HANDOFF.md
-BIOMEOS_HANDOFF_BLURB.md
-RICH_TUI_HANDOFF_TO_BIOMEOS.md
-INTERACTION_TESTING_GUIDE.md
-PLASMID_BIN_INTEGRATION_SUMMARY.md
-TRUE_PRIMAL_EXTERNAL_SYSTEMS.md
-
-## Reference (5 files)
-DEMO_GUIDE.md
-QUICK_START.md
 ENV_VARS.md
-NEXT_ACTIONS.md
-PRIMAL_BOUNDARIES_COMPLETE.md
+
+## Specs (specs/)
+specs/GRAMMAR_OF_GRAPHICS_ARCHITECTURE.md
+specs/UNIVERSAL_VISUALIZATION_PIPELINE.md
+specs/TUFTE_CONSTRAINT_SYSTEM.md
+specs/INTERACTION_ENGINE_ARCHITECTURE.md
+specs/BIDIRECTIONAL_UUI_ARCHITECTURE.md
+specs/UNIVERSAL_USER_INTERFACE_SPECIFICATION.md
+specs/JSONRPC_PROTOCOL_SPECIFICATION.md
+
+## Archive
+archive/                    # Fossil record: session reports, legacy crates, plans, scripts
 
 ## Statistics
-Total Root MD Files: 40
-Audio System Docs: 14
-Archives: 1 directory
-Total Lines: 118,045
-
-## Status
-✅ Clean and organized
-✅ Updated to v1.4.0
-✅ Substrate-agnostic audio complete
-✅ Production ready
+Total Root MD Files: 5
+Spec Files: 7+
+Archived Dirs: 20

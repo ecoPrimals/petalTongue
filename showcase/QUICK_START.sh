@@ -12,7 +12,7 @@ source "${SCRIPT_DIR}/scripts/common.sh"
 print_header "petalTongue Showcase - Automated Tour"
 print_version_info
 
-echo -e "${BOLD}This tour runs all local demos (~8 minutes).${NC}"
+echo -e "${BOLD}This tour runs all local demos (~15 minutes).${NC}"
 echo -e "${DIM}Set PAUSE_DURATION=0 for faster runs (CI mode).${NC}"
 echo
 
@@ -55,11 +55,21 @@ run_demo "01-local-primal/05-tui-dashboard" "TUI Dashboard"
 run_demo "01-local-primal/06-audio-export" "Audio Export"
 run_demo "01-local-primal/07-graph-layouts" "Graph Layouts"
 run_demo "01-local-primal/08-clinical-data" "Clinical Data"
+run_demo "01-local-primal/12-scene-graph" "Scene Graph"
+run_demo "01-local-primal/13-grammar-compilation" "Grammar Compilation"
+run_demo "01-local-primal/14-tufte-constraints" "Tufte Constraints"
+run_demo "01-local-primal/15-math-objects" "Math Objects"
+run_demo "01-local-primal/16-animation-system" "Animation System"
+run_demo "01-local-primal/17-svg-modality" "SVG Modality"
+run_demo "01-local-primal/18-physics-bridge" "Physics Bridge"
 
 # 02-ipc-protocol
 run_demo "02-ipc-protocol/01-unix-socket-server" "Unix Socket Server"
 run_demo "02-ipc-protocol/02-jsonrpc-methods" "JSON-RPC Methods"
 run_demo "02-ipc-protocol/03-health-monitoring" "Health Monitoring"
+
+# 04-spring-integration
+run_demo "04-spring-integration/03-scene-engine-pipeline" "Scene Engine Pipeline"
 
 # Summary
 echo

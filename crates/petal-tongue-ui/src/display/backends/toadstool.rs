@@ -138,14 +138,17 @@ impl ToadstoolDisplay {
 
         // 2. XDG runtime directory
         if let Ok(runtime_dir) = std::env::var("XDG_RUNTIME_DIR") {
-            let path = std::path::PathBuf::from(runtime_dir).join("biomeos-neural-api.sock");
+            let path = std::path::PathBuf::from(runtime_dir).join(format!(
+                "{}.sock",
+                petal_tongue_core::constants::biomeos_socket_name()
+            ));
             if path.exists() {
                 return Ok(path);
             }
         }
 
-        // 3. Fallback
-        Ok("/tmp/biomeos-neural-api.sock".into())
+        // 3. Fallback: capability-based discovery via petal-tongue-core constants
+        Ok(petal_tongue_core::constants::biomeos_legacy_socket())
     }
 
     /// Send JSON-RPC request to biomeOS
@@ -369,11 +372,15 @@ impl DisplayBackend for ToadstoolDisplay {
     }
 
     fn is_available() -> bool {
-        // Check if biomeOS socket exists
+        // Check if biomeOS socket exists (capability-based discovery)
         let socket_paths = [
-            std::path::PathBuf::from("/tmp/biomeos-neural-api.sock"),
-            std::path::PathBuf::from(std::env::var("XDG_RUNTIME_DIR").unwrap_or_default())
-                .join("biomeos-neural-api.sock"),
+            petal_tongue_core::constants::biomeos_legacy_socket(),
+            std::path::PathBuf::from(std::env::var("XDG_RUNTIME_DIR").unwrap_or_default()).join(
+                format!(
+                    "{}.sock",
+                    petal_tongue_core::constants::biomeos_socket_name()
+                ),
+            ),
         ];
 
         socket_paths.iter().any(|p| p.exists())

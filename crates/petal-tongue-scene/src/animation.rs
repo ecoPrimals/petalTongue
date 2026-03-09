@@ -239,6 +239,104 @@ impl AnimationState {
     }
 }
 
+/// Manages active animations and applies them to a scene graph each frame.
+///
+/// The player holds a queue of animations. Each frame, `tick()` is called with
+/// delta time, advancing all animations and applying interpolated values to
+/// the scene graph nodes they target.
+#[derive(Debug, Clone, Default)]
+pub struct AnimationPlayer {
+    active: Vec<AnimationState>,
+}
+
+impl AnimationPlayer {
+    /// Create a new empty player.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Queue a single animation.
+    pub fn play(&mut self, animation: Animation) {
+        self.active.push(AnimationState::new(animation));
+    }
+
+    /// Queue all animations from a sequence (flattened).
+    pub fn play_sequence(&mut self, sequence: Sequence) {
+        match sequence {
+            Sequence::Sequential(anims) | Sequence::Parallel(anims) => {
+                for a in anims {
+                    self.active.push(AnimationState::new(a));
+                }
+            }
+            Sequence::Group(seqs) => {
+                for s in seqs {
+                    self.play_sequence(s);
+                }
+            }
+        }
+    }
+
+    /// Advance all animations by `dt` seconds and apply to the scene graph.
+    /// Returns the number of animations still active.
+    pub fn tick(&mut self, dt: f64, scene: &mut crate::scene_graph::SceneGraph) -> usize {
+        for state in &mut self.active {
+            state.advance(dt);
+            apply_animation_to_scene(state, scene);
+        }
+        self.active.retain(|s| !s.is_done());
+        self.active.len()
+    }
+
+    /// Number of currently active animations.
+    #[must_use]
+    pub fn active_count(&self) -> usize {
+        self.active.len()
+    }
+
+    /// Whether any animations are currently playing.
+    #[must_use]
+    pub fn is_playing(&self) -> bool {
+        !self.active.is_empty()
+    }
+}
+
+/// Apply an animation state's current progress to the targeted scene graph node.
+fn apply_animation_to_scene(state: &AnimationState, scene: &mut crate::scene_graph::SceneGraph) {
+    match &state.animation.target {
+        AnimationTarget::Opacity { node_id, from, to } => {
+            if let Some(node) = scene.get_mut(node_id) {
+                node.opacity = state.lerp_f32(*from, *to) as f32;
+            }
+        }
+        AnimationTarget::Translate { node_id, from, to } => {
+            if let Some(node) = scene.get_mut(node_id) {
+                let x = state.lerp_f64(from[0], to[0]);
+                let y = state.lerp_f64(from[1], to[1]);
+                node.transform = crate::transform::Transform2D::translate(x, y);
+            }
+        }
+        AnimationTarget::Scale { node_id, from, to } => {
+            if let Some(node) = scene.get_mut(node_id) {
+                let s = state.lerp_f64(*from, *to);
+                node.transform = crate::transform::Transform2D::scale(s, s);
+            }
+        }
+        AnimationTarget::Rotation { node_id, from, to } => {
+            if let Some(node) = scene.get_mut(node_id) {
+                let r = state.lerp_f64(*from, *to);
+                node.transform = crate::transform::Transform2D::rotate(r);
+            }
+        }
+        AnimationTarget::StrokeDraw { node_id } => {
+            if let Some(node) = scene.get_mut(node_id) {
+                let progress = state.progress() as f32;
+                node.opacity = progress;
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -333,5 +431,45 @@ mod tests {
         let a3 = Animation::fade_in("n3", 3.0);
         let seq = Sequence::Parallel(vec![a1, a2, a3]);
         assert!((seq.total_duration() - 5.0).abs() < EPS);
+    }
+
+    #[test]
+    fn animation_player_plays_and_completes() {
+        use crate::scene_graph::{SceneGraph, SceneNode};
+        let mut scene = SceneGraph::new();
+        scene.add_to_root(SceneNode::new("n1").with_opacity(0.0));
+
+        let mut player = AnimationPlayer::new();
+        assert!(!player.is_playing());
+
+        player.play(Animation::fade_in("n1", 1.0));
+        assert!(player.is_playing());
+        assert_eq!(player.active_count(), 1);
+
+        // Half-way
+        let remaining = player.tick(0.5, &mut scene);
+        assert_eq!(remaining, 1);
+        let opacity = scene.get("n1").unwrap().opacity;
+        assert!(opacity > 0.0 && opacity < 1.0);
+
+        // Complete
+        let remaining = player.tick(1.0, &mut scene);
+        assert_eq!(remaining, 0);
+        assert!(!player.is_playing());
+    }
+
+    #[test]
+    fn animation_player_tick_translates_node() {
+        use crate::scene_graph::{SceneGraph, SceneNode};
+        let mut scene = SceneGraph::new();
+        scene.add_to_root(SceneNode::new("n1"));
+
+        let mut player = AnimationPlayer::new();
+        player.play(Animation::move_to("n1", [0.0, 0.0], [100.0, 200.0], 1.0));
+        player.tick(1.0, &mut scene);
+        let node = scene.get("n1").unwrap();
+        let (x, y) = node.transform.apply(0.0, 0.0);
+        assert!((x - 100.0).abs() < 1.0);
+        assert!((y - 200.0).abs() < 1.0);
     }
 }

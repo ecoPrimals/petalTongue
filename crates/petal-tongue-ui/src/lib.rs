@@ -4,6 +4,7 @@
 //! Desktop UI application for petalTongue
 
 #![warn(missing_docs)]
+#![forbid(unsafe_code)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::must_use_candidate)]
@@ -143,10 +144,11 @@ pub mod system_dashboard;
 pub mod system_monitor_integration;
 pub mod timeline_view;
 // pub mod toadstool_bridge; // REMOVED: Deprecated Python bridge, superseded by tarpc integration (toadstool_v2.rs)
+pub mod scene_bridge;
 pub mod tool_integration;
 pub mod traffic_view;
 pub mod trust_dashboard;
-pub mod universal_discovery; // NEW: Capability-based GPU rendering discovery via Songbird
+pub mod universal_discovery; // NEW: Capability-based GPU rendering discovery via Songbird // Scene engine -> egui paint command bridge
 
 pub use app::PetalTongueApp;
 pub use human_entropy_window::HumanEntropyWindow;

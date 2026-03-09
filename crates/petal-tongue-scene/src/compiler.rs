@@ -7,6 +7,7 @@
 
 use serde_json::Value;
 
+use crate::domain_palette::palette_for_domain;
 use crate::grammar::{GeometryType, GrammarExpr, VariableRole};
 use crate::math_objects::{Axes, MathObject};
 use crate::primitive::{Color, LineCap, LineJoin, Primitive, StrokeStyle};
@@ -56,9 +57,15 @@ impl GrammarCompiler {
         let x_field = Self::x_field(expr);
         let y_field = Self::y_field(expr);
 
-        // Default axes for coordinate mapping (Linear scale)
+        // Resolve domain palette (capability-based, no hardcoded primal names)
+        let palette = expr
+            .domain
+            .as_deref()
+            .map_or_else(|| palette_for_domain("measurement"), palette_for_domain);
+        let primary = palette.primary;
+        let secondary = palette.secondary;
+
         let axes = Axes::default();
-        // Collect (x, y) pairs from data
         let mut points: Vec<[f64; 2]> = Vec::new();
         for (i, obj) in data.iter().enumerate() {
             let obj = obj.as_object();
@@ -72,8 +79,8 @@ impl GrammarCompiler {
         }
 
         let stroke = StrokeStyle {
-            color: Color::BLACK,
-            width: 1.0,
+            color: primary,
+            width: 1.5,
             cap: LineCap::Butt,
             join: LineJoin::Miter,
         };
@@ -88,7 +95,7 @@ impl GrammarCompiler {
                         x: sx,
                         y: sy,
                         radius: 4.0,
-                        fill: Some(Color::rgb(0.2, 0.4, 0.8)),
+                        fill: Some(primary),
                         stroke: None,
                         data_id: Some(format!("pt-{i}")),
                     }
@@ -115,7 +122,7 @@ impl GrammarCompiler {
                             y: bar_y,
                             width: bar_width,
                             height: height.max(1.0),
-                            fill: Some(Color::rgb(0.2, 0.4, 0.8)),
+                            fill: Some(crate::domain_palette::categorical_color(palette, i)),
                             stroke: None,
                             corner_radius: 0.0,
                             data_id: Some(format!("bar-{i}")),
@@ -142,8 +149,69 @@ impl GrammarCompiler {
                 }
             }
 
+            GeometryType::Area => {
+                // Area geometry: filled region under a line (ideal for Spectrum rendering)
+                if points.len() < 2 {
+                    Vec::new()
+                } else {
+                    let mut screen_points: Vec<[f64; 2]> = points
+                        .iter()
+                        .map(|&[x, y]| axes.data_to_screen(x, y))
+                        .map(|(sx, sy)| [sx, sy])
+                        .collect();
+
+                    // Close the polygon by adding baseline points
+                    let (_, baseline_y) = axes.data_to_screen(0.0, 0.0);
+                    if let Some(last) = screen_points.last() {
+                        screen_points.push([last[0], baseline_y]);
+                    }
+                    if let Some(first_x) = points.first().map(|p| p[0]) {
+                        let (sx, _) = axes.data_to_screen(first_x, 0.0);
+                        screen_points.push([sx, baseline_y]);
+                    }
+
+                    let fill_color = Color::rgba(primary.r, primary.g, primary.b, 0.3);
+                    let mut prims = vec![Primitive::Polygon {
+                        points: screen_points,
+                        fill: fill_color,
+                        stroke: None,
+                        fill_rule: crate::primitive::FillRule::NonZero,
+                        data_id: Some("area-fill".to_string()),
+                    }];
+
+                    // Add stroke line on top
+                    let line_points: Vec<[f64; 2]> = points
+                        .iter()
+                        .map(|&[x, y]| axes.data_to_screen(x, y))
+                        .map(|(sx, sy)| [sx, sy])
+                        .collect();
+                    prims.push(Primitive::Line {
+                        points: line_points,
+                        stroke,
+                        closed: false,
+                        data_id: Some("area-line".to_string()),
+                    });
+                    prims
+                }
+            }
+
+            GeometryType::Ribbon => {
+                // Ribbon: filled band between ymin and ymax (confidence intervals)
+                let fill_color = Color::rgba(secondary.r, secondary.g, secondary.b, 0.2);
+                vec![Primitive::Text {
+                    x: axes.origin.0 + axes.width / 2.0,
+                    y: axes.origin.1 - axes.height / 2.0,
+                    content: "Ribbon (requires ymin/ymax roles)".to_string(),
+                    font_size: 12.0,
+                    color: fill_color,
+                    anchor: crate::primitive::AnchorPoint::Center,
+                    bold: false,
+                    italic: false,
+                    data_id: None,
+                }]
+            }
+
             _ => {
-                // Other geometries: Text placeholder
                 vec![Primitive::Text {
                     x: axes.origin.0 + axes.width / 2.0,
                     y: axes.origin.1 - axes.height / 2.0,

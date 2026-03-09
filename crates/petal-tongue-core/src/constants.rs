@@ -66,15 +66,27 @@ pub const DEFAULT_BIND_ADDR: &str = "0.0.0.0";
 pub const LEGACY_TMP_PREFIX: &str = "/tmp";
 
 /// Build a default web bind address
+///
+/// Port is overridable via `PETALTONGUE_WEB_PORT` env var.
 #[must_use]
 pub fn default_web_bind() -> String {
-    format!("{DEFAULT_BIND_ADDR}:{DEFAULT_WEB_PORT}")
+    let port = std::env::var("PETALTONGUE_WEB_PORT")
+        .ok()
+        .and_then(|s| s.parse::<u16>().ok())
+        .unwrap_or(DEFAULT_WEB_PORT);
+    format!("{DEFAULT_BIND_ADDR}:{port}")
 }
 
 /// Build a default headless bind address
+///
+/// Port is overridable via `PETALTONGUE_HEADLESS_PORT` env var.
 #[must_use]
 pub fn default_headless_bind() -> String {
-    format!("{DEFAULT_BIND_ADDR}:{DEFAULT_HEADLESS_PORT}")
+    let port = std::env::var("PETALTONGUE_HEADLESS_PORT")
+        .ok()
+        .and_then(|s| s.parse::<u16>().ok())
+        .unwrap_or(DEFAULT_HEADLESS_PORT);
+    format!("{DEFAULT_BIND_ADDR}:{port}")
 }
 
 /// Build a legacy biomeOS socket path (/tmp/biomeos-neural-api.sock)
@@ -119,12 +131,42 @@ mod tests {
 
     #[test]
     fn test_default_web_bind() {
-        assert_eq!(super::default_web_bind(), "0.0.0.0:3000");
+        env_test_helpers::with_env_vars(
+            &[
+                ("PETALTONGUE_WEB_PORT", None),
+                ("PETALTONGUE_HEADLESS_PORT", None),
+            ],
+            || {
+                assert_eq!(super::default_web_bind(), "0.0.0.0:3000");
+            },
+        );
     }
 
     #[test]
     fn test_default_headless_bind() {
-        assert_eq!(super::default_headless_bind(), "0.0.0.0:8080");
+        env_test_helpers::with_env_vars(
+            &[
+                ("PETALTONGUE_WEB_PORT", None),
+                ("PETALTONGUE_HEADLESS_PORT", None),
+            ],
+            || {
+                assert_eq!(super::default_headless_bind(), "0.0.0.0:8080");
+            },
+        );
+    }
+
+    #[test]
+    fn test_default_web_bind_env_override() {
+        env_test_helpers::with_env_var("PETALTONGUE_WEB_PORT", "4000", || {
+            assert_eq!(super::default_web_bind(), "0.0.0.0:4000");
+        });
+    }
+
+    #[test]
+    fn test_default_headless_bind_env_override() {
+        env_test_helpers::with_env_var("PETALTONGUE_HEADLESS_PORT", "9000", || {
+            assert_eq!(super::default_headless_bind(), "0.0.0.0:9000");
+        });
     }
 
     #[test]
