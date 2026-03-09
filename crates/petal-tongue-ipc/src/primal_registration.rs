@@ -83,12 +83,14 @@ impl SongbirdClient {
     /// 3. Conventional path fallback
     #[must_use]
     pub fn new() -> Self {
-        let socket_path = std::env::var("SONGBIRD_SOCKET").unwrap_or_else(|_| {
-            crate::socket_path::discover_primal_socket("discovery.service", None, None).map_or_else(
-                |_| "/tmp/songbird-nat0-default.sock".to_string(),
+        let socket_path = crate::socket_path::discover_primal_socket("songbird", None, None)
+            .map_or_else(
+                |_| {
+                    std::env::var("SONGBIRD_SOCKET_FALLBACK")
+                        .unwrap_or_else(|_| "/tmp/songbird-nat0-default.sock".to_string())
+                },
                 |p| p.to_string_lossy().to_string(),
-            )
-        });
+            );
         Self {
             socket_path,
             request_id: std::sync::atomic::AtomicU64::new(1),

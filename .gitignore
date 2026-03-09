@@ -9,3 +9,10 @@ coverage.json
 test_outputs/
 awakening_demo.*
 demo.svg
+
+# Doom WAD assets (large binaries, not source)
+freedoom1.wad
+freedoom.zip
+
+# Build artifacts
+petal-tongue.sha256

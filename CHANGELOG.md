@@ -2,6 +2,47 @@
 
 All notable changes to petalTongue will be documented in this file.
 
+## [1.4.4] - 2026-03-09
+
+### Added - Spring Absorption, Domain Palettes & IPC Evolution
+
+- **5 new IPC methods**: `visualization.validate` (pre-render Tufte check),
+  `visualization.export` (SVG/JSON/description), `visualization.dismiss`,
+  `visualization.interact.apply` (programmatic interaction),
+  `visualization.interact.perspectives` (list active views)
+- **Domain color palette system** (`petal-tongue-scene/src/domain_palette.rs`):
+  6 curated palettes (health, physics, ecology, agriculture, measurement, neural)
+  resolved at runtime from grammar `domain` field
+- **Spectrum/Area geometry** in GrammarCompiler: filled polygon rendering for
+  frequency-domain data (wetSpring biosignal, Pan-Tompkins)
+- **AnimationPlayer**: manages active animations and applies them to scene graph
+  nodes each frame (play, play_sequence, tick)
+- **TerminalCompiler**: scene graph to character grid for ratatui rendering
+- **Scene bridge renderers**: egui (`petal-tongue-ui/src/scene_bridge.rs`) and
+  ratatui (`petal-tongue-tui/src/scene_bridge.rs`)
+- **Physics bridge** (`petal-tongue-ipc/src/physics_bridge.rs`): async IPC client
+  for barraCuda `math.physics.nbody` with CPU Euler fallback
+- **Callback-based interaction subscriptions**: `interaction.subscribe` now accepts
+  `event_filter`, `callback_method`, and `grammar_id` (healthSpring V12 pattern)
+- **+18 new tests** (1,896 to 1,914)
+
+### Changed
+- `visualization.capabilities` now reports grammar geometry types, output modalities,
+  Tufte constraints, and `scene_engine: true`
+- GrammarCompiler uses domain palettes instead of hardcoded colors
+- `#![forbid(unsafe_code)]` added to petal-tongue-ui
+- Hardcoded ports/paths/primal-names replaced with env var discovery across
+  constants.rs, primal_registration.rs, primal_details.rs, toadstool.rs
+
+### Fixed
+- Hardcoded `"http://localhost:8080"` in primal_details test helper
+- Hardcoded `/tmp/biomeos-neural-api.sock` in toadstool backend
+- Hardcoded songbird socket path in primal_registration
+- `unsafe { std::env::set_var }` in discovery integration tests replaced with
+  safe `with_env_vars_async` helper
+
+---
+
 ## [1.4.3] - 2026-03-09
 
 ### Added - Scene Engine, healthSpring Coevolution & SAME DAVE Integration

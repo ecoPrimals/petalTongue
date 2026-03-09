@@ -172,6 +172,9 @@ tracing-subscriber = { workspace = true }
 # System info (Pure Rust!)
 num_cpus = "1.16"
 
+# Scene engine (for examples and future integration)
+petal-tongue-scene = { path = "crates/petal-tongue-scene" }
+
 # Examples dependencies (optional, not in production)
 # EVOLVED: libc removed - framebuffer_demo uses rustix (via petal-tongue-core)
 png = { version = "0.17", optional = true }
@@ -207,3 +210,6 @@ required-features = ["ui"]
 
 [[example]]
 name = "field_mode_demo"
+
+[[example]]
+name = "scene_engine_demo"

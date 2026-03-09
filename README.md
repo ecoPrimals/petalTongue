@@ -83,7 +83,7 @@ petaltongue
 
 | Metric | Actual Status |
 |--------|---------------|
-| Tests | 1,896 passing, 0 failures, 3 ignored |
+| Tests | 1,914 passing, 0 failures, 2 ignored |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings, pedantic enabled (`clippy::pedantic` via `[workspace.lints.clippy]`) |
 | Coverage | 63% line / 67% function (llvm-cov) |

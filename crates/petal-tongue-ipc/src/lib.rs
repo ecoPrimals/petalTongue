@@ -75,6 +75,8 @@ pub mod capability_detection;
 pub mod client;
 pub mod json_rpc;
 pub mod json_rpc_client;
+/// Physics bridge: async IPC for barraCuda `math.physics.nbody`
+pub mod physics_bridge;
 pub mod primal_registration;
 pub mod protocol;
 pub mod server;
@@ -97,9 +99,11 @@ pub use protocol::{InstanceStatus, IpcCommand, IpcResponse};
 pub use server::{IpcServer, IpcServerError};
 pub use unix_socket_server::UnixSocketServer;
 pub use visualization_handler::{
-    InteractionEventNotification, InteractionSubscriberRegistry, StreamOperation,
-    StreamUpdateRequest, StreamUpdateResponse, VisualizationRenderRequest,
-    VisualizationRenderResponse, VisualizationState,
+    ConstraintResult, DismissRequest, DismissResponse, ExportRequest, ExportResponse,
+    GrammarRenderRequest, GrammarRenderResponse, InteractionApplyRequest, InteractionApplyResponse,
+    InteractionEventNotification, InteractionSubscriberRegistry, Perspective, StreamOperation,
+    StreamUpdateRequest, StreamUpdateResponse, ValidateRequest, ValidateResponse,
+    VisualizationRenderRequest, VisualizationRenderResponse, VisualizationState,
 };
 
 // tarpc (PRIMARY - primal-to-primal)

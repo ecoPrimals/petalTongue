@@ -282,11 +282,13 @@ mod tests {
     use petal_tongue_core::{PrimalId, Properties, PropertyValue};
 
     fn test_primal_info() -> PrimalInfo {
+        let endpoint =
+            std::env::var("PETALTONGUE_WEB_URL").unwrap_or_else(|_| "http://localhost:8080".into());
         let mut info = PrimalInfo::new(
             PrimalId::from("test-1"),
             "Test Node",
             "compute",
-            "http://localhost:8080",
+            endpoint,
             vec!["cap1".to_string(), "cap2".to_string()],
             PrimalHealthStatus::Healthy,
             1_000_000,

@@ -86,13 +86,14 @@ async fn test_live_biomeos_integration() {
 
     // Test 4: Test auto-discovery flow
     println!("\n4. Testing auto-discovery flow...");
-    #[allow(unsafe_code)]
-    unsafe {
-        std::env::set_var("PETALTONGUE_ENABLE_MDNS", "false");
-        std::env::set_var("BIOMEOS_URL", &biomeos_url);
-    }
-
-    let providers = discover_visualization_providers().await;
+    let providers = petal_tongue_core::test_fixtures::env_test_helpers::with_env_vars_async(
+        &[
+            ("PETALTONGUE_ENABLE_MDNS", Some("false")),
+            ("BIOMEOS_URL", Some(biomeos_url.as_str())),
+        ],
+        || async { discover_visualization_providers().await },
+    )
+    .await;
     assert!(
         providers.is_ok(),
         "Auto-discovery should succeed: {:?}",

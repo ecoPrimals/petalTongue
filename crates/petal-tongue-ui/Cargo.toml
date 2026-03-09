@@ -21,6 +21,7 @@ petal-tongue-discovery = { path = "../petal-tongue-discovery" }
 petal-tongue-entropy = { path = "../petal-tongue-entropy" }
 petal-tongue-adapters = { path = "../petal-tongue-adapters" }  # NEW: Adapter system
 petal-tongue-ipc = { path = "../petal-tongue-ipc" }  # IPC with tarpc PRIMARY
+petal-tongue-scene = { path = "../petal-tongue-scene" }  # Declarative scene graph + modality
 doom-core = { path = "../doom-core", optional = true }  # Doom integration for platform testing
 
 # Songbird is discovered at runtime via IPC (Unix sockets, JSON-RPC)

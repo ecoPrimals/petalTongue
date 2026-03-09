@@ -182,7 +182,7 @@ impl PropertyPanel {
     /// Get help text for a parameter (TRUE PRIMAL: context-aware, not hardcoded!)
     fn get_parameter_help(&self, param_name: &str) -> &'static str {
         match param_name {
-            "primal_name" => "Name of the primal to start (e.g., beardog-server)",
+            "primal_name" => "Name of the primal to start (discovered at runtime)",
             "family_id" => "Family ID for the primal (e.g., nat0)",
             "timeout" => "Timeout in seconds (e.g., 30)",
             "condition" => "Condition to wait for or evaluate",
@@ -346,7 +346,7 @@ mod tests {
         let mut graph = VisualGraph::new("test".to_string());
 
         let mut node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
-        node.set_parameter("primal_name".to_string(), "beardog".to_string());
+        node.set_parameter("primal_name".to_string(), "sample_primal".to_string());
         let node_id = node.id.clone();
         graph.add_node(node);
 
@@ -355,7 +355,7 @@ mod tests {
         assert_eq!(panel.editing_node, Some(node_id));
         assert_eq!(
             panel.temp_params.get("primal_name"),
-            Some(&"beardog".to_string())
+            Some(&"sample_primal".to_string())
         );
     }
 
@@ -371,7 +371,7 @@ mod tests {
         panel.set_editing_node(Some(node_id.clone()), &graph);
         panel
             .temp_params
-            .insert("primal_name".to_string(), "beardog".to_string());
+            .insert("primal_name".to_string(), "sample_primal".to_string());
         panel
             .temp_params
             .insert("family_id".to_string(), "nat0".to_string());
@@ -381,7 +381,7 @@ mod tests {
         let node = graph.get_node(&node_id).unwrap();
         assert_eq!(
             node.get_parameter("primal_name"),
-            Some(&"beardog".to_string())
+            Some(&"sample_primal".to_string())
         );
         assert_eq!(node.get_parameter("family_id"), Some(&"nat0".to_string()));
         assert!(!node.visual_state.has_error);
@@ -479,7 +479,7 @@ mod tests {
         let mut graph = VisualGraph::new("test".to_string());
         let mut node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
         node.set_parameter("family_id".to_string(), "nat0".to_string());
-        node.set_parameter("primal_name".to_string(), "beardog".to_string());
+        node.set_parameter("primal_name".to_string(), "sample_primal".to_string());
         let node_id = node.id.clone();
         graph.add_node(node);
 
@@ -487,7 +487,7 @@ mod tests {
 
         assert_eq!(
             panel.temp_params.get("primal_name"),
-            Some(&"beardog".to_string())
+            Some(&"sample_primal".to_string())
         );
         assert_eq!(
             panel.temp_params.get("family_id"),

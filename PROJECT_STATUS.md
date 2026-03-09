@@ -1,7 +1,7 @@
 # petalTongue -- Project Status
 
 **Updated**: March 9, 2026  
-**Version**: 1.4.2  
+**Version**: 1.4.4  
 **Edition**: 2024 (all crates)
 
 ---
@@ -11,7 +11,7 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 1,896 passing, 0 failures, 3 ignored |
+| Tests | 1,914 passing, 0 failures, 2 ignored |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings, pedantic enabled (`clippy::pedantic` via workspace lints) |
 | Rustdoc | Clean (`RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps`) |
@@ -23,9 +23,11 @@
 | External C deps | None (`ring` eliminated, `libc`/`nix`/`atty` removed, using `rustix`) |
 | ecoBin | Compliant (no ring, aws-lc-sys, openssl-sys, native-tls, zstd-sys) |
 | Coverage | 63% line / 67% function (llvm-cov, workspace) |
-| JSON-RPC | Semantic method naming (`domain.operation`) |
+| JSON-RPC | Semantic method naming (`domain.operation`), 15 visualization methods |
 | Mocks | All gated behind `#[cfg(test)]` or `#[cfg(feature = "mock")]` |
 | Primal names | Capability-based constants, zero hardcoded external primal names |
+| Domain theming | 6 domain palettes (health, physics, ecology, agriculture, measurement, neural) |
+| Spring IPC | healthSpring callback subscriptions, wetSpring Spectrum renderer, physics bridge |
 
 ---
 
@@ -70,9 +72,15 @@ Major incomplete work (delegated to other primals or future phases):
 - CSV export for timeline view
 - TUI force-directed layout
 
+### Remaining Evolution Targets (P2)
+
+- `visualization.interact.sync` (perspective sync mode) -- needs multi-user state
+- `visualization.render.stream` grammar subscription mode -- needs capability-based data resolution
+- Capability-based data resolution (`"source": "capability:X"`) -- requires Songbird integration
+
 ### Test Coverage Gap
 
-Current: 63% line coverage, 67% function coverage (1,896 tests).
+Current: 63% line coverage, 67% function coverage (1,914 tests).
 Target: 90%.
 
 Well-covered areas (>80%):
@@ -128,8 +136,14 @@ output.
 | `grammar.rs` | Grammar of Graphics expression types (GrammarExpr, VariableBinding, scales, facets) |
 | `tufte.rs` | Machine-checkable Tufte constraints (Data-Ink Ratio, Lie Factor, Chartjunk, Accessibility) |
 | `compiler.rs` | Grammar compiler (GrammarExpr + data to SceneGraph, with constraint evaluation) |
-| `modality.rs` | Modality compilers (SvgCompiler, AudioCompiler, DescriptionCompiler) |
+| `modality.rs` | Modality compilers (SvgCompiler, AudioCompiler, DescriptionCompiler, TerminalCompiler) |
+| `domain_palette.rs` | Domain-specific color palettes (6 domains: health, physics, ecology, agriculture, measurement, neural) |
 | `physics.rs` | Physics bridge (PhysicsWorld, IPC serialization for barraCuda N-body/molecular dynamics) |
+
+Related crates:
+- `petal-tongue-ui/src/scene_bridge.rs` -- egui scene graph renderer
+- `petal-tongue-tui/src/scene_bridge.rs` -- ratatui scene graph renderer
+- `petal-tongue-ipc/src/physics_bridge.rs` -- async barraCuda IPC client with CPU fallback
 
 Related specs:
 - `specs/GRAMMAR_OF_GRAPHICS_ARCHITECTURE.md` -- Composable type-safe grammar

@@ -3,7 +3,8 @@
 use crate::capability_detection;
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse, error_codes};
 use crate::visualization_handler::{
-    StreamUpdateRequest, VisualizationRenderRequest, VisualizationState,
+    DismissRequest, ExportRequest, GrammarRenderRequest, InteractionApplyRequest,
+    StreamUpdateRequest, ValidateRequest, VisualizationRenderRequest, VisualizationState,
 };
 use petal_tongue_core::graph_engine::GraphEngine;
 use serde_json::{Value, json};
@@ -65,6 +66,12 @@ impl RpcHandlers {
             "topology.get" => self.get_topology(req.id),
             "visualization.render" => self.handle_visualization_render(req),
             "visualization.render.stream" => self.handle_visualization_stream(req),
+            "visualization.render.grammar" => self.handle_grammar_render(req),
+            "visualization.validate" => self.handle_validate_grammar(req),
+            "visualization.export" => self.handle_export(req),
+            "visualization.dismiss" => self.handle_dismiss(req),
+            "visualization.interact.apply" => self.handle_interact_apply(req),
+            "visualization.interact.perspectives" => self.handle_interact_perspectives(req.id),
             "visualization.capabilities" => self.handle_visualization_capabilities(req.id),
             "interaction.subscribe" => self.handle_interaction_subscribe(req),
             "interaction.poll" => self.handle_interaction_poll(req),
@@ -144,6 +151,166 @@ impl RpcHandlers {
         JsonRpcResponse::success(req.id, value)
     }
 
+    /// Handle `visualization.render.grammar`: compile grammar expression through scene engine
+    fn handle_grammar_render(&self, req: JsonRpcRequest) -> JsonRpcResponse {
+        let params = match serde_json::from_value::<GrammarRenderRequest>(req.params) {
+            Ok(p) => p,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INVALID_PARAMS,
+                    format!("Invalid grammar params: {e}"),
+                );
+            }
+        };
+        let response = self
+            .viz_state
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .handle_grammar_render(params);
+        let value = match serde_json::to_value(&response) {
+            Ok(v) => v,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INTERNAL_ERROR,
+                    format!("Serialization failed: {e}"),
+                );
+            }
+        };
+        JsonRpcResponse::success(req.id, value)
+    }
+
+    /// Handle `visualization.validate`: validate grammar + data against Tufte constraints
+    fn handle_validate_grammar(&self, req: JsonRpcRequest) -> JsonRpcResponse {
+        let params = match serde_json::from_value::<ValidateRequest>(req.params) {
+            Ok(p) => p,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INVALID_PARAMS,
+                    format!("Invalid params: {e}"),
+                );
+            }
+        };
+        let response = self
+            .viz_state
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .handle_validate(params);
+        let value = match serde_json::to_value(&response) {
+            Ok(v) => v,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INTERNAL_ERROR,
+                    format!("Serialization failed: {e}"),
+                );
+            }
+        };
+        JsonRpcResponse::success(req.id, value)
+    }
+
+    /// Handle `visualization.export`: export a session to the requested format
+    fn handle_export(&self, req: JsonRpcRequest) -> JsonRpcResponse {
+        let params = match serde_json::from_value::<ExportRequest>(req.params) {
+            Ok(p) => p,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INVALID_PARAMS,
+                    format!("Invalid params: {e}"),
+                );
+            }
+        };
+        let response = self
+            .viz_state
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .handle_export(params);
+        let value = match serde_json::to_value(&response) {
+            Ok(v) => v,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INTERNAL_ERROR,
+                    format!("Serialization failed: {e}"),
+                );
+            }
+        };
+        JsonRpcResponse::success(req.id, value)
+    }
+
+    /// Handle `visualization.dismiss`: remove a session
+    fn handle_dismiss(&self, req: JsonRpcRequest) -> JsonRpcResponse {
+        let params = match serde_json::from_value::<DismissRequest>(req.params) {
+            Ok(p) => p,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INVALID_PARAMS,
+                    format!("Invalid params: {e}"),
+                );
+            }
+        };
+        let response = self
+            .viz_state
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .handle_dismiss(params);
+        let value = match serde_json::to_value(&response) {
+            Ok(v) => v,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INTERNAL_ERROR,
+                    format!("Serialization failed: {e}"),
+                );
+            }
+        };
+        JsonRpcResponse::success(req.id, value)
+    }
+
+    /// Handle `visualization.interact.apply`: apply interaction intent and broadcast
+    fn handle_interact_apply(&self, req: JsonRpcRequest) -> JsonRpcResponse {
+        let params = match serde_json::from_value::<InteractionApplyRequest>(req.params) {
+            Ok(p) => p,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INVALID_PARAMS,
+                    format!("Invalid params: {e}"),
+                );
+            }
+        };
+        let response = self
+            .interaction_subscribers
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .apply_interaction(&params);
+        let value = match serde_json::to_value(&response) {
+            Ok(v) => v,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INTERNAL_ERROR,
+                    format!("Serialization failed: {e}"),
+                );
+            }
+        };
+        JsonRpcResponse::success(req.id, value)
+    }
+
+    /// Handle `visualization.interact.perspectives`: return available perspectives
+    fn handle_interact_perspectives(&self, id: Value) -> JsonRpcResponse {
+        let perspectives = self
+            .interaction_subscribers
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .perspectives();
+        JsonRpcResponse::success(id, json!({ "perspectives": perspectives }))
+    }
+
     /// Handle visualization.capabilities: return supported `DataBinding` variant names
     #[allow(clippy::unused_self)]
     fn handle_visualization_capabilities(&self, id: Value) -> JsonRpcResponse {
@@ -157,10 +324,20 @@ impl RpcHandlers {
             "FieldMap",
             "Spectrum",
         ];
+        let grammar_geometry = [
+            "Point", "Line", "Bar", "Area", "Ribbon", "Tile", "Arc", "ErrorBar", "Mesh3D",
+            "Sphere", "Cylinder", "Text",
+        ];
+        let output_modalities = ["svg", "audio", "description"];
+        let tufte_constraints = ["DataInkRatio", "ChartjunkDetection"];
         JsonRpcResponse::success(
             id,
             json!({
                 "data_binding_variants": variants,
+                "grammar_geometry_types": grammar_geometry,
+                "output_modalities": output_modalities,
+                "tufte_constraints": tufte_constraints,
+                "scene_engine": true,
             }),
         )
     }
@@ -415,17 +592,38 @@ impl RpcHandlers {
                 "subscriber_id is required",
             );
         }
+
+        let event_filter: Vec<String> = req.params["events"]
+            .as_array()
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        let callback_method = req.params["callback_method"].as_str().map(String::from);
+
+        let grammar_id = req.params["grammar_id"].as_str().map(String::from);
+
         let is_new = self
             .interaction_subscribers
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .subscribe(&subscriber_id);
+            .subscribe_with_filter(
+                &subscriber_id,
+                event_filter,
+                callback_method.clone(),
+                grammar_id,
+            );
+
         JsonRpcResponse::success(
             req.id,
             json!({
                 "subscribed": true,
                 "subscriber_id": subscriber_id,
                 "is_new": is_new,
+                "callback_method": callback_method,
             }),
         )
     }

@@ -37,6 +37,8 @@ pub mod app;
 pub mod events;
 /// Layout utilities
 pub mod layout;
+/// Scene engine bridge: renders `petal-tongue-scene` graphs to ratatui widgets
+pub mod scene_bridge;
 /// State management
 pub mod state;
 /// Interactive views

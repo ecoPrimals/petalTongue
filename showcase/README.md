@@ -47,8 +47,15 @@ cd 01-local-primal/00-hello-petaltongue/
 | 09 | [domain-themes](01-local-primal/09-domain-themes/) | Domain-aware color palettes | 45s |
 | 10 | [visualization-push](01-local-primal/10-visualization-push/) | Spring IPC push + UiConfig | 45s |
 | 11 | [scatter3d-data](01-local-primal/11-scatter3d-data/) | Scatter3D, Heatmap, FieldMap, Spectrum | 45s |
+| 12 | [scene-graph](01-local-primal/12-scene-graph/) | Declarative scene graph operations | 30s |
+| 13 | [grammar-compilation](01-local-primal/13-grammar-compilation/) | GrammarExpr -> SceneGraph pipeline | 30s |
+| 14 | [tufte-constraints](01-local-primal/14-tufte-constraints/) | Machine-checked visualization quality | 30s |
+| 15 | [math-objects](01-local-primal/15-math-objects/) | Manim-style: Axes, FunctionPlot, VectorField | 30s |
+| 16 | [animation-system](01-local-primal/16-animation-system/) | Easing, transitions, sequences | 30s |
+| 17 | [svg-modality](01-local-primal/17-svg-modality/) | Grammar -> SVG + Audio + Accessibility | 30s |
+| 18 | [physics-bridge](01-local-primal/18-physics-bridge/) | barraCuda N-body IPC bridge | 30s |
 
-**Total**: ~8 minutes | **Dependencies**: none
+**Total**: ~12 minutes | **Dependencies**: none
 
 ### 02-ipc-protocol/ (JSON-RPC, local only)
 
@@ -72,6 +79,16 @@ cd 01-local-primal/00-hello-petaltongue/
 
 **Total**: ~3 minutes | **Dependencies**: other primals (all gracefully skip if absent)
 
+### 04-spring-integration/ (springs and biomeOS atomic deployments)
+
+| # | Demo | What it proves | Requires |
+|---|------|---------------|----------|
+| 01 | [healthspring-push](04-spring-integration/01-healthspring-push/) | Clinical data push via IPC | None (standalone) |
+| 02 | [biomeos-atomic-viz](04-spring-integration/02-biomeos-atomic-viz/) | Atomic deployment topology | biomeOS (graceful skip) |
+| 03 | [scene-engine-pipeline](04-spring-integration/03-scene-engine-pipeline/) | Full grammar -> multi-modality pipeline | None |
+
+**Total**: ~3 minutes | **Dependencies**: biomeOS optional (graceful skip)
+
 ---
 
 ## Principles
@@ -80,7 +97,7 @@ cd 01-local-primal/00-hello-petaltongue/
 2. **Verifiable output**: Exit codes, JSON validation, HTTP status checks
 3. **Progressive complexity**: local -> IPC -> inter-primal
 4. **Graceful degradation**: Inter-primal demos skip cleanly if deps are absent
-5. **Scenario-driven data**: Uses `sandbox/scenarios/*.json` (17 scenarios)
+5. **Scenario-driven data**: Uses `sandbox/scenarios/*.json` (26 scenarios)
 6. **No hardcoded ports**: Demos use high ephemeral ports to avoid conflicts
 
 ---
