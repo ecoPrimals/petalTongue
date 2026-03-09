@@ -1,7 +1,7 @@
 # petalTongue -- Project Status
 
 **Updated**: March 9, 2026  
-**Version**: 1.4.0  
+**Version**: 1.4.1  
 **Edition**: 2024 (all crates)
 
 ---
@@ -11,7 +11,7 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 1,427 passing, 0 failures, 14 ignored |
+| Tests | 1,421 passing, 0 failures, 3 ignored |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (`cargo clippy --all-targets -- -D warnings`) |
 | Unsafe | `#![forbid(unsafe_code)]` workspace-wide, zero C deps |

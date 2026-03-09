@@ -23,7 +23,7 @@ cd showcase/01-local-primal/00-hello-petaltongue/
 
 This runs `petaltongue status`, verifies output, and checks JSON serialization.
 
-## Automated tour (6 minutes)
+## Automated tour (8 minutes)
 
 ```bash
 cd showcase/
@@ -35,8 +35,9 @@ Runs all local demos that need no external dependencies.
 ## What each section covers
 
 - **01-local-primal/**: petalTongue by itself. Status, web server, TUI,
-  headless mode, audio export, graph layouts, clinical data rendering.
-  No external primal dependencies.
+  headless mode, audio export, graph layouts, clinical data rendering,
+  domain themes, IPC visualization push, and advanced data types
+  (Scatter3D, Heatmap, FieldMap, Spectrum). No external primal dependencies.
 
 - **02-ipc-protocol/**: JSON-RPC over Unix sockets. Demonstrates the
   inter-primal communication protocol locally.

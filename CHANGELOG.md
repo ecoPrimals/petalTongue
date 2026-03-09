@@ -2,6 +2,26 @@
 
 All notable changes to petalTongue will be documented in this file.
 
+## [1.4.1] - 2026-03-09
+
+### Added - UiConfig IPC, Domain-Aware Rendering & Refactoring
+- **UiConfig IPC**: Springs can now drive panel visibility, mode, zoom, and
+  theme via `ui_config` field in `visualization.render` requests.
+- **Domain-aware chart renderers**: Heatmap, Scatter3D, FieldMap, Spectrum now
+  use `DomainPalette` colors based on session domain (health, physics, ecology,
+  atmospheric, measurement, neural) instead of hardcoded clinical_theme.
+- **Improved Scatter3D**: Z-axis encoded as color intensity and point size
+  across 8 bands, point labels on hover, proper `Points` rendering.
+
+### Refactored
+- `chart_renderer.rs` → `chart_renderer/` module (basic_charts, domain_charts)
+- `graph_builder.rs` → `graph_builder/` module (types, builder, tests)
+- `tarpc_client.rs` → `tarpc_client/` module (types, client, tests)
+- `jsonrpc_provider.rs` → `jsonrpc_provider/` module (types, provider, tests)
+- `display_verification.rs` → `display_verification/` module (types, verifier, tests)
+
+---
+
 ## [1.4.0] - 2026-03-09
 
 ### Added - Interaction Engine, Spring Integration & Deep Debt Evolution

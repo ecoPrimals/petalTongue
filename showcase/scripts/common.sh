@@ -233,6 +233,7 @@ find_petaltongue_socket() {
     local runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
     local socket=""
     for candidate in \
+        "${runtime_dir}/petaltongue/"petaltongue*.sock \
         "${runtime_dir}/petaltongue"*.sock \
         /tmp/petaltongue*.sock; do
         if [[ -S "$candidate" ]]; then
