@@ -105,7 +105,7 @@ impl ChaosTestRunner {
                 // Add primals
                 for i in 0..count {
                     graph.add_node(PrimalInfo {
-                        id: format!("churn_{}_{}", iteration, i),
+                        id: format!("churn_{}_{}", iteration, i).into(),
                         name: format!("Churn Primal {}", i),
                         primal_type: "ChurnTest".to_string(),
                         endpoint: format!("http://churn:808{i}"),
@@ -173,7 +173,7 @@ impl ChaosTestRunner {
             {
                 let mut g = graph.write().unwrap();
                 g.add_node(PrimalInfo {
-                    id: "stress_test".to_string(),
+                    id: "stress_test".into(),
                     name: "Stress Test Node".to_string(),
                     primal_type: "StressTest".to_string(),
                     endpoint: "http://stress:8080".to_string(),
@@ -237,7 +237,7 @@ impl ChaosTestRunner {
             // Add test nodes
             for i in 0..10 {
                 graph.add_node(PrimalInfo {
-                    id: format!("health_test_{i}"),
+                    id: format!("health_test_{i}").into(),
                     name: format!("Health Test {i}"),
                     primal_type: "HealthTest".to_string(),
                     endpoint: format!("http://health:808{i}"),
@@ -304,7 +304,7 @@ impl ChaosTestRunner {
                 let mut g = graph.write().unwrap();
                 for i in 0..threads {
                     g.add_node(PrimalInfo {
-                        id: format!("concurrent_{i}"),
+                        id: format!("concurrent_{i}").into(),
                         name: format!("Concurrent {i}"),
                         primal_type: "ConcurrentTest".to_string(),
                         endpoint: format!("http://concurrent:808{i}"),

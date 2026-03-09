@@ -69,36 +69,40 @@ pub fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
 /// - s: Saturation (0.0-1.0)
 /// - v: Value (0.0-1.0)
 #[must_use]
-pub fn rgb_to_hsv(r: u8, g: u8, b: u8) -> (f32, f32, f32) {
-    let r = f32::from(r) / 255.0;
-    let g = f32::from(g) / 255.0;
-    let b = f32::from(b) / 255.0;
+pub fn rgb_to_hsv(red: u8, green: u8, blue: u8) -> (f32, f32, f32) {
+    let red_norm = f32::from(red) / 255.0;
+    let green_norm = f32::from(green) / 255.0;
+    let blue_norm = f32::from(blue) / 255.0;
 
-    let max = r.max(g).max(b);
-    let min = r.min(g).min(b);
+    let max = red_norm.max(green_norm).max(blue_norm);
+    let min = red_norm.min(green_norm).min(blue_norm);
     let delta = max - min;
 
     // Value
-    let v = max;
+    let value = max;
 
     // Saturation
-    let s = if max == 0.0 { 0.0 } else { delta / max };
+    let saturation = if (max - 0.0).abs() < f32::EPSILON {
+        0.0
+    } else {
+        delta / max
+    };
 
     // Hue
-    let h = if delta == 0.0 {
+    let hue = if (delta - 0.0).abs() < f32::EPSILON {
         0.0
-    } else if max == r {
-        60.0 * (((g - b) / delta) % 6.0)
-    } else if max == g {
-        60.0 * (((b - r) / delta) + 2.0)
+    } else if (max - red_norm).abs() < f32::EPSILON {
+        60.0 * (((green_norm - blue_norm) / delta) % 6.0)
+    } else if (max - green_norm).abs() < f32::EPSILON {
+        60.0 * (((blue_norm - red_norm) / delta) + 2.0)
     } else {
-        60.0 * (((r - g) / delta) + 4.0)
+        60.0 * (((red_norm - green_norm) / delta) + 4.0)
     };
 
     // Normalize hue to [0, 360)
-    let h = if h < 0.0 { h + 360.0 } else { h };
+    let hue = if hue < 0.0 { hue + 360.0 } else { hue };
 
-    (h, s, v)
+    (hue, saturation, value)
 }
 
 /// Interpolate between two colors in HSV space

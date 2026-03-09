@@ -10,7 +10,9 @@
 //!
 //! Run with: cargo test --test e2e_integration
 
-use petal_tongue_core::{Instance, InstanceId, InstanceRegistry, SessionManager};
+use petal_tongue_core::{
+    test_fixtures::env_test_helpers, Instance, InstanceId, InstanceRegistry, SessionManager,
+};
 use tempfile::TempDir;
 
 use std::path::PathBuf;
@@ -32,10 +34,8 @@ fn session_path(temp_dir: &TempDir, instance_id: &InstanceId) -> PathBuf {
 fn test_multi_instance_lifecycle() {
     let temp_dir = TempDir::new().unwrap();
     let reg_path = registry_path(&temp_dir);
-    // SAFETY: test-only; explicit save_to/load_from avoids the data race
-    unsafe { std::env::set_var("XDG_DATA_HOME", temp_dir.path()) };
-
-    let mut registry = InstanceRegistry::new();
+    env_test_helpers::with_env_var("XDG_DATA_HOME", temp_dir.path().to_str().unwrap(), || {
+        let mut registry = InstanceRegistry::new();
 
     let id_a = InstanceId::new();
     let instance_a = Instance::new(id_a.clone(), Some("instance-a".to_string())).unwrap();
@@ -58,6 +58,7 @@ fn test_multi_instance_lifecycle() {
     registry.save_to(&reg_path).unwrap();
     let loaded_registry = InstanceRegistry::load_from(&reg_path).unwrap();
     assert_eq!(loaded_registry.list().len(), 1);
+    });
 }
 
 /// Test 2: State persistence and restoration
@@ -81,10 +82,8 @@ fn test_state_persistence() {
 #[test]
 fn test_registry_garbage_collection() {
     let temp_dir = TempDir::new().unwrap();
-    // SAFETY: test-only env var for Instance::new paths
-    unsafe { std::env::set_var("XDG_DATA_HOME", temp_dir.path()) };
-
-    let mut registry = InstanceRegistry::new();
+    env_test_helpers::with_env_var("XDG_DATA_HOME", temp_dir.path().to_str().unwrap(), || {
+        let mut registry = InstanceRegistry::new();
 
     let live_id = InstanceId::new();
     let live_instance = Instance::new(live_id.clone(), Some("live".to_string())).unwrap();
@@ -99,6 +98,7 @@ fn test_registry_garbage_collection() {
     let _cleaned = registry.gc().unwrap();
     assert_eq!(registry.list_alive().len(), 1);
     assert!(registry.get(&live_id).is_some());
+    });
 }
 
 /// Test 4: Session export and import
@@ -169,10 +169,8 @@ fn test_session_merge() {
 fn test_concurrent_registry_access() {
     let temp_dir = TempDir::new().unwrap();
     let reg_path = registry_path(&temp_dir);
-    // SAFETY: test-only env var for Instance::new paths
-    unsafe { std::env::set_var("XDG_DATA_HOME", temp_dir.path()) };
-
-    let mut registry = InstanceRegistry::new();
+    env_test_helpers::with_env_var("XDG_DATA_HOME", temp_dir.path().to_str().unwrap(), || {
+        let mut registry = InstanceRegistry::new();
     let id = InstanceId::new();
     let instance = Instance::new(id.clone(), Some("concurrent-test".to_string())).unwrap();
     registry.register(instance).unwrap();
@@ -183,6 +181,7 @@ fn test_concurrent_registry_access() {
 
     assert_eq!(registry_1.list().len(), 1);
     assert_eq!(registry_2.list().len(), 1);
+    });
 }
 
 /// Test 8: Instance uniqueness (no filesystem -- safe concurrent)

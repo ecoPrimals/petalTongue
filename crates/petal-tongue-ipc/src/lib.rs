@@ -71,6 +71,7 @@
 
 pub mod client;
 pub mod json_rpc;
+pub mod json_rpc_client;
 pub mod primal_registration;
 pub mod protocol;
 pub mod server;
@@ -82,6 +83,9 @@ pub mod unix_socket_server;
 // JSON-RPC (SECONDARY - local IPC)
 pub use client::{IpcClient, IpcClientError};
 pub use json_rpc::{JsonRpcError, JsonRpcRequest, JsonRpcResponse};
+pub use json_rpc_client::{
+    JsonRpcClient, JsonRpcClientError, JsonRpcResult, TopologyData,
+};
 pub use protocol::{InstanceStatus, IpcCommand, IpcResponse};
 pub use server::{IpcServer, IpcServerError};
 pub use unix_socket_server::UnixSocketServer;

@@ -241,39 +241,46 @@ struct WindowId(u64);
 #[cfg(test)]
 mod tests {
     use super::*;
+    use petal_tongue_core::test_fixtures::env_test_helpers;
 
     #[tokio::test]
     async fn test_toadstool_backend_name() {
-        std::env::set_var("PETALTONGUE_TOADSTOOL_STUB", "1");
-        let backend = ToadstoolBackend::new().await.unwrap();
-        assert_eq!(backend.name(), "toadstool");
+        env_test_helpers::with_env_var_async("PETALTONGUE_TOADSTOOL_STUB", "1", || async {
+            let backend = ToadstoolBackend::new().await.unwrap();
+            assert_eq!(backend.name(), "toadstool");
+        })
+        .await;
     }
 
     #[tokio::test]
     async fn test_toadstool_capabilities() {
-        std::env::set_var("PETALTONGUE_TOADSTOOL_STUB", "1");
-        let backend = ToadstoolBackend::new().await.unwrap();
-        let caps = backend.capabilities();
-
-        assert!(caps.pure_rust); // ✅ Key feature!
-        assert!(caps.has_gpu);
-        assert!(caps.multi_window);
+        env_test_helpers::with_env_var_async("PETALTONGUE_TOADSTOOL_STUB", "1", || async {
+            let backend = ToadstoolBackend::new().await.unwrap();
+            let caps = backend.capabilities();
+            assert!(caps.pure_rust);
+            assert!(caps.has_gpu);
+            assert!(caps.multi_window);
+        })
+        .await;
     }
 
     #[tokio::test]
     async fn test_toadstool_stub_init() {
-        std::env::set_var("PETALTONGUE_TOADSTOOL_STUB", "1");
-        let mut backend = ToadstoolBackend::new().await.unwrap();
-        let result = backend.init().await;
-        assert!(result.is_ok());
-        assert!(backend.initialized);
+        env_test_helpers::with_env_var_async("PETALTONGUE_TOADSTOOL_STUB", "1", || async {
+            let mut backend = ToadstoolBackend::new().await.unwrap();
+            let result = backend.init().await;
+            assert!(result.is_ok());
+            assert!(backend.initialized);
+        })
+        .await;
     }
 
     #[tokio::test]
     async fn test_toadstool_not_available_without_stub() {
-        std::env::remove_var("PETALTONGUE_TOADSTOOL_STUB");
-        let available = ToadstoolBackend::is_available().await;
-        // Should be false until Toadstool implements display service
-        assert!(!available);
+        env_test_helpers::with_env_var_removed_async("PETALTONGUE_TOADSTOOL_STUB", || async {
+            let available = ToadstoolBackend::is_available().await;
+            assert!(!available);
+        })
+        .await;
     }
 }

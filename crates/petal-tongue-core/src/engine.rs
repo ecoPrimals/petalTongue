@@ -149,7 +149,7 @@ impl UniversalRenderingEngine {
         // Update state
         {
             let mut state = self.state.write().await;
-            state.selection = selected.clone();
+            state.selection.clone_from(&selected);
         }
 
         // Broadcast event

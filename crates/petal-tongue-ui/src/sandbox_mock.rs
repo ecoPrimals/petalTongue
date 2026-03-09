@@ -42,7 +42,7 @@ pub fn load_sandbox_scenario(name: &str) -> Result<SandboxScenario, String> {
     info!("📦 Loading sandbox scenario from: {:?}", scenario_file);
 
     if !scenario_file.exists() {
-        return Err(format!("Sandbox scenario not found: {scenario_file:?}"));
+        return Err(format!("Sandbox scenario not found: {}", scenario_file.display()));
     }
 
     // Read and parse JSON
@@ -157,7 +157,7 @@ pub fn get_default_scenario() -> SandboxScenario {
         description: "Basic 3-primal demonstration (fallback)".to_string(),
         primals: vec![
             PrimalInfo {
-                id: "local".to_string(),
+                id: "local".into(),
                 name: "petalTongue (Local)".to_string(),
                 primal_type: "Visualization".to_string(),
                 endpoint: "self".to_string(),
@@ -173,7 +173,7 @@ pub fn get_default_scenario() -> SandboxScenario {
                 family_id: None,
             },
             PrimalInfo {
-                id: "beardog".to_string(),
+                id: "beardog".into(),
                 name: "BearDog".to_string(),
                 primal_type: "Security".to_string(),
                 endpoint: "http://localhost:9000".to_string(),
@@ -189,7 +189,7 @@ pub fn get_default_scenario() -> SandboxScenario {
                 family_id: None,
             },
             PrimalInfo {
-                id: "songbird".to_string(),
+                id: "songbird".into(),
                 name: "Songbird".to_string(),
                 primal_type: "Orchestration".to_string(),
                 endpoint: "http://localhost:8080".to_string(),
@@ -237,7 +237,7 @@ mod tests {
         assert!(!scenario.primals.is_empty(), "Scenario should have primals");
         // First primal ID depends on which scenario loaded (simple.json vs fallback)
         assert!(
-            scenario.primals[0].id.len() > 0,
+            scenario.primals[0].id.as_str().len() > 0,
             "First primal should have valid ID"
         );
     }

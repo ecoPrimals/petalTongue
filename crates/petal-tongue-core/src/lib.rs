@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-#![cfg_attr(not(test), forbid(unsafe_code))]
+#![cfg_attr(
+    not(any(test, feature = "test-fixtures")),
+    forbid(unsafe_code)
+)]
 //! petalTongue Core
 //!
 //! Core graph engine and types for multi-modal primal visualization.

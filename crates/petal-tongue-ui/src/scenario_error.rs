@@ -4,6 +4,7 @@
 //! This module provides context-rich error types that help users understand
 //! and fix issues with their scenario files.
 
+use std::fmt::Write;
 use thiserror::Error;
 
 /// Scenario-specific errors with rich context
@@ -146,7 +147,7 @@ impl ScenarioError {
             Self::MissingField { field, suggestion } => {
                 let mut help = format!("Add the '{field}' field to your scenario JSON.");
                 if let Some(sug) = suggestion {
-                    help.push_str(&format!("\n\nExample:\n{sug}"));
+                    let _ = write!(help, "\n\nExample:\n{sug}");
                 }
                 Some(help)
             }

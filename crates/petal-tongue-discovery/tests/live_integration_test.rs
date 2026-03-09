@@ -53,7 +53,7 @@ async fn test_live_biomeos_integration() {
         println!("       Last seen: {}", primal.last_seen);
 
         // Validate required fields
-        assert!(!primal.id.is_empty(), "Primal ID should not be empty");
+        assert!(!primal.id.as_str().is_empty(), "Primal ID should not be empty");
         assert!(!primal.name.is_empty(), "Primal name should not be empty");
         assert!(
             !primal.endpoint.is_empty(),

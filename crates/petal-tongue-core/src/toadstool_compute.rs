@@ -305,7 +305,7 @@ mod tests {
             metadata,
         };
 
-        assert_eq!(info.id, "test-service");
+        assert_eq!(info.id.as_str(), "test-service");
         assert_eq!(info.endpoint, "tarpc://localhost:9001");
         assert_eq!(info.capabilities.len(), 1);
         assert_eq!(info.metadata.get("version").unwrap(), "1.0.0");

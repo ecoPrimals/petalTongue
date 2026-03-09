@@ -232,16 +232,14 @@ impl AccessibilityPanel {
         self.settings.font_size = match self.settings.font_size {
             FontSize::Small => FontSize::Medium,
             FontSize::Medium => FontSize::Large,
-            FontSize::Large => FontSize::ExtraLarge,
-            FontSize::ExtraLarge => FontSize::ExtraLarge, // Already at max
+            FontSize::Large | FontSize::ExtraLarge => FontSize::ExtraLarge, // Already at max
         };
     }
 
     /// Decrease font size
     pub fn decrease_font_size(&mut self) {
         self.settings.font_size = match self.settings.font_size {
-            FontSize::Small => FontSize::Small, // Already at min
-            FontSize::Medium => FontSize::Small,
+            FontSize::Small | FontSize::Medium => FontSize::Small, // Already at min
             FontSize::Large => FontSize::Medium,
             FontSize::ExtraLarge => FontSize::Large,
         };

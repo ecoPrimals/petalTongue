@@ -6,7 +6,9 @@
 //! 2. JSON-RPC (SECONDARY) - Universal, debuggable
 //! 3. HTTPS (FALLBACK) - External/browser access
 
-use petal_tongue_ipc::{TarpcClient, TarpcResult};
+use petal_tongue_ipc::{
+    JsonRpcClient, JsonRpcClientError, TarpcClient, TarpcClientError, TarpcResult,
+};
 use tracing::{debug, info, warn};
 
 /// Protocol priority for primal-to-primal communication
@@ -86,11 +88,21 @@ pub async fn connect_with_priority(endpoint: &str) -> TarpcResult<PrimalConnecti
         }
         Protocol::JsonRpc => {
             info!("📝 Using JSON-RPC (SECONDARY) for {}", endpoint);
-            // TODO: Implement JSON-RPC client connection
-            // For now, return error to force fallback
-            Err(petal_tongue_ipc::TarpcClientError::Configuration(
-                "JSON-RPC client not yet implemented for primal-to-primal".to_string(),
-            ))
+            let socket_path = parse_unix_socket_path(endpoint)?;
+            let client = JsonRpcClient::new(&socket_path)
+                .map_err(|e| TarpcClientError::Connection(e.to_string()))?;
+
+            // Test connection via health check
+            match client.health_check().await {
+                Ok(_) => {
+                    info!("✅ JSON-RPC connection established");
+                    Ok(PrimalConnection::JsonRpc(client))
+                }
+                Err(e) => {
+                    warn!("❌ JSON-RPC connection failed: {}", e);
+                    Err(TarpcClientError::Connection(e.to_string()))
+                }
+            }
         }
         Protocol::Https => {
             info!("🌐 Using HTTPS (FALLBACK) for {}", endpoint);
@@ -102,13 +114,28 @@ pub async fn connect_with_priority(endpoint: &str) -> TarpcResult<PrimalConnecti
     }
 }
 
+/// Parse Unix socket path from endpoint URL
+///
+/// Supports: unix:///path/to/sock, ipc:///path/to/sock
+fn parse_unix_socket_path(endpoint: &str) -> TarpcResult<std::path::PathBuf> {
+    let path_str = endpoint
+        .strip_prefix("unix://")
+        .or_else(|| endpoint.strip_prefix("ipc://"))
+        .ok_or_else(|| {
+            TarpcClientError::Configuration(format!(
+                "Invalid Unix socket endpoint (expected unix:// or ipc://): {endpoint}"
+            ))
+        })?;
+    Ok(std::path::PathBuf::from(path_str))
+}
+
 /// Connection to remote primal (protocol-agnostic wrapper)
 #[derive(Clone)]
 pub enum PrimalConnection {
     /// tarpc connection (PRIMARY)
     Tarpc(TarpcClient),
     /// JSON-RPC connection (SECONDARY)
-    JsonRpc(/* TODO */),
+    JsonRpc(JsonRpcClient),
     /// HTTPS connection (FALLBACK)
     Https(/* TODO */),
 }
@@ -118,13 +145,25 @@ impl PrimalConnection {
     pub async fn get_capabilities(&self) -> TarpcResult<Vec<String>> {
         match self {
             PrimalConnection::Tarpc(client) => client.get_capabilities().await,
-            PrimalConnection::JsonRpc(/* client */) => {
-                Err(petal_tongue_ipc::TarpcClientError::Configuration(
-                    "JSON-RPC not yet implemented".to_string(),
-                ))
+            PrimalConnection::JsonRpc(client) => {
+                let value = client.get_capabilities().await.map_err(jsonrpc_to_tarpc_error)?;
+                let capabilities = value
+                    .get("capabilities")
+                    .and_then(|c| c.as_array())
+                    .ok_or_else(|| {
+                        TarpcClientError::Configuration(
+                            "JSON-RPC capabilities response missing 'capabilities' array"
+                                .to_string(),
+                        )
+                    })?;
+                let strings: Vec<String> = capabilities
+                    .iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect();
+                Ok(strings)
             }
             PrimalConnection::Https(/* client */) => {
-                Err(petal_tongue_ipc::TarpcClientError::Configuration(
+                Err(TarpcClientError::Configuration(
                     "HTTPS not yet implemented".to_string(),
                 ))
             }
@@ -135,17 +174,57 @@ impl PrimalConnection {
     pub async fn health(&self) -> TarpcResult<petal_tongue_ipc::HealthStatus> {
         match self {
             PrimalConnection::Tarpc(client) => client.health().await,
-            PrimalConnection::JsonRpc(/* client */) => {
-                Err(petal_tongue_ipc::TarpcClientError::Configuration(
-                    "JSON-RPC not yet implemented".to_string(),
-                ))
+            PrimalConnection::JsonRpc(client) => {
+                let value = client.health_check().await.map_err(jsonrpc_to_tarpc_error)?;
+                let status = value
+                    .get("status")
+                    .and_then(|s| s.as_str())
+                    .unwrap_or("unknown")
+                    .to_string();
+                let version = value
+                    .get("version")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string();
+                let uptime_seconds = value
+                    .get("uptime_seconds")
+                    .and_then(serde_json::Value::as_u64)
+                    .unwrap_or(0);
+                let capabilities = value
+                    .get("capabilities")
+                    .or_else(|| value.get("modalities_active"))
+                    .and_then(|c| c.as_array())
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|v| v.as_str().map(String::from))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                Ok(petal_tongue_ipc::HealthStatus {
+                    status,
+                    version,
+                    uptime_seconds,
+                    capabilities,
+                    details: std::collections::HashMap::new(),
+                })
             }
             PrimalConnection::Https(/* client */) => {
-                Err(petal_tongue_ipc::TarpcClientError::Configuration(
+                Err(TarpcClientError::Configuration(
                     "HTTPS not yet implemented".to_string(),
                 ))
             }
         }
+    }
+}
+
+fn jsonrpc_to_tarpc_error(e: JsonRpcClientError) -> TarpcClientError {
+    match e {
+        JsonRpcClientError::Connection(s) => TarpcClientError::Connection(s),
+        JsonRpcClientError::Timeout(s) => TarpcClientError::Timeout(s),
+        JsonRpcClientError::RpcError { message, .. } => TarpcClientError::Rpc(message),
+        JsonRpcClientError::Serialization(s) => TarpcClientError::Serialization(s),
+        JsonRpcClientError::InvalidResponse(s) => TarpcClientError::Rpc(s),
+        JsonRpcClientError::Io(e) => TarpcClientError::Connection(e.to_string()),
     }
 }
 

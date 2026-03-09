@@ -613,127 +613,182 @@ impl Drop for UnixSocketServer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use petal_tongue_core::test_fixtures::env_test_helpers;
 
     #[test]
     fn test_unix_socket_server_creation() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
 
-        // SAFETY: Test-only environment variable modification
-        unsafe {
-            std::env::set_var("FAMILY_ID", "test-family");
-            std::env::set_var("XDG_RUNTIME_DIR", "/tmp");
-            std::env::set_var("PETALTONGUE_NODE_ID", "default");
-        }
-
-        let server = UnixSocketServer::new(graph).unwrap();
-
-        assert_eq!(server.family_id, "test-family");
-
-        // Socket path now includes node ID: petaltongue-<family>-<node>.sock
-        // The path respects XDG_RUNTIME_DIR when set (proper behavior)
-        let socket_str = server.socket_path.to_str().unwrap();
-        assert!(
-            socket_str.ends_with("petaltongue-test-family-default.sock"),
-            "Socket path should end with family and node ID, got: {socket_str}"
+        env_test_helpers::with_env_vars(
+            &[
+                ("FAMILY_ID", Some("test-family")),
+                ("XDG_RUNTIME_DIR", Some("/tmp")),
+                ("PETALTONGUE_NODE_ID", Some("default")),
+            ],
+            || {
+                let server = UnixSocketServer::new(graph).unwrap();
+                assert_eq!(server.family_id, "test-family");
+                let socket_str = server.socket_path.to_str().unwrap();
+                assert!(
+                    socket_str.ends_with("petaltongue-test-family-default.sock"),
+                    "Socket path should end with family and node ID, got: {socket_str}"
+                );
+                assert!(
+                    socket_str.contains("/tmp") || socket_str.contains("/run/user"),
+                    "Socket path should use XDG runtime directory, got: {socket_str}"
+                );
+            },
         );
-        assert!(
-            socket_str.contains("/tmp") || socket_str.contains("/run/user"),
-            "Socket path should use XDG runtime directory, got: {socket_str}"
-        );
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("FAMILY_ID");
-            std::env::remove_var("XDG_RUNTIME_DIR");
-            std::env::remove_var("PETALTONGUE_NODE_ID");
-        }
     }
 
     #[test]
     fn test_get_capabilities_response() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        // SAFETY: Test-only environment variable modification
-        unsafe {
-            std::env::set_var("XDG_RUNTIME_DIR", "/tmp");
-        }
-        let server = UnixSocketServer::new(graph).unwrap();
-
-        let response = server.get_capabilities(json!(1));
-
-        assert!(response.result.is_some());
-        let result = response.result.unwrap();
-        assert!(result["capabilities"].is_array());
-        assert_eq!(result["family_id"], server.family_id);
-
-        unsafe {
-            std::env::remove_var("XDG_RUNTIME_DIR");
-        }
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let response = server.get_capabilities(json!(1));
+            assert!(response.result.is_some());
+            let result = response.result.unwrap();
+            assert!(result["capabilities"].is_array());
+            assert_eq!(result["family_id"], server.family_id);
+        });
     }
 
     #[test]
     fn test_get_health_response() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        // SAFETY: Test-only environment variable modification
-        unsafe {
-            std::env::set_var("XDG_RUNTIME_DIR", "/tmp");
-        }
-        let server = UnixSocketServer::new(graph).unwrap();
-
-        let response = server.get_health(json!(1));
-
-        assert!(response.result.is_some());
-        let result = response.result.unwrap();
-        assert_eq!(result["status"], "healthy");
-        assert_eq!(result["family_id"], server.family_id);
-
-        unsafe {
-            std::env::remove_var("XDG_RUNTIME_DIR");
-        }
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let response = server.get_health(json!(1));
+            assert!(response.result.is_some());
+            let result = response.result.unwrap();
+            assert_eq!(result["status"], "healthy");
+            assert_eq!(result["family_id"], server.family_id);
+        });
     }
 
     #[test]
     fn test_biomeos_health_check() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        // SAFETY: Test-only environment variable modification
-        unsafe {
-            std::env::set_var("XDG_RUNTIME_DIR", "/tmp");
-        }
-        let server = UnixSocketServer::new(graph).unwrap();
-
-        let request = JsonRpcRequest::new("health_check", json!({}), json!(1));
-        let response = server.handle_health_check(&request);
-
-        assert!(response.result.is_some());
-        let result = response.result.unwrap();
-        assert_eq!(result["status"], "healthy");
-        assert_eq!(result["version"], env!("CARGO_PKG_VERSION"));
-        assert!(result["modalities_active"].is_array());
-
-        unsafe {
-            std::env::remove_var("XDG_RUNTIME_DIR");
-        }
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let request = JsonRpcRequest::new("health_check", json!({}), json!(1));
+            let response = server.handle_health_check(&request);
+            assert!(response.result.is_some());
+            let result = response.result.unwrap();
+            assert_eq!(result["status"], "healthy");
+            assert_eq!(result["version"], env!("CARGO_PKG_VERSION"));
+            assert!(result["modalities_active"].is_array());
+        });
     }
 
     #[test]
     fn test_biomeos_announce_capabilities() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        // SAFETY: Test-only environment variable modification
-        unsafe {
-            std::env::set_var("XDG_RUNTIME_DIR", "/tmp");
-        }
-        let server = UnixSocketServer::new(graph).unwrap();
-
-        let request = JsonRpcRequest::new("announce_capabilities", json!({}), json!(1));
-        let response = server.handle_announce_capabilities(&request);
-
-        assert!(response.result.is_some());
-        let result = response.result.unwrap();
-        assert!(result["capabilities"].is_array());
-        let caps = result["capabilities"].as_array().unwrap();
-        assert!(!caps.is_empty());
-
-        unsafe {
-            std::env::remove_var("XDG_RUNTIME_DIR");
-        }
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let request = JsonRpcRequest::new("announce_capabilities", json!({}), json!(1));
+            let response = server.handle_announce_capabilities(&request);
+            assert!(response.result.is_some());
+            let result = response.result.unwrap();
+            assert!(result["capabilities"].is_array());
+            let caps = result["capabilities"].as_array().unwrap();
+            assert!(!caps.is_empty());
+        });
     }
+
+    #[test]
+    fn test_handle_ui_display_status_valid_params() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let request = JsonRpcRequest::new(
+                "ui.display_status",
+                json!({
+                    "primal_name": "beardog",
+                    "status": {
+                        "health": "healthy",
+                        "tunnels_active": 3
+                    }
+                }),
+                json!(42),
+            );
+            let response = server.handle_ui_display_status(&request);
+            assert!(response.result.is_some());
+            let result = response.result.unwrap();
+            assert_eq!(result["updated"], true);
+            assert_eq!(result["primal"], "beardog");
+        });
+    }
+
+    #[test]
+    fn test_handle_ui_display_status_missing_params() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let request = JsonRpcRequest::new("ui.display_status", json!(null), json!(1));
+            let response = server.handle_ui_display_status(&request);
+            assert!(response.error.is_some());
+            assert_eq!(response.error.unwrap().code, error_codes::INVALID_PARAMS);
+        });
+    }
+
+    #[test]
+    fn test_get_topology_with_nodes() {
+        use petal_tongue_core::test_fixtures::primals;
+        use petal_tongue_core::LayoutAlgorithm;
+
+        let mut graph = GraphEngine::new();
+        graph.add_node(primals::test_primal("node1"));
+        graph.add_node(primals::test_primal("node2"));
+        graph.add_edge(petal_tongue_core::TopologyEdge {
+            from: "node1".into(),
+            to: "node2".into(),
+            edge_type: "test".to_string(),
+            label: None,
+            capability: None,
+            metrics: None,
+        });
+        graph.set_layout(LayoutAlgorithm::Circular);
+        graph.layout(1);
+
+        let graph = Arc::new(RwLock::new(graph));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let response = server.get_topology(json!(1));
+            assert!(response.result.is_some());
+            let result = response.result.unwrap();
+            assert!(result["nodes"].is_array());
+            assert!(result["edges"].is_array());
+            assert_eq!(result["nodes"].as_array().unwrap().len(), 2);
+            assert_eq!(result["edges"].as_array().unwrap().len(), 1);
+        });
+    }
+
+    #[test]
+    fn test_render_graph_svg_format() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            let response = rt.block_on(server.render_graph(json!({"format": "svg"}), json!(1)));
+            assert!(response.result.is_some());
+            let result = response.result.unwrap();
+            assert_eq!(result["format"], "svg");
+            assert!(result["data"].as_str().unwrap().contains("svg"));
+        });
+    }
+
+    #[test]
+    fn test_render_graph_unsupported_format() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            let response = rt.block_on(server.render_graph(json!({"format": "pdf"}), json!(1)));
+            assert!(response.error.is_some());
+            assert_eq!(response.error.unwrap().code, error_codes::INVALID_PARAMS);
+        });
+    }
+
 }

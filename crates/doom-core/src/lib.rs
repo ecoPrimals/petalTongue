@@ -530,4 +530,74 @@ mod tests {
         doom.init().unwrap();
         assert_eq!(doom.framebuffer().len(), 320 * 240 * 4);
     }
+
+    #[test]
+    fn test_doom_key_to_code() {
+        assert_eq!(DoomKey::Up.to_doom_code(), 0xAE);
+        assert_eq!(DoomKey::Fire.to_doom_code(), 0x9D);
+        assert_eq!(DoomKey::Enter.to_doom_code(), 13);
+        assert_eq!(DoomKey::Escape.to_doom_code(), 27);
+    }
+
+    #[test]
+    fn test_doom_state_transitions() {
+        let mut doom = DoomInstance::new(320, 240).unwrap();
+        assert_eq!(doom.state(), DoomState::Uninitialized);
+
+        doom.new_game().unwrap();
+        assert_eq!(doom.state(), DoomState::Playing);
+
+        doom.pause();
+        assert_eq!(doom.state(), DoomState::Paused);
+
+        doom.resume_game();
+        assert_eq!(doom.state(), DoomState::Playing);
+    }
+
+    #[test]
+    fn test_view_mode_toggle() {
+        let mut doom = DoomInstance::new(320, 240).unwrap();
+        assert!(doom.is_first_person());
+        doom.toggle_view_mode();
+        assert!(!doom.is_first_person());
+        doom.toggle_view_mode();
+        assert!(doom.is_first_person());
+    }
+
+    #[test]
+    fn test_mouse_move() {
+        let mut doom = DoomInstance::new(320, 240).unwrap();
+        doom.mouse_move(100, 50);
+        doom.mouse_move(150, 60);
+        doom.tick().unwrap();
+    }
+
+    #[test]
+    fn test_game_stats() {
+        let doom = DoomInstance::new(320, 240).unwrap();
+        let stats = doom.stats();
+        assert_eq!(stats.state, DoomState::Uninitialized);
+        assert_eq!(stats.dimensions, (320, 240));
+        assert_eq!(stats.frame_count, 0);
+        assert!(stats.player_x.is_none());
+    }
+
+    #[test]
+    fn test_load_map_no_wad() {
+        let mut doom = DoomInstance::new(320, 240).unwrap();
+        let result = doom.load_map("E1M1");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_view_mode_enum() {
+        assert_eq!(
+            std::mem::discriminant(&ViewMode::FirstPerson),
+            std::mem::discriminant(&ViewMode::FirstPerson)
+        );
+        assert_ne!(
+            std::mem::discriminant(&ViewMode::FirstPerson),
+            std::mem::discriminant(&ViewMode::TopDown)
+        );
+    }
 }

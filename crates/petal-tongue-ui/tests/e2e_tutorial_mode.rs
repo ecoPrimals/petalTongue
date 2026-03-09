@@ -56,7 +56,7 @@ fn test_e2e_minimal_fallback_scenario_complete_flow() {
 
     // Verify nodes are properly formed
     for node in graph.nodes() {
-        assert!(!node.info.id.is_empty(), "Node ID should not be empty");
+        assert!(!node.info.id.as_str().is_empty(), "Node ID should not be empty");
         assert!(!node.info.name.is_empty(), "Node name should not be empty");
         assert!(
             !node.info.primal_type.is_empty(),
@@ -145,7 +145,7 @@ fn test_e2e_fallback_graph_is_interactive() {
         assert!(!edges.is_empty());
 
         // Can find specific node
-        let petal_node = nodes.iter().find(|n| n.info.id.contains("petaltongue"));
+        let petal_node = nodes.iter().find(|n| n.info.id.as_str().contains("petaltongue"));
         assert!(petal_node.is_some(), "Should find petalTongue node");
     }
 

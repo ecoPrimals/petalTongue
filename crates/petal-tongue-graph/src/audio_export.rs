@@ -241,21 +241,10 @@ impl AudioFileGenerator {
                 angle.sin()
             }
             Instrument::Drums => {
-                // White noise with decay
-                #[cfg(feature = "native-audio")]
-                {
-                    use rand::Rng;
-                    let mut rng = rand::thread_rng();
-                    let envelope = (-t * 10.0).exp();
-                    rng.gen_range(-1.0..1.0) * envelope
-                }
-                #[cfg(not(feature = "native-audio"))]
-                {
-                    // Simple noise approximation without rand
-                    let envelope = (-t * 10.0).exp();
-                    let noise = (t * 12_345.679).sin() * (t * 98_765.43).cos();
-                    noise * envelope
-                }
+                // White noise with decay (deterministic approximation - no rand dependency)
+                let envelope = (-t * 10.0).exp();
+                let noise = (t * 12_345.679).sin() * (t * 98_765.43).cos();
+                noise * envelope
             }
             Instrument::Chimes => {
                 // Triangle wave (bright)

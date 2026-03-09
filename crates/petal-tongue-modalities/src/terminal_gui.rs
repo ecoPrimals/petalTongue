@@ -214,12 +214,11 @@ impl GUIModality for TerminalGUI {
     async fn handle_event(&mut self, event: EngineEvent) -> Result<()> {
         match event {
             EngineEvent::StateUpdate { key, value } => {
-                if key == "awakening_text" {
-                    if let Some(message) = value.get("message").and_then(|v| v.as_str()) {
-                        if let Some(stage) = value.get("stage").and_then(|v| v.as_str()) {
-                            self.render_awakening(stage, message)?;
-                        }
-                    }
+                if key == "awakening_text"
+                    && let Some(message) = value.get("message").and_then(|v| v.as_str())
+                    && let Some(stage) = value.get("stage").and_then(|v| v.as_str())
+                {
+                    self.render_awakening(stage, message)?;
                 }
             }
             EngineEvent::Shutdown => {

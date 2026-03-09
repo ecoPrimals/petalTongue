@@ -663,4 +663,47 @@ mod tests {
             "Both subscribers should receive NodeStatus"
         );
     }
+
+    #[tokio::test]
+    async fn test_stop_execution() {
+        let handler = StreamHandler::new();
+        let _rx = handler.subscribe();
+
+        handler
+            .start_execution("test-graph".to_string())
+            .await
+            .unwrap();
+        assert!(handler.get_execution_state("test-graph").await.is_some());
+
+        handler.stop_execution("test-graph").await.unwrap();
+        assert!(handler.get_execution_state("test-graph").await.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_progress_clamping() {
+        let handler = StreamHandler::new();
+        let mut rx = handler.subscribe();
+
+        handler
+            .send_progress(
+                "test-graph".to_string(),
+                "node-1".to_string(),
+                1.5, // Should clamp to 1.0
+                "Over 100%".to_string(),
+            )
+            .await
+            .unwrap();
+
+        let msg = tokio::time::timeout(Duration::from_secs(1), rx.recv())
+            .await
+            .expect("recv timed out")
+            .expect("recv failed");
+        assert!(
+            matches!(
+                msg,
+                StreamMessage::Progress { progress, .. } if progress == 1.0
+            ),
+            "Progress should be clamped to 1.0"
+        );
+    }
 }

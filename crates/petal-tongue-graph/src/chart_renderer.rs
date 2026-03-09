@@ -314,3 +314,33 @@ pub fn draw_node_detail(ui: &mut Ui, node: &NodeDetail) {
         ui.add_space(8.0);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_node_detail_default() {
+        let node = NodeDetail::default();
+        assert!(node.name.is_empty());
+        assert_eq!(node.health, 0);
+        assert!(node.status.is_empty());
+        assert!(node.capabilities.is_empty());
+        assert!(node.data_channels.is_empty());
+    }
+
+    #[test]
+    fn test_node_detail_with_data() {
+        let node = NodeDetail {
+            name: "Test Node".to_string(),
+            health: 95,
+            status: "Active".to_string(),
+            capabilities: vec!["ui.render".to_string(), "ui.graph".to_string()],
+            data_channels: vec![],
+        };
+        assert_eq!(node.name, "Test Node");
+        assert_eq!(node.health, 95);
+        assert_eq!(node.status, "Active");
+        assert_eq!(node.capabilities.len(), 2);
+    }
+}

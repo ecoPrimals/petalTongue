@@ -61,6 +61,7 @@ mod mdns_discovery;
 pub use cache::CacheStats;
 pub use capabilities::VisualizationCapability;
 pub use dynamic_scenario_provider::DynamicScenarioProvider;
+#[allow(deprecated)]
 pub use http_provider::HttpVisualizationProvider;
 pub use jsonrpc_provider::JsonRpcProvider;
 pub use mdns_provider::MdnsVisualizationProvider;
@@ -308,6 +309,7 @@ async fn try_connect_jsonrpc(socket_path: &str) -> Result<Box<dyn VisualizationD
 ///
 /// ⚠️  HTTP is the FALLBACK protocol for external integrations only.
 /// Prefer JSON-RPC over Unix sockets for TRUE PRIMAL architecture!
+#[allow(deprecated)]
 async fn try_connect_http(url: &str) -> Result<Box<dyn VisualizationDataProvider>> {
     let provider = HttpVisualizationProvider::new(url)?;
 
@@ -322,49 +324,46 @@ mod tests {
 
     #[tokio::test]
     async fn test_discover_returns_empty_without_config() {
-        // Clear any environment variables that might provide providers
-        std::env::remove_var("BIOMEOS_URL");
-        std::env::remove_var("PETALTONGUE_DISCOVERY_HINTS");
-        std::env::remove_var("PETALTONGUE_MOCK_MODE");
-        std::env::remove_var("PETALTONGUE_ENABLE_MDNS");
+        use petal_tongue_core::test_fixtures::env_test_helpers;
 
-        // Production mode with no explicit config
-        // TRUE PRIMAL: Discovery should work even without config (runtime discovery)
-        // The function might find providers via:
-        // 1. Unix socket discovery (if primals are running)
-        // 2. mDNS auto-discovery (if network has providers)
-        // 3. Or return empty (graceful degradation)
-        let result = discover_visualization_providers().await;
-        assert!(
-            result.is_ok(),
-            "Discovery should succeed even without explicit config (TRUE PRIMAL: graceful degradation)"
-        );
-
-        // The result might be empty OR contain discovered providers
-        // Both are valid TRUE PRIMAL behavior:
-        // - Empty: Graceful degradation to standalone mode
-        // - Non-empty: Runtime discovery found primals
-        let providers = result.unwrap();
-        tracing::info!(
-            "Discovered {} provider(s) without explicit config",
-            providers.len()
-        );
-        // Test passes regardless - discovery is working correctly
+        env_test_helpers::with_env_var_removed_async("BIOMEOS_URL", || async {
+            env_test_helpers::with_env_var_removed_async("PETALTONGUE_DISCOVERY_HINTS", || async {
+                env_test_helpers::with_env_var_removed_async("PETALTONGUE_MOCK_MODE", || async {
+                    env_test_helpers::with_env_var_removed_async("PETALTONGUE_ENABLE_MDNS", || async {
+                        let result = discover_visualization_providers().await;
+                        assert!(
+                            result.is_ok(),
+                            "Discovery should succeed even without explicit config"
+                        );
+                        let providers = result.unwrap();
+                        tracing::info!(
+                            "Discovered {} provider(s) without explicit config",
+                            providers.len()
+                        );
+                    })
+                    .await
+                })
+                .await
+            })
+            .await
+        })
+        .await;
     }
 
     #[tokio::test]
     async fn test_discover_with_mock_mode() {
-        // Mock mode works when explicitly enabled
-        std::env::set_var("PETALTONGUE_MOCK_MODE", "true");
-        let result = discover_visualization_providers().await;
-        std::env::remove_var("PETALTONGUE_MOCK_MODE");
+        use petal_tongue_core::test_fixtures::env_test_helpers;
 
-        assert!(
-            result.is_ok(),
-            "Mock mode should work when explicitly enabled"
-        );
-        let providers = result.unwrap();
-        assert!(!providers.is_empty(), "Mock mode should return providers");
+        env_test_helpers::with_env_var_async("PETALTONGUE_MOCK_MODE", "true", || async {
+            let result = discover_visualization_providers().await;
+            assert!(
+                result.is_ok(),
+                "Mock mode should work when explicitly enabled"
+            );
+            let providers = result.unwrap();
+            assert!(!providers.is_empty(), "Mock mode should return providers");
+        })
+        .await;
     }
 
     #[tokio::test]

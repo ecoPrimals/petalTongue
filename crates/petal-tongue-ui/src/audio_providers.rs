@@ -329,6 +329,7 @@ impl ToadstoolAudioProvider {
     }
 
     /// Request audio synthesis from Toadstool
+    #[allow(dead_code)]
     async fn request_synthesis(&self, params: &str) -> Result<Vec<u8>, String> {
         let endpoint = self.endpoint.as_ref().ok_or("Toadstool not configured")?;
 
@@ -768,6 +769,7 @@ impl AudioSystem {
 }
 
 impl Default for AudioSystem {
+    #[allow(deprecated)]
     fn default() -> Self {
         Self::new()
     }
@@ -796,5 +798,54 @@ mod tests {
                 .iter()
                 .any(|(name, available, _)| { name == &"Pure Rust Tones" && *available })
         );
+    }
+
+    #[test]
+    fn test_pure_rust_provider_available_sounds() {
+        let provider = PureRustAudioProvider::new();
+        let sounds = provider.available_sounds();
+        assert!(sounds.contains(&"success".to_string()));
+        assert!(sounds.contains(&"error".to_string()));
+        assert!(sounds.contains(&"click".to_string()));
+        assert!(sounds.contains(&"startup".to_string()));
+    }
+
+    #[test]
+    fn test_audio_system_provider_switching() {
+        let mut system = AudioSystem::new();
+        let initial_name = system.current_provider_name().to_string();
+
+        system.set_provider(0);
+        assert_eq!(system.current_provider_name(), initial_name);
+
+        if system.get_providers().len() > 1 {
+            system.set_provider(1);
+            assert_ne!(system.current_provider_name(), initial_name);
+        }
+    }
+
+    #[test]
+    fn test_audio_system_available_sounds() {
+        let system = AudioSystem::new();
+        let sounds = system.available_sounds();
+        assert!(!sounds.is_empty());
+    }
+
+    #[test]
+    fn test_toadstool_provider_availability() {
+        // Toadstool is available only when TOADSTOOL_URL is set
+        let provider = ToadstoolAudioProvider::new();
+        // When env is not set, provider reports not available
+        if !provider.is_available() {
+            assert!(provider.available_sounds().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_user_sound_provider_scan_empty_dir() {
+        let temp = tempfile::tempdir().unwrap();
+        let provider = UserSoundProvider::new(temp.path().to_path_buf());
+        assert!(!provider.is_available());
+        assert!(provider.available_sounds().is_empty());
     }
 }

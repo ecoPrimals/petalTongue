@@ -2,10 +2,41 @@
 //! JSON-RPC 2.0 protocol types
 //!
 //! Implements the JSON-RPC 2.0 specification for inter-primal communication.
-//! Follows the standard defined at: https://www.jsonrpc.org/specification
+//! Follows the standard defined at: <https://www.jsonrpc.org/specification>
 
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+/// Serde helper for base64-encoded Bytes
+mod base64_bytes {
+    use base64::{engine::general_purpose::STANDARD, Engine};
+    use bytes::Bytes;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S: Serializer>(v: &Bytes, s: S) -> Result<S::Ok, S::Error> {
+        let b64 = STANDARD.encode(v);
+        b64.serialize(s)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Bytes, D::Error> {
+        let s = String::deserialize(d)?;
+        let buf = STANDARD
+            .decode(&s)
+            .map_err(serde::de::Error::custom)?;
+        Ok(Bytes::from(buf))
+    }
+}
+
+/// Binary payload for IPC (zero-copy with Bytes)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BinaryPayload {
+    /// Raw binary data (base64-encoded in JSON)
+    #[serde(with = "base64_bytes")]
+    pub data: Bytes,
+    /// MIME type or content descriptor
+    pub content_type: String,
+}
 
 /// JSON-RPC 2.0 Request
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -182,6 +213,21 @@ mod tests {
         assert_eq!(request.jsonrpc, "2.0");
         assert_eq!(request.method, "get_health");
         assert_eq!(request.id, json!(42));
+    }
+
+    #[test]
+    fn test_binary_payload_roundtrip() {
+        use super::BinaryPayload;
+
+        let payload = BinaryPayload {
+            data: bytes::Bytes::from_static(b"hello binary"),
+            content_type: "application/octet-stream".to_string(),
+        };
+        let json = serde_json::to_string(&payload).unwrap();
+        assert!(json.contains("content_type"));
+        let restored: BinaryPayload = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored.data.as_ref(), b"hello binary");
+        assert_eq!(restored.content_type, "application/octet-stream");
     }
 
     #[test]

@@ -160,4 +160,32 @@ mod tests {
         assert!(mods.shift);
         assert!(!mods.alt);
     }
+
+    #[test]
+    fn test_modifier_mapping_alt_meta() {
+        let mods = map_modifiers(KeyModifiers::ALT);
+        assert!(mods.alt);
+        assert!(!mods.ctrl);
+        let mods = map_modifiers(KeyModifiers::SUPER);
+        assert!(mods.meta);
+    }
+
+    #[test]
+    fn test_keycode_mapping_full() {
+        assert_eq!(map_keycode(KeyCode::Enter), Key::Enter);
+        assert_eq!(map_keycode(KeyCode::Tab), Key::Tab);
+        assert_eq!(map_keycode(KeyCode::Backspace), Key::Backspace);
+        assert_eq!(map_keycode(KeyCode::Delete), Key::Delete);
+        assert_eq!(map_keycode(KeyCode::Down), Key::Down);
+        assert_eq!(map_keycode(KeyCode::Left), Key::Left);
+        assert_eq!(map_keycode(KeyCode::Right), Key::Right);
+        assert_eq!(map_keycode(KeyCode::F(1)), Key::F(1));
+        assert_eq!(map_keycode(KeyCode::Insert), Key::Unknown);
+    }
+
+    #[test]
+    fn test_keyboard_sensor_name() {
+        let sensor = KeyboardSensor::new(InputType::Terminal);
+        assert_eq!(sensor.name(), "Terminal Keyboard");
+    }
 }

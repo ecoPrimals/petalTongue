@@ -94,15 +94,14 @@ impl SongbirdClient {
 
     /// Check if Songbird is available
     pub async fn is_available(&self) -> bool {
-        match tokio::time::timeout(
-            Duration::from_millis(100),
-            UnixStream::connect(&self.socket_path),
+        matches!(
+            tokio::time::timeout(
+                Duration::from_millis(100),
+                UnixStream::connect(&self.socket_path),
+            )
+            .await,
+            Ok(Ok(_))
         )
-        .await
-        {
-            Ok(Ok(_)) => true,
-            _ => false,
-        }
     }
 
     /// Register with Songbird
@@ -321,11 +320,38 @@ mod tests {
 
     #[tokio::test]
     async fn test_songbird_unavailable() {
-        // Use a non-existent socket path
         let client = SongbirdClient::with_socket_path("/tmp/nonexistent-songbird.sock".to_string());
-
-        // Should return false quickly
         let available = client.is_available().await;
         assert!(!available);
+    }
+
+    #[test]
+    fn test_registration_metadata() {
+        let reg = PrimalRegistration::petaltongue();
+        assert!(reg.metadata.is_some());
+        let meta = reg.metadata.as_ref().unwrap();
+        assert!(meta.contains_key("description"));
+        assert!(meta.contains_key("ui_modes"));
+    }
+
+    #[test]
+    fn test_registration_serialization() {
+        let reg = PrimalRegistration::petaltongue();
+        let json = serde_json::to_string(&reg).unwrap();
+        assert!(json.contains("petaltongue"));
+        assert!(json.contains("ui.render"));
+    }
+
+    #[test]
+    fn test_songbird_client_default() {
+        let client = SongbirdClient::default();
+        drop(client);
+    }
+
+    #[test]
+    fn test_registration_manager_creation() {
+        let reg = PrimalRegistration::petaltongue();
+        let manager = RegistrationManager::new(reg);
+        drop(manager);
     }
 }

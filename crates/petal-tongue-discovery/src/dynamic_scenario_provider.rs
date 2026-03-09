@@ -124,7 +124,7 @@ impl DynamicScenarioProvider {
             let family_id = Self::get_string(primal_obj, "family");
 
             primals.push(PrimalInfo {
-                id,
+                id: id.into(),
                 name,
                 primal_type,
                 endpoint: "scenario://dynamic".to_string(),

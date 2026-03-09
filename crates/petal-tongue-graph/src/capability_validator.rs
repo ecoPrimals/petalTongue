@@ -142,7 +142,7 @@ mod tests {
 
     fn create_test_primal(id: &str, name: &str, capabilities: Vec<&str>) -> PrimalInfo {
         PrimalInfo {
-            id: id.to_string(),
+            id: id.to_string().into(),
             name: name.to_string(),
             primal_type: "test".to_string(),
             endpoint: format!("test://{}", id),

@@ -93,12 +93,12 @@ pub fn get_current_uid() -> u32 {
 /// - **biomeOS Compatible**: Follows inter-primal socket conventions
 #[must_use]
 pub fn get_user_runtime_dir() -> PathBuf {
-    std::env::var("XDG_RUNTIME_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| {
-            let uid = get_current_uid();
-            PathBuf::from(format!("/run/user/{uid}"))
-        })
+    if let Ok(path) = std::env::var("XDG_RUNTIME_DIR") {
+        PathBuf::from(path)
+    } else {
+        let uid = get_current_uid();
+        PathBuf::from(format!("/run/user/{uid}"))
+    }
 }
 
 #[cfg(test)]

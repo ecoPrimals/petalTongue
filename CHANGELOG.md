@@ -2,6 +2,40 @@
 
 All notable changes to petalTongue will be documented in this file.
 
+## [1.3.1] - 2026-03-08
+
+### Added - Grammar of Graphics Architecture & Comprehensive Audit
+- **Grammar of Graphics spec** (`specs/GRAMMAR_OF_GRAPHICS_ARCHITECTURE.md`):
+  Composable type-safe grammar layer (Scale, Geometry, CoordinateSystem,
+  Statistic, Aesthetic, Facet traits). Replaces ad-hoc per-widget rendering.
+- **Universal Visualization Pipeline spec** (`specs/UNIVERSAL_VISUALIZATION_PIPELINE.md`):
+  End-to-end data→render pipeline, barraCuda GPU compute offload, modality
+  compilers (egui, ratatui, audio, SVG, PNG, JSON), inverse scale interaction.
+- **Tufte Constraint System spec** (`specs/TUFTE_CONSTRAINT_SYSTEM.md`):
+  Machine-checkable visualization quality (data-ink ratio, lie factor,
+  chartjunk, accessibility). Auto-correctable via grammar compiler.
+- **wateringHole integration guide** (`wateringHole/petaltongue/VISUALIZATION_INTEGRATION_GUIDE.md`):
+  How other primal teams send grammar expressions to petalTongue.
+
+### Changed
+- Updated `wateringHole/petaltongue/README.md` with Grammar of Graphics evolution,
+  barraCuda integration, visualization JSON-RPC method table.
+- Updated `wateringHole/PRIMAL_REGISTRY.md` petalTongue entry with grammar
+  primitives, Tufte constraints, interaction pipeline.
+- Corrected root `README.md` quality metrics to match actual state
+  (clippy: 76 errors not 0, coverage: 54% not 90%, unsafe: 5/17 not 16/17).
+- Corrected `PROJECT_STATUS.md` version to 1.3.0 (was 2.0.0), added known debt.
+- Corrected license identifier to AGPL-3.0-only (SPDX-compliant).
+
+### Removed
+- Stale root shell scripts moved to archive (fix_tests.sh, READY_TO_PUSH.sh,
+  test-audio-discovery.sh, verify-substrate-agnostic-audio.sh,
+  test-with-plasmid-binaries.sh, test_socket_configuration.sh, launch-demo.sh)
+- Empty debris directories removed (demo/, coverage-html/, tools/, scripts/)
+- Fixed stale CHANGELOG links to STATUS.md, NAVIGATION.md, DOCS_INDEX.md
+
+---
+
 ## [2.3.0] - 2026-01-15
 
 ### Added - Universal Desktop Architecture 🌸
@@ -452,5 +486,5 @@ We use [Semantic Versioning](https://semver.org/):
 
 ## Links
 - [README](README.md)
-- [STATUS](STATUS.md)
-- [NAVIGATION](NAVIGATION.md)
+- [PROJECT_STATUS](PROJECT_STATUS.md)
+- [START_HERE](START_HERE.md)

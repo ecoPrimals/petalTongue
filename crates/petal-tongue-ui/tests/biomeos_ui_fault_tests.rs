@@ -97,7 +97,10 @@ async fn test_fault_rapid_initialization() {
     for _ in 0..50 {
         let handle = tokio::spawn(async {
             let manager = BiomeOSUIManager::new().await;
+            #[cfg(feature = "mock")]
             assert!(manager.is_mock_mode());
+            #[cfg(not(feature = "mock"))]
+            assert!(!manager.is_mock_mode());
         });
         handles.push(handle);
     }
@@ -197,7 +200,10 @@ async fn test_fault_event_processing_recovery() {
     }
 
     // Should still be functional
+    #[cfg(feature = "mock")]
     assert!(manager.is_mock_mode());
+    #[cfg(not(feature = "mock"))]
+    assert!(!manager.is_mock_mode());
 }
 
 /// Fault Test: Refresh throttling under stress

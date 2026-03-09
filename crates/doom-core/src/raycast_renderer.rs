@@ -283,4 +283,70 @@ mod tests {
         renderer.move_forward(10.0);
         assert!((renderer.player_y - 110.0).abs() < 0.1);
     }
+
+    #[test]
+    fn test_render_empty_map() {
+        use crate::wad_loader::MapData;
+
+        let mut renderer = RaycastRenderer::new(64, 64);
+        let map = MapData {
+            name: "TEST".to_string(),
+            vertices: vec![],
+            linedefs: vec![],
+            sectors: vec![],
+            things: vec![],
+        };
+
+        renderer.render(&map);
+        assert_eq!(renderer.framebuffer().len(), 64 * 64 * 4);
+        assert_eq!(renderer.framebuffer()[0], 100);
+        assert_eq!(renderer.framebuffer()[3], 255);
+    }
+
+    #[test]
+    fn test_set_player_start() {
+        use crate::wad_loader::{MapData, Thing};
+
+        let mut renderer = RaycastRenderer::new(64, 64);
+        let map = MapData {
+            name: "TEST".to_string(),
+            vertices: vec![],
+            linedefs: vec![],
+            sectors: vec![],
+            things: vec![Thing {
+                x: 64,
+                y: 64,
+                angle: 90,
+                thing_type: 1,
+                flags: 0,
+            }],
+        };
+
+        renderer.set_player_start(&map);
+        assert_eq!(renderer.player_x, 64.0);
+        assert_eq!(renderer.player_y, 64.0);
+    }
+
+    #[test]
+    fn test_rotate_wrapping() {
+        let mut renderer = RaycastRenderer::new(64, 64);
+        renderer.player_angle = 0.0;
+
+        renderer.rotate(2.0 * PI);
+        assert!((renderer.player_angle - 0.0).abs() < 0.01);
+
+        renderer.rotate(-2.0 * PI);
+        assert!((renderer.player_angle - 0.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_move_strafe() {
+        let mut renderer = RaycastRenderer::new(64, 64);
+        renderer.player_x = 0.0;
+        renderer.player_y = 0.0;
+        renderer.player_angle = 0.0;
+
+        renderer.move_strafe(10.0);
+        assert!((renderer.player_y - 10.0).abs() < 0.1);
+    }
 }

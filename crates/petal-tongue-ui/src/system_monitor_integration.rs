@@ -336,3 +336,40 @@ impl ToolPanel for SystemMonitorTool {
         Some(format!("CPU: {cpu:.1}% | MEM: {mem:.1}%"))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_system_monitor_default() {
+        let tool = SystemMonitorTool::default();
+        assert!(!tool.is_visible());
+        let meta = tool.metadata();
+        assert_eq!(meta.name, "System Monitor");
+        assert!(meta.description.contains("Real-time"));
+        assert!(meta.capabilities.contains(&ToolCapability::Visual));
+        assert!(meta.capabilities.contains(&ToolCapability::Custom("RealTime".to_string())));
+    }
+
+    #[test]
+    fn test_system_monitor_toggle_visibility() {
+        let mut tool = SystemMonitorTool::default();
+        assert!(!tool.is_visible());
+        tool.toggle_visibility();
+        assert!(tool.is_visible());
+        tool.toggle_visibility();
+        assert!(!tool.is_visible());
+    }
+
+    #[test]
+    fn test_system_monitor_status_message() {
+        let tool = SystemMonitorTool::default();
+        let msg = tool.status_message();
+        assert!(msg.is_some());
+        let msg = msg.unwrap();
+        assert!(msg.contains("CPU:"));
+        assert!(msg.contains("MEM:"));
+        assert!(msg.contains("%"));
+    }
+}

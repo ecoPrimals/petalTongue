@@ -113,19 +113,19 @@ impl PrimalCapabilities for PrimalInfo {
     }
 
     fn display_type(&self) -> &str {
-        &self.primal_type
+        self.primal_type.as_str()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::PrimalHealthStatus;
+    use crate::{PrimalHealthStatus, PrimalId};
 
     #[expect(deprecated)]
     fn test_primal(capabilities: Vec<String>) -> PrimalInfo {
         PrimalInfo {
-            id: "test".to_string(),
+            id: PrimalId::from("test"),
             name: "Test Primal".to_string(),
             primal_type: "TestType".to_string(),
             endpoint: "http://test:8000".to_string(),

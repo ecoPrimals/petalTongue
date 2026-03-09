@@ -61,6 +61,7 @@ pub struct PetalTongueApp {
     data_providers: Vec<Box<dyn VisualizationDataProvider>>,
     /// Legacy `BiomeOS` client (DEPRECATED - kept for backward compatibility)
     #[deprecated(note = "Use data_providers instead - biomeOS is just another primal!")]
+    #[allow(dead_code)]
     biomeos_client: BiomeOSClient,
     /// Current layout algorithm
     current_layout: LayoutAlgorithm,
@@ -142,23 +143,30 @@ pub struct PetalTongueApp {
     /// Graph Builder canvas (interactive visual graph construction)
     graph_canvas: GraphCanvas,
     /// Node palette (available node types)
+    #[allow(dead_code)]
     node_palette: NodePalette,
     /// Property panel (node parameter editor)
+    #[allow(dead_code)]
     property_panel: PropertyPanel,
     /// Graph manager (save/load/execute via Neural API)
+    #[allow(dead_code)]
     graph_manager: GraphManagerPanel,
     /// Show Graph Builder window
     show_graph_builder: bool,
 
     /// Adaptive UI manager (device-specific rendering) - DEPRECATED
+    #[allow(dead_code)]
     adaptive_ui: crate::adaptive_ui::AdaptiveUIManager,
 
     /// Sensory UI manager (capability-based rendering)
+    #[allow(dead_code)]
     sensory_ui: Option<crate::sensory_ui::SensoryUIManager>,
     /// Use sensory UI instead of adaptive UI (feature flag for migration)
+    #[allow(dead_code)]
     use_sensory_ui: bool,
 
     /// Panel registry for custom panel types (Doom, web, video, etc.)
+    #[allow(dead_code)]
     panel_registry: PanelRegistry,
     /// Active custom panels
     custom_panels: Vec<Box<dyn PanelInstance>>,

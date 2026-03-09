@@ -1,0 +1,183 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+//! Instance registry - file-backed tracking of running instances.
+
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
+
+use super::lifecycle::{current_timestamp, get_registry_path};
+use super::{Instance, InstanceError, InstanceId};
+
+/// Registry of all petalTongue instances
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InstanceRegistry {
+    /// Map of instance ID to instance metadata
+    instances: HashMap<InstanceId, Instance>,
+
+    /// Last time garbage collection was run
+    last_gc: u64,
+}
+
+impl Default for InstanceRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl InstanceRegistry {
+    /// Create a new empty registry
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            instances: HashMap::new(),
+            last_gc: current_timestamp(),
+        }
+    }
+
+    /// Load registry from the default platform path
+    pub fn load() -> Result<Self, InstanceError> {
+        Self::load_from(&get_registry_path()?)
+    }
+
+    /// Load registry from an explicit path
+    pub fn load_from(path: &Path) -> Result<Self, InstanceError> {
+        if !path.exists() {
+            return Ok(Self::new());
+        }
+
+        let contents = fs::read_to_string(path)
+            .map_err(|e| InstanceError::IoError(format!("Failed to read registry: {e}")))?;
+
+        ron::from_str(&contents)
+            .map_err(|e| InstanceError::ParseError(format!("Failed to parse registry: {e}")))
+    }
+
+    /// Save registry to the default platform path
+    pub fn save(&self) -> Result<(), InstanceError> {
+        self.save_to(&get_registry_path()?)
+    }
+
+    /// Save registry to an explicit path
+    pub fn save_to(&self, path: &Path) -> Result<(), InstanceError> {
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(|e| {
+                InstanceError::IoError(format!("Failed to create registry directory: {e}"))
+            })?;
+        }
+
+        let contents = ron::ser::to_string_pretty(self, ron::ser::PrettyConfig::default())
+            .map_err(|e| InstanceError::SerializeError(format!("Failed to serialize: {e}")))?;
+
+        fs::write(path, contents)
+            .map_err(|e| InstanceError::IoError(format!("Failed to write registry: {e}")))?;
+
+        Ok(())
+    }
+
+    /// Register a new instance
+    pub fn register(&mut self, instance: Instance) -> Result<(), InstanceError> {
+        tracing::info!(
+            "Registering instance: {} (PID: {})",
+            instance.id,
+            instance.pid
+        );
+        self.instances.insert(instance.id.clone(), instance);
+        self.save()?;
+        Ok(())
+    }
+
+    /// Unregister an instance
+    pub fn unregister(&mut self, instance_id: &InstanceId) -> Result<(), InstanceError> {
+        tracing::info!("Unregistering instance: {}", instance_id);
+        self.instances.remove(instance_id);
+        self.save()?;
+        Ok(())
+    }
+
+    /// Update an existing instance
+    pub fn update(&mut self, instance: Instance) -> Result<(), InstanceError> {
+        if !self.instances.contains_key(&instance.id) {
+            return Err(InstanceError::NotFound(instance.id.to_string()));
+        }
+
+        self.instances.insert(instance.id.clone(), instance);
+        self.save()?;
+        Ok(())
+    }
+
+    /// Get an instance by ID
+    #[must_use]
+    pub fn get(&self, instance_id: &InstanceId) -> Option<&Instance> {
+        self.instances.get(instance_id)
+    }
+
+    /// Get a mutable reference to an instance by ID
+    pub fn get_mut(&mut self, instance_id: &InstanceId) -> Option<&mut Instance> {
+        self.instances.get_mut(instance_id)
+    }
+
+    /// List all instances
+    #[must_use]
+    pub fn list(&self) -> Vec<&Instance> {
+        self.instances.values().collect()
+    }
+
+    /// List all alive instances
+    #[must_use]
+    pub fn list_alive(&self) -> Vec<&Instance> {
+        self.instances.values().filter(|i| i.is_alive()).collect()
+    }
+
+    /// Find instance by window ID
+    #[must_use]
+    pub fn find_by_window(&self, window_id: u64) -> Option<&Instance> {
+        self.instances
+            .values()
+            .find(|i| i.window_id == Some(window_id))
+    }
+
+    /// Find instance by PID
+    #[must_use]
+    pub fn find_by_pid(&self, pid: u32) -> Option<&Instance> {
+        self.instances.values().find(|i| i.pid == pid)
+    }
+
+    /// Find instance by name
+    #[must_use]
+    pub fn find_by_name(&self, name: &str) -> Option<&Instance> {
+        self.instances
+            .values()
+            .find(|i| i.name.as_deref() == Some(name))
+    }
+
+    /// Garbage collect dead instances
+    pub fn gc(&mut self) -> Result<usize, InstanceError> {
+        let before = self.instances.len();
+
+        self.instances.retain(|_, instance| instance.is_alive());
+
+        let removed = before - self.instances.len();
+
+        if removed > 0 {
+            tracing::info!("Garbage collected {} dead instances", removed);
+            self.save()?;
+        }
+
+        self.last_gc = current_timestamp();
+
+        Ok(removed)
+    }
+
+    /// Get the number of registered instances
+    #[must_use]
+    pub fn count(&self) -> usize {
+        self.instances.len()
+    }
+
+    /// Get the number of alive instances
+    #[must_use]
+    pub fn count_alive(&self) -> usize {
+        self.instances.values().filter(|i| i.is_alive()).count()
+    }
+}

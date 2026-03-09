@@ -78,7 +78,7 @@ impl MockDeviceProvider {
                 device_type: DeviceType::GPU,
                 status: DeviceStatus::Online,
                 resource_usage: 0.45,
-                assigned_to: Some("toadstool".to_string()),
+                assigned_to: Some("primal-compute".to_string()),
                 metadata: serde_json::json!({
                     "vram": "24GB",
                     "cuda_cores": 16384,
@@ -104,7 +104,7 @@ impl MockDeviceProvider {
                 device_type: DeviceType::Storage,
                 status: DeviceStatus::Online,
                 resource_usage: 0.67,
-                assigned_to: Some("nestgate".to_string()),
+                assigned_to: Some("primal-storage".to_string()),
                 metadata: serde_json::json!({
                     "capacity": "2TB",
                     "used": "1.34TB",
@@ -143,7 +143,7 @@ impl MockDeviceProvider {
                 device_type: DeviceType::GPU,
                 status: DeviceStatus::Busy,
                 resource_usage: 0.92,
-                assigned_to: Some("toadstool".to_string()),
+                assigned_to: Some("primal-compute".to_string()),
                 metadata: serde_json::json!({
                     "vram": "80GB",
                     "tensor_cores": 6912,
@@ -165,12 +165,12 @@ impl MockDeviceProvider {
         ]
     }
 
-    /// Create demo primals for showcase
+    /// Create demo primals for showcase (generic names - zero sovereignty violations)
     fn create_demo_primals() -> Vec<Primal> {
         vec![
             Primal {
-                id: "beardog".to_string(),
-                name: "beardog".to_string(),
+                id: "primal-security".to_string(),
+                name: "Security Primal".to_string(),
                 capabilities: vec!["security".to_string(), "auth".to_string()],
                 health: Health::Healthy,
                 load: 0.23,
@@ -181,8 +181,8 @@ impl MockDeviceProvider {
                 }),
             },
             Primal {
-                id: "songbird".to_string(),
-                name: "songbird".to_string(),
+                id: "primal-discovery".to_string(),
+                name: "Discovery Primal".to_string(),
                 capabilities: vec!["discovery".to_string(), "registry".to_string()],
                 health: Health::Healthy,
                 load: 0.15,
@@ -193,8 +193,8 @@ impl MockDeviceProvider {
                 }),
             },
             Primal {
-                id: "toadstool".to_string(),
-                name: "toadstool".to_string(),
+                id: "primal-compute".to_string(),
+                name: "Compute Primal".to_string(),
                 capabilities: vec!["compute".to_string(), "gpu".to_string()],
                 health: Health::Healthy,
                 load: 0.68,
@@ -205,8 +205,8 @@ impl MockDeviceProvider {
                 }),
             },
             Primal {
-                id: "nestgate".to_string(),
-                name: "nestgate".to_string(),
+                id: "primal-storage".to_string(),
+                name: "Storage Primal".to_string(),
                 capabilities: vec!["storage".to_string(), "cache".to_string()],
                 health: Health::Healthy,
                 load: 0.45,
@@ -217,8 +217,8 @@ impl MockDeviceProvider {
                 }),
             },
             Primal {
-                id: "petaltongue".to_string(),
-                name: "petaltongue".to_string(),
+                id: "primal-ui".to_string(),
+                name: "UI Primal".to_string(),
                 capabilities: vec!["ui".to_string(), "render".to_string()],
                 health: Health::Healthy,
                 load: 0.12,
@@ -229,8 +229,8 @@ impl MockDeviceProvider {
                 }),
             },
             Primal {
-                id: "squirrel".to_string(),
-                name: "squirrel".to_string(),
+                id: "primal-ai".to_string(),
+                name: "AI Primal".to_string(),
                 capabilities: vec!["ai".to_string(), "learning".to_string()],
                 health: Health::Degraded,
                 load: 0.87,
@@ -335,7 +335,9 @@ impl VisualizationDataProvider for MockDeviceProvider {
                 endpoints: None,
                 metadata: None,
                 properties: Default::default(),
+                #[allow(deprecated)]
                 trust_level: None,
+                #[allow(deprecated)]
                 family_id: None,
             })
             .collect())
@@ -345,24 +347,24 @@ impl VisualizationDataProvider for MockDeviceProvider {
         // Mock topology showing some connections
         Ok(vec![
             TopologyEdge {
-                from: "songbird".to_string(),
-                to: "beardog".to_string(),
+                from: "primal-discovery".to_string(),
+                to: "primal-security".to_string(),
                 edge_type: "discovery".to_string(),
                 label: Some("Discovers".to_string()),
                 capability: Some("security".to_string()),
                 metrics: None,
             },
             TopologyEdge {
-                from: "songbird".to_string(),
-                to: "toadstool".to_string(),
+                from: "primal-discovery".to_string(),
+                to: "primal-compute".to_string(),
                 edge_type: "discovery".to_string(),
                 label: Some("Discovers".to_string()),
                 capability: Some("compute".to_string()),
                 metrics: None,
             },
             TopologyEdge {
-                from: "toadstool".to_string(),
-                to: "nestgate".to_string(),
+                from: "primal-compute".to_string(),
+                to: "primal-storage".to_string(),
                 edge_type: "storage".to_string(),
                 label: Some("Uses".to_string()),
                 capability: Some("storage".to_string()),
@@ -389,7 +391,7 @@ impl VisualizationDataProvider for MockDeviceProvider {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "mock"))]
 mod tests {
     use super::*;
 
@@ -416,8 +418,8 @@ mod tests {
 
         assert!(!primals.is_empty(), "Should have demo primals");
         assert!(
-            primals.iter().any(|p| p.name == "toadstool"),
-            "Should have toadstool"
+            primals.iter().any(|p| p.id == "primal-compute"),
+            "Should have compute primal"
         );
         assert!(
             primals.iter().any(|p| p.health == Health::Healthy),
@@ -461,24 +463,14 @@ mod tests {
 
     #[test]
     fn test_mock_mode_detection() {
-        // Without SHOWCASE_MODE, should be false
-        unsafe {
-            // SAFETY: Test isolation - we control environment in tests
-            std::env::remove_var("SHOWCASE_MODE");
-        }
-        assert!(!MockDeviceProvider::is_mock_mode_requested());
+        use petal_tongue_core::test_fixtures::env_test_helpers;
 
-        // With SHOWCASE_MODE=true, should be true
-        unsafe {
-            // SAFETY: Test isolation - we control environment in tests
-            std::env::set_var("SHOWCASE_MODE", "true");
-        }
-        assert!(MockDeviceProvider::is_mock_mode_requested());
+        env_test_helpers::with_env_var_removed("SHOWCASE_MODE", || {
+            assert!(!MockDeviceProvider::is_mock_mode_requested());
+        });
 
-        // Cleanup
-        unsafe {
-            // SAFETY: Test isolation - cleanup after test
-            std::env::remove_var("SHOWCASE_MODE");
-        }
+        env_test_helpers::with_env_var("SHOWCASE_MODE", "true", || {
+            assert!(MockDeviceProvider::is_mock_mode_requested());
+        });
     }
 }

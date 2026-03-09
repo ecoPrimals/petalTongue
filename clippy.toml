@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Clippy pedantic configuration for petalTongue
+# Follows ecoPrimals wateringHole coding standards
+
+# Maximum number of lines per function body (excluding tests)
+too-many-lines-threshold = 100
+
+# Maximum number of bool fields in a struct before warning
+max-struct-bools = 4
+
+# Cognitive complexity threshold
+cognitive-complexity-threshold = 30
+
+# Maximum number of arguments per function
+too-many-arguments-threshold = 7
+
+# Enum variant size difference threshold (bytes)
+enum-variant-size-threshold = 200
+
+# Type complexity threshold
+type-complexity-threshold = 250

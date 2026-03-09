@@ -20,7 +20,7 @@ use petal_tongue_core::{InstanceId, InstanceRegistry};
 use petal_tongue_ipc::{IpcClient, IpcCommand, IpcResponse};
 
 /// CLI argument parser for petalTongue instance management.
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 #[command(name = "petaltongue")]
 #[command(about = "petalTongue instance manager", long_about = None)]
 #[command(version)]
@@ -30,7 +30,7 @@ pub struct Cli {
 }
 
 /// Available CLI subcommands.
-#[derive(Subcommand)]
+#[derive(Debug, Subcommand)]
 pub enum Commands {
     /// List all running instances
     List,
@@ -353,6 +353,13 @@ async fn status_instances() -> Result<()> {
     Ok(())
 }
 
+/// Parse CLI arguments (for testing)
+#[cfg(test)]
+pub fn parse_args(args: &[&str]) -> std::result::Result<Commands, clap::Error> {
+    let cli = Cli::try_parse_from(args)?;
+    Ok(cli.command)
+}
+
 /// Resolve instance ID from string (supports prefixes)
 fn resolve_instance_id(id_str: &str) -> Result<InstanceId> {
     // Try to parse as UUID string and create InstanceId
@@ -379,5 +386,103 @@ fn resolve_instance_id(id_str: &str) -> Result<InstanceId> {
             id_str,
             matches.len()
         ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_list() {
+        let cmd = parse_args(&["petaltongue", "list"]).unwrap();
+        assert!(matches!(cmd, Commands::List));
+    }
+
+    #[test]
+    fn test_parse_status() {
+        let cmd = parse_args(&["petaltongue", "status"]).unwrap();
+        assert!(matches!(cmd, Commands::Status));
+    }
+
+    #[test]
+    fn test_parse_show() {
+        let cmd = parse_args(&["petaltongue", "show", "abc-123"]).unwrap();
+        match &cmd {
+            Commands::Show { instance_id } => assert_eq!(instance_id, "abc-123"),
+            _ => panic!("Expected Show command"),
+        }
+    }
+
+    #[test]
+    fn test_parse_gc() {
+        let cmd = parse_args(&["petaltongue", "gc"]).unwrap();
+        match &cmd {
+            Commands::Gc { force } => assert!(!*force),
+            _ => panic!("Expected Gc command"),
+        }
+    }
+
+    #[test]
+    fn test_parse_gc_force() {
+        let cmd = parse_args(&["petaltongue", "gc", "--force"]).unwrap();
+        match &cmd {
+            Commands::Gc { force } => assert!(*force),
+            _ => panic!("Expected Gc command"),
+        }
+    }
+
+    #[test]
+    fn test_parse_ping() {
+        let cmd = parse_args(&["petaltongue", "ping", "uuid-here"]).unwrap();
+        match &cmd {
+            Commands::Ping { instance_id } => assert_eq!(instance_id, "uuid-here"),
+            _ => panic!("Expected Ping command"),
+        }
+    }
+
+    #[test]
+    fn test_parse_raise() {
+        let cmd = parse_args(&["petaltongue", "raise", "inst-id"]).unwrap();
+        match &cmd {
+            Commands::Raise { instance_id } => assert_eq!(instance_id, "inst-id"),
+            _ => panic!("Expected Raise command"),
+        }
+    }
+
+    #[test]
+    fn test_help_text_generation() {
+        let result = Cli::try_parse_from(["petaltongue", "--help"]);
+        let err = result.expect_err("--help should produce Err with help text");
+        let help = err.to_string();
+        assert!(help.contains("petaltongue"));
+        assert!(help.contains("list") || help.contains("List"));
+        assert!(help.contains("show") || help.contains("Show"));
+    }
+
+    #[test]
+    fn test_version_output() {
+        let result = Cli::try_parse_from(["petaltongue", "--version"]);
+        let err = result.expect_err("--version should produce Err with version");
+        let version = err.to_string();
+        assert!(version.contains("petaltongue"));
+        assert!(version.contains(".") || version.chars().any(|c| c.is_ascii_digit()));
+    }
+
+    #[test]
+    fn test_list_subcommand_help() {
+        let result = Cli::try_parse_from(["petaltongue", "list", "--help"]);
+        let err = result.expect_err("list --help should produce Err with help");
+        let help = err.to_string();
+        assert!(help.contains("list") || help.contains("List"));
+    }
+
+    #[test]
+    fn test_gc_subcommand_with_force_flag() {
+        let cmd = parse_args(&["petaltongue", "gc", "-f"]).unwrap();
+        match &cmd {
+            Commands::Gc { force } => assert!(*force),
+            _ => panic!("Expected Gc command"),
+        }
     }
 }

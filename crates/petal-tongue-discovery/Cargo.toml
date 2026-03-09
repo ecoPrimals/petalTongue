@@ -2,11 +2,11 @@
 name = "petal-tongue-discovery"
 version = "0.1.0"
 edition = "2021"
-license = "AGPL-3.0"
+license = "AGPL-3.0-only"
 
 [dependencies]
 # Core dependencies
-petal-tongue-core = { path = "../petal-tongue-core" }
+petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
 async-trait = "0.1"
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"

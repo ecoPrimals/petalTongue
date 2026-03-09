@@ -29,6 +29,7 @@ pub trait Sensor: Send + Sync {
 
 /// Describes what a sensor can do
 #[derive(Debug, Clone)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct SensorCapabilities {
     /// Type of sensor
     pub sensor_type: SensorType,
@@ -251,18 +252,18 @@ impl SensorEvent {
     #[must_use]
     pub fn timestamp(&self) -> Instant {
         match self {
-            SensorEvent::Position { timestamp, .. } => *timestamp,
-            SensorEvent::Click { timestamp, .. } => *timestamp,
-            SensorEvent::Scroll { timestamp, .. } => *timestamp,
-            SensorEvent::KeyPress { timestamp, .. } => *timestamp,
-            SensorEvent::KeyRelease { timestamp, .. } => *timestamp,
-            SensorEvent::ButtonPress { timestamp, .. } => *timestamp,
-            SensorEvent::AudioLevel { timestamp, .. } => *timestamp,
-            SensorEvent::Temperature { timestamp, .. } => *timestamp,
-            SensorEvent::Heartbeat { timestamp, .. } => *timestamp,
-            SensorEvent::FrameAcknowledged { timestamp, .. } => *timestamp,
-            SensorEvent::DisplayVisible { timestamp, .. } => *timestamp,
-            SensorEvent::Generic { timestamp, .. } => *timestamp,
+            SensorEvent::Position { timestamp, .. }
+            | SensorEvent::Click { timestamp, .. }
+            | SensorEvent::Scroll { timestamp, .. }
+            | SensorEvent::KeyPress { timestamp, .. }
+            | SensorEvent::KeyRelease { timestamp, .. }
+            | SensorEvent::ButtonPress { timestamp, .. }
+            | SensorEvent::AudioLevel { timestamp, .. }
+            | SensorEvent::Temperature { timestamp, .. }
+            | SensorEvent::Heartbeat { timestamp, .. }
+            | SensorEvent::FrameAcknowledged { timestamp, .. }
+            | SensorEvent::DisplayVisible { timestamp, .. }
+            | SensorEvent::Generic { timestamp, .. } => *timestamp,
         }
     }
 
@@ -405,10 +406,11 @@ impl SensorRegistry {
 
     /// Get sensors by type
     #[must_use]
-    pub fn sensors_by_type(&self, sensor_type: SensorType) -> Vec<&Box<dyn Sensor>> {
+    pub fn sensors_by_type(&self, sensor_type: SensorType) -> Vec<&dyn Sensor> {
         self.sensors
             .iter()
             .filter(|s| s.capabilities().sensor_type == sensor_type)
+            .map(std::convert::AsRef::as_ref)
             .collect()
     }
 

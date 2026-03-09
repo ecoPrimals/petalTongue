@@ -43,6 +43,27 @@ pub struct AwakeningExperience {
     config: AwakeningConfig,
 }
 
+/// Modality toggles for awakening (visual, audio, text)
+#[derive(Debug, Clone)]
+pub struct AwakeningModalityFlags {
+    /// Enable visual animation
+    pub visual_enabled: bool,
+    /// Enable audio
+    pub audio_enabled: bool,
+    /// Enable text descriptions
+    pub text_enabled: bool,
+}
+
+impl Default for AwakeningModalityFlags {
+    fn default() -> Self {
+        Self {
+            visual_enabled: true,
+            audio_enabled: true,
+            text_enabled: true,
+        }
+    }
+}
+
 /// Awakening Configuration
 #[derive(Debug, Clone)]
 pub struct AwakeningConfig {
@@ -64,14 +85,8 @@ pub struct AwakeningConfig {
     /// Auto-start tutorial after awakening
     pub auto_tutorial: bool,
 
-    /// Enable visual animation
-    pub visual_enabled: bool,
-
-    /// Enable audio
-    pub audio_enabled: bool,
-
-    /// Enable text descriptions
-    pub text_enabled: bool,
+    /// Modality toggles (visual, audio, text)
+    pub modality: AwakeningModalityFlags,
 }
 
 impl Default for AwakeningConfig {
@@ -83,9 +98,7 @@ impl Default for AwakeningConfig {
             stage_3_duration: 4,
             stage_4_duration: 2,
             auto_tutorial: true,
-            visual_enabled: true,
-            audio_enabled: true,
-            text_enabled: true,
+            modality: AwakeningModalityFlags::default(),
         }
     }
 }
@@ -171,7 +184,7 @@ impl AwakeningExperience {
         }
 
         // Coordinate modalities
-        if self.config.visual_enabled
+        if self.config.modality.visual_enabled
             && let Err(e) = self
                 .engine
                 .events()
@@ -184,7 +197,7 @@ impl AwakeningExperience {
             tracing::warn!("Failed to broadcast visual: {}", e);
         }
 
-        if self.config.audio_enabled
+        if self.config.modality.audio_enabled
             && let Err(e) = self
                 .engine
                 .events()
@@ -197,7 +210,7 @@ impl AwakeningExperience {
             tracing::warn!("Failed to broadcast audio: {}", e);
         }
 
-        if self.config.text_enabled
+        if self.config.modality.text_enabled
             && let Err(e) = self
                 .engine
                 .events()
@@ -237,7 +250,7 @@ impl AwakeningExperience {
         }
 
         // Coordinate modalities
-        if self.config.visual_enabled
+        if self.config.modality.visual_enabled
             && let Err(e) = self
                 .engine
                 .events()
@@ -250,7 +263,7 @@ impl AwakeningExperience {
             tracing::warn!("Failed to broadcast visual: {}", e);
         }
 
-        if self.config.audio_enabled
+        if self.config.modality.audio_enabled
             && let Err(e) = self
                 .engine
                 .events()
@@ -263,7 +276,7 @@ impl AwakeningExperience {
             tracing::warn!("Failed to broadcast audio: {}", e);
         }
 
-        if self.config.text_enabled
+        if self.config.modality.text_enabled
             && let Err(e) = self
                 .engine
                 .events()
@@ -303,7 +316,7 @@ impl AwakeningExperience {
         }
 
         // Coordinate modalities
-        if self.config.visual_enabled
+        if self.config.modality.visual_enabled
             && let Err(e) = self
                 .engine
                 .events()
@@ -316,7 +329,7 @@ impl AwakeningExperience {
             tracing::warn!("Failed to broadcast visual: {}", e);
         }
 
-        if self.config.audio_enabled
+        if self.config.modality.audio_enabled
             && let Err(e) = self
                 .engine
                 .events()
@@ -368,7 +381,7 @@ impl AwakeningExperience {
         }
 
         // Coordinate modalities
-        if self.config.visual_enabled
+        if self.config.modality.visual_enabled
             && let Err(e) = self
                 .engine
                 .events()
@@ -381,7 +394,7 @@ impl AwakeningExperience {
             tracing::warn!("Failed to broadcast visual: {}", e);
         }
 
-        if self.config.audio_enabled
+        if self.config.modality.audio_enabled
             && let Err(e) = self
                 .engine
                 .events()
@@ -394,7 +407,7 @@ impl AwakeningExperience {
             tracing::warn!("Failed to broadcast audio: {}", e);
         }
 
-        if self.config.text_enabled
+        if self.config.modality.text_enabled
             && let Err(e) = self
                 .engine
                 .events()
@@ -444,6 +457,9 @@ mod tests {
         config.stage_2_duration = 1;
         config.stage_3_duration = 1;
         config.stage_4_duration = 1;
+        config.modality.visual_enabled = true;
+        config.modality.audio_enabled = true;
+        config.modality.text_enabled = true;
 
         let awakening = AwakeningExperience::with_config(engine, config);
 

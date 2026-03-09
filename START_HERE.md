@@ -7,12 +7,10 @@
 ## Build & Run
 
 ```bash
-# Build
 cargo build --release
 
-# Run modes
-petaltongue ui                     # Desktop GUI (discovers display provider)
-petaltongue tui                    # Terminal UI (Pure Rust)
+petaltongue ui                     # Desktop GUI
+petaltongue tui                    # Terminal UI
 petaltongue web                    # Web server
 petaltongue headless --mode svg -o out.svg   # Export to SVG
 petaltongue status                 # System info
@@ -23,7 +21,6 @@ petaltongue status                 # System info
 Priority: Environment > Config file > Defaults
 
 ```bash
-# Environment variables
 export PETALTONGUE_WEB_PORT=8080
 export PETALTONGUE_HEADLESS_PORT=9000
 export BIOMEOS_NEURAL_API_SOCKET=/run/user/$(id -u)/biomeos-neural-api.sock
@@ -46,15 +43,15 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace             # All tests (1,300+)
-cargo clippy --workspace -- -W clippy::pedantic
-cargo fmt --check
-cargo doc --workspace --no-deps
+cargo test --workspace                          # 1,309 tests
+cargo clippy --workspace -- -D warnings         # Lint (76 errors to fix)
+cargo fmt --check                               # Format check (clean)
+cargo doc --workspace --no-deps                 # Docs (141 warnings to fix)
+cargo llvm-cov --workspace --summary-only       # Coverage (54%, target 90%)
 ```
 
 ### Scenarios
 
-Load a scenario for testing:
 ```bash
 petaltongue ui --scenario sandbox/scenarios/paint-simple.json
 petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
@@ -62,13 +59,16 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 
 ### Architecture Rules
 
-1. **Self-knowledge only** -- petalTongue knows its own name, ports, and capabilities. Other primals are discovered at runtime via socket/mDNS/JSON-RPC.
-2. **Constants centralized** -- All self-knowledge lives in `petal_tongue_core::constants`. No magic strings.
+1. **Self-knowledge only** -- petalTongue knows its own name, ports, and capabilities.
+   Other primals discovered at runtime via capability-based discovery.
+2. **Constants centralized** -- All self-knowledge in `petal_tongue_core::constants`.
 3. **IPC priority** -- JSON-RPC over Unix sockets (primary), tarpc (secondary), HTTP (fallback).
-4. **No `unwrap()` in production** -- Use `?`, `if let`, or graceful early return with `tracing::error!`.
-5. **No `unsafe` unless FFI** -- 16/17 crates have `#![forbid(unsafe_code)]`.
-6. **Concurrent testing** -- No `thread::sleep`, no serial tests except chaos. Use `tokio::time::timeout` for async.
-7. **Files under 1,000 lines** -- Split into cohesive modules when approaching limit.
+4. **No `unwrap()` in production** -- Use `?`, `if let`, or `tracing::error!`.
+5. **`#![forbid(unsafe_code)]`** unless hardware FFI is unavoidable. Document with `// SAFETY:`.
+6. **Concurrent testing** -- No `thread::sleep`. Use `tokio::time::timeout`.
+7. **Files under 1,000 lines** -- Split into cohesive modules at ~800 lines.
+8. **SPDX headers** -- `// SPDX-License-Identifier: AGPL-3.0-only` on all `.rs` files.
+9. **Semantic naming** -- JSON-RPC methods follow `{domain}.{operation}` pattern.
 
 ---
 
@@ -77,16 +77,8 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 ### Core (`petal-tongue-core`)
 - `constants.rs` -- Centralized self-knowledge (name, ports, socket names)
 - `graph_engine.rs` -- Graph data model (nodes, edges, layout)
-- `capability_discovery.rs` -- Runtime capability-based primal discovery
 - `config_system.rs` -- XDG-compliant configuration (env > file > defaults)
-- `data_channel.rs` -- `DataChannel` enum (TimeSeries, Distribution, Bar, Gauge)
-- `dynamic_schema.rs` -- Flexible scenario/primal schema with version handling
-
-### Graph (`petal-tongue-graph`)
-- `visual_2d/` -- 2D force-directed graph renderer (egui)
-- `chart_renderer.rs` -- Data channel visualization (egui_plot)
-- `clinical_theme.rs` -- Clinical color palette (healthSpring-derived)
-- `audio_sonification.rs` -- Graph-to-audio mapping
+- `data_channel.rs` -- DataChannel enum (TimeSeries, Distribution, Bar, Gauge)
 
 ### IPC (`petal-tongue-ipc`)
 - `unix_socket_server.rs` -- JSON-RPC 2.0 server over Unix sockets
@@ -95,24 +87,30 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 
 ### Discovery (`petal-tongue-discovery`)
 - `lib.rs` -- Provider discovery orchestrator
-- `http_provider.rs` -- HTTP fallback provider
-- `mdns_provider.rs` -- mDNS multicast discovery
-- `dynamic_scenario_provider.rs` -- JSON scenario loading
+- `jsonrpc_provider.rs` -- JSON-RPC client (primary)
+- `http_provider.rs` -- HTTP fallback (deprecated as primary)
+
+### Specs
+
+Architectural specifications in `specs/` -- read these before making major changes:
+- `GRAMMAR_OF_GRAPHICS_ARCHITECTURE.md` -- Next evolution (composable grammar)
+- `UNIVERSAL_VISUALIZATION_PIPELINE.md` -- Data→render pipeline
+- `TUFTE_CONSTRAINT_SYSTEM.md` -- Visualization quality constraints
 
 ---
 
 ## Cross-Primal Integration
 
-petalTongue integrates with the ecoPrimals ecosystem:
-- **biomeOS** -- Device/primal topology visualization (JSON-RPC)
+- **biomeOS** -- Topology visualization (JSON-RPC)
 - **healthSpring** -- Diagnostic data channels, clinical theme
-- **ToadStool** -- Audio/display backend (tarpc, capability-discovered)
-- **Songbird** -- Encrypted discovery protocol
+- **ToadStool** -- Display backend (tarpc, capability-discovered)
+- **barraCuda** -- GPU compute offload for heavy visualization
+- **Songbird** -- Discovery protocol
 
-See `ecoPrimals/wateringHole/` for inter-primal standards and handoffs.
+See `ecoPrimals/wateringHole/petaltongue/` for inter-primal standards.
 
 ---
 
 ## License
 
-AGPL-3.0 -- See [LICENSE](./LICENSE).
+AGPL-3.0-only -- See [LICENSE](./LICENSE).

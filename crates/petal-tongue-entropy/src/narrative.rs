@@ -66,7 +66,7 @@ pub fn narrative_complexity(text: &str) -> f64 {
 
     // 2. Average sentence length (words per sentence)
     let sentences: Vec<&str> = text
-        .split(|c| c == '.' || c == '!' || c == '?')
+        .split(|c: char| ['.', '!', '?'].contains(&c))
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
         .collect();
@@ -76,15 +76,11 @@ pub fn narrative_complexity(text: &str) -> f64 {
     let sentence_component = (avg_sentence_len / 25.0).min(1.0);
 
     // 3. Punctuation density
-    let punct_count = text.chars().filter(|c| ".,!?;:-\"'".contains(*c)).count();
+    let punct_count = text.chars().filter(|c| c.is_ascii_punctuation()).count();
     let punct_density = punct_count as f64 / text.len() as f64;
     let punct_component = (punct_density * 10.0).min(1.0);
 
-    let complexity = (vocab_diversity * 0.5 + sentence_component * 0.25 + punct_component * 0.25)
-        .min(1.0)
-        .max(0.0);
-
-    complexity
+    (vocab_diversity * 0.5 + sentence_component * 0.25 + punct_component * 0.25).clamp(0.0, 1.0)
 }
 
 /// Narrative entropy capturer

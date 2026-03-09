@@ -139,7 +139,7 @@ impl PrimalPanel {
 
         // Primal list
         egui::ScrollArea::vertical()
-            .id_source("primal_list")
+            .id_salt("primal_list")
             .show(ui, |ui| {
                 // Clone primals to avoid borrow checker issues with mutable UI rendering
                 let filtered_primals: Vec<Primal> =

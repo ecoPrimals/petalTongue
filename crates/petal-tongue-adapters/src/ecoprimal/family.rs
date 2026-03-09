@@ -157,4 +157,29 @@ mod tests {
         assert!(decoration.ring_color.is_some());
         assert!(decoration.tooltip.is_some());
     }
+
+    #[test]
+    fn test_node_decoration_no_family_id() {
+        let adapter = EcoPrimalFamilyAdapter::new();
+        let props = Properties::new();
+        assert!(adapter.node_decoration(&props).is_none());
+    }
+
+    #[test]
+    fn test_adapter_priority() {
+        let adapter = EcoPrimalFamilyAdapter::new();
+        assert_eq!(adapter.priority(), 10);
+    }
+
+    #[test]
+    fn test_adapter_name() {
+        let adapter = EcoPrimalFamilyAdapter::new();
+        assert_eq!(adapter.name(), "ecoprimal-family");
+    }
+
+    #[test]
+    fn test_default_impl() {
+        let adapter = EcoPrimalFamilyAdapter::default();
+        assert!(adapter.handles("family_id"));
+    }
 }

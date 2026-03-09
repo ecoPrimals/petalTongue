@@ -427,4 +427,163 @@ mod tests {
         assert!(!is_map_marker("E1"));
         assert!(!is_map_marker("MAP"));
     }
+
+    /// Create a minimal valid WAD file in memory for testing
+    fn create_minimal_wad_bytes() -> Vec<u8> {
+        let mut wad = Vec::new();
+
+        // WAD structure: header (12) + lump data + directory
+        let data_start = 12u32;
+
+        // E1M1 marker (empty lump)
+        let e1m1_offset = data_start;
+        let e1m1_size = 0i32;
+
+        // VERTEXES: 2 vertices = 8 bytes
+        let vertex_data = [0i16, 0i16, 100i16, 100i16];
+        let vertex_bytes: Vec<u8> = vertex_data
+            .iter()
+            .flat_map(|v| v.to_le_bytes())
+            .collect();
+        let vertex_offset = data_start;
+        let vertex_size = vertex_bytes.len() as i32;
+
+        // LINEDEFS: 1 linedef = 14 bytes (start, end, flags, type, tag, right, left)
+        let linedef_data: [u8; 14] = [
+            0, 0, 1, 0, // start_vertex=0, end_vertex=1
+            0, 0,       // flags
+            0, 0,       // line_type
+            0, 0,       // sector_tag
+            0, 0,       // right_sidedef
+            0, 0,       // left_sidedef
+        ];
+        let linedef_offset = data_start + vertex_size as u32;
+        let linedef_size = 14i32;
+
+        // SECTORS: 1 sector = 26 bytes
+        let mut sector_data = [0u8; 26];
+        sector_data[0..2].copy_from_slice(&0i16.to_le_bytes());
+        sector_data[2..4].copy_from_slice(&128i16.to_le_bytes());
+        sector_data[4..12].copy_from_slice(b"FLOOR4_6");
+        sector_data[12..20].copy_from_slice(b"CEIL3_5 ");
+        sector_data[20..22].copy_from_slice(&160u16.to_le_bytes());
+        let sector_offset = linedef_offset + linedef_size as u32;
+        let sector_size = 26i32;
+
+        // THINGS: 1 thing = 10 bytes
+        let thing_data: [u8; 10] = [
+            50, 0, 50, 0, 0, 0, 1, 0, 0, 0,
+        ];
+        let thing_offset = sector_offset + sector_size as u32;
+        let thing_size = 10i32;
+
+        // Build file: header + data + directory
+        wad.extend_from_slice(b"IWAD");
+        let dir_offset = thing_offset + thing_size as u32;
+        wad.extend_from_slice(&5i32.to_le_bytes());
+        wad.extend_from_slice(&dir_offset.to_le_bytes());
+
+        // Lump data
+        wad.extend_from_slice(&vertex_bytes);
+        wad.extend_from_slice(&linedef_data);
+        wad.extend_from_slice(&sector_data);
+        wad.extend_from_slice(&thing_data);
+
+        // Directory (16 bytes per entry: offset, size, 8-char name)
+        fn dir_entry(off: u32, size: i32, name: &str) -> [u8; 16] {
+            let mut bytes = [0u8; 16];
+            bytes[0..4].copy_from_slice(&(off as i32).to_le_bytes());
+            bytes[4..8].copy_from_slice(&size.to_le_bytes());
+            let name_bytes = name.as_bytes();
+            bytes[8..8 + name_bytes.len().min(8)].copy_from_slice(name_bytes);
+            bytes
+        }
+
+        wad.extend_from_slice(&dir_entry(e1m1_offset, e1m1_size, "E1M1"));
+        wad.extend_from_slice(&dir_entry(vertex_offset, vertex_size, "VERTEXES"));
+        wad.extend_from_slice(&dir_entry(linedef_offset, linedef_size, "LINEDEFS"));
+        wad.extend_from_slice(&dir_entry(sector_offset, sector_size, "SECTORS"));
+        wad.extend_from_slice(&dir_entry(thing_offset, thing_size, "THINGS"));
+
+        wad
+    }
+
+    #[test]
+    fn test_wad_load_minimal() {
+        let wad_bytes = create_minimal_wad_bytes();
+        let path = std::env::temp_dir().join("petaltongue_test_minimal.wad");
+        std::fs::write(&path, &wad_bytes).unwrap();
+
+        let result = WadData::load(&path);
+        std::fs::remove_file(&path).ok();
+
+        let wad = result.expect("Should load minimal WAD");
+        assert!(!wad.maps.is_empty(), "Should have at least one map");
+        let map = &wad.maps[0];
+        assert_eq!(map.name, "E1M1");
+        assert_eq!(map.vertices.len(), 2);
+        assert_eq!(map.linedefs.len(), 1);
+        assert_eq!(map.sectors.len(), 1);
+        assert_eq!(map.things.len(), 1);
+    }
+
+    #[test]
+    fn test_wad_lump_accessors() {
+        let wad_bytes = create_minimal_wad_bytes();
+        let path = std::env::temp_dir().join("petaltongue_test_lump.wad");
+        std::fs::write(&path, &wad_bytes).unwrap();
+
+        let wad = WadData::load(&path).unwrap();
+        std::fs::remove_file(&path).ok();
+
+        let vertex_lump = wad.get_lump("VERTEXES").expect("Should have VERTEXES");
+        assert_eq!(vertex_lump.name(), "VERTEXES");
+        assert_eq!(vertex_lump.data().len(), 8);
+
+        assert!(wad.get_lump("NONEXISTENT").is_none());
+    }
+
+    #[test]
+    fn test_wad_get_map_by_name() {
+        let wad_bytes = create_minimal_wad_bytes();
+        let path = std::env::temp_dir().join("petaltongue_test_getmap.wad");
+        std::fs::write(&path, &wad_bytes).unwrap();
+
+        let wad = WadData::load(&path).unwrap();
+        std::fs::remove_file(&path).ok();
+
+        let map = wad.get_map("E1M1").expect("Should find E1M1");
+        assert_eq!(map.name, "E1M1");
+
+        assert!(wad.get_map("E2M1").is_none());
+    }
+
+    #[test]
+    fn test_wad_first_map() {
+        let wad_bytes = create_minimal_wad_bytes();
+        let path = std::env::temp_dir().join("petaltongue_test_first.wad");
+        std::fs::write(&path, &wad_bytes).unwrap();
+
+        let wad = WadData::load(&path).unwrap();
+        std::fs::remove_file(&path).ok();
+
+        let map = wad.first_map().expect("Should have first map");
+        assert_eq!(map.name, "E1M1");
+    }
+
+    #[test]
+    fn test_vertex_coordinates() {
+        let wad_bytes = create_minimal_wad_bytes();
+        let path = std::env::temp_dir().join("petaltongue_test_vertex.wad");
+        std::fs::write(&path, &wad_bytes).unwrap();
+
+        let wad = WadData::load(&path).unwrap();
+        std::fs::remove_file(&path).ok();
+
+        let map = wad.first_map().unwrap();
+        assert_eq!(map.vertices[0].x, 0);
+        assert_eq!(map.vertices[0].y, 0);
+        assert_eq!(map.vertices[1].x, 100);
+        assert_eq!(map.vertices[1].y, 100);
+    }
 }

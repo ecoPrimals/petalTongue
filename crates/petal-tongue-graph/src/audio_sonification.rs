@@ -68,7 +68,7 @@ impl AudioSonificationRenderer {
             .iter()
             .map(|node| {
                 let attrs = self.node_to_audio(node);
-                (node.info.id.clone(), attrs)
+                (node.info.id.as_str().to_string(), attrs)
             })
             .collect()
     }
@@ -301,8 +301,8 @@ mod tests {
         graph.add_node(songbird);
 
         graph.add_edge(TopologyEdge {
-            from: "beardog-1".to_string(),
-            to: "toadstool-1".to_string(),
+            from: "beardog-1".into(),
+            to: "toadstool-1".into(),
             edge_type: "api".to_string(),
             label: None,
             capability: None,

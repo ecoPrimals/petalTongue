@@ -89,7 +89,7 @@ impl ScenarioVisualizationProvider {
                 }
 
                 PrimalInfo {
-                    id: p.id.clone(),
+                    id: p.id.clone().into(),
                     name: p.name.clone(),
                     primal_type: p.primal_type.clone(),
                     endpoint: format!("scenario://{}", p.id),

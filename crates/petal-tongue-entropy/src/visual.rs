@@ -77,11 +77,7 @@ pub fn visual_complexity(strokes: &[Stroke], canvas_size: (u32, u32)) -> f64 {
     let point_density = total_points as f64 / canvas_area;
     let spatial_component = (point_density / 0.01).min(1.0);
 
-    let complexity = (color_component * 0.4 + brightness_component * 0.3 + spatial_component * 0.3)
-        .min(1.0)
-        .max(0.0);
-
-    complexity
+    (color_component * 0.4 + brightness_component * 0.3 + spatial_component * 0.3).clamp(0.0, 1.0)
 }
 
 /// Visual entropy capturer

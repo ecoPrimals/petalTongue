@@ -135,8 +135,8 @@ impl TutorialMode {
         for edge in scenario.edges {
             use petal_tongue_core::TopologyEdge;
             graph.add_edge(TopologyEdge {
-                from: edge.from_id,
-                to: edge.to_id,
+                from: edge.from_id.into(),
+                to: edge.to_id.into(),
                 edge_type: edge.edge_type,
                 label: None,
                 capability: None,
@@ -183,7 +183,7 @@ impl TutorialMode {
 
         // Add petalTongue (self-awareness!)
         graph.add_node(PrimalInfo {
-            id: "petaltongue-tutorial".to_string(),
+            id: "petaltongue-tutorial".into(),
             name: "petalTongue (You Are Here)".to_string(),
             primal_type: "Visualization".to_string(),
             endpoint: "http://localhost:3030".to_string(),
@@ -218,7 +218,7 @@ impl TutorialMode {
 
         // Add example Security primal
         graph.add_node(PrimalInfo {
-            id: "beardog-tutorial".to_string(),
+            id: "beardog-tutorial".into(),
             name: "BearDog (Security)".to_string(),
             primal_type: "Security".to_string(),
             endpoint: "http://localhost:8001".to_string(),
@@ -243,7 +243,7 @@ impl TutorialMode {
 
         // Add example Discovery primal
         graph.add_node(PrimalInfo {
-            id: "songbird-tutorial".to_string(),
+            id: "songbird-tutorial".into(),
             name: "Songbird (Discovery)".to_string(),
             primal_type: "Discovery".to_string(),
             endpoint: "http://localhost:8003".to_string(),
@@ -267,8 +267,8 @@ impl TutorialMode {
 
         // Add connections
         graph.add_edge(petal_tongue_core::TopologyEdge {
-            from: "petaltongue-tutorial".to_string(),
-            to: "songbird-tutorial".to_string(),
+            from: "petaltongue-tutorial".into(),
+            to: "songbird-tutorial".into(),
             edge_type: "discovers_via".to_string(),
             label: Some("Discovery".to_string()),
             capability: None,
@@ -276,8 +276,8 @@ impl TutorialMode {
         });
 
         graph.add_edge(petal_tongue_core::TopologyEdge {
-            from: "songbird-tutorial".to_string(),
-            to: "beardog-tutorial".to_string(),
+            from: "songbird-tutorial".into(),
+            to: "beardog-tutorial".into(),
             edge_type: "finds".to_string(),
             label: Some("Service Discovery".to_string()),
             capability: None,

@@ -102,11 +102,11 @@ impl Config {
     /// Merge configurations (other overrides self)
     #[must_use]
     pub fn merge(mut self, other: Self) -> Self {
-        self.network = self.network.merge(other.network);
+        self.network = NetworkConfig::merge(self.network, other.network);
         self.paths = self.paths.merge(other.paths);
-        self.discovery = self.discovery.merge(other.discovery);
-        self.thresholds = self.thresholds.merge(other.thresholds);
-        self.performance = self.performance.merge(other.performance);
+        self.discovery = DiscoveryConfig::merge(self.discovery, other.discovery);
+        self.thresholds = ThresholdsConfig::merge(self.thresholds, other.thresholds);
+        self.performance = PerformanceConfig::merge(self.performance, other.performance);
         self
     }
 
@@ -173,7 +173,7 @@ pub struct NetworkConfig {
 }
 
 impl NetworkConfig {
-    fn merge(self, other: Self) -> Self {
+    fn merge(_base: Self, other: Self) -> Self {
         other // Simple override for now; could be more sophisticated
     }
 
@@ -230,21 +230,23 @@ impl PathsConfig {
 
     /// Get runtime directory (with fallback)
     pub fn runtime_dir(&self) -> Result<PathBuf, ConfigError> {
+        use crate::platform_dirs;
+
         if let Some(ref dir) = self.runtime_dir {
             return Ok(dir.clone());
         }
 
-        use crate::platform_dirs;
         platform_dirs::runtime_dir().map_err(|e| ConfigError::EnvError(e.to_string()))
     }
 
     /// Get data directory (with fallback)
     pub fn data_dir(&self) -> Result<PathBuf, ConfigError> {
+        use crate::platform_dirs;
+
         if let Some(ref dir) = self.data_dir {
             return Ok(dir.clone());
         }
 
-        use crate::platform_dirs;
         platform_dirs::data_dir().map_err(|e| ConfigError::EnvError(e.to_string()))
     }
 }
@@ -266,7 +268,7 @@ pub struct DiscoveryConfig {
 }
 
 impl DiscoveryConfig {
-    fn merge(self, other: Self) -> Self {
+    fn merge(_base: Self, other: Self) -> Self {
         other
     }
 }
@@ -305,7 +307,7 @@ pub struct ThresholdsConfig {
 }
 
 impl ThresholdsConfig {
-    fn merge(self, other: Self) -> Self {
+    fn merge(_base: Self, other: Self) -> Self {
         other
     }
 }
@@ -340,7 +342,7 @@ pub struct PerformanceConfig {
 }
 
 impl PerformanceConfig {
-    fn merge(self, other: Self) -> Self {
+    fn merge(_base: Self, other: Self) -> Self {
         other
     }
 }

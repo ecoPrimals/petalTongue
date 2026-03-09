@@ -79,6 +79,7 @@ pub struct TimelineView {
     /// Zoom level (1.0 = default)
     zoom: f32,
     /// Scroll offset (for panning)
+    #[allow(dead_code)]
     scroll_offset: f32,
     /// Show event details panel
     show_details: bool,
@@ -128,6 +129,22 @@ impl TimelineView {
     pub fn set_time_range(&mut self, start: Option<DateTime<Utc>>, end: Option<DateTime<Utc>>) {
         self.time_range_start = start;
         self.time_range_end = end;
+    }
+
+    /// Set event type filter (for testing and UI)
+    pub fn set_event_type_filter(&mut self, filter: Option<String>) {
+        self.event_type_filter = filter;
+    }
+
+    /// Set primal filter (for testing and UI)
+    pub fn set_primal_filter(&mut self, filter: Option<String>) {
+        self.primal_filter = filter;
+    }
+
+    /// Get count of filtered events (for testing)
+    #[must_use]
+    pub fn filtered_event_count(&self) -> usize {
+        self.filtered_events().len()
     }
 
     /// Get filtered events based on current filters
@@ -580,5 +597,142 @@ mod tests {
         assert_eq!(view.events[0].id, "evt1");
         assert_eq!(view.events[1].id, "evt2");
         assert_eq!(view.events[2].id, "evt3");
+    }
+
+    #[test]
+    fn test_event_type_filter() {
+        let mut view = TimelineView::new();
+        let now = Utc::now();
+
+        view.add_event(TimelineEvent {
+            id: "evt1".to_string(),
+            from: "a".to_string(),
+            to: "b".to_string(),
+            event_type: "discover".to_string(),
+            timestamp: now,
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        view.add_event(TimelineEvent {
+            id: "evt2".to_string(),
+            from: "a".to_string(),
+            to: "b".to_string(),
+            event_type: "invoke".to_string(),
+            timestamp: now,
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+
+        assert_eq!(view.filtered_event_count(), 2);
+        view.set_event_type_filter(Some("discover".to_string()));
+        assert_eq!(view.filtered_event_count(), 1);
+        view.set_event_type_filter(None);
+        assert_eq!(view.filtered_event_count(), 2);
+    }
+
+    #[test]
+    fn test_primal_filter() {
+        let mut view = TimelineView::new();
+        let now = Utc::now();
+
+        view.add_event(TimelineEvent {
+            id: "evt1".to_string(),
+            from: "alice".to_string(),
+            to: "bob".to_string(),
+            event_type: "test".to_string(),
+            timestamp: now,
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        view.add_event(TimelineEvent {
+            id: "evt2".to_string(),
+            from: "bob".to_string(),
+            to: "charlie".to_string(),
+            event_type: "test".to_string(),
+            timestamp: now,
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+
+        view.set_primal_filter(Some("alice".to_string()));
+        assert_eq!(view.filtered_event_count(), 1);
+        view.set_primal_filter(Some("bob".to_string()));
+        assert_eq!(view.filtered_event_count(), 2);
+        view.set_primal_filter(None);
+        assert_eq!(view.filtered_event_count(), 2);
+    }
+
+    #[test]
+    fn test_event_status_icons() {
+        assert_eq!(EventStatus::Success.icon(), "✅");
+        assert_eq!(EventStatus::Failure.icon(), "❌");
+        assert_eq!(EventStatus::InProgress.icon(), "⏳");
+        assert_eq!(EventStatus::Timeout.icon(), "⏱️");
+    }
+
+    #[test]
+    fn test_time_range_filter() {
+        let mut view = TimelineView::new();
+        let now = Utc::now();
+        let start = now - chrono::Duration::seconds(10);
+        let end = now + chrono::Duration::seconds(10);
+
+        // Add events: one before range, one in range, one after range
+        view.add_event(TimelineEvent {
+            id: "evt_before".to_string(),
+            from: "a".to_string(),
+            to: "b".to_string(),
+            event_type: "test".to_string(),
+            timestamp: now - chrono::Duration::seconds(20),
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        view.add_event(TimelineEvent {
+            id: "evt_in".to_string(),
+            from: "a".to_string(),
+            to: "b".to_string(),
+            event_type: "test".to_string(),
+            timestamp: now,
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        view.add_event(TimelineEvent {
+            id: "evt_after".to_string(),
+            from: "a".to_string(),
+            to: "b".to_string(),
+            event_type: "test".to_string(),
+            timestamp: now + chrono::Duration::seconds(20),
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+
+        assert_eq!(view.filtered_event_count(), 3);
+
+        view.set_time_range(Some(start), Some(end));
+        assert_eq!(view.filtered_event_count(), 1);
+    }
+
+    #[test]
+    fn test_set_time_range() {
+        let mut view = TimelineView::new();
+        let start = Utc::now() - chrono::Duration::hours(1);
+        let end = Utc::now();
+        view.set_time_range(Some(start), Some(end));
+        // Just verify it doesn't panic
+        assert_eq!(view.filtered_event_count(), 0);
+    }
+
+    #[test]
+    fn test_default_timeline_view() {
+        let view = TimelineView::default();
+        assert_eq!(view.events.len(), 0);
+        assert!(view.show_details);
     }
 }

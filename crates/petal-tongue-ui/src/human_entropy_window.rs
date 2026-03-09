@@ -306,7 +306,7 @@ impl HumanEntropyWindow {
             ui.add_space(20.0);
 
             ui.horizontal(|ui| {
-                if ui.button("✅ Send to BearDog").clicked() {
+                if ui.button("✅ Send to Entropy Source").clicked() {
                     self.finalize_and_stream();
                 }
 
@@ -323,7 +323,7 @@ impl HumanEntropyWindow {
             ui.spinner();
             ui.label("Processing and streaming entropy...");
             ui.add_space(10.0);
-            ui.label("🔒 Encrypted transmission to BearDog");
+            ui.label("🔒 Encrypted transmission to entropy source");
         });
     }
 
@@ -445,7 +445,7 @@ impl HumanEntropyWindow {
     fn finalize_and_stream(&mut self) {
         info!("Finalizing and streaming entropy");
         self.state = CaptureWindowState::Processing;
-        self.status_message = "Streaming to BearDog...".to_string();
+        self.status_message = "Streaming to entropy source...".to_string();
 
         // Get entropy capture data by moving capturer out of Option
         let entropy_result = match self.modality {
@@ -497,21 +497,21 @@ impl HumanEntropyWindow {
         };
 
         if let Some(entropy) = entropy_data {
-            // Discover BearDog endpoint via capability-based discovery
-            let endpoint = self.discover_beardog_endpoint();
+            // Discover entropy source via capability-based discovery (entropy.source capability)
+            let endpoint = self.discover_entropy_source_endpoint();
 
             if let Some(url) = endpoint {
                 // Stream entropy asynchronously (fire and forget)
-                Self::stream_entropy_to_beardog(url, entropy);
+                Self::stream_entropy_to_source(url, entropy);
 
                 // Update UI state optimistically
                 self.reset();
-                self.status_message = "✅ Entropy sent to BearDog!".to_string();
+                self.status_message = "✅ Entropy sent to entropy source!".to_string();
                 info!("Entropy streaming initiated");
             } else {
-                warn!("No BearDog endpoint found - entropy will be zeroized");
+                warn!("No entropy source endpoint found - entropy will be zeroized");
                 self.reset();
-                self.status_message = "⚠️ BearDog not found. Entropy discarded.".to_string();
+                self.status_message = "⚠️ Entropy source not found. Entropy discarded.".to_string();
             }
         } else {
             warn!("No entropy data to stream");
@@ -520,13 +520,20 @@ impl HumanEntropyWindow {
         }
     }
 
-    /// Discover `BearDog` endpoint via capability-based discovery
+    /// Discover entropy source endpoint via capability-based discovery
     ///
-    /// TRUE PRIMAL: We don't hardcode `BearDog`'s location. We discover it.
-    fn discover_beardog_endpoint(&self) -> Option<String> {
+    /// Looks for a primal with "entropy.source" or "entropy-ingestion" capability.
+    /// TRUE PRIMAL: Zero hardcoded primal names; use capability-based discovery only.
+    fn discover_entropy_source_endpoint(&self) -> Option<String> {
         // Try environment variable first (manual configuration)
+        if let Ok(endpoint) = std::env::var("ENTROPY_SOURCE_ENDPOINT") {
+            info!("Using configured entropy source endpoint: {}", endpoint);
+            return Some(endpoint);
+        }
+
+        // Legacy: BEARDOG_ENTROPY_ENDPOINT (deprecated, use ENTROPY_SOURCE_ENDPOINT)
         if let Ok(endpoint) = std::env::var("BEARDOG_ENTROPY_ENDPOINT") {
-            info!("Using configured BearDog endpoint: {}", endpoint);
+            info!("Using ENTROPY_SOURCE_ENDPOINT (legacy BEARDOG_ENTROPY_ENDPOINT): {}", endpoint);
             return Some(endpoint);
         }
 
@@ -536,16 +543,16 @@ impl HumanEntropyWindow {
                 let hint = hint.trim();
                 // Check if this primal advertises entropy ingestion capability
                 if self.check_entropy_capability(hint) {
-                    info!("Discovered BearDog at: {}", hint);
+                    info!("Discovered entropy source at: {}", hint);
                     return Some(format!("{hint}/api/v1/entropy"));
                 }
             }
         }
 
-        // Future: Use mDNS discovery to find primals with "entropy-ingestion" capability
+        // Future: Use mDNS discovery to find primals with "entropy.source" capability
         // For now, return None and let user configure via environment
         warn!(
-            "BearDog endpoint not discovered. Set BEARDOG_ENTROPY_ENDPOINT environment variable."
+            "Entropy source not discovered. Set ENTROPY_SOURCE_ENDPOINT environment variable."
         );
         None
     }
@@ -557,11 +564,11 @@ impl HumanEntropyWindow {
         false
     }
 
-    /// Stream entropy to `BearDog` asynchronously
+    /// Stream entropy to discovered entropy source asynchronously
     ///
     /// This is a fire-and-forget operation. In production, you'd want to track
     /// the task and report completion/errors back to the UI.
-    fn stream_entropy_to_beardog(endpoint: String, entropy: EntropyCapture) {
+    fn stream_entropy_to_source(endpoint: String, entropy: EntropyCapture) {
         // Serialize entropy for transmission
         let payload = match serde_json::to_vec(&entropy) {
             Ok(json) => json,
@@ -597,7 +604,7 @@ impl HumanEntropyWindow {
                         info!("✅ Entropy streamed successfully to {}", endpoint);
                     } else {
                         warn!(
-                            "⚠️ BearDog returned error: {} ({})",
+                            "⚠️ Entropy source returned error: {} ({})",
                             response.status(),
                             endpoint
                         );

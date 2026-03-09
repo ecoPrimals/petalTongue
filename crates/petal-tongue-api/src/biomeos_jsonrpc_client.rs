@@ -114,15 +114,14 @@ impl BiomeOSJsonRpcClient {
 
     /// Check if `BiomeOS` is available
     pub async fn is_available(&self) -> bool {
-        match tokio::time::timeout(
-            std::time::Duration::from_millis(100),
-            UnixStream::connect(&self.socket_path),
+        matches!(
+            tokio::time::timeout(
+                std::time::Duration::from_millis(100),
+                UnixStream::connect(&self.socket_path),
+            )
+            .await,
+            Ok(Ok(_))
         )
-        .await
-        {
-            Ok(Ok(_)) => true,
-            _ => false,
-        }
     }
 
     /// Health check (semantic: `neural_api.health`)
@@ -251,18 +250,43 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_with_socket_path() {
+        let client = BiomeOSJsonRpcClient::with_socket_path("/custom/path.sock");
+        drop(client);
+    }
+
+    #[test]
     fn test_socket_path_discovery() {
-        // Should not panic, even if socket doesn't exist
-        let _client = BiomeOSJsonRpcClient::new();
+        // May succeed if socket exists, or fail - either is valid
+        let _ = BiomeOSJsonRpcClient::new();
+    }
+
+    #[test]
+    fn test_discover_socket_from_env() {
+        let temp = std::env::temp_dir().join("biomeos-api-test.sock");
+        std::fs::write(&temp, "").unwrap();
+
+        let result = petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
+            "BIOMEOS_SOCKET",
+            temp.to_str().unwrap(),
+            || BiomeOSJsonRpcClient::new(),
+        );
+        assert!(result.is_ok());
+
+        let _ = std::fs::remove_file(&temp);
     }
 
     #[tokio::test]
     async fn test_biomeos_unavailable() {
-        // Use non-existent socket
         let client = BiomeOSJsonRpcClient::with_socket_path("/tmp/nonexistent-biomeos.sock");
-
-        // Should return false, not panic
         let available = client.is_available().await;
         assert!(!available);
+    }
+
+    #[tokio::test]
+    async fn test_health_check_unavailable() {
+        let client = BiomeOSJsonRpcClient::with_socket_path("/tmp/nonexistent-biomeos-health.sock");
+        let healthy = client.health_check().await.unwrap();
+        assert!(!healthy);
     }
 }

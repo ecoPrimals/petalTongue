@@ -17,12 +17,15 @@ async fn test_e2e_device_assignment_flow() {
     let manager = Arc::new(RwLock::new(BiomeOSUIManager::new().await));
     let rpc = BiomeOSUIRPC::new(manager.clone());
 
-    // 1. Get initial data
+    // 1. Get initial data (mock data only when mock feature enabled)
     let devices = rpc.get_devices().await.unwrap();
     let primals = rpc.get_primals_extended().await.unwrap();
 
-    assert!(!devices.is_empty(), "Should have devices");
-    assert!(!primals.is_empty(), "Should have primals");
+    #[cfg(feature = "mock")]
+    {
+        assert!(!devices.is_empty(), "Should have devices");
+        assert!(!primals.is_empty(), "Should have primals");
+    }
 
     // 2. Switch to device panel
     rpc.show_device_panel().await.unwrap();
@@ -44,8 +47,9 @@ async fn test_e2e_niche_creation_workflow() {
     let manager = Arc::new(RwLock::new(BiomeOSUIManager::new().await));
     let rpc = BiomeOSUIRPC::new(manager.clone());
 
-    // 1. Get templates
+    // 1. Get templates (mock only when mock feature enabled)
     let templates = rpc.get_niche_templates().await.unwrap();
+    #[cfg(feature = "mock")]
     assert!(!templates.is_empty(), "Should have templates");
 
     // 2. Switch to niche designer
@@ -98,10 +102,12 @@ async fn test_e2e_tab_navigation_consistency() {
 async fn test_e2e_provider_fallback() {
     let manager = BiomeOSUIManager::new().await;
 
-    // In test environment, should fall back to mock
+    // Mock mode only when mock feature enabled and biomeOS unavailable
+    #[cfg(feature = "mock")]
     assert!(manager.is_mock_mode());
+    #[cfg(not(feature = "mock"))]
+    assert!(!manager.is_mock_mode());
 
-    // But mock mode should still provide full functionality
     let manager = Arc::new(RwLock::new(manager));
     let rpc = BiomeOSUIRPC::new(manager.clone());
 
@@ -109,10 +115,12 @@ async fn test_e2e_provider_fallback() {
     let primals = rpc.get_primals_extended().await.unwrap();
     let templates = rpc.get_niche_templates().await.unwrap();
 
-    // Mock mode should have realistic data
-    assert!(!devices.is_empty());
-    assert!(!primals.is_empty());
-    assert!(!templates.is_empty());
+    #[cfg(feature = "mock")]
+    {
+        assert!(!devices.is_empty());
+        assert!(!primals.is_empty());
+        assert!(!templates.is_empty());
+    }
 }
 
 /// E2E Test: Concurrent access to manager
@@ -192,9 +200,12 @@ async fn test_e2e_full_lifecycle() {
     let primals = rpc.get_primals_extended().await.unwrap();
     let templates = rpc.get_niche_templates().await.unwrap();
 
-    assert!(!devices.is_empty());
-    assert!(!primals.is_empty());
-    assert!(!templates.is_empty());
+    #[cfg(feature = "mock")]
+    {
+        assert!(!devices.is_empty());
+        assert!(!primals.is_empty());
+        assert!(!templates.is_empty());
+    }
 
     // 5. Final refresh
     rpc.refresh().await.unwrap();
@@ -222,7 +233,10 @@ async fn test_e2e_rapid_tab_switching() {
     }
 
     // Should still be in valid state
+    #[cfg(feature = "mock")]
     assert!(manager.read().await.is_mock_mode());
+    #[cfg(not(feature = "mock"))]
+    assert!(!manager.read().await.is_mock_mode());
 }
 
 /// E2E Test: Data consistency across refreshes
@@ -242,7 +256,9 @@ async fn test_e2e_data_consistency() {
     rpc.refresh().await.unwrap();
     let devices2 = rpc.get_devices().await.unwrap();
 
-    // Mock provider should return consistent data
+    // Data should be consistent (mock returns same; empty stays empty)
     assert_eq!(devices1.len(), devices2.len());
-    assert_eq!(devices1[0].id, devices2[0].id);
+    if !devices1.is_empty() {
+        assert_eq!(devices1[0].id, devices2[0].id);
+    }
 }

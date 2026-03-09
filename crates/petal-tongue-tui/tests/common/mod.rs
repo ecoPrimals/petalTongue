@@ -50,8 +50,8 @@ pub fn create_test_primal_with_health(
 /// Create a test TopologyEdge
 pub fn create_test_edge(from: &str, to: &str, edge_type: &str) -> TopologyEdge {
     TopologyEdge {
-        from: from.to_string(),
-        to: to.to_string(),
+        from: from.into(),
+        to: to.into(),
         edge_type: edge_type.to_string(),
         label: None,
         capability: None,

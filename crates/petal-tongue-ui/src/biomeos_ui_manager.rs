@@ -20,6 +20,7 @@
 
 use crate::biomeos_integration::{BiomeOSProvider, Device, NicheTemplate, Primal};
 use crate::device_panel::DevicePanel;
+#[cfg(feature = "mock")]
 use crate::mock_device_provider::MockDeviceProvider;
 use crate::niche_designer::NicheDesigner;
 use crate::primal_panel::PrimalPanel;
@@ -34,11 +35,13 @@ use tracing::{info, warn};
 pub struct BiomeOSUIManager {
     /// Provider for data (`BiomeOS` or Mock)
     biomeos_provider: Option<BiomeOSProvider>,
-    /// Mock provider - lazily initialized only when needed for graceful degradation
+    /// Mock provider - only when `mock` feature enabled (dev/test only, never production)
+    #[cfg(feature = "mock")]
     mock_provider: Option<MockDeviceProvider>,
     use_mock: bool,
 
     /// Event handler
+    #[allow(dead_code)]
     event_handler: Arc<RwLock<UIEventHandler>>,
 
     /// UI Panels
@@ -76,15 +79,19 @@ impl BiomeOSUIManager {
         // Try to discover biomeOS provider
         let biomeos_provider = BiomeOSProvider::discover().await.ok().flatten();
 
-        let use_mock = biomeos_provider.is_none();
+        // Mock only when biomeOS unavailable AND mock feature enabled (never in production)
+        let use_mock = biomeos_provider.is_none() && cfg!(feature = "mock");
 
         if use_mock {
-            info!("📦 Using mock provider (biomeOS not available)");
+            info!("📦 Using mock provider (biomeOS not available, mock feature enabled)");
+        } else if biomeos_provider.is_none() {
+            info!("⚠️ biomeOS not available - empty panels (use --features mock for demo data)");
         } else {
             info!("✅ Connected to biomeOS");
         }
 
-        // Lazy initialization: only create mock provider when needed for graceful degradation
+        // Lazy initialization: only create mock provider when needed (mock feature + biomeOS unavailable)
+        #[cfg(feature = "mock")]
         let mock_provider = if use_mock {
             Some(MockDeviceProvider::new())
         } else {
@@ -93,6 +100,7 @@ impl BiomeOSUIManager {
 
         Self {
             biomeos_provider,
+            #[cfg(feature = "mock")]
             mock_provider,
             use_mock,
             event_handler: event_handler.clone(),
@@ -112,20 +120,26 @@ impl BiomeOSUIManager {
         }
 
         let (devices, primals, templates) = if self.use_mock {
-            // Use mock provider (methods are not async)
-            // Lazily create mock provider if not already initialized
-            if self.mock_provider.is_none() {
-                self.mock_provider = Some(MockDeviceProvider::new());
-            }
+            #[cfg(feature = "mock")]
+            {
+                // Use mock provider (methods are not async)
+                if self.mock_provider.is_none() {
+                    self.mock_provider = Some(MockDeviceProvider::new());
+                }
 
-            if let Some(mock) = &self.mock_provider {
-                let devices = mock.get_devices();
-                let primals = mock.get_primals_extended();
-                let templates = mock.get_niche_templates();
-                (devices, primals, templates)
-            } else {
-                warn!("Mock provider not available");
-                return Ok(());
+                if let Some(mock) = &self.mock_provider {
+                    let devices = mock.get_devices();
+                    let primals = mock.get_primals_extended();
+                    let templates = mock.get_niche_templates();
+                    (devices, primals, templates)
+                } else {
+                    warn!("Mock provider not available");
+                    return Ok(());
+                }
+            }
+            #[cfg(not(feature = "mock"))]
+            {
+                unreachable!("use_mock is only true when mock feature is enabled");
             }
         } else if let Some(provider) = &self.biomeos_provider {
             // Use biomeOS provider (methods are async)
@@ -291,12 +305,16 @@ impl BiomeOSUIRPC {
     pub async fn get_devices(&self) -> Result<Vec<Device>> {
         let manager = self.manager.read().await;
         if manager.use_mock {
-            // Use mock provider for graceful degradation
-            Ok(manager
-                .mock_provider
-                .as_ref()
-                .map(super::mock_device_provider::MockDeviceProvider::get_devices)
-                .unwrap_or_default())
+            #[cfg(feature = "mock")]
+            {
+                Ok(manager
+                    .mock_provider
+                    .as_ref()
+                    .map(super::mock_device_provider::MockDeviceProvider::get_devices)
+                    .unwrap_or_default())
+            }
+            #[cfg(not(feature = "mock"))]
+            Ok(Vec::new())
         } else if let Some(provider) = &manager.biomeos_provider {
             provider.get_devices().await
         } else {
@@ -308,12 +326,16 @@ impl BiomeOSUIRPC {
     pub async fn get_primals_extended(&self) -> Result<Vec<Primal>> {
         let manager = self.manager.read().await;
         if manager.use_mock {
-            // Use mock provider for graceful degradation
-            Ok(manager
-                .mock_provider
-                .as_ref()
-                .map(super::mock_device_provider::MockDeviceProvider::get_primals_extended)
-                .unwrap_or_default())
+            #[cfg(feature = "mock")]
+            {
+                Ok(manager
+                    .mock_provider
+                    .as_ref()
+                    .map(super::mock_device_provider::MockDeviceProvider::get_primals_extended)
+                    .unwrap_or_default())
+            }
+            #[cfg(not(feature = "mock"))]
+            Ok(Vec::new())
         } else if let Some(provider) = &manager.biomeos_provider {
             provider.get_primals_extended().await
         } else {
@@ -325,12 +347,16 @@ impl BiomeOSUIRPC {
     pub async fn get_niche_templates(&self) -> Result<Vec<NicheTemplate>> {
         let manager = self.manager.read().await;
         if manager.use_mock {
-            // Use mock provider for graceful degradation
-            Ok(manager
-                .mock_provider
-                .as_ref()
-                .map(super::mock_device_provider::MockDeviceProvider::get_niche_templates)
-                .unwrap_or_default())
+            #[cfg(feature = "mock")]
+            {
+                Ok(manager
+                    .mock_provider
+                    .as_ref()
+                    .map(super::mock_device_provider::MockDeviceProvider::get_niche_templates)
+                    .unwrap_or_default())
+            }
+            #[cfg(not(feature = "mock"))]
+            Ok(Vec::new())
         } else if let Some(provider) = &manager.biomeos_provider {
             provider.get_niche_templates().await
         } else {
@@ -374,8 +400,11 @@ mod tests {
     async fn test_mock_mode() {
         let manager = BiomeOSUIManager::new().await;
 
-        // In test environment, should use mock mode
+        // Mock mode only when mock feature enabled and biomeOS unavailable
+        #[cfg(feature = "mock")]
         assert!(manager.is_mock_mode());
+        #[cfg(not(feature = "mock"))]
+        assert!(!manager.is_mock_mode());
     }
 
     #[tokio::test]
@@ -399,15 +428,23 @@ mod tests {
         let manager = Arc::new(RwLock::new(BiomeOSUIManager::new().await));
         let rpc = BiomeOSUIRPC::new(manager);
 
-        // Test data access via RPC
+        // Test data access via RPC (mock data only when mock feature enabled)
         let devices = rpc.get_devices().await.unwrap();
-        assert!(!devices.is_empty(), "Should have mock devices");
-
         let primals = rpc.get_primals_extended().await.unwrap();
-        assert!(!primals.is_empty(), "Should have mock primals");
-
         let templates = rpc.get_niche_templates().await.unwrap();
-        assert!(!templates.is_empty(), "Should have mock templates");
+
+        #[cfg(feature = "mock")]
+        {
+            assert!(!devices.is_empty(), "Should have mock devices");
+            assert!(!primals.is_empty(), "Should have mock primals");
+            assert!(!templates.is_empty(), "Should have mock templates");
+        }
+        #[cfg(not(feature = "mock"))]
+        {
+            assert!(devices.is_empty());
+            assert!(primals.is_empty());
+            assert!(templates.is_empty());
+        }
     }
 
     #[tokio::test]

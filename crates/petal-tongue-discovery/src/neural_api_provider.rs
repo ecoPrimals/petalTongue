@@ -29,6 +29,15 @@ pub struct NeuralApiProvider {
 }
 
 impl NeuralApiProvider {
+    /// Create provider with explicit socket path (for testing)
+    #[cfg(test)]
+    pub fn with_socket_path(socket_path: PathBuf) -> Self {
+        Self {
+            socket_path,
+            request_id: std::sync::atomic::AtomicU64::new(1),
+        }
+    }
+
     /// Discover Neural API socket
     ///
     /// Searches for biomeos-neural-api-{family_id}.sock in standard locations.
@@ -142,7 +151,7 @@ impl NeuralApiProvider {
     /// Parse primal from Neural API format to PrimalInfo
     fn parse_primal(primal: &Value) -> Result<PrimalInfo> {
         Ok(PrimalInfo {
-            id: primal["id"].as_str().unwrap_or("unknown").to_string(),
+            id: primal["id"].as_str().unwrap_or("unknown").to_string().into(),
             name: primal["primal_type"]
                 .as_str()
                 .unwrap_or("unknown")
@@ -223,8 +232,8 @@ impl VisualizationDataProvider for NeuralApiProvider {
         let mut edges = Vec::new();
         for conn in connections {
             edges.push(TopologyEdge {
-                from: conn["from"].as_str().unwrap_or("").to_string(),
-                to: conn["to"].as_str().unwrap_or("").to_string(),
+                from: conn["from"].as_str().unwrap_or("").to_string().into(),
+                to: conn["to"].as_str().unwrap_or("").to_string().into(),
                 edge_type: conn["connection_type"]
                     .as_str()
                     .unwrap_or("unknown")
@@ -277,5 +286,29 @@ mod tests {
         assert!(!paths.is_empty());
         // Should always have /tmp as fallback
         assert!(paths.iter().any(|p| p.to_str() == Some("/tmp")));
+    }
+
+    #[test]
+    fn test_search_paths_with_xdg_runtime() {
+        petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
+            "XDG_RUNTIME_DIR",
+            "/custom/runtime",
+            || {
+                let paths = NeuralApiProvider::get_search_paths();
+                assert_eq!(paths.first().and_then(|p| p.to_str()), Some("/custom/runtime"));
+            },
+        );
+    }
+
+    #[test]
+    fn test_get_metadata() {
+        let provider = NeuralApiProvider::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let metadata = provider.get_metadata();
+
+        assert_eq!(metadata.name, "Neural API (Central Coordinator)");
+        assert!(metadata.endpoint.contains("test.sock"));
+        assert_eq!(metadata.protocol, "unix+jsonrpc");
+        assert!(metadata.capabilities.contains(&"primal-discovery".to_string()));
+        assert!(metadata.capabilities.contains(&"proprioception".to_string()));
     }
 }

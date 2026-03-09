@@ -294,9 +294,19 @@ impl<'a> NeuralGraphClient<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::NeuralApiProvider;
+    use std::path::PathBuf;
 
-    // Note: These tests would require a running Neural API server
-    // For now, we test the structure and serialization
+    // Note: save_graph, load_graph, etc. require a running Neural API server
+    // We test structure, serialization, and client construction
+
+    #[test]
+    fn test_neural_graph_client_creation() {
+        let provider = NeuralApiProvider::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = NeuralGraphClient::new(&provider);
+        drop(client);
+        drop(provider);
+    }
 
     #[test]
     fn test_execution_status_serialization() {
@@ -358,5 +368,56 @@ mod tests {
             let deserialized: ExecutionStatus = serde_json::from_value(json).unwrap();
             assert_eq!(status, deserialized);
         }
+    }
+
+    #[test]
+    fn test_graph_metadata_serde_roundtrip() {
+        let metadata = GraphMetadata {
+            id: "g1".to_string(),
+            name: "Graph 1".to_string(),
+            description: Some("Desc".to_string()),
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+            modified_at: "2026-01-02T00:00:00Z".to_string(),
+            node_count: 3,
+            edge_count: 2,
+        };
+
+        let json = serde_json::to_value(&metadata).unwrap();
+        let restored: GraphMetadata = serde_json::from_value(json).unwrap();
+        assert_eq!(metadata.id, restored.id);
+        assert_eq!(metadata.node_count, restored.node_count);
+    }
+
+    #[test]
+    fn test_graph_metadata_minimal() {
+        let metadata = GraphMetadata {
+            id: "min".to_string(),
+            name: "Minimal".to_string(),
+            description: None,
+            created_at: "0".to_string(),
+            modified_at: "0".to_string(),
+            node_count: 0,
+            edge_count: 0,
+        };
+
+        let json = serde_json::to_value(&metadata).unwrap();
+        assert_eq!(json["node_count"], 0);
+    }
+
+    #[test]
+    fn test_execution_result_serde() {
+        let result = ExecutionResult {
+            execution_id: "e1".to_string(),
+            graph_id: "g1".to_string(),
+            status: ExecutionStatus::Failed,
+            started_at: None,
+            completed_at: None,
+            error: Some("Something went wrong".to_string()),
+            output: None,
+        };
+
+        let json = serde_json::to_value(&result).unwrap();
+        assert_eq!(json["status"], "failed");
+        assert_eq!(json["error"], "Something went wrong");
     }
 }

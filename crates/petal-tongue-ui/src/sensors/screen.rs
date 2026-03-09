@@ -25,7 +25,9 @@ use std::time::Instant;
 pub struct ScreenSensor {
     capabilities: SensorCapabilities,
     display_type: DisplayType,
+    #[allow(dead_code)]
     width: usize,
+    #[allow(dead_code)]
     height: usize,
     last_heartbeat: Option<Instant>,
     frames_sent: u64,
@@ -241,11 +243,10 @@ fn query_framebuffer_dimensions(fb_path: &str) -> Result<(usize, usize)> {
     // - Optional (framebuffer feature, graceful degradation if disabled)
     //
     // Used by production systems: mpv, mplayer, kmscon, and many more.
-    let result = unsafe {
-        // Using libc directly is standard for ioctl - even rustix uses unsafe for this
-
-        libc::ioctl(fd, FBIOGET_VSCREENINFO.into(), &mut var_info)
-    };
+    //
+    // SAFETY: fd is valid (from File::open), var_info has correct layout (FBIOGET_VSCREENINFO
+    // read-only), kernel validates request. ioctl is read-only.
+    let result = unsafe { libc::ioctl(fd, FBIOGET_VSCREENINFO.into(), &mut var_info) };
 
     if result == 0 {
         Ok((var_info.xres as usize, var_info.yres as usize))
@@ -411,5 +412,40 @@ mod tests {
     async fn test_screen_discovery() {
         // This test depends on environment, so just check it doesn't crash
         let _result = discover().await;
+    }
+
+    #[tokio::test]
+    async fn test_display_type_names() {
+        assert_eq!(
+            ScreenSensor::new(DisplayType::Terminal, 80, 24).name(),
+            "Terminal Screen"
+        );
+        assert_eq!(
+            ScreenSensor::new(DisplayType::Framebuffer, 1920, 1080).name(),
+            "Framebuffer Screen"
+        );
+        assert_eq!(
+            ScreenSensor::new(DisplayType::Window, 1400, 900).name(),
+            "Window Screen"
+        );
+        assert_eq!(
+            ScreenSensor::new(DisplayType::Unknown, 0, 0).name(),
+            "Unknown Screen"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_record_frame_sent() {
+        let mut sensor = ScreenSensor::new(DisplayType::Terminal, 80, 24);
+        sensor.record_frame_sent(42);
+        // Frame ID is stored - we verify through poll which may include it
+        let events = sensor.poll_events().await.unwrap();
+        assert!(!events.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_screen_is_available() {
+        let sensor = ScreenSensor::new(DisplayType::Terminal, 80, 24);
+        assert!(sensor.is_available());
     }
 }

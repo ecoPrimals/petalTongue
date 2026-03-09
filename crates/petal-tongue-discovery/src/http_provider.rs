@@ -77,6 +77,7 @@ struct DiscoveredPrimal {
     last_seen: u64,
 }
 
+#[allow(deprecated)]
 impl HttpVisualizationProvider {
     /// Create a new HTTP provider
     ///
@@ -112,6 +113,7 @@ impl HttpVisualizationProvider {
 }
 
 #[async_trait]
+#[allow(deprecated)]
 impl VisualizationDataProvider for HttpVisualizationProvider {
     async fn get_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
         let url = format!("{}/api/v1/primals", self.endpoint);
@@ -198,10 +200,11 @@ impl VisualizationDataProvider for HttpVisualizationProvider {
 }
 
 /// Convert discovered primal to PrimalInfo
+#[allow(deprecated)]
 impl From<DiscoveredPrimal> for PrimalInfo {
     fn from(primal: DiscoveredPrimal) -> Self {
         Self {
-            id: primal.id,
+            id: primal.id.into(),
             name: primal.name,
             primal_type: primal.primal_type,
             endpoint: primal.endpoint,
@@ -225,6 +228,7 @@ impl From<DiscoveredPrimal> for PrimalInfo {
 }
 
 #[cfg(test)]
+#[allow(deprecated)]
 mod tests {
     use super::*;
 

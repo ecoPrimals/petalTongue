@@ -16,7 +16,7 @@ use std::sync::{Arc, RwLock};
 /// 1. Holds all registered adapters
 /// 2. Finds the right adapter for each property
 /// 3. Falls back to generic rendering if no adapter exists
-/// 4. Provides thread-safe access (Arc<RwLock>)
+/// 4. Provides thread-safe access (`Arc<RwLock>`)
 ///
 /// # Example
 ///
@@ -229,5 +229,49 @@ mod tests {
         assert_eq!(names.len(), 2);
         assert!(names.contains(&"alpha".to_string()));
         assert!(names.contains(&"beta".to_string()));
+    }
+
+    #[test]
+    fn test_registry_default() {
+        let registry = AdapterRegistry::default();
+        assert_eq!(registry.adapter_count(), 0);
+    }
+
+    #[test]
+    fn test_registry_priority_sorting() {
+        struct HighPriorityAdapter;
+        impl PropertyAdapter for HighPriorityAdapter {
+            fn name(&self) -> &str {
+                "high"
+            }
+            fn handles(&self, _: &str) -> bool {
+                false
+            }
+            fn render(&self, _: &str, _: &PropertyValue, _: &mut Ui) {}
+            fn priority(&self) -> i32 {
+                100
+            }
+        }
+        struct LowPriorityAdapter;
+        impl PropertyAdapter for LowPriorityAdapter {
+            fn name(&self) -> &str {
+                "low"
+            }
+            fn handles(&self, _: &str) -> bool {
+                false
+            }
+            fn render(&self, _: &str, _: &PropertyValue, _: &mut Ui) {}
+            fn priority(&self) -> i32 {
+                1
+            }
+        }
+
+        let registry = AdapterRegistry::new();
+        registry.register(Box::new(LowPriorityAdapter));
+        registry.register(Box::new(HighPriorityAdapter));
+
+        let names = registry.adapter_names();
+        assert_eq!(names.len(), 2);
+        assert_eq!(names[0], "high");
     }
 }
