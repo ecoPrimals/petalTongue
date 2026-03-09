@@ -4,7 +4,7 @@
 //! **Universal Terminal User Interface** for biomeOS and ecoPrimals.
 //!
 //! This crate provides a rich, interactive terminal UI that can:
-//! - Run as a standalone UI (like PopOS)
+//! - Run as a standalone UI (like `PopOS`)
 //! - Run on top of existing OS (SSH, headless)
 //! - Manage neuralAPI, NUCLEUS, liveSpore
 //! - Adapt to any user (human, AI, non-human)
@@ -12,7 +12,7 @@
 //!
 //! ## Features
 //!
-//! - **8 Interactive Views**: Dashboard, Topology, Devices, Primals, Logs, neuralAPI, NUCLEUS, LiveSpore
+//! - **8 Interactive Views**: Dashboard, Topology, Devices, Primals, Logs, neuralAPI, NUCLEUS, `LiveSpore`
 //! - **Real-Time Updates**: Live WebSocket/JSON-RPC integration
 //! - **Keyboard Navigation**: Full keyboard control
 //! - **Mouse Support**: Optional mouse interaction

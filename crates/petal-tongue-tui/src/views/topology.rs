@@ -2,7 +2,9 @@
 //! Topology View
 //!
 //! ASCII art graph visualization of primal connections.
-//! Leverages Songbird if available, ToadStool for layout compute (optional).
+//! Leverages discovery provider if available, layout compute optional.
+
+use std::collections::HashMap;
 
 use ratatui::{
     Frame,
@@ -13,6 +15,23 @@ use ratatui::{
 };
 
 use crate::state::TUIState;
+
+fn health_icon_for_status(health: petal_tongue_core::PrimalHealthStatus) -> &'static str {
+    match health {
+        petal_tongue_core::PrimalHealthStatus::Healthy => "✅",
+        petal_tongue_core::PrimalHealthStatus::Warning => "⚠️",
+        petal_tongue_core::PrimalHealthStatus::Critical => "❌",
+        petal_tongue_core::PrimalHealthStatus::Unknown => "❓",
+    }
+}
+
+fn count_edge_types(topology: &[petal_tongue_core::TopologyEdge]) -> HashMap<String, usize> {
+    let mut edge_types = HashMap::new();
+    for edge in topology {
+        *edge_types.entry(edge.edge_type.clone()).or_insert(0) += 1;
+    }
+    edge_types
+}
 
 /// Render topology view
 pub fn render(frame: &mut Frame, area: Rect, state: &TUIState) {
@@ -108,15 +127,8 @@ fn render_graph(
             Line::from(""),
         ];
 
-        use petal_tongue_core::PrimalHealthStatus;
-
         for primal in primals {
-            let health_icon = match primal.health {
-                PrimalHealthStatus::Healthy => "✅",
-                PrimalHealthStatus::Warning => "⚠️",
-                PrimalHealthStatus::Critical => "❌",
-                PrimalHealthStatus::Unknown => "❓",
-            };
+            let health_icon = health_icon_for_status(primal.health);
 
             lines.push(Line::from(vec![Span::raw("    ┌─────────────┐")]));
             lines.push(Line::from(vec![
@@ -153,24 +165,17 @@ fn render_graph(
 }
 
 /// Render ASCII graph with connections
-fn render_ascii_graph<'a>(
+pub(crate) fn render_ascii_graph<'a>(
     primals: &'a [petal_tongue_core::PrimalInfo],
     topology: &'a [petal_tongue_core::TopologyEdge],
 ) -> Vec<Line<'a>> {
     let mut lines = vec![Line::from("")];
 
     // Simple vertical layout for now
-    // TODO: Implement proper force-directed layout (optionally with ToadStool)
-
-    use petal_tongue_core::PrimalHealthStatus;
+    // TODO: Implement proper force-directed layout (optionally with layout provider)
 
     for (i, primal) in primals.iter().enumerate() {
-        let health_icon = match primal.health {
-            PrimalHealthStatus::Healthy => "✅",
-            PrimalHealthStatus::Warning => "⚠️",
-            PrimalHealthStatus::Critical => "❌",
-            PrimalHealthStatus::Unknown => "❓",
-        };
+        let health_icon = health_icon_for_status(primal.health);
 
         // Node box
         lines.push(Line::from(vec![Span::raw("    ┌─────────────────┐")]));
@@ -251,12 +256,7 @@ fn render_details(
             ListItem::new(Line::from("")),
         ];
 
-        // Count edge types
-        let mut edge_types: std::collections::HashMap<String, usize> =
-            std::collections::HashMap::new();
-        for edge in topology {
-            *edge_types.entry(edge.edge_type.clone()).or_insert(0) += 1;
-        }
+        let edge_types = count_edge_types(topology);
 
         for (edge_type, count) in edge_types {
             items.push(ListItem::new(Line::from(vec![
@@ -278,4 +278,183 @@ fn render_details(
     );
 
     frame.render_widget(list, area);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use petal_tongue_core::{PrimalHealthStatus, PrimalId, PrimalInfo, TopologyEdge};
+
+    fn line_text(line: &ratatui::text::Line) -> String {
+        line.spans.iter().map(|s| s.content.as_ref()).collect()
+    }
+
+    #[test]
+    fn render_ascii_graph_empty_primals() {
+        let primals: Vec<PrimalInfo> = vec![];
+        let topology: Vec<TopologyEdge> = vec![];
+        let lines = render_ascii_graph(&primals, &topology);
+        assert_eq!(lines.len(), 1);
+        assert_eq!(line_text(&lines[0]), "");
+    }
+
+    #[test]
+    fn render_ascii_graph_one_primal_no_edges() {
+        let primals = vec![PrimalInfo::new(
+            PrimalId::from("test-primal"),
+            "TestPrimal",
+            "Compute",
+            "http://localhost",
+            vec![],
+            PrimalHealthStatus::Healthy,
+            0,
+        )];
+        let topology: Vec<TopologyEdge> = vec![];
+        let lines = render_ascii_graph(&primals, &topology);
+        assert!(lines.len() >= 5);
+        let all_text: String = lines.iter().map(line_text).collect::<Vec<_>>().join("\n");
+        assert!(all_text.contains("TestPrimal"));
+        assert!(all_text.contains("Compute"));
+    }
+
+    #[test]
+    fn render_ascii_graph_with_topology_edges() {
+        let primals = vec![
+            PrimalInfo::new(
+                PrimalId::from("a"),
+                "PrimalA",
+                "Compute",
+                "http://a",
+                vec![],
+                PrimalHealthStatus::Healthy,
+                0,
+            ),
+            PrimalInfo::new(
+                PrimalId::from("b"),
+                "PrimalB",
+                "Storage",
+                "http://b",
+                vec![],
+                PrimalHealthStatus::Healthy,
+                0,
+            ),
+        ];
+        let topology = vec![TopologyEdge {
+            from: PrimalId::from("a"),
+            to: PrimalId::from("b"),
+            edge_type: "connection".to_string(),
+            label: None,
+            capability: None,
+            metrics: None,
+        }];
+        let lines = render_ascii_graph(&primals, &topology);
+        assert!(lines.len() >= 10);
+        let all_text: String = lines.iter().map(line_text).collect::<Vec<_>>().join("\n");
+        assert!(all_text.contains("PrimalA"));
+        assert!(all_text.contains("PrimalB"));
+        assert!(all_text.contains("connection"));
+    }
+
+    #[test]
+    fn render_ascii_graph_health_icons() {
+        let primals = vec![
+            PrimalInfo::new(
+                PrimalId::from("h"),
+                "Healthy",
+                "T",
+                "http://h",
+                vec![],
+                PrimalHealthStatus::Healthy,
+                0,
+            ),
+            PrimalInfo::new(
+                PrimalId::from("w"),
+                "Warning",
+                "T",
+                "http://w",
+                vec![],
+                PrimalHealthStatus::Warning,
+                0,
+            ),
+        ];
+        let topology: Vec<TopologyEdge> = vec![];
+        let lines = render_ascii_graph(&primals, &topology);
+        let all_text: String = lines.iter().map(line_text).collect::<Vec<_>>().join("\n");
+        assert!(all_text.contains("Healthy"));
+        assert!(all_text.contains("Warning"));
+        assert!(all_text.contains("✅"));
+        assert!(all_text.contains("⚠️"));
+    }
+
+    #[test]
+    fn health_icon_for_status_mapping() {
+        assert_eq!(health_icon_for_status(PrimalHealthStatus::Healthy), "✅");
+        assert_eq!(health_icon_for_status(PrimalHealthStatus::Warning), "⚠️");
+        assert_eq!(health_icon_for_status(PrimalHealthStatus::Critical), "❌");
+        assert_eq!(health_icon_for_status(PrimalHealthStatus::Unknown), "❓");
+    }
+
+    #[test]
+    fn count_edge_types_empty() {
+        let topology: Vec<TopologyEdge> = vec![];
+        let counts = count_edge_types(&topology);
+        assert!(counts.is_empty());
+    }
+
+    #[test]
+    fn count_edge_types_single_type() {
+        let topology = vec![
+            TopologyEdge {
+                from: PrimalId::from("a"),
+                to: PrimalId::from("b"),
+                edge_type: "connection".to_string(),
+                label: None,
+                capability: None,
+                metrics: None,
+            },
+            TopologyEdge {
+                from: PrimalId::from("b"),
+                to: PrimalId::from("c"),
+                edge_type: "connection".to_string(),
+                label: None,
+                capability: None,
+                metrics: None,
+            },
+        ];
+        let counts = count_edge_types(&topology);
+        assert_eq!(counts.get("connection"), Some(&2));
+    }
+
+    #[test]
+    fn count_edge_types_multiple_types() {
+        let topology = vec![
+            TopologyEdge {
+                from: PrimalId::from("a"),
+                to: PrimalId::from("b"),
+                edge_type: "connection".to_string(),
+                label: None,
+                capability: None,
+                metrics: None,
+            },
+            TopologyEdge {
+                from: PrimalId::from("b"),
+                to: PrimalId::from("c"),
+                edge_type: "data".to_string(),
+                label: None,
+                capability: None,
+                metrics: None,
+            },
+            TopologyEdge {
+                from: PrimalId::from("c"),
+                to: PrimalId::from("a"),
+                edge_type: "connection".to_string(),
+                label: None,
+                capability: None,
+                metrics: None,
+            },
+        ];
+        let counts = count_edge_types(&topology);
+        assert_eq!(counts.get("connection"), Some(&2));
+        assert_eq!(counts.get("data"), Some(&1));
+    }
 }

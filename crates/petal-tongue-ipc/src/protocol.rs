@@ -47,7 +47,7 @@ pub enum IpcCommand {
     // === Motor commands (efferent via IPC afferent channel) ===
     /// Set a panel's visibility
     SetPanel {
-        /// Panel name (e.g. "left_sidebar", "audio", "system_dashboard", "trust", "proprioception", "graph_stats", "top_menu")
+        /// Panel name (e.g. "`left_sidebar`", "audio", "`system_dashboard`", "trust", "proprioception", "`graph_stats`", "`top_menu`")
         panel: String,
         /// Whether to show or hide
         visible: bool,
@@ -182,7 +182,7 @@ impl IpcCommand {
     /// Convert this IPC command to a motor command, if applicable.
     ///
     /// IPC commands that map to motor efferent signals return `Some(MotorCommand)`.
-    /// Non-motor commands (Ping, GetStatus, etc.) return `None`.
+    /// Non-motor commands (Ping, `GetStatus`, etc.) return `None`.
     #[must_use]
     pub fn to_motor_command(&self) -> Option<petal_tongue_core::MotorCommand> {
         use petal_tongue_core::{MotorCommand, PanelId};

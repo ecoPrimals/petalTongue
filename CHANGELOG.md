@@ -2,6 +2,30 @@
 
 All notable changes to petalTongue will be documented in this file.
 
+## [1.4.2] - 2026-03-09
+
+### Added - Pedantic Lints, Coverage Expansion & Cleanup
+- **clippy::pedantic**: Enabled workspace-wide via `[workspace.lints.clippy]` with selective allows. All crates inherit via `[lints] workspace = true`.
+- **+332 new tests** (1,484 → 1,816) across 30+ modules:
+  - TUI rendering tests via ratatui TestBackend (all 8 views)
+  - Graph validation, session management, config, constants, instance lifecycle
+  - Proprioception, sensory capabilities, display traits, display verification
+  - Scenario ecosystem/types/config/loader, graph engine layout/types
+  - Human entropy state, process viewer, graph metrics plotter
+  - System dashboard panels, app_panels builders/primal_details
+  - Visual 2D interaction/animation, doom-core WAD parsing, audio sonification
+  - Core types, rendering awareness, state sync, awakening coordinator, sensor, dynamic schema
+  - CLI parsing, IPC server, discovery provider, streaming protocol/execution state
+- **Coverage**: 56% → 63% line, 63% → 67% function
+
+### Changed
+- Workspace-level `[workspace.lints.clippy]` replaces per-crate lint configuration
+- All crate Cargo.toml files now use `[lints] workspace = true`
+- Auto-fixed ~390 pedantic warnings (format strings, closures, imports)
+- Extracted testable helpers from rendering modules for unit testing
+
+---
+
 ## [1.4.1] - 2026-03-09
 
 ### Added - UiConfig IPC, Domain-Aware Rendering & Refactoring

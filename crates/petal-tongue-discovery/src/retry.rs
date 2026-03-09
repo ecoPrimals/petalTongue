@@ -36,6 +36,7 @@ impl Default for RetryPolicy {
 
 impl RetryPolicy {
     /// Create a new retry policy
+    #[must_use]
     pub fn new(max_attempts: usize) -> Self {
         Self {
             max_attempts,

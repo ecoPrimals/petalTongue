@@ -55,12 +55,14 @@ impl SvgUI {
     }
 
     /// Set background color (hex format)
+    #[must_use]
     pub fn with_background(mut self, color: &str) -> Self {
         self.background_color = color.to_string();
         self
     }
 
     /// Set node radius
+    #[must_use]
     pub fn with_node_radius(mut self, radius: f32) -> Self {
         self.node_radius = radius;
         self
@@ -86,11 +88,11 @@ impl SvgUI {
 
         // Styles
         svg.push_str(
-            r#"<style>
+            r"<style>
             text { font-family: system-ui, sans-serif; fill: #f3f4f6; }
             .node-label { font-size: 12px; text-anchor: middle; }
             .edge { stroke: #6b7280; stroke-width: 2; }
-        </style>"#,
+        </style>",
         );
         svg.push('\n');
 
@@ -104,14 +106,16 @@ impl SvgUI {
             let from_pos = nodes
                 .iter()
                 .find(|n| n.info.id == edge.from)
-                .map(|n| (n.position.x, n.position.y))
-                .unwrap_or((self.width as f32 / 2.0, self.height as f32 / 2.0));
+                .map_or((self.width as f32 / 2.0, self.height as f32 / 2.0), |n| {
+                    (n.position.x, n.position.y)
+                });
 
             let to_pos = nodes
                 .iter()
                 .find(|n| n.info.id == edge.to)
-                .map(|n| (n.position.x, n.position.y))
-                .unwrap_or((self.width as f32 / 2.0, self.height as f32 / 2.0));
+                .map_or((self.width as f32 / 2.0, self.height as f32 / 2.0), |n| {
+                    (n.position.x, n.position.y)
+                });
 
             svg.push_str(&format!(
                 r#"<line x1="{}" y1="{}" x2="{}" y2="{}" class="edge"/>"#,
@@ -165,7 +169,7 @@ impl SvgUI {
 }
 
 impl UniversalUI for SvgUI {
-    fn mode_name(&self) -> &str {
+    fn mode_name(&self) -> &'static str {
         "SVG"
     }
 

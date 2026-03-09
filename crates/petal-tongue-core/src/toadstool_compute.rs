@@ -97,9 +97,9 @@ impl ToadstoolCompute {
             });
         }
 
-        // TODO: Implement mDNS discovery
-        // TODO: Implement Unix socket probing
-        // TODO: Implement HTTP probing
+        // TODO: Implement mDNS discovery (delegated to discovery provider)
+        // TODO: Implement Unix socket probing (delegated to discovery provider)
+        // TODO: Implement HTTP probing (delegated to beardog/songbird via IPC)
 
         anyhow::bail!("No GPU compute provider discovered")
     }

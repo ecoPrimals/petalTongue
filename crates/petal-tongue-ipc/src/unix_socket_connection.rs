@@ -48,3 +48,32 @@ pub async fn handle_connection(handler: &RpcHandlers, stream: UnixStream) -> Res
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_json_rpc_request_line() {
+        let line = r#"{"jsonrpc":"2.0","method":"health.get","params":{},"id":42}"#;
+        let request: JsonRpcRequest = serde_json::from_str(line).expect("parse");
+        assert_eq!(request.jsonrpc, "2.0");
+        assert_eq!(request.method, "health.get");
+        assert_eq!(request.id, serde_json::json!(42));
+    }
+
+    #[test]
+    fn parse_json_rpc_request_with_params() {
+        let line = r#"{"jsonrpc":"2.0","method":"capability.list","params":{"filter":"compute"},"id":"req-1"}"#;
+        let request: JsonRpcRequest = serde_json::from_str(line).expect("parse");
+        assert_eq!(request.method, "capability.list");
+        assert_eq!(request.id, serde_json::json!("req-1"));
+    }
+
+    #[test]
+    fn parse_invalid_json_returns_error() {
+        let line = r#"{"jsonrpc":"2.0","method":}"#;
+        let result: Result<JsonRpcRequest, _> = serde_json::from_str(line);
+        assert!(result.is_err());
+    }
+}

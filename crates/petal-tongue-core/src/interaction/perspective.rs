@@ -4,7 +4,7 @@
 //! A [`Perspective`] is the complete context through which a human perceives
 //! and interacts with data. Two users can have different perspectives on the
 //! same data and both be correct. Selection and focus operate on
-//! [`DataObjectId`](super::target::DataObjectId) values (perspective-invariant),
+//! [`DataObjectId`] values (perspective-invariant),
 //! not on rendered primitives.
 
 use serde::{Deserialize, Serialize};

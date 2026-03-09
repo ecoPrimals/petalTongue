@@ -34,7 +34,9 @@ impl ProprioceptionPanel {
     pub fn new() -> Self {
         Self {
             data: None,
-            last_update: Instant::now().checked_sub(REFRESH_INTERVAL).unwrap(), // Trigger immediate fetch
+            last_update: Instant::now()
+                .checked_sub(REFRESH_INTERVAL)
+                .unwrap_or_else(Instant::now),
             fetching: false,
         }
     }

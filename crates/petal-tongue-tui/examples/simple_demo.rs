@@ -3,7 +3,7 @@
 //!
 //! Demonstrates the Rich TUI in action.
 //!
-//! Run with: cargo run --example simple_demo
+//! Run with: cargo run --example `simple_demo`
 
 use petal_tongue_tui::launch;
 

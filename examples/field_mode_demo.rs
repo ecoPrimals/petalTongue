@@ -91,72 +91,69 @@ async fn run_field_interface(
         let events = registry.poll_all().await?;
 
         for event in events {
-            match event {
-                SensorEvent::KeyPress { key, .. } => {
-                    match key {
-                        Key::Char('s') | Key::Char('S') => {
-                            println!("\n📊 Topology Status:");
-                            println!("   Total nodes: {}", total_nodes);
-                            println!("   Healthy: {}", total_nodes - 1);
-                            println!("   Warnings: 1");
-                            println!("   Current node: {}/{}", current_node + 1, total_nodes);
-                            println!();
+            if let SensorEvent::KeyPress { key, .. } = event {
+                match key {
+                    Key::Char('s' | 'S') => {
+                        println!("\n📊 Topology Status:");
+                        println!("   Total nodes: {total_nodes}");
+                        println!("   Healthy: {}", total_nodes - 1);
+                        println!("   Warnings: 1");
+                        println!("   Current node: {}/{}", current_node + 1, total_nodes);
+                        println!();
 
-                            if audio_available {
-                                // Play success beep
-                                println!("🔊 *beep*");
-                            }
+                        if audio_available {
+                            // Play success beep
+                            println!("🔊 *beep*");
                         }
-                        Key::Char('h') | Key::Char('H') => {
-                            println!("\n💚 System Health:");
-                            println!("   Overall: Healthy");
-                            println!("   Uptime: 5m 23s");
-                            println!("   Memory: 45MB");
-                            println!("   CPU: 2%");
-                            println!();
+                    }
+                    Key::Char('h' | 'H') => {
+                        println!("\n💚 System Health:");
+                        println!("   Overall: Healthy");
+                        println!("   Uptime: 5m 23s");
+                        println!("   Memory: 45MB");
+                        println!("   CPU: 2%");
+                        println!();
 
-                            if audio_available {
-                                println!("🔊 *success tone*");
-                            }
+                        if audio_available {
+                            println!("🔊 *success tone*");
                         }
-                        Key::Char('n') | Key::Char('N') => {
-                            current_node = (current_node + 1) % total_nodes;
-                            println!("→ Next node: {}/{}", current_node + 1, total_nodes);
+                    }
+                    Key::Char('n' | 'N') => {
+                        current_node = (current_node + 1) % total_nodes;
+                        println!("→ Next node: {}/{}", current_node + 1, total_nodes);
 
-                            if audio_available {
-                                println!("🔊 *click*");
-                            }
+                        if audio_available {
+                            println!("🔊 *click*");
                         }
-                        Key::Char('p') | Key::Char('P') => {
-                            current_node = if current_node == 0 {
-                                total_nodes - 1
-                            } else {
-                                current_node - 1
-                            };
-                            println!("← Previous node: {}/{}", current_node + 1, total_nodes);
+                    }
+                    Key::Char('p' | 'P') => {
+                        current_node = if current_node == 0 {
+                            total_nodes - 1
+                        } else {
+                            current_node - 1
+                        };
+                        println!("← Previous node: {}/{}", current_node + 1, total_nodes);
 
-                            if audio_available {
-                                println!("🔊 *click*");
-                            }
+                        if audio_available {
+                            println!("🔊 *click*");
                         }
-                        Key::Char('q') | Key::Char('Q') => {
-                            println!("\n👋 Exiting field mode...");
-                            if audio_available {
-                                println!("🔊 *goodbye tone*");
-                            }
-                            return Ok(());
+                    }
+                    Key::Char('q' | 'Q') => {
+                        println!("\n👋 Exiting field mode...");
+                        if audio_available {
+                            println!("🔊 *goodbye tone*");
                         }
-                        _ => {
-                            println!("❓ Unknown command. Press [S], [H], [N], [P], or [Q].");
-                            if audio_available {
-                                println!("🔊 *error beep*");
-                            }
+                        return Ok(());
+                    }
+                    _ => {
+                        println!("❓ Unknown command. Press [S], [H], [N], [P], or [Q].");
+                        if audio_available {
+                            println!("🔊 *error beep*");
                         }
                     }
                 }
-                _ => {
-                    // Ignore other events
-                }
+            } else {
+                // Ignore other events
             }
         }
 

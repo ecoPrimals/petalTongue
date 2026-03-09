@@ -440,8 +440,10 @@ mod tests {
     #[tokio::test]
     async fn test_awakening_disabled() {
         let engine = Arc::new(UniversalRenderingEngine::new().unwrap());
-        let mut config = AwakeningConfig::default();
-        config.enabled = false;
+        let config = AwakeningConfig {
+            enabled: false,
+            ..Default::default()
+        };
 
         let awakening = AwakeningExperience::with_config(engine, config);
 
@@ -452,14 +454,18 @@ mod tests {
     #[tokio::test]
     async fn test_custom_durations() {
         let engine = Arc::new(UniversalRenderingEngine::new().unwrap());
-        let mut config = AwakeningConfig::default();
-        config.stage_1_duration = 1; // Fast for testing
-        config.stage_2_duration = 1;
-        config.stage_3_duration = 1;
-        config.stage_4_duration = 1;
-        config.modality.visual_enabled = true;
-        config.modality.audio_enabled = true;
-        config.modality.text_enabled = true;
+        let config = AwakeningConfig {
+            stage_1_duration: 1,
+            stage_2_duration: 1,
+            stage_3_duration: 1,
+            stage_4_duration: 1,
+            modality: AwakeningModalityFlags {
+                visual_enabled: true,
+                audio_enabled: true,
+                text_enabled: true,
+            },
+            ..Default::default()
+        };
 
         let awakening = AwakeningExperience::with_config(engine, config);
 

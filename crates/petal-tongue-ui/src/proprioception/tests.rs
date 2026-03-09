@@ -138,3 +138,62 @@ fn test_initialize_standard_proprioception() {
     let state = system.get_state();
     assert!(!state.status.is_empty());
 }
+
+#[test]
+fn test_proprioceptive_state_not_confident() {
+    let state = ProprioceptiveState {
+        motor_functional: true,
+        sensory_functional: true,
+        loop_complete: true,
+        health: 0.9,
+        confidence: 0.5,
+        last_loop_confirmation: None,
+        status: "OK".to_string(),
+        frame_rate: 60.0,
+        time_since_last_frame: std::time::Duration::ZERO,
+        is_hanging: false,
+        hang_reason: None,
+        total_frames: 100,
+    };
+    assert!(!state.is_confident());
+}
+
+#[test]
+fn test_proprioceptive_state_health_threshold() {
+    let state = ProprioceptiveState {
+        motor_functional: true,
+        sensory_functional: true,
+        loop_complete: true,
+        health: 0.7,
+        confidence: 0.9,
+        last_loop_confirmation: None,
+        status: "OK".to_string(),
+        frame_rate: 60.0,
+        time_since_last_frame: std::time::Duration::ZERO,
+        is_hanging: false,
+        hang_reason: None,
+        total_frames: 100,
+    };
+    assert!(!state.is_healthy());
+}
+
+#[test]
+fn test_input_received_confirms_output() {
+    let mut system = ProprioceptionSystem::new();
+    system.register_output(OutputModality::Visual);
+    system.register_input(InputModality::Keyboard);
+    system.input_received(&InputModality::Keyboard);
+    let state = system.assess();
+    let _ = state.total_frames;
+}
+
+#[test]
+fn test_assess_aggregates_health() {
+    let mut system = ProprioceptionSystem::new();
+    system.register_output(OutputModality::Visual);
+    system.register_input(InputModality::Keyboard);
+    system.input_received(&InputModality::Keyboard);
+    let state = system.assess();
+    assert!(state.health >= 0.0 && state.health <= 1.0);
+    assert!(state.confidence >= 0.0 && state.confidence <= 1.0);
+}

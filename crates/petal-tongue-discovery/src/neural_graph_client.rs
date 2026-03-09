@@ -93,7 +93,7 @@ impl<'a> NeuralGraphClient<'a> {
     /// Save a graph to Neural API
     ///
     /// # Arguments
-    /// * `graph_json` - The graph as JSON (serialized VisualGraph)
+    /// * `graph_json` - The graph as JSON (serialized `VisualGraph`)
     ///
     /// # Returns
     /// The graph ID assigned by Neural API
@@ -124,7 +124,7 @@ impl<'a> NeuralGraphClient<'a> {
     /// * `graph_id` - The graph ID to load
     ///
     /// # Returns
-    /// The graph as JSON (to be deserialized into VisualGraph)
+    /// The graph as JSON (to be deserialized into `VisualGraph`)
     pub async fn load_graph(&self, graph_id: &str) -> Result<serde_json::Value> {
         let params = json!({
             "graph_id": graph_id
@@ -303,9 +303,7 @@ mod tests {
     #[test]
     fn test_neural_graph_client_creation() {
         let provider = NeuralApiProvider::with_socket_path(PathBuf::from("/tmp/test.sock"));
-        let client = NeuralGraphClient::new(&provider);
-        drop(client);
-        drop(provider);
+        let _client = NeuralGraphClient::new(&provider);
     }
 
     #[test]

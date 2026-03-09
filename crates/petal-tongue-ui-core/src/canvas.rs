@@ -31,12 +31,10 @@ use std::sync::{Arc, RwLock};
 /// # Ok(())
 /// # }
 /// ```
+#[allow(dead_code)]
 pub struct CanvasUI {
-    #[expect(dead_code)]
     graph: Arc<RwLock<GraphEngine>>,
-    #[expect(dead_code)]
     width: u32,
-    #[expect(dead_code)]
     height: u32,
 }
 
@@ -54,6 +52,7 @@ impl CanvasUI {
     ///
     /// TODO: Implement full rendering with tiny-skia
     /// For now, returns a placeholder
+    #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
     fn render_png(&self) -> Result<Vec<u8>> {
         tracing::warn!("Canvas rendering not fully implemented yet - generating placeholder");
 
@@ -74,7 +73,7 @@ impl CanvasUI {
 }
 
 impl UniversalUI for CanvasUI {
-    fn mode_name(&self) -> &str {
+    fn mode_name(&self) -> &'static str {
         "Canvas/PNG"
     }
 

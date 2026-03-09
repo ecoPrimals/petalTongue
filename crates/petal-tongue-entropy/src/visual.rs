@@ -4,7 +4,7 @@
 //! Captures stroke patterns, spatial coverage, and timing for visual creativity.
 
 use crate::quality::{create_histogram_buckets, shannon_entropy, variance, weighted_quality};
-use crate::types::*;
+use crate::types::{Color, Point2D, Stroke, VisualEntropyData, VisualQualityMetrics};
 use std::time::Duration;
 
 /// Compute Shannon entropy from color channel histograms (R, G, B buckets).
@@ -17,16 +17,17 @@ use std::time::Duration;
 ///
 /// # Returns
 /// Average Shannon entropy [0.0-1.0] across R, G, B channels, or 0.0 for empty input
+#[must_use]
 pub fn compute_color_entropy(colors: &[Color]) -> f64 {
+    const NUM_BUCKETS: usize = 8;
+
     if colors.is_empty() {
         return 0.0;
     }
 
-    let r_vals: Vec<f64> = colors.iter().map(|c| c.r as f64).collect();
-    let g_vals: Vec<f64> = colors.iter().map(|c| c.g as f64).collect();
-    let b_vals: Vec<f64> = colors.iter().map(|c| c.b as f64).collect();
-
-    const NUM_BUCKETS: usize = 8;
+    let r_vals: Vec<f64> = colors.iter().map(|c| f64::from(c.r)).collect();
+    let g_vals: Vec<f64> = colors.iter().map(|c| f64::from(c.g)).collect();
+    let b_vals: Vec<f64> = colors.iter().map(|c| f64::from(c.b)).collect();
     let r_buckets = create_histogram_buckets(&r_vals, NUM_BUCKETS);
     let g_buckets = create_histogram_buckets(&g_vals, NUM_BUCKETS);
     let b_buckets = create_histogram_buckets(&b_vals, NUM_BUCKETS);
@@ -39,8 +40,8 @@ pub fn compute_color_entropy(colors: &[Color]) -> f64 {
 }
 
 /// Compute luminance (perceived brightness) for a color.
-fn luminance(c: &Color) -> f64 {
-    0.299 * (c.r as f64) + 0.587 * (c.g as f64) + 0.114 * (c.b as f64)
+fn luminance(c: Color) -> f64 {
+    0.299 * f64::from(c.r) + 0.587 * f64::from(c.g) + 0.114 * f64::from(c.b)
 }
 
 /// Quantify visual complexity from color diversity, brightness variance,
@@ -57,7 +58,7 @@ pub fn visual_complexity(strokes: &[Stroke], canvas_size: (u32, u32)) -> f64 {
         return 0.0;
     }
 
-    let (cw, ch) = (canvas_size.0 as f64, canvas_size.1 as f64);
+    let (cw, ch) = (f64::from(canvas_size.0), f64::from(canvas_size.1));
     let canvas_area = (cw * ch).max(1.0);
 
     // 1. Color diversity: Shannon entropy of color distribution
@@ -65,7 +66,7 @@ pub fn visual_complexity(strokes: &[Stroke], canvas_size: (u32, u32)) -> f64 {
     let color_component = compute_color_entropy(&colors);
 
     // 2. Brightness variance: variance of luminance across strokes
-    let luminances: Vec<f64> = colors.iter().map(luminance).collect();
+    let luminances: Vec<f64> = colors.iter().copied().map(luminance).collect();
     let brightness_component = if luminances.len() >= 2 {
         variance(&luminances)
     } else {
@@ -88,6 +89,7 @@ pub struct VisualEntropyCapture {
 
 impl VisualEntropyCapture {
     /// Create a new visual entropy capturer
+    #[must_use]
     pub fn new(canvas_width: u32, canvas_height: u32) -> Self {
         Self {
             strokes: Vec::new(),
@@ -101,6 +103,7 @@ impl VisualEntropyCapture {
     }
 
     /// Assess current quality
+    #[must_use]
     pub fn assess_quality(&self) -> VisualQualityMetrics {
         if self.strokes.is_empty() {
             return VisualQualityMetrics {
@@ -148,7 +151,7 @@ impl VisualEntropyCapture {
     }
 
     fn calculate_spatial_entropy(&self) -> f64 {
-        let (cw, ch) = (self.canvas_size.0 as f64, self.canvas_size.1 as f64);
+        let (cw, ch) = (f64::from(self.canvas_size.0), f64::from(self.canvas_size.1));
         if cw < 1.0 || ch < 1.0 {
             return 0.0;
         }
@@ -192,7 +195,7 @@ impl VisualEntropyCapture {
             .fold((f32::MAX, f32::MIN), |(a, b), y| (a.min(y), b.max(y)));
         let bbox_area = (max_x - min_x).max(0.0) * (max_y - min_y).max(0.0);
         let canvas_area = cw * ch;
-        (bbox_area / canvas_area).min(1.0) as f64
+        f64::from((bbox_area / canvas_area).min(1.0))
     }
 
     /// Finalize and create entropy data
@@ -211,6 +214,8 @@ impl VisualEntropyCapture {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::float_cmp)]
+
     use super::*;
 
     #[test]

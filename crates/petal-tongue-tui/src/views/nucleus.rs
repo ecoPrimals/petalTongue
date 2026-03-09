@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! NUCLEUS View
 //!
-//! Secure discovery management for biomeOS.
+//! Secure discovery management for the orchestration runtime.
 //! Shows discovery layers and trust scores.
 
 use ratatui::{
@@ -44,7 +44,7 @@ fn render_discovery_layers(frame: &mut Frame, area: Rect, standalone: bool) {
                 Style::default().fg(Color::Yellow),
             )])),
             ListItem::new(Line::from("")),
-            ListItem::new(Line::from("NUCLEUS requires biomeOS.")),
+            ListItem::new(Line::from("NUCLEUS requires the orchestration runtime.")),
         ]
     } else {
         vec![
@@ -105,7 +105,7 @@ fn render_trust_matrix(frame: &mut Frame, area: Rect, standalone: bool) {
                     .add_modifier(Modifier::BOLD),
             )]),
             Line::from(""),
-            Line::from("NUCLEUS is biomeOS's secure"),
+            Line::from("NUCLEUS is the orchestration runtime's secure"),
             Line::from("discovery system."),
             Line::from(""),
             Line::from("It provides:"),

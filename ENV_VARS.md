@@ -2,7 +2,7 @@
 
 This document describes all environment variables used by petalTongue.
 
-## 🔌 Socket Configuration (biomeOS Standard)
+## Socket Configuration (biomeOS Standard)
 
 ### **PETALTONGUE_SOCKET**
 **Type**: String (absolute path)  
@@ -73,7 +73,7 @@ Standard XDG runtime directory for socket placement. This is the standard Unix l
 
 ---
 
-## 🔧 Discovery & Integration
+## Discovery & Integration
 
 ### **BIOMEOS_URL**
 **Type**: String (URL)  
@@ -138,7 +138,7 @@ Comma-separated list of discovery hints for finding BiomeOS and other primals.
 
 ---
 
-## 🤖 Self-Awareness & AI Integration
+## Self-Awareness & AI Integration
 
 ### **PETALTONGUE_STATUS_FILE**
 **Type**: String (file path)  
@@ -157,6 +157,8 @@ Path to write machine-readable status file for AI systems.
 - Automated diagnosis tools
 
 ---
+
+### **PETALTONGUE_SOUNDS_DIR**
 **Type**: String (directory path)  
 **Default**: `./sounds` (current directory)  
 **Required**: No (falls back to generated sounds)  
@@ -175,7 +177,7 @@ Directory containing user-supplied sound files for audio system.
 
 ---
 
-## 📊 Logging & Debugging
+## Logging & Debugging
 
 ### **RUST_LOG**
 **Type**: Log Level (`error` | `warn` | `info` | `debug` | `trace`)  
@@ -218,7 +220,7 @@ RUST_LOG_FILTER=petal_tongue_graph::visual_2d=trace
 
 ---
 
-## 🎨 UI Configuration
+## UI Configuration
 
 ### **PETALTONGUE_WINDOW_WIDTH**
 **Type**: Integer (pixels)  
@@ -248,11 +250,9 @@ Initial window height in pixels.
 
 Force audio rendering on/off. By default, petalTongue detects audio capabilities at runtime using its capability detection system.
 
-**Note**: Audio requires ALSA libraries on Linux (`libasound2-dev`).
-
 ---
 
-## ⚡ Performance Tuning
+## Performance Tuning
 
 ### **PETALTONGUE_REFRESH_INTERVAL**
 **Type**: Float (seconds)  
@@ -283,7 +283,7 @@ Maximum frame rate for rendering.
 
 ---
 
-## 🔌 Tool Integration
+## Tool Integration
 
 ### **BINGOCUBE_PATH**
 **Type**: String (file path)  
@@ -305,7 +305,7 @@ System monitor refresh interval (for resource tracking tool).
 
 ---
 
-## 🔒 Security & Privacy
+## Security & Privacy
 
 ### **PETALTONGUE_NO_TELEMETRY**
 **Type**: Boolean (`true` | `false`)  
@@ -349,7 +349,7 @@ Ports to probe during HTTP-based capability discovery.
 
 ---
 
-## 📋 Quick Reference
+## Quick Reference
 
 ### Minimal Production Configuration
 ```bash
@@ -388,7 +388,7 @@ RUST_LOG=error
 
 ---
 
-## 🎯 Capability-Based Design
+## Capability-Based Design
 
 **Key Principle**: petalTongue never hardcodes assumptions about primals or external services.
 
@@ -424,7 +424,7 @@ Before deploying to production:
 
 ---
 
-## 📚 Additional Resources
+## Additional Resources
 
 - [README.md](README.md) - Project overview
 - [START_HERE.md](START_HERE.md) - Getting started guide

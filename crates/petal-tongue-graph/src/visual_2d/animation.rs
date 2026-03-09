@@ -8,6 +8,13 @@ use petal_tongue_core::graph_engine::Position;
 
 use super::renderer::Visual2DRenderer;
 
+#[must_use]
+fn lerp_position(source: Position, target: Position, t: f32) -> Position {
+    let x = source.x + (target.x - source.x) * t;
+    let y = source.y + (target.y - source.y) * t;
+    Position::new_2d(x, y)
+}
+
 /// Renders flow particles along edges and node pulse effects.
 pub fn render_animation(
     renderer: &Visual2DRenderer,
@@ -24,11 +31,7 @@ pub fn render_animation(
             ) {
                 let source_pos = source_node.position;
                 let target_pos = target_node.position;
-
-                let x = source_pos.x + (target_pos.x - source_pos.x) * particle.progress;
-                let y = source_pos.y + (target_pos.y - source_pos.y) * particle.progress;
-
-                let world_pos = Position::new_2d(x, y);
+                let world_pos = lerp_position(source_pos, target_pos, particle.progress);
                 let screen_pos = renderer.world_to_screen(world_pos, screen_center);
 
                 painter.circle_filled(
@@ -54,5 +57,38 @@ pub fn render_animation(
                 Stroke::new(2.0, Color32::from_rgba_premultiplied(100, 200, 255, alpha)),
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use petal_tongue_core::graph_engine::Position;
+
+    #[test]
+    fn lerp_position_start() {
+        let a = Position::new_2d(0.0, 0.0);
+        let b = Position::new_2d(100.0, 50.0);
+        let r = lerp_position(a, b, 0.0);
+        assert!((r.x - 0.0).abs() < 0.001);
+        assert!((r.y - 0.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn lerp_position_end() {
+        let a = Position::new_2d(0.0, 0.0);
+        let b = Position::new_2d(100.0, 50.0);
+        let r = lerp_position(a, b, 1.0);
+        assert!((r.x - 100.0).abs() < 0.001);
+        assert!((r.y - 50.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn lerp_position_mid() {
+        let a = Position::new_2d(0.0, 0.0);
+        let b = Position::new_2d(100.0, 50.0);
+        let r = lerp_position(a, b, 0.5);
+        assert!((r.x - 50.0).abs() < 0.001);
+        assert!((r.y - 25.0).abs() < 0.001);
     }
 }

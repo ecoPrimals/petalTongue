@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! neuralAPI View
 //!
-//! Graph orchestration management for biomeOS.
+//! Graph orchestration management for the orchestration runtime.
 //! Shows neural graph execution and status.
 
 use ratatui::{
@@ -44,7 +44,7 @@ fn render_graph_list(frame: &mut Frame, area: Rect, standalone: bool) {
                 Style::default().fg(Color::Yellow),
             )])),
             ListItem::new(Line::from("")),
-            ListItem::new(Line::from("neuralAPI requires biomeOS.")),
+            ListItem::new(Line::from("neuralAPI requires the orchestration runtime.")),
         ]
     } else {
         vec![
@@ -62,7 +62,7 @@ fn render_graph_list(frame: &mut Frame, area: Rect, standalone: bool) {
             )])),
             ListItem::new(Line::from("")),
             ListItem::new(Line::from("Graphs will appear here once")),
-            ListItem::new(Line::from("defined in biomeOS.")),
+            ListItem::new(Line::from("defined in the orchestration runtime.")),
             ListItem::new(Line::from("")),
             ListItem::new(Line::from(vec![Span::styled(
                 "💡 Example Graphs:",
@@ -98,7 +98,7 @@ fn render_execution_details(frame: &mut Frame, area: Rect, standalone: bool) {
                     .add_modifier(Modifier::BOLD),
             )]),
             Line::from(""),
-            Line::from("neuralAPI is biomeOS's graph"),
+            Line::from("neuralAPI is the orchestration runtime's graph"),
             Line::from("orchestration system."),
             Line::from(""),
             Line::from("It manages:"),

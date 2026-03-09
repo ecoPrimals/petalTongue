@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Dynamic scenario provider using schema-agnostic data structures
 //!
-//! This provider replaces the static, brittle scenario_provider.rs with
+//! This provider replaces the static, brittle `scenario_provider.rs` with
 //! a fully dynamic implementation that can handle evolving JSON schemas
 //! without recompilation.
 //!
@@ -152,7 +152,7 @@ impl DynamicScenarioProvider {
         obj.get(key)?.as_str().map(String::from)
     }
 
-    /// Convert DynamicValue to PropertyValue
+    /// Convert `DynamicValue` to `PropertyValue`
     fn dynamic_to_property(value: &DynamicValue) -> Option<PropertyValue> {
         match value {
             DynamicValue::String(s) => Some(PropertyValue::String(s.clone())),
@@ -175,16 +175,19 @@ impl DynamicScenarioProvider {
     }
 
     /// Get scenario name (if present)
+    #[must_use]
     pub fn name(&self) -> Option<&str> {
         self.scenario.get_str("name")
     }
 
     /// Get scenario version string
+    #[must_use]
     pub fn version(&self) -> Option<&str> {
         self.version.as_deref()
     }
 
     /// Get arbitrary scenario field (for custom data)
+    #[must_use]
     pub fn get_field(&self, key: &str) -> Option<&DynamicValue> {
         self.scenario.get(key)
     }
@@ -319,8 +322,8 @@ mod tests {
         let primal = &provider.primals[0];
 
         // Unknown fields should be in properties
-        assert!(primal.properties.get("custom_field").is_some());
-        assert!(primal.properties.get("tier").is_some());
+        assert!(primal.properties.contains_key("custom_field"));
+        assert!(primal.properties.contains_key("tier"));
 
         std::fs::remove_file(&temp_file).ok();
     }

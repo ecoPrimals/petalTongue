@@ -144,13 +144,11 @@ pub async fn discover() -> Option<AudioSensor> {
 fn probe_audio_output() -> bool {
     #[cfg(feature = "audio")]
     {
-        use rodio::OutputStream;
-        OutputStream::try_default().is_ok()
+        false
     }
 
     #[cfg(not(feature = "audio"))]
     {
-        // Fallback: assume terminal bell works
         true
     }
 }

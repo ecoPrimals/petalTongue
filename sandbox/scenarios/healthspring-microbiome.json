@@ -1,0 +1,361 @@
+{
+  "name": "healthSpring Microbiome Study",
+  "description": "Diversity indices, Anderson lattice, C. diff resistance, FMT — 4 experiments",
+  "version": "2.0.0",
+  "mode": "live-ecosystem",
+  "sensory_config": {
+    "required_capabilities": {
+      "outputs": [
+        "visual"
+      ],
+      "inputs": []
+    },
+    "optional_capabilities": {
+      "outputs": [
+        "audio"
+      ],
+      "inputs": [
+        "pointer",
+        "keyboard"
+      ]
+    },
+    "complexity_hint": "standard"
+  },
+  "ui_config": {
+    "theme": "benchtop-dark",
+    "animations": {
+      "enabled": true,
+      "breathing_nodes": true,
+      "connection_pulses": true,
+      "smooth_transitions": true,
+      "celebration_effects": false
+    },
+    "performance": {
+      "target_fps": 60,
+      "vsync": true,
+      "hardware_acceleration": true
+    }
+  },
+  "ecosystem": {
+    "primals": [
+      {
+        "id": "diversity",
+        "name": "Diversity Indices",
+        "type": "compute",
+        "family": "healthspring",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 95,
+        "capabilities": [
+          "science.microbiome.diversity"
+        ],
+        "data_channels": [
+          {
+            "channel_type": "bar",
+            "id": "shannon",
+            "label": "Shannon H′",
+            "categories": [
+              "Healthy",
+              "Dysbiotic",
+              "C. diff",
+              "Even"
+            ],
+            "values": [
+              1.9868643500048115,
+              0.6980569966078221,
+              1.339648956992998,
+              2.3025850929940455
+            ],
+            "unit": "nats"
+          },
+          {
+            "channel_type": "bar",
+            "id": "simpson",
+            "label": "Simpson D",
+            "categories": [
+              "Healthy",
+              "Dysbiotic",
+              "C. diff",
+              "Even"
+            ],
+            "values": [
+              0.8406,
+              0.27306200000000014,
+              0.602062,
+              0.8999999999999999
+            ],
+            "unit": "probability"
+          },
+          {
+            "channel_type": "bar",
+            "id": "pielou",
+            "label": "Pielou J",
+            "categories": [
+              "Healthy",
+              "Dysbiotic",
+              "C. diff",
+              "Even"
+            ],
+            "values": [
+              0.8628842234973807,
+              0.30316230168073405,
+              0.5818021497095056,
+              0.9999999999999998
+            ],
+            "unit": "evenness"
+          },
+          {
+            "channel_type": "heatmap",
+            "id": "bray_curtis",
+            "label": "Bray-Curtis Dissimilarity",
+            "x_labels": [
+              "Healthy",
+              "Dysbiotic",
+              "C. diff",
+              "Even"
+            ],
+            "y_labels": [
+              "Healthy",
+              "Dysbiotic",
+              "C. diff",
+              "Even"
+            ],
+            "values": [
+              0.0,
+              0.6,
+              0.34999999999999987,
+              0.31999999999999995,
+              0.6,
+              0.0,
+              0.2499999999999999,
+              0.75,
+              0.34999999999999987,
+              0.2499999999999999,
+              0.0,
+              0.5499999999999999,
+              0.31999999999999995,
+              0.75,
+              0.5499999999999999,
+              0.0
+            ],
+            "unit": "BC"
+          }
+        ],
+        "clinical_ranges": [
+          {
+            "label": "Healthy Shannon",
+            "min": 2.5,
+            "max": 4.0,
+            "status": "normal"
+          },
+          {
+            "label": "Dysbiotic Shannon",
+            "min": 0.0,
+            "max": 1.5,
+            "status": "critical"
+          }
+        ]
+      },
+      {
+        "id": "anderson",
+        "name": "Anderson Gut Lattice",
+        "type": "compute",
+        "family": "healthspring",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 95,
+        "capabilities": [
+          "science.microbiome.anderson_lattice"
+        ],
+        "data_channels": [
+          {
+            "channel_type": "gauge",
+            "id": "ipr",
+            "label": "Inverse Participation Ratio",
+            "value": 1755.1033105280173,
+            "min": 0.0,
+            "max": 1.0,
+            "unit": "dimensionless",
+            "normal_range": [
+              0.0,
+              0.1
+            ],
+            "warning_range": [
+              0.1,
+              0.5
+            ]
+          },
+          {
+            "channel_type": "gauge",
+            "id": "xi",
+            "label": "Localization Length ξ",
+            "value": 0.0005697670296679876,
+            "min": 0.0,
+            "max": 100.0,
+            "unit": "sites",
+            "normal_range": [
+              5.0,
+              50.0
+            ],
+            "warning_range": [
+              1.0,
+              5.0
+            ]
+          },
+          {
+            "channel_type": "gauge",
+            "id": "cr",
+            "label": "Colonization Resistance",
+            "value": 1755.1033105280173,
+            "min": 0.0,
+            "max": 1.0,
+            "unit": "1/ξ",
+            "normal_range": [
+              0.02,
+              0.5
+            ],
+            "warning_range": [
+              0.5,
+              0.9
+            ]
+          },
+          {
+            "channel_type": "bar",
+            "id": "disorder",
+            "label": "Anderson Disorder W",
+            "categories": [
+              "Healthy",
+              "Dysbiotic"
+            ],
+            "values": [
+              4.314421117486903,
+              1.5158115084036703
+            ],
+            "unit": "a.u."
+          }
+        ]
+      },
+      {
+        "id": "cdiff",
+        "name": "C. diff Colonization Resistance",
+        "type": "compute",
+        "family": "healthspring",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 95,
+        "capabilities": [
+          "science.microbiome.cdiff_resistance"
+        ],
+        "data_channels": [
+          {
+            "channel_type": "bar",
+            "id": "cr_compare",
+            "label": "Colonization Resistance by Community",
+            "categories": [
+              "Healthy",
+              "Dysbiotic",
+              "C. diff",
+              "Even"
+            ],
+            "values": [
+              1755.1033105280173,
+              27.72673061141474,
+              363.5319941674455,
+              3165.062499999997
+            ],
+            "unit": "1/ξ"
+          }
+        ],
+        "clinical_ranges": [
+          {
+            "label": "Protective CR",
+            "min": 0.05,
+            "max": 1.0,
+            "status": "normal"
+          }
+        ]
+      },
+      {
+        "id": "fmt",
+        "name": "FMT Engraftment",
+        "type": "compute",
+        "family": "healthspring",
+        "status": "healthy",
+        "health": 100,
+        "confidence": 95,
+        "capabilities": [
+          "science.microbiome.fmt"
+        ],
+        "data_channels": [
+          {
+            "channel_type": "timeseries",
+            "id": "fmt_shannon",
+            "label": "Shannon vs Engraftment",
+            "x_label": "Engraftment",
+            "y_label": "Shannon H′",
+            "unit": "nats",
+            "x_values": [
+              0.2,
+              0.4,
+              0.6,
+              0.8,
+              1.0
+            ],
+            "y_values": [
+              1.5159946632300507,
+              1.6679204916183052,
+              1.7972540056299557,
+              1.9040446560676447,
+              1.9868643500048115
+            ]
+          },
+          {
+            "channel_type": "timeseries",
+            "id": "fmt_bc",
+            "label": "Bray-Curtis vs Engraftment",
+            "x_label": "Engraftment",
+            "y_label": "BC Dissimilarity",
+            "unit": "BC",
+            "x_values": [
+              0.2,
+              0.4,
+              0.6,
+              0.8,
+              1.0
+            ],
+            "y_values": [
+              0.28,
+              0.20999999999999996,
+              0.1399999999999999,
+              0.06999999999999984,
+              0.0
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "neural_api": {
+    "enabled": false
+  },
+  "edges": [
+    {
+      "from": "diversity",
+      "to": "anderson",
+      "edge_type": "data-flow",
+      "label": "evenness → disorder"
+    },
+    {
+      "from": "anderson",
+      "to": "cdiff",
+      "edge_type": "data-flow",
+      "label": "ξ → resistance"
+    },
+    {
+      "from": "cdiff",
+      "to": "fmt",
+      "edge_type": "data-flow",
+      "label": "FMT intervention"
+    }
+  ]
+}

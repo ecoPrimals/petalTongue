@@ -2,7 +2,7 @@
 //! Pure Rust GUI Demo
 //!
 //! Demonstrates the complete Pure Rust rendering pipeline:
-//! egui UI → EguiPixelRenderer → Display Backend
+//! egui UI → `EguiPixelRenderer` → Display Backend
 //!
 //! This showcases the GUI sovereignty achieved by petalTongue.
 
@@ -25,7 +25,7 @@ async fn main() -> Result<()> {
 
     // Get active backend info
     let backend_name = display.active_backend_name().unwrap_or("None").to_string(); // Clone to avoid borrow issues
-    println!("Active backend: {}\n", backend_name);
+    println!("Active backend: {backend_name}\n");
 
     // Create egui context
     let ctx = egui::Context::default();
@@ -36,7 +36,7 @@ async fn main() -> Result<()> {
         .dimensions()
         .ok_or_else(|| anyhow::anyhow!("No active display backend"))?;
     let mut renderer = EguiPixelRenderer::new(width, height);
-    println!("✅ Created pixel renderer: {}x{}\n", width, height);
+    println!("✅ Created pixel renderer: {width}x{height}\n");
 
     println!("════════════════════════════════════════════════════════════");
     println!("   🎨 Rendering 60 Frames (1 second)");
@@ -101,7 +101,7 @@ async fn main() -> Result<()> {
         // Frame timing (target 60 FPS = 16.67ms)
         let frame_time = frame_start.elapsed();
         if frame_time < Duration::from_millis(16) {
-            tokio::time::sleep(Duration::from_millis(16) - frame_time).await;
+            tokio::time::sleep(Duration::from_millis(16).checked_sub(frame_time).unwrap()).await;
         }
 
         // Progress indicator
@@ -123,12 +123,12 @@ async fn main() -> Result<()> {
     println!("   📊 Performance Results");
     println!("════════════════════════════════════════════════════════════\n");
     println!("Total time: {:.2}s", total_time.as_secs_f32());
-    println!("Frames rendered: {}", target_frames);
+    println!("Frames rendered: {target_frames}");
     println!(
         "Average frame time: {:.2}ms",
         avg_frame_time.as_secs_f32() * 1000.0
     );
-    println!("Average FPS: {:.1}", fps);
+    println!("Average FPS: {fps:.1}");
     println!("\n✅ Pure Rust GUI rendering complete!\n");
 
     // Cleanup

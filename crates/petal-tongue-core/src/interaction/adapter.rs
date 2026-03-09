@@ -2,7 +2,7 @@
 //! Input adapter trait -- converts device events to semantic intents.
 //!
 //! Each input modality (mouse, keyboard, voice, Braille, gamepad) implements
-//! [`InputAdapter`] to translate raw [`SensorEvent`](crate::sensor::SensorEvent)
+//! [`InputAdapter`] to translate raw [`SensorEvent`]
 //! values into modality-agnostic [`InteractionIntent`] values.
 
 use crate::sensor::SensorEvent;

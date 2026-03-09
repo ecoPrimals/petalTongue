@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Integration tests for BiomeOS API client.
+//! Integration tests for `BiomeOS` API client.
 //!
 //! Mock-dependent tests require the `test-fixtures` feature:
 //!   cargo test -p petal-tongue-api --features test-fixtures

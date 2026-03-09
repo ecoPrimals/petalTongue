@@ -79,13 +79,13 @@ mod tests {
 
     #[test]
     fn test_validate_empty_id() {
-        let node = GraphNode::new("".to_string(), "test-type".to_string());
+        let node = GraphNode::new(String::new(), "test-type".to_string());
         assert!(GraphValidator::validate_node(&node).is_err());
     }
 
     #[test]
     fn test_validate_empty_type() {
-        let node = GraphNode::new("node-1".to_string(), "".to_string());
+        let node = GraphNode::new("node-1".to_string(), String::new());
         assert!(GraphValidator::validate_node(&node).is_err());
     }
 

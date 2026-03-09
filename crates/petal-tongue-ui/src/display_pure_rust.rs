@@ -151,8 +151,8 @@ mod tests {
             Some((width, height)) => {
                 assert!(width > 0, "Width should be positive");
                 assert!(height > 0, "Height should be positive");
-                assert!(width < 100000, "Width should be reasonable");
-                assert!(height < 100000, "Height should be reasonable");
+                assert!(width < 100_000, "Width should be reasonable");
+                assert!(height < 100_000, "Height should be reasonable");
             }
             None => {
                 // Acceptable in headless environments

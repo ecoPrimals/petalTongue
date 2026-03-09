@@ -33,7 +33,7 @@ async fn test_chaos_rapid_view_switching() {
                     timestamp: Utc::now(),
                     source: Some("chaos".to_string()),
                     level: LogLevel::Info,
-                    message: format!("Chaos log {}", i),
+                    message: format!("Chaos log {i}"),
                 })
                 .await;
         }
@@ -69,9 +69,9 @@ async fn test_chaos_extreme_concurrency() {
                 state_clone
                     .add_log(LogMessage {
                         timestamp: Utc::now(),
-                        source: Some(format!("task-{}", task_id)),
+                        source: Some(format!("task-{task_id}")),
                         level: LogLevel::Debug,
-                        message: format!("Task {} iteration {}", task_id, i),
+                        message: format!("Task {task_id} iteration {i}"),
                     })
                     .await;
 
@@ -100,7 +100,7 @@ async fn test_chaos_topology_thrashing() {
 
     // Create initial primals
     let primals: Vec<_> = (0..10)
-        .map(|i| create_test_primal(&format!("primal-{}", i), &format!("primal-{}", i)))
+        .map(|i| create_test_primal(&format!("primal-{i}"), &format!("primal-{i}")))
         .collect();
 
     state.update_primals(primals).await;
@@ -113,7 +113,7 @@ async fn test_chaos_topology_thrashing() {
             let topology: Vec<_> = (0..10)
                 .map(|i| {
                     create_test_edge(
-                        &format!("primal-{}", i),
+                        &format!("primal-{i}"),
                         &format!("primal-{}", (i + 1) % 10),
                         if iteration % 2 == 0 {
                             "discovery"
@@ -160,13 +160,13 @@ async fn test_chaos_log_overflow_stress() {
                 state_clone
                     .add_log(LogMessage {
                         timestamp: Utc::now(),
-                        source: Some(format!("task-{}", task_id)),
+                        source: Some(format!("task-{task_id}")),
                         level: if i % 5 == 0 {
                             LogLevel::Error
                         } else {
                             LogLevel::Info
                         },
-                        message: format!("Task {} log {}", task_id, i),
+                        message: format!("Task {task_id} log {i}"),
                     })
                     .await;
             }
@@ -199,7 +199,7 @@ async fn test_chaos_capability_thrashing() {
                     format!("capability-{}-{}", primal_id, iteration),
                     format!("capability-{}-{}", primal_id, iteration + 1),
                 ];
-                state_clone.register_capability(format!("primal-{}", primal_id), capabilities);
+                state_clone.register_capability(format!("primal-{primal_id}"), capabilities);
             }
         });
         handles.push(handle);
@@ -238,7 +238,7 @@ async fn test_chaos_mixed_operations() {
                     timestamp: Utc::now(),
                     source: Some("chaos".to_string()),
                     level: LogLevel::Info,
-                    message: format!("Log {}", i),
+                    message: format!("Log {i}"),
                 })
                 .await;
         }
@@ -250,10 +250,7 @@ async fn test_chaos_mixed_operations() {
         for iteration in 0..100 {
             let primals: Vec<_> = (0..5)
                 .map(|i| {
-                    create_test_primal(
-                        &format!("primal-{}", i),
-                        &format!("primal-{}-{}", i, iteration),
-                    )
+                    create_test_primal(&format!("primal-{i}"), &format!("primal-{i}-{iteration}"))
                 })
                 .collect();
             primal_state.update_primals(primals).await;

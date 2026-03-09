@@ -5,6 +5,7 @@
 mod tests {
     use super::super::types::*;
     use crate::PrimalId;
+    use std::collections::HashMap;
 
     #[test]
     fn test_primal_health_status_variants() {
@@ -62,7 +63,7 @@ mod tests {
             family_id: None,
             capabilities: vec!["cap1".to_string(), "cap2".to_string()],
             last_seen: 1_234_567_890,
-            properties: Default::default(),
+            properties: HashMap::default(),
         };
 
         assert_eq!(info.id.as_str(), "test-1");
@@ -89,7 +90,7 @@ mod tests {
             last_seen: 1_234_567_890,
             endpoints: None,
             metadata: None,
-            properties: Default::default(),
+            properties: HashMap::default(),
         };
 
         let cloned = info.clone();
@@ -147,7 +148,7 @@ mod tests {
             last_seen: 1_234_567_890,
             endpoints: None,
             metadata: None,
-            properties: Default::default(),
+            properties: HashMap::default(),
         };
 
         let primal2 = PrimalInfo {
@@ -162,7 +163,7 @@ mod tests {
             last_seen: 1_234_567_890,
             endpoints: None,
             metadata: None,
-            properties: Default::default(),
+            properties: HashMap::default(),
         };
 
         let edge = TopologyEdge {
@@ -263,7 +264,7 @@ mod tests {
             last_seen: 1_234_567_890,
             endpoints: None,
             metadata: None,
-            properties: Default::default(),
+            properties: HashMap::default(),
         };
 
         let json = serde_json::to_string(&info).expect("Failed to serialize");
@@ -295,5 +296,105 @@ mod tests {
             serde_json::from_str(&json).expect("Failed to deserialize");
         assert_eq!(deserialized.from.as_str(), edge.from.as_str());
         assert_eq!(deserialized.to.as_str(), edge.to.as_str());
+    }
+
+    #[test]
+    fn test_primal_id_new() {
+        let id = PrimalId::new("test-id");
+        assert_eq!(id.as_str(), "test-id");
+    }
+
+    #[test]
+    fn test_primal_id_from_str() {
+        let id: PrimalId = "foo".into();
+        assert_eq!(id.as_str(), "foo");
+    }
+
+    #[test]
+    fn test_primal_id_from_string() {
+        let id: PrimalId = "bar".to_string().into();
+        assert_eq!(id.as_str(), "bar");
+    }
+
+    #[test]
+    fn test_primal_id_display() {
+        let id = PrimalId::from("display-test");
+        assert_eq!(format!("{id}"), "display-test");
+    }
+
+    #[test]
+    fn test_primal_id_partial_eq_str() {
+        let id = PrimalId::from("eq-test");
+        assert!(id == "eq-test");
+        assert!(id != "other");
+    }
+
+    #[test]
+    fn test_primal_id_borrow() {
+        use std::borrow::Borrow;
+        let id = PrimalId::from("borrow-test");
+        let s: &str = id.borrow();
+        assert_eq!(s, "borrow-test");
+    }
+
+    #[test]
+    fn test_primal_id_hashmap_key() {
+        use std::collections::HashMap;
+        let mut map: HashMap<PrimalId, i32> = HashMap::new();
+        map.insert(PrimalId::from("key1"), 42);
+        assert_eq!(map.get("key1"), Some(&42));
+    }
+
+    #[test]
+    fn test_primal_info_new() {
+        let info = PrimalInfo::new(
+            "id-1",
+            "Test",
+            "compute",
+            "http://localhost:8080",
+            vec!["cap1".to_string()],
+            PrimalHealthStatus::Healthy,
+            12345,
+        );
+        assert_eq!(info.id.as_str(), "id-1");
+        assert_eq!(info.name, "Test");
+        assert_eq!(info.primal_type, "compute");
+        assert_eq!(info.endpoint, "http://localhost:8080");
+        assert_eq!(info.capabilities.len(), 1);
+        assert_eq!(info.last_seen, 12345);
+    }
+
+    #[test]
+    fn test_primal_endpoints() {
+        let ep = PrimalEndpoints {
+            unix_socket: Some("/tmp/sock".to_string()),
+            http: Some("http://localhost:8080".to_string()),
+        };
+        assert_eq!(ep.unix_socket.as_deref(), Some("/tmp/sock"));
+        assert_eq!(ep.http.as_deref(), Some("http://localhost:8080"));
+    }
+
+    #[test]
+    fn test_connection_metrics() {
+        let m = ConnectionMetrics {
+            request_count: Some(100),
+            avg_latency_ms: Some(12.5),
+            error_count: Some(2),
+        };
+        assert_eq!(m.request_count, Some(100));
+        assert!((m.avg_latency_ms.unwrap() - 12.5).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_topology_edge_connection_type() {
+        let edge = TopologyEdge {
+            from: PrimalId::from("a"),
+            to: PrimalId::from("b"),
+            edge_type: "connection".to_string(),
+            label: None,
+            capability: None,
+            metrics: None,
+        };
+        assert_eq!(edge.edge_type, "connection");
     }
 }

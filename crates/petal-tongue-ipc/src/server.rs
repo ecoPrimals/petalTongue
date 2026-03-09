@@ -112,6 +112,7 @@ impl IpcServer {
     }
 
     /// Start Unix domain socket server (Phase 1)
+    #[allow(clippy::unused_async)]
     async fn start_unix(instance: &Instance) -> Result<Self, IpcServerError> {
         let socket_path = instance.socket_path.clone();
         let instance_id = instance.id.clone();
@@ -147,8 +148,8 @@ impl IpcServer {
     }
 
     /// Start TCP server with automatic port assignment (Phase 3)
-    async fn start_tcp(_instance: &Instance) -> Result<Self, IpcServerError> {
-        let instance_id = _instance.id.clone();
+    async fn start_tcp(instance: &Instance) -> Result<Self, IpcServerError> {
+        let instance_id = instance.id.clone();
 
         // Bind to any available port on localhost
         let listener = TcpListener::bind("127.0.0.1:0")

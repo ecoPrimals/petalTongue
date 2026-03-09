@@ -62,3 +62,46 @@ pub(super) fn get_socket_dir() -> Result<PathBuf, InstanceError> {
 pub(super) fn get_registry_path() -> Result<PathBuf, InstanceError> {
     Ok(get_base_dir()?.join("instances.ron"))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn current_timestamp_nonzero() {
+        let ts = current_timestamp();
+        assert!(ts > 0);
+    }
+
+    #[test]
+    fn process_exists_current_process() {
+        let pid = std::process::id();
+        assert!(process_exists(pid));
+    }
+
+    #[test]
+    fn process_exists_invalid_pid() {
+        assert!(!process_exists(99_999_999));
+    }
+
+    #[test]
+    fn get_base_dir_returns_path() {
+        let dir = get_base_dir().expect("base dir");
+        assert!(
+            dir.to_string_lossy()
+                .contains(crate::constants::APP_DIR_NAME)
+        );
+    }
+
+    #[test]
+    fn get_socket_dir_returns_path() {
+        let dir = get_socket_dir().expect("socket dir");
+        assert!(!dir.as_os_str().is_empty());
+    }
+
+    #[test]
+    fn get_registry_path_includes_instances_ron() {
+        let path = get_registry_path().expect("registry path");
+        assert!(path.to_string_lossy().ends_with("instances.ron"));
+    }
+}

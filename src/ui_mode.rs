@@ -56,8 +56,7 @@ fn run_ui_blocking(
             .with_inner_size([1400.0, 900.0])
             .with_min_inner_size([800.0, 600.0])
             .with_title(format!(
-                "🌸 {} - Universal Representation System",
-                PRIMAL_NAME
+                "🌸 {PRIMAL_NAME} - Universal Representation System"
             ))
             .with_visible(true)
             .with_active(true),
@@ -82,7 +81,7 @@ fn run_ui_blocking(
             Ok(Box::new(app))
         }),
     )
-    .map_err(|e| anyhow::anyhow!("eframe error: {}", e))
+    .map_err(|e| anyhow::anyhow!("eframe error: {e}"))
 }
 
 #[cfg(not(feature = "ui"))]

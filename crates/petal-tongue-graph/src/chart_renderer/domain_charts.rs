@@ -7,6 +7,21 @@ use crate::domain_theme;
 use egui::{RichText, Ui};
 use egui_plot::{Line, Plot, PlotPoints, Points};
 
+#[must_use]
+pub(crate) fn validate_heatmap_dimensions(cols: usize, rows: usize, values_len: usize) -> bool {
+    cols > 0 && rows > 0 && values_len == cols * rows
+}
+
+#[must_use]
+pub(crate) fn validate_scatter3d_lengths(x_len: usize, y_len: usize, z_len: usize) -> bool {
+    x_len > 0 && x_len == y_len && x_len == z_len
+}
+
+#[must_use]
+pub(crate) fn validate_spectrum_lengths(freq_len: usize, amp_len: usize) -> bool {
+    freq_len > 0 && freq_len == amp_len
+}
+
 pub(crate) fn draw_heatmap(
     ui: &mut Ui,
     label: &str,
@@ -25,7 +40,7 @@ pub(crate) fn draw_heatmap(
 
     let cols = x_labels.len();
     let rows = y_labels.len();
-    if cols == 0 || rows == 0 || values.len() != cols * rows {
+    if !validate_heatmap_dimensions(cols, rows, values.len()) {
         ui.label(RichText::new("(invalid heatmap dimensions)").color(palette.caution));
         return;
     }
@@ -77,7 +92,7 @@ pub(crate) fn draw_scatter3d(ui: &mut Ui, params: &Scatter3dParams<'_>) {
     let unit = params.unit;
     let count = x_vals.len();
 
-    if x_vals.len() != y_vals.len() || x_vals.len() != z_vals.len() || x_vals.is_empty() {
+    if !validate_scatter3d_lengths(x_vals.len(), y_vals.len(), z_vals.len()) {
         ui.label(RichText::new("(invalid scatter3d data)").color(palette.caution));
         return;
     }
@@ -102,7 +117,7 @@ pub(crate) fn draw_scatter3d(ui: &mut Ui, params: &Scatter3dParams<'_>) {
     let base_color = palette.info;
 
     let plot_id = format!("{label}_scatter3d");
-    let mut plot = Plot::new(plot_id.clone())
+    let mut plot = Plot::new(plot_id)
         .height(160.0)
         .show_axes(true)
         .x_axis_label("x")
@@ -191,7 +206,7 @@ pub(crate) fn draw_fieldmap(
             .color(palette.text_dim),
     );
 
-    if cols == 0 || rows == 0 || values.len() != cols * rows {
+    if !validate_heatmap_dimensions(cols, rows, values.len()) {
         ui.label(RichText::new("(invalid fieldmap dimensions)").color(palette.caution));
         return;
     }
@@ -233,7 +248,7 @@ pub(crate) fn draw_spectrum(
             .color(palette.text_dim),
     );
 
-    if frequencies.len() != amplitudes.len() || frequencies.is_empty() {
+    if !validate_spectrum_lengths(frequencies.len(), amplitudes.len()) {
         ui.label(RichText::new("(invalid spectrum data)").color(palette.caution));
         return;
     }
@@ -251,4 +266,111 @@ pub(crate) fn draw_spectrum(
         .show(ui, |plot_ui| {
             plot_ui.line(Line::new(points).name(label).fill(0.0).color(palette.info));
         });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn validate_heatmap_valid() {
+        assert!(validate_heatmap_dimensions(3, 4, 12));
+        assert!(validate_heatmap_dimensions(1, 1, 1));
+    }
+
+    #[test]
+    fn validate_heatmap_invalid() {
+        assert!(!validate_heatmap_dimensions(0, 4, 12));
+        assert!(!validate_heatmap_dimensions(3, 0, 12));
+        assert!(!validate_heatmap_dimensions(3, 4, 10));
+        assert!(!validate_heatmap_dimensions(3, 4, 14));
+    }
+
+    #[test]
+    fn validate_scatter3d_valid() {
+        assert!(validate_scatter3d_lengths(5, 5, 5));
+        assert!(validate_scatter3d_lengths(1, 1, 1));
+    }
+
+    #[test]
+    fn validate_scatter3d_invalid() {
+        assert!(!validate_scatter3d_lengths(0, 5, 5));
+        assert!(!validate_scatter3d_lengths(5, 4, 5));
+        assert!(!validate_scatter3d_lengths(5, 5, 4));
+    }
+
+    #[test]
+    fn validate_spectrum_valid() {
+        assert!(validate_spectrum_lengths(10, 10));
+        assert!(validate_spectrum_lengths(1, 1));
+    }
+
+    #[test]
+    fn validate_spectrum_invalid() {
+        assert!(!validate_spectrum_lengths(0, 0));
+        assert!(!validate_spectrum_lengths(10, 9));
+        assert!(!validate_spectrum_lengths(9, 10));
+    }
+
+    #[test]
+    fn validate_heatmap_edge_cases() {
+        assert!(!validate_heatmap_dimensions(1, 0, 0));
+        assert!(!validate_heatmap_dimensions(0, 1, 0));
+        assert!(validate_heatmap_dimensions(2, 3, 6));
+        assert!(!validate_heatmap_dimensions(2, 3, 5));
+        assert!(!validate_heatmap_dimensions(2, 3, 7));
+    }
+
+    #[test]
+    fn validate_scatter3d_edge_cases() {
+        assert!(!validate_scatter3d_lengths(1, 0, 0));
+        assert!(!validate_scatter3d_lengths(0, 1, 1));
+        assert!(!validate_scatter3d_lengths(1, 1, 0));
+        assert!(validate_scatter3d_lengths(100, 100, 100));
+    }
+
+    #[test]
+    fn scatter3d_params_construction() {
+        let x = vec![1.0, 2.0, 3.0];
+        let y = vec![4.0, 5.0, 6.0];
+        let z = vec![7.0, 8.0, 9.0];
+        let labels = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+        let params = Scatter3dParams {
+            label: "test",
+            x_vals: &x,
+            y_vals: &y,
+            z_vals: &z,
+            point_labels: &labels,
+            unit: "m",
+            domain: Some("health"),
+        };
+        assert_eq!(params.label, "test");
+        assert_eq!(params.x_vals.len(), 3);
+        assert_eq!(params.y_vals.len(), 3);
+        assert_eq!(params.z_vals.len(), 3);
+        assert_eq!(params.unit, "m");
+        assert_eq!(params.domain, Some("health"));
+    }
+
+    #[test]
+    fn scatter3d_params_domain_none() {
+        let x = vec![1.0];
+        let y = vec![2.0];
+        let z = vec![3.0];
+        let params = Scatter3dParams {
+            label: "l",
+            x_vals: &x,
+            y_vals: &y,
+            z_vals: &z,
+            point_labels: &[],
+            unit: "u",
+            domain: None,
+        };
+        assert!(params.domain.is_none());
+    }
+
+    #[test]
+    fn z_bands_constant() {
+        assert_eq!(Z_BANDS, 8);
+    }
 }

@@ -34,6 +34,7 @@ pub struct AwakeningAudio {
 
 impl AwakeningAudio {
     /// Create new awakening audio generator
+    #[must_use]
     pub fn new(sample_rate: u32) -> Self {
         Self {
             sample_rate,
@@ -267,6 +268,8 @@ pub fn mix_layers(layers: Vec<Vec<f32>>) -> Vec<f32> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::float_cmp)]
+
     use super::*;
 
     #[test]

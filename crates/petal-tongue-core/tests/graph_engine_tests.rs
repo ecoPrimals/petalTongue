@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Comprehensive tests for graph_engine module
+//! Comprehensive tests for `graph_engine` module
 //!
 //! Tests verify the core graph structure, layout algorithms, and node positioning.
+
+#![allow(clippy::float_cmp)]
 
 use petal_tongue_core::{
     GraphEngine, PrimalHealthStatus, PrimalId, PrimalInfo, TopologyEdge, graph_engine::Position,

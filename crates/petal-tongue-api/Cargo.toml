@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+[lints]
+workspace = true
+
 [package]
 name = "petal-tongue-api"
 description = "BiomeOS API client for primal discovery and topology retrieval"

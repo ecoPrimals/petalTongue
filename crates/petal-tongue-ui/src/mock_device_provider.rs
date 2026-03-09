@@ -318,7 +318,7 @@ impl VisualizationDataProvider for MockDeviceProvider {
             .primals
             .iter()
             .map(|p| PrimalInfo {
-                id: p.id.clone(),
+                id: p.id.clone().into(),
                 name: p.name.clone(),
                 primal_type: "mock".to_string(),
                 endpoint: format!("mock://{}", p.name),
@@ -347,24 +347,24 @@ impl VisualizationDataProvider for MockDeviceProvider {
         // Mock topology showing some connections
         Ok(vec![
             TopologyEdge {
-                from: "primal-discovery".to_string(),
-                to: "primal-security".to_string(),
+                from: "primal-discovery".to_string().into(),
+                to: "primal-security".to_string().into(),
                 edge_type: "discovery".to_string(),
                 label: Some("Discovers".to_string()),
                 capability: Some("security".to_string()),
                 metrics: None,
             },
             TopologyEdge {
-                from: "primal-discovery".to_string(),
-                to: "primal-compute".to_string(),
+                from: "primal-discovery".to_string().into(),
+                to: "primal-compute".to_string().into(),
                 edge_type: "discovery".to_string(),
                 label: Some("Discovers".to_string()),
                 capability: Some("compute".to_string()),
                 metrics: None,
             },
             TopologyEdge {
-                from: "primal-compute".to_string(),
-                to: "primal-storage".to_string(),
+                from: "primal-compute".to_string().into(),
+                to: "primal-storage".to_string().into(),
                 edge_type: "storage".to_string(),
                 label: Some("Uses".to_string()),
                 capability: Some("storage".to_string()),

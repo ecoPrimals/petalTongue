@@ -149,3 +149,70 @@ impl Default for ValidationResult {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validation_issue_error() {
+        let issue = ValidationIssue::error("msg".to_string());
+        assert_eq!(issue.severity, ValidationSeverity::Error);
+        assert!(issue.node_id.is_none());
+        assert_eq!(issue.message, "msg");
+    }
+
+    #[test]
+    fn test_validation_issue_node_error() {
+        let issue = ValidationIssue::node_error("n1".to_string(), "err".to_string());
+        assert_eq!(issue.severity, ValidationSeverity::Error);
+        assert_eq!(issue.node_id.as_deref(), Some("n1"));
+        assert_eq!(issue.message, "err");
+    }
+
+    #[test]
+    fn test_validation_issue_warning() {
+        let issue = ValidationIssue::warning("warn".to_string());
+        assert_eq!(issue.severity, ValidationSeverity::Warning);
+    }
+
+    #[test]
+    fn test_validation_issue_with_suggestion() {
+        let issue = ValidationIssue::error("e".to_string()).with_suggestion("fix".to_string());
+        assert_eq!(issue.suggestion.as_deref(), Some("fix"));
+    }
+
+    #[test]
+    fn test_validation_result_new() {
+        let r = ValidationResult::new();
+        assert!(r.issues.is_empty());
+        assert!(r.is_valid());
+        assert!(!r.has_errors());
+        assert!(!r.has_warnings());
+    }
+
+    #[test]
+    fn test_validation_result_has_errors() {
+        let mut r = ValidationResult::new();
+        r.add_issue(ValidationIssue::error("e".to_string()));
+        assert!(r.has_errors());
+        assert!(!r.is_valid());
+    }
+
+    #[test]
+    fn test_validation_result_has_warnings() {
+        let mut r = ValidationResult::new();
+        r.add_issue(ValidationIssue::warning("w".to_string()));
+        assert!(r.has_warnings());
+        assert!(r.is_valid());
+    }
+
+    #[test]
+    fn test_validation_result_errors_warnings() {
+        let mut r = ValidationResult::new();
+        r.add_issue(ValidationIssue::error("e1".to_string()));
+        r.add_issue(ValidationIssue::warning("w1".to_string()));
+        assert_eq!(r.errors().len(), 1);
+        assert_eq!(r.warnings().len(), 1);
+    }
+}

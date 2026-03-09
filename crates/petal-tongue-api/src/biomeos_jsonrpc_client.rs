@@ -269,7 +269,7 @@ mod tests {
         let result = petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
             "BIOMEOS_SOCKET",
             temp.to_str().unwrap(),
-            || BiomeOSJsonRpcClient::new(),
+            BiomeOSJsonRpcClient::new,
         );
         assert!(result.is_ok());
 

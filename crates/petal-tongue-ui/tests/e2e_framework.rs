@@ -2,18 +2,17 @@
 //! End-to-End Test Framework
 //!
 //! Provides infrastructure for full-stack integration testing of petalTongue.
-//! Tests the complete flow from BiomeOS API → UI rendering → User interaction.
+//! Tests the complete flow from `BiomeOS` API → UI rendering → User interaction.
 
 use petal_tongue_api::BiomeOSClient;
 use petal_tongue_core::{GraphEngine, PrimalHealthStatus, PrimalInfo, TopologyEdge};
 use std::sync::{Arc, RwLock};
-use tokio::time::{Duration, sleep};
 
 /// E2E test configuration
 pub struct E2ETestConfig {
-    /// Use mock BiomeOS (true) or real instance (false)
+    /// Use mock `BiomeOS` (true) or real instance (false)
     pub use_mock: bool,
-    /// BiomeOS URL (if not using mock)
+    /// `BiomeOS` URL (if not using mock)
     pub biomeos_url: Option<String>,
     /// Test timeout in seconds
     pub timeout_secs: u64,
@@ -144,7 +143,7 @@ impl E2ETestRunner {
             duration_ms,
             error: match &result {
                 Err(e) => Some(e.to_string()),
-                Ok(_) => None,
+                Ok(()) => None,
             },
             steps_completed,
             total_steps,
@@ -210,7 +209,7 @@ impl E2ETestRunner {
             duration_ms,
             error: match &result {
                 Err(e) => Some(e.to_string()),
-                Ok(_) => None,
+                Ok(()) => None,
             },
             steps_completed,
             total_steps,
@@ -262,10 +261,10 @@ impl E2ETestRunner {
             // Step 3: Verify update
             {
                 let g = graph.read().unwrap();
-                if let Some(node) = g.get_node("test1") {
-                    if node.info.health != PrimalHealthStatus::Warning {
-                        return Err("Health status not updated".into());
-                    }
+                if let Some(node) = g.get_node("test1")
+                    && node.info.health != PrimalHealthStatus::Warning
+                {
+                    return Err("Health status not updated".into());
                 }
             }
             steps_completed += 1;
@@ -282,7 +281,7 @@ impl E2ETestRunner {
             duration_ms,
             error: match &result {
                 Err(e) => Some(e.to_string()),
-                Ok(_) => None,
+                Ok(()) => None,
             },
             steps_completed,
             total_steps,
@@ -379,7 +378,7 @@ impl E2ETestRunner {
             duration_ms,
             error: match &result {
                 Err(e) => Some(e.to_string()),
-                Ok(_) => None,
+                Ok(()) => None,
             },
             steps_completed,
             total_steps,
@@ -419,7 +418,7 @@ impl E2ETestRunner {
             duration_ms,
             error: match &result {
                 Err(e) => Some(e.to_string()),
-                Ok(_) => None,
+                Ok(()) => None,
             },
             steps_completed,
             total_steps,

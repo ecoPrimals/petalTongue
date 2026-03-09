@@ -181,3 +181,47 @@ impl InstanceRegistry {
         self.instances.values().filter(|i| i.is_alive()).count()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn load_from_nonexistent_returns_new() {
+        let path = std::path::Path::new("/nonexistent/path/instances.ron");
+        let registry = InstanceRegistry::load_from(path).unwrap();
+        assert_eq!(registry.count(), 0);
+    }
+
+    #[test]
+    fn load_from_invalid_ron_fails() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("instances.ron");
+        fs::write(&path, "not valid ron {{{").unwrap();
+        let result = InstanceRegistry::load_from(&path);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn save_to_and_load_from_roundtrip() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("instances.ron");
+
+        crate::test_fixtures::env_test_helpers::with_env_vars(
+            &[("XDG_DATA_HOME", Some(dir.path().to_str().unwrap()))],
+            || {
+                let id = InstanceId::new();
+                let instance = Instance::new(id.clone(), Some("roundtrip".to_string())).unwrap();
+                let mut registry = InstanceRegistry::new();
+                registry.instances.insert(id.clone(), instance);
+                registry.save_to(&path).unwrap();
+
+                let loaded = InstanceRegistry::load_from(&path).unwrap();
+                assert_eq!(loaded.count(), 1);
+                assert!(loaded.get(&id).is_some());
+                assert_eq!(loaded.find_by_name("roundtrip").unwrap().id, id);
+            },
+        );
+    }
+}

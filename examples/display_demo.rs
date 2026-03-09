@@ -18,10 +18,10 @@ async fn main() -> anyhow::Result<()> {
     if has_display {
         println!("✅ Display server detected:");
         if let Ok(display) = std::env::var("DISPLAY") {
-            println!("   DISPLAY={}", display);
+            println!("   DISPLAY={display}");
         }
         if let Ok(display) = std::env::var("WAYLAND_DISPLAY") {
-            println!("   WAYLAND_DISPLAY={}", display);
+            println!("   WAYLAND_DISPLAY={display}");
         }
         println!();
         println!("🎨 Available backends:");

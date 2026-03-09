@@ -10,6 +10,13 @@ use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};
 use std::collections::VecDeque;
 use std::time::Instant;
 
+fn compute_chart_bounds(data: &[f32]) -> (f32, f32, f32) {
+    let max_value = data.iter().copied().fold(0.0f32, f32::max).max(1.0);
+    let min_value = data.iter().copied().fold(max_value, f32::min).min(0.0);
+    let range = (max_value - min_value).max(1.0);
+    (min_value, max_value, range)
+}
+
 /// Metrics snapshot
 #[derive(Clone, Debug)]
 struct MetricsSnapshot {
@@ -132,10 +139,7 @@ impl GraphMetricsPlotter {
             return;
         }
 
-        // Find min/max for scaling
-        let max_value = data.iter().copied().fold(0.0f32, f32::max).max(1.0);
-        let min_value = data.iter().copied().fold(max_value, f32::min).min(0.0);
-        let range = (max_value - min_value).max(1.0);
+        let (min_value, max_value, range) = compute_chart_bounds(data);
 
         // Draw background
         painter.rect_filled(rect, 2.0, egui::Color32::from_rgb(20, 20, 25));
@@ -239,5 +243,83 @@ impl ToolPanel for GraphMetricsPlotter {
         } else {
             Some("No data".to_string())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_creation() {
+        let p = GraphMetricsPlotter::default();
+        assert!(!p.show_panel);
+        assert_eq!(p.status_message(), Some("No data".to_string()));
+    }
+
+    #[test]
+    fn add_snapshot_accumulates() {
+        let mut p = GraphMetricsPlotter::default();
+        p.add_snapshot(5, 3);
+        assert_eq!(p.status_message(), Some("N:5 E:3".to_string()));
+        p.add_snapshot(10, 8);
+        assert_eq!(p.status_message(), Some("N:10 E:8".to_string()));
+        p.add_snapshot(7, 12);
+        assert_eq!(p.status_message(), Some("N:7 E:12".to_string()));
+    }
+
+    #[test]
+    fn add_snapshot_respects_max_history() {
+        let mut p = GraphMetricsPlotter::default();
+        for i in 0..101 {
+            p.add_snapshot(i, i * 2);
+        }
+        assert_eq!(p.status_message(), Some("N:100 E:200".to_string()));
+    }
+
+    #[test]
+    fn compute_chart_bounds_basic() {
+        let data = [1.0, 5.0, 3.0, 9.0, 2.0];
+        let (min, max, range) = compute_chart_bounds(&data);
+        assert_eq!(min, 0.0);
+        assert_eq!(max, 9.0);
+        assert_eq!(range, 9.0);
+    }
+
+    #[test]
+    fn compute_chart_bounds_single_value() {
+        let data = [42.0, 42.0];
+        let (min, max, range) = compute_chart_bounds(&data);
+        assert_eq!(min, 0.0);
+        assert_eq!(max, 42.0);
+        assert_eq!(range, 42.0);
+    }
+
+    #[test]
+    fn compute_chart_bounds_empty_range() {
+        let data = [0.0, 0.0];
+        let (min, max, range) = compute_chart_bounds(&data);
+        assert_eq!(min, 0.0);
+        assert_eq!(max, 1.0);
+        assert_eq!(range, 1.0);
+    }
+
+    #[test]
+    fn compute_chart_bounds_negative() {
+        let data = [-5.0, 0.0, 5.0];
+        let (min, max, range) = compute_chart_bounds(&data);
+        assert_eq!(min, -5.0);
+        assert_eq!(max, 5.0);
+        assert_eq!(range, 10.0);
+    }
+
+    #[test]
+    fn status_message_format() {
+        let mut p = GraphMetricsPlotter::default();
+        p.add_snapshot(42, 17);
+        let msg = p.status_message().unwrap();
+        assert!(msg.starts_with("N:"));
+        assert!(msg.contains("42"));
+        assert!(msg.contains("17"));
     }
 }

@@ -22,6 +22,7 @@ pub enum EntropyCapture {
 
 impl EntropyCapture {
     /// Get the overall quality score for this entropy capture
+    #[must_use]
     pub fn quality(&self) -> f64 {
         match self {
             Self::Audio(data) => data.quality_metrics.overall_quality,
@@ -33,6 +34,7 @@ impl EntropyCapture {
     }
 
     /// Get the modality name
+    #[must_use]
     pub fn modality(&self) -> &'static str {
         match self {
             Self::Audio(_) => "audio",
@@ -403,6 +405,7 @@ pub struct VideoQualityMetrics {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use zeroize::Zeroize;
 
     #[test]
     fn test_entropy_capture_quality() {
@@ -449,8 +452,6 @@ mod tests {
             },
         };
 
-        // Manual zeroize for testing
-        use zeroize::Zeroize;
         audio_data.samples.zeroize();
         assert!(audio_data.samples.iter().all(|&x| x == 0.0));
     }

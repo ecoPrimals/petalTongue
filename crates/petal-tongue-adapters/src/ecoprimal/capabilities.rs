@@ -52,11 +52,13 @@ pub struct EcoPrimalCapabilityAdapter {
 
 impl EcoPrimalCapabilityAdapter {
     /// Create adapter with default configuration
+    #[must_use]
     pub fn new() -> Self {
         Self::from_config(CapabilityIconConfig::default())
     }
 
     /// Create adapter from configuration
+    #[must_use]
     pub fn from_config(config: CapabilityIconConfig) -> Self {
         Self { config }
     }
@@ -88,7 +90,7 @@ impl Default for EcoPrimalCapabilityAdapter {
 }
 
 impl PropertyAdapter for EcoPrimalCapabilityAdapter {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "ecoprimal-capabilities"
     }
 

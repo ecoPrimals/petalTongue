@@ -35,6 +35,7 @@ pub struct AdapterRegistry {
 
 impl AdapterRegistry {
     /// Create a new empty registry
+    #[must_use]
     pub fn new() -> Self {
         Self {
             adapters: Arc::new(RwLock::new(Vec::new())),
@@ -85,6 +86,7 @@ impl AdapterRegistry {
     /// Get node decoration from all adapters
     ///
     /// If multiple adapters provide decorations, they're merged (last wins).
+    #[must_use]
     pub fn get_node_decoration(&self, properties: &Properties) -> Option<NodeDecoration> {
         let adapters = self
             .adapters
@@ -119,6 +121,7 @@ impl AdapterRegistry {
     }
 
     /// Generic property rendering (fallback when no adapter exists)
+    #[allow(clippy::unused_self)]
     fn render_generic_property(&self, key: &str, value: &PropertyValue, ui: &mut Ui) {
         ui.horizontal(|ui| {
             // Key in gray
@@ -152,6 +155,7 @@ impl AdapterRegistry {
     }
 
     /// Get count of registered adapters
+    #[must_use]
     pub fn adapter_count(&self) -> usize {
         self.adapters
             .read()
@@ -160,6 +164,7 @@ impl AdapterRegistry {
     }
 
     /// Get names of all registered adapters (for debugging)
+    #[must_use]
     pub fn adapter_names(&self) -> Vec<String> {
         self.adapters
             .read()
@@ -241,7 +246,7 @@ mod tests {
     fn test_registry_priority_sorting() {
         struct HighPriorityAdapter;
         impl PropertyAdapter for HighPriorityAdapter {
-            fn name(&self) -> &str {
+            fn name(&self) -> &'static str {
                 "high"
             }
             fn handles(&self, _: &str) -> bool {
@@ -254,7 +259,7 @@ mod tests {
         }
         struct LowPriorityAdapter;
         impl PropertyAdapter for LowPriorityAdapter {
-            fn name(&self) -> &str {
+            fn name(&self) -> &'static str {
                 "low"
             }
             fn handles(&self, _: &str) -> bool {

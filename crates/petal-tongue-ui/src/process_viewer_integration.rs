@@ -19,6 +19,18 @@ struct ProcessInfo {
     memory: u64, // in bytes
 }
 
+#[cfg(test)]
+impl ProcessInfo {
+    fn test_new(pid: u32, name: impl Into<String>, cpu_usage: f32, memory: u64) -> Self {
+        Self {
+            pid,
+            name: name.into(),
+            cpu_usage,
+            memory,
+        }
+    }
+}
+
 /// Process Viewer tool integration
 ///
 /// Provides real-time process monitoring with filtering and sorting.
@@ -41,6 +53,29 @@ enum SortColumn {
     Name,
     Cpu,
     Memory,
+}
+
+fn filter_and_sort_processes(
+    mut processes: Vec<ProcessInfo>,
+    filter_text: &str,
+    sort_by: SortColumn,
+    max_display: usize,
+) -> Vec<ProcessInfo> {
+    if !filter_text.is_empty() {
+        let filter_lower = filter_text.to_lowercase();
+        processes.retain(|p| p.name.to_lowercase().contains(&filter_lower));
+    }
+    match sort_by {
+        SortColumn::Name => processes.sort_by(|a, b| a.name.cmp(&b.name)),
+        SortColumn::Cpu => processes.sort_by(|a, b| {
+            b.cpu_usage
+                .partial_cmp(&a.cpu_usage)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        }),
+        SortColumn::Memory => processes.sort_by(|a, b| b.memory.cmp(&a.memory)),
+    }
+    processes.truncate(max_display);
+    processes
 }
 
 impl Default for ProcessViewerTool {
@@ -73,7 +108,7 @@ impl ProcessViewerTool {
             self.last_refresh = now;
 
             // Collect process info
-            let mut processes: Vec<ProcessInfo> = self
+            let processes: Vec<ProcessInfo> = self
                 .system
                 .processes()
                 .iter()
@@ -85,27 +120,12 @@ impl ProcessViewerTool {
                 })
                 .collect();
 
-            // Apply filter
-            if !self.filter_text.is_empty() {
-                let filter_lower = self.filter_text.to_lowercase();
-                processes.retain(|p| p.name.to_lowercase().contains(&filter_lower));
-            }
-
-            // Sort by selected column
-            match self.sort_by {
-                SortColumn::Name => processes.sort_by(|a, b| a.name.cmp(&b.name)),
-                SortColumn::Cpu => processes.sort_by(|a, b| {
-                    b.cpu_usage
-                        .partial_cmp(&a.cpu_usage)
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                }),
-                SortColumn::Memory => processes.sort_by(|a, b| b.memory.cmp(&a.memory)),
-            }
-
-            // Limit to max display
-            processes.truncate(self.max_display);
-
-            self.processes = processes;
+            self.processes = filter_and_sort_processes(
+                processes,
+                &self.filter_text,
+                self.sort_by,
+                self.max_display,
+            );
         }
     }
 
@@ -268,5 +288,114 @@ impl ToolPanel for ProcessViewerTool {
         let total = self.system.processes().len();
         let showing = self.processes.len();
         Some(format!("Processes: {showing}/{total}"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn format_memory_mb(memory: u64) -> String {
+        let mb = memory as f64 / 1_048_576.0;
+        format!("{mb:.1} MB")
+    }
+
+    #[test]
+    fn process_viewer_default() {
+        let pv = ProcessViewerTool::default();
+        assert!(!pv.show_panel);
+        assert_eq!(pv.filter_text, "");
+        assert_eq!(pv.sort_by, SortColumn::Cpu);
+        assert_eq!(pv.max_display, 50);
+    }
+
+    #[test]
+    fn process_info_creation() {
+        let p = ProcessInfo::test_new(1234, "test_process", 5.5, 10_485_760);
+        assert_eq!(p.pid, 1234);
+        assert_eq!(p.name, "test_process");
+        assert!((p.cpu_usage - 5.5).abs() < f32::EPSILON);
+        assert_eq!(p.memory, 10_485_760);
+    }
+
+    #[test]
+    fn format_memory_mb_display() {
+        assert_eq!(format_memory_mb(0), "0.0 MB");
+        assert_eq!(format_memory_mb(1_048_576), "1.0 MB");
+        assert_eq!(format_memory_mb(10_485_760), "10.0 MB");
+    }
+
+    #[test]
+    fn filter_processes_by_name() {
+        let processes = vec![
+            ProcessInfo::test_new(1, "chrome", 10.0, 100),
+            ProcessInfo::test_new(2, "firefox", 5.0, 200),
+            ProcessInfo::test_new(3, "chromium", 3.0, 150),
+        ];
+        let result = filter_and_sort_processes(processes, "chrom", SortColumn::Name, 10);
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].name, "chrome");
+        assert_eq!(result[1].name, "chromium");
+    }
+
+    #[test]
+    fn filter_case_insensitive() {
+        let processes = vec![
+            ProcessInfo::test_new(1, "Chrome", 10.0, 100),
+            ProcessInfo::test_new(2, "FIREFOX", 5.0, 200),
+        ];
+        let result = filter_and_sort_processes(processes, "chrome", SortColumn::Name, 10);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].name, "Chrome");
+    }
+
+    #[test]
+    fn sort_by_name() {
+        let processes = vec![
+            ProcessInfo::test_new(1, "zebra", 1.0, 100),
+            ProcessInfo::test_new(2, "alpha", 1.0, 100),
+            ProcessInfo::test_new(3, "middle", 1.0, 100),
+        ];
+        let result = filter_and_sort_processes(processes, "", SortColumn::Name, 10);
+        assert_eq!(result[0].name, "alpha");
+        assert_eq!(result[1].name, "middle");
+        assert_eq!(result[2].name, "zebra");
+    }
+
+    #[test]
+    fn sort_by_cpu_descending() {
+        let processes = vec![
+            ProcessInfo::test_new(1, "a", 5.0, 100),
+            ProcessInfo::test_new(2, "b", 20.0, 100),
+            ProcessInfo::test_new(3, "c", 10.0, 100),
+        ];
+        let result = filter_and_sort_processes(processes, "", SortColumn::Cpu, 10);
+        assert_eq!(result[0].name, "b");
+        assert_eq!(result[1].name, "c");
+        assert_eq!(result[2].name, "a");
+    }
+
+    #[test]
+    fn sort_by_memory_descending() {
+        let processes = vec![
+            ProcessInfo::test_new(1, "a", 1.0, 100),
+            ProcessInfo::test_new(2, "b", 1.0, 500),
+            ProcessInfo::test_new(3, "c", 1.0, 250),
+        ];
+        let result = filter_and_sort_processes(processes, "", SortColumn::Memory, 10);
+        assert_eq!(result[0].memory, 500);
+        assert_eq!(result[1].memory, 250);
+        assert_eq!(result[2].memory, 100);
+    }
+
+    #[test]
+    fn max_display_truncates() {
+        let processes = vec![
+            ProcessInfo::test_new(1, "a", 1.0, 100),
+            ProcessInfo::test_new(2, "b", 2.0, 200),
+            ProcessInfo::test_new(3, "c", 3.0, 300),
+        ];
+        let result = filter_and_sort_processes(processes, "", SortColumn::Cpu, 2);
+        assert_eq!(result.len(), 2);
     }
 }

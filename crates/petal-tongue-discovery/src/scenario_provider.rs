@@ -80,11 +80,11 @@ impl ScenarioVisualizationProvider {
                 if let Some(pos) = p.position {
                     properties.insert(
                         "position_x".to_string(),
-                        PropertyValue::Number(pos.x as f64),
+                        PropertyValue::Number(f64::from(pos.x)),
                     );
                     properties.insert(
                         "position_y".to_string(),
-                        PropertyValue::Number(pos.y as f64),
+                        PropertyValue::Number(f64::from(pos.y)),
                     );
                 }
 

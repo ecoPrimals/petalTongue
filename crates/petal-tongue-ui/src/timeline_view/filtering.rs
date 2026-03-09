@@ -64,3 +64,96 @@ pub fn get_primals(events: &[TimelineEvent]) -> Vec<String> {
     primal_vec.sort();
     primal_vec
 }
+
+#[cfg(test)]
+mod tests {
+    use super::super::types::{EventStatus, TimelineEvent};
+    use super::*;
+
+    fn mock_event(
+        id: &str,
+        from: &str,
+        to: &str,
+        event_type: &str,
+        timestamp: DateTime<Utc>,
+    ) -> TimelineEvent {
+        TimelineEvent {
+            id: id.to_string(),
+            from: from.to_string(),
+            to: to.to_string(),
+            event_type: event_type.to_string(),
+            timestamp,
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        }
+    }
+
+    #[test]
+    fn filtered_events_no_filters_returns_all() {
+        let now = Utc::now();
+        let events = vec![
+            mock_event("1", "a", "b", "discover", now),
+            mock_event("2", "b", "c", "invoke", now),
+        ];
+        let result = filtered_events(&events, &None, &None, &None, &None);
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn filtered_events_event_type_filter() {
+        let now = Utc::now();
+        let events = vec![
+            mock_event("1", "a", "b", "discover", now),
+            mock_event("2", "b", "c", "invoke", now),
+        ];
+        let result = filtered_events(&events, &Some("discover".to_string()), &None, &None, &None);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].event_type, "discover");
+    }
+
+    #[test]
+    fn filtered_events_primal_filter() {
+        let now = Utc::now();
+        let events = vec![
+            mock_event("1", "alice", "bob", "test", now),
+            mock_event("2", "bob", "charlie", "test", now),
+        ];
+        let result = filtered_events(&events, &None, &Some("alice".to_string()), &None, &None);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].from, "alice");
+    }
+
+    #[test]
+    fn filtered_events_time_range() {
+        let base = Utc::now();
+        let events = vec![
+            mock_event("1", "a", "b", "test", base - chrono::Duration::seconds(20)),
+            mock_event("2", "a", "b", "test", base),
+            mock_event("3", "a", "b", "test", base + chrono::Duration::seconds(20)),
+        ];
+        let start = base - chrono::Duration::seconds(10);
+        let end = base + chrono::Duration::seconds(10);
+        let result = filtered_events(&events, &None, &None, &Some(start), &Some(end));
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].id, "2");
+    }
+
+    #[test]
+    fn get_primals_unique_sorted() {
+        let now = Utc::now();
+        let events = vec![
+            mock_event("1", "charlie", "alice", "test", now),
+            mock_event("2", "bob", "charlie", "test", now),
+        ];
+        let primals = get_primals(&events);
+        assert_eq!(primals, vec!["alice", "bob", "charlie"]);
+    }
+
+    #[test]
+    fn get_primals_empty() {
+        let events: Vec<TimelineEvent> = vec![];
+        let primals = get_primals(&events);
+        assert!(primals.is_empty());
+    }
+}

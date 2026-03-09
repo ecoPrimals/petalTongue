@@ -74,4 +74,21 @@ fn test_continuous_verification_interaction_states() {
 
     let v = continuous_verification("test-window", 100.0);
     assert_eq!(v.interactivity, InteractivityState::Idle);
+
+    let v = continuous_verification("test-window", 400.0);
+    assert_eq!(v.interactivity, InteractivityState::Unconfirmed);
+}
+
+#[test]
+fn test_display_verification_status_message_format() {
+    let v = DisplayVerification::failed("custom reason");
+    assert!(v.status_message.starts_with("Display verification failed:"));
+    assert!(v.status_message.contains("custom reason"));
+}
+
+#[test]
+fn test_display_verification_confirmed_evidence() {
+    let v = DisplayVerification::confirmed_visible();
+    assert!(!v.topology_evidence.is_empty());
+    assert!(v.topology_evidence[0].contains("User interaction"));
 }

@@ -59,9 +59,9 @@ mod state_tests {
             state
                 .add_log(LogMessage {
                     timestamp: Utc::now(),
-                    source: Some(format!("primal-{}", i)),
+                    source: Some(format!("primal-{i}")),
                     level: LogLevel::Info,
-                    message: format!("Test message {}", i),
+                    message: format!("Test message {i}"),
                 })
                 .await;
         }
@@ -94,7 +94,7 @@ mod state_tests {
                     timestamp: Utc::now(),
                     source: None,
                     level: LogLevel::Debug,
-                    message: format!("Log {}", i),
+                    message: format!("Log {i}"),
                 })
                 .await;
         }
@@ -169,7 +169,7 @@ mod state_tests {
                         timestamp: Utc::now(),
                         source: Some("task1".to_string()),
                         level: LogLevel::Info,
-                        message: format!("Message {}", i),
+                        message: format!("Message {i}"),
                     })
                     .await;
             }
@@ -183,7 +183,7 @@ mod state_tests {
                         timestamp: Utc::now(),
                         source: Some("task2".to_string()),
                         level: LogLevel::Debug,
-                        message: format!("Message {}", i),
+                        message: format!("Message {i}"),
                     })
                     .await;
             }
@@ -258,7 +258,7 @@ mod view_tests {
     }
 }
 
-/// Test suite for LogLevel
+/// Test suite for `LogLevel`
 mod log_level_tests {
     use super::*;
 
@@ -278,8 +278,8 @@ mod log_level_tests {
 }
 
 /// Test suite for TUI view data preparation and layout
-/// Note: Full render tests with TestBackend require running outside tokio runtime
-/// due to block_on in view render callbacks. These tests verify state and layout logic.
+/// Note: Full render tests with `TestBackend` require running outside tokio runtime
+/// due to `block_on` in view render callbacks. These tests verify state and layout logic.
 mod view_rendering_tests {
     use super::*;
     use petal_tongue_core::PrimalHealthStatus;

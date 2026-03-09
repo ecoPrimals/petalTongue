@@ -109,3 +109,92 @@ impl EventStream {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::biomeos_integration::{Device, DeviceStatus, DeviceType};
+
+    fn make_device() -> Device {
+        Device {
+            id: "dev-1".to_string(),
+            name: "Test Device".to_string(),
+            device_type: DeviceType::GPU,
+            status: DeviceStatus::Online,
+            resource_usage: 0.5,
+            assigned_to: None,
+            metadata: serde_json::json!({}),
+        }
+    }
+
+    #[test]
+    fn biomeos_event_device_added_roundtrip() {
+        let device = make_device();
+        let event = BiomeOSEvent::DeviceAdded {
+            device: device.clone(),
+        };
+        let json = serde_json::to_string(&event).unwrap();
+        let parsed: BiomeOSEvent = serde_json::from_str(&json).unwrap();
+        match &parsed {
+            BiomeOSEvent::DeviceAdded { device: d } => assert_eq!(d.id, device.id),
+            _ => panic!("expected DeviceAdded"),
+        }
+    }
+
+    #[test]
+    fn biomeos_event_device_removed_roundtrip() {
+        let event = BiomeOSEvent::DeviceRemoved {
+            device_id: "dev-99".to_string(),
+        };
+        let json = serde_json::to_string(&event).unwrap();
+        let parsed: BiomeOSEvent = serde_json::from_str(&json).unwrap();
+        match parsed {
+            BiomeOSEvent::DeviceRemoved { device_id } => assert_eq!(device_id, "dev-99"),
+            _ => panic!("expected DeviceRemoved"),
+        }
+    }
+
+    #[test]
+    fn biomeos_event_primal_status_roundtrip() {
+        let event = BiomeOSEvent::PrimalStatus {
+            primal_id: "p1".to_string(),
+            health: Health::Degraded,
+        };
+        let json = serde_json::to_string(&event).unwrap();
+        let parsed: BiomeOSEvent = serde_json::from_str(&json).unwrap();
+        match parsed {
+            BiomeOSEvent::PrimalStatus { primal_id, health } => {
+                assert_eq!(primal_id, "p1");
+                assert_eq!(health, Health::Degraded);
+            }
+            _ => panic!("expected PrimalStatus"),
+        }
+    }
+
+    #[test]
+    fn biomeos_event_niche_deployed_roundtrip() {
+        let event = BiomeOSEvent::NicheDeployed {
+            niche_id: "niche-1".to_string(),
+            name: "My Niche".to_string(),
+        };
+        let json = serde_json::to_string(&event).unwrap();
+        let parsed: BiomeOSEvent = serde_json::from_str(&json).unwrap();
+        match parsed {
+            BiomeOSEvent::NicheDeployed { niche_id, name } => {
+                assert_eq!(niche_id, "niche-1");
+                assert_eq!(name, "My Niche");
+            }
+            _ => panic!("expected NicheDeployed"),
+        }
+    }
+
+    #[test]
+    fn biomeos_event_serde_tag_type() {
+        let json = r#"{"type":"DeviceRemoved","device_id":"x"}"#;
+        let parsed: BiomeOSEvent = serde_json::from_str(json).unwrap();
+        match parsed {
+            BiomeOSEvent::DeviceRemoved { device_id } => assert_eq!(device_id, "x"),
+            _ => panic!("expected DeviceRemoved"),
+        }
+    }
+}

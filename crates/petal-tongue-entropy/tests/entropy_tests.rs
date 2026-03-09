@@ -3,6 +3,8 @@
 //!
 //! Tests verify encryption, zeroization, and streaming logic.
 
+#![allow(clippy::float_cmp)]
+
 use petal_tongue_entropy::types::*;
 use std::time::Duration;
 

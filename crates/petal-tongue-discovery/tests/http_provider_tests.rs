@@ -5,6 +5,7 @@
 //! Requires `--features legacy-http` to run.
 
 #![cfg(feature = "legacy-http")]
+#![allow(deprecated)]
 
 use petal_tongue_discovery::{HttpVisualizationProvider, VisualizationDataProvider};
 use wiremock::matchers::{method, path};
@@ -13,8 +14,6 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 #[tokio::test]
 async fn test_http_provider_creation() {
     let _provider = HttpVisualizationProvider::new("http://test:3000").unwrap();
-    // Provider should be created successfully
-    assert!(true, "HTTP provider created");
 }
 
 #[tokio::test]
@@ -30,7 +29,7 @@ async fn test_get_primals_success() {
                 "endpoint": "http://test-1:8080",
                 "capabilities": ["compute", "storage"],
                 "health": "healthy",
-                "last_seen": 1234567890_u64
+                "last_seen": 1_234_567_890_u64
             },
             {
                 "id": "test-primal-2",
@@ -39,7 +38,7 @@ async fn test_get_primals_success() {
                 "endpoint": "http://test-2:8080",
                 "capabilities": ["storage"],
                 "health": "healthy",
-                "last_seen": 1234567890_u64
+                "last_seen": 1_234_567_890_u64
             }
         ]
     });

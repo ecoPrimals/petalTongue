@@ -2,7 +2,7 @@
 //! E2E Tests for Tutorial Mode
 //!
 //! Tests the full tutorial mode workflow including:
-//! - Explicit tutorial mode (SHOWCASE_MODE)
+//! - Explicit tutorial mode (`SHOWCASE_MODE`)
 //! - Graceful fallback (no providers)
 //! - Graph population
 //! - Integration with app initialization
@@ -122,8 +122,7 @@ fn test_e2e_tutorial_scenario_with_all_layouts() {
         let graph = graph.read().unwrap();
         assert!(
             !graph.nodes().is_empty(),
-            "Should load nodes with {:?} layout",
-            layout
+            "Should load nodes with {layout:?} layout"
         );
     }
 }

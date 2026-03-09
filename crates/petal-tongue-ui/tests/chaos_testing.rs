@@ -6,7 +6,6 @@
 
 use petal_tongue_core::{GraphEngine, PrimalHealthStatus, PrimalInfo};
 use std::sync::{Arc, RwLock};
-use tokio::time::{Duration, sleep};
 
 /// Chaos test scenario
 #[derive(Debug, Clone)]
@@ -105,8 +104,8 @@ impl ChaosTestRunner {
                 // Add primals
                 for i in 0..count {
                     graph.add_node(PrimalInfo {
-                        id: format!("churn_{}_{}", iteration, i).into(),
-                        name: format!("Churn Primal {}", i),
+                        id: format!("churn_{iteration}_{i}").into(),
+                        name: format!("Churn Primal {i}"),
                         primal_type: "ChurnTest".to_string(),
                         endpoint: format!("http://churn:808{i}"),
                         capabilities: vec![],
@@ -143,7 +142,7 @@ impl ChaosTestRunner {
         let duration_ms = start.elapsed().as_millis() as u64;
         let (survived, error, final_ops) = match result {
             Ok(ops) => (true, None, ops),
-            Err(e) => (false, Some(format!("Panic: {:?}", e)), 0),
+            Err(e) => (false, Some(format!("Panic: {e:?}")), 0),
         };
 
         self.results.push(ChaosTestResult {
@@ -152,7 +151,7 @@ impl ChaosTestRunner {
             duration_ms,
             error,
             operations_completed: final_ops,
-            crashes: if survived { 0 } else { 1 },
+            crashes: usize::from(!survived),
         });
 
         Ok(())
@@ -209,7 +208,7 @@ impl ChaosTestRunner {
         let duration_ms = start.elapsed().as_millis() as u64;
         let (survived, error, final_ops) = match result {
             Ok(ops) => (true, None, ops),
-            Err(e) => (false, Some(format!("Panic: {:?}", e)), 0),
+            Err(e) => (false, Some(format!("Panic: {e:?}")), 0),
         };
 
         self.results.push(ChaosTestResult {
@@ -218,7 +217,7 @@ impl ChaosTestRunner {
             duration_ms,
             error,
             operations_completed: final_ops,
-            crashes: if survived { 0 } else { 1 },
+            crashes: usize::from(!survived),
         });
 
         Ok(())
@@ -273,7 +272,7 @@ impl ChaosTestRunner {
         let duration_ms = start.elapsed().as_millis() as u64;
         let (survived, error, final_ops) = match result {
             Ok(ops) => (true, None, ops),
-            Err(e) => (false, Some(format!("Panic: {:?}", e)), 0),
+            Err(e) => (false, Some(format!("Panic: {e:?}")), 0),
         };
 
         self.results.push(ChaosTestResult {
@@ -282,7 +281,7 @@ impl ChaosTestRunner {
             duration_ms,
             error,
             operations_completed: final_ops,
-            crashes: if survived { 0 } else { 1 },
+            crashes: usize::from(!survived),
         });
 
         Ok(())
@@ -349,7 +348,7 @@ impl ChaosTestRunner {
         let duration_ms = start.elapsed().as_millis() as u64;
         let (survived, error, final_ops) = match result {
             Ok(ops) => (true, None, ops),
-            Err(e) => (false, Some(format!("Panic: {:?}", e)), 0),
+            Err(e) => (false, Some(format!("Panic: {e:?}")), 0),
         };
 
         self.results.push(ChaosTestResult {
@@ -358,7 +357,7 @@ impl ChaosTestRunner {
             duration_ms,
             error,
             operations_completed: final_ops,
-            crashes: if survived { 0 } else { 1 },
+            crashes: usize::from(!survived),
         });
 
         Ok(())

@@ -65,3 +65,55 @@ pub struct PrimalMetrics {
     #[serde(default)]
     pub active_executions: usize,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ecosystem_default_empty() {
+        let eco = Ecosystem::default();
+        assert!(eco.primals.is_empty());
+    }
+
+    #[test]
+    fn ecosystem_with_primals() {
+        let eco = Ecosystem {
+            primals: vec![PrimalDefinition {
+                id: "p1".to_string(),
+                name: "Test".to_string(),
+                primal_type: "test".to_string(),
+                family: "fam".to_string(),
+                status: "healthy".to_string(),
+                health: 100,
+                confidence: 90,
+                position: Position { x: 1.0, y: 2.0 },
+                capabilities: vec!["cap".to_string()],
+                metrics: PrimalMetrics::default(),
+                proprioception: None,
+                data_bindings: vec![],
+                threshold_ranges: vec![],
+            }],
+        };
+        assert_eq!(eco.primals.len(), 1);
+        assert_eq!(eco.primals[0].id, "p1");
+        assert_eq!(eco.primals[0].position.x, 1.0);
+    }
+
+    #[test]
+    fn primal_metrics_defaults() {
+        let m = PrimalMetrics::default();
+        assert_eq!(m.cpu_percent, 0.0);
+        assert_eq!(m.memory_mb, 0);
+        assert_eq!(m.uptime_seconds, 0);
+    }
+
+    #[test]
+    fn position_serialization() {
+        let p = Position { x: 10.5, y: 20.0 };
+        let json = serde_json::to_string(&p).unwrap();
+        let parsed: Position = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.x, 10.5);
+        assert_eq!(parsed.y, 20.0);
+    }
+}

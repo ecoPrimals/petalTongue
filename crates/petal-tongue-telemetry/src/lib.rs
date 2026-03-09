@@ -183,8 +183,7 @@ impl TelemetryCollector {
     /// Add an event to the telemetry stream
     ///
     /// Events are buffered and distributed to subscribers.
-    pub fn push_event(&self, event: TelemetryEvent) {
-        // Add to buffer
+    pub fn push_event(&self, event: &TelemetryEvent) {
         {
             let Ok(mut buffer) = self.buffer.write() else {
                 tracing::error!("Telemetry buffer lock poisoned");
@@ -205,12 +204,11 @@ impl TelemetryCollector {
                 return;
             };
             for subscriber in subscribers.iter_mut() {
-                subscriber.on_event(&event);
+                subscriber.on_event(event);
             }
         }
 
-        // Update metrics
-        self.update_metrics(&event);
+        self.update_metrics(event);
     }
 
     /// Add a subscriber to the telemetry stream
@@ -363,7 +361,7 @@ mod tests {
             timestamp: SystemTime::now(),
         };
 
-        collector.push_event(event);
+        collector.push_event(&event);
 
         let metrics = collector.get_metrics();
         assert_eq!(metrics.total_primals, 1);
@@ -389,7 +387,7 @@ mod tests {
             timestamp: SystemTime::now(),
         };
 
-        collector.push_event(event);
+        collector.push_event(&event);
 
         assert_eq!(*events_received.read().expect("SAFETY: Lock poisoned"), 1);
     }
@@ -399,7 +397,7 @@ mod tests {
         let collector = TelemetryCollector::default();
 
         // Add two primals
-        collector.push_event(TelemetryEvent::PrimalDiscovered {
+        collector.push_event(&TelemetryEvent::PrimalDiscovered {
             primal_id: "primal-a".to_string(),
             primal_type: "compute".to_string(),
             capabilities: vec![],
@@ -407,7 +405,7 @@ mod tests {
             timestamp: SystemTime::now(),
         });
 
-        collector.push_event(TelemetryEvent::PrimalDiscovered {
+        collector.push_event(&TelemetryEvent::PrimalDiscovered {
             primal_id: "primal-b".to_string(),
             primal_type: "storage".to_string(),
             capabilities: vec![],
@@ -416,7 +414,7 @@ mod tests {
         });
 
         // Add API call
-        collector.push_event(TelemetryEvent::ApiCall {
+        collector.push_event(&TelemetryEvent::ApiCall {
             from: "primal-a".to_string(),
             to: "primal-b".to_string(),
             capability: "store".to_string(),
@@ -442,7 +440,7 @@ mod tests {
     fn test_data_transfer_metrics() {
         let collector = TelemetryCollector::default();
 
-        collector.push_event(TelemetryEvent::PrimalDiscovered {
+        collector.push_event(&TelemetryEvent::PrimalDiscovered {
             primal_id: "primal-a".to_string(),
             primal_type: "compute".to_string(),
             capabilities: vec![],
@@ -450,7 +448,7 @@ mod tests {
             timestamp: SystemTime::now(),
         });
 
-        collector.push_event(TelemetryEvent::DataTransfer {
+        collector.push_event(&TelemetryEvent::DataTransfer {
             from: "primal-a".to_string(),
             to: "primal-b".to_string(),
             bytes: 1024,
@@ -469,7 +467,7 @@ mod tests {
     fn test_primal_disappeared() {
         let collector = TelemetryCollector::default();
 
-        collector.push_event(TelemetryEvent::PrimalDiscovered {
+        collector.push_event(&TelemetryEvent::PrimalDiscovered {
             primal_id: "test-1".to_string(),
             primal_type: "compute".to_string(),
             capabilities: vec![],
@@ -477,7 +475,7 @@ mod tests {
             timestamp: SystemTime::now(),
         });
 
-        collector.push_event(TelemetryEvent::PrimalDisappeared {
+        collector.push_event(&TelemetryEvent::PrimalDisappeared {
             primal_id: "test-1".to_string(),
             timestamp: SystemTime::now(),
         });
@@ -492,7 +490,7 @@ mod tests {
         let collector = TelemetryCollector::default();
 
         for i in 0..5 {
-            collector.push_event(TelemetryEvent::PrimalDiscovered {
+            collector.push_event(&TelemetryEvent::PrimalDiscovered {
                 primal_id: format!("primal-{i}"),
                 primal_type: "compute".to_string(),
                 capabilities: vec![],
@@ -510,7 +508,7 @@ mod tests {
         let collector = TelemetryCollector::new(3, Duration::from_secs(1));
 
         for i in 0..5 {
-            collector.push_event(TelemetryEvent::PrimalDiscovered {
+            collector.push_event(&TelemetryEvent::PrimalDiscovered {
                 primal_id: format!("primal-{i}"),
                 primal_type: "compute".to_string(),
                 capabilities: vec![],
@@ -527,7 +525,7 @@ mod tests {
     fn test_clear() {
         let collector = TelemetryCollector::default();
 
-        collector.push_event(TelemetryEvent::PrimalDiscovered {
+        collector.push_event(&TelemetryEvent::PrimalDiscovered {
             primal_id: "test-1".to_string(),
             primal_type: "compute".to_string(),
             capabilities: vec![],

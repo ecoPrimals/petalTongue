@@ -3,6 +3,8 @@
 //!
 //! Tests the modular UI control system introduced in v2.2.0
 
+#![allow(clippy::unnecessary_get_then_check, clippy::bool_assert_comparison)]
+
 use petal_tongue_ui::scenario::{FeatureFlags, PanelVisibility, Scenario};
 use std::path::PathBuf;
 
@@ -173,8 +175,8 @@ fn test_scenario_to_primal_infos() {
     assert_eq!(red_circle.primal_type, "test");
 
     // Verify positions are preserved
-    assert_eq!(primals[0].properties.get("cpu_percent").is_some(), true);
-    assert_eq!(primals[0].properties.get("memory_mb").is_some(), true);
+    assert!(primals[0].properties.contains_key("cpu_percent"));
+    assert!(primals[0].properties.contains_key("memory_mb"));
 }
 
 #[test]

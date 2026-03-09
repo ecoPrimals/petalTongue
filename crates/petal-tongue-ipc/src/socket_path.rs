@@ -81,26 +81,23 @@ pub fn get_petaltongue_socket_path() -> Result<PathBuf> {
     let family_id = get_family_id();
     let node_id = get_node_id();
 
-    match get_runtime_dir() {
-        Ok(runtime_dir) => {
-            // healthSpring discovers at XDG_RUNTIME_DIR/petaltongue/*.sock (subdirectory)
-            let sock_dir = runtime_dir.join(APP_DIR_NAME);
-            let path = sock_dir.join(format!("{APP_DIR_NAME}-{family_id}-{node_id}.sock"));
+    if let Ok(runtime_dir) = get_runtime_dir() {
+        // healthSpring discovers at XDG_RUNTIME_DIR/petaltongue/*.sock (subdirectory)
+        let sock_dir = runtime_dir.join(APP_DIR_NAME);
+        let path = sock_dir.join(format!("{APP_DIR_NAME}-{family_id}-{node_id}.sock"));
 
-            // Ensure petaltongue subdirectory exists
-            std::fs::create_dir_all(&sock_dir)?;
+        // Ensure petaltongue subdirectory exists
+        std::fs::create_dir_all(&sock_dir)?;
 
-            Ok(path)
-        }
-        Err(_) => {
-            // Priority 3: Fallback to /tmp (last resort)
-            let path = PathBuf::from(format!("/tmp/{APP_DIR_NAME}-{family_id}-{node_id}.sock"));
+        Ok(path)
+    } else {
+        // Priority 3: Fallback to /tmp (last resort)
+        let path = PathBuf::from(format!("/tmp/{APP_DIR_NAME}-{family_id}-{node_id}.sock"));
 
-            // Ensure /tmp exists (it should, but be defensive)
-            std::fs::create_dir_all("/tmp")?;
+        // Ensure /tmp exists (it should, but be defensive)
+        std::fs::create_dir_all("/tmp")?;
 
-            Ok(path)
-        }
+        Ok(path)
     }
 }
 
@@ -112,6 +109,7 @@ pub fn get_petaltongue_socket_path() -> Result<PathBuf> {
 ///
 /// This function only determines OUR family ID. It does not know about or
 /// hardcode any other primal's family IDs.
+#[must_use]
 pub fn get_family_id() -> String {
     env::var("FAMILY_ID").unwrap_or_else(|_| "nat0".to_string())
 }
@@ -128,6 +126,7 @@ pub fn get_family_id() -> String {
 ///
 /// This is critical for atomic deployments where multiple instances
 /// may need to run on the same machine.
+#[must_use]
 pub fn get_node_id() -> String {
     env::var("PETALTONGUE_NODE_ID").unwrap_or_else(|_| "default".to_string())
 }
@@ -190,7 +189,7 @@ pub fn get_runtime_dir() -> Result<PathBuf> {
 /// # Arguments
 ///
 /// * `primal_name` - Name of the primal to discover (e.g., "beardog", "songbird")
-/// * `family_id` - Optional family ID (defaults to current FAMILY_ID)
+/// * `family_id` - Optional family ID (defaults to current `FAMILY_ID`)
 /// * `node_id` - Optional node ID (defaults to "default")
 ///
 /// # Examples
@@ -244,6 +243,7 @@ pub fn discover_primal_socket(
 ///
 /// This function checks if a socket exists WITHOUT assuming it SHOULD exist.
 /// This enables graceful degradation when primals are not available.
+#[must_use]
 pub fn socket_exists(socket_path: &Path) -> bool {
     socket_path.exists() && socket_path.is_file()
 }

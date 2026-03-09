@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Interaction engine -- the game-engine-style bidirectional loop.
 //!
-//! Consumes [`SensorEvent`](crate::sensor::SensorEvent) values from input
+//! Consumes [`SensorEvent`] values from input
 //! adapters and IPC, translates them to semantic intents, resolves targets
 //! via inverse pipelines, applies state changes, and broadcasts results.
 

@@ -323,8 +323,8 @@ mod tests {
         };
 
         renderer.set_player_start(&map);
-        assert_eq!(renderer.player_x, 64.0);
-        assert_eq!(renderer.player_y, 64.0);
+        assert!((renderer.player_x - 64.0).abs() < f32::EPSILON);
+        assert!((renderer.player_y - 64.0).abs() < f32::EPSILON);
     }
 
     #[test]

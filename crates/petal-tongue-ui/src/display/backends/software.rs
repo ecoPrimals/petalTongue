@@ -298,7 +298,7 @@ mod tests {
     #[tokio::test]
     async fn test_software_display_creation() {
         let display = SoftwareDisplay::new();
-        assert_eq!(display.name().starts_with("Software Rendering"), true);
+        assert!(display.name().starts_with("Software Rendering"));
         assert_eq!(display.dimensions(), (1920, 1080));
     }
 

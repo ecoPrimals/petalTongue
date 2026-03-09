@@ -4,7 +4,7 @@
 //! Tests error handling and graceful degradation
 
 use chrono::Utc;
-use petal_tongue_tui::state::{LogLevel, LogMessage, TUIState, View};
+use petal_tongue_tui::state::{LogLevel, LogMessage, TUIState};
 
 mod common;
 use common::{create_test_edge, create_test_primal, create_test_primal_with_health};
@@ -256,7 +256,7 @@ async fn test_fault_log_flooding_oom_protection() {
                 timestamp: Utc::now(),
                 source: Some(format!("source-{}", i % 100)),
                 level: LogLevel::Debug,
-                message: format!("Flood log {}", i),
+                message: format!("Flood log {i}"),
             })
             .await;
     }
@@ -279,8 +279,8 @@ async fn test_fault_concurrent_primal_access() {
     let writer = tokio::spawn(async move {
         for i in 0..100 {
             let primals = vec![create_test_primal(
-                &format!("primal-{}", i),
-                &format!("primal-{}", i),
+                &format!("primal-{i}"),
+                &format!("primal-{i}"),
             )];
             write_state.update_primals(primals).await;
         }

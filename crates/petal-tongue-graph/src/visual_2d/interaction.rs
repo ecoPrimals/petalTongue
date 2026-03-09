@@ -8,6 +8,21 @@ use petal_tongue_core::{PrimalHealthStatus, PrimalId, PrimalInfo, Properties, Pr
 
 use super::{EdgeDraft, Visual2DRenderer};
 
+#[must_use]
+fn interactive_node_id(node_count: usize) -> String {
+    format!("interactive-node-{}", node_count + 1)
+}
+
+#[must_use]
+fn interactive_node_name(node_count: usize) -> String {
+    format!("Node {}", node_count + 1)
+}
+
+#[must_use]
+fn is_edge_duplicate(from: &str, to: &str, existing_from: &str, existing_to: &str) -> bool {
+    (existing_from == from && existing_to == to) || (existing_from == to && existing_to == from)
+}
+
 /// Handle user input (pan, zoom, click, double-click, drag)
 pub fn handle_input(
     renderer: &mut Visual2DRenderer,
@@ -153,7 +168,7 @@ fn create_node_at(renderer: &mut Visual2DRenderer, world_pos: Position) {
     };
 
     let node_count = graph.nodes().len();
-    let new_id = format!("interactive-node-{}", node_count + 1);
+    let new_id = interactive_node_id(node_count);
 
     let mut properties = Properties::new();
     properties.insert(
@@ -167,7 +182,7 @@ fn create_node_at(renderer: &mut Visual2DRenderer, world_pos: Position) {
 
     let new_primal = PrimalInfo {
         id: PrimalId::from(new_id.clone()),
-        name: format!("Node {}", node_count + 1),
+        name: interactive_node_name(node_count),
         primal_type: "custom".to_string(),
         endpoint: format!("interactive://{}", new_id),
         capabilities: vec!["interactive".to_string()],
@@ -204,10 +219,10 @@ fn create_edge(renderer: &mut Visual2DRenderer, from: PrimalId, to: PrimalId) {
         return;
     };
 
-    let edge_exists = graph.edges().iter().any(|e| {
-        (e.from.as_str() == from.as_str() && e.to.as_str() == to.as_str())
-            || (e.from.as_str() == to.as_str() && e.to.as_str() == from.as_str())
-    });
+    let edge_exists = graph
+        .edges()
+        .iter()
+        .any(|e| is_edge_duplicate(from.as_str(), to.as_str(), e.from.as_str(), e.to.as_str()));
 
     if edge_exists {
         return;
@@ -256,4 +271,45 @@ fn delete_node(renderer: &mut Visual2DRenderer, node_id: &str) {
         return;
     };
     graph.remove_node(node_id);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn interactive_node_id_first() {
+        assert_eq!(interactive_node_id(0), "interactive-node-1");
+    }
+
+    #[test]
+    fn interactive_node_id_after_nodes() {
+        assert_eq!(interactive_node_id(5), "interactive-node-6");
+    }
+
+    #[test]
+    fn interactive_node_name_first() {
+        assert_eq!(interactive_node_name(0), "Node 1");
+    }
+
+    #[test]
+    fn interactive_node_name_after_nodes() {
+        assert_eq!(interactive_node_name(3), "Node 4");
+    }
+
+    #[test]
+    fn is_edge_duplicate_same_direction() {
+        assert!(is_edge_duplicate("a", "b", "a", "b"));
+    }
+
+    #[test]
+    fn is_edge_duplicate_reverse_direction() {
+        assert!(is_edge_duplicate("a", "b", "b", "a"));
+    }
+
+    #[test]
+    fn is_edge_duplicate_different() {
+        assert!(!is_edge_duplicate("a", "b", "a", "c"));
+        assert!(!is_edge_duplicate("a", "b", "c", "d"));
+    }
 }

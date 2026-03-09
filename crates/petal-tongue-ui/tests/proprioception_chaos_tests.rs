@@ -145,8 +145,8 @@ fn chaos_massive_registrations() {
 
     // Register many modalities
     for i in 0..50 {
-        system.register_output(OutputModality::Generic(format!("output-{}", i)));
-        system.register_input(InputModality::Generic(format!("input-{}", i)));
+        system.register_output(OutputModality::Generic(format!("output-{i}")));
+        system.register_input(InputModality::Generic(format!("input-{i}")));
     }
 
     // Should not crash

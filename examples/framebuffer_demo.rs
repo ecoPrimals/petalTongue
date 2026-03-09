@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
     {
         let euid = petal_tongue_core::system_info::get_current_euid();
         if euid != 0 {
-            eprintln!("⚠️  WARNING: Not running as root (eUID: {})", euid);
+            eprintln!("⚠️  WARNING: Not running as root (eUID: {euid})");
             eprintln!("    Framebuffer access may require root privileges.");
             eprintln!("    If this fails, try: sudo target/release/examples/framebuffer_demo\n");
         }
@@ -55,12 +55,12 @@ async fn main() -> Result<()> {
 
     // Check if framebuffer backend is active
     let active_name = display_manager.active_backend_name().unwrap_or("Unknown");
-    println!("✅ Active backend: {}", active_name);
+    println!("✅ Active backend: {active_name}");
 
     if !active_name.contains("Framebuffer") {
         eprintln!("⚠️  WARNING: Not using framebuffer backend!");
         eprintln!("   This demo is intended for framebuffer display.");
-        eprintln!("   Current backend: {}", active_name);
+        eprintln!("   Current backend: {active_name}");
         eprintln!("\nReasons framebuffer may not be available:");
         eprintln!("   - /dev/fb0 does not exist");
         eprintln!("   - Insufficient permissions (need root)");
@@ -117,7 +117,7 @@ async fn main() -> Result<()> {
                 ui.separator();
                 ui.label("Interactive Elements:");
                 if ui.button("Button (demo)").clicked() {
-                    println!("Button clicked at frame {}", i);
+                    println!("Button clicked at frame {i}");
                 }
 
                 let mut value = i as f32 / 60.0;
@@ -158,7 +158,7 @@ async fn main() -> Result<()> {
         // Target 60 FPS (16.67ms per frame)
         let target_frame_time = Duration::from_millis(16);
         if frame_time < target_frame_time {
-            tokio::time::sleep(target_frame_time - frame_time).await;
+            tokio::time::sleep(target_frame_time.checked_sub(frame_time).unwrap()).await;
         }
     }
 
@@ -171,7 +171,7 @@ async fn main() -> Result<()> {
     println!("═══════════════════════════════════════");
     println!("Total Time: {:.2}s", total_time.as_secs_f64());
     println!("Frames: 60");
-    println!("Average FPS: {:.1}", fps);
+    println!("Average FPS: {fps:.1}");
     println!(
         "Average Frame Time: {:.2}ms",
         avg_frame_time.as_secs_f64() * 1000.0
@@ -179,7 +179,7 @@ async fn main() -> Result<()> {
     println!("Target Frame Time: 16.67ms (60 FPS)");
 
     let target_achievement = (16.67 / (avg_frame_time.as_secs_f64() * 1000.0)) * 100.0;
-    println!("Target Achievement: {:.1}%", target_achievement);
+    println!("Target Achievement: {target_achievement:.1}%");
 
     println!("\n✅ Framebuffer demo complete!");
     println!("   Direct hardware rendering working");

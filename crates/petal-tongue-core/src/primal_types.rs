@@ -121,6 +121,7 @@ impl PrimalCapabilities for PrimalInfo {
 mod tests {
     use super::*;
     use crate::{PrimalHealthStatus, PrimalId};
+    use std::collections::HashMap;
 
     #[expect(deprecated)]
     fn test_primal(capabilities: Vec<String>) -> PrimalInfo {
@@ -135,8 +136,8 @@ mod tests {
             trust_level: None,
             family_id: None,
             capabilities,
-            last_seen: 0,                   // Unix timestamp
-            properties: Default::default(), // Empty properties for tests
+            last_seen: 0, // Unix timestamp
+            properties: HashMap::default(),
         }
     }
 

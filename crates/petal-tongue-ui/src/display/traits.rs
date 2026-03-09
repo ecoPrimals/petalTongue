@@ -138,3 +138,53 @@ pub enum BackendPriority {
     /// Tier 4: Low priority (External fallback)
     External = 4,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_display_capabilities_toadstool() {
+        let caps = DisplayCapabilities::toadstool();
+        assert!(caps.requires_network);
+        assert!(!caps.requires_gpu);
+        assert!(!caps.requires_root);
+        assert!(caps.supports_resize);
+        assert_eq!(caps.max_fps, 60);
+        assert!(caps.remote_capable);
+    }
+
+    #[test]
+    fn test_display_capabilities_software() {
+        let caps = DisplayCapabilities::software();
+        assert!(!caps.requires_network);
+        assert!(!caps.requires_gpu);
+        assert!(!caps.requires_root);
+        assert!(caps.supports_resize);
+        assert_eq!(caps.max_fps, 60);
+    }
+
+    #[test]
+    fn test_display_capabilities_framebuffer() {
+        let caps = DisplayCapabilities::framebuffer();
+        assert!(caps.requires_root);
+        assert!(!caps.supports_resize);
+        assert!(!caps.remote_capable);
+    }
+
+    #[test]
+    fn test_display_capabilities_external() {
+        let caps = DisplayCapabilities::external();
+        assert!(caps.requires_gpu);
+        assert!(caps.requires_display_server);
+        assert!(!caps.remote_capable);
+        assert_eq!(caps.max_fps, 144);
+    }
+
+    #[test]
+    fn test_backend_priority_ordering() {
+        assert!(BackendPriority::Toadstool < BackendPriority::Software);
+        assert!(BackendPriority::Software < BackendPriority::Framebuffer);
+        assert!(BackendPriority::Framebuffer < BackendPriority::External);
+    }
+}

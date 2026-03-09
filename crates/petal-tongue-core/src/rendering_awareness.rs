@@ -578,4 +578,121 @@ mod tests {
         // Should be near 100% (all checks pass)
         assert!(health > 95.0, "Health was {health}");
     }
+
+    #[test]
+    fn test_visibility_state_confirmed() {
+        let mut awareness = RenderingAwareness::new();
+        for i in 0..10u64 {
+            let fid = awareness.motor_command(MotorCommand::RenderFrame { frame_id: i });
+            awareness.sensory_feedback(&SensorEvent::FrameAcknowledged {
+                frame_id: fid,
+                timestamp: Instant::now(),
+            });
+        }
+        let assessment = awareness.assess_self();
+        assert_eq!(assessment.user_visibility, VisibilityState::Confirmed);
+    }
+
+    #[test]
+    fn test_visibility_state_probable() {
+        let mut awareness = RenderingAwareness::new();
+        for i in 0..10u64 {
+            awareness.motor_command(MotorCommand::RenderFrame { frame_id: i });
+            if i < 6 {
+                awareness.sensory_feedback(&SensorEvent::FrameAcknowledged {
+                    frame_id: i + 1,
+                    timestamp: Instant::now(),
+                });
+            }
+        }
+        let assessment = awareness.assess_self();
+        assert_eq!(assessment.user_visibility, VisibilityState::Probable);
+    }
+
+    #[test]
+    fn test_visibility_state_uncertain() {
+        let mut awareness = RenderingAwareness::new();
+        awareness.motor_command(MotorCommand::RenderFrame { frame_id: 1 });
+        awareness.sensory_feedback(&SensorEvent::FrameAcknowledged {
+            frame_id: 1,
+            timestamp: Instant::now(),
+        });
+        for i in 2..10u64 {
+            awareness.motor_command(MotorCommand::RenderFrame { frame_id: i });
+        }
+        let assessment = awareness.assess_self();
+        assert_eq!(assessment.user_visibility, VisibilityState::Uncertain);
+    }
+
+    #[test]
+    fn test_visibility_state_unknown() {
+        let awareness = RenderingAwareness::new();
+        let assessment = awareness.assess_self();
+        assert_eq!(assessment.user_visibility, VisibilityState::Unknown);
+    }
+
+    #[test]
+    fn test_self_assessment_is_healthy() {
+        let mut awareness = RenderingAwareness::new();
+        let fid = awareness.motor_command(MotorCommand::RenderFrame { frame_id: 1 });
+        awareness.sensory_feedback(&SensorEvent::FrameAcknowledged {
+            frame_id: fid,
+            timestamp: Instant::now(),
+        });
+        awareness.sensory_feedback(&SensorEvent::Heartbeat {
+            latency: Duration::from_millis(10),
+            timestamp: Instant::now(),
+        });
+        let assessment = awareness.assess_self();
+        assert!(assessment.is_healthy());
+    }
+
+    #[test]
+    fn test_self_assessment_unhealthy_no_motor() {
+        let awareness = RenderingAwareness::new();
+        let assessment = awareness.assess_self();
+        assert!(!assessment.is_healthy());
+    }
+
+    #[test]
+    fn test_health_percentage_partial() {
+        let mut awareness = RenderingAwareness::new();
+        awareness.motor_command(MotorCommand::RenderFrame { frame_id: 1 });
+        let assessment = awareness.assess_self();
+        let health = assessment.health_percentage();
+        assert!(health > 0.0 && health < 100.0);
+    }
+
+    #[test]
+    fn test_panel_id_variants() {
+        assert_eq!(PanelId::LeftSidebar, PanelId::LeftSidebar);
+        assert_eq!(
+            PanelId::Custom("foo".to_string()),
+            PanelId::Custom("foo".to_string())
+        );
+        assert!(PanelId::Custom("a".to_string()) != PanelId::Custom("b".to_string()));
+    }
+
+    #[test]
+    fn test_motor_command_ids_increment() {
+        let mut awareness = RenderingAwareness::new();
+        let id1 = awareness.motor_command(MotorCommand::UpdateDisplay);
+        let id2 = awareness.motor_command(MotorCommand::ClearDisplay);
+        assert_eq!(id1, 1);
+        assert_eq!(id2, 2);
+    }
+
+    #[test]
+    fn test_time_since_last_interaction_no_interaction() {
+        let awareness = RenderingAwareness::new();
+        let elapsed = awareness.time_since_last_interaction();
+        assert!(elapsed >= Duration::from_secs(9999));
+    }
+
+    #[test]
+    fn test_default_rendering_awareness() {
+        let awareness = RenderingAwareness::default();
+        assert_eq!(awareness.metrics().commands_sent, 0);
+        assert_eq!(awareness.metrics().frames_confirmed, 0);
+    }
 }

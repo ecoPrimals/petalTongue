@@ -295,4 +295,34 @@ mod tests {
         assert!(desc.contains("pointer"));
         assert!(desc.contains("keyboard"));
     }
+
+    #[test]
+    fn test_has_minimal_output_false() {
+        let caps = SensoryCapabilities::default();
+        assert!(!caps.has_minimal_output());
+        assert!(!caps.has_minimal_input());
+    }
+
+    #[test]
+    fn test_has_visual_audio_haptic() {
+        let caps = SensoryCapabilities {
+            visual_outputs: vec![VisualOutputCapability::TwoD {
+                resolution: (800, 600),
+                refresh_rate: 60,
+                color_depth: 8,
+                size_mm: None,
+            }],
+            audio_outputs: vec![AudioOutputCapability::Mono {
+                sample_rate: 44100,
+                bit_depth: 16,
+            }],
+            haptic_outputs: vec![HapticOutputCapability::SimpleVibration {
+                intensity_levels: 10,
+            }],
+            ..Default::default()
+        };
+        assert!(caps.has_visual_output());
+        assert!(caps.has_audio_output());
+        assert!(caps.has_haptic_output());
+    }
 }

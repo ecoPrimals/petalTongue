@@ -23,6 +23,7 @@ pub enum ExportFormat {
 
 impl ExportFormat {
     /// Get file extension for this format
+    #[must_use]
     pub fn extension(&self) -> &'static str {
         match self {
             ExportFormat::Svg => "svg",
@@ -34,6 +35,7 @@ impl ExportFormat {
     }
 
     /// Get MIME type for this format
+    #[must_use]
     pub fn mime_type(&self) -> &'static str {
         match self {
             ExportFormat::Svg => "image/svg+xml",

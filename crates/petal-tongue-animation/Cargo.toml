@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+[lints]
+workspace = true
+
 [package]
 name = "petal-tongue-animation"
 description = "Flow animation engine for visualizing primal interactions and data movement"

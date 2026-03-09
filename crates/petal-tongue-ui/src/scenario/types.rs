@@ -155,3 +155,137 @@ pub struct Sensory {
     #[serde(default)]
     pub last_scan: Option<String>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scenario::config::UiConfig;
+    use crate::scenario::ecosystem::{Ecosystem, Position, PrimalDefinition};
+    use crate::scenario::sensory::SensoryConfig;
+
+    fn minimal_scenario() -> Scenario {
+        let mut sensory = SensoryConfig::default();
+        sensory.complexity_hint = "auto".to_string();
+        Scenario {
+            name: "Test".to_string(),
+            description: "Desc".to_string(),
+            version: "2.0.0".to_string(),
+            mode: "doom-showcase".to_string(),
+            ui_config: UiConfig::default(),
+            ecosystem: Ecosystem::default(),
+            neural_api: NeuralApiConfig::default(),
+            sensory_config: sensory,
+            edges: vec![],
+        }
+    }
+
+    #[test]
+    fn scenario_primal_count() {
+        let mut s = minimal_scenario();
+        assert_eq!(s.primal_count(), 0);
+        s.ecosystem.primals.push(PrimalDefinition {
+            id: "1".to_string(),
+            name: "P1".to_string(),
+            primal_type: "t".to_string(),
+            family: "f".to_string(),
+            status: "ok".to_string(),
+            health: 100,
+            confidence: 100,
+            position: Position { x: 0.0, y: 0.0 },
+            capabilities: vec![],
+            metrics: Default::default(),
+            proprioception: None,
+            data_bindings: vec![],
+            threshold_ranges: vec![],
+        });
+        assert_eq!(s.primal_count(), 1);
+    }
+
+    #[test]
+    fn scenario_edge_count() {
+        let mut s = minimal_scenario();
+        assert_eq!(s.edge_count(), 0);
+        s.edges.push(TopologyEdge {
+            from: petal_tongue_core::PrimalId::from("a"),
+            to: petal_tongue_core::PrimalId::from("b"),
+            edge_type: "test".to_string(),
+            label: None,
+            capability: None,
+            metrics: None,
+        });
+        assert_eq!(s.edge_count(), 1);
+    }
+
+    #[test]
+    fn scenario_validate_empty_name_fails() {
+        let mut s = minimal_scenario();
+        s.name = "".to_string();
+        assert!(s.validate().is_err());
+    }
+
+    #[test]
+    fn scenario_validate_empty_mode_fails() {
+        let mut s = minimal_scenario();
+        s.mode = "".to_string();
+        assert!(s.validate().is_err());
+    }
+
+    #[test]
+    fn scenario_validate_empty_version_fails() {
+        let mut s = minimal_scenario();
+        s.version = "".to_string();
+        assert!(s.validate().is_err());
+    }
+
+    #[test]
+    fn scenario_validate_tutorial_allows_empty_primals() {
+        let mut s = minimal_scenario();
+        s.mode = "tutorial".to_string();
+        assert!(s.validate().is_ok());
+    }
+
+    #[test]
+    fn scenario_validate_ok() {
+        let mut s = minimal_scenario();
+        s.ecosystem.primals.push(PrimalDefinition {
+            id: "1".to_string(),
+            name: "P1".to_string(),
+            primal_type: "t".to_string(),
+            family: "f".to_string(),
+            status: "ok".to_string(),
+            health: 100,
+            confidence: 100,
+            position: Position { x: 0.0, y: 0.0 },
+            capabilities: vec![],
+            metrics: Default::default(),
+            proprioception: None,
+            data_bindings: vec![],
+            threshold_ranges: vec![],
+        });
+        assert!(s.validate().is_ok());
+    }
+
+    #[test]
+    fn neural_api_config_default() {
+        let c = NeuralApiConfig::default();
+        assert!(!c.enabled);
+        assert_eq!(c.learning_rate, 0.0);
+        assert_eq!(c.optimization_cycles, 0);
+    }
+
+    #[test]
+    fn scenario_proprioception_default() {
+        let p = ScenarioProprioception::default();
+        assert_eq!(p.self_awareness.knows_about, 0);
+        assert!(!p.motor.can_deploy);
+    }
+
+    #[test]
+    fn scenario_serialization_roundtrip() {
+        let s = minimal_scenario();
+        let json = serde_json::to_string(&s).unwrap();
+        let parsed: Scenario = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.name, s.name);
+        assert_eq!(parsed.version, s.version);
+    }
+}

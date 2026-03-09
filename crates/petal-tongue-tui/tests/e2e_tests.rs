@@ -7,11 +7,7 @@ use chrono::Utc;
 use petal_tongue_tui::state::{LogLevel, LogMessage, TUIState, View};
 
 mod common;
-use common::{
-    create_test_edge, create_test_primal, create_test_primal_with_caps,
-    create_test_primal_with_health,
-};
-use petal_tongue_core::PrimalHealthStatus;
+use common::{create_test_edge, create_test_primal, create_test_primal_with_caps};
 
 /// Test complete user workflow
 #[tokio::test]
@@ -49,7 +45,7 @@ async fn test_complete_dashboard_workflow() {
                 timestamp: Utc::now(),
                 source: Some("songbird".to_string()),
                 level: LogLevel::Info,
-                message: format!("Discovery event {}", i),
+                message: format!("Discovery event {i}"),
             })
             .await;
     }
@@ -153,8 +149,8 @@ async fn test_log_streaming_workflow() {
     let state = TUIState::new();
 
     // Simulate log streaming from multiple sources
-    let sources = vec!["songbird", "toadstool", "nestgate", "beardog"];
-    let levels = vec![
+    let sources = ["songbird", "toadstool", "nestgate", "beardog"];
+    let levels = [
         LogLevel::Trace,
         LogLevel::Debug,
         LogLevel::Info,
@@ -172,7 +168,7 @@ async fn test_log_streaming_workflow() {
                 timestamp: Utc::now(),
                 source: Some(source.to_string()),
                 level,
-                message: format!("Event {} from {}", i, source),
+                message: format!("Event {i} from {source}"),
             })
             .await;
     }
@@ -184,7 +180,7 @@ async fn test_log_streaming_workflow() {
     // Verify log sources are distributed
     let songbird_logs: Vec<_> = logs
         .iter()
-        .filter(|log| log.source.as_ref().map(|s| s.as_str()) == Some("songbird"))
+        .filter(|log| log.source.as_deref() == Some("songbird"))
         .collect();
     assert!(!songbird_logs.is_empty());
 
@@ -198,7 +194,7 @@ async fn test_log_streaming_workflow() {
                 timestamp: Utc::now(),
                 source: Some(source.to_string()),
                 level,
-                message: format!("Event {} from {}", i, source),
+                message: format!("Event {i} from {source}"),
             })
             .await;
     }
@@ -250,7 +246,7 @@ async fn test_concurrent_multi_user_workflow() {
                     timestamp: Utc::now(),
                     source: Some("user1".to_string()),
                     level: LogLevel::Info,
-                    message: format!("User 1 action {}", i),
+                    message: format!("User 1 action {i}"),
                 })
                 .await;
         }
@@ -265,7 +261,7 @@ async fn test_concurrent_multi_user_workflow() {
                     timestamp: Utc::now(),
                     source: Some("user2".to_string()),
                     level: LogLevel::Debug,
-                    message: format!("User 2 action {}", i),
+                    message: format!("User 2 action {i}"),
                 })
                 .await;
         }
@@ -280,7 +276,7 @@ async fn test_concurrent_multi_user_workflow() {
                     timestamp: Utc::now(),
                     source: Some("user3".to_string()),
                     level: LogLevel::Warn,
-                    message: format!("User 3 action {}", i),
+                    message: format!("User 3 action {i}"),
                 })
                 .await;
         }

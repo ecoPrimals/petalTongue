@@ -32,13 +32,13 @@ async fn main() -> Result<()> {
         .active_backend_name()
         .unwrap_or("Unknown")
         .to_string();
-    println!("✅ Active backend: {}\n", backend_name);
+    println!("✅ Active backend: {backend_name}\n");
 
     // Get display dimensions
     let (width, height) = display
         .dimensions()
         .ok_or_else(|| anyhow::anyhow!("No active display backend"))?;
-    println!("📐 Display dimensions: {}x{}\n", width, height);
+    println!("📐 Display dimensions: {width}x{height}\n");
 
     // Create egui context
     let ctx = egui::Context::default();
@@ -103,16 +103,13 @@ async fn main() -> Result<()> {
             } else {
                 "Tutorial"
             };
-            println!(
-                "  [{:.1}s] Stage: {} (Frame {})",
-                elapsed, stage, frame_count
-            );
+            println!("  [{elapsed:.1}s] Stage: {stage} (Frame {frame_count})");
         }
 
         // Frame timing
         let frame_time = frame_start.elapsed();
         if frame_time < frame_duration {
-            tokio::time::sleep(frame_duration - frame_time).await;
+            tokio::time::sleep(frame_duration.checked_sub(frame_time).unwrap()).await;
         }
 
         // Request repaint
@@ -129,19 +126,19 @@ async fn main() -> Result<()> {
 
     println!("📊 Performance Metrics:");
     println!("   Total time: {:.2}s", total_time.as_secs_f32());
-    println!("   Frames rendered: {}", frame_count);
+    println!("   Frames rendered: {frame_count}");
     println!(
         "   Average frame time: {:.2}ms",
         avg_frame_time.as_secs_f32() * 1000.0
     );
-    println!("   Average FPS: {:.1}\n", fps);
+    println!("   Average FPS: {fps:.1}\n");
 
     println!("🎯 Achievement Unlocked:");
     println!("   ✅ Full awakening experience via Pure Rust!");
     println!("   ✅ Zero OpenGL required");
     println!("   ✅ Zero display server required");
     println!("   ✅ Complete GUI sovereignty");
-    println!("   ✅ Backend: {}\n", backend_name);
+    println!("   ✅ Backend: {backend_name}\n");
 
     // Check for tutorial transition
     if awakening.should_transition_to_tutorial() {

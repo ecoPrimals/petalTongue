@@ -3,9 +3,64 @@
 
 use crate::accessibility::ColorPalette;
 use petal_tongue_adapters::AdapterRegistry;
-use petal_tongue_core::{DataBinding, GraphEngine, PrimalHealthStatus};
+use petal_tongue_core::{
+    DataBinding, GraphEngine, PrimalHealthStatus, PrimalInfo, Properties, PropertyValue,
+};
 use petal_tongue_graph::{NodeDetail, Visual2DRenderer, draw_node_detail};
 use std::sync::{Arc, RwLock};
+
+#[must_use]
+fn build_properties_from_info(info: &PrimalInfo) -> Properties {
+    let mut props = Properties::new();
+    #[expect(deprecated)]
+    if let Some(trust_level) = info.trust_level {
+        props.insert(
+            "trust_level".to_string(),
+            PropertyValue::Number(f64::from(trust_level)),
+        );
+    }
+    #[expect(deprecated)]
+    if let Some(family_id) = &info.family_id {
+        props.insert(
+            "family_id".to_string(),
+            PropertyValue::String(family_id.clone()),
+        );
+    }
+    let cap_array: Vec<PropertyValue> = info
+        .capabilities
+        .iter()
+        .map(|c| PropertyValue::String(c.clone()))
+        .collect();
+    props.insert("capabilities".to_string(), PropertyValue::Array(cap_array));
+    props
+}
+
+#[must_use]
+fn health_status_display(health: PrimalHealthStatus) -> (&'static str, egui::Color32) {
+    match health {
+        PrimalHealthStatus::Healthy => ("✅", egui::Color32::from_rgb(0, 200, 0)),
+        PrimalHealthStatus::Warning => ("⚠️", egui::Color32::from_rgb(255, 200, 0)),
+        PrimalHealthStatus::Critical => ("❌", egui::Color32::from_rgb(255, 50, 50)),
+        PrimalHealthStatus::Unknown => ("❓", egui::Color32::GRAY),
+    }
+}
+
+#[must_use]
+fn format_last_seen_seconds(seconds_ago: u64) -> String {
+    format!("{seconds_ago} seconds ago")
+}
+
+#[must_use]
+fn extract_health_u8_from_properties(properties: &Properties) -> u8 {
+    properties
+        .get("health")
+        .and_then(PropertyValue::as_number)
+        .map_or(100, |n| {
+            #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let v = n as u8;
+            v
+        })
+}
 
 /// Render the primal details panel for a selected node
 pub fn render_primal_details_panel(
@@ -63,33 +118,7 @@ pub fn render_primal_details_panel(
         ui.add_space(12.0);
 
         let properties = if info.properties.is_empty() {
-            use petal_tongue_core::{Properties, PropertyValue};
-            let mut props = Properties::new();
-
-            #[expect(deprecated)]
-            if let Some(trust_level) = info.trust_level {
-                props.insert(
-                    "trust_level".to_string(),
-                    PropertyValue::Number(f64::from(trust_level)),
-                );
-            }
-
-            #[expect(deprecated)]
-            if let Some(family_id) = &info.family_id {
-                props.insert(
-                    "family_id".to_string(),
-                    PropertyValue::String(family_id.clone()),
-                );
-            }
-
-            let cap_array: Vec<PropertyValue> = info
-                .capabilities
-                .iter()
-                .map(|c| PropertyValue::String(c.clone()))
-                .collect();
-            props.insert("capabilities".to_string(), PropertyValue::Array(cap_array));
-
-            props
+            build_properties_from_info(info)
         } else {
             info.properties.clone()
         };
@@ -145,12 +174,7 @@ pub fn render_primal_details_panel(
         ui.label(egui::RichText::new("🩺 Health Status").size(16.0).strong());
         ui.add_space(6.0);
 
-        let (health_icon, health_color) = match info.health {
-            PrimalHealthStatus::Healthy => ("✅", egui::Color32::from_rgb(0, 200, 0)),
-            PrimalHealthStatus::Warning => ("⚠️", egui::Color32::from_rgb(255, 200, 0)),
-            PrimalHealthStatus::Critical => ("❌", egui::Color32::from_rgb(255, 50, 50)),
-            PrimalHealthStatus::Unknown => ("❓", egui::Color32::GRAY),
-        };
+        let (health_icon, health_color) = health_status_display(info.health);
 
         ui.horizontal(|ui| {
             ui.label(egui::RichText::new(health_icon).size(24.0));
@@ -206,18 +230,7 @@ pub fn render_primal_details_panel(
         {
             ui.separator();
             ui.add_space(8.0);
-            let health_u8 = properties
-                .get("health")
-                .and_then(petal_tongue_core::PropertyValue::as_number)
-                .map_or(100, |n| {
-                    #[expect(
-                        clippy::cast_possible_truncation,
-                        clippy::cast_sign_loss,
-                        reason = "health 0..100"
-                    )]
-                    let v = n as u8;
-                    v
-                });
+            let health_u8 = extract_health_u8_from_properties(&properties);
             let detail = NodeDetail {
                 name: info.name.clone(),
                 health: health_u8,
@@ -233,12 +246,14 @@ pub fn render_primal_details_panel(
         ui.add_space(8.0);
         ui.label(
             egui::RichText::new(format!(
-                "⏱️ Last seen: {} seconds ago",
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_secs()
-                    .saturating_sub(info.last_seen)
+                "⏱️ Last seen: {}",
+                format_last_seen_seconds(
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_secs()
+                        .saturating_sub(info.last_seen)
+                )
             ))
             .size(12.0)
             .color(egui::Color32::GRAY),
@@ -258,5 +273,76 @@ pub fn render_primal_details_panel(
         });
     } else {
         ui.label(egui::RichText::new("Node not found").color(egui::Color32::RED));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use petal_tongue_core::{PrimalId, Properties, PropertyValue};
+
+    fn test_primal_info() -> PrimalInfo {
+        let mut info = PrimalInfo::new(
+            PrimalId::from("test-1"),
+            "Test Node",
+            "compute",
+            "http://localhost:8080",
+            vec!["cap1".to_string(), "cap2".to_string()],
+            PrimalHealthStatus::Healthy,
+            1_000_000,
+        );
+        #[expect(deprecated)]
+        {
+            info.trust_level = Some(2);
+            info.family_id = Some("family-x".to_string());
+        }
+        info
+    }
+
+    #[test]
+    fn build_properties_from_info_empty_props() {
+        let info = test_primal_info();
+        let props = build_properties_from_info(&info);
+        assert_eq!(props.get("trust_level"), Some(&PropertyValue::Number(2.0)));
+        assert_eq!(
+            props.get("family_id"),
+            Some(&PropertyValue::String("family-x".to_string()))
+        );
+        if let Some(PropertyValue::Array(caps)) = props.get("capabilities") {
+            assert_eq!(caps.len(), 2);
+        } else {
+            panic!("expected capabilities array");
+        }
+    }
+
+    #[test]
+    fn health_status_display_all() {
+        let (icon, _) = health_status_display(PrimalHealthStatus::Healthy);
+        assert_eq!(icon, "✅");
+        let (icon, _) = health_status_display(PrimalHealthStatus::Warning);
+        assert_eq!(icon, "⚠️");
+        let (icon, _) = health_status_display(PrimalHealthStatus::Critical);
+        assert_eq!(icon, "❌");
+        let (icon, _) = health_status_display(PrimalHealthStatus::Unknown);
+        assert_eq!(icon, "❓");
+    }
+
+    #[test]
+    fn format_last_seen_seconds_display() {
+        assert_eq!(format_last_seen_seconds(0), "0 seconds ago");
+        assert_eq!(format_last_seen_seconds(42), "42 seconds ago");
+    }
+
+    #[test]
+    fn extract_health_u8_default() {
+        let props = Properties::new();
+        assert_eq!(extract_health_u8_from_properties(&props), 100);
+    }
+
+    #[test]
+    fn extract_health_u8_from_property() {
+        let mut props = Properties::new();
+        props.insert("health".to_string(), PropertyValue::Number(75.0));
+        assert_eq!(extract_health_u8_from_properties(&props), 75);
     }
 }

@@ -12,6 +12,7 @@ use tokio::net::{UnixListener, UnixStream};
 
 /// JSON-RPC Request (for server parsing)
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct JsonRpcRequest {
     jsonrpc: String,
     method: String,
@@ -93,7 +94,7 @@ async fn handle_connection(stream: UnixStream) {
                     error: None,
                     id: request.id,
                 },
-                "get_topology" => JsonRpcResponse {
+                "topology.get" | "get_topology" => JsonRpcResponse {
                     jsonrpc: "2.0".to_string(),
                     result: Some(serde_json::json!([
                         {
@@ -105,17 +106,7 @@ async fn handle_connection(stream: UnixStream) {
                     error: None,
                     id: request.id,
                 },
-                "invalid_method" => JsonRpcResponse {
-                    jsonrpc: "2.0".to_string(),
-                    result: None,
-                    error: Some(JsonRpcError {
-                        code: -32601,
-                        message: "Method not found".to_string(),
-                        data: None,
-                    }),
-                    id: request.id,
-                },
-                _ => JsonRpcResponse {
+                "invalid_method" | _ => JsonRpcResponse {
                     jsonrpc: "2.0".to_string(),
                     result: None,
                     error: Some(JsonRpcError {

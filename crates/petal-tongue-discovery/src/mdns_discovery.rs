@@ -11,6 +11,7 @@ use crate::traits::VisualizationDataProvider;
 /// Queries for primals advertising visualization capabilities.
 /// Real mDNS implementation lives in [`crate::mdns_provider::MdnsVisualizationProvider`].
 /// This function delegates to it; returns empty on failure.
+#[allow(dead_code, clippy::unused_async)]
 pub async fn discover_via_mdns() -> anyhow::Result<Vec<Box<dyn VisualizationDataProvider>>> {
     tracing::debug!("mDNS discovery: delegating to MdnsVisualizationProvider");
     Ok(Vec::new())
@@ -19,6 +20,8 @@ pub async fn discover_via_mdns() -> anyhow::Result<Vec<Box<dyn VisualizationData
 /// Query mDNS for a specific capability
 ///
 /// Full mDNS implementation is in [`crate::mdns_provider`].
+#[expect(dead_code, reason = "Stub; reserved for future mDNS integration")]
+#[allow(clippy::unused_async)]
 pub async fn query_capability(_capability: VisualizationCapability) -> anyhow::Result<Vec<String>> {
     Ok(Vec::new())
 }

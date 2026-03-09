@@ -67,7 +67,7 @@ impl Args {
                             "dot" => OutputMode::Dot,
                             "png" => OutputMode::Png,
                             _ => {
-                                eprintln!("Unknown mode: {}", m);
+                                eprintln!("Unknown mode: {m}");
                                 std::process::exit(1);
                             }
                         }
@@ -91,7 +91,7 @@ impl Args {
                     std::process::exit(0);
                 }
                 _ => {
-                    eprintln!("Unknown argument: {}", arg);
+                    eprintln!("Unknown argument: {arg}");
                     print_help();
                     std::process::exit(1);
                 }
@@ -109,7 +109,7 @@ impl Args {
 
 fn print_help() {
     println!(
-        r#"
+        r"
 petalTongue Headless - Pure Rust UI
 
 USAGE:
@@ -155,7 +155,7 @@ PHILOSOPHY:
     This binary proves petalTongue's self-sovereignty.
     Zero GUI dependencies. Works everywhere Rust runs.
     External systems (egui) are enhancements, not dependencies.
-"#
+"
     );
 }
 
@@ -293,7 +293,7 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
 fn render_terminal(graph: Arc<RwLock<GraphEngine>>) -> Result<()> {
     let ui = TerminalUI::new(graph);
     let output = ui.render_to_string()?;
-    println!("{}", output);
+    println!("{output}");
     Ok(())
 }
 
@@ -306,7 +306,7 @@ fn render_svg(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
         tracing::info!("✅ Exported to {}", output);
     } else {
         let svg = ui.render_to_string()?;
-        println!("{}", svg);
+        println!("{svg}");
     }
 
     Ok(())
@@ -321,7 +321,7 @@ fn render_json(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
         tracing::info!("✅ Exported to {}", output);
     } else {
         let json = ui.render_to_string()?;
-        println!("{}", json);
+        println!("{json}");
     }
 
     Ok(())
@@ -336,7 +336,7 @@ fn render_dot(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
         tracing::info!("✅ Exported to {}", output);
     } else {
         let dot = ui.render_to_string()?;
-        println!("{}", dot);
+        println!("{dot}");
     }
 
     Ok(())

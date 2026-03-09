@@ -49,6 +49,82 @@ impl SensoryConfig {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sensory_config_deserialize_default_hint() {
+        let c: SensoryConfig = serde_json::from_str("{}").unwrap();
+        assert_eq!(c.complexity_hint, "auto");
+    }
+
+    #[test]
+    fn sensory_config_validate_invalid_hint_fails() {
+        let c = SensoryConfig {
+            required_capabilities: CapabilityRequirements::default(),
+            optional_capabilities: CapabilityRequirements::default(),
+            complexity_hint: "invalid".to_string(),
+        };
+        assert!(c.validate().is_err());
+    }
+
+    #[test]
+    fn sensory_config_validate_valid_hints() {
+        for hint in ["auto", "minimal", "simple", "standard", "rich", "immersive"] {
+            let c = SensoryConfig {
+                required_capabilities: CapabilityRequirements::default(),
+                optional_capabilities: CapabilityRequirements::default(),
+                complexity_hint: hint.to_string(),
+            };
+            assert!(c.validate().is_ok(), "hint {hint} should be valid");
+        }
+    }
+
+    #[test]
+    fn capability_requirements_invalid_output_fails() {
+        let r = CapabilityRequirements {
+            outputs: vec!["invalid".to_string()],
+            inputs: vec![],
+        };
+        assert!(r.validate("required").is_err());
+    }
+
+    #[test]
+    fn capability_requirements_invalid_input_fails() {
+        let r = CapabilityRequirements {
+            outputs: vec![],
+            inputs: vec!["invalid".to_string()],
+        };
+        assert!(r.validate("optional").is_err());
+    }
+
+    #[test]
+    fn capability_requirements_valid() {
+        let r = CapabilityRequirements {
+            outputs: vec!["visual".to_string(), "audio".to_string()],
+            inputs: vec!["pointer".to_string(), "keyboard".to_string()],
+        };
+        assert!(r.validate("required").is_ok());
+    }
+
+    #[test]
+    fn sensory_config_serialization() {
+        let c = SensoryConfig {
+            required_capabilities: CapabilityRequirements {
+                outputs: vec!["visual".to_string()],
+                inputs: vec![],
+            },
+            optional_capabilities: CapabilityRequirements::default(),
+            complexity_hint: "simple".to_string(),
+        };
+        let json = serde_json::to_string(&c).unwrap();
+        let parsed: SensoryConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.complexity_hint, "simple");
+        assert_eq!(parsed.required_capabilities.outputs, vec!["visual"]);
+    }
+}
+
 /// Capability requirements for a scenario
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CapabilityRequirements {

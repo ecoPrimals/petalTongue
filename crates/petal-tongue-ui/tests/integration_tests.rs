@@ -3,6 +3,8 @@
 //!
 //! Tests the state management, data source, and integration between modules.
 
+#![allow(deprecated)]
+
 use petal_tongue_core::{GraphEngine, PrimalHealthStatus, PrimalInfo, TopologyEdge};
 use std::sync::{Arc, RwLock};
 
@@ -25,7 +27,7 @@ fn test_graph_engine_integration() {
         trust_level: None,
         family_id: None,
         capabilities: vec!["capability-1".to_string()],
-        last_seen: 1234567890,
+        last_seen: 1_234_567_890,
         endpoints: None,
         metadata: None,
     };
@@ -58,7 +60,7 @@ fn test_graph_with_edges() {
         trust_level: None,
         family_id: None,
         capabilities: vec![],
-        last_seen: 1234567890,
+        last_seen: 1_234_567_890,
         endpoints: None,
         metadata: None,
     };
@@ -74,7 +76,7 @@ fn test_graph_with_edges() {
         trust_level: None,
         family_id: None,
         capabilities: vec![],
-        last_seen: 1234567890,
+        last_seen: 1_234_567_890,
         endpoints: None,
         metadata: None,
     };
@@ -117,7 +119,7 @@ fn test_multiple_primals_different_health() {
             trust_level: None,
             family_id: None,
             capabilities: vec![],
-            last_seen: 1234567890,
+            last_seen: 1_234_567_890,
             endpoints: None,
             metadata: None,
         },
@@ -132,7 +134,7 @@ fn test_multiple_primals_different_health() {
             trust_level: None,
             family_id: None,
             capabilities: vec![],
-            last_seen: 1234567890,
+            last_seen: 1_234_567_890,
             endpoints: None,
             metadata: None,
         },
@@ -147,7 +149,7 @@ fn test_multiple_primals_different_health() {
             trust_level: None,
             family_id: None,
             capabilities: vec![],
-            last_seen: 1234567890,
+            last_seen: 1_234_567_890,
             endpoints: None,
             metadata: None,
         },
@@ -183,17 +185,17 @@ fn test_graph_clear() {
         let mut g = graph.write().unwrap();
         for i in 0..5 {
             let primal = PrimalInfo {
-                id: format!("primal-{}", i).into(),
-                name: format!("Primal {}", i),
+                id: format!("primal-{i}").into(),
+                name: format!("Primal {i}"),
                 primal_type: "compute".to_string(),
-                endpoint: format!("http://p{}:8080", i),
+                endpoint: format!("http://p{i}:8080"),
                 health: PrimalHealthStatus::Healthy,
                 properties: petal_tongue_core::Properties::new(),
                 #[expect(deprecated)]
                 trust_level: None,
                 family_id: None,
                 capabilities: vec![],
-                last_seen: 1234567890,
+                last_seen: 1_234_567_890,
                 endpoints: None,
                 metadata: None,
             };
@@ -239,7 +241,7 @@ fn test_primal_with_capabilities() {
             "compute.schedule".to_string(),
             "storage.read".to_string(),
         ],
-        last_seen: 1234567890,
+        last_seen: 1_234_567_890,
         endpoints: None,
         metadata: None,
     };
@@ -277,7 +279,7 @@ fn test_edge_with_label() {
             trust_level: None,
             family_id: None,
             capabilities: vec![],
-            last_seen: 1234567890,
+            last_seen: 1_234_567_890,
             endpoints: None,
             metadata: None,
         });
@@ -293,7 +295,7 @@ fn test_edge_with_label() {
             trust_level: None,
             family_id: None,
             capabilities: vec![],
-            last_seen: 1234567890,
+            last_seen: 1_234_567_890,
             endpoints: None,
             metadata: None,
         });
@@ -332,7 +334,7 @@ fn test_concurrent_access() {
             trust_level: None,
             family_id: None,
             capabilities: vec![],
-            last_seen: 1234567890,
+            last_seen: 1_234_567_890,
             endpoints: None,
             metadata: None,
         });
@@ -371,17 +373,17 @@ fn test_graph_stats() {
         // Add 3 primals
         for i in 0..3 {
             g.add_node(PrimalInfo {
-                id: format!("primal-{}", i).into(),
-                name: format!("Primal {}", i),
+                id: format!("primal-{i}").into(),
+                name: format!("Primal {i}"),
                 primal_type: "compute".to_string(),
-                endpoint: format!("http://p{}:8080", i),
+                endpoint: format!("http://p{i}:8080"),
                 health: PrimalHealthStatus::Healthy,
                 properties: petal_tongue_core::Properties::new(),
                 #[expect(deprecated)]
                 trust_level: None,
                 family_id: None,
                 capabilities: vec![],
-                last_seen: 1234567890,
+                last_seen: 1_234_567_890,
                 endpoints: None,
                 metadata: None,
             });
@@ -434,17 +436,17 @@ fn test_remove_node_removes_edges() {
         // Add 3 primals
         for i in 0..3 {
             g.add_node(PrimalInfo {
-                id: format!("primal-{}", i).into(),
-                name: format!("Primal {}", i),
+                id: format!("primal-{i}").into(),
+                name: format!("Primal {i}"),
                 primal_type: "compute".to_string(),
-                endpoint: format!("http://p{}:8080", i),
+                endpoint: format!("http://p{i}:8080"),
                 health: PrimalHealthStatus::Healthy,
                 properties: petal_tongue_core::Properties::new(),
                 #[expect(deprecated)]
                 trust_level: None,
                 family_id: None,
                 capabilities: vec![],
-                last_seen: 1234567890,
+                last_seen: 1_234_567_890,
                 endpoints: None,
                 metadata: None,
             });

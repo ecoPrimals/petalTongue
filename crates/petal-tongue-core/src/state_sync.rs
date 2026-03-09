@@ -340,7 +340,7 @@ mod tests {
 
         state.set_ui_state("count".to_string(), DynamicValue::Number(42.0));
         assert_eq!(
-            state.get_ui_state("count").and_then(|v| v.as_f64()),
+            state.get_ui_state("count").and_then(DynamicValue::as_f64),
             Some(42.0)
         );
 
@@ -362,7 +362,9 @@ mod tests {
 
         state.set_preference("volume".to_string(), DynamicValue::Number(0.8));
         assert_eq!(
-            state.get_preference("volume").and_then(|v| v.as_f64()),
+            state
+                .get_preference("volume")
+                .and_then(DynamicValue::as_f64),
             Some(0.8)
         );
 
@@ -508,7 +510,10 @@ mod tests {
 
         sync.set_ui_state("k2".to_string(), DynamicValue::Number(99.0))
             .unwrap();
-        assert_eq!(sync.get_ui_state("k2").and_then(|v| v.as_f64()), Some(99.0));
+        assert_eq!(
+            sync.get_ui_state("k2").and_then(DynamicValue::as_f64),
+            Some(99.0)
+        );
     }
 
     #[test]
@@ -560,5 +565,53 @@ mod tests {
         assert!(persistence.load("no-such-device").unwrap().is_none());
 
         let _ = std::fs::remove_dir_all(&temp);
+    }
+
+    #[test]
+    fn test_state_merge_ui_state_overwrite() {
+        let mut state1 = DeviceState::new("device1".to_string(), DeviceType::Desktop);
+        state1.set_ui_state("key".to_string(), DynamicValue::String("old".to_string()));
+        state1.last_updated = Utc::now() - chrono::Duration::seconds(10);
+
+        let mut state2 = DeviceState::new("device2".to_string(), DeviceType::Phone);
+        state2.set_ui_state("key".to_string(), DynamicValue::String("new".to_string()));
+        state2.last_updated = Utc::now();
+
+        state1.merge(&state2);
+        assert_eq!(
+            state1.get_ui_state("key").and_then(|v| v.as_str()),
+            Some("new")
+        );
+    }
+
+    #[test]
+    fn test_device_state_metadata() {
+        let mut state = DeviceState::new("dev".to_string(), DeviceType::Desktop);
+        assert!(state.metadata.is_empty());
+        state
+            .metadata
+            .insert("source".to_string(), "test".to_string());
+        assert_eq!(state.metadata.get("source"), Some(&"test".to_string()));
+    }
+
+    #[test]
+    fn test_state_sync_get_ui_state_none_before_init() {
+        let persistence = InMemoryPersistence::new();
+        let sync = StateSync::with_persistence(Box::new(persistence));
+        assert!(sync.get_ui_state("any").is_none());
+    }
+
+    #[test]
+    fn test_device_state_merge_same_timestamp() {
+        let mut state1 = DeviceState::new("device1".to_string(), DeviceType::Desktop);
+        state1.set_ui_state("a".to_string(), DynamicValue::String("1".to_string()));
+
+        let mut state2 = DeviceState::new("device2".to_string(), DeviceType::Phone);
+        state2.set_ui_state("b".to_string(), DynamicValue::String("2".to_string()));
+        state2.last_updated = state1.last_updated;
+
+        state1.merge(&state2);
+        assert!(state1.get_ui_state("a").is_some());
+        assert!(state1.get_ui_state("b").is_none());
     }
 }

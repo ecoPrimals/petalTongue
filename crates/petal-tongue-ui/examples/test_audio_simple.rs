@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Simple audio test - generates and saves a WAV file
 
-use petal_tongue_ui::audio_pure_rust::{SAMPLE_RATE, Waveform, export_wav, generate_tone};
+use petal_tongue_ui::audio_pure_rust::{Waveform, export_wav, generate_tone};
 
 fn main() {
     println!("🔊 Generating test audio...");
@@ -17,9 +17,9 @@ fn main() {
     std::fs::write(path, wav_bytes).expect("Failed to write WAV file");
 
     println!("✅ Generated {} samples", samples.len());
-    println!("💾 Saved to: {}", path);
+    println!("💾 Saved to: {path}");
     println!("🎵 Frequency: 440Hz (A note)");
     println!("⏱️  Duration: 0.5s");
-    println!("");
-    println!("Play with: aplay {} (or paplay, mpv, etc.)", path);
+    println!();
+    println!("Play with: aplay {path} (or paplay, mpv, etc.)");
 }

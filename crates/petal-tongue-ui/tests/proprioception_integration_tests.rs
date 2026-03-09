@@ -8,7 +8,7 @@
 //! - Health assessment
 //! - Topology detection
 //!
-//! EVOLUTION NOTE: Tests evolved to remove blocking thread::sleep calls.
+//! EVOLUTION NOTE: Tests evolved to remove blocking `thread::sleep` calls.
 //! Time-based behavior is tested via mechanism verification, not actual time passage.
 
 use petal_tongue_ui::{input_verification::*, output_verification::*, proprioception::*};
@@ -384,7 +384,7 @@ mod topology_detection_tests {
 
     #[test]
     fn test_visual_topology_detection() {
-        let (topology, evidence) = detect_visual_topology();
+        let (topology, _evidence) = detect_visual_topology();
 
         // Should return some topology
         assert!(matches!(
@@ -402,7 +402,7 @@ mod topology_detection_tests {
 
     #[test]
     fn test_audio_topology_detection() {
-        let (topology, evidence) = detect_audio_topology();
+        let (topology, _evidence) = detect_audio_topology();
 
         // Should return some topology
         assert!(matches!(
@@ -415,7 +415,7 @@ mod topology_detection_tests {
 
     #[test]
     fn test_haptic_topology_detection() {
-        let (topology, evidence) = detect_haptic_topology();
+        let (topology, _evidence) = detect_haptic_topology();
 
         // Should return some topology
         assert!(matches!(

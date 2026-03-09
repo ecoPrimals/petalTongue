@@ -8,7 +8,7 @@
 //! - Session merging and transfer
 //! - Auto-save functionality
 //!
-//! Run with: cargo test --test e2e_integration
+//! Run with: cargo test --test `e2e_integration`
 
 use petal_tongue_core::{
     Instance, InstanceId, InstanceRegistry, SessionManager, test_fixtures::env_test_helpers,

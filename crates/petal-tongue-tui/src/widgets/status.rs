@@ -46,7 +46,7 @@ impl StatusBar {
 }
 
 /// Format duration as human-readable string
-fn format_duration(duration: std::time::Duration) -> String {
+pub(crate) fn format_duration(duration: std::time::Duration) -> String {
     let secs = duration.as_secs();
     let hours = secs / 3600;
     let minutes = (secs % 3600) / 60;
@@ -58,5 +58,52 @@ fn format_duration(duration: std::time::Duration) -> String {
         format!("{minutes}m {seconds}s")
     } else {
         format!("{seconds}s")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn format_duration_zero_seconds() {
+        assert_eq!(format_duration(std::time::Duration::from_secs(0)), "0s");
+    }
+
+    #[test]
+    fn format_duration_seconds_only() {
+        assert_eq!(format_duration(std::time::Duration::from_secs(45)), "45s");
+    }
+
+    #[test]
+    fn format_duration_one_minute_thirty_seconds() {
+        assert_eq!(
+            format_duration(std::time::Duration::from_secs(90)),
+            "1m 30s"
+        );
+    }
+
+    #[test]
+    fn format_duration_two_hours_fifteen_minutes() {
+        assert_eq!(
+            format_duration(std::time::Duration::from_secs(8100)),
+            "2h 15m 0s"
+        );
+    }
+
+    #[test]
+    fn format_duration_hours_only() {
+        assert_eq!(
+            format_duration(std::time::Duration::from_secs(3600)),
+            "1h 0m 0s"
+        );
+    }
+
+    #[test]
+    fn format_duration_mixed() {
+        assert_eq!(
+            format_duration(std::time::Duration::from_secs(3661)),
+            "1h 1m 1s"
+        );
     }
 }

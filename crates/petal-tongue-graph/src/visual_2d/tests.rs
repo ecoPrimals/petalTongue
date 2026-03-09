@@ -44,7 +44,7 @@ mod visual_2d_tests {
     fn test_renderer_creation() {
         let graph = create_test_graph();
         let renderer = Visual2DRenderer::new(graph);
-        assert_eq!(renderer.zoom, 1.0);
+        assert!((renderer.zoom - 1.0).abs() < f32::EPSILON);
         assert_eq!(renderer.camera_offset, Vec2::ZERO);
     }
 
@@ -111,7 +111,7 @@ mod visual_2d_tests {
         renderer.reset_camera();
 
         assert_eq!(renderer.camera_offset, Vec2::ZERO);
-        assert_eq!(renderer.zoom, 1.0);
+        assert!((renderer.zoom - 1.0).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -136,16 +136,16 @@ mod visual_2d_tests {
         let graph = create_test_graph();
         let mut renderer = Visual2DRenderer::new(graph);
 
-        assert_eq!(renderer.zoom, 1.0);
+        assert!((renderer.zoom - 1.0).abs() < f32::EPSILON);
 
         renderer.zoom = 0.5;
-        assert_eq!(renderer.zoom, 0.5);
+        assert!((renderer.zoom - 0.5).abs() < f32::EPSILON);
 
         renderer.zoom = 2.0;
-        assert_eq!(renderer.zoom, 2.0);
+        assert!((renderer.zoom - 2.0).abs() < f32::EPSILON);
 
         renderer.zoom = 3.0;
-        assert_eq!(renderer.zoom, 3.0);
+        assert!((renderer.zoom - 3.0).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -239,11 +239,11 @@ mod visual_2d_tests {
     #[test]
     fn test_renderer_with_empty_graph() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        let _renderer = Visual2DRenderer::new(graph.clone());
+        let renderer = Visual2DRenderer::new(graph.clone());
 
-        assert_eq!(_renderer.zoom, 1.0);
-        assert_eq!(_renderer.camera_offset, Vec2::ZERO);
-        assert!(_renderer.selected_node().is_none());
+        assert!((renderer.zoom - 1.0).abs() < f32::EPSILON);
+        assert_eq!(renderer.camera_offset, Vec2::ZERO);
+        assert!(renderer.selected_node().is_none());
 
         let graph_read = graph.read().expect("lock poisoned");
         assert_eq!(graph_read.nodes().len(), 0);
@@ -276,30 +276,30 @@ mod visual_2d_tests {
         graph.layout(1);
 
         let graph_arc = Arc::new(RwLock::new(graph));
-        let _renderer = Visual2DRenderer::new(graph_arc.clone());
+        let renderer = Visual2DRenderer::new(graph_arc.clone());
 
         let graph_read = graph_arc.read().expect("lock poisoned");
         assert_eq!(graph_read.nodes().len(), 10);
         assert_eq!(graph_read.edges().len(), 9);
         drop(graph_read);
 
-        assert_eq!(_renderer.zoom, 1.0);
+        assert!((renderer.zoom - 1.0).abs() < f32::EPSILON);
     }
 
     #[test]
     fn test_animation_engine_optional() {
         let graph = create_test_graph();
-        let _renderer = Visual2DRenderer::new(graph);
+        let renderer = Visual2DRenderer::new(graph);
 
-        assert!(!_renderer.is_animation_enabled());
+        assert!(!renderer.is_animation_enabled());
     }
 
     #[test]
     fn test_zoom_default_value() {
         let graph = create_test_graph();
-        let _renderer = Visual2DRenderer::new(graph);
+        let renderer = Visual2DRenderer::new(graph);
 
-        assert_eq!(_renderer.zoom, 1.0);
+        assert!((renderer.zoom - 1.0).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -320,10 +320,10 @@ mod visual_2d_tests {
     #[test]
     fn test_renderer_initial_state() {
         let graph = create_test_graph();
-        let _renderer = Visual2DRenderer::new(graph);
+        let renderer = Visual2DRenderer::new(graph);
 
-        assert_eq!(_renderer.zoom, 1.0);
-        assert!(!_renderer.is_animation_enabled());
+        assert!((renderer.zoom - 1.0).abs() < f32::EPSILON);
+        assert!(!renderer.is_animation_enabled());
     }
 
     #[test]

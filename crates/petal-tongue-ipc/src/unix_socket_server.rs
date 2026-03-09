@@ -21,6 +21,7 @@ pub struct UnixSocketServer {
     motor_tx: Option<std::sync::mpsc::Sender<petal_tongue_core::MotorCommand>>,
 }
 
+#[allow(dead_code)]
 impl UnixSocketServer {
     /// Create a new Unix socket server with graph and visualization state
     pub fn new(graph: Arc<std::sync::RwLock<GraphEngine>>) -> Result<Self> {
@@ -38,6 +39,7 @@ impl UnixSocketServer {
 
     /// Attach a motor command sender so IPC motor commands are forwarded
     /// to the UI's efferent channel.
+    #[must_use]
     pub fn with_motor_sender(
         mut self,
         tx: std::sync::mpsc::Sender<petal_tongue_core::MotorCommand>,
@@ -81,43 +83,36 @@ impl UnixSocketServer {
         }
     }
 
-    #[expect(dead_code)]
     fn get_capabilities(&self, id: Value) -> crate::json_rpc::JsonRpcResponse {
         self.handlers.get_capabilities(id)
     }
 
-    #[expect(dead_code)]
     fn get_health(&self, id: Value) -> crate::json_rpc::JsonRpcResponse {
         self.handlers.get_health(id)
     }
 
-    #[expect(dead_code)]
     fn get_topology(&self, id: Value) -> crate::json_rpc::JsonRpcResponse {
         self.handlers.get_topology(id)
     }
 
-    #[expect(dead_code)]
-    fn handle_health_check(&self, request: &JsonRpcRequest) -> crate::json_rpc::JsonRpcResponse {
+    fn handle_health_check(&self, request: JsonRpcRequest) -> crate::json_rpc::JsonRpcResponse {
         self.handlers.handle_health_check(request)
     }
 
-    #[expect(dead_code)]
     fn handle_announce_capabilities(
         &self,
-        request: &JsonRpcRequest,
+        request: JsonRpcRequest,
     ) -> crate::json_rpc::JsonRpcResponse {
         self.handlers.handle_announce_capabilities(request)
     }
 
-    #[expect(dead_code)]
     fn handle_ui_display_status(
         &self,
-        request: &JsonRpcRequest,
+        request: JsonRpcRequest,
     ) -> crate::json_rpc::JsonRpcResponse {
         self.handlers.handle_ui_display_status(request)
     }
 
-    #[expect(dead_code)]
     async fn render_graph(&self, params: Value, id: Value) -> crate::json_rpc::JsonRpcResponse {
         self.handlers.render_graph(params, id).await
     }
@@ -201,8 +196,8 @@ mod tests {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
             let server = UnixSocketServer::new(graph).unwrap();
-            let request = JsonRpcRequest::new("health_check", json!({}), json!(1));
-            let response = server.handle_health_check(&request);
+            let request = JsonRpcRequest::new("health.check", json!({}), json!(1));
+            let response = server.handle_health_check(request);
             assert!(response.result.is_some());
             let result = response.result.unwrap();
             assert_eq!(result["status"], "healthy");
@@ -216,8 +211,8 @@ mod tests {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
             let server = UnixSocketServer::new(graph).unwrap();
-            let request = JsonRpcRequest::new("announce_capabilities", json!({}), json!(1));
-            let response = server.handle_announce_capabilities(&request);
+            let request = JsonRpcRequest::new("capability.announce", json!({}), json!(1));
+            let response = server.handle_announce_capabilities(request);
             assert!(response.result.is_some());
             let result = response.result.unwrap();
             assert!(result["capabilities"].is_array());
@@ -242,7 +237,7 @@ mod tests {
                 }),
                 json!(42),
             );
-            let response = server.handle_ui_display_status(&request);
+            let response = server.handle_ui_display_status(request);
             assert!(response.result.is_some());
             let result = response.result.unwrap();
             assert_eq!(result["updated"], true);
@@ -256,7 +251,7 @@ mod tests {
         env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
             let server = UnixSocketServer::new(graph).unwrap();
             let request = JsonRpcRequest::new("ui.display_status", json!(null), json!(1));
-            let response = server.handle_ui_display_status(&request);
+            let response = server.handle_ui_display_status(request);
             assert!(response.error.is_some());
             assert_eq!(response.error.unwrap().code, error_codes::INVALID_PARAMS);
         });
@@ -317,6 +312,91 @@ mod tests {
             let response = rt.block_on(server.render_graph(json!({"format": "pdf"}), json!(1)));
             assert!(response.error.is_some());
             assert_eq!(response.error.unwrap().code, error_codes::INVALID_PARAMS);
+        });
+    }
+
+    #[test]
+    fn test_with_motor_sender() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let (tx, _rx) = std::sync::mpsc::channel();
+            let server = UnixSocketServer::new(graph).unwrap().with_motor_sender(tx);
+            let response = server.get_health(json!(1));
+            assert!(response.result.is_some());
+        });
+    }
+
+    #[test]
+    fn test_get_topology_empty_graph() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let response = server.get_topology(json!(1));
+            assert!(response.result.is_some());
+            let result = response.result.unwrap();
+            assert!(result["nodes"].as_array().unwrap().is_empty());
+            assert!(result["edges"].as_array().unwrap().is_empty());
+        });
+    }
+
+    #[test]
+    fn test_handle_ui_display_status_empty_status() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let request = JsonRpcRequest::new(
+                "ui.display_status",
+                json!({"primal_name": "test", "status": {}}),
+                json!(1),
+            );
+            let response = server.handle_ui_display_status(request);
+            assert!(response.result.is_some());
+            let result = response.result.unwrap();
+            assert_eq!(result["primal"], "test");
+        });
+    }
+
+    #[test]
+    fn test_get_capabilities_returns_family_id() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        env_test_helpers::with_env_vars(
+            &[
+                ("FAMILY_ID", Some("cap-test-family")),
+                ("XDG_RUNTIME_DIR", Some("/tmp")),
+            ],
+            || {
+                let server = UnixSocketServer::new(graph).unwrap();
+                let response = server.get_capabilities(json!(99));
+                assert!(response.result.is_some());
+                assert_eq!(response.result.unwrap()["family_id"], "cap-test-family");
+            },
+        );
+    }
+
+    #[test]
+    fn test_get_health_returns_graph_stats() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let response = server.get_health(json!(1));
+            let result = response.result.unwrap();
+            assert_eq!(result["status"], "healthy");
+            assert!(result["graph"].is_object());
+            assert!(result["graph"]["nodes"].is_number());
+            assert!(result["graph"]["edges"].is_number());
+        });
+    }
+
+    #[test]
+    fn test_handle_announce_capabilities_returns_array() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let request = JsonRpcRequest::new("capability.announce", json!({}), json!(1));
+            let response = server.handle_announce_capabilities(request);
+            let result = response.result.unwrap();
+            let caps = result["capabilities"].as_array().unwrap();
+            assert!(!caps.is_empty());
         });
     }
 }

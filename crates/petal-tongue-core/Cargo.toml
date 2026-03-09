@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+[lints]
+workspace = true
+
 [package]
 name = "petal-tongue-core"
 description = "Universal UI and Visualization System"
@@ -27,19 +31,15 @@ indexmap = "2.0"
 # System information (Pure Rust Unix syscalls - EVOLVED from libc!)
 # EVOLUTION: Migrated from libc to rustix for 100% safe Rust
 rustix = { version = "0.38", features = ["process"] }
+temp-env = { version = "0.3", optional = true, features = ["async_closure"] }
 
 [features]
 default = []
-
-# EVOLUTION COMPLETE: Audio capability detection is now pure Rust via AudioCanvas
-# NO rodio, NO cpal, NO ALSA dependencies needed!
-# AudioCanvas provides direct /dev/snd access (like framebuffer for graphics)
-# See: crates/petal-tongue-ui/src/audio_canvas.rs
-
-test-fixtures = []
+test-fixtures = ["dep:temp-env"]
 
 [build-dependencies]
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util", "macros"] }
 tempfile = "3.8"
+temp-env = { version = "0.3", features = ["async_closure"] }

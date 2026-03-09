@@ -367,7 +367,7 @@ mod tests {
         let config = Config::default();
         assert_eq!(config.network.web_port, 3000);
         assert_eq!(config.network.headless_port, 8080);
-        assert_eq!(config.thresholds.health_threshold, 80.0);
+        assert!((config.thresholds.health_threshold - 80.0).abs() < f32::EPSILON);
     }
 
     #[test]

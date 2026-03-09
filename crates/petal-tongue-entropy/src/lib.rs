@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! # PetalTongue Entropy Capture
+//! # `PetalTongue` Entropy Capture
 //!
 //! Multi-modal human entropy capture for sovereign, non-fungible keys.
 //!

@@ -232,7 +232,7 @@ impl UniversalDiscovery {
     async fn discover_via_config(&self, capability: &str) -> Result<Vec<DiscoveredService>> {
         debug!("Checking config file for capability: {}", capability);
 
-        // TODO: Implement config file discovery
+        // TODO: Implement config file discovery (delegated to discovery provider)
         // Config should be capability-based, not service-name-based:
         //
         // [capabilities]
@@ -298,7 +298,7 @@ impl UniversalDiscovery {
         // Convert capability to mDNS service type
         let _service_type = format!("_{capability}._tcp.local");
 
-        // TODO: Implement mDNS query
+        // TODO: Implement mDNS query (delegated to discovery provider)
         // This would use multicast DNS to find services advertising this capability
 
         Ok(Vec::new())
@@ -407,7 +407,7 @@ impl UniversalDiscovery {
     ) -> Result<Vec<DiscoveredService>> {
         debug!("Querying Unix socket: {}", endpoint);
 
-        // TODO: Implement Unix socket query
+        // TODO: Implement Unix socket query (delegated to discovery provider)
         // This would connect to the socket and send a generic discovery request
 
         Ok(Vec::new())

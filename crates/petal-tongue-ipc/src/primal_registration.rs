@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Primal Registration with Songbird
 //!
-//! Implements the `ipc.register` and `ipc.heartbeat` standards from PRIMAL_IPC_PROTOCOL.md.
+//! Implements the `ipc.register` and `ipc.heartbeat` standards from `PRIMAL_IPC_PROTOCOL.md`.
 //!
 //! This module handles:
 //! - Initial registration with Songbird on startup
@@ -38,6 +38,7 @@ pub struct PrimalRegistration {
 
 impl PrimalRegistration {
     /// Create a new registration for petalTongue
+    #[must_use]
     pub fn petaltongue() -> Self {
         let mut metadata = serde_json::Map::new();
         metadata.insert(
@@ -80,11 +81,13 @@ impl SongbirdClient {
     /// 1. `SONGBIRD_SOCKET` environment variable
     /// 2. `discover_primal_socket` for conventional discovery service path
     /// 3. Conventional path fallback
+    #[must_use]
     pub fn new() -> Self {
         let socket_path = std::env::var("SONGBIRD_SOCKET").unwrap_or_else(|_| {
-            crate::socket_path::discover_primal_socket("discovery.service", None, None)
-                .map(|p| p.to_string_lossy().to_string())
-                .unwrap_or_else(|_| "/tmp/songbird-nat0-default.sock".to_string())
+            crate::socket_path::discover_primal_socket("discovery.service", None, None).map_or_else(
+                |_| "/tmp/songbird-nat0-default.sock".to_string(),
+                |p| p.to_string_lossy().to_string(),
+            )
         });
         Self {
             socket_path,
@@ -93,6 +96,7 @@ impl SongbirdClient {
     }
 
     /// Create a client with a custom socket path (for testing)
+    #[must_use]
     pub fn with_socket_path(socket_path: String) -> Self {
         Self {
             socket_path,
@@ -114,7 +118,7 @@ impl SongbirdClient {
 
     /// Register with Songbird
     ///
-    /// Sends `ipc.register` to Songbird per PRIMAL_IPC_PROTOCOL.md
+    /// Sends `ipc.register` to Songbird per `PRIMAL_IPC_PROTOCOL.md`
     ///
     /// # Errors
     ///
@@ -144,7 +148,7 @@ impl SongbirdClient {
 
     /// Send a heartbeat to Songbird
     ///
-    /// Sends `ipc.heartbeat` to maintain registration per PRIMAL_IPC_PROTOCOL.md
+    /// Sends `ipc.heartbeat` to maintain registration per `PRIMAL_IPC_PROTOCOL.md`
     ///
     /// # Errors
     ///
@@ -225,6 +229,7 @@ pub struct RegistrationManager {
 
 impl RegistrationManager {
     /// Create a new registration manager
+    #[must_use]
     pub fn new(registration: PrimalRegistration) -> Self {
         Self {
             client: SongbirdClient::new(),

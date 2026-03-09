@@ -230,9 +230,8 @@ async fn create_auto_backend() -> Result<Box<dyn UIBackend>> {
         if ToadstoolBackend::is_available().await {
             tracing::info!("✅ Toadstool backend available - using Pure Rust UI!");
             return create_toadstool_backend().await;
-        } else {
-            tracing::info!("⚠️  Toadstool backend not available, falling back to eframe");
         }
+        tracing::info!("⚠️  Toadstool backend not available, falling back to eframe");
     }
 
     // Fallback to eframe

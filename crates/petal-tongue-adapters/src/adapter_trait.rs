@@ -97,7 +97,7 @@ mod tests {
     struct TestAdapter;
 
     impl PropertyAdapter for TestAdapter {
-        fn name(&self) -> &str {
+        fn name(&self) -> &'static str {
             "test"
         }
 

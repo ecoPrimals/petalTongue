@@ -449,4 +449,75 @@ mod tests {
         let data2 = DynamicData::from_json_str(&json_out).unwrap();
         assert_eq!(data2.get_str("name"), Some("Test"));
     }
+
+    #[test]
+    fn test_schema_version_parse_error() {
+        assert!(SchemaVersion::parse("1.2").is_err());
+        assert!(SchemaVersion::parse("1.2.3.4").is_err());
+        assert!(SchemaVersion::parse("a.b.c").is_err());
+    }
+
+    #[test]
+    fn test_schema_version_default() {
+        let v = SchemaVersion::default();
+        assert_eq!(v.major, 1);
+        assert_eq!(v.minor, 0);
+        assert_eq!(v.patch, 0);
+    }
+
+    #[test]
+    fn test_dynamic_value_is_null() {
+        assert!(DynamicValue::Null.is_null());
+        assert!(!DynamicValue::Boolean(false).is_null());
+        assert!(!DynamicValue::String(String::new()).is_null());
+    }
+
+    #[test]
+    fn test_dynamic_value_json_roundtrip() {
+        let val = DynamicValue::Object(
+            [("k".to_string(), DynamicValue::Number(42.0))]
+                .into_iter()
+                .collect(),
+        );
+        let json_val = val.to_json_value();
+        let back = DynamicValue::from_json_value(json_val);
+        assert_eq!(val, back);
+    }
+
+    #[test]
+    fn test_dynamic_value_array() {
+        let arr = DynamicValue::Array(vec![
+            DynamicValue::Number(1.0),
+            DynamicValue::String("x".to_string()),
+        ]);
+        assert_eq!(arr.as_array().map(<[_]>::len), Some(2));
+        assert_eq!(arr.as_f64(), None);
+    }
+
+    #[test]
+    fn test_dynamic_data_with_version() {
+        let data = DynamicData::with_version(SchemaVersion::new(2, 1, 0));
+        assert_eq!(data.version, Some(SchemaVersion::new(2, 1, 0)));
+        assert!(data.fields.is_empty());
+    }
+
+    #[test]
+    fn test_migration_registry_no_migration() {
+        let registry = MigrationRegistry::new();
+        let mut data = DynamicData::new();
+        data.set("x".to_string(), DynamicValue::String("y".to_string()));
+        let from = SchemaVersion::new(1, 0, 0);
+        let to = SchemaVersion::new(1, 0, 0);
+        assert!(registry.migrate(&mut data, from, to).is_ok());
+        assert_eq!(data.get_str("x"), Some("y"));
+    }
+
+    #[test]
+    fn test_migration_registry_no_handler() {
+        let registry = MigrationRegistry::new();
+        let mut data = DynamicData::new();
+        let from = SchemaVersion::new(1, 0, 0);
+        let to = SchemaVersion::new(2, 0, 0);
+        assert!(registry.migrate(&mut data, from, to).is_err());
+    }
 }

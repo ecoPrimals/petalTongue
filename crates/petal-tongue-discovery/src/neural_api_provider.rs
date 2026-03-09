@@ -31,6 +31,7 @@ pub struct NeuralApiProvider {
 impl NeuralApiProvider {
     /// Create provider with explicit socket path (for testing)
     #[cfg(test)]
+    #[must_use]
     pub fn with_socket_path(socket_path: PathBuf) -> Self {
         Self {
             socket_path,
@@ -148,7 +149,8 @@ impl NeuralApiProvider {
             .ok_or_else(|| anyhow::anyhow!("No result in Neural API response"))
     }
 
-    /// Parse primal from Neural API format to PrimalInfo
+    /// Parse primal from Neural API format to `PrimalInfo`
+    #[allow(clippy::unnecessary_wraps)]
     fn parse_primal(primal: &Value) -> Result<PrimalInfo> {
         Ok(PrimalInfo {
             id: primal["id"]
@@ -180,7 +182,7 @@ impl NeuralApiProvider {
             last_seen: 0, // Neural API doesn't provide this yet
             endpoints: None,
             metadata: None,
-            properties: Default::default(),
+            properties: std::collections::HashMap::default(),
             #[expect(deprecated)]
             trust_level: None,
             #[expect(deprecated)]

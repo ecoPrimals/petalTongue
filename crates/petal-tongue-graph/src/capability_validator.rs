@@ -140,7 +140,7 @@ mod tests {
     use super::*;
     use petal_tongue_core::{PrimalHealthStatus, Properties};
 
-    fn create_test_primal(id: &str, name: &str, capabilities: Vec<&str>) -> PrimalInfo {
+    fn create_test_primal(id: &str, name: &str, capabilities: &[&str]) -> PrimalInfo {
         PrimalInfo {
             id: id.to_string().into(),
             name: name.to_string(),
@@ -155,7 +155,15 @@ mod tests {
             endpoints: None,
             metadata: None,
             properties: Properties::new(),
+            #[expect(
+                deprecated,
+                reason = "Test fixture; struct literal requires deprecated fields"
+            )]
             trust_level: None,
+            #[expect(
+                deprecated,
+                reason = "Test fixture; struct literal requires deprecated fields"
+            )]
             family_id: None,
         }
     }
@@ -165,12 +173,12 @@ mod tests {
         let provider = create_test_primal(
             "provider",
             "Security Provider",
-            vec!["security-provider", "auth"],
+            &["security-provider", "auth"],
         );
         let consumer = create_test_primal(
             "consumer",
             "Service Consumer",
-            vec!["security-consumer", "api"],
+            &["security-consumer", "api"],
         );
 
         // Should allow - but might warn since capabilities don't exactly match
@@ -186,12 +194,9 @@ mod tests {
 
     #[test]
     fn test_coordination_primal_connects_to_anything() {
-        let nucleus = create_test_primal(
-            "nucleus",
-            "NUCLEUS",
-            vec!["coordination", "graph-execution"],
-        );
-        let service = create_test_primal("service", "Random Service", vec!["api"]);
+        let nucleus =
+            create_test_primal("nucleus", "NUCLEUS", &["coordination", "graph-execution"]);
+        let service = create_test_primal("service", "Random Service", &["api"]);
 
         let result = validate_connection(&nucleus, &service);
         assert_eq!(
@@ -210,7 +215,7 @@ mod tests {
 
     #[test]
     fn test_self_connection_warning() {
-        let primal = create_test_primal("test", "Test", vec!["api"]);
+        let primal = create_test_primal("test", "Test", &["api"]);
 
         let result = validate_connection(&primal, &primal);
         assert!(
@@ -224,7 +229,7 @@ mod tests {
         let primal = create_test_primal(
             "test",
             "Test",
-            vec!["security-provider", "compute", "api-consumer"],
+            &["security-provider", "compute", "api-consumer"],
         );
 
         let provided = discover_provided_capabilities(&primal);
@@ -246,8 +251,8 @@ mod tests {
 
     #[test]
     fn test_no_match_gives_warning() {
-        let primal1 = create_test_primal("p1", "Primal 1", vec!["custom-a"]);
-        let primal2 = create_test_primal("p2", "Primal 2", vec!["custom-b"]);
+        let primal1 = create_test_primal("p1", "Primal 1", &["custom-a"]);
+        let primal2 = create_test_primal("p2", "Primal 2", &["custom-b"]);
 
         let result = validate_connection(&primal1, &primal2);
         assert!(

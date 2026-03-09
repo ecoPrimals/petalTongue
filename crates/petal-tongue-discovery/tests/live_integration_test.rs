@@ -3,12 +3,14 @@
 //
 // This test validates that petalTongue can discover primals from a running biomeOS API server
 
+#![allow(deprecated)]
+
 #[cfg(feature = "legacy-http")]
 use petal_tongue_discovery::HttpVisualizationProvider;
 use petal_tongue_discovery::{VisualizationDataProvider, discover_visualization_providers};
 
 #[tokio::test]
-#[ignore] // Only run when biomeOS API is actually running
+#[ignore = "Only run when biomeOS API is actually running"]
 #[cfg(feature = "legacy-http")]
 async fn test_live_biomeos_integration() {
     // This test expects biomeOS API running on localhost:3000
@@ -84,8 +86,11 @@ async fn test_live_biomeos_integration() {
 
     // Test 4: Test auto-discovery flow
     println!("\n4. Testing auto-discovery flow...");
-    std::env::set_var("PETALTONGUE_ENABLE_MDNS", "false"); // Disable mDNS for this test
-    std::env::set_var("BIOMEOS_URL", &biomeos_url);
+    #[allow(unsafe_code)]
+    unsafe {
+        std::env::set_var("PETALTONGUE_ENABLE_MDNS", "false");
+        std::env::set_var("BIOMEOS_URL", &biomeos_url);
+    }
 
     let providers = discover_visualization_providers().await;
     assert!(
@@ -114,40 +119,15 @@ async fn test_live_biomeos_integration() {
 
 #[tokio::test]
 async fn test_biomeos_api_contract() {
-    // Test that we can handle the biomeOS API response format
-    // This uses mock data in the same format as the real API
-
     use serde_json::json;
 
-    // Mock response in biomeOS format
-    let response = json!({
-        "primals": [
-            {
-                "id": "test-primal",
-                "name": "Test Primal",
-                "primal_type": "test",
-                "version": "1.0.0",
-                "health": "healthy",
-                "capabilities": ["test.capability"],
-                "endpoint": "http://localhost:9999",
-                "last_seen": 1234567890u64,
-                "trust_level": 2,
-                "family_id": "test-family",
-                "allowed_capabilities": ["*"],
-                "denied_capabilities": []
-            }
-        ],
-        "count": 1,
-        "mode": "test"
-    });
-
-    // Parse as our internal format
     #[derive(serde::Deserialize)]
     struct BiomeOSResponse {
         primals: Vec<BiomeOSPrimal>,
     }
 
     #[derive(serde::Deserialize)]
+    #[allow(dead_code)]
     struct BiomeOSPrimal {
         id: String,
         name: String,
@@ -158,6 +138,27 @@ async fn test_biomeos_api_contract() {
         last_seen: u64,
     }
 
+    let response = json!({
+        "primals": [
+            {
+                "id": "test-primal",
+                "name": "Test Primal",
+                "primal_type": "test",
+                "version": "1.0.0",
+                "health": "healthy",
+                "capabilities": ["test.capability"],
+                "endpoint": "http://localhost:9999",
+                "last_seen": 1_234_567_890u64,
+                "trust_level": 2,
+                "family_id": "test-family",
+                "allowed_capabilities": ["*"],
+                "denied_capabilities": []
+            }
+        ],
+        "count": 1,
+        "mode": "test"
+    });
+
     let parsed: BiomeOSResponse = serde_json::from_value(response).unwrap();
     assert_eq!(parsed.primals.len(), 1);
 
@@ -166,7 +167,7 @@ async fn test_biomeos_api_contract() {
     assert_eq!(primal.name, "Test Primal");
     assert_eq!(primal.primal_type, "test");
     assert_eq!(primal.health, "healthy");
-    assert_eq!(primal.last_seen, 1234567890);
+    assert_eq!(primal.last_seen, 1_234_567_890);
 
     println!("✅ API contract validation passed");
 }

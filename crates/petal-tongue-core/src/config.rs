@@ -93,3 +93,53 @@ fn default_max_fps() -> u32 {
 fn default_true() -> bool {
     true
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_config() {
+        let config = PetalTongueConfig::default();
+        assert_eq!(config.common.name, "petalTongue");
+        assert!(config.biomeos_url.is_none());
+        assert_eq!(config.refresh_interval_secs, 5);
+        assert_eq!(config.audio_sample_rate, 48000);
+        assert_eq!(config.max_fps, 60);
+        assert!(config.audio_enabled);
+        assert!(!config.mock_mode);
+    }
+
+    #[test]
+    fn test_refresh_interval() {
+        let config = PetalTongueConfig::default();
+        let d = config.refresh_interval();
+        assert_eq!(d.as_secs(), 5);
+    }
+
+    #[test]
+    fn test_config_serialization() {
+        let config = PetalTongueConfig::default();
+        let toml = toml::to_string(&config).unwrap();
+        let parsed: PetalTongueConfig = toml::from_str(&toml).unwrap();
+        assert_eq!(parsed.refresh_interval_secs, config.refresh_interval_secs);
+    }
+
+    #[test]
+    fn test_config_with_overrides() {
+        let toml = r#"
+            name = "custom"
+            refresh_interval_secs = 10
+            audio_sample_rate = 44100
+            max_fps = 30
+            audio_enabled = false
+            mock_mode = true
+        "#;
+        let config: PetalTongueConfig = toml::from_str(toml).unwrap();
+        assert_eq!(config.refresh_interval_secs, 10);
+        assert_eq!(config.audio_sample_rate, 44100);
+        assert_eq!(config.max_fps, 30);
+        assert!(!config.audio_enabled);
+        assert!(config.mock_mode);
+    }
+}

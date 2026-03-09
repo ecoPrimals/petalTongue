@@ -43,14 +43,14 @@ impl TerminalUI {
     pub fn new(graph: Arc<RwLock<GraphEngine>>) -> Self {
         // Try to detect terminal width
         let width = terminal_size::terminal_size()
-            .map(|(terminal_size::Width(w), _)| w as usize)
-            .unwrap_or(80)
+            .map_or(80, |(terminal_size::Width(w), _)| w as usize)
             .min(120); // Cap at 120 for readability
 
         Self { graph, width }
     }
 
     /// Create with explicit width
+    #[must_use]
     pub fn with_width(mut self, width: usize) -> Self {
         self.width = width;
         self
@@ -71,7 +71,10 @@ impl TerminalUI {
         output.push('\n');
 
         // Get graph data
-        let graph = self.graph.read().unwrap_or_else(|e| e.into_inner());
+        let graph = self
+            .graph
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let nodes = graph.nodes();
         let edges = graph.edges();
 
@@ -83,7 +86,7 @@ impl TerminalUI {
         if nodes.is_empty() {
             output.push_str("  (No primals discovered)\n");
         } else {
-            for node in nodes.iter() {
+            for node in nodes {
                 let health_icon = health_to_emoji(&node.info.health);
                 let health_pct = health_to_percentage(&node.info.health);
                 let name_width = self.width.saturating_sub(25);
@@ -109,18 +112,16 @@ impl TerminalUI {
         if edges.is_empty() {
             output.push_str("  (No connections)\n");
         } else {
-            for edge in edges.iter() {
+            for edge in edges {
                 let from_name = nodes
                     .iter()
                     .find(|n| n.info.id == edge.from)
-                    .map(|n| n.info.name.as_str())
-                    .unwrap_or("unknown");
+                    .map_or("unknown", |n| n.info.name.as_str());
 
                 let to_name = nodes
                     .iter()
                     .find(|n| n.info.id == edge.to)
-                    .map(|n| n.info.name.as_str())
-                    .unwrap_or("unknown");
+                    .map_or("unknown", |n| n.info.name.as_str());
 
                 let max_name_len = (self.width.saturating_sub(10)) / 2;
                 let from = if from_name.len() > max_name_len {
@@ -156,7 +157,7 @@ impl TerminalUI {
 }
 
 impl UniversalUI for TerminalUI {
-    fn mode_name(&self) -> &str {
+    fn mode_name(&self) -> &'static str {
         "Terminal"
     }
 

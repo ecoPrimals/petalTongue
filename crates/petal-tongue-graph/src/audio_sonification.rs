@@ -265,7 +265,7 @@ impl AudioSonificationRenderer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use petal_tongue_core::{LayoutAlgorithm, TopologyEdge};
+    use petal_tongue_core::{GraphEngine, LayoutAlgorithm, TopologyEdge};
 
     fn create_test_graph() -> Arc<RwLock<GraphEngine>> {
         let mut graph = GraphEngine::new();
@@ -352,13 +352,18 @@ mod tests {
         let graph = create_test_graph();
         let renderer = AudioSonificationRenderer::new(graph);
 
-        assert_eq!(renderer.health_to_pitch(&PrimalHealthStatus::Healthy), 0.75);
-        assert_eq!(renderer.health_to_pitch(&PrimalHealthStatus::Warning), 0.55);
-        assert_eq!(
-            renderer.health_to_pitch(&PrimalHealthStatus::Critical),
-            0.25
+        assert!(
+            (renderer.health_to_pitch(&PrimalHealthStatus::Healthy) - 0.75).abs() < f32::EPSILON
         );
-        assert_eq!(renderer.health_to_pitch(&PrimalHealthStatus::Unknown), 0.5);
+        assert!(
+            (renderer.health_to_pitch(&PrimalHealthStatus::Warning) - 0.55).abs() < f32::EPSILON
+        );
+        assert!(
+            (renderer.health_to_pitch(&PrimalHealthStatus::Critical) - 0.25).abs() < f32::EPSILON
+        );
+        assert!(
+            (renderer.health_to_pitch(&PrimalHealthStatus::Unknown) - 0.5).abs() < f32::EPSILON
+        );
     }
 
     #[test]
@@ -368,15 +373,15 @@ mod tests {
 
         // Left side
         let left_pos = Position::new_2d(-500.0, 0.0);
-        assert_eq!(renderer.position_to_pan(left_pos), -1.0);
+        assert!((renderer.position_to_pan(left_pos) - (-1.0)).abs() < f32::EPSILON);
 
         // Center
         let center_pos = Position::new_2d(0.0, 0.0);
-        assert_eq!(renderer.position_to_pan(center_pos), 0.0);
+        assert!((renderer.position_to_pan(center_pos) - 0.0).abs() < f32::EPSILON);
 
         // Right side
         let right_pos = Position::new_2d(500.0, 0.0);
-        assert_eq!(renderer.position_to_pan(right_pos), 1.0);
+        assert!((renderer.position_to_pan(right_pos) - 1.0).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -390,7 +395,7 @@ mod tests {
         // Find BearDog
         let beardog_attrs = attrs.iter().find(|(id, _)| id == "beardog-1").unwrap();
         assert_eq!(beardog_attrs.1.instrument, Instrument::Bass);
-        assert_eq!(beardog_attrs.1.pitch, 0.75); // Healthy
+        assert!((beardog_attrs.1.pitch - 0.75).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -452,5 +457,101 @@ mod tests {
         assert!(description.contains("off-key"));
 
         assert!(renderer.describe_node_audio("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_instrument_default_unknown_type() {
+        let graph = create_test_graph();
+        let renderer = AudioSonificationRenderer::new(graph);
+        assert_eq!(
+            renderer.map_primal_to_instrument("unknown"),
+            Instrument::Default
+        );
+        assert_eq!(renderer.map_primal_to_instrument(""), Instrument::Default);
+        assert_eq!(
+            renderer.map_primal_to_instrument("FOO"),
+            Instrument::Default
+        );
+    }
+
+    #[test]
+    fn test_instrument_case_insensitive() {
+        let graph = create_test_graph();
+        let renderer = AudioSonificationRenderer::new(graph);
+        assert_eq!(
+            renderer.map_primal_to_instrument("security"),
+            Instrument::Bass
+        );
+        assert_eq!(
+            renderer.map_primal_to_instrument("SECURITY"),
+            Instrument::Bass
+        );
+        assert_eq!(
+            renderer.map_primal_to_instrument("compute"),
+            Instrument::Drums
+        );
+        assert_eq!(renderer.map_primal_to_instrument("AI"), Instrument::Synth);
+    }
+
+    #[test]
+    fn test_position_to_pan_clamp() {
+        let graph = create_test_graph();
+        let renderer = AudioSonificationRenderer::new(graph);
+        let far_left = Position::new_2d(-1000.0, 0.0);
+        assert!((renderer.position_to_pan(far_left) - (-1.0)).abs() < f32::EPSILON);
+        let far_right = Position::new_2d(1000.0, 0.0);
+        assert!((renderer.position_to_pan(far_right) - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_activity_to_volume_via_attributes() {
+        let mut graph = GraphEngine::new();
+        let mut low_cap =
+            petal_tongue_core::test_fixtures::primals::test_primal_with_type("low", "Compute");
+        low_cap.capabilities = vec!["a".to_string()];
+        graph.add_node(low_cap);
+        let mut high_cap =
+            petal_tongue_core::test_fixtures::primals::test_primal_with_type("high", "Compute");
+        high_cap.capabilities = vec![
+            "a".to_string(),
+            "b".to_string(),
+            "c".to_string(),
+            "d".to_string(),
+            "e".to_string(),
+            "f".to_string(),
+            "g".to_string(),
+            "h".to_string(),
+            "i".to_string(),
+            "j".to_string(),
+        ];
+        graph.add_node(high_cap);
+        graph.set_layout(LayoutAlgorithm::Circular);
+        graph.layout(1);
+        let renderer = AudioSonificationRenderer::new(Arc::new(RwLock::new(graph)));
+        let attrs = renderer.generate_audio_attributes();
+        let low_vol = attrs.iter().find(|(id, _)| id == "low").unwrap().1.volume;
+        let high_vol = attrs.iter().find(|(id, _)| id == "high").unwrap().1.volume;
+        assert!(high_vol > low_vol);
+    }
+
+    #[test]
+    fn test_audio_attributes_structure() {
+        let graph = create_test_graph();
+        let renderer = AudioSonificationRenderer::new(graph);
+        let attrs = renderer.generate_audio_attributes();
+        for (_, a) in &attrs {
+            assert!(a.pitch >= 0.0 && a.pitch <= 1.0);
+            assert!(a.volume >= 0.0 && a.volume <= 1.0);
+            assert!(a.pan >= -1.0 && a.pan <= 1.0);
+        }
+    }
+
+    #[test]
+    fn test_describe_soundscape_empty() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let renderer = AudioSonificationRenderer::new(graph);
+        let desc = renderer.describe_soundscape();
+        assert!(desc.contains("silent"));
+        assert!(desc.contains("No primals"));
     }
 }

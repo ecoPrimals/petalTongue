@@ -80,9 +80,10 @@ petaltongue
 
 | Metric | Actual Status |
 |--------|---------------|
-| Tests | 1,421 passing, 0 failures, 3 ignored |
+| Tests | 1,816 passing, 0 failures, 3 ignored |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings (`cargo clippy --all-targets -- -D warnings`) |
+| Clippy | Zero warnings, pedantic enabled (`clippy::pedantic` via `[workspace.lints.clippy]`) |
+| Coverage | 63% line / 67% function (llvm-cov) |
 | Unsafe | `#![forbid(unsafe_code)]` workspace-wide, zero `libc`/`nix` deps |
 | License | AGPL-3.0-only, SPDX headers on all source files |
 | Files | All production files under 650 lines (max: 650, `app/mod.rs`) |

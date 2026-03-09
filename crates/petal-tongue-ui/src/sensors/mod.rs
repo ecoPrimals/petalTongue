@@ -75,7 +75,7 @@ mod tests {
         let stats = registry.stats();
 
         // We should discover at least some sensors (screen is almost always available)
-        assert!(stats.total > 0 || stats.total == 0, "Sensor count is valid");
+        let _ = stats.total;
     }
 
     #[test]

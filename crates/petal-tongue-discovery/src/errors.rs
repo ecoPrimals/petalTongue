@@ -123,7 +123,7 @@ mod tests {
         let err = DiscoveryError::AllProvidersFailed { count: 3 };
         let msg = err.to_string();
         assert!(msg.contains("All"));
-        assert!(msg.contains("3"));
+        assert!(msg.contains('3'));
         assert!(msg.contains("failed"));
     }
 

@@ -281,12 +281,7 @@ impl PetalTongueApp {
                 tracing::debug!("Motor: SelectNode({node_id:?})");
             }
             MotorCommand::SetLayout { ref algorithm } => {
-                let layout = match algorithm.as_str() {
-                    "Hierarchical" => LayoutAlgorithm::Hierarchical,
-                    "Circular" => LayoutAlgorithm::Circular,
-                    "Random" => LayoutAlgorithm::Random,
-                    _ => LayoutAlgorithm::ForceDirected,
-                };
+                let layout = layout_from_str(algorithm);
                 self.current_layout = layout;
                 if let Ok(mut graph) = self.graph.write() {
                     graph.set_layout(layout);
@@ -310,6 +305,15 @@ impl PetalTongueApp {
                 tracing::info!("Motor: LoadScenario({path})");
             }
         }
+    }
+}
+
+fn layout_from_str(algorithm: &str) -> LayoutAlgorithm {
+    match algorithm {
+        "Hierarchical" => LayoutAlgorithm::Hierarchical,
+        "Circular" => LayoutAlgorithm::Circular,
+        "Random" => LayoutAlgorithm::Random,
+        _ => LayoutAlgorithm::ForceDirected,
     }
 }
 
@@ -646,5 +650,42 @@ impl eframe::App for PetalTongueApp {
             }
             ctx.request_repaint();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn layout_from_str_hierarchical() {
+        assert_eq!(
+            layout_from_str("Hierarchical"),
+            LayoutAlgorithm::Hierarchical
+        );
+    }
+
+    #[test]
+    fn layout_from_str_circular() {
+        assert_eq!(layout_from_str("Circular"), LayoutAlgorithm::Circular);
+    }
+
+    #[test]
+    fn layout_from_str_random() {
+        assert_eq!(layout_from_str("Random"), LayoutAlgorithm::Random);
+    }
+
+    #[test]
+    fn layout_from_str_unknown_defaults_force_directed() {
+        assert_eq!(layout_from_str("unknown"), LayoutAlgorithm::ForceDirected);
+        assert_eq!(layout_from_str(""), LayoutAlgorithm::ForceDirected);
+    }
+
+    #[test]
+    fn mode_presets_produce_commands() {
+        let cmds = crate::mode_presets::commands_for_mode("clinical");
+        assert!(!cmds.is_empty());
+        let cmds = crate::mode_presets::commands_for_mode("developer");
+        assert!(!cmds.is_empty());
     }
 }

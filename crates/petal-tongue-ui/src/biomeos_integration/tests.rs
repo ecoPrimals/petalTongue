@@ -52,7 +52,7 @@ async fn test_biomeos_provider_empty_cache() {
             assert!(
                 primals.is_empty(),
                 "Empty cache should return empty primals"
-            )
+            );
         }
         Err(_) => {} // Connection failure is expected without a live socket
     }
