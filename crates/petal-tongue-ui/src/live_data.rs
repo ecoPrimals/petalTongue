@@ -344,11 +344,7 @@ mod tests {
 
     #[test]
     fn test_live_graph_header_creation() {
-        let mut header = LiveGraphHeader::new(
-            "Test".to_string(),
-            "source".to_string(),
-            1.0,
-        );
+        let mut header = LiveGraphHeader::new("Test".to_string(), "source".to_string(), 1.0);
         header.mark_updated();
         // Just verify no panic
     }

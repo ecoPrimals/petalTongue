@@ -97,59 +97,73 @@ impl TutorialMode {
     /// - Testing without full ecosystem
     /// - Showcasing capabilities
     pub fn load_into_graph(&self, graph: Arc<RwLock<GraphEngine>>, layout: LayoutAlgorithm) {
-        use crate::sandbox_mock::{get_default_scenario, load_sandbox_scenario};
+        #[cfg(any(test, feature = "mock"))]
+        {
+            use crate::sandbox_mock::{get_default_scenario, load_sandbox_scenario};
 
-        info!("📦 Loading tutorial scenario: {}", self.scenario_name);
-        info!("🌸 Seamless transition from awakening to tutorial experience");
+            info!("📦 Loading tutorial scenario: {}", self.scenario_name);
+            info!("🌸 Seamless transition from awakening to tutorial experience");
 
-        // Try to load requested scenario
-        let scenario = match load_sandbox_scenario(&self.scenario_name) {
-            Ok(s) => {
-                info!("✅ Loaded tutorial scenario: {}", s.name);
-                info!("📝 Description: {}", s.description);
-                s
+            // Try to load requested scenario
+            let scenario = match load_sandbox_scenario(&self.scenario_name) {
+                Ok(s) => {
+                    info!("✅ Loaded tutorial scenario: {}", s.name);
+                    info!("📝 Description: {}", s.description);
+                    s
+                }
+                Err(e) => {
+                    warn!("Failed to load scenario '{}': {}", self.scenario_name, e);
+                    info!("Using default tutorial scenario");
+                    get_default_scenario()
+                }
+            };
+
+            // Update graph with scenario data
+            let mut graph = graph.write().expect("graph lock poisoned");
+            *graph = GraphEngine::new();
+
+            info!(
+                "📊 Populating graph: {} primals, {} edges",
+                scenario.primals.len(),
+                scenario.edges.len()
+            );
+
+            // Add primals from scenario
+            for primal in scenario.primals {
+                graph.add_node(primal);
             }
-            Err(e) => {
-                warn!("Failed to load scenario '{}': {}", self.scenario_name, e);
-                info!("Using default tutorial scenario");
-                get_default_scenario()
+
+            // Add edges from scenario
+            for edge in scenario.edges {
+                use petal_tongue_core::TopologyEdge;
+                graph.add_edge(TopologyEdge {
+                    from: edge.from_id.into(),
+                    to: edge.to_id.into(),
+                    edge_type: edge.edge_type,
+                    label: None,
+                    capability: None,
+                    metrics: None,
+                });
             }
-        };
 
-        // Update graph with scenario data
-        let mut graph = graph.write().expect("graph lock poisoned");
-        *graph = GraphEngine::new();
+            // Apply layout
+            graph.set_layout(layout);
+            graph.layout(100);
 
-        info!(
-            "📊 Populating graph: {} primals, {} edges",
-            scenario.primals.len(),
-            scenario.edges.len()
-        );
-
-        // Add primals from scenario
-        for primal in scenario.primals {
-            graph.add_node(primal);
+            info!("✅ Tutorial data loaded successfully");
+            info!("🎓 Tutorial mode active - explore the sandbox!");
         }
-
-        // Add edges from scenario
-        for edge in scenario.edges {
-            use petal_tongue_core::TopologyEdge;
-            graph.add_edge(TopologyEdge {
-                from: edge.from_id.into(),
-                to: edge.to_id.into(),
-                edge_type: edge.edge_type,
-                label: None,
-                capability: None,
-                metrics: None,
-            });
+        #[cfg(not(any(test, feature = "mock")))]
+        {
+            warn!("📚 Tutorial mode: mock feature disabled - using minimal example");
+            info!("💡 Start with --features mock for sandbox scenarios");
+            let mut graph = graph.write().expect("graph lock poisoned");
+            *graph = GraphEngine::new();
+            Self::populate_minimal_example(&mut graph);
+            graph.set_layout(layout);
+            graph.layout(100);
+            info!("✅ Tutorial data loaded (minimal example)");
         }
-
-        // Apply layout
-        graph.set_layout(layout);
-        graph.layout(100);
-
-        info!("✅ Tutorial data loaded successfully");
-        info!("🎓 Tutorial mode active - explore the sandbox!");
     }
 
     /// Create fallback scenario when discovery fails
@@ -186,7 +200,8 @@ impl TutorialMode {
             id: "petaltongue-tutorial".into(),
             name: "petalTongue (You Are Here)".to_string(),
             primal_type: "Visualization".to_string(),
-            endpoint: "http://localhost:3030".to_string(),
+            endpoint: std::env::var("PETALTONGUE_TUTORIAL_ENDPOINT_COMPUTE")
+                .unwrap_or_else(|_| "http://localhost:3030".to_string()),
             capabilities: vec![
                 "visual_2d".to_string(),
                 "audio_sonification".to_string(),
@@ -221,7 +236,8 @@ impl TutorialMode {
             id: "beardog-tutorial".into(),
             name: "BearDog (Security)".to_string(),
             primal_type: "Security".to_string(),
-            endpoint: "http://localhost:8001".to_string(),
+            endpoint: std::env::var("PETALTONGUE_TUTORIAL_ENDPOINT_SECURITY")
+                .unwrap_or_else(|_| "http://localhost:8001".to_string()),
             capabilities: vec![
                 "authentication".to_string(),
                 "authorization".to_string(),
@@ -246,7 +262,8 @@ impl TutorialMode {
             id: "songbird-tutorial".into(),
             name: "Songbird (Discovery)".to_string(),
             primal_type: "Discovery".to_string(),
-            endpoint: "http://localhost:8003".to_string(),
+            endpoint: std::env::var("PETALTONGUE_TUTORIAL_ENDPOINT_DISCOVERY")
+                .unwrap_or_else(|_| "http://localhost:8003".to_string()),
             capabilities: vec![
                 "service_discovery".to_string(),
                 "capability_matching".to_string(),

@@ -52,7 +52,7 @@
 #[cfg(feature = "ui-eframe")]
 pub mod eframe;
 
-#[cfg(feature = "ui-toadstool")]
+#[cfg(feature = "legacy-toadstool")]
 pub mod toadstool;
 
 use anyhow::{Context, Result};
@@ -167,7 +167,7 @@ impl BackendChoice {
         match s.to_lowercase().as_str() {
             "auto" => Some(Self::Auto),
             "eframe" | "egui" => Some(Self::Eframe),
-            "toadstool" | "pure-rust" => Some(Self::Toadstool),
+            "compute.provider" | "pure-rust" => Some(Self::Toadstool),
             _ => None,
         }
     }
@@ -224,7 +224,7 @@ async fn create_auto_backend() -> Result<Box<dyn UIBackend>> {
     tracing::info!("🔍 Auto-detecting best UI backend...");
 
     // Try Toadstool first (Pure Rust!)
-    #[cfg(feature = "ui-toadstool")]
+    #[cfg(feature = "legacy-toadstool")]
     {
         use crate::backend::toadstool::ToadstoolBackend;
         if ToadstoolBackend::is_available().await {
@@ -261,7 +261,7 @@ async fn create_eframe_backend() -> Result<Box<dyn UIBackend>> {
 
 /// Create Toadstool backend
 async fn create_toadstool_backend() -> Result<Box<dyn UIBackend>> {
-    #[cfg(feature = "ui-toadstool")]
+    #[cfg(feature = "legacy-toadstool")]
     {
         use crate::backend::toadstool::ToadstoolBackend;
         let mut backend = ToadstoolBackend::new()
@@ -274,9 +274,9 @@ async fn create_toadstool_backend() -> Result<Box<dyn UIBackend>> {
         Ok(Box::new(backend))
     }
 
-    #[cfg(not(feature = "ui-toadstool"))]
+    #[cfg(not(feature = "legacy-toadstool"))]
     {
-        anyhow::bail!("Toadstool backend not available (compile with --features ui-toadstool)")
+        anyhow::bail!("Toadstool backend not available (compile with --features legacy-toadstool)")
     }
 }
 
@@ -305,7 +305,7 @@ mod tests {
         );
         assert_eq!(BackendChoice::from_str("egui"), Some(BackendChoice::Eframe));
         assert_eq!(
-            BackendChoice::from_str("toadstool"),
+            BackendChoice::from_str("compute.provider"),
             Some(BackendChoice::Toadstool)
         );
         assert_eq!(

@@ -118,8 +118,15 @@ impl BiomeOSClient {
 
     /// Check if `BiomeOS` API is available
     pub async fn health_check(&self) -> anyhow::Result<bool> {
+        #[cfg(any(test, feature = "test-fixtures"))]
         if self.mock_mode {
-            return Ok(true); // Mock mode is always "healthy"
+            return Ok(true); // Mock mode is always "healthy" (test/dev only)
+        }
+        #[cfg(not(any(test, feature = "test-fixtures")))]
+        if self.mock_mode {
+            anyhow::bail!(
+                "Mock mode requires test-fixtures feature. Use real biomeOS connection or build with --features test-fixtures."
+            );
         }
 
         let url = format!("{}/api/v1/health", self.base_url);
@@ -134,9 +141,16 @@ impl BiomeOSClient {
     /// **PRODUCTION MODE**: Returns error if API fails (no mock fallback)
     /// **TEST MODE**: Set `mock_mode` to use test data
     pub async fn discover_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
+        #[cfg(any(test, feature = "test-fixtures"))]
         if self.mock_mode {
             tracing::warn!("Mock mode enabled - using test data (TESTING ONLY)");
             return Ok(self.mock_discover_primals());
+        }
+        #[cfg(not(any(test, feature = "test-fixtures")))]
+        if self.mock_mode {
+            anyhow::bail!(
+                "Mock mode requires test-fixtures feature. Use real biomeOS connection or build with --features test-fixtures."
+            );
         }
 
         // Query BiomeOS discovery endpoint
@@ -193,9 +207,16 @@ impl BiomeOSClient {
     ///
     /// **Updated**: Now supports biomeOS's new topology format with nodes + edges
     pub async fn get_topology(&self) -> anyhow::Result<Vec<TopologyEdge>> {
+        #[cfg(any(test, feature = "test-fixtures"))]
         if self.mock_mode {
             tracing::warn!("Mock mode enabled - using test topology (TESTING ONLY)");
             return Ok(self.mock_topology());
+        }
+        #[cfg(not(any(test, feature = "test-fixtures")))]
+        if self.mock_mode {
+            anyhow::bail!(
+                "Mock mode requires test-fixtures feature. Use real biomeOS connection or build with --features test-fixtures."
+            );
         }
 
         let url = format!("{}/api/v1/topology", self.base_url);
@@ -234,7 +255,9 @@ impl BiomeOSClient {
         Ok(topology.edges)
     }
 
-    /// Mock primal discovery (for development/testing only - generic names, no sovereignty violations)
+    /// Mock primal discovery (TEST/DEV ONLY - never in production)
+    /// Gated behind test-fixtures feature. Production builds return error when mock_mode is requested.
+    #[cfg(any(test, feature = "test-fixtures"))]
     fn mock_discover_primals(&self) -> Vec<PrimalInfo> {
         let now = chrono::Utc::now().timestamp() as u64;
         vec![
@@ -335,7 +358,9 @@ impl BiomeOSClient {
         ]
     }
 
-    /// Mock topology (for development/testing only - generic primal IDs)
+    /// Mock topology (TEST/DEV ONLY - never in production)
+    /// Gated behind test-fixtures feature.
+    #[cfg(any(test, feature = "test-fixtures"))]
     fn mock_topology(&self) -> Vec<TopologyEdge> {
         vec![
             TopologyEdge {

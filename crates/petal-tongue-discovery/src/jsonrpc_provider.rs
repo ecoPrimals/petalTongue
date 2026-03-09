@@ -125,18 +125,18 @@ impl JsonRpcProvider {
         info!("🔍 Auto-discovering JSON-RPC providers on Unix sockets...");
 
         // Check environment variable first (explicit override)
-        if let Ok(url) = std::env::var("BIOMEOS_URL") {
-            if let Some(socket_path) = url.strip_prefix("unix://") {
-                debug!("Using BIOMEOS_URL: {}", socket_path);
-                if tokio::fs::metadata(socket_path).await.is_ok() {
-                    info!("✅ Found JSON-RPC provider at {}", socket_path);
-                    return Ok(Self::new(socket_path));
-                } else {
-                    warn!(
-                        "❌ Socket specified in BIOMEOS_URL not found: {}",
-                        socket_path
-                    );
-                }
+        if let Ok(url) = std::env::var("BIOMEOS_URL")
+            && let Some(socket_path) = url.strip_prefix("unix://")
+        {
+            debug!("Using BIOMEOS_URL: {}", socket_path);
+            if tokio::fs::metadata(socket_path).await.is_ok() {
+                info!("✅ Found JSON-RPC provider at {}", socket_path);
+                return Ok(Self::new(socket_path));
+            } else {
+                warn!(
+                    "❌ Socket specified in BIOMEOS_URL not found: {}",
+                    socket_path
+                );
             }
         }
 
@@ -555,9 +555,11 @@ mod tests {
         assert!(paths.len() >= 4);
 
         // Should include biomeOS path
-        assert!(paths
-            .iter()
-            .any(|p| p.to_string_lossy().contains("biomeos")));
+        assert!(
+            paths
+                .iter()
+                .any(|p| p.to_string_lossy().contains("biomeos"))
+        );
     }
 
     #[tokio::test]
@@ -569,15 +571,18 @@ mod tests {
         let result = petal_tongue_core::test_fixtures::env_test_helpers::with_env_var_async(
             "BIOMEOS_URL",
             &format!("unix://{socket_path}"),
-            || async {
-                JsonRpcProvider::discover().await
-            },
+            || async { JsonRpcProvider::discover().await },
         )
         .await;
 
         assert!(result.is_ok());
         let provider = result.unwrap();
-        assert!(provider.get_metadata().endpoint.contains("test-jsonrpc-discover"));
+        assert!(
+            provider
+                .get_metadata()
+                .endpoint
+                .contains("test-jsonrpc-discover")
+        );
 
         let _ = std::fs::remove_file(socket_path);
     }

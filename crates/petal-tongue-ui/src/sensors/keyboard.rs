@@ -7,6 +7,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use petal_tongue_core::{Key, Modifiers, Sensor, SensorCapabilities, SensorEvent, SensorType};
+use std::io::IsTerminal;
 use std::time::{Duration, Instant};
 
 /// Keyboard sensor implementation
@@ -47,7 +48,7 @@ impl Sensor for KeyboardSensor {
 
     fn is_available(&self) -> bool {
         // Keyboard is available if terminal stdin is a TTY
-        atty::is(atty::Stream::Stdin)
+        std::io::stdin().is_terminal()
     }
 
     async fn poll_events(&mut self) -> Result<Vec<SensorEvent>> {
@@ -126,7 +127,7 @@ fn map_modifiers(mods: KeyModifiers) -> Modifiers {
 /// Discover keyboard capabilities
 pub async fn discover() -> Option<KeyboardSensor> {
     // Check if stdin is a terminal
-    if atty::is(atty::Stream::Stdin) {
+    if std::io::stdin().is_terminal() {
         tracing::debug!("Discovered terminal keyboard");
         return Some(KeyboardSensor::new(InputType::Terminal));
     }

@@ -684,7 +684,7 @@ fn calculate_content_entropy(text: &str) -> f64 {
 ### Internal
 
 - petalTongue: `HUMAN_ENTROPY_INTEGRATION_VISION_JAN_3_2026.md`
-- petalTongue: `specs/PETALTONGUE_UI_AND_VISUALIZATION_SPECIFICATION.md`
+- petalTongue: `specs/archive/PETALTONGUE_UI_AND_VISUALIZATION_SPECIFICATION.md` (archived)
 
 ---
 

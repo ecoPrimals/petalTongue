@@ -3,10 +3,8 @@
 
 use std::fmt;
 
-use super::types::{
-    AudioOutputCapability, PointerInputCapability, VisualOutputCapability,
-};
 use super::SensoryCapabilities;
+use super::types::{AudioOutputCapability, PointerInputCapability, VisualOutputCapability};
 
 /// UI complexity level derived from discovered capabilities
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]

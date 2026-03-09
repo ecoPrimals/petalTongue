@@ -32,11 +32,11 @@ use tracing::{debug, info};
 #[derive(Debug, Clone)]
 pub struct UniversalDiscovery {
     /// Discovered service mesh providers (if any)
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     service_mesh_providers: Vec<DiscoveredService>,
 
     /// Direct service connections (from env/config)
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     direct_services: HashMap<String, DiscoveredService>,
 
     /// Discovery methods to try
@@ -313,21 +313,22 @@ impl UniversalDiscovery {
     async fn discover_via_http(&self, capability: &str) -> Result<Vec<DiscoveredService>> {
         debug!("Probing HTTP endpoints for capability: {}", capability);
 
-        // TRUE PRIMAL: Port list from environment, not hardcoded
-        let ports = if let Ok(port_str) = std::env::var("DISCOVERY_PORTS") {
+        let ports = if let Ok(port_str) = std::env::var("PETALTONGUE_DISCOVERY_PORTS") {
             port_str
                 .split(',')
                 .filter_map(|s| s.trim().parse::<u16>().ok())
                 .collect()
         } else {
-            // Default range (no hardcoded primals, just common ports)
-            vec![8080, 8081, 8082, 8083, 8084, 8085, 3000, 3001, 9000, 9001]
+            vec![8080, 8081, 3000, 9000]
         };
+
+        let base = std::env::var("PETALTONGUE_DISCOVERY_BASE")
+            .unwrap_or_else(|_| "http://localhost".to_string());
 
         let mut services = Vec::new();
 
         for port in ports {
-            let endpoint = format!("http://localhost:{port}");
+            let endpoint = format!("{base}:{port}");
 
             if let Ok(http_services) = self.query_generic_endpoint(&endpoint, capability).await {
                 services.extend(http_services);

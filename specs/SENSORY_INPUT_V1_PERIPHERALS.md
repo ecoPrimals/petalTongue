@@ -64,6 +64,8 @@ pub enum SensorCapability {
 ### Discovery Process
 
 ```rust
+use std::io::IsTerminal;
+
 pub struct ScreenDiscovery;
 
 impl ScreenDiscovery {
@@ -80,7 +82,7 @@ impl ScreenDiscovery {
             Some(Self::probe_framebuffer().await)
         }
         // Method 3: Terminal
-        else if atty::is(atty::Stream::Stdout) {
+        else if std::io::stdout().is_terminal() {
             Some(Self::probe_terminal().await)
         }
         else {
@@ -206,6 +208,8 @@ impl ScreenSensor {
 ### Discovery Process
 
 ```rust
+use std::io::IsTerminal;
+
 pub struct KeyboardDiscovery;
 
 impl KeyboardDiscovery {
@@ -213,7 +217,7 @@ impl KeyboardDiscovery {
         // Try detection methods in order
         
         // Method 1: stdin is terminal
-        if atty::is(atty::Stream::Stdin) {
+        if std::io::stdin().is_terminal() {
             Some(Self::probe_terminal_input().await)
         }
         // Method 2: Raw device access

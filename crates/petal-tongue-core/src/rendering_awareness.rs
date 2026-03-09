@@ -256,7 +256,7 @@ impl ValidationPipeline {
         let unconfirmed = self.sent_frames.len();
         let total_sent = unconfirmed + self.confirmed_frames.len();
 
-        #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+        #[expect(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
         let confirmation_rate = if total_sent > 0 {
             (self.confirmed_frames.len() as f64 / total_sent as f64) as f32 * 100.0
         } else {
@@ -282,9 +282,36 @@ pub struct ValidationHealth {
     pub unconfirmed_count: usize,
 }
 
-/// Motor command types
+/// Identifier for a UI panel (used by efferent motor commands).
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+pub enum PanelId {
+    /// Left sidebar (controls, graph stats, animation)
+    LeftSidebar,
+    /// Right sidebar (audio, dashboard, trust)
+    RightSidebar,
+    /// Top menu bar
+    TopMenu,
+    /// System metrics dashboard
+    SystemDashboard,
+    /// Audio controls panel
+    AudioPanel,
+    /// Trust relationship dashboard
+    TrustDashboard,
+    /// Proprioception / SAME DAVE panel
+    Proprioception,
+    /// Graph statistics overlay
+    GraphStats,
+    /// Named custom panel
+    Custom(String),
+}
+
+/// Motor command types — efferent signals that change UI state.
+///
+/// These flow through efferent channels from the proprioception core
+/// to the UI effectors (panels, renderer, layout engine).
 #[derive(Debug, Clone)]
 pub enum MotorCommand {
+    // === Rendering (existing) ===
     /// Render a specific frame
     RenderFrame {
         /// Frame identifier
@@ -294,6 +321,60 @@ pub enum MotorCommand {
     UpdateDisplay,
     /// Clear the display
     ClearDisplay,
+
+    // === Panel visibility (efferent) ===
+    /// Show or hide a specific panel
+    SetPanelVisibility {
+        /// Which panel to control
+        panel: PanelId,
+        /// Whether it should be visible
+        visible: bool,
+    },
+
+    // === Camera / viewport (efferent) ===
+    /// Set the zoom level on the graph renderer
+    SetZoom {
+        /// Zoom level (1.0 = default)
+        level: f32,
+    },
+    /// Fit all nodes into the viewport
+    FitToView,
+    /// Center the viewport on a specific node
+    Navigate {
+        /// Node ID to center on
+        target_node: String,
+    },
+    /// Select (or deselect) a node
+    SelectNode {
+        /// Node ID, or None to deselect
+        node_id: Option<String>,
+    },
+
+    // === Layout (efferent) ===
+    /// Change the graph layout algorithm
+    SetLayout {
+        /// Algorithm name (e.g. "ForceDirected", "Grid", "Radial")
+        algorithm: String,
+    },
+
+    // === Mode / profile (efferent) ===
+    /// Switch to a named mode (applies a preset bundle of commands)
+    SetMode {
+        /// Mode name (e.g. "clinical", "developer", "presentation")
+        mode: String,
+    },
+
+    // === Startup / lifecycle (efferent) ===
+    /// Enable or disable the awakening overlay
+    SetAwakening {
+        /// Whether the overlay should be active
+        enabled: bool,
+    },
+    /// Load a new scenario from a file path
+    LoadScenario {
+        /// Path to the scenario JSON file
+        path: String,
+    },
 }
 
 /// Command ID (unique identifier for tracking)

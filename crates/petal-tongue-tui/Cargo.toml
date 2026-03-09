@@ -1,7 +1,7 @@
 [package]
 name = "petal-tongue-tui"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
 description = "Rich Terminal User Interface for petalTongue - Universal Interface for biomeOS"
 authors = ["ecoPrimals Team"]
 license = "AGPL-3.0-only"

@@ -32,11 +32,11 @@ use std::sync::{Arc, RwLock};
 /// # }
 /// ```
 pub struct CanvasUI {
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     graph: Arc<RwLock<GraphEngine>>,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     width: u32,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     height: u32,
 }
 

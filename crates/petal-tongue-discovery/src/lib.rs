@@ -38,9 +38,11 @@ mod cache;
 mod capabilities;
 mod dns_parser;
 mod dynamic_scenario_provider;
+#[cfg(feature = "legacy-http")]
 mod http_provider;
 mod jsonrpc_provider;
 mod mdns_provider;
+#[cfg(any(test, feature = "test-fixtures"))]
 mod mock_provider;
 mod neural_api_provider;
 mod neural_graph_client;
@@ -61,10 +63,12 @@ mod mdns_discovery;
 pub use cache::CacheStats;
 pub use capabilities::VisualizationCapability;
 pub use dynamic_scenario_provider::DynamicScenarioProvider;
+#[cfg(feature = "legacy-http")]
 #[allow(deprecated)]
 pub use http_provider::HttpVisualizationProvider;
 pub use jsonrpc_provider::JsonRpcProvider;
 pub use mdns_provider::MdnsVisualizationProvider;
+#[cfg(any(test, feature = "test-fixtures"))]
 pub use mock_provider::MockVisualizationProvider;
 pub use neural_api_provider::NeuralApiProvider;
 pub use neural_graph_client::{ExecutionResult, ExecutionStatus, GraphMetadata, NeuralGraphClient};
@@ -104,16 +108,26 @@ use petal_tongue_core::constants;
 pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn VisualizationDataProvider>>> {
     let mut providers: Vec<Box<dyn VisualizationDataProvider>> = Vec::new();
 
-    // Check for explicit mock mode (testing only)
+    // Check for explicit mock mode (testing only - requires test-fixtures feature)
     let mock_mode = std::env::var("PETALTONGUE_MOCK_MODE")
         .unwrap_or_else(|_| "false".to_string())
         .to_lowercase()
         == "true";
 
     if mock_mode {
-        tracing::warn!("PETALTONGUE_MOCK_MODE=true - Using mock provider (TESTING ONLY)");
-        providers.push(Box::new(MockVisualizationProvider::new()));
-        return Ok(providers);
+        #[cfg(any(test, feature = "test-fixtures"))]
+        {
+            tracing::warn!("PETALTONGUE_MOCK_MODE=true - Using mock provider (TESTING ONLY)");
+            providers.push(Box::new(MockVisualizationProvider::new()));
+            return Ok(providers);
+        }
+        #[cfg(not(any(test, feature = "test-fixtures")))]
+        {
+            tracing::warn!(
+                "PETALTONGUE_MOCK_MODE=true but test-fixtures feature not enabled - returning empty (use --features test-fixtures for mock data)"
+            );
+            return Ok(vec![]);
+        }
     }
 
     // Priority 1: Try Neural API (PREFERRED METHOD - Central Coordinator)
@@ -191,28 +205,31 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
     }
 
     // Try environment hints (JSON-RPC first, then HTTP as fallback)
-    if providers.is_empty() {
-        if let Ok(hints) = std::env::var("PETALTONGUE_DISCOVERY_HINTS") {
-            tracing::info!("Trying discovery hints: {}", hints);
-            for hint in hints.split(',') {
-                let hint = hint.trim();
+    if providers.is_empty()
+        && let Ok(hints) = std::env::var("PETALTONGUE_DISCOVERY_HINTS")
+    {
+        tracing::info!("Trying discovery hints: {}", hints);
+        for hint in hints.split(',') {
+            let hint = hint.trim();
 
-                // Try JSON-RPC first if it looks like a Unix socket
-                if hint.starts_with("unix://") || hint.starts_with("/") {
-                    let socket_path = hint.strip_prefix("unix://").unwrap_or(hint);
-                    match try_connect_jsonrpc(socket_path).await {
-                        Ok(provider) => {
-                            tracing::info!("✅ Connected to JSON-RPC provider at {}", socket_path);
-                            providers.push(provider);
-                            continue;
-                        }
-                        Err(e) => {
-                            tracing::debug!("JSON-RPC connection failed: {}", e);
-                        }
+            // Try JSON-RPC first if it looks like a Unix socket
+            if hint.starts_with("unix://") || hint.starts_with("/") {
+                let socket_path = hint.strip_prefix("unix://").unwrap_or(hint);
+                match try_connect_jsonrpc(socket_path).await {
+                    Ok(provider) => {
+                        tracing::info!("✅ Connected to JSON-RPC provider at {}", socket_path);
+                        providers.push(provider);
+                        continue;
+                    }
+                    Err(e) => {
+                        tracing::debug!("JSON-RPC connection failed: {}", e);
                     }
                 }
+            }
 
-                // Fallback to HTTP (with warning)
+            // Fallback to HTTP (with warning) - requires legacy-http feature
+            #[cfg(feature = "legacy-http")]
+            {
                 match try_connect_http(hint).await {
                     Ok(provider) => {
                         tracing::warn!("⚠️  Using HTTP provider (external fallback) at {}", hint);
@@ -226,43 +243,60 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
                     }
                 }
             }
+            #[cfg(not(feature = "legacy-http"))]
+            {
+                tracing::debug!(
+                    "HTTP fallback skipped (compile with --features legacy-http for HTTP provider)"
+                );
+            }
         }
     }
 
     // Try legacy BIOMEOS_URL (backward compatibility, but prefer JSON-RPC)
-    if providers.is_empty() {
-        if let Ok(biomeos_url) = std::env::var("BIOMEOS_URL") {
-            tracing::info!("Trying legacy BIOMEOS_URL: {}", biomeos_url);
+    if providers.is_empty()
+        && let Ok(biomeos_url) = std::env::var("BIOMEOS_URL")
+    {
+        tracing::info!("Trying legacy BIOMEOS_URL: {}", biomeos_url);
 
-            // Try JSON-RPC first if it's a Unix socket
-            if biomeos_url.starts_with("unix://") || biomeos_url.starts_with("/") {
-                let socket_path = biomeos_url.strip_prefix("unix://").unwrap_or(&biomeos_url);
-                match try_connect_jsonrpc(socket_path).await {
-                    Ok(provider) => {
-                        tracing::info!("✅ Connected to JSON-RPC provider at {}", socket_path);
-                        providers.push(provider);
-                        return Ok(providers);
-                    }
-                    Err(e) => {
-                        tracing::debug!("JSON-RPC connection failed: {}", e);
-                    }
+        // Try JSON-RPC first if it's a Unix socket
+        if biomeos_url.starts_with("unix://") || biomeos_url.starts_with("/") {
+            let socket_path = biomeos_url.strip_prefix("unix://").unwrap_or(&biomeos_url);
+            match try_connect_jsonrpc(socket_path).await {
+                Ok(provider) => {
+                    tracing::info!("✅ Connected to JSON-RPC provider at {}", socket_path);
+                    providers.push(provider);
+                    return Ok(providers);
+                }
+                Err(e) => {
+                    tracing::debug!("JSON-RPC connection failed: {}", e);
                 }
             }
+        }
 
-            // Fallback to HTTP (with deprecation warning)
+        // Fallback to HTTP (with deprecation warning) - requires legacy-http feature
+        #[cfg(feature = "legacy-http")]
+        {
             match try_connect_http(&biomeos_url).await {
                 Ok(provider) => {
                     tracing::warn!(
                         "⚠️  Using HTTP provider (external fallback) at {}",
                         biomeos_url
                     );
-                    tracing::warn!("💡 Migrate to JSON-RPC: BIOMEOS_URL=unix:///run/user/$UID/biomeos-device-management.sock");
+                    tracing::warn!(
+                        "💡 Migrate to JSON-RPC: BIOMEOS_URL=unix:///run/user/$UID/biomeos-device-management.sock"
+                    );
                     providers.push(provider);
                 }
                 Err(e) => {
                     tracing::error!("❌ Failed to connect to biomeOS at {}: {}", biomeos_url, e);
                 }
             }
+        }
+        #[cfg(not(feature = "legacy-http"))]
+        {
+            tracing::debug!(
+                "HTTP fallback skipped (compile with --features legacy-http for HTTP provider)"
+            );
         }
     }
 
@@ -309,6 +343,7 @@ async fn try_connect_jsonrpc(socket_path: &str) -> Result<Box<dyn VisualizationD
 ///
 /// ⚠️  HTTP is the FALLBACK protocol for external integrations only.
 /// Prefer JSON-RPC over Unix sockets for TRUE PRIMAL architecture!
+#[cfg(feature = "legacy-http")]
 #[allow(deprecated)]
 async fn try_connect_http(url: &str) -> Result<Box<dyn VisualizationDataProvider>> {
     let provider = HttpVisualizationProvider::new(url)?;
@@ -329,18 +364,21 @@ mod tests {
         env_test_helpers::with_env_var_removed_async("BIOMEOS_URL", || async {
             env_test_helpers::with_env_var_removed_async("PETALTONGUE_DISCOVERY_HINTS", || async {
                 env_test_helpers::with_env_var_removed_async("PETALTONGUE_MOCK_MODE", || async {
-                    env_test_helpers::with_env_var_removed_async("PETALTONGUE_ENABLE_MDNS", || async {
-                        let result = discover_visualization_providers().await;
-                        assert!(
-                            result.is_ok(),
-                            "Discovery should succeed even without explicit config"
-                        );
-                        let providers = result.unwrap();
-                        tracing::info!(
-                            "Discovered {} provider(s) without explicit config",
-                            providers.len()
-                        );
-                    })
+                    env_test_helpers::with_env_var_removed_async(
+                        "PETALTONGUE_ENABLE_MDNS",
+                        || async {
+                            let result = discover_visualization_providers().await;
+                            assert!(
+                                result.is_ok(),
+                                "Discovery should succeed even without explicit config"
+                            );
+                            let providers = result.unwrap();
+                            tracing::info!(
+                                "Discovered {} provider(s) without explicit config",
+                                providers.len()
+                            );
+                        },
+                    )
                     .await
                 })
                 .await
@@ -367,6 +405,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "legacy-http")]
     async fn test_try_connect_http_invalid() {
         // Invalid URL should fail
         let result = try_connect_http("http://nonexistent-host-12345:99999").await;

@@ -13,7 +13,7 @@ use std::path::PathBuf;
 
 /// Get the current user's UID (User ID)
 ///
-/// This is a safe wrapper around `libc::getuid()`.
+/// Uses `rustix::process::getuid()` - 100% safe Rust, no unsafe code.
 /// The function is always safe because `getuid()` cannot fail
 /// and returns the process's effective user ID.
 ///
@@ -39,12 +39,10 @@ use std::path::PathBuf;
 /// - **Capability-Based**: Use for socket paths, not authentication
 #[must_use]
 pub fn get_current_uid() -> u32 {
-    // EVOLVED: Was unsafe { libc::getuid() }, now 100% safe Rust!
-    //
     // rustix::process::getuid() is a safe wrapper around the getuid syscall.
     // No unsafe code needed - this is pure Rust with the same functionality.
     //
-    // Benefits of rustix over libc:
+    // Benefits of rustix:
     // - 100% safe Rust (no unsafe blocks)
     // - Type-safe wrappers for Unix syscalls
     // - Better error handling
@@ -59,6 +57,29 @@ pub fn get_current_uid() -> u32 {
     {
         // On Windows, UID concept doesn't exist
         // Return a placeholder value (0 = "system")
+        0
+    }
+}
+
+/// Get the current effective user ID (EUID)
+///
+/// Uses `rustix::process::geteuid()` - 100% safe Rust.
+/// For root check (e.g. framebuffer access): `get_current_euid() == 0`.
+///
+/// # Platform Support
+///
+/// - **Linux**: ✅ Supported
+/// - **macOS**: ✅ Supported
+/// - **Windows**: ❌ Returns 0 (not applicable)
+#[must_use]
+pub fn get_current_euid() -> u32 {
+    #[cfg(unix)]
+    {
+        rustix::process::geteuid().as_raw()
+    }
+
+    #[cfg(not(unix))]
+    {
         0
     }
 }

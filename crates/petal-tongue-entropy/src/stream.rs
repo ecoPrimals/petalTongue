@@ -3,8 +3,8 @@
 
 use crate::types::EntropyCapture;
 use aes_gcm::{
-    aead::{generic_array::GenericArray, Aead, KeyInit, OsRng},
     Aes256Gcm,
+    aead::{Aead, KeyInit, OsRng, generic_array::GenericArray},
 };
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -297,14 +297,13 @@ mod tests {
         let entropy = EntropyCapture::Audio(audio_data);
 
         // This would fail without a live server
-        let result = stream_entropy(
-            entropy,
-            &format!(
+        let endpoint = std::env::var("PETALTONGUE_ENTROPY_ENDPOINT").unwrap_or_else(|_| {
+            format!(
                 "http://localhost:{}/api/v1/entropy/stream",
                 constants::DEFAULT_WEB_PORT
-            ),
-        )
-        .await;
+            )
+        });
+        let result = stream_entropy(entropy, &endpoint).await;
         assert!(result.is_err()); // Expected to fail in test environment
     }
 }

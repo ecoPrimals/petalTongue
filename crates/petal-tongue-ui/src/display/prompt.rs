@@ -6,7 +6,7 @@
 
 use anyhow::Result;
 use std::env;
-use std::io::{self, Write};
+use std::io::{self, IsTerminal, Write};
 use std::time::Duration;
 use tracing::info;
 
@@ -67,7 +67,7 @@ fn is_non_interactive() -> bool {
         || env::var("HEADLESS").is_ok()
         || env::var("PETALTONGUE_HEADLESS").is_ok()
         || env::var("NON_INTERACTIVE").is_ok()
-        || !atty::is(atty::Stream::Stdin)
+        || !std::io::stdin().is_terminal()
 }
 
 /// Print the display server prompt

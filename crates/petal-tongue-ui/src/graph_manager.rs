@@ -22,7 +22,7 @@ pub struct GraphManagerPanel {
     selected_graph_id: Option<String>,
 
     /// Current execution ID (if running)
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     current_execution: Option<String>,
 
     /// Execution status message

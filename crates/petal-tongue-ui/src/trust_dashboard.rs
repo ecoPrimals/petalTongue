@@ -508,7 +508,12 @@ mod tests {
             family_id: None,
         }];
         dashboard.update_from_primals(&primals);
-        assert!(dashboard.trust_summary.trust_distribution.contains_key("Unknown (99)"));
+        assert!(
+            dashboard
+                .trust_summary
+                .trust_distribution
+                .contains_key("Unknown (99)")
+        );
     }
 
     #[test]

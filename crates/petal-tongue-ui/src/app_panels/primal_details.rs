@@ -3,11 +3,9 @@
 
 use crate::accessibility::ColorPalette;
 use petal_tongue_adapters::AdapterRegistry;
-use petal_tongue_core::PrimalHealthStatus;
-use petal_tongue_graph::Visual2DRenderer;
+use petal_tongue_core::{DataBinding, GraphEngine, PrimalHealthStatus};
+use petal_tongue_graph::{NodeDetail, Visual2DRenderer, draw_node_detail};
 use std::sync::{Arc, RwLock};
-
-use petal_tongue_core::GraphEngine;
 
 /// Render the primal details panel for a selected node
 pub fn render_primal_details_panel(
@@ -188,6 +186,48 @@ pub fn render_primal_details_panel(
         }
 
         ui.add_space(12.0);
+
+        // Data binding rendering (scenario data_bindings)
+        let dc_json: Option<String> = properties
+            .get("data_bindings_json")
+            .or_else(|| properties.get("data_channels_json"))
+            .and_then(|v| v.as_string().map(String::from))
+            .or_else(|| {
+                // DynamicScenarioProvider stores as PropertyValue tree — re-serialize
+                properties
+                    .get("data_bindings")
+                    .or_else(|| properties.get("data_channels"))
+                    .and_then(|v| serde_json::to_string(v).ok())
+            });
+
+        if let Some(ref json) = dc_json
+            && let Ok(bindings) = serde_json::from_str::<Vec<DataBinding>>(json)
+            && !bindings.is_empty()
+        {
+            ui.separator();
+            ui.add_space(8.0);
+            let health_u8 = properties
+                .get("health")
+                .and_then(petal_tongue_core::PropertyValue::as_number)
+                .map_or(100, |n| {
+                    #[expect(
+                        clippy::cast_possible_truncation,
+                        clippy::cast_sign_loss,
+                        reason = "health 0..100"
+                    )]
+                    let v = n as u8;
+                    v
+                });
+            let detail = NodeDetail {
+                name: info.name.clone(),
+                health: health_u8,
+                status: info.primal_type.clone(),
+                capabilities: info.capabilities.clone(),
+                data_bindings: bindings,
+            };
+            draw_node_detail(ui, &detail);
+            ui.add_space(12.0);
+        }
 
         ui.separator();
         ui.add_space(8.0);

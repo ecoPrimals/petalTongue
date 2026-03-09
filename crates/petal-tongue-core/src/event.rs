@@ -112,6 +112,16 @@ pub enum EngineEvent {
         /// Discovery index
         index: usize,
     },
+
+    /// Interaction engine event (semantic intent resolved to data)
+    Interaction {
+        /// Semantic event type (select, focus, navigate, etc.)
+        event_type: String,
+        /// Resolved data-space targets as JSON.
+        targets: Vec<serde_json::Value>,
+        /// Which perspective originated this.
+        perspective_id: u64,
+    },
 }
 
 /// Event Bus

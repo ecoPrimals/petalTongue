@@ -441,21 +441,18 @@ mod tests {
 
         // VERTEXES: 2 vertices = 8 bytes
         let vertex_data = [0i16, 0i16, 100i16, 100i16];
-        let vertex_bytes: Vec<u8> = vertex_data
-            .iter()
-            .flat_map(|v| v.to_le_bytes())
-            .collect();
+        let vertex_bytes: Vec<u8> = vertex_data.iter().flat_map(|v| v.to_le_bytes()).collect();
         let vertex_offset = data_start;
         let vertex_size = vertex_bytes.len() as i32;
 
         // LINEDEFS: 1 linedef = 14 bytes (start, end, flags, type, tag, right, left)
         let linedef_data: [u8; 14] = [
             0, 0, 1, 0, // start_vertex=0, end_vertex=1
-            0, 0,       // flags
-            0, 0,       // line_type
-            0, 0,       // sector_tag
-            0, 0,       // right_sidedef
-            0, 0,       // left_sidedef
+            0, 0, // flags
+            0, 0, // line_type
+            0, 0, // sector_tag
+            0, 0, // right_sidedef
+            0, 0, // left_sidedef
         ];
         let linedef_offset = data_start + vertex_size as u32;
         let linedef_size = 14i32;
@@ -471,9 +468,7 @@ mod tests {
         let sector_size = 26i32;
 
         // THINGS: 1 thing = 10 bytes
-        let thing_data: [u8; 10] = [
-            50, 0, 50, 0, 0, 0, 1, 0, 0, 0,
-        ];
+        let thing_data: [u8; 10] = [50, 0, 50, 0, 0, 0, 1, 0, 0, 0];
         let thing_offset = sector_offset + sector_size as u32;
         let thing_size = 10i32;
 

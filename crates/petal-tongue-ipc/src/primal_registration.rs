@@ -76,10 +76,18 @@ pub struct SongbirdClient {
 impl SongbirdClient {
     /// Create a new Songbird client
     ///
-    /// Uses the standard Songbird endpoint: `/primal/songbird`
+    /// Socket path resolution (priority order):
+    /// 1. `SONGBIRD_SOCKET` environment variable
+    /// 2. `discover_primal_socket` for conventional discovery service path
+    /// 3. Conventional path fallback
     pub fn new() -> Self {
+        let socket_path = std::env::var("SONGBIRD_SOCKET").unwrap_or_else(|_| {
+            crate::socket_path::discover_primal_socket("discovery.service", None, None)
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_else(|_| "/tmp/songbird-nat0-default.sock".to_string())
+        });
         Self {
-            socket_path: "/primal/songbird".to_string(),
+            socket_path,
             request_id: std::sync::atomic::AtomicU64::new(1),
         }
     }

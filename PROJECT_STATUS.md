@@ -1,8 +1,8 @@
 # petalTongue -- Project Status
 
-**Updated**: March 8, 2026  
-**Version**: 1.3.0  
-**Edition**: 2024
+**Updated**: March 9, 2026  
+**Version**: 1.4.0  
+**Edition**: 2024 (all crates)
 
 ---
 
@@ -11,60 +11,42 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 1,309 passing, 0 failures, 23 ignored |
+| Tests | 1,427 passing, 0 failures, 14 ignored |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | 76 errors (`-D warnings`), 487 warnings total |
-| Docs | `cargo doc` builds, 141 warnings |
-| Coverage | 54.10% line (target: 90%) |
-| Unsafe | `#![forbid(unsafe_code)]` on 5/17 crates |
-| Files | All under 1,000 lines (max: 833) |
-| License | AGPL-3.0-only, SPDX on 289+ files |
+| Clippy | Zero warnings (`cargo clippy --all-targets -- -D warnings`) |
+| Unsafe | `#![forbid(unsafe_code)]` workspace-wide, zero C deps |
+| Files | All production files under 650 lines |
+| License | AGPL-3.0-only, SPDX on all source files |
+| Edition | 2024 (all 15 crates) |
+| External C deps | None (libc/nix/atty removed, using rustix) |
 
 ---
 
 ## Known Debt
 
-### Clippy (76 errors under `-D warnings`)
+### Clippy
 
-| Category | Count |
-|----------|-------|
-| Missing struct field docs | 31 |
-| Unnecessary `Result` wrapping | 8 |
-| More than 3 bools in struct | 8 |
-| Unused `self` argument | 4 |
-| Precision-loss casts (`u64 as f32`, etc.) | 9 |
-| Other (items after statements, identical match arms, etc.) | 16 |
+Zero warnings under `cargo clippy --all-targets -- -D warnings`.
+Lint suppression uses `#[expect(...)]` (warns when lint no longer applies).
 
-### Coverage Gaps (54% → 90% target)
-
-Worst-covered modules:
-- `sensory_ui.rs` -- 0%
-- `status_reporter.rs` -- 0%
-- `system_monitor_integration.rs` -- 0%
-- `system_dashboard.rs` -- 17%
-- `main.rs` -- 19%
-- `traffic_view.rs` -- 24%
-- `trust_dashboard.rs` -- 36%
-
-### Stubs and TODOs (~60 items)
+### Stubs and TODOs (~35 items)
 
 Major incomplete work:
-- Toadstool display backend (entire backend is stub)
-- JSON-RPC client in protocol_selection.rs
-- mDNS full packet building
-- PNG/SVG rendering in modalities crate
+- mDNS full DNS packet building
+- HTTPS client connection
 - Video entropy modality
 - WebSocket subscription for biomeOS events
+- Canvas rendering with tiny-skia
+- Windows audio direct access
 
-### Hardcoded Values
+### Legacy Modules (feature-gated, frozen)
 
-- Primal names in production code (beardog, songbird, toadstool in ~6 files)
-- Default ports (3000, 8080) in constants.rs
-- Socket paths in jsonrpc_provider.rs
+- `legacy-toadstool`: Toadstool display backend stub
+- `legacy-audio`: Audio providers (rodio-based)
+- `legacy-http`: HTTP discovery provider
 
 ### Missing Infrastructure
 
-- No `clippy.toml` / `rustfmt.toml` / `deny.toml`
 - No CI/CD pipeline
 - No property-based testing
 - No genomeBin manifest
@@ -84,25 +66,25 @@ See specs for full evolution path.
 
 ---
 
-## Crate Map
+## Crate Map (15 crates)
 
 ```
 petaltongue (workspace root -- UniBin entry point)
-├── petal-tongue-core         Graph engine, capabilities, config, constants
-├── petal-tongue-graph        2D rendering, charts, clinical theme, audio
-├── petal-tongue-ui           Desktop GUI, panels, scenarios
-├── petal-tongue-tui          Terminal UI
-├── petal-tongue-ipc          Unix socket + TCP IPC, tarpc types
-├── petal-tongue-discovery    Provider discovery (JSON-RPC, HTTP, mDNS)
+├── petal-tongue-core         Graph engine, capabilities, interaction engine, data bindings
+├── petal-tongue-graph        2D rendering, charts, domain themes, audio sonification
+├── petal-tongue-ui           Desktop GUI, panels, scenarios, interaction adapters
+├── petal-tongue-tui          Terminal UI (ratatui)
+├── petal-tongue-ipc          Unix socket IPC, JSON-RPC server, visualization handler
+├── petal-tongue-discovery    Provider discovery (JSON-RPC, mDNS, Unix socket)
 ├── petal-tongue-entropy      Human entropy capture
 ├── petal-tongue-animation    Visual animations
 ├── petal-tongue-adapters     EcoPrimal adapter traits
-├── petal-tongue-primitives   UI primitives (forms, tables, trees)
-├── petal-tongue-modalities   SVG/PNG modalities
 ├── petal-tongue-telemetry    Metrics and events
-├── petal-tongue-headless     Headless binary
-├── petal-tongue-ui-core      Universal UI traits
+├── petal-tongue-headless     Headless binary (zero GUI deps)
+├── petal-tongue-ui-core      Universal UI traits and headless renderers
 ├── petal-tongue-api          biomeOS JSON-RPC client
 ├── petal-tongue-cli          CLI parsing
-└── doom-core                 Doom WAD renderer
+└── doom-core                 Doom WAD renderer (optional)
 ```
+
+Archived crates (in `archive/crates/`): `petal-tongue-primitives`, `petal-tongue-modalities`

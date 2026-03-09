@@ -5,13 +5,14 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use serde::Serialize;
+use serde::de::DeserializeOwned;
+
 use crate::instance::InstanceId;
 
-use super::validation;
 use super::SessionError;
-use super::SessionState;
+use super::validation;
 
-/// Get current Unix timestamp
 pub(super) fn current_timestamp() -> u64 {
     if let Ok(d) = SystemTime::now().duration_since(UNIX_EPOCH) {
         d.as_secs()
@@ -41,8 +42,7 @@ fn get_base_dir() -> Result<PathBuf, SessionError> {
         })
 }
 
-/// Save session to disk (atomic write)
-pub(super) fn save_session(session: &SessionState, path: &Path) -> Result<(), SessionError> {
+pub(super) fn save_session(session: &impl Serialize, path: &Path) -> Result<(), SessionError> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
             .map_err(|e| SessionError::IoError(format!("Failed to create directory: {e}")))?;
@@ -62,8 +62,9 @@ pub(super) fn save_session(session: &SessionState, path: &Path) -> Result<(), Se
     Ok(())
 }
 
-/// Load session from disk
-pub(super) fn load_session(path: &Path) -> Result<SessionState, SessionError> {
+pub(super) fn load_session<T: DeserializeOwned + validation::SessionStateLike>(
+    path: &Path,
+) -> Result<T, SessionError> {
     if !path.exists() {
         return Err(SessionError::NotFound(path.display().to_string()));
     }
@@ -71,10 +72,10 @@ pub(super) fn load_session(path: &Path) -> Result<SessionState, SessionError> {
     let contents = fs::read_to_string(path)
         .map_err(|e| SessionError::IoError(format!("Failed to read file: {e}")))?;
 
-    let session: SessionState = ron::from_str(&contents)
+    let session: T = ron::from_str(&contents)
         .map_err(|e| SessionError::ParseError(format!("Failed to parse: {e}")))?;
 
-    validation::validate_version(&session)?;
+    validation::validate_version_trait(&session)?;
 
     tracing::debug!("Session loaded from: {}", path.display());
     Ok(session)

@@ -31,6 +31,16 @@ pub struct UiConfig {
     /// Custom panels (e.g., Doom, web browser, video player)
     #[serde(default)]
     pub custom_panels: Vec<CustomPanelConfig>,
+    /// Whether to show the awakening overlay on startup (default: true)
+    #[serde(default = "default_true")]
+    pub awakening_enabled: bool,
+    /// Initial zoom level: "fit" to auto-fit, or a numeric string like "1.0"
+    #[serde(default)]
+    pub initial_zoom: String,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl UiConfig {

@@ -94,7 +94,9 @@ impl AwakeningTimeline {
             stage,
             event_type: TimelineEventType::StageTransition { stage },
         });
-        if config.modality.audio_enabled && let Some(layer) = audio_layer {
+        if config.modality.audio_enabled
+            && let Some(layer) = audio_layer
+        {
             events.push(TimelineEvent {
                 time,
                 stage,
@@ -103,7 +105,9 @@ impl AwakeningTimeline {
                 },
             });
         }
-        if config.modality.text_enabled && let Some(message) = text_message {
+        if config.modality.text_enabled
+            && let Some(message) = text_message
+        {
             events.push(TimelineEvent {
                 time,
                 stage,
@@ -114,7 +118,7 @@ impl AwakeningTimeline {
         }
     }
 
-    #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+    #[expect(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
     fn add_duration(time: &mut f32, duration: u64) {
         *time += duration as f64 as f32;
     }
@@ -154,7 +158,7 @@ impl AwakeningTimeline {
             config,
         );
 
-        #[allow(clippy::cast_possible_truncation)]
+        #[expect(clippy::cast_possible_truncation)]
         for i in 0u32..3 {
             let discovery_time = time + (f64::from(i) as f32 + 1.0);
             events.push(TimelineEvent {

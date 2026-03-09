@@ -404,36 +404,94 @@ other primals, web clients, or AI systems:
 
 ## Stage 6: Interaction and Inverse Mapping
 
-### The Inverse Pipeline
+> **Full specification**: See `INTERACTION_ENGINE_ARCHITECTURE.md`
+>
+> The interaction engine is a full subsystem with semantic intents, per-modality
+> inverse pipelines, a perspective system for multi-user collaboration, and an
+> IPC protocol for cross-primal interaction.
 
-When a human interacts with a visualization, the event flows backward through
-the pipeline:
+### The Generalized Inverse Pipeline
+
+The forward pipeline maps data to modality output. The inverse pipeline maps
+human interaction BACK to data. Each active modality has its own inverse path,
+but all converge to the same `DataTarget` -- a reference to actual data
+rows/objects that is perspective-invariant.
+
+#### Visual Inverse (egui, SVG, web)
 
 ```
-Screen event (click at pixel 423, 187)
-    │
-    ▼
-Viewport → normalize to [0,1] coordinates
-    │
-    ▼
-Panel hit test → which facet panel?
-    │
-    ▼
-Inverse coordinate system → data-space coordinates
-    │
-    ▼
-Inverse scale → data values (e.g., time=14:23, cpu=67%)
-    │
-    ▼
-Nearest primitive → which data row?
-    │
-    ▼
-Interaction handler → emit event
+Pixel coordinate (423, 187)
+    -> Viewport normalize to [0, 1]
+    -> Panel hit test (which facet?)
+    -> Inverse CoordinateSystem (Cartesian, Polar, Perspective)
+    -> Inverse Scale per axis (linear, log, temporal, categorical)
+    -> Data-space values (time=14:23, cpu=67.2)
+    -> Nearest primitive (by distance in data space)
+    -> DataObjectId (source=health_metrics, row=42)
 ```
+
+#### Audio Inverse (sonification)
+
+```
+Time offset in soundscape (3.2s into the render)
+    -> Which sonic element is playing (tone_id=7)
+    -> Inverse sonification mapping
+        pitch -> data value (health=85)
+        pan -> data position (x=0.3 -> primal "songbird")
+        timbre -> data category (type="discovery")
+    -> DataObjectId (source=topology, row="songbird-alpha")
+```
+
+#### TUI Inverse (ratatui, terminal)
+
+```
+Cursor position (row=12, col=34)
+    -> Character cell content lookup
+    -> Cell -> RenderPlan primitive mapping
+    -> Inverse character-space to data-space
+        Braille dot position -> approximate continuous value
+        Block character -> binned range
+        Text label -> categorical value
+    -> DataObjectId
+```
+
+#### Voice / Command Inverse
+
+```
+Parsed command: "select the unhealthy primal"
+    -> Entity resolution against current DataSource
+        "unhealthy" -> filter: status != "healthy"
+        "primal" -> entity type constraint
+    -> Matching DataObjectIds
+```
+
+All inverse paths produce `DataObjectId` values that are the same regardless
+of which modality resolved them. This is how the "6 vs 9" problem is solved:
+three users with different sensory systems all point at the same data row.
+
+### Semantic Intents (Replacing Device Events)
+
+Device events (mouse click, key press, voice command) are NOT interactions.
+The Interaction Engine translates them to semantic `InteractionIntent` values:
+
+```
+Device event (mouse click at 423, 187)
+    -> InputAdapter.translate()
+    -> InteractionIntent::Select { target, mode: Replace }
+    -> InversePipeline.resolve_at() -> DataObjectId
+    -> StateChange::SelectionChanged
+    -> Broadcast to all perspectives and IPC subscribers
+```
+
+A keyboard Enter on a focused node, a voice command "select that", and a
+Braille display routing key all produce the same `InteractionIntent::Select`.
+See `INTERACTION_ENGINE_ARCHITECTURE.md` §2 for the full intent taxonomy.
 
 ### Interaction Events (IPC)
 
-Interaction events are sent over JSON-RPC to other primals:
+Interaction events are sent over JSON-RPC to other primals. The event carries
+`DataObjectId` (data-space, not screen-space) so any modality can highlight
+the referenced objects:
 
 ```json
 {
@@ -441,19 +499,50 @@ Interaction events are sent over JSON-RPC to other primals:
   "method": "visualization.interact",
   "params": {
     "event": "select",
-    "data": {
-      "primal_id": "songbird-alpha",
-      "timestamp": "2026-03-08T14:23:00Z",
-      "cpu_percent": 67.2
-    },
+    "targets": [
+      {"source": "health_metrics", "row_key": {"primal_id": "songbird-alpha"}}
+    ],
+    "perspective_id": "user_a_egui",
     "grammar_id": "health_overview",
-    "panel": 0
+    "timestamp": "2026-03-09T14:23:00Z"
   }
 }
 ```
 
-This enables cross-primal interaction: clicking a primal in the topology view
-can trigger biomeOS to show details, or Squirrel to analyze the selected data.
+Other primals can subscribe to interaction events:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "visualization.interact.subscribe",
+  "params": {
+    "grammar_id": "health_overview",
+    "events": ["select", "focus", "filter", "annotate"],
+    "callback_method": "my_primal.on_interaction"
+  },
+  "id": 1
+}
+```
+
+And programmatically drive petalTongue's selection:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "visualization.interact.apply",
+  "params": {
+    "intent": "select",
+    "targets": [
+      {"source": "health_metrics", "row_key": {"primal_id": "songbird-alpha"}}
+    ]
+  },
+  "id": 2
+}
+```
+
+This enables patterns like: Squirrel detects an anomaly and tells petalTongue
+to highlight it. The human sees the highlight in their own modality and
+investigates.
 
 ### Linked Views
 
@@ -470,7 +559,27 @@ pub struct LinkedSelection {
 
 Linked selections are local to petalTongue (no IPC needed). The grammar
 compiler listens for selection changes and incrementally recompiles affected
-views.
+views. With perspectives, linked views extend naturally to multi-modal:
+a selection in the egui view highlights in the TUI and triggers a tone in
+the audio sonification simultaneously.
+
+### The Interaction Loop
+
+petalTongue runs a game-engine-style tick loop integrating forward and
+inverse pipelines:
+
+```
+1. POLL    - Collect device events from all InputAdapters + IPC events
+2. TRANSLATE - DeviceEvent -> InputAdapter -> InteractionIntent
+3. RESOLVE - InteractionIntent -> InversePipeline -> DataTarget
+4. APPLY   - DataTarget -> StateChange (selection, filter, mutation)
+5. RECOMPILE - Grammar.incremental_recompile(state_changes)
+6. RENDER  - All active ModalityCompilers render simultaneously
+7. BROADCAST - Emit InteractionResult to local modalities + IPC subscribers
+8. CONFIRM - Proprioception verifies output reached the user
+```
+
+See `INTERACTION_ENGINE_ARCHITECTURE.md` §7 for the full loop specification.
 
 ---
 
@@ -513,19 +622,23 @@ Physics state        → Updated positions (Bytes, streaming)
 ### Other Primals → petalTongue
 
 ```
-visualization.render         → Full grammar expression
-visualization.render.stream  → Grammar + streaming data subscription
-visualization.export         → Grammar → static SVG/PNG/JSON
-visualization.capabilities   → What can petalTongue render?
-visualization.interact       → (outbound) User interaction events
+visualization.render              → Full grammar expression
+visualization.render.stream       → Grammar + streaming data subscription
+visualization.export              → Grammar → static SVG/PNG/JSON
+visualization.capabilities        → What can petalTongue render?
+visualization.interact.subscribe  → Subscribe to interaction events
+visualization.interact.apply      → Programmatically trigger an interaction
+visualization.interact.perspectives → List active perspectives
+visualization.interact.sync       → Set perspective synchronization mode
 ```
 
 ### petalTongue → Other Primals
 
 ```
-visualization.interact  → Interaction events (selection, hover, command)
-discovery.query          → Capability-based data source resolution
-{source}.subscribe       → Streaming data subscription
+visualization.interact     → Interaction events (semantic intents with DataObjectId)
+discovery.query            → Capability-based data source resolution
+{source}.subscribe         → Streaming data subscription
+{callback_method}          → Interaction event delivery to subscribers
 ```
 
 ---

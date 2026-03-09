@@ -5,8 +5,8 @@
 //! Pure Rust, zero hardcoding.
 
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
     Frame,
+    layout::{Constraint, Direction, Layout, Rect},
 };
 
 /// Standard TUI layout with header, body, and footer

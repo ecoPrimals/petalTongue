@@ -35,19 +35,7 @@ use petal_tongue_core::{GraphEngine, RenderingCapabilities};
 
 /// Toadstool backend - Pure Rust GUI via Toadstool display service
 ///
-/// This is currently a stub implementation. It will connect to Toadstool's
-/// display service once that's implemented.
-///
-/// # TODO (Toadstool Team)
-///
-/// - [ ] Implement ToadstoolDisplayClient (RPC client)
-/// - [ ] Add window creation via DRM/KMS
-/// - [ ] Add input handling via evdev
-/// - [ ] Add framebuffer management
-/// - [ ] Add multi-window support
-/// - [ ] Add VSync support
-/// - [ ] Performance optimization
-///
+/// NOTE: Legacy module - frozen stub. Use `display::backends::toadstool_v2` instead.
 /// See `TOADSTOOL_DISPLAY_BACKEND_REQUEST.md` for complete specification.
 pub struct ToadstoolBackend {
     /// Toadstool display client (stub for now)
@@ -68,8 +56,7 @@ impl ToadstoolBackend {
     pub async fn new() -> Result<Self> {
         tracing::info!("🍄 Creating Toadstool backend");
 
-        // TODO: Connect to Toadstool display service
-        // For now, return stub
+        // NOTE: Legacy stub - no actual connection
         Ok(Self {
             client: None,
             window: None,
@@ -85,15 +72,13 @@ impl UIBackend for ToadstoolBackend {
     }
 
     async fn is_available() -> bool {
-        // TODO: Actually check if Toadstool display service is running
-        // For now, check for env var to enable stub testing
+        // NOTE: Legacy stub - check env var for stub testing only
         if std::env::var("PETALTONGUE_TOADSTOOL_STUB").is_ok() {
             tracing::info!("🍄 Toadstool stub mode enabled");
             return true;
         }
 
-        // Try to connect to Toadstool
-        // TODO: Implement actual connection check
+        // NOTE: Legacy stub - no actual connection check
         tracing::debug!("Checking for Toadstool display service...");
 
         // For now, not available (requires Toadstool implementation)
@@ -107,11 +92,7 @@ impl UIBackend for ToadstoolBackend {
 
         tracing::info!("🔧 Initializing Toadstool backend...");
 
-        // TODO: Connect to Toadstool display service
-        // let client = ToadstoolDisplayClient::connect("localhost:8084").await?;
-        // self.client = Some(client);
-
-        // For now, stub implementation
+        // NOTE: Legacy stub - no actual connection
         if std::env::var("PETALTONGUE_TOADSTOOL_STUB").is_ok() {
             tracing::warn!("⚠️  Using Toadstool STUB implementation");
             tracing::warn!("   Set PETALTONGUE_TOADSTOOL_STUB to enable");
@@ -150,18 +131,7 @@ impl UIBackend for ToadstoolBackend {
         );
         tracing::info!("   Using shared graph from DataService (TRUE PRIMAL!)");
 
-        // TODO: Implement actual Toadstool integration
-        // 1. Create window via Toadstool RPC
-        // 2. Set up input event stream
-        // 3. Create PetalTongueApp with shared_graph (like eframe backend)
-        // 4. Render loop:
-        //    - Render egui to pixels
-        //    - Send pixels to Toadstool framebuffer
-        //    - Poll input events
-        //    - Handle events in egui
-        // 5. Clean up on exit
-
-        // For now, stub implementation
+        // NOTE: Legacy stub - no actual Toadstool integration
         if std::env::var("PETALTONGUE_TOADSTOOL_STUB").is_ok() {
             tracing::warn!("🍄 Toadstool STUB: Would create window and run UI here");
             tracing::warn!(
@@ -184,10 +154,7 @@ impl UIBackend for ToadstoolBackend {
     async fn shutdown(&mut self) -> Result<()> {
         tracing::info!("🛑 Shutting down Toadstool backend...");
 
-        // TODO: Clean up Toadstool resources
-        // - Destroy window
-        // - Close RPC connection
-        // - Release input devices
+        // NOTE: Legacy stub - no resources to clean
 
         self.window = None;
         self.client = None;
@@ -201,7 +168,7 @@ impl UIBackend for ToadstoolBackend {
             has_gpu: true,          // Toadstool provides GPU via wgpu
             multi_window: true,     // Toadstool will support multiple windows
             custom_cursor: true,    // Will be supported
-            clipboard: false,       // TODO: Add clipboard support
+            clipboard: false,       // NOTE: Legacy stub - clipboard not implemented
             pure_rust: true,        // ✅ 100% Pure Rust! (no C dependencies)
             needs_privileges: true, // Requires DRM/KMS access (or libseat)
         }
@@ -212,22 +179,7 @@ impl UIBackend for ToadstoolBackend {
 
 /// Toadstool display client (stub)
 ///
-/// This will be replaced by actual RPC client once Toadstool implements
-/// display backend.
-///
-/// # TODO (Toadstool Team)
-///
-/// ```rust,ignore
-/// use tarpc::client;
-///
-/// #[tarpc::service]
-/// pub trait ToadstoolDisplay {
-///     async fn create_window(width: u32, height: u32) -> WindowId;
-///     async fn present(window: WindowId, pixels: Vec<u8>) -> ();
-///     async fn poll_events() -> Vec<InputEvent>;
-///     async fn destroy_window(window: WindowId) -> ();
-/// }
-/// ```
+/// NOTE: Legacy module - frozen stub. See toadstool_v2 for actual implementation.
 struct ToadstoolDisplayClient {
     // Will contain RPC client
 }

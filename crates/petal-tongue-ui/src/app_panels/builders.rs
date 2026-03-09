@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Individual panel builders - render functions for each app panel.
 
+use super::layout;
 use crate::accessibility::ColorPalette;
 use crate::accessibility_panel::AccessibilityPanel;
-use super::layout;
 use crate::tool_integration::ToolManager;
 use petal_tongue_core::{GraphEngine, LayoutAlgorithm, Modality, constants::PRIMAL_NAME};
 use petal_tongue_graph::Visual2DRenderer;

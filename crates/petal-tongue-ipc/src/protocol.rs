@@ -43,6 +43,39 @@ pub enum IpcCommand {
 
     /// List all instances (registry query)
     ListInstances,
+
+    // === Motor commands (efferent via IPC afferent channel) ===
+    /// Set a panel's visibility
+    SetPanel {
+        /// Panel name (e.g. "left_sidebar", "audio", "system_dashboard", "trust", "proprioception", "graph_stats", "top_menu")
+        panel: String,
+        /// Whether to show or hide
+        visible: bool,
+    },
+
+    /// Set the graph zoom level
+    SetZoom {
+        /// Zoom level (1.0 = default)
+        level: f32,
+    },
+
+    /// Fit all nodes into the viewport
+    FitToView,
+
+    /// Switch to a named mode preset
+    SetMode {
+        /// Mode name (e.g. "clinical", "developer", "presentation")
+        mode: String,
+    },
+
+    /// Center the viewport on a specific node
+    Navigate {
+        /// Node ID to center on
+        node_id: String,
+    },
+
+    /// Reload the current scenario from disk
+    ReloadScenario,
 }
 
 /// Responses from an instance via IPC
@@ -113,6 +146,12 @@ impl IpcCommand {
                 | Self::MergeGraph { .. }
                 | Self::Show
                 | Self::Hide
+                | Self::SetPanel { .. }
+                | Self::SetZoom { .. }
+                | Self::FitToView
+                | Self::SetMode { .. }
+                | Self::Navigate { .. }
+                | Self::ReloadScenario
         )
     }
 
@@ -129,6 +168,49 @@ impl IpcCommand {
             Self::Hide => "Hide",
             Self::Shutdown => "Shutdown",
             Self::ListInstances => "ListInstances",
+            Self::SetPanel { .. } => "SetPanel",
+            Self::SetZoom { .. } => "SetZoom",
+            Self::FitToView => "FitToView",
+            Self::SetMode { .. } => "SetMode",
+            Self::Navigate { .. } => "Navigate",
+            Self::ReloadScenario => "ReloadScenario",
+        }
+    }
+}
+
+impl IpcCommand {
+    /// Convert this IPC command to a motor command, if applicable.
+    ///
+    /// IPC commands that map to motor efferent signals return `Some(MotorCommand)`.
+    /// Non-motor commands (Ping, GetStatus, etc.) return `None`.
+    #[must_use]
+    pub fn to_motor_command(&self) -> Option<petal_tongue_core::MotorCommand> {
+        use petal_tongue_core::{MotorCommand, PanelId};
+        match self {
+            Self::SetPanel { panel, visible } => {
+                let pid = match panel.as_str() {
+                    "left_sidebar" | "controls" => PanelId::LeftSidebar,
+                    "right_sidebar" => PanelId::RightSidebar,
+                    "top_menu" => PanelId::TopMenu,
+                    "system_dashboard" | "dashboard" => PanelId::SystemDashboard,
+                    "audio" | "audio_panel" => PanelId::AudioPanel,
+                    "trust" | "trust_dashboard" => PanelId::TrustDashboard,
+                    "proprioception" => PanelId::Proprioception,
+                    "graph_stats" => PanelId::GraphStats,
+                    other => PanelId::Custom(other.to_string()),
+                };
+                Some(MotorCommand::SetPanelVisibility {
+                    panel: pid,
+                    visible: *visible,
+                })
+            }
+            Self::SetZoom { level } => Some(MotorCommand::SetZoom { level: *level }),
+            Self::FitToView => Some(MotorCommand::FitToView),
+            Self::SetMode { mode } => Some(MotorCommand::SetMode { mode: mode.clone() }),
+            Self::Navigate { node_id } => Some(MotorCommand::Navigate {
+                target_node: node_id.clone(),
+            }),
+            _ => None,
         }
     }
 }

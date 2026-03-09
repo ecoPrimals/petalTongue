@@ -3,9 +3,8 @@
 //!
 //! Discovers primals via multicast DNS that advertise visualization capabilities.
 
-use crate::http_provider::HttpVisualizationProvider;
-use crate::traits::VisualizationDataProvider;
 use crate::VisualizationCapability;
+use crate::traits::VisualizationDataProvider;
 
 /// Discover providers via mDNS/multicast
 ///

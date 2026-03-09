@@ -42,8 +42,7 @@ async fn main() -> Result<()> {
     // Check if running with root
     #[cfg(target_os = "linux")]
     {
-        // Check if we're root (UID 0)
-        let euid = unsafe { libc::geteuid() };
+        let euid = petal_tongue_core::system_info::get_current_euid();
         if euid != 0 {
             eprintln!("⚠️  WARNING: Not running as root (eUID: {})", euid);
             eprintln!("    Framebuffer access may require root privileges.");

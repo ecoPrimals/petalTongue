@@ -5,11 +5,11 @@
 //! Leverages Songbird if available, ToadStool for layout compute (optional).
 
 use ratatui::{
+    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
-    Frame,
 };
 
 use crate::state::TUIState;

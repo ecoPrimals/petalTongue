@@ -112,7 +112,7 @@ impl CpuHistory {
 
     /// Get the average over all recorded values
     #[must_use]
-    #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+    #[expect(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
     pub fn average(&self) -> f32 {
         if self.values.is_empty() {
             0.0

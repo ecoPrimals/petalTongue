@@ -71,8 +71,10 @@ pub mod tutorial_mode;
 pub mod audio; // NEW: Substrate-agnostic audio system (TRUE PRIMAL evolution!)
 pub mod audio_canvas; // Direct hardware access (like WGPU!)
 pub mod audio_discovery; // v1.3.1: Audio discovery - PipeWire/PulseAudio Unix sockets (TRUE PRIMAL!)
+#[cfg(feature = "legacy-audio")]
 pub mod audio_providers;
 pub mod audio_pure_rust;
+pub mod interaction_adapters; // Concrete InputAdapter implementations (pointer, keyboard)
 // bingocube is a primalTool (ecoPrimals/primalTools/bingoCube)
 // Discovered at runtime via IPC, not compiled into petalTongue
 pub mod biomeos_integration; // biomeOS UI Integration - Phase 1 (device management provider)
@@ -93,6 +95,7 @@ pub mod live_data;
 pub mod metrics_dashboard; // System metrics dashboard with sparklines (Neural API)
 #[cfg(feature = "mock")]
 pub mod mock_device_provider; // Mock provider - dev/test only, NEVER production (sovereignty)
+pub mod mode_presets; // Mode presets — named bundles of motor commands (SAME DAVE efferent)
 /// Multimodal data streaming (audio, visual, haptic, etc.)
 pub mod multimodal_stream;
 pub mod niche_designer; // Niche Designer UI - Phase 4
@@ -110,6 +113,7 @@ pub mod ui_events; // Event-driven architecture for real-time updates // Sensor 
 // pub mod rendering_discovery;
 
 // NEW: Universal infant discovery (zero hardcoded knowledge)
+#[cfg(any(test, feature = "mock"))]
 pub mod sandbox_mock;
 pub mod state;
 pub mod status_reporter;

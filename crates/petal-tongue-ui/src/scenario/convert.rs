@@ -76,6 +76,22 @@ impl PrimalDefinition {
             properties.insert("capabilities".to_string(), PropertyValue::String(caps_json));
         }
 
+        // Preserve data bindings and threshold ranges for chart rendering
+        if !self.data_bindings.is_empty() {
+            let json = serde_json::to_string(&self.data_bindings).unwrap_or_default();
+            properties.insert(
+                "data_bindings_json".to_string(),
+                PropertyValue::String(json),
+            );
+        }
+        if !self.threshold_ranges.is_empty() {
+            let json = serde_json::to_string(&self.threshold_ranges).unwrap_or_default();
+            properties.insert(
+                "threshold_ranges_json".to_string(),
+                PropertyValue::String(json),
+            );
+        }
+
         // Add metrics to properties
         if self.metrics.cpu_percent > 0.0 {
             properties.insert(
@@ -214,6 +230,8 @@ mod tests {
                 ..Default::default()
             },
             proprioception: None,
+            data_bindings: vec![],
+            threshold_ranges: vec![],
         };
 
         let info = primal.to_primal_info();
@@ -256,6 +274,8 @@ mod tests {
                         capabilities: vec![],
                         metrics: Default::default(),
                         proprioception: None,
+                        data_bindings: vec![],
+                        threshold_ranges: vec![],
                     },
                     PrimalDefinition {
                         id: "p2".to_string(),
@@ -269,11 +289,14 @@ mod tests {
                         capabilities: vec![],
                         metrics: Default::default(),
                         proprioception: None,
+                        data_bindings: vec![],
+                        threshold_ranges: vec![],
                     },
                 ],
             },
             neural_api: Default::default(),
             sensory_config: Default::default(),
+            edges: vec![],
         };
 
         let infos = scenario.to_primal_infos();

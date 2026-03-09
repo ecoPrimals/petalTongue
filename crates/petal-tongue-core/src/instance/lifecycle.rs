@@ -22,14 +22,9 @@ pub(super) fn current_timestamp() -> u64 {
 pub(super) fn process_exists(pid: u32) -> bool {
     #[cfg(unix)]
     {
-        use nix::sys::signal::kill;
-        use nix::unistd::Pid;
-
-        #[expect(clippy::cast_possible_wrap)]
-        match kill(Pid::from_raw(pid as i32), None) {
-            Ok(()) | Err(nix::errno::Errno::EPERM) => true,
-            Err(nix::errno::Errno::ESRCH | _) => false,
-        }
+        // rustix 0.38+ Signal::from_raw(0) returns None because 0 is not a
+        // real signal. Use /proc on Linux for process existence check instead.
+        std::path::Path::new(&format!("/proc/{pid}")).exists()
     }
 
     #[cfg(not(unix))]

@@ -42,7 +42,10 @@ pub fn load_sandbox_scenario(name: &str) -> Result<SandboxScenario, String> {
     info!("📦 Loading sandbox scenario from: {:?}", scenario_file);
 
     if !scenario_file.exists() {
-        return Err(format!("Sandbox scenario not found: {}", scenario_file.display()));
+        return Err(format!(
+            "Sandbox scenario not found: {}",
+            scenario_file.display()
+        ));
     }
 
     // Read and parse JSON
@@ -173,10 +176,11 @@ pub fn get_default_scenario() -> SandboxScenario {
                 family_id: None,
             },
             PrimalInfo {
-                id: "beardog".into(),
-                name: "BearDog".to_string(),
+                id: "security".into(),
+                name: "Security".to_string(),
                 primal_type: "Security".to_string(),
-                endpoint: "http://localhost:9000".to_string(),
+                endpoint: std::env::var("PETALTONGUE_SANDBOX_SECURITY_ENDPOINT")
+                    .unwrap_or_else(|_| "http://localhost:9000".to_string()),
                 capabilities: vec!["authentication".to_string(), "encryption".to_string()],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: chrono::Utc::now().timestamp() as u64,
@@ -189,10 +193,11 @@ pub fn get_default_scenario() -> SandboxScenario {
                 family_id: None,
             },
             PrimalInfo {
-                id: "songbird".into(),
-                name: "Songbird".to_string(),
+                id: "discovery".into(),
+                name: "Discovery".to_string(),
                 primal_type: "Orchestration".to_string(),
-                endpoint: "http://localhost:8080".to_string(),
+                endpoint: std::env::var("PETALTONGUE_SANDBOX_DISCOVERY_ENDPOINT")
+                    .unwrap_or_else(|_| "http://localhost:8080".to_string()),
                 capabilities: vec!["discovery".to_string(), "coordination".to_string()],
                 health: PrimalHealthStatus::Healthy,
                 last_seen: chrono::Utc::now().timestamp() as u64,
@@ -208,12 +213,12 @@ pub fn get_default_scenario() -> SandboxScenario {
         edges: vec![
             SandboxEdge {
                 from_id: "local".to_string(),
-                to_id: "beardog".to_string(),
+                to_id: "security".to_string(),
                 edge_type: "trust".to_string(),
             },
             SandboxEdge {
                 from_id: "local".to_string(),
-                to_id: "songbird".to_string(),
+                to_id: "discovery".to_string(),
                 edge_type: "discovery".to_string(),
             },
         ],

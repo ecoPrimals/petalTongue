@@ -21,7 +21,6 @@ uuid = { version = "1.7", features = ["v4", "serde"] }
 ron = "0.8"
 toml = "0.8"  # For config system
 # etcetera = "0.8"  # REMOVED! Replaced with our own platform_dirs (zero deps!)
-nix = { version = "0.27", features = ["signal"] }
 # Universal Rendering System dependencies
 async-trait = "0.1"
 indexmap = "2.0"

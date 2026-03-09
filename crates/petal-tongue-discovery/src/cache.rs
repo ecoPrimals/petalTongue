@@ -66,11 +66,11 @@ pub struct ProviderCache<T> {
 
 impl<T> ProviderCache<T> {
     /// Create a new cache with specified capacity
-    #[expect(dead_code)] // Reserved for future use when caching is enabled
+    #[expect(dead_code)]
     pub fn new(capacity: usize) -> Self {
         Self {
             cache: Arc::new(RwLock::new(LruCache::new(
-                NonZeroUsize::new(capacity).unwrap(),
+                NonZeroUsize::new(capacity.max(1)).expect("max(1) guarantees non-zero"),
             ))),
             primals_ttl: Duration::from_secs(30),
             topology_ttl: Duration::from_secs(60),
@@ -89,7 +89,7 @@ impl<T> ProviderCache<T> {
     ) -> Self {
         Self {
             cache: Arc::new(RwLock::new(LruCache::new(
-                NonZeroUsize::new(capacity).unwrap(),
+                NonZeroUsize::new(capacity.max(1)).expect("max(1) guarantees non-zero"),
             ))),
             primals_ttl,
             topology_ttl,

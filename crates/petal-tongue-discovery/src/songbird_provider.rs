@@ -110,9 +110,11 @@ mod tests {
         let metadata = provider.get_metadata();
         assert_eq!(metadata.name, "Songbird Registry");
         assert_eq!(metadata.protocol, "unix+jsonrpc");
-        assert!(metadata
-            .capabilities
-            .contains(&"primal-discovery".to_string()));
+        assert!(
+            metadata
+                .capabilities
+                .contains(&"primal-discovery".to_string())
+        );
     }
 
     #[test]
@@ -121,12 +123,16 @@ mod tests {
         let provider = SongbirdVisualizationProvider::from_client(client);
 
         let metadata = provider.get_metadata();
-        assert!(metadata
-            .capabilities
-            .contains(&"primal-discovery".to_string()));
-        assert!(metadata
-            .capabilities
-            .contains(&"capability-query".to_string()));
+        assert!(
+            metadata
+                .capabilities
+                .contains(&"primal-discovery".to_string())
+        );
+        assert!(
+            metadata
+                .capabilities
+                .contains(&"capability-query".to_string())
+        );
         assert!(metadata.capabilities.contains(&"registry".to_string()));
     }
 }

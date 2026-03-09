@@ -5,7 +5,10 @@
 //! Updates automatically every 5 seconds with fresh data from Neural API.
 
 use egui::{Color32, ProgressBar, RichText, Ui};
-use petal_tongue_core::{MotorData, ProprioceptionData, SelfAwarenessData, SensoryData};
+use petal_tongue_core::{
+    ChannelSnapshot, MotorData, ProprioceptionData, SelfAwarenessData, SensoryData,
+    channel::ChannelDirection,
+};
 use petal_tongue_discovery::NeuralApiProvider;
 use std::time::{Duration, Instant};
 use tracing::{debug, warn};
@@ -69,7 +72,12 @@ impl ProprioceptionPanel {
 
     /// Render the proprioception panel
     pub fn render(&self, ui: &mut Ui) {
-        ui.heading("🧠 NUCLEUS Proprioception");
+        ui.heading("🧠 SAME DAVE Proprioception");
+        ui.label(
+            RichText::new("Sensory Afferent · Motor Efferent")
+                .color(Color32::from_rgb(156, 163, 175))
+                .italics(),
+        );
 
         ui.separator();
 
@@ -78,6 +86,8 @@ impl ProprioceptionPanel {
             ui.add_space(8.0);
             self.render_confidence_meter(ui, data);
             ui.add_space(8.0);
+            self.render_channel_overview(ui, data);
+            ui.add_space(8.0);
             self.render_same_dave_panel(ui, data);
             ui.add_space(8.0);
             self.render_timestamp(ui, data);
@@ -85,7 +95,7 @@ impl ProprioceptionPanel {
             ui.label(
                 RichText::new("No proprioception data available")
                     .color(Color32::from_rgb(156, 163, 175)),
-            ); // gray-400
+            );
             ui.label("Waiting for Neural API...");
         }
     }
@@ -134,31 +144,100 @@ impl ProprioceptionPanel {
         );
     }
 
-    /// Render SAME DAVE panel with all four components
+    /// Render SAME DAVE system detail (sensory/motor/awareness).
     fn render_same_dave_panel(&self, ui: &mut Ui, data: &ProprioceptionData) {
         ui.group(|ui| {
-            ui.label(
-                RichText::new("SAME DAVE Self-Awareness")
-                    .strong()
-                    .size(14.0),
-            );
+            ui.label(RichText::new("System Snapshot").strong().size(14.0));
 
             ui.separator();
 
-            // Sensory
             self.render_sensory_section(ui, &data.sensory);
             ui.add_space(4.0);
 
-            // Awareness
             self.render_awareness_section(ui, &data.self_awareness);
             ui.add_space(4.0);
 
-            // Motor
             self.render_motor_section(ui, &data.motor);
             ui.add_space(4.0);
 
-            // Evaluative
             self.render_evaluative_section(ui, data);
+        });
+    }
+
+    /// Render afferent/efferent channel overview.
+    fn render_channel_overview(&self, ui: &mut Ui, data: &ProprioceptionData) {
+        ui.group(|ui| {
+            ui.label(RichText::new("Channel Health").strong().size(14.0));
+            ui.separator();
+
+            let afferent: Vec<_> = data
+                .afferent_channels
+                .iter()
+                .filter(|c| c.direction == ChannelDirection::Afferent)
+                .collect();
+            let efferent: Vec<_> = data
+                .efferent_channels
+                .iter()
+                .filter(|c| c.direction == ChannelDirection::Efferent)
+                .collect();
+
+            ui.label(
+                RichText::new(format!("Afferent (sensory): {} channels", afferent.len()))
+                    .color(Color32::from_rgb(96, 165, 250)), // blue-400
+            );
+            for ch in &afferent {
+                self.render_channel_row(ui, ch);
+            }
+
+            ui.add_space(4.0);
+
+            ui.label(
+                RichText::new(format!("Efferent (motor): {} channels", efferent.len()))
+                    .color(Color32::from_rgb(52, 211, 153)), // emerald-400
+            );
+            for ch in &efferent {
+                self.render_channel_row(ui, ch);
+            }
+
+            if afferent.is_empty() && efferent.is_empty() {
+                ui.label(
+                    RichText::new("No channel data (local mode)")
+                        .color(Color32::from_rgb(156, 163, 175)),
+                );
+            }
+        });
+    }
+
+    /// Render a single channel status row.
+    fn render_channel_row(&self, ui: &mut Ui, ch: &ChannelSnapshot) {
+        ui.horizontal(|ui| {
+            let active_color = if ch.active {
+                Color32::from_rgb(34, 197, 94)
+            } else {
+                Color32::from_rgb(107, 114, 128)
+            };
+            let dot = if ch.active { "●" } else { "○" };
+            ui.label(RichText::new(dot).color(active_color));
+            ui.label(&ch.id);
+
+            if ch.signals_in > 0 {
+                ui.label(
+                    RichText::new(format!("{}→{}", ch.signals_in, ch.signals_out))
+                        .color(Color32::from_rgb(156, 163, 175)),
+                );
+                ui.add(
+                    ProgressBar::new(ch.throughput)
+                        .desired_width(50.0)
+                        .fill(active_color),
+                );
+            }
+
+            if ch.node_count > 0 {
+                ui.label(
+                    RichText::new(format!("{}n", ch.node_count))
+                        .color(Color32::from_rgb(156, 163, 175)),
+                );
+            }
         });
     }
 

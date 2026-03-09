@@ -7,6 +7,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use crossterm::event::{self, Event, MouseButton as CrosstermButton, MouseEventKind};
 use petal_tongue_core::{MouseButton, Sensor, SensorCapabilities, SensorEvent, SensorType};
+use std::io::IsTerminal;
 use std::time::{Duration, Instant};
 
 /// Mouse sensor implementation
@@ -135,7 +136,7 @@ fn map_button(btn: CrosstermButton) -> MouseButton {
 /// Discover mouse capabilities
 pub async fn discover() -> Option<MouseSensor> {
     // Check if terminal supports mouse events
-    if atty::is(atty::Stream::Stdout) {
+    if std::io::stdout().is_terminal() {
         tracing::debug!("Discovered terminal mouse");
         return Some(MouseSensor::new(PointerType::TerminalMouse));
     }

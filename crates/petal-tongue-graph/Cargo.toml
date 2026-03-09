@@ -19,9 +19,9 @@ tokio = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-egui = { workspace = true }
-egui_extras = { workspace = true }
-egui_plot = { workspace = true }
+egui = { workspace = true, optional = true }
+egui_extras = { workspace = true, optional = true }
+egui_plot = { workspace = true, optional = true }
 anyhow = { workspace = true }
 
 # Pure Rust audio file generation (no system dependencies - always available)
@@ -34,7 +34,8 @@ rand = { workspace = true }
 # This crate only generates audio FILES (WAV via hound - pure Rust)
 
 [features]
-default = []
+default = ["egui-render"]
+egui-render = ["dep:egui", "dep:egui_extras", "dep:egui_plot"]
 
 # REMOVED: native-audio feature (was requiring ALSA via rodio)
 # Audio playback is now:

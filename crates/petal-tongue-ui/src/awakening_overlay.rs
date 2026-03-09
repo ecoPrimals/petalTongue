@@ -54,6 +54,11 @@ impl AwakeningOverlay {
         self.active
     }
 
+    /// Skip the awakening overlay immediately (motor efferent command).
+    pub fn skip(&mut self) {
+        self.active = false;
+    }
+
     /// Check if should transition to tutorial
     #[must_use]
     pub fn should_transition_to_tutorial(&self) -> bool {
