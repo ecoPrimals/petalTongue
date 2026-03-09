@@ -16,6 +16,7 @@ members = [
     "crates/petal-tongue-ui",        # Tier 2: Native GUI (egui)
     "crates/petal-tongue-tui",       # NEW: Rich TUI (Terminal UI)
     "crates/petal-tongue-headless",  # NEW: Headless binary (Tier 1 only)
+    "crates/petal-tongue-scene",     # Declarative scene graph + modality compilers
     "crates/doom-core",              # Doom integration for platform testing
     # BingoCube is now a standalone tool at bingoCube/
     # (it has its own workspace with core, adapters, demos)

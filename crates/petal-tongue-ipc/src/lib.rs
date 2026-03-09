@@ -97,7 +97,8 @@ pub use protocol::{InstanceStatus, IpcCommand, IpcResponse};
 pub use server::{IpcServer, IpcServerError};
 pub use unix_socket_server::UnixSocketServer;
 pub use visualization_handler::{
-    StreamOperation, StreamUpdateRequest, StreamUpdateResponse, VisualizationRenderRequest,
+    InteractionEventNotification, InteractionSubscriberRegistry, StreamOperation,
+    StreamUpdateRequest, StreamUpdateResponse, VisualizationRenderRequest,
     VisualizationRenderResponse, VisualizationState,
 };
 

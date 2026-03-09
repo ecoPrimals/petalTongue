@@ -17,6 +17,8 @@ pub fn commands_for_mode(mode: &str) -> Vec<MotorCommand> {
         "developer" => developer_mode(),
         "presentation" => presentation_mode(),
         "full" => full_mode(),
+        "research" => research_mode(),
+        "patient-facing" => patient_facing_mode(),
         _ => Vec::new(),
     }
 }
@@ -132,6 +134,47 @@ fn full_mode() -> Vec<MotorCommand> {
     developer_mode()
 }
 
+/// Research mode: like developer but with proprioception, trust dashboard, and graph stats visible.
+fn research_mode() -> Vec<MotorCommand> {
+    developer_mode()
+}
+
+/// Patient-facing mode: minimal — graph only, no top menu, no graph stats.
+fn patient_facing_mode() -> Vec<MotorCommand> {
+    vec![
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::LeftSidebar,
+            visible: false,
+        },
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::SystemDashboard,
+            visible: false,
+        },
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::AudioPanel,
+            visible: false,
+        },
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::TrustDashboard,
+            visible: false,
+        },
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::Proprioception,
+            visible: false,
+        },
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::GraphStats,
+            visible: false,
+        },
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::TopMenu,
+            visible: false,
+        },
+        MotorCommand::SetAwakening { enabled: false },
+        MotorCommand::FitToView,
+    ]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -152,7 +195,14 @@ mod tests {
 
     #[test]
     fn all_modes_produce_commands() {
-        for mode in &["clinical", "developer", "presentation", "full"] {
+        for mode in &[
+            "clinical",
+            "developer",
+            "presentation",
+            "full",
+            "research",
+            "patient-facing",
+        ] {
             let cmds = commands_for_mode(mode);
             assert!(!cmds.is_empty(), "{mode} should produce commands");
         }

@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! SAME DAVE Channel Model — Neuroanatomy-based signal pathways
 //!
+//! SAME DAVE is neuroanatomy, not AI — the channel model maps specialized
+//! unidirectional pathways analogous to the spinal cord's dorsal/ventral roots.
+//! Sensory Afferent pathways carry input TO the proprioception core. Motor
+//! Efferent pathways carry commands FROM the core to effectors. Classification
+//! nodes along each channel act like nodes of Ranvier, enabling saltatory
+//! signal routing.
+//!
 //! # Neuroanatomy Model
 //!
 //! - **SAME**: **S**ensory **A**fferent, **M**otor **E**fferent
@@ -15,14 +22,6 @@
 //!
 //! Bidirectional control emerges from paired afferent + efferent channels,
 //! not from bidirectional channels.
-//!
-//! # Saltatory Classification
-//!
-//! Signals propagate through classification nodes along each channel,
-//! analogous to saltatory conduction between Schwann cells at the nodes
-//! of Ranvier. Each classification node can filter, route, or transform
-//! signals as they pass through — enabling smarter, faster propagation
-//! without requiring every signal to traverse the full pathway.
 
 use serde::{Deserialize, Serialize};
 use std::time::Instant;

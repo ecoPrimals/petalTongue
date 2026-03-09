@@ -63,7 +63,7 @@ case $choice in
   4)
     echo -e "${BLUE}Launching Neural API Learning...${NC}"
     ../target/release/petal-tongue ui \
-      --scenario scenarios/neural-learning.json \
+      --scenario scenarios/neural-api-test.json \
       --mode neural
     ;;
   5)
@@ -97,7 +97,7 @@ case $choice in
     # Neural Learning
     echo -e "${GREEN}[4/4] Neural API Learning${NC}"
     timeout 30s ../target/release/petal-tongue ui \
-      --scenario scenarios/neural-learning.json \
+      --scenario scenarios/neural-api-test.json \
       --mode neural || true
     
     echo ""

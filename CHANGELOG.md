@@ -2,6 +2,43 @@
 
 All notable changes to petalTongue will be documented in this file.
 
+## [1.4.3] - 2026-03-09
+
+### Added - Scene Engine, healthSpring Coevolution & SAME DAVE Integration
+
+- **petal-tongue-scene crate** (16th crate): Declarative scene graph with
+  Manim-style animation, Grammar of Graphics compiler, Tufte constraint
+  validation, modality compilers (SVG, audio, accessibility text), and
+  physics bridge for barraCuda IPC.
+  - `primitive.rs`: 8 atomic rendering primitives (Point, Line, Rect, Text,
+    Polygon, Arc, BezierPath, Mesh) with Color, StrokeStyle, FillRule
+  - `transform.rs`: 2D affine (3x3) and 3D (4x4) spatial transforms
+  - `scene_graph.rs`: Hierarchical scene graph with flatten/hit-test
+  - `animation.rs`: 6 easing functions, AnimationTarget, Sequential/Parallel
+    sequences, AnimationState interpolation
+  - `math_objects.rs`: NumberLine, Axes, FunctionPlot, ParametricCurve,
+    VectorField (Manim-style math objects that compile to primitives)
+  - `grammar.rs`: GrammarExpr with variables, scales, geometry, coordinates,
+    facets, aesthetics (Grammar of Graphics expression types)
+  - `tufte.rs`: Machine-checkable Tufte constraints (Data-Ink Ratio,
+    Lie Factor, Chartjunk, Color Accessibility, Data Density)
+  - `compiler.rs`: Grammar compiler (GrammarExpr + data to SceneGraph)
+  - `modality.rs`: SvgCompiler, AudioCompiler, DescriptionCompiler
+  - `physics.rs`: PhysicsWorld with Euler integration and barraCuda IPC bridge
+- **healthSpring coevolution**: ChannelRegistry wired to app update loop,
+  interaction.subscribe/poll/unsubscribe IPC methods, 64KB IPC buffer,
+  research_mode/patient_facing_mode presets, motor command history in
+  proprioception panel
+- **+80 new tests** (1,816 to 1,896): 69 scene engine tests + 11 coevolution tests
+
+### Changed
+- Crate count: 15 to 16 (petal-tongue-scene added)
+- IPC buffer: 8KB to 64KB for large clinical payloads
+- Proprioception panel: Now displays motor command history and current mode
+- SAME DAVE doc comments clarified across channel, proprioception, rendering_awareness
+
+---
+
 ## [1.4.2] - 2026-03-09
 
 ### Added - Pedantic Lints, Coverage Expansion & Cleanup

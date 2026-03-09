@@ -1,17 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Proprioception (SAME DAVE) data structures
 //!
-//! # Neuroanatomy Model
-//!
-//! SAME DAVE is a spinal-cord pathway mnemonic:
-//!
-//! - **SAME**: **S**ensory **A**fferent, **M**otor **E**fferent
-//! - **DAVE**: **D**orsal **A**fferent, **V**entral **E**fferent
-//!
-//! Afferent channels carry sensory input *toward* the proprioception core.
-//! Efferent channels carry motor commands *from* the core to effectors.
-//! Bidirectional self-awareness (proprioception) emerges from the paired
-//! operation of these unidirectional channels.
+//! SAME DAVE is neuroanatomy, not AI — the channel model maps specialized
+//! unidirectional pathways analogous to the spinal cord's dorsal/ventral roots.
+//! Sensory Afferent pathways carry input TO the proprioception core. Motor
+//! Efferent pathways carry commands FROM the core to effectors. Classification
+//! nodes along each channel act like nodes of Ranvier, enabling saltatory
+//! signal routing.
 //!
 //! The types in this module are **snapshots** of channel and system state,
 //! populated by the Neural API or local introspection and visualized by the UI.
