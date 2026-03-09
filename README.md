@@ -49,18 +49,20 @@ petaltongue
 - **Capability-based discovery** via Songbird (zero hardcoded primal names)
 - **Self-knowledge only** -- other primals discovered at runtime
 - **Graceful degradation** -- works standalone or in full ecosystem
-- **Grammar of Graphics** -- composable data→visualization pipeline (design phase)
-- **Tufte constraints** -- machine-checked visualization quality (design phase)
+- **Grammar of Graphics** -- composable data→visualization pipeline
+- **Tufte constraints** -- machine-checked visualization quality
+- **Domain-aware rendering** -- automatic palette selection per domain (health, physics, ecology...)
+- **Spring IPC** -- springs push data via `visualization.render`, petalTongue renders with `UiConfig`
 
 ### Crates (15)
 
 | Crate | Purpose |
 |-------|---------|
 | `petal-tongue-core` | Graph engine, capabilities, config, interaction engine, data bindings |
-| `petal-tongue-graph` | 2D rendering, charts, domain themes, audio sonification |
+| `petal-tongue-graph` | Domain-aware chart renderers, 2D rendering, audio sonification |
 | `petal-tongue-ui` | Desktop GUI (egui/eframe), panels, scenarios, biomeOS |
 | `petal-tongue-tui` | Terminal UI (ratatui) |
-| `petal-tongue-ipc` | Unix socket IPC, JSON-RPC server, tarpc types, visualization handler |
+| `petal-tongue-ipc` | Unix socket IPC, JSON-RPC server, tarpc client, visualization handler |
 | `petal-tongue-discovery` | Provider discovery (JSON-RPC, mDNS, Unix socket, scenarios) |
 | `petal-tongue-entropy` | Human entropy capture (gesture, narrative, visual, audio) |
 | `petal-tongue-animation` | Flower/visual animations |
@@ -78,7 +80,7 @@ petaltongue
 
 | Metric | Actual Status |
 |--------|---------------|
-| Tests | 1,427 passing, 0 failures, 14 ignored |
+| Tests | 1,421 passing, 0 failures, 3 ignored |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (`cargo clippy --all-targets -- -D warnings`) |
 | Unsafe | `#![forbid(unsafe_code)]` workspace-wide, zero `libc`/`nix` deps |

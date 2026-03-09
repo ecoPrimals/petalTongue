@@ -44,8 +44,11 @@ cd 01-local-primal/00-hello-petaltongue/
 | 06 | [audio-export](01-local-primal/06-audio-export/) | Pure Rust WAV generation (hound) | 30s |
 | 07 | [graph-layouts](01-local-primal/07-graph-layouts/) | Layout algorithms via topologies | 60s |
 | 08 | [clinical-data](01-local-primal/08-clinical-data/) | healthSpring DataChannel rendering | 45s |
+| 09 | [domain-themes](01-local-primal/09-domain-themes/) | Domain-aware color palettes | 45s |
+| 10 | [visualization-push](01-local-primal/10-visualization-push/) | Spring IPC push + UiConfig | 45s |
+| 11 | [scatter3d-data](01-local-primal/11-scatter3d-data/) | Scatter3D, Heatmap, FieldMap, Spectrum | 45s |
 
-**Total**: ~6 minutes | **Dependencies**: none
+**Total**: ~8 minutes | **Dependencies**: none
 
 ### 02-ipc-protocol/ (JSON-RPC, local only)
 
