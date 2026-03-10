@@ -9,10 +9,10 @@
 //! NO hardcoding - just discovers whatever socket-based audio exists!
 
 use crate::audio::traits::{AudioBackend, AudioCapabilities, BackendMetadata, BackendType};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use std::path::{Path, PathBuf};
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 /// Discovered audio socket
 #[derive(Debug, Clone)]
@@ -24,7 +24,10 @@ pub struct DiscoveredSocket {
 /// Socket audio backend
 pub struct SocketBackend {
     socket: DiscoveredSocket,
-    _connection: Option<()>, // TODO: Actual socket connection
+    #[cfg(unix)]
+    connection: Option<std::os::unix::net::UnixStream>,
+    #[cfg(not(unix))]
+    connection: Option<()>,
 }
 
 impl SocketBackend {
@@ -33,7 +36,7 @@ impl SocketBackend {
     pub fn new(socket: DiscoveredSocket) -> Self {
         Self {
             socket,
-            _connection: None,
+            connection: None,
         }
     }
 
@@ -134,7 +137,10 @@ impl AudioBackend for SocketBackend {
     }
 
     async fn is_available(&self) -> bool {
-        self.socket.path.exists()
+        // Socket exists, but PipeWire/PulseAudio protocol negotiation
+        // is not implemented yet. Report unavailable so AudioManager
+        // skips this backend and falls through to software/silent.
+        false
     }
 
     async fn initialize(&mut self) -> Result<()> {
@@ -142,25 +148,56 @@ impl AudioBackend for SocketBackend {
             "🔌 Initializing socket audio backend: {}",
             self.socket.path.display()
         );
-        // TODO: Actual socket connection
+        #[cfg(unix)]
+        {
+            let path = self.socket.path.clone();
+            let path_display = path.display().to_string();
+            let stream =
+                tokio::task::spawn_blocking(move || std::os::unix::net::UnixStream::connect(&path))
+                    .await
+                    .context("spawn_blocking for socket connect")?
+                    .with_context(|| format!("Failed to connect to socket at {}", path_display))?;
+            self.connection = Some(stream);
+        }
+        #[cfg(not(unix))]
+        {
+            let _ = self;
+            anyhow::bail!("Socket audio backend is not available on this platform");
+        }
         Ok(())
     }
 
     async fn play_samples(&mut self, samples: &[f32], sample_rate: u32) -> Result<()> {
-        debug!(
-            "🔌 Socket playback: {} samples at {} Hz via {}",
-            samples.len(),
-            sample_rate,
-            self.socket.detected_name
-        );
-        // TODO: Actual socket communication
-        Ok(())
+        #[cfg(unix)]
+        {
+            if self.connection.is_none() {
+                anyhow::bail!("Socket audio backend not initialized: no connection");
+            }
+            debug!(
+                "🔌 Socket playback: {} samples at {} Hz via {} (protocol not implemented)",
+                samples.len(),
+                sample_rate,
+                self.socket.detected_name
+            );
+            warn!(
+                "PipeWire/PulseAudio protocol negotiation not yet implemented for {}",
+                self.socket.detected_name
+            );
+            anyhow::bail!(
+                "Socket audio protocol not yet implemented - backend reports not available"
+            );
+        }
+        #[cfg(not(unix))]
+        {
+            let _ = (samples, sample_rate);
+            anyhow::bail!("Socket audio backend is not available on this platform");
+        }
     }
 
     fn capabilities(&self) -> AudioCapabilities {
         AudioCapabilities {
-            can_play: true,
-            can_record: true,
+            can_play: false, // Protocol negotiation not yet implemented
+            can_record: false,
             max_sample_rate: 192_000,
             max_channels: 8,
             latency_estimate_ms: 20,
@@ -171,16 +208,91 @@ impl AudioBackend for SocketBackend {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
+    use tempfile::TempDir;
 
     #[tokio::test]
     async fn test_socket_discovery() {
         // Should not panic
         let backends = SocketBackend::discover_all().await;
-        println!("Discovered {} socket audio backend(s)", backends.len());
+        assert!(backends.len() <= 2); // At most pipewire-0 and pulse/native
 
         for backend in &backends {
             let meta = backend.metadata();
-            println!("  - {} at {}", meta.name, backend.socket.path.display());
+            assert!(!meta.name.is_empty());
+            assert!(!meta.description.is_empty());
         }
+    }
+
+    #[tokio::test]
+    #[cfg(unix)]
+    async fn test_discover_audio_sockets_returns_sockets_from_xdg_runtime_dir() {
+        let temp = TempDir::new().unwrap();
+        let socket_path = temp.path().join("pipewire-0");
+
+        // Create a real Unix socket so is_audio_socket passes
+        let _listener = std::os::unix::net::UnixListener::bind(&socket_path).unwrap();
+
+        let backends = petal_tongue_core::test_fixtures::env_test_helpers::with_env_var_async(
+            "XDG_RUNTIME_DIR",
+            temp.path().to_str().unwrap(),
+            || async { SocketBackend::discover_all().await },
+        )
+        .await;
+
+        assert!(
+            !backends.is_empty(),
+            "Should discover pipewire-0 socket when XDG_RUNTIME_DIR contains it"
+        );
+    }
+
+    #[tokio::test]
+    #[cfg(unix)]
+    async fn test_discover_audio_sockets_ignores_regular_files() {
+        let temp = TempDir::new().unwrap();
+        let fake_socket_path = temp.path().join("pipewire-0");
+        // Write a regular file, not a socket
+        std::fs::write(&fake_socket_path, "not a socket").unwrap();
+
+        let backends = petal_tongue_core::test_fixtures::env_test_helpers::with_env_var_async(
+            "XDG_RUNTIME_DIR",
+            temp.path().to_str().unwrap(),
+            || async { SocketBackend::discover_all().await },
+        )
+        .await;
+
+        assert!(
+            backends.is_empty(),
+            "Should not discover regular files as audio sockets"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_socket_backend_capabilities_can_play_false() {
+        let socket = DiscoveredSocket {
+            path: PathBuf::from("/dev/null"),
+            detected_name: "Test".to_string(),
+        };
+        let backend = SocketBackend::new(socket);
+        let caps = backend.capabilities();
+        assert!(
+            !caps.can_play,
+            "Socket backend reports can_play false (protocol not implemented)"
+        );
+        assert!(!caps.can_record);
+        assert_eq!(caps.max_sample_rate, 192_000);
+    }
+
+    #[tokio::test]
+    async fn test_socket_backend_is_available_returns_false() {
+        let socket = DiscoveredSocket {
+            path: PathBuf::from("/dev/null"),
+            detected_name: "Test".to_string(),
+        };
+        let backend = SocketBackend::new(socket);
+        assert!(
+            !backend.is_available().await,
+            "Socket backend reports unavailable (protocol not implemented)"
+        );
     }
 }

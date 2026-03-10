@@ -123,7 +123,7 @@ impl DirectBackend {
     }
 
     /// Write samples to device (like `AudioCanvas`!)
-    fn write_samples_to_device(file: &mut File, samples: &[f32]) -> Result<()> {
+    pub(crate) fn write_samples_to_device(file: &mut File, samples: &[f32]) -> Result<()> {
         // Convert f32 [-1.0, 1.0] to i16 PCM [-32768, 32767]
         let i16_samples: Vec<i16> = samples
             .iter()
@@ -163,23 +163,18 @@ impl AudioBackend for DirectBackend {
     }
 
     async fn is_available(&self) -> bool {
-        self.device.path.exists()
+        // Direct PCM device access requires ALSA ioctls for sample rate,
+        // format, and buffer setup that are not yet implemented. Opening
+        // a device managed by PipeWire/PulseAudio will also block
+        // indefinitely. Report unavailable until proper ALSA setup is in place.
+        false
     }
 
     async fn initialize(&mut self) -> Result<()> {
-        info!(
-            "🎨 Initializing direct audio device: {}",
-            self.device.path.display()
+        anyhow::bail!(
+            "Direct PCM device access requires ALSA ioctl setup (sample rate, format, buffers) \
+             which is not yet implemented. Use socket-based audio servers instead."
         );
-
-        // Open device for writing
-        self.file = Some(
-            std::fs::OpenOptions::new()
-                .write(true)
-                .open(&self.device.path)?,
-        );
-
-        Ok(())
     }
 
     async fn play_samples(&mut self, samples: &[f32], sample_rate: u32) -> Result<()> {
@@ -217,16 +212,63 @@ impl AudioBackend for DirectBackend {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::{Read, Seek};
 
     #[test]
     fn test_direct_discovery() {
-        // Should not panic
+        // Should not panic - tests runtime heuristic discovery
         let backends = DirectBackend::discover_all();
-        println!("Discovered {} direct audio backend(s)", backends.len());
-
         for backend in &backends {
             let meta = backend.metadata();
-            println!("  - {} at {}", meta.name, backend.device.path.display());
+            assert!(!meta.name.is_empty());
+            assert_eq!(meta.backend_type, BackendType::Direct);
         }
+    }
+
+    #[test]
+    fn test_write_samples_to_device_byte_output() {
+        let mut file = tempfile::tempfile().unwrap();
+        let samples: Vec<f32> = vec![1.0, -1.0, 0.0, 0.5];
+
+        DirectBackend::write_samples_to_device(&mut file, &samples).unwrap();
+
+        // Verify: f32 [-1,1] -> i16 little-endian (implementation uses 32767 scale)
+        // 1.0 -> 32767, -1.0 -> -32767, 0.0 -> 0, 0.5 -> 16383
+        file.rewind().unwrap();
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf).unwrap();
+        assert_eq!(buf.len(), 8); // 4 samples * 2 bytes
+        assert_eq!(buf[0..2], 32767i16.to_le_bytes());
+        assert_eq!(buf[2..4], (-32767i16).to_le_bytes());
+        assert_eq!(buf[4..6], 0i16.to_le_bytes());
+        assert_eq!(buf[6..8], 16383i16.to_le_bytes());
+    }
+
+    #[tokio::test]
+    async fn test_direct_backend_is_available_returns_false() {
+        let device = DiscoveredDevice {
+            path: PathBuf::from("/dev/null"),
+            device_type: DeviceType::Pcm,
+        };
+        let backend = DirectBackend::new(device);
+        assert!(
+            !backend.is_available().await,
+            "Direct backend reports unavailable (ALSA setup not implemented)"
+        );
+    }
+
+    #[test]
+    fn test_direct_backend_capabilities() {
+        let device = DiscoveredDevice {
+            path: PathBuf::from("/dev/null"),
+            device_type: DeviceType::Pcm,
+        };
+        let backend = DirectBackend::new(device);
+        let caps = backend.capabilities();
+        assert!(caps.can_play);
+        assert!(!caps.can_record);
+        assert_eq!(caps.max_sample_rate, 48000);
+        assert_eq!(caps.max_channels, 2);
+        assert_eq!(caps.latency_estimate_ms, 10);
     }
 }

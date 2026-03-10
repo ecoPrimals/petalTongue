@@ -58,6 +58,10 @@ impl ScenarioVisualizationProvider {
         let scenario: ScenarioFile = serde_json::from_str(&contents)
             .with_context(|| format!("Failed to parse scenario JSON: {}", path.display()))?;
 
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "Unix timestamp for current time is always non-negative"
+        )]
         let now = chrono::Utc::now().timestamp() as u64;
         let primals: Vec<PrimalInfo> = scenario
             .ecosystem

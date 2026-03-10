@@ -40,8 +40,8 @@ pub struct BiomeOSUIManager {
     mock_provider: Option<MockDeviceProvider>,
     use_mock: bool,
 
-    /// Event handler
-    #[expect(dead_code)]
+    /// Event handler (passed to child panels for event dispatch)
+    #[allow(dead_code)]
     event_handler: Arc<RwLock<UIEventHandler>>,
 
     /// UI Panels

@@ -39,6 +39,7 @@ wildcards = "allow"
 highlight = "all"
 deny = [
     # ecoBin banned: no native TLS, no C crypto
+    { name = "ring", wrappers = [] },
     { name = "openssl", wrappers = [] },
     { name = "openssl-sys", wrappers = [] },
     { name = "native-tls", wrappers = [] },

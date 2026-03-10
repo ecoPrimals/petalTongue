@@ -15,6 +15,7 @@ use petal_tongue_ui::graph_editor::{
 use tracing::{Level, info};
 
 #[tokio::main]
+#[expect(clippy::too_many_lines, reason = "demo main is cohesive setup and run")]
 async fn main() -> Result<()> {
     // Initialize tracing
     tracing_subscriber::fmt().with_max_level(Level::INFO).init();

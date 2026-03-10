@@ -30,6 +30,10 @@ impl Default for MockVisualizationProvider {
 #[async_trait]
 impl VisualizationDataProvider for MockVisualizationProvider {
     async fn get_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "Unix timestamp for current time is always non-negative"
+        )]
         let now = chrono::Utc::now().timestamp() as u64;
 
         // Create primals using modern properties approach

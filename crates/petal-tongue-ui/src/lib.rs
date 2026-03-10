@@ -74,10 +74,17 @@ pub mod accessibility_panel;
 pub mod adaptive_ui;
 pub mod app;
 pub mod app_panels;
+pub mod audio;
+pub mod audio_canvas;
+pub mod audio_discovery;
+#[cfg(feature = "legacy-audio")]
+pub mod audio_providers;
+pub mod audio_pure_rust;
 pub mod awakening_overlay;
 pub mod backend; // NEW: UI backend abstraction (ecoBlossom!)
 pub mod event_loop;
 pub mod focus_manager;
+pub mod interaction_adapters;
 pub mod panel_registry;
 pub mod panels;
 pub mod scenario;
@@ -85,19 +92,7 @@ pub mod scenario_error;
 pub mod sensor_discovery;
 pub mod sensory_ui;
 pub mod startup_audio;
-pub mod tutorial_mode;
-// Smart refactoring modules (app.rs → modular architecture) - TEMPORARILY DISABLED FOR INCREMENTAL REFACTORING
-// pub mod app_state;    // Application state (Phase 1)
-// pub mod app_ui;       // UI rendering (Phase 2)
-// pub mod app_data;     // Data management (Phase 3)
-// pub mod app_adapters; // Adapter management (Phase 4)
-pub mod audio; // NEW: Substrate-agnostic audio system (TRUE PRIMAL evolution!)
-pub mod audio_canvas; // Direct hardware access (like WGPU!)
-pub mod audio_discovery; // v1.3.1: Audio discovery - PipeWire/PulseAudio Unix sockets (TRUE PRIMAL!)
-#[cfg(feature = "legacy-audio")]
-pub mod audio_providers;
-pub mod audio_pure_rust;
-pub mod interaction_adapters; // Concrete InputAdapter implementations (pointer, keyboard)
+pub mod tutorial_mode; // Concrete InputAdapter implementations (pointer, keyboard)
 // bingocube is a primalTool (ecoPrimals/primalTools/bingoCube)
 // Discovered at runtime via IPC, not compiled into petalTongue
 pub mod biomeos_integration; // biomeOS UI Integration - Phase 1 (device management provider)

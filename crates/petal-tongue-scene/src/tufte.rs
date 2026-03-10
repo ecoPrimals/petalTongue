@@ -362,4 +362,103 @@ mod tests {
         assert!(result.passed);
         assert!(result.score >= 1.0 || (result.score - 1.0).abs() < 1e-10);
     }
+
+    #[test]
+    fn lie_factor_returns_placeholder_for_axis_context() {
+        let primitives = vec![make_data_primitive()];
+        let expr = GrammarExpr::new("data", GeometryType::Point);
+        let result = LieFactor.evaluate(&primitives, &expr);
+        assert!(result.passed);
+        assert!((result.score - 1.0).abs() < 1e-10);
+        assert!(result.message.contains("axis") || result.message.contains("scale"));
+    }
+
+    #[test]
+    fn data_ink_ratio_high_decoration_low_score() {
+        let primitives = vec![
+            make_non_data_primitive(),
+            make_non_data_primitive(),
+            make_non_data_primitive(),
+            make_data_primitive(),
+        ];
+        let expr = GrammarExpr::new("data", GeometryType::Point);
+        let result = DataInkRatio.evaluate(&primitives, &expr);
+        assert!(!result.passed);
+        assert!((result.score - 0.25).abs() < 1e-10);
+    }
+
+    #[test]
+    fn data_ink_ratio_all_data_passes() {
+        let primitives = vec![
+            make_data_primitive(),
+            make_data_primitive(),
+            make_data_primitive(),
+        ];
+        let expr = GrammarExpr::new("data", GeometryType::Line);
+        let result = DataInkRatio.evaluate(&primitives, &expr);
+        assert!(result.passed);
+        assert!((result.score - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn data_ink_ratio_half_data_passes_threshold() {
+        let primitives = vec![make_data_primitive(), make_non_data_primitive()];
+        let expr = GrammarExpr::new("data", GeometryType::Point);
+        let result = DataInkRatio.evaluate(&primitives, &expr);
+        assert!(result.passed);
+        assert!((result.score - 0.5).abs() < 1e-10);
+    }
+
+    #[test]
+    fn color_accessibility_placeholder_passes() {
+        let primitives = vec![make_data_primitive()];
+        let expr = GrammarExpr::new("data", GeometryType::Point);
+        let result = ColorAccessibility.evaluate(&primitives, &expr);
+        assert!(result.passed);
+        assert!(result.message.contains("palette") || result.message.contains("accessibility"));
+    }
+
+    #[test]
+    fn smallest_effective_difference_placeholder_passes() {
+        let primitives = vec![make_data_primitive()];
+        let expr = GrammarExpr::new("data", GeometryType::Point);
+        let result = SmallestEffectiveDifference.evaluate(&primitives, &expr);
+        assert!(result.passed);
+    }
+
+    #[test]
+    fn chartjunk_detection_decorative_fill_fails() {
+        let primitives = vec![Primitive::Rect {
+            x: 0.0,
+            y: 0.0,
+            width: 100.0,
+            height: 50.0,
+            fill: Some(Color::rgb(0.9, 0.9, 0.9)),
+            stroke: None,
+            corner_radius: 0.0,
+            data_id: None,
+        }];
+        let expr = GrammarExpr::new("data", GeometryType::Bar);
+        let result = ChartjunkDetection.evaluate(&primitives, &expr);
+        assert!(!result.passed);
+        assert!(result.score < 1.0);
+    }
+
+    #[test]
+    fn data_density_with_data_passes() {
+        let primitives = vec![make_data_primitive()];
+        let expr = GrammarExpr::new("data", GeometryType::Point);
+        let result = DataDensity.evaluate(&primitives, &expr);
+        assert!(result.passed);
+        assert!((result.score - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn data_density_no_data_fails() {
+        let primitives: Vec<Primitive> = vec![];
+        let expr = GrammarExpr::new("data", GeometryType::Point);
+        let result = DataDensity.evaluate(&primitives, &expr);
+        assert!(!result.passed);
+        assert!((result.score - 0.0).abs() < 1e-10);
+    }
 }

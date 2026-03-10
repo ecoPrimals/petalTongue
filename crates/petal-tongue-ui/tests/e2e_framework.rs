@@ -135,6 +135,10 @@ impl E2ETestRunner {
         }
         .await;
 
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "test duration in ms fits u64"
+        )]
         let duration_ms = start.elapsed().as_millis() as u64;
 
         self.results.push(E2ETestResult {
@@ -201,6 +205,10 @@ impl E2ETestRunner {
         }
         .await;
 
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "test duration in ms fits u64"
+        )]
         let duration_ms = start.elapsed().as_millis() as u64;
 
         self.results.push(E2ETestResult {
@@ -273,6 +281,10 @@ impl E2ETestRunner {
         }
         .await;
 
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "test duration in ms fits u64"
+        )]
         let duration_ms = start.elapsed().as_millis() as u64;
 
         self.results.push(E2ETestResult {
@@ -370,6 +382,10 @@ impl E2ETestRunner {
         }
         .await;
 
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "test duration in ms fits u64"
+        )]
         let duration_ms = start.elapsed().as_millis() as u64;
 
         self.results.push(E2ETestResult {
@@ -410,6 +426,10 @@ impl E2ETestRunner {
         }
         .await;
 
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "test duration in ms fits u64"
+        )]
         let duration_ms = start.elapsed().as_millis() as u64;
 
         self.results.push(E2ETestResult {

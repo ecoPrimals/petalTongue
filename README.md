@@ -52,9 +52,12 @@ petaltongue
 - **Self-knowledge only** -- other primals discovered at runtime
 - **Graceful degradation** -- works standalone or in full ecosystem
 - **Grammar of Graphics** -- composable data→visualization pipeline
+- **DataBinding auto-compiler** -- all 8 chart types (TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter3D, FieldMap) auto-compile to grammar
+- **Dashboard layout engine** -- multi-panel grid with domain theming and SVG export
 - **Tufte constraints** -- machine-checked visualization quality
 - **Domain-aware rendering** -- automatic palette selection per domain (health, physics, ecology...)
-- **Spring IPC** -- springs push data via `visualization.render`, petalTongue renders with `UiConfig`
+- **Spring IPC** -- springs push data via `visualization.render`, petalTongue auto-compiles and renders
+- **Scenario loader** -- load JSON scenario files from disk (`--scenario` CLI flag)
 
 ### Crates (16)
 
@@ -66,7 +69,7 @@ petaltongue
 | `petal-tongue-tui` | Terminal UI (ratatui) |
 | `petal-tongue-ipc` | Unix socket IPC, JSON-RPC server, tarpc client, visualization handler |
 | `petal-tongue-discovery` | Provider discovery (JSON-RPC, mDNS, Unix socket, scenarios) |
-| `petal-tongue-scene` | Declarative scene graph, animation, grammar compiler, Tufte constraints, modality compilers, physics bridge |
+| `petal-tongue-scene` | Scene graph, animation, grammar compiler, DataBinding compiler, dashboard layout, Tufte constraints, modality compilers, physics bridge |
 | `petal-tongue-entropy` | Human entropy capture (gesture, narrative, visual, audio) |
 | `petal-tongue-animation` | Flower/visual animations |
 | `petal-tongue-adapters` | EcoPrimal adapter traits |
@@ -81,16 +84,17 @@ petaltongue
 
 ## Quality
 
-| Metric | Actual Status |
-|--------|---------------|
-| Tests | 1,914 passing, 0 failures, 2 ignored |
+| Metric | Status |
+|--------|--------|
+| Tests | 2,011 passing, 0 failures, 2 ignored |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings, pedantic enabled (`clippy::pedantic` via `[workspace.lints.clippy]`) |
+| Docs | `RUSTDOCFLAGS="-D warnings" cargo doc` clean |
 | Coverage | 63% line / 67% function (llvm-cov) |
-| Unsafe | `#![forbid(unsafe_code)]` workspace-wide, zero `libc`/`nix` deps |
+| Unsafe | `#![forbid(unsafe_code)]` workspace-wide, zero C deps |
 | License | AGPL-3.0-only, SPDX headers on all source files |
-| Files | All production files under 650 lines (max: 650, `app/mod.rs`) |
-| Edition | 2024 (all crates) |
+| Files | All production files under 820 lines (max: `math_objects.rs` 818) |
+| Edition | 2024 (all 16 crates) |
 | External C deps | None -- pure Rust (`rustix` for syscalls) |
 
 ---

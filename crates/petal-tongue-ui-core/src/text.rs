@@ -64,7 +64,10 @@ impl TextUI {
         output.push_str("petalTongue Topology Report\n");
         output.push_str("===========================\n\n");
 
-        let graph = self.graph.read().unwrap();
+        let graph = match self.graph.read() {
+            Ok(guard) => guard,
+            Err(e) => return Err(anyhow::anyhow!("graph lock poisoned: {e}")),
+        };
         let nodes = graph.nodes();
         let edges = graph.edges();
 
@@ -116,7 +119,10 @@ impl TextUI {
 
     /// Render as JSON
     fn render_json(&self) -> Result<String> {
-        let graph = self.graph.read().unwrap();
+        let graph = match self.graph.read() {
+            Ok(guard) => guard,
+            Err(e) => return Err(anyhow::anyhow!("graph lock poisoned: {e}")),
+        };
 
         // Create a simplified structure for JSON export
         let data = serde_json::json!({
@@ -167,7 +173,10 @@ impl TextUI {
         dot.push_str("  node [style=filled, fontcolor=white, fontname=\"sans-serif\"];\n");
         dot.push_str("  edge [color=\"#6b7280\"];\n\n");
 
-        let graph = self.graph.read().unwrap();
+        let graph = match self.graph.read() {
+            Ok(guard) => guard,
+            Err(e) => return Err(anyhow::anyhow!("graph lock poisoned: {e}")),
+        };
         let nodes = graph.nodes();
         let edges = graph.edges();
 

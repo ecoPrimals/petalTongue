@@ -1,7 +1,7 @@
 # petalTongue -- Project Status
 
-**Updated**: March 9, 2026  
-**Version**: 1.4.4  
+**Updated**: March 10, 2026  
+**Version**: 1.5.0  
 **Edition**: 2024 (all crates)
 
 ---
@@ -11,23 +11,28 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 1,914 passing, 0 failures, 2 ignored |
+| Tests | 2,011 passing, 0 failures, 2 ignored |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings, pedantic enabled (`clippy::pedantic` via workspace lints) |
+| Clippy | Zero warnings, pedantic tightened (removed float_cmp, cast_*, too_many_lines, needless_pass_by_value allows; all uses `#[expect]` with documented reasons) |
 | Rustdoc | Clean (`RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps`) |
 | cargo deny | Clean (advisories, bans, licenses, sources) |
 | Unsafe | `#![forbid(unsafe_code)]` workspace-wide, zero C deps, zero `unsafe` blocks |
-| Files | All production files under 650 lines |
+| Files | All production files under 820 lines (largest: math_objects.rs 818) |
 | License | AGPL-3.0-only, SPDX on all source and config files |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None (`ring` eliminated, `libc`/`nix`/`atty` removed, using `rustix`) |
 | ecoBin | Compliant (no ring, aws-lc-sys, openssl-sys, native-tls, zstd-sys) |
-| Coverage | 63% line / 67% function (llvm-cov, workspace) |
-| JSON-RPC | Semantic method naming (`domain.operation`), 15 visualization methods |
-| Mocks | All gated behind `#[cfg(test)]` or `#[cfg(feature = "mock")]` |
+| Coverage | 63% line / 67% function (llvm-cov, workspace) — target 90% |
+| JSON-RPC | Semantic method naming (`domain.operation`), 16 visualization methods |
+| Mocks | All gated behind `#[cfg(test)]` or `#[cfg(feature = "test-fixtures")]`; PETALTONGUE_MOCK_MODE test-only |
 | Primal names | Capability-based constants, zero hardcoded external primal names |
+| Hardcoding | Socket names, ports, endpoints all configurable via env vars |
 | Domain theming | 6 domain palettes (health, physics, ecology, agriculture, measurement, neural) |
-| Spring IPC | healthSpring callback subscriptions, wetSpring Spectrum renderer, physics bridge |
+| Spring IPC | healthSpring DataChannel auto-compile, dashboard layout, wetSpring Spectrum, physics bridge |
+| DataChannel compiler | All 8 DataBinding variants auto-compiled to Grammar of Graphics |
+| Dashboard engine | Multi-panel grid layout with domain theming and SVG export |
+| Scenario loader | JSON scenario files loaded from disk; `--scenario` CLI flag |
+| Dependencies | Updated: base64→0.22, socket2→0.6, lru→0.16, mdns-sd→0.18 |
 
 ---
 
@@ -80,20 +85,24 @@ Major incomplete work (delegated to other primals or future phases):
 
 ### Test Coverage Gap
 
-Current: 63% line coverage, 67% function coverage (1,914 tests).
+Current: 63% line coverage, 67% function coverage (2,011 tests).
 Target: 90%.
 
 Well-covered areas (>80%):
 - Core engine, graph builder, graph validation, types, interaction engine
 - Session, data channel, telemetry, data bindings, config, constants
 - Discovery (JSON-RPC, HTTP, Songbird, cache, unix socket)
-- IPC (Unix socket, tarpc client, JSON-RPC handlers, server)
+- IPC (Unix socket, tarpc client, JSON-RPC handlers, server, visualization)
 - Scenario builder, domain theme, filtering, timeline types
 - Rendering awareness, state sync, awakening coordinator, sensor
 - Dynamic schema, instance lifecycle/registry, capabilities
 - CLI argument parsing, process viewer, graph metrics
 - Proprioception, sensory capabilities, display traits, entropy state
 - TUI rendering via TestBackend (all 8 views tested)
+- Scene engine: determinism tests (100-run identical output), modality round-trips
+- Math objects: edge cases (NaN, infinity, degenerate parameters)
+- Animation: all easing functions at boundaries, sequences, zero duration
+- Tufte constraints: data-ink ratio, chartjunk, data density
 
 Remaining uncovered areas (require display/terminal runtime):
 - egui app module, app_panels/builders, app/init: 0% (require egui Context)
@@ -115,8 +124,109 @@ screenshot-based testing (future infrastructure).
 ### Missing Infrastructure
 
 - No CI/CD pipeline
-- No property-based testing
+- No property-based testing (proptest/quickcheck)
 - No genomeBin manifest
+- No validation binaries (hotSpring pattern: hardcoded expected, exit 0/1)
+- No Python baselines for cross-validation
+- No benchmark suite (criterion/iai/divan)
+
+---
+
+## Ecosystem Alignment (March 10, 2026)
+
+### Primal Versions Tracked
+
+| Primal | Version | Aligned |
+|--------|---------|---------|
+| barraCuda | v0.3.3 (unreleased HEAD) | Yes — `compute.dispatch` uses `op` field; ecosystem discovery |
+| toadStool | S139 (Mar 9) | Yes — dual-write discovery at `$XDG_RUNTIME_DIR/ecoPrimals/` |
+| coralReef | Phase 10, Iter 26 | N/A — petalTongue does not call coralReef directly |
+| groundSpring | V100 (Mar 8) | Reviewed — sovereign rewire guidance applied |
+
+### IPC Contract Status
+
+| Contract | Aligned | Notes |
+|----------|---------|-------|
+| `barracuda.compute.dispatch` | Partial | Uses `op` field (v0.3.3+); `math.physics.nbody` wired but not in barraCuda dispatch table |
+| ToadStool display IPC | Planned | `display.*` methods defined; integration is Phase 2 |
+| coralReef `compiler.*` | N/A | petalTongue does not compile shaders |
+| Ecosystem discovery | Yes | Scans `$XDG_RUNTIME_DIR/ecoPrimals/discovery/` per S139 |
+
+### Capability Constants
+
+| Constant | Source | Used In |
+|----------|--------|---------|
+| `gpu.dispatch` | barraCuda v0.3.3 | toadstool_compute.rs, physics_bridge.rs |
+| `science.gpu.dispatch` | toadStool S139 | toadstool_compute.rs |
+| `display` | toadStool display backend | toadstool_compute.rs |
+| `shader.compile` | coralReef Phase 10 | toadstool_compute.rs (noted, not used) |
+
+---
+
+## Evolution Readiness (GPU Shader Promotion)
+
+Evolution path: Python baseline → barraCuda CPU → GPU kokoks → GPU barraCuda → sovereign pipeline
+
+### Module-to-Shader Mapping
+
+| Rust Module | Tier | WGSL Shader Target | Pipeline Stage | Blocking |
+|-------------|------|-------------------|----------------|----------|
+| `math_objects.rs` (NumberLine, Axes, FunctionPlot) | A: Ready | `petal_math.wgsl` | Compute | Pure math, no I/O |
+| `transform.rs` (Transform2D, Transform3D) | A: Ready | `petal_transform.wgsl` | Compute | Pure affine/matrix ops |
+| `domain_palette.rs` (categorical colors) | A: Ready | `petal_palette.wgsl` | Compute | Pure color math |
+| `tufte.rs` (constraint evaluation) | A: Ready | `petal_tufte.wgsl` | Compute | Pure validation logic |
+| `animation.rs` (easing functions) | A: Ready | `petal_easing.wgsl` | Compute | Pure interpolation |
+| `compiler.rs` (grammar → scene) | B: Adapt | `petal_compiler.wgsl` | Compute | Needs trait abstraction for GPU dispatch; JSON parsing stays CPU |
+| `physics.rs` (PhysicsWorld types) | B: Adapt | Already uses barraCuda IPC | Compute | Types serialize; compute delegated to barraCuda |
+| `modality.rs` (SVG/audio/terminal) | C: New | N/A | Render | Platform-specific output, not promotable |
+| `scene_graph.rs` (hierarchical tree) | C: New | N/A | CPU-only | Tree traversal inherently sequential |
+| UI crates (egui, ratatui) | C: New | N/A | Render | Platform-specific |
+| IPC crates (tarpc, JSON-RPC) | C: New | N/A | Transport | Platform-specific |
+| Discovery crate | C: New | N/A | Transport | Platform-specific |
+
+### Tier Definitions
+
+- **Tier A (Ready)**: Pure computation, no I/O, no allocation, composable. Can be
+  transcribed to WGSL with minimal changes. ~5 modules.
+- **Tier B (Adapt)**: Needs trait abstraction or data format changes for GPU dispatch.
+  CPU fallback required. ~2 modules.
+- **Tier C (New)**: Platform-specific or inherently sequential. Stays on CPU. ~8+ modules.
+
+### barraCuda Integration Status
+
+| Capability | Spec | Implemented | Gap |
+|-----------|------|-------------|-----|
+| `math.physics.nbody` | Yes | Yes (physics_bridge.rs) | CPU fallback only; no GPU parity test |
+| `math.physics.md_forces` | Yes | Types only | No IPC client |
+| `math.stat.kde` | Yes | No | Offload at ≥10K rows not implemented |
+| `math.stat.smooth` | Yes | No | LOESS/moving average not implemented |
+| `math.stat.bin` | Yes | No | Histogram binning not implemented |
+| `math.stat.summary` | Yes | No | Grouped aggregation not implemented |
+| `math.tessellate.*` | Yes | No | 3D tessellation not implemented |
+| `math.project.*` | Yes | No | 3D projection not implemented |
+
+### Python Baseline Status
+
+petalTongue is a visualization primal, not a compute Spring. The evolution
+path for petalTongue is:
+
+1. **Rust-native** (current): Grammar of Graphics compiler, modality compilers, Tufte constraints
+2. **barraCuda delegation** (next): Heavy statistics/3D offloaded via IPC
+3. **ToadStool integration** (future): GPU display pipeline, direct framebuffer
+
+Python benchmarks exist in the compute Springs (healthSpring, groundSpring,
+airSpring, wetSpring) for their numerical algorithms. petalTongue's validation
+targets are visualization-specific (compile latency, rendering fidelity,
+Tufte constraint compliance) rather than numerical parity.
+
+### Cross-Spring Benchmark Infrastructure
+
+Other Springs have extensive Python → Rust → GPU validation:
+- **healthSpring**: `bench_barracuda_cpu_vs_python.py` (Hill eq, PK, Shannon/Simpson)
+- **groundSpring**: `bench_barracuda_cpu_vs_python.py` (FAO-56, decompose, rawr)
+- **airSpring**: 24/24 CPU parity at 20.6× speedup, 1,237/1,237 Python baselines
+- **wetSpring**: 35/35 domains bit-identical to SciPy/NumPy, 173/173 PASS chain
+- **hotSpring**: Kokkos-CUDA parity (9 cases, gap 27× → 3.7×)
 
 ---
 

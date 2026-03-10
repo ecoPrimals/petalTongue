@@ -241,8 +241,12 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
             "songbird-1",
             "Songbird",
             "Encrypted Communication",
-            std::env::var("PETALTONGUE_HEADLESS_ENDPOINT")
-                .unwrap_or_else(|_| "http://localhost:9000".to_string()),
+            std::env::var("PETALTONGUE_HEADLESS_ENDPOINT").unwrap_or_else(|_| {
+                format!(
+                    "http://localhost:{}",
+                    constants::DEFAULT_SANDBOX_SECURITY_PORT
+                )
+            }),
             vec!["encryption".to_string(), "messaging".to_string()],
             PrimalHealthStatus::Warning,
             std::time::SystemTime::now()

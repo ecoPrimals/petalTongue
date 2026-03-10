@@ -84,6 +84,10 @@ impl ModalityCompiler for SvgCompiler {
 }
 
 impl SvgCompiler {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "emit_primitive is a single match over primitive variants"
+    )]
     fn emit_primitive(buf: &mut String, prim: &Primitive, transform: &Transform2D) {
         match prim {
             Primitive::Point {
@@ -296,13 +300,16 @@ impl SvgCompiler {
         }
     }
 
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "color components clamped to [0,255] before cast"
+    )]
     fn color_attr(c: Color) -> String {
-        format!(
-            "rgb({},{},{})",
-            (c.r * 255.0) as u8,
-            (c.g * 255.0) as u8,
-            (c.b * 255.0) as u8
-        )
+        let r = (c.r * 255.0).clamp(0.0, 255.0);
+        let g = (c.g * 255.0).clamp(0.0, 255.0);
+        let b = (c.b * 255.0).clamp(0.0, 255.0);
+        format!("rgb({},{},{})", r as u8, g as u8, b as u8)
     }
 }
 
@@ -479,12 +486,27 @@ impl TerminalCompiler {
     }
 
     fn to_cell(x: f64, y: f64, w: usize, h: usize) -> (usize, usize) {
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "clamped to [0, w-1] and [0, h-1] before cast"
+        )]
         let col = (x / 800.0 * w as f64).clamp(0.0, (w - 1) as f64) as usize;
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "clamped to [0, w-1] and [0, h-1] before cast"
+        )]
         let row = (y / 600.0 * h as f64).clamp(0.0, (h - 1) as f64) as usize;
         (col, row)
     }
 
     #[allow(clippy::cast_possible_wrap)]
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "y,x are bounds-checked in loop condition before indexing"
+    )]
     fn bresenham(grid: &mut [Vec<char>], x0: usize, y0: usize, x1: usize, y1: usize) {
         let (mut x, mut y) = (x0 as i64, y0 as i64);
         let x1i = x1 as i64;
@@ -591,9 +613,8 @@ mod tests {
         let compiler = SvgCompiler::new();
         let graph = SceneGraph::new();
         let out = compiler.compile(&graph);
-        let s = match &out {
-            ModalityOutput::Svg(s) => s,
-            _ => panic!("expected Svg"),
+        let ModalityOutput::Svg(s) = &out else {
+            panic!("expected Svg");
         };
         assert!(s.contains("<svg"));
         assert!(s.contains("</svg>"));
@@ -612,9 +633,8 @@ mod tests {
         };
         graph.add_to_root(crate::scene_graph::SceneNode::new("p").with_primitive(prim));
         let out = SvgCompiler::new().compile(&graph);
-        let s = match &out {
-            ModalityOutput::Svg(s) => s,
-            _ => panic!("expected Svg"),
+        let ModalityOutput::Svg(s) = &out else {
+            panic!("expected Svg");
         };
         assert!(s.contains("<circle"));
     }
@@ -632,9 +652,8 @@ mod tests {
         };
         graph.add_to_root(crate::scene_graph::SceneNode::new("p").with_primitive(prim));
         let out = AudioCompiler::new().compile(&graph);
-        let params = match &out {
-            ModalityOutput::AudioParams(p) => p,
-            _ => panic!("expected AudioParams"),
+        let ModalityOutput::AudioParams(params) = &out else {
+            panic!("expected AudioParams");
         };
         assert_eq!(params.len(), 1);
         assert!(params[0].frequency >= 200.0 && params[0].frequency <= 2000.0);
@@ -654,9 +673,8 @@ mod tests {
         };
         graph.add_to_root(crate::scene_graph::SceneNode::new("p").with_primitive(prim));
         let out = TerminalCompiler::new(80, 24).compile(&graph);
-        let grid = match &out {
-            ModalityOutput::TerminalCells(g) => g,
-            _ => panic!("expected TerminalCells"),
+        let ModalityOutput::TerminalCells(grid) = &out else {
+            panic!("expected TerminalCells");
         };
         assert_eq!(grid.len(), 24);
         assert_eq!(grid[0].len(), 80);
@@ -680,9 +698,8 @@ mod tests {
         };
         graph.add_to_root(crate::scene_graph::SceneNode::new("t").with_primitive(prim));
         let out = TerminalCompiler::new(40, 10).compile(&graph);
-        let grid = match &out {
-            ModalityOutput::TerminalCells(g) => g,
-            _ => panic!("expected TerminalCells"),
+        let ModalityOutput::TerminalCells(grid) = &out else {
+            panic!("expected TerminalCells");
         };
         assert_eq!(grid[0][0], 'H');
         assert_eq!(grid[0][1], 'i');
@@ -694,9 +711,8 @@ mod tests {
         graph.add_to_root(crate::scene_graph::SceneNode::new("a"));
         graph.add_to_root(crate::scene_graph::SceneNode::new("b"));
         let out = DescriptionCompiler::new().compile(&graph);
-        let s = match &out {
-            ModalityOutput::Description(s) => s,
-            _ => panic!("expected Description"),
+        let ModalityOutput::Description(s) = &out else {
+            panic!("expected Description");
         };
         assert!(s.contains("3 nodes")); // root + a + b
     }

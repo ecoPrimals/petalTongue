@@ -101,6 +101,10 @@ impl MathObject for NumberLine {
             let mut v = self.start;
             while v <= self.end {
                 let sx = self.data_to_screen_x(v);
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "axis labels are integer tick values"
+                )]
                 let label = if (v - v.round()).abs() < 1e-10 {
                     format!("{}", v.round() as i64)
                 } else {
@@ -186,6 +190,10 @@ impl Axes {
 }
 
 impl MathObject for Axes {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "axis rendering is a cohesive sequence: x-axis, y-axis, ticks, labels, gridlines"
+    )]
     fn to_primitives(&self) -> Vec<Primitive> {
         let mut prims = Vec::new();
         let stroke = StrokeStyle {
@@ -217,6 +225,10 @@ impl MathObject for Axes {
                 data_id: None,
             });
             if self.show_labels {
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "axis labels are integer tick values"
+                )]
                 prims.push(Primitive::Text {
                     x: sx,
                     y: oy + 8.0,
@@ -265,6 +277,10 @@ impl MathObject for Axes {
                 data_id: None,
             });
             if self.show_labels {
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "axis labels are integer tick values"
+                )]
                 prims.push(Primitive::Text {
                     x: ox - 8.0,
                     y: sy,
@@ -579,8 +595,8 @@ mod tests {
     #[test]
     fn parametric_curve_circle_closed() {
         let curve = ParametricCurve::sample(
-            |t| t.cos(),
-            |t| t.sin(),
+            f64::cos,
+            f64::sin,
             (0.0, std::f64::consts::TAU - 0.01),
             64,
             StrokeStyle::default(),
@@ -627,5 +643,180 @@ mod tests {
         let boxed: Box<dyn MathObject> = Box::new(NumberLine::default());
         let prims2 = boxed.to_primitives();
         assert!(!prims2.is_empty());
+    }
+
+    #[test]
+    fn numberline_custom_range_and_tick_count() {
+        let nl = NumberLine {
+            start: -5.0,
+            end: 5.0,
+            step: 0.5,
+            origin_x: 100.0,
+            origin_y: 200.0,
+            length: 200.0,
+            color: Color::BLACK,
+            show_labels: true,
+            label_font_size: 10.0,
+        };
+        let prims = nl.to_primitives();
+        assert!(!prims.is_empty());
+        let tick_count = prims
+            .iter()
+            .filter(|p| matches!(p, Primitive::Line { .. }))
+            .count();
+        assert!(
+            tick_count >= 20,
+            "Should have ~21 ticks from -5 to 5 by 0.5"
+        );
+    }
+
+    #[test]
+    fn numberline_no_labels_produces_no_text() {
+        let nl = NumberLine {
+            show_labels: false,
+            ..NumberLine::default()
+        };
+        let prims = nl.to_primitives();
+        let has_text = prims.iter().any(|p| matches!(p, Primitive::Text { .. }));
+        assert!(!has_text);
+    }
+
+    #[test]
+    fn axes_various_aspect_ratios() {
+        let axes_square = Axes {
+            width: 400.0,
+            height: 400.0,
+            ..Axes::default()
+        };
+        let (sx, sy) = axes_square.data_to_screen(0.0, 0.0);
+        assert!((sx - 400.0).abs() < 1e-10);
+        assert!((sy - 0.0).abs() < 1e-10); // y flipped: origin.1 - ty*height
+
+        let axes_wide = Axes {
+            width: 800.0,
+            height: 200.0,
+            ..Axes::default()
+        };
+        let (sx2, sy2) = axes_wide.data_to_screen(0.0, 0.0);
+        assert!((sx2 - 600.0).abs() < 1e-10); // origin.0 + 0.5*800
+        assert!((sy2 - 100.0).abs() < 1e-10); // origin.1 - 0.5*200
+
+        let axes_tall = Axes {
+            width: 200.0,
+            height: 600.0,
+            ..Axes::default()
+        };
+        let prims = axes_tall.to_primitives();
+        assert!(!prims.is_empty());
+    }
+
+    #[test]
+    fn function_plot_nan_and_infinity_handling() {
+        let axes = Axes {
+            x_range: (-1.0, 1.0, 0.5),
+            y_range: (-10.0, 10.0, 2.0),
+            ..Axes::default()
+        };
+        let plot = FunctionPlot::sample(&axes, |x| 1.0 / (x - 1.0), StrokeStyle::default());
+        assert_eq!(plot.points.len(), 200);
+        let has_special = plot
+            .points
+            .iter()
+            .any(|[_, y]| y.is_nan() || y.is_infinite());
+        assert!(has_special, "1/(x-1) at x=1 produces infinity");
+    }
+
+    #[test]
+    fn function_plot_very_large_range() {
+        let axes = Axes {
+            x_range: (-1e6, 1e6, 1e5),
+            y_range: (-1e6, 1e6, 1e5),
+            ..Axes::default()
+        };
+        let plot = FunctionPlot::sample(&axes, |x| x, StrokeStyle::default());
+        assert_eq!(plot.points.len(), 200);
+        assert!((plot.points[0][0] - (-1e6)).abs() < 1e3);
+        assert!((plot.points[199][0] - 1e6).abs() < 1e3);
+    }
+
+    #[test]
+    fn function_plot_from_points_edge_case_empty() {
+        let axes = Axes::default();
+        let plot = FunctionPlot::from_points(vec![], &axes, StrokeStyle::default());
+        let prims = plot.to_primitives();
+        assert_eq!(prims.len(), 1);
+        if let Primitive::Line { points, .. } = &prims[0] {
+            assert!(points.is_empty());
+        }
+    }
+
+    #[test]
+    fn vector_field_various_grid_sizes() {
+        for density in [1, 2, 5, 10] {
+            let vf = VectorField::from_fn(
+                |x, y| (x + y, x - y),
+                (-1.0, 1.0),
+                (-1.0, 1.0),
+                density,
+                0.1,
+                Color::BLACK,
+            );
+            assert_eq!(vf.arrows.len(), density * density);
+            let prims = vf.to_primitives();
+            assert!(!prims.is_empty());
+        }
+    }
+
+    #[test]
+    fn vector_field_empty_density_zero() {
+        let vf = VectorField::from_fn(
+            |_, _| (0.0, 0.0),
+            (0.0, 1.0),
+            (0.0, 1.0),
+            0,
+            1.0,
+            Color::BLACK,
+        );
+        assert!(vf.arrows.is_empty());
+        let prims = vf.to_primitives();
+        assert!(prims.is_empty());
+    }
+
+    #[test]
+    fn parametric_curve_zero_range() {
+        let curve = ParametricCurve::sample(|t| t, |t| t, (1.0, 1.0), 10, StrokeStyle::default());
+        assert_eq!(curve.points.len(), 10);
+        let first = curve.points[0];
+        let last = curve.points[9];
+        assert!((first[0] - 1.0).abs() < 1e-10);
+        assert!((last[0] - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn parametric_curve_single_point() {
+        let curve = ParametricCurve {
+            points: vec![[0.0, 0.0]],
+            stroke: StrokeStyle::default(),
+            closed: false,
+        };
+        let prims = curve.to_primitives();
+        assert_eq!(prims.len(), 1);
+        if let Primitive::Line { points, .. } = &prims[0] {
+            assert_eq!(points.len(), 1);
+        }
+    }
+
+    #[test]
+    fn parametric_curve_closed_produces_line() {
+        let curve = ParametricCurve {
+            points: vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]],
+            stroke: StrokeStyle::default(),
+            closed: true,
+        };
+        let prims = curve.to_primitives();
+        assert_eq!(prims.len(), 1);
+        if let Primitive::Line { closed, .. } = &prims[0] {
+            assert!(*closed);
+        }
     }
 }

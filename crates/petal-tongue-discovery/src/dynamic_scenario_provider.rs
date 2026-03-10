@@ -76,6 +76,10 @@ impl DynamicScenarioProvider {
             .and_then(|v| v.as_array())
             .context("Missing 'primals' array in ecosystem")?;
 
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "Unix timestamp for current time is always non-negative"
+        )]
         let now = chrono::Utc::now().timestamp() as u64;
         let mut primals = Vec::new();
 

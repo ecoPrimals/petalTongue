@@ -98,7 +98,7 @@ async fn test_primal_discovery_workflow() {
     assert!(!state.is_standalone().await);
 
     // Verify discovery
-    assert_eq!(state.get_primals().await.len(), 1);
+    assert_eq!(state.primal_count().await, 1);
     assert!(state.has_capability("songbird", "discovery"));
 
     // Discover more primals
@@ -106,7 +106,7 @@ async fn test_primal_discovery_workflow() {
     all_primals.push(create_test_primal("toadstool", "toadstool-1"));
 
     state.update_primals(all_primals).await;
-    assert_eq!(state.get_primals().await.len(), 2);
+    assert_eq!(state.primal_count().await, 2);
 }
 
 /// Test topology update workflow
@@ -140,7 +140,7 @@ async fn test_topology_update_workflow() {
     let new_topology = vec![create_test_edge("songbird-1", "nestgate-1", "discovery")];
 
     state.update_topology(new_topology).await;
-    assert_eq!(state.get_topology().await.len(), 1);
+    assert_eq!(state.topology_edge_count().await, 1);
 }
 
 /// Test log streaming workflow
@@ -301,10 +301,10 @@ async fn test_degraded_mode_workflow() {
     assert!(state.is_standalone().await);
 
     // No primals
-    assert_eq!(state.get_primals().await.len(), 0);
+    assert_eq!(state.primal_count().await, 0);
 
     // No topology
-    assert_eq!(state.get_topology().await.len(), 0);
+    assert_eq!(state.topology_edge_count().await, 0);
 
     // Can still navigate views
     state.set_view(View::Topology).await;
@@ -320,5 +320,5 @@ async fn test_degraded_mode_workflow() {
         })
         .await;
 
-    assert_eq!(state.get_logs().await.len(), 1);
+    assert_eq!(state.log_count().await, 1);
 }

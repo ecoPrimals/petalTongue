@@ -162,14 +162,14 @@ struct JsonRpcRequest {
     id: u64,
 }
 
-/// JSON-RPC response
+/// JSON-RPC response (jsonrpc and id required for spec compliance, not read after parse)
 #[derive(Deserialize)]
 struct JsonRpcResponse {
-    #[expect(dead_code)]
+    #[allow(dead_code)]
     jsonrpc: String,
     result: Option<Value>,
     error: Option<JsonRpcError>,
-    #[expect(dead_code)]
+    #[allow(dead_code)]
     id: u64,
 }
 

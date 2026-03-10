@@ -46,6 +46,11 @@ impl AwakeningAudio {
     ///
     /// This is the Pure Rust fallback that always works.
     pub fn generate_signature_tone(&mut self, duration_secs: f32) -> Vec<f32> {
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "sample count is positive and bounded by duration*rate"
+        )]
         let num_samples = (duration_secs * self.sample_rate as f32) as usize;
         let mut samples = Vec::with_capacity(num_samples);
 
@@ -85,6 +90,11 @@ impl AwakeningAudio {
 
     /// Generate heartbeat harmonics (self-knowledge stage)
     pub fn generate_heartbeat(&mut self, duration_secs: f32) -> Vec<f32> {
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "sample count is positive and bounded by duration*rate"
+        )]
         let num_samples = (duration_secs * self.sample_rate as f32) as usize;
         let mut samples = Vec::with_capacity(num_samples);
 
@@ -124,6 +134,11 @@ impl AwakeningAudio {
     /// Generate discovery chime (when primal found)
     pub fn generate_discovery_chime(&mut self, primal_index: u32) -> Vec<f32> {
         let duration_secs = 0.5;
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "sample count is positive and bounded by duration*rate"
+        )]
         let num_samples = (duration_secs * self.sample_rate as f32) as usize;
         let mut samples = Vec::with_capacity(num_samples);
 
@@ -154,6 +169,11 @@ impl AwakeningAudio {
     /// Generate bird chirp (nature sounds)
     pub fn generate_bird_chirp(&mut self) -> Vec<f32> {
         let duration_secs = 0.3;
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "sample count is positive and bounded by duration*rate"
+        )]
         let num_samples = (duration_secs * self.sample_rate as f32) as usize;
         let mut samples = Vec::with_capacity(num_samples);
 
@@ -181,6 +201,11 @@ impl AwakeningAudio {
 
     /// Generate wind ambience (filtered noise)
     pub fn generate_wind(&mut self, duration_secs: f32) -> Vec<f32> {
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "sample count is positive and bounded by duration*rate"
+        )]
         let num_samples = (duration_secs * self.sample_rate as f32) as usize;
         let mut samples = Vec::with_capacity(num_samples);
 
@@ -219,6 +244,11 @@ impl AwakeningAudio {
         // Add discovery chimes at 1s intervals
         for i in 0..3 {
             let chime = self.generate_discovery_chime(i);
+            #[expect(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "offset is positive, i in 0..3"
+            )]
             let offset = (i as f32 * 1.0 * self.sample_rate as f32) as usize;
 
             // Mix chime into wind

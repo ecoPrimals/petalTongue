@@ -146,8 +146,6 @@ impl VisualizationDataProvider for HttpVisualizationProvider {
                     #[derive(serde::Deserialize)]
                     struct TopologyResponse {
                         edges: Vec<TopologyEdge>,
-                        #[expect(dead_code)]
-                        nodes: Option<serde_json::Value>, // Optional nodes field
                     }
 
                     if let Ok(topology) = response.json::<TopologyResponse>().await {

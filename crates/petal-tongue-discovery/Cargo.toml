@@ -15,7 +15,6 @@ async-trait = "0.1"
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 thiserror = "1"
-# REMOVED: libc = "0.2" - Now using petal-tongue-core::system_info (rustix-based, 100% safe!)
 
 # HTTP client
 reqwest = { workspace = true }  # Use workspace version (0.12 with rustls-tls)
@@ -30,14 +29,14 @@ chrono = "0.4"
 # Logging
 tracing = "0.1"
 
-# Low-level socket for multicast (Phase 1)
-socket2 = "0.5"
+# Low-level socket for multicast (Phase 1) - uses libc for syscalls (not C crypto)
+socket2 = "0.6"
 
-# LRU cache for performance optimization (Phase 2)
-lru = "0.12"
+# LRU cache for performance optimization (Phase 2) - pure Rust
+lru = "0.16"
 
-# mDNS discovery (optional feature)
-mdns-sd = { version = "0.11", optional = true }
+# mDNS discovery (optional feature) - pure Rust
+mdns-sd = { version = "0.18", optional = true }
 
 # Modern async patterns (Discovery Evolution)
 futures = "0.3"  # For concurrent operations

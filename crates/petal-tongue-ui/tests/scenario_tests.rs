@@ -206,12 +206,30 @@ fn test_primal_positions_from_scenario() {
     // Verify explicit positions are in the scenario
     let primals = &scenario.ecosystem.primals;
 
-    assert_eq!(primals[0].position.x, 200.0, "Red Circle x position");
-    assert_eq!(primals[0].position.y, 200.0, "Red Circle y position");
+    assert!(
+        (primals[0].position.x - 200.0).abs() < f32::EPSILON,
+        "Red Circle x position"
+    );
+    assert!(
+        (primals[0].position.y - 200.0).abs() < f32::EPSILON,
+        "Red Circle y position"
+    );
 
-    assert_eq!(primals[1].position.x, 400.0, "Green Square x position");
-    assert_eq!(primals[1].position.y, 200.0, "Green Square y position");
+    assert!(
+        (primals[1].position.x - 400.0).abs() < f32::EPSILON,
+        "Green Square x position"
+    );
+    assert!(
+        (primals[1].position.y - 200.0).abs() < f32::EPSILON,
+        "Green Square y position"
+    );
 
-    assert_eq!(primals[2].position.x, 300.0, "Blue Triangle x position");
-    assert_eq!(primals[2].position.y, 350.0, "Blue Triangle y position");
+    assert!(
+        (primals[2].position.x - 300.0).abs() < f32::EPSILON,
+        "Blue Triangle x position"
+    );
+    assert!(
+        (primals[2].position.y - 350.0).abs() < f32::EPSILON,
+        "Blue Triangle y position"
+    );
 }

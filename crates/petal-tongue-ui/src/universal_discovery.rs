@@ -31,14 +31,6 @@ use tracing::{debug, info};
 /// Discovers ANY service by capability, without hardcoding names.
 #[derive(Debug, Clone)]
 pub struct UniversalDiscovery {
-    /// Discovered service mesh providers (if any)
-    #[expect(dead_code)]
-    service_mesh_providers: Vec<DiscoveredService>,
-
-    /// Direct service connections (from env/config)
-    #[expect(dead_code)]
-    direct_services: HashMap<String, DiscoveredService>,
-
     /// Discovery methods to try
     discovery_methods: Vec<DiscoveryMethod>,
 }
@@ -87,8 +79,6 @@ impl UniversalDiscovery {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            service_mesh_providers: Vec::new(),
-            direct_services: HashMap::new(),
             discovery_methods: vec![
                 DiscoveryMethod::Environment, // Fastest
                 DiscoveryMethod::UnixSocket,  // Port-free
@@ -307,20 +297,22 @@ impl UniversalDiscovery {
     /// Discover via HTTP probing (AGNOSTIC)
     ///
     /// Probes ports WITHOUT assumptions:
-    /// - Reads `DISCOVERY_PORTS` env var if provided
-    /// - Falls back to common service port range
+    /// - Reads `PETALTONGUE_DISCOVERY_PORTS` or `DISCOVERY_PORTS` env var if provided
+    /// - Falls back to common service port range (documented in ENV_VARS.md)
     /// - Checks /capabilities, /health, /api/v1/capabilities endpoints
     async fn discover_via_http(&self, capability: &str) -> Result<Vec<DiscoveredService>> {
         debug!("Probing HTTP endpoints for capability: {}", capability);
 
-        let ports = if let Ok(port_str) = std::env::var("PETALTONGUE_DISCOVERY_PORTS") {
-            port_str
-                .split(',')
-                .filter_map(|s| s.trim().parse::<u16>().ok())
-                .collect()
-        } else {
-            vec![8080, 8081, 3000, 9000]
-        };
+        let ports: Vec<u16> = std::env::var("PETALTONGUE_DISCOVERY_PORTS")
+            .or_else(|_| std::env::var("DISCOVERY_PORTS"))
+            .map_or_else(
+                |_| vec![8080, 8081, 3000, 9000],
+                |s| {
+                    s.split(',')
+                        .filter_map(|p| p.trim().parse::<u16>().ok())
+                        .collect()
+                },
+            );
 
         let base = std::env::var("PETALTONGUE_DISCOVERY_BASE")
             .unwrap_or_else(|_| "http://localhost".to_string());

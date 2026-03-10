@@ -23,7 +23,7 @@ fn test_proprioception_initialization() {
     assert!(!state.motor_functional);
     assert!(!state.sensory_functional);
     assert!(!state.loop_complete);
-    assert_eq!(state.health, 0.0);
+    assert!((state.health - 0.0).abs() < f32::EPSILON);
 }
 
 #[test]
@@ -38,7 +38,7 @@ fn test_output_registration() {
     // Should have 3 outputs registered
     let state = system.assess();
     // Health still 0 because no confirmations yet
-    assert_eq!(state.health, 0.0);
+    assert!((state.health - 0.0).abs() < f32::EPSILON);
 }
 
 #[test]
@@ -51,7 +51,7 @@ fn test_input_registration() {
     system.register_input(InputModality::Audio);
 
     let state = system.assess();
-    assert_eq!(state.health, 0.0); // No input received yet
+    assert!((state.health - 0.0).abs() < f32::EPSILON); // No input received yet
 }
 
 #[test]
@@ -79,7 +79,7 @@ fn test_health_calculation() {
 
     // No interaction - health should be low
     let state1 = system.assess();
-    assert_eq!(state1.health, 0.0);
+    assert!((state1.health - 0.0).abs() < f32::EPSILON);
 
     // Simulate user interaction
     system.input_received(&InputModality::Keyboard);
@@ -99,8 +99,8 @@ fn test_confidence_mechanism() {
 
     // Test 1: Confidence should be 0 initially (no input)
     let state_no_input = system.assess();
-    assert_eq!(
-        state_no_input.confidence, 0.0,
+    assert!(
+        (state_no_input.confidence - 0.0).abs() < f32::EPSILON,
         "Confidence should be 0 with no input"
     );
 
@@ -229,7 +229,7 @@ fn test_graceful_degradation_no_inputs() {
 
     // Should not crash, should report unknown state
     assert!(!state.is_healthy());
-    assert_eq!(state.health, 0.0);
+    assert!((state.health - 0.0).abs() < f32::EPSILON);
     assert!(!state.loop_complete);
 }
 

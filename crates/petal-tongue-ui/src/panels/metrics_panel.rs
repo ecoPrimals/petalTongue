@@ -75,32 +75,6 @@ impl MetricsPanel {
         }
     }
 
-    #[expect(dead_code)]
-    async fn refresh_metrics(&mut self) {
-        if let Some(provider) = &self.provider {
-            match provider.get_metrics().await {
-                Ok(json_value) => {
-                    // Parse the JSON into our structs
-                    match serde_json::from_value::<SystemMetrics>(json_value) {
-                        Ok(metrics) => {
-                            self.last_metrics = Some(metrics);
-                            self.last_update = Instant::now();
-                            self.error_message = None;
-                        }
-                        Err(e) => {
-                            self.error_message = Some(format!("Parse error: {e}"));
-                            tracing::warn!("Failed to parse metrics: {}", e);
-                        }
-                    }
-                }
-                Err(e) => {
-                    self.error_message = Some(format!("API error: {e}"));
-                    tracing::warn!("Failed to get metrics: {}", e);
-                }
-            }
-        }
-    }
-
     fn format_uptime(seconds: u64) -> String {
         let days = seconds / 86400;
         let hours = (seconds % 86400) / 3600;

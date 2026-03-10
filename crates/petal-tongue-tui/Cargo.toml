@@ -24,7 +24,7 @@ ratatui = "0.28"
 crossterm = { version = "0.28", features = ["event-stream"] }
 
 # Async runtime
-tokio = { version = "1.45", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 tokio-util = "0.7"
 
 # Serialization

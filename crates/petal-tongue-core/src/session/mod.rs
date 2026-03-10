@@ -204,7 +204,11 @@ mod tests {
     #[test]
     fn test_session_dirty_tracking() {
         let id = InstanceId::new();
-        let mut manager = SessionManager::new(&id).unwrap();
+        let temp = std::env::temp_dir()
+            .join("petal-dirty-track-test")
+            .join(format!("{}.ron", id.as_str()));
+        std::fs::create_dir_all(temp.parent().unwrap()).unwrap();
+        let mut manager = SessionManager::with_session_path(temp.clone()).unwrap();
 
         manager.load_or_create(id).unwrap();
         assert!(manager.is_dirty());
@@ -214,6 +218,8 @@ mod tests {
 
         manager.mark_dirty();
         assert!(manager.is_dirty());
+
+        let _ = std::fs::remove_dir_all(temp.parent().unwrap());
     }
 
     #[test]

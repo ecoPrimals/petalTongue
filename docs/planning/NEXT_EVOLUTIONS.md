@@ -1,8 +1,8 @@
 # Next Evolution Paths for petalTongue
 
-**Current State**: v1.3.0-dev ECOSYSTEM ALIGNED + tarpc PRIMARY  
+**Current State**: v1.5.0 — Grammar of Graphics + DataBinding compiler + Dashboard + Scenario loader  
 **Grade**: A+ (10/10)  
-**Date**: January 10, 2026  
+**Date**: March 10, 2026 (header updated; historical content below from Jan 10, 2026)  
 
 ## Recently Completed ✅
 

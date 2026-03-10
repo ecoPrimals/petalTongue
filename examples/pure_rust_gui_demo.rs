@@ -80,9 +80,14 @@ async fn main() -> Result<()> {
 
                 // Progress bar
                 let progress = (frame_count as f32) / (target_frames as f32);
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    clippy::cast_sign_loss,
+                    reason = "progress in [0,1], percentage clamped"
+                )]
                 ui.add(
                     egui::ProgressBar::new(progress)
-                        .text(format!("{}%", (progress * 100.0) as u32)),
+                        .text(format!("{}%", (progress * 100.0).clamp(0.0, 100.0) as u32)),
                 );
             });
         });
@@ -101,7 +106,12 @@ async fn main() -> Result<()> {
         // Frame timing (target 60 FPS = 16.67ms)
         let frame_time = frame_start.elapsed();
         if frame_time < Duration::from_millis(16) {
-            tokio::time::sleep(Duration::from_millis(16).checked_sub(frame_time).unwrap()).await;
+            tokio::time::sleep(
+                Duration::from_millis(16)
+                    .checked_sub(frame_time)
+                    .unwrap_or(Duration::ZERO),
+            )
+            .await;
         }
 
         // Progress indicator

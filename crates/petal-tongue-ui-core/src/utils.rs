@@ -44,7 +44,12 @@ pub fn get_trust_level(info: &PrimalInfo) -> String {
     if let Some(trust) = info.properties.get("trust_level")
         && let Some(num) = trust.as_number()
     {
-        return format!("{}", num as u8);
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "trust_level is 0-5, clamped for display"
+        )]
+        return format!("{}", num.clamp(0.0, 255.0) as u8);
     }
 
     // Fall back to deprecated field

@@ -234,8 +234,8 @@ impl RichTUI {
     /// Get item count for current view (for selection wrapping)
     async fn get_current_view_item_count(&self) -> usize {
         match self.state.get_view().await {
-            View::Primals => self.state.get_primals().await.len(),
-            View::Logs => self.state.get_logs().await.len(),
+            View::Primals => self.state.primal_count().await,
+            View::Logs => self.state.log_count().await,
             _ => 0,
         }
     }
@@ -268,7 +268,7 @@ impl RichTUI {
                     self.state.update_primals(all_primals).await;
                     self.add_log(format!(
                         "Discovered {} primals",
-                        self.state.get_primals().await.len()
+                        self.state.primal_count().await
                     ))
                     .await;
                 }

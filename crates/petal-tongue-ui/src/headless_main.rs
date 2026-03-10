@@ -224,8 +224,10 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
         }
     }
 
-    let node_count = graph.read().unwrap().nodes().len();
-    let edge_count = graph.read().unwrap().edges().len();
+    let (node_count, edge_count) = {
+        let g = graph.read().map_err(|e| anyhow::anyhow!("graph lock poisoned: {e}"))?;
+        (g.nodes().len(), g.edges().len())
+    };
     tracing::info!("📊 Loaded: {} primals, {} connections", node_count, edge_count);
 
     Ok(())

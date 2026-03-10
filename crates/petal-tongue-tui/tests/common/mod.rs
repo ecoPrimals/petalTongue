@@ -5,6 +5,10 @@ use chrono::Utc;
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
 
 /// Create a test `PrimalInfo` with minimal required fields
+#[expect(
+    clippy::cast_sign_loss,
+    reason = "Unix timestamp for current time is always non-negative"
+)]
 pub fn create_test_primal(name: &str, id: &str) -> PrimalInfo {
     PrimalInfo::new(
         id,
@@ -19,6 +23,10 @@ pub fn create_test_primal(name: &str, id: &str) -> PrimalInfo {
 
 /// Create a test `PrimalInfo` with capabilities
 #[allow(dead_code)]
+#[expect(
+    clippy::cast_sign_loss,
+    reason = "Unix timestamp for current time is always non-negative"
+)]
 pub fn create_test_primal_with_caps(name: &str, id: &str, capabilities: Vec<String>) -> PrimalInfo {
     PrimalInfo::new(
         id,
@@ -33,6 +41,10 @@ pub fn create_test_primal_with_caps(name: &str, id: &str, capabilities: Vec<Stri
 
 /// Create a test `PrimalInfo` with specific health status
 #[allow(dead_code)]
+#[expect(
+    clippy::cast_sign_loss,
+    reason = "Unix timestamp for current time is always non-negative"
+)]
 pub fn create_test_primal_with_health(
     name: &str,
     id: &str,

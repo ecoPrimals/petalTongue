@@ -116,6 +116,10 @@ mod serde_duration {
     where
         S: Serializer,
     {
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "duration in ms fits u64 for serialization"
+        )]
         serializer.serialize_u64(duration.as_millis() as u64)
     }
 
@@ -136,6 +140,10 @@ mod serde_duration_vec {
     where
         S: Serializer,
     {
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "duration in ms fits u64 for serialization"
+        )]
         let millis: Vec<u64> = durations.iter().map(|d| d.as_millis() as u64).collect();
         millis.serialize(serializer)
     }
