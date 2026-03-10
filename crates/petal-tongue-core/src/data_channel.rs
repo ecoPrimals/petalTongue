@@ -2,7 +2,7 @@
 //! Data binding and threshold range types for universal visualization.
 //!
 //! Schema for binding data sources to visualizations across all spring domains:
-//! timeseries, distribution, bar, gauge, heatmap, scatter3d, field map, spectrum.
+//! timeseries, distribution, bar, gauge, heatmap, scatter, scatter3d, field map, spectrum.
 //! Optional threshold ranges for normal/warning/critical state coloring.
 
 use serde::{Deserialize, Serialize};
@@ -114,6 +114,38 @@ pub enum DataBinding {
         /// Optional per-point labels (empty vec if unlabeled).
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         point_labels: Vec<String>,
+        /// X-axis label (e.g., "PC1").
+        #[serde(default)]
+        x_label: String,
+        /// Y-axis label (e.g., "PC2").
+        #[serde(default)]
+        y_label: String,
+        /// Z-axis label (e.g., "PC3").
+        #[serde(default)]
+        z_label: String,
+        /// Unit of measurement for the axes.
+        unit: String,
+    },
+    /// 2D scatter plot (e.g., PCoA ordination, UMAP embedding, KMD plots).
+    #[serde(rename = "scatter")]
+    Scatter {
+        /// Unique identifier for this channel within the visualization.
+        id: String,
+        /// Human-readable display name.
+        label: String,
+        /// X coordinates for each point.
+        x: Vec<f64>,
+        /// Y coordinates for each point.
+        y: Vec<f64>,
+        /// Optional per-point labels (empty vec if unlabeled).
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        point_labels: Vec<String>,
+        /// X-axis label (e.g., "PC1 (32.1%)").
+        #[serde(default)]
+        x_label: String,
+        /// Y-axis label (e.g., "PC2 (18.7%)").
+        #[serde(default)]
+        y_label: String,
         /// Unit of measurement for the axes.
         unit: String,
     },
@@ -309,5 +341,101 @@ mod tests {
 
         assert_eq!(thresholds[1].status, "warning");
         assert_eq!(thresholds[2].label, "Shannon healthy");
+    }
+
+    const WETSPRING_SCATTER_SNIPPET: &str = r#"[
+        {
+            "channel_type": "scatter",
+            "id": "pcoa_ordination",
+            "label": "PCoA Ordination",
+            "x": [1.2, -0.5, 0.8],
+            "y": [0.3, 1.1, -0.7],
+            "point_labels": ["Sample A", "Sample B", "Sample C"],
+            "x_label": "PC1 (32.1%)",
+            "y_label": "PC2 (18.7%)",
+            "unit": "eigenvalue"
+        },
+        {
+            "channel_type": "scatter3d",
+            "id": "pcoa_3d",
+            "label": "PCoA 3D",
+            "x": [1.0, 2.0],
+            "y": [3.0, 4.0],
+            "z": [5.0, 6.0],
+            "x_label": "PC1",
+            "y_label": "PC2",
+            "z_label": "PC3",
+            "unit": "eigenvalue"
+        }
+    ]"#;
+
+    #[test]
+    fn wetspring_scatter_round_trip() {
+        let bindings: Vec<DataBinding> =
+            serde_json::from_str(WETSPRING_SCATTER_SNIPPET).expect("deserialize scatter");
+        assert_eq!(bindings.len(), 2);
+
+        match &bindings[0] {
+            DataBinding::Scatter {
+                id,
+                x,
+                y,
+                point_labels,
+                x_label,
+                y_label,
+                ..
+            } => {
+                assert_eq!(id, "pcoa_ordination");
+                assert_eq!(x.len(), 3);
+                assert_eq!(y.len(), 3);
+                assert_eq!(point_labels.len(), 3);
+                assert_eq!(x_label, "PC1 (32.1%)");
+                assert_eq!(y_label, "PC2 (18.7%)");
+            }
+            _ => panic!("expected Scatter"),
+        }
+
+        match &bindings[1] {
+            DataBinding::Scatter3D {
+                id,
+                x_label,
+                y_label,
+                z_label,
+                ..
+            } => {
+                assert_eq!(id, "pcoa_3d");
+                assert_eq!(x_label, "PC1");
+                assert_eq!(y_label, "PC2");
+                assert_eq!(z_label, "PC3");
+            }
+            _ => panic!("expected Scatter3D"),
+        }
+    }
+
+    #[test]
+    fn scatter3d_without_labels_deserializes() {
+        let json = r#"{
+            "channel_type": "scatter3d",
+            "id": "legacy",
+            "label": "Legacy",
+            "x": [1.0],
+            "y": [2.0],
+            "z": [3.0],
+            "unit": "m"
+        }"#;
+        let binding: DataBinding = serde_json::from_str(json).expect("deserialize");
+        match &binding {
+            DataBinding::Scatter3D {
+                x_label,
+                y_label,
+                z_label,
+                ..
+            } => {
+                assert!(x_label.is_empty());
+                assert!(y_label.is_empty());
+                assert!(z_label.is_empty());
+            }
+            _ => panic!("expected Scatter3D"),
+        }
     }
 }

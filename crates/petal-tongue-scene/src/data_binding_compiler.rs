@@ -4,7 +4,7 @@
 //! Converts healthSpring's typed data payloads into the Grammar of Graphics
 //! pipeline for actual rendering.
 
-use petal_tongue_core::DataBinding;
+use petal_tongue_core::{DataBinding, ThresholdRange};
 use serde_json::Value;
 
 use crate::grammar::{
@@ -99,10 +99,12 @@ impl DataBindingCompiler {
                 id,
                 label,
                 value,
+                min,
+                max,
                 unit,
                 ..
             } => {
-                let expr = GrammarExpr::new(id.clone(), GeometryType::Bar)
+                let expr = GrammarExpr::new(id.clone(), GeometryType::Arc)
                     .with_x("x")
                     .with_y("y")
                     .with_title(format!("{label}: {value:.1} {unit}"));
@@ -111,7 +113,12 @@ impl DataBindingCompiler {
                 } else {
                     expr
                 };
-                let data = vec![serde_json::json!({"x": 0, "y": *value, "label": label})];
+                let normalized = if (max - min).abs() > f64::EPSILON {
+                    (*value - min) / (max - min)
+                } else {
+                    0.5
+                };
+                let data = vec![serde_json::json!({"x": 0, "y": normalized, "label": label})];
                 (expr, data)
             }
             DataBinding::Spectrum {
@@ -168,6 +175,27 @@ impl DataBindingCompiler {
                             serde_json::json!({"x": col, "y": row, "value": val, "x_label": x_label, "y_label": y_label})
                         })
                     })
+                    .collect();
+                (expr, data)
+            }
+            DataBinding::Scatter {
+                id, label, x, y, ..
+            } => {
+                let expr = GrammarExpr::new(id.clone(), GeometryType::Point)
+                    .with_x("x")
+                    .with_y("y")
+                    .with_title(label.clone())
+                    .with_scale("x", ScaleType::Linear)
+                    .with_scale("y", ScaleType::Linear);
+                let expr = if let Some(d) = domain {
+                    expr.with_domain(d)
+                } else {
+                    expr
+                };
+                let data: Vec<Value> = x
+                    .iter()
+                    .zip(y.iter())
+                    .map(|(xi, yi)| serde_json::json!({"x": xi, "y": yi}))
                     .collect();
                 (expr, data)
             }
@@ -242,6 +270,44 @@ impl DataBindingCompiler {
         }
     }
 
+    /// Compile with optional threshold ranges that color Heatmap/FieldMap cells
+    /// by status (normal/warning/critical) instead of continuous intensity.
+    ///
+    /// Threshold ranges are matched against each cell's value. The highest-severity
+    /// matching range wins. A `"status"` field is injected into data rows so the
+    /// Tile geometry renderer can use domain palette status colors.
+    #[must_use]
+    pub fn compile_with_thresholds(
+        binding: &DataBinding,
+        domain: Option<&str>,
+        thresholds: &[ThresholdRange],
+    ) -> (GrammarExpr, Vec<Value>) {
+        let (expr, data) = Self::compile(binding, domain);
+        if thresholds.is_empty() {
+            return (expr, data);
+        }
+        let needs_status = matches!(
+            binding,
+            DataBinding::Heatmap { .. } | DataBinding::FieldMap { .. }
+        );
+        if !needs_status {
+            return (expr, data);
+        }
+        let data = data
+            .into_iter()
+            .map(|mut row| {
+                if let Some(val) = row.get("value").and_then(Value::as_f64) {
+                    let status = resolve_threshold_status(val, thresholds);
+                    if let Value::Object(ref mut map) = row {
+                        map.insert("status".to_string(), Value::String(status.to_string()));
+                    }
+                }
+                row
+            })
+            .collect();
+        (expr, data)
+    }
+
     /// Compile a batch of DataBindings into a Vec of (GrammarExpr, data) pairs.
     #[must_use]
     pub fn compile_batch(
@@ -250,6 +316,42 @@ impl DataBindingCompiler {
     ) -> Vec<(GrammarExpr, Vec<Value>)> {
         bindings.iter().map(|b| Self::compile(b, domain)).collect()
     }
+
+    /// Compile a batch with threshold ranges applied to heatmap/fieldmap bindings.
+    #[must_use]
+    pub fn compile_batch_with_thresholds(
+        bindings: &[DataBinding],
+        domain: Option<&str>,
+        thresholds: &[ThresholdRange],
+    ) -> Vec<(GrammarExpr, Vec<Value>)> {
+        bindings
+            .iter()
+            .map(|b| Self::compile_with_thresholds(b, domain, thresholds))
+            .collect()
+    }
+}
+
+/// Resolve the threshold status for a value against a set of threshold ranges.
+///
+/// Returns "critical" > "warning" > "normal" > "unknown" (highest severity wins).
+fn resolve_threshold_status(value: f64, thresholds: &[ThresholdRange]) -> &'static str {
+    let mut best: Option<&'static str> = None;
+    for t in thresholds {
+        if value >= t.min && value <= t.max {
+            let status = match t.status.as_str() {
+                "critical" => Some("critical"),
+                "warning" => Some("warning"),
+                "normal" => Some("normal"),
+                _ => continue,
+            };
+            best = match (best, status) {
+                (Some("critical"), _) | (_, Some("critical")) => Some("critical"),
+                (Some("warning"), _) | (_, Some("warning")) => Some("warning"),
+                (_, s) => s.or(best),
+            };
+        }
+    }
+    best.unwrap_or("unknown")
 }
 
 /// Bin continuous values into a histogram.
@@ -357,13 +459,15 @@ mod tests {
             warning_range: [40.0, 60.0],
         };
         let (expr, data) = DataBindingCompiler::compile(&binding, None);
-        assert_eq!(expr.geometry, GeometryType::Bar);
+        assert_eq!(expr.geometry, GeometryType::Arc);
         assert!(
             expr.title
                 .as_ref()
                 .is_some_and(|t| t.contains("72.0") && t.contains("bpm"))
         );
         assert_eq!(data.len(), 1);
+        // Value is normalized to 0..1 for arc (72 in [40,140] -> (72-40)/100 = 0.32)
+        assert!((data[0]["y"].as_f64().unwrap() - 0.32).abs() < 0.01);
     }
 
     #[test]
@@ -399,6 +503,23 @@ mod tests {
     }
 
     #[test]
+    fn scatter_compiles_to_point() {
+        let binding = DataBinding::Scatter {
+            id: "pcoa".to_string(),
+            label: "PCoA".to_string(),
+            x: vec![1.0, 2.0, 3.0],
+            y: vec![4.0, 5.0, 6.0],
+            point_labels: vec![],
+            x_label: "PC1".to_string(),
+            y_label: "PC2".to_string(),
+            unit: String::new(),
+        };
+        let (expr, data) = DataBindingCompiler::compile(&binding, None);
+        assert_eq!(expr.geometry, GeometryType::Point);
+        assert_eq!(data.len(), 3);
+    }
+
+    #[test]
     fn scatter3d_compiles_to_point_perspective3d() {
         let binding = DataBinding::Scatter3D {
             id: "s3d".to_string(),
@@ -407,6 +528,9 @@ mod tests {
             y: vec![3.0, 4.0],
             z: vec![5.0, 6.0],
             point_labels: vec!["p1".to_string(), "p2".to_string()],
+            x_label: String::new(),
+            y_label: String::new(),
+            z_label: String::new(),
             unit: String::new(),
         };
         let (expr, data) = DataBindingCompiler::compile(&binding, None);
@@ -463,6 +587,94 @@ mod tests {
         assert_eq!(results.len(), 2);
         assert_eq!(results[0].0.data_source, "a");
         assert_eq!(results[1].0.data_source, "b");
+    }
+
+    #[test]
+    fn compile_with_thresholds_injects_status() {
+        let binding = DataBinding::Heatmap {
+            id: "hm".to_string(),
+            label: "Matrix".to_string(),
+            x_labels: vec!["A".to_string(), "B".to_string()],
+            y_labels: vec!["X".to_string()],
+            values: vec![0.1, 0.4],
+            unit: String::new(),
+        };
+        let thresholds = vec![
+            petal_tongue_core::ThresholdRange {
+                label: "Low".to_string(),
+                min: 0.0,
+                max: 0.2,
+                status: "normal".to_string(),
+            },
+            petal_tongue_core::ThresholdRange {
+                label: "High".to_string(),
+                min: 0.2,
+                max: 1.0,
+                status: "warning".to_string(),
+            },
+        ];
+        let (_expr, data) =
+            DataBindingCompiler::compile_with_thresholds(&binding, Some("health"), &thresholds);
+        assert_eq!(data[0]["status"], "normal");
+        assert_eq!(data[1]["status"], "warning");
+    }
+
+    #[test]
+    fn compile_with_thresholds_no_thresholds_passthrough() {
+        let binding = DataBinding::Heatmap {
+            id: "hm".to_string(),
+            label: "M".to_string(),
+            x_labels: vec!["A".to_string()],
+            y_labels: vec!["X".to_string()],
+            values: vec![1.0],
+            unit: String::new(),
+        };
+        let (_expr, data) = DataBindingCompiler::compile_with_thresholds(&binding, None, &[]);
+        assert!(data[0].get("status").is_none());
+    }
+
+    #[test]
+    fn compile_with_thresholds_non_heatmap_unchanged() {
+        let binding = DataBinding::Bar {
+            id: "b".to_string(),
+            label: "B".to_string(),
+            categories: vec!["A".to_string()],
+            values: vec![1.0],
+            unit: String::new(),
+        };
+        let thresholds = vec![petal_tongue_core::ThresholdRange {
+            label: "T".to_string(),
+            min: 0.0,
+            max: 2.0,
+            status: "normal".to_string(),
+        }];
+        let (_expr, data) =
+            DataBindingCompiler::compile_with_thresholds(&binding, None, &thresholds);
+        assert!(data[0].get("status").is_none());
+    }
+
+    #[test]
+    fn threshold_critical_wins_over_warning() {
+        assert_eq!(
+            super::resolve_threshold_status(
+                0.5,
+                &[
+                    petal_tongue_core::ThresholdRange {
+                        label: "W".to_string(),
+                        min: 0.0,
+                        max: 1.0,
+                        status: "warning".to_string(),
+                    },
+                    petal_tongue_core::ThresholdRange {
+                        label: "C".to_string(),
+                        min: 0.3,
+                        max: 0.7,
+                        status: "critical".to_string(),
+                    },
+                ]
+            ),
+            "critical"
+        );
     }
 
     #[test]

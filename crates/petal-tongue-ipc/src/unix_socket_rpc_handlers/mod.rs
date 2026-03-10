@@ -88,9 +88,13 @@ impl RpcHandlers {
                 visualization::handle_interact_perspectives(self, req.id)
             }
             "visualization.capabilities" => visualization::handle_capabilities(self, req.id),
-            "interaction.subscribe" => self.handle_interaction_subscribe(req),
-            "interaction.poll" => self.handle_interaction_poll(req),
-            "interaction.unsubscribe" => self.handle_interaction_unsubscribe(req),
+            "interaction.subscribe" | "visualization.interact.subscribe" => {
+                self.handle_interaction_subscribe(req)
+            }
+            "interaction.poll" | "visualization.interact.poll" => self.handle_interaction_poll(req),
+            "interaction.unsubscribe" | "visualization.interact.unsubscribe" => {
+                self.handle_interaction_unsubscribe(req)
+            }
             "motor.set_panel" | "motor.set_zoom" | "motor.fit_to_view" | "motor.set_mode"
             | "motor.navigate" => motor::handle_motor_command(self, req),
             _ => {
