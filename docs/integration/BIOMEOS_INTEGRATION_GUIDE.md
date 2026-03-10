@@ -1,6 +1,6 @@
 # biomeOS Integration Guide - petalTongue
 
-**Version**: 1.5.0+  
+**Version**: 1.6.0+  
 **Status**: 60% Complete (6/10 tasks)  
 **Grade**: A (9.5/10) - Production Ready
 
@@ -49,7 +49,7 @@ petalTongue is the Universal User Interface for the ecoPrimals ecosystem, provid
 ### **1. Build Binary**
 ```bash
 cd petalTongue
-./scripts/build_for_biomeos.sh
+archive/scripts-mar_2026/build_for_biomeos.sh
 ```
 
 This will:
@@ -104,7 +104,7 @@ echo '{"jsonrpc":"2.0","method":"health_check","params":{},"id":1}' | \
   "jsonrpc": "2.0",
   "result": {
     "status": "healthy",
-    "version": "1.3.0",
+    "version": "1.6.0",
     "uptime_seconds": 123,
     "display_available": true,
     "modalities_active": ["visual", "audio", "terminal"]
@@ -439,6 +439,6 @@ echo '{"jsonrpc":"2.0","method":"health_check","params":{},"id":1}' | \
 ---
 
 **Last Updated**: 2026-03-10  
-**petalTongue Version**: v1.5.0+  
+**petalTongue Version**: v1.6.0+  
 **biomeOS Compatibility**: Phase 4 Ready
 

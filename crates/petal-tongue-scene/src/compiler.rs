@@ -237,10 +237,16 @@ impl GrammarCompiler {
                     let val_range = (val_max - val_min).max(f64::EPSILON);
 
                     // Determine grid dimensions from unique x/y values
-                    #[allow(clippy::cast_possible_truncation)]
+                    #[expect(
+                        clippy::cast_possible_truncation,
+                        reason = "grid coordinate quantization to i64 is intentional"
+                    )]
                     let x_vals: std::collections::BTreeSet<i64> =
                         points.iter().map(|p| (p[0] * 1000.0) as i64).collect();
-                    #[allow(clippy::cast_possible_truncation)]
+                    #[expect(
+                        clippy::cast_possible_truncation,
+                        reason = "grid coordinate quantization to i64 is intentional"
+                    )]
                     let y_vals: std::collections::BTreeSet<i64> =
                         points.iter().map(|p| (p[1] * 1000.0) as i64).collect();
                     let cols = x_vals.len().max(1);
@@ -267,7 +273,10 @@ impl GrammarCompiler {
                                     "warning" => palette.warning,
                                     "critical" => palette.critical,
                                     _ => {
-                                        #[allow(clippy::cast_possible_truncation)]
+                                        #[expect(
+                                            clippy::cast_possible_truncation,
+                                            reason = "color interpolation t is clamped to 0.0..1.0"
+                                        )]
                                         let t =
                                             ((val - val_min) / val_range).clamp(0.0, 1.0) as f32;
                                         Color::rgba(
@@ -279,7 +288,10 @@ impl GrammarCompiler {
                                     }
                                 }
                             } else {
-                                #[allow(clippy::cast_possible_truncation)]
+                                #[expect(
+                                    clippy::cast_possible_truncation,
+                                    reason = "color interpolation t is clamped to 0.0..1.0"
+                                )]
                                 let t = ((val - val_min) / val_range).clamp(0.0, 1.0) as f32;
                                 Color::rgba(
                                     primary.r * t + palette.chart_bg.r * (1.0 - t),

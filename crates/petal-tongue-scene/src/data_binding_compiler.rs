@@ -19,7 +19,10 @@ impl DataBindingCompiler {
     /// Convert a DataBinding into a GrammarExpr and corresponding data rows
     /// suitable for GrammarCompiler::compile().
     #[must_use]
-    #[allow(clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "single cohesive match over all DataBinding variants"
+    )]
     pub fn compile(binding: &DataBinding, domain: Option<&str>) -> (GrammarExpr, Vec<Value>) {
         match binding {
             DataBinding::TimeSeries {
@@ -371,7 +374,11 @@ fn histogram_bins(values: &[f64], n_bins: usize) -> (Vec<f64>, Vec<f64>) {
         centers.push(min + (i as f64 + 0.5) * bin_width);
     }
     for v in values {
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "histogram bin index bounded by n_bins"
+        )]
         let bin = ((*v - min) / bin_width).floor() as usize;
         let bin = bin.min(n_bins - 1);
         counts[bin] += 1.0;

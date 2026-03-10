@@ -88,7 +88,7 @@ Major incomplete work (delegated to other primals or future phases):
 
 ### Test Coverage Gap
 
-Current: 63% line coverage, 67% function coverage (2,011 tests).
+Current: 63% line coverage, 67% function coverage (2,025 tests).
 Target: 90%.
 
 Well-covered areas (>80%):

@@ -52,7 +52,8 @@ petaltongue
 - **Self-knowledge only** -- other primals discovered at runtime
 - **Graceful degradation** -- works standalone or in full ecosystem
 - **Grammar of Graphics** -- composable data→visualization pipeline
-- **DataBinding auto-compiler** -- all 8 chart types (TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter3D, FieldMap) auto-compile to grammar
+- **DataBinding auto-compiler** -- all 9 chart types (TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter, Scatter3D, FieldMap) auto-compile to grammar
+- **Geometry & faceting** -- Tile (heatmap/fieldmap), Arc (gauge), faceting (small multiples), threshold coloring
 - **Dashboard layout engine** -- multi-panel grid with domain theming and SVG export
 - **Tufte constraints** -- machine-checked visualization quality
 - **Domain-aware rendering** -- automatic palette selection per domain (health, physics, ecology...)
@@ -86,7 +87,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 2,011 passing, 0 failures, 2 ignored |
+| Tests | 2,025 passing, 0 failures, 2 ignored |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings, pedantic enabled (`clippy::pedantic` via `[workspace.lints.clippy]`) |
 | Docs | `RUSTDOCFLAGS="-D warnings" cargo doc` clean |

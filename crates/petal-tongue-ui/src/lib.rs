@@ -127,19 +127,15 @@ pub mod proprioception_panel; // SAME DAVE self-awareness visualization (Neural 
 pub mod protocol_selection; // Protocol priority: tarpc PRIMARY, JSON-RPC SECONDARY, HTTPS FALLBACK
 pub mod sensors;
 pub mod ui_events; // Event-driven architecture for real-time updates // Sensor implementations (bidirectional UUI)
-// DEPRECATED: Old hardcoded discovery (remove after migration)
-// pub mod rendering_discovery;
-
-// NEW: Universal infant discovery (zero hardcoded knowledge)
+// Universal infant discovery (zero hardcoded knowledge)
 #[cfg(any(test, feature = "mock"))]
 pub mod sandbox_mock;
+pub mod scene_bridge;
 pub mod state;
 pub mod status_reporter;
 pub mod system_dashboard;
 pub mod system_monitor_integration;
 pub mod timeline_view;
-// pub mod toadstool_bridge; // REMOVED: Deprecated Python bridge, superseded by tarpc integration (toadstool_v2.rs)
-pub mod scene_bridge;
 pub mod tool_integration;
 pub mod traffic_view;
 pub mod trust_dashboard;
