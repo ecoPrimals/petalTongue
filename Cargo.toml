@@ -39,7 +39,7 @@ repository.workspace = true
 authors.workspace = true
 
 [workspace.package]
-version = "1.5.0"
+version = "1.6.0"
 edition = "2024"
 license = "AGPL-3.0-only"
 repository = "https://github.com/ecoPrimals/petalTongue"

@@ -26,6 +26,7 @@ pub use basic_charts::{NodeDetail, draw_node_detail};
 /// If `domain` is provided, uses a domain-aware color palette (e.g. "health",
 /// "physics", "ecology"). If `None`, defaults to the health palette for
 /// backward compatibility.
+#[allow(clippy::too_many_lines)]
 pub fn draw_channel(ui: &mut Ui, binding: &DataBinding, domain: Option<&str>) {
     match binding {
         DataBinding::TimeSeries {
@@ -78,6 +79,30 @@ pub fn draw_channel(ui: &mut Ui, binding: &DataBinding, domain: Option<&str>) {
             ..
         } => {
             domain_charts::draw_heatmap(ui, label, x_labels, y_labels, values, unit, domain);
+        }
+        DataBinding::Scatter {
+            label,
+            x,
+            y,
+            point_labels,
+            x_label,
+            y_label,
+            unit,
+            ..
+        } => {
+            domain_charts::draw_scatter(
+                ui,
+                &domain_charts::Scatter2dParams {
+                    label,
+                    x_vals: x,
+                    y_vals: y,
+                    point_labels,
+                    x_label,
+                    y_label,
+                    unit,
+                    domain,
+                },
+            );
         }
         DataBinding::Scatter3D {
             label,

@@ -272,6 +272,7 @@ pub fn handle_capabilities(_handlers: &RpcHandlers, id: Value) -> JsonRpcRespons
         "Gauge",
         "Heatmap",
         "Scatter3D",
+        "Scatter",
         "FieldMap",
         "Spectrum",
     ];

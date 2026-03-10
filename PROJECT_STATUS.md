@@ -1,7 +1,7 @@
 # petalTongue -- Project Status
 
 **Updated**: March 10, 2026  
-**Version**: 1.5.0  
+**Version**: 1.6.0  
 **Edition**: 2024 (all crates)
 
 ---
@@ -11,7 +11,7 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 2,011 passing, 0 failures, 2 ignored |
+| Tests | 2,025 passing, 0 failures, 2 ignored |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings, pedantic tightened (removed float_cmp, cast_*, too_many_lines, needless_pass_by_value allows; all uses `#[expect]` with documented reasons) |
 | Rustdoc | Clean (`RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps`) |
@@ -28,10 +28,13 @@
 | Primal names | Capability-based constants, zero hardcoded external primal names |
 | Hardcoding | Socket names, ports, endpoints all configurable via env vars |
 | Domain theming | 6 domain palettes (health, physics, ecology, agriculture, measurement, neural) |
-| Spring IPC | healthSpring DataChannel auto-compile, dashboard layout, wetSpring Spectrum, physics bridge |
-| DataChannel compiler | All 8 DataBinding variants auto-compiled to Grammar of Graphics |
+| Spring IPC | healthSpring DataChannel auto-compile, dashboard layout, wetSpring Scatter/Spectrum, physics bridge, interaction aliases |
+| DataChannel compiler | All 9 DataBinding variants (incl. Scatter 2D) auto-compiled to Grammar of Graphics |
 | Dashboard engine | Multi-panel grid layout with domain theming and SVG export |
 | Scenario loader | JSON scenario files loaded from disk; `--scenario` CLI flag |
+| Geometry | Point, Line, Bar, Area, Ribbon (stub), Tile (heatmap/fieldmap), Arc (gauge), Mesh3D (stub) |
+| Faceting | `compile_faceted()` supports `FacetLayout::Wrap` and Grid small multiples |
+| Threshold coloring | `compile_with_thresholds()` maps ThresholdRange status to domain palette colors |
 | Dependencies | Updated: base64→0.22, socket2→0.6, lru→0.16, mdns-sd→0.18 |
 
 ---

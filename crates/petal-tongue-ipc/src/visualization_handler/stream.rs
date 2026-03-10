@@ -19,6 +19,7 @@ pub fn binding_id(binding: &DataBinding) -> &str {
         | DataBinding::Gauge { id, .. }
         | DataBinding::Heatmap { id, .. }
         | DataBinding::Scatter3D { id, .. }
+        | DataBinding::Scatter { id, .. }
         | DataBinding::FieldMap { id, .. }
         | DataBinding::Spectrum { id, .. } => id,
     }

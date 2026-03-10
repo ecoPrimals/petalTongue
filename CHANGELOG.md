@@ -2,6 +2,46 @@
 
 All notable changes to petalTongue will be documented in this file.
 
+## [1.6.0] - 2026-03-10
+
+### Added - Spring Schema Evolution: Scatter 2D, Faceting, Threshold Coloring, Geometry
+
+- **DataBinding::Scatter (2D)** (`petal-tongue-core`): New variant for wetSpring
+  PCoA/UMAP ordinations. Fields: `x`, `y`, `point_labels`, `x_label`, `y_label`.
+  Compiles to `GeometryType::Point` via `DataBindingCompiler`.
+- **Scatter3D axis labels**: `x_label`, `y_label`, `z_label` fields added with
+  `#[serde(default)]` for backward-compatible deserialization.
+- **IPC method aliases**: `visualization.interact.subscribe/poll/unsubscribe`
+  now alias to `interaction.subscribe/poll/unsubscribe`, bridging wetSpring's
+  naming convention without breaking existing clients.
+- **Tile geometry** (grammar compiler): Real heatmap/fieldmap rendering. Each
+  data row becomes a filled, color-mapped rectangle. Grid dimensions inferred
+  from unique x/y values. Domain palette intensity mapping.
+- **Arc geometry** (grammar compiler): Semi-circular gauge rendering. Background
+  arc + filled arc proportional to normalized value (0..1). Value label centered.
+  `DataBindingCompiler` now normalizes Gauge to Arc instead of Bar.
+- **ThresholdRange cell coloring**: `DataBindingCompiler::compile_with_thresholds()`
+  injects threshold status (normal/warning/critical) into Heatmap/FieldMap data.
+  Tile geometry renders cells using domain palette status colors when status is present.
+- **Facet wrap (small multiples)**: `GrammarCompiler::compile_faceted()` partitions
+  data by facet variable, compiles each group, and arranges panels in a wrapped
+  grid layout. Supports `FacetLayout::Wrap { columns }` and `FacetLayout::Grid`.
+- **+14 new tests** (2,011 to 2,025): Scatter 2D/3D roundtrip, axis labels backward
+  compat, Tile/Arc geometry compilation, facet wrap multi-panel, threshold status
+  injection and precedence, status-based Tile coloring.
+
+### Changed
+
+- Workspace version bumped to 1.6.0
+- `DataBindingCompiler::compile` for Gauge now uses `GeometryType::Arc` with
+  normalized value (was `GeometryType::Bar` with raw value)
+- Visualization capabilities include `"Scatter"` in variant list
+- `petal-tongue-scene` compiler imports `FacetLayout`, `AnchorPoint`, `BTreeMap`
+  for faceting support
+- Grammar compiler `Tile` and `Arc` branches replace the `_ =>` placeholder text
+
+---
+
 ## [1.5.0] - 2026-03-10
 
 ### Added - Universal Visualization Pipeline: DataChannel Compiler, Dashboard, Scenarios

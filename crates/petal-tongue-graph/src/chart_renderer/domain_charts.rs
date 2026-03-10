@@ -18,6 +18,11 @@ pub(crate) fn validate_scatter3d_lengths(x_len: usize, y_len: usize, z_len: usiz
 }
 
 #[must_use]
+pub(crate) fn validate_scatter2d_lengths(x_len: usize, y_len: usize) -> bool {
+    x_len > 0 && x_len == y_len
+}
+
+#[must_use]
 pub(crate) fn validate_spectrum_lengths(freq_len: usize, amp_len: usize) -> bool {
     freq_len > 0 && freq_len == amp_len
 }
@@ -66,6 +71,87 @@ pub(crate) fn draw_heatmap(
             }
         });
     }
+}
+
+/// `Scatter` (2D) rendering parameters bundled to reduce argument count.
+pub(crate) struct Scatter2dParams<'a> {
+    pub label: &'a str,
+    pub x_vals: &'a [f64],
+    pub y_vals: &'a [f64],
+    pub point_labels: &'a [String],
+    pub x_label: &'a str,
+    pub y_label: &'a str,
+    pub unit: &'a str,
+    pub domain: Option<&'a str>,
+}
+
+/// Draw 2D scatter plot (e.g., `PCoA` ordination, UMAP embedding).
+pub(crate) fn draw_scatter(ui: &mut Ui, params: &Scatter2dParams<'_>) {
+    let palette = domain_theme::palette_for_domain(params.domain.unwrap_or("health"));
+    let x_vals = params.x_vals;
+    let y_vals = params.y_vals;
+    let point_labels = params.point_labels;
+    let label = params.label;
+    let x_label = params.x_label;
+    let y_label = params.y_label;
+    let unit = params.unit;
+
+    if !validate_scatter2d_lengths(x_vals.len(), y_vals.len()) {
+        ui.label(RichText::new("(invalid scatter data)").color(palette.caution));
+        return;
+    }
+
+    let count = x_vals.len();
+    let has_labels = point_labels.len() == count;
+
+    ui.label(
+        RichText::new(format!("{label} ({unit}) — {count} points"))
+            .strong()
+            .color(palette.text_dim),
+    );
+
+    let plot_id = format!("{label}_scatter");
+    let mut plot = Plot::new(plot_id)
+        .height(160.0)
+        .show_axes(true)
+        .x_axis_label(x_label)
+        .y_axis_label(y_label);
+
+    if has_labels {
+        plot = plot.label_formatter(move |_name, value| {
+            let (cursor_x, cursor_y) = (value.x, value.y);
+            let mut best_idx = 0usize;
+            let mut best_dist = f64::INFINITY;
+            for (idx, (&xi, &yi)) in x_vals.iter().zip(y_vals.iter()).enumerate() {
+                let dist = (xi - cursor_x).powi(2) + (yi - cursor_y).powi(2);
+                if dist < best_dist {
+                    best_dist = dist;
+                    best_idx = idx;
+                }
+            }
+            if best_idx < point_labels.len() {
+                let pt_label = &point_labels[best_idx];
+                format!("{pt_label}\nx: {cursor_x:.2}  y: {cursor_y:.2}")
+            } else {
+                format!("x: {cursor_x:.2}  y: {cursor_y:.2}")
+            }
+        });
+    }
+
+    let points: PlotPoints = x_vals
+        .iter()
+        .zip(y_vals.iter())
+        .map(|(&x, &y)| [x, y])
+        .collect();
+
+    plot.show(ui, |plot_ui| {
+        plot_ui.points(
+            Points::new(points)
+                .color(palette.info)
+                .radius(3.0)
+                .name(label),
+        );
+    });
 }
 
 /// Number of z-bands for color/size encoding (higher z = darker, larger).
@@ -284,6 +370,18 @@ mod tests {
         assert!(!validate_heatmap_dimensions(3, 0, 12));
         assert!(!validate_heatmap_dimensions(3, 4, 10));
         assert!(!validate_heatmap_dimensions(3, 4, 14));
+    }
+
+    #[test]
+    fn validate_scatter2d_valid() {
+        assert!(validate_scatter2d_lengths(5, 5));
+        assert!(validate_scatter2d_lengths(1, 1));
+    }
+
+    #[test]
+    fn validate_scatter2d_invalid() {
+        assert!(!validate_scatter2d_lengths(0, 5));
+        assert!(!validate_scatter2d_lengths(5, 4));
     }
 
     #[test]
