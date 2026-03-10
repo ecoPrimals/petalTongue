@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: March 9, 2026
+**Updated**: March 10, 2026
 
 ---
 
@@ -43,7 +43,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace                          # 1,896 tests
+cargo test --workspace                          # 2,025 tests
 cargo clippy --workspace -- -D warnings         # Lint (clean)
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)

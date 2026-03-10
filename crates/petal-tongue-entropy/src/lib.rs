@@ -56,14 +56,6 @@ pub mod quality;
 pub mod stream;
 pub mod types;
 
-// Modality modules (behind feature flags - audio moved to AudioCanvas in UI layer)
-// Audio entropy is now handled by AudioCanvas in petal-tongue-ui
-// #[cfg(feature = "audio")]
-// pub mod audio;
-
-// #[cfg(feature = "video")]
-// pub mod video; // TODO: Implement video modality
-
 // Always-available modalities (no special dependencies)
 pub mod awakening_audio; // NEW: Awakening experience audio layers
 pub mod gesture;
@@ -75,13 +67,6 @@ pub mod prelude {
     pub use crate::quality::*;
     pub use crate::stream::*;
     pub use crate::types::*;
-
-    // Audio entropy moved to AudioCanvas in UI layer
-    // #[cfg(feature = "audio")]
-    // pub use crate::audio::*;
-
-    // #[cfg(feature = "video")]
-    // pub use crate::video::*; // TODO: Implement video modality
 
     pub use crate::awakening_audio::*;
     pub use crate::gesture::*;
