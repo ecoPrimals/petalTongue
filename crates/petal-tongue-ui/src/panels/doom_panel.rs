@@ -20,10 +20,6 @@ pub struct DoomPanel {
     /// Last update time (for frame timing)
     last_update: Instant,
 
-    /// Target frame time (35 FPS = ~28.57ms per frame)
-    #[expect(dead_code)]
-    target_frame_time_ms: f32,
-
     /// Show debug overlay?
     show_debug: bool,
 
@@ -47,7 +43,6 @@ impl DoomPanel {
             doom: None,
             texture: None,
             last_update: Instant::now(),
-            target_frame_time_ms: 1000.0 / 35.0, // 35 FPS Doom tick rate
             show_debug: true,
             frame_count: 0,
             fps: 0.0,

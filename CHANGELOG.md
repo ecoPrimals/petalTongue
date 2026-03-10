@@ -2,6 +2,131 @@
 
 All notable changes to petalTongue will be documented in this file.
 
+## [1.5.0] - 2026-03-10
+
+### Added - Universal Visualization Pipeline: DataChannel Compiler, Dashboard, Scenarios
+
+- **DataBindingCompiler** (`petal-tongue-scene`): Auto-compiles all 8 `DataBinding`
+  variants (TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter3D,
+  FieldMap) to `GrammarExpr` + data rows for the Grammar of Graphics pipeline.
+  Includes histogram binning for Distribution and `compile_batch()` for multi-channel.
+- **Dashboard layout engine** (`petal-tongue-scene`): `build_dashboard()` and
+  `compose_dashboard()` arrange multiple compiled panels in auto-fit grid
+  (configurable columns, vertical, horizontal). Domain palette theming, panel
+  titles, background, and stroke applied automatically.
+- **`visualization.render.dashboard`** IPC method: New JSON-RPC method that compiles
+  all DataBindings into a multi-panel dashboard and returns SVG/description output
+  with panel/grid metadata. Wired into the RPC dispatcher.
+- **Scenario JSON loader** (`petal-tongue-core`): `LoadedScenario::from_file()` and
+  `from_json()` parse healthSpring-style scenario files with nested ecosystem
+  nodes, data channels, clinical ranges, and edges. `inferred_domain()` resolves
+  domain from node families. `--scenario` CLI flag already supported.
+- **+33 new tests** (1,978 to 2,011): DataBinding compiler (11 tests per variant
+  + histogram edge cases + integration), dashboard layout (10 tests: grid
+  dimensions, domain, panel count, custom config), scenario loader (10 tests:
+  parsing, edges, bindings, thresholds, domain inference, error handling)
+- **IPC auto-compile on render**: `handle_render()` now compiles every DataBinding
+  to a scene graph via `DataBindingCompiler` and stores under `session:binding_id`,
+  enabling immediate SVG export of any pushed data
+
+### Changed
+
+- Workspace version bumped to 1.5.0
+- `visualization.render` handler stores compiled scene graphs for each binding
+- `visualization.dismiss` cleans up DataBinding-compiled scenes
+- `petal-tongue-scene` exports: `Dashboard`, `DashboardConfig`, `DashboardLayout`,
+  `DataBindingCompiler`, `build_dashboard`, `compose_dashboard`
+- `petal-tongue-core` exports: `LoadedScenario`, `ScenarioNode`, `ScenarioEdge`
+
+---
+
+## [1.4.6] - 2026-03-10
+
+### Added - Deep Debt Resolution: Dead Code, Stubs→Implementations, Coverage
+
+- **+23 new tests** (1,955 to 1,978): socket backend discovery, direct backend PCM
+  output, capability version compatibility, toadStool ecosystem manifest discovery,
+  animation edge cases (negative values, group sequences)
+- **Canvas rendering implemented**: `CanvasUI::render_png()` now uses `tiny-skia` for
+  actual node/edge rendering instead of 1x1 placeholder PNG
+- **Audio file playback implemented**: `AudioSystemV2::play_file()` decodes MP3/WAV via
+  `symphonia` (pure Rust) and plays through AudioManager
+- **CSV export implemented**: Timeline view exports events to
+  `$XDG_DATA_HOME/petalTongue/exports/timeline_events.csv` with RFC 4180 escaping
+- **Semver version compatibility**: `Capability::matches()` now checks `version_req` with
+  `major.minor.patch` comparison (same major, capability >= required)
+- **TUI count methods**: `primal_count()`, `topology_edge_count()`, `log_count()` avoid
+  cloning full Vecs in hot paths
+
+### Changed - Deep Debt Evolution
+
+- **~30 dead code fields removed**: `data_providers`, `biomeos_client`, `session_manager`,
+  `instance_id`, `node_palette`, `property_panel`, `graph_manager`, `adaptive_ui_manager`,
+  `sensory_ui_manager`, `use_sensory_ui`, `panel_registry`, `service_mesh_providers`,
+  `direct_connections`, `timestamp`, `start_time`, `show_all`, `target_frame_time_ms`,
+  `scroll_offset`, `execution_id`, plus struct fields in events, dns_parser, http_provider,
+  visualization_handler
+- **Production unwrap()/expect() eliminated**: All `graph.read().unwrap()` in
+  `text.rs`, `svg.rs`, `headless_main.rs`, `audio_sonification.rs` replaced with
+  proper error propagation; `checked_sub().unwrap()` in examples replaced with
+  `unwrap_or(Duration::ZERO)`
+- **AudioSystemV2 runtime fix**: Owned `tokio::runtime::Runtime` retained so handle
+  stays valid (was dropping immediately, causing hangs in sync-over-async path)
+- **Socket/Direct audio backends**: Report `is_available: false` since protocol
+  negotiation not yet implemented; socket backend stores `UnixStream` connection;
+  direct backend documents ALSA ioctl requirement
+- **Workspace version** bumped to 1.4.6
+
+### Fixed
+- Audio compat test hang caused by orphaned tokio runtime Handle
+- Direct audio backend blocking on PipeWire-owned ALSA devices
+- Clippy `single_match_else` in audio compat
+
+---
+
+## [1.4.5] - 2026-03-10
+
+### Added - Deep Evolution: Pedantic Tightening, Coverage & Smart Refactoring
+
+- **+41 new tests** (1,914 to 1,955): determinism tests (100-run identical output),
+  modality round-trip tests, math object edge cases (NaN, infinity, degenerate params),
+  animation boundary tests (all easing functions at t=0/0.5/1), Tufte constraint coverage
+- **Workspace clippy tightened**: removed `float_cmp`, `cast_possible_truncation`,
+  `cast_sign_loss`, `too_many_lines`, `needless_pass_by_value` workspace allows;
+  all casts now use `#[expect]` with documented justification reasons
+- **Smart refactored** 3 large files into focused domain submodules:
+  `unix_socket_rpc_handlers` (879→7 modules), `audio_providers` (848→5 modules),
+  `visualization_handler` (760→6 modules), `app/mod.rs` (extracted layout.rs)
+- **Evolution readiness plan**: module-to-shader mapping (5 Tier A ready, 2 Tier B adapt,
+  8+ Tier C platform-specific), barraCuda integration gap matrix, cross-Spring benchmark catalog
+
+### Changed
+- **Workspace version** synced to 1.4.5 (was 1.3.0 in Cargo.toml)
+- **Dependencies evolved**: base64 0.21→0.22, socket2 0.5→0.6, lru 0.12→0.16, mdns-sd 0.11→0.18
+- **PETALTONGUE_MOCK_MODE** gated behind `#[cfg(any(test, feature = "test-fixtures"))]`
+  (was production-accessible)
+- **Socket discovery** evolved: all socket names, ports, endpoints configurable via env vars;
+  `DISCOVERY_SERVICE_SOCKET`, `PHYSICS_COMPUTE_SOCKET_NAME`, `BARRACUDA_SOCKET` added
+- **Session dirty tracking test** evolved to use temp directory (was failing on permission-denied)
+- **Physics bridge test** fixed tautological assertion (`!x || x` → `!x`)
+- **Doc links** fixed for private module references in refactored IPC crates
+- **Ecosystem rewire (barraCuda v0.3.3, toadStool S139, coralReef Phase 10 Iter 26)**:
+  - `physics_bridge.rs`: IPC params aligned with barraCuda contract (`op` field, not `operation`);
+    documented CPU-only until barraCuda adds `math.physics.nbody` to dispatch table
+  - Compute socket discovery: added `$XDG_RUNTIME_DIR/ecoPrimals/discovery/` scanning
+    (toadStool S139 dual-write pattern) alongside existing primal-specific paths
+  - `toadstool_compute.rs`: ecosystem discovery via JSON manifests; capability parsing
+    recognizes `gpu.dispatch`, `science.gpu.dispatch`, `display`, `shader.compile`
+  - Updated wateringHole/petaltongue/README.md with ecosystem alignment status
+
+### Fixed
+- 9 clippy errors (redundant closures, manual_let_else, overly_complex_bool_expr)
+- Strict float comparisons in domain_palette.rs and physics.rs tests (now use epsilon)
+- Physics bridge IPC field mismatch (`operation` → `op`) per barraCuda v0.3.3 contract
+- `visualization_handler` doc references to private submodules
+
+---
+
 ## [1.4.4] - 2026-03-09
 
 ### Added - Spring Absorption, Domain Palettes & IPC Evolution

@@ -43,8 +43,6 @@ pub struct ProcessViewerTool {
     processes: Vec<ProcessInfo>,
     filter_text: String,
     sort_by: SortColumn,
-    #[expect(dead_code)] // TODO: Add toggle for showing system processes
-    show_all: bool, // Show all processes or only user processes
     max_display: usize,
 }
 
@@ -91,7 +89,6 @@ impl Default for ProcessViewerTool {
             processes: Vec::new(),
             filter_text: String::new(),
             sort_by: SortColumn::Cpu,
-            show_all: false,
             max_display: 50, // Show top 50 processes
         }
     }

@@ -59,61 +59,97 @@ impl ToadstoolCompute {
         })
     }
 
-    /// Discover Toadstool via universal discovery
+    /// Discover GPU compute provider via universal discovery.
     ///
-    /// Uses capability-based discovery (no hardcoded names or endpoints).
+    /// Uses capability-based discovery (no hardcoded primal names).
+    /// Follows toadStool S139 ecosystem discovery pattern:
+    /// 1. Env override (`GPU_RENDERING_ENDPOINT`, `COMPUTE_PROVIDER_ENDPOINT`)
+    /// 2. Ecosystem directory (`$XDG_RUNTIME_DIR/ecoPrimals/discovery/`)
+    /// 3. Socket scan (`$XDG_RUNTIME_DIR/toadstool/`)
     async fn discover_toadstool() -> Result<ToadstoolServiceInfo> {
-        // Try environment variable first
         if let Ok(endpoint) = std::env::var("GPU_RENDERING_ENDPOINT") {
-            tracing::info!(
-                "🔍 Found GPU rendering service via environment: {}",
-                endpoint
-            );
-
+            tracing::info!("Found GPU rendering service via environment: {endpoint}");
             return Ok(ToadstoolServiceInfo {
                 id: "discovered-gpu-renderer".to_string(),
                 endpoint,
-                capabilities: vec![
-                    "gpu-rendering".to_string(),
-                    "layout-computation".to_string(),
-                ],
+                capabilities: vec!["gpu.dispatch".to_string(), "display".to_string()],
                 metadata: HashMap::new(),
             });
         }
 
-        // Try COMPUTE_PROVIDER_ENDPOINT
         if let Ok(endpoint) = std::env::var("COMPUTE_PROVIDER_ENDPOINT") {
-            tracing::info!("🔍 Found compute provider via environment: {}", endpoint);
-
+            tracing::info!("Found compute provider via environment: {endpoint}");
             return Ok(ToadstoolServiceInfo {
                 id: "discovered-compute-provider".to_string(),
                 endpoint,
                 capabilities: vec![
-                    "gpu-rendering".to_string(),
-                    "layout-computation".to_string(),
-                    "particle-effects".to_string(),
+                    "gpu.dispatch".to_string(),
+                    "science.gpu.dispatch".to_string(),
+                    "display".to_string(),
                 ],
                 metadata: HashMap::new(),
             });
         }
 
-        // TODO: Implement mDNS discovery (delegated to discovery provider)
-        // TODO: Implement Unix socket probing (delegated to discovery provider)
-        // TODO: Implement HTTP probing (delegated to beardog/songbird via IPC)
+        // Ecosystem discovery: scan for manifest files (toadStool S139 dual-write)
+        let runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_string());
+        let discovery_dir = format!("{runtime_dir}/ecoPrimals/discovery");
+        if let Ok(entries) = std::fs::read_dir(&discovery_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().is_some_and(|e| e == "json")
+                    && let Ok(contents) = std::fs::read_to_string(&path)
+                    && let Ok(manifest) = serde_json::from_str::<serde_json::Value>(&contents)
+                {
+                    let caps = manifest
+                        .get("capabilities")
+                        .and_then(|c| c.as_array())
+                        .map(|arr| {
+                            arr.iter()
+                                .filter_map(|v| v.as_str().map(String::from))
+                                .collect::<Vec<_>>()
+                        })
+                        .unwrap_or_default();
+
+                    if caps.iter().any(|c| c == "gpu.dispatch" || c == "display") {
+                        let endpoint = manifest
+                            .get("endpoint")
+                            .and_then(|e| e.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        let id = manifest
+                            .get("id")
+                            .and_then(|i| i.as_str())
+                            .unwrap_or("discovered-compute")
+                            .to_string();
+                        tracing::info!("Found GPU compute provider via ecosystem discovery: {id}");
+                        return Ok(ToadstoolServiceInfo {
+                            id,
+                            endpoint,
+                            capabilities: caps,
+                            metadata: HashMap::new(),
+                        });
+                    }
+                }
+            }
+        }
 
         anyhow::bail!("No GPU compute provider discovered")
     }
 
-    /// Parse capability strings into `ComputeCapability` enum
-    fn parse_capabilities(caps: &[String]) -> Vec<ComputeCapability> {
+    /// Parse capability strings into `ComputeCapability` enum.
+    ///
+    /// Recognizes both legacy strings and ecosystem capability strings
+    /// (barraCuda v0.3.3+, toadStool S139+).
+    pub(crate) fn parse_capabilities(caps: &[String]) -> Vec<ComputeCapability> {
         let mut result = Vec::new();
 
         for cap in caps {
             match cap.as_str() {
-                "layout-computation" | "gpu-layout" => {
+                "layout-computation" | "gpu-layout" | "gpu.dispatch" => {
                     result.push(ComputeCapability::LayoutComputation);
                 }
-                "physics" | "physics-simulation" => {
+                "physics" | "physics-simulation" | "science.gpu.dispatch" => {
                     result.push(ComputeCapability::PhysicsSimulation);
                 }
                 "ray-tracing" | "raytracing" => {
@@ -125,8 +161,11 @@ impl ToadstoolCompute {
                 "image-processing" | "image" => {
                     result.push(ComputeCapability::ImageProcessing);
                 }
+                "display" | "shader.compile" => {
+                    // Hardware/shader capabilities -- noted but not mapped to compute
+                }
                 _ => {
-                    tracing::warn!("Unknown compute capability: {}", cap);
+                    tracing::debug!("Unrecognized compute capability: {cap}");
                 }
             }
         }
@@ -235,6 +274,71 @@ impl ComputeProvider for CPUFallbackCompute {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parse_capabilities_ecosystem_strings() {
+        let caps = vec![
+            "gpu.dispatch".to_string(),
+            "science.gpu.dispatch".to_string(),
+            "display".to_string(),
+            "shader.compile".to_string(),
+        ];
+        let parsed = ToadstoolCompute::parse_capabilities(&caps);
+        // gpu.dispatch -> LayoutComputation, science.gpu.dispatch -> PhysicsSimulation
+        // display and shader.compile are noted but not mapped to compute
+        assert!(parsed.contains(&ComputeCapability::LayoutComputation));
+        assert!(parsed.contains(&ComputeCapability::PhysicsSimulation));
+        assert_eq!(parsed.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_discover_toadstool_with_manifest_in_temp_dir() {
+        let temp = tempfile::tempdir().unwrap();
+        let discovery_dir = temp.path().join("ecoPrimals").join("discovery");
+        std::fs::create_dir_all(&discovery_dir).unwrap();
+
+        let manifest = serde_json::json!({
+            "id": "test-toadstool",
+            "endpoint": "tarpc://localhost:9001",
+            "capabilities": ["gpu.dispatch", "display"]
+        });
+        let manifest_path = discovery_dir.join("toadstool.json");
+        std::fs::write(&manifest_path, serde_json::to_string(&manifest).unwrap()).unwrap();
+
+        let runtime_dir = temp.path().to_str().unwrap().to_string();
+        let provider = crate::test_fixtures::env_test_helpers::with_env_var_async(
+            "XDG_RUNTIME_DIR",
+            &runtime_dir,
+            || async { ToadstoolCompute::new().await.unwrap() },
+        )
+        .await;
+
+        assert!(provider.is_available().await);
+        assert!(
+            provider
+                .capabilities()
+                .contains(&ComputeCapability::LayoutComputation)
+        );
+    }
+
+    #[tokio::test]
+    async fn test_cpu_fallback_lifecycle_init_available_shutdown() {
+        let mut provider = CPUFallbackCompute::new();
+
+        assert!(
+            provider.is_available().await,
+            "CPU fallback always available"
+        );
+
+        provider.initialize().await.unwrap();
+        assert!(provider.is_available().await, "Available after init");
+
+        provider.shutdown().await.unwrap();
+        assert!(
+            provider.is_available().await,
+            "CPU fallback still available after shutdown"
+        );
+    }
 
     #[tokio::test]
     async fn test_toadstool_creation() {

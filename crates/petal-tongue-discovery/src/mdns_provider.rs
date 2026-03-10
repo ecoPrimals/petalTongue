@@ -247,6 +247,10 @@ impl MdnsVisualizationProvider {
         // Question section
         // Encode service name as DNS labels
         for label in service_name.split('.') {
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "DNS label length is at most 63"
+            )]
             packet.push(label.len() as u8);
             packet.extend_from_slice(label.as_bytes());
         }

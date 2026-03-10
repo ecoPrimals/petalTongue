@@ -7,6 +7,9 @@
 use chrono::{DateTime, Utc};
 use egui::{Pos2, Rect, Stroke, Vec2};
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::Write;
+use std::path::PathBuf;
 
 use super::filtering::{filtered_events, get_primals};
 use super::types::TimelineEvent;
@@ -23,9 +26,6 @@ pub struct TimelineView {
     time_range_end: Option<DateTime<Utc>>,
     /// Zoom level (1.0 = default)
     zoom: f32,
-    /// Scroll offset (for panning)
-    #[expect(dead_code)]
-    scroll_offset: f32,
     /// Show event details panel
     show_details: bool,
     /// Filter by event type
@@ -50,7 +50,6 @@ impl TimelineView {
             time_range_start: None,
             time_range_end: None,
             zoom: 1.0,
-            scroll_offset: 0.0,
             show_details: true,
             event_type_filter: None,
             primal_filter: None,
@@ -377,9 +376,69 @@ impl TimelineView {
     }
 
     /// Export events to CSV format
+    ///
+    /// Writes to `{XDG_DATA_HOME}/petalTongue/exports/timeline_events.csv`
+    /// or temp dir if platform_dirs is unavailable.
     fn export_csv(&self) {
-        // TODO: Implement CSV export
-        // This would write events to a file in CSV format
-        tracing::info!("CSV export not yet implemented");
+        let path = self.export_csv_path();
+        let events = self.filtered_events();
+
+        match self.write_events_csv(&path, events) {
+            Ok(()) => tracing::info!("CSV exported to {}", path.display()),
+            Err(e) => tracing::error!("CSV export failed: {}", e),
+        }
+    }
+
+    fn export_csv_path(&self) -> PathBuf {
+        petal_tongue_core::platform_dirs::data_dir().map_or_else(
+            |_| std::env::temp_dir().join("petalTongue_timeline_events.csv"),
+            |d| {
+                d.join("petalTongue")
+                    .join("exports")
+                    .join("timeline_events.csv")
+            },
+        )
+    }
+
+    fn write_events_csv(&self, path: &PathBuf, events: Vec<&TimelineEvent>) -> std::io::Result<()> {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let mut f = File::create(path)?;
+
+        // Header
+        writeln!(
+            f,
+            "id,from,to,event_type,timestamp,duration_ms,status,payload_summary"
+        )?;
+
+        for event in events {
+            let duration = event.duration_ms.map(|d| d.to_string()).unwrap_or_default();
+            let payload = event.payload_summary.as_deref().unwrap_or("");
+            writeln!(
+                f,
+                "{},{},{},{},{},{},{},{}",
+                escape_csv(&event.id),
+                escape_csv(&event.from),
+                escape_csv(&event.to),
+                escape_csv(&event.event_type),
+                escape_csv(&event.timestamp.to_rfc3339()),
+                escape_csv(&duration),
+                escape_csv(&format!("{:?}", event.status)),
+                escape_csv(payload),
+            )?;
+        }
+
+        Ok(())
+    }
+}
+
+/// Escape a CSV field (RFC 4180): wrap in quotes if contains comma, quote, or newline
+fn escape_csv(s: &str) -> String {
+    let needs_quotes = s.contains(',') || s.contains('"') || s.contains('\n') || s.contains('\r');
+    if needs_quotes {
+        format!("\"{}\"", s.replace('"', "\"\""))
+    } else {
+        s.to_string()
     }
 }

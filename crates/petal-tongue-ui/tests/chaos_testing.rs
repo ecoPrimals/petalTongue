@@ -139,6 +139,10 @@ impl ChaosTestRunner {
             operations
         });
 
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "test duration in ms fits u64"
+        )]
         let duration_ms = start.elapsed().as_millis() as u64;
         let (survived, error, final_ops) = match result {
             Ok(ops) => (true, None, ops),
@@ -205,6 +209,10 @@ impl ChaosTestRunner {
             operations
         });
 
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "test duration in ms fits u64"
+        )]
         let duration_ms = start.elapsed().as_millis() as u64;
         let (survived, error, final_ops) = match result {
             Ok(ops) => (true, None, ops),
@@ -269,6 +277,10 @@ impl ChaosTestRunner {
             operations
         });
 
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "test duration in ms fits u64"
+        )]
         let duration_ms = start.elapsed().as_millis() as u64;
         let (survived, error, final_ops) = match result {
             Ok(ops) => (true, None, ops),
@@ -345,6 +357,10 @@ impl ChaosTestRunner {
             total_ops
         });
 
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "test duration in ms fits u64"
+        )]
         let duration_ms = start.elapsed().as_millis() as u64;
         let (survived, error, final_ops) = match result {
             Ok(ops) => (true, None, ops),

@@ -53,7 +53,7 @@ pub(super) struct EventStream {
 }
 
 /// WebSocket connection wrapper for biomeOS events
-#[expect(dead_code)]
+#[allow(dead_code)]
 struct WebSocketConnection {
     /// WebSocket endpoint URL (e.g., "<ws://localhost:8080/events>")
     endpoint: String,
@@ -90,23 +90,6 @@ impl EventStream {
         F: Fn(BiomeOSEvent) + Send + Sync + 'static,
     {
         self.callback = Some(Box::new(callback));
-    }
-
-    /// Check if connected
-    #[expect(dead_code)]
-    pub(super) fn is_connected(&self) -> bool {
-        self.ws_connection
-            .as_ref()
-            .is_some_and(|conn| conn.connected)
-    }
-
-    /// Disconnect from WebSocket
-    #[expect(dead_code)]
-    pub(super) fn disconnect(&mut self) {
-        if self.ws_connection.is_some() {
-            info!("🔌 Disconnecting from biomeOS event stream");
-            self.ws_connection = None;
-        }
     }
 }
 

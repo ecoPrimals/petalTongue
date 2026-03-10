@@ -50,19 +50,23 @@ pub fn biomeos_legacy_socket_name() -> String {
     std::env::var("BIOMEOS_LEGACY_SOCKET").unwrap_or_else(|_| "biomeos".to_string())
 }
 
-/// Default sandbox security endpoint port (fallback when PETALTONGUE_SANDBOX_SECURITY_ENDPOINT not set)
+/// Default sandbox security endpoint port.
+/// Overridable via `PETALTONGUE_SANDBOX_SECURITY_ENDPOINT` (full URL) env var.
 pub const DEFAULT_SANDBOX_SECURITY_PORT: u16 = 9000;
 
-/// Default sandbox discovery endpoint port (fallback when PETALTONGUE_SANDBOX_DISCOVERY_ENDPOINT not set)
+/// Default sandbox discovery endpoint port.
+/// Overridable via `PETALTONGUE_SANDBOX_DISCOVERY_ENDPOINT` (full URL) env var.
 pub const DEFAULT_SANDBOX_DISCOVERY_PORT: u16 = 8080;
 
 /// Max FPS for rendering (overridable via config)
 pub const DEFAULT_MAX_FPS: u32 = 60;
 
-/// Default bind address for servers
+/// Default bind address for servers (0.0.0.0 = all interfaces).
+/// Overridable via `--bind` CLI or config; port comes from `PETALTONGUE_WEB_PORT` / `PETALTONGUE_HEADLESS_PORT`.
 pub const DEFAULT_BIND_ADDR: &str = "0.0.0.0";
 
-/// Legacy /tmp socket fallback path prefix
+/// Legacy /tmp socket fallback path prefix.
+/// Used when XDG_RUNTIME_DIR is unavailable; configurable via explicit socket env vars.
 pub const LEGACY_TMP_PREFIX: &str = "/tmp";
 
 /// Build a default web bind address

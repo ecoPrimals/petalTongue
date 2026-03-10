@@ -137,7 +137,12 @@ impl PropertyAdapter for EcoPrimalTrustAdapter {
 
     fn node_decoration(&self, properties: &Properties) -> Option<NodeDecoration> {
         if let Some(PropertyValue::Number(level)) = properties.get("trust_level") {
-            let level = *level as u8;
+            #[expect(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "trust_level is 0-5, clamped before cast"
+            )]
+            let level = level.clamp(0.0, 255.0) as u8;
             if let Some(idx) = self.get_level_index(level) {
                 return Some(NodeDecoration {
                     badge: Some(self.config.level_emojis[idx].clone()),

@@ -3,26 +3,35 @@
 //!
 //! This is the **`EguiGUI` Modality** implementation - the native desktop GUI.
 //!
-//! ## Architecture Note
+//! ## Architecture (SMART_REFACTORING_POLICY)
 //!
-//! This module represents Tier 3 (Enhancement) GUI modality using egui/eframe.
-//! Rather than extracting to a separate modality file, we recognize that this
-//! IS the `EguiGUI` implementation. This is a "smart refactor" approach - we don't
-//! split code just to split it; the current organization is clean and working.
+//! This module is the application root - naturally centralized. Per
+//! `docs/operations/SMART_REFACTORING_POLICY.md`, app.rs may legitimately be
+//! large because it is the UI integration point.
+//!
+//! **Why we keep it cohesive:**
+//! - Single responsibility: Application state and lifecycle
+//! - Single type: `PetalTongueApp` with impl blocks
+//! - All panels coordinate through single state; splitting would create circular deps
+//! - Event flow is linear: sensory → motor drain → update → panel dispatch
+//!
+//! **What we extracted:**
+//! - `init.rs` — scenario loading, provider discovery, renderer setup
+//! - `sensory.rs` — sensory feedback and display verification
+//! - `layout.rs` — pure layout algorithm parsing (testable)
+//! - `app_panels/` — panel rendering (top menu, controls, audio, capability, primal details)
 
 mod init;
+mod layout;
 mod sensory;
 
 use crate::accessibility_panel::AccessibilityPanel;
 use crate::audio::AudioSystemV2;
 use crate::awakening_overlay::AwakeningOverlay;
 use crate::graph_canvas::GraphCanvas;
-use crate::graph_manager::GraphManagerPanel;
 use crate::keyboard_shortcuts::KeyboardShortcuts;
 use crate::metrics_dashboard::MetricsDashboard;
-use crate::node_palette::NodePalette;
-use crate::panel_registry::{PanelInstance, PanelRegistry};
-use crate::property_panel::PropertyPanel;
+use crate::panel_registry::PanelInstance;
 use crate::proprioception::ProprioceptionSystem;
 use crate::proprioception_panel::ProprioceptionPanel;
 use crate::system_dashboard::SystemDashboard;
@@ -31,12 +40,11 @@ use crate::trust_dashboard::TrustDashboard;
 use anyhow::Result as AnyhowResult;
 use petal_tongue_adapters::AdapterRegistry;
 use petal_tongue_animation::AnimationEngine;
-use petal_tongue_api::BiomeOSClient;
 use petal_tongue_core::{
-    CapabilityDetector, GraphEngine, InstanceId, LayoutAlgorithm, MotorCommand, PanelId,
-    RenderingAwareness, SensorRegistry, SessionManager,
+    CapabilityDetector, GraphEngine, LayoutAlgorithm, MotorCommand, PanelId, RenderingAwareness,
+    SensorRegistry,
 };
-use petal_tongue_discovery::{NeuralApiProvider, VisualizationDataProvider};
+use petal_tongue_discovery::NeuralApiProvider;
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer, Visual2DRenderer};
 use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
@@ -57,13 +65,6 @@ pub struct PetalTongueApp {
     audio_generator: AudioFileGenerator,
     /// Animation engine (used for flow visualization)
     animation_engine: Arc<RwLock<AnimationEngine>>,
-    /// Visualization data providers (discovered at runtime - capability-based!)
-    #[expect(dead_code)]
-    data_providers: Vec<Box<dyn VisualizationDataProvider>>,
-    /// Legacy `BiomeOS` client (DEPRECATED - kept for backward compatibility)
-    #[deprecated(note = "Use data_providers instead - biomeOS is just another primal!")]
-    #[expect(dead_code)]
-    biomeos_client: BiomeOSClient,
     /// Current layout algorithm
     current_layout: LayoutAlgorithm,
     /// Show audio description panel
@@ -112,11 +113,6 @@ pub struct PetalTongueApp {
     /// Awakening overlay (visual flower animation + tutorial transition)
     awakening_overlay: AwakeningOverlay,
 
-    #[expect(dead_code)]
-    session_manager: Option<SessionManager>,
-    #[expect(dead_code)]
-    instance_id: Option<InstanceId>,
-
     /// Rendering awareness - motor + sensory feedback loop
     rendering_awareness: Arc<RwLock<RenderingAwareness>>,
     /// Sensor registry - discovered input peripherals
@@ -145,32 +141,9 @@ pub struct PetalTongueApp {
 
     /// Graph Builder canvas (interactive visual graph construction)
     graph_canvas: GraphCanvas,
-    /// Node palette (available node types)
-    #[expect(dead_code)]
-    node_palette: NodePalette,
-    /// Property panel (node parameter editor)
-    #[expect(dead_code)]
-    property_panel: PropertyPanel,
-    /// Graph manager (save/load/execute via Neural API)
-    #[expect(dead_code)]
-    graph_manager: GraphManagerPanel,
     /// Show Graph Builder window
     show_graph_builder: bool,
 
-    /// Adaptive UI manager (device-specific rendering) - DEPRECATED
-    #[expect(dead_code)]
-    adaptive_ui: crate::adaptive_ui::AdaptiveUIManager,
-
-    /// Sensory UI manager (capability-based rendering)
-    #[expect(dead_code)]
-    sensory_ui: Option<crate::sensory_ui::SensoryUIManager>,
-    /// Use sensory UI instead of adaptive UI (feature flag for migration)
-    #[expect(dead_code)]
-    use_sensory_ui: bool,
-
-    /// Panel registry for custom panel types (Doom, web, video, etc.)
-    #[expect(dead_code)]
-    panel_registry: PanelRegistry,
     /// Active custom panels
     custom_panels: Vec<Box<dyn PanelInstance>>,
 
@@ -284,7 +257,7 @@ impl PetalTongueApp {
                 tracing::debug!("Motor: SelectNode({node_id:?})");
             }
             MotorCommand::SetLayout { ref algorithm } => {
-                let layout = layout_from_str(algorithm);
+                let layout = layout::layout_from_str(algorithm);
                 self.current_layout = layout;
                 if let Ok(mut graph) = self.graph.write() {
                     graph.set_layout(layout);
@@ -311,15 +284,6 @@ impl PetalTongueApp {
         }
         self.neural_proprioception_panel
             .record_motor_command(&cmd_description);
-    }
-}
-
-fn layout_from_str(algorithm: &str) -> LayoutAlgorithm {
-    match algorithm {
-        "Hierarchical" => LayoutAlgorithm::Hierarchical,
-        "Circular" => LayoutAlgorithm::Circular,
-        "Random" => LayoutAlgorithm::Random,
-        _ => LayoutAlgorithm::ForceDirected,
     }
 }
 
@@ -694,32 +658,6 @@ impl eframe::App for PetalTongueApp {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    #[test]
-    fn layout_from_str_hierarchical() {
-        assert_eq!(
-            layout_from_str("Hierarchical"),
-            LayoutAlgorithm::Hierarchical
-        );
-    }
-
-    #[test]
-    fn layout_from_str_circular() {
-        assert_eq!(layout_from_str("Circular"), LayoutAlgorithm::Circular);
-    }
-
-    #[test]
-    fn layout_from_str_random() {
-        assert_eq!(layout_from_str("Random"), LayoutAlgorithm::Random);
-    }
-
-    #[test]
-    fn layout_from_str_unknown_defaults_force_directed() {
-        assert_eq!(layout_from_str("unknown"), LayoutAlgorithm::ForceDirected);
-        assert_eq!(layout_from_str(""), LayoutAlgorithm::ForceDirected);
-    }
-
     #[test]
     fn mode_presets_produce_commands() {
         let cmds = crate::mode_presets::commands_for_mode("clinical");

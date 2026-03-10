@@ -64,8 +64,8 @@ fn chaos_all_inputs_stop() {
     let degraded_state = system_no_input.assess();
 
     // Should not crash! System detects no input
-    assert_eq!(
-        degraded_state.confidence, 0.0,
+    assert!(
+        (degraded_state.confidence - 0.0).abs() < f32::EPSILON,
         "Confidence should be 0 without input"
     );
     assert!(
@@ -128,7 +128,7 @@ fn chaos_unknown_modalities() {
 
     // Should not crash
     let state = system.assess();
-    assert_eq!(state.health, 0.0); // No confirmations yet
+    assert!((state.health - 0.0).abs() < f32::EPSILON); // No confirmations yet
 
     // Simulate future input
     system.input_received(&InputModality::Generic("brain-waves".to_string()));
@@ -194,7 +194,7 @@ fn chaos_zero_modality_system() {
     let state = system.assess();
 
     // Should report zero health, not crash
-    assert_eq!(state.health, 0.0);
+    assert!((state.health - 0.0).abs() < f32::EPSILON);
     assert!(!state.is_healthy());
     assert!(!state.is_confident());
 }
@@ -228,7 +228,7 @@ fn chaos_output_without_input() {
 
     // Should report incomplete loop
     assert!(!state.loop_complete);
-    assert_eq!(state.health, 0.0);
+    assert!((state.health - 0.0).abs() < f32::EPSILON);
 }
 
 /// Chaos Scenario: Concurrent access simulation

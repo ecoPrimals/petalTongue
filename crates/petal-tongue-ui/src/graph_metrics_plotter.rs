@@ -8,7 +8,6 @@
 
 use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};
 use std::collections::VecDeque;
-use std::time::Instant;
 
 fn compute_chart_bounds(data: &[f32]) -> (f32, f32, f32) {
     let max_value = data.iter().copied().fold(0.0f32, f32::max).max(1.0);
@@ -20,8 +19,6 @@ fn compute_chart_bounds(data: &[f32]) -> (f32, f32, f32) {
 /// Metrics snapshot
 #[derive(Clone, Debug)]
 struct MetricsSnapshot {
-    #[expect(dead_code)] // TODO: Use for time axis labels
-    timestamp: Instant,
     node_count: usize,
     edge_count: usize,
 }
@@ -34,8 +31,6 @@ pub struct GraphMetricsPlotter {
     show_panel: bool,
     history: VecDeque<MetricsSnapshot>,
     max_history: usize,
-    #[expect(dead_code)] // TODO: Use for time-based x-axis
-    start_time: Instant,
 }
 
 impl Default for GraphMetricsPlotter {
@@ -44,7 +39,6 @@ impl Default for GraphMetricsPlotter {
             show_panel: false,
             history: VecDeque::new(),
             max_history: 100, // Last 100 samples
-            start_time: Instant::now(),
         }
     }
 }
@@ -53,7 +47,6 @@ impl GraphMetricsPlotter {
     /// Add a metrics snapshot
     pub fn add_snapshot(&mut self, node_count: usize, edge_count: usize) {
         let snapshot = MetricsSnapshot {
-            timestamp: Instant::now(),
             node_count,
             edge_count,
         };

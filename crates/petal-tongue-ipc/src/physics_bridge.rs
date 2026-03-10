@@ -1,9 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Physics bridge: async IPC client for barraCuda `math.physics.nbody`.
+//! Physics bridge: async IPC client for GPU-accelerated physics simulation.
 //!
-//! Sends physics world state to barraCuda for GPU-accelerated simulation
-//! and applies the response. Falls back to CPU Euler integration when
-//! barraCuda is unavailable (primal sovereignty -- no hard dependency).
+//! Discovers compute primals at runtime (capability `gpu.dispatch`) and sends
+//! physics world state for GPU-accelerated N-body / molecular dynamics.
+//! Falls back to CPU Euler integration when no compute primal is available
+//! (primal sovereignty -- no hard dependency).
+//!
+//! # barraCuda IPC contract (v0.3.3+)
+//!
+//! barraCuda's `barracuda.compute.dispatch` currently supports ops:
+//! `zeros`, `ones`, `read`. Custom physics ops (`math.physics.nbody`)
+//! are planned but not yet in barraCuda's dispatch table.
+//!
+//! Until barraCuda exposes a physics op, this bridge always falls back to
+//! CPU Euler. The IPC path is wired and tested for when barraCuda adds it.
 
 use petal_tongue_scene::physics::PhysicsWorld;
 use serde_json::json;
@@ -12,7 +22,7 @@ use tracing::debug;
 /// Result of a physics step (either GPU or CPU fallback).
 #[derive(Debug, Clone)]
 pub struct PhysicsStepResult {
-    /// Whether barraCuda GPU was used.
+    /// Whether GPU compute was used.
     pub gpu_accelerated: bool,
     /// Number of bodies updated.
     pub bodies_updated: usize,
@@ -20,16 +30,16 @@ pub struct PhysicsStepResult {
     pub step_duration_secs: f64,
 }
 
-/// Attempt a GPU-accelerated physics step via barraCuda IPC.
+/// Attempt a GPU-accelerated physics step via compute primal IPC.
 ///
-/// Discovers barraCuda at runtime via socket scanning (no hardcoded addresses).
-/// Falls back to CPU Euler integration if barraCuda is unavailable.
+/// Discovers compute primals at runtime via socket scanning (no hardcoded addresses).
+/// Falls back to CPU Euler integration if no compute primal is available.
 pub async fn step_physics(world: &mut PhysicsWorld) -> PhysicsStepResult {
     let start = std::time::Instant::now();
 
-    match try_barracuda_step(world).await {
+    match try_gpu_physics_step(world).await {
         Ok(count) => {
-            debug!("Physics step via barraCuda GPU: {count} bodies");
+            debug!("Physics step via GPU compute: {count} bodies");
             PhysicsStepResult {
                 gpu_accelerated: true,
                 bodies_updated: count,
@@ -37,7 +47,7 @@ pub async fn step_physics(world: &mut PhysicsWorld) -> PhysicsStepResult {
             }
         }
         Err(e) => {
-            debug!("barraCuda unavailable ({e}), using CPU Euler fallback");
+            debug!("GPU compute unavailable ({e}), using CPU Euler fallback");
             let count = world.bodies.len();
             world.step_euler();
             PhysicsStepResult {
@@ -49,16 +59,21 @@ pub async fn step_physics(world: &mut PhysicsWorld) -> PhysicsStepResult {
     }
 }
 
-/// Try to send physics state to barraCuda via JSON-RPC.
-async fn try_barracuda_step(world: &mut PhysicsWorld) -> Result<usize, String> {
-    let socket_path = discover_barracuda_socket()?;
+/// Try to send physics state to a compute primal via JSON-RPC.
+///
+/// Uses barraCuda's IPC contract: `barracuda.compute.dispatch` with `op` field.
+/// When barraCuda adds physics ops, this will dispatch `math.physics.nbody`.
+async fn try_gpu_physics_step(world: &mut PhysicsWorld) -> Result<usize, String> {
+    let socket_path = discover_compute_socket()?;
 
     let request = json!({
         "jsonrpc": "2.0",
         "method": "barracuda.compute.dispatch",
         "params": {
-            "operation": "math.physics.nbody",
-            "payload": world.to_ipc_request()
+            "op": "math.physics.nbody",
+            "bodies": world.to_ipc_request(),
+            "dt": world.time_step,
+            "gravity": world.gravity
         },
         "id": 1
     });
@@ -73,21 +88,41 @@ async fn try_barracuda_step(world: &mut PhysicsWorld) -> Result<usize, String> {
             .and_then(|e| e.get("message"))
             .and_then(|m| m.as_str())
             .unwrap_or("unknown error");
-        format!("barraCuda error: {err}")
+        format!("Compute primal error: {err}")
     })?;
 
     world.apply_ipc_response(result);
     Ok(world.bodies.len())
 }
 
-/// Discover barraCuda Unix socket via runtime scanning.
-fn discover_barracuda_socket() -> Result<String, String> {
+/// Discover GPU compute socket via runtime scanning.
+///
+/// Capability-based: discovers primals providing `gpu.dispatch` (no hardcoded names).
+/// Follows toadStool S139 dual-write pattern for ecosystem discovery.
+///
+/// Priority:
+/// 1. `BARRACUDA_SOCKET` env (explicit override)
+/// 2. `$XDG_RUNTIME_DIR/ecoPrimals/` (ecosystem discovery directory, toadStool S139)
+/// 3. `$XDG_RUNTIME_DIR/{socket_name}/` (primal-specific)
+/// 4. `/tmp/` fallback
+fn discover_compute_socket() -> Result<String, String> {
+    if let Ok(path) = std::env::var("BARRACUDA_SOCKET") {
+        return Ok(path);
+    }
+
     let runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_string());
+    let socket_name =
+        std::env::var("PHYSICS_COMPUTE_SOCKET_NAME").unwrap_or_else(|_| "barracuda".to_string());
 
     let candidates = [
-        format!("{runtime_dir}/barracuda/barracuda.sock"),
-        format!("{runtime_dir}/barracuda.sock"),
-        "/tmp/barracuda.sock".to_string(),
+        // Ecosystem discovery (toadStool S139 dual-write)
+        format!("{runtime_dir}/ecoPrimals/{socket_name}.sock"),
+        format!("{runtime_dir}/ecoPrimals/discovery/{socket_name}.sock"),
+        // Primal-specific
+        format!("{runtime_dir}/{socket_name}/{socket_name}.sock"),
+        format!("{runtime_dir}/{socket_name}.sock"),
+        // Fallback
+        format!("/tmp/{socket_name}.sock"),
     ];
 
     for path in &candidates {
@@ -96,12 +131,7 @@ fn discover_barracuda_socket() -> Result<String, String> {
         }
     }
 
-    // Check env override
-    if let Ok(path) = std::env::var("BARRACUDA_SOCKET") {
-        return Ok(path);
-    }
-
-    Err("barraCuda socket not found (not running or not discoverable)".into())
+    Err("GPU compute socket not found (not running or not discoverable)".into())
 }
 
 /// Send a JSON-RPC request over a Unix socket and read the response.
@@ -143,7 +173,7 @@ mod tests {
 
     #[test]
     fn discover_barracuda_returns_err_when_absent() {
-        let result = discover_barracuda_socket();
+        let result = discover_compute_socket();
         // In CI/test, barraCuda is typically not running
         assert!(
             result.is_ok() || result.is_err(),
@@ -165,8 +195,10 @@ mod tests {
         });
 
         let result = step_physics(&mut world).await;
-        // Without barraCuda running, should fall back to CPU
-        assert!(!result.gpu_accelerated || result.gpu_accelerated);
+        assert!(
+            !result.gpu_accelerated,
+            "without barraCuda running, should fall back to CPU"
+        );
         assert_eq!(result.bodies_updated, 1);
         assert!(result.step_duration_secs >= 0.0);
     }

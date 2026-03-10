@@ -30,6 +30,10 @@ use std::time::{Duration, Instant};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
+#[expect(
+    clippy::too_many_lines,
+    reason = "demo main is cohesive setup and render loop"
+)]
 async fn main() -> Result<()> {
     // Initialize logging
     tracing_subscriber::fmt()
@@ -143,6 +147,7 @@ async fn main() -> Result<()> {
 
         // Print progress every 10 frames
         if (i + 1) % 10 == 0 {
+            #[expect(clippy::cast_possible_truncation, reason = "frame count is small")]
             let avg_frame_time: Duration =
                 frame_times.iter().sum::<Duration>() / frame_times.len() as u32;
             println!(
@@ -158,11 +163,17 @@ async fn main() -> Result<()> {
         // Target 60 FPS (16.67ms per frame)
         let target_frame_time = Duration::from_millis(16);
         if frame_time < target_frame_time {
-            tokio::time::sleep(target_frame_time.checked_sub(frame_time).unwrap()).await;
+            tokio::time::sleep(
+                target_frame_time
+                    .checked_sub(frame_time)
+                    .unwrap_or(Duration::ZERO),
+            )
+            .await;
         }
     }
 
     let total_time = start_time.elapsed();
+    #[expect(clippy::cast_possible_truncation, reason = "frame count is 60")]
     let avg_frame_time: Duration = frame_times.iter().sum::<Duration>() / frame_times.len() as u32;
     let fps = 60.0 / total_time.as_secs_f64();
 

@@ -51,6 +51,10 @@ impl GrammarCompiler {
     }
 
     /// Compile grammar expression and data into a scene graph.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "compile is a single cohesive match over grammar variants"
+    )]
     pub fn compile(&self, expr: &GrammarExpr, data: &[Value]) -> SceneGraph {
         let mut graph = SceneGraph::new();
 

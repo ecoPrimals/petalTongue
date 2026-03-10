@@ -21,10 +21,6 @@ pub struct GraphManagerPanel {
     /// Selected graph for loading
     selected_graph_id: Option<String>,
 
-    /// Current execution ID (if running)
-    #[expect(dead_code)]
-    current_execution: Option<String>,
-
     /// Execution status message
     execution_status: Option<String>,
 
@@ -45,7 +41,6 @@ impl GraphManagerPanel {
             available_graphs: Vec::new(),
             last_refresh: None,
             selected_graph_id: None,
-            current_execution: None,
             execution_status: None,
             save_name: String::new(),
             save_description: String::new(),

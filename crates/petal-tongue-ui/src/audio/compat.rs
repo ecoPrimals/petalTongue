@@ -19,6 +19,8 @@ use tracing::{error, info};
 pub struct AudioSystemV2 {
     manager: Arc<Mutex<AudioManager>>,
     runtime: tokio::runtime::Handle,
+    /// Kept alive so the handle remains valid when no external runtime exists.
+    _owned_runtime: Option<tokio::runtime::Runtime>,
 }
 
 impl AudioSystemV2 {
@@ -29,18 +31,17 @@ impl AudioSystemV2 {
     pub fn new() -> Self {
         info!("🎵 Initializing AudioSystemV2 (substrate-agnostic)...");
 
-        // Get or create tokio runtime
-        let runtime = tokio::runtime::Handle::try_current().unwrap_or_else(|_| {
-            tokio::runtime::Runtime::new()
-                .unwrap_or_else(|e| {
-                    error!("Failed to create tokio runtime for audio: {}", e);
-                    panic!("Cannot initialize audio: tokio runtime creation failed");
-                })
-                .handle()
-                .clone()
-        });
+        let (runtime, owned) = if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            (handle, None)
+        } else {
+            let rt = tokio::runtime::Runtime::new().unwrap_or_else(|e| {
+                error!("Failed to create tokio runtime for audio: {}", e);
+                panic!("Cannot initialize audio: tokio runtime creation failed");
+            });
+            let handle = rt.handle().clone();
+            (handle, Some(rt))
+        };
 
-        // Initialize AudioManager (logs and panics on failure - no fallback available)
         let manager = runtime.block_on(async {
             AudioManager::init().await.unwrap_or_else(|e| {
                 error!("Failed to initialize AudioManager: {}", e);
@@ -53,6 +54,7 @@ impl AudioSystemV2 {
         Self {
             manager: Arc::new(Mutex::new(manager)),
             runtime,
+            _owned_runtime: owned,
         }
     }
 
@@ -76,14 +78,81 @@ impl AudioSystemV2 {
 
     /// Play audio file (synchronous API)
     ///
-    /// TODO: Implement file loading and playback
+    /// Decodes MP3/WAV via symphonia and plays through AudioManager.
     pub fn play_file(&self, path: &Path) -> Result<()> {
         info!("🎵 Playing file: {}", path.display());
 
-        // TODO: Load audio file using symphonia
-        // TODO: Convert to samples
-        // TODO: Play via AudioManager
+        use symphonia::core::audio::{AudioBufferRef, Signal};
+        use symphonia::core::codecs::DecoderOptions;
+        use symphonia::core::formats::FormatOptions;
+        use symphonia::core::io::MediaSourceStream;
+        use symphonia::core::meta::MetadataOptions;
+        use symphonia::core::probe::Hint;
 
+        let file = std::fs::File::open(path)?;
+        let mss = MediaSourceStream::new(Box::new(file), Default::default());
+
+        let mut hint = Hint::new();
+        if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+            hint.with_extension(ext);
+        }
+
+        let probed = symphonia::default::get_probe().format(
+            &hint,
+            mss,
+            &FormatOptions::default(),
+            &MetadataOptions::default(),
+        )?;
+
+        let mut format = probed.format;
+        let track = format
+            .default_track()
+            .ok_or_else(|| anyhow::anyhow!("no audio track found"))?;
+        let mut decoder = symphonia::default::get_codecs()
+            .make(&track.codec_params, &DecoderOptions::default())?;
+        let sample_rate = track.codec_params.sample_rate.unwrap_or(44100);
+        let track_id = track.id;
+
+        let mut all_samples: Vec<f32> = Vec::new();
+
+        loop {
+            let packet = match format.next_packet() {
+                Ok(p) => p,
+                Err(symphonia::core::errors::Error::IoError(ref e))
+                    if e.kind() == std::io::ErrorKind::UnexpectedEof =>
+                {
+                    break;
+                }
+                Err(e) => return Err(e.into()),
+            };
+
+            if packet.track_id() != track_id {
+                continue;
+            }
+
+            let frame = decoder.decode(&packet)?;
+
+            match frame {
+                AudioBufferRef::F32(buf) => {
+                    for &s in buf.chan(0) {
+                        all_samples.push(s);
+                    }
+                }
+                AudioBufferRef::S16(buf) => {
+                    for &s in buf.chan(0) {
+                        all_samples.push(f32::from(s) / 32768.0);
+                    }
+                }
+                AudioBufferRef::S32(buf) => {
+                    for &s in buf.chan(0) {
+                        all_samples.push(s as f32 / 2_147_483_648.0);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        self.play_samples(&all_samples, sample_rate);
         Ok(())
     }
 

@@ -47,16 +47,18 @@ pub struct SongbirdClient {
 }
 
 impl SongbirdClient {
-    /// Discover Songbird's Unix socket
+    /// Discover discovery service Unix socket (capability-based, no hardcoded primal names)
     ///
-    /// Searches in biomeOS-standard locations for songbird-<`family_id>.sock`
+    /// Uses `DISCOVERY_SERVICE_SOCKET` env for socket name (default: discovery-service).
+    /// Set to `songbird` for Songbird deployments.
     pub fn discover(family_id: Option<&str>) -> Result<Self> {
         let family = family_id
             .map(String::from)
             .or_else(|| std::env::var("FAMILY_ID").ok())
             .unwrap_or_else(|| "nat0".to_string());
 
-        let socket_name = format!("songbird-{family}.sock");
+        let socket_base = petal_tongue_core::constants::discovery_service_socket_name();
+        let socket_name = format!("{socket_base}-{family}.sock");
 
         // Try XDG_RUNTIME_DIR first
         let search_paths = Self::get_search_paths();
@@ -64,13 +66,13 @@ impl SongbirdClient {
         for base_path in search_paths {
             let socket_path = base_path.join(&socket_name);
             if socket_path.exists() {
-                info!("🎵 Found Songbird at: {}", socket_path.display());
+                info!("🎵 Found discovery service at: {}", socket_path.display());
                 return Ok(Self { socket_path });
             }
         }
 
-        // Songbird not found
-        warn!("⚠️ Songbird not found in standard locations");
+        // Discovery service not found
+        warn!("⚠️ Discovery service not found in standard locations");
         warn!("   Searched for: {}", socket_name);
         warn!("   Search paths:");
         for path in Self::get_search_paths() {
@@ -78,7 +80,7 @@ impl SongbirdClient {
         }
 
         Err(anyhow::anyhow!(
-            "Songbird not found. Is it running? (looking for {socket_name})"
+            "Discovery service not found. Is it running? (looking for {socket_name})"
         ))
     }
 

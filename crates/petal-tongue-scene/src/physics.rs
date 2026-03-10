@@ -144,7 +144,11 @@ mod tests {
         };
         assert_eq!(body.id, "b1");
         assert!((body.mass - 1.0).abs() < 1e-10);
-        assert_eq!(body.position, [0.0, 0.0, 0.0]);
+        assert!(
+            (body.position[0] - 0.0).abs() < f64::EPSILON
+                && (body.position[1] - 0.0).abs() < f64::EPSILON
+                && (body.position[2] - 0.0).abs() < f64::EPSILON
+        );
     }
 
     #[test]

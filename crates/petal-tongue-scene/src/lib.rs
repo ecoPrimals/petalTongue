@@ -23,6 +23,8 @@
 
 pub mod animation;
 pub mod compiler;
+pub mod dashboard;
+pub mod data_binding_compiler;
 pub mod domain_palette;
 pub mod grammar;
 pub mod math_objects;
@@ -35,6 +37,10 @@ pub mod tufte;
 
 pub use animation::{Animation, AnimationPlayer, AnimationState, Easing, Sequence};
 pub use compiler::GrammarCompiler;
+pub use dashboard::{
+    Dashboard, DashboardConfig, DashboardLayout, build_dashboard, compose_dashboard,
+};
+pub use data_binding_compiler::DataBindingCompiler;
 pub use domain_palette::{DomainPalette, palette_for_domain};
 pub use grammar::{
     Aesthetic, CoordinateSystem, Facet, FacetLayout, GeometryType, GrammarExpr, ScaleType,

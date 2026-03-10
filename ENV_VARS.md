@@ -138,6 +138,87 @@ Comma-separated list of discovery hints for finding BiomeOS and other primals.
 
 ---
 
+### **PETALTONGUE_DISCOVERY_PORTS**
+**Type**: String (comma-separated port numbers)  
+**Default**: `8080,8081,3000,9000`  
+**Required**: No  
+**Example**: `PETALTONGUE_DISCOVERY_PORTS=8080,8081,9000,9001`
+
+Ports to probe during HTTP-based capability discovery. Also accepts `DISCOVERY_PORTS` as alias.
+
+---
+
+### **PETALTONGUE_DISCOVERY_BASE**
+**Type**: String (URL base)  
+**Default**: `http://localhost`  
+**Required**: No  
+**Example**: `PETALTONGUE_DISCOVERY_BASE=http://192.0.2.10`
+
+Base URL for HTTP probing; ports from `PETALTONGUE_DISCOVERY_PORTS` are appended.
+
+---
+
+### **DISCOVERY_SERVICE_SOCKET**
+**Type**: String (socket name or path)  
+**Default**: `discovery-service`  
+**Required**: No  
+**Example**: `DISCOVERY_SERVICE_SOCKET=songbird` (for Songbird deployments)
+
+Capability-based discovery service socket name. Set to `songbird` when using Songbird as discovery provider.
+
+---
+
+### **SONGBIRD_SOCKET_FALLBACK**
+**Type**: String (absolute path)  
+**Default**: `/tmp/<discovery-service>-nat0-default.sock`  
+**Required**: No  
+**Example**: `SONGBIRD_SOCKET_FALLBACK=/run/user/1000/songbird-nat0.sock`
+
+Fallback socket path when discovery service is not found in standard locations.
+
+---
+
+### **BARRACUDA_SOCKET**
+**Type**: String (absolute path)  
+**Default**: None (runtime scan)  
+**Required**: No  
+**Example**: `BARRACUDA_SOCKET=/run/user/1000/barracuda.sock`
+
+Explicit path to physics/GPU compute primal socket. Overrides runtime scanning.
+
+---
+
+### **PHYSICS_COMPUTE_SOCKET_NAME**
+**Type**: String  
+**Default**: `barracuda`  
+**Required**: No  
+**Example**: `PHYSICS_COMPUTE_SOCKET_NAME=physics-gpu`
+
+Socket name for physics compute capability discovery (used when `BARRACUDA_SOCKET` not set).
+
+---
+
+### **PETALTONGUE_HEADLESS_ENDPOINT**
+**Type**: String (URL)  
+**Default**: `http://localhost:9000`  
+**Required**: No  
+**Example**: `PETALTONGUE_HEADLESS_ENDPOINT=http://discovery:9000`
+
+Demo/topology endpoint for headless mode (e.g., discovery service URL).
+
+---
+
+### **PETALTONGUE_TUTORIAL_ENDPOINT_COMPUTE**
+### **PETALTONGUE_TUTORIAL_ENDPOINT_SECURITY**
+### **PETALTONGUE_TUTORIAL_ENDPOINT_DISCOVERY**
+**Type**: String (URL)  
+**Default**: `http://localhost:3030`, `http://localhost:8001`, `http://localhost:8003`  
+**Required**: No  
+
+Tutorial mode placeholder endpoints for compute, security, and discovery primals.
+
+---
+
 ## Self-Awareness & AI Integration
 
 ### **PETALTONGUE_STATUS_FILE**
@@ -333,19 +414,11 @@ Show debug overlay with internal state (FPS, memory, etc.).
 
 ### **DISCOVERY_PORTS**
 **Type**: String (comma-separated port numbers)  
-**Default**: `8080,8081,8082,8083,8084,8085,3000,3001,9000,9001`  
+**Default**: `8080,8081,3000,9000` (or see `PETALTONGUE_DISCOVERY_PORTS`)  
 **Required**: No  
 **Example**: `DISCOVERY_PORTS=8080,8081,9000,9001`
 
-Ports to probe during HTTP-based capability discovery.
-
-**TRUE PRIMAL Behavior**:
-- Probes these ports for `/capabilities`, `/health`, `/api/v1/capabilities` endpoints
-- No assumptions about which services run on which ports
-- Discovers any primal advertising visualization capabilities
-
-**Production**: Can narrow to known port range for faster discovery.  
-**Development**: Use default for maximum discovery coverage.
+Alias for `PETALTONGUE_DISCOVERY_PORTS`. Ports to probe during HTTP-based capability discovery.
 
 ---
 

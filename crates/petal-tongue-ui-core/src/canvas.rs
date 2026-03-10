@@ -5,9 +5,11 @@
 //! Exports to PNG for reports, embedding, and automation.
 
 use crate::trait_def::{ExportFormat, UICapability, UniversalUI};
+use crate::utils::health_to_color;
 use anyhow::Result;
 use petal_tongue_core::GraphEngine;
 use std::sync::{Arc, RwLock};
+use tiny_skia::{Color, FillRule, Paint, PathBuilder, Pixmap, Stroke, Transform};
 
 /// Canvas UI renderer (pure Rust, zero native dependencies)
 ///
@@ -50,26 +52,119 @@ impl CanvasUI {
 
     /// Render to pixel buffer (PNG format)
     ///
-    /// TODO: Implement full rendering with tiny-skia
-    /// For now, returns a placeholder
-    #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
+    /// Uses tiny-skia to render the graph topology: nodes as filled circles,
+    /// edges as lines. Transforms graph coordinates to fit the canvas with padding.
     fn render_png(&self) -> Result<Vec<u8>> {
-        tracing::warn!("Canvas rendering not fully implemented yet - generating placeholder");
+        let graph = match self.graph.read() {
+            Ok(guard) => guard,
+            Err(e) => return Err(anyhow::anyhow!("graph lock poisoned: {e}")),
+        };
 
-        // For now, create a simple placeholder PNG
-        // Full implementation will use tiny-skia for proper rendering
+        let nodes = graph.nodes();
+        let edges = graph.edges();
 
-        // Minimal valid PNG (1x1 transparent pixel)
-        Ok(vec![
-            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
-            0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR chunk
-            0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, // 1x1
-            0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00, 0x0A, 0x49,
-            0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0D,
-            0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60,
-            0x82,
-        ])
+        let mut pixmap = Pixmap::new(self.width, self.height).ok_or_else(|| {
+            anyhow::anyhow!("Failed to create pixmap {}x{}", self.width, self.height)
+        })?;
+
+        // Dark background (match SVG style)
+        let bg = Color::from_rgba8(20, 24, 34, 255);
+        pixmap.fill(bg);
+
+        if nodes.is_empty() {
+            return pixmap
+                .encode_png()
+                .map_err(|e| anyhow::anyhow!("PNG encode failed: {e}"));
+        }
+
+        // Compute bounds and scale to fit canvas with padding
+        let padding = 60.0;
+        let (min_x, max_x, min_y, max_y) = nodes.iter().fold(
+            (f32::MAX, f32::MIN, f32::MAX, f32::MIN),
+            |(min_x, max_x, min_y, max_y), n| {
+                (
+                    min_x.min(n.position.x),
+                    max_x.max(n.position.x),
+                    min_y.min(n.position.y),
+                    max_y.max(n.position.y),
+                )
+            },
+        );
+        let range_x = (max_x - min_x).max(1.0);
+        let range_y = (max_y - min_y).max(1.0);
+        let avail_w = (self.width as f32) - 2.0 * padding;
+        let avail_h = (self.height as f32) - 2.0 * padding;
+        let scale = (avail_w / range_x).min(avail_h / range_y);
+        let offset_x = padding - min_x * scale;
+        let offset_y = padding - min_y * scale;
+
+        let to_screen = |x: f32, y: f32| (x * scale + offset_x, y * scale + offset_y);
+
+        let transform = Transform::default();
+        let node_radius = 12.0f32.max(scale * 0.05);
+
+        // Draw edges first (behind nodes)
+        let mut edge_paint = Paint::default();
+        edge_paint.set_color_rgba8(107, 114, 128, 255);
+        let stroke = Stroke {
+            width: 2.0,
+            ..Stroke::default()
+        };
+
+        let default_center = (self.width as f32 / 2.0, self.height as f32 / 2.0);
+        for edge in edges {
+            let from_node = nodes
+                .iter()
+                .find(|n| n.info.id.as_str() == edge.from.as_str());
+            let to_node = nodes
+                .iter()
+                .find(|n| n.info.id.as_str() == edge.to.as_str());
+            let (x1, y1) =
+                from_node.map_or(default_center, |n| to_screen(n.position.x, n.position.y));
+            let (x2, y2) =
+                to_node.map_or(default_center, |n| to_screen(n.position.x, n.position.y));
+
+            let path = {
+                let mut pb = tiny_skia::PathBuilder::new();
+                pb.move_to(x1, y1);
+                pb.line_to(x2, y2);
+                pb.finish()
+            };
+            if let Some(path) = path {
+                pixmap.stroke_path(&path, &edge_paint, &stroke, transform, None);
+            }
+        }
+
+        // Draw nodes as filled circles
+        for node in nodes {
+            let (cx, cy) = to_screen(node.position.x, node.position.y);
+            let hex = health_to_color(&node.info.health);
+            let color = parse_hex_color(hex).unwrap_or(Color::from_rgba8(156, 163, 175, 255));
+
+            let path = PathBuilder::from_circle(cx, cy, node_radius);
+            if let Some(path) = path {
+                let mut paint = Paint::default();
+                paint.set_color(color);
+                pixmap.fill_path(&path, &paint, FillRule::Winding, transform, None);
+            }
+        }
+
+        pixmap
+            .encode_png()
+            .map_err(|e| anyhow::anyhow!("PNG encode failed: {e}"))
     }
+}
+
+/// Parse hex color (#RRGGBB) to tiny_skia Color
+fn parse_hex_color(hex: &str) -> Option<Color> {
+    let s = hex.strip_prefix('#')?.trim();
+    if s.len() != 6 {
+        return None;
+    }
+    let r = u8::from_str_radix(&s[0..2], 16).ok()?;
+    let g = u8::from_str_radix(&s[2..4], 16).ok()?;
+    let b = u8::from_str_radix(&s[4..6], 16).ok()?;
+    Some(Color::from_rgba8(r, g, b, 255))
 }
 
 impl UniversalUI for CanvasUI {
@@ -120,7 +215,7 @@ mod tests {
     }
 
     #[test]
-    fn test_canvas_render_placeholder() {
+    fn test_canvas_render_png() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         let ui = CanvasUI::new(graph, 800, 600);
 
@@ -133,6 +228,12 @@ mod tests {
         assert_eq!(
             &png_data[0..8],
             &[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+        );
+        // Actual rendering produces much larger PNG than 1x1 placeholder (~68 bytes)
+        assert!(
+            png_data.len() > 100,
+            "PNG should be larger than placeholder (got {} bytes)",
+            png_data.len()
         );
     }
 }

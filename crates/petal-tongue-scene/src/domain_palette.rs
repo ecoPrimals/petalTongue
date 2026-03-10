@@ -215,8 +215,8 @@ mod tests {
         let palette = palette_for_domain("health");
         let c0 = categorical_color(palette, 0);
         let c6 = categorical_color(palette, 6);
-        assert_eq!(c0.r, c6.r);
-        assert_eq!(c0.g, c6.g);
+        assert!((c0.r - c6.r).abs() < f32::EPSILON);
+        assert!((c0.g - c6.g).abs() < f32::EPSILON);
     }
 
     #[test]

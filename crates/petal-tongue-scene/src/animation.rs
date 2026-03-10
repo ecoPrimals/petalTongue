@@ -304,6 +304,10 @@ impl AnimationPlayer {
 /// Apply an animation state's current progress to the targeted scene graph node.
 fn apply_animation_to_scene(state: &AnimationState, scene: &mut crate::scene_graph::SceneGraph) {
     match &state.animation.target {
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "opacity is in [0,1], f32 sufficient"
+        )]
         AnimationTarget::Opacity { node_id, from, to } => {
             if let Some(node) = scene.get_mut(node_id) {
                 node.opacity = state.lerp_f32(*from, *to) as f32;
@@ -328,6 +332,10 @@ fn apply_animation_to_scene(state: &AnimationState, scene: &mut crate::scene_gra
                 node.transform = crate::transform::Transform2D::rotate(r);
             }
         }
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "progress is in [0,1], f32 sufficient"
+        )]
         AnimationTarget::StrokeDraw { node_id } => {
             if let Some(node) = scene.get_mut(node_id) {
                 let progress = state.progress() as f32;
@@ -471,5 +479,169 @@ mod tests {
         let (x, y) = node.transform.apply(0.0, 0.0);
         assert!((x - 100.0).abs() < 1.0);
         assert!((y - 200.0).abs() < 1.0);
+    }
+
+    #[test]
+    fn easing_spring_at_0_0_5_1_0() {
+        assert!((Easing::Spring.apply(0.0) - 0.0).abs() < EPS);
+        assert!((Easing::Spring.apply(1.0) - 1.0).abs() < 0.1);
+        let mid = Easing::Spring.apply(0.5);
+        assert!(mid > 0.0 && mid < 1.0);
+    }
+
+    #[test]
+    fn easing_bounce_at_0_0_5_1_0() {
+        assert!((Easing::Bounce.apply(0.0) - 0.0).abs() < EPS);
+        assert!((Easing::Bounce.apply(1.0) - 1.0).abs() < EPS);
+        let mid = Easing::Bounce.apply(0.5);
+        assert!(mid > 0.0 && mid <= 1.0);
+    }
+
+    #[test]
+    fn easing_ease_in_out_at_0_and_1() {
+        assert!((Easing::EaseInOut.apply(0.0) - 0.0).abs() < EPS);
+        assert!((Easing::EaseInOut.apply(1.0) - 1.0).abs() < EPS);
+    }
+
+    #[test]
+    fn easing_clamps_negative_t() {
+        assert!((Easing::Linear.apply(-1.0) - 0.0).abs() < EPS);
+        assert!((Easing::EaseIn.apply(-0.5) - 0.0).abs() < EPS);
+    }
+
+    #[test]
+    fn easing_clamps_t_above_one() {
+        assert!((Easing::Linear.apply(2.0) - 1.0).abs() < EPS);
+        assert!((Easing::Bounce.apply(1.5) - 1.0).abs() < EPS);
+    }
+
+    #[test]
+    fn sequence_group_total_duration() {
+        let a1 = Animation::fade_in("n1", 2.0);
+        let a2 = Animation::fade_in("n2", 3.0);
+        let inner = Sequence::Sequential(vec![a1, a2]);
+        let outer = Sequence::Group(vec![inner.clone(), inner]);
+        assert!((outer.total_duration() - 10.0).abs() < EPS);
+    }
+
+    #[test]
+    fn animation_state_zero_duration_immediate_complete() {
+        let anim = Animation::fade_in("n", 0.0);
+        let state = AnimationState::new(anim);
+        assert!(state.is_done());
+        assert!((state.progress() - 1.0).abs() < EPS);
+    }
+
+    #[test]
+    fn animation_state_negative_t_from_advance_beyond_duration() {
+        let anim = Animation::fade_in("n", 1.0);
+        let mut state = AnimationState::new(anim);
+        state.advance(2.0);
+        assert!(state.is_done());
+        assert!((state.progress() - 1.0).abs() < EPS);
+    }
+
+    #[test]
+    fn animation_lerp_f64() {
+        let anim = Animation::fade_in("n", 1.0);
+        let mut state = AnimationState::new(anim);
+        assert!((state.lerp_f64(0.0, 100.0) - 0.0).abs() < EPS);
+        state.advance(0.5);
+        let mid = state.lerp_f64(0.0, 100.0);
+        assert!(mid > 0.0 && mid < 100.0);
+        state.advance(1.0);
+        assert!((state.lerp_f64(0.0, 100.0) - 100.0).abs() < 1.0);
+    }
+
+    #[test]
+    fn animation_fade_out_and_create() {
+        let fade_out = Animation::fade_out("n", 1.0);
+        assert_eq!(
+            fade_out.target,
+            AnimationTarget::Opacity {
+                node_id: "n".to_string(),
+                from: 1.0,
+                to: 0.0,
+            }
+        );
+
+        let create = Animation::create("n", 2.0);
+        assert!(matches!(create.target, AnimationTarget::StrokeDraw { .. }));
+        assert!((create.total_duration() - 2.0).abs() < EPS);
+    }
+
+    #[test]
+    fn animation_with_easing_and_delay() {
+        let anim = Animation::fade_in("n", 1.0)
+            .with_easing(Easing::EaseIn)
+            .with_delay(0.5);
+        assert!((anim.total_duration() - 1.5).abs() < EPS);
+    }
+
+    #[test]
+    fn animation_player_sequence_group_in_tick_path() {
+        use crate::scene_graph::{SceneGraph, SceneNode};
+        let mut scene = SceneGraph::new();
+        scene.add_to_root(SceneNode::new("n1").with_opacity(0.0));
+        scene.add_to_root(SceneNode::new("n2").with_opacity(0.0));
+
+        let a1 = Animation::fade_in("n1", 0.5);
+        let a2 = Animation::fade_in("n2", 0.5);
+        let inner = Sequence::Sequential(vec![a1, a2]);
+        let group = Sequence::Group(vec![inner.clone(), inner]);
+
+        let mut player = AnimationPlayer::new();
+        player.play_sequence(group);
+        assert_eq!(player.active_count(), 4);
+
+        // Tick through to completion (4 * 0.5 = 2.0 total)
+        let remaining = player.tick(2.0, &mut scene);
+        assert_eq!(remaining, 0);
+        assert!(!player.is_playing());
+        assert!((scene.get("n1").unwrap().opacity - 1.0).abs() < 0.01);
+        assert!((scene.get("n2").unwrap().opacity - 1.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn animation_lerp_with_negative_values() {
+        let anim = Animation::fade_in("n", 1.0);
+        let mut state = AnimationState::new(anim);
+
+        // Lerp from -1 to 1
+        assert!((state.lerp_f64(-1.0, 1.0) - (-1.0)).abs() < EPS);
+        state.advance(0.5);
+        let mid = state.lerp_f64(-1.0, 1.0);
+        assert!(mid > -1.0 && mid < 1.0);
+        state.advance(1.0);
+        assert!((state.lerp_f64(-1.0, 1.0) - 1.0).abs() < EPS);
+    }
+
+    #[test]
+    fn animation_scale_with_negative_from() {
+        use crate::scene_graph::{SceneGraph, SceneNode};
+        let mut scene = SceneGraph::new();
+        scene.add_to_root(SceneNode::new("n1"));
+
+        let anim = Animation {
+            target: AnimationTarget::Scale {
+                node_id: "n1".to_string(),
+                from: -1.0,
+                to: 1.0,
+            },
+            duration_secs: 1.0,
+            easing: Easing::Linear,
+            delay_secs: 0.0,
+        };
+
+        let mut player = AnimationPlayer::new();
+        player.play(anim);
+        player.tick(1.0, &mut scene);
+
+        let node = scene.get("n1").unwrap();
+        let (x, _) = node.transform.apply(1.0, 0.0);
+        assert!(
+            (x - 1.0).abs() < 0.01,
+            "Scale should interpolate from -1 to 1"
+        );
     }
 }

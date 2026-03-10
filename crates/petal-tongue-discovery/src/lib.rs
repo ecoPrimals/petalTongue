@@ -103,31 +103,24 @@ use petal_tongue_core::constants;
 ///
 /// A vector of discovered providers, or an error if none found.
 ///
-/// **NOTE**: Mock providers are NOT used in production. Use explicit
-/// `PETALTONGUE_MOCK_MODE=true` if you need mock data for testing.
+/// **NOTE**: Mock providers are NOT used in production. For testing, build with
+/// `--features test-fixtures` and set `PETALTONGUE_MOCK_MODE=true`.
 #[allow(clippy::too_many_lines)]
 pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn VisualizationDataProvider>>> {
     let mut providers: Vec<Box<dyn VisualizationDataProvider>> = Vec::new();
 
-    // Check for explicit mock mode (testing only - requires test-fixtures feature)
-    let mock_mode = std::env::var("PETALTONGUE_MOCK_MODE")
-        .unwrap_or_else(|_| "false".to_string())
-        .to_lowercase()
-        == "true";
+    // Mock mode: ONLY when test-fixtures feature enabled. Production builds never check env var.
+    #[cfg(any(test, feature = "test-fixtures"))]
+    {
+        let mock_mode = std::env::var("PETALTONGUE_MOCK_MODE")
+            .unwrap_or_else(|_| "false".to_string())
+            .to_lowercase()
+            == "true";
 
-    if mock_mode {
-        #[cfg(any(test, feature = "test-fixtures"))]
-        {
+        if mock_mode {
             tracing::warn!("PETALTONGUE_MOCK_MODE=true - Using mock provider (TESTING ONLY)");
             providers.push(Box::new(MockVisualizationProvider::new()));
             return Ok(providers);
-        }
-        #[cfg(not(any(test, feature = "test-fixtures")))]
-        {
-            tracing::warn!(
-                "PETALTONGUE_MOCK_MODE=true but test-fixtures feature not enabled - returning empty (use --features test-fixtures for mock data)"
-            );
-            return Ok(vec![]);
         }
     }
 
@@ -315,7 +308,7 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
             \n\
             Fallback options (external only):\n\
             4. HTTP fallback: BIOMEOS_URL=http://localhost:{}\n\
-            5. Development: PETALTONGUE_MOCK_MODE=true\n\
+            5. Development: Build with --features test-fixtures and PETALTONGUE_MOCK_MODE=true\n\
             \n\
             💡 GUI will start with tutorial mode as graceful fallback",
             constants::DEFAULT_WEB_PORT

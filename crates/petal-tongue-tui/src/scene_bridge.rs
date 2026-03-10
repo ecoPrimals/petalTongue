@@ -35,6 +35,10 @@ impl<'a> SceneWidget<'a> {
 }
 
 impl Widget for SceneWidget<'_> {
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "col_idx, row_idx bounded by area dimensions (u16)"
+    )]
     fn render(self, area: Rect, buf: &mut Buffer) {
         let compiler = TerminalCompiler::new(area.width as usize, area.height as usize);
         let output = compiler.compile(self.scene);

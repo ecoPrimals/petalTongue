@@ -97,7 +97,10 @@ impl SvgUI {
         svg.push('\n');
 
         // Get graph data
-        let graph = self.graph.read().unwrap();
+        let graph = match self.graph.read() {
+            Ok(guard) => guard,
+            Err(e) => return Err(anyhow::anyhow!("graph lock poisoned: {e}")),
+        };
         let nodes = graph.nodes();
         let edges = graph.edges();
 

@@ -57,6 +57,7 @@ pub mod primal_types;
 pub mod property; // Generic property system
 pub mod proprioception;
 pub mod scenario_builder; // ScenarioBuilder trait for springs and primals
+pub mod scenario_loader; // healthSpring-style scenario JSON loader
 pub mod session; // Session state persistence (Phase 2)
 pub mod state_sync; // State synchronization across devices
 pub mod system_info; // System information utilities (safe FFI wrappers)
@@ -136,6 +137,9 @@ pub use data_channel::{ClinicalRange, DataBinding, DataChannel, ThresholdRange};
 
 /// Scenario builder trait (springs and primals produce visualization data)
 pub use scenario_builder::{ScenarioBuilder, ScenarioMetadata, VisualizationScene};
+
+/// Loaded scenario from healthSpring-style JSON
+pub use scenario_loader::LoadedScenario;
 
 /// Dynamic schema system (Live evolution, no recompilation)
 pub use dynamic_schema::{

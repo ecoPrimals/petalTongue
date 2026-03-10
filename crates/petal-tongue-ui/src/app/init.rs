@@ -9,16 +9,13 @@ use crate::accessibility_panel::AccessibilityPanel;
 use crate::audio::AudioSystemV2;
 use crate::awakening_overlay::AwakeningOverlay;
 use crate::graph_canvas::GraphCanvas;
-use crate::graph_manager::GraphManagerPanel;
 use crate::graph_metrics_plotter::GraphMetricsPlotter;
 use crate::keyboard_shortcuts::KeyboardShortcuts;
 use crate::metrics_dashboard::MetricsDashboard;
-use crate::node_palette::NodePalette;
 use crate::panel_registry::{PanelInstance, PanelRegistry};
 #[cfg(feature = "doom")]
 use crate::panels::create_doom_factory;
 use crate::process_viewer_integration::ProcessViewerTool;
-use crate::property_panel::PropertyPanel;
 use crate::proprioception::initialize_standard_proprioception;
 use crate::proprioception_panel::ProprioceptionPanel;
 use crate::status_reporter::StatusReporter;
@@ -31,7 +28,6 @@ use petal_tongue_adapters::{
     AdapterRegistry, EcoPrimalCapabilityAdapter, EcoPrimalFamilyAdapter, EcoPrimalTrustAdapter,
 };
 use petal_tongue_animation::AnimationEngine;
-use petal_tongue_api::BiomeOSClient;
 use petal_tongue_core::{
     CapabilityDetector, GraphEngine, LayoutAlgorithm, Modality,
     channel::standard_channels,
@@ -97,7 +93,6 @@ pub(super) fn create_app(
         &runtime,
     );
 
-    let biomeos_client = create_biomeos_client();
     let neural_api_provider = discover_neural_api(&runtime);
     let graph = shared_graph;
 
@@ -113,7 +108,7 @@ pub(super) fn create_app(
     let tools = create_tool_manager();
     let audio_system = AudioSystemV2::new();
 
-    let (panel_registry, custom_panels) = create_panel_registry_and_panels(&scenario);
+    let (_panel_registry, custom_panels) = create_panel_registry_and_panels(&scenario);
 
     if let Some(backend) = audio_system.active_backend() {
         tracing::info!("🎵 Active audio backend: {}", backend);
@@ -137,9 +132,6 @@ pub(super) fn create_app(
         audio_renderer,
         audio_generator,
         animation_engine,
-        data_providers,
-        #[expect(deprecated)]
-        biomeos_client,
         current_layout: LayoutAlgorithm::ForceDirected,
         show_audio_panel: scenario
             .as_ref()
@@ -167,8 +159,6 @@ pub(super) fn create_app(
             .as_ref()
             .is_none_or(|s| s.ui_config.show_panels.trust_dashboard),
         awakening_overlay: AwakeningOverlay::new(),
-        session_manager: None,
-        instance_id: None,
         rendering_awareness,
         sensor_registry,
         channel_registry,
@@ -182,14 +172,7 @@ pub(super) fn create_app(
         show_neural_metrics: false,
         tokio_runtime: runtime,
         graph_canvas: GraphCanvas::new("New Graph".to_string()),
-        node_palette: NodePalette::new(),
-        property_panel: PropertyPanel::new(),
-        graph_manager: GraphManagerPanel::new(),
         show_graph_builder: false,
-        adaptive_ui: crate::adaptive_ui::AdaptiveUIManager::new(rendering_caps),
-        sensory_ui: crate::sensory_ui::SensoryUIManager::new().ok(),
-        use_sensory_ui: true,
-        panel_registry,
         custom_panels,
         motor_rx,
         motor_tx,
@@ -305,24 +288,6 @@ fn discover_data_providers(
             }
         })
     }
-}
-
-fn create_biomeos_client() -> BiomeOSClient {
-    let biomeos_url = std::env::var("BIOMEOS_URL").ok();
-    #[cfg(feature = "mock")]
-    let mock_mode_requested = std::env::var("PETALTONGUE_MOCK_MODE")
-        .unwrap_or_else(|_| "false".to_string())
-        .to_lowercase()
-        == "true";
-    #[cfg(not(feature = "mock"))]
-    let mock_mode_requested = false;
-
-    let biomeos_url = biomeos_url.unwrap_or_else(|| {
-        tracing::info!("No BIOMEOS_URL provided - will discover BiomeOS capability at runtime");
-        String::new()
-    });
-
-    BiomeOSClient::new(&biomeos_url).with_mock_mode(mock_mode_requested)
 }
 
 fn discover_neural_api(runtime: &tokio::runtime::Runtime) -> Option<Arc<NeuralApiProvider>> {

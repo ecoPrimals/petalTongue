@@ -9,6 +9,7 @@
 //! - Graceful handling when Songbird is unavailable
 
 use anyhow::{Context, Result};
+use petal_tongue_core::constants;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::time::Duration;
@@ -77,17 +78,19 @@ pub struct SongbirdClient {
 impl SongbirdClient {
     /// Create a new Songbird client
     ///
+    /// Capability-based discovery: uses discovery service socket (no hardcoded primal names).
     /// Socket path resolution (priority order):
-    /// 1. `SONGBIRD_SOCKET` environment variable
-    /// 2. `discover_primal_socket` for conventional discovery service path
-    /// 3. Conventional path fallback
+    /// 1. `SONGBIRD_SOCKET` or `DISCOVERY_SERVICE_SOCKET` env (explicit override)
+    /// 2. `discover_primal_socket` with capability-based socket name from constants
+    /// 3. `SONGBIRD_SOCKET_FALLBACK` env or conventional path fallback
     #[must_use]
     pub fn new() -> Self {
-        let socket_path = crate::socket_path::discover_primal_socket("songbird", None, None)
+        let socket_base = constants::discovery_service_socket_name();
+        let socket_path = crate::socket_path::discover_primal_socket(&socket_base, None, None)
             .map_or_else(
                 |_| {
                     std::env::var("SONGBIRD_SOCKET_FALLBACK")
-                        .unwrap_or_else(|_| "/tmp/songbird-nat0-default.sock".to_string())
+                        .unwrap_or_else(|_| format!("/tmp/{socket_base}-nat0-default.sock"))
                 },
                 |p| p.to_string_lossy().to_string(),
             );

@@ -195,6 +195,11 @@ impl TUIState {
         self.primals.read().await.clone()
     }
 
+    /// Get primal count (no clone)
+    pub async fn primal_count(&self) -> usize {
+        self.primals.read().await.len()
+    }
+
     /// Update primals (from discovery)
     pub async fn update_primals(&self, primals: Vec<PrimalInfo>) {
         *self.primals.write().await = primals;
@@ -204,6 +209,11 @@ impl TUIState {
     /// Get topology
     pub async fn get_topology(&self) -> Vec<TopologyEdge> {
         self.topology.read().await.clone()
+    }
+
+    /// Get topology edge count (no clone)
+    pub async fn topology_edge_count(&self) -> usize {
+        self.topology.read().await.len()
     }
 
     /// Update topology (from Songbird)
@@ -226,6 +236,11 @@ impl TUIState {
     /// Get logs
     pub async fn get_logs(&self) -> Vec<LogMessage> {
         self.logs.read().await.clone()
+    }
+
+    /// Get log count (no clone)
+    pub async fn log_count(&self) -> usize {
+        self.logs.read().await.len()
     }
 
     /// Get system status

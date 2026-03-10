@@ -21,7 +21,7 @@ pub async fn run(
     );
 
     // Run in blocking context (egui is not async)
-    tokio::task::spawn_blocking(move || run_ui_blocking(scenario, no_audio, data_service))
+    tokio::task::spawn_blocking(move || run_ui_blocking(scenario, no_audio, &data_service))
         .await
         .context("UI task panicked")?
 }
@@ -30,7 +30,7 @@ pub async fn run(
 fn run_ui_blocking(
     scenario: Option<String>,
     _no_audio: bool,
-    data_service: Arc<crate::data_service::DataService>,
+    data_service: &Arc<crate::data_service::DataService>,
 ) -> Result<()> {
     use petal_tongue_core::{InstanceId, RenderingCapabilities};
     use petal_tongue_ui::PetalTongueApp;

@@ -61,7 +61,9 @@ impl AudioSonificationRenderer {
 
     /// Generate audio attributes for all nodes
     pub fn generate_audio_attributes(&self) -> Vec<(String, AudioAttributes)> {
-        let graph = self.graph.read().expect("graph lock poisoned");
+        let Ok(graph) = self.graph.read() else {
+            return Vec::new();
+        };
 
         graph
             .nodes()
@@ -147,7 +149,9 @@ impl AudioSonificationRenderer {
 
     /// Generate a textual description of the soundscape (for AI narration)
     pub fn describe_soundscape(&self) -> String {
-        let graph = self.graph.read().expect("graph lock poisoned");
+        let Ok(graph) = self.graph.read() else {
+            return "Graph unavailable.".to_string();
+        };
         let stats = graph.stats();
 
         if stats.node_count == 0 {
@@ -223,7 +227,7 @@ impl AudioSonificationRenderer {
 
     /// Get detailed information about a specific node's audio
     pub fn describe_node_audio(&self, node_id: &str) -> Option<String> {
-        let graph = self.graph.read().expect("graph lock poisoned");
+        let graph = self.graph.read().ok()?;
         let node = graph.get_node(node_id)?;
 
         let attrs = self.node_to_audio(node);

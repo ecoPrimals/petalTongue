@@ -55,7 +55,7 @@ fn main() {
     }
 }
 
-fn json_array(val: serde_json::Value) -> Vec<serde_json::Value> {
+fn json_array(val: &serde_json::Value) -> Vec<serde_json::Value> {
     val.as_array().cloned().unwrap_or_default()
 }
 
@@ -73,7 +73,7 @@ fn demo_grammar() {
     println!("  Domain: {:?}", expr.domain);
     println!("  3D coords: {}", expr.uses_3d_coord());
 
-    let data = json_array(serde_json::json!([
+    let data = json_array(&serde_json::json!([
         {"time_hours": 0, "heart_rate": 72},
         {"time_hours": 4, "heart_rate": 68},
         {"time_hours": 8, "heart_rate": 75},
@@ -321,7 +321,7 @@ fn demo_svg() {
         .with_y("temp_c")
         .with_title("Weekly Temperature");
 
-    let data = json_array(serde_json::json!([
+    let data = json_array(&serde_json::json!([
         {"day": 1, "temp_c": 18},
         {"day": 2, "temp_c": 22},
         {"day": 3, "temp_c": 20},
@@ -401,7 +401,7 @@ fn demo_accessibility() {
         .with_y("reading")
         .with_title("Sensor Readings");
 
-    let data = json_array(serde_json::json!([
+    let data = json_array(&serde_json::json!([
         {"sensor": 0, "reading": 45},
         {"sensor": 1, "reading": 78},
         {"sensor": 2, "reading": 32}

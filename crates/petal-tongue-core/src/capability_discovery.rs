@@ -12,6 +12,36 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+/// Parse "major.minor.patch" into (major, minor, patch). Handles partial versions.
+pub(crate) fn parse_version(s: &str) -> Option<(u32, u32, u32)> {
+    let parts: Vec<&str> = s.split('.').collect();
+    let major = parts.first()?.trim().parse().ok()?;
+    let minor = parts
+        .get(1)
+        .and_then(|p| p.trim().parse().ok())
+        .unwrap_or(0);
+    let patch = parts
+        .get(2)
+        .and_then(|p| p.trim().parse().ok())
+        .unwrap_or(0);
+    Some((major, minor, patch))
+}
+
+/// Check if capability version satisfies the required version.
+/// Compatible if major versions match and capability >= required.
+pub(crate) fn version_compatible(cap_version: &str, required: &str) -> bool {
+    let Some((cap_maj, cap_min, cap_patch)) = parse_version(cap_version) else {
+        return false;
+    };
+    let Some((req_maj, req_min, req_patch)) = parse_version(required) else {
+        return true; // Unparseable requirement: allow
+    };
+    if cap_maj != req_maj {
+        return false;
+    }
+    (cap_min, cap_patch) >= (req_min, req_patch)
+}
+
 /// A capability that a primal can provide
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Capability {
@@ -62,7 +92,11 @@ impl Capability {
             return false;
         }
 
-        // TODO: Add version compatibility check (semver)
+        // Version compatibility: major must match, capability version must be >= required
+        if let Some(ref version_req) = query.version_req {
+            return version_compatible(&self.version, version_req);
+        }
+
         true
     }
 }
@@ -92,6 +126,13 @@ impl CapabilityQuery {
     #[must_use]
     pub fn with_operation(mut self, operation: impl Into<String>) -> Self {
         self.operation = Some(operation.into());
+        self
+    }
+
+    /// Query for minimum version (semver-compatible)
+    #[must_use]
+    pub fn with_version(mut self, version_req: impl Into<String>) -> Self {
+        self.version_req = Some(version_req.into());
         self
     }
 }
@@ -255,6 +296,137 @@ impl CapabilityDiscovery {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use async_trait::async_trait;
+
+    #[test]
+    fn test_version_compatible_same_major_higher_minor() {
+        assert!(version_compatible("1.2.0", "1.1.0"));
+        assert!(version_compatible("1.3.5", "1.2.0"));
+    }
+
+    #[test]
+    fn test_version_compatible_different_major() {
+        assert!(!version_compatible("1.0.0", "2.0.0"));
+        assert!(!version_compatible("2.0.0", "1.0.0"));
+    }
+
+    #[test]
+    fn test_version_compatible_same_version() {
+        assert!(version_compatible("1.2.3", "1.2.3"));
+    }
+
+    #[test]
+    fn test_version_compatible_lower_minor_fails() {
+        assert!(!version_compatible("1.1.0", "1.2.0"));
+    }
+
+    #[test]
+    fn test_parse_version() {
+        assert_eq!(parse_version("1.2.3"), Some((1, 2, 3)));
+        assert_eq!(parse_version("1.0"), Some((1, 0, 0)));
+        assert_eq!(parse_version("2"), Some((2, 0, 0)));
+        assert_eq!(parse_version("invalid"), None);
+    }
+
+    /// Mock discovery backend for testing
+    struct MockDiscoveryBackend {
+        results: Vec<PrimalEndpoint>,
+    }
+
+    #[async_trait]
+    impl DiscoveryBackend for MockDiscoveryBackend {
+        async fn query(
+            &self,
+            _query: &CapabilityQuery,
+        ) -> Result<Vec<PrimalEndpoint>, DiscoveryError> {
+            Ok(self.results.clone())
+        }
+
+        async fn subscribe(&self, _query: &CapabilityQuery) -> Result<(), DiscoveryError> {
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn test_discover_one_with_mock_backend() {
+        let endpoint = PrimalEndpoint {
+            id: "test-primal".to_string(),
+            capabilities: vec![Capability::new("display")],
+            endpoints: PrimalEndpoints {
+                tarpc: Some("tarpc://test".to_string()),
+                jsonrpc: None,
+                https: None,
+            },
+            health: PrimalHealth::Healthy,
+        };
+        let backend = Box::new(MockDiscoveryBackend {
+            results: vec![endpoint],
+        });
+        let discovery = CapabilityDiscovery::new(backend);
+        let query = CapabilityQuery::new("display");
+
+        let result = discovery.discover_one(&query).await.unwrap();
+        assert_eq!(result.id, "test-primal");
+        assert_eq!(result.health, PrimalHealth::Healthy);
+    }
+
+    #[tokio::test]
+    async fn test_discover_one_empty_returns_error() {
+        let backend = Box::new(MockDiscoveryBackend { results: vec![] });
+        let discovery = CapabilityDiscovery::new(backend);
+        let query = CapabilityQuery::new("nonexistent");
+
+        let result = discovery.discover_one(&query).await;
+        assert!(matches!(
+            result,
+            Err(DiscoveryError::CapabilityNotFound { domain }) if domain == "nonexistent"
+        ));
+    }
+
+    #[tokio::test]
+    async fn test_discover_all_with_mock_backend() {
+        let endpoints = vec![
+            PrimalEndpoint {
+                id: "primal-1".to_string(),
+                capabilities: vec![Capability::new("storage")],
+                endpoints: PrimalEndpoints {
+                    tarpc: None,
+                    jsonrpc: None,
+                    https: None,
+                },
+                health: PrimalHealth::Healthy,
+            },
+            PrimalEndpoint {
+                id: "primal-2".to_string(),
+                capabilities: vec![Capability::new("storage")],
+                endpoints: PrimalEndpoints {
+                    tarpc: None,
+                    jsonrpc: None,
+                    https: None,
+                },
+                health: PrimalHealth::Degraded,
+            },
+        ];
+        let backend = Box::new(MockDiscoveryBackend { results: endpoints });
+        let discovery = CapabilityDiscovery::new(backend);
+        let query = CapabilityQuery::new("storage");
+
+        let result = discovery.discover_all(&query).await.unwrap();
+        assert_eq!(result.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_discover_all_empty_returns_error() {
+        let backend = Box::new(MockDiscoveryBackend { results: vec![] });
+        let discovery = CapabilityDiscovery::new(backend);
+        let query = CapabilityQuery::new("empty");
+
+        let result = discovery.discover_all(&query).await;
+        assert!(matches!(
+            result,
+            Err(DiscoveryError::CapabilityNotFound { domain }) if domain == "empty"
+        ));
+    }
 
     #[test]
     fn test_capability_matching() {
@@ -282,5 +454,36 @@ mod tests {
         let query = CapabilityQuery::new("display").with_operation("render");
         assert_eq!(query.domain, "display");
         assert_eq!(query.operation, Some("render".to_string()));
+    }
+
+    #[test]
+    fn test_capability_version_matching() {
+        let cap = Capability::new("crypto")
+            .with_operation("encrypt")
+            .with_version("1.2.3");
+
+        // Same version
+        let query = CapabilityQuery::new("crypto")
+            .with_operation("encrypt")
+            .with_version("1.2.3");
+        assert!(cap.matches(&query));
+
+        // Lower required version
+        let query = CapabilityQuery::new("crypto")
+            .with_operation("encrypt")
+            .with_version("1.0.0");
+        assert!(cap.matches(&query));
+
+        // Higher required version
+        let query = CapabilityQuery::new("crypto")
+            .with_operation("encrypt")
+            .with_version("1.3.0");
+        assert!(!cap.matches(&query));
+
+        // Different major version
+        let query = CapabilityQuery::new("crypto")
+            .with_operation("encrypt")
+            .with_version("2.0.0");
+        assert!(!cap.matches(&query));
     }
 }

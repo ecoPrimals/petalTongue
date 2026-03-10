@@ -129,11 +129,6 @@ name = "petal-tongue"
 path = "src/main.rs"
 doc = false
 
-# BingoCube demo moved to bingoCube/demos
-# [[bin]]
-# name = "bingocube-demo"
-# path = "src/bingocube_main.rs"
-
 [dev-dependencies]
 petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }  # For tests that use test_fixtures (run: cargo test --features test-fixtures or --features mock)
 tokio = { workspace = true, features = ["test-util", "macros"] }

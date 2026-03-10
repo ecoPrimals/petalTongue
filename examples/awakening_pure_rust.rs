@@ -109,7 +109,12 @@ async fn main() -> Result<()> {
         // Frame timing
         let frame_time = frame_start.elapsed();
         if frame_time < frame_duration {
-            tokio::time::sleep(frame_duration.checked_sub(frame_time).unwrap()).await;
+            tokio::time::sleep(
+                frame_duration
+                    .checked_sub(frame_time)
+                    .unwrap_or(Duration::ZERO),
+            )
+            .await;
         }
 
         // Request repaint
@@ -117,6 +122,7 @@ async fn main() -> Result<()> {
     }
 
     let total_time = start.elapsed();
+    #[expect(clippy::cast_possible_truncation, reason = "frame count is small")]
     let avg_frame_time = total_time / (frame_count as u32);
     let fps = 1.0 / avg_frame_time.as_secs_f64();
 

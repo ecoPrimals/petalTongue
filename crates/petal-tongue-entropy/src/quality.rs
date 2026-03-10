@@ -109,6 +109,11 @@ pub fn create_histogram_buckets(values: &[f64], num_buckets: usize) -> Vec<usize
         .iter()
         .map(|&v| {
             let normalized = (v - min) / (max - min);
+            #[expect(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "bucket index is in [0, num_buckets-1], normalized in [0,1]"
+            )]
             let bucket = (normalized * num_buckets as f64).floor() as usize;
             bucket.min(num_buckets - 1)
         })
@@ -133,6 +138,10 @@ pub fn timing_entropy(durations: &[Duration]) -> f64 {
     }
 
     // Convert to milliseconds
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "duration in ms fits u64 for practical inter-event intervals"
+    )]
     let ms_values: Vec<u64> = durations.iter().map(|d| d.as_millis() as u64).collect();
 
     // Create histogram buckets (10 buckets for timing)
