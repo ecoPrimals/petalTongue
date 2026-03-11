@@ -152,6 +152,18 @@ impl ModalityRegistry {
         self.modalities.insert(name, modality);
     }
 
+    /// Number of registered modalities.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.modalities.len()
+    }
+
+    /// Returns true if no modalities are registered.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.modalities.is_empty()
+    }
+
     /// Check if a modality is registered
     #[must_use]
     pub fn has(&self, name: &str) -> bool {

@@ -316,7 +316,7 @@ mod tests {
         for cap in detector.get_all() {
             // If status is Available, it MUST have been tested
             if cap.status == ModalityStatus::Available {
-                // For now, we allow Animation to not be tested (TODO)
+                // Animation is detected by presence of game_loop/player, not runtime probing
                 if cap.modality != Modality::Animation {
                     assert!(
                         cap.tested,

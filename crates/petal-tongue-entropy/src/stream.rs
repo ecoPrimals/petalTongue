@@ -267,6 +267,36 @@ mod tests {
         assert_eq!(deserialized.nonce, encrypted.nonce);
     }
 
+    #[test]
+    fn test_stream_confirmation_fields() {
+        let conf = StreamConfirmation {
+            receipt_id: String::new(),
+            timestamp: 12345,
+            quality: 0.85,
+            message: String::new(),
+        };
+        assert!(conf.receipt_id.is_empty());
+        assert_eq!(conf.timestamp, 12345);
+        assert!((conf.quality - 0.85).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_encrypt_empty_data() {
+        let data: &[u8] = &[];
+        let encrypted = encrypt_entropy(data).expect("empty encryption should succeed");
+        assert_eq!(encrypted.nonce.len(), 12);
+        assert!(!encrypted.ciphertext.is_empty(), "GCM adds auth tag");
+    }
+
+    #[test]
+    fn test_encrypt_large_data() {
+        let data: Vec<u8> = (0..10000_u32)
+            .map(|i| u8::try_from(i % 256).expect("0..255 fits u8"))
+            .collect();
+        let encrypted = encrypt_entropy(&data).expect("large encryption should succeed");
+        assert_eq!(encrypted.ciphertext.len(), data.len() + 16);
+    }
+
     #[tokio::test]
     #[ignore = "Requires live server"]
     async fn test_stream_entropy_integration() {
@@ -297,12 +327,7 @@ mod tests {
         let entropy = EntropyCapture::Audio(audio_data);
 
         // This would fail without a live server
-        let endpoint = std::env::var("PETALTONGUE_ENTROPY_ENDPOINT").unwrap_or_else(|_| {
-            format!(
-                "http://localhost:{}/api/v1/entropy/stream",
-                constants::DEFAULT_WEB_PORT
-            )
-        });
+        let endpoint = constants::default_entropy_stream_endpoint();
         let result = stream_entropy(entropy, &endpoint).await;
         assert!(result.is_err()); // Expected to fail in test environment
     }

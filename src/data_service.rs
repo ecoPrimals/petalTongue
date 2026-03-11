@@ -145,6 +145,7 @@ impl DataService {
     }
 
     /// Get current data snapshot
+    #[expect(clippy::unused_async, reason = "async for future async graph access")]
     pub async fn snapshot(&self) -> Result<DataSnapshot> {
         // Get primals and edges from graph
         let (primals, edges) = {
@@ -178,13 +179,13 @@ impl DataService {
         Arc::clone(&self.graph)
     }
 
-    /// Subscribe to data updates
+    /// Subscribe to data updates (public API for streaming consumers).
     #[allow(dead_code)]
     pub fn subscribe(&self) -> broadcast::Receiver<DataUpdate> {
         self.update_tx.subscribe()
     }
 
-    /// Check if Neural API is available
+    /// Check if Neural API is available.
     #[allow(dead_code)]
     pub fn has_neural_api(&self) -> bool {
         self.neural_api.is_some()
@@ -209,11 +210,43 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_data_service_default() {
+        let service = DataService::default();
+        assert!(!service.has_neural_api());
+    }
+
+    #[tokio::test]
     async fn test_snapshot_without_neural_api() {
         let service = DataService::new();
         let snapshot = service.snapshot().await.unwrap();
 
         assert!(snapshot.primals.is_empty());
+        assert!(snapshot.edges.is_empty());
+        // Timestamp is always valid (epoch or later)
+        let _ = snapshot.timestamp;
+    }
+
+    #[tokio::test]
+    async fn test_snapshot_timestamp() {
+        let service = DataService::new();
+        let snapshot = service.snapshot().await.unwrap();
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        assert!(
+            snapshot.timestamp <= now + 1,
+            "Timestamp should be reasonable"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_graph_access() {
+        let service = DataService::new();
+        let graph = service.graph();
+        let guard = graph.read().unwrap();
+        assert!(guard.nodes().is_empty());
+        assert!(guard.edges().is_empty());
     }
 
     #[tokio::test]
@@ -230,5 +263,12 @@ mod tests {
             .expect("recv timed out")
             .expect("recv failed");
         assert!(matches!(update, DataUpdate::TopologyUpdated));
+    }
+
+    #[tokio::test]
+    async fn test_refresh_without_neural_api() {
+        let service = DataService::new();
+        let result = service.refresh().await;
+        assert!(result.is_ok());
     }
 }

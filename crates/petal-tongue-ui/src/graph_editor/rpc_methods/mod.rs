@@ -226,6 +226,7 @@ impl GraphEditorService {
         })
     }
 
+    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
     pub async fn get_preview(&self, req: GetPreviewRequest) -> Result<GetPreviewResponse> {
         debug!("Getting execution preview for graph '{}'", req.graph.id);
 

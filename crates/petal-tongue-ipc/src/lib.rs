@@ -101,8 +101,8 @@ pub use unix_socket_server::UnixSocketServer;
 pub use visualization_handler::{
     ConstraintResult, DismissRequest, DismissResponse, ExportRequest, ExportResponse,
     GrammarRenderRequest, GrammarRenderResponse, InteractionApplyRequest, InteractionApplyResponse,
-    InteractionEventNotification, InteractionSubscriberRegistry, Perspective, StreamOperation,
-    StreamUpdateRequest, StreamUpdateResponse, ValidateRequest, ValidateResponse,
+    InteractionEventNotification, InteractionSubscriberRegistry, Perspective, SensorStreamRegistry,
+    StreamOperation, StreamUpdateRequest, StreamUpdateResponse, ValidateRequest, ValidateResponse,
     VisualizationRenderRequest, VisualizationRenderResponse, VisualizationState,
 };
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! System Monitor Integration
 //!
-//! Real-time system resource monitoring using sysinfo.
+//! Real-time system resource monitoring via /proc parsing (ecoBin v3.0 compliant).
 //! Demonstrates petalTongue integrating with external monitoring tool.
 //! ALL DATA IS LIVE - timestamps and indicators prove it!
 
@@ -12,24 +12,25 @@
 )]
 
 use crate::live_data::{LiveGraphHeader, LiveMetric};
+use crate::proc_stats::{ProcStats, SOURCE_ID};
 use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
-use sysinfo::System;
 
 /// System Monitor tool integration
 ///
-/// Provides real-time system resource monitoring (CPU, memory, disk) using the sysinfo crate.
+/// Provides real-time system resource monitoring (CPU, memory) via /proc parsing.
 /// This demonstrates petalTongue's capability-based tool integration pattern.
 /// Features LIVE data indicators to prove all metrics are real-time.
 pub struct SystemMonitorTool {
     show_panel: bool,
-    system: System,
+    stats: ProcStats,
     last_refresh: Instant,
     refresh_interval: Duration,
     cpu_history: VecDeque<f32>, // Last N seconds
     mem_history: VecDeque<f32>, // Last N seconds
     max_history: usize,
+    last_cpu_usage: f32, // Cached for status_message (which has &self)
 
     // Live data indicators
     cpu_header: LiveGraphHeader,
@@ -40,33 +41,31 @@ pub struct SystemMonitorTool {
 
 impl Default for SystemMonitorTool {
     fn default() -> Self {
-        let mut system = System::new_all();
-        system.refresh_all();
-
         Self {
             show_panel: false,
-            system,
+            stats: ProcStats::new(),
             last_refresh: Instant::now(),
             refresh_interval: Duration::from_secs(1),
             cpu_history: VecDeque::new(),
             mem_history: VecDeque::new(),
             max_history: 60, // 60 seconds of history
+            last_cpu_usage: 0.0,
 
             // Initialize live data indicators - PROVE data is live!
             cpu_header: LiveGraphHeader::new(
                 "💻 CPU Usage".to_string(),
-                "sysinfo".to_string(),
+                SOURCE_ID.to_string(),
                 1.0, // 1 second update interval
             ),
             memory_header: LiveGraphHeader::new(
                 "🧠 Memory Usage".to_string(),
-                "sysinfo".to_string(),
+                SOURCE_ID.to_string(),
                 1.0,
             ),
-            cpu_metric: LiveMetric::new("Current CPU".to_string(), "sysinfo".to_string(), 1.0),
+            cpu_metric: LiveMetric::new("Current CPU".to_string(), SOURCE_ID.to_string(), 1.0),
             memory_metric: LiveMetric::new(
                 "Current Memory".to_string(),
-                "sysinfo".to_string(),
+                SOURCE_ID.to_string(),
                 1.0,
             ),
         }
@@ -78,17 +77,9 @@ impl SystemMonitorTool {
     fn refresh(&mut self) {
         let now = Instant::now();
         if now.duration_since(self.last_refresh) >= self.refresh_interval {
-            self.system.refresh_all();
+            let cpu_usage = self.stats.cpu_usage();
+            self.last_cpu_usage = cpu_usage;
             self.last_refresh = now;
-
-            // Update CPU history - use first CPU as proxy for global
-            // In sysinfo 0.30, we need to iterate over CPUs
-            let cpus = self.system.cpus();
-            let cpu_usage = if cpus.is_empty() {
-                0.0
-            } else {
-                cpus.iter().map(sysinfo::Cpu::cpu_usage).sum::<f32>() / cpus.len() as f32
-            };
 
             self.cpu_history.push_back(cpu_usage);
             if self.cpu_history.len() > self.max_history {
@@ -96,8 +87,8 @@ impl SystemMonitorTool {
             }
 
             // Update memory history
-            let used_mem = self.system.used_memory() as f32;
-            let total_mem = self.system.total_memory() as f32;
+            let used_mem = self.stats.used_memory() as f32;
+            let total_mem = self.stats.total_memory() as f32;
             let mem_percent = if total_mem > 0.0 {
                 (used_mem / total_mem) * 100.0
             } else {
@@ -124,17 +115,12 @@ impl SystemMonitorTool {
         self.cpu_header.render(ui);
         ui.add_space(5.0);
 
-        // Current usage - calculate average
-        let cpus = self.system.cpus();
-        let cpu_usage = if cpus.is_empty() {
-            0.0
-        } else {
-            cpus.iter().map(sysinfo::Cpu::cpu_usage).sum::<f32>() / cpus.len() as f32
-        };
+        // Current usage
+        let cpu_usage = self.stats.cpu_usage();
 
         // Live metric display
         self.cpu_metric.render(ui);
-        ui.label(format!("Cores: {}", cpus.len()));
+        ui.label(format!("Cores: {}", self.stats.cpu_count()));
 
         // Progress bar
         ui.add(
@@ -167,8 +153,8 @@ impl SystemMonitorTool {
         self.memory_header.render(ui);
         ui.add_space(5.0);
 
-        let used = self.system.used_memory();
-        let total = self.system.total_memory();
+        let used = self.stats.used_memory();
+        let total = self.stats.total_memory();
         let percent = if total > 0 {
             (used as f64 / total as f64) * 100.0
         } else {
@@ -204,22 +190,6 @@ impl SystemMonitorTool {
             ));
             Self::render_sparkline(ui, &self.mem_history, 100.0);
         }
-
-        ui.add_space(10.0);
-    }
-
-    /// Render disk section
-    fn render_disk(ui: &mut egui::Ui) {
-        ui.heading("💾 Disk");
-
-        // Note: sysinfo 0.30 API changed - disk access may differ
-        // For now, show a placeholder until we verify the correct API
-        ui.label(egui::RichText::new("Disk monitoring coming soon").color(egui::Color32::GRAY));
-        ui.label(
-            egui::RichText::new("(API update in progress)")
-                .size(11.0)
-                .color(egui::Color32::DARK_GRAY),
-        );
 
         ui.add_space(10.0);
     }
@@ -270,7 +240,9 @@ impl ToolPanel for SystemMonitorTool {
                 ToolCapability::Custom("RealTime".to_string()),
             ],
             icon: "📡".to_string(),
-            source: Some("https://github.com/GuillaumeGomez/sysinfo".to_string()),
+            source: Some(
+                "https://www.kernel.org/doc/html/latest/filesystems/proc.html".to_string(),
+            ),
         })
     }
 
@@ -310,8 +282,6 @@ impl ToolPanel for SystemMonitorTool {
                     self.render_cpu(ui);
                     ui.separator();
                     self.render_memory(ui);
-                    ui.separator();
-                    Self::render_disk(ui);
                 });
         });
 
@@ -320,16 +290,10 @@ impl ToolPanel for SystemMonitorTool {
     }
 
     fn status_message(&self) -> Option<String> {
-        let cpus = self.system.cpus();
+        let cpu = self.last_cpu_usage;
         #[expect(clippy::cast_precision_loss)]
-        let cpu = if cpus.is_empty() {
-            0.0
-        } else {
-            cpus.iter().map(sysinfo::Cpu::cpu_usage).sum::<f32>() / cpus.len() as f32
-        };
-        #[expect(clippy::cast_precision_loss)]
-        let mem = if self.system.total_memory() > 0 {
-            (self.system.used_memory() as f64 / self.system.total_memory() as f64) * 100.0
+        let mem = if self.stats.total_memory() > 0 {
+            (self.stats.used_memory() as f64 / self.stats.total_memory() as f64) * 100.0
         } else {
             0.0
         };
@@ -374,5 +338,49 @@ mod tests {
         assert!(msg.contains("CPU:"));
         assert!(msg.contains("MEM:"));
         assert!(msg.contains("%"));
+    }
+
+    #[test]
+    fn test_system_monitor_metadata_source() {
+        let tool = SystemMonitorTool::default();
+        let meta = tool.metadata();
+        assert_eq!(meta.icon, "📡");
+        assert!(meta.source.is_some());
+        assert!(meta.source.as_ref().unwrap().contains("kernel.org"));
+    }
+
+    #[test]
+    fn test_system_monitor_metadata_version() {
+        let tool = SystemMonitorTool::default();
+        let meta = tool.metadata();
+        assert_eq!(meta.version, "0.1.0");
+    }
+
+    #[test]
+    fn test_system_monitor_toggle_multiple() {
+        let mut tool = SystemMonitorTool::default();
+        for _ in 0..4 {
+            tool.toggle_visibility();
+        }
+        assert!(!tool.is_visible());
+    }
+
+    #[test]
+    fn test_system_monitor_status_message_format() {
+        let tool = SystemMonitorTool::default();
+        let msg = tool.status_message().expect("status message");
+        // Format: "CPU: X.X% | MEM: Y.Y%"
+        assert!(msg.starts_with("CPU:"));
+        assert!(msg.contains("MEM:"));
+        assert!(msg.contains('%'));
+        let parts: Vec<&str> = msg.split('|').collect();
+        assert_eq!(parts.len(), 2);
+    }
+
+    #[test]
+    fn test_system_monitor_metadata_capabilities_count() {
+        let tool = SystemMonitorTool::default();
+        let meta = tool.metadata();
+        assert!(meta.capabilities.len() >= 2);
     }
 }

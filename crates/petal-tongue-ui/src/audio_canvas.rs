@@ -184,7 +184,7 @@ impl AudioCanvas {
     /// Check if audio canvas is available on this platform
     pub fn is_available() -> bool {
         // Windows uses WDM/WASAPI - different approach needed
-        false // TODO: Implement Windows direct access
+        false // Windows WDM/WASAPI requires platform-specific integration
     }
 }
 

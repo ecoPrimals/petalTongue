@@ -10,6 +10,34 @@ use egui::{Color32, RichText, Ui};
 
 use super::streaming::{AIReasoning, Alternative, ErrorInfo, NodeStatus, Pattern, ResourceUsage};
 
+// --- Pure logic (testable, no egui) ---
+
+/// Node status display data: (icon, color_rgb, text).
+#[must_use]
+pub fn node_status_display(status: &NodeStatus) -> (&'static str, [u8; 3], String) {
+    match status {
+        NodeStatus::Pending => ("⚪", [128, 128, 128], "Pending".to_string()),
+        NodeStatus::Running { progress } => ("🔵", [0, 128, 255], format!("Running ({progress}%)")),
+        NodeStatus::Completed => ("✅", [0, 255, 0], "Completed".to_string()),
+        NodeStatus::Failed { .. } => ("❌", [255, 0, 0], "Failed".to_string()),
+        NodeStatus::Paused => ("⏸️", [255, 255, 0], "Paused".to_string()),
+    }
+}
+
+/// Confidence value (0.0–1.0) to RGB color.
+#[must_use]
+pub fn confidence_color_rgb(confidence: f32) -> [u8; 3] {
+    if confidence > 0.8 {
+        [0, 255, 0] // Green
+    } else if confidence > 0.5 {
+        [255, 255, 0] // Yellow
+    } else {
+        [255, 165, 0] // Orange
+    }
+}
+
+// --- UI widgets (use egui) ---
+
 /// Status display widget - Shows node execution status
 ///
 /// Displays real-time status updates for graph nodes.
@@ -18,20 +46,10 @@ pub struct StatusDisplay;
 impl StatusDisplay {
     /// Render node status badge
     pub fn show_node_status(ui: &mut Ui, node_id: &str, status: &NodeStatus) {
-        ui.horizontal(|ui| {
-            // Status icon and color
-            let (icon, color, text) = match status {
-                NodeStatus::Pending => ("⚪", Color32::GRAY, "Pending"),
-                NodeStatus::Running { progress } => {
-                    let color = Color32::from_rgb(0, 128, 255);
-                    let text = format!("Running ({progress}%)");
-                    ("🔵", color, text.leak() as &str)
-                }
-                NodeStatus::Completed => ("✅", Color32::GREEN, "Completed"),
-                NodeStatus::Failed { .. } => ("❌", Color32::RED, "Failed"),
-                NodeStatus::Paused => ("⏸️", Color32::YELLOW, "Paused"),
-            };
+        let (icon, color_rgb, text) = node_status_display(status);
+        let color = Color32::from_rgb(color_rgb[0], color_rgb[1], color_rgb[2]);
 
+        ui.horizontal(|ui| {
             // Icon
             ui.label(RichText::new(icon).size(16.0));
 
@@ -139,13 +157,8 @@ impl ReasoningDisplay {
                     ui.horizontal(|ui| {
                         ui.label(RichText::new("🤖 AI Reasoning").size(16.0).strong());
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            let confidence_color = if reasoning.confidence > 0.8 {
-                                Color32::GREEN
-                            } else if reasoning.confidence > 0.5 {
-                                Color32::YELLOW
-                            } else {
-                                Color32::from_rgb(255, 165, 0)
-                            };
+                            let rgb = confidence_color_rgb(reasoning.confidence);
+                            let confidence_color = Color32::from_rgb(rgb[0], rgb[1], rgb[2]);
 
                             ui.colored_label(
                                 confidence_color,
@@ -383,6 +396,75 @@ impl ConflictResolution {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::graph_editor::streaming::NodeStatus;
+
+    #[test]
+    fn test_node_status_display_pending() {
+        let (icon, rgb, text) = node_status_display(&NodeStatus::Pending);
+        assert_eq!(icon, "⚪");
+        assert_eq!(rgb, [128, 128, 128]);
+        assert_eq!(text, "Pending");
+    }
+
+    #[test]
+    fn test_node_status_display_running() {
+        let (icon, rgb, text) = node_status_display(&NodeStatus::Running { progress: 50 });
+        assert_eq!(icon, "🔵");
+        assert_eq!(rgb, [0, 128, 255]);
+        assert_eq!(text, "Running (50%)");
+    }
+
+    #[test]
+    fn test_node_status_display_completed() {
+        let (icon, rgb, text) = node_status_display(&NodeStatus::Completed);
+        assert_eq!(icon, "✅");
+        assert_eq!(rgb, [0, 255, 0]);
+        assert_eq!(text, "Completed");
+    }
+
+    #[test]
+    fn test_node_status_display_failed() {
+        let (icon, rgb, text) = node_status_display(&NodeStatus::Failed {
+            error: "err".to_string(),
+        });
+        assert_eq!(icon, "❌");
+        assert_eq!(rgb, [255, 0, 0]);
+        assert_eq!(text, "Failed");
+    }
+
+    #[test]
+    fn test_node_status_display_paused() {
+        let (icon, rgb, text) = node_status_display(&NodeStatus::Paused);
+        assert_eq!(icon, "⏸️");
+        assert_eq!(rgb, [255, 255, 0]);
+        assert_eq!(text, "Paused");
+    }
+
+    #[test]
+    fn test_confidence_color_rgb_high() {
+        let rgb = confidence_color_rgb(0.9);
+        assert_eq!(rgb, [0, 255, 0]);
+    }
+
+    #[test]
+    fn test_confidence_color_rgb_mid() {
+        let rgb = confidence_color_rgb(0.6);
+        assert_eq!(rgb, [255, 255, 0]);
+    }
+
+    #[test]
+    fn test_confidence_color_rgb_low() {
+        let rgb = confidence_color_rgb(0.3);
+        assert_eq!(rgb, [255, 165, 0]);
+    }
+
+    #[test]
+    fn test_confidence_color_rgb_boundary() {
+        let rgb_08 = confidence_color_rgb(0.8);
+        assert_eq!(rgb_08, [255, 255, 0]); // 0.8 is not > 0.8
+        let rgb_081 = confidence_color_rgb(0.81);
+        assert_eq!(rgb_081, [0, 255, 0]);
+    }
 
     #[test]
     fn test_conflict_types() {

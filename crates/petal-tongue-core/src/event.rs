@@ -161,6 +161,10 @@ impl EventBus {
     }
 
     /// Broadcast event to all subscribers
+    #[expect(
+        clippy::unused_async,
+        reason = "async for future broadcast::Sender API"
+    )]
     pub async fn broadcast(&self, event: EngineEvent) -> Result<usize, String> {
         self.tx
             .send(event)

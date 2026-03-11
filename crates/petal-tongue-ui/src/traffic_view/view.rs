@@ -7,6 +7,48 @@ use std::collections::HashMap;
 
 use super::types::{ColorScheme, TrafficFlow, TrafficMetrics};
 
+/// Bezier control points for flow curve from (from_x, from_y) to (to_x, to_y).
+/// Returns (ctrl1, ctrl2) as [x, y] arrays.
+#[must_use]
+pub(crate) fn bezier_control_points(
+    from_x: f32,
+    from_y: f32,
+    to_x: f32,
+    to_y: f32,
+) -> ([f32; 2], [f32; 2]) {
+    let dx = to_x - from_x;
+    let control_offset = dx.abs() * 0.3;
+    let ctrl1 = [from_x + control_offset * dx.signum(), from_y];
+    let ctrl2 = [to_x - control_offset * dx.signum(), to_y];
+    (ctrl1, ctrl2)
+}
+
+/// Compute lane positions for primals in the traffic view.
+/// Returns for each index: (y, left_center_x, right_center_x).
+#[must_use]
+pub(crate) fn primal_lane_layout(
+    primal_count: usize,
+    rect_min_x: f32,
+    rect_min_y: f32,
+    rect_max_x: f32,
+    rect_max_y: f32,
+    margin: f32,
+    node_width: f32,
+) -> Vec<(f32, f32, f32)> {
+    if primal_count == 0 {
+        return Vec::new();
+    }
+    let node_height = (rect_max_y - rect_min_y - 2.0 * margin) / primal_count as f32;
+    let left_center_x = rect_min_x + margin + node_width / 2.0;
+    let right_center_x = rect_max_x - margin - node_width / 2.0;
+    (0..primal_count)
+        .map(|i| {
+            let y = rect_min_y + margin + node_height * (i as f32 + 0.5);
+            (y, left_center_x, right_center_x)
+        })
+        .collect()
+}
+
 /// Traffic View - Sankey-style flow visualization
 pub struct TrafficView {
     /// Traffic flows to display
@@ -281,18 +323,24 @@ impl TrafficView {
         // Layout: primals on left and right, flows in middle
         let node_width = 120.0;
         let margin = 20.0;
-        let flow_area_width = rect.width() - 2.0 * (node_width + margin);
-        let node_height = (rect.height() - margin * 2.0) / primal_ids.len() as f32;
 
-        // Build primal positions
+        let lane_layout = primal_lane_layout(
+            primal_ids.len(),
+            rect.min.x,
+            rect.min.y,
+            rect.max.x,
+            rect.max.y,
+            margin,
+            node_width,
+        );
+
         let primal_positions: HashMap<_, _> = primal_ids
             .iter()
             .enumerate()
-            .map(|(i, id)| {
-                let y = rect.min.y + margin + node_height * (i as f32 + 0.5);
-                let left_pos = Pos2::new(rect.min.x + margin + node_width / 2.0, y);
-                let right_pos = Pos2::new(rect.max.x - margin - node_width / 2.0, y);
-                (id.clone(), (left_pos, right_pos))
+            .filter_map(|(i, id)| {
+                lane_layout.get(i).map(|&(y, left_x, right_x)| {
+                    (id.clone(), (Pos2::new(left_x, y), Pos2::new(right_x, y)))
+                })
             })
             .collect();
 
@@ -308,10 +356,9 @@ impl TrafficView {
                 let start = *from_right;
                 let end = *to_left;
 
-                // Draw curved flow line (Bezier)
-                let control_offset = flow_area_width * 0.3;
-                let ctrl1 = Pos2::new(start.x + control_offset, start.y);
-                let ctrl2 = Pos2::new(end.x - control_offset, end.y);
+                let (ctrl1_arr, ctrl2_arr) = bezier_control_points(start.x, start.y, end.x, end.y);
+                let ctrl1 = Pos2::new(ctrl1_arr[0], ctrl1_arr[1]);
+                let ctrl2 = Pos2::new(ctrl2_arr[0], ctrl2_arr[1]);
 
                 // Draw flow path
                 self.draw_bezier_flow(&painter, start, ctrl1, ctrl2, end, width, flow.color);
@@ -332,15 +379,12 @@ impl TrafficView {
 
         // Draw primal nodes
         for (i, primal_id) in primal_ids.iter().enumerate() {
-            let y = rect.min.y + margin + node_height * (i as f32 + 0.5);
-
-            // Left node (source)
-            let left_pos = Pos2::new(rect.min.x + margin + node_width / 2.0, y);
-            self.draw_primal_node(&painter, left_pos, primal_id, node_width);
-
-            // Right node (destination)
-            let right_pos = Pos2::new(rect.max.x - margin - node_width / 2.0, y);
-            self.draw_primal_node(&painter, right_pos, primal_id, node_width);
+            if let Some(&(y, left_x, right_x)) = lane_layout.get(i) {
+                let left_pos = Pos2::new(left_x, y);
+                let right_pos = Pos2::new(right_x, y);
+                self.draw_primal_node(&painter, left_pos, primal_id, node_width);
+                self.draw_primal_node(&painter, right_pos, primal_id, node_width);
+            }
         }
     }
 
@@ -453,6 +497,60 @@ impl TrafficView {
     fn update_flow_colors(&mut self) {
         for flow in &mut self.flows {
             flow.color = Self::calculate_flow_color(&flow.metrics, self.color_scheme);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bezier_control_points_left_to_right() {
+        let (ctrl1, ctrl2) = bezier_control_points(100.0, 50.0, 400.0, 100.0);
+        let dx = 400.0_f32 - 100.0;
+        let offset = dx.abs() * 0.3;
+        assert!((ctrl1[0] - (100.0 + offset)).abs() < f32::EPSILON);
+        assert!((ctrl1[1] - 50.0).abs() < f32::EPSILON);
+        assert!((ctrl2[0] - (400.0 - offset)).abs() < f32::EPSILON);
+        assert!((ctrl2[1] - 100.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn bezier_control_points_right_to_left() {
+        let (ctrl1, ctrl2) = bezier_control_points(400.0, 50.0, 100.0, 100.0);
+        let dx: f32 = 100.0 - 400.0;
+        let offset = dx.abs() * 0.3;
+        assert!((ctrl1[0] - (400.0 + dx.signum() * offset)).abs() < f32::EPSILON);
+        assert!((ctrl2[0] - (100.0 - dx.signum() * offset)).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn primal_lane_layout_empty() {
+        let layout = primal_lane_layout(0, 0.0, 0.0, 800.0, 600.0, 20.0, 120.0);
+        assert!(layout.is_empty());
+    }
+
+    #[test]
+    fn primal_lane_layout_single() {
+        let layout = primal_lane_layout(1, 0.0, 0.0, 800.0, 600.0, 20.0, 120.0);
+        assert_eq!(layout.len(), 1);
+        let (y, left_x, right_x) = layout[0];
+        assert!((y - 300.0).abs() < f32::EPSILON);
+        assert!((left_x - 80.0).abs() < f32::EPSILON);
+        assert!((right_x - 720.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn primal_lane_layout_three() {
+        let layout = primal_lane_layout(3, 0.0, 0.0, 800.0, 600.0, 20.0, 120.0);
+        assert_eq!(layout.len(), 3);
+        let node_height = (600.0 - 40.0) / 3.0;
+        for (i, &(y, left_x, right_x)) in layout.iter().enumerate() {
+            let expected_y = 20.0 + node_height * (i as f32 + 0.5);
+            assert!((y - expected_y).abs() < f32::EPSILON);
+            assert!((left_x - 80.0).abs() < f32::EPSILON);
+            assert!((right_x - 720.0).abs() < f32::EPSILON);
         }
     }
 }

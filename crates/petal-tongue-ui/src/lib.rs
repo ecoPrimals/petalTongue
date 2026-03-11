@@ -10,7 +10,6 @@
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::doc_markdown)]
-#![allow(clippy::unused_async)]
 // UI rendering: precision loss in casts is acceptable (f32 for coordinates, u8 for colors)
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::cast_possible_truncation)]
@@ -106,10 +105,12 @@ pub mod graph_canvas; // Graph builder canvas - visual graph construction (Neura
 pub mod graph_editor; // Collaborative Intelligence - Interactive graph editing
 pub mod graph_manager; // Graph manager - save/load/execute via Neural API
 pub mod graph_metrics_plotter;
+pub mod headless_harness; // Headless egui harness for UI introspection and testing
 pub mod human_entropy_window;
 pub mod input_verification; // Universal input verification (keyboard, pointer, etc.)
 pub mod keyboard_shortcuts;
 pub mod live_data;
+pub mod live_sessions;
 pub mod metrics_dashboard; // System metrics dashboard with sparklines (Neural API)
 #[cfg(feature = "mock")]
 pub mod mock_device_provider; // Mock provider - dev/test only, NEVER production (sovereignty)
@@ -120,6 +121,7 @@ pub mod niche_designer; // Niche Designer UI - Phase 4
 pub mod node_palette; // Node palette - available node types for graph builder
 pub mod output_verification; // Universal output verification (visual, audio, haptic, etc.)
 pub mod primal_panel; // Primal Status UI - Phase 3
+pub mod proc_stats;
 pub mod process_viewer_integration;
 pub mod property_panel; // Property panel - node parameter editor
 pub mod proprioception; // SAME DAVE - Complete sensory-motor self-awareness
@@ -128,9 +130,14 @@ pub mod protocol_selection; // Protocol priority: tarpc PRIMARY, JSON-RPC SECOND
 pub mod sensors;
 pub mod ui_events; // Event-driven architecture for real-time updates // Sensor implementations (bidirectional UUI)
 // Universal infant discovery (zero hardcoded knowledge)
+pub mod egui_compiler;
+pub mod game_data_channel;
+pub mod interaction_bridge;
+pub mod neural_registration;
 #[cfg(any(test, feature = "mock"))]
 pub mod sandbox_mock;
 pub mod scene_bridge;
+pub mod sensor_feed;
 pub mod state;
 pub mod status_reporter;
 pub mod system_dashboard;

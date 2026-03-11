@@ -6,6 +6,78 @@ use eframe::egui;
 use super::manager::SensoryUIRenderer;
 
 // ============================================================================
+// Pure formatting functions (testable, no egui)
+// ============================================================================
+
+/// Format topology summary as single line
+#[must_use]
+pub(crate) fn format_topology_summary(node_count: usize, edge_count: usize) -> String {
+    format!("Topology: {node_count} nodes, {edge_count} edges")
+}
+
+/// Format CPU metric
+#[must_use]
+pub(crate) fn format_cpu_metrics(cpu_percent: f64) -> String {
+    format!("CPU: {cpu_percent:.1}%")
+}
+
+/// Format memory metric
+#[must_use]
+pub(crate) fn format_memory_metrics(memory_percent: f64) -> String {
+    format!("Memory: {memory_percent:.1}%")
+}
+
+/// Format proprioception as label-value pairs for display
+#[must_use]
+pub(crate) fn format_proprioception_summary(
+    health_percentage: f32,
+    status: &str,
+    confidence: f32,
+) -> Vec<(String, String)> {
+    vec![
+        ("Health".to_string(), format!("{health_percentage:.0}%")),
+        ("Status".to_string(), status.to_string()),
+        ("Confidence".to_string(), format!("{confidence:.1}")),
+    ]
+}
+
+/// Format nodes count
+#[must_use]
+pub(crate) fn format_topology_nodes(node_count: usize) -> String {
+    format!("Nodes: {node_count}")
+}
+
+/// Format edges count
+#[must_use]
+pub(crate) fn format_topology_edges(edge_count: usize) -> String {
+    format!("Edges: {edge_count}")
+}
+
+/// Format average degree
+#[must_use]
+pub(crate) fn format_avg_degree(avg_degree: f32) -> String {
+    format!("Avg Degree: {avg_degree:.1}")
+}
+
+/// Format capabilities count
+#[must_use]
+pub(crate) fn format_capabilities_count(count: usize) -> String {
+    format!("{count} caps")
+}
+
+/// Format combined CPU and memory for compact display
+#[must_use]
+pub(crate) fn format_cpu_memory_combined(cpu_percent: f64, memory_percent: f64) -> String {
+    format!("CPU: {cpu_percent:.1}% | Memory: {memory_percent:.1}%")
+}
+
+/// Format health and confidence for compact display
+#[must_use]
+pub(crate) fn format_health_confidence(health_percentage: f32, confidence: f32) -> String {
+    format!("Health: {health_percentage:.0}% | Confidence: {confidence:.0}%")
+}
+
+// ============================================================================
 // Minimal Sensory UI (Audio-only, very limited capabilities)
 // ============================================================================
 
@@ -33,10 +105,7 @@ impl SensoryUIRenderer for MinimalSensoryUI {
         graph_engine: &petal_tongue_core::GraphEngine,
     ) {
         let stats = graph_engine.stats();
-        ui.label(format!(
-            "Topology: {} nodes, {} edges",
-            stats.node_count, stats.edge_count
-        ));
+        ui.label(format_topology_summary(stats.node_count, stats.edge_count));
     }
 
     fn render_metrics(
@@ -45,8 +114,8 @@ impl SensoryUIRenderer for MinimalSensoryUI {
         metrics: Option<&petal_tongue_core::SystemMetrics>,
     ) {
         if let Some(m) = metrics {
-            ui.label(format!("CPU: {:.1}%", m.system.cpu_percent));
-            ui.label(format!("Memory: {:.1}%", m.system.memory_percent));
+            ui.label(format_cpu_metrics(m.system.cpu_percent.into()));
+            ui.label(format_memory_metrics(m.system.memory_percent.into()));
         }
     }
 
@@ -56,8 +125,14 @@ impl SensoryUIRenderer for MinimalSensoryUI {
         proprioception: Option<&petal_tongue_core::ProprioceptionData>,
     ) {
         if let Some(p) = proprioception {
-            ui.label(format!("Health: {:.0}%", p.health.percentage));
-            ui.label(format!("Status: {}", p.health.status));
+            let pairs = format_proprioception_summary(
+                p.health.percentage,
+                &format!("{:?}", p.health.status),
+                p.confidence,
+            );
+            for (label, value) in pairs {
+                ui.label(format!("{label}: {value}"));
+            }
         }
     }
 }
@@ -95,8 +170,8 @@ impl SensoryUIRenderer for SimpleSensoryUI {
         let stats = graph_engine.stats();
         ui.group(|ui| {
             ui.label(egui::RichText::new("Topology").heading());
-            ui.label(format!("Nodes: {}", stats.node_count));
-            ui.label(format!("Edges: {}", stats.edge_count));
+            ui.label(format_topology_nodes(stats.node_count));
+            ui.label(format_topology_edges(stats.edge_count));
         });
     }
 
@@ -107,10 +182,10 @@ impl SensoryUIRenderer for SimpleSensoryUI {
     ) {
         if let Some(m) = metrics {
             ui.group(|ui| {
-                ui.label(format!("CPU {:.1}%", m.system.cpu_percent));
+                ui.label(format_cpu_metrics(m.system.cpu_percent.into()));
                 ui.add(egui::ProgressBar::new(m.system.cpu_percent / 100.0));
 
-                ui.label(format!("Mem {:.1}%", m.system.memory_percent));
+                ui.label(format_memory_metrics(m.system.memory_percent.into()));
                 ui.add(egui::ProgressBar::new(m.system.memory_percent / 100.0));
             });
         }
@@ -122,10 +197,16 @@ impl SensoryUIRenderer for SimpleSensoryUI {
         proprioception: Option<&petal_tongue_core::ProprioceptionData>,
     ) {
         if let Some(p) = proprioception {
+            let pairs = format_proprioception_summary(
+                p.health.percentage,
+                &format!("{:?}", p.health.status),
+                p.confidence,
+            );
             ui.group(|ui| {
                 ui.label(egui::RichText::new("System Health").heading());
-                ui.label(format!("{:.0}%", p.health.percentage));
-                ui.label(format!("{:?}", p.health.status));
+                for (label, value) in pairs {
+                    ui.label(format!("{label}: {value}"));
+                }
                 ui.add(egui::ProgressBar::new(p.health.percentage / 100.0));
             });
         }
@@ -165,9 +246,9 @@ impl SensoryUIRenderer for StandardSensoryUI {
         let stats = graph_engine.stats();
         ui.vertical(|ui| {
             ui.label(egui::RichText::new("Topology").heading());
-            ui.label(format!("Nodes: {}", stats.node_count));
-            ui.label(format!("Edges: {}", stats.edge_count));
-            ui.label(format!("Avg Degree: {:.1}", stats.avg_degree));
+            ui.label(format_topology_nodes(stats.node_count));
+            ui.label(format_topology_edges(stats.edge_count));
+            ui.label(format_avg_degree(stats.avg_degree));
         });
     }
 
@@ -180,10 +261,10 @@ impl SensoryUIRenderer for StandardSensoryUI {
             ui.vertical(|ui| {
                 ui.label(egui::RichText::new("System Metrics").heading());
 
-                ui.label(format!("CPU: {:.1}%", m.system.cpu_percent));
+                ui.label(format_cpu_metrics(m.system.cpu_percent.into()));
                 ui.add(egui::ProgressBar::new(m.system.cpu_percent / 100.0).show_percentage());
 
-                ui.label(format!("Memory: {:.1}%", m.system.memory_percent));
+                ui.label(format_memory_metrics(m.system.memory_percent.into()));
                 ui.add(egui::ProgressBar::new(m.system.memory_percent / 100.0).show_percentage());
             });
         }
@@ -195,11 +276,16 @@ impl SensoryUIRenderer for StandardSensoryUI {
         proprioception: Option<&petal_tongue_core::ProprioceptionData>,
     ) {
         if let Some(p) = proprioception {
+            let pairs = format_proprioception_summary(
+                p.health.percentage,
+                &format!("{:?}", p.health.status),
+                p.confidence,
+            );
             ui.vertical(|ui| {
                 ui.label(egui::RichText::new("Proprioception").heading());
-                ui.label(format!("Health: {:.0}%", p.health.percentage));
-                ui.label(format!("Status: {:?}", p.health.status));
-                ui.label(format!("Confidence: {:.0}%", p.confidence));
+                for (label, value) in pairs {
+                    ui.label(format!("{label}: {value}"));
+                }
             });
         }
     }
@@ -232,7 +318,7 @@ impl SensoryUIRenderer for RichSensoryUI {
                     for primal in primals {
                         ui.label(&primal.name);
                         ui.label(&primal.primal_type);
-                        ui.label(format!("{} caps", primal.capabilities.len()));
+                        ui.label(format_capabilities_count(primal.capabilities.len()));
                         ui.end_row();
                     }
                 });
@@ -280,7 +366,7 @@ impl SensoryUIRenderer for RichSensoryUI {
                             .show_percentage()
                             .desired_width(150.0),
                     );
-                    ui.label(format!("{:.1}%", m.system.cpu_percent));
+                    ui.label(format_cpu_metrics(m.system.cpu_percent.into()));
                     ui.end_row();
 
                     ui.label("Memory:");
@@ -289,7 +375,7 @@ impl SensoryUIRenderer for RichSensoryUI {
                             .show_percentage()
                             .desired_width(150.0),
                     );
-                    ui.label(format!("{:.1}%", m.system.memory_percent));
+                    ui.label(format_memory_metrics(m.system.memory_percent.into()));
                     ui.end_row();
                 });
             });
@@ -363,8 +449,9 @@ impl SensoryUIRenderer for ImmersiveSensoryUI {
         ui.label(egui::RichText::new("🕸️ 3D Topology").heading());
         ui.label("(3D graph rendering would appear here)");
         ui.label(format!(
-            "Nodes: {} • Edges: {}",
-            stats.node_count, stats.edge_count
+            "{} • {}",
+            format_topology_nodes(stats.node_count),
+            format_topology_edges(stats.edge_count)
         ));
     }
 
@@ -376,9 +463,9 @@ impl SensoryUIRenderer for ImmersiveSensoryUI {
         if let Some(m) = metrics {
             ui.label(egui::RichText::new("📊 Spatial Metrics").heading());
             ui.label("(Floating 3D metrics panels would appear here)");
-            ui.label(format!(
-                "CPU: {:.1}% | Memory: {:.1}%",
-                m.system.cpu_percent, m.system.memory_percent
+            ui.label(format_cpu_memory_combined(
+                m.system.cpu_percent.into(),
+                m.system.memory_percent.into(),
             ));
         }
     }
@@ -391,10 +478,77 @@ impl SensoryUIRenderer for ImmersiveSensoryUI {
         if let Some(p) = proprioception {
             ui.label(egui::RichText::new("🧠 Holographic Health").heading());
             ui.label("(3D health visualization would appear here)");
-            ui.label(format!(
-                "Health: {:.0}% | Confidence: {:.0}%",
-                p.health.percentage, p.confidence
-            ));
+            ui.label(format_health_confidence(p.health.percentage, p.confidence));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_topology_summary() {
+        assert_eq!(
+            format_topology_summary(5, 12),
+            "Topology: 5 nodes, 12 edges"
+        );
+        assert_eq!(format_topology_summary(0, 0), "Topology: 0 nodes, 0 edges");
+    }
+
+    #[test]
+    fn test_format_cpu_metrics() {
+        assert_eq!(format_cpu_metrics(45.2), "CPU: 45.2%");
+        assert_eq!(format_cpu_metrics(0.0), "CPU: 0.0%");
+        assert_eq!(format_cpu_metrics(100.0), "CPU: 100.0%");
+    }
+
+    #[test]
+    fn test_format_memory_metrics() {
+        assert_eq!(format_memory_metrics(62.5), "Memory: 62.5%");
+        assert_eq!(format_memory_metrics(0.0), "Memory: 0.0%");
+    }
+
+    #[test]
+    fn test_format_proprioception_summary() {
+        let pairs = format_proprioception_summary(85.0, "Healthy", 92.5);
+        assert_eq!(pairs.len(), 3);
+        assert_eq!(pairs[0], ("Health".to_string(), "85%".to_string()));
+        assert_eq!(pairs[1], ("Status".to_string(), "Healthy".to_string()));
+        assert_eq!(pairs[2], ("Confidence".to_string(), "92.5".to_string()));
+    }
+
+    #[test]
+    fn test_format_topology_nodes_edges() {
+        assert_eq!(format_topology_nodes(10), "Nodes: 10");
+        assert_eq!(format_topology_edges(25), "Edges: 25");
+    }
+
+    #[test]
+    fn test_format_avg_degree() {
+        assert_eq!(format_avg_degree(2.5), "Avg Degree: 2.5");
+        assert_eq!(format_avg_degree(0.0), "Avg Degree: 0.0");
+    }
+
+    #[test]
+    fn test_format_capabilities_count() {
+        assert_eq!(format_capabilities_count(3), "3 caps");
+        assert_eq!(format_capabilities_count(0), "0 caps");
+    }
+
+    #[test]
+    fn test_format_cpu_memory_combined() {
+        assert_eq!(
+            format_cpu_memory_combined(45.0, 62.5),
+            "CPU: 45.0% | Memory: 62.5%"
+        );
+    }
+
+    #[test]
+    fn test_format_health_confidence() {
+        assert_eq!(
+            format_health_confidence(85.0, 92.0),
+            "Health: 85% | Confidence: 92%"
+        );
     }
 }

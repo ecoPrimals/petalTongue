@@ -18,13 +18,13 @@ async fn test_e2e_device_assignment_flow() {
     let rpc = BiomeOSUIRPC::new(manager.clone());
 
     // 1. Get initial data (mock data only when mock feature enabled)
-    let devices = rpc.get_devices().await.unwrap();
-    let primals = rpc.get_primals_extended().await.unwrap();
+    let _devices = rpc.get_devices().await.unwrap();
+    let _primals = rpc.get_primals_extended().await.unwrap();
 
     #[cfg(feature = "mock")]
     {
-        assert!(!devices.is_empty(), "Should have devices");
-        assert!(!primals.is_empty(), "Should have primals");
+        assert!(!_devices.is_empty(), "Should have devices");
+        assert!(!_primals.is_empty(), "Should have primals");
     }
 
     // 2. Switch to device panel
@@ -48,9 +48,9 @@ async fn test_e2e_niche_creation_workflow() {
     let rpc = BiomeOSUIRPC::new(manager.clone());
 
     // 1. Get templates (mock only when mock feature enabled)
-    let templates = rpc.get_niche_templates().await.unwrap();
+    let _templates = rpc.get_niche_templates().await.unwrap();
     #[cfg(feature = "mock")]
-    assert!(!templates.is_empty(), "Should have templates");
+    assert!(!_templates.is_empty(), "Should have templates");
 
     // 2. Switch to niche designer
     rpc.show_niche_designer().await.unwrap();
@@ -111,15 +111,15 @@ async fn test_e2e_provider_fallback() {
     let manager = Arc::new(RwLock::new(manager));
     let rpc = BiomeOSUIRPC::new(manager.clone());
 
-    let devices = rpc.get_devices().await.unwrap();
-    let primals = rpc.get_primals_extended().await.unwrap();
-    let templates = rpc.get_niche_templates().await.unwrap();
+    let _devices = rpc.get_devices().await.unwrap();
+    let _primals = rpc.get_primals_extended().await.unwrap();
+    let _templates = rpc.get_niche_templates().await.unwrap();
 
     #[cfg(feature = "mock")]
     {
-        assert!(!devices.is_empty());
-        assert!(!primals.is_empty());
-        assert!(!templates.is_empty());
+        assert!(!_devices.is_empty());
+        assert!(!_primals.is_empty());
+        assert!(!_templates.is_empty());
     }
 }
 
@@ -196,15 +196,15 @@ async fn test_e2e_full_lifecycle() {
     rpc.show_niche_designer().await.unwrap();
 
     // 4. Access all data types
-    let devices = rpc.get_devices().await.unwrap();
-    let primals = rpc.get_primals_extended().await.unwrap();
-    let templates = rpc.get_niche_templates().await.unwrap();
+    let _devices = rpc.get_devices().await.unwrap();
+    let _primals = rpc.get_primals_extended().await.unwrap();
+    let _templates = rpc.get_niche_templates().await.unwrap();
 
     #[cfg(feature = "mock")]
     {
-        assert!(!devices.is_empty());
-        assert!(!primals.is_empty());
-        assert!(!templates.is_empty());
+        assert!(!_devices.is_empty());
+        assert!(!_primals.is_empty());
+        assert!(!_templates.is_empty());
     }
 
     // 5. Final refresh

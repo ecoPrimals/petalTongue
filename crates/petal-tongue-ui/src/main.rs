@@ -196,6 +196,10 @@ fn run_with_eframe(
         tracing::info!("🎬 DIAGNOSTIC: This will block until window closes");
     }
 
+    let shared_viz_state = Arc::new(RwLock::new(
+        petal_tongue_ipc::visualization_handler::VisualizationState::new(),
+    ));
+
     let result = eframe::run_native(
         PRIMAL_NAME,
         options,
@@ -203,10 +207,21 @@ fn run_with_eframe(
             if diagnostic_enabled {
                 tracing::info!("🎨 DIAGNOSTIC: Creating PetalTongueApp...");
             }
-            let app = PetalTongueApp::new(cc, scenario_path, rendering_caps.clone())?;
+            let mut app = PetalTongueApp::new(cc, scenario_path, rendering_caps.clone())?;
+            app.set_visualization_state(Arc::clone(&shared_viz_state));
 
-            // Start IPC server in background thread with motor channel bridge
-            start_ipc_server(app.graph_handle(), app.motor_sender());
+            let ipc_handles = start_ipc_server(
+                app.graph_handle(),
+                app.motor_sender(),
+                Arc::clone(app.rendering_awareness()),
+                Arc::clone(&shared_viz_state),
+            );
+            if let Some(handles) = ipc_handles {
+                app.set_sensor_stream(handles.sensor_stream);
+                app.set_interaction_subscribers(handles.interaction_subscribers);
+            }
+
+            register_with_neural_api_background();
 
             if diagnostic_enabled {
                 tracing::info!("🎨 DIAGNOSTIC: PetalTongueApp created successfully");
@@ -220,11 +235,36 @@ fn run_with_eframe(
     result
 }
 
-/// Start the IPC Unix socket server in a background thread.
+/// Handles returned by `start_ipc_server` so the UI can broadcast events.
+struct IpcHandles {
+    sensor_stream: Arc<RwLock<petal_tongue_ipc::SensorStreamRegistry>>,
+    interaction_subscribers: Arc<RwLock<petal_tongue_ipc::InteractionSubscriberRegistry>>,
+}
+
+/// Build the IPC server, extract shared handles, then start it in a background thread.
+///
+/// Returns `None` only when the server fails to construct (e.g. socket path error).
 fn start_ipc_server(
     graph: Arc<RwLock<GraphEngine>>,
     motor_tx: std::sync::mpsc::Sender<MotorCommand>,
-) {
+    rendering_awareness: Arc<RwLock<petal_tongue_core::RenderingAwareness>>,
+    viz_state: Arc<RwLock<petal_tongue_ipc::visualization_handler::VisualizationState>>,
+) -> Option<IpcHandles> {
+    let server = match petal_tongue_ipc::UnixSocketServer::new(Arc::clone(&graph)) {
+        Ok(s) => s
+            .with_motor_sender(motor_tx)
+            .with_rendering_awareness(rendering_awareness)
+            .with_visualization_state(viz_state),
+        Err(e) => {
+            tracing::warn!("IPC server not started: {e}");
+            return None;
+        }
+    };
+
+    let sensor_stream = server.sensor_stream_handle();
+    let interaction_subscribers = server.interaction_subscribers_handle();
+    let server = Arc::new(server);
+
     std::thread::Builder::new()
         .name("ipc-server".into())
         .spawn(move || {
@@ -239,19 +279,62 @@ fn start_ipc_server(
                 }
             };
             rt.block_on(async {
-                match petal_tongue_ipc::UnixSocketServer::new(graph) {
-                    Ok(server) => {
-                        let server = Arc::new(server.with_motor_sender(motor_tx));
-                        tracing::info!("🔌 IPC server starting with motor channel bridge");
-                        if let Err(e) = server.start().await {
-                            tracing::error!("IPC server error: {e}");
-                        }
-                    }
-                    Err(e) => {
-                        tracing::warn!("IPC server not started: {e}");
-                    }
+                tracing::info!(
+                    "🔌 IPC server starting with motor channel + introspection + live viz bridge"
+                );
+                if let Err(e) = server.start().await {
+                    tracing::error!("IPC server error: {e}");
                 }
             });
+        })
+        .ok();
+
+    Some(IpcHandles {
+        sensor_stream,
+        interaction_subscribers,
+    })
+}
+
+/// Attempt Neural API registration in a background thread.
+///
+/// Non-blocking: if biomeOS is not running, registration fails gracefully
+/// and no heartbeat thread is spawned.
+fn register_with_neural_api_background() {
+    std::thread::Builder::new()
+        .name("neural-register".into())
+        .spawn(|| {
+            let our_socket = match petal_tongue_ipc::socket_path::get_petaltongue_socket_path() {
+                Ok(p) => p,
+                Err(e) => {
+                    tracing::debug!(
+                        "Cannot determine own socket path for Neural API registration: {e}"
+                    );
+                    return;
+                }
+            };
+
+            let rt = match tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+            {
+                Ok(rt) => rt,
+                Err(e) => {
+                    tracing::error!("Failed to create Neural API registration runtime: {e}");
+                    return;
+                }
+            };
+
+            match rt.block_on(
+                petal_tongue_ui::neural_registration::register_with_neural_api(&our_socket),
+            ) {
+                Ok(provider) => {
+                    tracing::info!("🧠 Neural API registration successful, starting heartbeat");
+                    petal_tongue_ui::neural_registration::spawn_heartbeat(provider, our_socket);
+                }
+                Err(e) => {
+                    tracing::info!("Neural API not available: {e} (standalone mode)");
+                }
+            }
         })
         .ok();
 }

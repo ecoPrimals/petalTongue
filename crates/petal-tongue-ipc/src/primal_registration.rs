@@ -355,7 +355,7 @@ mod tests {
     #[test]
     fn test_registration_serialization() {
         let reg = PrimalRegistration::petaltongue();
-        let json = serde_json::to_string(&reg).unwrap();
+        let json = serde_json::to_string(&reg).expect("serialize");
         assert!(json.contains("petaltongue"));
         assert!(json.contains("ui.render"));
     }
@@ -371,5 +371,93 @@ mod tests {
         let reg = PrimalRegistration::petaltongue();
         let manager = RegistrationManager::new(reg);
         drop(manager);
+    }
+
+    #[test]
+    fn test_primal_registration_version() {
+        let reg = PrimalRegistration::petaltongue();
+        assert!(!reg.version.is_empty());
+        assert!(
+            reg.version
+                .chars()
+                .next()
+                .expect("version")
+                .is_ascii_digit()
+        );
+    }
+
+    #[test]
+    fn test_primal_registration_all_capabilities() {
+        let reg = PrimalRegistration::petaltongue();
+        let expected = [
+            "ui.render",
+            "ui.visualization",
+            "ui.graph",
+            "graph.topology",
+            "graph.builder",
+            "modality.visual",
+            "modality.audio",
+        ];
+        for cap in expected {
+            assert!(
+                reg.capabilities.contains(&cap.to_string()),
+                "missing capability: {cap}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_songbird_client_with_socket_path() {
+        let client = SongbirdClient::with_socket_path(String::new());
+        drop(client);
+    }
+
+    #[test]
+    fn test_registration_manager_heartbeat_interval() {
+        let reg = PrimalRegistration::petaltongue();
+        let manager = RegistrationManager::new(reg);
+        drop(manager);
+    }
+
+    #[test]
+    fn test_songbird_client_clone() {
+        let client = SongbirdClient::with_socket_path("/tmp/test.sock".to_string());
+        let cloned = client.clone();
+        drop(cloned);
+        drop(client);
+    }
+
+    #[tokio::test]
+    async fn test_register_on_startup_songbird_unavailable() {
+        let reg = PrimalRegistration::petaltongue();
+        let manager = RegistrationManager::new(reg);
+        // When Songbird is unavailable, should not panic
+        manager.register_on_startup().await;
+    }
+
+    #[tokio::test]
+    async fn test_spawn_heartbeat_task_returns_handle() {
+        let reg = PrimalRegistration::petaltongue();
+        let manager = RegistrationManager::new(reg);
+        let handle = manager.spawn_heartbeat_task();
+        // Handle should be valid
+        drop(handle);
+    }
+
+    #[test]
+    fn test_registration_manager_creation_with_defaults() {
+        let reg = PrimalRegistration::petaltongue();
+        let _manager = RegistrationManager::new(reg);
+        // Just verify creation succeeds
+    }
+
+    #[test]
+    fn test_primal_registration_deserialization_roundtrip() {
+        let reg = PrimalRegistration::petaltongue();
+        let json = serde_json::to_string(&reg).expect("serialize");
+        let restored: PrimalRegistration = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.name, reg.name);
+        assert_eq!(restored.endpoint, reg.endpoint);
+        assert_eq!(restored.capabilities.len(), reg.capabilities.len());
     }
 }

@@ -4,7 +4,11 @@
 use petal_tongue_core::rendering_awareness::{InteractivityState, VisibilityState};
 
 use super::types::{DisplayTopology, DisplayVerification, ViewerLocation};
-use super::verifier::continuous_verification;
+use super::verifier::{
+    continuous_verification, detect_display_topology, format_active_interaction_status,
+    format_recent_interaction_status, interactivity_state_from_seconds,
+    suggested_action_for_prolonged_idle, topology_description,
+};
 
 #[test]
 fn test_display_verification_unknown() {
@@ -91,4 +95,111 @@ fn test_display_verification_confirmed_evidence() {
     let v = DisplayVerification::confirmed_visible();
     assert!(!v.topology_evidence.is_empty());
     assert!(v.topology_evidence[0].contains("User interaction"));
+}
+
+#[test]
+fn test_detect_display_topology_returns_valid() {
+    let (topology, evidence) = detect_display_topology();
+    match topology {
+        DisplayTopology::DirectLocal
+        | DisplayTopology::Forwarded
+        | DisplayTopology::Nested
+        | DisplayTopology::Virtual
+        | DisplayTopology::Unknown => {}
+    }
+    let _ = evidence;
+}
+
+#[test]
+fn test_continuous_verification_active_sets_visibility() {
+    let v = continuous_verification("test-window", 1.0);
+    assert_eq!(v.interactivity, InteractivityState::Active);
+    assert_eq!(v.visibility, VisibilityState::Confirmed);
+    assert!(v.output_reaches_viewer);
+}
+
+#[test]
+fn test_continuous_verification_recent_sets_probable() {
+    let v = continuous_verification("test-window", 15.0);
+    assert_eq!(v.interactivity, InteractivityState::Recent);
+    assert_eq!(v.visibility, VisibilityState::Probable);
+    assert!(v.output_reaches_viewer);
+}
+
+#[test]
+fn test_interactivity_state_from_seconds() {
+    assert_eq!(
+        interactivity_state_from_seconds(2.0),
+        InteractivityState::Active
+    );
+    assert_eq!(
+        interactivity_state_from_seconds(4.9),
+        InteractivityState::Active
+    );
+    assert_eq!(
+        interactivity_state_from_seconds(10.0),
+        InteractivityState::Recent
+    );
+    assert_eq!(
+        interactivity_state_from_seconds(29.9),
+        InteractivityState::Recent
+    );
+    assert_eq!(
+        interactivity_state_from_seconds(100.0),
+        InteractivityState::Idle
+    );
+    assert_eq!(
+        interactivity_state_from_seconds(299.9),
+        InteractivityState::Idle
+    );
+    assert_eq!(
+        interactivity_state_from_seconds(400.0),
+        InteractivityState::Unconfirmed
+    );
+}
+
+#[test]
+fn test_topology_description() {
+    assert_eq!(
+        topology_description(&DisplayTopology::DirectLocal),
+        "Direct local display"
+    );
+    assert_eq!(
+        topology_description(&DisplayTopology::Forwarded),
+        "Forwarded display"
+    );
+    assert_eq!(
+        topology_description(&DisplayTopology::Virtual),
+        "Virtual display"
+    );
+    assert_eq!(
+        topology_description(&DisplayTopology::Unknown),
+        "Unknown topology"
+    );
+}
+
+#[test]
+fn test_format_active_interaction_status() {
+    let s = format_active_interaction_status(&DisplayTopology::DirectLocal);
+    assert!(s.contains("actively interacting"));
+    let s = format_active_interaction_status(&DisplayTopology::Forwarded);
+    assert!(s.contains("user interaction proves visibility"));
+}
+
+#[test]
+fn test_format_recent_interaction_status() {
+    let s = format_recent_interaction_status(&DisplayTopology::DirectLocal, 15.0);
+    assert!(s.contains("Direct local display"));
+    assert!(s.contains("15"));
+    assert!(s.contains("recent interaction"));
+}
+
+#[test]
+fn test_suggested_action_for_prolonged_idle() {
+    assert!(suggested_action_for_prolonged_idle(100.0).is_none());
+    assert!(suggested_action_for_prolonged_idle(300.0).is_none());
+    let action = suggested_action_for_prolonged_idle(301.0);
+    assert!(action.is_some());
+    let action = action.expect("some");
+    assert!(action.contains("5+ minutes"));
 }

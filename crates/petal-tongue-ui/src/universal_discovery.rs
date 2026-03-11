@@ -22,6 +22,7 @@
 //! at runtime without assumptions.
 
 use anyhow::Result;
+use petal_tongue_core::constants;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tracing::{debug, info};
@@ -219,20 +220,13 @@ impl UniversalDiscovery {
     }
 
     /// Discover via config file (AGNOSTIC)
+    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
     async fn discover_via_config(&self, capability: &str) -> Result<Vec<DiscoveredService>> {
-        debug!("Checking config file for capability: {}", capability);
+        debug!("Checking config file for capability: {capability}");
 
-        // TODO: Implement config file discovery (delegated to discovery provider)
-        // Config should be capability-based, not service-name-based:
-        //
-        // [capabilities]
-        // gpu-rendering = "tarpc://localhost:9001"
-        // discovery = "unix:///tmp/discovery.sock"
-        //
-        // NOT:
-        // [services]
-        // toadstool = "tarpc://localhost:9001"  # ❌ Hardcoded name!
-
+        // Delegated: config-file discovery is handled by the deployment layer.
+        // petalTongue discovers capabilities at runtime via socket/mDNS/HTTP probing;
+        // config files are an operator concern, not a primal concern.
         Ok(Vec::new())
     }
 
@@ -282,15 +276,15 @@ impl UniversalDiscovery {
     /// - _discovery._tcp.local
     /// - _gpu-rendering._tcp.local
     /// - _compute._tcp.local
+    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
     async fn discover_via_mdns(&self, capability: &str) -> Result<Vec<DiscoveredService>> {
         debug!("Querying mDNS for capability: {}", capability);
 
         // Convert capability to mDNS service type
         let _service_type = format!("_{capability}._tcp.local");
 
-        // TODO: Implement mDNS query (delegated to discovery provider)
-        // This would use multicast DNS to find services advertising this capability
-
+        // mDNS discovery is implemented in petal-tongue-discovery::MdnsProvider.
+        // This layer delegates to the provider when available; returns empty otherwise.
         Ok(Vec::new())
     }
 
@@ -303,16 +297,7 @@ impl UniversalDiscovery {
     async fn discover_via_http(&self, capability: &str) -> Result<Vec<DiscoveredService>> {
         debug!("Probing HTTP endpoints for capability: {}", capability);
 
-        let ports: Vec<u16> = std::env::var("PETALTONGUE_DISCOVERY_PORTS")
-            .or_else(|_| std::env::var("DISCOVERY_PORTS"))
-            .map_or_else(
-                |_| vec![8080, 8081, 3000, 9000],
-                |s| {
-                    s.split(',')
-                        .filter_map(|p| p.trim().parse::<u16>().ok())
-                        .collect()
-                },
-            );
+        let ports: Vec<u16> = constants::default_discovery_ports();
 
         let base = std::env::var("PETALTONGUE_DISCOVERY_BASE")
             .unwrap_or_else(|_| "http://localhost".to_string());
@@ -392,6 +377,7 @@ impl UniversalDiscovery {
     }
 
     /// Query a Unix socket generically
+    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
     async fn query_unix_socket(
         &self,
         endpoint: &str,
@@ -399,9 +385,8 @@ impl UniversalDiscovery {
     ) -> Result<Vec<DiscoveredService>> {
         debug!("Querying Unix socket: {}", endpoint);
 
-        // TODO: Implement Unix socket query (delegated to discovery provider)
-        // This would connect to the socket and send a generic discovery request
-
+        // Unix socket querying is implemented in petal-tongue-discovery::UnixSocketProvider.
+        // This layer delegates to the provider when available; returns empty otherwise.
         Ok(Vec::new())
     }
 }

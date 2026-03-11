@@ -142,4 +142,28 @@ mod tests {
         assert!(!config.audio_enabled);
         assert!(config.mock_mode);
     }
+
+    #[test]
+    fn test_biomeos_url_from_config() {
+        let config = PetalTongueConfig {
+            biomeos_url: Some("http://localhost:9999".to_string()),
+            ..PetalTongueConfig::default()
+        };
+        let url = config.biomeos_url();
+        assert_eq!(url, "http://localhost:9999");
+    }
+
+    #[test]
+    fn test_biomeos_url_returns_string() {
+        let config = PetalTongueConfig::default();
+        let url = config.biomeos_url();
+        assert!(url.len() < 256, "url should be reasonable length");
+    }
+
+    #[test]
+    fn test_config_common_flattened() {
+        let config = PetalTongueConfig::default();
+        assert_eq!(config.common.name, "petalTongue");
+        assert!(!config.common.host.is_empty());
+    }
 }

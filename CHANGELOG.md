@@ -2,6 +2,40 @@
 
 All notable changes to petalTongue will be documented in this file.
 
+## [1.6.1] - 2026-03-11
+
+### Added - Live Ecosystem Wiring: Sensor Feed, Interaction Broadcast, Neural API, Game Channels
+
+- **Sensor Event Feed** (`sensor_feed.rs`): Pure function `collect_sensor_events(ctx)`
+  reads egui pointer/click/scroll/key events and converts to `SensorEventIpc` for
+  broadcast to the `SensorStreamRegistry`. External primals (ludoSpring, Squirrel)
+  can subscribe via `interaction.sensor_stream.subscribe` and poll raw UI events.
+- **Interaction Event Broadcast**: UI selection changes (node select/deselect) are
+  now broadcast to `InteractionSubscriberRegistry` subscribers with change detection.
+  New `interaction_subscribers_handle()` on `UnixSocketServer`.
+- **Neural API Self-Registration** (`neural_registration.rs`): On startup, discovers
+  biomeOS Neural API and calls `lifecycle.register` with capabilities (`ui.render`,
+  `visualization.render`, `ipc.json-rpc`, `interaction.sensor_stream`). 30s heartbeat
+  via `lifecycle.status`. Graceful degradation when biomeOS is not running.
+- **GameDataChannel Mapping** (`game_data_channel.rs`): Maps all 7 ludoSpring channel
+  types to `DataBinding` variants: EngagementCurve→TimeSeries, DifficultyProfile→
+  TimeSeries, FlowTimeline→Bar, InteractionCostMap→Heatmap, GenerationPreview→
+  Scatter, AccessibilityReport→FieldMap, UiAnalysis→FieldMap.
+- **IPC Server Handle Extraction**: `start_ipc_server()` refactored to build the
+  server on the main thread, extract shared handles (sensor_stream, interaction_subscribers),
+  then spawn the background server thread. Enables bidirectional UI↔IPC wiring.
+- **`SensorStreamRegistry` re-export**: Now exported from `petal_tongue_ipc` root.
+- **+28 new tests**: 4 sensor_feed, 2 neural_registration, 13 game_data_channel,
+  9 live_primal_integration_tests.
+- **`docs/LIVE_TESTING.md`**: Guide for testing with real biomeOS/NUCLEUS/ludoSpring.
+
+### Fixed
+
+- `.gitignore`: Added `.env` to prevent accidental secret commits.
+- `sandbox/demo-benchtop.sh`: Fixed binary name `petal-tongue` → `petaltongue`.
+
+---
+
 ## [1.6.0] - 2026-03-10
 
 ### Added - Spring Schema Evolution: Scatter 2D, Faceting, Threshold Coloring, Geometry

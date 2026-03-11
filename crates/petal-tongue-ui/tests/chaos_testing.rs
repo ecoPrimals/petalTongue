@@ -68,20 +68,20 @@ impl ChaosTestRunner {
     }
 
     /// Run all chaos scenarios
-    pub async fn run_all(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn run_all(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         tracing::info!("Starting chaos test suite");
 
         // Scenario 1: Primal churn
-        self.test_primal_churn().await?;
+        self.test_primal_churn()?;
 
         // Scenario 2: High update rate
-        self.test_high_update_rate().await?;
+        self.test_high_update_rate()?;
 
         // Scenario 3: Random health changes
-        self.test_random_health_changes().await?;
+        self.test_random_health_changes()?;
 
         // Scenario 4: Concurrent modifications
-        self.test_concurrent_modifications().await?;
+        self.test_concurrent_modifications()?;
 
         tracing::info!("Chaos test suite completed");
         self.print_summary();
@@ -90,7 +90,8 @@ impl ChaosTestRunner {
     }
 
     /// Test: Primal churn (rapid add/remove)
-    async fn test_primal_churn(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    #[allow(clippy::unnecessary_wraps)]
+    fn test_primal_churn(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let start = std::time::Instant::now();
         let scenario_name = "primal_churn";
         let count = 50;
@@ -162,7 +163,8 @@ impl ChaosTestRunner {
     }
 
     /// Test: High update rate
-    async fn test_high_update_rate(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    #[allow(clippy::unnecessary_wraps)]
+    fn test_high_update_rate(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let start = std::time::Instant::now();
         let scenario_name = "high_update_rate";
         let updates_per_sec = 1000;
@@ -232,7 +234,8 @@ impl ChaosTestRunner {
     }
 
     /// Test: Random health changes
-    async fn test_random_health_changes(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    #[allow(clippy::unnecessary_wraps)]
+    fn test_random_health_changes(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let start = std::time::Instant::now();
         let scenario_name = "random_health_changes";
         let changes = 500;
@@ -300,7 +303,8 @@ impl ChaosTestRunner {
     }
 
     /// Test: Concurrent modifications
-    async fn test_concurrent_modifications(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    #[allow(clippy::unnecessary_wraps)]
+    fn test_concurrent_modifications(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let start = std::time::Instant::now();
         let scenario_name = "concurrent_modifications";
         let threads = 4;
@@ -440,7 +444,7 @@ mod tests {
         let mut runner = ChaosTestRunner::new();
 
         // Run all chaos tests
-        let result = runner.run_all().await;
+        let result = runner.run_all();
         assert!(result.is_ok());
 
         // Check that tests ran

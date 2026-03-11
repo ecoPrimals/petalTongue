@@ -127,7 +127,7 @@ impl FramebufferDisplay {
 
 impl Default for FramebufferDisplay {
     fn default() -> Self {
-        Self::new().unwrap()
+        Self::new().expect("FramebufferDisplay::new always succeeds")
     }
 }
 

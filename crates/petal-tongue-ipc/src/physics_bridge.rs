@@ -111,8 +111,8 @@ fn discover_compute_socket() -> Result<String, String> {
     }
 
     let runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_string());
-    let socket_name =
-        std::env::var("PHYSICS_COMPUTE_SOCKET_NAME").unwrap_or_else(|_| "barracuda".to_string());
+    let socket_name = std::env::var("PHYSICS_COMPUTE_SOCKET_NAME")
+        .unwrap_or_else(|_| "physics-compute".to_string());
 
     let candidates = [
         // Ecosystem discovery (toadStool S139 dual-write)
@@ -174,7 +174,6 @@ mod tests {
     #[test]
     fn discover_barracuda_returns_err_when_absent() {
         let result = discover_compute_socket();
-        // In CI/test, barraCuda is typically not running
         assert!(
             result.is_ok() || result.is_err(),
             "Should gracefully handle presence or absence"
@@ -201,5 +200,67 @@ mod tests {
         );
         assert_eq!(result.bodies_updated, 1);
         assert!(result.step_duration_secs >= 0.0);
+    }
+
+    #[tokio::test]
+    async fn step_physics_with_barracuda_env_uses_env_path() {
+        let temp = std::env::temp_dir().join("physics-bridge-test.sock");
+        std::fs::write(&temp, "").expect("create temp file");
+        let path_str = temp.to_str().expect("path").to_string();
+
+        let result = petal_tongue_core::test_fixtures::env_test_helpers::with_env_var_async(
+            "BARRACUDA_SOCKET",
+            &path_str,
+            || async {
+                let mut world = PhysicsWorld::new();
+                world.gravity = [0.0, 0.0, 0.0];
+                world.add_body(PhysicsBody {
+                    id: "b1".into(),
+                    mass: 1.0,
+                    position: [0.0, 0.0, 0.0],
+                    velocity: [0.0, 0.0, 0.0],
+                    collision_shape: CollisionShape::None,
+                });
+                step_physics(&mut world).await
+            },
+        )
+        .await;
+        let _ = std::fs::remove_file(&temp);
+        assert!(
+            !result.gpu_accelerated,
+            "temp file is not a socket, should fall back"
+        );
+        assert_eq!(result.bodies_updated, 1);
+    }
+
+    #[tokio::test]
+    async fn step_physics_multiple_bodies() {
+        let mut world = PhysicsWorld::new();
+        world.gravity = [0.0, -9.81, 0.0];
+        world.time_step = 0.016;
+        for i in 0..5 {
+            world.add_body(PhysicsBody {
+                id: format!("body-{i}"),
+                mass: 1.0,
+                position: [0.0, 0.0, 0.0],
+                velocity: [0.0, 0.0, 0.0],
+                collision_shape: CollisionShape::None,
+            });
+        }
+        let result = step_physics(&mut world).await;
+        assert_eq!(result.bodies_updated, 5);
+        assert!(result.step_duration_secs >= 0.0);
+    }
+
+    #[test]
+    fn physics_step_result_structure() {
+        let r = PhysicsStepResult {
+            gpu_accelerated: false,
+            bodies_updated: 3,
+            step_duration_secs: 0.001,
+        };
+        assert!(!r.gpu_accelerated);
+        assert_eq!(r.bodies_updated, 3);
+        assert!((r.step_duration_secs - 0.001).abs() < f64::EPSILON);
     }
 }

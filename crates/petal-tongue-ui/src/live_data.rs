@@ -5,6 +5,7 @@
 
 use crate::accessibility::LiveIndicator;
 use egui::{Color32, Context, RichText, Ui};
+use petal_tongue_core::constants;
 use std::time::{Duration, Instant};
 
 /// Live data badge - shows "LIVE" or "STALE" with color
@@ -281,6 +282,13 @@ impl ConnectionStatus {
     }
 }
 
+/// Default connection target for display (e.g. "localhost:3000").
+/// Uses `BIOMEOS_URL` or `PETALTONGUE_LIVE_TARGET`; fallback from constants.
+#[must_use]
+pub fn default_connection_target() -> String {
+    constants::default_biomeos_connection_target()
+}
+
 fn format_age_for_display(age_secs: f32) -> String {
     if age_secs < 1.0 {
         "Just now".to_string()
@@ -318,7 +326,7 @@ mod tests {
 
     #[test]
     fn test_live_metric_update() {
-        let mut metric = LiveMetric::new("CPU".to_string(), "sysinfo".to_string(), 1.0);
+        let mut metric = LiveMetric::new("CPU".to_string(), "proc".to_string(), 1.0);
         metric.update("45.2".to_string(), Some("%".to_string()));
         assert_eq!(metric.value, "45.2");
         assert_eq!(metric.unit, Some("%".to_string()));
@@ -327,7 +335,7 @@ mod tests {
 
     #[test]
     fn test_connection_status() {
-        let mut status = ConnectionStatus::new("localhost:3000".to_string());
+        let mut status = ConnectionStatus::new(default_connection_target());
         assert!(!status.connected);
 
         status.mark_connected();
@@ -361,18 +369,121 @@ mod tests {
     }
 
     #[test]
-    fn test_connection_status_target() {
-        let status = ConnectionStatus::new("biomeOS:3000".to_string());
-        assert_eq!(status.target, "biomeOS:3000");
+    fn test_connection_status_target_default() {
+        let target = default_connection_target();
+        let status = ConnectionStatus::new(target.clone());
+        assert_eq!(status.target, target);
     }
 
     #[test]
     fn test_format_age_for_display() {
         assert_eq!(format_age_for_display(0.5), "Just now");
+        assert_eq!(format_age_for_display(0.0), "Just now");
+        assert_eq!(format_age_for_display(0.99), "Just now");
         assert_eq!(format_age_for_display(1.0), "1.0s ago");
         assert_eq!(format_age_for_display(30.0), "30.0s ago");
+        assert_eq!(format_age_for_display(59.9), "59.9s ago");
+        assert_eq!(format_age_for_display(60.0), "1.0m ago");
         assert_eq!(format_age_for_display(90.0), "1.5m ago");
         assert_eq!(format_age_for_display(3600.0), "1.0h ago");
         assert_eq!(format_age_for_display(7200.0), "2.0h ago");
+        assert_eq!(format_age_for_display(86400.0), "24.0h ago");
+    }
+
+    #[test]
+    fn test_live_badge_new_and_mark_updated() {
+        let mut badge = LiveBadge::new(String::new(), 0.5);
+        badge.mark_updated();
+        assert!(badge.indicator.is_live);
+    }
+
+    #[test]
+    fn test_live_metric_value_with_unit_formatting() {
+        let mut metric = LiveMetric::new("Temp".to_string(), "sensor".to_string(), 1.0);
+        metric.update("72.5".to_string(), Some("°F".to_string()));
+        assert_eq!(metric.value, "72.5");
+        assert_eq!(metric.unit.as_deref(), Some("°F"));
+    }
+
+    #[test]
+    fn test_connection_status_mark_disconnected_preserves_target() {
+        let mut status = ConnectionStatus::new("target:9000".to_string());
+        status.mark_connected();
+        status.mark_disconnected();
+        assert!(!status.connected);
+        assert_eq!(status.target, "target:9000");
+    }
+
+    #[test]
+    fn test_default_connection_target() {
+        let target = default_connection_target();
+        assert!(!target.is_empty());
+        assert!(target.contains(':') || target.contains("localhost"));
+    }
+
+    #[test]
+    fn test_live_graph_header_creation_and_mark_updated() {
+        let mut header = LiveGraphHeader::new("Test".to_string(), "source".to_string(), 1.0);
+        assert_eq!(header.title, "Test");
+        header.mark_updated();
+        assert!(header.badge.indicator.is_live);
+    }
+
+    #[test]
+    fn test_live_metric_creation_defaults() {
+        let metric = LiveMetric::new("Label".to_string(), "src".to_string(), 2.0);
+        assert_eq!(metric.label, "Label");
+        assert_eq!(metric.value, "0");
+        assert_eq!(metric.unit, None);
+    }
+
+    #[test]
+    fn test_connection_status_last_connection_preserved() {
+        let mut status = ConnectionStatus::new("localhost:3000".to_string());
+        assert!(status.last_connection.is_none());
+        status.mark_connected();
+        assert!(status.last_connection.is_some());
+    }
+
+    #[test]
+    fn test_connection_status_target_custom() {
+        let target = "biomeOS at 127.0.0.1:8080".to_string();
+        let status = ConnectionStatus::new(target.clone());
+        assert_eq!(status.target, target);
+    }
+
+    #[test]
+    fn test_format_age_boundary_seconds() {
+        assert_eq!(format_age_for_display(0.1), "Just now");
+        assert_eq!(format_age_for_display(1.0), "1.0s ago");
+        assert_eq!(format_age_for_display(59.0), "59.0s ago");
+    }
+
+    #[test]
+    fn test_format_age_boundary_minutes() {
+        assert_eq!(format_age_for_display(60.0), "1.0m ago");
+        assert_eq!(format_age_for_display(3599.0), "60.0m ago");
+    }
+
+    #[test]
+    fn test_default_connection_target_non_empty() {
+        let target = default_connection_target();
+        assert!(!target.is_empty());
+    }
+
+    #[test]
+    fn test_live_metric_value_with_unit() {
+        let mut metric = LiveMetric::new("Test".to_string(), "src".to_string(), 1.0);
+        metric.update("99.5".to_string(), Some("ms".to_string()));
+        assert_eq!(metric.value, "99.5");
+        assert_eq!(metric.unit, Some("ms".to_string()));
+    }
+
+    #[test]
+    fn test_live_graph_header_title_and_badge() {
+        let mut header = LiveGraphHeader::new("Test".to_string(), "src".to_string(), 2.0);
+        assert_eq!(header.title, "Test");
+        header.mark_updated();
+        assert!(header.badge.indicator.is_live);
     }
 }

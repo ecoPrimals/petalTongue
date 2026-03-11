@@ -217,7 +217,7 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
             "petaltongue-headless",
             "petalTongue Headless",
             "Visualization",
-            format!("http://localhost:{}", constants::DEFAULT_HEADLESS_PORT),
+            constants::default_headless_url(),
             vec!["visualization".to_string(), "export".to_string()],
             PrimalHealthStatus::Healthy,
             std::time::SystemTime::now()
@@ -226,10 +226,12 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
                 .as_secs(),
         ),
         PrimalInfo::new(
-            "biomeos-1",
-            "biomeOS",
+            std::env::var("PETALTONGUE_HEADLESS_DEMO_HEALTH_ID")
+                .unwrap_or_else(|_| "health-monitor-1".to_string()),
+            std::env::var("PETALTONGUE_HEADLESS_DEMO_HEALTH_NAME")
+                .unwrap_or_else(|_| "Health Monitor".to_string()),
             "Health Monitoring",
-            format!("http://localhost:{}", constants::DEFAULT_WEB_PORT),
+            constants::default_web_url(),
             vec!["health".to_string(), "monitoring".to_string()],
             PrimalHealthStatus::Healthy,
             std::time::SystemTime::now()
@@ -238,15 +240,10 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
                 .as_secs(),
         ),
         PrimalInfo::new(
-            "songbird-1",
-            "Songbird",
+            "encryption-demo-1",
+            "Encryption Primal",
             "Encrypted Communication",
-            std::env::var("PETALTONGUE_HEADLESS_ENDPOINT").unwrap_or_else(|_| {
-                format!(
-                    "http://localhost:{}",
-                    constants::DEFAULT_SANDBOX_SECURITY_PORT
-                )
-            }),
+            constants::default_sandbox_security_url(),
             vec!["encryption".to_string(), "messaging".to_string()],
             PrimalHealthStatus::Warning,
             std::time::SystemTime::now()
@@ -261,9 +258,11 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
         g.add_node(primal);
     }
 
-    // Add some connections
+    // Add some connections (use same env-driven IDs for edges)
+    let health_id = std::env::var("PETALTONGUE_HEADLESS_DEMO_HEALTH_ID")
+        .unwrap_or_else(|_| "health-monitor-1".to_string());
     g.add_edge(TopologyEdge {
-        from: "biomeos-1".into(),
+        from: health_id.into(),
         to: "petaltongue-headless".into(),
         edge_type: "monitors".to_string(),
         label: Some("Health Monitoring".to_string()),
@@ -271,7 +270,7 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
         metrics: None,
     });
     g.add_edge(TopologyEdge {
-        from: "songbird-1".into(),
+        from: "encryption-demo-1".into(),
         to: "petaltongue-headless".into(),
         edge_type: "sends_data".to_string(),
         label: Some("Encrypted Messages".to_string()),

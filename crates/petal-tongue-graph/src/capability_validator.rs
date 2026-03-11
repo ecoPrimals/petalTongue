@@ -260,4 +260,64 @@ mod tests {
             "No capability match should give warning"
         );
     }
+
+    #[test]
+    fn test_validation_result_variants() {
+        assert!(matches!(ValidationResult::Valid, ValidationResult::Valid));
+        assert!(matches!(
+            ValidationResult::Warning("w".to_string()),
+            ValidationResult::Warning(_)
+        ));
+        assert!(matches!(
+            ValidationResult::Invalid("e".to_string()),
+            ValidationResult::Invalid(_)
+        ));
+    }
+
+    #[test]
+    fn test_orchestrate_capability() {
+        let orch = create_test_primal("o1", "Orchestrator", &["orchestrate", "api"]);
+        let service = create_test_primal("s1", "Service", &["api"]);
+        let result = validate_connection(&orch, &service);
+        assert_eq!(result, ValidationResult::Valid);
+    }
+
+    #[test]
+    fn test_nucleus_capability() {
+        let nucleus = create_test_primal("n1", "Nucleus", &["nucleus", "graph"]);
+        let client = create_test_primal("c1", "Client", &["client"]);
+        let result = validate_connection(&nucleus, &client);
+        assert_eq!(result, ValidationResult::Valid);
+    }
+
+    #[test]
+    fn test_coordinate_capability() {
+        let coord = create_test_primal("c1", "Coordinator", &["coordinate", "events"]);
+        let service = create_test_primal("s1", "Service", &["compute"]);
+        let result = validate_connection(&coord, &service);
+        assert_eq!(result, ValidationResult::Valid);
+    }
+
+    #[test]
+    fn test_discover_provided_storage() {
+        let primal = create_test_primal("p1", "Storage", &["storage-provider", "auth"]);
+        let provided = discover_provided_capabilities(&primal);
+        assert!(provided.contains(&"storage-provider".to_string()));
+        assert!(provided.contains(&"auth".to_string()));
+    }
+
+    #[test]
+    fn test_discover_required_client() {
+        let primal = create_test_primal("p1", "Client", &["api-client", "require-auth"]);
+        let required = discover_required_capabilities(&primal);
+        assert!(required.contains(&"api-client".to_string()));
+    }
+
+    #[test]
+    fn test_validate_connection_matching_capabilities() {
+        let provider = create_test_primal("p1", "Discovery", &["discovery", "security"]);
+        let consumer = create_test_primal("p2", "Client", &["discovery", "auth"]);
+        let result = validate_connection(&provider, &consumer);
+        assert_eq!(result, ValidationResult::Valid);
+    }
 }

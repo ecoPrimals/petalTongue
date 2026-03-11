@@ -330,8 +330,9 @@ mod tests {
             stroke: Some(StrokeStyle::default()),
             data_id: Some("pt-1".to_string()),
         };
-        let json = serde_json::to_string(&point).unwrap();
-        let decoded: Primitive = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&point).expect("serialization should succeed");
+        let decoded: Primitive =
+            serde_json::from_str(&json).expect("deserialization should succeed");
         assert_eq!(point, decoded);
     }
 
@@ -348,8 +349,206 @@ mod tests {
             closed: true,
             data_id: Some("line-2".to_string()),
         };
-        let json = serde_json::to_string(&line).unwrap();
-        let decoded: Primitive = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&line).expect("serialization should succeed");
+        let decoded: Primitive =
+            serde_json::from_str(&json).expect("deserialization should succeed");
         assert_eq!(line, decoded);
+    }
+
+    #[test]
+    fn color_constants() {
+        assert!((Color::BLACK.r - 0.0).abs() < f32::EPSILON);
+        assert!((Color::BLACK.a - 1.0).abs() < f32::EPSILON);
+        assert!((Color::WHITE.r - 1.0).abs() < f32::EPSILON);
+        assert!((Color::WHITE.g - 1.0).abs() < f32::EPSILON);
+        assert!((Color::TRANSPARENT.a - 0.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn line_cap_variants() {
+        assert_eq!(LineCap::Butt, LineCap::Butt);
+        assert_ne!(LineCap::Butt, LineCap::Round);
+        assert_ne!(LineCap::Round, LineCap::Square);
+    }
+
+    #[test]
+    fn line_join_variants() {
+        assert_eq!(LineJoin::Miter, LineJoin::Miter);
+        assert_ne!(LineJoin::Miter, LineJoin::Round);
+        assert_ne!(LineJoin::Round, LineJoin::Bevel);
+    }
+
+    #[test]
+    fn fill_rule_variants() {
+        assert_eq!(FillRule::EvenOdd, FillRule::EvenOdd);
+        assert_ne!(FillRule::EvenOdd, FillRule::NonZero);
+    }
+
+    #[test]
+    fn anchor_point_variants() {
+        assert_eq!(AnchorPoint::TopLeft, AnchorPoint::TopLeft);
+        assert_eq!(AnchorPoint::Center, AnchorPoint::Center);
+        assert_ne!(AnchorPoint::TopLeft, AnchorPoint::BottomRight);
+    }
+
+    #[test]
+    fn primitive_rect_data_id() {
+        let rect = Primitive::Rect {
+            x: 0.0,
+            y: 0.0,
+            width: 100.0,
+            height: 50.0,
+            fill: Some(Color::BLACK),
+            stroke: None,
+            corner_radius: 0.0,
+            data_id: Some("rect-1".to_string()),
+        };
+        assert_eq!(rect.data_id(), Some("rect-1"));
+        assert!(rect.carries_data());
+    }
+
+    #[test]
+    fn primitive_text_data_id() {
+        let text = Primitive::Text {
+            x: 0.0,
+            y: 0.0,
+            content: "Hello".to_string(),
+            font_size: 12.0,
+            color: Color::BLACK,
+            anchor: AnchorPoint::Center,
+            bold: false,
+            italic: false,
+            data_id: Some("text-1".to_string()),
+        };
+        assert_eq!(text.data_id(), Some("text-1"));
+        assert!(text.carries_data());
+    }
+
+    #[test]
+    fn primitive_polygon_data_id() {
+        let poly = Primitive::Polygon {
+            points: vec![[0.0, 0.0], [1.0, 0.0], [0.5, 1.0]],
+            fill: Color::BLACK,
+            stroke: None,
+            fill_rule: FillRule::NonZero,
+            data_id: Some("poly-1".to_string()),
+        };
+        assert_eq!(poly.data_id(), Some("poly-1"));
+        assert!(poly.carries_data());
+    }
+
+    #[test]
+    fn primitive_arc_data_id() {
+        let arc = Primitive::Arc {
+            cx: 0.0,
+            cy: 0.0,
+            radius: 10.0,
+            start_angle: 0.0,
+            end_angle: std::f64::consts::PI,
+            fill: Some(Color::BLACK),
+            stroke: None,
+            data_id: Some("arc-1".to_string()),
+        };
+        assert_eq!(arc.data_id(), Some("arc-1"));
+        assert!(arc.carries_data());
+    }
+
+    #[test]
+    fn primitive_bezier_path_data_id() {
+        let path = Primitive::BezierPath {
+            start: [0.0, 0.0],
+            segments: vec![],
+            stroke: StrokeStyle::default(),
+            fill: None,
+            fill_rule: FillRule::NonZero,
+            data_id: Some("path-1".to_string()),
+        };
+        assert_eq!(path.data_id(), Some("path-1"));
+        assert!(path.carries_data());
+    }
+
+    #[test]
+    fn primitive_mesh_data_id() {
+        let mesh = Primitive::Mesh {
+            vertices: vec![],
+            indices: vec![],
+            data_id: Some("mesh-1".to_string()),
+        };
+        assert_eq!(mesh.data_id(), Some("mesh-1"));
+        assert!(mesh.carries_data());
+    }
+
+    #[test]
+    fn primitive_rect_no_data_id() {
+        let rect = Primitive::Rect {
+            x: 0.0,
+            y: 0.0,
+            width: 100.0,
+            height: 50.0,
+            fill: None,
+            stroke: None,
+            corner_radius: 4.0,
+            data_id: None,
+        };
+        assert_eq!(rect.data_id(), None);
+        assert!(!rect.carries_data());
+    }
+
+    #[test]
+    fn bezier_segment_construction() {
+        let seg = BezierSegment {
+            cp1: [1.0, 2.0],
+            cp2: [3.0, 4.0],
+            end: [5.0, 6.0],
+        };
+        assert!((seg.cp1[0] - 1.0).abs() < 1e-10);
+        assert!((seg.end[1] - 6.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn mesh_vertex_construction() {
+        let v = MeshVertex {
+            position: [1.0, 2.0, 3.0],
+            normal: [0.0, 1.0, 0.0],
+            color: Color::WHITE,
+        };
+        assert!((v.position[2] - 3.0).abs() < 1e-10);
+        assert!((v.normal[1] - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn serialization_roundtrip_rect() {
+        let rect = Primitive::Rect {
+            x: 5.0,
+            y: 10.0,
+            width: 50.0,
+            height: 25.0,
+            fill: Some(Color::rgba(0.5, 0.5, 0.5, 0.5)),
+            stroke: Some(StrokeStyle::default()),
+            corner_radius: 8.0,
+            data_id: None,
+        };
+        let json = serde_json::to_string(&rect).expect("serialization should succeed");
+        let decoded: Primitive =
+            serde_json::from_str(&json).expect("deserialization should succeed");
+        assert_eq!(rect, decoded);
+    }
+
+    #[test]
+    fn serialization_roundtrip_arc() {
+        let arc = Primitive::Arc {
+            cx: 100.0,
+            cy: 100.0,
+            radius: 50.0,
+            start_angle: 0.0,
+            end_angle: std::f64::consts::FRAC_PI_2,
+            fill: Some(Color::BLACK),
+            stroke: None,
+            data_id: None,
+        };
+        let json = serde_json::to_string(&arc).expect("serialization should succeed");
+        let decoded: Primitive =
+            serde_json::from_str(&json).expect("deserialization should succeed");
+        assert_eq!(arc, decoded);
     }
 }

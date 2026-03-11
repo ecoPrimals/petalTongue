@@ -356,7 +356,10 @@ impl JsonRpcClient {
         Ok(())
     }
 
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unused_self,
+        reason = "trait method; self required for dispatch"
+    )]
     fn extract_result(&self, response: JsonRpcResponse, _expected_id: u64) -> JsonRpcResult<Value> {
         response.result.ok_or_else(|| {
             JsonRpcClientError::InvalidResponse("Response has no result field".to_string())
@@ -380,7 +383,7 @@ mod tests {
 
     #[test]
     fn test_client_creation() {
-        let client = JsonRpcClient::new("/tmp/test.sock").unwrap();
+        let client = JsonRpcClient::new("/tmp/test.sock").expect("valid path");
         assert_eq!(client.socket_path(), std::path::Path::new("/tmp/test.sock"));
         assert_eq!(client.timeout(), Duration::from_secs(5));
     }
@@ -393,14 +396,14 @@ mod tests {
 
     #[test]
     fn test_with_timeout() {
-        let client =
-            JsonRpcClient::with_timeout("/tmp/test.sock", Duration::from_secs(10)).unwrap();
+        let client = JsonRpcClient::with_timeout("/tmp/test.sock", Duration::from_secs(10))
+            .expect("valid path");
         assert_eq!(client.timeout(), Duration::from_secs(10));
     }
 
     #[test]
     fn test_debug_impl() {
-        let client = JsonRpcClient::new("/tmp/test.sock").unwrap();
+        let client = JsonRpcClient::new("/tmp/test.sock").expect("valid path");
         let debug_str = format!("{client:?}");
         assert!(debug_str.contains("JsonRpcClient"));
         assert!(debug_str.contains("/tmp/test.sock"));
@@ -408,14 +411,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_call_nonexistent_socket() {
-        let client = JsonRpcClient::new("/tmp/nonexistent-jsonrpc-test-12345.sock").unwrap();
+        let client =
+            JsonRpcClient::new("/tmp/nonexistent-jsonrpc-test-12345.sock").expect("valid path");
         let result = client.call("health.check", serde_json::json!({})).await;
         assert!(result.is_err());
     }
 
     #[tokio::test]
     async fn test_notify_nonexistent_socket() {
-        let client = JsonRpcClient::new("/tmp/nonexistent-jsonrpc-notify-12345.sock").unwrap();
+        let client =
+            JsonRpcClient::new("/tmp/nonexistent-jsonrpc-notify-12345.sock").expect("valid path");
         let result = client.notify("some.method", serde_json::json!({})).await;
         assert!(result.is_err());
     }
@@ -426,9 +431,9 @@ mod tests {
             nodes: vec![serde_json::json!({"id": "n1"})],
             edges: vec![serde_json::json!({"from": "n1", "to": "n2"})],
         };
-        let json = serde_json::to_value(&data).unwrap();
-        assert_eq!(json["nodes"].as_array().unwrap().len(), 1);
-        assert_eq!(json["edges"].as_array().unwrap().len(), 1);
+        let json = serde_json::to_value(&data).expect("serialize");
+        assert_eq!(json["nodes"].as_array().expect("nodes").len(), 1);
+        assert_eq!(json["edges"].as_array().expect("edges").len(), 1);
     }
 
     #[test]
@@ -437,14 +442,256 @@ mod tests {
             nodes: vec![],
             edges: vec![],
         };
-        let json = serde_json::to_value(&data).unwrap();
-        assert!(json["nodes"].as_array().unwrap().is_empty());
+        let json = serde_json::to_value(&data).expect("serialize");
+        assert!(json["nodes"].as_array().expect("nodes").is_empty());
     }
 
     #[test]
     fn test_client_clone() {
-        let client = JsonRpcClient::new("/tmp/clone-test.sock").unwrap();
+        let client = JsonRpcClient::new("/tmp/clone-test.sock").expect("valid path");
         let cloned = client.clone();
         assert_eq!(client.socket_path(), cloned.socket_path());
+    }
+
+    #[test]
+    fn test_json_rpc_client_error_display() {
+        let err = JsonRpcClientError::Connection("test".to_string());
+        let s = format!("{err}");
+        assert!(s.contains("Connection"));
+        assert!(s.contains("test"));
+    }
+
+    #[test]
+    fn test_json_rpc_client_rpc_error() {
+        let err = JsonRpcClientError::RpcError {
+            code: -32601,
+            message: "Method not found".to_string(),
+            data: None,
+        };
+        let s = format!("{err}");
+        assert!(s.contains("-32601"));
+        assert!(s.contains("Method not found"));
+    }
+
+    #[test]
+    fn test_json_rpc_client_empty_path_error() {
+        let result = JsonRpcClient::new("");
+        assert!(result.is_err());
+        if let Err(JsonRpcClientError::Connection(msg)) = result {
+            assert!(msg.contains("empty"));
+        } else {
+            panic!("Expected Connection error");
+        }
+    }
+
+    #[test]
+    fn test_json_rpc_request_format() {
+        use crate::json_rpc::JsonRpcRequest;
+        let req = JsonRpcRequest::new(
+            "test.method",
+            serde_json::json!({"a": 1}),
+            serde_json::json!(42),
+        );
+        assert_eq!(req.jsonrpc, "2.0");
+        assert_eq!(req.method, "test.method");
+        assert_eq!(req.id, serde_json::json!(42));
+    }
+
+    #[test]
+    fn test_next_id_increments() {
+        let client = JsonRpcClient::new("/tmp/test.sock").expect("valid path");
+        let id1 = client.next_id();
+        let id2 = client.next_id();
+        assert_eq!(id2, id1 + 1);
+    }
+
+    #[test]
+    fn test_extract_result_no_result() {
+        use crate::json_rpc::JsonRpcResponse;
+        let client = JsonRpcClient::new("/tmp/test.sock").expect("valid path");
+        let resp = JsonRpcResponse {
+            jsonrpc: "2.0".to_string(),
+            result: None,
+            error: None,
+            id: serde_json::json!(1),
+        };
+        let result = client.extract_result(resp, 1);
+        assert!(result.is_err());
+        if let Err(JsonRpcClientError::InvalidResponse(msg)) = result {
+            assert!(msg.contains("no result"));
+        } else {
+            panic!("Expected InvalidResponse");
+        }
+    }
+
+    #[test]
+    fn test_extract_result_success() {
+        use crate::json_rpc::JsonRpcResponse;
+        let client = JsonRpcClient::new("/tmp/test.sock").expect("valid path");
+        let resp = JsonRpcResponse {
+            jsonrpc: "2.0".to_string(),
+            result: Some(serde_json::json!({"status": "ok"})),
+            error: None,
+            id: serde_json::json!(1),
+        };
+        let result = client.extract_result(resp, 1);
+        assert!(result.is_ok());
+        let val = result.expect("ok");
+        assert_eq!(val["status"], "ok");
+    }
+
+    #[test]
+    fn test_json_rpc_client_rpc_error_with_data() {
+        let err = JsonRpcClientError::RpcError {
+            code: -32602,
+            message: "Invalid params".to_string(),
+            data: Some(serde_json::json!({"param": "id"})),
+        };
+        let s = format!("{err}");
+        assert!(s.contains("-32602"));
+        assert!(s.contains("Invalid params"));
+    }
+
+    #[tokio::test]
+    async fn test_batch_nonexistent_socket() {
+        let client = JsonRpcClient::new("/tmp/nonexistent-batch-99999.sock").expect("valid path");
+        let requests = vec![
+            ("health.check", serde_json::json!({})),
+            ("topology.get", serde_json::json!({})),
+        ];
+        let result = client.batch(requests).await;
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_json_rpc_response_error_extraction() {
+        use crate::json_rpc::JsonRpcResponse;
+        let resp = JsonRpcResponse::error(
+            serde_json::json!(1),
+            crate::json_rpc::error_codes::METHOD_NOT_FOUND,
+            "Method not found",
+        );
+        assert!(resp.result.is_none());
+        assert!(resp.error.is_some());
+    }
+
+    #[test]
+    fn test_request_serialization_roundtrip() {
+        use crate::json_rpc::JsonRpcRequest;
+        let req = JsonRpcRequest::new(
+            "topology.get",
+            serde_json::json!({"filter": "nodes"}),
+            serde_json::json!(42),
+        );
+        let json = serde_json::to_string(&req).expect("serialize");
+        let parsed: JsonRpcRequest = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(parsed.method, "topology.get");
+        assert_eq!(parsed.params["filter"], "nodes");
+        assert_eq!(parsed.id, serde_json::json!(42));
+    }
+
+    #[test]
+    fn test_response_success_deserialization() {
+        use crate::json_rpc::JsonRpcResponse;
+        let json = r#"{"jsonrpc":"2.0","result":{"nodes":[],"edges":[]},"id":1}"#;
+        let resp: JsonRpcResponse = serde_json::from_str(json).expect("deserialize");
+        assert!(resp.result.is_some());
+        assert!(resp.error.is_none());
+        assert!(resp.result.as_ref().expect("result")["nodes"].is_array());
+    }
+
+    #[test]
+    fn test_response_error_deserialization() {
+        use crate::json_rpc::JsonRpcResponse;
+        let json =
+            r#"{"jsonrpc":"2.0","error":{"code":-32601,"message":"Method not found"},"id":1}"#;
+        let resp: JsonRpcResponse = serde_json::from_str(json).expect("deserialize");
+        assert!(resp.result.is_none());
+        let err = resp.error.as_ref().expect("error");
+        assert_eq!(err.code, -32601);
+        assert_eq!(err.message, "Method not found");
+    }
+
+    #[test]
+    fn test_method_name_formatting() {
+        use crate::json_rpc::JsonRpcRequest;
+        let req = JsonRpcRequest::new(
+            "capability.list",
+            serde_json::json!({}),
+            serde_json::json!(1),
+        );
+        assert_eq!(req.method, "capability.list");
+        let req2 = JsonRpcRequest::new("health.check", serde_json::json!({}), serde_json::json!(2));
+        assert_eq!(req2.method, "health.check");
+    }
+
+    #[test]
+    fn test_request_includes_id() {
+        use crate::json_rpc::JsonRpcRequest;
+        let req = JsonRpcRequest::new("test.method", serde_json::json!({}), serde_json::json!(99));
+        assert_eq!(req.id, serde_json::json!(99));
+        let req_null = JsonRpcRequest::new(
+            "notify.method",
+            serde_json::json!({}),
+            serde_json::Value::Null,
+        );
+        assert!(req_null.id.is_null());
+    }
+
+    #[test]
+    fn test_json_rpc_client_error_timeout() {
+        let err = JsonRpcClientError::Timeout("Connection timeout".to_string());
+        let s = format!("{err}");
+        assert!(s.contains("Timeout"));
+        assert!(s.contains("Connection timeout"));
+    }
+
+    #[test]
+    fn test_json_rpc_client_error_serialization() {
+        let err = JsonRpcClientError::Serialization("JSON parse failed".to_string());
+        let s = format!("{err}");
+        assert!(s.contains("Serialization"));
+        assert!(s.contains("JSON parse failed"));
+    }
+
+    #[test]
+    fn test_json_rpc_client_error_invalid_response() {
+        let err = JsonRpcClientError::InvalidResponse("Malformed JSON".to_string());
+        let s = format!("{err}");
+        assert!(s.contains("Invalid response"));
+        assert!(s.contains("Malformed JSON"));
+    }
+
+    #[test]
+    fn test_json_rpc_client_error_io() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::ConnectionRefused, "refused");
+        let err = JsonRpcClientError::Io(io_err);
+        let s = format!("{err}");
+        assert!(s.contains("refused") || s.contains("I/O"));
+    }
+
+    #[test]
+    fn test_batch_request_structure() {
+        let requests = [
+            ("health.check", serde_json::json!({})),
+            ("topology.get", serde_json::json!({})),
+        ];
+        assert_eq!(requests.len(), 2);
+        assert_eq!(requests[0].0, "health.check");
+        assert_eq!(requests[1].0, "topology.get");
+    }
+
+    #[test]
+    fn test_topology_data_serialization() {
+        let data = TopologyData {
+            nodes: vec![
+                serde_json::json!({"id": "n1", "x": 0.0}),
+                serde_json::json!({"id": "n2", "x": 1.0}),
+            ],
+            edges: vec![serde_json::json!({"from": "n1", "to": "n2"})],
+        };
+        let json = serde_json::to_value(&data).expect("serialize");
+        assert_eq!(json["nodes"].as_array().expect("nodes").len(), 2);
+        assert_eq!(json["edges"].as_array().expect("edges").len(), 1);
     }
 }

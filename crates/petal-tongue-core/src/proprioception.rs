@@ -282,8 +282,53 @@ mod tests {
     #[test]
     fn test_serde_roundtrip() {
         let data = ProprioceptionData::empty("test");
-        let json = serde_json::to_string(&data).unwrap();
-        let decoded: ProprioceptionData = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&data).expect("serialize");
+        let decoded: ProprioceptionData = serde_json::from_str(&json).expect("deserialize");
         assert_eq!(decoded.family_id, "test");
+    }
+
+    #[test]
+    fn test_health_status_display() {
+        assert_eq!(HealthStatus::Healthy.to_string(), "Healthy");
+        assert_eq!(HealthStatus::Degraded.to_string(), "Degraded");
+        assert_eq!(HealthStatus::Critical.to_string(), "Critical");
+    }
+
+    #[test]
+    fn test_proprioception_is_stale_fresh() {
+        let data = ProprioceptionData::empty("test");
+        assert!(!data.is_stale());
+    }
+
+    #[test]
+    fn test_proprioception_age() {
+        let data = ProprioceptionData::empty("test");
+        let age = data.age();
+        assert!(age.num_seconds() >= 0);
+    }
+
+    #[test]
+    fn test_sensory_data_fields() {
+        let mut data = ProprioceptionData::empty("test");
+        data.sensory.active_sockets = 5;
+        assert_eq!(data.sensory.active_sockets, 5);
+    }
+
+    #[test]
+    fn test_motor_data_fields() {
+        let mut data = ProprioceptionData::empty("test");
+        data.motor.can_deploy = true;
+        data.motor.can_execute_graphs = true;
+        assert!(data.motor.can_deploy);
+        assert!(data.motor.can_execute_graphs);
+    }
+
+    #[test]
+    fn test_self_awareness_data_fields() {
+        let mut data = ProprioceptionData::empty("test");
+        data.self_awareness.knows_about = 10;
+        data.self_awareness.can_coordinate = true;
+        assert_eq!(data.self_awareness.knows_about, 10);
+        assert!(data.self_awareness.can_coordinate);
     }
 }

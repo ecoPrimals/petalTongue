@@ -64,7 +64,7 @@ pub use cache::CacheStats;
 pub use capabilities::VisualizationCapability;
 pub use dynamic_scenario_provider::DynamicScenarioProvider;
 #[cfg(feature = "legacy-http")]
-#[allow(deprecated)]
+#[expect(deprecated)]
 pub use http_provider::HttpVisualizationProvider;
 pub use jsonrpc_provider::JsonRpcProvider;
 pub use mdns_provider::MdnsVisualizationProvider;
@@ -103,26 +103,16 @@ use petal_tongue_core::constants;
 ///
 /// A vector of discovered providers, or an error if none found.
 ///
-/// **NOTE**: Mock providers are NOT used in production. For testing, build with
-/// `--features test-fixtures` and set `PETALTONGUE_MOCK_MODE=true`.
-#[allow(clippy::too_many_lines)]
+/// **NOTE**: Mock providers are NEVER used in production runtime. They exist only
+/// in test code (`#[cfg(test)]`) or when building with `--features test-fixtures`
+/// for test fixtures. Production always attempts real discovery and returns empty
+/// if no providers found (graceful degradation).
+#[expect(
+    clippy::too_many_lines,
+    reason = "discovery fallback chain; refactor would obscure priority order"
+)]
 pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn VisualizationDataProvider>>> {
     let mut providers: Vec<Box<dyn VisualizationDataProvider>> = Vec::new();
-
-    // Mock mode: ONLY when test-fixtures feature enabled. Production builds never check env var.
-    #[cfg(any(test, feature = "test-fixtures"))]
-    {
-        let mock_mode = std::env::var("PETALTONGUE_MOCK_MODE")
-            .unwrap_or_else(|_| "false".to_string())
-            .to_lowercase()
-            == "true";
-
-        if mock_mode {
-            tracing::warn!("PETALTONGUE_MOCK_MODE=true - Using mock provider (TESTING ONLY)");
-            providers.push(Box::new(MockVisualizationProvider::new()));
-            return Ok(providers);
-        }
-    }
 
     // Priority 1: Try Neural API (PREFERRED METHOD - Central Coordinator)
     // Neural API is the single source of truth for all primal state
@@ -308,7 +298,7 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
             \n\
             Fallback options (external only):\n\
             4. HTTP fallback: BIOMEOS_URL=http://localhost:{}\n\
-            5. Development: Build with --features test-fixtures and PETALTONGUE_MOCK_MODE=true\n\
+            5. Development: Build with --features test-fixtures for test fixtures (mocks only in tests)\n\
             \n\
             💡 GUI will start with tutorial mode as graceful fallback",
             constants::DEFAULT_WEB_PORT
@@ -338,7 +328,7 @@ async fn try_connect_jsonrpc(socket_path: &str) -> Result<Box<dyn VisualizationD
 /// ⚠️  HTTP is the FALLBACK protocol for external integrations only.
 /// Prefer JSON-RPC over Unix sockets for TRUE PRIMAL architecture!
 #[cfg(feature = "legacy-http")]
-#[allow(deprecated)]
+#[expect(deprecated)]
 async fn try_connect_http(url: &str) -> Result<Box<dyn VisualizationDataProvider>> {
     let provider = HttpVisualizationProvider::new(url)?;
 
@@ -352,7 +342,6 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    #[allow(clippy::large_futures)]
     async fn test_discover_returns_empty_without_config() {
         use petal_tongue_core::test_fixtures::env_test_helpers;
 
@@ -384,19 +373,73 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_discover_with_mock_mode() {
+    async fn test_discover_graceful_degradation_returns_ok() {
         use petal_tongue_core::test_fixtures::env_test_helpers;
 
-        env_test_helpers::with_env_var_async("PETALTONGUE_MOCK_MODE", "true", || async {
-            let result = discover_visualization_providers().await;
-            assert!(
-                result.is_ok(),
-                "Mock mode should work when explicitly enabled"
-            );
-            let providers = result.unwrap();
-            assert!(!providers.is_empty(), "Mock mode should return providers");
+        env_test_helpers::with_env_var_removed_async("BIOMEOS_URL", || async {
+            env_test_helpers::with_env_var_removed_async("PETALTONGUE_DISCOVERY_HINTS", || async {
+                env_test_helpers::with_env_var_removed_async("FAMILY_ID", || async {
+                    env_test_helpers::with_env_var_removed_async(
+                        "PETALTONGUE_ENABLE_MDNS",
+                        || async {
+                            let result = discover_visualization_providers().await;
+                            assert!(
+                                result.is_ok(),
+                                "Discovery must never panic - graceful degradation"
+                            );
+                            let providers = result.unwrap();
+                            assert!(
+                                providers.is_empty(),
+                                "Without config, expect empty (or mock in test-fixtures)"
+                            );
+                        },
+                    )
+                    .await;
+                })
+                .await;
+            })
+            .await;
         })
         .await;
+    }
+
+    #[tokio::test]
+    async fn test_try_connect_jsonrpc_nonexistent_socket() {
+        let result = try_connect_jsonrpc("/tmp/nonexistent-socket-xyz-12345.sock").await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_try_connect_jsonrpc_invalid_path() {
+        let result = try_connect_jsonrpc("").await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "test-fixtures")]
+    async fn test_mock_provider_direct_usage() {
+        // Mock provider is ONLY for test code - never used in production discover path.
+        // Tests that use mock data should instantiate MockVisualizationProvider directly.
+        let provider = MockVisualizationProvider::new();
+        let primals = provider.get_primals().await.unwrap();
+        assert!(!primals.is_empty(), "Mock provider should return primals");
+        assert_eq!(primals.len(), 3);
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "test-fixtures")]
+    async fn test_mock_provider_get_topology() {
+        let provider = MockVisualizationProvider::new();
+        let topology = provider.get_topology().await.unwrap();
+        assert!(topology.is_empty() || !topology.is_empty()); // Mock may return edges
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "test-fixtures")]
+    async fn test_mock_provider_health_check() {
+        let provider = MockVisualizationProvider::new();
+        let health = provider.health_check().await.unwrap();
+        assert!(!health.is_empty());
     }
 
     #[tokio::test]

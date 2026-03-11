@@ -275,4 +275,66 @@ mod tests {
         assert!(!info.description.is_empty());
         assert_eq!(info.required_params.len(), 2); // primal_name, family_id
     }
+
+    #[test]
+    fn test_node_palette_default() {
+        let palette = NodePalette::default();
+        assert!(palette.search.is_empty());
+        assert_eq!(palette.node_types.len(), 4);
+    }
+
+    #[test]
+    fn test_node_info_verification_type() {
+        let info = NodeTypeInfo::from_node_type(NodeType::Verification);
+        assert!(info.name.contains("Verify") || info.name.contains("Verification"));
+        assert!(!info.required_params.is_empty());
+    }
+
+    #[test]
+    fn test_node_info_conditional_type() {
+        let info = NodeTypeInfo::from_node_type(NodeType::Conditional);
+        assert!(!info.name.is_empty());
+        assert!(!info.description.is_empty());
+    }
+
+    #[test]
+    fn test_search_filter_empty_shows_all() {
+        let palette = NodePalette::new();
+        let filtered: Vec<_> = palette
+            .node_types
+            .iter()
+            .filter(|info| {
+                palette.search.is_empty()
+                    || info
+                        .name
+                        .to_lowercase()
+                        .contains(&palette.search.to_lowercase())
+                    || info
+                        .description
+                        .to_lowercase()
+                        .contains(&palette.search.to_lowercase())
+            })
+            .collect();
+        assert_eq!(filtered.len(), 4);
+    }
+
+    #[test]
+    fn test_search_filter_nonexistent_returns_empty() {
+        let mut palette = NodePalette::new();
+        palette.search = "xyznonexistent123".to_string();
+        let filtered: Vec<_> = palette
+            .node_types
+            .iter()
+            .filter(|info| {
+                info.name
+                    .to_lowercase()
+                    .contains(&palette.search.to_lowercase())
+                    || info
+                        .description
+                        .to_lowercase()
+                        .contains(&palette.search.to_lowercase())
+            })
+            .collect();
+        assert!(filtered.is_empty());
+    }
 }

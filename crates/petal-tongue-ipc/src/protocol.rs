@@ -272,4 +272,183 @@ mod tests {
         assert_eq!(IpcCommand::Ping.name(), "Ping");
         assert_eq!(IpcCommand::GetStatus.name(), "GetStatus");
     }
+
+    #[test]
+    fn test_command_requires_running() {
+        assert!(!IpcCommand::Ping.requires_running());
+        assert!(!IpcCommand::Shutdown.requires_running());
+        assert!(!IpcCommand::ListInstances.requires_running());
+        assert!(IpcCommand::GetStatus.requires_running());
+        assert!(
+            IpcCommand::SetPanel {
+                panel: "audio".to_string(),
+                visible: true,
+            }
+            .requires_running()
+        );
+    }
+
+    #[test]
+    fn test_command_parse_navigate() {
+        let json = r#"{"Navigate":{"node_id":"some-node"}}"#;
+        let cmd: IpcCommand = serde_json::from_str(json).unwrap();
+        assert!(matches!(cmd, IpcCommand::Navigate { node_id } if node_id == "some-node"));
+    }
+
+    #[test]
+    fn test_command_set_zoom_roundtrip() {
+        let cmd = IpcCommand::SetZoom { level: 1.5 };
+        let json = serde_json::to_string(&cmd).unwrap();
+        let parsed: IpcCommand = serde_json::from_str(&json).unwrap();
+        if let IpcCommand::SetZoom { level } = parsed {
+            assert!((level - 1.5).abs() < f32::EPSILON);
+        } else {
+            panic!("Expected SetZoom");
+        }
+    }
+
+    #[test]
+    fn test_response_status_roundtrip() {
+        let status = InstanceStatus {
+            instance_id: petal_tongue_core::InstanceId::new(),
+            pid: 1234,
+            window_id: Some(1),
+            name: Some("test".to_string()),
+            uptime_seconds: 60,
+            node_count: 5,
+            edge_count: 3,
+            window_visible: true,
+            metadata: std::collections::HashMap::new(),
+        };
+        let resp = IpcResponse::Status(status);
+        let json = serde_json::to_string(&resp).unwrap();
+        let parsed: IpcResponse = serde_json::from_str(&json).unwrap();
+        assert!(!parsed.is_error());
+    }
+
+    #[test]
+    fn test_command_to_motor_command() {
+        let cmd = IpcCommand::SetZoom { level: 2.0 };
+        let motor = cmd.to_motor_command().unwrap();
+        if let petal_tongue_core::MotorCommand::SetZoom { level } = motor {
+            assert!((level - 2.0).abs() < f32::EPSILON);
+        } else {
+            panic!("Expected SetZoom");
+        }
+
+        let cmd = IpcCommand::Ping;
+        assert!(cmd.to_motor_command().is_none());
+    }
+
+    #[test]
+    fn test_command_set_panel_to_motor() {
+        let cmd = IpcCommand::SetPanel {
+            panel: "left_sidebar".to_string(),
+            visible: true,
+        };
+        let motor = cmd.to_motor_command().unwrap();
+        assert!(matches!(
+            motor,
+            petal_tongue_core::MotorCommand::SetPanelVisibility {
+                panel: petal_tongue_core::PanelId::LeftSidebar,
+                visible: true
+            }
+        ));
+    }
+
+    #[test]
+    fn test_all_command_names() {
+        assert_eq!(IpcCommand::Ping.name(), "Ping");
+        assert_eq!(IpcCommand::Shutdown.name(), "Shutdown");
+        assert_eq!(
+            IpcCommand::MergeGraph {
+                nodes: vec![],
+                edges: vec![]
+            }
+            .name(),
+            "MergeGraph"
+        );
+        assert_eq!(IpcCommand::Show.name(), "Show");
+        assert_eq!(IpcCommand::Hide.name(), "Hide");
+        assert_eq!(IpcCommand::ReloadScenario.name(), "ReloadScenario");
+    }
+
+    #[test]
+    fn test_command_to_motor_all_panel_aliases() {
+        for (panel, expected_id) in [
+            ("controls", petal_tongue_core::PanelId::LeftSidebar),
+            ("right_sidebar", petal_tongue_core::PanelId::RightSidebar),
+            ("top_menu", petal_tongue_core::PanelId::TopMenu),
+            ("dashboard", petal_tongue_core::PanelId::SystemDashboard),
+            ("audio_panel", petal_tongue_core::PanelId::AudioPanel),
+            (
+                "trust_dashboard",
+                petal_tongue_core::PanelId::TrustDashboard,
+            ),
+            ("proprioception", petal_tongue_core::PanelId::Proprioception),
+            ("graph_stats", petal_tongue_core::PanelId::GraphStats),
+        ] {
+            let cmd = IpcCommand::SetPanel {
+                panel: panel.to_string(),
+                visible: true,
+            };
+            let motor = cmd.to_motor_command().expect("motor");
+            assert!(
+                matches!(motor, petal_tongue_core::MotorCommand::SetPanelVisibility { panel: p, .. } if p == expected_id),
+                "panel {panel} -> {expected_id:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_command_to_motor_custom_panel() {
+        let cmd = IpcCommand::SetPanel {
+            panel: "custom_panel".to_string(),
+            visible: false,
+        };
+        let motor = cmd.to_motor_command().expect("motor");
+        assert!(matches!(
+            motor,
+            petal_tongue_core::MotorCommand::SetPanelVisibility {
+                panel: petal_tongue_core::PanelId::Custom(s),
+                visible: false
+            } if s == "custom_panel"
+        ));
+    }
+
+    #[test]
+    fn test_response_success_not_error() {
+        assert!(!IpcResponse::Success.is_error());
+        assert!(IpcResponse::error("e").is_error());
+    }
+
+    #[test]
+    fn test_response_error_message_none_for_success() {
+        assert!(IpcResponse::Success.error_message().is_none());
+        assert!(IpcResponse::Pong.error_message().is_none());
+    }
+
+    #[test]
+    fn test_response_error_into_string() {
+        let resp = IpcResponse::error("failed");
+        assert_eq!(resp.error_message(), Some("failed"));
+    }
+
+    #[test]
+    fn test_command_serialization_all_variants() {
+        let variants = [
+            IpcCommand::Ping,
+            IpcCommand::GetStatus,
+            IpcCommand::GetState,
+            IpcCommand::Show,
+            IpcCommand::Hide,
+            IpcCommand::Shutdown,
+            IpcCommand::ListInstances,
+            IpcCommand::FitToView,
+        ];
+        for cmd in variants {
+            let json = serde_json::to_string(&cmd).expect("serialize");
+            let _: IpcCommand = serde_json::from_str(&json).expect("deserialize");
+        }
+    }
 }

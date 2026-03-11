@@ -77,7 +77,7 @@ struct DiscoveredPrimal {
     last_seen: u64,
 }
 
-#[allow(deprecated)]
+#[expect(deprecated)]
 impl HttpVisualizationProvider {
     /// Create a new HTTP provider
     ///
@@ -113,7 +113,7 @@ impl HttpVisualizationProvider {
 }
 
 #[async_trait]
-#[allow(deprecated)]
+#[expect(deprecated)]
 impl VisualizationDataProvider for HttpVisualizationProvider {
     async fn get_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
         let url = format!("{}/api/v1/primals", self.endpoint);
@@ -226,7 +226,7 @@ impl From<DiscoveredPrimal> for PrimalInfo {
 }
 
 #[cfg(test)]
-#[allow(deprecated)]
+#[expect(deprecated)]
 mod tests {
     use super::*;
 
@@ -260,5 +260,70 @@ mod tests {
         let provider = HttpVisualizationProvider::new("http://nonexistent:99999").unwrap();
         let health = provider.health_check().await;
         assert!(health.is_err(), "Invalid endpoint should fail health check");
+    }
+
+    #[test]
+    fn test_provider_metadata_capabilities() {
+        let provider = HttpVisualizationProvider::new("http://localhost:3000").unwrap();
+        let metadata = provider.get_metadata();
+        assert_eq!(metadata.name, "HTTP Provider");
+        assert!(
+            metadata
+                .capabilities
+                .contains(&"visualization.primal-provider".to_string())
+        );
+        assert!(
+            metadata
+                .capabilities
+                .contains(&"visualization.health-provider".to_string())
+        );
+    }
+
+    #[test]
+    fn test_discovered_primal_health_variants() {
+        for (health, expected) in [
+            ("healthy", PrimalHealthStatus::Healthy),
+            ("warning", PrimalHealthStatus::Warning),
+            ("critical", PrimalHealthStatus::Critical),
+        ] {
+            let discovered = DiscoveredPrimal {
+                id: "test".to_string(),
+                name: "Test".to_string(),
+                primal_type: "Test".to_string(),
+                endpoint: "http://test:8000".to_string(),
+                capabilities: vec![],
+                health: health.to_string(),
+                last_seen: 0,
+            };
+            let primal: PrimalInfo = discovered.into();
+            assert!(
+                std::mem::discriminant(&primal.health) == std::mem::discriminant(&expected),
+                "health {health}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_discovered_primal_unknown_health() {
+        let discovered = DiscoveredPrimal {
+            id: "test".to_string(),
+            name: "Test".to_string(),
+            primal_type: "Test".to_string(),
+            endpoint: "http://test:8000".to_string(),
+            capabilities: vec!["cap".to_string()],
+            health: "invalid".to_string(),
+            last_seen: 123,
+        };
+        let primal: PrimalInfo = discovered.into();
+        assert!(matches!(primal.health, PrimalHealthStatus::Unknown));
+        assert_eq!(primal.capabilities.len(), 1);
+        assert_eq!(primal.last_seen, 123);
+    }
+
+    #[test]
+    fn test_provider_creation_with_trailing_slash() {
+        let provider = HttpVisualizationProvider::new("http://test:9000/").unwrap();
+        let metadata = provider.get_metadata();
+        assert_eq!(metadata.endpoint, "http://test:9000/");
     }
 }

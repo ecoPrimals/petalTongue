@@ -17,6 +17,7 @@ mod ui;
 mod visualization;
 
 use crate::visualization_handler::VisualizationState;
+use petal_tongue_core::RenderingAwareness;
 use petal_tongue_core::graph_engine::GraphEngine;
 use std::sync::{Arc, RwLock};
 use std::time::SystemTime;
@@ -39,6 +40,10 @@ pub struct RpcHandlers {
     /// Interaction event subscriber registry (poll-based IPC subscriptions)
     pub interaction_subscribers:
         Arc<RwLock<crate::visualization_handler::InteractionSubscriberRegistry>>,
+    /// Sensor event stream subscriber registry
+    pub sensor_stream_subscribers: Arc<RwLock<crate::visualization_handler::SensorStreamRegistry>>,
+    /// Rendering awareness (content-level introspection for IPC queries)
+    pub rendering_awareness: Option<Arc<RwLock<RenderingAwareness>>>,
 }
 
 impl RpcHandlers {
@@ -57,6 +62,10 @@ impl RpcHandlers {
             interaction_subscribers: Arc::new(RwLock::new(
                 crate::visualization_handler::InteractionSubscriberRegistry::new(),
             )),
+            sensor_stream_subscribers: Arc::new(RwLock::new(
+                crate::visualization_handler::SensorStreamRegistry::new(),
+            )),
+            rendering_awareness: None,
         }
     }
 
@@ -88,6 +97,9 @@ impl RpcHandlers {
                 visualization::handle_interact_perspectives(self, req.id)
             }
             "visualization.capabilities" => visualization::handle_capabilities(self, req.id),
+            "visualization.introspect" => visualization::handle_introspect(self, req.id),
+            "visualization.panels" => visualization::handle_panels(self, req.id),
+            "visualization.showing" => visualization::handle_showing(self, req),
             "interaction.subscribe" | "visualization.interact.subscribe" => {
                 self.handle_interaction_subscribe(req)
             }
@@ -95,6 +107,9 @@ impl RpcHandlers {
             "interaction.unsubscribe" | "visualization.interact.unsubscribe" => {
                 self.handle_interaction_unsubscribe(req)
             }
+            "interaction.sensor_stream.subscribe" => self.handle_sensor_stream_subscribe(req),
+            "interaction.sensor_stream.unsubscribe" => self.handle_sensor_stream_unsubscribe(req),
+            "interaction.sensor_stream.poll" => self.handle_sensor_stream_poll(req),
             "motor.set_panel" | "motor.set_zoom" | "motor.fit_to_view" | "motor.set_mode"
             | "motor.navigate" => motor::handle_motor_command(self, req),
             _ => {
@@ -168,6 +183,66 @@ impl RpcHandlers {
 
     fn handle_interaction_unsubscribe(&self, req: JsonRpcRequest) -> JsonRpcResponse {
         interaction::handle_unsubscribe(self, req)
+    }
+
+    fn handle_sensor_stream_subscribe(&self, req: JsonRpcRequest) -> JsonRpcResponse {
+        let mut reg = self
+            .sensor_stream_subscribers
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let subscription_id = reg.subscribe();
+        JsonRpcResponse::success(
+            req.id,
+            serde_json::json!({
+                "subscription_id": subscription_id,
+            }),
+        )
+    }
+
+    fn handle_sensor_stream_unsubscribe(&self, req: JsonRpcRequest) -> JsonRpcResponse {
+        let subscription_id = req.params["subscription_id"]
+            .as_str()
+            .unwrap_or("")
+            .to_string();
+        if subscription_id.is_empty() {
+            return JsonRpcResponse::error(
+                req.id,
+                error_codes::INVALID_PARAMS,
+                "subscription_id is required",
+            );
+        }
+        let mut reg = self
+            .sensor_stream_subscribers
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let was_subscribed = reg.unsubscribe(&subscription_id);
+        JsonRpcResponse::success(
+            req.id,
+            serde_json::json!({
+                "unsubscribed": was_subscribed,
+                "subscription_id": subscription_id,
+            }),
+        )
+    }
+
+    fn handle_sensor_stream_poll(&self, req: JsonRpcRequest) -> JsonRpcResponse {
+        let subscription_id = req.params["subscription_id"]
+            .as_str()
+            .unwrap_or("")
+            .to_string();
+        if subscription_id.is_empty() {
+            return JsonRpcResponse::error(
+                req.id,
+                error_codes::INVALID_PARAMS,
+                "subscription_id is required",
+            );
+        }
+        let mut reg = self
+            .sensor_stream_subscribers
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let batch = reg.poll(&subscription_id);
+        JsonRpcResponse::success(req.id, serde_json::to_value(&batch).unwrap_or_default())
     }
 }
 

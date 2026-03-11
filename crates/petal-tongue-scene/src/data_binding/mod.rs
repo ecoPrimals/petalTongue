@@ -4,6 +4,8 @@
 //! Converts healthSpring's typed data payloads into the Grammar of Graphics
 //! pipeline for actual rendering.
 
+mod utils;
+
 use petal_tongue_core::{DataBinding, ThresholdRange};
 use serde_json::Value;
 
@@ -53,7 +55,7 @@ impl DataBindingCompiler {
             DataBinding::Distribution {
                 id, label, values, ..
             } => {
-                let (bins, counts) = histogram_bins(values, 20);
+                let (bins, counts) = utils::histogram_bins(values, 20);
                 let expr = GrammarExpr::new(id.clone(), GeometryType::Bar)
                     .with_x("x")
                     .with_y("y")
@@ -275,10 +277,6 @@ impl DataBindingCompiler {
 
     /// Compile with optional threshold ranges that color Heatmap/FieldMap cells
     /// by status (normal/warning/critical) instead of continuous intensity.
-    ///
-    /// Threshold ranges are matched against each cell's value. The highest-severity
-    /// matching range wins. A `"status"` field is injected into data rows so the
-    /// Tile geometry renderer can use domain palette status colors.
     #[must_use]
     pub fn compile_with_thresholds(
         binding: &DataBinding,
@@ -300,7 +298,7 @@ impl DataBindingCompiler {
             .into_iter()
             .map(|mut row| {
                 if let Some(val) = row.get("value").and_then(Value::as_f64) {
-                    let status = resolve_threshold_status(val, thresholds);
+                    let status = utils::resolve_threshold_status(val, thresholds);
                     if let Value::Object(ref mut map) = row {
                         map.insert("status".to_string(), Value::String(status.to_string()));
                     }
@@ -332,58 +330,6 @@ impl DataBindingCompiler {
             .map(|b| Self::compile_with_thresholds(b, domain, thresholds))
             .collect()
     }
-}
-
-/// Resolve the threshold status for a value against a set of threshold ranges.
-///
-/// Returns "critical" > "warning" > "normal" > "unknown" (highest severity wins).
-fn resolve_threshold_status(value: f64, thresholds: &[ThresholdRange]) -> &'static str {
-    let mut best: Option<&'static str> = None;
-    for t in thresholds {
-        if value >= t.min && value <= t.max {
-            let status = match t.status.as_str() {
-                "critical" => Some("critical"),
-                "warning" => Some("warning"),
-                "normal" => Some("normal"),
-                _ => continue,
-            };
-            best = match (best, status) {
-                (Some("critical"), _) | (_, Some("critical")) => Some("critical"),
-                (Some("warning"), _) | (_, Some("warning")) => Some("warning"),
-                (_, s) => s.or(best),
-            };
-        }
-    }
-    best.unwrap_or("unknown")
-}
-
-/// Bin continuous values into a histogram.
-fn histogram_bins(values: &[f64], n_bins: usize) -> (Vec<f64>, Vec<f64>) {
-    if values.is_empty() || n_bins == 0 {
-        return (vec![], vec![]);
-    }
-    let min = values.iter().copied().fold(f64::INFINITY, f64::min);
-    let max = values.iter().copied().fold(f64::NEG_INFINITY, f64::max);
-    if (max - min).abs() < f64::EPSILON {
-        return (vec![min], vec![values.len() as f64]);
-    }
-    let bin_width = (max - min) / n_bins as f64;
-    let mut counts = vec![0.0_f64; n_bins];
-    let mut centers = Vec::with_capacity(n_bins);
-    for i in 0..n_bins {
-        centers.push(min + (i as f64 + 0.5) * bin_width);
-    }
-    for v in values {
-        #[expect(
-            clippy::cast_possible_truncation,
-            clippy::cast_sign_loss,
-            reason = "histogram bin index bounded by n_bins"
-        )]
-        let bin = ((*v - min) / bin_width).floor() as usize;
-        let bin = bin.min(n_bins - 1);
-        counts[bin] += 1.0;
-    }
-    (centers, counts)
 }
 
 #[cfg(test)]
@@ -426,7 +372,7 @@ mod tests {
         let (expr, data) = DataBindingCompiler::compile(&binding, None);
         assert_eq!(expr.geometry, GeometryType::Bar);
         assert_eq!(data.len(), 20);
-        let (bins, counts) = histogram_bins(&values, 20);
+        let (bins, counts) = utils::histogram_bins(&values, 20);
         assert_eq!(bins.len(), 20);
         assert_eq!(counts.len(), 20);
         let total: f64 = counts.iter().sum();
@@ -473,7 +419,6 @@ mod tests {
                 .is_some_and(|t| t.contains("72.0") && t.contains("bpm"))
         );
         assert_eq!(data.len(), 1);
-        // Value is normalized to 0..1 for arc (72 in [40,140] -> (72-40)/100 = 0.32)
         assert!((data[0]["y"].as_f64().unwrap() - 0.32).abs() < 0.01);
     }
 
@@ -663,7 +608,7 @@ mod tests {
     #[test]
     fn threshold_critical_wins_over_warning() {
         assert_eq!(
-            super::resolve_threshold_status(
+            utils::resolve_threshold_status(
                 0.5,
                 &[
                     petal_tongue_core::ThresholdRange {
@@ -686,14 +631,14 @@ mod tests {
 
     #[test]
     fn histogram_bins_empty() {
-        let (bins, counts) = histogram_bins(&[], 10);
+        let (bins, counts) = utils::histogram_bins(&[], 10);
         assert!(bins.is_empty());
         assert!(counts.is_empty());
     }
 
     #[test]
     fn histogram_bins_single_value() {
-        let (bins, counts) = histogram_bins(&[42.0], 5);
+        let (bins, counts) = utils::histogram_bins(&[42.0], 5);
         assert_eq!(bins.len(), 1);
         assert_eq!(counts.len(), 1);
         assert!((counts[0] - 1.0).abs() < f64::EPSILON);
@@ -702,7 +647,7 @@ mod tests {
     #[test]
     fn histogram_bins_uniform() {
         let values: Vec<f64> = (0..100).map(|i| i as f64).collect();
-        let (bins, counts) = histogram_bins(&values, 10);
+        let (bins, counts) = utils::histogram_bins(&values, 10);
         assert_eq!(bins.len(), 10);
         assert_eq!(counts.len(), 10);
         let total: f64 = counts.iter().sum();
@@ -725,5 +670,83 @@ mod tests {
         let scene = compiler.compile(&expr, &data);
         assert!(scene.node_count() > 0);
         assert!(scene.total_primitives() > 0);
+    }
+
+    #[test]
+    fn gauge_min_equals_max_uses_half() {
+        let binding = DataBinding::Gauge {
+            id: "g".to_string(),
+            label: "G".to_string(),
+            value: 50.0,
+            min: 100.0,
+            max: 100.0,
+            unit: String::new(),
+            normal_range: [100.0, 100.0],
+            warning_range: [0.0, 0.0],
+        };
+        let (_expr, data) = DataBindingCompiler::compile(&binding, None);
+        assert_eq!(data.len(), 1);
+        assert!((data[0]["y"].as_f64().expect("y") - 0.5).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn heatmap_sparse_values_uses_zero_fallback() {
+        let binding = DataBinding::Heatmap {
+            id: "hm".to_string(),
+            label: "M".to_string(),
+            x_labels: vec!["A".to_string(), "B".to_string(), "C".to_string()],
+            y_labels: vec!["X".to_string(), "Y".to_string()],
+            values: vec![1.0, 2.0],
+            unit: String::new(),
+        };
+        let (_expr, data) = DataBindingCompiler::compile(&binding, None);
+        assert_eq!(data.len(), 6);
+        assert!((data[0]["value"].as_f64().expect("v") - 1.0).abs() < f64::EPSILON);
+        assert!((data[2]["value"].as_f64().expect("v") - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn scatter3d_empty_point_labels_uses_empty_string() {
+        let binding = DataBinding::Scatter3D {
+            id: "s3d".to_string(),
+            label: "S".to_string(),
+            x: vec![1.0],
+            y: vec![2.0],
+            z: vec![3.0],
+            point_labels: vec![],
+            x_label: String::new(),
+            y_label: String::new(),
+            z_label: String::new(),
+            unit: String::new(),
+        };
+        let (_expr, data) = DataBindingCompiler::compile(&binding, None);
+        assert_eq!(data.len(), 1);
+        assert_eq!(data[0]["label"].as_str(), Some(""));
+    }
+
+    #[test]
+    fn compile_batch_with_thresholds_fieldmap() {
+        let binding = DataBinding::FieldMap {
+            id: "fm".to_string(),
+            label: "F".to_string(),
+            grid_x: vec![0.0, 1.0],
+            grid_y: vec![0.0],
+            values: vec![0.1, 0.9],
+            unit: String::new(),
+        };
+        let thresholds = vec![petal_tongue_core::ThresholdRange {
+            label: "T".to_string(),
+            min: 0.0,
+            max: 0.5,
+            status: "normal".to_string(),
+        }];
+        let results = DataBindingCompiler::compile_batch_with_thresholds(
+            &[binding],
+            Some("health"),
+            &thresholds,
+        );
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].1[0]["status"], "normal");
+        assert_eq!(results[0].1[1]["status"], "unknown");
     }
 }

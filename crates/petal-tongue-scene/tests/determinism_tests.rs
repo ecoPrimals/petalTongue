@@ -198,9 +198,10 @@ fn modality_svg_structure_has_expected_elements() {
     let data = sample_data();
 
     let scene = grammar_compiler.compile(&expr, &data);
-    let ModalityOutput::Svg(svg) = svg_compiler.compile(&scene) else {
+    let ModalityOutput::Svg(b) = svg_compiler.compile(&scene) else {
         panic!("expected Svg");
     };
+    let svg = std::str::from_utf8(b.as_ref()).unwrap();
 
     assert!(svg.contains("<svg"), "SVG must have root element");
     assert!(svg.contains("</svg>"), "SVG must close root");

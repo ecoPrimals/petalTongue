@@ -7,6 +7,24 @@ use super::state::HumanEntropyWindow;
 use super::types::{CaptureWindowState, EntropyModality};
 use eframe::egui;
 
+/// Map quality (0.0–1.0) to RGB color: green (good), yellow (medium), red (poor).
+#[must_use]
+pub fn quality_color_rgb(quality: f32) -> [u8; 3] {
+    if quality > 0.7 {
+        [0, 255, 0] // green
+    } else if quality > 0.4 {
+        [255, 255, 0] // yellow
+    } else {
+        [255, 0, 0] // red
+    }
+}
+
+/// Format recording duration in seconds as human-readable string.
+#[must_use]
+pub fn format_recording_duration(elapsed_secs: f64) -> String {
+    format!("{elapsed_secs:.1}s")
+}
+
 impl HumanEntropyWindow {
     /// Render the window
     pub fn show(&mut self, ctx: &egui::Context) -> bool {
@@ -117,7 +135,7 @@ impl HumanEntropyWindow {
             let duration = std::time::Instant::now().duration_since(start);
             ui.horizontal(|ui| {
                 ui.label("Recording:");
-                ui.label(format!("{:.1}s", duration.as_secs_f64()));
+                ui.label(format_recording_duration(duration.as_secs_f64()));
             });
         }
 
@@ -128,13 +146,8 @@ impl HumanEntropyWindow {
             ui.horizontal(|ui| {
                 ui.label("Quality:");
 
-                let color = if quality > 0.7 {
-                    egui::Color32::GREEN
-                } else if quality > 0.4 {
-                    egui::Color32::YELLOW
-                } else {
-                    egui::Color32::RED
-                };
+                let [r, g, b] = quality_color_rgb(quality as f32);
+                let color = egui::Color32::from_rgb(r, g, b);
 
                 ui.colored_label(color, format!("{:.1}%", quality * 100.0));
             });
@@ -193,5 +206,47 @@ impl HumanEntropyWindow {
             ui.add_space(10.0);
             ui.label("🔒 Encrypted transmission to entropy source");
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quality_color_rgb_good() {
+        let rgb = quality_color_rgb(0.8f32);
+        assert_eq!(rgb, [0, 255, 0]);
+    }
+
+    #[test]
+    fn quality_color_rgb_medium() {
+        let rgb = quality_color_rgb(0.5f32);
+        assert_eq!(rgb, [255, 255, 0]);
+    }
+
+    #[test]
+    fn quality_color_rgb_poor() {
+        let rgb = quality_color_rgb(0.3f32);
+        assert_eq!(rgb, [255, 0, 0]);
+    }
+
+    #[test]
+    fn quality_color_rgb_boundary_07() {
+        let rgb = quality_color_rgb(0.71f32);
+        assert_eq!(rgb, [0, 255, 0]);
+    }
+
+    #[test]
+    fn quality_color_rgb_boundary_04() {
+        let rgb = quality_color_rgb(0.41f32);
+        assert_eq!(rgb, [255, 255, 0]);
+    }
+
+    #[test]
+    fn test_format_recording_duration() {
+        assert_eq!(super::format_recording_duration(0.0), "0.0s");
+        assert_eq!(super::format_recording_duration(42.5), "42.5s");
+        assert_eq!(super::format_recording_duration(123.456), "123.5s");
     }
 }

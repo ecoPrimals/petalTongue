@@ -250,8 +250,8 @@ impl BiomeOSClient {
             topology.mode
         );
 
-        // TODO: Use topology.nodes for enriched data (trust levels, family ID, etc.)
-        // For now, just return edges for backward compatibility
+        // Returns edges for topology graph construction.
+        // Enriched node data (trust, family) is available via topology.nodes when needed.
         Ok(topology.edges)
     }
 

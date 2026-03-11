@@ -14,6 +14,7 @@
 //! Note: winit monitor detection requires an active event loop which is complex
 //! for our use case. We use simpler, more reliable methods.
 
+use petal_tongue_core::constants;
 use tracing::{debug, info, warn};
 
 /// Get primary display dimensions using pure Rust
@@ -22,6 +23,17 @@ use tracing::{debug, info, warn};
 /// Uses environment variables and sensible defaults.
 pub fn get_display_dimensions_pure_rust() -> Option<(u32, u32)> {
     info!("🖥️  Detecting display dimensions (pure Rust)...");
+
+    // Method 0: Explicit window size (PETALTONGUE_WINDOW_WIDTH, PETALTONGUE_WINDOW_HEIGHT)
+    let (default_w, default_h) = constants::default_window_size();
+    if default_w != constants::DEFAULT_WINDOW_WIDTH || default_h != constants::DEFAULT_WINDOW_HEIGHT
+    {
+        info!(
+            "✅ Display dimensions from env: {}x{}",
+            default_w, default_h
+        );
+        return Some((default_w, default_h));
+    }
 
     // Method 1: Check for common resolution environment variables
     if let Ok(res) = std::env::var("RESOLUTION")
@@ -33,14 +45,16 @@ pub fn get_display_dimensions_pure_rust() -> Option<(u32, u32)> {
 
     // Method 2: Sensible defaults based on display type
     if std::env::var("WAYLAND_DISPLAY").is_ok() {
-        debug!("Wayland session detected - using default 1920x1080");
-        return Some((1920, 1080));
+        debug!(
+            "Wayland session detected - using default {}x{}",
+            default_w, default_h
+        );
+        return Some((default_w, default_h));
     }
 
     if let Ok(display_var) = std::env::var("DISPLAY") {
         debug!("X11 session detected (DISPLAY={})", display_var);
-        // Common desktop resolution
-        return Some((1920, 1080));
+        return Some((default_w, default_h));
     }
 
     // Method 3: Terminal dimensions (for headless/SSH)
@@ -57,9 +71,12 @@ pub fn get_display_dimensions_pure_rust() -> Option<(u32, u32)> {
         return Some((pixel_w, pixel_h));
     }
 
-    // Fallback: Standard HD resolution
-    warn!("Could not detect display dimensions, using fallback 1920x1080");
-    Some((1920, 1080))
+    // Fallback: From constants (env: PETALTONGUE_WINDOW_WIDTH, PETALTONGUE_WINDOW_HEIGHT)
+    warn!(
+        "Could not detect display dimensions, using fallback {}x{}",
+        default_w, default_h
+    );
+    Some((default_w, default_h))
 }
 
 /// Parse resolution string (e.g., "1920x1080" or "1920*1080")

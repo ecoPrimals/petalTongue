@@ -298,17 +298,25 @@ mod tests {
         fn save(&self, state: &DeviceState) -> Result<()> {
             self.storage
                 .lock()
-                .unwrap()
+                .expect("state_sync: lock poisoned — unrecoverable")
                 .insert(state.device_id.clone(), state.clone());
             Ok(())
         }
 
         fn load(&self, device_id: &str) -> Result<Option<DeviceState>> {
-            Ok(self.storage.lock().unwrap().get(device_id).cloned())
+            Ok(self
+                .storage
+                .lock()
+                .expect("state_sync: lock poisoned — unrecoverable")
+                .get(device_id)
+                .cloned())
         }
 
         fn delete(&self, device_id: &str) -> Result<()> {
-            self.storage.lock().unwrap().remove(device_id);
+            self.storage
+                .lock()
+                .expect("state_sync: lock poisoned — unrecoverable")
+                .remove(device_id);
             Ok(())
         }
     }
@@ -329,13 +337,13 @@ mod tests {
 
         state.set_ui_state(
             "selected_primal".to_string(),
-            DynamicValue::String("beardog".to_string()),
+            DynamicValue::String("gpu-display".to_string()),
         );
         assert_eq!(
             state
                 .get_ui_state("selected_primal")
                 .and_then(|v| v.as_str()),
-            Some("beardog")
+            Some("gpu-display")
         );
 
         state.set_ui_state("count".to_string(), DynamicValue::Number(42.0));
@@ -613,5 +621,152 @@ mod tests {
         state1.merge(&state2);
         assert!(state1.get_ui_state("a").is_some());
         assert!(state1.get_ui_state("b").is_none());
+    }
+
+    #[test]
+    fn test_device_state_empty_merge() {
+        let mut state1 = DeviceState::new("device1".to_string(), DeviceType::Desktop);
+        let state2 = DeviceState::new("device2".to_string(), DeviceType::Phone);
+        state1.merge(&state2);
+        assert!(state1.ui_state.is_empty());
+        assert!(state1.preferences.is_empty());
+    }
+
+    #[test]
+    fn test_device_state_null_field_handling() {
+        let mut state = DeviceState::new("dev".to_string(), DeviceType::Desktop);
+        state.set_ui_state("null_key".to_string(), DynamicValue::Null);
+        assert!(state.get_ui_state("null_key").unwrap().is_null());
+        assert!(state.get_ui_state("null_key").is_some());
+    }
+
+    #[test]
+    fn test_device_state_array_value() {
+        let mut state = DeviceState::new("dev".to_string(), DeviceType::Desktop);
+        state.set_ui_state(
+            "items".to_string(),
+            DynamicValue::Array(vec![
+                DynamicValue::Number(1.0),
+                DynamicValue::String("x".to_string()),
+            ]),
+        );
+        let arr = state.get_ui_state("items").and_then(DynamicValue::as_array);
+        assert_eq!(arr.map(<[_]>::len), Some(2));
+    }
+
+    #[test]
+    fn test_device_state_object_value() {
+        let mut obj = HashMap::new();
+        obj.insert("nested".to_string(), DynamicValue::Number(99.0));
+        let mut state = DeviceState::new("dev".to_string(), DeviceType::Desktop);
+        state.set_ui_state("config".to_string(), DynamicValue::Object(obj));
+        let inner = state
+            .get_ui_state("config")
+            .and_then(DynamicValue::as_object)
+            .and_then(|o| o.get("nested"));
+        assert_eq!(inner.and_then(DynamicValue::as_f64), Some(99.0));
+    }
+
+    #[test]
+    fn test_state_sync_update_overwrites() {
+        let persistence = InMemoryPersistence::new();
+        let mut sync = StateSync::with_persistence(Box::new(persistence));
+        sync.init("device-1".to_string(), DeviceType::Desktop)
+            .unwrap();
+        sync.set_ui_state("k".to_string(), DynamicValue::String("v1".to_string()))
+            .unwrap();
+        let mut state = sync.current().unwrap().clone();
+        state.set_ui_state("k".to_string(), DynamicValue::String("v2".to_string()));
+        sync.update(state).unwrap();
+        assert_eq!(sync.get_ui_state("k").and_then(|v| v.as_str()), Some("v2"));
+    }
+
+    #[test]
+    fn test_state_sync_get_ui_state_missing_key() {
+        let persistence = InMemoryPersistence::new();
+        let mut sync = StateSync::with_persistence(Box::new(persistence));
+        sync.init("device-1".to_string(), DeviceType::Desktop)
+            .unwrap();
+        assert!(sync.get_ui_state("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_device_state_merge_preferences_overwrite() {
+        let mut state1 = DeviceState::new("device1".to_string(), DeviceType::Desktop);
+        state1.set_preference("volume".to_string(), DynamicValue::Number(0.5));
+        state1.last_updated = Utc::now();
+
+        let mut state2 = DeviceState::new("device2".to_string(), DeviceType::Phone);
+        state2.set_preference("volume".to_string(), DynamicValue::Number(1.0));
+        state2.last_updated = state1.last_updated - chrono::Duration::seconds(1);
+
+        state1.merge(&state2);
+        assert_eq!(
+            state1
+                .get_preference("volume")
+                .and_then(DynamicValue::as_f64),
+            Some(1.0)
+        );
+    }
+
+    #[test]
+    fn test_local_persistence_delete_nonexistent() {
+        let temp = std::env::temp_dir().join("petal-state-delete-test");
+        let _ = std::fs::remove_dir_all(&temp);
+        std::fs::create_dir_all(&temp).unwrap();
+
+        let persistence = LocalStatePersistence::with_base_dir(temp.clone());
+        let result = persistence.delete("never-existed");
+        assert!(result.is_ok());
+
+        let _ = std::fs::remove_dir_all(&temp);
+    }
+
+    #[test]
+    fn test_device_type_serialization() {
+        let state = DeviceState::new("dev".to_string(), DeviceType::Watch);
+        let json = serde_json::to_string(&state).unwrap();
+        assert!(json.contains("device_id"));
+        let restored: DeviceState = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored.device_type, DeviceType::Watch);
+    }
+}
+
+#[cfg(test)]
+mod proptest_tests {
+    use super::*;
+    use crate::adaptive_rendering::DeviceType;
+    use crate::dynamic_schema::DynamicValue;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// set_ui_state then get_ui_state returns the value (finite numbers; NaN != NaN).
+        #[test]
+        fn prop_set_get_ui_state_roundtrip(key in "\\PC{1,20}", val in proptest::num::f64::NORMAL) {
+            let key = if key.is_empty() { "k".to_string() } else { key };
+            let mut state = DeviceState::new("dev".to_string(), DeviceType::Desktop);
+            state.set_ui_state(key.clone(), DynamicValue::Number(val));
+            prop_assert_eq!(state.get_ui_state(&key).and_then(DynamicValue::as_f64), Some(val));
+        }
+
+        /// set_preference then get_preference returns the value (finite numbers; NaN != NaN).
+        #[test]
+        fn prop_set_get_preference_roundtrip(key in "\\PC{1,20}", val in proptest::num::f64::NORMAL) {
+            let key = if key.is_empty() { "k".to_string() } else { key };
+            let mut state = DeviceState::new("dev".to_string(), DeviceType::Desktop);
+            state.set_preference(key.clone(), DynamicValue::Number(val));
+            prop_assert_eq!(state.get_preference(&key).and_then(DynamicValue::as_f64), Some(val));
+        }
+
+        /// DeviceState JSON serialization roundtrip preserves device_id and type.
+        #[test]
+        fn prop_device_state_serialization_roundtrip(device_id in "\\w{1,30}") {
+            let device_id = if device_id.is_empty() { "dev".to_string() } else { device_id };
+            let state = DeviceState::new(device_id.clone(), DeviceType::Phone);
+            let json = serde_json::to_string(&state).unwrap();
+            let restored: DeviceState = serde_json::from_str(&json).unwrap();
+            prop_assert_eq!(restored.device_id, device_id);
+            prop_assert_eq!(restored.device_type, DeviceType::Phone);
+        }
     }
 }

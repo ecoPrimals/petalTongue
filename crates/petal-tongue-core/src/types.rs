@@ -95,7 +95,7 @@ const PROP_FAMILY_ID: &str = "family_id";
 /// Endpoints for different protocols (biomeOS format)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrimalEndpoints {
-    /// Unix socket path (e.g., "/tmp/beardog-node-alpha.sock")
+    /// Unix socket path (e.g., "/tmp/primal-node-alpha.sock")
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unix_socket: Option<String>,
 

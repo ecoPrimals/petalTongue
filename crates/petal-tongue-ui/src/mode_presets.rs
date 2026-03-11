@@ -23,16 +23,20 @@ pub fn commands_for_mode(mode: &str) -> Vec<MotorCommand> {
     }
 }
 
-/// Clinical mode: graph + data channels only, no dev tooling.
+/// Clinical mode: dashboard + trust + graph stats. Clean, health-focused.
 fn clinical_mode() -> Vec<MotorCommand> {
     vec![
         MotorCommand::SetPanelVisibility {
+            panel: PanelId::TopMenu,
+            visible: true,
+        },
+        MotorCommand::SetPanelVisibility {
             panel: PanelId::LeftSidebar,
             visible: false,
         },
         MotorCommand::SetPanelVisibility {
             panel: PanelId::SystemDashboard,
-            visible: false,
+            visible: true,
         },
         MotorCommand::SetPanelVisibility {
             panel: PanelId::AudioPanel,
@@ -40,7 +44,7 @@ fn clinical_mode() -> Vec<MotorCommand> {
         },
         MotorCommand::SetPanelVisibility {
             panel: PanelId::TrustDashboard,
-            visible: false,
+            visible: true,
         },
         MotorCommand::SetPanelVisibility {
             panel: PanelId::Proprioception,
@@ -50,19 +54,19 @@ fn clinical_mode() -> Vec<MotorCommand> {
             panel: PanelId::GraphStats,
             visible: true,
         },
-        MotorCommand::SetPanelVisibility {
-            panel: PanelId::TopMenu,
-            visible: true,
-        },
         MotorCommand::SetAwakening { enabled: false },
         MotorCommand::FitToView,
     ]
 }
 
-/// Developer mode: everything visible, full tooling.
+/// Developer mode: everything visible — the power-user view.
 fn developer_mode() -> Vec<MotorCommand> {
     vec![
         MotorCommand::SetPanelVisibility {
+            panel: PanelId::TopMenu,
+            visible: true,
+        },
+        MotorCommand::SetPanelVisibility {
             panel: PanelId::LeftSidebar,
             visible: true,
         },
@@ -84,18 +88,18 @@ fn developer_mode() -> Vec<MotorCommand> {
         },
         MotorCommand::SetPanelVisibility {
             panel: PanelId::GraphStats,
-            visible: true,
-        },
-        MotorCommand::SetPanelVisibility {
-            panel: PanelId::TopMenu,
             visible: true,
         },
     ]
 }
 
-/// Presentation mode: clean, graph-centered, minimal chrome.
+/// Presentation mode: graph canvas only, minimal chrome for projection.
 fn presentation_mode() -> Vec<MotorCommand> {
     vec![
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::TopMenu,
+            visible: false,
+        },
         MotorCommand::SetPanelVisibility {
             panel: PanelId::LeftSidebar,
             visible: false,
@@ -118,10 +122,6 @@ fn presentation_mode() -> Vec<MotorCommand> {
         },
         MotorCommand::SetPanelVisibility {
             panel: PanelId::GraphStats,
-            visible: false,
-        },
-        MotorCommand::SetPanelVisibility {
-            panel: PanelId::TopMenu,
             visible: false,
         },
         MotorCommand::SetAwakening { enabled: false },
@@ -129,19 +129,52 @@ fn presentation_mode() -> Vec<MotorCommand> {
     ]
 }
 
-/// Full mode: restore all panels to default (backward compatible).
+/// Full mode: synonym for developer (backward compatible).
 fn full_mode() -> Vec<MotorCommand> {
     developer_mode()
 }
 
-/// Research mode: like developer but with proprioception, trust dashboard, and graph stats visible.
+/// Research mode: data-analysis focus — proprioception, metrics, stats, trust, no audio or graph builder.
 fn research_mode() -> Vec<MotorCommand> {
-    developer_mode()
+    vec![
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::TopMenu,
+            visible: true,
+        },
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::LeftSidebar,
+            visible: false,
+        },
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::SystemDashboard,
+            visible: true,
+        },
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::AudioPanel,
+            visible: false,
+        },
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::TrustDashboard,
+            visible: true,
+        },
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::Proprioception,
+            visible: true,
+        },
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::GraphStats,
+            visible: true,
+        },
+    ]
 }
 
-/// Patient-facing mode: minimal — graph only, no top menu, no graph stats.
+/// Patient-facing mode: minimal top menu, graph canvas only.
 fn patient_facing_mode() -> Vec<MotorCommand> {
     vec![
+        MotorCommand::SetPanelVisibility {
+            panel: PanelId::TopMenu,
+            visible: true,
+        },
         MotorCommand::SetPanelVisibility {
             panel: PanelId::LeftSidebar,
             visible: false,
@@ -164,10 +197,6 @@ fn patient_facing_mode() -> Vec<MotorCommand> {
         },
         MotorCommand::SetPanelVisibility {
             panel: PanelId::GraphStats,
-            visible: false,
-        },
-        MotorCommand::SetPanelVisibility {
-            panel: PanelId::TopMenu,
             visible: false,
         },
         MotorCommand::SetAwakening { enabled: false },
@@ -179,12 +208,66 @@ fn patient_facing_mode() -> Vec<MotorCommand> {
 mod tests {
     use super::*;
 
+    fn panel_visible(cmds: &[MotorCommand], panel: &PanelId) -> Option<bool> {
+        cmds.iter().find_map(|c| match c {
+            MotorCommand::SetPanelVisibility { panel: p, visible } if p == panel => Some(*visible),
+            _ => None,
+        })
+    }
+
     #[test]
-    fn clinical_disables_sidebars() {
+    fn clinical_shows_dashboard_hides_audio() {
         let cmds = commands_for_mode("clinical");
-        assert!(!cmds.is_empty());
-        let has_fit = cmds.iter().any(|c| matches!(c, MotorCommand::FitToView));
-        assert!(has_fit, "clinical mode should include FitToView");
+        assert_eq!(panel_visible(&cmds, &PanelId::SystemDashboard), Some(true));
+        assert_eq!(panel_visible(&cmds, &PanelId::TrustDashboard), Some(true));
+        assert_eq!(panel_visible(&cmds, &PanelId::AudioPanel), Some(false));
+        assert_eq!(panel_visible(&cmds, &PanelId::Proprioception), Some(false));
+        assert!(cmds.iter().any(|c| matches!(c, MotorCommand::FitToView)));
+    }
+
+    #[test]
+    fn developer_enables_everything() {
+        let cmds = commands_for_mode("developer");
+        assert_eq!(panel_visible(&cmds, &PanelId::Proprioception), Some(true));
+        assert_eq!(panel_visible(&cmds, &PanelId::AudioPanel), Some(true));
+        assert_eq!(panel_visible(&cmds, &PanelId::LeftSidebar), Some(true));
+    }
+
+    #[test]
+    fn research_differs_from_developer() {
+        let research = commands_for_mode("research");
+        let developer = commands_for_mode("developer");
+        assert_eq!(
+            panel_visible(&research, &PanelId::Proprioception),
+            Some(true)
+        );
+        assert_eq!(panel_visible(&research, &PanelId::AudioPanel), Some(false));
+        assert_eq!(panel_visible(&developer, &PanelId::AudioPanel), Some(true));
+    }
+
+    #[test]
+    fn presentation_hides_all_chrome() {
+        let cmds = commands_for_mode("presentation");
+        assert_eq!(panel_visible(&cmds, &PanelId::TopMenu), Some(false));
+        assert_eq!(panel_visible(&cmds, &PanelId::LeftSidebar), Some(false));
+        assert_eq!(panel_visible(&cmds, &PanelId::GraphStats), Some(false));
+        assert!(cmds.iter().any(|c| matches!(c, MotorCommand::FitToView)));
+    }
+
+    #[test]
+    fn patient_facing_shows_top_menu_only() {
+        let cmds = commands_for_mode("patient-facing");
+        assert_eq!(panel_visible(&cmds, &PanelId::TopMenu), Some(true));
+        assert_eq!(panel_visible(&cmds, &PanelId::LeftSidebar), Some(false));
+        assert_eq!(panel_visible(&cmds, &PanelId::AudioPanel), Some(false));
+        assert_eq!(panel_visible(&cmds, &PanelId::Proprioception), Some(false));
+    }
+
+    #[test]
+    fn full_is_synonym_for_developer() {
+        let full = commands_for_mode("full");
+        let dev = commands_for_mode("developer");
+        assert_eq!(full.len(), dev.len());
     }
 
     #[test]

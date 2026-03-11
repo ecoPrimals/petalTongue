@@ -12,9 +12,11 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+bytes = { workspace = true }
 petal-tongue-core = { path = "../petal-tongue-core" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]
+proptest = { workspace = true }

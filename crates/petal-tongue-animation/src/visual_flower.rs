@@ -18,8 +18,8 @@ pub struct VisualFlowerRenderer {
     /// Current time for animation
     current_time: f32,
 
-    /// Base color (hue in HSV) - reserved for future color customization
-    #[allow(dead_code)]
+    /// Base color (hue in HSV) — reserved for future color customization
+    #[allow(dead_code, reason = "reserved for GPU/SVG renderer color theming")]
     base_hue: f32,
 }
 
@@ -65,8 +65,8 @@ impl VisualFlowerRenderer {
         }
     }
 
-    /// Get opening percentage (0.0 to 1.0) - reserved for future use in custom renderers
-    #[allow(dead_code)]
+    /// Get opening percentage (0.0 to 1.0) — reserved for future use in custom renderers
+    #[allow(dead_code, reason = "reserved for GPU/SVG renderer opening animation")]
     fn opening_percent(&self) -> f32 {
         match self.current_state() {
             FlowerState::Closed => 0.0,
@@ -306,11 +306,24 @@ mod tests {
     }
 
     #[test]
+    fn test_visual_flower_default() {
+        let renderer = VisualFlowerRenderer::default();
+        assert_eq!(renderer.current_state(), FlowerState::Closed);
+    }
+
+    #[test]
     fn test_visual_flower_update() {
         let mut renderer = VisualFlowerRenderer::new();
         renderer.update(1.5);
         assert!((renderer.current_time - 1.5).abs() < f32::EPSILON);
         assert!(matches!(renderer.current_state(), FlowerState::Opening(_)));
+    }
+
+    #[test]
+    fn test_visual_flower_update_zero_delta() {
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(0.0);
+        assert_eq!(renderer.current_state(), FlowerState::Closed);
     }
 
     #[test]
@@ -353,5 +366,73 @@ mod tests {
         // Stage 3: Open
         renderer.update(5.0);
         assert_eq!(renderer.current_state(), FlowerState::Open);
+    }
+
+    #[test]
+    fn test_state_boundary_just_below_closed() {
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(0.29); // progress = 0.29/3 < 0.1
+        assert_eq!(renderer.current_state(), FlowerState::Closed);
+    }
+
+    #[test]
+    fn test_state_boundary_just_above_closed() {
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(0.31); // progress ~= 0.103 > 0.1
+        assert!(matches!(renderer.current_state(), FlowerState::Opening(_)));
+    }
+
+    #[test]
+    fn test_state_boundary_just_below_open() {
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(2.69); // progress ~= 0.897 < 0.9
+        assert!(matches!(renderer.current_state(), FlowerState::Opening(_)));
+    }
+
+    #[test]
+    fn test_state_boundary_just_above_open() {
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(2.71); // progress ~= 0.903 > 0.9
+        assert_eq!(renderer.current_state(), FlowerState::Open);
+    }
+
+    #[test]
+    fn test_opening_percent_mid_range() {
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(1.5); // progress = 0.5, opening percent ~= 50%
+        let p = renderer.opening_percent();
+        assert!(p > 0.4 && p < 0.6);
+    }
+
+    #[test]
+    fn test_opening_percent_glowing_reaching_return_one() {
+        // VisualFlowerRenderer's calculate_state only returns Closed/Opening/Open,
+        // but opening_percent handles Glowing/Reaching as 1.0. We test via
+        // current_state which can't reach those - verify Open gives 1.0
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(4.0); // progress > 0.9 -> Open
+        assert_eq!(renderer.current_state(), FlowerState::Open);
+        assert!((renderer.opening_percent() - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_frame_generation_progression() {
+        let mut renderer = VisualFlowerRenderer::new();
+        let mut prev_time = 0.0;
+        for _ in 0..5 {
+            renderer.update(0.5);
+            prev_time += 0.5;
+            assert!((renderer.current_time - prev_time).abs() < f32::EPSILON);
+        }
+    }
+
+    #[test]
+    fn test_reset_clears_animation() {
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(2.5);
+        assert!((renderer.current_time - 2.5).abs() < f32::EPSILON);
+        renderer.reset();
+        assert!((renderer.current_time - 0.0).abs() < f32::EPSILON);
+        assert_eq!(renderer.current_state(), FlowerState::Closed);
     }
 }

@@ -12,13 +12,13 @@
 //! │  ├─ Filter Bar (All/Healthy/Degraded/Error)                 │
 //! │  ├─ Search Box                                              │
 //! │  └─ Primal List                                             │
-//! │      ├─ PrimalCard (beardog) [drop zone]                    │
+//! │      ├─ PrimalCard (security-primal) [drop zone]            │
 //! │      │   ├─ Health: Healthy                                 │
 //! │      │   ├─ Load: 45%                                       │
 //! │      │   ├─ Capabilities: 5                                 │
 //! │      │   └─ Devices: GPU-0, CPU-1                           │
-//! │      ├─ PrimalCard (songbird) [drop zone]                   │
-//! │      └─ PrimalCard (toadstool) [drop zone]                  │
+//! │      ├─ PrimalCard (discovery-primal) [drop zone]           │
+//! │      └─ PrimalCard (compute-primal) [drop zone]             │
 //! └─────────────────────────────────────────────────────────────┘
 //! ```
 
@@ -73,6 +73,7 @@ impl PrimalPanel {
     }
 
     /// Update primals from provider
+    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
     pub async fn refresh(&mut self, primals: Vec<Primal>) {
         debug!("🔄 Refreshing primal panel with {} primals", primals.len());
         self.primals = primals;
@@ -143,7 +144,7 @@ impl PrimalPanel {
             .show(ui, |ui| {
                 // Clone primals to avoid borrow checker issues with mutable UI rendering
                 let filtered_primals: Vec<Primal> =
-                    self.filtered_primals().iter().map(|&p| p.clone()).collect();
+                    self.filtered_primals().into_iter().cloned().collect();
 
                 if filtered_primals.is_empty() {
                     ui.colored_label(Color32::GRAY, "No primals found");
@@ -586,6 +587,153 @@ mod tests {
         // Select primal
         panel.selected = Some("primal-1".to_string());
         assert!(panel.selected_primal().is_some());
-        assert_eq!(panel.selected_primal().unwrap().name, "Test Primal");
+        assert_eq!(
+            panel.selected_primal().expect("selected").name,
+            "Test Primal"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_primal_panel_search_by_id() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut panel = PrimalPanel::new(event_handler);
+
+        let primals = vec![
+            Primal {
+                id: "primal-abc-123".to_string(),
+                name: "Alpha".to_string(),
+                health: Health::Healthy,
+                capabilities: vec![],
+                load: 0.0,
+                assigned_devices: vec![],
+                metadata: serde_json::json!({}),
+            },
+            Primal {
+                id: "primal-xyz-456".to_string(),
+                name: "Beta".to_string(),
+                health: Health::Healthy,
+                capabilities: vec![],
+                load: 0.0,
+                assigned_devices: vec![],
+                metadata: serde_json::json!({}),
+            },
+        ];
+        panel.refresh(primals).await;
+
+        panel.search_query = "xyz".to_string();
+        let filtered = panel.filtered_primals();
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].id, "primal-xyz-456");
+    }
+
+    #[tokio::test]
+    async fn test_primal_panel_primal_removed_clears_selection() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut panel = PrimalPanel::new(event_handler.clone());
+
+        panel
+            .refresh(vec![Primal {
+                id: "p1".to_string(),
+                name: "P1".to_string(),
+                health: Health::Healthy,
+                capabilities: vec![],
+                load: 0.0,
+                assigned_devices: vec![],
+                metadata: serde_json::json!({}),
+            }])
+            .await;
+        panel.selected = Some("p1".to_string());
+
+        event_handler
+            .write()
+            .await
+            .handle_event(UIEvent::PrimalRemoved("p1".to_string()))
+            .await;
+        panel.process_events().await;
+
+        assert!(panel.selected.is_none());
+        assert!(panel.primals.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_primal_panel_load_changed() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut panel = PrimalPanel::new(event_handler.clone());
+
+        panel
+            .refresh(vec![Primal {
+                id: "p1".to_string(),
+                name: "P1".to_string(),
+                health: Health::Healthy,
+                capabilities: vec![],
+                load: 0.3,
+                assigned_devices: vec![],
+                metadata: serde_json::json!({}),
+            }])
+            .await;
+
+        event_handler
+            .write()
+            .await
+            .handle_event(UIEvent::PrimalLoadChanged("p1".to_string(), 0.9))
+            .await;
+        panel.process_events().await;
+
+        assert!((panel.primals[0].load - 0.9).abs() < f64::EPSILON);
+    }
+
+    #[tokio::test]
+    async fn test_primal_panel_primal_discovered() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut panel = PrimalPanel::new(event_handler.clone());
+
+        event_handler
+            .write()
+            .await
+            .handle_event(UIEvent::PrimalDiscovered(Primal {
+                id: "new".to_string(),
+                name: "New Primal".to_string(),
+                health: Health::Healthy,
+                capabilities: vec!["compute".to_string()],
+                load: 0.0,
+                assigned_devices: vec![],
+                metadata: serde_json::json!({}),
+            }))
+            .await;
+        panel.process_events().await;
+
+        assert_eq!(panel.primals.len(), 1);
+        assert_eq!(panel.primals[0].name, "New Primal");
+    }
+
+    #[tokio::test]
+    async fn test_primal_filter_all_includes_offline() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut panel = PrimalPanel::new(event_handler);
+
+        let primals = vec![
+            Primal {
+                id: "h".to_string(),
+                name: "Healthy".to_string(),
+                health: Health::Healthy,
+                capabilities: vec![],
+                load: 0.0,
+                assigned_devices: vec![],
+                metadata: serde_json::json!({}),
+            },
+            Primal {
+                id: "o".to_string(),
+                name: "Offline".to_string(),
+                health: Health::Offline,
+                capabilities: vec![],
+                load: 0.0,
+                assigned_devices: vec![],
+                metadata: serde_json::json!({}),
+            },
+        ];
+        panel.refresh(primals).await;
+        panel.filter = PrimalFilter::All;
+
+        assert_eq!(panel.filtered_primals().len(), 2);
     }
 }

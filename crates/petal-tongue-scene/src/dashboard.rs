@@ -5,7 +5,7 @@
 //! with automatic grid layout, titles, and consistent spacing.
 
 use crate::compiler::GrammarCompiler;
-use crate::data_binding_compiler::DataBindingCompiler;
+use crate::data_binding::DataBindingCompiler;
 use crate::domain_palette::palette_for_domain;
 use crate::primitive::{AnchorPoint, Color, Primitive, StrokeStyle};
 use crate::scene_graph::{SceneGraph, SceneNode};
@@ -369,5 +369,98 @@ mod tests {
         let config = DashboardConfig::default().with_panel_size(800.0, 600.0);
         let dashboard = build_dashboard(&sample_bindings(), &config);
         assert!(dashboard.scene.total_primitives() > 0);
+    }
+
+    #[test]
+    fn compose_dashboard_empty_panels() {
+        let config = DashboardConfig::default().with_title("Empty");
+        let dashboard = compose_dashboard(&[], &config);
+        assert_eq!(dashboard.panel_count, 0);
+        assert_eq!(dashboard.columns, 0);
+        assert_eq!(dashboard.rows, 0);
+        assert!(dashboard.scene.node_count() >= 1);
+    }
+
+    #[test]
+    fn compose_dashboard_single_panel_empty_title() {
+        let mut scene = SceneGraph::new();
+        scene.add_to_root(SceneNode::new("content"));
+        let panels = vec![(String::new(), scene)];
+        let config = DashboardConfig::default();
+        let dashboard = compose_dashboard(&panels, &config);
+        assert_eq!(dashboard.panel_count, 1);
+        assert_eq!(dashboard.columns, 1);
+        assert_eq!(dashboard.rows, 1);
+    }
+
+    #[test]
+    fn compose_dashboard_multiple_panels_with_titles() {
+        let mut s1 = SceneGraph::new();
+        s1.add_to_root(SceneNode::new("c1"));
+        let mut s2 = SceneGraph::new();
+        s2.add_to_root(SceneNode::new("c2"));
+        let panels = vec![("Panel A".to_string(), s1), ("Panel B".to_string(), s2)];
+        let config = DashboardConfig::default()
+            .with_title("Multi")
+            .with_panel_size(200.0, 150.0)
+            .with_layout(DashboardLayout::Vertical);
+        let dashboard = compose_dashboard(&panels, &config);
+        assert_eq!(dashboard.panel_count, 2);
+        assert_eq!(dashboard.columns, 1);
+        assert_eq!(dashboard.rows, 2);
+        assert!(dashboard.scene.get("panel_0").is_some());
+        assert!(dashboard.scene.get("panel_1").is_some());
+    }
+
+    #[test]
+    fn dashboard_config_default() {
+        let config = DashboardConfig::default();
+        assert_eq!(config.layout, DashboardLayout::Grid { max_columns: 3 });
+        assert!((config.panel_width - 400.0).abs() < 1e-10);
+        assert!((config.panel_height - 300.0).abs() < 1e-10);
+        assert!((config.spacing - 20.0).abs() < 1e-10);
+        assert!(config.title.is_none());
+        assert!(config.domain.is_none());
+    }
+
+    #[test]
+    fn dashboard_config_builder_chain() {
+        let config = DashboardConfig::default()
+            .with_title("Test")
+            .with_domain("health")
+            .with_layout(DashboardLayout::Horizontal)
+            .with_panel_size(500.0, 400.0);
+        assert_eq!(config.title.as_deref(), Some("Test"));
+        assert_eq!(config.domain.as_deref(), Some("health"));
+        assert_eq!(config.layout, DashboardLayout::Horizontal);
+        assert!((config.panel_width - 500.0).abs() < 1e-10);
+        assert!((config.panel_height - 400.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn dashboard_layout_default() {
+        assert_eq!(
+            DashboardLayout::default(),
+            DashboardLayout::Grid { max_columns: 3 }
+        );
+    }
+
+    #[test]
+    fn grid_dimensions_single_panel() {
+        let (c, r) = grid_dimensions(1, &DashboardLayout::default());
+        assert_eq!((c, r), (1, 1));
+    }
+
+    #[test]
+    fn grid_dimensions_more_than_max_columns() {
+        let (c, r) = grid_dimensions(10, &DashboardLayout::Grid { max_columns: 3 });
+        assert_eq!(c, 3);
+        assert_eq!(r, 4);
+    }
+
+    #[test]
+    fn grid_dimensions_exact_max_columns() {
+        let (c, r) = grid_dimensions(6, &DashboardLayout::Grid { max_columns: 3 });
+        assert_eq!((c, r), (3, 2));
     }
 }

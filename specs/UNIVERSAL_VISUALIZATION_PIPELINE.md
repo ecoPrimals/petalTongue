@@ -643,6 +643,92 @@ discovery.query            → Capability-based data source resolution
 
 ---
 
+## Live UI Bridge
+
+When an external primal calls `visualization.render`, the session is stored in
+`VisualizationState`. With the IPC-to-UI bridge, these sessions surface as live
+panels in the running GUI.
+
+### Architecture
+
+`VisualizationState` is shared between the IPC server and the UI application via
+`Arc<RwLock<VisualizationState>>`. The IPC server writes (session CRUD), the app
+reads (poll for active sessions each frame).
+
+### Session Lifecycle
+
+```
+External primal calls visualization.render
+  → IPC handler creates session in VisualizationState
+  → App polls VisualizationState on next frame
+  → Detects new session via updated_since(last_check)
+  → Extracts DataBindings from session
+  → Compiles via DataBindingCompiler → GrammarCompiler → SceneGraph
+  → Renders via active modality (egui / audio / terminal / braille)
+  → Session dismissed → panel removed
+```
+
+### Streaming Data
+
+When `visualization.render.stream` is used with `StreamOperation::Append`,
+the data binding is updated in-place. The UI detects changes via timestamp
+comparison and re-renders the affected panel. This enables real-time data
+feeds (live vital signs, engagement curves, AI reasoning traces).
+
+### Domain Theming
+
+Sessions carry domain metadata. The UI applies the appropriate domain palette:
+
+| Source Primal | Domain | Palette |
+|---------------|--------|---------|
+| healthSpring | health | Blue-green clinical |
+| groundSpring | ecology | Earth tones |
+| ludoSpring | game | High-contrast playful |
+| Squirrel | neural | Purple-blue cognitive |
+| wetSpring | measurement | Grey-steel precision |
+| airSpring | ecology | Sky-earth atmospheric |
+
+---
+
+## Continuous Mode
+
+petalTongue's default mode is event-driven: the UI repaints only when user
+input or IPC messages arrive. Continuous mode enables 60 Hz rendering for
+game-style visualization, animation, and physics simulation.
+
+### Game Loop Integration
+
+`petal-tongue-scene/src/game_loop.rs` implements a fixed-timestep game loop:
+
+- Fixed dt: 16.67ms (60 Hz)
+- Max accumulator: 250ms (prevents spiral of death)
+- Physics and animation stepping via `tick_frame()`
+- Interpolation factor via `TickClock::alpha()`
+
+The UI app integrates this loop:
+
+1. On each frame, read `ctx.input(|i| i.stable_dt)` as the unified delta source
+2. Feed dt to `TickClock`, which accumulates time
+3. While `should_tick()`, call `tick_frame()` for physics and animation
+4. If `scene_dirty`, recompile modalities and call `ctx.request_repaint()`
+5. If no animations or physics are active, stop requesting repaint (idle mode)
+
+### Adaptive Repaint
+
+| Condition | Behavior |
+|-----------|----------|
+| No animations, no IPC streams | Event-driven (idle, ~0% CPU) |
+| Active animations or physics | 60 Hz continuous repaint |
+| Active IPC streaming sessions | Repaint on session update |
+| User interaction in progress | Immediate repaint |
+
+### Reference
+
+See `REALTIME_COLLABORATIVE_PIPELINE.md` for the full collaborative loop design
+including sensor streaming and IPC-to-UI bridge.
+
+---
+
 ## Sovereignty Considerations
 
 1. **No hardcoded primal names**: Data sources resolved via `discovery.query`

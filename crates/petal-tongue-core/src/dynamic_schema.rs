@@ -520,4 +520,198 @@ mod tests {
         let to = SchemaVersion::new(2, 0, 0);
         assert!(registry.migrate(&mut data, from, to).is_err());
     }
+
+    #[test]
+    fn test_dynamic_data_empty_json() {
+        let json = "{}";
+        let data = DynamicData::from_json_str(json).unwrap();
+        assert!(data.fields.is_empty());
+        assert!(data.version.is_none());
+    }
+
+    #[test]
+    fn test_dynamic_data_mixed_types() {
+        let json = r#"{"str":"x","num":42,"bool":true,"null":null,"arr":[1,2],"obj":{"a":1}}"#;
+        let data = DynamicData::from_json_str(json).unwrap();
+        assert_eq!(data.get_str("str"), Some("x"));
+        assert_eq!(data.get_f64("num"), Some(42.0));
+        assert_eq!(data.get_bool("bool"), Some(true));
+        assert!(data.get("null").unwrap().is_null());
+        assert_eq!(
+            data.get("arr").and_then(|v| v.as_array()).map(<[_]>::len),
+            Some(2)
+        );
+        assert_eq!(
+            data.get("obj")
+                .and_then(|v| v.as_object())
+                .and_then(|o| o.get("a"))
+                .and_then(DynamicValue::as_f64),
+            Some(1.0)
+        );
+    }
+
+    #[test]
+    fn test_schema_version_compatibility_same_major() {
+        let v1_2_3 = SchemaVersion::new(1, 2, 3);
+        let v1_0_0 = SchemaVersion::new(1, 0, 0);
+        assert!(v1_2_3.is_compatible_with(&v1_0_0));
+        assert!(!v1_0_0.is_compatible_with(&v1_2_3));
+    }
+
+    #[test]
+    fn test_schema_version_compatibility_exact_match() {
+        let v = SchemaVersion::new(2, 1, 0);
+        assert!(v.is_compatible_with(&v));
+    }
+
+    #[test]
+    fn test_dynamic_value_object_nested() {
+        let mut inner = HashMap::new();
+        inner.insert("nested".to_string(), DynamicValue::Number(42.0));
+        let mut outer = HashMap::new();
+        outer.insert("inner".to_string(), DynamicValue::Object(inner));
+        let val = DynamicValue::Object(outer);
+        let json_val = val.to_json_value();
+        let restored = DynamicValue::from_json_value(json_val);
+        assert_eq!(
+            restored
+                .as_object()
+                .and_then(|o| o.get("inner"))
+                .and_then(DynamicValue::as_object)
+                .and_then(|o| o.get("nested"))
+                .and_then(DynamicValue::as_f64),
+            Some(42.0)
+        );
+    }
+
+    #[test]
+    fn test_dynamic_data_from_json_with_version_string() {
+        let json = r#"{"version":"2.0.1","name":"test"}"#;
+        let data = DynamicData::from_json_str(json).unwrap();
+        assert_eq!(data.version, Some(SchemaVersion::new(2, 0, 1)));
+        assert_eq!(data.get_str("name"), Some("test"));
+    }
+
+    #[test]
+    fn test_dynamic_data_set_overwrites() {
+        let mut data = DynamicData::new();
+        data.set("k".to_string(), DynamicValue::String("v1".to_string()));
+        data.set("k".to_string(), DynamicValue::String("v2".to_string()));
+        assert_eq!(data.get_str("k"), Some("v2"));
+    }
+
+    #[test]
+    fn test_dynamic_value_number_special() {
+        let zero = DynamicValue::Number(0.0);
+        assert_eq!(zero.as_f64(), Some(0.0));
+        let neg = DynamicValue::Number(-1.5);
+        assert_eq!(neg.as_f64(), Some(-1.5));
+    }
+
+    #[test]
+    fn test_migration_registry_custom_migration() {
+        struct TestMigration;
+        impl SchemaMigration for TestMigration {
+            fn can_migrate(&self, from: SchemaVersion, to: SchemaVersion) -> bool {
+                from.major == 1 && to.major == 2
+            }
+            fn migrate(
+                &self,
+                data: &mut DynamicData,
+                _from: SchemaVersion,
+                _to: SchemaVersion,
+            ) -> Result<()> {
+                data.set("migrated".to_string(), DynamicValue::Boolean(true));
+                Ok(())
+            }
+        }
+        let mut registry = MigrationRegistry::new();
+        registry.register(Box::new(TestMigration));
+        let mut data = DynamicData::new();
+        data.set("x".to_string(), DynamicValue::String("y".to_string()));
+        let from = SchemaVersion::new(1, 0, 0);
+        let to = SchemaVersion::new(2, 0, 0);
+        registry.migrate(&mut data, from, to).unwrap();
+        assert_eq!(data.get_bool("migrated"), Some(true));
+        assert_eq!(data.get_str("x"), Some("y"));
+    }
+
+    #[test]
+    fn test_dynamic_data_json_parse_error() {
+        let result = DynamicData::from_json_str("{invalid}");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_dynamic_value_as_bool_false() {
+        assert_eq!(DynamicValue::Boolean(false).as_bool(), Some(false));
+    }
+}
+
+#[cfg(test)]
+mod proptest_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    /// Schema version parse is idempotent: parse(s).to_string() == s for valid semver.
+    #[test]
+    fn prop_schema_version_parse_idempotent() {
+        fn prop(major: u32, minor: u32, patch: u32) -> Result<(), TestCaseError> {
+            let s = format!("{major}.{minor}.{patch}");
+            let v = SchemaVersion::parse(&s).map_err(|_| TestCaseError::reject("parse failed"))?;
+            prop_assert_eq!(v.to_string(), s);
+            Ok(())
+        }
+        proptest!(|(major in 0u32..1000u32, minor in 0u32..1000u32, patch in 0u32..1000u32)| prop(major, minor, patch)?);
+    }
+
+    /// DynamicData JSON roundtrip preserves data (within float precision).
+    #[test]
+    fn prop_dynamic_data_json_roundtrip() {
+        fn prop(key: String, val: f64) -> Result<(), TestCaseError> {
+            let key = if key.is_empty() { "k".to_string() } else { key };
+            let mut data = DynamicData::new();
+            data.set(key.clone(), DynamicValue::Number(val));
+            let json = data
+                .to_json_string()
+                .map_err(|_| TestCaseError::reject("serialize"))?;
+            let restored = DynamicData::from_json_str(&json)
+                .map_err(|_| TestCaseError::reject("deserialize"))?;
+            let got = restored.get_f64(&key);
+            prop_assert!(got.is_some());
+            let got = got.unwrap();
+            let rel = if val.abs() < 1e-15 {
+                val.abs().max(got.abs())
+            } else {
+                val
+            };
+            prop_assert!(
+                (got - val).abs() <= rel.abs() * 1e-10 + 1e-15,
+                "roundtrip: {} -> {}",
+                val,
+                got
+            );
+            Ok(())
+        }
+        proptest!(|(key in "\\PC*", val in proptest::num::f64::NORMAL)| prop(key, val)?);
+    }
+
+    /// DynamicValue from_json_value(to_json_value(v)) == v for primitive values.
+    #[test]
+    fn prop_dynamic_value_roundtrip_primitive() {
+        fn prop_num(n: f64) -> Result<(), TestCaseError> {
+            let v = DynamicValue::Number(n);
+            let back = DynamicValue::from_json_value(v.to_json_value());
+            prop_assert_eq!(v, back);
+            Ok(())
+        }
+        fn prop_str(s: String) -> Result<(), TestCaseError> {
+            let v = DynamicValue::String(s);
+            let back = DynamicValue::from_json_value(v.to_json_value());
+            prop_assert_eq!(v, back);
+            Ok(())
+        }
+        proptest!(|(n in proptest::num::f64::NORMAL)| prop_num(n)?);
+        proptest!(|(s in "\\PC*")| prop_str(s)?);
+    }
 }

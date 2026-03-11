@@ -2,11 +2,91 @@
 //! Graph canvas rendering - grid, nodes, edges, selection box.
 
 use crate::accessibility::ColorPalette;
-use egui::{Color32, Pos2, Rect, Stroke, Vec2 as EguiVec2};
+use egui::{Color32, Pos2, Rect, Stroke};
 use petal_tongue_core::graph_builder::{EdgeType, GraphEdge, GraphNode};
 
 use super::layout;
 use super::{EdgeDrawState, GraphCanvas};
+
+// --- Pure logic (testable, no egui) ---
+
+/// Node fill and stroke colors based on state.
+/// Returns (fill_rgb, stroke_rgb).
+#[must_use]
+pub(crate) fn node_colors(selected: bool, hovered: bool, has_error: bool) -> ([u8; 3], [u8; 3]) {
+    if selected {
+        ([245, 166, 35], [200, 130, 20])
+    } else if hovered {
+        ([100, 150, 255], [70, 120, 200])
+    } else if has_error {
+        ([208, 2, 27], [150, 0, 20])
+    } else {
+        ([74, 144, 226], [50, 100, 180])
+    }
+}
+
+/// Edge color as RGB based on edge type and accent.
+#[must_use]
+pub(crate) fn edge_color_rgb(edge_type: &EdgeType, accent: [u8; 3]) -> [u8; 3] {
+    match edge_type {
+        EdgeType::Dependency => accent,
+        EdgeType::DataFlow => [150, 150, 150],
+    }
+}
+
+/// Arrow triangle geometry for directed edges.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct ArrowPoints {
+    pub tip: [f32; 2],
+    pub left: [f32; 2],
+    pub right: [f32; 2],
+}
+
+/// Compute arrow triangle vertices from line segment and zoom.
+#[must_use]
+pub(crate) fn arrow_geometry(from: [f32; 2], to: [f32; 2], zoom: f32) -> ArrowPoints {
+    let arrow_size = 8.0 * zoom;
+    let dx = to[0] - from[0];
+    let dy = to[1] - from[1];
+    let len = (dx * dx + dy * dy).sqrt();
+    if len < f32::EPSILON {
+        return ArrowPoints {
+            tip: to,
+            left: to,
+            right: to,
+        };
+    }
+    let dir_x = dx / len;
+    let dir_y = dy / len;
+    let perp_x = -dir_y;
+    let perp_y = dir_x;
+    let base_x = to[0] - dir_x * arrow_size * 2.0;
+    let base_y = to[1] - dir_y * arrow_size * 2.0;
+    ArrowPoints {
+        tip: to,
+        left: [base_x + perp_x * arrow_size, base_y + perp_y * arrow_size],
+        right: [base_x - perp_x * arrow_size, base_y - perp_y * arrow_size],
+    }
+}
+
+/// Grid line positions along one axis.
+#[must_use]
+pub(crate) fn grid_line_positions(
+    rect_min: f32,
+    rect_max: f32,
+    grid_size: f32,
+    offset: f32,
+) -> Vec<f32> {
+    let mut positions = Vec::new();
+    let mut x = rect_min - offset;
+    while x < rect_max {
+        positions.push(x);
+        x += grid_size;
+    }
+    positions
+}
+
+// --- Rendering (uses egui) ---
 
 impl GraphCanvas {
     /// Draw grid
@@ -22,22 +102,18 @@ impl GraphCanvas {
         let offset_x = (self.camera.position.x * self.camera.zoom) % grid_size;
         let offset_y = (self.camera.position.y * self.camera.zoom) % grid_size;
 
-        let mut x = rect.min.x - offset_x;
-        while x < rect.max.x {
+        for x in grid_line_positions(rect.min.x, rect.max.x, grid_size, offset_x) {
             painter.line_segment(
                 [Pos2::new(x, rect.min.y), Pos2::new(x, rect.max.y)],
                 Stroke::new(1.0, grid_color),
             );
-            x += grid_size;
         }
 
-        let mut y = rect.min.y - offset_y;
-        while y < rect.max.y {
+        for y in grid_line_positions(rect.min.y, rect.max.y, grid_size, offset_y) {
             painter.line_segment(
                 [Pos2::new(rect.min.x, y), Pos2::new(rect.max.x, y)],
                 Stroke::new(1.0, grid_color),
             );
-            y += grid_size;
         }
     }
 
@@ -57,24 +133,13 @@ impl GraphCanvas {
         );
         let node_rect = Rect::from_center_size(screen_pos, self.node_size * self.camera.zoom);
 
-        let (fill_color, stroke_color) = if self.selected_nodes.contains(&node.id) {
-            (
-                Color32::from_rgb(245, 166, 35),
-                Color32::from_rgb(200, 130, 20),
-            )
-        } else if Some(&node.id) == self.hovered_node.as_ref() {
-            (
-                Color32::from_rgb(100, 150, 255),
-                Color32::from_rgb(70, 120, 200),
-            )
-        } else if node.visual_state.has_error {
-            (Color32::from_rgb(208, 2, 27), Color32::from_rgb(150, 0, 20))
-        } else {
-            (
-                Color32::from_rgb(74, 144, 226),
-                Color32::from_rgb(50, 100, 180),
-            )
-        };
+        let (fill_rgb, stroke_rgb) = node_colors(
+            self.selected_nodes.contains(&node.id),
+            Some(&node.id) == self.hovered_node.as_ref(),
+            node.visual_state.has_error,
+        );
+        let fill_color = Color32::from_rgb(fill_rgb[0], fill_rgb[1], fill_rgb[2]);
+        let stroke_color = Color32::from_rgb(stroke_rgb[0], stroke_rgb[1], stroke_rgb[2]);
 
         painter.rect(
             node_rect,
@@ -145,10 +210,9 @@ impl GraphCanvas {
                 self.camera.zoom,
             );
 
-            let edge_color = match edge.edge_type {
-                EdgeType::Dependency => palette.accent,
-                EdgeType::DataFlow => Color32::from_rgb(150, 150, 150),
-            };
+            let accent_rgb = [palette.accent.r(), palette.accent.g(), palette.accent.b()];
+            let edge_rgb = edge_color_rgb(&edge.edge_type, accent_rgb);
+            let edge_color = Color32::from_rgb(edge_rgb[0], edge_rgb[1], edge_rgb[2]);
 
             draw_arrow(
                 painter,
@@ -227,8 +291,6 @@ fn draw_arrow(
     zoom: f32,
 ) {
     let stroke_width = 2.0 * zoom;
-    let arrow_size = 8.0 * zoom;
-
     let stroke = match edge_type {
         EdgeType::Dependency => Stroke::new(stroke_width, color),
         EdgeType::DataFlow => Stroke::new(stroke_width, color),
@@ -236,16 +298,124 @@ fn draw_arrow(
 
     painter.line_segment([from, to], stroke);
 
-    let direction = (to - from).normalized();
-    let perpendicular = EguiVec2::new(-direction.y, direction.x);
-
-    let arrow_base = to - direction * arrow_size * 2.0;
-    let arrow_left = arrow_base + perpendicular * arrow_size;
-    let arrow_right = arrow_base - perpendicular * arrow_size;
+    let from_arr = [from.x, from.y];
+    let to_arr = [to.x, to.y];
+    let points = arrow_geometry(from_arr, to_arr, zoom);
 
     painter.add(egui::Shape::convex_polygon(
-        vec![to, arrow_left, arrow_right],
+        vec![
+            Pos2::new(points.tip[0], points.tip[1]),
+            Pos2::new(points.left[0], points.left[1]),
+            Pos2::new(points.right[0], points.right[1]),
+        ],
         color,
         Stroke::NONE,
     ));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use petal_tongue_core::graph_builder::EdgeType;
+
+    #[test]
+    fn test_node_colors_selected() {
+        let (fill, stroke) = node_colors(true, false, false);
+        assert_eq!(fill, [245, 166, 35]);
+        assert_eq!(stroke, [200, 130, 20]);
+    }
+
+    #[test]
+    fn test_node_colors_hovered() {
+        let (fill, stroke) = node_colors(false, true, false);
+        assert_eq!(fill, [100, 150, 255]);
+        assert_eq!(stroke, [70, 120, 200]);
+    }
+
+    #[test]
+    fn test_node_colors_error() {
+        let (fill, stroke) = node_colors(false, false, true);
+        assert_eq!(fill, [208, 2, 27]);
+        assert_eq!(stroke, [150, 0, 20]);
+    }
+
+    #[test]
+    fn test_node_colors_default() {
+        let (fill, stroke) = node_colors(false, false, false);
+        assert_eq!(fill, [74, 144, 226]);
+        assert_eq!(stroke, [50, 100, 180]);
+    }
+
+    #[test]
+    fn test_node_colors_priority_selected_over_hovered() {
+        let (fill, _) = node_colors(true, true, false);
+        assert_eq!(fill, [245, 166, 35]);
+    }
+
+    #[test]
+    fn test_edge_color_rgb_dependency() {
+        let accent = [100, 150, 200];
+        let rgb = edge_color_rgb(&EdgeType::Dependency, accent);
+        assert_eq!(rgb, accent);
+    }
+
+    #[test]
+    fn test_edge_color_rgb_data_flow() {
+        let rgb = edge_color_rgb(&EdgeType::DataFlow, [0, 0, 0]);
+        assert_eq!(rgb, [150, 150, 150]);
+    }
+
+    #[test]
+    fn test_arrow_geometry_normal() {
+        let from = [0.0, 0.0];
+        let to = [100.0, 0.0];
+        let zoom = 1.0;
+        let points = arrow_geometry(from, to, zoom);
+
+        assert_eq!(points.tip, to);
+        assert!((points.left[0] - 84.0).abs() < f32::EPSILON);
+        assert!((points.left[1] - 8.0).abs() < f32::EPSILON);
+        assert!((points.right[0] - 84.0).abs() < f32::EPSILON);
+        assert!((points.right[1] - (-8.0)).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_arrow_geometry_zero_length() {
+        let from = [50.0, 50.0];
+        let to = [50.0, 50.0];
+        let points = arrow_geometry(from, to, 1.0);
+
+        assert_eq!(points.tip, to);
+        assert_eq!(points.left, to);
+        assert_eq!(points.right, to);
+    }
+
+    #[test]
+    fn test_arrow_geometry_scales_with_zoom() {
+        let from = [0.0, 0.0];
+        let to = [100.0, 0.0];
+        let points_zoom1 = arrow_geometry(from, to, 1.0);
+        let points_zoom2 = arrow_geometry(from, to, 2.0);
+
+        let width1 = (points_zoom1.left[1] - points_zoom1.right[1]).abs();
+        let width2 = (points_zoom2.left[1] - points_zoom2.right[1]).abs();
+        assert!(width2 > width1);
+    }
+
+    #[test]
+    fn test_grid_line_positions() {
+        let positions = grid_line_positions(0.0, 100.0, 25.0, 0.0);
+        assert!(!positions.is_empty());
+        assert!((positions[0] - 0.0).abs() < f32::EPSILON);
+        let last = positions.last().expect("non-empty");
+        assert!(*last < 100.0);
+        assert!(*last >= 75.0);
+    }
+
+    #[test]
+    fn test_grid_line_positions_with_offset() {
+        let positions = grid_line_positions(0.0, 50.0, 20.0, 5.0);
+        assert!(!positions.is_empty());
+        assert!((positions[0] - (-5.0)).abs() < f32::EPSILON);
+    }
 }

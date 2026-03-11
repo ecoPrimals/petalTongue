@@ -4,8 +4,9 @@
 //! Translates scene graph primitives into egui paint commands, connecting the
 //! Grammar of Graphics pipeline to the live UI.
 
-use egui::{Color32, Painter, Pos2, Rect, Rounding, Stroke, Vec2};
+use egui::{Color32, Painter, Pos2, Rect, Rounding, Sense, Stroke, Ui, Vec2};
 use petal_tongue_scene::primitive::{Color, Primitive};
+use petal_tongue_scene::render_plan::RenderPlan;
 use petal_tongue_scene::scene_graph::SceneGraph;
 use petal_tongue_scene::transform::Transform2D;
 
@@ -133,6 +134,44 @@ pub fn paint_primitive(painter: &Painter, prim: &Primitive, transform: &Transfor
     }
 }
 
+/// Render a full `RenderPlan` into an egui `Painter`.
+pub fn paint_plan(painter: &Painter, plan: &RenderPlan, offset: Vec2) {
+    paint_scene(painter, &plan.scene, offset);
+}
+
+/// An egui widget that renders a `RenderPlan` via the scene bridge.
+///
+/// Drop this into any egui panel to display a grammar-compiled visualization:
+/// ```ignore
+/// SceneWidget::new(&plan).desired_size(vec2(400.0, 300.0)).show(ui);
+/// ```
+pub struct SceneWidget<'a> {
+    plan: &'a RenderPlan,
+    desired_size: Vec2,
+}
+
+impl<'a> SceneWidget<'a> {
+    pub fn new(plan: &'a RenderPlan) -> Self {
+        Self {
+            plan,
+            desired_size: Vec2::new(400.0, 300.0),
+        }
+    }
+
+    #[must_use]
+    pub fn desired_size(mut self, size: Vec2) -> Self {
+        self.desired_size = size;
+        self
+    }
+
+    pub fn show(self, ui: &mut Ui) -> egui::Response {
+        let (response, painter) = ui.allocate_painter(self.desired_size, Sense::hover());
+        let offset = response.rect.min.to_vec2();
+        paint_plan(&painter, self.plan, offset);
+        response
+    }
+}
+
 fn to_color32(c: Color) -> Color32 {
     Color32::from_rgba_unmultiplied(
         (c.r * 255.0) as u8,
@@ -153,7 +192,9 @@ fn to_stroke_style(s: &petal_tongue_scene::primitive::StrokeStyle) -> Stroke {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use petal_tongue_scene::grammar::{GeometryType, GrammarExpr};
     use petal_tongue_scene::primitive::StrokeStyle;
+    use petal_tongue_scene::render_plan::RenderPlan;
     use petal_tongue_scene::scene_graph::SceneNode;
 
     #[test]
@@ -170,6 +211,12 @@ mod tests {
     }
 
     #[test]
+    fn color_conversion_alpha() {
+        let transparent = to_color32(Color::TRANSPARENT);
+        assert_eq!(transparent.a(), 0);
+    }
+
+    #[test]
     fn stroke_conversion() {
         let s = StrokeStyle {
             color: Color::WHITE,
@@ -178,6 +225,17 @@ mod tests {
         };
         let egui_s = to_stroke(s);
         assert!((egui_s.width - 2.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn stroke_style_conversion() {
+        let s = StrokeStyle {
+            color: Color::from_rgba8(128, 128, 128, 255),
+            width: 3.0,
+            ..StrokeStyle::default()
+        };
+        let egui_s = to_stroke_style(&s);
+        assert!((egui_s.width - 3.0).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -200,5 +258,92 @@ mod tests {
         }));
         let flat = graph.flatten();
         assert_eq!(flat.len(), 1);
+    }
+
+    #[test]
+    fn scene_widget_creation() {
+        let graph = SceneGraph::new();
+        let grammar = GrammarExpr::new("data", GeometryType::Point);
+        let plan = RenderPlan::new(graph, grammar);
+
+        let _widget = SceneWidget::new(&plan);
+        // Widget created with default size 400x300
+    }
+
+    #[test]
+    fn scene_widget_desired_size_builder() {
+        let graph = SceneGraph::new();
+        let grammar = GrammarExpr::new("data", GeometryType::Point);
+        let plan = RenderPlan::new(graph, grammar);
+
+        let _widget = SceneWidget::new(&plan).desired_size(egui::Vec2::new(800.0, 600.0));
+        // Builder pattern applied
+    }
+
+    #[test]
+    fn paint_plan_delegates_to_paint_scene() {
+        let mut graph = SceneGraph::new();
+        graph.add_to_root(SceneNode::new("pt").with_primitive(Primitive::Point {
+            x: 0.0,
+            y: 0.0,
+            radius: 1.0,
+            fill: Some(Color::BLACK),
+            stroke: None,
+            data_id: None,
+        }));
+        let grammar = GrammarExpr::new("data", GeometryType::Point);
+        let plan = RenderPlan::new(graph, grammar);
+        // paint_plan just calls paint_scene - we verify the plan has the right structure
+        assert!(!plan.scene.flatten().is_empty());
+    }
+
+    #[test]
+    fn paint_primitive_point_with_stroke() {
+        use petal_tongue_scene::primitive::StrokeStyle;
+
+        let mut graph = SceneGraph::new();
+        graph.add_to_root(SceneNode::new("pt").with_primitive(Primitive::Point {
+            x: 10.0,
+            y: 20.0,
+            radius: 5.0,
+            fill: Some(Color::rgb(1.0, 0.0, 0.0)),
+            stroke: Some(StrokeStyle {
+                color: Color::WHITE,
+                width: 2.0,
+                ..StrokeStyle::default()
+            }),
+            data_id: None,
+        }));
+        let flat = graph.flatten();
+        assert_eq!(flat.len(), 1);
+        let (_transform, prim) = &flat[0];
+        match prim {
+            Primitive::Point {
+                x,
+                y,
+                radius,
+                fill,
+                stroke,
+                ..
+            } => {
+                assert!((*x - 10.0).abs() < f64::EPSILON);
+                assert!((*y - 20.0).abs() < f64::EPSILON);
+                assert!((*radius - 5.0).abs() < f64::EPSILON);
+                assert!(fill.is_some());
+                assert!(stroke.is_some());
+            }
+            _ => panic!("expected Point primitive"),
+        }
+    }
+
+    #[test]
+    fn color_mapping_rgba() {
+        let c = Color::from_rgba8(128, 64, 32, 200);
+        let egui_c = Color32::from_rgba_unmultiplied(128, 64, 32, 200);
+        let converted = to_color32(c);
+        assert_eq!(converted.r(), egui_c.r());
+        assert_eq!(converted.g(), egui_c.g());
+        assert_eq!(converted.b(), egui_c.b());
+        assert_eq!(converted.a(), egui_c.a());
     }
 }

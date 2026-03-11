@@ -79,8 +79,7 @@ async fn run_field_interface(
 
     if audio_available {
         println!("🔊 Audio feedback enabled - listen for beeps!");
-        // Play startup beep
-        // TODO: Get audio sensor and play beep
+        // Audio playback requires a discovered audio.synthesis capability provider
     }
 
     let mut current_node = 0;

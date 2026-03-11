@@ -503,16 +503,19 @@ mod tests {
         wad
     }
 
+    fn write_wad(bytes: &[u8]) -> (tempfile::TempDir, std::path::PathBuf) {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.wad");
+        std::fs::write(&path, bytes).unwrap();
+        (dir, path)
+    }
+
     #[test]
     fn test_wad_load_minimal() {
         let wad_bytes = create_minimal_wad_bytes();
-        let path = std::env::temp_dir().join("petaltongue_test_minimal.wad");
-        std::fs::write(&path, &wad_bytes).unwrap();
+        let (_dir, path) = write_wad(&wad_bytes);
 
-        let result = WadData::load(&path);
-        std::fs::remove_file(&path).ok();
-
-        let wad = result.expect("Should load minimal WAD");
+        let wad = WadData::load(&path).expect("Should load minimal WAD");
         assert!(!wad.maps.is_empty(), "Should have at least one map");
         let map = &wad.maps[0];
         assert_eq!(map.name, "E1M1");
@@ -525,11 +528,11 @@ mod tests {
     #[test]
     fn test_wad_lump_accessors() {
         let wad_bytes = create_minimal_wad_bytes();
-        let path = std::env::temp_dir().join("petaltongue_test_lump.wad");
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test_lump.wad");
         std::fs::write(&path, &wad_bytes).unwrap();
 
         let wad = WadData::load(&path).unwrap();
-        std::fs::remove_file(&path).ok();
 
         let vertex_lump = wad.get_lump("VERTEXES").expect("Should have VERTEXES");
         assert_eq!(vertex_lump.name(), "VERTEXES");
@@ -541,11 +544,9 @@ mod tests {
     #[test]
     fn test_wad_get_map_by_name() {
         let wad_bytes = create_minimal_wad_bytes();
-        let path = std::env::temp_dir().join("petaltongue_test_getmap.wad");
-        std::fs::write(&path, &wad_bytes).unwrap();
+        let (_dir, path) = write_wad(&wad_bytes);
 
         let wad = WadData::load(&path).unwrap();
-        std::fs::remove_file(&path).ok();
 
         let map = wad.get_map("E1M1").expect("Should find E1M1");
         assert_eq!(map.name, "E1M1");
@@ -556,11 +557,9 @@ mod tests {
     #[test]
     fn test_wad_first_map() {
         let wad_bytes = create_minimal_wad_bytes();
-        let path = std::env::temp_dir().join("petaltongue_test_first.wad");
-        std::fs::write(&path, &wad_bytes).unwrap();
+        let (_dir, path) = write_wad(&wad_bytes);
 
         let wad = WadData::load(&path).unwrap();
-        std::fs::remove_file(&path).ok();
 
         let map = wad.first_map().expect("Should have first map");
         assert_eq!(map.name, "E1M1");
@@ -569,11 +568,9 @@ mod tests {
     #[test]
     fn test_vertex_coordinates() {
         let wad_bytes = create_minimal_wad_bytes();
-        let path = std::env::temp_dir().join("petaltongue_test_vertex.wad");
-        std::fs::write(&path, &wad_bytes).unwrap();
+        let (_dir, path) = write_wad(&wad_bytes);
 
         let wad = WadData::load(&path).unwrap();
-        std::fs::remove_file(&path).ok();
 
         let map = wad.first_map().unwrap();
         assert_eq!(map.vertices[0].x, 0);
@@ -588,10 +585,8 @@ mod tests {
         bad_wad[0..4].copy_from_slice(b"XXXX");
         bad_wad[4..8].copy_from_slice(&0i32.to_le_bytes());
         bad_wad[8..12].copy_from_slice(&12i32.to_le_bytes());
-        let path = std::env::temp_dir().join("petaltongue_test_badtype.wad");
-        std::fs::write(&path, &bad_wad).unwrap();
+        let (_dir, path) = write_wad(&bad_wad);
         let result = WadData::load(&path);
-        std::fs::remove_file(&path).ok();
         if let Err(e) = result {
             assert!(e.to_string().contains("Unknown WAD type"));
         } else {
@@ -602,10 +597,8 @@ mod tests {
     #[test]
     fn test_wad_truncated_header() {
         let bad_wad = vec![0u8; 8];
-        let path = std::env::temp_dir().join("petaltongue_test_truncated.wad");
-        std::fs::write(&path, &bad_wad).unwrap();
+        let (_dir, path) = write_wad(&bad_wad);
         let result = WadData::load(&path);
-        std::fs::remove_file(&path).ok();
         assert!(result.is_err());
     }
 
@@ -613,10 +606,8 @@ mod tests {
     fn test_wad_pwad_type() {
         let mut wad = create_minimal_wad_bytes();
         wad[0..4].copy_from_slice(b"PWAD");
-        let path = std::env::temp_dir().join("petaltongue_test_pwad.wad");
-        std::fs::write(&path, &wad).unwrap();
+        let (_dir, path) = write_wad(&wad);
         let result = WadData::load(&path);
-        std::fs::remove_file(&path).ok();
         assert!(result.is_ok());
         assert!(!result.unwrap().maps.is_empty());
     }
@@ -632,10 +623,8 @@ mod tests {
         entry[4..8].copy_from_slice(&0i32.to_le_bytes());
         entry[8..16].copy_from_slice(b"DATA    ");
         wad.extend_from_slice(&entry);
-        let path = std::env::temp_dir().join("petaltongue_test_nomaps.wad");
-        std::fs::write(&path, &wad).unwrap();
+        let (_dir, path) = write_wad(&wad);
         let result = WadData::load(&path);
-        std::fs::remove_file(&path).ok();
         if let Err(e) = result {
             assert!(e.to_string().contains("No valid maps"));
         } else {
@@ -646,10 +635,8 @@ mod tests {
     #[test]
     fn test_map_data_structures() {
         let wad_bytes = create_minimal_wad_bytes();
-        let path = std::env::temp_dir().join("petaltongue_test_structs.wad");
-        std::fs::write(&path, &wad_bytes).unwrap();
+        let (_dir, path) = write_wad(&wad_bytes);
         let wad = WadData::load(&path).unwrap();
-        std::fs::remove_file(&path).ok();
         let map = wad.first_map().unwrap();
         assert_eq!(map.linedefs[0].start_vertex, 0);
         assert_eq!(map.linedefs[0].end_vertex, 1);
@@ -671,10 +658,8 @@ mod tests {
     #[test]
     fn test_lump_extraction() {
         let wad_bytes = create_minimal_wad_bytes();
-        let path = std::env::temp_dir().join("petaltongue_test_lump.wad");
-        std::fs::write(&path, &wad_bytes).unwrap();
+        let (_dir, path) = write_wad(&wad_bytes);
         let wad = WadData::load(&path).unwrap();
-        std::fs::remove_file(&path).ok();
         let lumps = wad.lumps();
         assert_eq!(lumps.len(), 5);
         assert_eq!(lumps[0].name(), "E1M1");

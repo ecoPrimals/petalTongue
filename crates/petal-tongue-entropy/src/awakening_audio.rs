@@ -304,9 +304,9 @@ mod tests {
 
     #[test]
     fn test_awakening_audio_creation() {
-        let audio = AwakeningAudio::new(44100);
-        assert_eq!(audio.sample_rate, 44100);
-        assert_eq!(audio.time, 0.0);
+        let mut audio = AwakeningAudio::new(44100);
+        let samples = audio.generate_signature_tone(0.1);
+        assert_eq!(samples.len(), 4410, "0.1s at 44100 Hz = 4410 samples");
     }
 
     #[test]
@@ -411,5 +411,69 @@ mod tests {
 
         // Chimes should be different (different frequencies)
         assert_ne!(chime0, chime1);
+    }
+
+    #[test]
+    fn test_discovery_chime_pentatonic_wraparound() {
+        let mut audio = AwakeningAudio::new(44100);
+        let chime5 = audio.generate_discovery_chime(5);
+        let chime0 = audio.generate_discovery_chime(0);
+        assert_eq!(chime5.len(), chime0.len());
+    }
+
+    #[test]
+    fn test_signature_tone_fade_in_out() {
+        let mut audio = AwakeningAudio::new(44100);
+        let samples = audio.generate_signature_tone(1.0);
+        assert!(samples[0].abs() < 0.1, "start should have fade-in");
+        assert!(
+            samples[samples.len() - 1].abs() < 0.1,
+            "end should have fade-out"
+        );
+    }
+
+    #[test]
+    fn test_mix_layers_empty() {
+        let mixed = mix_layers(vec![]);
+        assert!(mixed.is_empty());
+    }
+
+    #[test]
+    fn test_mix_layers_different_lengths() {
+        let layer1 = vec![0.5, 0.5];
+        let layer2 = vec![0.3, 0.3, 0.3, 0.3];
+        let mixed = mix_layers(vec![layer1, layer2]);
+        assert_eq!(mixed.len(), 4);
+        assert!((mixed[0] - 0.8).abs() < 0.01);
+        assert!((mixed[2] - 0.3).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_bird_chirp_frequency_sweep() {
+        let mut audio = AwakeningAudio::new(44100);
+        let samples = audio.generate_bird_chirp();
+        assert!(!samples.is_empty());
+        for &s in &samples {
+            assert!((-1.0..=1.0).contains(&s));
+        }
+    }
+
+    #[test]
+    fn test_heartbeat_pulse_shape() {
+        let mut audio = AwakeningAudio::new(44100);
+        let samples = audio.generate_heartbeat(2.0);
+        assert_eq!(samples.len(), 88200);
+        let max_amp = samples.iter().map(|s| s.abs()).fold(0.0f32, f32::max);
+        assert!(max_amp > 0.0 && max_amp <= 1.0);
+    }
+
+    #[test]
+    fn test_wind_filtered_noise() {
+        let mut audio = AwakeningAudio::new(44100);
+        let samples = audio.generate_wind(0.5);
+        assert_eq!(samples.len(), 22050);
+        for &s in &samples {
+            assert!((-1.0..=1.0).contains(&s));
+        }
     }
 }

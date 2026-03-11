@@ -243,4 +243,60 @@ mod tests {
     fn sync_mode_default() {
         assert_eq!(PerspectiveSync::default(), PerspectiveSync::SharedSelection);
     }
+
+    #[test]
+    fn perspective_add_to_selection_no_duplicate() {
+        let mut p = Perspective::new(1);
+        let id = DataObjectId::new("src", serde_json::json!("a"));
+        p.add_to_selection(id.clone());
+        p.add_to_selection(id.clone());
+        assert_eq!(p.selection.len(), 1);
+    }
+
+    #[test]
+    fn perspective_viewport_default() {
+        let vp = PerspectiveViewport::default();
+        assert!((vp.center_x - 0.0).abs() < f64::EPSILON);
+        assert!((vp.zoom - 1.0).abs() < f64::EPSILON);
+        assert!(vp.contains(0.0, 0.0));
+    }
+
+    #[test]
+    fn perspective_viewport_contains_with_zoom() {
+        let vp = PerspectiveViewport {
+            center_x: 50.0,
+            center_y: 50.0,
+            width: 100.0,
+            height: 100.0,
+            zoom: 2.0,
+        };
+        assert!(vp.contains(50.0, 50.0));
+        assert!(!vp.contains(0.0, 0.0));
+    }
+
+    #[test]
+    fn output_modality_variants() {
+        assert_eq!(OutputModality::Gui, OutputModality::Gui);
+        assert_eq!(OutputModality::Tui, OutputModality::Tui);
+        assert_eq!(OutputModality::Audio, OutputModality::Audio);
+    }
+
+    #[test]
+    fn orientation_variants() {
+        assert!(matches!(Orientation::default(), Orientation::Default));
+        let rot = Orientation::Rotated(1.5);
+        assert!(matches!(rot, Orientation::Rotated(_)));
+    }
+
+    #[test]
+    fn axis_variants() {
+        assert_eq!(Axis::X, Axis::X);
+        assert_eq!(Axis::Y, Axis::Y);
+    }
+
+    #[test]
+    fn perspective_sync_variants() {
+        assert_eq!(PerspectiveSync::Independent, PerspectiveSync::Independent);
+        assert_eq!(PerspectiveSync::FullSync, PerspectiveSync::FullSync);
+    }
 }

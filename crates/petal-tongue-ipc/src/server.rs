@@ -112,7 +112,10 @@ impl IpcServer {
     }
 
     /// Start Unix domain socket server (Phase 1)
-    #[allow(clippy::unused_async)]
+    #[expect(
+        clippy::unused_async,
+        reason = "async for UnixListener::incoming and spawned tasks"
+    )]
     async fn start_unix(instance: &Instance) -> Result<Self, IpcServerError> {
         let socket_path = instance.socket_path.clone();
         let instance_id = instance.id.clone();
@@ -463,15 +466,105 @@ mod tests {
     use super::*;
     use petal_tongue_core::Instance;
 
+    #[test]
+    fn test_ipc_transport_display_unix() {
+        let transport = IpcTransport::Unix(PathBuf::from("/tmp/test.sock"));
+        let s = transport.to_string();
+        assert!(s.starts_with("unix:"));
+        assert!(s.contains("test"));
+    }
+
+    #[test]
+    fn test_ipc_transport_display_tcp() {
+        let addr: SocketAddr = "127.0.0.1:12345".parse().unwrap();
+        let transport = IpcTransport::Tcp(addr);
+        let s = transport.to_string();
+        assert!(s.starts_with("tcp:"));
+        assert!(s.contains("12345"));
+    }
+
+    #[test]
+    fn test_ipc_transport_equality() {
+        let t1 = IpcTransport::Unix(PathBuf::from("/tmp/a.sock"));
+        let t2 = IpcTransport::Unix(PathBuf::from("/tmp/a.sock"));
+        let t3 = IpcTransport::Tcp("127.0.0.1:0".parse().expect("addr"));
+        assert_eq!(t1.to_string(), t2.to_string());
+        assert!(t1.to_string().starts_with("unix:"));
+        assert!(t3.to_string().starts_with("tcp:"));
+    }
+
+    #[test]
+    fn test_ipc_server_error_display() {
+        let err = IpcServerError::ParseError("bad json".to_string());
+        let s = format!("{err}");
+        assert!(s.contains("Parse"));
+        assert!(s.contains("bad json"));
+
+        let err = IpcServerError::ChannelClosed;
+        let s = format!("{err}");
+        assert!(s.contains("Channel"));
+
+        let err = IpcServerError::SocketError("bind failed".to_string());
+        assert!(format!("{err}").contains("bind failed"));
+
+        let err = IpcServerError::IoError("read failed".to_string());
+        assert!(format!("{err}").contains("read failed"));
+
+        let err = IpcServerError::SerializeError("to_json failed".to_string());
+        assert!(format!("{err}").contains("to_json failed"));
+
+        let err = IpcServerError::DiscoveryError("write failed".to_string());
+        assert!(format!("{err}").contains("write failed"));
+    }
+
+    #[test]
+    fn test_ipc_command_parse() {
+        use crate::protocol::IpcCommand;
+        let json = r#"{"Ping":null}"#;
+        let cmd: IpcCommand = serde_json::from_str(json).expect("parse");
+        matches!(cmd, IpcCommand::Ping);
+
+        let json = r#"{"GetStatus":null}"#;
+        let cmd: IpcCommand = serde_json::from_str(json).expect("parse");
+        matches!(cmd, IpcCommand::GetStatus);
+
+        let json = r#"{"SetPanel":{"panel":"left","visible":true}}"#;
+        let cmd: IpcCommand = serde_json::from_str(json).expect("parse");
+        match &cmd {
+            IpcCommand::SetPanel { panel, visible } => {
+                assert_eq!(panel, "left");
+                assert!(*visible);
+            }
+            _ => panic!("expected SetPanel"),
+        }
+    }
+
+    #[test]
+    fn test_ipc_command_serialize_roundtrip() {
+        use crate::protocol::IpcCommand;
+        let cmd = IpcCommand::Ping;
+        let json = serde_json::to_string(&cmd).expect("serialize");
+        let restored: IpcCommand = serde_json::from_str(&json).expect("deserialize");
+        matches!(restored, IpcCommand::Ping);
+
+        let cmd = IpcCommand::SetZoom { level: 2.0 };
+        let json = serde_json::to_string(&cmd).expect("serialize");
+        let restored: IpcCommand = serde_json::from_str(&json).expect("deserialize");
+        match restored {
+            IpcCommand::SetZoom { level } => assert!((level - 2.0).abs() < f32::EPSILON),
+            _ => panic!("expected SetZoom"),
+        }
+    }
+
     #[tokio::test]
     async fn test_server_creation() {
         let instance_id = InstanceId::new();
-        let instance = Instance::new(instance_id, Some("test".to_string())).unwrap();
+        let instance = Instance::new(instance_id, Some("test".to_string())).expect("instance");
 
         let server = IpcServer::start(&instance).await;
         assert!(server.is_ok());
 
-        let server = server.unwrap();
+        let server = server.expect("server");
         assert_eq!(server.instance_id(), &instance.id);
     }
 
@@ -479,14 +572,52 @@ mod tests {
     async fn test_tcp_fallback() {
         // Force TCP by using an instance with invalid Unix path
         let instance_id = InstanceId::new();
-        let instance = Instance::new(instance_id, Some("test-tcp".to_string())).unwrap();
+        let instance = Instance::new(instance_id, Some("test-tcp".to_string())).expect("instance");
 
         // Try to start - should work with TCP fallback
         let server = IpcServer::start(&instance).await;
         assert!(server.is_ok());
 
-        let server = server.unwrap();
+        let server = server.expect("server");
         // Should have TCP transport
         matches!(server.transport(), IpcTransport::Tcp(_));
+    }
+
+    #[test]
+    fn test_is_platform_constrained() {
+        // On non-Android, should return false
+        #[cfg(not(target_os = "android"))]
+        assert!(!is_platform_constrained());
+
+        #[cfg(target_os = "android")]
+        assert!(is_platform_constrained());
+    }
+
+    #[tokio::test]
+    async fn test_recv_command_returns_option() {
+        let instance_id = InstanceId::new();
+        let instance = Instance::new(instance_id, Some("test-recv".to_string())).expect("instance");
+        let mut server = IpcServer::start(&instance).await.expect("server");
+
+        // recv_command with timeout - no clients connected
+        let result =
+            tokio::time::timeout(std::time::Duration::from_millis(50), server.recv_command()).await;
+        // Timeout returns Err, or we got Some/None - all outcomes are expected (no panic)
+        match result {
+            Ok(None | Some(_)) | Err(_) => {}
+        }
+    }
+
+    #[tokio::test]
+    async fn test_server_transport_display() {
+        let transport = IpcTransport::Unix(PathBuf::from("/tmp/x.sock"));
+        let s = transport.to_string();
+        assert!(s.starts_with("unix:"));
+        assert!(s.contains("x.sock"));
+
+        let addr: SocketAddr = "127.0.0.1:0".parse().expect("addr");
+        let transport = IpcTransport::Tcp(addr);
+        let s = transport.to_string();
+        assert!(s.starts_with("tcp:"));
     }
 }

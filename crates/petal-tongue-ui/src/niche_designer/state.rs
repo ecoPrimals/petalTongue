@@ -47,6 +47,7 @@ impl NicheDesigner {
     }
 
     /// Update templates and primals
+    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
     pub async fn refresh(&mut self, templates: Vec<NicheTemplate>, primals: Vec<Primal>) {
         debug!(
             "🔄 Refreshing niche designer with {} templates, {} primals",

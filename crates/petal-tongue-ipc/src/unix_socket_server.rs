@@ -21,6 +21,7 @@ pub struct UnixSocketServer {
     motor_tx: Option<std::sync::mpsc::Sender<petal_tongue_core::MotorCommand>>,
 }
 
+// new/with_* builders used by UI; get_* methods invoked via RPC handlers
 #[allow(dead_code)]
 impl UnixSocketServer {
     /// Create a new Unix socket server with graph and visualization state
@@ -46,6 +47,48 @@ impl UnixSocketServer {
     ) -> Self {
         self.motor_tx = Some(tx.clone());
         self.handlers.motor_tx = Some(tx);
+        self
+    }
+
+    /// Inject a shared `VisualizationState` so the UI can poll IPC sessions.
+    #[must_use]
+    pub fn with_visualization_state(
+        mut self,
+        viz_state: Arc<std::sync::RwLock<VisualizationState>>,
+    ) -> Self {
+        self.handlers.viz_state = viz_state;
+        self
+    }
+
+    /// Return a handle to the shared visualization state.
+    #[must_use]
+    pub fn visualization_state_handle(&self) -> Arc<std::sync::RwLock<VisualizationState>> {
+        Arc::clone(&self.handlers.viz_state)
+    }
+
+    /// Return a handle to the sensor stream subscriber registry.
+    #[must_use]
+    pub fn sensor_stream_handle(
+        &self,
+    ) -> Arc<std::sync::RwLock<crate::visualization_handler::SensorStreamRegistry>> {
+        Arc::clone(&self.handlers.sensor_stream_subscribers)
+    }
+
+    /// Return a handle to the interaction subscriber registry.
+    #[must_use]
+    pub fn interaction_subscribers_handle(
+        &self,
+    ) -> Arc<std::sync::RwLock<crate::visualization_handler::InteractionSubscriberRegistry>> {
+        Arc::clone(&self.handlers.interaction_subscribers)
+    }
+
+    /// Attach rendering awareness so IPC can serve introspection queries.
+    #[must_use]
+    pub fn with_rendering_awareness(
+        mut self,
+        awareness: Arc<std::sync::RwLock<petal_tongue_core::RenderingAwareness>>,
+    ) -> Self {
+        self.handlers.rendering_awareness = Some(awareness);
         self
     }
 

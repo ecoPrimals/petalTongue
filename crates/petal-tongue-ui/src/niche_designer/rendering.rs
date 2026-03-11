@@ -10,6 +10,27 @@ use tracing::info;
 use super::state::NicheDesigner;
 use super::types::ValidationResult;
 
+/// Get (icon, text, color_rgb) for a validation result.
+#[must_use]
+pub fn validation_display_info(result: &ValidationResult) -> (&'static str, String, [u8; 3]) {
+    match result {
+        ValidationResult::Valid => ("✓", "All requirements met".to_string(), [0, 255, 0]),
+        ValidationResult::MissingRequirements(missing) => (
+            "✖",
+            format!("Missing required capabilities: {}", missing.join(", ")),
+            [255, 0, 0],
+        ),
+        ValidationResult::InsufficientResources(msg) => ("⚠", msg.clone(), [255, 255, 0]),
+        ValidationResult::Conflicts(_) => ("✖", "Conflicts detected:".to_string(), [255, 0, 0]),
+    }
+}
+
+/// Whether deployment is allowed given the validation result.
+#[must_use]
+pub fn can_deploy(validation: &ValidationResult) -> bool {
+    validation == &ValidationResult::Valid
+}
+
 impl NicheDesigner {
     /// Render the niche designer
     pub fn ui(&mut self, ui: &mut Ui) {
@@ -163,24 +184,13 @@ impl NicheDesigner {
                 ui.label(RichText::new("Validation").strong());
                 ui.separator();
 
-                match &self.validation {
-                    ValidationResult::Valid => {
-                        ui.colored_label(Color32::GREEN, "✓ All requirements met");
-                    }
-                    ValidationResult::MissingRequirements(missing) => {
-                        ui.colored_label(
-                            Color32::RED,
-                            format!("✖ Missing required capabilities: {}", missing.join(", ")),
-                        );
-                    }
-                    ValidationResult::InsufficientResources(msg) => {
-                        ui.colored_label(Color32::YELLOW, format!("⚠ {msg}"));
-                    }
-                    ValidationResult::Conflicts(conflicts) => {
-                        ui.colored_label(Color32::RED, "✖ Conflicts detected:");
-                        for conflict in conflicts {
-                            ui.label(format!("  • {conflict}"));
-                        }
+                let (icon, text, [r, g, b]) = validation_display_info(&self.validation);
+                let color = Color32::from_rgb(r, g, b);
+                ui.colored_label(color, format!("{icon} {text}"));
+
+                if let ValidationResult::Conflicts(conflicts) = &self.validation {
+                    for conflict in conflicts {
+                        ui.label(format!("  • {conflict}"));
                     }
                 }
             });
@@ -189,27 +199,91 @@ impl NicheDesigner {
 
     /// Render deploy button
     fn render_deploy_button(&self, ui: &mut Ui) {
-        let can_deploy = self.validation == ValidationResult::Valid;
+        let deploy_allowed = can_deploy(&self.validation);
 
         let button = egui::Button::new(RichText::new("🚀 Deploy Niche").strong().size(16.0).color(
-            if can_deploy {
+            if deploy_allowed {
                 Color32::WHITE
             } else {
                 Color32::GRAY
             },
         ))
-        .fill(if can_deploy {
+        .fill(if deploy_allowed {
             Color32::from_rgb(0, 120, 0)
         } else {
             Color32::from_gray(60)
         });
 
-        if ui.add_enabled(can_deploy, button).clicked() {
+        if ui.add_enabled(deploy_allowed, button).clicked() {
             self.deploy_niche();
         }
 
-        if !can_deploy {
+        if !deploy_allowed {
             ui.colored_label(Color32::GRAY, "Complete all required assignments to deploy");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn validation_display_info_valid() {
+        let (icon, text, rgb) = validation_display_info(&ValidationResult::Valid);
+        assert_eq!(icon, "✓");
+        assert_eq!(text, "All requirements met");
+        assert_eq!(rgb, [0, 255, 0]);
+    }
+
+    #[test]
+    fn validation_display_info_missing() {
+        let (icon, text, rgb) =
+            validation_display_info(&ValidationResult::MissingRequirements(vec![
+                "cap1".to_string(),
+                "cap2".to_string(),
+            ]));
+        assert_eq!(icon, "✖");
+        assert!(text.contains("Missing required capabilities"));
+        assert!(text.contains("cap1"));
+        assert!(text.contains("cap2"));
+        assert_eq!(rgb, [255, 0, 0]);
+    }
+
+    #[test]
+    fn validation_display_info_insufficient() {
+        let (icon, text, rgb) = validation_display_info(&ValidationResult::InsufficientResources(
+            "low memory".to_string(),
+        ));
+        assert_eq!(icon, "⚠");
+        assert_eq!(text, "low memory");
+        assert_eq!(rgb, [255, 255, 0]);
+    }
+
+    #[test]
+    fn validation_display_info_conflicts() {
+        let (icon, text, rgb) =
+            validation_display_info(&ValidationResult::Conflicts(vec!["conflict1".to_string()]));
+        assert_eq!(icon, "✖");
+        assert_eq!(text, "Conflicts detected:");
+        assert_eq!(rgb, [255, 0, 0]);
+    }
+
+    #[test]
+    fn can_deploy_valid() {
+        assert!(can_deploy(&ValidationResult::Valid));
+    }
+
+    #[test]
+    fn can_deploy_invalid() {
+        assert!(!can_deploy(&ValidationResult::MissingRequirements(vec![
+            "x".to_string()
+        ])));
+        assert!(!can_deploy(&ValidationResult::InsufficientResources(
+            "msg".to_string()
+        )));
+        assert!(!can_deploy(&ValidationResult::Conflicts(vec![
+            "c".to_string()
+        ])));
     }
 }

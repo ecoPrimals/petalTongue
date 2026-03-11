@@ -312,4 +312,58 @@ mod tests {
         let complexity = narrative_complexity(text);
         assert!(complexity > 0.0 && complexity <= 1.0);
     }
+
+    #[test]
+    fn test_narrative_add_backspace() {
+        let mut capture = NarrativeEntropyCapture::new();
+        capture.start();
+        capture.add_char('a');
+        capture.add_char('b');
+        capture.add_backspace();
+        assert_eq!(capture.text, "a");
+    }
+
+    #[test]
+    fn test_narrative_finalize() {
+        let mut capture = NarrativeEntropyCapture::new();
+        capture.start();
+        capture.add_char('H');
+        capture.add_char('i');
+        let data = capture.finalize().expect("finalize");
+        assert_eq!(data.text, "Hi");
+        assert_eq!(data.keystroke_timings.len(), 2);
+    }
+
+    #[test]
+    fn test_narrative_quality_with_content() {
+        let mut capture = NarrativeEntropyCapture::new();
+        capture.start();
+        capture.add_char('a');
+        capture.add_char('b');
+        capture.add_char('c');
+        let quality = capture.assess_quality();
+        assert!(quality.content_entropy >= 0.0);
+        assert!(quality.overall_quality >= 0.0);
+    }
+
+    #[test]
+    fn test_narrative_complexity_words_only() {
+        let text = "word";
+        let c = narrative_complexity(text);
+        assert!((0.0..=1.0).contains(&c));
+    }
+
+    #[test]
+    fn test_narrative_complexity_single_sentence() {
+        let text = "Hello world.";
+        let c = narrative_complexity(text);
+        assert!(c > 0.0);
+    }
+
+    #[test]
+    fn test_compute_text_entropy_mixed() {
+        let text = "aab";
+        let e = compute_text_entropy(text);
+        assert!(e > 0.0 && e < 2.0);
+    }
 }

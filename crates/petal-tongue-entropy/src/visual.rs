@@ -296,4 +296,52 @@ mod tests {
         let complexity = visual_complexity(&[stroke], (800, 600));
         assert!(complexity > 0.0 && complexity <= 1.0);
     }
+
+    #[test]
+    fn test_visual_add_stroke_and_finalize() {
+        let mut capture = VisualEntropyCapture::new(800, 600);
+        let stroke = Stroke {
+            points: vec![Point2D { x: 10.0, y: 20.0 }, Point2D { x: 50.0, y: 60.0 }],
+            timestamps: vec![Duration::from_millis(0), Duration::from_millis(50)],
+            pressure: vec![0.5, 0.6],
+            color: Color {
+                r: 255,
+                g: 128,
+                b: 0,
+                a: 255,
+            },
+        };
+        capture.add_stroke(stroke);
+        let data = capture.finalize().expect("finalize");
+        assert_eq!(data.strokes.len(), 1);
+        assert_eq!(data.canvas_size, (800, 600));
+        assert!(data.total_coverage >= 0.0 && data.total_coverage <= 1.0);
+    }
+
+    #[test]
+    fn test_visual_quality_with_strokes() {
+        let mut capture = VisualEntropyCapture::new(800, 600);
+        let stroke = Stroke {
+            points: vec![
+                Point2D { x: 0.0, y: 0.0 },
+                Point2D { x: 100.0, y: 0.0 },
+                Point2D { x: 100.0, y: 100.0 },
+            ],
+            timestamps: vec![
+                Duration::from_millis(0),
+                Duration::from_millis(50),
+                Duration::from_millis(100),
+            ],
+            pressure: vec![0.5, 0.5, 0.5],
+            color: Color {
+                r: 255,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+        };
+        capture.add_stroke(stroke);
+        let quality = capture.assess_quality();
+        assert!(quality.overall_quality >= 0.0);
+    }
 }

@@ -28,34 +28,29 @@ impl AudioSystemV2 {
     ///
     /// This is synchronous for backward compatibility, but internally
     /// uses async `AudioManager`.
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self> {
         info!("🎵 Initializing AudioSystemV2 (substrate-agnostic)...");
 
         let (runtime, owned) = if let Ok(handle) = tokio::runtime::Handle::try_current() {
             (handle, None)
         } else {
-            let rt = tokio::runtime::Runtime::new().unwrap_or_else(|e| {
-                error!("Failed to create tokio runtime for audio: {}", e);
-                panic!("Cannot initialize audio: tokio runtime creation failed");
-            });
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| anyhow::anyhow!("tokio runtime creation failed: {}", e))?;
             let handle = rt.handle().clone();
             (handle, Some(rt))
         };
 
-        let manager = runtime.block_on(async {
-            AudioManager::init().await.unwrap_or_else(|e| {
-                error!("Failed to initialize AudioManager: {}", e);
-                panic!("Cannot initialize audio: AudioManager failed");
-            })
-        });
+        let manager = runtime
+            .block_on(AudioManager::init())
+            .map_err(|e| anyhow::anyhow!("AudioManager init failed: {}", e))?;
 
         info!("✅ AudioSystemV2 initialized");
 
-        Self {
+        Ok(Self {
             manager: Arc::new(Mutex::new(manager)),
             runtime,
             _owned_runtime: owned,
-        }
+        })
     }
 
     /// Play a tone with given waveform, frequency, and duration
@@ -214,7 +209,7 @@ impl AudioSystemV2 {
 
 impl Default for AudioSystemV2 {
     fn default() -> Self {
-        Self::new()
+        Self::new().expect("AudioSystemV2::default() requires working audio init (test-only)")
     }
 }
 
@@ -225,23 +220,60 @@ mod tests {
     #[test]
     fn test_audio_system_v2_creation() {
         // Should not panic
-        let audio = AudioSystemV2::new();
+        let audio = AudioSystemV2::new().expect("test requires working audio");
 
         // Should have at least silent backend
         let backends = audio.available_backends();
         assert!(!backends.is_empty(), "Should have at least one backend");
 
         println!("Available backends:");
-        for backend in backends {
-            println!("  - {}", backend);
+        for backend in &backends {
+            println!("  - {backend}");
         }
     }
 
     #[test]
     fn test_audio_system_v2_play_tone() {
-        let audio = AudioSystemV2::new();
+        let audio = AudioSystemV2::new().expect("test requires working audio");
 
         // Should not panic (may be silent)
         audio.play_tone(Waveform::Sine, 440.0, 0.1);
+    }
+
+    #[test]
+    fn test_play_polyphonic_empty_tones() {
+        let audio = AudioSystemV2::new().expect("test requires working audio");
+        let result = audio.play_polyphonic(&[], 0.1);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_play_polyphonic_single_tone() {
+        let audio = AudioSystemV2::new().expect("test requires working audio");
+        let tones = [(440.0, 0.5, Waveform::Sine)];
+        let result = audio.play_polyphonic(&tones, 0.1);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_play_sound_by_name() {
+        let audio = AudioSystemV2::new().expect("test requires working audio");
+        audio.play("notification");
+    }
+
+    #[test]
+    fn test_available_backends_format() {
+        let audio = AudioSystemV2::new().expect("test requires working audio");
+        let backends = audio.available_backends();
+        for backend in &backends {
+            assert!(!backend.is_empty());
+            assert!(backend.contains('(') || backend.contains("Silent"));
+        }
+    }
+
+    #[test]
+    fn test_waveform_variants() {
+        assert_eq!(Waveform::Sine, Waveform::Sine);
+        assert_ne!(Waveform::Sine, Waveform::Square);
     }
 }

@@ -6,10 +6,13 @@
 use async_trait::async_trait;
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
 use petal_tongue_discovery::{ProviderMetadata, VisualizationDataProvider};
+use tokio::time::timeout;
 use tracing::debug;
 
 use super::provider::BiomeOSProvider;
 use super::types::Health;
+
+const HEALTH_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
 
 #[async_trait]
 impl VisualizationDataProvider for BiomeOSProvider {
@@ -25,7 +28,7 @@ impl VisualizationDataProvider for BiomeOSProvider {
                 primal_type: "device-managed".to_string(),
                 endpoint: format!(
                     "unix:///run/user/{}/{}.sock",
-                    users::get_current_uid(),
+                    petal_tongue_core::system_info::get_current_uid(),
                     p.name
                 ),
                 capabilities: p.capabilities.clone(),
@@ -41,9 +44,9 @@ impl VisualizationDataProvider for BiomeOSProvider {
                 endpoints: None,
                 metadata: None,
                 properties: Default::default(),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: None,
             })
             .collect())
@@ -58,9 +61,16 @@ impl VisualizationDataProvider for BiomeOSProvider {
     async fn health_check(&self) -> anyhow::Result<String> {
         debug!("Health check for device management provider");
 
-        // TODO: Implement actual health check
-        // For Phase 1, always return healthy
-        Ok("healthy".to_string())
+        let result = timeout(HEALTH_CHECK_TIMEOUT, self.health_check_jsonrpc()).await;
+
+        match result {
+            Ok(Ok(status)) => Ok(status),
+            Ok(Err(e)) => Err(e),
+            Err(_) => Err(anyhow::anyhow!(
+                "Health check timed out after {} seconds",
+                HEALTH_CHECK_TIMEOUT.as_secs()
+            )),
+        }
     }
 
     fn get_metadata(&self) -> ProviderMetadata {

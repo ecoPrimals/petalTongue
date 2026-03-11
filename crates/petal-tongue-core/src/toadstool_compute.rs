@@ -66,6 +66,7 @@ impl ToadstoolCompute {
     /// 1. Env override (`GPU_RENDERING_ENDPOINT`, `COMPUTE_PROVIDER_ENDPOINT`)
     /// 2. Ecosystem directory (`$XDG_RUNTIME_DIR/ecoPrimals/discovery/`)
     /// 3. Socket scan (`$XDG_RUNTIME_DIR/toadstool/`)
+    #[expect(clippy::unused_async, reason = "async for future async discovery APIs")]
     async fn discover_toadstool() -> Result<ToadstoolServiceInfo> {
         if let Ok(endpoint) = std::env::var("GPU_RENDERING_ENDPOINT") {
             tracing::info!("Found GPU rendering service via environment: {endpoint}");
@@ -131,6 +132,24 @@ impl ToadstoolCompute {
                         });
                     }
                 }
+            }
+        }
+
+        // Final fallback: GPU_COMPUTE_ENDPOINT when ecosystem discovery fails (env-driven)
+        if std::env::var("GPU_COMPUTE_ENDPOINT").is_ok() {
+            let endpoint = crate::constants::default_gpu_compute_endpoint();
+            if !endpoint.is_empty() {
+                tracing::info!("Using GPU compute endpoint from env: {endpoint}");
+                return Ok(ToadstoolServiceInfo {
+                    id: "env-gpu-compute".to_string(),
+                    endpoint,
+                    capabilities: vec![
+                        "gpu.dispatch".to_string(),
+                        "science.gpu.dispatch".to_string(),
+                        "display".to_string(),
+                    ],
+                    metadata: HashMap::new(),
+                });
             }
         }
 
@@ -298,11 +317,11 @@ mod tests {
         std::fs::create_dir_all(&discovery_dir).unwrap();
 
         let manifest = serde_json::json!({
-            "id": "test-toadstool",
-            "endpoint": "tarpc://localhost:9001",
+            "id": "test-gpu-compute",
+            "endpoint": crate::constants::DEFAULT_GPU_COMPUTE_ENDPOINT,
             "capabilities": ["gpu.dispatch", "display"]
         });
-        let manifest_path = discovery_dir.join("toadstool.json");
+        let manifest_path = discovery_dir.join("gpu-compute.json");
         std::fs::write(&manifest_path, serde_json::to_string(&manifest).unwrap()).unwrap();
 
         let runtime_dir = temp.path().to_str().unwrap().to_string();
@@ -404,13 +423,16 @@ mod tests {
 
         let info = ToadstoolServiceInfo {
             id: "test-service".to_string(),
-            endpoint: "tarpc://localhost:9001".to_string(),
+            endpoint: crate::constants::DEFAULT_GPU_COMPUTE_ENDPOINT.to_string(),
             capabilities: vec!["gpu-rendering".to_string()],
             metadata,
         };
 
         assert_eq!(info.id.as_str(), "test-service");
-        assert_eq!(info.endpoint, "tarpc://localhost:9001");
+        assert_eq!(
+            info.endpoint,
+            crate::constants::DEFAULT_GPU_COMPUTE_ENDPOINT
+        );
         assert_eq!(info.capabilities.len(), 1);
         assert_eq!(info.metadata.get("version").unwrap(), "1.0.0");
     }

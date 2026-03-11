@@ -18,6 +18,7 @@
 
 use anyhow::Result;
 use async_trait::async_trait;
+use petal_tongue_core::constants;
 use petal_tongue_core::{Sensor, SensorCapabilities, SensorEvent, SensorType};
 use std::io::IsTerminal;
 use std::time::Instant;
@@ -65,6 +66,7 @@ impl ScreenSensor {
     }
 
     /// Send heartbeat to check if display is responsive
+    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
     pub async fn send_heartbeat(&mut self) -> Result<()> {
         if self.display_type == DisplayType::Terminal {
             // Query cursor position as heartbeat
@@ -139,6 +141,7 @@ pub enum DisplayType {
 }
 
 /// Discover screen capabilities
+#[expect(clippy::unused_async, reason = "async for trait compatibility")]
 pub async fn discover() -> Option<ScreenSensor> {
     // Method 1: Terminal
     if std::io::stdout().is_terminal()
@@ -160,7 +163,12 @@ pub async fn discover() -> Option<ScreenSensor> {
             return Some(ScreenSensor::new(DisplayType::Framebuffer, width, height));
         }
         tracing::warn!("Framebuffer exists but couldn't read dimensions, using defaults");
-        return Some(ScreenSensor::new(DisplayType::Framebuffer, 1920, 1080));
+        let (w, h) = constants::default_window_size();
+        return Some(ScreenSensor::new(
+            DisplayType::Framebuffer,
+            w as usize,
+            h as usize,
+        ));
     }
 
     // Method 3: Window (discover actual dimensions from environment)
@@ -279,13 +287,21 @@ fn query_x11_dimensions() -> Option<(usize, usize)> {
         return Some((pixel_width, pixel_height));
     }
 
-    // Last resort: Default dimensions
-    tracing::warn!("Could not detect display dimensions, using defaults");
-    Some((1920, 1080))
+    // Last resort: From constants (env: PETALTONGUE_WINDOW_WIDTH, PETALTONGUE_WINDOW_HEIGHT)
+    let (w, h) = constants::default_window_size();
+    tracing::warn!(
+        "Could not detect display dimensions, using defaults {}x{}",
+        w,
+        h
+    );
+    Some((w as usize, h as usize))
 }
 
 /// Query X11 display dimensions (DEPRECATED - kept for compatibility)
-#[expect(dead_code)]
+#[expect(
+    dead_code,
+    reason = "deprecated fallback; query_x11_dimensions uses pure Rust (winit)"
+)]
 fn query_x11_dimensions_legacy() -> Option<(usize, usize)> {
     // DEPRECATED: This function used external commands (xrandr, xdpyinfo)
     // Now replaced with pure Rust (winit) via query_x11_dimensions()
@@ -406,5 +422,55 @@ mod tests {
     async fn test_screen_is_available() {
         let sensor = ScreenSensor::new(DisplayType::Terminal, 80, 24);
         assert!(sensor.is_available());
+    }
+
+    #[tokio::test]
+    async fn test_screen_sensor_window_heartbeat() {
+        let mut sensor = ScreenSensor::new(DisplayType::Window, 1920, 1080);
+        sensor.send_heartbeat().await.expect("heartbeat");
+        assert!(sensor.last_activity().is_some());
+    }
+
+    #[tokio::test]
+    async fn test_screen_sensor_framebuffer() {
+        let sensor = ScreenSensor::new(DisplayType::Framebuffer, 1920, 1080);
+        assert_eq!(sensor.name(), "Framebuffer Screen");
+    }
+
+    #[tokio::test]
+    async fn test_screen_sensor_display_visible_event() {
+        let mut sensor = ScreenSensor::new(DisplayType::Terminal, 80, 24);
+        let events = sensor.poll_events().await.expect("poll");
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, SensorEvent::DisplayVisible { .. }))
+        );
+    }
+
+    #[test]
+    fn test_query_framebuffer_dimensions_nonexistent() {
+        let result = query_framebuffer_dimensions("/dev/fb_nonexistent_12345");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_display_type_variants() {
+        assert_eq!(
+            ScreenSensor::new(DisplayType::Terminal, 80, 24).name(),
+            "Terminal Screen"
+        );
+        assert_eq!(
+            ScreenSensor::new(DisplayType::Framebuffer, 1920, 1080).name(),
+            "Framebuffer Screen"
+        );
+        assert_eq!(
+            ScreenSensor::new(DisplayType::Window, 1400, 900).name(),
+            "Window Screen"
+        );
+        assert_eq!(
+            ScreenSensor::new(DisplayType::Unknown, 0, 0).name(),
+            "Unknown Screen"
+        );
     }
 }

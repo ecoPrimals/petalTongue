@@ -245,4 +245,96 @@ mod tests {
         // (0.8*1.0 + 0.6*0.5) / (1.0 + 0.5) = 1.1 / 1.5 ≈ 0.733
         assert_relative_eq!(quality, 0.733, epsilon = 0.01);
     }
+
+    #[test]
+    fn test_shannon_entropy_empty() {
+        let values: Vec<i32> = vec![];
+        let entropy = shannon_entropy(&values);
+        assert_relative_eq!(entropy, 0.0, epsilon = 0.01);
+    }
+
+    #[test]
+    fn test_shannon_entropy_low_diversity() {
+        let values = vec![1, 1, 1, 2, 2];
+        let entropy = shannon_entropy(&values);
+        assert!(entropy > 0.0 && entropy < 1.0);
+    }
+
+    #[test]
+    fn test_shannon_entropy_strings() {
+        let values = vec!["a", "b", "c", "a", "b", "c"];
+        let entropy = shannon_entropy(&values);
+        assert_relative_eq!(entropy, 1.0, epsilon = 0.01);
+    }
+
+    #[test]
+    fn test_variance_single_value() {
+        let values = vec![42.0];
+        let var = variance(&values);
+        assert_relative_eq!(var, 0.0, epsilon = 0.01);
+    }
+
+    #[test]
+    fn test_variance_empty() {
+        let values: Vec<f64> = vec![];
+        let var = variance(&values);
+        assert_relative_eq!(var, 0.0, epsilon = 0.01);
+    }
+
+    #[test]
+    fn test_create_histogram_buckets_empty() {
+        let values: Vec<f64> = vec![];
+        let buckets = create_histogram_buckets(&values, 5);
+        assert!(buckets.is_empty());
+    }
+
+    #[test]
+    fn test_create_histogram_buckets_zero_buckets() {
+        let values = vec![1.0, 2.0, 3.0];
+        let buckets = create_histogram_buckets(&values, 0);
+        assert!(buckets.is_empty());
+    }
+
+    #[test]
+    fn test_create_histogram_buckets_uniform_values() {
+        let values = vec![5.0, 5.0, 5.0];
+        let buckets = create_histogram_buckets(&values, 3);
+        assert_eq!(buckets.len(), 3);
+        assert_eq!(buckets, vec![0, 0, 0]);
+    }
+
+    #[test]
+    fn test_timing_entropy_single_duration() {
+        let durations = vec![Duration::from_millis(100)];
+        let entropy = timing_entropy(&durations);
+        assert_relative_eq!(entropy, 0.0, epsilon = 0.01);
+    }
+
+    #[test]
+    fn test_timing_entropy_empty() {
+        let durations: Vec<Duration> = vec![];
+        let entropy = timing_entropy(&durations);
+        assert_relative_eq!(entropy, 0.0, epsilon = 0.01);
+    }
+
+    #[test]
+    fn test_weighted_quality_empty() {
+        let components: Vec<(f64, f64)> = vec![];
+        let quality = weighted_quality(&components);
+        assert_relative_eq!(quality, 0.0, epsilon = 0.01);
+    }
+
+    #[test]
+    fn test_weighted_quality_zero_total_weight() {
+        let components = vec![(0.5, 0.0), (0.5, 0.0)];
+        let quality = weighted_quality(&components);
+        assert_relative_eq!(quality, 0.0, epsilon = 0.01);
+    }
+
+    #[test]
+    fn test_weighted_quality_single_component() {
+        let components = vec![(0.9, 1.0)];
+        let quality = weighted_quality(&components);
+        assert_relative_eq!(quality, 0.9, epsilon = 0.01);
+    }
 }

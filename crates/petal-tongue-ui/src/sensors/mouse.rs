@@ -134,6 +134,7 @@ fn map_button(btn: CrosstermButton) -> MouseButton {
 }
 
 /// Discover mouse capabilities
+#[expect(clippy::unused_async, reason = "async for trait compatibility")]
 pub async fn discover() -> Option<MouseSensor> {
     // Check if terminal supports mouse events
     if std::io::stdout().is_terminal() {

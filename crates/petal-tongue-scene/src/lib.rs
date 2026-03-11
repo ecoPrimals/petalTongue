@@ -24,13 +24,21 @@
 pub mod animation;
 pub mod compiler;
 pub mod dashboard;
-pub mod data_binding_compiler;
+pub mod data_binding;
 pub mod domain_palette;
+pub mod equation;
 pub mod grammar;
-pub mod math_objects;
+pub mod math;
+/// Backward compatibility: re-export math module.
+pub mod math_objects {
+    pub use super::math::*;
+}
+pub mod game_loop;
+pub mod gpu_compiler;
 pub mod modality;
 pub mod physics;
 pub mod primitive;
+pub mod render_plan;
 pub mod scene_graph;
 pub mod transform;
 pub mod tufte;
@@ -40,18 +48,28 @@ pub use compiler::GrammarCompiler;
 pub use dashboard::{
     Dashboard, DashboardConfig, DashboardLayout, build_dashboard, compose_dashboard,
 };
-pub use data_binding_compiler::DataBindingCompiler;
+pub use data_binding::DataBindingCompiler;
 pub use domain_palette::{DomainPalette, palette_for_domain};
+pub use equation::EquationCompiler;
+pub use gpu_compiler::{GpuCompiler, GpuDrawCommand};
 pub use grammar::{
     Aesthetic, CoordinateSystem, Facet, FacetLayout, GeometryType, GrammarExpr, ScaleType,
 };
-pub use math_objects::{Axes, FunctionPlot, MathObject, NumberLine, ParametricCurve, VectorField};
-pub use modality::{AudioParam, ModalityCompiler, ModalityOutput};
+pub use math::{Axes, FunctionPlot, MathObject, NumberLine, ParametricCurve, VectorField};
+pub use modality::{
+    AudioParam, BrailleCell, BrailleCompiler, HapticCommand, HapticCompiler, HapticPattern,
+    ModalityCompiler, ModalityOutput,
+};
 pub use physics::{CollisionShape, PhysicsBody, PhysicsWorld};
 pub use primitive::{
     AnchorPoint, BezierSegment, Color, FillRule, LineCap, LineJoin, MeshVertex, Primitive,
     StrokeStyle,
 };
+pub use render_plan::{AxisMeta, PanelBounds, PanelMeta, RenderPlan};
 pub use scene_graph::{NodeId, SceneGraph, SceneNode};
 pub use transform::{Transform2D, Transform3D};
-pub use tufte::{ConstraintResult, ConstraintSeverity, TufteConstraint, TufteReport};
+pub use tufte::{
+    ChartjunkDetection, ColorAccessibility, ConstraintResult, ConstraintSeverity, DataDensity,
+    DataInkRatio, LieFactor, SmallMultiplesPreference, SmallestEffectiveDifference,
+    TufteConstraint, TufteReport,
+};

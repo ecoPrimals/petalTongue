@@ -94,12 +94,7 @@ impl SystemDashboard {
             self.cpu_metric.render_large(ui);
             ui.add_space(5.0);
 
-            let cpus = self.system.cpus();
-            let cpu_usage = if cpus.is_empty() {
-                0.0
-            } else {
-                cpus.iter().map(sysinfo::Cpu::cpu_usage).sum::<f32>() / cpus.len() as f32
-            };
+            let cpu_usage = self.stats.cpu_usage();
 
             // Progress bar
             ui.add(
@@ -114,7 +109,7 @@ impl SystemDashboard {
                     }),
             );
 
-            ui.label(format!("Cores: {}", cpus.len()));
+            ui.label(format!("Cores: {}", self.stats.cpu_count()));
             self.render_mini_sparkline(ui, &self.cpu_history, palette);
         });
 
@@ -125,8 +120,8 @@ impl SystemDashboard {
             self.memory_metric.render_large(ui);
             ui.add_space(5.0);
 
-            let used = self.system.used_memory();
-            let total = self.system.total_memory();
+            let used = self.stats.used_memory();
+            let total = self.stats.total_memory();
             let percent = memory_percent(used, total);
 
             ui.label(format_memory_gb(used, total));
@@ -475,5 +470,38 @@ mod tests {
         assert!(s.contains("2.0"));
         assert!(s.contains("8.0"));
         assert!(s.starts_with("Used:"));
+    }
+
+    #[test]
+    fn memory_percent_small_values() {
+        assert!((memory_percent(1, 100) - 1.0).abs() < f64::EPSILON);
+        assert!((memory_percent(0, 1000) - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn format_memory_gb_zero() {
+        let s = format_memory_gb(0, 0);
+        assert!(s.contains("0.0"));
+    }
+
+    #[test]
+    fn memory_percent_large_values() {
+        let used = 8 * 1_073_741_824;
+        let total = 16 * 1_073_741_824;
+        assert!((memory_percent(used, total) - 50.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn format_memory_gb_fractional() {
+        let used = 1_073_741_824 / 2;
+        let total = 2 * 1_073_741_824;
+        let s = format_memory_gb(used, total);
+        assert!(s.contains("Used:"));
+        assert!(s.contains("GB"));
+    }
+
+    #[test]
+    fn memory_percent_near_full() {
+        assert!((memory_percent(99, 100) - 99.0).abs() < f64::EPSILON);
     }
 }

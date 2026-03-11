@@ -150,7 +150,10 @@ impl NeuralApiProvider {
     }
 
     /// Parse primal from Neural API format to `PrimalInfo`
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "Ok wrapper for struct literal in Result chain"
+    )]
     fn parse_primal(primal: &Value) -> Result<PrimalInfo> {
         Ok(PrimalInfo {
             id: primal["id"]
@@ -326,6 +329,42 @@ mod tests {
             metadata
                 .capabilities
                 .contains(&"proprioception".to_string())
+        );
+    }
+
+    #[test]
+    fn test_jsonrpc_request_format() {
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": "neural_api.get_primals",
+            "params": {},
+            "id": 1
+        });
+        assert_eq!(request["jsonrpc"], "2.0");
+        assert_eq!(request["method"], "neural_api.get_primals");
+        assert!(request["params"].is_object());
+    }
+
+    #[test]
+    fn test_jsonrpc_request_with_params() {
+        let params = json!({"graph_id": "g-1"});
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": "neural_api.load_graph",
+            "params": params,
+            "id": 2
+        });
+        assert_eq!(request["params"]["graph_id"], "g-1");
+    }
+
+    #[test]
+    fn test_search_paths_contains_uid() {
+        let paths = NeuralApiProvider::get_search_paths();
+        let uid = petal_tongue_core::system_info::get_current_uid();
+        let run_user = format!("/run/user/{uid}");
+        assert!(
+            paths.iter().any(|p| p.to_str() == Some(&run_user)),
+            "paths should include /run/user/<uid>"
         );
     }
 }

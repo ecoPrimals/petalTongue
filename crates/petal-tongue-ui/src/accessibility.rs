@@ -130,6 +130,27 @@ impl FontSize {
             Self::ExtraLarge => "Extra Large",
         }
     }
+
+    /// Increase font size (clamped at ExtraLarge).
+    #[must_use]
+    pub fn increase(self) -> Self {
+        match self {
+            Self::Small => Self::Medium,
+            Self::Medium => Self::Large,
+            Self::Large | Self::ExtraLarge => Self::ExtraLarge,
+        }
+    }
+
+    /// Decrease font size (clamped at Small).
+    #[must_use]
+    pub fn decrease(self) -> Self {
+        match self {
+            Self::Small => Self::Small,
+            Self::Medium => Self::Small,
+            Self::Large => Self::Medium,
+            Self::ExtraLarge => Self::Large,
+        }
+    }
 }
 
 /// Color palette for a specific scheme
@@ -292,13 +313,29 @@ impl LiveIndicator {
         }
     }
 
+    /// Create indicator with fixed last-update time (for testing age_string branches)
+    #[cfg(test)]
+    #[must_use]
+    pub fn new_with_last_update(
+        source: String,
+        update_interval: f64,
+        last_update_secs: f64,
+    ) -> Self {
+        Self {
+            is_live: true,
+            last_update_secs,
+            source,
+            update_interval,
+        }
+    }
+
     /// Mark as updated (now)
     pub fn mark_updated(&mut self) {
         use std::time::{SystemTime, UNIX_EPOCH};
         self.is_live = true;
         self.last_update_secs = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .expect("System time before UNIX epoch - clock error")
             .as_secs_f64();
     }
 
@@ -308,7 +345,7 @@ impl LiveIndicator {
         use std::time::{SystemTime, UNIX_EPOCH};
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .expect("System time before UNIX epoch - clock error")
             .as_secs_f64();
         now - self.last_update_secs
     }
@@ -366,5 +403,70 @@ mod tests {
         assert!(indicator.is_live);
         assert!(indicator.age_seconds() < 0.1);
         assert!(!indicator.is_stale());
+    }
+
+    #[test]
+    fn test_live_indicator_age_string_branches() {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_secs_f64();
+
+        let mut ind = LiveIndicator::new("x".to_string(), 1.0);
+        ind.mark_updated();
+        let s = ind.age_string();
+        assert!(s == "Just now" || s.contains("s ago"));
+
+        let ind = LiveIndicator::new_with_last_update("x".to_string(), 1.0, now - 45.0);
+        assert!(ind.age_string().contains("s ago"));
+
+        let ind = LiveIndicator::new_with_last_update("x".to_string(), 1.0, now - 120.0);
+        assert!(ind.age_string().contains("m ago"));
+
+        let ind = LiveIndicator::new_with_last_update("x".to_string(), 1.0, now - 7200.0);
+        assert!(ind.age_string().contains("h ago"));
+    }
+
+    #[test]
+    fn test_live_indicator_is_stale() {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_secs_f64();
+        let ind = LiveIndicator::new_with_last_update("x".to_string(), 1.0, now - 5.0);
+        assert!(ind.is_stale());
+    }
+
+    #[test]
+    fn test_color_scheme_names() {
+        assert_eq!(ColorScheme::Default.name(), "Default");
+        assert_eq!(ColorScheme::HighContrast.name(), "High Contrast");
+        assert_eq!(ColorScheme::Deuteranopia.name(), "Deuteranopia (Red-Green)");
+        assert_eq!(ColorScheme::Protanopia.name(), "Protanopia (Red-Blind)");
+        assert_eq!(ColorScheme::Tritanopia.name(), "Tritanopia (Blue-Yellow)");
+        assert_eq!(ColorScheme::Dark.name(), "Dark Mode");
+        assert_eq!(ColorScheme::Light.name(), "Light Mode");
+    }
+
+    #[test]
+    fn test_font_size_names() {
+        assert_eq!(FontSize::Small.name(), "Small");
+        assert_eq!(FontSize::Medium.name(), "Medium");
+        assert_eq!(FontSize::Large.name(), "Large");
+        assert_eq!(FontSize::ExtraLarge.name(), "Extra Large");
+    }
+
+    #[test]
+    fn test_accessibility_settings_default() {
+        let s = AccessibilitySettings::default();
+        assert_eq!(s.color_scheme, ColorScheme::Default);
+        assert_eq!(s.font_size, FontSize::Medium);
+        assert!(s.audio_enabled);
+        assert!((s.audio_volume - 0.8).abs() < f32::EPSILON);
+        assert!(!s.narration_enabled);
+        assert!(!s.keyboard_only);
+        assert!(!s.screen_reader_mode);
+        assert!(!s.high_contrast);
+        assert!(!s.reduced_motion);
     }
 }

@@ -232,6 +232,10 @@ async fn get_total_memory() -> Option<u64> {
 }
 
 /// Gather detailed status (concurrent)
+#[expect(
+    clippy::unused_async,
+    reason = "async for future concurrent status gathering"
+)]
 async fn gather_detailed_status() -> DetailedStatus {
     DetailedStatus {
         modes: vec![
@@ -451,6 +455,45 @@ mod tests {
         }
 
         // Test completes quickly (no sleeps!)
+    }
+
+    #[tokio::test]
+    async fn test_status_json_serialization() {
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let status = gather_status(false, &data_service).await.unwrap();
+        let json = serde_json::to_string(&status).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert!(parsed.get("version").is_some());
+        assert!(parsed.get("unibin").is_some());
+        assert!(parsed.get("ecobin").is_some());
+        assert!(parsed.get("system").is_some());
+    }
+
+    #[tokio::test]
+    async fn test_status_verbose_has_detailed() {
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let status = gather_status(true, &data_service).await.unwrap();
+        let detailed = status.detailed.unwrap();
+        assert_eq!(detailed.modes.len(), 5);
+        assert!(!detailed.features.is_empty());
+        assert!(detailed.dependencies.total > 0);
+    }
+
+    #[tokio::test]
+    async fn test_status_system_info() {
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let status = gather_status(false, &data_service).await.unwrap();
+        assert_eq!(status.system.os, std::env::consts::OS);
+        assert_eq!(status.system.arch, std::env::consts::ARCH);
+    }
+
+    #[tokio::test]
+    async fn test_status_unibin_compliant() {
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let status = gather_status(false, &data_service).await.unwrap();
+        assert!(status.unibin.compliant);
+        assert_eq!(status.unibin.binary_count, 1);
+        assert_eq!(status.unibin.mode_count, 5);
     }
 
     // All tests run in parallel - modern concurrent Rust!

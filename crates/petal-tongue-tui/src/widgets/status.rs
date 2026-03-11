@@ -106,4 +106,55 @@ mod tests {
             "1h 1m 1s"
         );
     }
+
+    #[test]
+    fn format_duration_subsecond() {
+        assert_eq!(format_duration(std::time::Duration::from_millis(500)), "0s");
+    }
+
+    #[test]
+    fn format_duration_many_hours() {
+        assert_eq!(
+            format_duration(std::time::Duration::from_secs(90_000)),
+            "25h 0m 0s"
+        );
+    }
+
+    #[test]
+    fn status_bar_render_no_panic() {
+        use ratatui::Terminal;
+        use ratatui::backend::TestBackend;
+        let backend = TestBackend::new(80, 24);
+        let mut terminal = Terminal::new(backend).expect("terminal");
+        let status = crate::state::SystemStatus {
+            active_primals: 3,
+            discovered_devices: 2,
+            uptime: std::time::Duration::from_secs(3600),
+            last_update: chrono::Utc::now(),
+        };
+        terminal
+            .draw(|frame| {
+                StatusBar::render(frame, frame.area(), &status);
+            })
+            .expect("draw");
+    }
+
+    #[test]
+    fn status_bar_render_zero_primals() {
+        use ratatui::Terminal;
+        use ratatui::backend::TestBackend;
+        let backend = TestBackend::new(80, 24);
+        let mut terminal = Terminal::new(backend).expect("terminal");
+        let status = crate::state::SystemStatus {
+            active_primals: 0,
+            discovered_devices: 0,
+            uptime: std::time::Duration::ZERO,
+            last_update: chrono::Utc::now(),
+        };
+        terminal
+            .draw(|frame| {
+                StatusBar::render(frame, frame.area(), &status);
+            })
+            .expect("draw");
+    }
 }

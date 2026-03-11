@@ -53,8 +53,12 @@ fn test_cycle_detection() {
     graph.add_node(node2);
 
     // Create a cycle: node1 -> node2 -> node1
-    graph.add_edge(GraphEdge::dependency(id1.clone(), id2.clone()));
-    graph.add_edge(GraphEdge::dependency(id2.clone(), id1.clone()));
+    graph
+        .add_edge(GraphEdge::dependency(id1.clone(), id2.clone()))
+        .expect("edge");
+    graph
+        .add_edge(GraphEdge::dependency(id2.clone(), id1.clone()))
+        .expect("edge");
 
     let result = GraphValidator::validate(&graph);
     assert!(!result.is_valid());
@@ -94,8 +98,12 @@ fn test_unreachable_nodes() {
     // Connect node1 -> node2, and node3 -> node4 (separate graph)
     // node3 is a start node, but node4 depends on node3
     // Since node3 is not connected to node1/node2, node4 is "unreachable" from main chain
-    graph.add_edge(GraphEdge::dependency(id1, id2));
-    graph.add_edge(GraphEdge::dependency(id3, id4)); // Make node4 have incoming edge
+    graph
+        .add_edge(GraphEdge::dependency(id1, id2))
+        .expect("edge");
+    graph
+        .add_edge(GraphEdge::dependency(id3, id4))
+        .expect("edge"); // Make node4 have incoming edge
 
     let result = GraphValidator::validate(&graph);
 
@@ -137,12 +145,16 @@ fn test_execution_order() {
     graph.add_node(node3);
 
     // Create chain: node1 -> node2 -> node3
-    graph.add_edge(GraphEdge::dependency(id1.clone(), id2.clone()));
-    graph.add_edge(GraphEdge::dependency(id2.clone(), id3.clone()));
+    graph
+        .add_edge(GraphEdge::dependency(id1.clone(), id2.clone()))
+        .expect("edge");
+    graph
+        .add_edge(GraphEdge::dependency(id2.clone(), id3.clone()))
+        .expect("edge");
 
     let order = GraphValidator::get_execution_order(&graph);
     assert!(order.is_some());
-    let order = order.unwrap();
+    let order = order.expect("execution order");
     assert_eq!(order.len(), 3);
     assert_eq!(order[0], id1);
     assert_eq!(order[1], id2);
@@ -166,8 +178,12 @@ fn test_execution_order_with_cycle() {
     graph.add_node(node2);
 
     // Create cycle
-    graph.add_edge(GraphEdge::dependency(id1.clone(), id2.clone()));
-    graph.add_edge(GraphEdge::dependency(id2, id1));
+    graph
+        .add_edge(GraphEdge::dependency(id1.clone(), id2.clone()))
+        .expect("edge");
+    graph
+        .add_edge(GraphEdge::dependency(id2, id1))
+        .expect("edge");
 
     let order = GraphValidator::get_execution_order(&graph);
     assert!(order.is_none()); // Cannot get order with cycle
@@ -185,7 +201,9 @@ fn test_self_loop_detection() {
     graph.add_node(node1);
 
     // Create self-loop
-    graph.add_edge(GraphEdge::dependency(id1.clone(), id1));
+    graph
+        .add_edge(GraphEdge::dependency(id1.clone(), id1))
+        .expect("edge");
 
     let result = GraphValidator::validate(&graph);
     assert!(result.has_warnings());

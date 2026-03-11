@@ -194,19 +194,11 @@ pub struct ThresholdRange {
     pub status: String,
 }
 
-/// Deprecated: Use [`ThresholdRange`] instead.
-#[deprecated(note = "Use ThresholdRange instead")]
-pub type ClinicalRange = ThresholdRange;
-
-/// Deprecated: Use [`DataBinding`] instead.
-#[deprecated(note = "Use DataBinding instead")]
-pub type DataChannel = DataBinding;
-
 #[cfg(test)]
 mod tests {
     use super::{DataBinding, ThresholdRange};
 
-    /// Representative healthSpring JSON snippet (timeseries, distribution, bar, gauge, ClinicalRange).
+    /// Representative healthSpring JSON snippet (timeseries, distribution, bar, gauge, ThresholdRange).
     /// Confirms healthSpring schema compatibility with our types.
     const HEALTHSPRING_DATA_CHANNELS_SNIPPET: &str = r#"[
         {
@@ -436,6 +428,157 @@ mod tests {
                 assert!(z_label.is_empty());
             }
             _ => panic!("expected Scatter3D"),
+        }
+    }
+
+    #[test]
+    fn heatmap_round_trip() {
+        let json = r#"{
+            "channel_type": "heatmap",
+            "id": "hm1",
+            "label": "Correlation Matrix",
+            "x_labels": ["A", "B", "C"],
+            "y_labels": ["X", "Y"],
+            "values": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+            "unit": "corr"
+        }"#;
+        let binding: DataBinding = serde_json::from_str(json).expect("deserialize");
+        match &binding {
+            DataBinding::Heatmap {
+                id,
+                label,
+                x_labels,
+                y_labels,
+                values,
+                unit,
+            } => {
+                assert_eq!(id, "hm1");
+                assert_eq!(label, "Correlation Matrix");
+                assert_eq!(x_labels.len(), 3);
+                assert_eq!(y_labels.len(), 2);
+                assert_eq!(values.len(), 6);
+                assert_eq!(unit, "corr");
+            }
+            _ => panic!("expected Heatmap"),
+        }
+        let serialized = serde_json::to_string(&binding).expect("serialize");
+        let restored: DataBinding = serde_json::from_str(&serialized).expect("round-trip");
+        assert!(matches!(restored, DataBinding::Heatmap { .. }));
+    }
+
+    #[test]
+    fn fieldmap_round_trip() {
+        let json = r#"{
+            "channel_type": "fieldmap",
+            "id": "fm1",
+            "label": "ET0 Map",
+            "grid_x": [0.0, 1.0, 2.0],
+            "grid_y": [0.0, 1.0],
+            "values": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+            "unit": "mm/day"
+        }"#;
+        let binding: DataBinding = serde_json::from_str(json).expect("deserialize");
+        match &binding {
+            DataBinding::FieldMap {
+                id,
+                grid_x,
+                grid_y,
+                values,
+                unit,
+                ..
+            } => {
+                assert_eq!(id, "fm1");
+                assert_eq!(grid_x.len(), 3);
+                assert_eq!(grid_y.len(), 2);
+                assert_eq!(values.len(), 6);
+                assert_eq!(unit, "mm/day");
+            }
+            _ => panic!("expected FieldMap"),
+        }
+    }
+
+    #[test]
+    fn spectrum_round_trip() {
+        let json = r#"{
+            "channel_type": "spectrum",
+            "id": "spec1",
+            "label": "Power Spectrum",
+            "frequencies": [0.0, 1.0, 2.0, 3.0],
+            "amplitudes": [0.1, 0.5, 0.3, 0.05],
+            "unit": "dB"
+        }"#;
+        let binding: DataBinding = serde_json::from_str(json).expect("deserialize");
+        match &binding {
+            DataBinding::Spectrum {
+                id,
+                frequencies,
+                amplitudes,
+                unit,
+                ..
+            } => {
+                assert_eq!(id, "spec1");
+                assert_eq!(frequencies.len(), 4);
+                assert_eq!(amplitudes.len(), 4);
+                assert!((amplitudes[1] - 0.5).abs() < f64::EPSILON);
+                assert_eq!(unit, "dB");
+            }
+            _ => panic!("expected Spectrum"),
+        }
+    }
+
+    #[test]
+    fn threshold_range_serialization_round_trip() {
+        let tr = ThresholdRange {
+            label: "Critical".to_string(),
+            min: 0.0,
+            max: 1.0,
+            status: "critical".to_string(),
+        };
+        let json = serde_json::to_string(&tr).expect("serialize");
+        let restored: ThresholdRange = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.label, "Critical");
+        assert!((restored.min - 0.0).abs() < f64::EPSILON);
+        assert!((restored.max - 1.0).abs() < f64::EPSILON);
+        assert_eq!(restored.status, "critical");
+    }
+
+    #[test]
+    fn data_binding_invalid_json_fails() {
+        let result = serde_json::from_str::<DataBinding>("{invalid}");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn data_binding_unknown_channel_type_fails() {
+        let result = serde_json::from_str::<DataBinding>(
+            r#"{"channel_type": "unknown", "id": "x", "label": "x"}"#,
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn scatter_without_point_labels_deserializes() {
+        let json = r#"{
+            "channel_type": "scatter",
+            "id": "s1",
+            "label": "Scatter",
+            "x": [1.0, 2.0],
+            "y": [3.0, 4.0],
+            "unit": "u"
+        }"#;
+        let binding: DataBinding = serde_json::from_str(json).expect("deserialize");
+        match &binding {
+            DataBinding::Scatter {
+                point_labels,
+                x_label,
+                y_label,
+                ..
+            } => {
+                assert!(point_labels.is_empty());
+                assert!(x_label.is_empty());
+                assert!(y_label.is_empty());
+            }
+            _ => panic!("expected Scatter"),
         }
     }
 }

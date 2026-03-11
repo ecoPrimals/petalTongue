@@ -8,6 +8,7 @@
 //! - **Encapsulate unsafe**: Wrap FFI in safe, well-documented APIs
 //! - **No assumptions**: Discover at runtime, don't hardcode
 //! - **Cross-platform**: Abstract platform differences
+//! - **Pure Rust**: Use /proc parsing on Linux (no libc)
 
 use std::path::PathBuf;
 
@@ -55,8 +56,7 @@ pub fn get_current_uid() -> u32 {
 
     #[cfg(not(unix))]
     {
-        // On Windows, UID concept doesn't exist
-        // Return a placeholder value (0 = "system")
+        // On Windows, UID concept doesn't exist; return 0 (system/administrator)
         0
     }
 }
@@ -81,6 +81,63 @@ pub fn get_current_euid() -> u32 {
     #[cfg(not(unix))]
     {
         0
+    }
+}
+
+/// System information (hostname, OS, etc.) from /proc on Linux.
+///
+/// Pure Rust, no libc. On Linux reads from /proc. On other platforms
+/// returns sensible defaults.
+#[derive(Debug, Clone)]
+pub struct SystemInfo {
+    /// Hostname
+    pub hostname: String,
+    /// OS identifier (e.g. "Linux")
+    pub os: String,
+    /// Kernel version string if available
+    pub kernel_version: Option<String>,
+}
+
+impl SystemInfo {
+    /// Discover system info. On Linux uses /proc; elsewhere uses env/fallbacks.
+    #[must_use]
+    pub fn discover() -> Self {
+        #[cfg(target_os = "linux")]
+        {
+            let hostname = std::fs::read_to_string("/proc/sys/kernel/hostname")
+                .map_or_else(|_| "unknown".to_string(), |s| s.trim().to_string());
+            let os = "Linux".to_string();
+            let kernel_version = std::fs::read_to_string("/proc/version")
+                .ok()
+                .map(|s| {
+                    s.lines()
+                        .next()
+                        .unwrap_or("")
+                        .split_whitespace()
+                        .nth(2)
+                        .unwrap_or("")
+                        .to_string()
+                })
+                .filter(|v| !v.is_empty());
+            Self {
+                hostname,
+                os,
+                kernel_version,
+            }
+        }
+
+        #[cfg(not(target_os = "linux"))]
+        {
+            let hostname = std::env::var("HOSTNAME")
+                .or_else(|_| std::env::var("COMPUTERNAME"))
+                .unwrap_or_else(|_| "unknown".to_string());
+            let os = std::env::consts::OS.to_string();
+            Self {
+                hostname,
+                os,
+                kernel_version: None,
+            }
+        }
     }
 }
 
@@ -155,5 +212,12 @@ mod tests {
         let runtime_dir = get_user_runtime_dir();
         // Should be a valid path (doesn't need to exist)
         assert!(!runtime_dir.as_os_str().is_empty());
+    }
+
+    #[test]
+    fn test_system_info_discover() {
+        let info = SystemInfo::discover();
+        assert!(!info.hostname.is_empty());
+        assert!(!info.os.is_empty());
     }
 }

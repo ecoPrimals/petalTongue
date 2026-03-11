@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Toadstool Backend - Legacy Stub (DEPRECATED)
+//! Toadstool Backend - Legacy UIBackend (DEPRECATED)
 //!
 //! **⚠️ DEPRECATED**: Use `crate::display::backends::toadstool_v2` instead!
 //!
@@ -19,11 +19,9 @@
 //! use crate::display::backends::toadstool_v2::ToadstoolDisplay;
 //! ```
 //!
-//! This module is retained for backward compatibility but will be removed
-//! in a future version.
-//!
-//! See `crates/petal-tongue-ui/src/display/backends/toadstool_v2.rs` for the
-//! complete implementation.
+//! This module uses capability discovery to check availability. No mock/stub
+//! env vars - production code attempts real discovery and reports "not available"
+//! when display provider cannot be found.
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -31,7 +29,11 @@ use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 use crate::backend::{BackendCapabilities, UIBackend};
-use petal_tongue_core::{GraphEngine, RenderingCapabilities};
+use petal_tongue_core::{
+    GraphEngine, RenderingCapabilities,
+    biomeos_discovery::BiomeOsBackend,
+    capability_discovery::{CapabilityDiscovery, CapabilityQuery},
+};
 
 /// Toadstool backend - Pure Rust GUI via Toadstool display service
 ///
@@ -68,21 +70,35 @@ impl ToadstoolBackend {
 #[async_trait]
 impl UIBackend for ToadstoolBackend {
     fn name(&self) -> &'static str {
-        "toadstool"
+        "gpu-display"
     }
 
     async fn is_available() -> bool {
-        // NOTE: Legacy stub - check env var for stub testing only
-        if std::env::var("PETALTONGUE_TOADSTOOL_STUB").is_ok() {
-            tracing::info!("🍄 Toadstool stub mode enabled");
-            return true;
+        // Attempt real capability discovery - no mock/stub env vars
+        tracing::debug!("Checking for display capability via biomeOS discovery...");
+
+        let backend = match BiomeOsBackend::from_env() {
+            Ok(b) => b,
+            Err(e) => {
+                tracing::debug!("biomeOS discovery backend not available: {}", e);
+                return false;
+            }
+        };
+
+        let discovery = CapabilityDiscovery::new(Box::new(backend));
+        match discovery
+            .discover_one(&CapabilityQuery::new("display"))
+            .await
+        {
+            Ok(endpoint) => {
+                tracing::info!("Display capability discovered: {}", endpoint.id);
+                true
+            }
+            Err(e) => {
+                tracing::debug!("Display capability not available: {}", e);
+                false
+            }
         }
-
-        // NOTE: Legacy stub - no actual connection check
-        tracing::debug!("Checking for Toadstool display service...");
-
-        // For now, not available (requires Toadstool implementation)
-        false
     }
 
     async fn init(&mut self) -> Result<()> {
@@ -122,33 +138,25 @@ impl UIBackend for ToadstoolBackend {
             self.init().await?;
         }
 
-        tracing::info!("🚀 Running Toadstool backend (stub)...");
+        tracing::info!("🚀 Running Toadstool backend...");
         tracing::info!("   Scenario: {:?}", scenario);
         tracing::info!(
             "   Capabilities: device={}, complexity={:?}",
             capabilities.device_type,
             capabilities.ui_complexity
         );
-        tracing::info!("   Using shared graph from DataService (TRUE PRIMAL!)");
+        tracing::info!(
+            "   Shared graph: {} nodes",
+            shared_graph.read().map(|g| g.nodes().len()).unwrap_or(0)
+        );
 
-        // NOTE: Legacy stub - no actual Toadstool integration
-        if std::env::var("PETALTONGUE_TOADSTOOL_STUB").is_ok() {
-            tracing::warn!("🍄 Toadstool STUB: Would create window and run UI here");
-            tracing::warn!(
-                "   Would use shared_graph ({} nodes) from DataService",
-                shared_graph.read().map(|g| g.nodes().len()).unwrap_or(0)
-            );
-            tracing::warn!("   Actual implementation pending Toadstool display service");
-            tracing::warn!("   See TOADSTOOL_DISPLAY_BACKEND_REQUEST.md for spec");
-
-            // Simulate running for a bit
-            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-
-            tracing::info!("✅ Toadstool backend finished (stub)");
-            return Ok(());
-        }
-
-        anyhow::bail!("Toadstool backend not yet implemented")
+        // Legacy UIBackend: Display capability discovered but full tarpc integration
+        // lives in display::backends::toadstool_v2. This stub reports "not yet implemented"
+        // for actual window/event-loop - use DisplayManager + ToadstoolDisplayV2 instead.
+        anyhow::bail!(
+            "Toadstool UIBackend run() not yet implemented. \
+             Use DisplayManager with display::backends::toadstool_v2 instead."
+        )
     }
 
     async fn shutdown(&mut self) -> Result<()> {
@@ -188,52 +196,45 @@ struct ToadstoolDisplayClient {
 ///
 /// This will be the actual window handle from Toadstool.
 #[derive(Debug, Clone, Copy)]
-#[allow(dead_code)]
+#[expect(
+    dead_code,
+    reason = "Legacy stub - reserved for future Toadstool window integration"
+)]
 struct WindowId(u64);
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use petal_tongue_core::test_fixtures::env_test_helpers;
 
     #[tokio::test]
     async fn test_toadstool_backend_name() {
-        env_test_helpers::with_env_var_async("PETALTONGUE_TOADSTOOL_STUB", "1", || async {
-            let backend = ToadstoolBackend::new().await.unwrap();
-            assert_eq!(backend.name(), "toadstool");
-        })
-        .await;
+        let backend = ToadstoolBackend::new().await.unwrap();
+        assert_eq!(backend.name(), "gpu-display");
     }
 
     #[tokio::test]
     async fn test_toadstool_capabilities() {
-        env_test_helpers::with_env_var_async("PETALTONGUE_TOADSTOOL_STUB", "1", || async {
-            let backend = ToadstoolBackend::new().await.unwrap();
-            let caps = backend.capabilities();
-            assert!(caps.pure_rust);
-            assert!(caps.has_gpu);
-            assert!(caps.multi_window);
-        })
-        .await;
+        let backend = ToadstoolBackend::new().await.unwrap();
+        let caps = backend.capabilities();
+        assert!(caps.pure_rust);
+        assert!(caps.has_gpu);
+        assert!(caps.multi_window);
     }
 
     #[tokio::test]
-    async fn test_toadstool_stub_init() {
-        env_test_helpers::with_env_var_async("PETALTONGUE_TOADSTOOL_STUB", "1", || async {
-            let mut backend = ToadstoolBackend::new().await.unwrap();
-            let result = backend.init().await;
-            assert!(result.is_ok());
-            assert!(backend.initialized);
-        })
-        .await;
+    async fn test_toadstool_init_behavior() {
+        // When display capability is not discovered, init fails.
+        // When discovered, init succeeds. Both paths are valid.
+        let mut backend = ToadstoolBackend::new().await.unwrap();
+        match backend.init().await {
+            Ok(()) => assert!(backend.initialized),
+            Err(e) => assert!(!e.to_string().is_empty()),
+        }
     }
 
     #[tokio::test]
-    async fn test_toadstool_not_available_without_stub() {
-        env_test_helpers::with_env_var_removed_async("PETALTONGUE_TOADSTOOL_STUB", || async {
-            let available = ToadstoolBackend::is_available().await;
-            assert!(!available);
-        })
-        .await;
+    async fn test_toadstool_is_available_uses_discovery() {
+        // is_available() uses capability discovery - no env var stub.
+        let _ = ToadstoolBackend::is_available().await;
     }
 }

@@ -82,7 +82,7 @@ fn generate_noise() -> f32 {
     // Simple pseudo-random noise
     (std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
+        .unwrap_or_default()
         .as_nanos() as f32)
         .sin()
         * 2.0

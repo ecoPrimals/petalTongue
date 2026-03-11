@@ -295,7 +295,9 @@ mod tests {
             config: serde_json::Value::Null,
         };
 
-        let panel = registry.create(&config).unwrap();
+        let panel = registry
+            .create(&config)
+            .expect("mock_panel should be registered");
         assert_eq!(panel.title(), "Mock");
     }
 
@@ -312,6 +314,22 @@ mod tests {
             config: serde_json::Value::Null,
         };
 
-        assert!(registry.create(&config).is_err());
+        let result = registry.create(&config);
+        match result {
+            Err(PanelError::UnknownType(t)) => assert_eq!(t, "unknown"),
+            Err(e) => panic!("expected UnknownType, got {:?}", e),
+            Ok(_) => panic!("expected Err, got Ok"),
+        }
+    }
+
+    #[test]
+    fn test_available_types() {
+        let mut registry = PanelRegistry::new();
+        assert!(registry.available_types().is_empty());
+
+        registry.register(Arc::new(MockPanelFactory));
+        let types = registry.available_types();
+        assert_eq!(types.len(), 1);
+        assert_eq!(types[0], "mock_panel");
     }
 }

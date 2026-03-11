@@ -154,3 +154,122 @@ pub fn render_livespore(frame: &mut Frame, state: &TUIState) {
     // Footer
     Footer::render(frame, layout.footer, standalone);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+
+    #[tokio::test]
+    async fn test_render_dashboard_no_panic() {
+        let state = TUIState::new();
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_dashboard(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_topology_no_panic() {
+        let state = TUIState::new();
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_topology(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_devices_no_panic() {
+        let state = TUIState::new();
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_devices(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_primals_no_panic() {
+        let state = TUIState::new();
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_primals(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_logs_no_panic() {
+        let state = TUIState::new();
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_logs(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_neural_api_no_panic() {
+        let state = TUIState::new();
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_neural_api(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_nucleus_no_panic() {
+        let state = TUIState::new();
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_nucleus(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_livespore_no_panic() {
+        let state = TUIState::new();
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_livespore(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+}

@@ -6,9 +6,13 @@
 
 #![allow(clippy::cast_precision_loss)]
 
+use crate::scene_bridge::SceneWidget;
 use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};
+use petal_tongue_scene::compiler::GrammarCompiler;
+use petal_tongue_scene::grammar::{GeometryType, GrammarExpr};
 use std::collections::VecDeque;
 
+#[cfg(test)]
 fn compute_chart_bounds(data: &[f32]) -> (f32, f32, f32) {
     let max_value = data.iter().copied().fold(0.0f32, f32::max).max(1.0);
     let min_value = data.iter().copied().fold(max_value, f32::min).min(0.0);
@@ -58,7 +62,7 @@ impl GraphMetricsPlotter {
         }
     }
 
-    /// Render metrics chart
+    /// Render metrics chart using the scene engine pipeline.
     fn render_chart(&self, ui: &mut egui::Ui) {
         if self.history.is_empty() {
             ui.centered_and_justified(|ui| {
@@ -70,10 +74,9 @@ impl GraphMetricsPlotter {
             return;
         }
 
-        ui.heading("📊 Graph Topology Metrics");
+        ui.heading("Graph Topology Metrics");
         ui.add_space(10.0);
 
-        // Summary stats
         if let (Some(_first), Some(last)) = (self.history.front(), self.history.back()) {
             ui.horizontal(|ui| {
                 ui.label("Nodes:");
@@ -89,89 +92,55 @@ impl GraphMetricsPlotter {
 
         ui.add_space(10.0);
 
-        // Node count chart
-        Self::render_line_chart(
+        self.render_scene_chart(
             ui,
             "Node Count Over Time",
             &self
                 .history
                 .iter()
-                .map(|s| s.node_count as f32)
+                .map(|s| s.node_count as f64)
                 .collect::<Vec<_>>(),
-            egui::Color32::from_rgb(100, 150, 255),
         );
 
         ui.add_space(10.0);
 
-        // Edge count chart
-        Self::render_line_chart(
+        self.render_scene_chart(
             ui,
             "Edge Count Over Time",
             &self
                 .history
                 .iter()
-                .map(|s| s.edge_count as f32)
+                .map(|s| s.edge_count as f64)
                 .collect::<Vec<_>>(),
-            egui::Color32::from_rgb(100, 255, 150),
         );
     }
 
-    /// Render a line chart
-    fn render_line_chart(ui: &mut egui::Ui, title: &str, data: &[f32], color: egui::Color32) {
+    /// Render a line chart via grammar → scene → egui pipeline.
+    fn render_scene_chart(&self, ui: &mut egui::Ui, title: &str, data: &[f64]) {
         ui.label(egui::RichText::new(title).strong());
-
-        let height = 100.0;
-        let (response, painter) = ui.allocate_painter(
-            egui::Vec2::new(ui.available_width(), height),
-            egui::Sense::hover(),
-        );
-
-        let rect = response.rect;
 
         if data.len() < 2 {
             return;
         }
 
-        let (min_value, max_value, range) = compute_chart_bounds(data);
-
-        // Draw background
-        painter.rect_filled(rect, 2.0, egui::Color32::from_rgb(20, 20, 25));
-
-        // Draw grid lines
-        for i in 0..5 {
-            let y = rect.top() + (i as f32 / 4.0) * rect.height();
-            painter.line_segment(
-                [
-                    egui::Pos2::new(rect.left(), y),
-                    egui::Pos2::new(rect.right(), y),
-                ],
-                egui::Stroke::new(0.5, egui::Color32::from_rgb(40, 40, 45)),
-            );
-        }
-
-        // Draw data line
-        let points: Vec<egui::Pos2> = data
+        let json_data: Vec<serde_json::Value> = data
             .iter()
             .enumerate()
-            .map(|(i, &value)| {
-                let x = rect.left() + (i as f32 / (data.len() - 1).max(1) as f32) * rect.width();
-                let normalized = (value - min_value) / range;
-                let y = rect.bottom() - normalized * rect.height();
-                egui::Pos2::new(x, y)
-            })
+            .map(|(i, &v)| serde_json::json!({"x": i as f64, "y": v}))
             .collect();
 
-        painter.add(egui::Shape::line(points, egui::Stroke::new(2.0, color)));
+        let expr = GrammarExpr::new("metrics", GeometryType::Line)
+            .with_x("x")
+            .with_y("y")
+            .with_title(title);
 
-        // Draw labels
-        let label_text = format!("Max: {max_value:.0} | Min: {min_value:.0}");
-        painter.text(
-            egui::Pos2::new(rect.left() + 5.0, rect.top() + 5.0),
-            egui::Align2::LEFT_TOP,
-            label_text,
-            egui::FontId::proportional(10.0),
-            egui::Color32::GRAY,
-        );
+        let compiler = GrammarCompiler::new();
+        let plan = compiler.compile_plan(&expr, &json_data, &[]);
+
+        let width = ui.available_width();
+        SceneWidget::new(&plan)
+            .desired_size(egui::Vec2::new(width, 120.0))
+            .show(ui);
     }
 }
 
@@ -274,45 +243,84 @@ mod tests {
     fn compute_chart_bounds_basic() {
         let data = [1.0, 5.0, 3.0, 9.0, 2.0];
         let (min, max, range) = compute_chart_bounds(&data);
-        assert_eq!(min, 0.0);
-        assert_eq!(max, 9.0);
-        assert_eq!(range, 9.0);
+        assert!((min - 0.0).abs() < f32::EPSILON);
+        assert!((max - 9.0).abs() < f32::EPSILON);
+        assert!((range - 9.0).abs() < f32::EPSILON);
     }
 
     #[test]
     fn compute_chart_bounds_single_value() {
         let data = [42.0, 42.0];
         let (min, max, range) = compute_chart_bounds(&data);
-        assert_eq!(min, 0.0);
-        assert_eq!(max, 42.0);
-        assert_eq!(range, 42.0);
+        assert!((min - 0.0).abs() < f32::EPSILON);
+        assert!((max - 42.0).abs() < f32::EPSILON);
+        assert!((range - 42.0).abs() < f32::EPSILON);
     }
 
     #[test]
     fn compute_chart_bounds_empty_range() {
         let data = [0.0, 0.0];
         let (min, max, range) = compute_chart_bounds(&data);
-        assert_eq!(min, 0.0);
-        assert_eq!(max, 1.0);
-        assert_eq!(range, 1.0);
+        assert!((min - 0.0).abs() < f32::EPSILON);
+        assert!((max - 1.0).abs() < f32::EPSILON);
+        assert!((range - 1.0).abs() < f32::EPSILON);
     }
 
     #[test]
     fn compute_chart_bounds_negative() {
         let data = [-5.0, 0.0, 5.0];
         let (min, max, range) = compute_chart_bounds(&data);
-        assert_eq!(min, -5.0);
-        assert_eq!(max, 5.0);
-        assert_eq!(range, 10.0);
+        assert!((min - (-5.0)).abs() < f32::EPSILON);
+        assert!((max - 5.0).abs() < f32::EPSILON);
+        assert!((range - 10.0).abs() < f32::EPSILON);
     }
 
     #[test]
     fn status_message_format() {
         let mut p = GraphMetricsPlotter::default();
         p.add_snapshot(42, 17);
-        let msg = p.status_message().unwrap();
+        let msg = p.status_message().expect("should have message");
         assert!(msg.starts_with("N:"));
         assert!(msg.contains("42"));
         assert!(msg.contains("17"));
+    }
+
+    #[test]
+    fn is_visible_and_toggle() {
+        let mut p = GraphMetricsPlotter::default();
+        assert!(!p.is_visible());
+        p.toggle_visibility();
+        assert!(p.is_visible());
+        p.toggle_visibility();
+        assert!(!p.is_visible());
+    }
+
+    #[test]
+    fn metadata_fields() {
+        let p = GraphMetricsPlotter::default();
+        let meta = p.metadata();
+        assert_eq!(meta.name, "Graph Metrics");
+        assert!(meta.description.contains("topology"));
+        assert_eq!(meta.version, "0.1.0");
+        assert!(meta.capabilities.len() >= 2);
+        assert_eq!(meta.icon, "📈");
+    }
+
+    #[test]
+    fn compute_chart_bounds_empty() {
+        let data: [f32; 0] = [];
+        let (min, max, range) = compute_chart_bounds(&data);
+        assert!((min - 0.0).abs() < f32::EPSILON);
+        assert!((max - 1.0).abs() < f32::EPSILON);
+        assert!((range - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn compute_chart_bounds_single_element() {
+        let data = [7.0];
+        let (min, max, range) = compute_chart_bounds(&data);
+        assert!((min - 0.0).abs() < f32::EPSILON);
+        assert!((max - 7.0).abs() < f32::EPSILON);
+        assert!((range - 7.0).abs() < f32::EPSILON);
     }
 }

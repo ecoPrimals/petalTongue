@@ -20,6 +20,10 @@ anyhow = { workspace = true }
 tracing = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
 reqwest = { workspace = true }
+# WebSocket for biomeOS real-time topology/health subscription
+tokio-tungstenite = "0.21"
+futures-util = "0.3"
+
 # Phase 1: Instance Management dependencies
 uuid = { version = "1.7", features = ["v4", "serde"] }
 ron = "0.8"
@@ -30,6 +34,9 @@ indexmap = "2.0"
 # System information (Pure Rust Unix syscalls - EVOLVED from libc!)
 # EVOLUTION: Migrated from libc to rustix for 100% safe Rust
 rustix = { version = "0.38", features = ["process"] }
+# Terminal dimensions for CLI/adaptive rendering (screen size detection)
+terminal_size = "0.4"
+crossterm = { version = "0.28", optional = true }
 temp-env = { version = "0.3", optional = true, features = ["async_closure"] }
 
 [features]
@@ -42,3 +49,4 @@ test-fixtures = ["dep:temp-env"]
 tokio = { workspace = true, features = ["test-util", "macros"] }
 tempfile = "3.8"
 temp-env = { version = "0.3", features = ["async_closure"] }
+proptest = { workspace = true }
