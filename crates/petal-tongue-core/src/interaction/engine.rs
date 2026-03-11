@@ -378,11 +378,11 @@ fn apply_navigation(
         NavigationDirection::Up => viewport.center_y += step,
         NavigationDirection::Down => viewport.center_y -= step,
         NavigationDirection::In => {
-            viewport.zoom *= 1.0 + magnitude * 0.1;
+            viewport.zoom *= magnitude.mul_add(0.1, 1.0);
             viewport.zoom = viewport.zoom.clamp(0.1, 100.0);
         }
         NavigationDirection::Out => {
-            viewport.zoom /= 1.0 + magnitude * 0.1;
+            viewport.zoom /= magnitude.mul_add(0.1, 1.0);
             viewport.zoom = viewport.zoom.clamp(0.1, 100.0);
         }
         NavigationDirection::Forward

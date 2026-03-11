@@ -26,7 +26,7 @@ pub struct VisualFlowerRenderer {
 impl VisualFlowerRenderer {
     /// Create new visual flower renderer
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             animation: FlowerAnimation::new(30), // 30 FPS
             current_time: 0.0,
@@ -40,7 +40,7 @@ impl VisualFlowerRenderer {
     }
 
     /// Reset animation
-    pub fn reset(&mut self) {
+    pub const fn reset(&mut self) {
         self.animation.reset();
         self.current_time = 0.0;
     }
@@ -127,15 +127,15 @@ mod egui_rendering {
 
         /// Render leaves
         fn render_leaves(&self, painter: &egui::Painter, center: Pos2, size: f32, progress: f32) {
-            let leaf_y = center.y + size * 0.5;
+            let leaf_y = size.mul_add(0.5, center.y);
             let leaf_size = size * 0.15;
 
             // Left leaf
-            let left_center = Pos2::new(center.x - size * 0.1, leaf_y);
+            let left_center = Pos2::new(size.mul_add(-0.1, center.x), leaf_y);
             self.render_leaf(painter, left_center, leaf_size, -0.3, progress);
 
             // Right leaf
-            let right_center = Pos2::new(center.x + size * 0.1, leaf_y);
+            let right_center = Pos2::new(size.mul_add(0.1, center.x), leaf_y);
             self.render_leaf(painter, right_center, leaf_size, 0.3, progress);
         }
 
@@ -173,7 +173,8 @@ mod egui_rendering {
             #[expect(clippy::cast_precision_loss)]
             for i in 0..num_petals {
                 let base_angle = (i as f32 / num_petals as f32) * 2.0 * PI;
-                let angle = base_angle + spread * (i as f32 - num_petals as f32 / 2.0) * 0.1;
+                let angle =
+                    (spread * (i as f32 - num_petals as f32 / 2.0)).mul_add(0.1, base_angle);
 
                 self.render_petal(painter, center, petal_length, petal_width, angle, progress);
             }
@@ -194,8 +195,8 @@ mod egui_rendering {
             // Create petal gradient (lighter at tip, darker at base)
             let hue = self.base_hue;
             let saturation = 0.7;
-            let value_base = 0.8 * (0.5 + progress * 0.5);
-            let value_tip = 1.0 * (0.7 + progress * 0.3);
+            let value_base = 0.8 * progress.mul_add(0.5, 0.5);
+            let value_tip = 1.0 * progress.mul_add(0.3, 0.7);
 
             let color_base = Self::hsv_to_color32(hue, saturation, value_base);
             let color_tip = Self::hsv_to_color32(hue, saturation, value_tip);
@@ -249,7 +250,7 @@ mod egui_rendering {
                 clippy::cast_sign_loss
             )]
             for i in 0..5 {
-                let layer_size = size * (0.35 + i as f32 * 0.08);
+                let layer_size = size * (i as f32).mul_add(0.08, 0.35);
                 let alpha = 30 - i * 5;
                 let glow_color = Color32::from_rgba_premultiplied(255, 200, 220, alpha as u8);
                 painter.circle_filled(center, layer_size, glow_color);

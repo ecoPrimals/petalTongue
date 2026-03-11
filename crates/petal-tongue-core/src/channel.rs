@@ -148,7 +148,7 @@ impl Channel {
     }
 
     /// Record that a signal exited this channel (reached the end).
-    pub fn record_signal_out(&mut self) {
+    pub const fn record_signal_out(&mut self) {
         self.signals_out += 1;
     }
 
@@ -165,7 +165,7 @@ impl Channel {
 
     /// Whether this channel has seen any activity.
     #[must_use]
-    pub fn is_active(&self) -> bool {
+    pub const fn is_active(&self) -> bool {
         self.signals_in > 0
     }
 
@@ -215,7 +215,7 @@ pub struct ChannelRegistry {
 impl ChannelRegistry {
     /// Create an empty registry.
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             channels: Vec::new(),
         }
@@ -259,13 +259,13 @@ impl ChannelRegistry {
 
     /// Number of registered channels.
     #[must_use]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.channels.len()
     }
 
     /// Whether the registry is empty.
     #[must_use]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.channels.is_empty()
     }
 }

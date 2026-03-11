@@ -42,7 +42,7 @@ struct CpuStatLine {
 }
 
 impl CpuStatLine {
-    fn total(&self) -> u64 {
+    const fn total(&self) -> u64 {
         self.user
             + self.nice
             + self.system
@@ -53,7 +53,7 @@ impl CpuStatLine {
             + self.steal
     }
 
-    fn busy(&self) -> u64 {
+    const fn busy(&self) -> u64 {
         self.user + self.nice + self.system + self.irq + self.softirq + self.steal
     }
 }
@@ -84,7 +84,7 @@ impl ProcStats {
         #[cfg(target_os = "linux")]
         {
             if let Some(line) = parse_cpu_stat() {
-                let usage = if let Some(prev) = &self.prev_cpu {
+                let usage = self.prev_cpu.as_ref().map_or(0.0, |prev| {
                     let total_delta = line.total().saturating_sub(prev.total());
                     let busy_delta = line.busy().saturating_sub(prev.busy());
                     if total_delta > 0 {
@@ -92,9 +92,7 @@ impl ProcStats {
                     } else {
                         0.0
                     }
-                } else {
-                    0.0
-                };
+                });
                 self.prev_cpu = Some(line);
                 usage as f32
             } else {

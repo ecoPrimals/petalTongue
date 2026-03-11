@@ -145,7 +145,7 @@ impl CapabilityTaxonomy {
     ///
     /// Returns the dot-notation string (e.g., "ui.render")
     #[must_use]
-    pub fn as_str(&self) -> &'static str {
+    pub const fn as_str(&self) -> &'static str {
         match self {
             // UI Capabilities
             Self::UIRender => "ui.render",
@@ -228,7 +228,7 @@ impl CapabilityTaxonomy {
 
     /// Check if this is a UI capability
     #[must_use]
-    pub fn is_ui(&self) -> bool {
+    pub const fn is_ui(&self) -> bool {
         matches!(
             self,
             Self::UIRender
@@ -242,7 +242,7 @@ impl CapabilityTaxonomy {
 
     /// Check if this is an input capability
     #[must_use]
-    pub fn is_input(&self) -> bool {
+    pub const fn is_input(&self) -> bool {
         matches!(
             self,
             Self::UIInputKeyboard | Self::UIInputMouse | Self::UIInputTouch

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Axis types: NumberLine (1D) and Axes (2D Cartesian).
+//! Axis types: `NumberLine` (1D) and Axes (2D Cartesian).
 
 use serde::{Deserialize, Serialize};
 
@@ -49,7 +49,7 @@ impl NumberLine {
     /// Map a data value to screen x (horizontal number line).
     fn data_to_screen_x(&self, value: f64) -> f64 {
         let t = (value - self.start) / (self.end - self.start);
-        self.origin_x + t * self.length
+        t.mul_add(self.length, self.origin_x)
     }
 }
 
@@ -158,24 +158,26 @@ impl Default for Axes {
 
 impl Axes {
     /// Map data coordinates (x, y) to screen coordinates.
+    #[must_use]
     pub fn data_to_screen(&self, x: f64, y: f64) -> (f64, f64) {
         let (x_min, x_max, _) = self.x_range;
         let (y_min, y_max, _) = self.y_range;
         let tx = (x - x_min) / (x_max - x_min);
         let ty = (y - y_min) / (y_max - y_min);
-        let sx = self.origin.0 + tx * self.width;
-        let sy = self.origin.1 - ty * self.height; // y flipped (screen y down)
+        let sx = tx.mul_add(self.width, self.origin.0);
+        let sy = ty.mul_add(-self.height, self.origin.1); // y flipped (screen y down)
         (sx, sy)
     }
 
     /// Map screen coordinates to data coordinates.
+    #[must_use]
     pub fn screen_to_data(&self, sx: f64, sy: f64) -> (f64, f64) {
         let (x_min, x_max, _) = self.x_range;
         let (y_min, y_max, _) = self.y_range;
         let tx = (sx - self.origin.0) / self.width;
         let ty = (sy - self.origin.1) / -self.height;
-        let x = x_min + tx * (x_max - x_min);
-        let y = y_min + ty * (y_max - y_min);
+        let x = tx.mul_add(x_max - x_min, x_min);
+        let y = ty.mul_add(y_max - y_min, y_min);
         (x, y)
     }
 }

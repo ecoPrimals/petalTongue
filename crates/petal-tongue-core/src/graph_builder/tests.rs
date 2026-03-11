@@ -44,7 +44,7 @@ fn test_add_edge() {
     graph.add_node(node1);
     graph.add_node(node2);
 
-    let edge = GraphEdge::dependency(id1.clone(), id2.clone());
+    let edge = GraphEdge::dependency(id1, id2);
     assert!(graph.add_edge(edge).is_ok());
     assert_eq!(graph.edges.len(), 1);
 }
@@ -81,7 +81,7 @@ fn test_cycle_detection() {
         .add_edge(GraphEdge::dependency(id1.clone(), id2.clone()))
         .unwrap();
     graph
-        .add_edge(GraphEdge::dependency(id2.clone(), id3.clone()))
+        .add_edge(GraphEdge::dependency(id2, id3.clone()))
         .unwrap();
     graph.add_edge(GraphEdge::dependency(id3, id1)).unwrap();
 

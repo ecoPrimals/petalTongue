@@ -100,7 +100,7 @@ pub struct PanelSnapshot {
 impl PanelSnapshot {
     /// Convenience constructor for a visible panel.
     #[must_use]
-    pub fn visible(id: PanelId, kind: PanelKind) -> Self {
+    pub const fn visible(id: PanelId, kind: PanelKind) -> Self {
         Self {
             id,
             kind,
@@ -112,7 +112,7 @@ impl PanelSnapshot {
 
     /// Convenience constructor for a hidden panel.
     #[must_use]
-    pub fn hidden(id: PanelId, kind: PanelKind) -> Self {
+    pub const fn hidden(id: PanelId, kind: PanelKind) -> Self {
         Self {
             id,
             kind,
@@ -131,7 +131,7 @@ impl PanelSnapshot {
 
     /// Set widget count.
     #[must_use]
-    pub fn with_widget_count(mut self, count: usize) -> Self {
+    pub const fn with_widget_count(mut self, count: usize) -> Self {
         self.widget_count = count;
         self
     }
@@ -241,7 +241,7 @@ pub struct ContentAwareness {
 impl ContentAwareness {
     /// Create a new content awareness tracker.
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             current: None,
             history_len: 0,
@@ -258,19 +258,19 @@ impl ContentAwareness {
 
     /// The most recent frame introspection.
     #[must_use]
-    pub fn current(&self) -> Option<&FrameIntrospection> {
+    pub const fn current(&self) -> Option<&FrameIntrospection> {
         self.current.as_ref()
     }
 
     /// Whether any content has ever been recorded.
     #[must_use]
-    pub fn has_content(&self) -> bool {
+    pub const fn has_content(&self) -> bool {
         self.current.is_some()
     }
 
     /// Total number of introspections recorded.
     #[must_use]
-    pub fn total_introspections(&self) -> u64 {
+    pub const fn total_introspections(&self) -> u64 {
         self.total_introspections
     }
 
@@ -456,5 +456,67 @@ mod tests {
     fn test_panel_kind_custom() {
         let kind = PanelKind::Custom("my_panel".to_string());
         assert_eq!(kind, PanelKind::Custom("my_panel".to_string()));
+    }
+
+    #[test]
+    fn test_is_panel_visible_hidden_panel_same_kind() {
+        let mut frame = FrameIntrospection::empty(1);
+        frame
+            .visible_panels
+            .push(PanelSnapshot::hidden(PanelId::TopMenu, PanelKind::TopMenu));
+        assert!(!frame.is_panel_visible(PanelKind::TopMenu));
+    }
+
+    #[test]
+    fn test_is_panel_visible_no_match() {
+        let mut frame = FrameIntrospection::empty(1);
+        frame
+            .visible_panels
+            .push(PanelSnapshot::visible(PanelId::TopMenu, PanelKind::TopMenu));
+        assert!(!frame.is_panel_visible(PanelKind::GraphCanvas));
+    }
+
+    #[test]
+    fn test_panel_snapshot_with_data_source() {
+        let snap =
+            PanelSnapshot::visible(PanelId::Custom("p".into()), PanelKind::Custom("x".into()))
+                .with_data_source("source");
+        assert_eq!(snap.data_source.as_deref(), Some("source"));
+    }
+
+    #[test]
+    fn test_panel_snapshot_with_widget_count() {
+        let snap =
+            PanelSnapshot::visible(PanelId::TopMenu, PanelKind::TopMenu).with_widget_count(5);
+        assert_eq!(snap.widget_count, 5);
+    }
+
+    #[test]
+    fn test_interaction_capability_construction() {
+        let cap = InteractionCapability {
+            panel_id: PanelId::GraphStats,
+            intent: InteractionKind::Inspect,
+            target: None,
+        };
+        assert_eq!(cap.intent, InteractionKind::Inspect);
+        assert!(cap.target.is_none());
+    }
+
+    #[test]
+    fn test_binding_type_all_variants() {
+        assert_eq!(BindingType::GraphEdge, BindingType::GraphEdge);
+        assert_eq!(BindingType::MetricValue, BindingType::MetricValue);
+        assert_eq!(BindingType::Label, BindingType::Label);
+    }
+
+    #[test]
+    fn test_panel_kind_all_variants() {
+        assert_eq!(PanelKind::TopMenu, PanelKind::TopMenu);
+        assert_eq!(PanelKind::Controls, PanelKind::Controls);
+        assert_eq!(PanelKind::GraphBuilder, PanelKind::GraphBuilder);
+        assert_eq!(PanelKind::GraphCanvas, PanelKind::GraphCanvas);
+        assert_eq!(PanelKind::PrimalDetails, PanelKind::PrimalDetails);
+        assert_eq!(PanelKind::Awakening, PanelKind::Awakening);
+        assert_eq!(PanelKind::Accessibility, PanelKind::Accessibility);
     }
 }

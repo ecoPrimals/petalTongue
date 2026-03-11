@@ -131,7 +131,7 @@ impl RenderingAwareness {
 
     /// Get metrics
     #[must_use]
-    pub fn metrics(&self) -> &RenderingMetrics {
+    pub const fn metrics(&self) -> &RenderingMetrics {
         &self.metrics
     }
 
@@ -153,7 +153,7 @@ impl RenderingAwareness {
 
     /// The most recent frame introspection (what we are currently showing).
     #[must_use]
-    pub fn current_content(&self) -> Option<&FrameIntrospection> {
+    pub const fn current_content(&self) -> Option<&FrameIntrospection> {
         self.content.current()
     }
 
@@ -179,7 +179,7 @@ impl RenderingAwareness {
 
     /// Access the content awareness subsystem directly.
     #[must_use]
-    pub fn content(&self) -> &ContentAwareness {
+    pub const fn content(&self) -> &ContentAwareness {
         &self.content
     }
 }
@@ -197,7 +197,7 @@ struct MotorState {
 }
 
 impl MotorState {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
             last_command: None,
             commands_executed: 0,
@@ -210,7 +210,7 @@ impl MotorState {
         self.commands_executed
     }
 
-    fn is_functional(&self) -> bool {
+    const fn is_functional(&self) -> bool {
         self.commands_executed > 0
     }
 }
@@ -233,7 +233,7 @@ impl SensoryState {
         }
     }
 
-    fn record_event(&mut self, event: &SensorEvent) {
+    const fn record_event(&mut self, event: &SensorEvent) {
         self.last_event = Some(event.timestamp());
         self.events_received += 1;
 
@@ -248,7 +248,7 @@ impl SensoryState {
         self.substrate_health.responsive = latency < Duration::from_millis(100);
     }
 
-    fn is_functional(&self) -> bool {
+    const fn is_functional(&self) -> bool {
         self.events_received > 0
     }
 }
@@ -270,7 +270,7 @@ struct ValidationPipeline {
 }
 
 impl ValidationPipeline {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
             sent_frames: VecDeque::new(),
             confirmed_frames: VecDeque::new(),

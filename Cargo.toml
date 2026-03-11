@@ -39,7 +39,7 @@ repository.workspace = true
 authors.workspace = true
 
 [workspace.package]
-version = "1.6.1"
+version = "1.6.2"
 edition = "2024"
 license = "AGPL-3.0-only"
 repository = "https://github.com/ecoPrimals/petalTongue"
@@ -113,6 +113,7 @@ bincode = "1.3"
 
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
 must_use_candidate = "allow"
@@ -121,12 +122,32 @@ module_name_repetitions = "allow"
 # and safe for data sizes under 2^52. Targeted for local #[expect] evolution.
 cast_precision_loss = "allow"
 cast_lossless = "allow"
+cast_possible_truncation = "allow"
 similar_names = "allow"
 wildcard_imports = "warn"
 doc_markdown = "allow"
 default_trait_access = "allow"
 wildcard_in_or_patterns = "allow"
 items_after_statements = "allow"
+# Nursery: significant_drop_tightening produces false positives in test code
+# and is overly aggressive with RwLock guard patterns that are intentional.
+significant_drop_tightening = "allow"
+# Nursery: future_not_send is expected for egui-driven async code that
+# uses non-Send types (egui::Context, etc.) in single-threaded UI loops.
+future_not_send = "allow"
+# Visualization math uses f32/f64 comparisons with epsilon checks.
+float_cmp = "allow"
+# Suboptimal flops (mul_add) - allow but evolve via local #[expect].
+suboptimal_flops = "allow"
+# needless_collect false positives on iterator patterns used for clarity.
+needless_collect = "allow"
+# mut ref not used mutably: pattern used for future API evolution, and
+# some egui &mut callbacks require it structurally.
+needless_pass_by_ref_mut = "allow"
+# Float-comparison while loops are intentional in animation/interpolation.
+while_float = "allow"
+# Tuple-to-array: these patterns are used for egui Pos2/Vec2 conversions.
+tuple_array_conversions = "allow"
 
 # Audio (placeholder - will use rodio or cpal in production)
 # For now, we'll design the API without actual audio output

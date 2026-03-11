@@ -120,7 +120,7 @@ impl ToadstoolDisplay {
 
     /// Create with explicit tarpc client (for testing)
     #[must_use]
-    pub fn with_client(client: TarpcClient) -> Self {
+    pub const fn with_client(client: TarpcClient) -> Self {
         Self {
             discovery: None,
             tarpc_client: Some(client),

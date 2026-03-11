@@ -97,6 +97,8 @@ pub mod tutorial_mode; // Concrete InputAdapter implementations (pointer, keyboa
 pub mod biomeos_integration; // biomeOS UI Integration - Phase 1 (device management provider)
 pub mod biomeos_ui_manager; // biomeOS UI Manager - Phase 5 (integration & wiring)
 pub mod data_source;
+#[cfg(feature = "mock")]
+pub mod demo_device_provider; // Demo fallback when biomeOS unavailable
 pub mod device_panel; // Device Management UI - Phase 2
 pub mod display; // Pure Rust display system
 pub mod display_pure_rust;
@@ -112,8 +114,6 @@ pub mod keyboard_shortcuts;
 pub mod live_data;
 pub mod live_sessions;
 pub mod metrics_dashboard; // System metrics dashboard with sparklines (Neural API)
-#[cfg(feature = "mock")]
-pub mod mock_device_provider; // Mock provider - dev/test only, NEVER production (sovereignty)
 pub mod mode_presets; // Mode presets — named bundles of motor commands (SAME DAVE efferent)
 /// Multimodal data streaming (audio, visual, haptic, etc.)
 pub mod multimodal_stream;
@@ -135,7 +135,7 @@ pub mod game_data_channel;
 pub mod interaction_bridge;
 pub mod neural_registration;
 #[cfg(any(test, feature = "mock"))]
-pub mod sandbox_mock;
+pub mod sandbox_provider;
 pub mod scene_bridge;
 pub mod sensor_feed;
 pub mod state;

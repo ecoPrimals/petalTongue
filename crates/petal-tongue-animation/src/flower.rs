@@ -52,7 +52,7 @@ pub struct FlowerAnimation {
 impl FlowerAnimation {
     /// Create new flower animation
     #[must_use]
-    pub fn new(fps: u32) -> Self {
+    pub const fn new(fps: u32) -> Self {
         Self {
             frame_index: 0,
             total_frames: 90, // 3 seconds at 30 FPS
@@ -84,7 +84,7 @@ impl FlowerAnimation {
     }
 
     /// Reset animation
-    pub fn reset(&mut self) {
+    pub const fn reset(&mut self) {
         self.frame_index = 0;
     }
 

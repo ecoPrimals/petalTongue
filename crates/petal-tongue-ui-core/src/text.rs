@@ -43,7 +43,7 @@ pub struct TextUI {
 
 impl TextUI {
     /// Create a new Text UI
-    pub fn new(graph: Arc<RwLock<GraphEngine>>) -> Self {
+    pub const fn new(graph: Arc<RwLock<GraphEngine>>) -> Self {
         Self {
             graph,
             format: ExportFormat::Text,
@@ -52,7 +52,7 @@ impl TextUI {
 
     /// Set export format
     #[must_use]
-    pub fn with_format(mut self, format: ExportFormat) -> Self {
+    pub const fn with_format(mut self, format: ExportFormat) -> Self {
         self.format = format;
         self
     }

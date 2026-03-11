@@ -63,7 +63,7 @@ impl SvgUI {
 
     /// Set node radius
     #[must_use]
-    pub fn with_node_radius(mut self, radius: f32) -> Self {
+    pub const fn with_node_radius(mut self, radius: f32) -> Self {
         self.node_radius = radius;
         self
     }

@@ -48,8 +48,8 @@ pub enum IpcTransport {
 impl std::fmt::Display for IpcTransport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            IpcTransport::Unix(path) => write!(f, "unix:{}", path.display()),
-            IpcTransport::Tcp(addr) => write!(f, "tcp:{addr}"),
+            Self::Unix(path) => write!(f, "unix:{}", path.display()),
+            Self::Tcp(addr) => write!(f, "tcp:{addr}"),
         }
     }
 }
@@ -194,13 +194,13 @@ impl IpcServer {
 
     /// Get the transport being used
     #[must_use]
-    pub fn transport(&self) -> &IpcTransport {
+    pub const fn transport(&self) -> &IpcTransport {
         &self.transport
     }
 
     /// Get the instance ID
     #[must_use]
-    pub fn instance_id(&self) -> &InstanceId {
+    pub const fn instance_id(&self) -> &InstanceId {
         &self.instance_id
     }
 }
@@ -418,7 +418,7 @@ fn remove_discovery_file() -> Result<(), IpcServerError> {
 /// - Android (Unix sockets in /data/local/tmp may fail)
 /// - Permission issues
 /// - Other platform-specific constraints
-fn is_platform_constrained() -> bool {
+const fn is_platform_constrained() -> bool {
     // Check if we're on Android
     #[cfg(target_os = "android")]
     {

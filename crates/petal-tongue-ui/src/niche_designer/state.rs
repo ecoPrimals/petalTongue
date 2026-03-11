@@ -170,13 +170,13 @@ impl NicheDesigner {
 
     /// Get validation result
     #[must_use]
-    pub fn validation_result(&self) -> &ValidationResult {
+    pub const fn validation_result(&self) -> &ValidationResult {
         &self.validation
     }
 
     /// Get assigned primals
     #[must_use]
-    pub fn assigned_primals(&self) -> &std::collections::HashMap<String, String> {
+    pub const fn assigned_primals(&self) -> &std::collections::HashMap<String, String> {
         &self.assigned_primals
     }
 }

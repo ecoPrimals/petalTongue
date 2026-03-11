@@ -97,7 +97,7 @@ pub struct NarrativeEntropyCapture {
 impl NarrativeEntropyCapture {
     /// Create a new narrative entropy capturer
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             text: String::new(),
             keystroke_timings: Vec::new(),

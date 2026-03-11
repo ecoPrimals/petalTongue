@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Modality compilation: scene graph → output format (SVG, audio, description).
 //!
-//! Used by VisualizationState for grammar render and export.
+//! Used by `VisualizationState` for grammar render and export.
 
 use petal_tongue_scene::modality::{
     AudioCompiler, DescriptionCompiler, ModalityCompiler, ModalityOutput, SvgCompiler,

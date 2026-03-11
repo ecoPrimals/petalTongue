@@ -42,7 +42,7 @@ impl SceneNode {
 
     /// Builder: set transform.
     #[must_use]
-    pub fn with_transform(mut self, t: Transform2D) -> Self {
+    pub const fn with_transform(mut self, t: Transform2D) -> Self {
         self.transform = t;
         self
     }
@@ -63,20 +63,21 @@ impl SceneNode {
 
     /// Builder: set visibility.
     #[must_use]
-    pub fn with_visible(mut self, v: bool) -> Self {
+    pub const fn with_visible(mut self, v: bool) -> Self {
         self.visible = v;
         self
     }
 
     /// Builder: set opacity.
     #[must_use]
-    pub fn with_opacity(mut self, o: f32) -> Self {
+    pub const fn with_opacity(mut self, o: f32) -> Self {
         self.opacity = o;
         self
     }
 
     /// Total primitive count including this node.
-    pub fn primitive_count(&self) -> usize {
+    #[must_use]
+    pub const fn primitive_count(&self) -> usize {
         self.primitives.len()
     }
 }
@@ -94,6 +95,7 @@ pub struct SceneGraph {
 
 impl SceneGraph {
     /// Create a new scene graph with a root node.
+    #[must_use]
     pub fn new() -> Self {
         let root = SceneNode::new("root");
         let root_id = root.id.clone();
@@ -103,6 +105,7 @@ impl SceneGraph {
     }
 
     /// Get the root node ID.
+    #[must_use]
     pub fn root_id(&self) -> &str {
         &self.root_id
     }
@@ -131,6 +134,7 @@ impl SceneGraph {
     }
 
     /// Get a node by ID.
+    #[must_use]
     pub fn get(&self, id: &str) -> Option<&SceneNode> {
         self.nodes.get(id)
     }
@@ -169,6 +173,7 @@ impl SceneGraph {
     }
 
     /// Total number of nodes.
+    #[must_use]
     pub fn node_count(&self) -> usize {
         self.nodes.len()
     }
@@ -185,6 +190,7 @@ impl SceneGraph {
 
     /// Collect the flattened list of (transform, primitive) pairs via depth-first traversal.
     /// The transform is the composed world transform from root to the node.
+    #[must_use]
     pub fn flatten(&self) -> Vec<(Transform2D, &Primitive)> {
         let mut result = Vec::new();
         self.flatten_node(&self.root_id, Transform2D::IDENTITY, &mut result);
@@ -212,7 +218,8 @@ impl SceneGraph {
         }
     }
 
-    /// Find all primitives whose data_id matches, returning their world transforms.
+    /// Find all primitives whose `data_id` matches, returning their world transforms.
+    #[must_use]
     pub fn find_by_data_id(&self, data_id: &str) -> Vec<(Transform2D, &Primitive)> {
         self.flatten()
             .into_iter()
@@ -230,7 +237,7 @@ impl Default for SceneGraph {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::primitive::Primitive;
+    use crate::primitive::{Color, Primitive};
 
     const EPS: f64 = 1e-10;
 
@@ -630,5 +637,120 @@ mod tests {
         assert!((node.opacity - 1.0).abs() < f32::EPSILON);
         assert!(node.label.is_none());
         assert!(node.data_source.is_none());
+    }
+
+    #[test]
+    fn scene_node_serialization_roundtrip() {
+        let node = SceneNode::new("test_node")
+            .with_label("Test Label")
+            .with_opacity(0.7)
+            .with_visible(true)
+            .with_primitive(Primitive::Point {
+                x: 1.0,
+                y: 2.0,
+                radius: 3.0,
+                fill: Some(Color::WHITE),
+                stroke: None,
+                data_id: Some("pt-1".to_string()),
+            });
+        let json = serde_json::to_string(&node).expect("serialization should succeed");
+        let decoded: SceneNode =
+            serde_json::from_str(&json).expect("deserialization should succeed");
+        assert_eq!(node.id, decoded.id);
+        assert_eq!(node.label, decoded.label);
+        assert!((node.opacity - decoded.opacity).abs() < f32::EPSILON);
+        assert_eq!(node.visible, decoded.visible);
+        assert_eq!(node.primitives.len(), decoded.primitives.len());
+    }
+
+    #[test]
+    fn scene_graph_serialization_roundtrip() {
+        let mut g = SceneGraph::new();
+        g.add_to_root(SceneNode::new("child1").with_label("Child").with_primitive(
+            Primitive::Point {
+                x: 0.0,
+                y: 0.0,
+                radius: 1.0,
+                fill: None,
+                stroke: None,
+                data_id: None,
+            },
+        ));
+        let json = serde_json::to_string(&g).expect("serialization should succeed");
+        let decoded: SceneGraph =
+            serde_json::from_str(&json).expect("deserialization should succeed");
+        assert_eq!(g.root_id(), decoded.root_id());
+        assert_eq!(g.node_count(), decoded.node_count());
+        assert!(decoded.get("child1").is_some());
+    }
+
+    #[test]
+    fn scene_node_with_data_source() {
+        let mut node = SceneNode::new("n");
+        node.data_source = Some("ds-1".to_string());
+        assert_eq!(node.data_source.as_deref(), Some("ds-1"));
+    }
+
+    #[test]
+    fn scene_node_debug_formatting() {
+        let node = SceneNode::new("debug_node");
+        let s = format!("{node:?}");
+        assert!(s.contains("debug_node"));
+    }
+
+    #[test]
+    fn scene_graph_debug_formatting() {
+        let g = SceneGraph::new();
+        let s = format!("{g:?}");
+        assert!(!s.is_empty());
+    }
+
+    #[test]
+    fn scene_node_clone() {
+        let node = SceneNode::new("orig").with_opacity(0.5);
+        let cloned = node.clone();
+        assert_eq!(node.id, cloned.id);
+        assert!((node.opacity - cloned.opacity).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn scene_graph_clone() {
+        let mut g = SceneGraph::new();
+        g.add_to_root(SceneNode::new("a"));
+        let cloned = g.clone();
+        assert_eq!(g.node_count(), cloned.node_count());
+        assert!(cloned.get("a").is_some());
+    }
+
+    #[test]
+    fn flatten_node_with_multiple_primitives() {
+        let mut g = SceneGraph::new();
+        let prim = Primitive::Point {
+            x: 0.0,
+            y: 0.0,
+            radius: 1.0,
+            fill: None,
+            stroke: None,
+            data_id: None,
+        };
+        g.add_to_root(
+            SceneNode::new("multi")
+                .with_primitive(prim.clone())
+                .with_primitive(prim.clone())
+                .with_primitive(prim),
+        );
+        let flat = g.flatten();
+        assert_eq!(flat.len(), 3);
+    }
+
+    #[test]
+    fn add_node_to_root_multiple_times() {
+        let mut g = SceneGraph::new();
+        g.add_to_root(SceneNode::new("a"));
+        g.add_to_root(SceneNode::new("b"));
+        g.add_to_root(SceneNode::new("c"));
+        assert_eq!(g.node_count(), 4);
+        let root = g.get("root").expect("root exists");
+        assert_eq!(root.children.len(), 3);
     }
 }

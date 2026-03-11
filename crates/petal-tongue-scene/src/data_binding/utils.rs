@@ -6,7 +6,7 @@ use petal_tongue_core::ThresholdRange;
 /// Resolve the threshold status for a value against a set of threshold ranges.
 ///
 /// Returns "critical" > "warning" > "normal" > "unknown" (highest severity wins).
-pub(crate) fn resolve_threshold_status(value: f64, thresholds: &[ThresholdRange]) -> &'static str {
+pub fn resolve_threshold_status(value: f64, thresholds: &[ThresholdRange]) -> &'static str {
     let mut best: Option<&'static str> = None;
     for t in thresholds {
         if value >= t.min && value <= t.max {
@@ -27,7 +27,7 @@ pub(crate) fn resolve_threshold_status(value: f64, thresholds: &[ThresholdRange]
 }
 
 /// Bin continuous values into a histogram.
-pub(crate) fn histogram_bins(values: &[f64], n_bins: usize) -> (Vec<f64>, Vec<f64>) {
+pub fn histogram_bins(values: &[f64], n_bins: usize) -> (Vec<f64>, Vec<f64>) {
     if values.is_empty() || n_bins == 0 {
         return (vec![], vec![]);
     }
@@ -40,7 +40,7 @@ pub(crate) fn histogram_bins(values: &[f64], n_bins: usize) -> (Vec<f64>, Vec<f6
     let mut counts = vec![0.0_f64; n_bins];
     let mut centers = Vec::with_capacity(n_bins);
     for i in 0..n_bins {
-        centers.push(min + (i as f64 + 0.5) * bin_width);
+        centers.push((i as f64 + 0.5).mul_add(bin_width, min));
     }
     for v in values {
         #[expect(

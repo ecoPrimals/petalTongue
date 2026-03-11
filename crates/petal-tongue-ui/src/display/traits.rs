@@ -67,7 +67,7 @@ pub struct DisplayCapabilities {
 impl DisplayCapabilities {
     /// Toadstool WASM capabilities
     #[must_use]
-    pub fn toadstool() -> Self {
+    pub const fn toadstool() -> Self {
         Self {
             requires_network: true,
             requires_gpu: false, // Toadstool handles GPU
@@ -82,7 +82,7 @@ impl DisplayCapabilities {
 
     /// Software rendering capabilities
     #[must_use]
-    pub fn software() -> Self {
+    pub const fn software() -> Self {
         Self {
             requires_network: false,
             requires_gpu: false,
@@ -97,7 +97,7 @@ impl DisplayCapabilities {
 
     /// Framebuffer direct capabilities
     #[must_use]
-    pub fn framebuffer() -> Self {
+    pub const fn framebuffer() -> Self {
         Self {
             requires_network: false,
             requires_gpu: false,
@@ -112,7 +112,7 @@ impl DisplayCapabilities {
 
     /// External display server capabilities
     #[must_use]
-    pub fn external() -> Self {
+    pub const fn external() -> Self {
         Self {
             requires_network: false,
             requires_gpu: true, // Usually OpenGL

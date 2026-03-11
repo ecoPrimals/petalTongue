@@ -163,7 +163,7 @@ mod tests {
         graph.add_node(n2);
         graph.add_node(n3);
         graph
-            .add_edge(GraphEdge::dependency(id1.clone(), id2.clone()))
+            .add_edge(GraphEdge::dependency(id1.clone(), id2))
             .expect("edge");
         graph
             .add_edge(GraphEdge::dependency(id1, id3))

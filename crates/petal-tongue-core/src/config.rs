@@ -59,7 +59,7 @@ impl Default for PetalTongueConfig {
 impl PetalTongueConfig {
     /// Get refresh interval as Duration
     #[must_use]
-    pub fn refresh_interval(&self) -> Duration {
+    pub const fn refresh_interval(&self) -> Duration {
         Duration::from_secs(self.refresh_interval_secs)
     }
 
@@ -78,19 +78,19 @@ impl PetalTongueConfig {
     }
 }
 
-fn default_refresh_interval() -> u64 {
+const fn default_refresh_interval() -> u64 {
     5
 }
 
-fn default_sample_rate() -> u32 {
+const fn default_sample_rate() -> u32 {
     48000
 }
 
-fn default_max_fps() -> u32 {
+const fn default_max_fps() -> u32 {
     60
 }
 
-fn default_true() -> bool {
+const fn default_true() -> bool {
     true
 }
 

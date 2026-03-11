@@ -70,14 +70,14 @@ pub struct GpuCompiler {
 
 impl GpuCompiler {
     #[must_use]
-    pub fn new(viewport_width: f32, viewport_height: f32) -> Self {
+    pub const fn new(viewport_width: f32, viewport_height: f32) -> Self {
         Self {
             viewport_width,
             viewport_height,
         }
     }
 
-    fn color_to_f32(c: Color) -> [f32; 4] {
+    const fn color_to_f32(c: Color) -> [f32; 4] {
         [c.r, c.g, c.b, c.a]
     }
 

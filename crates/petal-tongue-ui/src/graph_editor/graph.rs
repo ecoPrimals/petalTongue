@@ -47,7 +47,7 @@ pub struct Graph {
 }
 
 /// Graph metadata
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct GraphMetadata {
     /// Tags for categorization
     pub tags: Vec<String>,
@@ -404,16 +404,14 @@ impl Graph {
 
         visited.insert(node.to_string());
 
-        let depth = if let Some(neighbors) = adj.get(node) {
+        let depth = adj.get(node).map_or(1, |neighbors| {
             neighbors
                 .iter()
                 .map(|neighbor| self.calculate_depth(neighbor, adj, visited))
                 .max()
                 .unwrap_or(0)
                 + 1
-        } else {
-            1
-        };
+        });
 
         visited.remove(node);
         depth

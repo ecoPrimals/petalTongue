@@ -168,14 +168,14 @@ impl RaycastRenderer {
         let line_dx = x2 - x1;
         let line_dy = y2 - y1;
 
-        let denominator = ray_dx * line_dy - ray_dy * line_dx;
+        let denominator = ray_dx.mul_add(line_dy, -(ray_dy * line_dx));
 
         if denominator.abs() < 0.0001 {
             return None;
         }
 
-        let u = ((ray_x - x1) * ray_dy - (ray_y - y1) * ray_dx) / denominator;
-        let t = ((ray_x - x1) * line_dy - (ray_y - y1) * line_dx) / denominator;
+        let u = (ray_x - x1).mul_add(ray_dy, -((ray_y - y1) * ray_dx)) / denominator;
+        let t = (ray_x - x1).mul_add(line_dy, -((ray_y - y1) * line_dx)) / denominator;
 
         if (0.0..=1.0).contains(&u) && t >= 0.0 {
             Some(t)

@@ -7,7 +7,7 @@ use anyhow::Result;
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 /// DNS record type
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[expect(clippy::upper_case_acronyms)]
 pub enum RecordType {
     A = 1,     // IPv4 address
@@ -20,7 +20,7 @@ pub enum RecordType {
 }
 
 impl RecordType {
-    fn from_u16(value: u16) -> Option<Self> {
+    const fn from_u16(value: u16) -> Option<Self> {
         match value {
             1 => Some(Self::A),
             2 => Some(Self::NS),
@@ -36,7 +36,7 @@ impl RecordType {
 
 /// DNS class
 #[allow(dead_code)] // RFC 1035 completeness; used in tests
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecordClass {
     IN = 1, // Internet
 }
@@ -69,7 +69,7 @@ impl DnsHeader {
         })
     }
 
-    pub fn is_response(&self) -> bool {
+    pub const fn is_response(&self) -> bool {
         (self.flags & 0x8000) != 0
     }
 }
@@ -80,7 +80,7 @@ pub struct NameParser<'a> {
 }
 
 impl<'a> NameParser<'a> {
-    pub fn new(data: &'a [u8]) -> Self {
+    pub const fn new(data: &'a [u8]) -> Self {
         Self { data }
     }
 
@@ -340,7 +340,7 @@ impl ResourceRecord {
     }
 
     /// Get record type enum
-    pub fn record_type(&self) -> Option<RecordType> {
+    pub const fn record_type(&self) -> Option<RecordType> {
         RecordType::from_u16(self.rtype)
     }
 }

@@ -88,7 +88,7 @@ pub enum SensorEventIpc {
 impl SensorEventBatch {
     /// Create an empty batch for a given subscription.
     #[must_use]
-    pub fn new(subscription_id: String) -> Self {
+    pub const fn new(subscription_id: String) -> Self {
         Self {
             subscription_id,
             events: Vec::new(),
@@ -97,13 +97,13 @@ impl SensorEventBatch {
 
     /// Whether this batch has any events.
     #[must_use]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.events.is_empty()
     }
 
     /// Number of events in this batch.
     #[must_use]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.events.len()
     }
 }

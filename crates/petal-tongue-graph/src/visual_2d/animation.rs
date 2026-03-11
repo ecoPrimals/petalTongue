@@ -10,8 +10,8 @@ use super::renderer::Visual2DRenderer;
 
 #[must_use]
 fn lerp_position(source: Position, target: Position, t: f32) -> Position {
-    let x = source.x + (target.x - source.x) * t;
-    let y = source.y + (target.y - source.y) * t;
+    let x = (target.x - source.x).mul_add(t, source.x);
+    let y = (target.y - source.y).mul_add(t, source.y);
     Position::new_2d(x, y)
 }
 

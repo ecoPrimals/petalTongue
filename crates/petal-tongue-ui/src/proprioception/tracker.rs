@@ -111,7 +111,7 @@ impl ProprioceptionSystem {
     }
 
     /// Record output activity
-    pub fn output_sent(&mut self, _modality: &OutputModality) {
+    pub const fn output_sent(&mut self, _modality: &OutputModality) {
         // This would be called when we send output (render frame, play audio, etc.)
         // For now, we track via user interaction confirming they received it
     }
@@ -386,7 +386,7 @@ impl ProprioceptionSystem {
 
     /// Get current proprioceptive state (cached, fast)
     #[must_use]
-    pub fn get_state(&self) -> &ProprioceptiveState {
+    pub const fn get_state(&self) -> &ProprioceptiveState {
         &self.last_state
     }
 

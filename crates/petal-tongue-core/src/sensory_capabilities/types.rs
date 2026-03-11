@@ -35,7 +35,7 @@ pub enum VisualOutputCapability {
 impl VisualOutputCapability {
     /// Calculate total pixel count for capability comparison
     #[must_use]
-    pub fn pixel_count(&self) -> u32 {
+    pub const fn pixel_count(&self) -> u32 {
         match self {
             Self::TwoD { resolution, .. } => resolution.0 * resolution.1,
             Self::ThreeD {
@@ -54,7 +54,7 @@ impl VisualOutputCapability {
             } =>
             {
                 #[expect(clippy::cast_possible_truncation)]
-                Some((f64::from(*w).powi(2) + f64::from(*h).powi(2)).sqrt() as f32)
+                Some(f64::from(*w).hypot(f64::from(*h)) as f32)
             }
             _ => None,
         }
@@ -68,7 +68,7 @@ impl VisualOutputCapability {
 
     /// Determine if this is high resolution (>= 1080p)
     #[must_use]
-    pub fn is_high_resolution(&self) -> bool {
+    pub const fn is_high_resolution(&self) -> bool {
         match self {
             Self::TwoD { resolution, .. } => resolution.0 >= 1920 && resolution.1 >= 1080,
             Self::ThreeD {
@@ -79,7 +79,7 @@ impl VisualOutputCapability {
 }
 
 /// Audio output capability to human ears
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AudioOutputCapability {
     /// Mono audio (single channel)
     Mono {
@@ -109,7 +109,7 @@ pub enum AudioOutputCapability {
 impl AudioOutputCapability {
     /// Determine if this is high quality audio (>= 48kHz, >= 16-bit)
     #[must_use]
-    pub fn is_high_quality(&self) -> bool {
+    pub const fn is_high_quality(&self) -> bool {
         match self {
             Self::Mono {
                 sample_rate,
@@ -125,7 +125,7 @@ impl AudioOutputCapability {
 }
 
 /// Haptic/tactile output capability to human touch
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum HapticOutputCapability {
     /// Simple vibration (phone, game controller)
     SimpleVibration {
@@ -151,21 +151,21 @@ pub enum HapticOutputCapability {
 }
 
 /// Taste output capability (future: medical sensors, chemical delivery)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TasteOutputCapability {
     /// Basic taste types supported (sweet, sour, salty, bitter, umami)
     pub basic_tastes: Vec<String>,
 }
 
 /// Smell output capability (future: environmental alerts, aromatherapy)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SmellOutputCapability {
     /// Number of independent scent channels
     pub scent_channels: u8,
 }
 
 /// Neural output capability (future: BCI, direct cortex stimulation)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NeuralOutputCapability {
     /// Signal types supported (visual cortex, audio cortex, etc.)
     pub signal_types: Vec<String>,
@@ -212,7 +212,7 @@ impl PointerInputCapability {
 }
 
 /// Keyboard input capability from human (text/command entry)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum KeyboardInputCapability {
     /// Physical keyboard (desktop, laptop)
     Physical {
@@ -240,7 +240,7 @@ pub enum KeyboardInputCapability {
 }
 
 /// Touch input capability from human (direct manipulation)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TouchInputCapability {
     /// Maximum simultaneous touch points (1 = single, 10 = multitouch)
     pub max_touch_points: u8,
@@ -255,13 +255,13 @@ pub struct TouchInputCapability {
 impl TouchInputCapability {
     /// Determine if this is multitouch capable
     #[must_use]
-    pub fn is_multitouch(&self) -> bool {
+    pub const fn is_multitouch(&self) -> bool {
         self.max_touch_points > 1
     }
 }
 
 /// Audio input capability from human (voice, sound)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AudioInputCapability {
     /// Sample rate in Hz
     pub sample_rate: u32,
@@ -300,7 +300,7 @@ pub enum GestureInputCapability {
 }
 
 /// Neural input capability (future: BCI, EEG, EMG)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NeuralInputCapability {
     /// Signal types (EEG, EMG, fNIRS, etc.)
     pub signal_types: Vec<String>,

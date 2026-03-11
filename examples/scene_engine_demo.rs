@@ -2,7 +2,7 @@
 //! Scene engine demonstration -- exercises grammar, scene graph, Tufte,
 //! math objects, modality compilers, animation, and physics bridge.
 //!
-//! Run with: cargo run --example scene_engine_demo -- [subcommand]
+//! Run with: cargo run --example `scene_engine_demo` -- [subcommand]
 //! Subcommands: grammar, scene-graph, tufte, math-objects, animation,
 //!              svg, audio, accessibility, physics, all
 
@@ -159,7 +159,7 @@ fn demo_tufte() {
         let x = f64::from(i) * 40.0;
         primitives.push(Primitive::Point {
             x,
-            y: (x * 0.1).sin() * 100.0 + 150.0,
+            y: (x * 0.1).sin().mul_add(100.0, 150.0),
             radius: 3.0,
             fill: Some(Color::rgba(0.1, 0.4, 0.8, 1.0)),
             stroke: None,
@@ -238,8 +238,8 @@ fn demo_math_objects() {
         ..StrokeStyle::default()
     };
     let param_curve = ParametricCurve::sample(
-        |t: f64| t.cos() * 100.0 + 300.0,
-        |t: f64| t.sin() * 100.0 + 300.0,
+        |t: f64| t.cos().mul_add(100.0, 300.0),
+        |t: f64| t.sin().mul_add(100.0, 300.0),
         (0.0, std::f64::consts::TAU),
         64,
         circle_stroke,
@@ -282,7 +282,7 @@ fn demo_animation() {
         create.duration_secs, create.easing
     );
 
-    let seq = Sequence::Sequential(vec![fade_in.clone(), move_to.clone()]);
+    let seq = Sequence::Sequential(vec![fade_in.clone(), move_to]);
     let par = Sequence::Parallel(vec![fade_in.clone(), create]);
     println!("  Sequential(FadeIn+MoveTo): {:.1}s", seq.total_duration());
     println!("  Parallel(FadeIn+Create): {:.1}s", par.total_duration());
@@ -363,8 +363,8 @@ fn demo_audio() {
 
     let mut graph = SceneGraph::new();
     for i in 0..5 {
-        let x = f64::from(i) * 100.0 + 50.0;
-        let y = f64::from(i) * 50.0 + 100.0;
+        let x = f64::from(i).mul_add(100.0, 50.0);
+        let y = f64::from(i).mul_add(50.0, 100.0);
         graph.add_to_root(
             SceneNode::new(format!("audio-{i}")).with_primitive(Primitive::Point {
                 x,

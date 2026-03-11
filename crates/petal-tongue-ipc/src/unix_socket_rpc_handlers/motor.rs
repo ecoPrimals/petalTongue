@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Handlers for motor.* JSON-RPC methods.
 //!
-//! Bridges IPC afferent commands to the UI efferent channel (motor_tx).
+//! Bridges IPC afferent commands to the UI efferent channel (`motor_tx`).
 
 use super::RpcHandlers;
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse, error_codes};

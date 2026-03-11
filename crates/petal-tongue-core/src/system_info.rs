@@ -171,12 +171,13 @@ impl SystemInfo {
 /// - **biomeOS Compatible**: Follows inter-primal socket conventions
 #[must_use]
 pub fn get_user_runtime_dir() -> PathBuf {
-    if let Ok(path) = std::env::var("XDG_RUNTIME_DIR") {
-        PathBuf::from(path)
-    } else {
-        let uid = get_current_uid();
-        PathBuf::from(format!("/run/user/{uid}"))
-    }
+    std::env::var("XDG_RUNTIME_DIR").map_or_else(
+        |_| {
+            let uid = get_current_uid();
+            PathBuf::from(format!("/run/user/{uid}"))
+        },
+        PathBuf::from,
+    )
 }
 
 #[cfg(test)]
@@ -203,7 +204,7 @@ mod tests {
         } else {
             let uid = get_current_uid();
             let expected = format!("/run/user/{uid}");
-            assert_eq!(path_str, expected, "Should construct /run/user/{{uid}}");
+            assert_eq!(path_str, expected, "Should construct /run/user/<uid>");
         }
     }
 

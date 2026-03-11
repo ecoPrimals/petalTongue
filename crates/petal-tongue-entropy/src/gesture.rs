@@ -87,7 +87,7 @@ pub fn gesture_complexity(points: &[Point2D], timestamps: &[Duration]) -> f64 {
     for i in 0..points.len() - 1 {
         let dx = f64::from(points[i + 1].x - points[i].x);
         let dy = f64::from(points[i + 1].y - points[i].y);
-        let seg_len = (dx * dx + dy * dy).sqrt();
+        let seg_len = dx.hypot(dy);
         path_length += seg_len;
 
         if seg_len > 1e-10 {
@@ -127,7 +127,7 @@ pub fn gesture_complexity(points: &[Point2D], timestamps: &[Duration]) -> f64 {
             if dt_ms > 1e-6 {
                 let dx = f64::from(points[i + 1].x - points[i].x);
                 let dy = f64::from(points[i + 1].y - points[i].y);
-                let dist = (dx * dx + dy * dy).sqrt();
+                let dist = dx.hypot(dy);
                 speeds.push(dist / dt_ms);
             }
         }
@@ -155,7 +155,7 @@ pub struct GestureEntropyCapture {
 impl GestureEntropyCapture {
     /// Create a new gesture entropy capturer
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             accelerometer: Vec::new(),
             gyroscope: Vec::new(),

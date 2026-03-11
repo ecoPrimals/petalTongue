@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! RenderPlan: the intermediate representation between grammar compilation
+//! `RenderPlan`: the intermediate representation between grammar compilation
 //! and modality dispatch.
 //!
 //! A `RenderPlan` wraps a `SceneGraph` with the metadata that modality
@@ -26,7 +26,8 @@ pub struct RenderPlan {
 }
 
 impl RenderPlan {
-    pub fn new(scene: SceneGraph, grammar: GrammarExpr) -> Self {
+    #[must_use]
+    pub const fn new(scene: SceneGraph, grammar: GrammarExpr) -> Self {
         Self {
             scene,
             panels: Vec::new(),
@@ -48,6 +49,7 @@ impl RenderPlan {
     }
 
     /// Overall Tufte score (1.0 if no report).
+    #[must_use]
     pub fn tufte_score(&self) -> f64 {
         self.constraints_report
             .as_ref()
@@ -55,7 +57,8 @@ impl RenderPlan {
     }
 
     /// Whether a bar/area geometry is present (for lie factor checks).
-    pub fn has_bar_or_area_geom(&self) -> bool {
+    #[must_use]
+    pub const fn has_bar_or_area_geom(&self) -> bool {
         use crate::grammar::GeometryType;
         matches!(
             self.grammar.geometry,
@@ -64,6 +67,7 @@ impl RenderPlan {
     }
 
     /// Y-axis domain minimum from the first panel's y-axis scale, if any.
+    #[must_use]
     pub fn y_domain_min(&self) -> Option<f64> {
         self.panels
             .first()
@@ -72,6 +76,7 @@ impl RenderPlan {
     }
 
     /// Y-axis domain maximum from the first panel's y-axis scale, if any.
+    #[must_use]
     pub fn y_domain_max(&self) -> Option<f64> {
         self.panels
             .first()
@@ -80,6 +85,7 @@ impl RenderPlan {
     }
 
     /// Whether a size aesthetic is mapped.
+    #[must_use]
     pub fn has_size_aesthetic(&self) -> bool {
         self.grammar
             .aesthetics
@@ -88,6 +94,7 @@ impl RenderPlan {
     }
 
     /// Grid line density (lines per axis, max across panels).
+    #[must_use]
     pub fn grid_line_density(&self) -> usize {
         self.panels
             .iter()
@@ -97,6 +104,7 @@ impl RenderPlan {
     }
 
     /// Whether any panel uses dual Y axes.
+    #[must_use]
     pub fn has_dual_y_axes(&self) -> bool {
         self.panels.iter().any(|p| p.dual_y_axes)
     }
@@ -142,7 +150,8 @@ pub struct PanelBounds {
 }
 
 impl PanelBounds {
-    pub fn new(x: f64, y: f64, width: f64, height: f64) -> Self {
+    #[must_use]
+    pub const fn new(x: f64, y: f64, width: f64, height: f64) -> Self {
         Self {
             x,
             y,
@@ -151,6 +160,7 @@ impl PanelBounds {
         }
     }
 
+    #[must_use]
     pub fn contains(&self, px: f64, py: f64) -> bool {
         px >= self.x && px <= self.x + self.width && py >= self.y && py <= self.y + self.height
     }
@@ -180,20 +190,21 @@ impl AxisMeta {
     }
 
     #[must_use]
-    pub fn with_domain(mut self, min: f64, max: f64) -> Self {
+    pub const fn with_domain(mut self, min: f64, max: f64) -> Self {
         self.domain_min = min;
         self.domain_max = max;
         self
     }
 
     #[must_use]
-    pub fn with_range(mut self, min: f64, max: f64) -> Self {
+    pub const fn with_range(mut self, min: f64, max: f64) -> Self {
         self.range_min = min;
         self.range_max = max;
         self
     }
 
     /// Forward transform: data value -> visual coordinate.
+    #[must_use]
     pub fn transform(&self, value: f64) -> f64 {
         let domain_span = self.domain_max - self.domain_min;
         if domain_span.abs() < f64::EPSILON {
@@ -229,6 +240,7 @@ impl AxisMeta {
     }
 
     /// Inverse transform: visual coordinate -> data value.
+    #[must_use]
     pub fn inverse(&self, visual: f64) -> f64 {
         let range_span = self.range_max - self.range_min;
         if range_span.abs() < f64::EPSILON {
@@ -239,16 +251,18 @@ impl AxisMeta {
             ScaleType::Linear
             | ScaleType::Temporal
             | ScaleType::Ordinal
-            | ScaleType::Categorical => self.domain_min + t * (self.domain_max - self.domain_min),
+            | ScaleType::Categorical => {
+                t.mul_add(self.domain_max - self.domain_min, self.domain_min)
+            }
             ScaleType::Log => {
                 let log_min = self.domain_min.max(f64::EPSILON).ln();
                 let log_max = self.domain_max.max(f64::EPSILON).ln();
-                (log_min + t * (log_max - log_min)).exp()
+                t.mul_add(log_max - log_min, log_min).exp()
             }
             ScaleType::Sqrt => {
                 let sqrt_min = self.domain_min.max(0.0).sqrt();
                 let sqrt_max = self.domain_max.max(0.0).sqrt();
-                let v = sqrt_min + t * (sqrt_max - sqrt_min);
+                let v = t.mul_add(sqrt_max - sqrt_min, sqrt_min);
                 v * v
             }
         }

@@ -112,7 +112,7 @@ impl SoftwareDisplay {
     }
 
     /// Check if Window backend is available
-    fn check_window() -> bool {
+    const fn check_window() -> bool {
         // Check if we can create a window (winit available)
         cfg!(feature = "window")
     }

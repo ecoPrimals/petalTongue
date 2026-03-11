@@ -338,7 +338,7 @@ impl DevicePanel {
 }
 
 /// Get icon for device type
-fn device_icon(device_type: DeviceType) -> &'static str {
+const fn device_icon(device_type: DeviceType) -> &'static str {
     match device_type {
         DeviceType::GPU => "🎮",
         DeviceType::CPU => "🧠",

@@ -189,4 +189,33 @@ mod tests {
         let err = errors.first().expect("should have error");
         assert!(err.suggestion.is_some());
     }
+
+    #[test]
+    fn test_multiple_nodes_mixed_valid_invalid() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut valid = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        valid.set_parameter("primal_name".to_string(), "x".to_string());
+        valid.set_parameter("family_id".to_string(), "f1".to_string());
+        graph.add_node(valid);
+        graph.add_node(GraphNode::new(NodeType::Conditional, Vec2::zero()));
+        let mut result = ValidationResult::new();
+        validate_nodes(&graph, &mut result);
+        assert!(!result.is_valid());
+        assert!(!result.errors().is_empty());
+    }
+
+    #[test]
+    fn test_empty_graph_valid() {
+        let graph = VisualGraph::new("g".to_string());
+        let mut result = ValidationResult::new();
+        validate_nodes(&graph, &mut result);
+        assert!(result.is_valid());
+    }
+
+    #[test]
+    fn test_primal_start_requires_family_id_implied_by_has_all_required() {
+        let mut node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        node.set_parameter("primal_name".to_string(), "p".to_string());
+        assert!(!node.has_all_required_parameters());
+    }
 }

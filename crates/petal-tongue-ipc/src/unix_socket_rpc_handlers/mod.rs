@@ -97,6 +97,7 @@ impl RpcHandlers {
                 visualization::handle_interact_perspectives(self, req.id)
             }
             "visualization.capabilities" => visualization::handle_capabilities(self, req.id),
+            "visualization.session.status" => visualization::handle_session_status(self, req),
             "visualization.introspect" => visualization::handle_introspect(self, req.id),
             "visualization.panels" => visualization::handle_panels(self, req.id),
             "visualization.showing" => visualization::handle_showing(self, req),
@@ -110,6 +111,7 @@ impl RpcHandlers {
             "interaction.sensor_stream.subscribe" => self.handle_sensor_stream_subscribe(req),
             "interaction.sensor_stream.unsubscribe" => self.handle_sensor_stream_unsubscribe(req),
             "interaction.sensor_stream.poll" => self.handle_sensor_stream_poll(req),
+            "provider.register_capability" => system::handle_provider_register(self, req),
             "motor.set_panel" | "motor.set_zoom" | "motor.fit_to_view" | "motor.set_mode"
             | "motor.navigate" => motor::handle_motor_command(self, req),
             _ => {
@@ -142,7 +144,8 @@ impl RpcHandlers {
         ui::handle_ui_render(self, request).await
     }
 
-    /// Handle ui.display_status: update status for a primal
+    /// Handle `ui.display_status`: update status for a primal
+    #[must_use]
     pub fn handle_ui_display_status(&self, request: JsonRpcRequest) -> JsonRpcResponse {
         ui::handle_ui_display_status(self, request)
     }
@@ -154,16 +157,18 @@ impl RpcHandlers {
     }
 
     /// Handle health.get: return health status and graph stats
+    #[must_use]
     pub fn get_health(&self, id: serde_json::Value) -> JsonRpcResponse {
         system::get_health(self, id)
     }
 
     /// Handle topology.get: return graph nodes and edges
+    #[must_use]
     pub fn get_topology(&self, id: serde_json::Value) -> JsonRpcResponse {
         system::get_topology(self, id)
     }
 
-    /// Handle visualization.render_graph: render graph to specified format (svg, png, terminal)
+    /// Handle `visualization.render_graph`: render graph to specified format (svg, png, terminal)
     #[allow(clippy::unused_async)]
     pub async fn render_graph(
         &self,

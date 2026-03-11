@@ -138,7 +138,7 @@ impl SensoryCapabilities {
     // Haptic Output Discovery
     // ========================================================================
 
-    fn discover_haptic() -> Vec<HapticOutputCapability> {
+    const fn discover_haptic() -> Vec<HapticOutputCapability> {
         // Most systems don't have haptic output
         // Would check for:
         // - Game controllers with rumble
@@ -212,7 +212,7 @@ impl SensoryCapabilities {
     // Touch Input Discovery
     // ========================================================================
 
-    fn discover_touch() -> Vec<TouchInputCapability> {
+    const fn discover_touch() -> Vec<TouchInputCapability> {
         // Check for touchscreen
         // Would use platform APIs to detect touch capability
 
@@ -251,7 +251,7 @@ impl SensoryCapabilities {
     // Gesture Input Discovery
     // ========================================================================
 
-    fn discover_gesture() -> Vec<GestureInputCapability> {
+    const fn discover_gesture() -> Vec<GestureInputCapability> {
         // Check for cameras, depth sensors, VR tracking
         // Most systems don't have gesture input
 

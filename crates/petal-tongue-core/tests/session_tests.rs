@@ -78,7 +78,7 @@ fn test_load_or_create_session() {
     let mut manager = SessionManager::new(&instance_id).unwrap();
 
     // Load or create should succeed
-    let state = manager.load_or_create(instance_id.clone());
+    let state = manager.load_or_create(instance_id);
     assert!(state.is_ok(), "Should load or create session successfully");
 
     // Manager should now have state
@@ -92,7 +92,7 @@ fn test_save_session() {
     let mut manager = SessionManager::new(&instance_id).unwrap();
 
     // Create session
-    manager.load_or_create(instance_id.clone()).unwrap();
+    manager.load_or_create(instance_id).unwrap();
 
     // Save should succeed
     let save_result = manager.save();
@@ -152,7 +152,7 @@ fn test_session_export_import() {
     let mut manager = SessionManager::new(&instance_id).unwrap();
 
     // Create session with data
-    manager.load_or_create(instance_id.clone()).unwrap();
+    manager.load_or_create(instance_id).unwrap();
     if let Some(state) = manager.current_state_mut() {
         state.nodes.push(PrimalInfo::new(
             "export-test",

@@ -50,7 +50,7 @@ pub struct FramebufferDisplay {
 
 impl FramebufferDisplay {
     /// Create new framebuffer display
-    pub fn new() -> Result<Self> {
+    pub const fn new() -> Result<Self> {
         Ok(Self {
             width: 1920,
             height: 1080,

@@ -74,7 +74,7 @@ fn test_state_persistence() {
     session_mgr.save().unwrap();
 
     let mut new_mgr = SessionManager::with_session_path(sess_path).unwrap();
-    new_mgr.load_or_create(instance_id.clone()).unwrap();
+    new_mgr.load_or_create(instance_id).unwrap();
     assert!(!new_mgr.has_unsaved_changes());
 }
 
@@ -90,7 +90,7 @@ fn test_registry_garbage_collection() {
         registry.register(live_instance).unwrap();
 
         let dead_id = InstanceId::new();
-        let mut dead_instance = Instance::new(dead_id.clone(), Some("dead".to_string())).unwrap();
+        let mut dead_instance = Instance::new(dead_id, Some("dead".to_string())).unwrap();
         dead_instance.pid = 999_999;
         registry.register(dead_instance).unwrap();
 
@@ -109,7 +109,7 @@ fn test_session_export_import() {
     let instance_id = InstanceId::new();
     let sess_path = session_path(&temp_dir, &instance_id);
     let mut session_mgr = SessionManager::with_session_path(sess_path).unwrap();
-    session_mgr.load_or_create(instance_id.clone()).unwrap();
+    session_mgr.load_or_create(instance_id).unwrap();
     session_mgr.mark_dirty();
     session_mgr.save().unwrap();
 
@@ -131,7 +131,7 @@ fn test_auto_save() {
     let sess_path = session_path(&temp_dir, &instance_id);
 
     let mut session_mgr = SessionManager::with_session_path(sess_path).unwrap();
-    session_mgr.load_or_create(instance_id.clone()).unwrap();
+    session_mgr.load_or_create(instance_id).unwrap();
 
     session_mgr.mark_dirty();
     assert!(session_mgr.has_unsaved_changes());
@@ -150,7 +150,7 @@ fn test_session_merge() {
     let id_a = InstanceId::new();
     let sess_a = session_path(&temp_dir, &id_a);
     let mut mgr_a = SessionManager::with_session_path(sess_a).unwrap();
-    mgr_a.load_or_create(id_a.clone()).unwrap();
+    mgr_a.load_or_create(id_a).unwrap();
     mgr_a.save().unwrap();
     let export_a = temp_dir.path().join("session_a.ron");
     mgr_a.export_session(&export_a).unwrap();
@@ -158,7 +158,7 @@ fn test_session_merge() {
     let id_b = InstanceId::new();
     let sess_b = session_path(&temp_dir, &id_b);
     let mut mgr_b = SessionManager::with_session_path(sess_b).unwrap();
-    mgr_b.load_or_create(id_b.clone()).unwrap();
+    mgr_b.load_or_create(id_b).unwrap();
 
     mgr_b.merge_session(&export_a).unwrap();
     assert!(mgr_b.has_unsaved_changes());
@@ -172,7 +172,7 @@ fn test_concurrent_registry_access() {
     env_test_helpers::with_env_var("XDG_DATA_HOME", temp_dir.path().to_str().unwrap(), || {
         let mut registry = InstanceRegistry::new();
         let id = InstanceId::new();
-        let instance = Instance::new(id.clone(), Some("concurrent-test".to_string())).unwrap();
+        let instance = Instance::new(id, Some("concurrent-test".to_string())).unwrap();
         registry.register(instance).unwrap();
         registry.save_to(&reg_path).unwrap();
 

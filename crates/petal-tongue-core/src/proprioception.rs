@@ -331,4 +331,63 @@ mod tests {
         assert_eq!(data.self_awareness.knows_about, 10);
         assert!(data.self_awareness.can_coordinate);
     }
+
+    #[test]
+    fn test_health_data_construction() {
+        let health = HealthData {
+            percentage: 75.5,
+            status: HealthStatus::Degraded,
+        };
+        assert!((health.percentage - 75.5).abs() < f32::EPSILON);
+        assert_eq!(health.status, HealthStatus::Degraded);
+    }
+
+    #[test]
+    fn test_sensory_data_construction() {
+        let now = chrono::Utc::now();
+        let sensory = SensoryData {
+            active_sockets: 3,
+            last_scan: now,
+        };
+        assert_eq!(sensory.active_sockets, 3);
+    }
+
+    #[test]
+    fn test_motor_data_construction() {
+        let motor = MotorData {
+            can_deploy: true,
+            can_execute_graphs: true,
+            can_coordinate_primals: true,
+        };
+        assert!(motor.can_deploy);
+        assert!(motor.can_execute_graphs);
+        assert!(motor.can_coordinate_primals);
+    }
+
+    #[test]
+    fn test_self_awareness_construction() {
+        let sa = SelfAwarenessData {
+            knows_about: 5,
+            can_coordinate: true,
+            has_security: true,
+            has_discovery: false,
+            has_compute: true,
+        };
+        assert_eq!(sa.knows_about, 5);
+        assert!(sa.has_security);
+        assert!(!sa.has_discovery);
+    }
+
+    #[test]
+    fn test_proprioception_empty_family_id_string() {
+        let data = ProprioceptionData::empty(String::from("dynamic-id"));
+        assert_eq!(data.family_id, "dynamic-id");
+    }
+
+    #[test]
+    fn test_health_status_serde_lowercase() {
+        let json = r#""healthy""#;
+        let status: HealthStatus = serde_json::from_str(json).expect("parse");
+        assert_eq!(status, HealthStatus::Healthy);
+    }
 }

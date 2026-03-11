@@ -40,7 +40,7 @@ pub enum ExternalDisplayType {
 impl ExternalDisplay {
     /// Create new external display backend
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             width: 1920,
             height: 1080,
@@ -50,7 +50,7 @@ impl ExternalDisplay {
 
     /// Create external display with specific dimensions
     #[must_use]
-    pub fn with_dimensions(width: u32, height: u32) -> Self {
+    pub const fn with_dimensions(width: u32, height: u32) -> Self {
         Self {
             width,
             height,

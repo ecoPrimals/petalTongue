@@ -187,7 +187,7 @@ impl DataService {
 
     /// Check if Neural API is available.
     #[allow(dead_code)]
-    pub fn has_neural_api(&self) -> bool {
+    pub const fn has_neural_api(&self) -> bool {
         self.neural_api.is_some()
     }
 }

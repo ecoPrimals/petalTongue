@@ -32,7 +32,7 @@ impl NeuralApiProvider {
     /// Create provider with explicit socket path (for testing)
     #[cfg(test)]
     #[must_use]
-    pub fn with_socket_path(socket_path: PathBuf) -> Self {
+    pub const fn with_socket_path(socket_path: PathBuf) -> Self {
         Self {
             socket_path,
             request_id: std::sync::atomic::AtomicU64::new(1),
@@ -105,7 +105,7 @@ impl NeuralApiProvider {
         let request = json!({
             "jsonrpc": "2.0",
             "method": method,
-            "params": params.unwrap_or(json!({})),
+            "params": params.unwrap_or_else(|| json!({})),
             "id": id
         });
 

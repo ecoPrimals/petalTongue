@@ -74,7 +74,7 @@ impl DeviceType {
 
     /// Get recommended UI complexity for this device type
     #[must_use]
-    pub fn recommended_complexity(&self) -> UIComplexity {
+    pub const fn recommended_complexity(&self) -> UIComplexity {
         match self {
             Self::Desktop | Self::TV => UIComplexity::Full,
             Self::Tablet => UIComplexity::Simplified,
@@ -372,7 +372,7 @@ impl RenderingCapabilities {
     }
 
     /// Check if keyboard is available
-    fn has_keyboard() -> bool {
+    const fn has_keyboard() -> bool {
         // Assume keyboard is always available if we have input
         true
     }

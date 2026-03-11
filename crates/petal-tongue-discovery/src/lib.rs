@@ -14,7 +14,7 @@
 //!
 //! 1. **mDNS/Multicast** - Automatic local discovery (preferred)
 //! 2. **Environment Hints** - Manual fallback configuration
-//! 3. **Mock Provider** - Development/testing mode
+//! 3. **Demo Provider** - Development/testing mode (when `test-fixtures` feature enabled)
 //!
 //! # Example
 //!
@@ -36,14 +36,14 @@
 
 mod cache;
 mod capabilities;
+#[cfg(any(test, feature = "test-fixtures"))]
+mod demo_provider;
 mod dns_parser;
 mod dynamic_scenario_provider;
 #[cfg(feature = "legacy-http")]
 mod http_provider;
 mod jsonrpc_provider;
 mod mdns_provider;
-#[cfg(any(test, feature = "test-fixtures"))]
-mod mock_provider;
 mod neural_api_provider;
 mod neural_graph_client;
 mod scenario_provider;
@@ -62,14 +62,14 @@ mod mdns_discovery;
 
 pub use cache::CacheStats;
 pub use capabilities::VisualizationCapability;
+#[cfg(any(test, feature = "test-fixtures"))]
+pub use demo_provider::DemoVisualizationProvider;
 pub use dynamic_scenario_provider::DynamicScenarioProvider;
 #[cfg(feature = "legacy-http")]
 #[expect(deprecated)]
 pub use http_provider::HttpVisualizationProvider;
 pub use jsonrpc_provider::JsonRpcProvider;
 pub use mdns_provider::MdnsVisualizationProvider;
-#[cfg(any(test, feature = "test-fixtures"))]
-pub use mock_provider::MockVisualizationProvider;
 pub use neural_api_provider::NeuralApiProvider;
 pub use neural_graph_client::{ExecutionResult, ExecutionStatus, GraphMetadata, NeuralGraphClient};
 pub use scenario_provider::ScenarioVisualizationProvider;
@@ -418,9 +418,9 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test-fixtures")]
     async fn test_mock_provider_direct_usage() {
-        // Mock provider is ONLY for test code - never used in production discover path.
-        // Tests that use mock data should instantiate MockVisualizationProvider directly.
-        let provider = MockVisualizationProvider::new();
+        // Demo provider is ONLY for test code - never used in production discover path.
+        // Tests that use demo data should instantiate DemoVisualizationProvider directly.
+        let provider = DemoVisualizationProvider::new();
         let primals = provider.get_primals().await.unwrap();
         assert!(!primals.is_empty(), "Mock provider should return primals");
         assert_eq!(primals.len(), 3);
@@ -429,7 +429,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test-fixtures")]
     async fn test_mock_provider_get_topology() {
-        let provider = MockVisualizationProvider::new();
+        let provider = DemoVisualizationProvider::new();
         let topology = provider.get_topology().await.unwrap();
         assert!(topology.is_empty() || !topology.is_empty()); // Mock may return edges
     }
@@ -437,7 +437,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test-fixtures")]
     async fn test_mock_provider_health_check() {
-        let provider = MockVisualizationProvider::new();
+        let provider = DemoVisualizationProvider::new();
         let health = provider.health_check().await.unwrap();
         assert!(!health.is_empty());
     }

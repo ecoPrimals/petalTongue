@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! DataBinding → GrammarExpr compiler.
+//! `DataBinding` → `GrammarExpr` compiler.
 //!
 //! Converts healthSpring's typed data payloads into the Grammar of Graphics
 //! pipeline for actual rendering.
@@ -13,13 +13,13 @@ use crate::grammar::{
     CoordinateSystem, GeometryType, GrammarExpr, ScaleType, VariableBinding, VariableRole,
 };
 
-/// Compiles DataBinding payloads into GrammarExpr and data rows for GrammarCompiler.
+/// Compiles `DataBinding` payloads into `GrammarExpr` and data rows for `GrammarCompiler`.
 #[derive(Debug, Clone, Default)]
 pub struct DataBindingCompiler;
 
 impl DataBindingCompiler {
-    /// Convert a DataBinding into a GrammarExpr and corresponding data rows
-    /// suitable for GrammarCompiler::compile().
+    /// Convert a `DataBinding` into a `GrammarExpr` and corresponding data rows
+    /// suitable for `GrammarCompiler::compile()`.
     #[must_use]
     #[expect(
         clippy::too_many_lines,
@@ -309,7 +309,7 @@ impl DataBindingCompiler {
         (expr, data)
     }
 
-    /// Compile a batch of DataBindings into a Vec of (GrammarExpr, data) pairs.
+    /// Compile a batch of `DataBindings` into a Vec of (`GrammarExpr`, data) pairs.
     #[must_use]
     pub fn compile_batch(
         bindings: &[DataBinding],
@@ -646,7 +646,7 @@ mod tests {
 
     #[test]
     fn histogram_bins_uniform() {
-        let values: Vec<f64> = (0..100).map(|i| i as f64).collect();
+        let values: Vec<f64> = (0..100).map(f64::from).collect();
         let (bins, counts) = utils::histogram_bins(&values, 10);
         assert_eq!(bins.len(), 10);
         assert_eq!(counts.len(), 10);

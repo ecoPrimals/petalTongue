@@ -290,4 +290,50 @@ mod tests {
             assert!(!cmds.is_empty(), "{mode} should produce commands");
         }
     }
+
+    #[test]
+    fn clinical_has_set_awakening_and_fit_to_view() {
+        let cmds = commands_for_mode("clinical");
+        assert!(
+            cmds.iter()
+                .any(|c| matches!(c, MotorCommand::SetAwakening { enabled: false }))
+        );
+        assert!(cmds.iter().any(|c| matches!(c, MotorCommand::FitToView)));
+    }
+
+    #[test]
+    fn presentation_has_fit_to_view() {
+        let cmds = commands_for_mode("presentation");
+        assert!(cmds.iter().any(|c| matches!(c, MotorCommand::FitToView)));
+    }
+
+    #[test]
+    fn developer_has_no_fit_to_view() {
+        let cmds = commands_for_mode("developer");
+        assert!(!cmds.iter().any(|c| matches!(c, MotorCommand::FitToView)));
+    }
+
+    #[test]
+    fn research_has_proprioception_visible() {
+        let cmds = commands_for_mode("research");
+        assert_eq!(panel_visible(&cmds, &PanelId::Proprioception), Some(true));
+        assert_eq!(panel_visible(&cmds, &PanelId::SystemDashboard), Some(true));
+    }
+
+    #[test]
+    fn patient_facing_has_fit_to_view() {
+        let cmds = commands_for_mode("patient-facing");
+        assert!(cmds.iter().any(|c| matches!(c, MotorCommand::FitToView)));
+    }
+
+    #[test]
+    fn mode_command_counts_differ() {
+        let presentation = commands_for_mode("presentation");
+        let developer = commands_for_mode("developer");
+        assert_ne!(
+            presentation.len(),
+            developer.len(),
+            "presentation has SetAwakening+FitToView, developer has only panel visibility"
+        );
+    }
 }

@@ -117,7 +117,7 @@ impl NodePulse {
     /// Get current pulse radius multiplier (oscillates between 1.0 and 1.0 + intensity)
     #[must_use]
     pub fn radius_multiplier(&self) -> f32 {
-        1.0 + (self.phase * std::f32::consts::TAU).sin() * 0.5 * self.intensity
+        ((self.phase * std::f32::consts::TAU).sin() * 0.5).mul_add(self.intensity, 1.0)
     }
 
     /// Get current pulse alpha (fades in and out)
@@ -145,7 +145,7 @@ pub struct EdgeAnimation {
 impl EdgeAnimation {
     /// Create new edge animation
     #[must_use]
-    pub fn new(source: String, target: String) -> Self {
+    pub const fn new(source: String, target: String) -> Self {
         Self {
             source,
             target,
@@ -173,7 +173,7 @@ impl EdgeAnimation {
         // self.particles.retain(|p| !p.is_complete());
 
         // Update thickness based on bandwidth
-        self.thickness_multiplier = 1.0 + self.bandwidth * 2.0;
+        self.thickness_multiplier = self.bandwidth.mul_add(2.0, 1.0);
     }
 }
 

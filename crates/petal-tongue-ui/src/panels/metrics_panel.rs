@@ -245,7 +245,7 @@ pub struct MetricsPanelFactory;
 impl MetricsPanelFactory {
     /// Create a new factory for metrics panels
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self
     }
 }

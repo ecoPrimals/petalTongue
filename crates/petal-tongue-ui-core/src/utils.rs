@@ -5,7 +5,7 @@ use petal_tongue_core::{PrimalHealthStatus, PrimalInfo};
 
 /// Convert health status to percentage (for UI display)
 #[must_use]
-pub fn health_to_percentage(health: &PrimalHealthStatus) -> u8 {
+pub const fn health_to_percentage(health: &PrimalHealthStatus) -> u8 {
     match health {
         PrimalHealthStatus::Healthy => 100,
         PrimalHealthStatus::Warning => 75,
@@ -16,7 +16,7 @@ pub fn health_to_percentage(health: &PrimalHealthStatus) -> u8 {
 
 /// Convert health status to color (hex)
 #[must_use]
-pub fn health_to_color(health: &PrimalHealthStatus) -> &'static str {
+pub const fn health_to_color(health: &PrimalHealthStatus) -> &'static str {
     match health {
         PrimalHealthStatus::Healthy => "#4ade80",  // green-400
         PrimalHealthStatus::Warning => "#facc15",  // yellow-400
@@ -27,7 +27,7 @@ pub fn health_to_color(health: &PrimalHealthStatus) -> &'static str {
 
 /// Convert health status to emoji
 #[must_use]
-pub fn health_to_emoji(health: &PrimalHealthStatus) -> &'static str {
+pub const fn health_to_emoji(health: &PrimalHealthStatus) -> &'static str {
     match health {
         PrimalHealthStatus::Healthy => "🟢",
         PrimalHealthStatus::Warning => "🟡",

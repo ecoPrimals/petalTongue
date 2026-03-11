@@ -127,12 +127,12 @@ pub fn lerp_hsv(color1: (u8, u8, u8), color2: (u8, u8, u8), t: f32) -> (u8, u8, 
     let h = if (h2 - h1).abs() > 180.0 {
         // Take shorter path around color wheel
         if h1 < h2 {
-            h1 + ((h2 - 360.0 - h1) * t)
+            (h2 - 360.0 - h1).mul_add(t, h1)
         } else {
-            h1 + ((h2 + 360.0 - h1) * t)
+            (h2 + 360.0 - h1).mul_add(t, h1)
         }
     } else {
-        h1 + ((h2 - h1) * t)
+        (h2 - h1).mul_add(t, h1)
     };
 
     let h = if h < 0.0 {
@@ -143,8 +143,8 @@ pub fn lerp_hsv(color1: (u8, u8, u8), color2: (u8, u8, u8), t: f32) -> (u8, u8, 
         h
     };
 
-    let s = s1 + ((s2 - s1) * t);
-    let v = v1 + ((v2 - v1) * t);
+    let s = (s2 - s1).mul_add(t, s1);
+    let v = (v2 - v1).mul_add(t, v1);
 
     hsv_to_rgb(h, s, v)
 }

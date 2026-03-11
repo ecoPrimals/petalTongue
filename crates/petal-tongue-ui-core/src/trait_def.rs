@@ -24,25 +24,25 @@ pub enum ExportFormat {
 impl ExportFormat {
     /// Get file extension for this format
     #[must_use]
-    pub fn extension(&self) -> &'static str {
+    pub const fn extension(&self) -> &'static str {
         match self {
-            ExportFormat::Svg => "svg",
-            ExportFormat::Png => "png",
-            ExportFormat::Text => "txt",
-            ExportFormat::Json => "json",
-            ExportFormat::Dot => "dot",
+            Self::Svg => "svg",
+            Self::Png => "png",
+            Self::Text => "txt",
+            Self::Json => "json",
+            Self::Dot => "dot",
         }
     }
 
     /// Get MIME type for this format
     #[must_use]
-    pub fn mime_type(&self) -> &'static str {
+    pub const fn mime_type(&self) -> &'static str {
         match self {
-            ExportFormat::Svg => "image/svg+xml",
-            ExportFormat::Png => "image/png",
-            ExportFormat::Text => "text/plain",
-            ExportFormat::Json => "application/json",
-            ExportFormat::Dot => "text/vnd.graphviz",
+            Self::Svg => "image/svg+xml",
+            Self::Png => "image/png",
+            Self::Text => "text/plain",
+            Self::Json => "application/json",
+            Self::Dot => "text/vnd.graphviz",
         }
     }
 }

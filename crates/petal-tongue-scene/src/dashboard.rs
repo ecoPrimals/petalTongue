@@ -68,13 +68,13 @@ impl DashboardConfig {
     }
 
     #[must_use]
-    pub fn with_layout(mut self, layout: DashboardLayout) -> Self {
+    pub const fn with_layout(mut self, layout: DashboardLayout) -> Self {
         self.layout = layout;
         self
     }
 
     #[must_use]
-    pub fn with_panel_size(mut self, width: f64, height: f64) -> Self {
+    pub const fn with_panel_size(mut self, width: f64, height: f64) -> Self {
         self.panel_width = width;
         self.panel_height = height;
         self
@@ -120,9 +120,10 @@ pub fn compose_dashboard(panels: &[(String, SceneGraph)], config: &DashboardConf
     let palette = palette_for_domain(config.domain.as_deref().unwrap_or("measurement"));
 
     let title_offset = if config.title.is_some() { 40.0 } else { 0.0 };
-    let total_width = columns as f64 * (config.panel_width + config.spacing) - config.spacing;
+    let total_width =
+        (columns as f64).mul_add(config.panel_width + config.spacing, -config.spacing);
     let total_height =
-        rows as f64 * (config.panel_height + config.spacing) - config.spacing + title_offset;
+        (rows as f64).mul_add(config.panel_height + config.spacing, -config.spacing) + title_offset;
 
     let mut scene = SceneGraph::new();
 
@@ -170,7 +171,7 @@ pub fn compose_dashboard(panels: &[(String, SceneGraph)], config: &DashboardConf
         let col = idx % columns.max(1);
         let row = idx / columns.max(1);
         let x = col as f64 * (config.panel_width + config.spacing);
-        let y = row as f64 * (config.panel_height + config.spacing) + title_offset;
+        let y = (row as f64).mul_add(config.panel_height + config.spacing, title_offset);
 
         let panel_id = format!("panel_{idx}");
         let mut panel_node = SceneNode::new(&panel_id);

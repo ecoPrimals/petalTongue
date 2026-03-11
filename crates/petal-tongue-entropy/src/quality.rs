@@ -337,4 +337,84 @@ mod tests {
         let quality = weighted_quality(&components);
         assert_relative_eq!(quality, 0.9, epsilon = 0.01);
     }
+
+    #[test]
+    fn test_shannon_entropy_single_unique_value() {
+        let values = vec![42];
+        let entropy = shannon_entropy(&values);
+        assert_relative_eq!(entropy, 0.0, epsilon = 0.01);
+    }
+
+    #[test]
+    fn test_create_histogram_buckets_bounds() {
+        let values = vec![0.0, 0.25, 0.5, 0.75, 1.0];
+        let buckets = create_histogram_buckets(&values, 5);
+        assert_eq!(buckets.len(), 5);
+        for &b in &buckets {
+            assert!(b < 5, "bucket index must be in [0, 4]");
+        }
+    }
+
+    #[test]
+    fn test_timing_entropy_varied_durations() {
+        let durations = vec![
+            Duration::from_millis(50),
+            Duration::from_millis(100),
+            Duration::from_millis(500),
+            Duration::from_millis(1000),
+        ];
+        let entropy = timing_entropy(&durations);
+        assert!(entropy > 0.5, "varied durations should have high entropy");
+    }
+
+    #[test]
+    fn test_weighted_quality_many_components() {
+        let components = vec![(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)];
+        let quality = weighted_quality(&components);
+        assert_relative_eq!(quality, 0.5, epsilon = 0.01);
+    }
+
+    #[test]
+    fn test_create_histogram_buckets_max_bucket_edge() {
+        let values = vec![0.0, 0.99, 1.0];
+        let buckets = create_histogram_buckets(&values, 5);
+        assert_eq!(buckets.len(), 3);
+        assert!(buckets[2] <= 4, "last value should map to bucket 4");
+    }
+
+    #[test]
+    fn test_variance_high_spread() {
+        let values = vec![0.0, 10.0, 20.0, 30.0, 40.0];
+        let var = variance(&values);
+        assert!(
+            var > 0.7,
+            "high spread should give high normalized variance"
+        );
+    }
+
+    #[test]
+    fn test_shannon_entropy_two_values_half_half() {
+        let values = vec![0, 1, 0, 1, 0, 1, 0, 1];
+        let entropy = shannon_entropy(&values);
+        assert_relative_eq!(entropy, 1.0, epsilon = 0.01);
+    }
+
+    #[test]
+    fn test_timing_entropy_uniform_intervals() {
+        let durations = vec![
+            Duration::from_millis(100),
+            Duration::from_millis(100),
+            Duration::from_millis(100),
+            Duration::from_millis(100),
+        ];
+        let entropy = timing_entropy(&durations);
+        assert!((0.0..=1.0).contains(&entropy));
+    }
+
+    #[test]
+    fn test_weighted_quality_unequal_weights() {
+        let components = vec![(1.0, 2.0), (0.0, 1.0)];
+        let quality = weighted_quality(&components);
+        assert_relative_eq!(quality, 2.0 / 3.0, epsilon = 0.01);
+    }
 }

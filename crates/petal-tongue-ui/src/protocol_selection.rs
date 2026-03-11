@@ -288,8 +288,8 @@ impl PrimalConnection {
     /// Get capabilities from remote primal
     pub async fn get_capabilities(&self) -> TarpcResult<Vec<String>> {
         match self {
-            PrimalConnection::Tarpc(client) => client.get_capabilities().await,
-            PrimalConnection::JsonRpc(client) => {
+            Self::Tarpc(client) => client.get_capabilities().await,
+            Self::JsonRpc(client) => {
                 let value = client
                     .get_capabilities()
                     .await
@@ -309,15 +309,15 @@ impl PrimalConnection {
                     .collect();
                 Ok(strings)
             }
-            PrimalConnection::Https(client) => client.get_capabilities().await,
+            Self::Https(client) => client.get_capabilities().await,
         }
     }
 
     /// Check health of remote primal
     pub async fn health(&self) -> TarpcResult<petal_tongue_ipc::HealthStatus> {
         match self {
-            PrimalConnection::Tarpc(client) => client.health().await,
-            PrimalConnection::JsonRpc(client) => {
+            Self::Tarpc(client) => client.health().await,
+            Self::JsonRpc(client) => {
                 let value = client
                     .health_check()
                     .await
@@ -354,7 +354,7 @@ impl PrimalConnection {
                     details: std::collections::HashMap::new(),
                 })
             }
-            PrimalConnection::Https(client) => client.health().await,
+            Self::Https(client) => client.health().await,
         }
     }
 }

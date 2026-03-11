@@ -37,7 +37,7 @@ fn build_properties_from_info(info: &PrimalInfo) -> Properties {
 
 #[allow(dead_code)] // Used in tests
 #[must_use]
-fn health_status_display(health: PrimalHealthStatus) -> (&'static str, egui::Color32) {
+const fn health_status_display(health: PrimalHealthStatus) -> (&'static str, egui::Color32) {
     let rgb = health_status_rgb(health);
     (
         health_status_icon(health),
@@ -47,7 +47,7 @@ fn health_status_display(health: PrimalHealthStatus) -> (&'static str, egui::Col
 
 /// Pure: health status icon (no egui)
 #[must_use]
-pub(crate) fn health_status_icon(health: PrimalHealthStatus) -> &'static str {
+pub const fn health_status_icon(health: PrimalHealthStatus) -> &'static str {
     match health {
         PrimalHealthStatus::Healthy => "✅",
         PrimalHealthStatus::Warning => "⚠️",
@@ -58,7 +58,7 @@ pub(crate) fn health_status_icon(health: PrimalHealthStatus) -> &'static str {
 
 /// Pure: health status RGB color [r, g, b] (no egui)
 #[must_use]
-pub(crate) fn health_status_rgb(health: PrimalHealthStatus) -> [u8; 3] {
+pub const fn health_status_rgb(health: PrimalHealthStatus) -> [u8; 3] {
     match health {
         PrimalHealthStatus::Healthy => [0, 200, 0],
         PrimalHealthStatus::Warning => [255, 200, 0],
@@ -89,7 +89,7 @@ fn extract_health_u8_from_properties(properties: &Properties) -> u8 {
 // ============================================================================
 
 /// Pre-computed summary for rendering primal details panel
-pub(crate) struct PrimalDetailsSummary {
+pub struct PrimalDetailsSummary {
     pub name: String,
     pub id: String,
     pub primal_type: String,

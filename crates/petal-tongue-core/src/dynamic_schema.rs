@@ -137,9 +137,9 @@ pub enum DynamicValue {
     /// String value
     String(String),
     /// Array of values
-    Array(Vec<DynamicValue>),
+    Array(Vec<Self>),
     /// Object (key-value map)
-    Object(HashMap<String, DynamicValue>),
+    Object(HashMap<String, Self>),
 }
 
 impl DynamicValue {
@@ -147,67 +147,67 @@ impl DynamicValue {
     #[must_use]
     pub fn as_str(&self) -> Option<&str> {
         match self {
-            DynamicValue::String(s) => Some(s),
+            Self::String(s) => Some(s),
             _ => None,
         }
     }
 
     /// Get value as number, if possible
     #[must_use]
-    pub fn as_f64(&self) -> Option<f64> {
+    pub const fn as_f64(&self) -> Option<f64> {
         match self {
-            DynamicValue::Number(n) => Some(*n),
+            Self::Number(n) => Some(*n),
             _ => None,
         }
     }
 
     /// Get value as boolean, if possible
     #[must_use]
-    pub fn as_bool(&self) -> Option<bool> {
+    pub const fn as_bool(&self) -> Option<bool> {
         match self {
-            DynamicValue::Boolean(b) => Some(*b),
+            Self::Boolean(b) => Some(*b),
             _ => None,
         }
     }
 
     /// Get value as array, if possible
     #[must_use]
-    pub fn as_array(&self) -> Option<&[DynamicValue]> {
+    pub fn as_array(&self) -> Option<&[Self]> {
         match self {
-            DynamicValue::Array(arr) => Some(arr),
+            Self::Array(arr) => Some(arr),
             _ => None,
         }
     }
 
     /// Get value as object, if possible
     #[must_use]
-    pub fn as_object(&self) -> Option<&HashMap<String, DynamicValue>> {
+    pub const fn as_object(&self) -> Option<&HashMap<String, Self>> {
         match self {
-            DynamicValue::Object(obj) => Some(obj),
+            Self::Object(obj) => Some(obj),
             _ => None,
         }
     }
 
     /// Check if value is null
     #[must_use]
-    pub fn is_null(&self) -> bool {
-        matches!(self, DynamicValue::Null)
+    pub const fn is_null(&self) -> bool {
+        matches!(self, Self::Null)
     }
 
     /// Convert to `serde_json::Value` for compatibility
     #[must_use]
     pub fn to_json_value(&self) -> serde_json::Value {
         match self {
-            DynamicValue::Null => serde_json::Value::Null,
-            DynamicValue::Boolean(b) => serde_json::Value::Bool(*b),
-            DynamicValue::Number(n) => serde_json::Value::Number(
+            Self::Null => serde_json::Value::Null,
+            Self::Boolean(b) => serde_json::Value::Bool(*b),
+            Self::Number(n) => serde_json::Value::Number(
                 serde_json::Number::from_f64(*n).unwrap_or_else(|| serde_json::Number::from(0)),
             ),
-            DynamicValue::String(s) => serde_json::Value::String(s.clone()),
-            DynamicValue::Array(arr) => {
-                serde_json::Value::Array(arr.iter().map(DynamicValue::to_json_value).collect())
+            Self::String(s) => serde_json::Value::String(s.clone()),
+            Self::Array(arr) => {
+                serde_json::Value::Array(arr.iter().map(Self::to_json_value).collect())
             }
-            DynamicValue::Object(obj) => serde_json::Value::Object(
+            Self::Object(obj) => serde_json::Value::Object(
                 obj.iter()
                     .map(|(k, v)| (k.clone(), v.to_json_value()))
                     .collect(),
@@ -218,14 +218,14 @@ impl DynamicValue {
     /// Create from `serde_json::Value`
     pub fn from_json_value(value: serde_json::Value) -> Self {
         match value {
-            serde_json::Value::Null => DynamicValue::Null,
-            serde_json::Value::Bool(b) => DynamicValue::Boolean(b),
-            serde_json::Value::Number(n) => DynamicValue::Number(n.as_f64().unwrap_or_default()),
-            serde_json::Value::String(s) => DynamicValue::String(s),
+            serde_json::Value::Null => Self::Null,
+            serde_json::Value::Bool(b) => Self::Boolean(b),
+            serde_json::Value::Number(n) => Self::Number(n.as_f64().unwrap_or_default()),
+            serde_json::Value::String(s) => Self::String(s),
             serde_json::Value::Array(arr) => {
-                DynamicValue::Array(arr.into_iter().map(Self::from_json_value).collect())
+                Self::Array(arr.into_iter().map(Self::from_json_value).collect())
             }
-            serde_json::Value::Object(obj) => DynamicValue::Object(
+            serde_json::Value::Object(obj) => Self::Object(
                 obj.into_iter()
                     .map(|(k, v)| (k, Self::from_json_value(v)))
                     .collect(),
@@ -475,9 +475,7 @@ mod tests {
     #[test]
     fn test_dynamic_value_json_roundtrip() {
         let val = DynamicValue::Object(
-            [("k".to_string(), DynamicValue::Number(42.0))]
-                .into_iter()
-                .collect(),
+            std::iter::once(("k".to_string(), DynamicValue::Number(42.0))).collect(),
         );
         let json_val = val.to_json_value();
         let back = DynamicValue::from_json_value(json_val);
@@ -686,7 +684,7 @@ mod proptest_tests {
                 val
             };
             prop_assert!(
-                (got - val).abs() <= rel.abs() * 1e-10 + 1e-15,
+                (got - val).abs() <= rel.abs().mul_add(1e-10, 1e-15),
                 "roundtrip: {} -> {}",
                 val,
                 got

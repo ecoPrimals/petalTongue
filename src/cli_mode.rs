@@ -349,7 +349,7 @@ fn print_status_text(status: &SystemStatus) {
 // Derive Clone for SystemStatus for testing
 impl Clone for SystemStatus {
     fn clone(&self) -> Self {
-        SystemStatus {
+        Self {
             version: self.version.clone(),
             mode: self.mode.clone(),
             unibin: UniBinStatus {
@@ -384,7 +384,7 @@ impl Clone for SystemStatus {
 
 impl Clone for ModeInfo {
     fn clone(&self) -> Self {
-        ModeInfo {
+        Self {
             name: self.name.clone(),
             pure_rust: self.pure_rust,
         }
@@ -393,7 +393,7 @@ impl Clone for ModeInfo {
 
 impl Clone for ModeDetails {
     fn clone(&self) -> Self {
-        ModeDetails {
+        Self {
             name: self.name.clone(),
             description: self.description.clone(),
             pure_rust: self.pure_rust,

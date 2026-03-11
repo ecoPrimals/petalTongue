@@ -19,9 +19,9 @@
 //! ```
 
 use crate::biomeos_integration::{BiomeOSProvider, Device, NicheTemplate, Primal};
-use crate::device_panel::DevicePanel;
 #[cfg(feature = "mock")]
-use crate::mock_device_provider::MockDeviceProvider;
+use crate::demo_device_provider::DemoDeviceProvider;
+use crate::device_panel::DevicePanel;
 use crate::niche_designer::NicheDesigner;
 use crate::primal_panel::PrimalPanel;
 use crate::ui_events::UIEventHandler;
@@ -35,9 +35,9 @@ use tracing::{info, warn};
 pub struct BiomeOSUIManager {
     /// Provider for data (`BiomeOS` or Mock)
     biomeos_provider: Option<BiomeOSProvider>,
-    /// Mock provider - only when `mock` feature enabled (dev/test only, never production)
+    /// Demo provider - only when `mock` feature enabled (graceful fallback when biomeOS unavailable)
     #[cfg(feature = "mock")]
-    mock_provider: Option<MockDeviceProvider>,
+    demo_provider: Option<DemoDeviceProvider>,
     use_mock: bool,
 
     /// Event handler (passed to child panels for event dispatch)
@@ -82,21 +82,21 @@ impl BiomeOSUIManager {
         // Try to discover biomeOS provider
         let biomeos_provider = BiomeOSProvider::discover().await.ok().flatten();
 
-        // Mock only when biomeOS unavailable AND mock feature enabled (never in production)
+        // Demo fallback only when biomeOS unavailable AND mock feature enabled
         let use_mock = biomeos_provider.is_none() && cfg!(feature = "mock");
 
         if use_mock {
-            info!("📦 Using mock provider (biomeOS not available, mock feature enabled)");
+            info!("📦 Using demo provider (biomeOS not available, mock feature enabled)");
         } else if biomeos_provider.is_none() {
             info!("⚠️ biomeOS not available - empty panels (use --features mock for demo data)");
         } else {
             info!("✅ Connected to biomeOS");
         }
 
-        // Lazy initialization: only create mock provider when needed (mock feature + biomeOS unavailable)
+        // Lazy initialization: only create demo provider when needed (mock feature + biomeOS unavailable)
         #[cfg(feature = "mock")]
-        let mock_provider = if use_mock {
-            Some(MockDeviceProvider::new())
+        let demo_provider = if use_mock {
+            Some(DemoDeviceProvider::new())
         } else {
             None
         };
@@ -104,7 +104,7 @@ impl BiomeOSUIManager {
         Self {
             biomeos_provider,
             #[cfg(feature = "mock")]
-            mock_provider,
+            demo_provider,
             use_mock,
             event_handler: event_handler.clone(),
             device_panel: DevicePanel::new(event_handler.clone()),
@@ -125,18 +125,18 @@ impl BiomeOSUIManager {
         let (devices, primals, templates) = if self.use_mock {
             #[cfg(feature = "mock")]
             {
-                // Use mock provider (methods are not async)
-                if self.mock_provider.is_none() {
-                    self.mock_provider = Some(MockDeviceProvider::new());
+                // Use demo provider (methods are not async)
+                if self.demo_provider.is_none() {
+                    self.demo_provider = Some(DemoDeviceProvider::new());
                 }
 
-                if let Some(mock) = &self.mock_provider {
-                    let devices = mock.get_devices();
-                    let primals = mock.get_primals_extended();
-                    let templates = mock.get_niche_templates();
+                if let Some(demo) = &self.demo_provider {
+                    let devices = demo.get_devices();
+                    let primals = demo.get_primals_extended();
+                    let templates = demo.get_niche_templates();
                     (devices, primals, templates)
                 } else {
-                    warn!("Mock provider not available");
+                    warn!("Demo provider not available");
                     return Ok(());
                 }
             }
@@ -238,31 +238,31 @@ impl BiomeOSUIManager {
 
     /// Get reference to device panel
     #[must_use]
-    pub fn device_panel(&self) -> &DevicePanel {
+    pub const fn device_panel(&self) -> &DevicePanel {
         &self.device_panel
     }
 
     /// Get reference to primal panel
     #[must_use]
-    pub fn primal_panel(&self) -> &PrimalPanel {
+    pub const fn primal_panel(&self) -> &PrimalPanel {
         &self.primal_panel
     }
 
     /// Get reference to niche designer
     #[must_use]
-    pub fn niche_designer(&self) -> &NicheDesigner {
+    pub const fn niche_designer(&self) -> &NicheDesigner {
         &self.niche_designer
     }
 
     /// Check if using mock mode
     #[must_use]
-    pub fn is_mock_mode(&self) -> bool {
+    pub const fn is_mock_mode(&self) -> bool {
         self.use_mock
     }
 
     /// Get current tab
     #[must_use]
-    pub fn current_tab(&self) -> UITab {
+    pub const fn current_tab(&self) -> UITab {
         self.current_tab
     }
 }
@@ -311,9 +311,9 @@ impl BiomeOSUIRPC {
             #[cfg(feature = "mock")]
             {
                 Ok(manager
-                    .mock_provider
+                    .demo_provider
                     .as_ref()
-                    .map(super::mock_device_provider::MockDeviceProvider::get_devices)
+                    .map(super::demo_device_provider::DemoDeviceProvider::get_devices)
                     .unwrap_or_default())
             }
             #[cfg(not(feature = "mock"))]
@@ -332,9 +332,9 @@ impl BiomeOSUIRPC {
             #[cfg(feature = "mock")]
             {
                 Ok(manager
-                    .mock_provider
+                    .demo_provider
                     .as_ref()
-                    .map(super::mock_device_provider::MockDeviceProvider::get_primals_extended)
+                    .map(super::demo_device_provider::DemoDeviceProvider::get_primals_extended)
                     .unwrap_or_default())
             }
             #[cfg(not(feature = "mock"))]
@@ -353,9 +353,9 @@ impl BiomeOSUIRPC {
             #[cfg(feature = "mock")]
             {
                 Ok(manager
-                    .mock_provider
+                    .demo_provider
                     .as_ref()
-                    .map(super::mock_device_provider::MockDeviceProvider::get_niche_templates)
+                    .map(super::demo_device_provider::DemoDeviceProvider::get_niche_templates)
                     .unwrap_or_default())
             }
             #[cfg(not(feature = "mock"))]

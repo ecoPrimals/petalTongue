@@ -21,6 +21,7 @@ pub enum Easing {
 
 impl Easing {
     /// Evaluate the easing function at time t (0.0 to 1.0).
+    #[must_use]
     pub fn apply(self, t: f64) -> f64 {
         let t = t.clamp(0.0, 1.0);
         match self {
@@ -31,25 +32,25 @@ impl Easing {
                 if t < 0.5 {
                     4.0 * t * t * t
                 } else {
-                    1.0 - (-2.0 * t + 2.0).powi(3) / 2.0
+                    1.0 - (-2.0f64).mul_add(t, 2.0).powi(3) / 2.0
                 }
             }
             Self::Spring => {
                 let freq = 4.5 * std::f64::consts::PI;
-                1.0 - ((-6.0 * t).exp() * (freq * t).cos())
+                (-6.0 * t).exp().mul_add(-(freq * t).cos(), 1.0)
             }
             Self::Bounce => {
                 if t < 1.0 / 2.75 {
                     7.5625 * t * t
                 } else if t < 2.0 / 2.75 {
                     let t2 = t - 1.5 / 2.75;
-                    7.5625 * t2 * t2 + 0.75
+                    (7.5625 * t2).mul_add(t2, 0.75)
                 } else if t < 2.5 / 2.75 {
                     let t2 = t - 2.25 / 2.75;
-                    7.5625 * t2 * t2 + 0.9375
+                    (7.5625 * t2).mul_add(t2, 0.9375)
                 } else {
                     let t2 = t - 2.625 / 2.75;
-                    7.5625 * t2 * t2 + 0.984_375
+                    (7.5625 * t2).mul_add(t2, 0.984_375)
                 }
             }
         }
@@ -146,19 +147,20 @@ impl Animation {
 
     /// Builder: set easing.
     #[must_use]
-    pub fn with_easing(mut self, easing: Easing) -> Self {
+    pub const fn with_easing(mut self, easing: Easing) -> Self {
         self.easing = easing;
         self
     }
 
     /// Builder: set delay.
     #[must_use]
-    pub fn with_delay(mut self, delay: f64) -> Self {
+    pub const fn with_delay(mut self, delay: f64) -> Self {
         self.delay_secs = delay;
         self
     }
 
     /// Total duration including delay.
+    #[must_use]
     pub fn total_duration(&self) -> f64 {
         self.delay_secs + self.duration_secs
     }
@@ -172,7 +174,7 @@ pub enum Sequence {
     /// Play animations simultaneously.
     Parallel(Vec<Animation>),
     /// Nested sequences.
-    Group(Vec<Sequence>),
+    Group(Vec<Self>),
 }
 
 impl Sequence {
@@ -184,7 +186,7 @@ impl Sequence {
                 .iter()
                 .map(Animation::total_duration)
                 .fold(0.0_f64, f64::max),
-            Self::Group(seqs) => seqs.iter().map(Sequence::total_duration).sum(),
+            Self::Group(seqs) => seqs.iter().map(Self::total_duration).sum(),
         }
     }
 }
@@ -198,7 +200,8 @@ pub struct AnimationState {
 
 impl AnimationState {
     /// Create a new animation state.
-    pub fn new(animation: Animation) -> Self {
+    #[must_use]
+    pub const fn new(animation: Animation) -> Self {
         Self {
             animation,
             elapsed: 0.0,
@@ -211,11 +214,13 @@ impl AnimationState {
     }
 
     /// Whether this animation has completed.
+    #[must_use]
     pub fn is_done(&self) -> bool {
         self.elapsed >= self.animation.total_duration()
     }
 
     /// Current progress ratio (0.0 to 1.0), accounting for delay and easing.
+    #[must_use]
     pub fn progress(&self) -> f64 {
         let active_time = (self.elapsed - self.animation.delay_secs).max(0.0);
         let raw = if self.animation.duration_secs > 0.0 {
@@ -227,15 +232,17 @@ impl AnimationState {
     }
 
     /// Interpolate a f64 value between `from` and `to` at current progress.
+    #[must_use]
     pub fn lerp_f64(&self, from: f64, to: f64) -> f64 {
         let t = self.progress();
-        from + (to - from) * t
+        (to - from).mul_add(t, from)
     }
 
     /// Interpolate a f32 value.
+    #[must_use]
     pub fn lerp_f32(&self, from: f32, to: f32) -> f64 {
         let t = self.progress();
-        f64::from(from) + f64::from(to - from) * t
+        f64::from(to - from).mul_add(t, f64::from(from))
     }
 }
 
@@ -290,13 +297,13 @@ impl AnimationPlayer {
 
     /// Number of currently active animations.
     #[must_use]
-    pub fn active_count(&self) -> usize {
+    pub const fn active_count(&self) -> usize {
         self.active.len()
     }
 
     /// Whether any animations are currently playing.
     #[must_use]
-    pub fn is_playing(&self) -> bool {
+    pub const fn is_playing(&self) -> bool {
         !self.active.is_empty()
     }
 }
@@ -709,7 +716,7 @@ mod tests {
     fn animation_easing_monotonic_linear() {
         let mut prev = -1.0;
         for i in 0..=10 {
-            let t = i as f64 / 10.0;
+            let t = f64::from(i) / 10.0;
             let v = Easing::Linear.apply(t);
             assert!(v >= prev, "Linear at t={t} should be monotonic");
             prev = v;
@@ -720,7 +727,7 @@ mod tests {
     fn animation_easing_monotonic_ease_in_out() {
         let mut prev = -1.0;
         for i in 0..=10 {
-            let t = i as f64 / 10.0;
+            let t = f64::from(i) / 10.0;
             let v = Easing::EaseInOut.apply(t);
             assert!(v >= prev, "EaseInOut at t={t} should be monotonic");
             prev = v;
@@ -831,7 +838,10 @@ mod tests {
     fn easing_bounce_first_branch() {
         let t = 0.03; // < 1/2.75 ≈ 0.3636
         let v = Easing::Bounce.apply(t);
-        assert!((v - 7.5625 * t * t).abs() < EPS, "first branch: 7.5625*t^2");
+        assert!(
+            (7.5625 * t).mul_add(-t, v).abs() < EPS,
+            "first branch: 7.5625*t^2"
+        );
     }
 
     #[test]
@@ -964,5 +974,113 @@ mod tests {
     fn animation_ease_out_midpoint() {
         let v = Easing::EaseOut.apply(0.5);
         assert!((v - 0.875).abs() < EPS, "EaseOut: 1-(1-t)^3 at 0.5 = 0.875");
+    }
+
+    #[test]
+    fn sequence_serialization_roundtrip() {
+        let seq = Sequence::Sequential(vec![
+            Animation::fade_in("n1", 1.0),
+            Animation::fade_out("n2", 2.0),
+        ]);
+        let json = serde_json::to_string(&seq).expect("serialization should succeed");
+        let decoded: Sequence =
+            serde_json::from_str(&json).expect("deserialization should succeed");
+        assert_eq!(seq, decoded);
+    }
+
+    #[test]
+    fn sequence_parallel_serialization_roundtrip() {
+        let seq = Sequence::Parallel(vec![Animation::create("n", 1.0)]);
+        let json = serde_json::to_string(&seq).expect("serialization should succeed");
+        let decoded: Sequence =
+            serde_json::from_str(&json).expect("deserialization should succeed");
+        assert_eq!(seq, decoded);
+    }
+
+    #[test]
+    fn sequence_group_serialization_roundtrip() {
+        let inner = Sequence::Sequential(vec![Animation::fade_in("n", 0.5)]);
+        let seq = Sequence::Group(vec![inner]);
+        let json = serde_json::to_string(&seq).expect("serialization should succeed");
+        let decoded: Sequence =
+            serde_json::from_str(&json).expect("deserialization should succeed");
+        assert_eq!(seq, decoded);
+    }
+
+    #[test]
+    fn animation_state_clone() {
+        let anim = Animation::fade_in("n", 1.0);
+        let state = AnimationState::new(anim);
+        let cloned = state.clone();
+        assert_eq!(state.elapsed, cloned.elapsed);
+        assert_eq!(
+            state.animation.duration_secs,
+            cloned.animation.duration_secs
+        );
+    }
+
+    #[test]
+    fn animation_player_default_equals_new() {
+        let defaulted = AnimationPlayer::default();
+        let created = AnimationPlayer::new();
+        assert_eq!(defaulted.active_count(), created.active_count());
+        assert!(!defaulted.is_playing());
+    }
+
+    #[test]
+    fn animation_player_clone() {
+        let mut player = AnimationPlayer::new();
+        player.play(Animation::fade_in("n", 1.0));
+        let cloned = player.clone();
+        assert_eq!(cloned.active_count(), 1);
+    }
+
+    #[test]
+    fn animation_target_debug_formatting() {
+        let target = AnimationTarget::Opacity {
+            node_id: "n".to_string(),
+            from: 0.0,
+            to: 1.0,
+        };
+        let s = format!("{target:?}");
+        assert!(s.contains("Opacity"));
+        assert!(s.contains('n'));
+    }
+
+    #[test]
+    fn animation_target_partial_eq() {
+        let a = AnimationTarget::StrokeDraw {
+            node_id: "x".to_string(),
+        };
+        let b = AnimationTarget::StrokeDraw {
+            node_id: "x".to_string(),
+        };
+        let c = AnimationTarget::StrokeDraw {
+            node_id: "y".to_string(),
+        };
+        assert_eq!(a, b);
+        assert_ne!(a, c);
+    }
+
+    #[test]
+    fn animation_move_to_construction() {
+        let anim = Animation::move_to("n", [0.0, 0.0], [10.0, 20.0], 1.0);
+        assert!(matches!(anim.target, AnimationTarget::Translate { .. }));
+        assert!((anim.duration_secs - 1.0).abs() < EPS);
+    }
+
+    #[test]
+    fn animation_scale_target_direct_construction() {
+        let anim = Animation {
+            target: AnimationTarget::Scale {
+                node_id: "n".to_string(),
+                from: 1.0,
+                to: 2.0,
+            },
+            duration_secs: 1.0,
+            easing: Easing::Linear,
+            delay_secs: 0.0,
+        };
+        assert!((anim.total_duration() - 1.0).abs() < EPS);
     }
 }

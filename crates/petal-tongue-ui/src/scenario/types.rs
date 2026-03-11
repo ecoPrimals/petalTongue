@@ -43,13 +43,13 @@ pub struct Scenario {
 impl Scenario {
     /// Get number of primals in scenario
     #[must_use]
-    pub fn primal_count(&self) -> usize {
+    pub const fn primal_count(&self) -> usize {
         self.ecosystem.primals.len()
     }
 
     /// Get number of edges in scenario
     #[must_use]
-    pub fn edge_count(&self) -> usize {
+    pub const fn edge_count(&self) -> usize {
         self.edges.len()
     }
 

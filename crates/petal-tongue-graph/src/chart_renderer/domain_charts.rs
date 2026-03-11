@@ -8,28 +8,28 @@ use egui::{RichText, Ui};
 use egui_plot::{Line, Plot, PlotPoints, Points};
 
 #[must_use]
-pub(crate) fn validate_heatmap_dimensions(cols: usize, rows: usize, values_len: usize) -> bool {
+pub const fn validate_heatmap_dimensions(cols: usize, rows: usize, values_len: usize) -> bool {
     cols > 0 && rows > 0 && values_len == cols * rows
 }
 
 #[must_use]
-pub(crate) fn validate_scatter3d_lengths(x_len: usize, y_len: usize, z_len: usize) -> bool {
+pub const fn validate_scatter3d_lengths(x_len: usize, y_len: usize, z_len: usize) -> bool {
     x_len > 0 && x_len == y_len && x_len == z_len
 }
 
 #[must_use]
-pub(crate) fn validate_scatter2d_lengths(x_len: usize, y_len: usize) -> bool {
+pub const fn validate_scatter2d_lengths(x_len: usize, y_len: usize) -> bool {
     x_len > 0 && x_len == y_len
 }
 
 #[must_use]
-pub(crate) fn validate_spectrum_lengths(freq_len: usize, amp_len: usize) -> bool {
+pub const fn validate_spectrum_lengths(freq_len: usize, amp_len: usize) -> bool {
     freq_len > 0 && freq_len == amp_len
 }
 
 /// Compute value range for heatmap/fieldmap normalization (testable without egui).
 #[must_use]
-pub(crate) fn value_range(values: &[f64]) -> Option<(f64, f64, f64)> {
+pub fn value_range(values: &[f64]) -> Option<(f64, f64, f64)> {
     if values.is_empty() {
         return None;
     }
@@ -47,14 +47,14 @@ pub(crate) fn value_range(values: &[f64]) -> Option<(f64, f64, f64)> {
 
 /// Normalize value to [0, 1] for color mapping (testable without egui).
 #[must_use]
-pub(crate) fn normalize_value(value: f64, vmin: f64, range: f64) -> f32 {
+pub fn normalize_value(value: f64, vmin: f64, range: f64) -> f32 {
     ((value - vmin) / range).clamp(0.0, 1.0) as f32
 }
 
 /// Assign scatter3d points to z-bands for color/size encoding (testable without egui).
 #[must_use]
 #[allow(dead_code)] // Used in tests; draw_scatter3d uses inline loop for egui integration
-pub(crate) fn scatter3d_bands(
+pub fn scatter3d_bands(
     x_vals: &[f64],
     y_vals: &[f64],
     z_vals: &[f64],
@@ -90,7 +90,7 @@ pub(crate) fn scatter3d_bands(
     Some(bands)
 }
 
-pub(crate) fn draw_heatmap(
+pub fn draw_heatmap(
     ui: &mut Ui,
     label: &str,
     x_labels: &[String],
@@ -135,7 +135,7 @@ pub(crate) fn draw_heatmap(
 }
 
 /// `Scatter` (2D) rendering parameters bundled to reduce argument count.
-pub(crate) struct Scatter2dParams<'a> {
+pub struct Scatter2dParams<'a> {
     pub label: &'a str,
     pub x_vals: &'a [f64],
     pub y_vals: &'a [f64],
@@ -147,7 +147,7 @@ pub(crate) struct Scatter2dParams<'a> {
 }
 
 /// Draw 2D scatter plot (e.g., `PCoA` ordination, UMAP embedding).
-pub(crate) fn draw_scatter(ui: &mut Ui, params: &Scatter2dParams<'_>) {
+pub fn draw_scatter(ui: &mut Ui, params: &Scatter2dParams<'_>) {
     let palette = domain_theme::palette_for_domain(params.domain.unwrap_or("health"));
     let x_vals = params.x_vals;
     let y_vals = params.y_vals;
@@ -184,7 +184,7 @@ pub(crate) fn draw_scatter(ui: &mut Ui, params: &Scatter2dParams<'_>) {
             let mut best_idx = 0usize;
             let mut best_dist = f64::INFINITY;
             for (idx, (&xi, &yi)) in x_vals.iter().zip(y_vals.iter()).enumerate() {
-                let dist = (xi - cursor_x).powi(2) + (yi - cursor_y).powi(2);
+                let dist = (yi - cursor_y).mul_add(yi - cursor_y, (xi - cursor_x).powi(2));
                 if dist < best_dist {
                     best_dist = dist;
                     best_idx = idx;
@@ -219,7 +219,7 @@ pub(crate) fn draw_scatter(ui: &mut Ui, params: &Scatter2dParams<'_>) {
 const Z_BANDS: usize = 8;
 
 /// `Scatter3D` rendering parameters bundled to reduce argument count.
-pub(crate) struct Scatter3dParams<'a> {
+pub struct Scatter3dParams<'a> {
     pub label: &'a str,
     pub x_vals: &'a [f64],
     pub y_vals: &'a [f64],
@@ -229,7 +229,7 @@ pub(crate) struct Scatter3dParams<'a> {
     pub domain: Option<&'a str>,
 }
 
-pub(crate) fn draw_scatter3d(ui: &mut Ui, params: &Scatter3dParams<'_>) {
+pub fn draw_scatter3d(ui: &mut Ui, params: &Scatter3dParams<'_>) {
     let palette = domain_theme::palette_for_domain(params.domain.unwrap_or("health"));
     let x_vals = params.x_vals;
     let y_vals = params.y_vals;
@@ -276,7 +276,7 @@ pub(crate) fn draw_scatter3d(ui: &mut Ui, params: &Scatter3dParams<'_>) {
             let mut best_idx = 0usize;
             let mut best_dist = f64::INFINITY;
             for (idx, (&xi, &yi)) in x_vals.iter().zip(y_vals.iter()).enumerate() {
-                let dist = (xi - cursor_x).powi(2) + (yi - cursor_y).powi(2);
+                let dist = (yi - cursor_y).mul_add(yi - cursor_y, (xi - cursor_x).powi(2));
                 if dist < best_dist {
                     best_dist = dist;
                     best_idx = idx;
@@ -316,8 +316,8 @@ pub(crate) fn draw_scatter3d(ui: &mut Ui, params: &Scatter3dParams<'_>) {
             }
 
             let band_points: PlotPoints = band_vec.into();
-            let color = base_color.gamma_multiply(0.3 + 0.7 * (1.0 - band_center as f32));
-            let radius = 2.0 + 2.0 * band_center as f32;
+            let color = base_color.gamma_multiply(0.7f32.mul_add(1.0 - band_center as f32, 0.3));
+            let radius = 2.0f32.mul_add(band_center as f32, 2.0);
 
             plot_ui.points(
                 Points::new(band_points)
@@ -335,7 +335,7 @@ pub(crate) fn draw_scatter3d(ui: &mut Ui, params: &Scatter3dParams<'_>) {
     );
 }
 
-pub(crate) fn draw_fieldmap(
+pub fn draw_fieldmap(
     ui: &mut Ui,
     label: &str,
     grid_x: &[f64],
@@ -378,7 +378,7 @@ pub(crate) fn draw_fieldmap(
     }
 }
 
-pub(crate) fn draw_spectrum(
+pub fn draw_spectrum(
     ui: &mut Ui,
     label: &str,
     frequencies: &[f64],

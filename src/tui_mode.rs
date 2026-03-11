@@ -41,7 +41,7 @@ pub async fn run(
 
     // Launch full interactive TUI from petal-tongue-tui crate
     let config = TUIConfig {
-        tick_rate: Duration::from_millis(1000 / refresh_rate as u64),
+        tick_rate: Duration::from_millis(1000 / u64::from(refresh_rate)),
         mouse_support: false,
         standalone: false,
     };

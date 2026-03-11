@@ -86,7 +86,7 @@ pub struct NeuralGraphClient<'a> {
 
 impl<'a> NeuralGraphClient<'a> {
     /// Create a new graph client
-    pub fn new(provider: &'a NeuralApiProvider) -> Self {
+    pub const fn new(provider: &'a NeuralApiProvider) -> Self {
         Self { provider }
     }
 
@@ -182,7 +182,7 @@ impl<'a> NeuralGraphClient<'a> {
     ) -> Result<String> {
         let params = json!({
             "graph_id": graph_id,
-            "parameters": parameters.unwrap_or(json!({}))
+            "parameters": parameters.unwrap_or_else(|| json!({}))
         });
 
         let result = self

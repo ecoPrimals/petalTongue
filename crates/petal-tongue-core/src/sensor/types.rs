@@ -56,7 +56,7 @@ pub struct SensorCapabilities {
 impl SensorCapabilities {
     /// Check if sensor has a specific capability
     #[must_use]
-    pub fn has_capability(&self, capability: SensorCapability) -> bool {
+    pub const fn has_capability(&self, capability: SensorCapability) -> bool {
         match capability {
             SensorCapability::Input => self.input,
             SensorCapability::Output => self.output,
@@ -193,43 +193,41 @@ pub enum SensorEvent {
 impl SensorEvent {
     /// Get timestamp of this event
     #[must_use]
-    pub fn timestamp(&self) -> Instant {
+    pub const fn timestamp(&self) -> Instant {
         match self {
-            SensorEvent::Position { timestamp, .. }
-            | SensorEvent::Click { timestamp, .. }
-            | SensorEvent::Scroll { timestamp, .. }
-            | SensorEvent::KeyPress { timestamp, .. }
-            | SensorEvent::KeyRelease { timestamp, .. }
-            | SensorEvent::ButtonPress { timestamp, .. }
-            | SensorEvent::AudioLevel { timestamp, .. }
-            | SensorEvent::Temperature { timestamp, .. }
-            | SensorEvent::Heartbeat { timestamp, .. }
-            | SensorEvent::FrameAcknowledged { timestamp, .. }
-            | SensorEvent::DisplayVisible { timestamp, .. }
-            | SensorEvent::Generic { timestamp, .. } => *timestamp,
+            Self::Position { timestamp, .. }
+            | Self::Click { timestamp, .. }
+            | Self::Scroll { timestamp, .. }
+            | Self::KeyPress { timestamp, .. }
+            | Self::KeyRelease { timestamp, .. }
+            | Self::ButtonPress { timestamp, .. }
+            | Self::AudioLevel { timestamp, .. }
+            | Self::Temperature { timestamp, .. }
+            | Self::Heartbeat { timestamp, .. }
+            | Self::FrameAcknowledged { timestamp, .. }
+            | Self::DisplayVisible { timestamp, .. }
+            | Self::Generic { timestamp, .. } => *timestamp,
         }
     }
 
     /// Check if this is a user interaction event
     #[must_use]
-    pub fn is_user_interaction(&self) -> bool {
+    pub const fn is_user_interaction(&self) -> bool {
         matches!(
             self,
-            SensorEvent::Click { .. }
-                | SensorEvent::KeyPress { .. }
-                | SensorEvent::ButtonPress { .. }
-                | SensorEvent::Scroll { .. }
+            Self::Click { .. }
+                | Self::KeyPress { .. }
+                | Self::ButtonPress { .. }
+                | Self::Scroll { .. }
         )
     }
 
     /// Check if this is a confirmation event
     #[must_use]
-    pub fn is_confirmation(&self) -> bool {
+    pub const fn is_confirmation(&self) -> bool {
         matches!(
             self,
-            SensorEvent::Heartbeat { .. }
-                | SensorEvent::FrameAcknowledged { .. }
-                | SensorEvent::DisplayVisible { .. }
+            Self::Heartbeat { .. } | Self::FrameAcknowledged { .. } | Self::DisplayVisible { .. }
         )
     }
 }
@@ -276,7 +274,7 @@ pub struct Modifiers {
 impl Modifiers {
     #[allow(missing_docs)]
     #[must_use]
-    pub fn none() -> Self {
+    pub const fn none() -> Self {
         Self {
             ctrl: false,
             alt: false,
@@ -287,7 +285,7 @@ impl Modifiers {
 
     #[allow(missing_docs)]
     #[must_use]
-    pub fn ctrl() -> Self {
+    pub const fn ctrl() -> Self {
         Self {
             ctrl: true,
             ..Self::none()

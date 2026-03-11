@@ -18,7 +18,7 @@ pub struct SoftwareBackend {
 impl SoftwareBackend {
     /// Create a new software synthesis backend
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             sample_buffer: Vec::new(),
             initialized: false,

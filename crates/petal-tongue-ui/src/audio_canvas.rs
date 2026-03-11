@@ -137,13 +137,13 @@ impl AudioCanvas {
 
     /// Get sample rate
     #[must_use]
-    pub fn sample_rate(&self) -> u32 {
+    pub const fn sample_rate(&self) -> u32 {
         self.sample_rate
     }
 
     /// Get number of channels
     #[must_use]
-    pub fn channels(&self) -> u8 {
+    pub const fn channels(&self) -> u8 {
         self.channels
     }
 }

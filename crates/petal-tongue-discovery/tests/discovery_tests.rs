@@ -10,10 +10,10 @@ use petal_tongue_discovery::discover_visualization_providers;
 #[cfg(feature = "test-fixtures")]
 async fn test_mock_provider_direct_only() {
     // Mock provider is ONLY for test code - never used in discover_visualization_providers().
-    // Tests that need mock data should use MockVisualizationProvider directly.
-    use petal_tongue_discovery::{MockVisualizationProvider, VisualizationDataProvider};
+    // Tests that need demo data should use DemoVisualizationProvider directly.
+    use petal_tongue_discovery::{DemoVisualizationProvider, VisualizationDataProvider};
 
-    let provider = MockVisualizationProvider::new();
+    let provider = DemoVisualizationProvider::new();
     let primals = provider.get_primals().await.unwrap();
     assert!(!primals.is_empty(), "Mock provider should return primals");
 }
@@ -61,13 +61,13 @@ async fn test_discover_without_hints() {
 
 #[tokio::test]
 #[cfg(feature = "test-fixtures")]
-async fn test_mock_provider_metadata() {
-    use petal_tongue_discovery::{MockVisualizationProvider, VisualizationDataProvider};
+async fn test_demo_provider_metadata() {
+    use petal_tongue_discovery::{DemoVisualizationProvider, VisualizationDataProvider};
 
-    let provider = MockVisualizationProvider::new();
+    let provider = DemoVisualizationProvider::new();
     let metadata = provider.get_metadata();
-    assert_eq!(metadata.name, "Mock Provider");
-    assert_eq!(metadata.protocol, "mock");
+    assert_eq!(metadata.name, "Demo Provider");
+    assert_eq!(metadata.protocol, "demo");
 }
 
 #[tokio::test]

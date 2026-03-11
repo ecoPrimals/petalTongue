@@ -46,7 +46,7 @@ pub struct DirectBackend {
 impl DirectBackend {
     /// Create from discovered device
     #[must_use]
-    pub fn new(device: DiscoveredDevice) -> Self {
+    pub const fn new(device: DiscoveredDevice) -> Self {
         Self { device, file: None }
     }
 

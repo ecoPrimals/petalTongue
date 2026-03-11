@@ -175,7 +175,7 @@ impl SystemDashboard {
         let mut points = Vec::with_capacity(point_count);
 
         for (i, &value) in data.iter().enumerate() {
-            let x = rect.min.x + (i as f32 * x_step);
+            let x = (i as f32).mul_add(x_step, rect.min.x);
             let y_normalized = value / 100.0; // Assume 0-100% range
             let y = rect.max.y - (y_normalized * height);
             points.push(Pos2::new(x, y));
@@ -199,7 +199,7 @@ impl SystemDashboard {
         // Draw current value indicator
         if let Some(&last_value) = data.back() {
             let last_x = rect.max.x;
-            let last_y = rect.max.y - ((last_value / 100.0) * height);
+            let last_y = (last_value / 100.0).mul_add(-height, rect.max.y);
             painter.circle_filled(Pos2::new(last_x, last_y), 2.0, color);
         }
     }
@@ -285,7 +285,7 @@ impl SystemDashboard {
                 ui.label(
                     egui::RichText::new(format!(
                         "⚠️  HANG: {}",
-                        state.hang_reason.as_ref().unwrap_or(&"Unknown".to_string())
+                        state.hang_reason.as_deref().unwrap_or("Unknown")
                     ))
                     .size(10.0 * font_scale)
                     .color(palette.error)

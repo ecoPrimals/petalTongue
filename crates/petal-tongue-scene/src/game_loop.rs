@@ -56,6 +56,7 @@ pub struct TickClock {
 }
 
 impl TickClock {
+    #[must_use]
     pub fn new(config: TickConfig) -> Self {
         Self {
             config,
@@ -93,6 +94,7 @@ impl TickClock {
     }
 
     /// Whether there's enough accumulated time for another fixed-step tick.
+    #[must_use]
     pub fn should_tick(&self) -> bool {
         self.accumulator >= self.config.fixed_dt
     }
@@ -105,30 +107,34 @@ impl TickClock {
     }
 
     /// Interpolation factor for rendering between physics steps (0.0 to 1.0).
+    #[must_use]
     pub fn alpha(&self) -> f64 {
         self.accumulator.as_secs_f64() / self.config.fixed_dt.as_secs_f64()
     }
 
-    pub fn frame_count(&self) -> u64 {
+    #[must_use]
+    pub const fn frame_count(&self) -> u64 {
         self.frame_count
     }
 
-    pub fn physics_steps_this_frame(&self) -> u32 {
+    #[must_use]
+    pub const fn physics_steps_this_frame(&self) -> u32 {
         self.physics_steps_this_frame
     }
 
-    pub fn fixed_dt_secs(&self) -> f64 {
+    #[must_use]
+    pub const fn fixed_dt_secs(&self) -> f64 {
         self.config.fixed_dt.as_secs_f64()
     }
 
     /// Access the tick config for reading.
     #[must_use]
-    pub fn config(&self) -> &TickConfig {
+    pub const fn config(&self) -> &TickConfig {
         &self.config
     }
 
     /// Access the tick config for mutation (e.g. enabling/disabling physics).
-    pub fn config_mut(&mut self) -> &mut TickConfig {
+    pub const fn config_mut(&mut self) -> &mut TickConfig {
         &mut self.config
     }
 }

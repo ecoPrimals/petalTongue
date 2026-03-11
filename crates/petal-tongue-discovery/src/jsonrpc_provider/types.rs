@@ -15,7 +15,7 @@ pub struct JsonRpcProvider {
 
 /// JSON-RPC 2.0 Request
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct JsonRpcRequest {
+pub struct JsonRpcRequest {
     pub jsonrpc: String,
     pub method: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -25,7 +25,7 @@ pub(crate) struct JsonRpcRequest {
 
 /// JSON-RPC 2.0 Response
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub(crate) struct JsonRpcResponse {
+pub struct JsonRpcResponse {
     pub jsonrpc: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<serde_json::Value>,
@@ -36,7 +36,7 @@ pub(crate) struct JsonRpcResponse {
 
 /// JSON-RPC 2.0 Error
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub(crate) struct JsonRpcError {
+pub struct JsonRpcError {
     pub code: i32,
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]

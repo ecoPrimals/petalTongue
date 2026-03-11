@@ -62,13 +62,13 @@ impl SensoryCapabilities {
 
     /// Check if system has minimal viable output for UI
     #[must_use]
-    pub fn has_minimal_output(&self) -> bool {
+    pub const fn has_minimal_output(&self) -> bool {
         !self.visual_outputs.is_empty() || !self.audio_outputs.is_empty()
     }
 
     /// Check if system has minimal viable input for UI
     #[must_use]
-    pub fn has_minimal_input(&self) -> bool {
+    pub const fn has_minimal_input(&self) -> bool {
         !self.pointer_inputs.is_empty()
             || !self.keyboard_inputs.is_empty()
             || !self.touch_inputs.is_empty()
@@ -78,19 +78,19 @@ impl SensoryCapabilities {
 
     /// Check if system has visual output capability
     #[must_use]
-    pub fn has_visual_output(&self) -> bool {
+    pub const fn has_visual_output(&self) -> bool {
         !self.visual_outputs.is_empty()
     }
 
     /// Check if system has audio output capability
     #[must_use]
-    pub fn has_audio_output(&self) -> bool {
+    pub const fn has_audio_output(&self) -> bool {
         !self.audio_outputs.is_empty()
     }
 
     /// Check if system has haptic output capability
     #[must_use]
-    pub fn has_haptic_output(&self) -> bool {
+    pub const fn has_haptic_output(&self) -> bool {
         !self.haptic_outputs.is_empty()
     }
 
@@ -324,5 +324,54 @@ mod tests {
         assert!(caps.has_visual_output());
         assert!(caps.has_audio_output());
         assert!(caps.has_haptic_output());
+    }
+
+    #[test]
+    fn test_capability_error_display() {
+        let err = CapabilityError::NoOutput;
+        assert!(err.to_string().contains("output"));
+        let err = CapabilityError::NoInput;
+        assert!(err.to_string().contains("input"));
+        let err = CapabilityError::DetectionFailed("failed".to_string());
+        assert!(err.to_string().contains("failed"));
+        let err = CapabilityError::UnsupportedPlatform("win".to_string());
+        assert!(err.to_string().contains("win"));
+    }
+
+    #[test]
+    fn test_sensory_capabilities_default() {
+        let caps = SensoryCapabilities::default();
+        assert!(caps.visual_outputs.is_empty());
+        assert!(caps.audio_outputs.is_empty());
+        assert!(caps.pointer_inputs.is_empty());
+        assert!(caps.keyboard_inputs.is_empty());
+    }
+
+    #[test]
+    fn test_minimal_output_audio_only() {
+        let caps = SensoryCapabilities {
+            audio_outputs: vec![AudioOutputCapability::Mono {
+                sample_rate: 44100,
+                bit_depth: 16,
+            }],
+            ..Default::default()
+        };
+        assert!(caps.has_minimal_output());
+        assert!(!caps.has_minimal_input());
+    }
+
+    #[test]
+    fn test_minimal_input_audio_only() {
+        let caps = SensoryCapabilities {
+            audio_inputs: vec![AudioInputCapability {
+                sample_rate: 48000,
+                channels: 1,
+                has_noise_cancellation: false,
+                supports_wake_word: false,
+            }],
+            ..Default::default()
+        };
+        assert!(!caps.has_minimal_output());
+        assert!(caps.has_minimal_input());
     }
 }

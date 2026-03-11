@@ -32,7 +32,8 @@ impl Transform2D {
         ty: 0.0,
     };
 
-    pub fn translate(x: f64, y: f64) -> Self {
+    #[must_use]
+    pub const fn translate(x: f64, y: f64) -> Self {
         Self {
             a: 1.0,
             b: 0.0,
@@ -43,7 +44,8 @@ impl Transform2D {
         }
     }
 
-    pub fn scale(sx: f64, sy: f64) -> Self {
+    #[must_use]
+    pub const fn scale(sx: f64, sy: f64) -> Self {
         Self {
             a: sx,
             b: 0.0,
@@ -54,10 +56,12 @@ impl Transform2D {
         }
     }
 
-    pub fn uniform_scale(s: f64) -> Self {
+    #[must_use]
+    pub const fn uniform_scale(s: f64) -> Self {
         Self::scale(s, s)
     }
 
+    #[must_use]
     pub fn rotate(angle_rad: f64) -> Self {
         let (sin, cos) = angle_rad.sin_cos();
         Self {
@@ -71,10 +75,11 @@ impl Transform2D {
     }
 
     /// Apply this transform to a point.
+    #[must_use]
     pub fn apply(&self, x: f64, y: f64) -> (f64, f64) {
         (
-            self.a * x + self.b * y + self.tx,
-            self.c * x + self.d * y + self.ty,
+            self.a.mul_add(x, self.b * y) + self.tx,
+            self.c.mul_add(x, self.d * y) + self.ty,
         )
     }
 
@@ -82,18 +87,19 @@ impl Transform2D {
     #[must_use]
     pub fn then(self, other: Self) -> Self {
         Self {
-            a: self.a * other.a + self.b * other.c,
-            b: self.a * other.b + self.b * other.d,
-            tx: self.a * other.tx + self.b * other.ty + self.tx,
-            c: self.c * other.a + self.d * other.c,
-            d: self.c * other.b + self.d * other.d,
-            ty: self.c * other.tx + self.d * other.ty + self.ty,
+            a: self.a.mul_add(other.a, self.b * other.c),
+            b: self.a.mul_add(other.b, self.b * other.d),
+            tx: self.a.mul_add(other.tx, self.b * other.ty) + self.tx,
+            c: self.c.mul_add(other.a, self.d * other.c),
+            d: self.c.mul_add(other.b, self.d * other.d),
+            ty: self.c.mul_add(other.tx, self.d * other.ty) + self.ty,
         }
     }
 
     /// Compute the inverse transform, if possible.
+    #[must_use]
     pub fn inverse(&self) -> Option<Self> {
-        let det = self.a * self.d - self.b * self.c;
+        let det = self.a.mul_add(self.d, -(self.b * self.c));
         if det.abs() < f64::EPSILON {
             return None;
         }
@@ -101,10 +107,10 @@ impl Transform2D {
         Some(Self {
             a: self.d * inv_det,
             b: -self.b * inv_det,
-            tx: (self.b * self.ty - self.d * self.tx) * inv_det,
+            tx: self.b.mul_add(self.ty, -(self.d * self.tx)) * inv_det,
             c: -self.c * inv_det,
             d: self.a * inv_det,
-            ty: (self.c * self.tx - self.a * self.ty) * inv_det,
+            ty: self.c.mul_add(self.tx, -(self.a * self.ty)) * inv_det,
         })
     }
 }
@@ -136,7 +142,8 @@ impl Transform3D {
         ],
     };
 
-    pub fn translate(x: f64, y: f64, z: f64) -> Self {
+    #[must_use]
+    pub const fn translate(x: f64, y: f64, z: f64) -> Self {
         let mut m = Self::IDENTITY;
         m.matrix[12] = x;
         m.matrix[13] = y;
@@ -144,7 +151,8 @@ impl Transform3D {
         m
     }
 
-    pub fn uniform_scale(s: f64) -> Self {
+    #[must_use]
+    pub const fn uniform_scale(s: f64) -> Self {
         let mut m = Self::IDENTITY;
         m.matrix[0] = s;
         m.matrix[5] = s;

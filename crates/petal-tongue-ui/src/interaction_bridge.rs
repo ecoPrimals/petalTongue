@@ -53,7 +53,7 @@ impl EguiInteractionBridge {
     }
 
     /// Access the inverse pipeline for hit-target registration.
-    pub fn inverse_pipeline_mut(&mut self) -> &mut VisualInversePipeline {
+    pub const fn inverse_pipeline_mut(&mut self) -> &mut VisualInversePipeline {
         &mut self.inverse_pipeline
     }
 
@@ -107,7 +107,7 @@ impl EguiInteractionBridge {
     }
 
     /// Build the `InteractionContext` for the current frame.
-    pub fn build_context(
+    pub const fn build_context(
         &self,
         screen_width: f32,
         screen_height: f32,

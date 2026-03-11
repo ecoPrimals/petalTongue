@@ -205,7 +205,7 @@ impl AccessibilityPanel {
 
     /// Get the current color palette
     #[must_use]
-    pub fn get_palette(&self) -> ColorPalette {
+    pub const fn get_palette(&self) -> ColorPalette {
         ColorPalette::from_scheme(self.settings.color_scheme)
     }
 
@@ -216,12 +216,12 @@ impl AccessibilityPanel {
     }
 
     /// Toggle panel visibility
-    pub fn toggle(&mut self) {
+    pub const fn toggle(&mut self) {
         self.show = !self.show;
     }
 
     /// Close the panel
-    pub fn close(&mut self) {
+    pub const fn close(&mut self) {
         self.show = false;
     }
 
@@ -244,7 +244,7 @@ impl AccessibilityPanel {
     }
 
     /// Increase font size
-    pub fn increase_font_size(&mut self) {
+    pub const fn increase_font_size(&mut self) {
         self.settings.font_size = match self.settings.font_size {
             FontSize::Small => FontSize::Medium,
             FontSize::Medium => FontSize::Large,
@@ -253,7 +253,7 @@ impl AccessibilityPanel {
     }
 
     /// Decrease font size
-    pub fn decrease_font_size(&mut self) {
+    pub const fn decrease_font_size(&mut self) {
         self.settings.font_size = match self.settings.font_size {
             FontSize::Small | FontSize::Medium => FontSize::Small, // Already at min
             FontSize::Large => FontSize::Medium,

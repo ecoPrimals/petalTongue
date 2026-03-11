@@ -251,14 +251,14 @@ impl EguiPixelRenderer {
     }
 
     /// Set dimensions
-    pub fn set_dimensions(&mut self, width: u32, height: u32) {
+    pub const fn set_dimensions(&mut self, width: u32, height: u32) {
         self.width = width;
         self.height = height;
     }
 
     /// Get dimensions
     #[must_use]
-    pub fn dimensions(&self) -> (u32, u32) {
+    pub const fn dimensions(&self) -> (u32, u32) {
         (self.width, self.height)
     }
 }

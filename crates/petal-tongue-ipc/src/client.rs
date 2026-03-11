@@ -34,7 +34,7 @@ impl IpcClient {
 
     /// Connect to an instance by socket path
     #[must_use]
-    pub fn from_socket_path(socket_path: PathBuf) -> Self {
+    pub const fn from_socket_path(socket_path: PathBuf) -> Self {
         Self { socket_path }
     }
 
@@ -200,7 +200,7 @@ mod tests {
     #[test]
     fn test_socket_path_getter() {
         let path = PathBuf::from("/var/run/petal.sock");
-        let client = IpcClient::from_socket_path(path.clone());
+        let client = IpcClient::from_socket_path(path);
         assert_eq!(client.socket_path(), Path::new("/var/run/petal.sock"));
     }
 

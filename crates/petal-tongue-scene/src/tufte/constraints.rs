@@ -126,7 +126,7 @@ impl TufteConstraint for LieFactor {
 }
 
 /// Chartjunk detection: decorative elements that don't carry data.
-/// Simple heuristic: primitives with fill but no data_id.
+/// Simple heuristic: primitives with fill but no `data_id`.
 pub struct ChartjunkDetection;
 
 impl TufteConstraint for ChartjunkDetection {
@@ -194,9 +194,13 @@ impl ColorAccessibility {
                 ((v + 0.055) / 1.055).powf(2.4)
             }
         }
-        0.2126 * linearize(f64::from(c.r))
-            + 0.7152 * linearize(f64::from(c.g))
-            + 0.0722 * linearize(f64::from(c.b))
+        0.0722f64.mul_add(
+            linearize(f64::from(c.b)),
+            0.2126f64.mul_add(
+                linearize(f64::from(c.r)),
+                0.7152 * linearize(f64::from(c.g)),
+            ),
+        )
     }
 
     fn contrast_ratio(c1: Color, c2: Color) -> f64 {
@@ -363,7 +367,7 @@ impl TufteConstraint for SmallestEffectiveDifference {
             for j in (i + 1)..positions.len() {
                 let dx = positions[i].0 - positions[j].0;
                 let dy = positions[i].1 - positions[j].1;
-                let dist = (dx * dx + dy * dy).sqrt();
+                let dist = dx.hypot(dy);
                 if dist < min_dist {
                     min_dist = dist;
                 }

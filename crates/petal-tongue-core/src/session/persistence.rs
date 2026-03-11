@@ -14,12 +14,13 @@ use super::SessionError;
 use super::validation;
 
 pub(super) fn current_timestamp() -> u64 {
-    if let Ok(d) = SystemTime::now().duration_since(UNIX_EPOCH) {
-        d.as_secs()
-    } else {
-        tracing::warn!("System time is before Unix epoch, using 0 as fallback");
-        0
-    }
+    SystemTime::now().duration_since(UNIX_EPOCH).map_or_else(
+        |_| {
+            tracing::warn!("System time is before Unix epoch, using 0 as fallback");
+            0
+        },
+        |d| d.as_secs(),
+    )
 }
 
 /// Get the session file path for an instance

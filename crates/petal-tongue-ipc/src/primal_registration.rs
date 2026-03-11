@@ -102,7 +102,7 @@ impl SongbirdClient {
 
     /// Create a client with a custom socket path (for testing)
     #[must_use]
-    pub fn with_socket_path(socket_path: String) -> Self {
+    pub const fn with_socket_path(socket_path: String) -> Self {
         Self {
             socket_path,
             request_id: std::sync::atomic::AtomicU64::new(1),

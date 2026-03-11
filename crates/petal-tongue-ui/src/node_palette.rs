@@ -137,18 +137,18 @@ impl NodePalette {
 
     /// Get currently dragging node type
     #[must_use]
-    pub fn get_dragging(&self) -> Option<&NodeType> {
+    pub const fn get_dragging(&self) -> Option<&NodeType> {
         self.dragging.as_ref()
     }
 
     /// Clear dragging state
-    pub fn clear_dragging(&mut self) {
+    pub const fn clear_dragging(&mut self) {
         self.dragging = None;
     }
 
     /// Check if currently dragging
     #[must_use]
-    pub fn is_dragging(&self) -> bool {
+    pub const fn is_dragging(&self) -> bool {
         self.dragging.is_some()
     }
 }

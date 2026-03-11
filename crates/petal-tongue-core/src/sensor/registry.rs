@@ -114,7 +114,7 @@ pub struct SensorStats {
 }
 
 #[cfg(test)]
-pub(crate) mod mock_sensor {
+pub mod mock_sensor {
     use crate::sensor::Sensor;
     use crate::sensor::types::{SensorCapabilities, SensorEvent};
     use async_trait::async_trait;

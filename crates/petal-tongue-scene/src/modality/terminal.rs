@@ -18,7 +18,7 @@ pub struct TerminalCompiler {
 impl TerminalCompiler {
     /// Create a terminal compiler with the given dimensions (columns x rows).
     #[must_use]
-    pub fn new(width: usize, height: usize) -> Self {
+    pub const fn new(width: usize, height: usize) -> Self {
         Self { width, height }
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Geometry compilation: map GrammarExpr geometry types to primitives.
+//! Geometry compilation: map `GrammarExpr` geometry types to primitives.
 
 use std::collections::BTreeSet;
 
@@ -17,7 +17,7 @@ use super::utils::get_number;
     clippy::too_many_lines,
     reason = "geometry compilation is a cohesive match over grammar variants"
 )]
-pub(crate) fn compile_geometry(
+pub fn compile_geometry(
     expr: &GrammarExpr,
     data: &[Value],
     points: &[[f64; 2]],
@@ -193,8 +193,21 @@ pub(crate) fn compile_geometry(
                                 .and_then(|o| o.get("status"))
                                 .and_then(|s| s.as_str())
                         });
-                        let fill = if let Some(status) = status {
-                            match status {
+                        let fill = status.map_or_else(
+                            || {
+                                #[expect(
+                                    clippy::cast_possible_truncation,
+                                    reason = "color interpolation t is clamped to 0.0..1.0"
+                                )]
+                                let t = ((val - val_min) / val_range).clamp(0.0, 1.0) as f32;
+                                Color::rgba(
+                                    primary.r.mul_add(t, palette.chart_bg.r * (1.0 - t)),
+                                    primary.g.mul_add(t, palette.chart_bg.g * (1.0 - t)),
+                                    primary.b.mul_add(t, palette.chart_bg.b * (1.0 - t)),
+                                    0.9,
+                                )
+                            },
+                            |status| match status {
                                 "normal" => palette.normal,
                                 "warning" => palette.warning,
                                 "critical" => palette.critical,
@@ -205,26 +218,14 @@ pub(crate) fn compile_geometry(
                                     )]
                                     let t = ((val - val_min) / val_range).clamp(0.0, 1.0) as f32;
                                     Color::rgba(
-                                        primary.r * t + palette.chart_bg.r * (1.0 - t),
-                                        primary.g * t + palette.chart_bg.g * (1.0 - t),
-                                        primary.b * t + palette.chart_bg.b * (1.0 - t),
+                                        primary.r.mul_add(t, palette.chart_bg.r * (1.0 - t)),
+                                        primary.g.mul_add(t, palette.chart_bg.g * (1.0 - t)),
+                                        primary.b.mul_add(t, palette.chart_bg.b * (1.0 - t)),
                                         0.9,
                                     )
                                 }
-                            }
-                        } else {
-                            #[expect(
-                                clippy::cast_possible_truncation,
-                                reason = "color interpolation t is clamped to 0.0..1.0"
-                            )]
-                            let t = ((val - val_min) / val_range).clamp(0.0, 1.0) as f32;
-                            Color::rgba(
-                                primary.r * t + palette.chart_bg.r * (1.0 - t),
-                                primary.g * t + palette.chart_bg.g * (1.0 - t),
-                                primary.b * t + palette.chart_bg.b * (1.0 - t),
-                                0.9,
-                            )
-                        };
+                            },
+                        );
                         Primitive::Rect {
                             x: sx - tile_w / 2.0,
                             y: sy - tile_h / 2.0,

@@ -55,14 +55,14 @@ impl AudioFileGenerator {
 
     /// Set audio quality
     #[must_use]
-    pub fn with_quality(mut self, quality: AudioQuality) -> Self {
+    pub const fn with_quality(mut self, quality: AudioQuality) -> Self {
         self.quality = quality;
         self
     }
 
     /// Set master volume (0.0 - 1.0)
     #[must_use]
-    pub fn with_volume(mut self, volume: f32) -> Self {
+    pub const fn with_volume(mut self, volume: f32) -> Self {
         self.master_volume = volume.clamp(0.0, 1.0);
         self
     }
@@ -98,7 +98,7 @@ impl AudioFileGenerator {
             clippy::cast_precision_loss
         )]
         let num_samples = (self.quality.sample_rate as f32 * duration_secs) as usize;
-        let frequency = 100.0 + (attrs.pitch * 700.0);
+        let frequency = attrs.pitch.mul_add(700.0, 100.0);
 
         // Apply volume
         let volume = attrs.volume * self.master_volume;
@@ -194,7 +194,7 @@ impl AudioFileGenerator {
             // Mix all primal tones
             let mut mixed_sample = 0.0;
             for (_id, attrs) in soundscape {
-                let frequency = 100.0 + (attrs.pitch * 700.0);
+                let frequency = attrs.pitch.mul_add(700.0, 100.0);
                 let volume = attrs.volume * self.master_volume;
                 mixed_sample += self.generate_sample(t, frequency, &attrs.instrument, volume);
             }
@@ -204,15 +204,11 @@ impl AudioFileGenerator {
             mixed_sample /= num_tones.sqrt(); // RMS normalization
 
             // Write stereo samples
+            #[expect(clippy::cast_possible_truncation)]
+            let sample_i16 = (mixed_sample * max_amplitude) as i16;
+            writer.write_sample(sample_i16)?;
             if self.quality.channels == 2 {
                 // For soundscape, we could spatialize each source, but for now just center
-                #[expect(clippy::cast_possible_truncation)]
-                let sample_i16 = (mixed_sample * max_amplitude) as i16;
-                writer.write_sample(sample_i16)?;
-                writer.write_sample(sample_i16)?;
-            } else {
-                #[expect(clippy::cast_possible_truncation)]
-                let sample_i16 = (mixed_sample * max_amplitude) as i16;
                 writer.write_sample(sample_i16)?;
             }
         }
@@ -251,16 +247,16 @@ impl AudioFileGenerator {
                 let period = 1.0 / frequency;
                 let phase = (t % period) / period;
                 if phase < 0.5 {
-                    4.0 * phase - 1.0
+                    4.0f32.mul_add(phase, -1.0)
                 } else {
-                    3.0 - 4.0 * phase
+                    4.0f32.mul_add(-phase, 3.0)
                 }
             }
             Instrument::Strings => {
                 // Sawtooth wave (rich harmonics)
                 let period = 1.0 / frequency;
                 let phase = (t % period) / period;
-                2.0 * phase - 1.0
+                2.0f32.mul_add(phase, -1.0)
             }
             Instrument::Synth => {
                 // Square wave (electronic)

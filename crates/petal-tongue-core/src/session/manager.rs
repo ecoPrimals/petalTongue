@@ -80,12 +80,12 @@ impl SessionManager {
 
     /// Returns a reference to the current session state, if loaded.
     #[must_use]
-    pub fn current_state(&self) -> Option<&SessionState> {
+    pub const fn current_state(&self) -> Option<&SessionState> {
         self.current_state.as_ref()
     }
 
     /// Returns a mutable reference to the current state; marks session dirty on access.
-    pub fn current_state_mut(&mut self) -> Option<&mut SessionState> {
+    pub const fn current_state_mut(&mut self) -> Option<&mut SessionState> {
         if self.current_state.is_some() {
             self.dirty = true;
         }
@@ -99,7 +99,7 @@ impl SessionManager {
     }
 
     /// Marks the session as having unsaved changes.
-    pub fn mark_dirty(&mut self) {
+    pub const fn mark_dirty(&mut self) {
         self.dirty = true;
     }
 
@@ -146,7 +146,7 @@ impl SessionManager {
     }
 
     /// Enables or disables auto-save.
-    pub fn set_auto_save(&mut self, enabled: bool) {
+    pub const fn set_auto_save(&mut self, enabled: bool) {
         self.auto_save_enabled = enabled;
     }
 
@@ -157,17 +157,15 @@ impl SessionManager {
 
     /// Returns whether the session has unsaved changes.
     #[must_use]
-    pub fn is_dirty(&self) -> bool {
+    pub const fn is_dirty(&self) -> bool {
         self.dirty
     }
 
     /// Exports the current state to the given path.
     pub fn export(&self, path: &Path) -> Result<(), SessionError> {
-        if let Some(state) = &self.current_state {
-            state.export(path)
-        } else {
-            Err(SessionError::NoState)
-        }
+        self.current_state
+            .as_ref()
+            .map_or(Err(SessionError::NoState), |state| state.export(path))
     }
 
     /// Imports state from the given path, replacing the current state.
@@ -180,7 +178,7 @@ impl SessionManager {
 
     /// Returns whether there are unsaved changes (alias for `is_dirty`).
     #[must_use]
-    pub fn has_unsaved_changes(&self) -> bool {
+    pub const fn has_unsaved_changes(&self) -> bool {
         self.is_dirty()
     }
 

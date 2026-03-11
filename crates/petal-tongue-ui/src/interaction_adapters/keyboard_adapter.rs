@@ -19,7 +19,7 @@ pub struct KeyboardAdapter {
 impl KeyboardAdapter {
     /// Create a new keyboard adapter.
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { _private: () }
     }
 }

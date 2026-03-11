@@ -41,7 +41,7 @@ pub struct CanvasUI {
 
 impl CanvasUI {
     /// Create a new Canvas UI renderer
-    pub fn new(graph: Arc<RwLock<GraphEngine>>, width: u32, height: u32) -> Self {
+    pub const fn new(graph: Arc<RwLock<GraphEngine>>, width: u32, height: u32) -> Self {
         Self {
             graph,
             width,
@@ -91,13 +91,13 @@ impl CanvasUI {
         );
         let range_x = (max_x - min_x).max(1.0);
         let range_y = (max_y - min_y).max(1.0);
-        let avail_w = (self.width as f32) - 2.0 * padding;
-        let avail_h = (self.height as f32) - 2.0 * padding;
+        let avail_w = 2.0f32.mul_add(-padding, self.width as f32);
+        let avail_h = 2.0f32.mul_add(-padding, self.height as f32);
         let scale = (avail_w / range_x).min(avail_h / range_y);
-        let offset_x = padding - min_x * scale;
-        let offset_y = padding - min_y * scale;
+        let offset_x = min_x.mul_add(-scale, padding);
+        let offset_y = min_y.mul_add(-scale, padding);
 
-        let to_screen = |x: f32, y: f32| (x * scale + offset_x, y * scale + offset_y);
+        let to_screen = |x: f32, y: f32| (x.mul_add(scale, offset_x), y.mul_add(scale, offset_y));
 
         let transform = Transform::default();
         let node_radius = 12.0f32.max(scale * 0.05);
@@ -138,7 +138,8 @@ impl CanvasUI {
         for node in nodes {
             let (cx, cy) = to_screen(node.position.x, node.position.y);
             let hex = health_to_color(&node.info.health);
-            let color = parse_hex_color(hex).unwrap_or(Color::from_rgba8(156, 163, 175, 255));
+            let color =
+                parse_hex_color(hex).unwrap_or_else(|| Color::from_rgba8(156, 163, 175, 255));
 
             let path = PathBuilder::from_circle(cx, cy, node_radius);
             if let Some(path) = path {
@@ -154,7 +155,7 @@ impl CanvasUI {
     }
 }
 
-/// Parse hex color (#RRGGBB) to tiny_skia Color
+/// Parse hex color (#RRGGBB) to `tiny_skia` Color
 fn parse_hex_color(hex: &str) -> Option<Color> {
     let s = hex.strip_prefix('#')?.trim();
     if s.len() != 6 {

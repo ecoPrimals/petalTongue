@@ -327,13 +327,13 @@ impl DoomInstance {
 
     /// Get framebuffer dimensions.
     #[must_use]
-    pub fn dimensions(&self) -> (usize, usize) {
+    pub const fn dimensions(&self) -> (usize, usize) {
         (self.width, self.height)
     }
 
     /// Get current game state.
     #[must_use]
-    pub fn state(&self) -> DoomState {
+    pub const fn state(&self) -> DoomState {
         self.state
     }
 
@@ -350,7 +350,7 @@ impl DoomInstance {
     }
 
     /// Update mouse position (delta used for turning).
-    pub fn mouse_move(&mut self, x: i32, y: i32) {
+    pub const fn mouse_move(&mut self, x: i32, y: i32) {
         let old_x = self.mouse_x;
         self.mouse_x = x;
         self.mouse_y = y;
@@ -378,7 +378,7 @@ impl DoomInstance {
 
     /// Check if in first-person mode.
     #[must_use]
-    pub fn is_first_person(&self) -> bool {
+    pub const fn is_first_person(&self) -> bool {
         self.first_person_mode
     }
 
@@ -437,15 +437,16 @@ impl DoomInstance {
     /// Get game statistics for display.
     #[must_use]
     pub fn stats(&self) -> GameStats {
-        let (player_x, player_y, player_angle) = if let Some(renderer) = &self.raycast_renderer {
-            (
-                Some(renderer.player_x),
-                Some(renderer.player_y),
-                Some(renderer.player_angle),
-            )
-        } else {
-            (None, None, None)
-        };
+        let (player_x, player_y, player_angle) =
+            self.raycast_renderer
+                .as_ref()
+                .map_or((None, None, None), |renderer| {
+                    (
+                        Some(renderer.player_x),
+                        Some(renderer.player_y),
+                        Some(renderer.player_angle),
+                    )
+                });
 
         GameStats {
             state: self.state,

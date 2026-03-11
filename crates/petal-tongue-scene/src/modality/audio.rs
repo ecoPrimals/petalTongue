@@ -13,7 +13,7 @@ pub struct AudioCompiler;
 impl AudioCompiler {
     /// Create a new audio compiler.
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self
     }
 }
@@ -57,7 +57,7 @@ impl ModalityCompiler for AudioCompiler {
             // Normalize to typical ranges: x→pan [-1,1], y→freq [200,2000], size→amp [0,1]
             let pan = (x / 400.0 - 0.5) * 2.0;
             let pan = pan.clamp(-1.0, 1.0);
-            let freq = 200.0 + (y / 600.0) * 1800.0;
+            let freq = (y / 600.0).mul_add(1800.0, 200.0);
             let freq = freq.clamp(200.0, 2000.0);
             let amplitude = (size / 10.0).clamp(0.0, 1.0);
             params.push(AudioParam {

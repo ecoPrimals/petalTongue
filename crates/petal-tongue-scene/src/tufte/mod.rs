@@ -77,7 +77,7 @@ pub trait TufteConstraint: Send + Sync {
 pub struct TufteReport {
     /// Average score across all constraints (0.0 to 1.0).
     pub overall_score: f64,
-    /// Per-constraint results: (constraint_name, result).
+    /// Per-constraint results: (`constraint_name`, result).
     pub results: Vec<(String, ConstraintResult)>,
     /// List of corrections that were applied (if any).
     pub corrections_applied: Vec<String>,

@@ -11,13 +11,13 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 3,245 passing, 0 failures |
+| Tests | 3,409 passing, 0 failures, 17 ignored |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings, pedantic tightened (removed float_cmp, cast_*, too_many_lines, needless_pass_by_value allows; all uses `#[expect]` with documented reasons) |
+| Clippy | Zero warnings, pedantic + nursery enabled (strategic `#[expect]` with documented reasons) |
 | Rustdoc | Clean (`RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps`) |
 | cargo deny | Clean (advisories, bans, licenses, sources) |
 | Unsafe | `#![forbid(unsafe_code)]` workspace-wide, zero C deps, zero `unsafe` blocks |
-| Files | All production files under 1,000 lines (largest: 968) |
+| Files | All production files under 1,000 lines (exception: `animation.rs` at 1,086 — refactor pending) |
 | License | AGPL-3.0-only, SPDX on all source and config files |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None (`ring` eliminated, `libc`/`nix`/`atty` removed, using `rustix`) |
@@ -27,7 +27,7 @@
 | Mocks | All gated behind `#[cfg(test)]` or `#[cfg(feature = "test-fixtures")]`; PETALTONGUE_MOCK_MODE test-only |
 | Primal names | Capability-based constants, zero hardcoded external primal names |
 | Hardcoding | Socket names, ports, endpoints all configurable via env vars |
-| Domain theming | 6 domain palettes (health, physics, ecology, agriculture, measurement, neural) |
+| Domain theming | 7 domain palettes (health, physics, ecology, agriculture, measurement, neural, game) + diverging color scales |
 | GUI logic extraction | All UI business logic in pure functions, 16 headless integration tests |
 | Game loop | Wired: TickClock in app, begin_frame_with_dt, continuous mode motor commands |
 | IPC-to-UI bridge | Complete: shared VisualizationState, LiveSessionsPanel, session polling |
@@ -37,6 +37,7 @@
 | Neural API registration | Complete: `lifecycle.register` + 30s heartbeat via `neural_registration.rs` |
 | GameDataChannel mapping | Complete: 7 ludoSpring channels → DataBinding variants via `game_data_channel.rs` |
 | Spring IPC | healthSpring DataChannel auto-compile, dashboard layout, wetSpring Scatter/Spectrum, physics bridge, interaction aliases |
+| Spring absorption | Backpressure, JSONL telemetry, diverging palette, pipeline DAG, provider registry, session status |
 | DataChannel compiler | All 9 DataBinding variants (incl. Scatter 2D) auto-compiled to Grammar of Graphics |
 | Dashboard engine | Multi-panel grid layout with domain theming and SVG export |
 | Scenario loader | JSON scenario files loaded from disk; `--scenario` CLI flag |
@@ -75,7 +76,7 @@
 
 ## Known Debt
 
-### Stubs and TODOs (~1 item in active code)
+### Stubs and TODOs (1 item in active code)
 
 Active TODO: Animation capability test exception in `capability_integration_tests.rs`.
 
@@ -97,7 +98,7 @@ Delegated/roadmap items (not TODOs, documented as roadmap markers):
 
 ### Test Coverage Gap
 
-Current: 77.4% region coverage, 79.2% function coverage (3,245 tests).
+Current: 77.4% region coverage, 79.2% function coverage (3,409 tests).
 Target: 90%.
 
 Well-covered areas (>80%):
@@ -131,6 +132,11 @@ tests already cover keyboard shortcuts, motor commands, and panel navigation.
 - `legacy-toadstool`: Toadstool display backend stub
 - `legacy-audio`: Audio providers (rodio-based)
 - `legacy-http`: HTTP discovery provider
+
+### File Size Exception
+
+`animation.rs` is 1,086 lines due to test additions (boundary tests for all easing
+functions). Refactor pending: split test module to `tests/animation_tests.rs`.
 
 ### Missing Infrastructure
 
@@ -262,7 +268,7 @@ output.
 | `tufte.rs` | Machine-checkable Tufte constraints (Data-Ink Ratio, Lie Factor, Chartjunk, Accessibility) |
 | `compiler.rs` | Grammar compiler (GrammarExpr + data to SceneGraph, with constraint evaluation) |
 | `modality.rs` | Modality compilers (SvgCompiler, AudioCompiler, DescriptionCompiler, TerminalCompiler) |
-| `domain_palette.rs` | Domain-specific color palettes (6 domains: health, physics, ecology, agriculture, measurement, neural) |
+| `domain_palette.rs` | Domain-specific color palettes (7 domains: health, physics, ecology, agriculture, measurement, neural, game) + diverging scales |
 | `physics.rs` | Physics bridge (PhysicsWorld, IPC serialization for barraCuda N-body/molecular dynamics) |
 
 Related crates:

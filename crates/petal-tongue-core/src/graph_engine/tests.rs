@@ -160,7 +160,7 @@ fn test_circular_layout() {
     // All nodes should be roughly the same distance from origin
     let radius = 300.0;
     for node in graph.nodes() {
-        let dist = (node.position.x * node.position.x + node.position.y * node.position.y).sqrt();
+        let dist = node.position.x.hypot(node.position.y);
         assert!((dist - radius).abs() < 0.1);
     }
 }
@@ -298,7 +298,7 @@ fn test_position_distance_to_3d() {
 #[test]
 fn test_node_new() {
     let info = create_test_primal("x", "X");
-    let node = Node::new(info.clone());
+    let node = Node::new(info);
     assert!((node.position.x - 0.0).abs() < f32::EPSILON);
     assert!((node.position.y - 0.0).abs() < f32::EPSILON);
     assert!(node.position.z.is_none());

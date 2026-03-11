@@ -12,7 +12,7 @@ use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer};
 use std::sync::{Arc, RwLock};
 
 #[must_use]
-fn modality_status_icon_and_color(status: ModalityStatus) -> (&'static str, egui::Color32) {
+const fn modality_status_icon_and_color(status: ModalityStatus) -> (&'static str, egui::Color32) {
     match status {
         ModalityStatus::Available => ("✅", egui::Color32::from_rgb(100, 255, 100)),
         ModalityStatus::NotInitialized => ("⚠️", egui::Color32::from_rgb(255, 200, 100)),
@@ -22,7 +22,7 @@ fn modality_status_icon_and_color(status: ModalityStatus) -> (&'static str, egui
 }
 
 #[must_use]
-fn modality_tested_text(tested: bool) -> &'static str {
+const fn modality_tested_text(tested: bool) -> &'static str {
     if tested { "tested" } else { "not tested" }
 }
 

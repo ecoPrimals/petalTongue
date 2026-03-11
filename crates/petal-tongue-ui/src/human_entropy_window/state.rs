@@ -181,7 +181,7 @@ impl HumanEntropyWindow {
     }
 
     /// Check if endpoint has entropy ingestion capability
-    fn check_entropy_capability(&self, _endpoint: &str) -> bool {
+    const fn check_entropy_capability(&self, _endpoint: &str) -> bool {
         // Future: Query endpoint's /api/v1/capabilities
         // For now, trust that configured endpoints are correct
         false

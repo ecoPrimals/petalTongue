@@ -78,6 +78,7 @@ impl InteractionSubscriberRegistry {
     }
 
     /// Get the callback method for a subscriber (if callback-based).
+    #[must_use]
     pub fn callback_method(&self, subscriber_id: &str) -> Option<&str> {
         self.subscribers
             .get(subscriber_id)
@@ -85,6 +86,7 @@ impl InteractionSubscriberRegistry {
     }
 
     /// Get all subscribers that have callback methods and pending events.
+    #[must_use]
     pub fn pending_callbacks(&self) -> Vec<(&str, &str, &[InteractionEventNotification])> {
         self.subscribers
             .iter()
@@ -624,5 +626,21 @@ mod tests {
         let mut reg = SensorStreamRegistry::new();
         let batch = reg.poll("unknown");
         assert!(batch.events.is_empty());
+        assert_eq!(batch.subscription_id, "unknown");
+    }
+
+    #[test]
+    fn test_interaction_event_notification_serialization_perspective_none() {
+        let event = InteractionEventNotification {
+            event_type: "navigate".to_string(),
+            targets: vec![],
+            timestamp: "2025-01-01T00:00:00Z".to_string(),
+            perspective_id: None,
+        };
+        let json = serde_json::to_string(&event).expect("serialize");
+        assert!(!json.contains("perspective_id"));
+        let parsed: InteractionEventNotification =
+            serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(parsed.perspective_id, None);
     }
 }

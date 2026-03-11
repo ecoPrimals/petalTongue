@@ -49,7 +49,7 @@ pub use dashboard::{
     Dashboard, DashboardConfig, DashboardLayout, build_dashboard, compose_dashboard,
 };
 pub use data_binding::DataBindingCompiler;
-pub use domain_palette::{DomainPalette, palette_for_domain};
+pub use domain_palette::{DivergingScale, DomainPalette, palette_for_domain};
 pub use equation::EquationCompiler;
 pub use gpu_compiler::{GpuCompiler, GpuDrawCommand};
 pub use grammar::{

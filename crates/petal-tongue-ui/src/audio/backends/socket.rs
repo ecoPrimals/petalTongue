@@ -33,7 +33,7 @@ pub struct SocketBackend {
 impl SocketBackend {
     /// Create from discovered socket
     #[must_use]
-    pub fn new(socket: DiscoveredSocket) -> Self {
+    pub const fn new(socket: DiscoveredSocket) -> Self {
         Self {
             socket,
             connection: None,

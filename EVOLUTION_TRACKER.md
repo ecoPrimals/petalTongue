@@ -9,7 +9,7 @@
 
 | Metric | Value |
 |--------|-------|
-| Tests | 3,245 passing |
+| Tests | 3,409 passing, 17 ignored |
 | Coverage (region) | 77.4% |
 | Coverage (function) | 79.2% |
 | Clippy | Zero warnings (pedantic) |
@@ -17,7 +17,7 @@
 | `cargo deny` | Clean (advisories, bans, licenses, sources) |
 | `cargo doc` | Clean (`-D warnings`) |
 | Unsafe code | `#![forbid(unsafe_code)]` workspace-wide |
-| Largest file | 968 lines (all under 1,000 max) |
+| Largest file | 1,086 lines (`animation.rs` — refactor pending; all others under 1,000) |
 | External C deps | Zero |
 | SPDX headers | All source files |
 
@@ -102,6 +102,24 @@ Full bidirectional pipeline between petalTongue and the ecoPrimals ecosystem:
 
 See `specs/REALTIME_COLLABORATIVE_PIPELINE.md` and `docs/LIVE_TESTING.md`.
 
+### Spring Absorption (March 11, 2026)
+
+Cross-spring patterns ingested and evolved into petalTongue core:
+
+| Feature | Source Springs | Implementation |
+|---------|---------------|----------------|
+| Server-side backpressure | wetSpring, healthSpring, ludoSpring | `BackpressureConfig` in `VisualizationState` — rate limiting, cooldown, burst tolerance for 60 Hz streaming |
+| JSONL telemetry ingestion | hotSpring | `TelemetryAdapter` — parses JSONL telemetry to `DataBinding::TimeSeries` by section/observable |
+| Diverging color scales | neuralSpring (S139) | `DivergingScale` with `interpolate()` — three-stop color interpolation for heatmaps |
+| Game domain palette | ludoSpring | 7th domain palette `(220, 160, 80)` for game/ludology visualizations |
+| Session health IPC | all springs | `visualization.session.status` — queries frame count, uptime, backpressure state |
+| Provider registry | toadStool (S145) | `provider.register_capability` IPC method for capability announcement |
+| Pipeline DAG | neuralSpring, groundSpring | `PipelineRegistry` with topological sort, progressive binding collection, multi-stage workflows |
+
+New files: `telemetry_adapter.rs` (core), `pipeline.rs` (IPC), updates to `domain_palette.rs`, `state.rs`, `types.rs`, `system.rs`, `mod.rs`.
+
++17 new tests from absorption work (3,409 total).
+
 ---
 
 ## In Progress
@@ -112,6 +130,7 @@ No active gaps. Next evolution targets:
 - `visualization.render.stream` grammar subscription mode
 - Capability-based data resolution (`"source": "capability:X"`)
 - Coverage target: 90% (currently 77.4%)
+- `animation.rs` refactor (split test module to meet 1,000-line limit)
 
 ---
 
@@ -180,4 +199,5 @@ the collaborative intelligence.
 | Logic extraction | 3,180 | 77.4% / 79.2% | March 10 |
 | Real-time pipeline | 3,211 | TBD | March 10 |
 | Ecosystem wiring | 3,245 | TBD | March 11 |
+| Spring absorption | 3,409 | TBD | March 11 |
 | Target | TBD | 90% / 90% | — |

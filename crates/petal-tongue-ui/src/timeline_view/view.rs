@@ -56,7 +56,7 @@ impl Default for TimelineView {
 impl TimelineView {
     /// Create a new timeline view
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             events: Vec::new(),
             selected_event: None,
@@ -83,7 +83,11 @@ impl TimelineView {
     }
 
     /// Set time range for display
-    pub fn set_time_range(&mut self, start: Option<DateTime<Utc>>, end: Option<DateTime<Utc>>) {
+    pub const fn set_time_range(
+        &mut self,
+        start: Option<DateTime<Utc>>,
+        end: Option<DateTime<Utc>>,
+    ) {
         self.time_range_start = start;
         self.time_range_end = end;
     }

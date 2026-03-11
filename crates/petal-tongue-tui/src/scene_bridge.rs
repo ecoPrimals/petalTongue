@@ -19,6 +19,7 @@ pub struct SceneWidget<'a> {
 
 impl<'a> SceneWidget<'a> {
     /// Create a widget from a scene graph reference.
+    #[must_use]
     pub fn new(scene: &'a SceneGraph) -> Self {
         Self {
             scene,
@@ -28,7 +29,7 @@ impl<'a> SceneWidget<'a> {
 
     /// Apply a base style (foreground/background colors).
     #[must_use]
-    pub fn style(mut self, style: Style) -> Self {
+    pub const fn style(mut self, style: Style) -> Self {
         self.style = style;
         self
     }

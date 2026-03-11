@@ -51,7 +51,7 @@ mod tests {
         let (_tip2, left2, right2) = arrow_head_vertices(from, to, 2.0);
         let dist1 = (left1 - right1).length();
         let dist2 = (left2 - right2).length();
-        assert!((dist2 - 2.0 * dist1).abs() < 0.1);
+        assert!(2.0f32.mul_add(-dist1, dist2).abs() < 0.1);
     }
 
     #[test]

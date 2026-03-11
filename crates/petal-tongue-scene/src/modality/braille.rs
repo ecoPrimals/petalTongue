@@ -23,6 +23,7 @@ impl BrailleCell {
 
     /// Convert dot pattern to the corresponding Unicode Braille character.
     #[expect(clippy::cast_lossless, reason = "u8 to u32 is always lossless")]
+    #[must_use]
     pub fn to_char(self) -> char {
         char::from_u32(0x2800 + self.dots as u32).unwrap_or('\u{2800}')
     }
@@ -43,11 +44,11 @@ pub struct BrailleCompiler {
 
 impl BrailleCompiler {
     #[must_use]
-    pub fn new(cols: usize, rows: usize) -> Self {
+    pub const fn new(cols: usize, rows: usize) -> Self {
         Self { cols, rows }
     }
 
-    fn to_braille_cell(
+    const fn to_braille_cell(
         col: usize,
         row: usize,
         dot_col: usize,

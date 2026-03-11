@@ -20,7 +20,7 @@ pub struct PointerAdapter {
 impl PointerAdapter {
     /// Create a new pointer adapter.
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             last_hover_x: 0.0,
             last_hover_y: 0.0,
@@ -55,7 +55,7 @@ impl InputAdapter for PointerAdapter {
     fn translate(
         &self,
         event: &SensorEvent,
-        context: &InteractionContext,
+        _context: &InteractionContext,
     ) -> Option<InteractionIntent> {
         match event {
             SensorEvent::Click { x, y, button, .. } => {
@@ -69,14 +69,10 @@ impl InputAdapter for PointerAdapter {
                 };
 
                 match button {
-                    MouseButton::Left => {
-                        let mode = if context.current_selection.is_empty() {
-                            SelectionMode::Replace
-                        } else {
-                            SelectionMode::Replace
-                        };
-                        Some(InteractionIntent::Select { target, mode })
-                    }
+                    MouseButton::Left => Some(InteractionIntent::Select {
+                        target,
+                        mode: SelectionMode::Replace,
+                    }),
                     MouseButton::Right => Some(InteractionIntent::Inspect {
                         target,
                         depth: petal_tongue_core::interaction::InspectionDepth::Summary,

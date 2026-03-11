@@ -64,7 +64,7 @@ fn test_add_duplicate_node() {
     let mut graph = GraphEngine::new();
     let primal = create_test_primal("test-1", "Test Primal");
 
-    graph.add_node(primal.clone());
+    graph.add_node(primal);
     // Graph doesn't prevent duplicates, it will add a second node
     // This is by design for streaming updates
     assert_eq!(graph.nodes().len(), 1);
@@ -94,8 +94,8 @@ fn test_add_edge() {
     graph.add_node(primal2.clone());
 
     let edge = TopologyEdge {
-        from: primal1.id.clone(),
-        to: primal2.id.clone(),
+        from: primal1.id,
+        to: primal2.id,
         edge_type: "connection".to_string(),
         label: Some("test".to_string()),
         capability: None,
@@ -134,8 +134,8 @@ fn test_remove_edge() {
     graph.add_node(primal2.clone());
 
     let edge = TopologyEdge {
-        from: primal1.id.clone(),
-        to: primal2.id.clone(),
+        from: primal1.id,
+        to: primal2.id,
         edge_type: "connection".to_string(),
         label: None,
         capability: None,
@@ -335,8 +335,8 @@ fn test_get_all_nodes() {
     let primal1 = create_test_primal("primal-1", "Primal 1");
     let primal2 = create_test_primal("primal-2", "Primal 2");
 
-    graph.add_node(primal1.clone());
-    graph.add_node(primal2.clone());
+    graph.add_node(primal1);
+    graph.add_node(primal2);
 
     let all_nodes = graph.nodes();
     assert_eq!(all_nodes.len(), 2);

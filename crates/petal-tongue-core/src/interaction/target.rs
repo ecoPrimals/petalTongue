@@ -108,7 +108,7 @@ pub struct BoundingBox {
 impl BoundingBox {
     /// Create from two corners.
     #[must_use]
-    pub fn from_corners(x1: f64, y1: f64, x2: f64, y2: f64) -> Self {
+    pub const fn from_corners(x1: f64, y1: f64, x2: f64, y2: f64) -> Self {
         Self {
             x_min: x1.min(x2),
             y_min: y1.min(y2),
@@ -167,11 +167,11 @@ pub enum FilterExpr {
         substring: String,
     },
     /// Logical AND of multiple filters.
-    And(Vec<FilterExpr>),
+    And(Vec<Self>),
     /// Logical OR of multiple filters.
-    Or(Vec<FilterExpr>),
+    Or(Vec<Self>),
     /// Logical NOT.
-    Not(Box<FilterExpr>),
+    Not(Box<Self>),
 }
 
 /// A row of data values keyed by column name.

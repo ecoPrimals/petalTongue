@@ -47,11 +47,9 @@ impl ToadstoolCompute {
         let service = Self::discover_toadstool().await.ok();
 
         // Determine capabilities based on discovery
-        let capabilities = if let Some(ref svc) = service {
-            Self::parse_capabilities(&svc.capabilities)
-        } else {
-            Vec::new()
-        };
+        let capabilities = service
+            .as_ref()
+            .map_or_else(Vec::new, |svc| Self::parse_capabilities(&svc.capabilities));
 
         Ok(Self {
             service,
@@ -194,7 +192,7 @@ impl ToadstoolCompute {
 
     /// Get service info
     #[must_use]
-    pub fn service(&self) -> Option<&ToadstoolServiceInfo> {
+    pub const fn service(&self) -> Option<&ToadstoolServiceInfo> {
         self.service.as_ref()
     }
 }

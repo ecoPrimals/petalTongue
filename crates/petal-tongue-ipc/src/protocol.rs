@@ -137,7 +137,7 @@ pub struct InstanceStatus {
 impl IpcCommand {
     /// Check if this command requires the instance to be running
     #[must_use]
-    pub fn requires_running(&self) -> bool {
+    pub const fn requires_running(&self) -> bool {
         matches!(
             self,
             Self::GetStatus
@@ -157,7 +157,7 @@ impl IpcCommand {
 
     /// Get command name for logging
     #[must_use]
-    pub fn name(&self) -> &'static str {
+    pub const fn name(&self) -> &'static str {
         match self {
             Self::Ping => "Ping",
             Self::GetStatus => "GetStatus",
@@ -226,7 +226,7 @@ impl IpcResponse {
 
     /// Check if this is an error response
     #[must_use]
-    pub fn is_error(&self) -> bool {
+    pub const fn is_error(&self) -> bool {
         matches!(self, Self::Error { .. })
     }
 

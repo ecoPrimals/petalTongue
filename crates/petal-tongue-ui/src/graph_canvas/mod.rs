@@ -122,12 +122,12 @@ impl GraphCanvas {
 
     /// Get the current graph
     #[must_use]
-    pub fn graph(&self) -> &VisualGraph {
+    pub const fn graph(&self) -> &VisualGraph {
         &self.graph
     }
 
     /// Get mutable graph reference
-    pub fn graph_mut(&mut self) -> &mut VisualGraph {
+    pub const fn graph_mut(&mut self) -> &mut VisualGraph {
         &mut self.graph
     }
 

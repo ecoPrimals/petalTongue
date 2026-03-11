@@ -38,7 +38,7 @@ pub struct ScreenSensor {
 impl ScreenSensor {
     /// Create new screen sensor
     #[must_use]
-    pub fn new(display_type: DisplayType, width: usize, height: usize) -> Self {
+    pub const fn new(display_type: DisplayType, width: usize, height: usize) -> Self {
         let capabilities = SensorCapabilities {
             sensor_type: SensorType::Screen,
             input: false, // Screen is output only
@@ -61,7 +61,7 @@ impl ScreenSensor {
     }
 
     /// Record that a frame was sent
-    pub fn record_frame_sent(&mut self, frame_id: u64) {
+    pub const fn record_frame_sent(&mut self, frame_id: u64) {
         self.frames_sent = frame_id;
     }
 
@@ -71,13 +71,10 @@ impl ScreenSensor {
         if self.display_type == DisplayType::Terminal {
             // Query cursor position as heartbeat
             print!("\x1b[6n");
-            self.last_heartbeat = Some(Instant::now());
-            Ok(())
-        } else {
-            // For other displays, assume responsive if we got here
-            self.last_heartbeat = Some(Instant::now());
-            Ok(())
         }
+        // For other displays, assume responsive if we got here
+        self.last_heartbeat = Some(Instant::now());
+        Ok(())
     }
 }
 

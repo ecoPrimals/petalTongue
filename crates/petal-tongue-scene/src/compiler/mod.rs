@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Grammar compiler: transforms GrammarExpr + data into a SceneGraph.
+//! Grammar compiler: transforms `GrammarExpr` + data into a `SceneGraph`.
 //!
 //! The compiler reads variable bindings from the grammar expression to map
 //! data fields to x/y coordinates, applies scales, and produces primitives
@@ -21,14 +21,14 @@ use crate::tufte::{TufteConstraint, TufteReport};
 use geometry::compile_geometry;
 use utils::{offset_primitive, partition_by_field, x_field, y_field};
 
-/// Compiles GrammarExpr and data into a SceneGraph.
+/// Compiles `GrammarExpr` and data into a `SceneGraph`.
 #[derive(Debug, Clone, Default)]
 pub struct GrammarCompiler;
 
 impl GrammarCompiler {
     /// Create a new grammar compiler.
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self
     }
 
@@ -201,6 +201,7 @@ impl GrammarCompiler {
     /// the `FacetLayout` (Wrap or Grid).
     ///
     /// If no facets are configured, delegates to `compile`.
+    #[must_use]
     pub fn compile_faceted(&self, expr: &GrammarExpr, data: &[Value]) -> SceneGraph {
         let Some(facet) = &expr.facets else {
             return self.compile(expr, data);

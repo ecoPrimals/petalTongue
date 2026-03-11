@@ -160,7 +160,7 @@ impl EventHandler {
 
 /// Parse key event into action
 #[must_use]
-pub fn parse_key_event(key: KeyEvent) -> KeyAction {
+pub const fn parse_key_event(key: KeyEvent) -> KeyAction {
     match (key.code, key.modifiers) {
         (KeyCode::Char('q'), KeyModifiers::NONE) | (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
             KeyAction::Quit

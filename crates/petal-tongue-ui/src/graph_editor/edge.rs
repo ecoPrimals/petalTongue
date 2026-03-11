@@ -48,7 +48,12 @@ pub enum DependencyType {
 impl GraphEdge {
     /// Create a new edge
     #[must_use]
-    pub fn new(id: String, from: String, to: String, dependency_type: DependencyType) -> Self {
+    pub const fn new(
+        id: String,
+        from: String,
+        to: String,
+        dependency_type: DependencyType,
+    ) -> Self {
         Self {
             id,
             from,
@@ -67,13 +72,13 @@ impl GraphEdge {
 
     /// Check if this is a required dependency
     #[must_use]
-    pub fn is_required(&self) -> bool {
+    pub const fn is_required(&self) -> bool {
         !matches!(self.dependency_type, DependencyType::Optional)
     }
 
     /// Get display color for edge type
     #[must_use]
-    pub fn display_color(&self) -> [u8; 3] {
+    pub const fn display_color(&self) -> [u8; 3] {
         match &self.dependency_type {
             DependencyType::Sequential => [0, 0, 0],             // Black
             DependencyType::DataFlow => [0, 0, 255],             // Blue
@@ -84,7 +89,7 @@ impl GraphEdge {
 
     /// Get display style (solid, dashed, etc)
     #[must_use]
-    pub fn display_style(&self) -> EdgeStyle {
+    pub const fn display_style(&self) -> EdgeStyle {
         match &self.dependency_type {
             DependencyType::Sequential => EdgeStyle::Solid,
             DependencyType::DataFlow => EdgeStyle::Solid,

@@ -80,7 +80,7 @@ impl TutorialMode {
 
     /// Check if tutorial mode is explicitly enabled
     #[must_use]
-    pub fn is_enabled(&self) -> bool {
+    pub const fn is_enabled(&self) -> bool {
         self.enabled
     }
 
@@ -99,7 +99,7 @@ impl TutorialMode {
     pub fn load_into_graph(&self, graph: Arc<RwLock<GraphEngine>>, layout: LayoutAlgorithm) {
         #[cfg(any(test, feature = "mock"))]
         {
-            use crate::sandbox_mock::{get_default_scenario, load_sandbox_scenario};
+            use crate::sandbox_provider::{get_default_scenario, load_sandbox_scenario};
 
             info!("📦 Loading tutorial scenario: {}", self.scenario_name);
             info!("🌸 Seamless transition from awakening to tutorial experience");

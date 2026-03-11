@@ -86,7 +86,7 @@ impl MathObject for VectorField {
             });
 
             // Arrow head (triangle)
-            let len = (dx * dx + dy * dy).sqrt();
+            let len = dx.hypot(dy);
             if len > 1e-10 {
                 let ux = dx / len;
                 let uy = dy / len;
@@ -94,12 +94,12 @@ impl MathObject for VectorField {
                 let perp_y = ux;
                 let tip = [ex, ey];
                 let base1 = [
-                    ex - ux * head_size + perp_x * head_size * 0.5,
-                    ey - uy * head_size + perp_y * head_size * 0.5,
+                    (perp_x * head_size).mul_add(0.5, ux.mul_add(-head_size, ex)),
+                    (perp_y * head_size).mul_add(0.5, uy.mul_add(-head_size, ey)),
                 ];
                 let base2 = [
-                    ex - ux * head_size - perp_x * head_size * 0.5,
-                    ey - uy * head_size - perp_y * head_size * 0.5,
+                    (perp_x * head_size).mul_add(-0.5, ux.mul_add(-head_size, ex)),
+                    (perp_y * head_size).mul_add(-0.5, uy.mul_add(-head_size, ey)),
                 ];
                 prims.push(Primitive::Polygon {
                     points: vec![tip, base1, base2],
