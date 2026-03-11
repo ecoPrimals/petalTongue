@@ -41,7 +41,10 @@ pub struct BiomeOSUIManager {
     use_mock: bool,
 
     /// Event handler (passed to child panels for event dispatch)
-    #[allow(dead_code)]
+    #[expect(
+        dead_code,
+        reason = "Reserved for future event dispatch from manager to panels"
+    )]
     event_handler: Arc<RwLock<UIEventHandler>>,
 
     /// UI Panels

@@ -17,6 +17,7 @@
 //! - Self-stable operation guaranteed
 
 use crate::audio::AudioSystemV2; // EVOLVED: Substrate-agnostic
+#[allow(unused_imports)]
 use crate::audio_pure_rust::{SAMPLE_RATE, Waveform, generate_tone};
 use std::path::{Path, PathBuf};
 use tracing::{info, warn};
@@ -247,54 +248,23 @@ impl StartupAudio {
 
     /// Generate signature tone
     ///
-    /// Creates the petalTongue signature audio - a distinctive sound that identifies
-    /// the application. Currently uses a pleasant chord progression.
-    ///
-    /// TODO: Design distinctive petalTongue signature sound
+    /// Creates the petalTongue "bloom" sound - a quick ascending arpeggio
+    /// (C5, E5, G5) that identifies the application.
     #[must_use]
     pub fn generate_signature_tone() -> Vec<f32> {
-        info!("🎵 Generating petalTongue signature tone...");
+        info!("🎵 Generating petalTongue signature tone (bloom)...");
 
-        // Signature: Ascending chord (C-E-G) with harmonic overtones
-        // This creates a welcoming, flourishing sound
-        let mut signature = Vec::new();
-
-        // Note frequencies (C major chord)
+        // Bloom: 3-note ascending arpeggio, ~80ms per note, ~250ms total
         let notes = [
-            261.63, // C4
-            329.63, // E4
-            392.00, // G4
+            (523.25, 0.08), // C5
+            (659.25, 0.08), // E5
+            (784.00, 0.08), // G5
         ];
 
-        // Generate each note of the chord
-        for (i, &freq) in notes.iter().enumerate() {
-            let delay = i as f32 * 0.1; // Stagger notes slightly
-            let duration = 0.5; // Each note lasts 0.5 seconds
-
-            // Generate sine wave for this note
-            let tone = generate_tone(freq, duration, Waveform::Sine, 0.3);
-
-            // Add silence before this note (for stagger effect)
-            let delay_samples = (SAMPLE_RATE as f32 * delay) as usize;
-            signature.resize(signature.len().max(delay_samples), 0.0);
-
-            // Mix this note into the signature
-            for (j, &sample) in tone.iter().enumerate() {
-                let index = delay_samples + j;
-                if index >= signature.len() {
-                    signature.push(sample);
-                } else {
-                    signature[index] += sample;
-                }
-            }
-        }
-
-        // Add harmonic overtone (octave up for sparkle)
-        let harmonic = generate_tone(523.25, 0.4, Waveform::Triangle, 0.15); // C5
-        for (j, &sample) in harmonic.iter().enumerate() {
-            if j < signature.len() {
-                signature[j] += sample;
-            }
+        let mut signature = Vec::new();
+        for &(freq, duration) in &notes {
+            let tone = generate_tone(freq, duration, Waveform::Sine, 0.35);
+            signature.extend(tone);
         }
 
         // Normalize to prevent clipping
@@ -306,7 +276,10 @@ impl StartupAudio {
             }
         }
 
-        info!("✨ Signature tone generated: {} samples", signature.len());
+        info!(
+            "✨ Signature tone generated: {} samples (~250ms bloom)",
+            signature.len()
+        );
         signature
     }
 
@@ -454,11 +427,11 @@ mod tests {
     fn test_signature_tone_length() {
         let signature = StartupAudio::generate_signature_tone();
 
-        // Should be around 0.7 seconds (3 notes * 0.5s with stagger)
+        // Bloom: ~250ms (3 notes * ~80ms each)
         let duration_secs = signature.len() as f32 / SAMPLE_RATE as f32;
         assert!(
-            (0.5..=1.0).contains(&duration_secs),
-            "Signature duration should be 0.5-1.0s, got {}s",
+            (0.2..=0.35).contains(&duration_secs),
+            "Signature duration should be ~250ms, got {}s",
             duration_secs
         );
     }
@@ -552,13 +525,13 @@ mod tests {
     }
 
     #[test]
-    fn test_signature_tone_c_major_chord() {
+    fn test_signature_tone_bloom_arpeggio() {
         let signature = StartupAudio::generate_signature_tone();
 
-        // Verify it's not empty (has actual audio data)
+        // Verify it's not empty (has actual audio data, ~250ms)
         assert!(
-            signature.len() > SAMPLE_RATE as usize / 2,
-            "Should have at least 0.5s of audio"
+            signature.len() > SAMPLE_RATE as usize / 10,
+            "Should have at least ~100ms of audio"
         );
 
         // Verify we have varied amplitudes (not flat/silence)
@@ -612,5 +585,56 @@ mod tests {
         // Test all getter methods
         let _ = startup.has_startup_music();
         let _ = startup.startup_music_path();
+    }
+
+    #[test]
+    fn test_get_embedded_music() {
+        let data = StartupAudio::get_embedded_music();
+        assert!(!data.is_empty(), "Embedded music should not be empty");
+    }
+
+    #[test]
+    fn test_has_embedded_music() {
+        assert!(StartupAudio::has_embedded_music());
+    }
+
+    #[test]
+    fn test_is_using_embedded() {
+        let startup = StartupAudio::new();
+        let using = startup.is_using_embedded();
+        assert!(using || !StartupAudio::has_embedded_music());
+    }
+
+    #[test]
+    fn test_signature_tone_notes_count() {
+        let signature = StartupAudio::generate_signature_tone();
+        // 3 notes * ~80ms each at 44100 Hz = ~10560 samples per note
+        assert!(signature.len() > 1000);
+    }
+
+    #[test]
+    fn test_signature_tone_frequency_content() {
+        use crate::audio_pure_rust::{SAMPLE_RATE, Waveform, generate_tone};
+        let c5 = generate_tone(523.25, 0.08, Waveform::Sine, 0.35);
+        let e5 = generate_tone(659.25, 0.08, Waveform::Sine, 0.35);
+        let g5 = generate_tone(784.0, 0.08, Waveform::Sine, 0.35);
+        assert!(!c5.is_empty());
+        assert!(!e5.is_empty());
+        assert!(!g5.is_empty());
+        let expected_len = (SAMPLE_RATE as f32 * 0.08) as usize;
+        assert!(c5.len().abs_diff(expected_len) < 2);
+    }
+
+    #[test]
+    fn test_startup_audio_default() {
+        let startup = StartupAudio::default();
+        assert!(startup.play_signature);
+        assert!(startup.play_music);
+    }
+
+    #[test]
+    fn test_decode_audio_symphonia_invalid_data() {
+        let result = decode_audio_symphonia(&[0u8; 10]);
+        assert!(result.is_err());
     }
 }

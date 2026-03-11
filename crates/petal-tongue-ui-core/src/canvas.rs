@@ -33,7 +33,6 @@ use tiny_skia::{Color, FillRule, Paint, PathBuilder, Pixmap, Stroke, Transform};
 /// # Ok(())
 /// # }
 /// ```
-#[allow(dead_code)]
 pub struct CanvasUI {
     graph: Arc<RwLock<GraphEngine>>,
     width: u32,
@@ -195,6 +194,8 @@ impl UniversalUI for CanvasUI {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use petal_tongue_core::test_fixtures::primals;
+    use petal_tongue_core::{PrimalId, TopologyEdge};
 
     #[test]
     fn test_canvas_ui_creation() {
@@ -234,6 +235,56 @@ mod tests {
             png_data.len() > 100,
             "PNG should be larger than placeholder (got {} bytes)",
             png_data.len()
+        );
+    }
+
+    #[test]
+    fn test_canvas_render_to_string_returns_error() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let ui = CanvasUI::new(graph, 800, 600);
+        let result = ui.render_to_string();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("binary export"));
+    }
+
+    #[test]
+    fn test_canvas_recommended_format() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let ui = CanvasUI::new(graph, 800, 600);
+        assert_eq!(ui.recommended_format(), ExportFormat::Png);
+    }
+
+    #[test]
+    fn test_canvas_mode_name() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let ui = CanvasUI::new(graph, 800, 600);
+        assert_eq!(ui.mode_name(), "Canvas/PNG");
+    }
+
+    #[test]
+    fn test_canvas_render_with_nodes() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        {
+            let mut g = graph.write().expect("lock");
+            g.add_node(primals::test_primal("n1"));
+            g.add_node(primals::test_primal("n2"));
+            g.add_edge(TopologyEdge {
+                from: PrimalId::from("n1"),
+                to: PrimalId::from("n2"),
+                edge_type: "test".to_string(),
+                label: None,
+                capability: None,
+                metrics: None,
+            });
+        }
+        let ui = CanvasUI::new(graph, 400, 300);
+        let result = ui.render_to_bytes();
+        assert!(result.is_ok());
+        let png_data = result.expect("png");
+        assert!(!png_data.is_empty());
+        assert_eq!(
+            &png_data[0..8],
+            &[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
         );
     }
 }

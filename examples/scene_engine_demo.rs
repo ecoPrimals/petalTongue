@@ -10,7 +10,7 @@ use petal_tongue_scene::{
     animation::{Animation, AnimationState, Easing, Sequence},
     compiler::GrammarCompiler,
     grammar::{GeometryType, GrammarExpr},
-    math_objects::{Axes, FunctionPlot, MathObject, NumberLine, ParametricCurve, VectorField},
+    math::{Axes, FunctionPlot, MathObject, NumberLine, ParametricCurve, VectorField},
     modality::{AudioCompiler, DescriptionCompiler, ModalityCompiler, SvgCompiler},
     physics::{CollisionShape, PhysicsBody, PhysicsWorld},
     primitive::{Color, Primitive, StrokeStyle},
@@ -171,7 +171,7 @@ fn demo_tufte() {
         .with_x("x")
         .with_y("y");
 
-    let report = TufteReport::evaluate_all(&constraints, &primitives, &expr);
+    let report = TufteReport::evaluate_all(&constraints, &primitives, &expr, None);
     println!("  Constraints evaluated: {}", report.results.len());
     for (name, r) in &report.results {
         println!(
@@ -238,8 +238,8 @@ fn demo_math_objects() {
         ..StrokeStyle::default()
     };
     let param_curve = ParametricCurve::sample(
-        |t| t.cos() * 100.0 + 300.0,
-        |t| t.sin() * 100.0 + 300.0,
+        |t: f64| t.cos() * 100.0 + 300.0,
+        |t: f64| t.sin() * 100.0 + 300.0,
         (0.0, std::f64::consts::TAU),
         64,
         circle_stroke,
@@ -251,7 +251,7 @@ fn demo_math_objects() {
     );
 
     let vf = VectorField::from_fn(
-        |x, y| (-y * 0.01, x * 0.01),
+        |x: f64, y: f64| (-y * 0.01, x * 0.01),
         (100.0, 500.0),
         (100.0, 500.0),
         8,
@@ -337,7 +337,9 @@ fn demo_svg() {
     let svg_compiler = SvgCompiler;
     let output = svg_compiler.compile(&scene);
     let svg_str = match &output {
-        petal_tongue_scene::modality::ModalityOutput::Svg(s) => s.as_str(),
+        petal_tongue_scene::modality::ModalityOutput::Svg(b) => {
+            std::str::from_utf8(b.as_ref()).unwrap_or_default()
+        }
         _ => panic!("Expected SVG output"),
     };
 
@@ -413,7 +415,9 @@ fn demo_accessibility() {
     let desc_compiler = DescriptionCompiler;
     let output = desc_compiler.compile(&scene);
     let text = match &output {
-        petal_tongue_scene::modality::ModalityOutput::Description(t) => t.as_str(),
+        petal_tongue_scene::modality::ModalityOutput::Description(b) => {
+            std::str::from_utf8(b.as_ref()).unwrap_or_default()
+        }
         _ => panic!("Expected Description output"),
     };
 

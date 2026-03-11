@@ -53,7 +53,10 @@ pub(super) struct EventStream {
 }
 
 /// WebSocket connection wrapper for biomeOS events
-#[allow(dead_code)]
+#[expect(
+    dead_code,
+    reason = "Connection state reserved for future reconnection logic"
+)]
 struct WebSocketConnection {
     /// WebSocket endpoint URL (e.g., "<ws://localhost:8080/events>")
     endpoint: String,
@@ -71,6 +74,7 @@ impl EventStream {
     }
 
     /// Connect to WebSocket endpoint for real-time events
+    #[expect(clippy::unused_async, reason = "async for future WebSocket client")]
     pub(super) async fn connect(&mut self, endpoint: &str) -> Result<()> {
         info!("🔌 Connecting to biomeOS event stream: {}", endpoint);
 

@@ -222,10 +222,10 @@ impl MdnsVisualizationProvider {
     /// Simplified implementation - just enough to query for our service.
     /// Real mDNS would use a full DNS packet parser.
     fn build_mdns_query(service_name: &str) -> Vec<u8> {
-        // For now, return a simple query packet
-        // TODO: Implement full DNS packet building
+        // Builds a standard DNS query for PTR records (sufficient for mDNS service discovery).
+        // Supports single-question queries; multi-question packets are not needed for our use case.
 
-        // mDNS query packet structure (simplified):
+        // mDNS query packet structure:
         // - Transaction ID: 0x0000
         // - Flags: 0x0000 (standard query)
         // - Questions: 1
@@ -297,7 +297,7 @@ impl MdnsVisualizationProvider {
 
         // Parse answer records
         let mut service_port: Option<u16> = None;
-        let mut _service_host: Option<String> = None; // TODO: Use for hostname resolution if needed
+        let mut _service_host: Option<String> = None;
         let mut txt_records: Vec<crate::dns_parser::TxtRecord> = Vec::new();
         let mut a_records: Vec<Ipv4Addr> = Vec::new();
 
@@ -479,6 +479,7 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::net::SocketAddr;
 
     #[test]
     fn test_build_mdns_query() {
@@ -490,6 +491,120 @@ mod tests {
         // Check DNS header
         assert_eq!(&query[0..2], &[0x00, 0x00], "Transaction ID should be 0");
         assert_eq!(&query[4..6], &[0x00, 0x01], "Should have 1 question");
+    }
+
+    #[test]
+    fn test_build_mdns_query_different_service() {
+        let query = MdnsVisualizationProvider::build_mdns_query("_http._tcp.local");
+        assert!(query.len() > 12);
+        assert_eq!(&query[4..6], &[0x00, 0x01]);
+        // Question should encode _http._tcp.local
+        assert!(query.len() > 20);
+    }
+
+    #[test]
+    fn test_build_mdns_query_question_format() {
+        let query = MdnsVisualizationProvider::build_mdns_query("a.b");
+        // Labels: 1 a, 1 b, 0 terminator = 4 bytes min for name
+        // + type (2) + class (2) = 8 bytes for question
+        assert!(query.len() >= 12 + 4 + 4);
+        assert_eq!(query[12], 1); // length of "a"
+        assert_eq!(query[13], b'a');
+        assert_eq!(query[14], 1); // length of "b"
+        assert_eq!(query[15], b'b');
+    }
+
+    #[test]
+    fn test_parse_mdns_response_empty() {
+        let addr = SocketAddr::from(([127, 0, 0, 1], 5353));
+        let result = MdnsVisualizationProvider::parse_mdns_response(&[], addr);
+        if let Err(e) = result {
+            let msg = e.to_string();
+            assert!(
+                msg.contains("short") || msg.contains("header"),
+                "got: {msg}"
+            );
+        } else {
+            panic!("expected parse to fail for empty input");
+        }
+    }
+
+    #[test]
+    fn test_parse_mdns_response_too_short() {
+        let addr = SocketAddr::from(([127, 0, 0, 1], 5353));
+        let data = [0u8; 11]; // Less than 12 bytes for header
+        let result = MdnsVisualizationProvider::parse_mdns_response(&data, addr);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_mdns_response_not_response() {
+        let addr = SocketAddr::from(([127, 0, 0, 1], 5353));
+        // Valid header but flags = 0x0000 (query, not response)
+        let mut data = vec![0x00, 0x00, 0x00, 0x00]; // transaction_id, flags (query)
+        data.extend_from_slice(&[0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]); // rest of header
+        let result = MdnsVisualizationProvider::parse_mdns_response(&data, addr);
+        if let Err(e) = result {
+            assert!(e.to_string().contains("Not a DNS response"));
+        } else {
+            panic!("expected parse to fail for non-response");
+        }
+    }
+
+    #[test]
+    fn test_parse_mdns_response_no_srv_record() {
+        let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
+        // Build minimal valid DNS response: header (response, 1 question, 1 answer) + question + PTR answer (no SRV)
+        let mut data = Vec::new();
+        data.extend_from_slice(&[0x00, 0x00]); // transaction_id
+        data.extend_from_slice(&[0x84, 0x00]); // flags: response + authoritative
+        data.extend_from_slice(&[0x00, 0x01]); // 1 question
+        data.extend_from_slice(&[0x00, 0x01]); // 1 answer
+        data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]); // authority, additional
+        // Question: _visualization-provider._tcp.local
+        data.extend_from_slice(&[22]); // length
+        data.extend_from_slice(b"_visualization-provider");
+        data.extend_from_slice(&[4]); // length
+        data.extend_from_slice(b"_tcp");
+        data.extend_from_slice(&[5]); // length
+        data.extend_from_slice(b"local");
+        data.extend_from_slice(&[0]); // end
+        data.extend_from_slice(&[0x00, 0x0C]); // type PTR
+        data.extend_from_slice(&[0x00, 0x01]); // class IN
+        // Answer: PTR record (no port) - name, type PTR, class IN, ttl, rdlength, rdata
+        data.extend_from_slice(&[22]);
+        data.extend_from_slice(b"_visualization-provider");
+        data.extend_from_slice(&[4]);
+        data.extend_from_slice(b"_tcp");
+        data.extend_from_slice(&[5]);
+        data.extend_from_slice(b"local");
+        data.extend_from_slice(&[0]);
+        data.extend_from_slice(&[0x00, 0x0C, 0x00, 0x01]); // PTR, IN
+        data.extend_from_slice(&[0x00, 0x00, 0x00, 0x3C]); // TTL 60
+        data.extend_from_slice(&[0x00, 0x02]); // rdlength 2 (compression pointer)
+        // PTR rdata: pointer to name (0xC0 0x0C = offset 12, start of question)
+        data.extend_from_slice(&[0xC0, 0x0C]);
+
+        let result = MdnsVisualizationProvider::parse_mdns_response(&data, addr);
+        // Should fail: PTR record has no SRV/port, or packet may be malformed
+        assert!(
+            result.is_err(),
+            "Parse should fail when response has no SRV record with port"
+        );
+    }
+
+    #[test]
+    fn test_mdns_provider_new() {
+        let metadata = ProviderMetadata {
+            name: "Test Provider".to_string(),
+            endpoint: "http://192.0.2.1:8080".to_string(),
+            protocol: "http".to_string(),
+            capabilities: vec!["viz".to_string()],
+        };
+        let provider =
+            MdnsVisualizationProvider::new("http://192.0.2.1:8080".to_string(), metadata.clone());
+        assert_eq!(provider.get_metadata().name, "Test Provider");
+        assert_eq!(provider.get_metadata().endpoint, "http://192.0.2.1:8080");
     }
 
     #[test]

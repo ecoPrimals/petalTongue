@@ -302,7 +302,10 @@ impl SongbirdClient {
     }
 
     /// Parse a primal from Songbird's JSON response
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unused_self,
+        reason = "method for consistency with other parsers"
+    )]
     fn parse_primal(&self, value: &Value) -> Result<PrimalInfo> {
         let id = value["id"]
             .as_str()
@@ -378,6 +381,13 @@ mod tests {
     }
 
     #[test]
+    fn test_with_socket_path() {
+        let path = PathBuf::from("/run/user/1000/discovery.sock");
+        let client = SongbirdClient::with_socket_path(path.clone());
+        assert_eq!(client.socket_path(), &path);
+    }
+
+    #[test]
     fn test_parse_primal() {
         let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
 
@@ -412,5 +422,158 @@ mod tests {
         assert_eq!(primal.id, "minimal-primal");
         assert_eq!(primal.primal_type, "unknown");
         assert!(primal.capabilities.is_empty());
+    }
+
+    #[test]
+    fn test_parse_primal_health_variants() {
+        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+
+        let json_healthy = json!({
+            "id": "test",
+            "name": "test",
+            "endpoint": "unix:///tmp/test.sock",
+            "health": "healthy"
+        });
+        assert!(matches!(
+            client.parse_primal(&json_healthy).unwrap().health,
+            PrimalHealthStatus::Healthy
+        ));
+
+        let json_degraded = json!({
+            "id": "test",
+            "name": "test",
+            "endpoint": "unix:///tmp/test.sock",
+            "health": "degraded"
+        });
+        assert!(matches!(
+            client.parse_primal(&json_degraded).unwrap().health,
+            PrimalHealthStatus::Warning
+        ));
+
+        let json_critical = json!({
+            "id": "test",
+            "name": "test",
+            "endpoint": "unix:///tmp/test.sock",
+            "health": "critical"
+        });
+        assert!(matches!(
+            client.parse_primal(&json_critical).unwrap().health,
+            PrimalHealthStatus::Critical
+        ));
+    }
+
+    #[test]
+    fn test_parse_primal_type_fallback() {
+        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+
+        let json = json!({
+            "id": "test",
+            "name": "test",
+            "primal_type": "toadstool",
+            "endpoint": "unix:///tmp/test.sock"
+        });
+        let primal = client.parse_primal(&json).unwrap();
+        assert_eq!(primal.primal_type, "toadstool");
+
+        let json_type = json!({
+            "id": "test",
+            "name": "test",
+            "type": "beardog",
+            "endpoint": "unix:///tmp/test.sock"
+        });
+        let primal2 = client.parse_primal(&json_type).unwrap();
+        assert_eq!(primal2.primal_type, "beardog");
+    }
+
+    #[test]
+    fn test_parse_primal_missing_id() {
+        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let json = json!({
+            "name": "test",
+            "endpoint": "unix:///tmp/test.sock"
+        });
+        assert!(client.parse_primal(&json).is_err());
+    }
+
+    #[test]
+    fn test_parse_primal_missing_name() {
+        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let json = json!({
+            "id": "test",
+            "endpoint": "unix:///tmp/test.sock"
+        });
+        assert!(client.parse_primal(&json).is_err());
+    }
+
+    #[test]
+    fn test_parse_primal_missing_endpoint() {
+        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let json = json!({
+            "id": "test",
+            "name": "test"
+        });
+        assert!(client.parse_primal(&json).is_err());
+    }
+
+    #[test]
+    fn test_discover_fails_without_socket() {
+        let result = SongbirdClient::discover(Some("nonexistent-family-xyz"));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    #[tokio::test]
+    async fn test_send_request_fails_nonexistent_socket() {
+        let client =
+            SongbirdClient::with_socket_path(PathBuf::from("/tmp/nonexistent-socket-12345.sock"));
+        let result = client.discover_by_capability("visualization").await;
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_primal_last_seen_fallback() {
+        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let json = json!({
+            "id": "test",
+            "name": "test",
+            "endpoint": "unix:///tmp/test.sock"
+        });
+        let primal = client.parse_primal(&json).expect("parse");
+        assert!(primal.last_seen > 0);
+    }
+
+    #[test]
+    fn test_parse_primal_health_warning_variants() {
+        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        for (health_str, expected) in [
+            ("warning", PrimalHealthStatus::Warning),
+            ("error", PrimalHealthStatus::Critical),
+            ("unhealthy", PrimalHealthStatus::Critical),
+        ] {
+            let json = json!({
+                "id": "test",
+                "name": "test",
+                "endpoint": "unix:///tmp/test.sock",
+                "health": health_str
+            });
+            let primal = client.parse_primal(&json).expect("parse");
+            assert!(
+                std::mem::discriminant(&primal.health) == std::mem::discriminant(&expected),
+                "health {health_str}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_parse_primal_unknown_health_defaults_healthy() {
+        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let json = json!({
+            "id": "test",
+            "name": "test",
+            "endpoint": "unix:///tmp/test.sock",
+            "health": "unknown_status"
+        });
+        let primal = client.parse_primal(&json).expect("parse");
+        assert!(matches!(primal.health, PrimalHealthStatus::Healthy));
     }
 }

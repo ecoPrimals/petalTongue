@@ -203,4 +203,56 @@ mod tests {
         assert!(debug_str.contains("NoProvidersFound"));
         assert!(debug_str.contains("attempted"));
     }
+
+    #[test]
+    fn test_discovery_failure_display_source() {
+        let failure = DiscoveryFailure::new("HTTP", "Connection refused");
+        assert_eq!(failure.source, "HTTP");
+        assert_eq!(failure.error, "Connection refused");
+    }
+
+    #[test]
+    fn test_discovery_failure_with_string_into() {
+        let failure = DiscoveryFailure::new("mDNS".to_string(), "timeout".to_string());
+        assert_eq!(failure.source, "mDNS");
+        assert_eq!(failure.error, "timeout");
+    }
+
+    #[test]
+    fn test_discovery_result_type() {
+        let ok_result: DiscoveryResult<i32> = Ok(42);
+        let val = match ok_result {
+            Ok(v) => v,
+            Err(e) => panic!("expected Ok, got {e:?}"),
+        };
+        assert_eq!(val, 42);
+
+        let err_result: DiscoveryResult<i32> =
+            Err(DiscoveryError::ConfigError("bad config".to_string()));
+        assert!(err_result.is_err());
+    }
+
+    #[test]
+    fn test_error_display_format() {
+        let err = DiscoveryError::InvalidUrl {
+            url: "bad://url".to_string(),
+        };
+        let display = err.to_string();
+        assert!(display.contains("Invalid URL"));
+        assert!(display.contains("bad://url"));
+    }
+
+    #[test]
+    fn test_error_source_chain() {
+        let inner = anyhow::anyhow!("inner error");
+        let err = DiscoveryError::HealthCheckFailed {
+            name: "test".to_string(),
+            endpoint: "http://localhost".to_string(),
+            source: inner,
+        };
+        let display = err.to_string();
+        assert!(display.contains("test"));
+        assert!(display.contains("http://localhost"));
+        assert!(display.contains("health check"));
+    }
 }

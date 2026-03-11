@@ -44,13 +44,13 @@ impl EntropyModality {
 
     pub(super) fn is_available(&self) -> bool {
         match self {
-            Self::Audio => false, // TODO: Enable when audio entropy capture implemented
+            Self::Audio => crate::sensors::audio::has_audio_input(),
 
             Self::Narrative => true, // Always available
 
-            Self::Visual => false,  // TODO: Phase 3
-            Self::Gesture => false, // TODO: Phase 5
-            Self::Video => false,   // TODO: Phase 6
+            Self::Visual => false, // Phase 3: requires camera sensor integration
+            Self::Gesture => false, // Phase 5: requires gesture recognition pipeline
+            Self::Video => false,  // Phase 6: requires video stream processing
         }
     }
 }

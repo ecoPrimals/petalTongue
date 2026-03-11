@@ -6,6 +6,16 @@
 use super::accessibility::{AccessibilitySettings, ColorPalette, ColorScheme, FontSize};
 use egui::{Context, Ui, Window};
 
+// ============================================================================
+// Pure formatting functions (testable, no egui)
+// ============================================================================
+
+/// Format font size multiplier for display
+#[must_use]
+pub(crate) fn format_font_multiplier_display(multiplier: f32) -> String {
+    format!("  → Current multiplier: {multiplier:.1}x")
+}
+
 /// Accessibility settings panel
 #[derive(Default)]
 pub struct AccessibilityPanel {
@@ -90,9 +100,8 @@ impl AccessibilityPanel {
             );
         });
 
-        ui.label(format!(
-            "  → Current multiplier: {:.1}x",
-            self.settings.font_size.multiplier()
+        ui.label(format_font_multiplier_display(
+            self.settings.font_size.multiplier(),
         ));
 
         ui.add_space(10.0);
@@ -119,10 +128,12 @@ impl AccessibilityPanel {
         }
 
         ui.add_space(5.0);
-        ui.checkbox(
-            &mut self.settings.narration_enabled,
-            "Enable Text-to-Speech Narration",
-        );
+        ui.add_enabled_ui(false, |ui| {
+            ui.checkbox(
+                &mut self.settings.narration_enabled,
+                "Enable Text-to-Speech Narration (not yet available)",
+            );
+        });
         ui.label("  → Speak UI elements and status updates");
 
         ui.add_space(10.0);
@@ -135,7 +146,12 @@ impl AccessibilityPanel {
         ui.checkbox(&mut self.settings.keyboard_only, "Keyboard-Only Mode");
         ui.label("  → Optimize for keyboard navigation (motor disabilities)");
 
-        ui.checkbox(&mut self.settings.screen_reader_mode, "Screen Reader Mode");
+        ui.add_enabled_ui(false, |ui| {
+            ui.checkbox(
+                &mut self.settings.screen_reader_mode,
+                "Screen Reader Mode (not yet available)",
+            );
+        });
         ui.label("  → Additional announcements for NVDA/JAWS/VoiceOver");
 
         ui.add_space(10.0);
@@ -268,5 +284,139 @@ mod tests {
 
         panel.settings.font_size = FontSize::Large;
         assert_eq!(panel.scale_font(base_size), 20.8);
+    }
+
+    #[test]
+    fn test_font_scaling_all_sizes() {
+        let mut panel = AccessibilityPanel::default();
+        let base = 10.0;
+
+        panel.settings.font_size = FontSize::Small;
+        assert!((panel.scale_font(base) - 8.5).abs() < 0.01);
+
+        panel.settings.font_size = FontSize::Medium;
+        assert_eq!(panel.scale_font(base), 10.0);
+
+        panel.settings.font_size = FontSize::Large;
+        assert_eq!(panel.scale_font(base), 13.0);
+
+        panel.settings.font_size = FontSize::ExtraLarge;
+        assert_eq!(panel.scale_font(base), 16.0);
+    }
+
+    #[test]
+    fn test_toggle() {
+        let mut panel = AccessibilityPanel::default();
+        assert!(!panel.show);
+        panel.toggle();
+        assert!(panel.show);
+        panel.toggle();
+        assert!(!panel.show);
+    }
+
+    #[test]
+    fn test_close() {
+        let mut panel = AccessibilityPanel::default();
+        panel.show = true;
+        panel.close();
+        assert!(!panel.show);
+    }
+
+    #[test]
+    fn test_get_palette() {
+        let panel = AccessibilityPanel::default();
+        let palette = panel.get_palette();
+        assert_ne!(palette.healthy, palette.error);
+        assert_ne!(palette.background, palette.text);
+    }
+
+    #[test]
+    fn test_select_color_scheme_by_index() {
+        let mut panel = AccessibilityPanel::default();
+
+        for (i, expected) in ColorScheme::all().iter().enumerate() {
+            panel.select_color_scheme_by_index(i);
+            assert_eq!(panel.settings.color_scheme, *expected);
+        }
+    }
+
+    #[test]
+    fn test_select_color_scheme_invalid_index() {
+        let mut panel = AccessibilityPanel::default();
+        let original = panel.settings.color_scheme;
+        panel.select_color_scheme_by_index(99);
+        // Invalid index should not panic; scheme may stay unchanged
+        assert_eq!(panel.settings.color_scheme, original);
+    }
+
+    #[test]
+    fn test_increase_font_size() {
+        let mut panel = AccessibilityPanel::default();
+
+        panel.settings.font_size = FontSize::Small;
+        panel.increase_font_size();
+        assert_eq!(panel.settings.font_size, FontSize::Medium);
+
+        panel.increase_font_size();
+        assert_eq!(panel.settings.font_size, FontSize::Large);
+
+        panel.increase_font_size();
+        assert_eq!(panel.settings.font_size, FontSize::ExtraLarge);
+
+        panel.increase_font_size();
+        assert_eq!(panel.settings.font_size, FontSize::ExtraLarge);
+    }
+
+    #[test]
+    fn test_decrease_font_size() {
+        let mut panel = AccessibilityPanel::default();
+
+        panel.settings.font_size = FontSize::ExtraLarge;
+        panel.decrease_font_size();
+        assert_eq!(panel.settings.font_size, FontSize::Large);
+
+        panel.decrease_font_size();
+        assert_eq!(panel.settings.font_size, FontSize::Medium);
+
+        panel.decrease_font_size();
+        assert_eq!(panel.settings.font_size, FontSize::Small);
+
+        panel.decrease_font_size();
+        assert_eq!(panel.settings.font_size, FontSize::Small);
+    }
+
+    #[test]
+    fn test_get_palette_reflects_scheme_change() {
+        let mut panel = AccessibilityPanel::default();
+        panel.select_color_scheme_by_index(1);
+        let palette = panel.get_palette();
+        assert_eq!(panel.settings.color_scheme, ColorScheme::HighContrast);
+        assert_ne!(palette.healthy, egui::Color32::TRANSPARENT);
+    }
+
+    #[test]
+    fn test_high_contrast_palette_wcag() {
+        let mut panel = AccessibilityPanel::default();
+        panel.settings.color_scheme = ColorScheme::HighContrast;
+        let palette = panel.get_palette();
+        // High contrast: black background, white text - WCAG AAA
+        assert_eq!(palette.background, egui::Color32::from_rgb(0, 0, 0));
+        assert_eq!(palette.text, egui::Color32::from_rgb(255, 255, 255));
+    }
+
+    #[test]
+    fn test_format_font_multiplier_display() {
+        assert_eq!(
+            format_font_multiplier_display(1.0),
+            "  → Current multiplier: 1.0x"
+        );
+        assert_eq!(
+            format_font_multiplier_display(0.85),
+            "  → Current multiplier: 0.9x"
+        );
+        assert_eq!(
+            format_font_multiplier_display(1.6),
+            "  → Current multiplier: 1.6x"
+        );
     }
 }

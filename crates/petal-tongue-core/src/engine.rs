@@ -186,18 +186,29 @@ impl UniversalRenderingEngine {
         Ok(())
     }
 
-    /// Discover and register available modalities
+    /// Discover and register available modalities.
+    ///
+    /// Queries the modality registry. Returns Ok(()) with empty registry
+    /// when no modalities are registered (graceful degradation).
     pub async fn discover_modalities(&self) -> Result<()> {
-        // This will be implemented when we extract the actual modalities
-        // For now, it's a placeholder
-        tracing::info!("Discovering modalities...");
+        let count = {
+            let registry = self.modalities.read().await;
+            registry.len()
+        };
+        tracing::info!("Modality discovery complete: {count} modality(ies) available");
         Ok(())
     }
 
-    /// Discover and register available compute providers
+    /// Discover and register available compute providers.
+    ///
+    /// Queries the compute registry. Returns Ok(()) with empty registry
+    /// when no compute providers are registered (graceful degradation).
     pub async fn discover_compute(&self) -> Result<()> {
-        // Use universal_discovery to find compute providers
-        tracing::info!("Discovering compute providers...");
+        let count = {
+            let registry = self.compute.read().await;
+            registry.len()
+        };
+        tracing::info!("Compute discovery complete: {count} provider(s) available");
         Ok(())
     }
 
@@ -274,10 +285,48 @@ impl UniversalRenderingEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::modality::{ModalityCapabilities, ModalityTier};
+    use async_trait::async_trait;
+
+    struct MockModality {
+        name: &'static str,
+        tier: ModalityTier,
+    }
+
+    #[async_trait]
+    impl crate::modality::GUIModality for MockModality {
+        fn name(&self) -> &'static str {
+            self.name
+        }
+        fn is_available(&self) -> bool {
+            true
+        }
+        fn tier(&self) -> ModalityTier {
+            self.tier
+        }
+        async fn initialize(
+            &mut self,
+            _engine: Arc<UniversalRenderingEngine>,
+        ) -> anyhow::Result<()> {
+            Ok(())
+        }
+        async fn render(&mut self) -> anyhow::Result<()> {
+            Ok(())
+        }
+        async fn handle_event(&mut self, _event: EngineEvent) -> anyhow::Result<()> {
+            Ok(())
+        }
+        async fn shutdown(&mut self) -> anyhow::Result<()> {
+            Ok(())
+        }
+        fn capabilities(&self) -> ModalityCapabilities {
+            ModalityCapabilities::default()
+        }
+    }
 
     #[tokio::test]
     async fn test_engine_creation() {
-        let engine = UniversalRenderingEngine::new().unwrap();
+        let engine = UniversalRenderingEngine::new().expect("engine creation");
 
         let state = engine.state.read().await;
         assert_eq!(state.view_mode, ViewMode::Graph);
@@ -286,7 +335,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_selection_update() {
-        let engine = UniversalRenderingEngine::new().unwrap();
+        let engine = UniversalRenderingEngine::new().expect("engine creation");
 
         let mut selected = HashSet::new();
         selected.insert("node1".to_string());
@@ -301,7 +350,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_viewport_update() {
-        let engine = UniversalRenderingEngine::new().unwrap();
+        let engine = UniversalRenderingEngine::new().expect("engine creation");
 
         // Event broadcast may fail if no subscribers - that's OK in tests
         let _ = engine.set_viewport(100.0, 200.0, 1.5).await;
@@ -310,5 +359,109 @@ mod tests {
         assert!((state.viewport.center_x - 100.0).abs() < f32::EPSILON);
         assert!((state.viewport.center_y - 200.0).abs() < f32::EPSILON);
         assert!((state.viewport.zoom - 1.5).abs() < f32::EPSILON);
+    }
+
+    #[tokio::test]
+    async fn test_discover_modalities() {
+        let engine = UniversalRenderingEngine::new().expect("engine creation");
+        engine
+            .discover_modalities()
+            .await
+            .expect("discover modalities");
+    }
+
+    #[tokio::test]
+    async fn test_discover_compute() {
+        let engine = UniversalRenderingEngine::new().expect("engine creation");
+        engine.discover_compute().await.expect("discover compute");
+    }
+
+    #[tokio::test]
+    async fn test_render_auto_no_modalities() {
+        let engine = UniversalRenderingEngine::new().expect("engine creation");
+        let engine = Arc::new(engine);
+        let result = engine.clone().render_auto().await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("No modalities"));
+    }
+
+    #[tokio::test]
+    async fn test_render_unknown_modality() {
+        let engine = UniversalRenderingEngine::new().expect("engine creation");
+        let engine = Arc::new(engine);
+        let result = engine.clone().render("nonexistent").await;
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Modality not found")
+        );
+    }
+
+    #[tokio::test]
+    async fn test_render_with_registered_modality() {
+        let engine = UniversalRenderingEngine::new().expect("engine creation");
+        {
+            let modalities = engine.modalities();
+            let mut guard = modalities.write().await;
+            guard.register(Box::new(MockModality {
+                name: "test",
+                tier: ModalityTier::AlwaysAvailable,
+            }));
+        }
+        let engine = Arc::new(engine);
+        let _sub = engine.events().subscribe().await;
+        let result = engine.clone().render("test").await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_render_multi() {
+        let engine = UniversalRenderingEngine::new().expect("engine creation");
+        {
+            let modalities = engine.modalities();
+            let mut guard = modalities.write().await;
+            guard.register(Box::new(MockModality {
+                name: "a",
+                tier: ModalityTier::AlwaysAvailable,
+            }));
+            guard.register(Box::new(MockModality {
+                name: "b",
+                tier: ModalityTier::AlwaysAvailable,
+            }));
+        }
+        let engine = Arc::new(engine);
+        let _sub = engine.events().subscribe().await;
+        let result = engine.clone().render_multi(vec!["a", "b"]).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_engine_state_accessors() {
+        let engine = UniversalRenderingEngine::new().expect("engine creation");
+        let _state = engine.state();
+        let _events = engine.events();
+        let _modalities = engine.modalities();
+        let _compute = engine.compute();
+    }
+
+    #[tokio::test]
+    async fn test_view_mode_variants() {
+        assert_eq!(ViewMode::Graph, ViewMode::Graph);
+        assert_ne!(ViewMode::Graph, ViewMode::List);
+        assert_ne!(ViewMode::Graph, ViewMode::Tree);
+        assert_ne!(ViewMode::Graph, ViewMode::Timeline);
+    }
+
+    #[tokio::test]
+    async fn test_engine_state_default() {
+        let state = EngineState::default();
+        assert_eq!(state.view_mode, ViewMode::Graph);
+        assert!(state.selection.is_empty());
+        assert!((state.viewport.center_x - 0.0).abs() < f32::EPSILON);
+        assert!((state.viewport.zoom - 1.0).abs() < f32::EPSILON);
+        assert!((state.time.current - 0.0).abs() < f64::EPSILON);
+        assert!(!state.time.paused);
     }
 }

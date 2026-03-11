@@ -16,6 +16,7 @@ use petal_tongue_core::types::{PrimalHealthStatus, PrimalInfo};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
@@ -100,14 +101,15 @@ impl UnixSocketProvider {
 
             // Process entries concurrently for better performance
             let mut probe_futures = Vec::new();
+            let provider = Arc::new(self.clone());
 
             while let Some(entry) = entries.next_entry().await.ok().flatten() {
                 let path = entry.path();
 
                 // Look for .sock files (Unix domain sockets)
                 if path.extension().and_then(|s| s.to_str()) == Some("sock") {
-                    // Clone self for the async task
-                    let provider = self.clone();
+                    let provider = Arc::clone(&provider);
+                    let path = path.clone();
                     probe_futures.push(async move {
                         match provider.probe_socket(&path).await {
                             Ok(info) => {
@@ -227,7 +229,11 @@ impl UnixSocketProvider {
     }
 
     /// Parse capabilities response into `PrimalInfo`
-    #[allow(clippy::needless_pass_by_value, clippy::unnecessary_wraps)]
+    #[expect(
+        clippy::needless_pass_by_value,
+        clippy::unnecessary_wraps,
+        reason = "Value consumed by indexing; Ok wrapper for Result chain"
+    )]
     fn parse_capabilities_response(&self, path: &Path, result: Value) -> Result<PrimalInfo> {
         let capabilities: Vec<String> = result["capabilities"]
             .as_array()
@@ -269,7 +275,10 @@ impl UnixSocketProvider {
     ///
     /// We infer the primal's role from its capabilities, not from hardcoded names.
     /// This allows ANY primal to provide ANY capability without our prior knowledge.
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unused_self,
+        reason = "method for consistency with parse_capabilities_response"
+    )]
     fn infer_primal_type(&self, path: &Path, capabilities: &[String]) -> String {
         // CAPABILITY-BASED INFERENCE (no hardcoded primal names!)
         // We derive type from the socket filename, which the primal itself chose.

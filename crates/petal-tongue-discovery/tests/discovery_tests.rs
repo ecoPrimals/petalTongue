@@ -8,31 +8,35 @@ use petal_tongue_discovery::discover_visualization_providers;
 
 #[tokio::test]
 #[cfg(feature = "test-fixtures")]
-async fn test_discover_with_mock_mode() {
+async fn test_mock_provider_direct_only() {
+    // Mock provider is ONLY for test code - never used in discover_visualization_providers().
+    // Tests that need mock data should use MockVisualizationProvider directly.
+    use petal_tongue_discovery::{MockVisualizationProvider, VisualizationDataProvider};
+
+    let provider = MockVisualizationProvider::new();
+    let primals = provider.get_primals().await.unwrap();
+    assert!(!primals.is_empty(), "Mock provider should return primals");
+}
+
+#[tokio::test]
+#[cfg(not(feature = "test-fixtures"))]
+async fn test_discover_returns_ok_without_providers() {
+    // Without real providers, discover returns Ok(empty) - graceful degradation
     env_test_helpers::with_env_vars_async(
         &[
-            ("PETALTONGUE_MOCK_MODE", Some("true")),
             ("PETALTONGUE_DISCOVERY_HINTS", None),
             ("BIOMEOS_URL", None),
             ("PETALTONGUE_ENABLE_MDNS", None),
         ],
         || async {
-            let providers = discover_visualization_providers().await;
-            assert!(providers.is_ok(), "Should discover mock provider");
-            let providers = providers.unwrap();
+            let result = discover_visualization_providers().await;
             assert!(
-                !providers.is_empty(),
-                "Mock mode should return at least 1 provider"
+                result.is_ok(),
+                "Discovery should succeed (empty or with providers)"
             );
         },
     )
     .await;
-}
-
-#[tokio::test]
-#[cfg(not(feature = "test-fixtures"))]
-async fn test_discover_with_mock_mode_skipped() {
-    // Mock mode tests require --features test-fixtures
 }
 
 #[tokio::test]
@@ -57,29 +61,23 @@ async fn test_discover_without_hints() {
 
 #[tokio::test]
 #[cfg(feature = "test-fixtures")]
-async fn test_mock_mode_case_insensitive() {
-    for value in &["true", "True", "TRUE", "TrUe"] {
-        env_test_helpers::with_env_vars_async(
-            &[("PETALTONGUE_MOCK_MODE", Some(value))],
-            || async {
-                let providers = discover_visualization_providers().await;
-                assert!(providers.is_ok(), "Should work with mock mode value");
-            },
-        )
-        .await;
-    }
+async fn test_mock_provider_metadata() {
+    use petal_tongue_discovery::{MockVisualizationProvider, VisualizationDataProvider};
+
+    let provider = MockVisualizationProvider::new();
+    let metadata = provider.get_metadata();
+    assert_eq!(metadata.name, "Mock Provider");
+    assert_eq!(metadata.protocol, "mock");
 }
 
 #[tokio::test]
-async fn test_mock_mode_false() {
+async fn test_discover_without_mock_env() {
+    // No PETALTONGUE_MOCK_MODE - discovery uses real providers only
     env_test_helpers::with_env_vars_async(
-        &[
-            ("PETALTONGUE_MOCK_MODE", Some("false")),
-            ("PETALTONGUE_DISCOVERY_HINTS", None),
-            ("BIOMEOS_URL", None),
-        ],
+        &[("PETALTONGUE_DISCOVERY_HINTS", None), ("BIOMEOS_URL", None)],
         || async {
-            let _providers = discover_visualization_providers().await;
+            let result = discover_visualization_providers().await;
+            assert!(result.is_ok(), "Discovery should complete");
         },
     )
     .await;
@@ -127,22 +125,26 @@ async fn test_legacy_biomeos_url() {
 
 #[cfg(feature = "test-fixtures")]
 #[tokio::test]
-async fn test_discovery_priority() {
+async fn test_discovery_graceful_empty() {
+    // When no real providers found, discover returns Ok(empty) - graceful degradation
     env_test_helpers::with_env_vars_async(
         &[
-            ("PETALTONGUE_MOCK_MODE", Some("true")),
             (
                 "PETALTONGUE_DISCOVERY_HINTS",
-                Some("http://should-not-be-used:3000"),
+                Some("http://nonexistent:99999"),
             ),
-            ("BIOMEOS_URL", Some("http://also-should-not-be-used:3000")),
+            ("BIOMEOS_URL", None),
+            ("PETALTONGUE_ENABLE_MDNS", Some("false")),
         ],
         || async {
-            let providers = discover_visualization_providers().await.unwrap();
+            let result = discover_visualization_providers().await;
             assert!(
-                !providers.is_empty(),
-                "Mock mode should take priority and return providers"
+                result.is_ok(),
+                "Discovery should succeed even when no providers found"
             );
+            let providers = result.unwrap();
+            // May be empty (graceful) or have providers if HTTP hint connected
+            let _ = providers;
         },
     )
     .await;
@@ -189,16 +191,19 @@ async fn test_malformed_hints() {
 
 #[tokio::test]
 async fn test_concurrent_discovery_attempts() {
-    env_test_helpers::with_env_vars_async(&[("PETALTONGUE_MOCK_MODE", Some("true"))], || async {
-        let mut handles = vec![];
-        for _ in 0..5 {
-            let handle = tokio::spawn(async { discover_visualization_providers().await });
-            handles.push(handle);
-        }
-        for handle in handles {
-            let result = handle.await;
-            assert!(result.is_ok(), "Concurrent discovery should work");
-        }
-    })
+    env_test_helpers::with_env_vars_async(
+        &[("PETALTONGUE_DISCOVERY_HINTS", None), ("BIOMEOS_URL", None)],
+        || async {
+            let mut handles = vec![];
+            for _ in 0..5 {
+                let handle = tokio::spawn(async { discover_visualization_providers().await });
+                handles.push(handle);
+            }
+            for handle in handles {
+                let result = handle.await;
+                assert!(result.is_ok(), "Concurrent discovery should work");
+            }
+        },
+    )
     .await;
 }

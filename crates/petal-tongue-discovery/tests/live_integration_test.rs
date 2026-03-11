@@ -3,11 +3,10 @@
 //
 // This test validates that petalTongue can discover primals from a running biomeOS API server
 
-#![allow(deprecated)]
-
 #[cfg(feature = "legacy-http")]
-use petal_tongue_discovery::HttpVisualizationProvider;
-use petal_tongue_discovery::{VisualizationDataProvider, discover_visualization_providers};
+use petal_tongue_discovery::{
+    HttpVisualizationProvider, VisualizationDataProvider, discover_visualization_providers,
+};
 
 #[tokio::test]
 #[ignore = "Only run when biomeOS API is actually running"]

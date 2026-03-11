@@ -15,7 +15,10 @@ pub(super) fn compile_modality(scene: &SceneGraph, modality: &str) -> (serde_jso
         "svg" => {
             let compiler = SvgCompiler;
             match compiler.compile(scene) {
-                ModalityOutput::Svg(s) => (serde_json::Value::String(s), "svg".into()),
+                ModalityOutput::Svg(b) => (
+                    serde_json::Value::String(String::from_utf8_lossy(b.as_ref()).into_owned()),
+                    "svg".into(),
+                ),
                 _ => (serde_json::Value::Null, "error".into()),
             }
         }
@@ -32,9 +35,10 @@ pub(super) fn compile_modality(scene: &SceneGraph, modality: &str) -> (serde_jso
         "description" | "accessibility" => {
             let compiler = DescriptionCompiler;
             match compiler.compile(scene) {
-                ModalityOutput::Description(s) => {
-                    (serde_json::Value::String(s), "description".into())
-                }
+                ModalityOutput::Description(b) => (
+                    serde_json::Value::String(String::from_utf8_lossy(b.as_ref()).into_owned()),
+                    "description".into(),
+                ),
                 _ => (serde_json::Value::Null, "error".into()),
             }
         }
@@ -42,7 +46,10 @@ pub(super) fn compile_modality(scene: &SceneGraph, modality: &str) -> (serde_jso
             warn!("Unknown modality '{other}', falling back to SVG");
             let compiler = SvgCompiler;
             match compiler.compile(scene) {
-                ModalityOutput::Svg(s) => (serde_json::Value::String(s), "svg".into()),
+                ModalityOutput::Svg(b) => (
+                    serde_json::Value::String(String::from_utf8_lossy(b.as_ref()).into_owned()),
+                    "svg".into(),
+                ),
                 _ => (serde_json::Value::Null, "error".into()),
             }
         }

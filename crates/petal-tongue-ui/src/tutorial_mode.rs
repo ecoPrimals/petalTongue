@@ -197,27 +197,33 @@ impl TutorialMode {
 
     /// Populate a minimal working example (3 primals, 2 connections)
     ///
-    /// This shows the basic concepts without overwhelming the user.
+    /// Reflects the real ecoPrimals architecture: Unix socket IPC,
+    /// capability-based discovery, and semantic method naming.
     fn populate_minimal_example(graph: &mut GraphEngine) {
-        info!("📦 Creating minimal tutorial example...");
+        info!("Creating minimal tutorial example...");
 
-        // Add petalTongue (self-awareness!)
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+
+        let socket_dir =
+            std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/run/user/1000".to_string());
+
         graph.add_node(PrimalInfo {
             id: "petaltongue-tutorial".into(),
-            name: "petalTongue (You Are Here)".to_string(),
+            name: "petalTongue".to_string(),
             primal_type: "Visualization".to_string(),
-            endpoint: std::env::var("PETALTONGUE_TUTORIAL_ENDPOINT_COMPUTE")
-                .unwrap_or_else(|_| "http://localhost:3030".to_string()),
+            endpoint: format!("unix://{socket_dir}/petaltongue/petaltongue-nat0-default.sock"),
             capabilities: vec![
-                "visual_2d".to_string(),
-                "audio_sonification".to_string(),
-                "multi_modal_representation".to_string(),
+                "ui.render".to_string(),
+                "ui.visualization".to_string(),
+                "ui.audio".to_string(),
+                "ipc.unix-socket".to_string(),
+                "ipc.json-rpc".to_string(),
             ],
             health: PrimalHealthStatus::Healthy,
-            last_seen: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs(),
+            last_seen: now,
             endpoints: None,
             metadata: None,
             properties: {
@@ -225,8 +231,7 @@ impl TutorialMode {
                 props.insert(
                     "tutorial_note".to_string(),
                     petal_tongue_core::PropertyValue::String(
-                        "This is tutorial data. Start real primals to see actual topology."
-                            .to_string(),
+                        "Tutorial data. Start real primals to see actual topology.".to_string(),
                     ),
                 );
                 props
@@ -237,23 +242,19 @@ impl TutorialMode {
             family_id: None,
         });
 
-        // Add example Security primal
         graph.add_node(PrimalInfo {
-            id: "beardog-tutorial".into(),
-            name: "BearDog (Security)".to_string(),
+            id: "security-example".into(),
+            name: "Security Primal".to_string(),
             primal_type: "Security".to_string(),
-            endpoint: std::env::var("PETALTONGUE_TUTORIAL_ENDPOINT_SECURITY")
-                .unwrap_or_else(|_| "http://localhost:8001".to_string()),
+            endpoint: "discovered-at-runtime".to_string(),
             capabilities: vec![
-                "authentication".to_string(),
-                "authorization".to_string(),
-                "encryption".to_string(),
+                "security.auth".to_string(),
+                "security.signing".to_string(),
+                "security.encryption".to_string(),
+                "security.identity".to_string(),
             ],
             health: PrimalHealthStatus::Healthy,
-            last_seen: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs(),
+            last_seen: now,
             endpoints: None,
             metadata: None,
             properties: Properties::new(),
@@ -263,22 +264,18 @@ impl TutorialMode {
             family_id: None,
         });
 
-        // Add example Discovery primal
         graph.add_node(PrimalInfo {
-            id: "songbird-tutorial".into(),
-            name: "Songbird (Discovery)".to_string(),
+            id: "discovery-example".into(),
+            name: "Discovery Primal".to_string(),
             primal_type: "Discovery".to_string(),
-            endpoint: std::env::var("PETALTONGUE_TUTORIAL_ENDPOINT_DISCOVERY")
-                .unwrap_or_else(|_| "http://localhost:8003".to_string()),
+            endpoint: "discovered-at-runtime".to_string(),
             capabilities: vec![
-                "service_discovery".to_string(),
-                "capability_matching".to_string(),
+                "discovery.primals".to_string(),
+                "discovery.services".to_string(),
+                "orchestration.workflow".to_string(),
             ],
             health: PrimalHealthStatus::Healthy,
-            last_seen: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs(),
+            last_seen: now,
             endpoints: None,
             metadata: None,
             properties: Properties::new(),
@@ -288,26 +285,25 @@ impl TutorialMode {
             family_id: None,
         });
 
-        // Add connections
         graph.add_edge(petal_tongue_core::TopologyEdge {
             from: "petaltongue-tutorial".into(),
-            to: "songbird-tutorial".into(),
-            edge_type: "discovers_via".to_string(),
-            label: Some("Discovery".to_string()),
+            to: "discovery-example".into(),
+            edge_type: "ipc.discovery".to_string(),
+            label: Some("discovers".to_string()),
             capability: None,
             metrics: None,
         });
 
         graph.add_edge(petal_tongue_core::TopologyEdge {
-            from: "songbird-tutorial".into(),
-            to: "beardog-tutorial".into(),
-            edge_type: "finds".to_string(),
-            label: Some("Service Discovery".to_string()),
+            from: "discovery-example".into(),
+            to: "security-example".into(),
+            edge_type: "ipc.trust".to_string(),
+            label: Some("authenticates".to_string()),
             capability: None,
             metrics: None,
         });
 
-        info!("✅ Minimal example created: 3 primals, 2 connections");
+        info!("Minimal example created: 3 primals, 2 connections");
     }
 }
 
@@ -396,8 +392,8 @@ mod tests {
         // Verify tutorial nodes have correct IDs
         let ids: Vec<&str> = nodes.iter().map(|n| n.info.id.as_str()).collect();
         assert!(ids.contains(&"petaltongue-tutorial"));
-        assert!(ids.contains(&"beardog-tutorial"));
-        assert!(ids.contains(&"songbird-tutorial"));
+        assert!(ids.contains(&"security-example"));
+        assert!(ids.contains(&"discovery-example"));
     }
 
     #[test]
@@ -429,7 +425,6 @@ mod tests {
             .read()
             .expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
 
-        // Find petalTongue node (self-awareness)
         let petal_node = graph
             .nodes()
             .iter()
@@ -439,11 +434,25 @@ mod tests {
 
         let petal_node = petal_node.unwrap();
         assert_eq!(petal_node.info.primal_type, "Visualization");
+        assert_eq!(petal_node.info.name, "petalTongue");
         assert!(
             petal_node
                 .info
                 .capabilities
-                .contains(&"visual_2d".to_string())
+                .contains(&"ui.render".to_string()),
+            "Should have capability taxonomy capabilities"
+        );
+        assert!(
+            petal_node
+                .info
+                .capabilities
+                .contains(&"ipc.json-rpc".to_string()),
+            "Should advertise IPC capability"
+        );
+        assert!(
+            petal_node.info.endpoint.starts_with("unix://"),
+            "Endpoint should be a Unix socket path, got: {}",
+            petal_node.info.endpoint
         );
     }
 
@@ -457,24 +466,32 @@ mod tests {
             .expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
         let edges = graph.edges();
 
-        // Verify edge structure
         assert_eq!(edges.len(), 2);
 
-        // Should connect petalTongue → songbird → beardog
-        let has_petal_to_songbird = edges
+        let discovery_edge = edges
             .iter()
-            .any(|e| e.from == "petaltongue-tutorial" && e.to == "songbird-tutorial");
+            .find(|e| e.from == "petaltongue-tutorial" && e.to == "discovery-example");
         assert!(
-            has_petal_to_songbird,
-            "Should have petalTongue → songbird edge"
+            discovery_edge.is_some(),
+            "Should have petalTongue → discovery edge"
+        );
+        assert_eq!(
+            discovery_edge.unwrap().edge_type,
+            "ipc.discovery",
+            "Edge should use semantic type"
         );
 
-        let has_songbird_to_beardog = edges
+        let trust_edge = edges
             .iter()
-            .any(|e| e.from == "songbird-tutorial" && e.to == "beardog-tutorial");
+            .find(|e| e.from == "discovery-example" && e.to == "security-example");
         assert!(
-            has_songbird_to_beardog,
-            "Should have songbird → beardog edge"
+            trust_edge.is_some(),
+            "Should have discovery → security edge"
+        );
+        assert_eq!(
+            trust_edge.unwrap().edge_type,
+            "ipc.trust",
+            "Edge should use semantic type"
         );
     }
 
@@ -504,6 +521,68 @@ mod tests {
     }
 
     #[test]
+    fn test_minimal_example_security_capabilities() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
+
+        let graph = graph
+            .read()
+            .expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+
+        let security = graph
+            .nodes()
+            .iter()
+            .find(|n| n.info.id == "security-example")
+            .expect("Security Primal should exist");
+
+        assert_eq!(security.info.name, "Security Primal");
+        assert!(
+            security
+                .info
+                .capabilities
+                .contains(&"security.auth".to_string())
+        );
+        assert!(
+            security
+                .info
+                .capabilities
+                .contains(&"security.encryption".to_string())
+        );
+        assert_eq!(security.info.endpoint, "discovered-at-runtime");
+    }
+
+    #[test]
+    fn test_minimal_example_discovery_capabilities() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
+
+        let graph = graph
+            .read()
+            .expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+
+        let discovery = graph
+            .nodes()
+            .iter()
+            .find(|n| n.info.id == "discovery-example")
+            .expect("Discovery Primal should exist");
+
+        assert_eq!(discovery.info.name, "Discovery Primal");
+        assert!(
+            discovery
+                .info
+                .capabilities
+                .contains(&"discovery.primals".to_string())
+        );
+        assert!(
+            discovery
+                .info
+                .capabilities
+                .contains(&"orchestration.workflow".to_string())
+        );
+        assert_eq!(discovery.info.endpoint, "discovered-at-runtime");
+    }
+
+    #[test]
     fn test_tutorial_properties() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
@@ -523,6 +602,20 @@ mod tests {
             petal_node.info.properties.contains_key("tutorial_note"),
             "Should have tutorial_note property"
         );
+    }
+
+    #[test]
+    fn test_tutorial_mode_disabled() {
+        let tutorial = TutorialMode::disabled();
+        assert!(!tutorial.is_enabled());
+        assert_eq!(tutorial.scenario_name(), "scenario");
+    }
+
+    #[test]
+    fn test_should_fallback_edge_cases() {
+        assert!(should_fallback(0));
+        assert!(!should_fallback(1));
+        assert!(!should_fallback(usize::MAX));
     }
 
     #[test]

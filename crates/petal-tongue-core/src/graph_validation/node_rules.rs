@@ -126,4 +126,67 @@ mod tests {
         validate_nodes(&graph, &mut result);
         assert!(!result.is_valid());
     }
+
+    #[test]
+    fn test_primal_start_missing_primal_name_only() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        node.set_parameter("family_id".to_string(), "f1".to_string());
+        graph.add_node(node);
+        let mut result = ValidationResult::new();
+        validate_nodes(&graph, &mut result);
+        assert!(!result.is_valid());
+        assert!(
+            result
+                .errors()
+                .iter()
+                .any(|e| e.message.contains("primal_name"))
+        );
+    }
+
+    #[test]
+    fn test_verification_valid() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut node = GraphNode::new(NodeType::Verification, Vec2::zero());
+        node.set_parameter("primal_name".to_string(), "x".to_string());
+        node.set_parameter("timeout".to_string(), "30".to_string());
+        graph.add_node(node);
+        let mut result = ValidationResult::new();
+        validate_nodes(&graph, &mut result);
+        assert!(result.is_valid());
+    }
+
+    #[test]
+    fn test_waitfor_valid() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut node = GraphNode::new(NodeType::WaitFor, Vec2::zero());
+        node.set_parameter("condition".to_string(), "healthy".to_string());
+        node.set_parameter("timeout".to_string(), "30".to_string());
+        graph.add_node(node);
+        let mut result = ValidationResult::new();
+        validate_nodes(&graph, &mut result);
+        assert!(result.is_valid());
+    }
+
+    #[test]
+    fn test_conditional_valid() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut node = GraphNode::new(NodeType::Conditional, Vec2::zero());
+        node.set_parameter("condition".to_string(), "cpu > 80".to_string());
+        graph.add_node(node);
+        let mut result = ValidationResult::new();
+        validate_nodes(&graph, &mut result);
+        assert!(result.is_valid());
+    }
+
+    #[test]
+    fn test_node_error_contains_suggestion() {
+        let mut graph = VisualGraph::new("g".to_string());
+        graph.add_node(GraphNode::new(NodeType::PrimalStart, Vec2::zero()));
+        let mut result = ValidationResult::new();
+        validate_nodes(&graph, &mut result);
+        let errors = result.errors();
+        let err = errors.first().expect("should have error");
+        assert!(err.suggestion.is_some());
+    }
 }

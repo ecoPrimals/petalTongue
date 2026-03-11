@@ -337,14 +337,14 @@ impl AudioSystem {
 }
 
 impl Default for AudioSystem {
-    #[allow(deprecated)]
+    #[expect(deprecated)]
     fn default() -> Self {
         Self::new()
     }
 }
 
 #[cfg(test)]
-#[allow(deprecated)]
+#[expect(deprecated)]
 mod tests {
     use super::*;
 
@@ -412,9 +412,40 @@ mod tests {
 
     #[test]
     fn test_user_sound_provider_scan_empty_dir() {
-        let temp = tempfile::tempdir().unwrap();
+        let temp = tempfile::tempdir().expect("temp dir");
         let provider = UserSoundProvider::new(temp.path().to_path_buf());
         assert!(!provider.is_available());
         assert!(provider.available_sounds().is_empty());
+    }
+
+    #[test]
+    fn test_audio_system_set_provider_out_of_bounds() {
+        let mut system = AudioSystem::new();
+        let name_before = system.current_provider_name().to_string();
+        system.set_provider(999);
+        assert_eq!(system.current_provider_name(), name_before);
+    }
+
+    #[test]
+    fn test_audio_system_set_status_reporter() {
+        let mut system = AudioSystem::new();
+        let reporter = Arc::new(crate::status_reporter::StatusReporter::new());
+        system.set_status_reporter(reporter);
+        let providers = system.get_providers();
+        assert!(!providers.is_empty());
+    }
+
+    #[test]
+    fn test_audio_system_play_success_with_pure_rust() {
+        let system = AudioSystem::new();
+        let result = system.play("success");
+        assert!(result.is_ok(), "Pure Rust should play success: {result:?}");
+    }
+
+    #[test]
+    fn test_audio_system_play_unknown_sound_fails() {
+        let system = AudioSystem::new();
+        let result = system.play("nonexistent_sound_xyz");
+        assert!(result.is_err());
     }
 }

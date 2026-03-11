@@ -33,7 +33,7 @@ doom-core = { path = "../doom-core", optional = true }  # Doom integration for p
 # NO compile-time dependency - TRUE PRIMAL sovereignty!
 
 tokio = { workspace = true }
-tokio-tungstenite = "0.21"  # WebSocket for real-time streaming (Collaborative Intelligence)
+tokio-tungstenite = "0.21"  # Pure Rust WebSocket (Collaborative Intelligence)
 serde = { workspace = true }
 serde_json = { workspace = true }
 reqwest = { workspace = true }
@@ -50,13 +50,14 @@ egui_extras = { workspace = true }  # For table widgets in process viewer
 # EVOLVED: libc removed - framebuffer uses sysfs for dimensions (100% safe Rust)
 # system_info uses rustix (petal-tongue-core)
 uuid = { version = "1.7", features = ["v4", "serde"] }  # For graph node IDs
-users = "0.11"  # For user ID detection (Unix sockets)
 
 # Pure Rust Audio (TRUE PRIMAL sovereignty - Audio Canvas!)
 # EVOLUTION COMPLETE: Direct hardware access (like WGPU for graphics!)
 # NO rodio, NO cpal, NO ALSA - just raw /dev/snd device access!
 symphonia = { version = "0.5", default-features = false, features = ["mp3", "wav"] }  # Pure Rust audio decoding
-winit = "0.30"  # Pure Rust windowing (for display detection)
+# winit: Links to X11/Wayland C libs (x11-dl, wayland-client). REQUIRED: petal-tongue-ui is a GUI app;
+# cannot use terminal-only detection. Used for window creation and display dimension discovery.
+winit = "0.30"
 
 # ✅ EVOLUTION COMPLETE:
 # - AudioCanvas provides direct /dev/snd access (Linux)
@@ -64,11 +65,10 @@ winit = "0.30"  # Pure Rust windowing (for display detection)
 # - Zero C dependencies for audio!
 # See: src/audio_canvas.rs for implementation
 
-# External tool integrations
-sysinfo = "0.30"  # System monitoring tool
+# External tool integrations - ecoBin v3.0: pure Rust /proc parsing (see proc_stats.rs)
 
-# Pure Rust display system
-crossterm = "0.27"  # Terminal input/output for sensors
+# Pure Rust display system (crossterm = 100% pure Rust)
+crossterm = "0.28"  # Terminal input/output for sensors (rustix backend, no libc)
 terminal_size = "0.4"  # Terminal dimensions for screen sensor
 async-trait = "0.1"  # For DisplayBackend trait
 tiny-skia = "0.11"  # For egui → pixel rendering

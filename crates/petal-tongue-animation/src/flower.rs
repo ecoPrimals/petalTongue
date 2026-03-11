@@ -317,4 +317,103 @@ mod tests {
         let reaching = FlowerAnimation::ascii_reaching();
         assert!(reaching.contains('~'));
     }
+
+    #[test]
+    fn test_ascii_opening_stages() {
+        let early = FlowerAnimation::ascii_opening(10);
+        let mid = FlowerAnimation::ascii_opening(50);
+        let late = FlowerAnimation::ascii_opening(80);
+        assert!(early.contains('•'));
+        assert!(mid.contains('🌸') || mid.contains('_'));
+        assert!(late.contains('🌸') || late.contains('•'));
+    }
+
+    #[test]
+    fn test_flower_state_enum() {
+        assert!(matches!(FlowerState::Closed, FlowerState::Closed));
+        assert!(matches!(FlowerState::Opening(50), FlowerState::Opening(50)));
+        assert!(matches!(FlowerState::Open, FlowerState::Open));
+        assert!(matches!(FlowerState::Glowing, FlowerState::Glowing));
+        assert!(matches!(FlowerState::Reaching, FlowerState::Reaching));
+    }
+
+    #[test]
+    fn test_flower_frame_structure() {
+        let mut animation = FlowerAnimation::new(30);
+        let frame = animation.next_frame().expect("first frame");
+        assert!(!frame.ascii.is_empty());
+        assert_eq!(
+            frame.duration,
+            std::time::Duration::from_secs_f32(1.0 / 30.0)
+        );
+        assert!(matches!(
+            frame.state,
+            FlowerState::Closed | FlowerState::Opening(_)
+        ));
+    }
+
+    #[test]
+    fn test_calculate_state_boundaries() {
+        assert_eq!(FlowerAnimation::calculate_state(0.0), FlowerState::Closed);
+        assert_eq!(FlowerAnimation::calculate_state(0.09), FlowerState::Closed);
+        assert_eq!(FlowerAnimation::calculate_state(1.0), FlowerState::Open);
+        assert_eq!(FlowerAnimation::calculate_state(0.9), FlowerState::Open);
+        if let FlowerState::Opening(p) = FlowerAnimation::calculate_state(0.5) {
+            assert!(p > 0 && p < 100);
+        } else {
+            panic!("expected Opening");
+        }
+    }
+
+    #[test]
+    fn test_awakening_sequence_stages() {
+        let frames = generate_awakening_sequence(30);
+        let mut closed_count = 0;
+        let mut opening_count = 0;
+        let mut _open_count = 0;
+        let mut glowing_count = 0;
+        let mut reaching_count = 0;
+        for f in &frames {
+            match f.state {
+                FlowerState::Closed => closed_count += 1,
+                FlowerState::Opening(_) => opening_count += 1,
+                FlowerState::Open => _open_count += 1,
+                FlowerState::Glowing => glowing_count += 1,
+                FlowerState::Reaching => reaching_count += 1,
+            }
+        }
+        assert!(
+            closed_count + opening_count > 0,
+            "should have opening stage"
+        );
+        assert!(glowing_count > 0, "should have glowing stage");
+        assert!(reaching_count > 0, "should have reaching stage");
+    }
+
+    #[test]
+    fn test_flower_animation_different_fps() {
+        let mut anim_30 = FlowerAnimation::new(30);
+        let mut anim_60 = FlowerAnimation::new(60);
+        let frame_30 = anim_30.next_frame().expect("frame");
+        let frame_60 = anim_60.next_frame().expect("frame");
+        assert_eq!(
+            frame_30.duration,
+            std::time::Duration::from_secs_f32(1.0 / 30.0)
+        );
+        assert_eq!(
+            frame_60.duration,
+            std::time::Duration::from_secs_f32(1.0 / 60.0)
+        );
+    }
+
+    #[test]
+    fn test_flower_frame_debug() {
+        let frame = FlowerFrame {
+            ascii: "test".to_string(),
+            duration: std::time::Duration::from_secs(1),
+            state: FlowerState::Closed,
+        };
+        let debug_str = format!("{frame:?}");
+        assert!(debug_str.contains("FlowerFrame"));
+    }
 }

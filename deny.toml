@@ -8,9 +8,9 @@ db-urls = ["https://github.com/rustsec/advisory-db"]
 ignore = [
     "RUSTSEC-2023-0040", # Transitive: bincode unmaintained (via tarpc)
     "RUSTSEC-2024-0387", # Transitive: opentelemetry_api merged (via tarpc)
+    "RUSTSEC-2024-0436", # Transitive: paste unmaintained (via ratatui); pastey migration pending
     "RUSTSEC-2025-0040", # Transitive: users crate unmaintained (via eframe)
     "RUSTSEC-2025-0141", # Transitive: BytesMut reserve overflow (pending bytes update)
-    "RUSTSEC-2026-0007", # Transitive: uzers root group listing
 ]
 
 [licenses]
@@ -22,6 +22,7 @@ allow = [
     "BSD-2-Clause",
     "BSD-3-Clause",
     "BSL-1.0",
+    "CDLA-Permissive-2.0",
     "ISC",
     "MIT",
     "MPL-2.0",

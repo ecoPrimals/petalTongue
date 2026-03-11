@@ -503,6 +503,107 @@ impl Default for ProprioceptionPanel {
     }
 }
 
+/// Shared rendering: health indicator with emoji + progress bar.
+///
+/// Used by both the main proprioception panel and the panel-registry version.
+pub fn render_shared_health(ui: &mut Ui, health: &petal_tongue_core::proprioception::HealthData) {
+    let emoji = health.status.emoji();
+    let (r, g, b) = health.status.color_rgb();
+    let color = Color32::from_rgb(r, g, b);
+
+    ui.horizontal(|ui| {
+        ui.label(RichText::new(emoji).size(24.0));
+        ui.vertical(|ui| {
+            ui.label(
+                RichText::new(format!("Health: {:.1}%", health.percentage))
+                    .size(18.0)
+                    .color(color)
+                    .strong(),
+            );
+            ui.label(RichText::new(format!("Status: {}", health.status)).color(color));
+        });
+    });
+
+    ui.add(
+        ProgressBar::new(health.percentage / 100.0)
+            .show_percentage()
+            .animate(true),
+    );
+}
+
+/// Shared rendering: SAME DAVE data summary.
+///
+/// Used by both the main proprioception panel and the panel-registry version.
+pub fn render_shared_same_dave(ui: &mut Ui, data: &ProprioceptionData) {
+    ui.label(RichText::new(format!(
+        "Confidence: {:.0}%",
+        data.confidence
+    )));
+    ui.add(
+        ProgressBar::new(data.confidence / 100.0)
+            .show_percentage()
+            .animate(true),
+    );
+
+    ui.separator();
+    ui.label("SAME DAVE Assessment:");
+    ui.add_space(2.0);
+
+    ui.label("👁️ Sensory:");
+    ui.label(format!(
+        "  {} active sockets detected",
+        data.sensory.active_sockets
+    ));
+
+    ui.add_space(2.0);
+    ui.label("💭 Awareness:");
+    ui.label(format!(
+        "  Knows about {} primals",
+        data.self_awareness.knows_about
+    ));
+    if data.self_awareness.can_coordinate {
+        ui.label("  Can coordinate primals");
+    }
+
+    ui.add_space(2.0);
+    ui.label("💪 Motor:");
+    if data.motor.can_deploy {
+        ui.label("  Can deploy primals");
+    }
+    if data.motor.can_execute_graphs {
+        ui.label("  Can execute graphs");
+    }
+    if data.motor.can_coordinate_primals {
+        ui.label("  Can coordinate primals");
+    }
+
+    ui.separator();
+
+    ui.label("Core Systems:");
+    let green = Color32::from_rgb(34, 197, 94);
+    if data.self_awareness.has_security {
+        ui.colored_label(green, "  Security (Entropy Source)");
+    } else {
+        ui.colored_label(Color32::GRAY, "  Security (Entropy Source) - not available");
+    }
+    if data.self_awareness.has_discovery {
+        ui.colored_label(green, "  Discovery (Discovery Service)");
+    } else {
+        ui.colored_label(
+            Color32::GRAY,
+            "  Discovery (Discovery Service) - not available",
+        );
+    }
+    if data.self_awareness.has_compute {
+        ui.colored_label(green, "  Compute (Compute Backend)");
+    } else {
+        ui.colored_label(Color32::GRAY, "  Compute (Compute Backend) - not available");
+    }
+
+    ui.add_space(4.0);
+    ui.label(format!("Family: {}", data.family_id));
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -559,5 +660,83 @@ mod tests {
         assert!(panel.session_domain.is_none());
         panel.set_session_domain(Some("health".to_string()));
         assert_eq!(panel.session_domain.as_deref(), Some("health"));
+    }
+
+    #[test]
+    fn test_merge_local_channels_empty_no_data() {
+        let mut panel = ProprioceptionPanel::new();
+        panel.merge_local_channels(vec![], vec![]);
+        assert!(panel.data.is_none());
+    }
+
+    #[test]
+    fn test_merge_local_channels_creates_data_when_none() {
+        use petal_tongue_core::ChannelSnapshot;
+        use petal_tongue_core::channel::{ChannelDirection, ChannelModality};
+
+        let mut panel = ProprioceptionPanel::new();
+        let afferent = vec![ChannelSnapshot {
+            id: "ch1".to_string(),
+            direction: ChannelDirection::Afferent,
+            modality: ChannelModality::Ipc,
+            active: true,
+            signals_in: 10,
+            signals_out: 5,
+            throughput: 0.5,
+            node_count: 2,
+        }];
+        panel.merge_local_channels(afferent, vec![]);
+
+        assert!(panel.data.is_some());
+        let data = panel.data.as_ref().unwrap();
+        assert_eq!(data.afferent_channels.len(), 1);
+        assert_eq!(data.afferent_channels[0].id, "ch1");
+        assert!(data.efferent_channels.is_empty());
+    }
+
+    #[test]
+    fn test_merge_local_channels_updates_existing() {
+        use petal_tongue_core::ChannelSnapshot;
+        use petal_tongue_core::channel::{ChannelDirection, ChannelModality};
+
+        let mut panel = ProprioceptionPanel::new();
+        let mut data = ProprioceptionData::empty("test");
+        data.afferent_channels.push(ChannelSnapshot {
+            id: "ch1".to_string(),
+            direction: ChannelDirection::Afferent,
+            modality: ChannelModality::Ipc,
+            active: false,
+            signals_in: 0,
+            signals_out: 0,
+            throughput: 0.0,
+            node_count: 0,
+        });
+        panel.data = Some(data);
+
+        panel.merge_local_channels(
+            vec![ChannelSnapshot {
+                id: "ch1".to_string(),
+                direction: ChannelDirection::Afferent,
+                modality: ChannelModality::Ipc,
+                active: true,
+                signals_in: 100,
+                signals_out: 50,
+                throughput: 0.8,
+                node_count: 5,
+            }],
+            vec![],
+        );
+
+        let data = panel.data.as_ref().unwrap();
+        assert_eq!(data.afferent_channels.len(), 1);
+        assert!(data.afferent_channels[0].active);
+        assert_eq!(data.afferent_channels[0].signals_in, 100);
+    }
+
+    #[test]
+    fn test_panel_default() {
+        let panel = ProprioceptionPanel::default();
+        assert!(panel.data.is_none());
+        assert_eq!(panel.current_mode, "default");
     }
 }

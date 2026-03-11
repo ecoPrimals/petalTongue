@@ -256,87 +256,28 @@ pub fn render_audio_panel(
                 }
                 ui.add_space(8.0);
 
+                let has_user_sounds = std::env::var("PETALTONGUE_SOUNDS_DIR").is_ok();
+                let has_toadstool = std::env::var("TOADSTOOL_URL").is_ok();
+
+                let tier_label = if has_toadstool {
+                    "Active tier: Toadstool Synthesis"
+                } else if has_user_sounds {
+                    "Active tier: User Sound Files"
+                } else {
+                    "Active tier: Pure Rust Tones"
+                };
+
                 ui.label(
-                    egui::RichText::new("✅ Audio System: Multi-Tier")
+                    egui::RichText::new(tier_label)
                         .size(13.0)
-                        .strong(),
+                        .strong()
+                        .color(egui::Color32::from_rgb(100, 255, 150)),
                 );
-                ui.add_space(4.0);
-
-                ui.horizontal(|ui| {
-                    ui.label("1️⃣");
-                    ui.vertical(|ui| {
-                        ui.label(
-                            egui::RichText::new("Pure Rust Tones")
-                                .strong()
-                                .color(egui::Color32::from_rgb(100, 255, 150)),
-                        );
-                        ui.label(
-                            egui::RichText::new("Always available, no dependencies")
-                                .size(10.0)
-                                .color(egui::Color32::GRAY),
-                        );
-                        ui.label(
-                            egui::RichText::new("8 UI sounds (success, error, notification, etc.)")
-                                .size(10.0)
-                                .color(egui::Color32::GRAY),
-                        );
-                    });
-                });
-
-                ui.add_space(6.0);
-                ui.horizontal(|ui| {
-                    ui.label("2️⃣");
-                    ui.vertical(|ui| {
-                        ui.label(egui::RichText::new("User Sound Files").strong());
-                        ui.label(
-                            egui::RichText::new("Set PETALTONGUE_SOUNDS_DIR=<path>")
-                                .size(10.0)
-                                .color(egui::Color32::GRAY),
-                        );
-                        ui.label(
-                            egui::RichText::new("Supports WAV, MP3, OGG files")
-                                .size(10.0)
-                                .color(egui::Color32::GRAY),
-                        );
-                    });
-                });
-
-                ui.add_space(6.0);
-                ui.horizontal(|ui| {
-                    ui.label("3️⃣");
-                    ui.vertical(|ui| {
-                        ui.label(egui::RichText::new("Toadstool Synthesis").strong());
-                        ui.label(
-                            egui::RichText::new("Set TOADSTOOL_URL=http://localhost:port")
-                                .size(10.0)
-                                .color(egui::Color32::GRAY),
-                        );
-                        ui.label(
-                            egui::RichText::new("Advanced music, voice, soundscapes")
-                                .size(10.0)
-                                .color(egui::Color32::GRAY),
-                        );
-                    });
-                });
-
-                ui.add_space(8.0);
-                ui.separator();
-                ui.add_space(4.0);
-
-                ui.label(egui::RichText::new("💡 Quick Start:").size(12.0).strong());
+                ui.add_space(2.0);
                 ui.label(
-                    egui::RichText::new("Pure Rust audio works NOW (mathematical waveforms)")
-                        .size(11.0)
-                        .color(egui::Color32::from_rgb(200, 220, 210)),
-                );
-                ui.label(
-                    egui::RichText::new(
-                        "For advanced features, connect Toadstool or add sound files",
-                    )
-                    .size(10.0)
-                    .italics()
-                    .color(egui::Color32::GRAY),
+                    egui::RichText::new("Tiers: Pure Rust (built-in) → User sounds → Toadstool")
+                        .size(10.0)
+                        .color(egui::Color32::GRAY),
                 );
             });
         ui.add_space(12.0);
@@ -410,27 +351,19 @@ pub fn render_audio_panel(
     ui.separator();
     ui.add_space(8.0);
 
-    // Instrument legend
+    // Instrument mapping — adapts dynamically per node via describe_node_audio()
     ui.heading(egui::RichText::new("🎹 Instrument Mapping").size(16.0));
     ui.add_space(4.0);
     ui.label(
-        egui::RichText::new("🐻 Security → Deep Bass")
-            .color(egui::Color32::from_rgb(100, 150, 255)),
+        egui::RichText::new("Audio adapts to each primal's type and capabilities.")
+            .size(12.0)
+            .color(egui::Color32::from_rgb(200, 200, 200)),
     );
     ui.label(
-        egui::RichText::new("🍄 Compute → Rhythmic Drums")
-            .color(egui::Color32::from_rgb(255, 200, 100)),
-    );
-    ui.label(
-        egui::RichText::new("🐦 Discovery → Light Chimes")
-            .color(egui::Color32::from_rgb(150, 255, 150)),
-    );
-    ui.label(
-        egui::RichText::new("🏠 Storage → Sustained Strings")
-            .color(egui::Color32::from_rgb(255, 150, 255)),
-    );
-    ui.label(
-        egui::RichText::new("🐿️ AI → High Synth").color(egui::Color32::from_rgb(255, 100, 100)),
+        egui::RichText::new("Select a node to hear its unique representation.")
+            .size(11.0)
+            .italics()
+            .color(egui::Color32::GRAY),
     );
 
     ui.add_space(12.0);
@@ -448,10 +381,13 @@ pub fn render_audio_panel(
     ui.add_space(6.0);
 
     if ui.button("💾 Export Soundscape to WAV").clicked() {
-        // Export graph soundscape
         let soundscape = audio_renderer.generate_audio_attributes();
 
-        let filepath = std::path::PathBuf::from("graph_soundscape.wav");
+        let export_dir = std::path::PathBuf::from("audio_export");
+        if !export_dir.exists() {
+            let _ = std::fs::create_dir_all(&export_dir);
+        }
+        let filepath = export_dir.join("graph_soundscape.wav");
         if let Err(e) = audio_generator.export_soundscape(&filepath, &soundscape, 3.0) {
             tracing::error!("Failed to export soundscape: {}", e);
         } else {
@@ -461,7 +397,7 @@ pub fn render_audio_panel(
 
     ui.add_space(4.0);
     ui.label(
-        egui::RichText::new("(File will be saved to ./audio_export/)")
+        egui::RichText::new("(Saves to ./audio_export/graph_soundscape.wav)")
             .size(10.0)
             .italics()
             .color(egui::Color32::GRAY),
@@ -530,7 +466,7 @@ pub fn render_capability_panel(
             ui.add_space(8.0);
             ui.label(egui::RichText::new("💡 Why This Matters").size(14.0).strong());
             ui.add_space(4.0);
-            ui.label("In critical situations (wartime AR, disaster response, accessibility),\nfalse capability claims are dangerous. This system is honest about what it can do.");
+            ui.label("Honest self-assessment ensures reliability.\nThis system reports only capabilities it has verified.");
         });
 }
 
@@ -567,5 +503,21 @@ mod tests {
     #[test]
     fn modality_tested_text_false() {
         assert_eq!(modality_tested_text(false), "not tested");
+    }
+
+    #[test]
+    fn modality_status_icon_not_initialized() {
+        let (icon, _) = modality_status_icon_and_color(ModalityStatus::NotInitialized);
+        assert_eq!(icon, "⚠️");
+    }
+
+    #[test]
+    fn modality_status_colors_distinct() {
+        let (_, avail) = modality_status_icon_and_color(ModalityStatus::Available);
+        let (_, unavail) = modality_status_icon_and_color(ModalityStatus::Unavailable);
+        let (_, disabled) = modality_status_icon_and_color(ModalityStatus::Disabled);
+        assert_ne!(avail, unavail);
+        assert_ne!(avail, disabled);
+        assert_ne!(unavail, disabled);
     }
 }

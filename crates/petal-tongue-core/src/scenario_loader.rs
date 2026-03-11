@@ -129,9 +129,258 @@ impl LoadedScenario {
                 "airspring" | "airSpring" => return "agriculture",
                 "groundspring" | "groundSpring" => return "measurement",
                 "neuralspring" | "neuralSpring" => return "neural",
+                "ludospring" | "ludoSpring" => return "game",
                 _ => {}
             }
         }
         "measurement"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    const MINIMAL_SCENARIO: &str = r#"{
+        "name": "Test Scenario",
+        "description": "A test scenario",
+        "ecosystem": {
+            "primals": [
+                {
+                    "id": "p1",
+                    "name": "Primal 1",
+                    "type": "healthspring",
+                    "family": "healthSpring",
+                    "data_channels": [],
+                    "clinical_ranges": []
+                }
+            ]
+        }
+    }"#;
+
+    #[test]
+    fn from_json_minimal() {
+        let scenario = LoadedScenario::from_json(MINIMAL_SCENARIO).expect("parse");
+        assert_eq!(scenario.name, "Test Scenario");
+        assert_eq!(scenario.description, "A test scenario");
+        assert_eq!(scenario.ecosystem.primals.len(), 1);
+        assert_eq!(scenario.ecosystem.primals[0].id, "p1");
+        assert_eq!(scenario.ecosystem.primals[0].family, "healthSpring");
+    }
+
+    #[test]
+    fn from_json_with_defaults() {
+        let json = r#"{
+            "name": "Minimal",
+            "description": "Desc",
+            "ecosystem": {"primals": []}
+        }"#;
+        let scenario = LoadedScenario::from_json(json).expect("parse");
+        assert!(scenario.version.is_empty());
+        assert!(scenario.mode.is_empty());
+        assert!(scenario.domain.is_none());
+        assert!(scenario.edges.is_empty());
+    }
+
+    #[test]
+    fn from_json_with_data_channels() {
+        let json = r#"{
+            "name": "With Channels",
+            "description": "Desc",
+            "ecosystem": {
+                "primals": [{
+                    "id": "p1",
+                    "name": "P1",
+                    "data_channels": [{
+                        "channel_type": "timeseries",
+                        "id": "ts1",
+                        "label": "Glucose",
+                        "x_label": "Time",
+                        "y_label": "mg/dL",
+                        "unit": "mg/dL",
+                        "x_values": [0.0, 1.0],
+                        "y_values": [90.0, 95.0]
+                    }],
+                    "clinical_ranges": [{
+                        "label": "Normal",
+                        "min": 70.0,
+                        "max": 100.0,
+                        "status": "normal"
+                    }]
+                }]
+            }
+        }"#;
+        let scenario = LoadedScenario::from_json(json).expect("parse");
+        let bindings = scenario.all_bindings();
+        assert_eq!(bindings.len(), 1);
+        let thresholds = scenario.all_thresholds();
+        assert_eq!(thresholds.len(), 1);
+        assert_eq!(thresholds[0].label, "Normal");
+    }
+
+    #[test]
+    fn inferred_domain_from_metadata() {
+        let json = r#"{
+            "name": "D",
+            "description": "D",
+            "domain": "health",
+            "ecosystem": {"primals": []}
+        }"#;
+        let scenario = LoadedScenario::from_json(json).expect("parse");
+        assert_eq!(scenario.inferred_domain(), "health");
+    }
+
+    #[test]
+    fn inferred_domain_from_family_healthspring() {
+        let json = r#"{
+            "name": "D",
+            "description": "D",
+            "ecosystem": {
+                "primals": [{"id": "p1", "name": "P1", "family": "healthspring"}]
+            }
+        }"#;
+        let scenario = LoadedScenario::from_json(json).expect("parse");
+        assert_eq!(scenario.inferred_domain(), "health");
+    }
+
+    #[test]
+    fn inferred_domain_from_family_wetspring() {
+        let json = r#"{
+            "name": "D",
+            "description": "D",
+            "ecosystem": {
+                "primals": [{"id": "p1", "name": "P1", "family": "wetSpring"}]
+            }
+        }"#;
+        let scenario = LoadedScenario::from_json(json).expect("parse");
+        assert_eq!(scenario.inferred_domain(), "ecology");
+    }
+
+    #[test]
+    fn inferred_domain_from_family_hotspring() {
+        let json = r#"{
+            "name": "D",
+            "description": "D",
+            "ecosystem": {
+                "primals": [{"id": "p1", "name": "P1", "family": "hotSpring"}]
+            }
+        }"#;
+        let scenario = LoadedScenario::from_json(json).expect("parse");
+        assert_eq!(scenario.inferred_domain(), "physics");
+    }
+
+    #[test]
+    fn inferred_domain_from_family_airspring() {
+        let json = r#"{
+            "name": "D",
+            "description": "D",
+            "ecosystem": {
+                "primals": [{"id": "p1", "name": "P1", "family": "airSpring"}]
+            }
+        }"#;
+        let scenario = LoadedScenario::from_json(json).expect("parse");
+        assert_eq!(scenario.inferred_domain(), "agriculture");
+    }
+
+    #[test]
+    fn inferred_domain_from_family_groundspring() {
+        let json = r#"{
+            "name": "D",
+            "description": "D",
+            "ecosystem": {
+                "primals": [{"id": "p1", "name": "P1", "family": "groundSpring"}]
+            }
+        }"#;
+        let scenario = LoadedScenario::from_json(json).expect("parse");
+        assert_eq!(scenario.inferred_domain(), "measurement");
+    }
+
+    #[test]
+    fn inferred_domain_from_family_neuralspring() {
+        let json = r#"{
+            "name": "D",
+            "description": "D",
+            "ecosystem": {
+                "primals": [{"id": "p1", "name": "P1", "family": "neuralSpring"}]
+            }
+        }"#;
+        let scenario = LoadedScenario::from_json(json).expect("parse");
+        assert_eq!(scenario.inferred_domain(), "neural");
+    }
+
+    #[test]
+    fn inferred_domain_from_family_ludospring() {
+        let json = r#"{
+            "name": "D",
+            "description": "D",
+            "ecosystem": {
+                "primals": [{"id": "p1", "name": "P1", "family": "ludoSpring"}]
+            }
+        }"#;
+        let scenario = LoadedScenario::from_json(json).expect("parse");
+        assert_eq!(scenario.inferred_domain(), "game");
+    }
+
+    #[test]
+    fn inferred_domain_fallback_measurement() {
+        let json = r#"{
+            "name": "D",
+            "description": "D",
+            "ecosystem": {
+                "primals": [{"id": "p1", "name": "P1", "family": "unknown"}]
+            }
+        }"#;
+        let scenario = LoadedScenario::from_json(json).expect("parse");
+        assert_eq!(scenario.inferred_domain(), "measurement");
+    }
+
+    #[test]
+    fn from_file_nonexistent_fails() {
+        let result = LoadedScenario::from_file(Path::new("/nonexistent/path/scenario.json"));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn from_json_invalid_fails() {
+        let result = LoadedScenario::from_json("{invalid}");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn scenario_node_defaults() {
+        let json = r#"{
+            "name": "D",
+            "description": "D",
+            "ecosystem": {
+                "primals": [{"id": "p1", "name": "P1"}]
+            }
+        }"#;
+        let scenario = LoadedScenario::from_json(json).expect("parse");
+        let node = &scenario.ecosystem.primals[0];
+        assert!(node.node_type.is_empty());
+        assert!(node.family.is_empty());
+        assert!(node.status.is_empty());
+        assert_eq!(node.health, 0);
+        assert!(node.data_channels.is_empty());
+        assert!(node.clinical_ranges.is_empty());
+        assert!(node.capabilities.is_empty());
+    }
+
+    #[test]
+    fn scenario_edge_parsing() {
+        let json = r#"{
+            "name": "D",
+            "description": "D",
+            "ecosystem": {"primals": []},
+            "edges": [
+                {"from": "a", "to": "b", "edge_type": "feeds", "label": "feeds"}
+            ]
+        }"#;
+        let scenario = LoadedScenario::from_json(json).expect("parse");
+        assert_eq!(scenario.edges.len(), 1);
+        assert_eq!(scenario.edges[0].from, "a");
+        assert_eq!(scenario.edges[0].to, "b");
+        assert_eq!(scenario.edges[0].edge_type, "feeds");
     }
 }

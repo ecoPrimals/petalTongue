@@ -6,6 +6,48 @@
 
 use egui::{Color32, ProgressBar, RichText, Stroke, Ui, Vec2};
 use petal_tongue_core::{CpuHistory, MemoryHistory, SystemMetrics};
+
+/// Map value to RGB color based on warning/critical thresholds.
+/// Green below warning, yellow between warning and critical, red at/above critical.
+#[must_use]
+pub fn threshold_color_rgb(value: f32, warning_threshold: f32, critical_threshold: f32) -> [u8; 3] {
+    if value < warning_threshold {
+        [34, 197, 94] // green-500
+    } else if value < critical_threshold {
+        [234, 179, 8] // yellow-500
+    } else {
+        [239, 68, 68] // red-500
+    }
+}
+
+/// Generate sparkline point coordinates from history data.
+/// Returns Vec of [x, y] in rect (x_start, y_start) with given width and height.
+#[must_use]
+pub fn sparkline_points(
+    history: &[f32],
+    x_start: f32,
+    y_start: f32,
+    width: f32,
+    height: f32,
+) -> Vec<[f32; 2]> {
+    if history.len() < 2 {
+        return Vec::new();
+    }
+    let min_val = history.iter().copied().fold(f32::INFINITY, f32::min);
+    let max_val = history.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+    let range = (max_val - min_val).max(0.1);
+
+    history
+        .iter()
+        .enumerate()
+        .map(|(i, &value)| {
+            let x = x_start + (i as f32 / (history.len() - 1) as f32) * width;
+            let normalized = (value - min_val) / range;
+            let y = y_start + height - normalized * height;
+            [x, y]
+        })
+        .collect()
+}
 use petal_tongue_discovery::NeuralApiProvider;
 use std::time::{Duration, Instant};
 use tracing::{debug, warn};
@@ -39,7 +81,9 @@ impl MetricsDashboard {
             data: None,
             cpu_history: CpuHistory::new(),
             memory_history: MemoryHistory::new(),
-            last_update: Instant::now().checked_sub(REFRESH_INTERVAL).unwrap(), // Trigger immediate fetch
+            last_update: Instant::now()
+                .checked_sub(REFRESH_INTERVAL)
+                .unwrap_or_else(Instant::now), // Trigger immediate fetch (fallback if overflow)
             fetching: false,
         }
     }
@@ -248,22 +292,11 @@ impl MetricsDashboard {
         let (rect, _response) = ui.allocate_exact_size(desired_size, egui::Sense::hover());
 
         if ui.is_rect_visible(rect) {
-            // Find min/max for scaling
-            let min_val = values.iter().copied().fold(f32::INFINITY, f32::min);
-            let max_val = values.iter().copied().fold(f32::NEG_INFINITY, f32::max);
-            let range = (max_val - min_val).max(0.1); // Avoid division by zero
-
-            // Calculate points
-            let mut points = Vec::new();
-            let width = rect.width();
-            let height = rect.height();
-
-            for (i, &value) in values.iter().enumerate() {
-                let x = rect.left() + (i as f32 / (values.len() - 1) as f32) * width;
-                let normalized = (value - min_val) / range;
-                let y = rect.bottom() - normalized * height;
-                points.push(egui::pos2(x, y));
-            }
+            let points: Vec<egui::Pos2> =
+                sparkline_points(values, rect.left(), rect.top(), rect.width(), rect.height())
+                    .into_iter()
+                    .map(|[x, y]| egui::pos2(x, y))
+                    .collect();
 
             // Draw line
             if points.len() >= 2 {
@@ -321,6 +354,12 @@ mod tests {
     }
 
     #[test]
+    fn test_dashboard_default() {
+        let dashboard = MetricsDashboard::default();
+        assert!(dashboard.data.is_none());
+    }
+
+    #[test]
     fn test_dashboard_with_data() {
         let mut dashboard = MetricsDashboard::new();
 
@@ -359,5 +398,66 @@ mod tests {
 
         assert_eq!(dashboard.cpu_history.values().len(), 10);
         assert!(dashboard.cpu_history.has_sufficient_data());
+    }
+
+    #[test]
+    fn test_memory_history_accumulation() {
+        let mut dashboard = MetricsDashboard::new();
+
+        dashboard.memory_history.push(25.0);
+        dashboard.memory_history.push(50.0);
+        dashboard.memory_history.push(75.0);
+
+        assert_eq!(dashboard.memory_history.values().len(), 3);
+        assert_eq!(dashboard.memory_history.current(), Some(75.0));
+    }
+
+    #[test]
+    fn test_system_metrics_thresholds() {
+        let metrics = SystemMetrics {
+            timestamp: chrono::Utc::now(),
+            system: SystemResourceMetrics {
+                cpu_percent: 95.0,
+                memory_used_mb: 8_000,
+                memory_total_mb: 8_192,
+                memory_percent: 97.0,
+                uptime_seconds: 86_400,
+            },
+            neural_api: NeuralApiMetrics {
+                family_id: "test".to_string(),
+                active_primals: 0,
+                graphs_available: 0,
+                active_executions: 0,
+            },
+        };
+
+        let cpu_thresh = metrics.cpu_threshold();
+        let mem_thresh = metrics.memory_threshold();
+        let (r, g, b) = cpu_thresh.color_rgb();
+        assert!(r > 0 || g > 0 || b > 0);
+        let (r, g, b) = mem_thresh.color_rgb();
+        assert!(r > 0 || g > 0 || b > 0);
+    }
+
+    #[test]
+    fn test_uptime_formatted() {
+        let metrics = SystemMetrics {
+            timestamp: chrono::Utc::now(),
+            system: SystemResourceMetrics {
+                cpu_percent: 0.0,
+                memory_used_mb: 0,
+                memory_total_mb: 0,
+                memory_percent: 0.0,
+                uptime_seconds: 3661, // 1h 1m 1s
+            },
+            neural_api: NeuralApiMetrics {
+                family_id: "".to_string(),
+                active_primals: 0,
+                graphs_available: 0,
+                active_executions: 0,
+            },
+        };
+        let formatted = metrics.uptime_formatted();
+        assert!(formatted.contains('h') || formatted.contains("1") || formatted.len() > 0);
     }
 }

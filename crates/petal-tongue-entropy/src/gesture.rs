@@ -211,7 +211,6 @@ impl GestureEntropyCapture {
     }
 
     fn calculate_motion_entropy(&self) -> f64 {
-        // Stub: Calculate variance of motion magnitudes
         if self.accelerometer.is_empty() {
             return 0.0;
         }
@@ -388,5 +387,85 @@ mod tests {
         ];
         let complexity = gesture_complexity(&points, &timestamps);
         assert!(complexity > 0.0 && complexity <= 1.0);
+    }
+
+    #[test]
+    fn test_angle_threshold_direction_changes() {
+        // Zigzag pattern: multiple direction changes > ANGLE_THRESHOLD (0.5 rad)
+        let points = vec![
+            Point2D { x: 0.0, y: 0.0 },
+            Point2D { x: 100.0, y: 0.0 },   // right
+            Point2D { x: 100.0, y: 100.0 }, // down
+            Point2D { x: 0.0, y: 100.0 },   // left
+        ];
+        let timestamps = vec![
+            Duration::from_millis(0),
+            Duration::from_millis(100),
+            Duration::from_millis(200),
+            Duration::from_millis(300),
+        ];
+        let complexity = gesture_complexity(&points, &timestamps);
+        assert!(
+            complexity > 0.3,
+            "Zigzag should have notable direction changes"
+        );
+    }
+
+    #[test]
+    fn test_gesture_bucketing_logic() {
+        // Points in multiple directions - should hit multiple angle buckets
+        let points = vec![
+            Point2D { x: 0.0, y: 0.0 },
+            Point2D { x: 10.0, y: 0.0 },   // 0 rad
+            Point2D { x: 10.0, y: 10.0 },  // π/2
+            Point2D { x: 0.0, y: 10.0 },   // π
+            Point2D { x: -10.0, y: 10.0 }, // 3π/4
+        ];
+        let entropy = analyze_gesture_entropy(&points);
+        assert!(entropy > 0.0);
+    }
+
+    #[test]
+    fn test_gesture_complexity_timestamp_mismatch() {
+        // Timestamps length != points - should use default 0.5 for speed component
+        let points = vec![Point2D { x: 0.0, y: 0.0 }, Point2D { x: 100.0, y: 100.0 }];
+        let timestamps = vec![Duration::from_millis(0)]; // mismatch
+        let complexity = gesture_complexity(&points, &timestamps);
+        assert!(complexity > 0.0 && complexity <= 1.0);
+    }
+
+    #[test]
+    fn test_gesture_finalize() {
+        let mut capture = GestureEntropyCapture::new();
+        capture.add_touch(TouchEvent {
+            position: Point2D { x: 50.0, y: 50.0 },
+            pressure: 0.5,
+            timestamp: Duration::from_millis(0),
+        });
+        capture.add_touch(TouchEvent {
+            position: Point2D { x: 100.0, y: 100.0 },
+            pressure: 0.6,
+            timestamp: Duration::from_millis(100),
+        });
+        let data = capture.finalize().unwrap();
+        assert_eq!(data.touch_events.len(), 2);
+        assert!(data.quality_metrics.overall_quality >= 0.0);
+    }
+
+    #[test]
+    fn test_gesture_pattern_uniqueness_from_touch() {
+        let mut capture = GestureEntropyCapture::new();
+        for i in 0u16..5 {
+            capture.add_touch(TouchEvent {
+                position: Point2D {
+                    x: f32::from(i) * 20.0,
+                    y: f32::from(i) * 30.0,
+                },
+                pressure: 0.5,
+                timestamp: Duration::from_millis(u64::from(i * 50)),
+            });
+        }
+        let quality = capture.assess_quality();
+        assert!(quality.pattern_uniqueness >= 0.0);
     }
 }

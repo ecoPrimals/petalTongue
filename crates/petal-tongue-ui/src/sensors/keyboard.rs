@@ -125,6 +125,7 @@ fn map_modifiers(mods: KeyModifiers) -> Modifiers {
 }
 
 /// Discover keyboard capabilities
+#[expect(clippy::unused_async, reason = "async for trait compatibility")]
 pub async fn discover() -> Option<KeyboardSensor> {
     // Check if stdin is a terminal
     if std::io::stdin().is_terminal() {

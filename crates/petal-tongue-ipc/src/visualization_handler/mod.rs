@@ -19,7 +19,9 @@ mod state;
 mod stream;
 mod types;
 
-pub use interaction::{InteractionEventNotification, InteractionSubscriberRegistry};
+pub use interaction::{
+    InteractionEventNotification, InteractionSubscriberRegistry, SensorStreamRegistry,
+};
 pub use state::{RenderSession, VisualizationState};
 pub use stream::{apply_operation, binding_id};
 pub use types::{

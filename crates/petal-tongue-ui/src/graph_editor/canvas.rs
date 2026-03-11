@@ -10,6 +10,28 @@ use super::edge::GraphEdge;
 use super::graph::Graph;
 use super::node::GraphNode;
 
+// --- Pure logic (testable, no egui) ---
+
+/// Editor node fill and stroke colors from base color and state.
+/// Returns (fill_rgb, stroke_rgb). Uses multiply factors: selected=0.8, else 0.6.
+#[must_use]
+pub(crate) fn editor_node_colors(
+    base_rgb: [u8; 3],
+    selected: bool,
+    _hovered: bool,
+) -> ([u8; 3], [u8; 3]) {
+    let factor = if selected { 0.8 } else { 0.6 };
+    let fill_rgb = [
+        (f32::from(base_rgb[0]) * factor).round() as u8,
+        (f32::from(base_rgb[1]) * factor).round() as u8,
+        (f32::from(base_rgb[2]) * factor).round() as u8,
+    ];
+    let stroke_rgb = if selected { [255, 255, 255] } else { base_rgb };
+    (fill_rgb, stroke_rgb)
+}
+
+// --- Rendering (uses egui) ---
+
 /// Graph Canvas - Interactive graph visualization and editing
 ///
 /// Provides drag-and-drop, zoom, pan, and node manipulation.
@@ -137,33 +159,21 @@ impl GraphCanvas {
 
         // Check if node is selected
         let is_selected = self.selected_nodes.contains(&node.id);
+        let is_hovered = node_rect.contains(response.hover_pos().unwrap_or(Pos2::ZERO));
 
-        // Node color based on state
-        let rgb = node.display_color();
-        let node_color = Color32::from_rgb(rgb[0], rgb[1], rgb[2]);
+        // Node color based on state (pure logic)
+        let base_rgb = node.display_color();
+        let (fill_rgb, stroke_rgb) = editor_node_colors(base_rgb, is_selected, is_hovered);
+        let fill_color = Color32::from_rgb(fill_rgb[0], fill_rgb[1], fill_rgb[2]);
+        let stroke_color = Color32::from_rgb(stroke_rgb[0], stroke_rgb[1], stroke_rgb[2]);
 
         // Draw node rectangle
-        painter.rect_filled(
-            node_rect,
-            5.0,
-            if is_selected {
-                node_color.linear_multiply(0.8)
-            } else {
-                node_color.linear_multiply(0.6)
-            },
-        );
+        painter.rect_filled(node_rect, 5.0, fill_color);
 
         painter.rect_stroke(
             node_rect,
             5.0,
-            Stroke::new(
-                if is_selected { 3.0 } else { 1.0 },
-                if is_selected {
-                    Color32::WHITE
-                } else {
-                    node_color
-                },
-            ),
+            Stroke::new(if is_selected { 3.0 } else { 1.0 }, stroke_color),
         );
 
         // Draw node label
@@ -289,5 +299,33 @@ impl GraphCanvas {
     pub fn reset_view(&mut self) {
         self.pan = Vec2::ZERO;
         self.zoom = 1.0;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::editor_node_colors;
+
+    #[test]
+    fn test_editor_node_colors_selected() {
+        let base = [100, 150, 200];
+        let (fill, stroke) = editor_node_colors(base, true, false);
+        assert_eq!(fill, [80, 120, 160]); // 0.8 * each
+        assert_eq!(stroke, [255, 255, 255]);
+    }
+
+    #[test]
+    fn test_editor_node_colors_not_selected() {
+        let base = [100, 150, 200];
+        let (fill, stroke) = editor_node_colors(base, false, false);
+        assert_eq!(fill, [60, 90, 120]); // 0.6 * each
+        assert_eq!(stroke, base);
+    }
+
+    #[test]
+    fn test_editor_node_colors_hovered_unused() {
+        let base = [128, 128, 128];
+        let (fill, _) = editor_node_colors(base, false, true);
+        assert_eq!(fill, [77, 77, 77]); // 0.6 * 128 rounded
     }
 }

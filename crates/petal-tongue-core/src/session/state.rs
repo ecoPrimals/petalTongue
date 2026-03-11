@@ -318,10 +318,10 @@ mod tests {
     fn test_save_load_roundtrip() {
         let id = InstanceId::new();
         let state = SessionState::new(id);
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().expect("create temp dir");
         let path = dir.path().join("session.ron");
-        state.save(&path).unwrap();
-        let loaded = SessionState::load(&path).unwrap();
+        state.save(&path).expect("save session");
+        let loaded = SessionState::load(&path).expect("load session");
         assert_eq!(loaded.version, state.version);
         assert_eq!(loaded.instance_id, state.instance_id);
     }
@@ -330,5 +330,71 @@ mod tests {
     fn test_load_nonexistent() {
         let result = SessionState::load(PathBuf::from("/nonexistent/path.ron").as_path());
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_session_state_export_import_alias() {
+        let id = InstanceId::new();
+        let state = SessionState::new(id);
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let path = dir.path().join("export.ron");
+        state.export(&path).expect("export");
+        let imported = SessionState::import(&path).expect("import");
+        assert_eq!(imported.version, state.version);
+    }
+
+    #[test]
+    fn test_session_state_touch_updates_timestamp() {
+        let id = InstanceId::new();
+        let mut state = SessionState::new(id);
+        let age_before = state.age_seconds();
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        state.touch();
+        let age_after = state.age_seconds();
+        assert!(age_after <= age_before + 1, "touch should reset timestamp");
+    }
+
+    #[test]
+    fn test_session_state_add_metadata_overwrites() {
+        let id = InstanceId::new();
+        let mut state = SessionState::new(id);
+        state.add_metadata("k", "v1");
+        state.add_metadata("k", "v2");
+        assert_eq!(state.metadata.get("k"), Some(&"v2".to_string()));
+    }
+
+    #[test]
+    fn test_session_state_merge_graph_duplicate_nodes_skipped() {
+        let id1 = InstanceId::new();
+        let id2 = InstanceId::new();
+        let mut state1 = SessionState::new(id1);
+        let mut state2 = SessionState::new(id2);
+        state1.nodes.push(PrimalInfo::new(
+            "dup",
+            "A",
+            "T1",
+            "http://localhost:1",
+            vec![],
+            PrimalHealthStatus::Healthy,
+            0,
+        ));
+        state2.nodes.push(PrimalInfo::new(
+            "dup",
+            "B",
+            "T1",
+            "http://localhost:1",
+            vec![],
+            PrimalHealthStatus::Healthy,
+            0,
+        ));
+        state1.merge_graph(&state2);
+        assert_eq!(state1.nodes.len(), 1, "duplicate node should not be added");
+    }
+
+    #[test]
+    fn test_session_state_like_version() {
+        let id = InstanceId::new();
+        let state = SessionState::new(id);
+        assert_eq!(state.version(), SessionState::VERSION);
     }
 }

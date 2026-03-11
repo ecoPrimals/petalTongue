@@ -306,3 +306,73 @@ fn family_id_to_color(family_id: &str) -> Color32 {
     let (r, g, b) = hsv_to_rgb(hue, 0.7, 0.9);
     Color32::from_rgb(r, g, b)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use petal_tongue_core::PrimalHealthStatus;
+
+    #[test]
+    fn test_health_to_colors_healthy() {
+        let (fill, stroke) = health_to_colors(PrimalHealthStatus::Healthy);
+        assert_eq!(fill, Color32::from_rgb(40, 180, 40));
+        assert_eq!(stroke, Color32::from_rgb(20, 120, 20));
+    }
+
+    #[test]
+    fn test_health_to_colors_warning() {
+        let (fill, stroke) = health_to_colors(PrimalHealthStatus::Warning);
+        assert_eq!(fill, Color32::from_rgb(200, 180, 40));
+        assert_eq!(stroke, Color32::from_rgb(140, 120, 20));
+    }
+
+    #[test]
+    fn test_health_to_colors_critical() {
+        let (fill, stroke) = health_to_colors(PrimalHealthStatus::Critical);
+        assert_eq!(fill, Color32::from_rgb(200, 40, 40));
+        assert_eq!(stroke, Color32::from_rgb(140, 20, 20));
+    }
+
+    #[test]
+    fn test_health_to_colors_unknown() {
+        let (fill, stroke) = health_to_colors(PrimalHealthStatus::Unknown);
+        assert_eq!(fill, Color32::from_rgb(120, 120, 120));
+        assert_eq!(stroke, Color32::from_rgb(80, 80, 80));
+    }
+
+    #[test]
+    fn test_trust_level_to_colors_none() {
+        let (fill, _stroke) = trust_level_to_colors(None);
+        assert_eq!(fill, Color32::from_rgb(100, 100, 100));
+    }
+
+    #[test]
+    fn test_trust_level_to_colors_zero() {
+        let (fill, _stroke) = trust_level_to_colors(Some(0));
+        assert_eq!(fill, Color32::from_rgb(100, 100, 100));
+    }
+
+    #[test]
+    fn test_trust_level_to_colors_one() {
+        let (fill, _) = trust_level_to_colors(Some(1));
+        assert_eq!(fill, Color32::from_rgb(200, 180, 40));
+    }
+
+    #[test]
+    fn test_trust_level_to_colors_two() {
+        let (fill, _) = trust_level_to_colors(Some(2));
+        assert_eq!(fill, Color32::from_rgb(220, 140, 40));
+    }
+
+    #[test]
+    fn test_trust_level_to_colors_three() {
+        let (fill, _) = trust_level_to_colors(Some(3));
+        assert_eq!(fill, Color32::from_rgb(40, 200, 80));
+    }
+
+    #[test]
+    fn test_trust_level_to_colors_high() {
+        let (fill, _) = trust_level_to_colors(Some(255));
+        assert_eq!(fill, Color32::from_rgb(120, 120, 120));
+    }
+}

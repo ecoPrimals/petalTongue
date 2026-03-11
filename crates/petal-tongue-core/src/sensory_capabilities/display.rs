@@ -62,7 +62,8 @@ pub fn describe(caps: &SensoryCapabilities) -> String {
 mod tests {
     use super::*;
     use crate::sensory_capabilities::{
-        AudioOutputCapability, GestureInputCapability, HapticOutputCapability, SensoryCapabilities,
+        AudioOutputCapability, GestureInputCapability, HapticOutputCapability,
+        KeyboardInputCapability, PointerInputCapability, SensoryCapabilities, TouchInputCapability,
         VisualOutputCapability,
     };
 
@@ -100,6 +101,59 @@ mod tests {
         assert!(desc.contains("3D visual"));
         assert!(desc.contains("spatial audio"));
         assert!(desc.contains("haptics"));
+        assert!(desc.contains("gesture"));
+    }
+
+    #[test]
+    fn test_describe_2d_visual_audio() {
+        let caps = SensoryCapabilities {
+            visual_outputs: vec![VisualOutputCapability::TwoD {
+                resolution: (1920, 1080),
+                refresh_rate: 60,
+                color_depth: 8,
+                size_mm: None,
+            }],
+            audio_outputs: vec![AudioOutputCapability::Mono {
+                sample_rate: 44100,
+                bit_depth: 16,
+            }],
+            ..Default::default()
+        };
+        let desc = describe(&caps);
+        assert!(desc.contains("2D visual"));
+        assert!(desc.contains("audio"));
+    }
+
+    #[test]
+    fn test_describe_all_input_types() {
+        let caps = SensoryCapabilities {
+            pointer_inputs: vec![PointerInputCapability::TwoD {
+                precision: 1.0,
+                has_wheel: true,
+                has_pressure: false,
+                button_count: 3,
+            }],
+            keyboard_inputs: vec![KeyboardInputCapability::Physical {
+                layout: "QWERTY".to_string(),
+                has_numpad: true,
+                modifier_keys: 4,
+            }],
+            touch_inputs: vec![TouchInputCapability {
+                max_touch_points: 10,
+                supports_pressure: true,
+                supports_hover: false,
+                screen_size_mm: None,
+            }],
+            gesture_inputs: vec![GestureInputCapability::Hand {
+                tracking_points: 21,
+                precision: 2.0,
+            }],
+            ..Default::default()
+        };
+        let desc = describe(&caps);
+        assert!(desc.contains("pointer"));
+        assert!(desc.contains("keyboard"));
+        assert!(desc.contains("touch"));
         assert!(desc.contains("gesture"));
     }
 }

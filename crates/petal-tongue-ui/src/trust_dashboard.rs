@@ -536,5 +536,43 @@ mod tests {
         assert_eq!(trust_level_number_to_label(3), "Full (3)");
         assert_eq!(trust_level_number_to_label(4), "Unknown (4)");
         assert_eq!(trust_level_number_to_label(99), "Unknown (99)");
+        assert_eq!(trust_level_number_to_label(-1), "Unknown (-1)");
+    }
+
+    #[test]
+    fn test_update_from_primals_properties_over_deprecated() {
+        let mut dashboard = TrustDashboard::new();
+        let mut props = Properties::new();
+        props.insert("trust_level".to_string(), PropertyValue::Number(2.0));
+        props.insert(
+            "family_id".to_string(),
+            PropertyValue::String("fam-x".to_string()),
+        );
+        let primals = vec![PrimalInfo {
+            id: "p1".to_string().into(),
+            name: "Test".to_string(),
+            primal_type: "Test".to_string(),
+            endpoint: "http://test".to_string(),
+            capabilities: vec![],
+            health: PrimalHealthStatus::Healthy,
+            last_seen: 0,
+            endpoints: None,
+            metadata: None,
+            properties: props,
+            #[expect(deprecated)]
+            trust_level: None,
+            #[expect(deprecated)]
+            family_id: None,
+        }];
+        dashboard.update_from_primals(&primals);
+        assert_eq!(dashboard.trust_summary.total_primals, 1);
+        assert_eq!(dashboard.trust_summary.unique_families, 1);
+        assert_eq!(
+            dashboard
+                .trust_summary
+                .trust_distribution
+                .get("Elevated (2)"),
+            Some(&1)
+        );
     }
 }

@@ -335,3 +335,191 @@ pub fn detect_pointer_topology() -> (InputTopology, Vec<String>) {
         (InputTopology::Direct, evidence)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use petal_tongue_core::rendering_awareness::InteractivityState;
+
+    #[test]
+    fn test_input_verification_unverified() {
+        let v = InputVerification::unverified(InputModality::Keyboard);
+        assert_eq!(v.modality, InputModality::Keyboard);
+        assert!(!v.device_available);
+        assert!(!v.input_active);
+        assert_eq!(v.topology, InputTopology::Unknown);
+        assert!(!v.from_intended_source);
+        assert_eq!(v.quality, InputQuality::Unknown);
+        assert!(v.evidence.is_empty());
+        assert!(v.last_input.is_none());
+        assert_eq!(v.interactivity, InteractivityState::Unconfirmed);
+        assert_eq!(v.status_message, "Input not yet verified");
+        assert!(v.suggested_action.is_none());
+    }
+
+    #[test]
+    fn test_input_verification_record_input() {
+        let mut v = InputVerification::unverified(InputModality::Pointer);
+        v.record_input();
+        assert!(v.input_active);
+        assert!(v.last_input.is_some());
+        assert!(v.from_intended_source);
+        assert_eq!(v.interactivity, InteractivityState::Active);
+        assert!(v.status_message.contains("Pointer"));
+        assert!(v.suggested_action.is_none());
+    }
+
+    #[test]
+    fn test_input_verification_is_stale_none() {
+        let v = InputVerification::unverified(InputModality::Keyboard);
+        assert!(v.is_stale(std::time::Duration::from_secs(30)));
+    }
+
+    #[test]
+    fn test_input_verification_is_stale_recent() {
+        let mut v = InputVerification::unverified(InputModality::Keyboard);
+        v.record_input();
+        assert!(!v.is_stale(std::time::Duration::from_secs(30)));
+    }
+
+    #[test]
+    fn test_input_verification_system_new() {
+        let sys = InputVerificationSystem::new();
+        assert!(sys.get_all_verifications().is_empty());
+        assert!(!sys.has_inactive_inputs());
+        assert!(sys.most_recent_interaction().is_none());
+        assert_eq!(sys.get_status_summary(), "Inputs: 0/0 active, 0 stale");
+    }
+
+    #[test]
+    fn test_input_verification_system_default() {
+        let sys = InputVerificationSystem::default();
+        assert!(sys.get_all_verifications().is_empty());
+    }
+
+    #[test]
+    fn test_input_verification_system_register() {
+        let mut sys = InputVerificationSystem::new();
+        sys.register_input(InputModality::Visual);
+        sys.register_input(InputModality::Audio);
+
+        assert_eq!(sys.get_all_verifications().len(), 2);
+        assert!(sys.get_verification(&InputModality::Visual).is_some());
+        assert!(sys.get_verification(&InputModality::Audio).is_some());
+        assert!(sys.get_verification(&InputModality::Keyboard).is_none());
+    }
+
+    #[test]
+    fn test_input_verification_system_register_idempotent() {
+        let mut sys = InputVerificationSystem::new();
+        sys.register_input(InputModality::Keyboard);
+        sys.register_input(InputModality::Keyboard);
+        assert_eq!(sys.get_all_verifications().len(), 1);
+    }
+
+    #[test]
+    fn test_input_verification_system_record_input() {
+        let mut sys = InputVerificationSystem::new();
+        sys.register_input(InputModality::Pointer);
+        sys.record_input(&InputModality::Pointer);
+
+        let v = sys
+            .get_verification(&InputModality::Pointer)
+            .expect("should exist");
+        assert!(v.input_active);
+        assert!(v.last_input.is_some());
+        assert!(!sys.has_inactive_inputs());
+        assert!(sys.most_recent_interaction().is_some());
+    }
+
+    #[test]
+    fn test_input_verification_system_record_auto_register() {
+        let mut sys = InputVerificationSystem::new();
+        sys.record_input(&InputModality::Generic("custom".to_string()));
+
+        assert_eq!(sys.get_all_verifications().len(), 1);
+        let v = sys
+            .get_verification(&InputModality::Generic("custom".to_string()))
+            .expect("auto-registered");
+        assert!(v.input_active);
+    }
+
+    #[test]
+    fn test_input_verification_system_has_inactive_inputs() {
+        let mut sys = InputVerificationSystem::new();
+        sys.register_input(InputModality::Visual);
+        sys.register_input(InputModality::Audio);
+        assert!(sys.has_inactive_inputs());
+
+        sys.record_input(&InputModality::Visual);
+        assert!(sys.has_inactive_inputs());
+
+        sys.record_input(&InputModality::Audio);
+        assert!(!sys.has_inactive_inputs());
+    }
+
+    #[test]
+    fn test_input_verification_system_status_summary() {
+        let mut sys = InputVerificationSystem::new();
+        sys.register_input(InputModality::Keyboard);
+        sys.record_input(&InputModality::Keyboard);
+
+        let summary = sys.get_status_summary();
+        assert!(summary.contains("1"));
+        assert!(summary.contains("active"));
+    }
+
+    #[test]
+    fn test_input_verification_update_interactivity_unconfirmed() {
+        let mut v = InputVerification::unverified(InputModality::Keyboard);
+        v.update_interactivity();
+        assert_eq!(v.interactivity, InteractivityState::Unconfirmed);
+    }
+
+    #[test]
+    fn test_input_modality_variants() {
+        assert_eq!(InputModality::Visual, InputModality::Visual);
+        assert_ne!(InputModality::Visual, InputModality::Audio);
+        assert!(matches!(
+            InputModality::Generic("x".to_string()),
+            InputModality::Generic(_)
+        ));
+    }
+
+    #[test]
+    fn test_input_topology_variants() {
+        assert_eq!(InputTopology::Direct, InputTopology::Direct);
+        assert_eq!(InputTopology::Forwarded, InputTopology::Forwarded);
+        assert_eq!(InputTopology::Synthetic, InputTopology::Synthetic);
+        assert_eq!(InputTopology::Ambient, InputTopology::Ambient);
+        assert_eq!(InputTopology::Unknown, InputTopology::Unknown);
+    }
+
+    #[test]
+    fn test_input_quality_variants() {
+        assert_eq!(InputQuality::High, InputQuality::High);
+        assert_eq!(InputQuality::Medium, InputQuality::Medium);
+        assert_eq!(InputQuality::Low, InputQuality::Low);
+        assert_eq!(InputQuality::Unknown, InputQuality::Unknown);
+    }
+
+    #[test]
+    fn test_detect_keyboard_topology_returns_tuple() {
+        let (topology, evidence) = detect_keyboard_topology();
+        assert!(!evidence.is_empty());
+        assert!(matches!(
+            topology,
+            InputTopology::Direct | InputTopology::Forwarded | InputTopology::Unknown
+        ));
+    }
+
+    #[test]
+    fn test_detect_pointer_topology_returns_tuple() {
+        let (topology, evidence) = detect_pointer_topology();
+        assert!(!evidence.is_empty());
+        assert!(matches!(
+            topology,
+            InputTopology::Direct | InputTopology::Forwarded | InputTopology::Unknown
+        ));
+    }
+}

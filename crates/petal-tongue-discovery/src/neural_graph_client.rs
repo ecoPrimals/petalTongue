@@ -414,8 +414,42 @@ mod tests {
             output: None,
         };
 
-        let json = serde_json::to_value(&result).unwrap();
+        let json = serde_json::to_value(&result).expect("serialize");
         assert_eq!(json["status"], "failed");
         assert_eq!(json["error"], "Something went wrong");
+    }
+
+    #[test]
+    fn test_save_graph_params_structure() {
+        let params = json!({"graph": {"nodes": [], "edges": []}});
+        assert!(params.get("graph").is_some());
+    }
+
+    #[test]
+    fn test_load_graph_params_structure() {
+        let params = json!({"graph_id": "g-123"});
+        assert_eq!(params["graph_id"], "g-123");
+    }
+
+    #[test]
+    fn test_execute_graph_params_structure() {
+        let params = json!({
+            "graph_id": "g-1",
+            "parameters": {"key": "value"}
+        });
+        assert_eq!(params["graph_id"], "g-1");
+        assert!(params["parameters"].is_object());
+    }
+
+    #[test]
+    fn test_execution_status_display() {
+        assert_eq!(
+            serde_json::to_string(&ExecutionStatus::Queued).expect("serialize"),
+            r#""queued""#
+        );
+        assert_eq!(
+            serde_json::to_string(&ExecutionStatus::Cancelled).expect("serialize"),
+            r#""cancelled""#
+        );
     }
 }

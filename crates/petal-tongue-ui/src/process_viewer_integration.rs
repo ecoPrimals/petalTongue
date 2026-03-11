@@ -1,22 +1,33 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Process Viewer Integration
 //!
-//! Real-time process monitoring using sysinfo.
+//! Real-time process monitoring via /proc parsing (ecoBin v3.0 compliant).
 //! Displays running processes with CPU, memory usage, and filtering.
 
 #![allow(clippy::cast_precision_loss)]
 
+use crate::proc_stats::{ProcStats, ProcessInfo as ProcProcessInfo};
 use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};
 use std::time::{Duration, Instant};
-use sysinfo::{ProcessRefreshKind, System};
 
-/// Process information for display
+/// Process information for display (wraps proc_stats::ProcessInfo for tests)
 #[derive(Clone, Debug)]
 struct ProcessInfo {
     pid: u32,
     name: String,
     cpu_usage: f32,
     memory: u64, // in bytes
+}
+
+impl From<ProcProcessInfo> for ProcessInfo {
+    fn from(p: ProcProcessInfo) -> Self {
+        Self {
+            pid: p.pid,
+            name: p.name,
+            cpu_usage: p.cpu_usage,
+            memory: p.memory,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -37,7 +48,7 @@ impl ProcessInfo {
 /// Complements the System Monitor by showing per-process details.
 pub struct ProcessViewerTool {
     show_panel: bool,
-    system: System,
+    stats: ProcStats,
     last_refresh: Instant,
     refresh_interval: Duration,
     processes: Vec<ProcessInfo>,
@@ -78,12 +89,9 @@ fn filter_and_sort_processes(
 
 impl Default for ProcessViewerTool {
     fn default() -> Self {
-        let mut system = System::new_all();
-        system.refresh_all();
-
         Self {
             show_panel: false,
-            system,
+            stats: ProcStats::new(),
             last_refresh: Instant::now(),
             refresh_interval: Duration::from_secs(2), // 2 second refresh for processes
             processes: Vec::new(),
@@ -99,22 +107,11 @@ impl ProcessViewerTool {
     fn refresh(&mut self) {
         let now = Instant::now();
         if now.duration_since(self.last_refresh) >= self.refresh_interval {
-            // Refresh processes
-            self.system
-                .refresh_processes_specifics(ProcessRefreshKind::everything());
-            self.last_refresh = now;
-
-            // Collect process info
             let processes: Vec<ProcessInfo> = self
-                .system
+                .stats
                 .processes()
-                .iter()
-                .map(|(pid, process)| ProcessInfo {
-                    pid: pid.as_u32(),
-                    name: process.name().to_string(),
-                    cpu_usage: process.cpu_usage(),
-                    memory: process.memory(),
-                })
+                .into_iter()
+                .map(ProcessInfo::from)
                 .collect();
 
             self.processes = filter_and_sort_processes(
@@ -123,6 +120,7 @@ impl ProcessViewerTool {
                 self.sort_by,
                 self.max_display,
             );
+            self.last_refresh = now;
         }
     }
 
@@ -151,13 +149,7 @@ impl ProcessViewerTool {
     fn render_process_table(&self, ui: &mut egui::Ui) {
         use egui_extras::{Column, TableBuilder};
 
-        let total_processes = self.system.processes().len();
-
-        ui.label(format!(
-            "Showing {} of {} processes",
-            self.processes.len(),
-            total_processes
-        ));
+        ui.label(format!("Showing {} processes", self.processes.len(),));
 
         ui.add_space(5.0);
 
@@ -226,7 +218,9 @@ impl ToolPanel for ProcessViewerTool {
                 ToolCapability::Custom("Filtering".to_string()),
             ],
             icon: "📋".to_string(),
-            source: Some("https://github.com/GuillaumeGomez/sysinfo".to_string()),
+            source: Some(
+                "https://www.kernel.org/doc/html/latest/filesystems/proc.html".to_string(),
+            ),
         })
     }
 
@@ -282,9 +276,8 @@ impl ToolPanel for ProcessViewerTool {
     }
 
     fn status_message(&self) -> Option<String> {
-        let total = self.system.processes().len();
         let showing = self.processes.len();
-        Some(format!("Processes: {showing}/{total}"))
+        Some(format!("Processes: {showing}"))
     }
 }
 
@@ -301,7 +294,7 @@ mod tests {
     fn process_viewer_default() {
         let pv = ProcessViewerTool::default();
         assert!(!pv.show_panel);
-        assert_eq!(pv.filter_text, "");
+        assert_eq!(pv.filter_text, String::new());
         assert_eq!(pv.sort_by, SortColumn::Cpu);
         assert_eq!(pv.max_display, 50);
     }
@@ -394,5 +387,92 @@ mod tests {
         ];
         let result = filter_and_sort_processes(processes, "", SortColumn::Cpu, 2);
         assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn filter_empty_shows_all() {
+        let processes = vec![
+            ProcessInfo::test_new(1, "a", 1.0, 100),
+            ProcessInfo::test_new(2, "b", 2.0, 200),
+        ];
+        let result = filter_and_sort_processes(processes, "", SortColumn::Name, 10);
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn filter_no_match_returns_empty() {
+        let processes = vec![
+            ProcessInfo::test_new(1, "chrome", 10.0, 100),
+            ProcessInfo::test_new(2, "firefox", 5.0, 200),
+        ];
+        let result = filter_and_sort_processes(processes, "xyz", SortColumn::Name, 10);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn status_message_format() {
+        let pv = ProcessViewerTool::default();
+        let msg = pv.status_message().expect("should have message");
+        assert!(msg.starts_with("Processes: "));
+        assert!(msg.contains('0'));
+    }
+
+    #[test]
+    fn process_info_from_proc() {
+        use crate::proc_stats::ProcessInfo as ProcProcessInfo;
+        let proc_info = ProcProcessInfo {
+            pid: 999,
+            name: "test_proc".to_string(),
+            cpu_usage: 12.5,
+            memory: 2_097_152,
+        };
+        let info = ProcessInfo::from(proc_info);
+        assert_eq!(info.pid, 999);
+        assert_eq!(info.name, "test_proc");
+        assert!((info.cpu_usage - 12.5).abs() < f32::EPSILON);
+        assert_eq!(info.memory, 2_097_152);
+    }
+
+    #[test]
+    fn sort_by_cpu_nan_safe() {
+        let processes = vec![
+            ProcessInfo::test_new(1, "a", f32::NAN, 100),
+            ProcessInfo::test_new(2, "b", 5.0, 100),
+        ];
+        let result = filter_and_sort_processes(processes, "", SortColumn::Cpu, 10);
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn process_viewer_tool_panel_metadata() {
+        let pv = ProcessViewerTool::default();
+        let meta = pv.metadata();
+        assert_eq!(meta.name, "Process Viewer");
+        assert!(meta.description.contains("process"));
+        assert_eq!(meta.version, "0.1.0");
+        assert!(meta.capabilities.len() >= 2);
+        assert_eq!(meta.icon, "📋");
+    }
+
+    #[test]
+    fn process_viewer_tool_panel_toggle() {
+        let mut pv = ProcessViewerTool::default();
+        assert!(!pv.is_visible());
+        pv.toggle_visibility();
+        assert!(pv.is_visible());
+        pv.toggle_visibility();
+        assert!(!pv.is_visible());
+    }
+
+    #[test]
+    fn process_viewer_max_display_default() {
+        let pv = ProcessViewerTool::default();
+        assert_eq!(pv.max_display, 50);
+    }
+
+    #[test]
+    fn process_viewer_refresh_interval() {
+        let pv = ProcessViewerTool::default();
+        assert_eq!(pv.refresh_interval, std::time::Duration::from_secs(2));
     }
 }

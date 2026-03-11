@@ -150,6 +150,16 @@ impl Default for ValidationResult {
     }
 }
 
+impl std::fmt::Display for ValidationSeverity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Error => write!(f, "Error"),
+            Self::Warning => write!(f, "Warning"),
+            Self::Info => write!(f, "Info"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -214,5 +224,41 @@ mod tests {
         r.add_issue(ValidationIssue::warning("w1".to_string()));
         assert_eq!(r.errors().len(), 1);
         assert_eq!(r.warnings().len(), 1);
+    }
+
+    #[test]
+    fn test_validation_issue_node_warning() {
+        let issue = ValidationIssue::node_warning("n1".to_string(), "warn".to_string());
+        assert_eq!(issue.severity, ValidationSeverity::Warning);
+        assert_eq!(issue.node_id.as_deref(), Some("n1"));
+    }
+
+    #[test]
+    fn test_validation_result_default() {
+        let r = ValidationResult::default();
+        assert!(r.issues.is_empty());
+        assert!(r.is_valid());
+    }
+
+    #[test]
+    fn test_validation_severity_display() {
+        assert_eq!(ValidationSeverity::Error.to_string(), "Error");
+        assert_eq!(ValidationSeverity::Warning.to_string(), "Warning");
+        assert_eq!(ValidationSeverity::Info.to_string(), "Info");
+    }
+
+    #[test]
+    fn test_validation_result_with_info() {
+        let mut r = ValidationResult::new();
+        r.add_issue(ValidationIssue {
+            severity: ValidationSeverity::Info,
+            node_id: None,
+            edge_index: None,
+            message: "info".to_string(),
+            suggestion: None,
+        });
+        assert!(r.is_valid());
+        assert!(!r.has_errors());
+        assert!(!r.has_warnings());
     }
 }

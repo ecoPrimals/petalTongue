@@ -196,7 +196,8 @@ fn test_e2e_tutorial_self_awareness() {
         self_node
             .info
             .capabilities
-            .contains(&"visual_2d".to_string())
+            .contains(&"ui.render".to_string()),
+        "petalTongue should advertise ui.render capability"
     );
 }
 

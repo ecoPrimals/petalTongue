@@ -143,7 +143,10 @@ pub enum IpcClientError {
 }
 
 /// Get socket path for an instance
-#[allow(clippy::unnecessary_wraps)]
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "Ok wrapper for early-return path consistency"
+)]
 fn get_socket_path(instance_id: &InstanceId) -> Result<PathBuf, IpcClientError> {
     use petal_tongue_core::constants::APP_DIR_NAME;
 
@@ -166,20 +169,91 @@ fn get_socket_path(instance_id: &InstanceId) -> Result<PathBuf, IpcClientError> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
 
     #[test]
-    fn test_client_creation() {
+    fn test_client_creation_socket_not_found() {
         let instance_id = InstanceId::new();
         let result = IpcClient::new(&instance_id);
 
         // Will fail since socket doesn't exist, but tests the code path
         assert!(result.is_err());
+        if let Err(IpcClientError::SocketNotFound(p)) = result {
+            assert!(p.to_string_lossy().contains(&instance_id.as_str()));
+        }
     }
 
     #[test]
     fn test_socket_path() {
         let instance_id = InstanceId::new();
-        let path = get_socket_path(&instance_id).unwrap();
+        let path = get_socket_path(&instance_id).expect("path");
         assert!(path.to_string_lossy().contains(&instance_id.as_str()));
+    }
+
+    #[test]
+    fn test_from_socket_path() {
+        let path = PathBuf::from("/tmp/test-socket.sock");
+        let client = IpcClient::from_socket_path(path.clone());
+        assert_eq!(client.socket_path(), path);
+    }
+
+    #[test]
+    fn test_socket_path_getter() {
+        let path = PathBuf::from("/var/run/petal.sock");
+        let client = IpcClient::from_socket_path(path.clone());
+        assert_eq!(client.socket_path(), Path::new("/var/run/petal.sock"));
+    }
+
+    #[test]
+    fn test_ipc_client_error_display() {
+        let err = IpcClientError::SocketNotFound(PathBuf::from("/tmp/x.sock"));
+        assert!(format!("{err}").contains("Socket not found"));
+
+        let err = IpcClientError::ConnectionError("msg".into());
+        assert!(format!("{err}").contains("Connection error"));
+
+        let err = IpcClientError::IoError("msg".into());
+        assert!(format!("{err}").contains("IO error"));
+
+        let err = IpcClientError::ParseError("msg".into());
+        assert!(format!("{err}").contains("Parse error"));
+
+        let err = IpcClientError::SerializeError("msg".into());
+        assert!(format!("{err}").contains("Serialize error"));
+
+        let err = IpcClientError::ServerError("msg".into());
+        assert!(format!("{err}").contains("Server error"));
+
+        let err = IpcClientError::UnexpectedResponse;
+        assert!(!format!("{err}").is_empty());
+
+        let err = IpcClientError::DirectoryError("msg".into());
+        assert!(format!("{err}").contains("Directory error"));
+    }
+
+    #[tokio::test]
+    async fn test_ping_nonexistent_socket() {
+        let path = PathBuf::from("/tmp/nonexistent-ipc-ping-99999.sock");
+        let client = IpcClient::from_socket_path(path);
+        let result = client.ping().await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_send_nonexistent_socket() {
+        let path = PathBuf::from("/tmp/nonexistent-ipc-send-99999.sock");
+        let client = IpcClient::from_socket_path(path);
+        let result = client.send(IpcCommand::Ping).await;
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_socket_path_format() {
+        let instance_id = InstanceId::new();
+        let path = get_socket_path(&instance_id).expect("path");
+        let path_str = path.to_string_lossy();
+        assert!(path_str.contains(&instance_id.as_str()));
+        assert!(path_str.ends_with(".sock"));
+        assert!(path_str.contains("petaltongue"));
     }
 }

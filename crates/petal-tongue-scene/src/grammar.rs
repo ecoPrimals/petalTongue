@@ -6,6 +6,7 @@
 //! faceting, and aesthetics. The grammar compiler transforms this into a `SceneGraph`.
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 /// Binding of a variable to a data field.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -226,12 +227,39 @@ impl GrammarExpr {
     /// Count of unique values implied by color aesthetic.
     /// Returns 0 if no color aesthetic is set.
     pub fn color_category_count(&self) -> usize {
-        for a in &self.aesthetics {
-            if let Aesthetic::Fill(_) = a {
-                return 1; // Placeholder: would need data to count categories
+        self.color_category_count_with_data(None)
+    }
+
+    /// Count unique string values in the category aesthetic field from data.
+    /// When `data` is `Some`, extracts the Fill aesthetic field and counts
+    /// unique string values in that column. When `data` is `None`, returns 0.
+    pub fn color_category_count_with_data(&self, data: Option<&[serde_json::Value]>) -> usize {
+        let field = self.aesthetics.iter().find_map(|a| {
+            if let Aesthetic::Fill(f) = a {
+                Some(f.as_str())
+            } else {
+                None
             }
+        });
+        let Some(field) = field else {
+            return 0;
+        };
+        let Some(data) = data else {
+            return 0;
+        };
+        let mut unique: HashSet<String> = HashSet::new();
+        for row in data {
+            let serde_json::Value::Object(obj) = row else {
+                continue;
+            };
+            let val = match obj.get(field) {
+                Some(serde_json::Value::String(s)) => s.clone(),
+                Some(v) => v.to_string(),
+                None => continue,
+            };
+            unique.insert(val);
         }
-        0
+        unique.len()
     }
 
     /// Whether faceting is configured.
@@ -320,5 +348,28 @@ mod tests {
         assert_eq!(expr.data_source, decoded.data_source);
         assert_eq!(expr.geometry, decoded.geometry);
         assert_eq!(expr.variables.len(), decoded.variables.len());
+    }
+
+    #[test]
+    fn color_category_count_with_data_counts_unique_values() {
+        let expr = GrammarExpr::new("data", GeometryType::Point)
+            .with_x("x")
+            .with_y("y")
+            .with_color("category");
+        let data = vec![
+            serde_json::json!({"x": 1, "y": 2, "category": "A"}),
+            serde_json::json!({"x": 2, "y": 3, "category": "B"}),
+            serde_json::json!({"x": 3, "y": 4, "category": "A"}),
+        ];
+        let data: Vec<serde_json::Value> = data;
+        assert_eq!(expr.color_category_count_with_data(Some(&data)), 2);
+    }
+
+    #[test]
+    fn color_category_count_without_fill_returns_zero() {
+        let expr = GrammarExpr::new("data", GeometryType::Point)
+            .with_x("x")
+            .with_y("y");
+        assert_eq!(expr.color_category_count(), 0);
     }
 }

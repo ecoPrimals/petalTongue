@@ -11,6 +11,7 @@ use petal_tongue_core::interaction::{
     OutputModality, PrimitiveId,
 };
 use petal_tongue_core::sensor::SensorEvent;
+use petal_tongue_scene::render_plan::RenderPlan;
 
 /// Inverse pipeline for egui/GUI visual rendering.
 ///
@@ -107,6 +108,47 @@ impl VisualInversePipeline {
         self.hit_targets
             .iter()
             .find(|t| (t.world_x - world_x).abs() < half_w && (t.world_y - world_y).abs() < half_h)
+    }
+}
+
+impl VisualInversePipeline {
+    /// Resolve a screen position to data-space coordinates using a `RenderPlan`.
+    ///
+    /// 1. Screen → world via camera inverse
+    /// 2. World → panel hit test (which panel contains this point?)
+    /// 3. Panel pixel → `AxisMeta::inverse()` → data value per axis
+    ///
+    /// Returns `None` if the position falls outside all panels.
+    pub fn resolve_to_data_coords(
+        &self,
+        screen_x: f32,
+        screen_y: f32,
+        context: &InteractionContext,
+        plan: &RenderPlan,
+    ) -> Option<DataRow> {
+        let (world_x, world_y) = self.screen_to_world(screen_x, screen_y, context);
+
+        for panel in &plan.panels {
+            if !panel
+                .bounds
+                .contains(f64::from(world_x), f64::from(world_y))
+            {
+                continue;
+            }
+
+            let mut row = DataRow::new();
+            for axis in &panel.axes {
+                let visual_val = match axis.variable.as_str() {
+                    "x" => f64::from(world_x),
+                    "y" => f64::from(world_y),
+                    _ => continue,
+                };
+                let data_val = axis.inverse(visual_val);
+                row.insert(axis.variable.clone(), serde_json::Value::from(data_val));
+            }
+            return Some(row);
+        }
+        None
     }
 }
 

@@ -28,7 +28,6 @@
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::doc_markdown)]
-#![allow(clippy::unused_async)]
 
 pub mod adaptive_rendering; // Adaptive rendering for multi-device support
 pub mod biomeos_discovery; // biomeOS discovery backend
@@ -72,6 +71,7 @@ pub mod capability_taxonomy; // biomeOS capability taxonomy
 pub mod compute; // Compute provider system (optional GPU)
 pub mod engine; // Universal rendering engine
 pub mod event; // Event bus (multi-modal coordination)
+pub mod frame_introspection; // Content-level self-awareness (what each frame contains)
 pub mod interaction; // Interaction engine (semantic intents, perspectives, inverse pipeline)
 pub mod modality; // Modality system (trait and registry)
 pub mod rendering_awareness; // Bidirectional UUI awareness (motor + sensory)
@@ -132,8 +132,7 @@ pub use graph_builder::{
 pub use graph_validation::{GraphValidator, ValidationIssue, ValidationResult};
 
 /// Data binding and threshold types (universal visualization)
-#[allow(deprecated)]
-pub use data_channel::{ClinicalRange, DataBinding, DataChannel, ThresholdRange};
+pub use data_channel::{DataBinding, ThresholdRange};
 
 /// Scenario builder trait (springs and primals produce visualization data)
 pub use scenario_builder::{ScenarioBuilder, ScenarioMetadata, VisualizationScene};
@@ -198,6 +197,12 @@ pub use modality::{
     AccessibilityFeatures, GUIModality, ModalityCapabilities, ModalityRegistry, ModalityTier,
 };
 
+/// Frame introspection (content-level self-awareness)
+pub use frame_introspection::{
+    BindingType, BoundDataObject, ContentAwareness, FrameIntrospection, InteractionCapability,
+    InteractionKind, PanelKind, PanelSnapshot,
+};
+
 /// Rendering awareness (bidirectional UUI)
 pub use rendering_awareness::{
     InteractivityState, MotorCommand, PanelId, RenderingAwareness, RenderingMetrics,
@@ -212,8 +217,8 @@ pub use channel::{
 
 /// Sensor system (input abstraction)
 pub use sensor::{
-    Key, Modifiers, MouseButton, Sensor, SensorCapabilities, SensorCapability, SensorEvent,
-    SensorRegistry, SensorStats, SensorType,
+    Key, KeyModifiersIpc, Modifiers, MouseButton, Sensor, SensorCapabilities, SensorCapability,
+    SensorEvent, SensorEventBatch, SensorEventIpc, SensorRegistry, SensorStats, SensorType,
 };
 
 /// Interaction engine (semantic intents, perspectives, inverse pipeline)

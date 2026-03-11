@@ -8,6 +8,79 @@ use tracing::{debug, info, warn};
 
 use super::types::{DisplayTopology, DisplayVerification, ViewerLocation};
 
+// ============================================================================
+// Pure verification logic (testable, no I/O)
+// ============================================================================
+
+/// Map seconds since last interaction to interactivity state
+#[must_use]
+pub(crate) fn interactivity_state_from_seconds(secs: f32) -> InteractivityState {
+    if secs < 5.0 {
+        InteractivityState::Active
+    } else if secs < 30.0 {
+        InteractivityState::Recent
+    } else if secs < 300.0 {
+        InteractivityState::Idle
+    } else {
+        InteractivityState::Unconfirmed
+    }
+}
+
+/// Human-readable topology description for status messages
+#[must_use]
+pub(crate) fn topology_description(topology: &DisplayTopology) -> &'static str {
+    match topology {
+        DisplayTopology::DirectLocal => "Direct local display",
+        DisplayTopology::Forwarded => "Forwarded display",
+        DisplayTopology::Nested => "Nested display",
+        DisplayTopology::Virtual => "Virtual display",
+        DisplayTopology::Unknown => "Unknown topology",
+    }
+}
+
+/// Status message when user is actively interacting
+#[must_use]
+pub(crate) fn format_active_interaction_status(topology: &DisplayTopology) -> String {
+    match topology {
+        DisplayTopology::DirectLocal => {
+            "Direct local display - user actively interacting".to_string()
+        }
+        DisplayTopology::Forwarded => {
+            "Forwarded display confirmed - user interaction proves visibility".to_string()
+        }
+        DisplayTopology::Nested => {
+            "Nested display confirmed - user interaction proves visibility".to_string()
+        }
+        DisplayTopology::Virtual => {
+            "Virtual display with active interaction (unusual but confirmed)".to_string()
+        }
+        DisplayTopology::Unknown => {
+            "Display topology unknown, but user interaction confirms visibility".to_string()
+        }
+    }
+}
+
+/// Status message for recent interaction (5-30s ago)
+#[must_use]
+pub(crate) fn format_recent_interaction_status(topology: &DisplayTopology, secs: f32) -> String {
+    format!(
+        "{} - recent interaction ({secs:.0}s ago) suggests viewer can still see output",
+        topology_description(topology)
+    )
+}
+
+/// Suggested action when no interaction for 5+ minutes
+#[must_use]
+pub(crate) fn suggested_action_for_prolonged_idle(secs: f32) -> Option<String> {
+    if secs > 300.0 {
+        Some(
+            "No interaction for 5+ minutes. If viewing remotely, verify connection and window visibility.".to_string()
+        )
+    } else {
+        None
+    }
+}
+
 /// Detect display topology (agnostic - no vendor names)
 #[must_use]
 pub fn detect_display_topology() -> (DisplayTopology, Vec<String>) {
@@ -233,37 +306,14 @@ pub fn continuous_verification(
 ) -> DisplayVerification {
     let mut verification = verify_display_substrate(window_title);
 
-    verification.interactivity = if last_interaction_secs < 5.0 {
-        InteractivityState::Active
-    } else if last_interaction_secs < 30.0 {
-        InteractivityState::Recent
-    } else if last_interaction_secs < 300.0 {
-        InteractivityState::Idle
-    } else {
-        InteractivityState::Unconfirmed
-    };
+    verification.interactivity = interactivity_state_from_seconds(last_interaction_secs);
 
     if verification.interactivity == InteractivityState::Active {
         verification.visibility = VisibilityState::Confirmed;
         verification.output_reaches_viewer = true;
         verification.viewer_location = ViewerLocation::Unknown;
-        verification.status_message = match verification.display_topology {
-            DisplayTopology::DirectLocal => {
-                "Direct local display - user actively interacting".to_string()
-            }
-            DisplayTopology::Forwarded => {
-                "Forwarded display confirmed - user interaction proves visibility".to_string()
-            }
-            DisplayTopology::Nested => {
-                "Nested display confirmed - user interaction proves visibility".to_string()
-            }
-            DisplayTopology::Virtual => {
-                "Virtual display with active interaction (unusual but confirmed)".to_string()
-            }
-            DisplayTopology::Unknown => {
-                "Display topology unknown, but user interaction confirms visibility".to_string()
-            }
-        };
+        verification.status_message =
+            format_active_interaction_status(&verification.display_topology);
         verification.suggested_action = None;
         verification.topology_evidence.push(format!(
             "User interaction within last {last_interaction_secs:.1}s confirms output reaches viewer"
@@ -271,17 +321,8 @@ pub fn continuous_verification(
     } else if verification.interactivity == InteractivityState::Recent {
         verification.visibility = VisibilityState::Probable;
         verification.output_reaches_viewer = true;
-        verification.status_message = format!(
-            "{} - recent interaction ({:.0}s ago) suggests viewer can still see output",
-            match verification.display_topology {
-                DisplayTopology::DirectLocal => "Direct local display",
-                DisplayTopology::Forwarded => "Forwarded display",
-                DisplayTopology::Nested => "Nested display",
-                DisplayTopology::Virtual => "Virtual display",
-                DisplayTopology::Unknown => "Unknown topology",
-            },
-            last_interaction_secs
-        );
+        verification.status_message =
+            format_recent_interaction_status(&verification.display_topology, last_interaction_secs);
     } else {
         match verification.display_topology {
             DisplayTopology::Forwarded | DisplayTopology::Nested | DisplayTopology::Unknown => {
@@ -291,11 +332,8 @@ pub fn continuous_verification(
                     "Display topology: {:?} - No recent interaction ({:.0}s). Cannot confirm viewer sees output.",
                     verification.display_topology, last_interaction_secs
                 );
-                if last_interaction_secs > 300.0 {
-                    verification.suggested_action = Some(
-                        "No interaction for 5+ minutes. If viewing remotely, verify connection and window visibility.".to_string()
-                    );
-                }
+                verification.suggested_action =
+                    suggested_action_for_prolonged_idle(last_interaction_secs);
             }
             DisplayTopology::DirectLocal => {
                 if verification.window_exists {

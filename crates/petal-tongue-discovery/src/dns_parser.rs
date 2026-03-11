@@ -35,15 +35,15 @@ impl RecordType {
 }
 
 /// DNS class
+#[allow(dead_code)] // RFC 1035 completeness; used in tests
 #[derive(Debug, Clone, Copy, PartialEq)]
-#[expect(dead_code)]
 pub enum RecordClass {
     IN = 1, // Internet
 }
 
 /// Parsed DNS header
+#[allow(dead_code)] // RFC 1035 completeness; authority/additional used in tests
 #[derive(Debug)]
-#[expect(dead_code)] // Some fields are parsed but not yet used
 pub struct DnsHeader {
     pub transaction_id: u16,
     pub flags: u16,
@@ -151,7 +151,10 @@ impl<'a> NameParser<'a> {
 
 /// SRV record data
 #[derive(Debug, Clone)]
-#[expect(dead_code)] // priority and weight are parsed but not yet used in routing logic
+#[expect(
+    dead_code,
+    reason = "RFC 2782 completeness; priority/weight parsed for future SRV routing logic"
+)]
 pub struct SrvRecord {
     pub priority: u16,
     pub weight: u16,
@@ -188,7 +191,7 @@ pub struct TxtRecord {
 }
 
 impl TxtRecord {
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(clippy::unnecessary_wraps, reason = "Ok wrapper for struct literal")]
     pub fn parse(rdata: &[u8]) -> Result<Self> {
         let mut attributes = Vec::new();
         let mut offset = 0;
@@ -242,7 +245,7 @@ impl ARecord {
 
 /// AAAA record data (IPv6)
 #[derive(Debug, Clone)]
-#[expect(dead_code)] // Currently unused but kept for future IPv6 support
+#[allow(dead_code)] // Used in tests; reserved for future IPv6 mDNS support
 pub struct AaaaRecord {
     pub addr: Ipv6Addr,
 }
@@ -265,8 +268,8 @@ impl AaaaRecord {
 }
 
 /// Generic DNS resource record
+#[allow(dead_code)] // RFC 1035 completeness; rclass/ttl used in tests
 #[derive(Debug)]
-#[expect(dead_code)] // rclass and ttl are parsed but not currently used in routing decisions
 pub struct ResourceRecord {
     pub name: String,
     pub rtype: u16,
@@ -331,7 +334,7 @@ impl ResourceRecord {
     }
 
     /// Parse as AAAA record
-    #[expect(dead_code)] // Reserved for future IPv6 support
+    #[allow(dead_code)] // Used in tests
     pub fn as_aaaa(&self) -> Result<AaaaRecord> {
         AaaaRecord::parse(&self.rdata)
     }
@@ -397,5 +400,180 @@ mod tests {
         let data = [192, 168, 1, 100];
         let a = ARecord::parse(&data).unwrap();
         assert_eq!(a.addr.to_string(), "192.0.2.100");
+    }
+
+    #[test]
+    fn test_dns_header_too_short() {
+        let data = [0x00, 0x01, 0x84];
+        let result = DnsHeader::parse(&data);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_dns_header_not_response() {
+        let data = [
+            0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+        let header = DnsHeader::parse(&data).expect("parse");
+        assert!(!header.is_response());
+    }
+
+    #[test]
+    fn test_name_parser_compression() {
+        let data = [
+            4, b't', b'e', b's', b't', 3, b'c', b'o', b'm', 0, 0xC0, 0x00,
+        ];
+        let parser = NameParser::new(&data);
+        let (name, len) = parser.parse_name(10).expect("parse with compression");
+        assert_eq!(name, "test.com");
+        assert_eq!(len, 2);
+    }
+
+    #[test]
+    fn test_txt_record_no_equals() {
+        let data = [4, b't', b'e', b's', b't'];
+        let txt = TxtRecord::parse(&data).expect("parse");
+        assert!(txt.attributes.is_empty());
+    }
+
+    #[test]
+    fn test_a_record_wrong_length() {
+        let data = [192, 168, 1];
+        let result = ARecord::parse(&data);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_aaaa_record_parse() {
+        let mut data = [0u8; 16];
+        data[0] = 0x20;
+        data[1] = 0x01;
+        data[2] = 0x0d;
+        data[3] = 0xb8;
+        let aaaa = AaaaRecord::parse(&data).expect("parse");
+        assert!(aaaa.addr.to_string().starts_with("2001:"));
+    }
+
+    #[test]
+    fn test_aaaa_record_wrong_length() {
+        let data = [0u8; 8];
+        let result = AaaaRecord::parse(&data);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_record_type_from_u16() {
+        assert_eq!(RecordType::from_u16(1), Some(RecordType::A));
+        assert_eq!(RecordType::from_u16(33), Some(RecordType::SRV));
+        assert_eq!(RecordType::from_u16(99), None);
+    }
+
+    #[test]
+    fn test_txt_get_missing() {
+        let data = [7, b'k', b'e', b'y', b'=', b'v', b'a', b'l'];
+        let txt = TxtRecord::parse(&data).unwrap();
+        assert_eq!(txt.get("missing"), None);
+    }
+
+    #[test]
+    fn test_record_type_all_variants() {
+        assert_eq!(RecordType::from_u16(1), Some(RecordType::A));
+        assert_eq!(RecordType::from_u16(2), Some(RecordType::NS));
+        assert_eq!(RecordType::from_u16(5), Some(RecordType::CNAME));
+        assert_eq!(RecordType::from_u16(12), Some(RecordType::PTR));
+        assert_eq!(RecordType::from_u16(16), Some(RecordType::TXT));
+        assert_eq!(RecordType::from_u16(28), Some(RecordType::AAAA));
+        assert_eq!(RecordType::from_u16(33), Some(RecordType::SRV));
+        assert_eq!(RecordType::from_u16(0), None);
+        assert_eq!(RecordType::from_u16(255), None);
+    }
+
+    #[test]
+    fn test_resource_record_parse() {
+        let data = [
+            4, b't', b'e', b's', b't', 3, b'c', b'o', b'm', 0, // name "test.com"
+            0x00, 0x01, // A record
+            0x00, 0x01, // IN class
+            0x00, 0x00, 0x00, 0x3c, // TTL 60
+            0x00, 0x04, // rdlength 4
+            192, 168, 1, 1, // A record data
+        ];
+        let (rr, consumed) = ResourceRecord::parse(&data, 0).expect("parse");
+        assert_eq!(rr.name, "test.com");
+        assert_eq!(rr.rtype, 1);
+        assert_eq!(rr.rclass, 1);
+        assert_eq!(rr.ttl, 60);
+        assert_eq!(rr.rdata.len(), 4);
+        assert_eq!(rr.record_type(), Some(RecordType::A));
+        assert!(consumed > 0);
+    }
+
+    #[test]
+    fn test_resource_record_as_a() {
+        let data = [
+            4, b't', b'e', b's', b't', 0, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x3c, 0x00,
+            0x04, 10, 0, 0, 1,
+        ];
+        let (rr, _) = ResourceRecord::parse(&data, 0).expect("parse");
+        let a = rr.as_a().expect("A record");
+        assert_eq!(a.addr.to_string(), "10.0.0.1");
+    }
+
+    #[test]
+    fn test_resource_record_as_txt() {
+        let data = [
+            4, b't', b'e', b's', b't', 0, 0x00, 0x10, 0x00, 0x01, 0x00, 0x00, 0x00, 0x3c, 0x00,
+            0x0a, 9, b'v', b'e', b'r', b'=', b'1', b'.', b'0', b'.', b'0',
+        ];
+        let (rr, _) = ResourceRecord::parse(&data, 0).expect("parse");
+        let txt = rr.as_txt().expect("TXT record");
+        assert_eq!(txt.get("ver"), Some("1.0.0"));
+    }
+
+    #[test]
+    fn test_resource_record_truncated() {
+        let data = [4, b't', b'e', b's', b't', 0];
+        let result = ResourceRecord::parse(&data, 0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_dns_header_authority_additional() {
+        let data = [
+            0x12, 0x34, 0x80, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04,
+        ];
+        let header = DnsHeader::parse(&data).expect("parse");
+        assert_eq!(header.transaction_id, 0x1234);
+        assert_eq!(header.authority, 3);
+        assert_eq!(header.additional, 4);
+    }
+
+    #[test]
+    fn test_name_parser_exceeds_bounds() {
+        let data = [4, b't', b'e', b's', b't'];
+        let parser = NameParser::new(&data);
+        let result = parser.parse_name(0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_srv_record_parse_rdata_too_short() {
+        let data = [0u8; 5];
+        let result = SrvRecord::parse(&[], 0, &data);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_record_class_in() {
+        let _ = RecordClass::IN;
+    }
+
+    #[test]
+    fn test_name_parser_single_label() {
+        let data = [4, b't', b'e', b's', b't', 0];
+        let parser = NameParser::new(&data);
+        let (name, len) = parser.parse_name(0).expect("parse");
+        assert_eq!(name, "test");
+        assert_eq!(len, 6);
     }
 }

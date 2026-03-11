@@ -5,7 +5,7 @@
 //! Requires `--features legacy-http` to run.
 
 #![cfg(feature = "legacy-http")]
-#![allow(deprecated)]
+#![expect(deprecated)]
 
 use petal_tongue_discovery::{HttpVisualizationProvider, VisualizationDataProvider};
 use wiremock::matchers::{method, path};

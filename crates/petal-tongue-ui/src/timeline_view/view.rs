@@ -14,6 +14,19 @@ use std::path::PathBuf;
 use super::filtering::{filtered_events, get_primals};
 use super::types::TimelineEvent;
 
+/// Map a timestamp to an x-coordinate within the time area.
+/// Returns x in [0, rect_width] for the given time range.
+#[must_use]
+pub fn time_to_x(time: f64, start_time: f64, end_time: f64, rect_width: f32) -> f32 {
+    let range = end_time - start_time;
+    let fraction = if range <= 0.0 {
+        0.0
+    } else {
+        ((time - start_time) / range).clamp(0.0, 1.0)
+    };
+    fraction as f32 * rect_width
+}
+
 /// Timeline View - Sequence diagram of primal interactions
 pub struct TimelineView {
     /// Events to display
@@ -253,59 +266,52 @@ impl TimelineView {
 
         // Draw events
         let filtered_events = self.filtered_events();
-        if !filtered_events.is_empty() {
-            // Calculate time range
-            let min_time = filtered_events
-                .first()
-                .expect("checked non-empty above")
-                .timestamp;
-            let max_time = filtered_events
-                .last()
-                .expect("checked non-empty above")
-                .timestamp;
-            let time_range = (max_time - min_time).num_milliseconds().max(1) as f64;
+        let (Some(first), Some(last)) = (filtered_events.first(), filtered_events.last()) else {
+            return;
+        };
+        let min_time = first.timestamp;
+        let max_time = last.timestamp;
 
-            // Collect event IDs for click detection
-            let mut clicked_event_id: Option<String> = None;
+        // Collect event IDs for click detection
+        let mut clicked_event_id: Option<String> = None;
 
-            for event in filtered_events {
-                if let (Some(from_lane), Some(to_lane)) =
-                    (primal_lanes.get(&event.from), primal_lanes.get(&event.to))
+        let start_ms = min_time.timestamp_millis() as f64;
+        let end_ms = max_time.timestamp_millis() as f64;
+
+        for event in filtered_events {
+            if let (Some(from_lane), Some(to_lane)) =
+                (primal_lanes.get(&event.from), primal_lanes.get(&event.to))
+            {
+                let time_ms = event.timestamp.timestamp_millis() as f64;
+                let x = rect.min.x + 100.0 + time_to_x(time_ms, start_ms, end_ms, time_width);
+
+                let from_y = rect.min.y + lane_height * (*from_lane as f32 + 1.0);
+                let to_y = rect.min.y + lane_height * (*to_lane as f32 + 1.0);
+
+                // Draw event arrow
+                let from_pos = Pos2::new(x, from_y);
+                let to_pos = Pos2::new(x, to_y);
+
+                painter.line_segment([from_pos, to_pos], Stroke::new(2.0, event.status.color()));
+
+                // Draw event marker (circle)
+                painter.circle_filled(from_pos, 4.0, event.status.color());
+                painter.circle_filled(to_pos, 4.0, event.status.color());
+
+                // Check for click
+                let click_rect = Rect::from_center_size(from_pos, Vec2::splat(10.0));
+                if response.clicked()
+                    && let Some(pointer_pos) = response.interact_pointer_pos()
+                    && click_rect.contains(pointer_pos)
                 {
-                    // Calculate time position
-                    let time_offset = (event.timestamp - min_time).num_milliseconds() as f64;
-                    let time_fraction = time_offset / time_range;
-                    let x = rect.min.x + 100.0 + time_width * time_fraction as f32;
-
-                    let from_y = rect.min.y + lane_height * (*from_lane as f32 + 1.0);
-                    let to_y = rect.min.y + lane_height * (*to_lane as f32 + 1.0);
-
-                    // Draw event arrow
-                    let from_pos = Pos2::new(x, from_y);
-                    let to_pos = Pos2::new(x, to_y);
-
-                    painter
-                        .line_segment([from_pos, to_pos], Stroke::new(2.0, event.status.color()));
-
-                    // Draw event marker (circle)
-                    painter.circle_filled(from_pos, 4.0, event.status.color());
-                    painter.circle_filled(to_pos, 4.0, event.status.color());
-
-                    // Check for click
-                    let click_rect = Rect::from_center_size(from_pos, Vec2::splat(10.0));
-                    if response.clicked()
-                        && let Some(pointer_pos) = response.interact_pointer_pos()
-                        && click_rect.contains(pointer_pos)
-                    {
-                        clicked_event_id = Some(event.id.clone());
-                    }
+                    clicked_event_id = Some(event.id.clone());
                 }
             }
+        }
 
-            // Apply click after borrowing events
-            if let Some(event_id) = clicked_event_id {
-                self.selected_event = Some(event_id);
-            }
+        // Apply click after borrowing events
+        if let Some(event_id) = clicked_event_id {
+            self.selected_event = Some(event_id);
         }
     }
 
@@ -405,40 +411,143 @@ impl TimelineView {
             std::fs::create_dir_all(parent)?;
         }
         let mut f = File::create(path)?;
-
-        // Header
-        writeln!(
-            f,
-            "id,from,to,event_type,timestamp,duration_ms,status,payload_summary"
-        )?;
-
-        for event in events {
-            let duration = event.duration_ms.map(|d| d.to_string()).unwrap_or_default();
-            let payload = event.payload_summary.as_deref().unwrap_or("");
-            writeln!(
-                f,
-                "{},{},{},{},{},{},{},{}",
-                escape_csv(&event.id),
-                escape_csv(&event.from),
-                escape_csv(&event.to),
-                escape_csv(&event.event_type),
-                escape_csv(&event.timestamp.to_rfc3339()),
-                escape_csv(&duration),
-                escape_csv(&format!("{:?}", event.status)),
-                escape_csv(payload),
-            )?;
-        }
-
+        write!(f, "{}", format_events_csv(events))?;
         Ok(())
     }
 }
 
+/// Format timeline events as CSV content (for testing and export).
+#[must_use]
+pub fn format_events_csv(events: Vec<&TimelineEvent>) -> String {
+    let mut out = String::new();
+    out.push_str("id,from,to,event_type,timestamp,duration_ms,status,payload_summary\n");
+    for event in events {
+        let duration = event
+            .duration_ms
+            .map_or_else(String::new, |d| d.to_string());
+        let payload = event.payload_summary.as_deref().unwrap_or("");
+        out.push_str(&format!(
+            "{},{},{},{},{},{},{},{}\n",
+            escape_csv(&event.id),
+            escape_csv(&event.from),
+            escape_csv(&event.to),
+            escape_csv(&event.event_type),
+            escape_csv(&event.timestamp.to_rfc3339()),
+            escape_csv(&duration),
+            escape_csv(&format!("{:?}", event.status)),
+            escape_csv(payload),
+        ));
+    }
+    out
+}
+
 /// Escape a CSV field (RFC 4180): wrap in quotes if contains comma, quote, or newline
-fn escape_csv(s: &str) -> String {
+#[must_use]
+pub fn escape_csv(s: &str) -> String {
     let needs_quotes = s.contains(',') || s.contains('"') || s.contains('\n') || s.contains('\r');
     if needs_quotes {
         format!("\"{}\"", s.replace('"', "\"\""))
     } else {
         s.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::types::EventStatus;
+    use super::*;
+
+    #[test]
+    fn time_to_x_start() {
+        let x = time_to_x(100.0, 100.0, 200.0, 500.0);
+        assert!(x.abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn time_to_x_end() {
+        let x = time_to_x(200.0, 100.0, 200.0, 500.0);
+        assert!((x - 500.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn time_to_x_mid() {
+        let x = time_to_x(150.0, 100.0, 200.0, 500.0);
+        assert!((x - 250.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn time_to_x_zero_range() {
+        let x = time_to_x(100.0, 100.0, 100.0, 500.0);
+        assert!(x.abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn time_to_x_clamps_before_start() {
+        let x = time_to_x(50.0, 100.0, 200.0, 500.0);
+        assert!(x.abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn time_to_x_clamps_after_end() {
+        let x = time_to_x(250.0, 100.0, 200.0, 500.0);
+        assert!((x - 500.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn escape_csv_plain() {
+        assert_eq!(escape_csv("hello"), "hello");
+    }
+
+    #[test]
+    fn escape_csv_with_comma() {
+        assert_eq!(escape_csv("a,b"), "\"a,b\"");
+    }
+
+    #[test]
+    fn escape_csv_with_quote() {
+        // RFC 4180: wrap in quotes and double internal quotes
+        assert_eq!(escape_csv("say \"hi\""), "\"say \"\"hi\"\"\"");
+    }
+
+    #[test]
+    fn escape_csv_with_newline() {
+        assert_eq!(escape_csv("line1\nline2"), "\"line1\nline2\"");
+    }
+
+    #[test]
+    fn format_events_csv_empty() {
+        let events: Vec<&TimelineEvent> = Vec::new();
+        let csv = format_events_csv(events);
+        assert_eq!(
+            csv,
+            "id,from,to,event_type,timestamp,duration_ms,status,payload_summary\n"
+        );
+    }
+
+    #[test]
+    fn format_events_csv_single_event() {
+        let event = TimelineEvent {
+            id: "ev1".to_string(),
+            from: "primal-a".to_string(),
+            to: "primal-b".to_string(),
+            event_type: "message".to_string(),
+            timestamp: chrono::DateTime::parse_from_rfc3339("2025-01-15T12:00:00Z")
+                .expect("valid datetime")
+                .with_timezone(&chrono::Utc),
+            duration_ms: Some(42.5),
+            status: EventStatus::Success,
+            payload_summary: Some("summary".to_string()),
+        };
+        let csv = format_events_csv(vec![&event]);
+        assert!(
+            csv.starts_with("id,from,to,event_type,timestamp,duration_ms,status,payload_summary\n")
+        );
+        assert!(csv.contains("ev1"));
+        assert!(csv.contains("primal-a"));
+        assert!(csv.contains("primal-b"));
+        assert!(csv.contains("message"));
+        assert!(csv.contains("42.5"));
+        assert!(csv.contains("Success"));
+        assert!(csv.contains("summary"));
     }
 }

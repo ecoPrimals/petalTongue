@@ -332,10 +332,138 @@ mod tests {
         graph.add_node(n1);
         graph.add_node(n2);
         graph.add_node(n3);
-        graph.add_edge(GraphEdge::dependency(id1, id2)).unwrap();
+        graph
+            .add_edge(GraphEdge::dependency(id1, id2))
+            .expect("add edge");
         graph.edges.push(GraphEdge::dependency(id3.clone(), id3));
         let mut result = crate::graph_validation::types::ValidationResult::new();
         check_unreachable_nodes(&graph, &mut result);
         assert!(result.has_warnings());
+    }
+
+    #[test]
+    fn test_check_unreachable_nodes_empty_graph_returns_early() {
+        let graph = VisualGraph::new("g".to_string());
+        let mut result = crate::graph_validation::types::ValidationResult::new();
+        check_unreachable_nodes(&graph, &mut result);
+        assert!(!result.has_errors());
+        assert!(!result.has_warnings());
+    }
+
+    #[test]
+    fn test_check_unreachable_nodes_all_have_incoming() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        n1.set_parameter("primal_name".to_string(), "a".to_string());
+        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        let id1 = n1.id.clone();
+        let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
+        n2.set_parameter("primal_name".to_string(), "b".to_string());
+        n2.set_parameter("timeout".to_string(), "30".to_string());
+        let id2 = n2.id.clone();
+        graph.add_node(n1);
+        graph.add_node(n2);
+        graph
+            .add_edge(GraphEdge::dependency(id1.clone(), id2.clone()))
+            .expect("add edge");
+        graph
+            .add_edge(GraphEdge::dependency(id2, id1))
+            .expect("add edge - cycle");
+        let mut result = crate::graph_validation::types::ValidationResult::new();
+        check_unreachable_nodes(&graph, &mut result);
+        assert!(result.has_warnings(), "cycle means no start nodes");
+    }
+
+    #[test]
+    fn test_get_execution_order_single_node() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut n = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        n.set_parameter("primal_name".to_string(), "x".to_string());
+        n.set_parameter("family_id".to_string(), "f1".to_string());
+        let id = n.id.clone();
+        graph.add_node(n);
+        let order = get_execution_order(&graph).expect("single node has no cycle");
+        assert_eq!(order.len(), 1);
+        assert_eq!(order[0], id);
+    }
+
+    #[test]
+    fn test_get_execution_order_empty_graph() {
+        let graph = VisualGraph::new("g".to_string());
+        let order = get_execution_order(&graph);
+        assert_eq!(order, Some(vec![]));
+    }
+
+    #[test]
+    fn test_get_execution_order_diamond() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        n1.set_parameter("primal_name".to_string(), "a".to_string());
+        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        let id1 = n1.id.clone();
+        let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
+        n2.set_parameter("primal_name".to_string(), "b".to_string());
+        n2.set_parameter("timeout".to_string(), "30".to_string());
+        let id2 = n2.id.clone();
+        let mut n3 = GraphNode::new(NodeType::Verification, Vec2::zero());
+        n3.set_parameter("primal_name".to_string(), "c".to_string());
+        n3.set_parameter("timeout".to_string(), "30".to_string());
+        let id3 = n3.id.clone();
+        let mut n4 = GraphNode::new(NodeType::Verification, Vec2::zero());
+        n4.set_parameter("primal_name".to_string(), "d".to_string());
+        n4.set_parameter("timeout".to_string(), "30".to_string());
+        let id4 = n4.id.clone();
+        graph.add_node(n1);
+        graph.add_node(n2);
+        graph.add_node(n3);
+        graph.add_node(n4);
+        graph
+            .add_edge(GraphEdge::dependency(id1.clone(), id2.clone()))
+            .expect("edge");
+        graph
+            .add_edge(GraphEdge::dependency(id1.clone(), id3.clone()))
+            .expect("edge");
+        graph
+            .add_edge(GraphEdge::dependency(id2, id4.clone()))
+            .expect("edge");
+        graph
+            .add_edge(GraphEdge::dependency(id3, id4))
+            .expect("edge");
+        let order = get_execution_order(&graph).expect("diamond is acyclic");
+        assert_eq!(order.len(), 4);
+        assert_eq!(order[0], id1);
+    }
+
+    #[test]
+    fn test_check_cycles_no_cycle() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut n1 = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        n1.set_parameter("primal_name".to_string(), "a".to_string());
+        n1.set_parameter("family_id".to_string(), "f1".to_string());
+        let id1 = n1.id.clone();
+        let mut n2 = GraphNode::new(NodeType::Verification, Vec2::zero());
+        n2.set_parameter("primal_name".to_string(), "b".to_string());
+        n2.set_parameter("timeout".to_string(), "30".to_string());
+        let id2 = n2.id.clone();
+        graph.add_node(n1);
+        graph.add_node(n2);
+        graph
+            .add_edge(GraphEdge::dependency(id1, id2))
+            .expect("edge");
+        let mut result = crate::graph_validation::types::ValidationResult::new();
+        check_cycles(&graph, &mut result);
+        assert!(!result.has_errors());
+    }
+
+    #[test]
+    fn test_validate_execution_order_invoked() {
+        let mut graph = VisualGraph::new("g".to_string());
+        let mut n = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        n.set_parameter("primal_name".to_string(), "x".to_string());
+        n.set_parameter("family_id".to_string(), "f1".to_string());
+        graph.add_node(n);
+        let mut result = crate::graph_validation::types::ValidationResult::new();
+        validate_execution_order(&graph, &mut result);
+        assert!(result.is_valid());
     }
 }

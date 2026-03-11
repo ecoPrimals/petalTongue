@@ -8,6 +8,7 @@
 //! - Evaluative: How confident the system is (health, confidence)
 
 use crate::panel_registry::{PanelFactory, PanelInstance};
+use crate::proprioception_panel::{render_shared_health, render_shared_same_dave};
 use crate::scenario::CustomPanelConfig;
 use petal_tongue_core::proprioception::ProprioceptionData;
 use petal_tongue_discovery::NeuralApiProvider;
@@ -33,27 +34,6 @@ impl ProprioceptionPanel {
             update_interval: Duration::from_secs(5), // Update every 5 seconds
             error_message: None,
         }
-    }
-
-    fn render_health_indicator(
-        ui: &mut egui::Ui,
-        health: &petal_tongue_core::proprioception::HealthData,
-    ) {
-        let emoji = health.status.emoji();
-        let (r, g, b) = health.status.color_rgb();
-        let color = egui::Color32::from_rgb(r, g, b);
-
-        ui.horizontal(|ui| {
-            ui.label(emoji);
-            ui.colored_label(color, format!("Health: {:.1}%", health.percentage));
-        });
-
-        // Health bar
-        ui.add(
-            egui::ProgressBar::new(health.percentage / 100.0)
-                .show_percentage()
-                .animate(true),
-        );
     }
 }
 
@@ -88,7 +68,6 @@ impl PanelInstance for ProprioceptionPanel {
     }
 
     fn render(&mut self, ui: &mut egui::Ui) {
-        // Try to refresh if needed (blocking is acceptable in render since it's fast)
         if self.last_update.elapsed() > self.update_interval && self.provider.is_some() {
             tokio::task::block_in_place(|| {
                 tokio::runtime::Handle::current().block_on(async {
@@ -118,107 +97,23 @@ impl PanelInstance for ProprioceptionPanel {
         }
 
         if let Some(proprio) = &self.last_proprio {
-            // Health section
-            Self::render_health_indicator(ui, &proprio.health);
-
+            render_shared_health(ui, &proprio.health);
             ui.add_space(4.0);
-
-            // Confidence
-            ui.label(format!("Confidence: {:.0}%", proprio.confidence));
-            ui.add(
-                egui::ProgressBar::new(proprio.confidence / 100.0)
-                    .show_percentage()
-                    .animate(true),
-            );
-
-            ui.separator();
-
-            // SAME DAVE dimensions
-            ui.label("SAME DAVE Assessment:");
-            ui.add_space(2.0);
-
-            // Sensory
-            ui.label("👁️ Sensory:".to_string());
-            ui.label(format!(
-                "  {} active sockets detected",
-                proprio.sensory.active_sockets
-            ));
+            render_shared_same_dave(ui, proprio);
 
             ui.add_space(2.0);
-
-            // Awareness
-            ui.label("💭 Awareness:".to_string());
-            ui.label(format!(
-                "  Knows about {} primals",
-                proprio.self_awareness.knows_about
-            ));
-            if proprio.self_awareness.can_coordinate {
-                ui.label("  ✅ Can coordinate primals");
-            }
-
-            ui.add_space(2.0);
-
-            // Motor
-            ui.label("💪 Motor:".to_string());
-            if proprio.motor.can_deploy {
-                ui.label("  ✅ Can deploy primals");
-            }
-            if proprio.motor.can_execute_graphs {
-                ui.label("  ✅ Can execute graphs");
-            }
-            if proprio.motor.can_coordinate_primals {
-                ui.label("  ✅ Can coordinate primals");
-            }
-
-            ui.separator();
-
-            // Core Systems
-            ui.label("Core Systems:");
-            if proprio.self_awareness.has_security {
-                ui.colored_label(
-                    egui::Color32::from_rgb(34, 197, 94),
-                    "  ✅ Security (Entropy Source)",
-                );
-            } else {
-                ui.colored_label(egui::Color32::GRAY, "  ❌ Security (Entropy Source)");
-            }
-            if proprio.self_awareness.has_discovery {
-                ui.colored_label(
-                    egui::Color32::from_rgb(34, 197, 94),
-                    "  ✅ Discovery (Discovery Service)",
-                );
-            } else {
-                ui.colored_label(egui::Color32::GRAY, "  ❌ Discovery (Discovery Service)");
-            }
-            if proprio.self_awareness.has_compute {
-                ui.colored_label(
-                    egui::Color32::from_rgb(34, 197, 94),
-                    "  ✅ Compute (Compute Backend)",
-                );
-            } else {
-                ui.colored_label(egui::Color32::GRAY, "  ❌ Compute (Compute Backend)");
-            }
-
-            ui.add_space(4.0);
-
-            // Family ID
-            ui.label(format!("Family: {}", proprio.family_id));
-
-            ui.add_space(2.0);
-
-            // Last update time
             let age = self.last_update.elapsed().as_secs();
             if age < 10 {
-                ui.label(format!("📡 Updated {age}s ago"));
+                ui.label(format!("Updated {age}s ago"));
             } else {
-                ui.colored_label(egui::Color32::YELLOW, format!("⏳ Updated {age}s ago"));
+                ui.colored_label(egui::Color32::YELLOW, format!("Updated {age}s ago"));
             }
         } else if self.provider.is_none() {
-            ui.label("⏳ Neural API not available");
+            ui.label("Neural API not available");
             ui.label("Start NUCLEUS to see proprioception:");
             ui.code("nucleus serve --family nat0");
         } else {
-            ui.label("⏳ Connecting to Neural API...");
+            ui.label("Connecting to Neural API...");
         }
     }
 

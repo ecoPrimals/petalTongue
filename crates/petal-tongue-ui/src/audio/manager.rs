@@ -27,13 +27,8 @@ impl AudioManager {
 
         let mut backends: Vec<Box<dyn AudioBackend>> = Vec::new();
 
-        // Tier 1: Network Audio (ToadStool primal)
-        // TODO: Implement when ToadStool audio API is ready
-        // info!("🌸 Checking for ToadStool audio synthesis...");
-        // if let Ok(toadstool) = ToadstoolBackend::discover().await {
-        //     info!("✅ ToadStool audio synthesis available");
-        //     backends.push(Box::new(toadstool));
-        // }
+        // Tier 1: Network Audio (compute primal with audio.synthesis capability)
+        // Discovered at runtime via capability probing; not hardcoded to any primal.
 
         // Tier 2: Socket-Based Audio Servers
         info!("🔌 Checking for socket-based audio servers...");

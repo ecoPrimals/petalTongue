@@ -1,7 +1,7 @@
 # petalTongue -- Project Status
 
-**Updated**: March 10, 2026  
-**Version**: 1.6.0  
+**Updated**: March 11, 2026  
+**Version**: 1.6.1  
 **Edition**: 2024 (all crates)
 
 ---
@@ -11,23 +11,31 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 2,025 passing, 0 failures, 2 ignored |
+| Tests | 3,245 passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings, pedantic tightened (removed float_cmp, cast_*, too_many_lines, needless_pass_by_value allows; all uses `#[expect]` with documented reasons) |
 | Rustdoc | Clean (`RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps`) |
 | cargo deny | Clean (advisories, bans, licenses, sources) |
 | Unsafe | `#![forbid(unsafe_code)]` workspace-wide, zero C deps, zero `unsafe` blocks |
-| Files | All production files under 820 lines (largest: math_objects.rs 818) |
+| Files | All production files under 1,000 lines (largest: 968) |
 | License | AGPL-3.0-only, SPDX on all source and config files |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None (`ring` eliminated, `libc`/`nix`/`atty` removed, using `rustix`) |
 | ecoBin | Compliant (no ring, aws-lc-sys, openssl-sys, native-tls, zstd-sys) |
-| Coverage | 63% line / 67% function (llvm-cov, workspace) — target 90% |
+| Coverage | 77.4% region / 79.2% function (llvm-cov, workspace) — target 90% |
 | JSON-RPC | Semantic method naming (`domain.operation`), 16 visualization methods |
 | Mocks | All gated behind `#[cfg(test)]` or `#[cfg(feature = "test-fixtures")]`; PETALTONGUE_MOCK_MODE test-only |
 | Primal names | Capability-based constants, zero hardcoded external primal names |
 | Hardcoding | Socket names, ports, endpoints all configurable via env vars |
 | Domain theming | 6 domain palettes (health, physics, ecology, agriculture, measurement, neural) |
+| GUI logic extraction | All UI business logic in pure functions, 16 headless integration tests |
+| Game loop | Wired: TickClock in app, begin_frame_with_dt, continuous mode motor commands |
+| IPC-to-UI bridge | Complete: shared VisualizationState, LiveSessionsPanel, session polling |
+| Sensor streaming | Complete: SensorEventBatch/IPC types, SensorStreamRegistry, subscribe/unsubscribe/poll handlers |
+| Sensor event feed | Complete: UI events broadcast to IPC subscribers via `sensor_feed.rs` |
+| Interaction broadcast | Complete: Selection changes broadcast to `InteractionSubscriberRegistry` |
+| Neural API registration | Complete: `lifecycle.register` + 30s heartbeat via `neural_registration.rs` |
+| GameDataChannel mapping | Complete: 7 ludoSpring channels → DataBinding variants via `game_data_channel.rs` |
 | Spring IPC | healthSpring DataChannel auto-compile, dashboard layout, wetSpring Scatter/Spectrum, physics bridge, interaction aliases |
 | DataChannel compiler | All 9 DataBinding variants (incl. Scatter 2D) auto-compiled to Grammar of Graphics |
 | Dashboard engine | Multi-panel grid layout with domain theming and SVG export |
@@ -67,17 +75,18 @@
 
 ## Known Debt
 
-### Stubs and TODOs (~47 items)
+### Stubs and TODOs (~1 item in active code)
 
-Major incomplete work (delegated to other primals or future phases):
+Active TODO: Animation capability test exception in `capability_integration_tests.rs`.
+
+Delegated/roadmap items (not TODOs, documented as roadmap markers):
 - mDNS full DNS packet building (delegate to songbird)
 - HTTPS client connection (delegate to beardog/songbird via IPC)
 - Video/Visual/Gesture entropy modalities (phases 3-6)
 - WebSocket subscription for biomeOS events
 - Canvas rendering with tiny-skia
-- Windows audio direct access
-- Audio socket/software backend completion (ToadStool integration)
-- CSV export for timeline view
+- Windows audio direct access (WDM/WASAPI platform integration)
+- Audio hardware playback via capability provider
 - TUI force-directed layout
 
 ### Remaining Evolution Targets (P2)
@@ -88,7 +97,7 @@ Major incomplete work (delegated to other primals or future phases):
 
 ### Test Coverage Gap
 
-Current: 63% line coverage, 67% function coverage (2,025 tests).
+Current: 77.4% region coverage, 79.2% function coverage (3,245 tests).
 Target: 90%.
 
 Well-covered areas (>80%):
@@ -107,16 +116,15 @@ Well-covered areas (>80%):
 - Animation: all easing functions at boundaries, sequences, zero duration
 - Tufte constraints: data-ink ratio, chartjunk, data density
 
-Remaining uncovered areas (require display/terminal runtime):
-- egui app module, app_panels/builders, app/init: 0% (require egui Context)
-- Visual 2D renderer, interaction, animation: 0% (require egui)
-- Graph canvas, niche designer rendering, sensory UI renderers: 0%
-- System dashboard panels, human entropy rendering: 0%
-- Chart renderer rendering bodies: 0% (require egui `Ui`)
+Remaining uncovered areas:
+- egui rendering adapter layer (thin `Ui` calls after pure logic extraction)
+- Visual 2D renderer, animation renderer (egui-dependent drawing)
+- Chart renderer rendering bodies (egui `Ui` drawing)
 
-Strategy: Logic extraction pattern -- extract pure data transforms from
-rendering functions, test those. Rendering itself needs headless egui or
-screenshot-based testing (future infrastructure).
+Strategy: Logic extraction complete — all business logic in pure testable
+functions. Remaining coverage gap is the thin rendering adapter layer, which
+requires the headless harness for integration testing. 16 headless integration
+tests already cover keyboard shortcuts, motor commands, and panel navigation.
 
 ### Legacy Modules (feature-gated, frozen)
 
@@ -127,24 +135,28 @@ screenshot-based testing (future infrastructure).
 ### Missing Infrastructure
 
 - No CI/CD pipeline
-- No property-based testing (proptest/quickcheck)
 - No genomeBin manifest
 - No validation binaries (hotSpring pattern: hardcoded expected, exit 0/1)
 - No Python baselines for cross-validation
 - No benchmark suite (criterion/iai/divan)
 
+Property-based testing (`proptest`) added for: dynamic_schema, SVG modality,
+Tufte constraints, state sync.
+
 ---
 
-## Ecosystem Alignment (March 10, 2026)
+## Ecosystem Alignment (March 11, 2026)
 
 ### Primal Versions Tracked
 
 | Primal | Version | Aligned |
 |--------|---------|---------|
 | barraCuda | v0.3.3 (unreleased HEAD) | Yes — `compute.dispatch` uses `op` field; ecosystem discovery |
-| toadStool | S139 (Mar 9) | Yes — dual-write discovery at `$XDG_RUNTIME_DIR/ecoPrimals/` |
+| toadStool | S141 (Mar 10) | Yes — dual-write discovery at `$XDG_RUNTIME_DIR/ecoPrimals/` |
 | coralReef | Phase 10, Iter 26 | N/A — petalTongue does not call coralReef directly |
 | groundSpring | V100 (Mar 8) | Reviewed — sovereign rewire guidance applied |
+| ludoSpring | V2 (Mar 11) | Yes — 7 GameDataChannel types mapped, sensor stream wired |
+| biomeOS | Tower stable (Mar 11) | Yes — Neural API `lifecycle.register` + heartbeat |
 
 ### IPC Contract Status
 

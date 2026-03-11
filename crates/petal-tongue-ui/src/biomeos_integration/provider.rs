@@ -64,22 +64,61 @@ impl BiomeOSProvider {
     pub async fn discover() -> Result<Option<Self>> {
         info!("🔍 Discovering device management provider (capability-based)...");
 
-        // Query all primals for "device.management" capability
-        // This is TRUE PRIMAL - we don't hardcode "biomeOS"!
         let capability = "device.management";
 
-        // TODO: Implement actual capability discovery
-        // For Phase 1, we'll check environment variable as a hint
+        // Try capability discovery via biomeOS Neural API
+        use petal_tongue_core::{
+            biomeos_discovery::BiomeOsBackend,
+            capability_discovery::{
+                CapabilityQuery, DiscoveryBackend, PrimalEndpoint, PrimalHealth,
+            },
+        };
+        if let Ok(backend) = BiomeOsBackend::from_env() {
+            let query = CapabilityQuery::new("device").with_operation("management");
+            match backend.query(&query).await {
+                Ok(endpoints) => {
+                    let endpoints: Vec<PrimalEndpoint> = endpoints;
+                    if let Some(ep) = endpoints
+                        .into_iter()
+                        .find(|e| e.health != PrimalHealth::Unavailable)
+                    {
+                        let endpoint = ep
+                            .endpoints
+                            .jsonrpc
+                            .or_else(|| {
+                                ep.endpoints.tarpc.as_ref().map(|t: &String| {
+                                    t.strip_prefix("tarpc://unix:")
+                                        .map_or_else(|| t.clone(), |s: &str| s.to_string())
+                                })
+                            })
+                            .unwrap_or_else(|| ep.id.clone());
+                        info!("✅ Found device management provider at: {}", endpoint);
+                        let provider = Self {
+                            endpoint,
+                            cache: Arc::new(RwLock::new(ProviderCache::default())),
+                            event_stream: Arc::new(RwLock::new(None)),
+                        };
+                        if provider.health_check().await.is_ok() {
+                            info!("✅ Device management provider healthy");
+                            return Ok(Some(provider));
+                        }
+                        warn!("⚠️ Device management provider found but unhealthy");
+                    }
+                }
+                Err(e) => {
+                    debug!("Capability query failed: {}", e);
+                }
+            }
+        }
+
+        // Fallback: environment variable hint
         if let Ok(endpoint) = std::env::var("DEVICE_MANAGEMENT_ENDPOINT") {
             info!("✅ Found device management provider at: {}", endpoint);
-
             let provider = Self {
                 endpoint,
                 cache: Arc::new(RwLock::new(ProviderCache::default())),
                 event_stream: Arc::new(RwLock::new(None)),
             };
-
-            // Test connection
             if provider.health_check().await.is_ok() {
                 info!("✅ Device management provider healthy");
                 return Ok(Some(provider));
@@ -275,23 +314,10 @@ impl BiomeOSProvider {
     /// 1. `BIOMEOS_WS_ENDPOINT` environment variable
     /// 2. Standard port derivation from socket path
     fn derive_websocket_endpoint(&self) -> String {
-        // Priority 1: Explicit environment override
         if let Ok(ws_endpoint) = std::env::var("BIOMEOS_WS_ENDPOINT") {
             return ws_endpoint;
         }
-        if let Ok(ws_endpoint) = std::env::var("PETALTONGUE_WS_ENDPOINT") {
-            return ws_endpoint;
-        }
-
-        // Priority 2: Derive from socket path (convention-based)
-        // e.g., /run/biomeos.sock -> ws://localhost:8080/events
-        std::env::var("BIOMEOS_WS_PORT")
-            .ok()
-            .and_then(|port| port.parse::<u16>().ok())
-            .map_or_else(
-                || format!("ws://localhost:{}/events", constants::DEFAULT_HEADLESS_PORT),
-                |port| format!("ws://localhost:{port}/events"),
-            )
+        constants::default_biomeos_ws_events_url()
     }
 
     /// Helper: Call JSON-RPC method on device management provider
@@ -361,6 +387,28 @@ impl BiomeOSProvider {
         Ok(())
     }
 
+    /// Health check returning status string (for VisualizationDataProvider)
+    pub(super) async fn health_check_jsonrpc(&self) -> Result<String> {
+        // Try health.check first (semantic method)
+        let params = serde_json::json!({});
+        let result = self.call_jsonrpc("health.check", params).await;
+
+        if let Ok(res) = result {
+            if let Some(status) = res.get("status").and_then(serde_json::Value::as_str) {
+                return Ok(status.to_string());
+            }
+            if let Some(healthy) = res.get("healthy").and_then(serde_json::Value::as_bool) {
+                return Ok(if healthy { "healthy" } else { "unhealthy" }.to_string());
+            }
+            Ok("healthy".to_string())
+        } else {
+            // Fallback to health.ping
+            self.call_jsonrpc("health.ping", serde_json::json!({}))
+                .await?;
+            Ok("healthy".to_string())
+        }
+    }
+
     /// Expose endpoint for VisualizationDataProvider trait impl
     pub(super) fn endpoint(&self) -> &str {
         &self.endpoint
@@ -376,5 +424,50 @@ impl BiomeOSProvider {
             cache: Arc::new(RwLock::new(ProviderCache::default())),
             event_stream: Arc::new(RwLock::new(None)),
         }
+    }
+
+    /// Expose derive_websocket_endpoint for testing
+    pub fn derive_websocket_endpoint_for_test(&self) -> String {
+        self.derive_websocket_endpoint()
+    }
+}
+
+#[cfg(test)]
+mod provider_tests {
+    use super::*;
+
+    #[test]
+    fn provider_cache_default() {
+        let cache = ProviderCache::default();
+        assert!(cache.devices.is_empty());
+        assert!(cache.primals.is_empty());
+        assert!(cache.niche_templates.is_empty());
+        assert!(cache.last_update.is_none());
+    }
+
+    #[test]
+    fn provider_new_for_test() {
+        let provider = BiomeOSProvider::new_for_test("/tmp/test.sock");
+        assert_eq!(provider.endpoint(), "/tmp/test.sock");
+    }
+
+    #[test]
+    fn derive_websocket_endpoint_format() {
+        let provider = BiomeOSProvider::new_for_test("dummy");
+        let ep = provider.derive_websocket_endpoint_for_test();
+        assert!(ep.starts_with("ws://"));
+        assert!(ep.ends_with("/events"));
+        assert!(
+            ep.contains("127.0.0.1") || ep.contains("localhost"),
+            "WebSocket URL should use loopback host, got: {ep}"
+        );
+    }
+
+    #[test]
+    fn provider_cache_clone() {
+        let cache = ProviderCache::default();
+        let cloned = cache.clone();
+        assert!(cloned.devices.is_empty());
+        assert!(cloned.primals.is_empty());
     }
 }

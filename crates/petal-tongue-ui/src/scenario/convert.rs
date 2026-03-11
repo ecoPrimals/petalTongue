@@ -198,9 +198,9 @@ impl PrimalDefinition {
             endpoints: None,
             metadata: None,
             properties,
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             trust_level: None,
-            #[allow(deprecated)]
+            #[expect(deprecated)]
             family_id: None,
         }
     }

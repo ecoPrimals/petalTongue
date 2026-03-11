@@ -349,6 +349,8 @@ impl Drop for RichTUI {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::events::{KeyAction, parse_key_event};
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
     #[test]
     fn tui_config_default_values() {
@@ -359,11 +361,250 @@ mod tests {
     }
 
     #[test]
+    fn tui_config_custom_values() {
+        let config = TUIConfig {
+            tick_rate: Duration::from_secs(1),
+            mouse_support: true,
+            standalone: true,
+        };
+        assert_eq!(config.tick_rate, Duration::from_secs(1));
+        assert!(config.mouse_support);
+        assert!(config.standalone);
+    }
+
+    #[test]
     fn view_all_returns_all_views() {
         let views = crate::state::View::all();
         assert_eq!(views.len(), 8);
         assert_eq!(views[0].shortcut(), '1');
         assert_eq!(views[0].name(), "Dashboard");
         assert_eq!(views[0], crate::state::View::Dashboard);
+    }
+
+    #[test]
+    fn view_shortcuts_map_to_indices() {
+        let views = crate::state::View::all();
+        for (i, view) in views.iter().enumerate() {
+            let shortcut = view.shortcut();
+            let expected_digit = char::from_digit(u32::try_from(i + 1).unwrap(), 10).unwrap();
+            assert_eq!(
+                shortcut,
+                expected_digit,
+                "View {} should have shortcut {}",
+                view.name(),
+                expected_digit
+            );
+        }
+    }
+
+    #[test]
+    fn key_event_quit_maps_to_action() {
+        let action = parse_key_event(KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE));
+        assert_eq!(action, KeyAction::Quit);
+    }
+
+    #[test]
+    fn key_event_view_switch_maps_to_action() {
+        let action = parse_key_event(KeyEvent::new(KeyCode::Char('3'), KeyModifiers::NONE));
+        assert_eq!(action, KeyAction::SwitchView(2));
+    }
+
+    #[test]
+    fn key_event_refresh_maps_to_action() {
+        let action = parse_key_event(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE));
+        assert_eq!(action, KeyAction::Refresh);
+    }
+
+    #[test]
+    fn key_action_switch_view_bounds() {
+        let views = crate::state::View::all();
+        let action = KeyAction::SwitchView(7);
+        if let KeyAction::SwitchView(idx) = action {
+            assert!(idx < views.len());
+        }
+    }
+
+    #[test]
+    fn key_action_variants() {
+        assert_eq!(KeyAction::Quit, KeyAction::Quit);
+        assert_ne!(KeyAction::Quit, KeyAction::Refresh);
+        assert_ne!(KeyAction::SwitchView(0), KeyAction::SwitchView(1));
+    }
+
+    #[tokio::test]
+    async fn state_view_switch_resets_selection() {
+        let state = crate::state::TUIState::new();
+        state.set_selected_index(5).await;
+        state.set_view(crate::state::View::Topology).await;
+        assert_eq!(state.get_selected_index().await, 0);
+    }
+
+    #[tokio::test]
+    async fn state_standalone_mode_affects_refresh() {
+        let state = crate::state::TUIState::new();
+        state.set_standalone_mode(true).await;
+        assert!(state.is_standalone().await);
+    }
+
+    #[test]
+    fn tui_event_variants() {
+        use crate::events::{ExternalEvent, TUIEvent};
+        let _key = TUIEvent::Key(KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE));
+        let _ = TUIEvent::Tick;
+        let _ = TUIEvent::Quit;
+        let _ = TUIEvent::Resize {
+            width: 80,
+            height: 24,
+        };
+        let _ext = TUIEvent::External(ExternalEvent::PrimalDiscovered {
+            name: "test".to_string(),
+        });
+    }
+
+    #[test]
+    fn external_event_log_format() {
+        use crate::events::ExternalEvent;
+        let _evt = ExternalEvent::LogMessage {
+            source: "src".to_string(),
+            message: "msg".to_string(),
+        };
+        let source = "src";
+        let message = "msg";
+        let formatted = format!("[{source}] {message}");
+        assert_eq!(formatted, "[src] msg");
+    }
+
+    #[test]
+    fn parse_key_select_previous_next() {
+        let prev = parse_key_event(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE));
+        assert_eq!(prev, KeyAction::SelectPrevious);
+        let next = parse_key_event(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
+        assert_eq!(next, KeyAction::SelectNext);
+    }
+
+    #[test]
+    fn parse_key_select_help_refresh() {
+        assert_eq!(
+            parse_key_event(KeyEvent::new(KeyCode::Char('?'), KeyModifiers::NONE)),
+            KeyAction::Help
+        );
+        assert_eq!(
+            parse_key_event(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)),
+            KeyAction::Refresh
+        );
+    }
+
+    #[test]
+    fn parse_key_scroll_page_home_end() {
+        assert_eq!(
+            parse_key_event(KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE)),
+            KeyAction::PageUp
+        );
+        assert_eq!(
+            parse_key_event(KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE)),
+            KeyAction::PageDown
+        );
+        assert_eq!(
+            parse_key_event(KeyEvent::new(KeyCode::Home, KeyModifiers::NONE)),
+            KeyAction::Home
+        );
+        assert_eq!(
+            parse_key_event(KeyEvent::new(KeyCode::End, KeyModifiers::NONE)),
+            KeyAction::End
+        );
+    }
+
+    #[test]
+    fn parse_key_select_toggle_back() {
+        assert_eq!(
+            parse_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            KeyAction::Select
+        );
+        assert_eq!(
+            parse_key_event(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
+            KeyAction::Toggle
+        );
+        assert_eq!(
+            parse_key_event(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            KeyAction::Back
+        );
+    }
+
+    #[test]
+    fn parse_key_unknown_maps_to_none() {
+        let action = parse_key_event(KeyEvent::new(KeyCode::Char('z'), KeyModifiers::NONE));
+        assert_eq!(action, KeyAction::None);
+    }
+
+    #[tokio::test]
+    async fn select_previous_with_max_zero() {
+        let state = crate::state::TUIState::new();
+        state.set_selected_index(0).await;
+        state.select_previous(0).await;
+        assert_eq!(state.get_selected_index().await, 0);
+    }
+
+    #[tokio::test]
+    async fn select_next_with_max_zero() {
+        let state = crate::state::TUIState::new();
+        state.set_selected_index(0).await;
+        state.select_next(0).await;
+        assert_eq!(state.get_selected_index().await, 0);
+    }
+
+    #[tokio::test]
+    async fn external_event_primal_status_format() {
+        let healthy = true;
+        let name = "test";
+        let formatted = format!(
+            "Primal {} status: {}",
+            name,
+            if healthy { "healthy" } else { "unhealthy" }
+        );
+        assert_eq!(formatted, "Primal test status: healthy");
+    }
+
+    #[tokio::test]
+    async fn get_current_view_item_count_primals() {
+        let state = crate::state::TUIState::new();
+        state.set_view(crate::state::View::Primals).await;
+        // With no primals, count is 0
+        let count = match state.get_view().await {
+            crate::state::View::Primals => state.primal_count().await,
+            crate::state::View::Logs => state.log_count().await,
+            _ => 0,
+        };
+        assert_eq!(count, 0);
+    }
+
+    #[tokio::test]
+    async fn get_current_view_item_count_logs() {
+        let state = crate::state::TUIState::new();
+        state.set_view(crate::state::View::Logs).await;
+        let count = match state.get_view().await {
+            crate::state::View::Primals => state.primal_count().await,
+            crate::state::View::Logs => state.log_count().await,
+            _ => 0,
+        };
+        assert_eq!(count, 0);
+    }
+
+    #[tokio::test]
+    async fn get_current_view_item_count_other_views() {
+        let state = crate::state::TUIState::new();
+        state.set_view(crate::state::View::Dashboard).await;
+        let count = match state.get_view().await {
+            crate::state::View::Primals => state.primal_count().await,
+            crate::state::View::Logs => state.log_count().await,
+            _ => 0,
+        };
+        assert_eq!(count, 0);
+    }
+
+    #[test]
+    fn tui_config_debug() {
+        let config = TUIConfig::default();
+        let debug_str = format!("{config:?}");
+        assert!(debug_str.contains("TUIConfig"));
     }
 }

@@ -118,10 +118,11 @@ impl UIBackend for EguiBackend {
         );
         tracing::info!("   Using shared graph from DataService (TRUE PRIMAL!)");
 
-        // Create native options
+        // Create native options (env: PETALTONGUE_WINDOW_WIDTH, PETALTONGUE_WINDOW_HEIGHT)
+        let (w, h) = petal_tongue_core::constants::default_window_size();
         let native_options = crate::eframe::NativeOptions {
             viewport: crate::egui::ViewportBuilder::default()
-                .with_inner_size([1920.0, 1080.0])
+                .with_inner_size([w as f32, h as f32])
                 .with_min_inner_size([800.0, 600.0])
                 .with_icon(load_icon()),
             ..Default::default()
@@ -175,29 +176,74 @@ impl UIBackend for EguiBackend {
 /// Load application icon
 ///
 /// Returns the petalTongue icon for the window title bar.
+/// Programmatically generates a 32x32 flower/petal design (no external file).
 fn load_icon() -> Arc<crate::egui::IconData> {
-    // For now, use a placeholder
-    // TODO: Load actual petalTongue icon
-    let (icon_rgba, icon_width, icon_height) = {
-        // 32x32 pink flower icon (placeholder)
-        let size = 32;
-        let mut rgba = vec![0u8; size * size * 4];
+    let size = 32;
+    let mut rgba = vec![0u8; size * size * 4];
 
-        // Simple pink color
-        for pixel in rgba.chunks_exact_mut(4) {
-            pixel[0] = 255; // R
-            pixel[1] = 182; // G
-            pixel[2] = 193; // B (light pink)
-            pixel[3] = 255; // A
+    let cx = size as f32 / 2.0 - 0.5;
+    let cy = size as f32 / 2.0 - 0.5;
+
+    // Petal colors (light pink petals, rose center)
+    let petal: (u8, u8, u8) = (255, 182, 193); // Light pink
+    let center: (u8, u8, u8) = (219, 112, 147); // Pale violet red (flower center)
+    let outline: (u8, u8, u8) = (199, 21, 133); // Medium violet red (accent)
+
+    for y in 0..size {
+        for x in 0..size {
+            let fx = x as f32;
+            let fy = y as f32;
+            let dx = fx - cx;
+            let dy = fy - cy;
+            let dist = (dx * dx + dy * dy).sqrt();
+            let angle = dy.atan2(dx);
+
+            let idx = (y * size + x) * 4;
+
+            // Center circle (radius ~4)
+            if dist < 4.0 {
+                rgba[idx] = center.0;
+                rgba[idx + 1] = center.1;
+                rgba[idx + 2] = center.2;
+                rgba[idx + 3] = 255;
+            }
+            // 5 petals - teardrop shapes at 72° intervals
+            else if dist < 14.0 {
+                let mut in_petal = false;
+                for i in 0..5 {
+                    let petal_angle = (i as f32) * std::f32::consts::TAU / 5.0;
+                    let angle_diff = (angle - petal_angle).abs();
+                    let angle_diff = angle_diff.min(std::f32::consts::TAU - angle_diff);
+                    // Petal: teardrop shape, wider near center
+                    let r = 12.0 * (1.0 - 0.4 * angle_diff);
+                    if dist < r {
+                        in_petal = true;
+                        break;
+                    }
+                }
+                if in_petal {
+                    rgba[idx] = petal.0;
+                    rgba[idx + 1] = petal.1;
+                    rgba[idx + 2] = petal.2;
+                    rgba[idx + 3] = 255;
+                } else if dist < 15.0 {
+                    rgba[idx] = outline.0;
+                    rgba[idx + 1] = outline.1;
+                    rgba[idx + 2] = outline.2;
+                    rgba[idx + 3] = 200;
+                } else {
+                    rgba[idx + 3] = 0;
+                }
+            } else {
+                rgba[idx + 3] = 0;
+            }
         }
-
-        (rgba, size as u32, size as u32)
-    };
+    }
 
     Arc::new(crate::egui::IconData {
-        rgba: icon_rgba,
-        width: icon_width,
-        height: icon_height,
+        rgba,
+        width: size as u32,
+        height: size as u32,
     })
 }
 

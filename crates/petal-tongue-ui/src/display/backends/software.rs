@@ -14,6 +14,7 @@
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
+use petal_tongue_core::constants;
 use tracing::info;
 
 /// Software rendering backend
@@ -37,10 +38,11 @@ enum SoftwareBackend {
 }
 
 impl SoftwareDisplay {
-    /// Create new software display with default dimensions
+    /// Create new software display with default dimensions (env: PETALTONGUE_WINDOW_WIDTH, PETALTONGUE_WINDOW_HEIGHT)
     #[must_use]
     pub fn new() -> Self {
-        Self::with_dimensions(1920, 1080)
+        let (w, h) = constants::default_window_size();
+        Self::with_dimensions(w, h)
     }
 
     /// Create new software display with specific dimensions
@@ -63,19 +65,26 @@ impl SoftwareDisplay {
         self.buffer.resize(buffer_size, 0);
     }
 
+    /// Default VNC port (RFB protocol). Overridable via VNC_PORT env var.
+    const DEFAULT_VNC_PORT: u16 = 5900;
+
     /// Check if VNC backend is available
     ///
-    /// Checks if we can bind to VNC port (5900) and if VNC libraries are available
+    /// Checks if we can bind to VNC port and if VNC libraries are available
     fn check_vnc() -> bool {
         // Check if VNC_ENABLE environment variable is set
         if std::env::var("VNC_ENABLE").is_ok() {
-            // Check if we can bind to VNC port (5900)
-            if let Ok(listener) = std::net::TcpListener::bind("127.0.0.1:5900") {
+            let port: u16 = std::env::var("VNC_PORT")
+                .ok()
+                .and_then(|p| p.parse().ok())
+                .unwrap_or(Self::DEFAULT_VNC_PORT);
+            // Check if we can bind to VNC port
+            if let Ok(listener) = std::net::TcpListener::bind(format!("127.0.0.1:{port}")) {
                 drop(listener);
-                tracing::info!("✅ VNC backend available (port 5900 bindable)");
+                tracing::info!("✅ VNC backend available (port {port} bindable)");
                 return true;
             }
-            tracing::warn!("VNC port 5900 already in use");
+            tracing::warn!("VNC port {port} already in use");
         }
         false
     }
@@ -114,6 +123,10 @@ impl SoftwareDisplay {
     ///
     /// Uses a file-based approach for VNC integration. Production systems
     /// would maintain TCP connections to clients on port 5900.
+    #[expect(
+        clippy::unused_async,
+        reason = "async for future TCP/VNC implementation"
+    )]
     async fn send_vnc_frame(&self, buffer: &[u8]) -> Result<()> {
         tracing::debug!(
             "📡 VNC frame ready: {}x{} ({} bytes)",
@@ -148,6 +161,7 @@ impl SoftwareDisplay {
     /// Send frame to WebSocket clients
     ///
     /// Streams RGBA8 frames over WebSocket for browser-based viewing
+    #[expect(clippy::unused_async, reason = "async for future WebSocket broadcast")]
     async fn send_websocket_frame(&self, buffer: &[u8]) -> Result<()> {
         use base64::{Engine as _, engine::general_purpose};
 

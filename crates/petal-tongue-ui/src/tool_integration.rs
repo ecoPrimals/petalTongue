@@ -309,4 +309,70 @@ mod tests {
         manager.register_tool(Box::new(tool));
         assert!(manager.visible_tool().is_some());
     }
+
+    #[test]
+    fn test_tool_manager_default() {
+        let manager = ToolManager::default();
+        assert!(manager.tools().is_empty());
+    }
+
+    #[test]
+    fn test_find_tool_mut() {
+        let mut manager = ToolManager::new();
+        manager.register_tool(Box::new(MockTool::new("EditableTool")));
+        let tool = manager.find_tool_mut("EditableTool");
+        assert!(tool.is_some());
+        let tool = manager.find_tool_mut("Nonexistent");
+        assert!(tool.is_none());
+    }
+
+    #[test]
+    fn test_tools_with_multiple_capabilities() {
+        let mut tool = MockTool::new("MultiCap");
+        tool.metadata.capabilities = vec![
+            ToolCapability::Visual,
+            ToolCapability::Audio,
+            ToolCapability::Export,
+        ];
+        let mut manager = ToolManager::new();
+        manager.register_tool(Box::new(tool));
+
+        assert_eq!(
+            manager.tools_with_capability(&ToolCapability::Visual).len(),
+            1
+        );
+        assert_eq!(
+            manager.tools_with_capability(&ToolCapability::Audio).len(),
+            1
+        );
+        assert_eq!(
+            manager.tools_with_capability(&ToolCapability::Export).len(),
+            1
+        );
+        assert_eq!(
+            manager
+                .tools_with_capability(&ToolCapability::TextInput)
+                .len(),
+            0
+        );
+    }
+
+    #[test]
+    fn test_tool_capability_custom() {
+        assert_eq!(
+            ToolCapability::Custom("x".to_string()),
+            ToolCapability::Custom("x".to_string())
+        );
+        assert_ne!(
+            ToolCapability::Custom("a".to_string()),
+            ToolCapability::Custom("b".to_string())
+        );
+    }
+
+    #[test]
+    fn test_tool_metadata_source() {
+        let mut tool = MockTool::new("WithSource");
+        tool.metadata.source = Some("https://example.com".to_string());
+        assert_eq!(tool.metadata.source.as_deref(), Some("https://example.com"));
+    }
 }

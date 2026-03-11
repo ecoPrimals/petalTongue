@@ -10,6 +10,7 @@ use crate::capability_discovery::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tokio::sync::mpsc;
 
 /// biomeOS discovery backend
 #[derive(Debug)]
@@ -125,7 +126,7 @@ impl DiscoveryBackend for BiomeOsBackend {
     }
 
     async fn subscribe(&self, _query: &CapabilityQuery) -> Result<(), DiscoveryError> {
-        // TODO: Implement WebSocket subscription for real-time updates
+        // Registration only; use subscribe_websocket() for the event stream
         Ok(())
     }
 }
@@ -165,11 +166,11 @@ struct JsonRpcRequest {
 /// JSON-RPC response (jsonrpc and id required for spec compliance, not read after parse)
 #[derive(Deserialize)]
 struct JsonRpcResponse {
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "Required by JSON-RPC spec for deserialization")]
     jsonrpc: String,
     result: Option<Value>,
     error: Option<JsonRpcError>,
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "Required by JSON-RPC spec for deserialization")]
     id: u64,
 }
 
@@ -218,6 +219,119 @@ impl From<BiomeOsPrimal> for PrimalEndpoint {
                 _ => PrimalHealth::Unavailable,
             },
         }
+    }
+}
+
+/// Real-time topology/health event from biomeOS WebSocket
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum BiomeOSDiscoveryEvent {
+    /// Primal health status changed
+    PrimalStatus {
+        /// ID of the primal whose status changed
+        primal_id: String,
+        /// New health status string (e.g. "healthy", "degraded")
+        health: String,
+    },
+    /// Topology changed (primal added/removed or edge changed)
+    TopologyUpdate {
+        /// List of primal IDs in the topology
+        primals: Vec<String>,
+        /// Edges as (from_id, to_id) pairs
+        edges: Vec<(String, String)>,
+    },
+}
+
+impl BiomeOsBackend {
+    /// Subscribe to real-time topology/health updates via WebSocket.
+    ///
+    /// Connects to the biomeOS WebSocket endpoint (discovered via socket/env),
+    /// subscribes to topology and health events, and returns a receiver stream.
+    /// Handles reconnection gracefully by spawning a background task that
+    /// retries on disconnect.
+    #[expect(
+        clippy::unused_async,
+        reason = "async for API consistency with other discovery methods"
+    )]
+    pub async fn subscribe_websocket(
+        &self,
+        _query: &CapabilityQuery,
+    ) -> Result<mpsc::Receiver<BiomeOSDiscoveryEvent>, DiscoveryError> {
+        let ws_url = Self::derive_websocket_url();
+        let (tx, rx) = mpsc::channel(64);
+
+        tokio::spawn(Self::websocket_loop(ws_url, tx));
+        Ok(rx)
+    }
+
+    fn derive_websocket_url() -> String {
+        if let Ok(url) = std::env::var("BIOMEOS_WS_ENDPOINT") {
+            return url;
+        }
+        crate::constants::default_biomeos_ws_topology_url()
+    }
+
+    async fn websocket_loop(url: String, tx: mpsc::Sender<BiomeOSDiscoveryEvent>) {
+        const MAX_BACKOFF: u64 = 30;
+        let mut backoff = 1u64;
+
+        loop {
+            match Self::connect_and_forward(&url, &tx).await {
+                Ok(()) => {
+                    backoff = 1;
+                }
+                Err(e) => {
+                    tracing::debug!("WebSocket disconnected: {e}, reconnecting in {backoff}s");
+                    tokio::time::sleep(tokio::time::Duration::from_secs(backoff)).await;
+                    backoff = (backoff * 2).min(MAX_BACKOFF);
+                }
+            }
+        }
+    }
+
+    async fn connect_and_forward(
+        url: &str,
+        tx: &mpsc::Sender<BiomeOSDiscoveryEvent>,
+    ) -> Result<(), String> {
+        use futures_util::{SinkExt, StreamExt};
+        use tokio_tungstenite::connect_async;
+
+        let (ws_stream, _) = connect_async(url)
+            .await
+            .map_err(|e| format!("WebSocket connect failed: {e}"))?;
+
+        let (mut write, mut read) = ws_stream.split();
+
+        // Send subscription message
+        let subscribe_msg = serde_json::json!({
+            "jsonrpc": "2.0",
+            "method": "topology.subscribe",
+            "params": {},
+            "id": 1
+        });
+        let _ = write
+            .send(tokio_tungstenite::tungstenite::Message::Text(
+                subscribe_msg.to_string(),
+            ))
+            .await;
+
+        while let Some(msg) = read.next().await {
+            match msg {
+                Ok(tokio_tungstenite::tungstenite::Message::Text(text)) => {
+                    if let Ok(event) = serde_json::from_str::<BiomeOSDiscoveryEvent>(&text)
+                        && tx.send(event).await.is_err()
+                    {
+                        return Ok(()); // Receiver dropped, exit
+                    }
+                }
+                Ok(tokio_tungstenite::tungstenite::Message::Close(_)) => {
+                    return Err("WebSocket closed by server".to_string());
+                }
+                Err(e) => return Err(format!("WebSocket error: {e}")),
+                _ => {}
+            }
+        }
+        Err("WebSocket stream ended".to_string())
     }
 }
 
@@ -320,6 +434,33 @@ mod tests {
 
         let endpoint: PrimalEndpoint = biomeos_primal.into();
         assert_eq!(endpoint.health, PrimalHealth::Unavailable);
+    }
+
+    #[test]
+    fn test_biomeos_discovery_event_primal_status() {
+        let json = r#"{"type":"PrimalStatus","primal_id":"p1","health":"healthy"}"#;
+        let event: BiomeOSDiscoveryEvent = serde_json::from_str(json).expect("parse PrimalStatus");
+        match &event {
+            BiomeOSDiscoveryEvent::PrimalStatus { primal_id, health } => {
+                assert_eq!(primal_id, "p1");
+                assert_eq!(health, "healthy");
+            }
+            BiomeOSDiscoveryEvent::TopologyUpdate { .. } => panic!("expected PrimalStatus"),
+        }
+    }
+
+    #[test]
+    fn test_biomeos_discovery_event_topology_update() {
+        let json = r#"{"type":"TopologyUpdate","primals":["a","b"],"edges":[["a","b"]]}"#;
+        let event: BiomeOSDiscoveryEvent =
+            serde_json::from_str(json).expect("parse TopologyUpdate");
+        match &event {
+            BiomeOSDiscoveryEvent::TopologyUpdate { primals, edges } => {
+                assert_eq!(primals, &["a", "b"]);
+                assert_eq!(edges, &[("a".to_string(), "b".to_string())]);
+            }
+            BiomeOSDiscoveryEvent::PrimalStatus { .. } => panic!("expected TopologyUpdate"),
+        }
     }
 
     #[test]

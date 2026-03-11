@@ -330,14 +330,14 @@ impl VisualizationDataProvider for MockDeviceProvider {
                 },
                 last_seen: std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
+                    .unwrap_or_default()
                     .as_secs(),
                 endpoints: None,
                 metadata: None,
                 properties: Default::default(),
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 trust_level: None,
-                #[allow(deprecated)]
+                #[expect(deprecated)]
                 family_id: None,
             })
             .collect())

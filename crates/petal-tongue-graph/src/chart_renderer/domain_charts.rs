@@ -27,6 +27,69 @@ pub(crate) fn validate_spectrum_lengths(freq_len: usize, amp_len: usize) -> bool
     freq_len > 0 && freq_len == amp_len
 }
 
+/// Compute value range for heatmap/fieldmap normalization (testable without egui).
+#[must_use]
+pub(crate) fn value_range(values: &[f64]) -> Option<(f64, f64, f64)> {
+    if values.is_empty() {
+        return None;
+    }
+    let (vmin, vmax) = values
+        .iter()
+        .fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), &v| {
+            (lo.min(v), hi.max(v))
+        });
+    let range = (vmax - vmin).max(f64::EPSILON);
+    if !range.is_finite() {
+        return None;
+    }
+    Some((vmin, vmax, range))
+}
+
+/// Normalize value to [0, 1] for color mapping (testable without egui).
+#[must_use]
+pub(crate) fn normalize_value(value: f64, vmin: f64, range: f64) -> f32 {
+    ((value - vmin) / range).clamp(0.0, 1.0) as f32
+}
+
+/// Assign scatter3d points to z-bands for color/size encoding (testable without egui).
+#[must_use]
+#[allow(dead_code)] // Used in tests; draw_scatter3d uses inline loop for egui integration
+pub(crate) fn scatter3d_bands(
+    x_vals: &[f64],
+    y_vals: &[f64],
+    z_vals: &[f64],
+    n_bands: usize,
+) -> Option<Vec<Vec<[f64; 2]>>> {
+    if !validate_scatter3d_lengths(x_vals.len(), y_vals.len(), z_vals.len()) || n_bands == 0 {
+        return None;
+    }
+    let (z_min, z_max) = z_vals
+        .iter()
+        .fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), &val| {
+            (lo.min(val), hi.max(val))
+        });
+    let z_range = (z_max - z_min).max(f64::EPSILON);
+
+    let mut bands: Vec<Vec<[f64; 2]>> = vec![Vec::new(); n_bands];
+    for ((&xv, &yv), &zv) in x_vals.iter().zip(y_vals.iter()).zip(z_vals.iter()) {
+        let norm = ((zv - z_min) / z_range).clamp(0.0, 1.0);
+        for (band_idx, band_vec) in bands.iter_mut().enumerate().take(n_bands) {
+            let lo = band_idx as f64 / n_bands as f64;
+            let hi = (band_idx + 1) as f64 / n_bands as f64;
+            let in_band = if band_idx == n_bands - 1 {
+                norm >= lo && norm <= 1.0
+            } else {
+                norm >= lo && norm < hi
+            };
+            if in_band {
+                band_vec.push([xv, yv]);
+                break;
+            }
+        }
+    }
+    Some(bands)
+}
+
 pub(crate) fn draw_heatmap(
     ui: &mut Ui,
     label: &str,
@@ -50,12 +113,10 @@ pub(crate) fn draw_heatmap(
         return;
     }
 
-    let (vmin, vmax) = values
-        .iter()
-        .fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), &v| {
-            (lo.min(v), hi.max(v))
-        });
-    let range = (vmax - vmin).max(f64::EPSILON);
+    let Some((vmin, _vmax, range)) = value_range(values) else {
+        ui.label(RichText::new("(no value range)").color(palette.caution));
+        return;
+    };
     let cell_w = (ui.available_width().min(320.0) / cols as f32).max(8.0);
     let cell_h = 14.0_f32;
 
@@ -63,8 +124,8 @@ pub(crate) fn draw_heatmap(
         ui.horizontal(|ui| {
             ui.label(RichText::new(y_label).small().color(palette.text_dim));
             for col in 0..cols {
-                let t = ((values[row * cols + col] - vmin) / range) as f32;
-                let color = palette.positive.linear_multiply(t.max(0.15));
+                let t = normalize_value(values[row * cols + col], vmin, range);
+                let color = palette.positive.linear_multiply(t.max(0.15_f32));
                 let (rect, _) =
                     ui.allocate_exact_size(egui::vec2(cell_w, cell_h), egui::Sense::hover());
                 ui.painter().rect_filled(rect, 2.0, color);
@@ -297,19 +358,17 @@ pub(crate) fn draw_fieldmap(
         return;
     }
 
-    let (vmin, vmax) = values
-        .iter()
-        .fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), &v| {
-            (lo.min(v), hi.max(v))
-        });
-    let range = (vmax - vmin).max(f64::EPSILON);
+    let Some((vmin, _vmax, range)) = value_range(values) else {
+        ui.label(RichText::new("(no value range)").color(palette.caution));
+        return;
+    };
     let cell_w = (ui.available_width().min(320.0) / cols as f32).max(4.0);
     let cell_h = (160.0_f32 / rows as f32).max(4.0);
 
     for row in 0..rows {
         ui.horizontal(|ui| {
             for col in 0..cols {
-                let t = ((values[row * cols + col] - vmin) / range) as f32;
+                let t = normalize_value(values[row * cols + col], vmin, range);
                 let color = palette.info.linear_multiply(t.max(0.1));
                 let (rect, _) =
                     ui.allocate_exact_size(egui::vec2(cell_w, cell_h), egui::Sense::hover());
@@ -470,5 +529,260 @@ mod tests {
     #[test]
     fn z_bands_constant() {
         assert_eq!(Z_BANDS, 8);
+    }
+
+    #[test]
+    fn scatter2d_params_construction() {
+        let x = vec![1.0, 2.0, 3.0];
+        let y = vec![4.0, 5.0, 6.0];
+        let labels = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+        let params = Scatter2dParams {
+            label: "test",
+            x_vals: &x,
+            y_vals: &y,
+            point_labels: &labels,
+            x_label: "X",
+            y_label: "Y",
+            unit: "m",
+            domain: Some("health"),
+        };
+        assert_eq!(params.label, "test");
+        assert_eq!(params.x_vals.len(), 3);
+        assert_eq!(params.y_vals.len(), 3);
+        assert_eq!(params.point_labels.len(), 3);
+        assert_eq!(params.x_label, "X");
+        assert_eq!(params.y_label, "Y");
+        assert_eq!(params.unit, "m");
+        assert_eq!(params.domain, Some("health"));
+    }
+
+    #[test]
+    fn value_range_empty() {
+        let values: Vec<f64> = vec![];
+        assert!(value_range(&values).is_none());
+    }
+
+    #[test]
+    fn value_range_single() {
+        let values = vec![42.0];
+        let (vmin, vmax, range) = value_range(&values).expect("should have range");
+        assert!((vmin - 42.0).abs() < 1e-10);
+        assert!((vmax - 42.0).abs() < 1e-10);
+        assert!(range >= f64::EPSILON);
+    }
+
+    #[test]
+    fn value_range_spread() {
+        let values = vec![1.0, 5.0, 3.0, 9.0, 2.0];
+        let (vmin, vmax, range) = value_range(&values).expect("should have range");
+        assert!((vmin - 1.0).abs() < 1e-10);
+        assert!((vmax - 9.0).abs() < 1e-10);
+        assert!((range - 8.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn normalize_value_mid_range() {
+        let t = normalize_value(5.0, 0.0, 10.0);
+        assert!((t - 0.5).abs() < 1e-5);
+    }
+
+    #[test]
+    fn normalize_value_clamps() {
+        let t_lo = normalize_value(-1.0, 0.0, 10.0);
+        assert!(t_lo <= 0.0);
+        let t_hi = normalize_value(15.0, 0.0, 10.0);
+        assert!(t_hi >= 1.0);
+    }
+
+    #[test]
+    fn scatter3d_bands_distribution() {
+        let x = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let y = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let z = vec![0.0, 0.25, 0.5, 0.75, 1.0]; // spread across 4 bands
+        let bands = scatter3d_bands(&x, &y, &z, 4).expect("valid scatter3d input");
+        assert_eq!(bands.len(), 4);
+        assert_eq!(bands[0].len(), 1); // z=0 -> band 0
+        assert_eq!(bands[1].len(), 1); // z=0.25 -> band 1
+        assert_eq!(bands[2].len(), 1); // z=0.5 -> band 2
+        assert_eq!(bands[3].len(), 2); // z=0.75 and 1.0 -> band 3
+    }
+
+    #[test]
+    fn scatter3d_bands_invalid_input() {
+        let x = vec![1.0, 2.0];
+        let y = vec![1.0, 2.0];
+        let z = vec![1.0]; // length mismatch
+        assert!(scatter3d_bands(&x, &y, &z, 4).is_none());
+    }
+
+    #[test]
+    fn scatter3d_bands_zero_bands() {
+        let x = vec![1.0];
+        let y = vec![2.0];
+        let z = vec![3.0];
+        assert!(scatter3d_bands(&x, &y, &z, 0).is_none());
+    }
+
+    #[test]
+    fn value_range_infinity_returns_none() {
+        let values = vec![1.0, f64::INFINITY, 3.0];
+        assert!(value_range(&values).is_none());
+    }
+
+    #[test]
+    fn value_range_all_nan_returns_none() {
+        let values = vec![f64::NAN, f64::NAN];
+        let result = value_range(&values);
+        assert!(
+            result.is_none() || {
+                let (vmin, vmax, range) = result.expect("unreachable");
+                !vmin.is_finite() || !vmax.is_finite() || !range.is_finite()
+            }
+        );
+    }
+
+    #[test]
+    fn value_range_negative_values() {
+        let values = vec![-10.0, -5.0, 0.0, 5.0];
+        let (vmin, vmax, range) = value_range(&values).expect("should have range");
+        assert!((vmin - (-10.0)).abs() < 1e-10);
+        assert!((vmax - 5.0).abs() < 1e-10);
+        assert!((range - 15.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn normalize_value_at_min() {
+        let t = normalize_value(0.0, 0.0, 10.0);
+        assert!((t - 0.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn normalize_value_at_max() {
+        let t = normalize_value(10.0, 0.0, 10.0);
+        assert!((t - 1.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn scatter3d_bands_single_point() {
+        let x = vec![1.0];
+        let y = vec![2.0];
+        let z = vec![0.5];
+        let bands = scatter3d_bands(&x, &y, &z, 4).expect("valid scatter3d input");
+        assert_eq!(bands.len(), 4);
+        let total: usize = bands.iter().map(Vec::len).sum();
+        assert_eq!(total, 1, "Single point should appear in exactly one band");
+    }
+
+    #[test]
+    fn scatter3d_bands_uniform_z() {
+        let x = vec![1.0, 2.0, 3.0];
+        let y = vec![1.0, 2.0, 3.0];
+        let z = vec![1.0, 1.0, 1.0];
+        let bands = scatter3d_bands(&x, &y, &z, 4).expect("valid scatter3d input");
+        let total: usize = bands.iter().map(Vec::len).sum();
+        assert_eq!(total, 3, "All 3 points should appear in bands");
+    }
+
+    #[test]
+    fn heatmap_value_range_integration() {
+        let values = vec![10.0, 20.0, 30.0, 40.0];
+        let (vmin, _vmax, range) = value_range(&values).expect("should have range");
+        for (i, &v) in values.iter().enumerate() {
+            let t = normalize_value(v, vmin, range);
+            let expected = i as f32 / 3.0; // 0, 1/3, 2/3, 1
+            assert!((t - expected).abs() < 0.01);
+        }
+    }
+
+    #[test]
+    fn value_range_neg_infinity_returns_none() {
+        let values = vec![1.0, f64::NEG_INFINITY, 3.0];
+        assert!(value_range(&values).is_none());
+    }
+
+    #[test]
+    fn value_range_nan_does_not_panic() {
+        let values = vec![1.0, f64::NAN, 3.0];
+        let _ = value_range(&values);
+    }
+
+    #[test]
+    fn normalize_value_zero_range_uses_epsilon() {
+        // When range is f64::EPSILON (from value_range), value at vmin normalizes to 0
+        let t = normalize_value(0.0, 0.0, f64::EPSILON);
+        assert!((0.0..=1.0).contains(&t));
+    }
+
+    #[test]
+    fn scatter3d_bands_last_band_inclusive() {
+        // Point at z=1.0 should land in last band (norm=1.0, band n_bands-1 uses norm <= 1.0)
+        let x = vec![1.0];
+        let y = vec![2.0];
+        let z = vec![1.0];
+        let bands = scatter3d_bands(&x, &y, &z, 4).expect("valid input");
+        let total: usize = bands.iter().map(Vec::len).sum();
+        assert_eq!(total, 1, "z=1.0 should be in last band");
+    }
+
+    #[test]
+    fn scatter3d_bands_first_band() {
+        let x = vec![1.0, 2.0, 3.0];
+        let y = vec![1.0, 2.0, 3.0];
+        let z = vec![0.0, 0.1, 1.0]; // range=1, norm 0/0.1/1 → band0 gets 2, band3 gets 1
+        let bands = scatter3d_bands(&x, &y, &z, 4).expect("valid input");
+        assert_eq!(bands[0].len(), 2);
+    }
+
+    #[test]
+    fn normalize_value_below_min_clamps_to_zero() {
+        let t = normalize_value(-5.0, 0.0, 10.0);
+        assert!((t - 0.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn normalize_value_above_max_clamps_to_one() {
+        let t = normalize_value(100.0, 0.0, 10.0);
+        assert!((t - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn value_range_all_same_returns_valid() {
+        let values = vec![7.0, 7.0, 7.0];
+        let (vmin, vmax, range) = value_range(&values).expect("same values still valid");
+        assert!((vmin - 7.0).abs() < f64::EPSILON);
+        assert!((vmax - 7.0).abs() < f64::EPSILON);
+        assert!(range >= f64::EPSILON);
+    }
+
+    #[test]
+    fn scatter3d_bands_boundary_between_bands() {
+        let x = vec![1.0, 2.0];
+        let y = vec![1.0, 2.0];
+        let z = vec![0.0, 0.5];
+        let bands = scatter3d_bands(&x, &y, &z, 2).expect("valid input");
+        assert_eq!(bands.len(), 2);
+        let total: usize = bands.iter().map(Vec::len).sum();
+        assert_eq!(total, 2);
+    }
+
+    #[test]
+    fn scatter3d_bands_norm_at_boundary() {
+        let x = vec![1.0];
+        let y = vec![2.0];
+        let z = vec![0.999_999];
+        let bands = scatter3d_bands(&x, &y, &z, 4).expect("valid input");
+        let total: usize = bands.iter().map(Vec::len).sum();
+        assert_eq!(total, 1);
+    }
+
+    #[test]
+    fn validate_scatter3d_mismatched_lengths() {
+        assert!(!validate_scatter3d_lengths(2, 3, 2));
+        assert!(!validate_scatter3d_lengths(3, 2, 3));
+    }
+
+    #[test]
+    fn validate_spectrum_mismatched() {
+        assert!(!validate_spectrum_lengths(5, 6));
     }
 }

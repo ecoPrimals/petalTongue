@@ -345,4 +345,147 @@ mod tests {
         panel.set_error(None);
         assert!(panel.error_message.is_none());
     }
+
+    #[test]
+    fn test_set_execution_status() {
+        let mut panel = GraphManagerPanel::new();
+        assert!(panel.execution_status.is_none());
+
+        panel.set_execution_status(Some("Running...".to_string()));
+        assert_eq!(panel.execution_status, Some("Running...".to_string()));
+
+        panel.set_execution_status(None);
+        assert!(panel.execution_status.is_none());
+    }
+
+    #[test]
+    fn test_remove_graph_clears_selected() {
+        let mut panel = GraphManagerPanel::new();
+        let metadata = GraphMetadata {
+            id: "graph-a".to_string(),
+            name: "Graph A".to_string(),
+            description: None,
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+            modified_at: "2026-01-01T01:00:00Z".to_string(),
+            node_count: 2,
+            edge_count: 1,
+        };
+        panel.add_graph(metadata);
+        panel.selected_graph_id = Some("graph-a".to_string());
+
+        panel.remove_graph("graph-a");
+        assert_eq!(panel.available_graphs.len(), 0);
+        assert!(panel.selected_graph_id.is_none());
+    }
+
+    #[test]
+    fn test_remove_graph_keeps_others() {
+        let mut panel = GraphManagerPanel::new();
+        panel.add_graph(GraphMetadata {
+            id: "g1".to_string(),
+            name: "G1".to_string(),
+            description: None,
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+            modified_at: "2026-01-01T01:00:00Z".to_string(),
+            node_count: 1,
+            edge_count: 0,
+        });
+        panel.add_graph(GraphMetadata {
+            id: "g2".to_string(),
+            name: "G2".to_string(),
+            description: None,
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+            modified_at: "2026-01-01T01:00:00Z".to_string(),
+            node_count: 2,
+            edge_count: 1,
+        });
+
+        panel.remove_graph("g1");
+        assert_eq!(panel.available_graphs.len(), 1);
+        assert_eq!(panel.available_graphs[0].id, "g2");
+    }
+
+    #[test]
+    fn test_graph_manager_action_variants() {
+        let save = GraphManagerAction::Save {
+            name: "test".to_string(),
+            description: Some("desc".to_string()),
+        };
+        match &save {
+            GraphManagerAction::Save { name, description } => {
+                assert_eq!(name, "test");
+                assert_eq!(description.as_deref(), Some("desc"));
+            }
+            _ => panic!("expected Save"),
+        }
+
+        let load = GraphManagerAction::Load("id-123".to_string());
+        match &load {
+            GraphManagerAction::Load(id) => assert_eq!(id, "id-123"),
+            _ => panic!("expected Load"),
+        }
+
+        let _ = GraphManagerAction::Execute;
+        let delete = GraphManagerAction::Delete("del-id".to_string());
+        match &delete {
+            GraphManagerAction::Delete(id) => assert_eq!(id, "del-id"),
+            _ => panic!("expected Delete"),
+        }
+    }
+
+    #[test]
+    fn test_panel_default() {
+        let panel = GraphManagerPanel::default();
+        assert!(panel.available_graphs.is_empty());
+        assert!(panel.save_name.is_empty());
+        assert!(panel.save_description.is_empty());
+    }
+
+    #[test]
+    fn test_save_action_empty_description() {
+        let save = GraphManagerAction::Save {
+            name: "graph".to_string(),
+            description: None,
+        };
+        match &save {
+            GraphManagerAction::Save { name, description } => {
+                assert_eq!(name, "graph");
+                assert!(description.is_none());
+            }
+            _ => panic!("expected Save"),
+        }
+    }
+
+    #[test]
+    fn test_remove_graph_nonexistent_id() {
+        let mut panel = GraphManagerPanel::new();
+        panel.add_graph(GraphMetadata {
+            id: "g1".to_string(),
+            name: "G1".to_string(),
+            description: None,
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+            modified_at: "2026-01-01T01:00:00Z".to_string(),
+            node_count: 1,
+            edge_count: 0,
+        });
+        panel.remove_graph("nonexistent");
+        assert_eq!(panel.available_graphs.len(), 1);
+    }
+
+    #[test]
+    fn test_add_multiple_graphs() {
+        let mut panel = GraphManagerPanel::new();
+        for i in 0..5 {
+            panel.add_graph(GraphMetadata {
+                id: format!("g{i}"),
+                name: format!("Graph {i}"),
+                description: None,
+                created_at: "2026-01-01T00:00:00Z".to_string(),
+                modified_at: "2026-01-01T01:00:00Z".to_string(),
+                node_count: i,
+                edge_count: i.saturating_sub(1),
+            });
+        }
+        assert_eq!(panel.available_graphs.len(), 5);
+    }
 }

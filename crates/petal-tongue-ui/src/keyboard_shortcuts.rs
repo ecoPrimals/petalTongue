@@ -5,6 +5,80 @@
 
 use egui::Key;
 
+/// Modifiers state for key mapping (egui-free)
+#[derive(Clone, Debug, Default)]
+pub struct KeyModifiers {
+    pub ctrl: bool,
+    pub shift: bool,
+    pub alt: bool,
+}
+
+/// Map a key press + modifiers to a shortcut action without egui dependency.
+#[must_use]
+pub fn map_key_to_action(
+    key: Key,
+    modifiers: &KeyModifiers,
+    _show_help: bool,
+) -> Option<ShortcutAction> {
+    // Help toggle (Shift+/)
+    if key == Key::Questionmark {
+        return Some(ShortcutAction::ToggleHelp);
+    }
+
+    // ESC - Close panels
+    if key == Key::Escape {
+        return Some(ShortcutAction::CloseOverlays);
+    }
+
+    // F keys
+    if key == Key::F1 {
+        return Some(ShortcutAction::ToggleHelp);
+    }
+
+    // Ctrl+ shortcuts
+    if modifiers.ctrl {
+        if key == Key::A {
+            return Some(ShortcutAction::ToggleAccessibility);
+        }
+        if key == Key::D {
+            return Some(ShortcutAction::ToggleDashboard);
+        }
+        if key == Key::H {
+            return Some(ShortcutAction::ToggleHelp);
+        }
+        if key == Key::T {
+            return Some(ShortcutAction::FocusTools);
+        }
+        if key == Key::R {
+            return Some(ShortcutAction::Refresh);
+        }
+        for (i, k) in [
+            Key::Num1,
+            Key::Num2,
+            Key::Num3,
+            Key::Num4,
+            Key::Num5,
+            Key::Num6,
+            Key::Num7,
+        ]
+        .iter()
+        .enumerate()
+        {
+            if key == *k {
+                return Some(ShortcutAction::SelectColorScheme(i));
+            }
+        }
+        if key == Key::Plus || key == Key::Equals {
+            return Some(ShortcutAction::IncreaseFontSize);
+        }
+        if key == Key::Minus {
+            return Some(ShortcutAction::DecreaseFontSize);
+        }
+    }
+
+    None
+}
+
 /// Keyboard shortcut configuration
 #[derive(Clone, Debug, Default)]
 pub struct KeyboardShortcuts {
@@ -15,76 +89,42 @@ pub struct KeyboardShortcuts {
 impl KeyboardShortcuts {
     /// Handle keyboard input for the app
     pub fn handle_input(&mut self, ctx: &egui::Context) -> ShortcutAction {
-        // Help toggle (Shift+/)
-        if ctx.input(|i| i.key_pressed(Key::Questionmark)) {
-            self.show_help = !self.show_help;
-            return ShortcutAction::ToggleHelp;
-        }
+        let modifiers = ctx.input(|i| crate::keyboard_shortcuts::KeyModifiers {
+            ctrl: i.modifiers.ctrl,
+            shift: i.modifiers.shift,
+            alt: i.modifiers.alt,
+        });
 
-        // ESC - Close panels
-        if ctx.input(|i| i.key_pressed(Key::Escape)) {
-            return ShortcutAction::CloseOverlays;
-        }
+        let keys_to_check = [
+            Key::Questionmark,
+            Key::Escape,
+            Key::F1,
+            Key::A,
+            Key::D,
+            Key::H,
+            Key::T,
+            Key::R,
+            Key::Num1,
+            Key::Num2,
+            Key::Num3,
+            Key::Num4,
+            Key::Num5,
+            Key::Num6,
+            Key::Num7,
+            Key::Plus,
+            Key::Equals,
+            Key::Minus,
+        ];
 
-        // Accessibility shortcuts
-        if ctx.input(|i| i.modifiers.ctrl) {
-            // Ctrl+A - Accessibility panel
-            if ctx.input(|i| i.key_pressed(Key::A)) {
-                return ShortcutAction::ToggleAccessibility;
-            }
-
-            // Ctrl+D - Dashboard
-            if ctx.input(|i| i.key_pressed(Key::D)) {
-                return ShortcutAction::ToggleDashboard;
-            }
-
-            // Ctrl+H - Help
-            if ctx.input(|i| i.key_pressed(Key::H)) {
-                self.show_help = !self.show_help;
-                return ShortcutAction::ToggleHelp;
-            }
-
-            // Ctrl+T - Tools menu
-            if ctx.input(|i| i.key_pressed(Key::T)) {
-                return ShortcutAction::FocusTools;
-            }
-
-            // Ctrl+R - Refresh
-            if ctx.input(|i| i.key_pressed(Key::R)) {
-                return ShortcutAction::Refresh;
-            }
-
-            // Ctrl+1-9 - Color schemes
-            for (i, key) in [
-                Key::Num1,
-                Key::Num2,
-                Key::Num3,
-                Key::Num4,
-                Key::Num5,
-                Key::Num6,
-                Key::Num7,
-            ]
-            .iter()
-            .enumerate()
-            {
-                if ctx.input(|input| input.key_pressed(*key)) {
-                    return ShortcutAction::SelectColorScheme(i);
+        for key in keys_to_check {
+            if ctx.input(|i| i.key_pressed(key)) {
+                if let Some(action) = map_key_to_action(key, &modifiers, self.show_help) {
+                    if action == ShortcutAction::ToggleHelp {
+                        self.show_help = !self.show_help;
+                    }
+                    return action;
                 }
             }
-
-            // Ctrl+Plus/Minus - Font size
-            if ctx.input(|i| i.key_pressed(Key::Plus) || i.key_pressed(Key::Equals)) {
-                return ShortcutAction::IncreaseFontSize;
-            }
-            if ctx.input(|i| i.key_pressed(Key::Minus)) {
-                return ShortcutAction::DecreaseFontSize;
-            }
-        }
-
-        // F keys
-        if ctx.input(|i| i.key_pressed(Key::F1)) {
-            self.show_help = !self.show_help;
-            return ShortcutAction::ToggleHelp;
         }
 
         ShortcutAction::None
@@ -216,6 +256,18 @@ pub enum ShortcutAction {
 mod tests {
     use super::*;
 
+    fn no_mods() -> KeyModifiers {
+        KeyModifiers::default()
+    }
+
+    fn ctrl_only() -> KeyModifiers {
+        KeyModifiers {
+            ctrl: true,
+            shift: false,
+            alt: false,
+        }
+    }
+
     #[test]
     fn test_keyboard_shortcuts_creation() {
         let shortcuts = KeyboardShortcuts::default();
@@ -226,5 +278,129 @@ mod tests {
     fn test_shortcut_actions() {
         assert_eq!(ShortcutAction::None, ShortcutAction::None);
         assert_ne!(ShortcutAction::ToggleHelp, ShortcutAction::None);
+    }
+
+    #[test]
+    fn map_questionmark_toggle_help() {
+        assert_eq!(
+            map_key_to_action(Key::Questionmark, &no_mods(), false),
+            Some(ShortcutAction::ToggleHelp)
+        );
+    }
+
+    #[test]
+    fn map_escape_close_overlays() {
+        assert_eq!(
+            map_key_to_action(Key::Escape, &no_mods(), false),
+            Some(ShortcutAction::CloseOverlays)
+        );
+    }
+
+    #[test]
+    fn map_f1_toggle_help() {
+        assert_eq!(
+            map_key_to_action(Key::F1, &no_mods(), false),
+            Some(ShortcutAction::ToggleHelp)
+        );
+    }
+
+    #[test]
+    fn map_ctrl_a_toggle_accessibility() {
+        assert_eq!(
+            map_key_to_action(Key::A, &ctrl_only(), false),
+            Some(ShortcutAction::ToggleAccessibility)
+        );
+    }
+
+    #[test]
+    fn map_ctrl_d_toggle_dashboard() {
+        assert_eq!(
+            map_key_to_action(Key::D, &ctrl_only(), false),
+            Some(ShortcutAction::ToggleDashboard)
+        );
+    }
+
+    #[test]
+    fn map_ctrl_h_toggle_help() {
+        assert_eq!(
+            map_key_to_action(Key::H, &ctrl_only(), false),
+            Some(ShortcutAction::ToggleHelp)
+        );
+    }
+
+    #[test]
+    fn map_ctrl_t_focus_tools() {
+        assert_eq!(
+            map_key_to_action(Key::T, &ctrl_only(), false),
+            Some(ShortcutAction::FocusTools)
+        );
+    }
+
+    #[test]
+    fn map_ctrl_r_refresh() {
+        assert_eq!(
+            map_key_to_action(Key::R, &ctrl_only(), false),
+            Some(ShortcutAction::Refresh)
+        );
+    }
+
+    #[test]
+    fn map_ctrl_num1_through_7_color_schemes() {
+        for (i, key) in [
+            Key::Num1,
+            Key::Num2,
+            Key::Num3,
+            Key::Num4,
+            Key::Num5,
+            Key::Num6,
+            Key::Num7,
+        ]
+        .iter()
+        .enumerate()
+        {
+            assert_eq!(
+                map_key_to_action(*key, &ctrl_only(), false),
+                Some(ShortcutAction::SelectColorScheme(i))
+            );
+        }
+    }
+
+    #[test]
+    fn map_ctrl_plus_increase_font() {
+        assert_eq!(
+            map_key_to_action(Key::Plus, &ctrl_only(), false),
+            Some(ShortcutAction::IncreaseFontSize)
+        );
+    }
+
+    #[test]
+    fn map_ctrl_equals_increase_font() {
+        assert_eq!(
+            map_key_to_action(Key::Equals, &ctrl_only(), false),
+            Some(ShortcutAction::IncreaseFontSize)
+        );
+    }
+
+    #[test]
+    fn map_ctrl_minus_decrease_font() {
+        assert_eq!(
+            map_key_to_action(Key::Minus, &ctrl_only(), false),
+            Some(ShortcutAction::DecreaseFontSize)
+        );
+    }
+
+    #[test]
+    fn map_a_without_ctrl_returns_none() {
+        assert_eq!(map_key_to_action(Key::A, &no_mods(), false), None);
+    }
+
+    #[test]
+    fn map_num1_without_ctrl_returns_none() {
+        assert_eq!(map_key_to_action(Key::Num1, &no_mods(), false), None);
+    }
+
+    #[test]
+    fn map_unknown_key_returns_none() {
+        assert_eq!(map_key_to_action(Key::Space, &no_mods(), false), None);
     }
 }

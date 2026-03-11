@@ -26,7 +26,10 @@ pub use basic_charts::{NodeDetail, draw_node_detail};
 /// If `domain` is provided, uses a domain-aware color palette (e.g. "health",
 /// "physics", "ecology"). If `None`, defaults to the health palette for
 /// backward compatibility.
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "match on DataBinding variants; splitting would reduce clarity"
+)]
 pub fn draw_channel(ui: &mut Ui, binding: &DataBinding, domain: Option<&str>) {
     match binding {
         DataBinding::TimeSeries {
@@ -150,6 +153,7 @@ pub fn draw_channel(ui: &mut Ui, binding: &DataBinding, domain: Option<&str>) {
 
 #[cfg(test)]
 mod tests {
+    use super::basic_charts::{GaugeStatus, distribution_bins, gauge_status_for_value};
     use super::*;
 
     #[test]
@@ -175,5 +179,109 @@ mod tests {
         assert_eq!(node.health, 95);
         assert_eq!(node.status, "Active");
         assert_eq!(node.capabilities.len(), 2);
+    }
+
+    #[test]
+    fn test_gauge_status_normal() {
+        let normal = [20.0, 80.0];
+        let warning = [10.0, 90.0];
+        assert_eq!(
+            gauge_status_for_value(50.0, &normal, &warning),
+            GaugeStatus::Normal
+        );
+        assert_eq!(
+            gauge_status_for_value(20.0, &normal, &warning),
+            GaugeStatus::Normal
+        );
+        assert_eq!(
+            gauge_status_for_value(80.0, &normal, &warning),
+            GaugeStatus::Normal
+        );
+    }
+
+    #[test]
+    fn test_gauge_status_warning() {
+        let normal = [20.0, 80.0];
+        let warning = [10.0, 90.0];
+        assert_eq!(
+            gauge_status_for_value(15.0, &normal, &warning),
+            GaugeStatus::Warning
+        );
+        assert_eq!(
+            gauge_status_for_value(85.0, &normal, &warning),
+            GaugeStatus::Warning
+        );
+        assert_eq!(
+            gauge_status_for_value(10.0, &normal, &warning),
+            GaugeStatus::Warning
+        );
+        assert_eq!(
+            gauge_status_for_value(90.0, &normal, &warning),
+            GaugeStatus::Warning
+        );
+    }
+
+    #[test]
+    fn test_gauge_status_critical() {
+        let normal = [20.0, 80.0];
+        let warning = [10.0, 90.0];
+        assert_eq!(
+            gauge_status_for_value(5.0, &normal, &warning),
+            GaugeStatus::Critical
+        );
+        assert_eq!(
+            gauge_status_for_value(95.0, &normal, &warning),
+            GaugeStatus::Critical
+        );
+    }
+
+    #[test]
+    fn test_distribution_bins_empty_returns_none() {
+        assert!(distribution_bins(&[], 10).is_none());
+    }
+
+    #[test]
+    fn test_distribution_bins_zero_bins_returns_none() {
+        assert!(distribution_bins(&[1.0, 2.0, 3.0], 0).is_none());
+    }
+
+    #[test]
+    fn test_distribution_bins_single_value_returns_none() {
+        // Single value gives bin_width=0, so returns None
+        assert!(distribution_bins(&[42.0], 5).is_none());
+    }
+
+    #[test]
+    fn test_distribution_bins_two_values() {
+        let result = distribution_bins(&[1.0, 2.0], 2);
+        assert!(result.is_some());
+        let (lo, hi, counts) = result.expect("two values should produce bins");
+        assert!((lo - 1.0).abs() < f64::EPSILON);
+        assert!((hi - 2.0).abs() < f64::EPSILON);
+        assert_eq!(counts.len(), 2);
+        assert_eq!(counts.iter().sum::<u32>(), 2);
+    }
+
+    #[test]
+    fn test_distribution_bins_spread() {
+        let values: Vec<f64> = (0..100).map(f64::from).collect();
+        let result = distribution_bins(&values, 10);
+        assert!(result.is_some());
+        let (lo, hi, counts) = result.expect("spread should produce bins");
+        assert!((lo - 0.0).abs() < f64::EPSILON);
+        assert!((hi - 99.0).abs() < f64::EPSILON);
+        assert_eq!(counts.len(), 10);
+        assert_eq!(counts.iter().sum::<u32>(), 100);
+    }
+
+    #[test]
+    fn test_distribution_bins_boundary_values() {
+        let values = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
+        let result = distribution_bins(&values, 3);
+        assert!(result.is_some());
+        let (lo, hi, counts) = result.expect("boundaries should produce bins");
+        assert!((lo - 0.0).abs() < f64::EPSILON);
+        assert!((hi - 9.0).abs() < f64::EPSILON);
+        assert_eq!(counts.iter().sum::<u32>(), 10);
     }
 }

@@ -121,7 +121,10 @@ impl AdapterRegistry {
     }
 
     /// Generic property rendering (fallback when no adapter exists)
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unused_self,
+        reason = "trait method; self required for dispatch"
+    )]
     fn render_generic_property(&self, key: &str, value: &PropertyValue, ui: &mut Ui) {
         ui.horizontal(|ui| {
             // Key in gray
@@ -278,5 +281,104 @@ mod tests {
         let names = registry.adapter_names();
         assert_eq!(names.len(), 2);
         assert_eq!(names[0], "high");
+    }
+
+    #[test]
+    fn test_registry_lookup_by_handles() {
+        let registry = AdapterRegistry::new();
+        registry.register(Box::new(TestAdapter {
+            name: "test".to_string(),
+        }));
+        assert!(registry.adapter_count() > 0);
+        let names = registry.adapter_names();
+        assert!(names.iter().any(|n| n == "test"));
+    }
+
+    #[test]
+    fn test_registry_clone_shared_adapters() {
+        let registry = AdapterRegistry::new();
+        registry.register(Box::new(TestAdapter {
+            name: "shared".to_string(),
+        }));
+        let registry2 = registry.clone();
+        assert_eq!(registry.adapter_count(), registry2.adapter_count());
+    }
+
+    #[test]
+    fn test_node_decoration_merge() {
+        use crate::adapter_trait::PropertyAdapter;
+        use egui::Color32;
+        use petal_tongue_core::property::Properties;
+
+        struct BadgeAdapter;
+        impl PropertyAdapter for BadgeAdapter {
+            fn name(&self) -> &'static str {
+                "badge"
+            }
+            fn handles(&self, _: &str) -> bool {
+                false
+            }
+            fn render(&self, _: &str, _: &petal_tongue_core::property::PropertyValue, _: &mut Ui) {}
+            fn node_decoration(&self, properties: &Properties) -> Option<NodeDecoration> {
+                if properties.contains_key("badge") {
+                    Some(NodeDecoration {
+                        badge: Some("B".to_string()),
+                        fill_color: None,
+                        ring_color: None,
+                        tooltip: None,
+                    })
+                } else {
+                    None
+                }
+            }
+        }
+
+        struct ColorAdapter;
+        impl PropertyAdapter for ColorAdapter {
+            fn name(&self) -> &'static str {
+                "color"
+            }
+            fn handles(&self, _: &str) -> bool {
+                false
+            }
+            fn render(&self, _: &str, _: &petal_tongue_core::property::PropertyValue, _: &mut Ui) {}
+            fn node_decoration(&self, properties: &Properties) -> Option<NodeDecoration> {
+                if properties.contains_key("color") {
+                    Some(NodeDecoration {
+                        badge: None,
+                        fill_color: Some(Color32::GREEN),
+                        ring_color: None,
+                        tooltip: None,
+                    })
+                } else {
+                    None
+                }
+            }
+        }
+
+        let registry = AdapterRegistry::new();
+        registry.register(Box::new(BadgeAdapter));
+        registry.register(Box::new(ColorAdapter));
+
+        let mut props = Properties::new();
+        props.insert(
+            "badge".to_string(),
+            petal_tongue_core::property::PropertyValue::Null,
+        );
+        props.insert(
+            "color".to_string(),
+            petal_tongue_core::property::PropertyValue::Null,
+        );
+
+        let dec = registry.get_node_decoration(&props).expect("should merge");
+        assert!(dec.badge.is_some());
+        assert!(dec.fill_color.is_some());
+    }
+
+    #[test]
+    fn test_registry_empty_no_decoration() {
+        let registry = AdapterRegistry::new();
+        let props = Properties::new();
+        assert!(registry.get_node_decoration(&props).is_none());
     }
 }

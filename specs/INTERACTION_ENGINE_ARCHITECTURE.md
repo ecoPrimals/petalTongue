@@ -888,6 +888,78 @@ correct.
 
 ---
 
+## Sensor Event Streaming
+
+The tick loop's step 1 (POLL) collects raw sensor events from all input
+adapters. These events are valuable to external primals:
+
+- **ludoSpring**: Needs pointer trajectories for Fitts's law analysis, key
+  timing for engagement curves, scroll patterns for attention tracking.
+- **Squirrel AI**: Needs interaction cadence for flow state detection and
+  adaptive visualization adjustment.
+- **Atomic (node primals)**: Need sensor context for SAME DAVE loop closure
+  (confirming the human acknowledged a notification).
+
+### Streaming Protocol
+
+External primals subscribe to sensor events via JSON-RPC:
+
+```
+interaction.sensor_stream.subscribe    → Returns subscription_id
+interaction.sensor_stream.unsubscribe  → Removes subscription by ID
+```
+
+Events are delivered as batched JSON-RPC notifications, one batch per tick
+(16.67ms at 60 Hz):
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "interaction.sensor_events",
+  "params": {
+    "subscription_id": "sub-001",
+    "batch": [
+      {"type": "pointer_move", "x": 423.0, "y": 187.0, "timestamp_ms": 1710000000000},
+      {"type": "click", "x": 423.0, "y": 187.0, "button": "left", "timestamp_ms": 1710000000050}
+    ]
+  }
+}
+```
+
+### Event Types
+
+| Event | Fields | Use Case |
+|-------|--------|----------|
+| `pointer_move` | x, y, timestamp_ms | Fitts's law, attention tracking |
+| `click` | x, y, button, timestamp_ms | Interaction cost analysis |
+| `key_press` | key, modifiers, timestamp_ms | Hick's law, engagement |
+| `key_release` | key, timestamp_ms | Typing cadence |
+| `scroll` | delta_x, delta_y, timestamp_ms | Navigation patterns |
+
+### Privacy
+
+Sensor events contain only structural interaction data (positions, keys,
+timing). No screen content, no text input content, no accessibility information.
+Events are local-only (Unix socket). No network transmission. Subscribers must
+be local primals discovered via capability-based discovery.
+
+### Relationship to Interaction Events
+
+Sensor events are **raw** — they describe what the human did physically.
+Interaction events (`visualization.interact`) are **semantic** — they describe
+what the human meant (`Select(DataObjectId)`, `Filter(...)`, `Navigate(...)`).
+
+External primals that need to understand user intent subscribe to interaction
+events. External primals that need to analyze human behavior (engagement, flow,
+accessibility) subscribe to sensor events.
+
+### Reference
+
+See `REALTIME_COLLABORATIVE_PIPELINE.md` for the full collaborative loop design,
+including game loop integration and IPC-to-UI bridge.
+
+---
+
 ## References
 
 - Norman, D.A. (2013). *The Design of Everyday Things*. Basic Books.

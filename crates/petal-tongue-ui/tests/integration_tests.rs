@@ -3,7 +3,7 @@
 //!
 //! Tests the state management, data source, and integration between modules.
 
-#![allow(deprecated)]
+#![expect(deprecated)]
 
 use petal_tongue_core::{GraphEngine, PrimalHealthStatus, PrimalInfo, TopologyEdge};
 use std::sync::{Arc, RwLock};

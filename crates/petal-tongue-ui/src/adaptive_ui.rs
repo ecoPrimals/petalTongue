@@ -28,7 +28,67 @@
 //! // UI automatically adapts to device!
 //! ```
 
-use petal_tongue_core::{DeviceType, PrimalInfo, RenderingCapabilities, UIComplexity};
+use petal_tongue_core::{
+    DeviceType, PrimalHealthStatus, PrimalInfo, RenderingCapabilities, UIComplexity,
+};
+
+// ============================================================================
+// Pure layout/adaptation logic (testable, no egui)
+// ============================================================================
+
+/// Device type to use for rendering (Unknown defaults to Desktop)
+#[must_use]
+pub(crate) fn effective_device_for_rendering(device_type: DeviceType) -> DeviceType {
+    match device_type {
+        DeviceType::Unknown => DeviceType::Desktop,
+        other => other,
+    }
+}
+
+/// CLI-style status text for primal health
+#[must_use]
+pub(crate) fn format_cli_primal_status(health: PrimalHealthStatus) -> &'static str {
+    match health {
+        PrimalHealthStatus::Healthy => "OK",
+        PrimalHealthStatus::Warning => "WARN",
+        PrimalHealthStatus::Critical => "CRIT",
+        PrimalHealthStatus::Unknown => "UNKN",
+    }
+}
+
+/// Watch-style health summary (healthy/total)
+#[must_use]
+pub(crate) fn format_watch_health_summary(healthy: usize, total: usize) -> String {
+    if healthy == total {
+        format!("✅ {healthy}/{total} OK")
+    } else {
+        format!("⚠️ {healthy}/{total}")
+    }
+}
+
+/// Phone-style status icon for primal health
+#[must_use]
+pub(crate) fn format_phone_primal_icon(health: PrimalHealthStatus) -> &'static str {
+    match health {
+        PrimalHealthStatus::Healthy => "✅",
+        PrimalHealthStatus::Warning => "⚠️",
+        PrimalHealthStatus::Critical => "❌",
+        PrimalHealthStatus::Unknown => "❓",
+    }
+}
+
+/// Desktop/tablet status indicator (text, rgb color)
+#[must_use]
+pub(crate) fn format_desktop_primal_indicator(
+    health: PrimalHealthStatus,
+) -> (&'static str, [u8; 3]) {
+    match health {
+        PrimalHealthStatus::Healthy => ("●", [0, 255, 0]),
+        PrimalHealthStatus::Warning => ("●", [255, 255, 0]),
+        PrimalHealthStatus::Critical => ("●", [255, 0, 0]),
+        PrimalHealthStatus::Unknown => ("○", [128, 128, 128]),
+    }
+}
 
 /// Manages adaptive UI rendering across different devices
 pub struct AdaptiveUIManager {
@@ -39,18 +99,18 @@ pub struct AdaptiveUIManager {
 impl AdaptiveUIManager {
     /// Create new adaptive UI manager with device detection
     pub fn new(capabilities: RenderingCapabilities) -> Self {
-        let renderer: Box<dyn AdaptiveUIRenderer> = match capabilities.device_type {
+        let device = effective_device_for_rendering(capabilities.device_type);
+        if capabilities.device_type == DeviceType::Unknown {
+            tracing::warn!("Unknown device type, defaulting to desktop UI");
+        }
+        let renderer: Box<dyn AdaptiveUIRenderer> = match device {
             DeviceType::Desktop => Box::new(DesktopUIRenderer::new()),
             DeviceType::Phone => Box::new(PhoneUIRenderer::new()),
             DeviceType::Watch => Box::new(WatchUIRenderer::new()),
             DeviceType::CLI => Box::new(CliUIRenderer::new()),
             DeviceType::Tablet => Box::new(TabletUIRenderer::new()),
             DeviceType::TV => Box::new(TvUIRenderer::new()),
-            DeviceType::Unknown => {
-                // Default to desktop for unknown devices
-                tracing::warn!("Unknown device type, defaulting to desktop UI");
-                Box::new(DesktopUIRenderer::new())
-            }
+            DeviceType::Unknown => Box::new(DesktopUIRenderer::new()),
         };
 
         Self {
@@ -134,21 +194,8 @@ impl AdaptiveUIRenderer for DesktopUIRenderer {
             for primal in primals {
                 ui.group(|ui| {
                     ui.horizontal(|ui| {
-                        // Status indicator
-                        let (color, text) = match primal.health {
-                            petal_tongue_core::PrimalHealthStatus::Healthy => {
-                                (egui::Color32::GREEN, "●")
-                            }
-                            petal_tongue_core::PrimalHealthStatus::Warning => {
-                                (egui::Color32::YELLOW, "●")
-                            }
-                            petal_tongue_core::PrimalHealthStatus::Critical => {
-                                (egui::Color32::RED, "●")
-                            }
-                            petal_tongue_core::PrimalHealthStatus::Unknown => {
-                                (egui::Color32::GRAY, "○")
-                            }
-                        };
+                        let (text, rgb) = format_desktop_primal_indicator(primal.health);
+                        let color = egui::Color32::from_rgb(rgb[0], rgb[1], rgb[2]);
                         ui.colored_label(color, text);
 
                         ui.vertical(|ui| {
@@ -218,22 +265,13 @@ impl AdaptiveUIRenderer for PhoneUIRenderer {
         egui::ScrollArea::vertical().show(ui, |ui| {
             for primal in primals {
                 ui.horizontal(|ui| {
-                    // Larger touch targets
-                    let (color, icon) = match primal.health {
-                        petal_tongue_core::PrimalHealthStatus::Healthy => {
-                            (egui::Color32::GREEN, "✅")
-                        }
-                        petal_tongue_core::PrimalHealthStatus::Warning => {
-                            (egui::Color32::YELLOW, "⚠️")
-                        }
-                        petal_tongue_core::PrimalHealthStatus::Critical => {
-                            (egui::Color32::RED, "❌")
-                        }
-                        petal_tongue_core::PrimalHealthStatus::Unknown => {
-                            (egui::Color32::GRAY, "❓")
-                        }
+                    let icon = format_phone_primal_icon(primal.health);
+                    let color = match primal.health {
+                        PrimalHealthStatus::Healthy => egui::Color32::GREEN,
+                        PrimalHealthStatus::Warning => egui::Color32::YELLOW,
+                        PrimalHealthStatus::Critical => egui::Color32::RED,
+                        PrimalHealthStatus::Unknown => egui::Color32::GRAY,
                     };
-
                     ui.colored_label(color, icon);
                     ui.label(&primal.name);
                 });
@@ -287,15 +325,16 @@ impl AdaptiveUIRenderer for WatchUIRenderer {
         // Watch: Glanceable summary only
         let healthy = primals
             .iter()
-            .filter(|p| matches!(p.health, petal_tongue_core::PrimalHealthStatus::Healthy))
+            .filter(|p| matches!(p.health, PrimalHealthStatus::Healthy))
             .count();
         let total = primals.len();
-
-        if healthy == total {
-            ui.colored_label(egui::Color32::GREEN, format!("✅ {healthy}/{total} OK"));
+        let summary = format_watch_health_summary(healthy, total);
+        let color = if healthy == total {
+            egui::Color32::GREEN
         } else {
-            ui.colored_label(egui::Color32::YELLOW, format!("⚠️ {healthy}/{total}"));
-        }
+            egui::Color32::YELLOW
+        };
+        ui.colored_label(color, summary);
     }
 
     fn render_topology(
@@ -340,13 +379,8 @@ impl AdaptiveUIRenderer for CliUIRenderer {
     ) {
         // CLI: Plain text list
         for primal in primals {
-            let status = match primal.health {
-                petal_tongue_core::PrimalHealthStatus::Healthy => "OK",
-                petal_tongue_core::PrimalHealthStatus::Warning => "WARN",
-                petal_tongue_core::PrimalHealthStatus::Critical => "CRIT",
-                petal_tongue_core::PrimalHealthStatus::Unknown => "UNKN",
-            };
-            ui.monospace(format!("[{}] {}", status, primal.name));
+            let status = format_cli_primal_status(primal.health);
+            ui.monospace(format!("[{status}] {}", primal.name));
         }
     }
 
@@ -389,12 +423,8 @@ impl AdaptiveUIRenderer for TabletUIRenderer {
         egui::ScrollArea::vertical().show(ui, |ui| {
             for primal in primals {
                 ui.horizontal(|ui| {
-                    let (color, text) = match primal.health {
-                        petal_tongue_core::PrimalHealthStatus::Healthy => {
-                            (egui::Color32::GREEN, "●")
-                        }
-                        _ => (egui::Color32::GRAY, "○"),
-                    };
+                    let (text, rgb) = format_desktop_primal_indicator(primal.health);
+                    let color = egui::Color32::from_rgb(rgb[0], rgb[1], rgb[2]);
                     ui.colored_label(color, text);
                     ui.label(&primal.name);
                     ui.label(&primal.primal_type);
@@ -445,10 +475,8 @@ impl AdaptiveUIRenderer for TvUIRenderer {
 
         for primal in primals {
             ui.horizontal(|ui| {
-                let (color, text) = match primal.health {
-                    petal_tongue_core::PrimalHealthStatus::Healthy => (egui::Color32::GREEN, "● "),
-                    _ => (egui::Color32::GRAY, "○ "),
-                };
+                let (text, rgb) = format_desktop_primal_indicator(primal.health);
+                let color = egui::Color32::from_rgb(rgb[0], rgb[1], rgb[2]);
                 ui.colored_label(color, egui::RichText::new(text).size(24.0));
                 ui.label(egui::RichText::new(&primal.name).size(24.0));
             });
@@ -544,5 +572,103 @@ mod tests {
         caps.device_type = DeviceType::TV;
         let manager = AdaptiveUIManager::new(caps);
         assert_eq!(manager.device_type(), DeviceType::TV);
+    }
+
+    #[test]
+    fn test_ui_complexity_levels() {
+        let mut caps = RenderingCapabilities::detect();
+        caps.ui_complexity = UIComplexity::Full;
+        let manager = AdaptiveUIManager::new(caps);
+        assert_eq!(manager.ui_complexity(), UIComplexity::Full);
+
+        let mut caps = RenderingCapabilities::detect();
+        caps.ui_complexity = UIComplexity::Simplified;
+        let manager = AdaptiveUIManager::new(caps);
+        assert_eq!(manager.ui_complexity(), UIComplexity::Simplified);
+    }
+
+    #[test]
+    fn test_all_device_types_create_manager() {
+        for device_type in [
+            DeviceType::Desktop,
+            DeviceType::Phone,
+            DeviceType::Watch,
+            DeviceType::CLI,
+            DeviceType::Tablet,
+            DeviceType::TV,
+            DeviceType::Unknown,
+        ] {
+            let mut caps = RenderingCapabilities::detect();
+            caps.device_type = device_type;
+            let manager = AdaptiveUIManager::new(caps);
+            assert_eq!(manager.device_type(), device_type);
+        }
+    }
+
+    #[test]
+    fn test_unknown_device_uses_desktop_renderer() {
+        let mut caps = RenderingCapabilities::detect();
+        caps.device_type = DeviceType::Unknown;
+        let manager = AdaptiveUIManager::new(caps);
+        // Unknown should default to desktop-like behavior (no panic)
+        assert_eq!(manager.device_type(), DeviceType::Unknown);
+    }
+
+    #[test]
+    fn test_effective_device_for_rendering() {
+        assert_eq!(
+            effective_device_for_rendering(DeviceType::Unknown),
+            DeviceType::Desktop
+        );
+        assert_eq!(
+            effective_device_for_rendering(DeviceType::Phone),
+            DeviceType::Phone
+        );
+        assert_eq!(
+            effective_device_for_rendering(DeviceType::Desktop),
+            DeviceType::Desktop
+        );
+    }
+
+    #[test]
+    fn test_format_cli_primal_status() {
+        assert_eq!(format_cli_primal_status(PrimalHealthStatus::Healthy), "OK");
+        assert_eq!(
+            format_cli_primal_status(PrimalHealthStatus::Warning),
+            "WARN"
+        );
+        assert_eq!(
+            format_cli_primal_status(PrimalHealthStatus::Critical),
+            "CRIT"
+        );
+        assert_eq!(
+            format_cli_primal_status(PrimalHealthStatus::Unknown),
+            "UNKN"
+        );
+    }
+
+    #[test]
+    fn test_format_watch_health_summary() {
+        assert_eq!(format_watch_health_summary(5, 5), "✅ 5/5 OK");
+        assert_eq!(format_watch_health_summary(3, 5), "⚠️ 3/5");
+    }
+
+    #[test]
+    fn test_format_phone_primal_icon() {
+        assert_eq!(format_phone_primal_icon(PrimalHealthStatus::Healthy), "✅");
+        assert_eq!(format_phone_primal_icon(PrimalHealthStatus::Warning), "⚠️");
+        assert_eq!(format_phone_primal_icon(PrimalHealthStatus::Critical), "❌");
+        assert_eq!(format_phone_primal_icon(PrimalHealthStatus::Unknown), "❓");
+    }
+
+    #[test]
+    fn test_format_desktop_primal_indicator() {
+        let (text, rgb) = format_desktop_primal_indicator(PrimalHealthStatus::Healthy);
+        assert_eq!(text, "●");
+        assert_eq!(rgb, [0, 255, 0]);
+
+        let (text, rgb) = format_desktop_primal_indicator(PrimalHealthStatus::Unknown);
+        assert_eq!(text, "○");
+        assert_eq!(rgb, [128, 128, 128]);
     }
 }

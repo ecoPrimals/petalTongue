@@ -2,10 +2,70 @@
 //! Graph canvas interaction handling - mouse, keyboard, drag, selection.
 
 use egui::{Rect, Response, Ui};
-use petal_tongue_core::graph_builder::{GraphEdge, Vec2};
+use petal_tongue_core::graph_builder::{GraphEdge, GraphNode, Vec2};
 
 use super::layout;
 use super::{DragState, EdgeDrawState, GraphCanvas};
+
+// --- Pure logic (testable, no egui) ---
+
+/// Hit-test: find node at world position. Returns first matching node ID.
+#[must_use]
+pub(crate) fn hit_test_nodes(
+    world_x: f32,
+    world_y: f32,
+    nodes: &[GraphNode],
+    half_width: f32,
+    half_height: f32,
+) -> Option<String> {
+    for node in nodes {
+        let dx = (node.position.x - world_x).abs();
+        let dy = (node.position.y - world_y).abs();
+        if dx < half_width && dy < half_height {
+            return Some(node.id.clone());
+        }
+    }
+    None
+}
+
+/// Nodes whose screen positions fall inside the selection box.
+#[must_use]
+pub(crate) fn nodes_in_rect(
+    box_min: [f32; 2],
+    box_max: [f32; 2],
+    nodes: &[GraphNode],
+    camera_pos: &Vec2,
+    zoom: f32,
+    canvas_rect_min: [f32; 2],
+    canvas_rect_size: [f32; 2],
+) -> Vec<String> {
+    let center_x = canvas_rect_min[0] + canvas_rect_size[0] / 2.0;
+    let center_y = canvas_rect_min[1] + canvas_rect_size[1] / 2.0;
+
+    let min_x = box_min[0].min(box_max[0]);
+    let max_x = box_min[0].max(box_max[0]);
+    let min_y = box_min[1].min(box_max[1]);
+    let max_y = box_min[1].max(box_max[1]);
+
+    let mut result = Vec::new();
+    for node in nodes {
+        let screen_x = center_x + (node.position.x - camera_pos.x) * zoom;
+        let screen_y = center_y + (node.position.y - camera_pos.y) * zoom;
+        if screen_x >= min_x && screen_x <= max_x && screen_y >= min_y && screen_y <= max_y {
+            result.push(node.id.clone());
+        }
+    }
+    result
+}
+
+/// Compute new zoom from scroll delta.
+#[must_use]
+pub(crate) fn compute_zoom(current_zoom: f32, scroll_delta: f32) -> f32 {
+    let zoom_factor = 1.0 + scroll_delta * 0.001;
+    (current_zoom * zoom_factor).clamp(0.25, 3.0)
+}
+
+// --- Interaction (uses egui) ---
 
 impl GraphCanvas {
     /// Handle input (zoom, keyboard, hover, mouse)
@@ -17,9 +77,7 @@ impl GraphCanvas {
             ui.input(|i| {
                 let scroll_delta = i.raw_scroll_delta.y;
                 if scroll_delta != 0.0 {
-                    let zoom_factor = 1.0 + scroll_delta * 0.001;
-                    self.camera.zoom *= zoom_factor;
-                    self.camera.zoom = self.camera.zoom.clamp(0.25, 3.0);
+                    self.camera.zoom = compute_zoom(self.camera.zoom, scroll_delta);
                 }
             });
         }
@@ -155,21 +213,24 @@ impl GraphCanvas {
                     });
 
                     // Select nodes in box
-                    let box_rect = Rect::from_two_pos(start, pointer_pos);
+                    let box_min = [start.x.min(pointer_pos.x), start.y.min(pointer_pos.y)];
+                    let box_max = [start.x.max(pointer_pos.x), start.y.max(pointer_pos.y)];
+                    let canvas_min = [canvas_rect.min.x, canvas_rect.min.y];
+                    let canvas_size = [canvas_rect.width(), canvas_rect.height()];
+                    let node_ids = nodes_in_rect(
+                        box_min,
+                        box_max,
+                        &self.graph.nodes,
+                        &self.camera.position,
+                        self.camera.zoom,
+                        canvas_min,
+                        canvas_size,
+                    );
                     if !ctrl_held {
                         self.clear_selection();
                     }
-
-                    for node in &self.graph.nodes {
-                        let node_screen = layout::world_to_screen(
-                            node.position,
-                            canvas_rect,
-                            &self.camera.position,
-                            self.camera.zoom,
-                        );
-                        if box_rect.contains(node_screen) {
-                            self.selected_nodes.insert(node.id.clone());
-                        }
+                    for id in node_ids {
+                        self.selected_nodes.insert(id);
                     }
                 }
                 Some(DragState::Pan { start_camera_pos }) => {
@@ -220,18 +281,18 @@ impl GraphCanvas {
                 self.camera.zoom,
             );
 
-            for node in &self.graph.nodes {
-                let dx = (node.position.x - world_pos.x).abs();
-                let dy = (node.position.y - world_pos.y).abs();
+            let half_width = self.node_size.x / (2.0 * self.camera.zoom);
+            let half_height = self.node_size.y / (2.0 * self.camera.zoom);
 
-                let half_width = self.node_size.x / (2.0 * self.camera.zoom);
-                let half_height = self.node_size.y / (2.0 * self.camera.zoom);
-
-                if dx < half_width && dy < half_height {
-                    self.hovered_node = Some(node.id.clone());
-                    ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
-                    break;
-                }
+            if let Some(id) = hit_test_nodes(
+                world_pos.x,
+                world_pos.y,
+                &self.graph.nodes,
+                half_width,
+                half_height,
+            ) {
+                self.hovered_node = Some(id);
+                ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
             }
         }
     }

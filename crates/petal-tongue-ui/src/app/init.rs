@@ -37,6 +37,7 @@ use petal_tongue_discovery::{
     NeuralApiProvider, VisualizationDataProvider, discover_visualization_providers,
 };
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer, Visual2DRenderer};
+use petal_tongue_scene::game_loop::{TickClock, TickConfig};
 use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::time::Instant;
@@ -106,7 +107,7 @@ pub(super) fn create_app(
 
     let adapter_registry = create_adapter_registry();
     let tools = create_tool_manager();
-    let audio_system = AudioSystemV2::new();
+    let audio_system = AudioSystemV2::new()?;
 
     let (_panel_registry, custom_panels) = create_panel_registry_and_panels(&scenario);
 
@@ -173,6 +174,13 @@ pub(super) fn create_app(
         tokio_runtime: runtime,
         graph_canvas: GraphCanvas::new("New Graph".to_string()),
         show_graph_builder: false,
+        tick_clock: TickClock::new(TickConfig::default()),
+        continuous_mode: false,
+        visualization_state: None,
+        last_session_poll: Instant::now(),
+        sensor_stream: None,
+        interaction_subscribers: None,
+        last_broadcast_selection: None,
         custom_panels,
         motor_rx,
         motor_tx,
@@ -538,7 +546,7 @@ fn finalize_app_startup(
                     cmds.len()
                 );
                 for cmd in cmds {
-                    app.apply_motor_command(cmd);
+                    super::events::apply_motor_command(app, cmd);
                 }
             }
         }
@@ -546,9 +554,9 @@ fn finalize_app_startup(
         // Apply initial zoom via motor command
         let zoom_str = &loaded_scenario.ui_config.initial_zoom;
         if zoom_str == "fit" {
-            app.apply_motor_command(MotorCommand::FitToView);
+            super::events::apply_motor_command(app, MotorCommand::FitToView);
         } else if let Ok(level) = zoom_str.parse::<f32>() {
-            app.apply_motor_command(MotorCommand::SetZoom { level });
+            super::events::apply_motor_command(app, MotorCommand::SetZoom { level });
         }
     } else if tutorial_mode.is_enabled() {
         tutorial_mode.load_into_graph(Arc::clone(&app.graph), app.current_layout);

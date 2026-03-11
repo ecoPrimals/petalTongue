@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! End-to-end tests for petal-tongue-headless binary
 
-#![allow(deprecated)]
+#![expect(deprecated)]
 
 use assert_cmd::Command;
 use predicates::prelude::*;

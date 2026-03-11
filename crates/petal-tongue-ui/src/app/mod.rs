@@ -21,15 +21,17 @@
 //! - `layout.rs` — pure layout algorithm parsing (testable)
 //! - `app_panels/` — panel rendering (top menu, controls, audio, capability, primal details)
 
+mod events;
 mod init;
 mod layout;
+mod panels;
 mod sensory;
 
 use crate::accessibility_panel::AccessibilityPanel;
 use crate::audio::AudioSystemV2;
 use crate::awakening_overlay::AwakeningOverlay;
 use crate::graph_canvas::GraphCanvas;
-use crate::keyboard_shortcuts::KeyboardShortcuts;
+use crate::keyboard_shortcuts::{KeyboardShortcuts, ShortcutAction};
 use crate::metrics_dashboard::MetricsDashboard;
 use crate::panel_registry::PanelInstance;
 use crate::proprioception::ProprioceptionSystem;
@@ -41,11 +43,13 @@ use anyhow::Result as AnyhowResult;
 use petal_tongue_adapters::AdapterRegistry;
 use petal_tongue_animation::AnimationEngine;
 use petal_tongue_core::{
-    CapabilityDetector, GraphEngine, LayoutAlgorithm, MotorCommand, PanelId, RenderingAwareness,
+    CapabilityDetector, FrameIntrospection, GraphEngine, InteractionCapability, InteractionKind,
+    LayoutAlgorithm, MotorCommand, PanelId, PanelKind, PanelSnapshot, RenderingAwareness,
     SensorRegistry,
 };
 use petal_tongue_discovery::NeuralApiProvider;
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer, Visual2DRenderer};
+use petal_tongue_scene::game_loop::{TickClock, tick_frame};
 use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
@@ -147,6 +151,26 @@ pub struct PetalTongueApp {
     /// Active custom panels
     custom_panels: Vec<Box<dyn PanelInstance>>,
 
+    // === Game loop (fixed-timestep tick for physics/animation) ===
+    /// Fixed-timestep tick clock for continuous rendering
+    tick_clock: TickClock,
+    /// Whether continuous 60 Hz mode is active
+    continuous_mode: bool,
+
+    // === IPC visualization bridge ===
+    /// Shared visualization state (written by IPC server, read by UI)
+    visualization_state: Option<Arc<RwLock<petal_tongue_ipc::VisualizationState>>>,
+    /// Timestamp of last session poll (to detect changes)
+    last_session_poll: Instant,
+
+    // === IPC sensor/interaction bridge ===
+    /// Shared sensor stream registry (UI broadcasts, IPC subscribers poll)
+    sensor_stream: Option<Arc<RwLock<petal_tongue_ipc::SensorStreamRegistry>>>,
+    /// Shared interaction subscriber registry (UI broadcasts selection changes)
+    interaction_subscribers: Option<Arc<RwLock<petal_tongue_ipc::InteractionSubscriberRegistry>>>,
+    /// Previously selected node (for change-detection-based broadcasting)
+    last_broadcast_selection: Option<String>,
+
     // === SAME DAVE: Efferent motor command channel ===
     /// Receiver for motor commands (efferent channel sink).
     /// Drained every frame in `update()` to apply UI state changes.
@@ -201,97 +225,211 @@ impl PetalTongueApp {
         Arc::clone(&self.graph)
     }
 
-    /// Drain all pending motor commands and apply them to UI state.
-    fn drain_motor_commands(&mut self) {
-        while let Ok(cmd) = self.motor_rx.try_recv() {
-            self.apply_motor_command(cmd);
+    /// Inject the IPC sensor stream registry so egui events are broadcast to subscribers.
+    pub fn set_sensor_stream(&mut self, reg: Arc<RwLock<petal_tongue_ipc::SensorStreamRegistry>>) {
+        self.sensor_stream = Some(reg);
+    }
+
+    /// Inject the IPC interaction subscriber registry so UI selection changes are broadcast.
+    pub fn set_interaction_subscribers(
+        &mut self,
+        reg: Arc<RwLock<petal_tongue_ipc::InteractionSubscriberRegistry>>,
+    ) {
+        self.interaction_subscribers = Some(reg);
+    }
+
+    /// Create an application in headless mode (no display, no eframe context).
+    ///
+    /// Suitable for testing, introspection harnesses, and CI pipelines.
+    pub fn new_headless() -> AnyhowResult<Self> {
+        let shared_graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let caps = petal_tongue_core::RenderingCapabilities::detect();
+        init::create_app(None, caps, shared_graph)
+    }
+
+    /// Snapshot of what this frame contains: visible panels, bound data, possible interactions.
+    ///
+    /// This closes the proprioceptive loop: the primal knows *what* it's showing.
+    #[must_use]
+    pub fn introspect(&self) -> FrameIntrospection {
+        let mut panels = Vec::new();
+
+        panels.push(if self.show_top_menu {
+            PanelSnapshot::visible(PanelId::TopMenu, PanelKind::TopMenu)
+        } else {
+            PanelSnapshot::hidden(PanelId::TopMenu, PanelKind::TopMenu)
+        });
+
+        panels.push(if self.show_controls {
+            PanelSnapshot::visible(PanelId::LeftSidebar, PanelKind::Controls)
+        } else {
+            PanelSnapshot::hidden(PanelId::LeftSidebar, PanelKind::Controls)
+        });
+
+        panels.push(if self.show_audio_panel {
+            PanelSnapshot::visible(PanelId::AudioPanel, PanelKind::AudioSonification)
+        } else {
+            PanelSnapshot::hidden(PanelId::AudioPanel, PanelKind::AudioSonification)
+        });
+
+        panels.push(if self.show_capability_panel {
+            PanelSnapshot::visible(
+                PanelId::Custom("capability".into()),
+                PanelKind::CapabilityStatus,
+            )
+        } else {
+            PanelSnapshot::hidden(
+                PanelId::Custom("capability".into()),
+                PanelKind::CapabilityStatus,
+            )
+        });
+
+        panels.push(if self.show_dashboard {
+            PanelSnapshot::visible(PanelId::SystemDashboard, PanelKind::Dashboard)
+                .with_data_source("proc_stats")
+        } else {
+            PanelSnapshot::hidden(PanelId::SystemDashboard, PanelKind::Dashboard)
+        });
+
+        panels.push(if self.show_trust_dashboard {
+            PanelSnapshot::visible(PanelId::TrustDashboard, PanelKind::TrustDashboard)
+        } else {
+            PanelSnapshot::hidden(PanelId::TrustDashboard, PanelKind::TrustDashboard)
+        });
+
+        panels.push(if self.show_neural_proprioception {
+            PanelSnapshot::visible(PanelId::Proprioception, PanelKind::Proprioception)
+        } else {
+            PanelSnapshot::hidden(PanelId::Proprioception, PanelKind::Proprioception)
+        });
+
+        panels.push(if self.show_neural_metrics {
+            PanelSnapshot::visible(PanelId::Custom("metrics".into()), PanelKind::Metrics)
+        } else {
+            PanelSnapshot::hidden(PanelId::Custom("metrics".into()), PanelKind::Metrics)
+        });
+
+        panels.push(if self.show_graph_builder {
+            PanelSnapshot::visible(
+                PanelId::Custom("graph_builder".into()),
+                PanelKind::GraphBuilder,
+            )
+        } else {
+            PanelSnapshot::hidden(
+                PanelId::Custom("graph_builder".into()),
+                PanelKind::GraphBuilder,
+            )
+        });
+
+        // Central panel (always visible)
+        panels.push(PanelSnapshot::visible(
+            PanelId::Custom("graph_canvas".into()),
+            PanelKind::GraphCanvas,
+        ));
+
+        panels.push(if self.accessibility_panel.show {
+            PanelSnapshot::visible(
+                PanelId::Custom("accessibility".into()),
+                PanelKind::Accessibility,
+            )
+        } else {
+            PanelSnapshot::hidden(
+                PanelId::Custom("accessibility".into()),
+                PanelKind::Accessibility,
+            )
+        });
+
+        // Awakening overlay
+        if self.awakening_overlay.is_active() {
+            panels.push(PanelSnapshot::visible(
+                PanelId::Custom("awakening".into()),
+                PanelKind::Awakening,
+            ));
+        }
+
+        // Collect bound data from the graph
+        let bound_data = self.collect_bound_data();
+
+        // Collect possible interactions
+        let possible_interactions = self.collect_possible_interactions();
+
+        FrameIntrospection {
+            frame_id: self.frame_count,
+            timestamp: std::time::Instant::now(),
+            visible_panels: panels,
+            bound_data,
+            possible_interactions,
+            active_modalities: vec![
+                petal_tongue_core::interaction::perspective::OutputModality::Gui,
+            ],
         }
     }
 
-    /// Apply a single motor command to UI state (efferent signal → effector).
-    fn apply_motor_command(&mut self, cmd: MotorCommand) {
-        let cmd_description = format!("{cmd:?}");
-        match cmd {
-            MotorCommand::RenderFrame { .. }
-            | MotorCommand::UpdateDisplay
-            | MotorCommand::ClearDisplay => {
-                // Rendering commands handled by the existing awareness system
+    /// Collect data objects currently bound to the graph canvas.
+    fn collect_bound_data(&self) -> Vec<petal_tongue_core::BoundDataObject> {
+        let mut bindings = Vec::new();
+        if let Ok(graph) = self.graph.read() {
+            for node in graph.nodes() {
+                bindings.push(petal_tongue_core::BoundDataObject {
+                    panel_id: PanelId::Custom("graph_canvas".into()),
+                    data_object_id: node.info.id.to_string(),
+                    binding_type: petal_tongue_core::BindingType::GraphNode,
+                });
             }
-            MotorCommand::SetPanelVisibility { panel, visible } => {
-                match panel {
-                    PanelId::LeftSidebar => self.show_controls = visible,
-                    PanelId::RightSidebar => {
-                        self.show_audio_panel = visible;
-                        self.show_dashboard = visible;
-                        self.show_trust_dashboard = visible;
-                    }
-                    PanelId::TopMenu => self.show_top_menu = visible,
-                    PanelId::SystemDashboard => self.show_dashboard = visible,
-                    PanelId::AudioPanel => self.show_audio_panel = visible,
-                    PanelId::TrustDashboard => self.show_trust_dashboard = visible,
-                    PanelId::Proprioception => self.show_neural_proprioception = visible,
-                    PanelId::GraphStats => self.visual_renderer.set_show_stats(visible),
-                    PanelId::Custom(_) => {}
-                }
-                tracing::debug!("Motor: SetPanelVisibility({panel:?}, {visible})");
-            }
-            MotorCommand::SetZoom { level } => {
-                self.visual_renderer.set_zoom(level);
-                tracing::debug!("Motor: SetZoom({level})");
-            }
-            MotorCommand::FitToView => {
-                self.visual_renderer.fit_to_view(&self.graph);
-                tracing::debug!("Motor: FitToView");
-            }
-            MotorCommand::Navigate { ref target_node } => {
-                self.visual_renderer
-                    .navigate_to_node(target_node, &self.graph);
-                tracing::debug!("Motor: Navigate({target_node})");
-            }
-            MotorCommand::SelectNode { ref node_id } => {
-                if let Some(id) = node_id {
-                    self.visual_renderer.select_node(Some(id));
-                } else {
-                    self.visual_renderer.select_node(None::<&str>);
-                }
-                tracing::debug!("Motor: SelectNode({node_id:?})");
-            }
-            MotorCommand::SetLayout { ref algorithm } => {
-                let layout = layout::layout_from_str(algorithm);
-                self.current_layout = layout;
-                if let Ok(mut graph) = self.graph.write() {
-                    graph.set_layout(layout);
-                }
-                tracing::debug!("Motor: SetLayout({algorithm})");
-            }
-            MotorCommand::SetMode { ref mode } => {
-                tracing::info!("Motor: SetMode({mode})");
-                self.neural_proprioception_panel.set_current_mode(mode);
-                let commands = crate::mode_presets::commands_for_mode(mode);
-                for sub_cmd in commands {
-                    self.apply_motor_command(sub_cmd);
-                }
-            }
-            MotorCommand::SetAwakening { enabled } => {
-                if !enabled {
-                    self.awakening_overlay.skip();
-                }
-                tracing::debug!("Motor: SetAwakening({enabled})");
-            }
-            MotorCommand::LoadScenario { ref path } => {
-                tracing::info!("Motor: LoadScenario({path})");
+            for edge in graph.edges() {
+                bindings.push(petal_tongue_core::BoundDataObject {
+                    panel_id: PanelId::Custom("graph_canvas".into()),
+                    data_object_id: format!("{}->{}", edge.from, edge.to),
+                    binding_type: petal_tongue_core::BindingType::GraphEdge,
+                });
             }
         }
-        self.neural_proprioception_panel
-            .record_motor_command(&cmd_description);
+        bindings
     }
-}
 
-impl eframe::App for PetalTongueApp {
-    #[expect(clippy::too_many_lines)]
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    /// Collect interactions currently available given UI state.
+    fn collect_possible_interactions(&self) -> Vec<InteractionCapability> {
+        let mut interactions = Vec::new();
+
+        interactions.push(InteractionCapability {
+            panel_id: PanelId::Custom("graph_canvas".into()),
+            intent: InteractionKind::Navigate,
+            target: None,
+        });
+
+        if let Some(selected) = self.visual_renderer.selected_node() {
+            interactions.push(InteractionCapability {
+                panel_id: PanelId::Custom("graph_canvas".into()),
+                intent: InteractionKind::Inspect,
+                target: Some(selected.to_string()),
+            });
+        }
+
+        interactions.push(InteractionCapability {
+            panel_id: PanelId::TopMenu,
+            intent: InteractionKind::TogglePanel,
+            target: None,
+        });
+
+        if self.show_controls {
+            interactions.push(InteractionCapability {
+                panel_id: PanelId::LeftSidebar,
+                intent: InteractionKind::Configure,
+                target: None,
+            });
+        }
+
+        interactions
+    }
+
+    /// Run one update cycle without requiring `eframe::Frame`.
+    ///
+    /// This contains the full panel logic extracted from `eframe::App::update`
+    /// so that the same code path can be exercised by both the real GUI and
+    /// the headless harness.
+    pub fn update_headless(&mut self, ctx: &egui::Context) {
         sensory::process_sensory_feedback(self, ctx);
-        self.drain_motor_commands();
+        events::drain_motor_commands(self);
 
         if let Ok(mut reg) = self.channel_registry.write() {
             if ctx.input(|i| !i.events.is_empty()) {
@@ -312,6 +450,40 @@ impl eframe::App for PetalTongueApp {
             }
         }
 
+        // Broadcast sensor events to IPC subscribers (ludoSpring, Squirrel, etc.)
+        if let Some(ref reg) = self.sensor_stream {
+            let events = crate::sensor_feed::collect_sensor_events(ctx);
+            if !events.is_empty() {
+                if let Ok(mut r) = reg.write() {
+                    r.broadcast(&events);
+                }
+            }
+        }
+
+        // Broadcast interaction events (selection changes) to IPC subscribers
+        if let Some(ref reg) = self.interaction_subscribers {
+            let current = self
+                .visual_renderer
+                .selected_node()
+                .map(ToString::to_string);
+            if current != self.last_broadcast_selection {
+                let event = petal_tongue_ipc::InteractionEventNotification {
+                    event_type: if current.is_some() {
+                        "select".to_string()
+                    } else {
+                        "deselect".to_string()
+                    },
+                    targets: current.clone().into_iter().collect(),
+                    timestamp: chrono::Utc::now().to_rfc3339(),
+                    perspective_id: None,
+                };
+                if let Ok(mut r) = reg.write() {
+                    r.broadcast(&event);
+                }
+                self.last_broadcast_selection = current;
+            }
+        }
+
         if self.awakening_overlay.is_active() {
             let delta_time = ctx.input(|i| i.stable_dt);
             if let Err(e) = self.awakening_overlay.update(delta_time) {
@@ -319,13 +491,14 @@ impl eframe::App for PetalTongueApp {
             }
             self.awakening_overlay.render(ctx);
             if self.awakening_overlay.should_transition_to_tutorial() {
-                tracing::info!("🎓 Transitioning to tutorial mode");
+                tracing::info!("Transitioning to tutorial mode");
                 let tutorial = crate::tutorial_mode::TutorialMode::new();
                 if tutorial.is_enabled() {
                     tutorial.load_into_graph(self.graph.clone(), self.current_layout);
                 }
             }
             ctx.request_repaint();
+            self.feed_introspection();
             return;
         }
 
@@ -333,7 +506,7 @@ impl eframe::App for PetalTongueApp {
             if i.key_pressed(egui::Key::P) && !i.modifiers.ctrl && !i.modifiers.shift {
                 self.show_neural_proprioception = !self.show_neural_proprioception;
                 tracing::info!(
-                    "🧠 Neural Proprioception Panel {}",
+                    "Neural Proprioception Panel {}",
                     if self.show_neural_proprioception {
                         "enabled"
                     } else {
@@ -344,7 +517,7 @@ impl eframe::App for PetalTongueApp {
             if i.key_pressed(egui::Key::M) && !i.modifiers.ctrl && !i.modifiers.shift {
                 self.show_neural_metrics = !self.show_neural_metrics;
                 tracing::info!(
-                    "📊 Neural Metrics Dashboard {}",
+                    "Neural Metrics Dashboard {}",
                     if self.show_neural_metrics {
                         "enabled"
                     } else {
@@ -355,7 +528,7 @@ impl eframe::App for PetalTongueApp {
             if i.key_pressed(egui::Key::G) && !i.modifiers.ctrl && !i.modifiers.shift {
                 self.show_graph_builder = !self.show_graph_builder;
                 tracing::info!(
-                    "🎨 Graph Builder {}",
+                    "Graph Builder {}",
                     if self.show_graph_builder {
                         "enabled"
                     } else {
@@ -364,6 +537,41 @@ impl eframe::App for PetalTongueApp {
                 );
             }
         });
+
+        // Apply keyboard shortcuts (Ctrl+D, Ctrl+A, Ctrl+H, Escape, etc.)
+        match self.keyboard_shortcuts.handle_input(ctx) {
+            ShortcutAction::ToggleHelp => {}
+            ShortcutAction::CloseOverlays => {
+                self.accessibility_panel.show = false;
+                self.keyboard_shortcuts.show_help = false;
+            }
+            ShortcutAction::ToggleAccessibility => {
+                self.accessibility_panel.show = !self.accessibility_panel.show;
+            }
+            ShortcutAction::ToggleDashboard => {
+                self.show_dashboard = !self.show_dashboard;
+            }
+            ShortcutAction::FocusTools => {
+                // Focus tools menu - no-op for headless; tools render in central panel
+            }
+            ShortcutAction::Refresh => {
+                self.refresh_graph_data();
+            }
+            ShortcutAction::SelectColorScheme(idx) => {
+                if let Some(&scheme) = crate::accessibility::ColorScheme::all().get(idx) {
+                    self.accessibility_panel.settings.color_scheme = scheme;
+                }
+            }
+            ShortcutAction::IncreaseFontSize => {
+                self.accessibility_panel.settings.font_size =
+                    self.accessibility_panel.settings.font_size.increase();
+            }
+            ShortcutAction::DecreaseFontSize => {
+                self.accessibility_panel.settings.font_size =
+                    self.accessibility_panel.settings.font_size.decrease();
+            }
+            ShortcutAction::None => {}
+        }
 
         self.system_dashboard
             .set_audio_enabled(self.accessibility_panel.settings.audio_enabled);
@@ -376,272 +584,33 @@ impl eframe::App for PetalTongueApp {
             engine.update();
         }
 
-        let palette = self.accessibility_panel.get_palette();
+        // Game loop: fixed-timestep tick for scene animation and physics.
+        if self.continuous_mode {
+            let dt = ctx.input(|i| i.stable_dt);
+            self.tick_clock.begin_frame_with_dt(dt);
+            let tick_result = tick_frame(&mut self.tick_clock, None, None, None);
+            if tick_result.scene_dirty {
+                ctx.request_repaint();
+            }
+        }
+
+        // IPC-to-UI bridge: check for updated visualization sessions.
+        if let Some(ref viz_state) = self.visualization_state {
+            if crate::live_sessions::has_updates_since(viz_state, self.last_session_poll) {
+                self.last_session_poll = Instant::now();
+                ctx.request_repaint();
+            }
+        }
+
         let mut style = (*ctx.style()).clone();
+        let palette = self.accessibility_panel.get_palette();
         style.visuals.dark_mode = true;
         style.visuals.override_text_color = Some(palette.text);
         style.visuals.window_fill = palette.background;
         style.visuals.panel_fill = palette.background_alt;
         ctx.set_style(style);
 
-        if self.show_top_menu {
-            egui::TopBottomPanel::top("top_panel")
-                .frame(
-                    egui::Frame::none()
-                        .fill(palette.background)
-                        .inner_margin(8.0),
-                )
-                .show(ctx, |ui| {
-                    let refresh_clicked = egui::menu::bar(ui, |ui| {
-                        crate::app_panels::render_top_menu_bar(
-                            ui,
-                            &palette,
-                            &mut self.accessibility_panel,
-                            &mut self.visual_renderer,
-                            &mut self.tools,
-                            &mut self.current_layout,
-                            &self.graph,
-                            &mut self.show_dashboard,
-                            &mut self.show_controls,
-                            &mut self.show_audio_panel,
-                            &mut self.show_capability_panel,
-                            &mut self.show_neural_proprioception,
-                            &mut self.show_neural_metrics,
-                            &mut self.show_graph_builder,
-                        )
-                    })
-                    .inner;
-                    if refresh_clicked {
-                        self.refresh_graph_data();
-                    }
-                });
-        } // show_top_menu
-
-        if self.show_controls {
-            egui::SidePanel::left("controls_panel")
-                .default_width(280.0)
-                .frame(
-                    egui::Frame::none()
-                        .fill(palette.background_alt)
-                        .inner_margin(12.0),
-                )
-                .show(ctx, |ui| {
-                    let elapsed = self.last_refresh.elapsed().as_secs_f32();
-                    let refresh_clicked = crate::app_panels::render_controls_panel(
-                        ui,
-                        &palette,
-                        &self.accessibility_panel,
-                        &mut self.auto_refresh,
-                        &mut self.refresh_interval,
-                        elapsed,
-                        &mut self.show_animation,
-                        &mut self.visual_renderer,
-                    );
-                    if refresh_clicked {
-                        self.refresh_graph_data();
-                    }
-                });
-        }
-
-        if self.show_audio_panel {
-            egui::SidePanel::right("audio_panel")
-                .default_width(380.0)
-                .frame(
-                    egui::Frame::none()
-                        .fill(egui::Color32::from_rgb(30, 30, 35))
-                        .inner_margin(12.0),
-                )
-                .show(ctx, |ui| {
-                    crate::app_panels::render_audio_panel(
-                        ui,
-                        &palette,
-                        &self.accessibility_panel,
-                        &mut self.audio_renderer,
-                        &self.audio_generator,
-                        &self.visual_renderer,
-                        &self.capabilities,
-                    );
-                });
-        }
-
-        if self.show_capability_panel {
-            crate::app_panels::render_capability_panel(ctx, &palette, &self.capabilities);
-        }
-
-        if self.show_dashboard {
-            egui::SidePanel::right("dashboard_panel")
-                .default_width(220.0)
-                .resizable(true)
-                .frame(
-                    egui::Frame::none()
-                        .fill(palette.background_alt)
-                        .inner_margin(12.0),
-                )
-                .show(ctx, |ui| {
-                    let font_scale = self.accessibility_panel.settings.font_size.multiplier();
-                    self.system_dashboard.render_compact(
-                        ui,
-                        &palette,
-                        font_scale,
-                        Some(&self.audio_system),
-                    );
-                    ui.add_space(8.0);
-                    crate::system_dashboard::SystemDashboard::render_sensory_status(
-                        ui,
-                        &palette,
-                        font_scale,
-                        &self.rendering_awareness,
-                        &self.sensor_registry,
-                    );
-                    ui.add_space(8.0);
-                    crate::system_dashboard::SystemDashboard::render_proprioception_status(
-                        ui,
-                        &palette,
-                        font_scale,
-                        &mut self.proprioception,
-                    );
-                });
-        }
-
-        if self.show_trust_dashboard {
-            egui::SidePanel::right("trust_dashboard_panel")
-                .default_width(280.0)
-                .resizable(true)
-                .frame(
-                    egui::Frame::none()
-                        .fill(palette.background_alt)
-                        .inner_margin(12.0),
-                )
-                .show(ctx, |ui| {
-                    let font_scale = self.accessibility_panel.settings.font_size.multiplier();
-                    self.trust_dashboard
-                        .render(ui, &palette, font_scale, Some(&self.audio_system));
-                });
-        }
-
-        if self.show_neural_proprioception {
-            if let Ok(reg) = self.channel_registry.read() {
-                let snapshots = reg.snapshots();
-                let afferent: Vec<_> = snapshots
-                    .iter()
-                    .filter(|s| s.direction == petal_tongue_core::ChannelDirection::Afferent)
-                    .cloned()
-                    .collect();
-                let efferent: Vec<_> = snapshots
-                    .iter()
-                    .filter(|s| s.direction == petal_tongue_core::ChannelDirection::Efferent)
-                    .cloned()
-                    .collect();
-                self.neural_proprioception_panel
-                    .merge_local_channels(afferent, efferent);
-            }
-            egui::Window::new("🧠 Neural API Proprioception")
-                .default_width(500.0)
-                .default_height(600.0)
-                .default_pos([100.0, 100.0])
-                .show(ctx, |ui| {
-                    if let Some(provider) = &self.neural_api_provider {
-                        self.tokio_runtime.block_on(async {
-                            self.neural_proprioception_panel
-                                .update(provider.as_ref())
-                                .await;
-                        });
-                        self.neural_proprioception_panel.render(ui);
-                    } else {
-                        self.neural_proprioception_panel.render(ui);
-                    }
-                });
-        }
-
-        if self.show_neural_metrics {
-            egui::Window::new("📊 Neural API Metrics")
-                .default_width(600.0)
-                .default_height(500.0)
-                .default_pos([150.0, 150.0])
-                .show(ctx, |ui| {
-                    if let Some(provider) = &self.neural_api_provider {
-                        self.tokio_runtime.block_on(async {
-                            self.neural_metrics_dashboard
-                                .update(provider.as_ref())
-                                .await;
-                        });
-                        self.neural_metrics_dashboard.render(ui);
-                    } else {
-                        ui.label("❌ Neural API not available");
-                        ui.label("Start biomeOS nucleus to enable metrics data.");
-                    }
-                });
-        }
-
-        if self.show_graph_builder {
-            egui::Window::new("🎨 Graph Builder")
-                .default_width(1200.0)
-                .default_height(800.0)
-                .default_pos([50.0, 50.0])
-                .resizable(true)
-                .show(ctx, |ui| {
-                    if self.neural_api_provider.is_some() {
-                        ui.heading("🎨 Neural Graph Builder");
-                        ui.separator();
-                        ui.label("Interactive visual graph construction for Neural API.");
-                        ui.separator();
-                        ui.horizontal(|ui| {
-                            ui.vertical(|ui| {
-                                ui.heading("Canvas");
-                                ui.separator();
-                                self.graph_canvas.render(ui, &palette);
-                            });
-                        });
-                        ui.separator();
-                        ui.label("💡 Coming soon: Node palette, property editor, and graph management.");
-                    } else {
-                        ui.label("❌ Neural API not available");
-                        ui.label("Start biomeOS nucleus to enable Graph Builder.");
-                        ui.separator();
-                        ui.label("The Graph Builder requires Neural API for graph persistence and execution.");
-                    }
-                });
-        }
-
-        for (idx, panel) in self.custom_panels.iter_mut().enumerate() {
-            egui::Window::new(panel.title())
-                .id(egui::Id::new(format!("custom_panel_{idx}")))
-                .default_width(640.0)
-                .default_height(480.0)
-                .resizable(true)
-                .show(ctx, |ui| {
-                    panel.update();
-                    panel.render(ui);
-                });
-        }
-
-        let selected_id_clone = self
-            .visual_renderer
-            .selected_node()
-            .map(std::string::ToString::to_string);
-        if let Some(selected_id) = selected_id_clone {
-            egui::SidePanel::right("primal_details_panel")
-                .default_width(350.0)
-                .resizable(true)
-                .show(ctx, |ui| {
-                    crate::app_panels::render_primal_details_panel(
-                        ui,
-                        &selected_id,
-                        &palette,
-                        &self.graph,
-                        &self.adapter_registry,
-                        &mut self.visual_renderer,
-                    );
-                });
-        }
-
-        egui::CentralPanel::default().show(ctx, |ui| {
-            if let Some(tool) = self.tools.visible_tool() {
-                tool.render_panel(ui);
-            } else {
-                self.visual_renderer.render(ui);
-            }
-        });
+        panels::render_all_panels(ctx, self);
 
         self.accessibility_panel.show(ctx);
         self.keyboard_shortcuts.render_help(ctx, &palette);
@@ -653,6 +622,69 @@ impl eframe::App for PetalTongueApp {
             }
             ctx.request_repaint();
         }
+
+        self.feed_introspection();
+    }
+
+    /// Record the current frame's content into the rendering awareness system.
+    fn feed_introspection(&mut self) {
+        let introspection = self.introspect();
+        if let Ok(mut awareness) = self.rendering_awareness.write() {
+            awareness.record_frame_content(introspection);
+        }
+    }
+
+    /// Access the rendering awareness (read-only).
+    #[must_use]
+    pub fn rendering_awareness(&self) -> &Arc<RwLock<RenderingAwareness>> {
+        &self.rendering_awareness
+    }
+
+    /// Access the frame count.
+    #[must_use]
+    pub fn frame_count(&self) -> u64 {
+        self.frame_count
+    }
+
+    /// Whether the keyboard shortcuts help overlay is visible.
+    #[must_use]
+    pub fn is_help_visible(&self) -> bool {
+        self.keyboard_shortcuts.show_help
+    }
+
+    /// Whether continuous 60 Hz mode is active.
+    #[must_use]
+    pub fn is_continuous_mode(&self) -> bool {
+        self.continuous_mode
+    }
+
+    /// Access the tick clock for introspection.
+    #[must_use]
+    pub fn tick_clock(&self) -> &TickClock {
+        &self.tick_clock
+    }
+
+    /// Inject the shared visualization state from the IPC server.
+    pub fn set_visualization_state(
+        &mut self,
+        state: Arc<RwLock<petal_tongue_ipc::VisualizationState>>,
+    ) {
+        self.visualization_state = Some(state);
+    }
+
+    /// Number of active IPC visualization sessions.
+    #[must_use]
+    pub fn active_session_count(&self) -> usize {
+        self.visualization_state
+            .as_ref()
+            .and_then(|vs| vs.read().ok())
+            .map_or(0, |state| state.sessions().len())
+    }
+}
+
+impl eframe::App for PetalTongueApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.update_headless(ctx);
     }
 }
 

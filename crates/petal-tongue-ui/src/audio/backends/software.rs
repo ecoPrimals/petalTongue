@@ -67,9 +67,8 @@ impl AudioBackend for SoftwareBackend {
         // Store samples in buffer
         self.sample_buffer.extend_from_slice(samples);
 
-        // TODO: When we have a playback backend selected,
-        // we can send these samples to it for actual hardware playback
-        // For now, we just generate and buffer
+        // Samples are buffered for retrieval via get_buffer(). Hardware playback
+        // happens through a discovered audio.playback capability provider.
 
         debug!("✅ Samples buffered (total: {})", self.sample_buffer.len());
 

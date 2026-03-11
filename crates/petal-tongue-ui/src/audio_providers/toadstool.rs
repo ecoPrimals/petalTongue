@@ -30,7 +30,7 @@ impl ToadstoolAudioProvider {
     }
 
     /// Request audio synthesis from Toadstool
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "Reserved for future parametric synthesis API")]
     async fn request_synthesis(&self, params: &str) -> Result<Vec<u8>, String> {
         let endpoint = self.endpoint.as_ref().ok_or("Toadstool not configured")?;
 
@@ -88,6 +88,47 @@ impl ToadstoolAudioProvider {
 impl Default for ToadstoolAudioProvider {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_toadstool_provider_default() {
+        let provider = ToadstoolAudioProvider::default();
+        assert_eq!(provider.name(), "Toadstool Synthesis");
+    }
+
+    #[test]
+    fn test_toadstool_play_when_unavailable() {
+        let provider = ToadstoolAudioProvider::new();
+        if !provider.is_available() {
+            let result = provider.play("music");
+            assert!(result.is_err());
+            assert!(result.unwrap_err().contains("not available"));
+        }
+    }
+
+    #[test]
+    fn test_toadstool_stop_when_unavailable_no_panic() {
+        let provider = ToadstoolAudioProvider::new();
+        provider.stop();
+    }
+
+    #[test]
+    fn test_toadstool_description() {
+        let provider = ToadstoolAudioProvider::new();
+        assert!(provider.description().contains("Toadstool"));
+    }
+
+    #[test]
+    fn test_toadstool_available_sounds_when_unavailable() {
+        let provider = ToadstoolAudioProvider::new();
+        if !provider.is_available() {
+            assert!(provider.available_sounds().is_empty());
+        }
     }
 }
 

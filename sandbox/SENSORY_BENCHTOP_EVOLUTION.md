@@ -370,22 +370,22 @@ impl Scenario {
 **Simulate different devices**:
 ```bash
 # Desktop (default)
-petal-tongue ui --scenario sandbox/scenarios/live-ecosystem.json
+petaltongue ui --scenario sandbox/scenarios/live-ecosystem.json
 
 # Phone (override capabilities)
 PETAL_SENSORY_OVERRIDE="touch:1080x2400" \
-petal-tongue ui --scenario sandbox/scenarios/live-ecosystem.json
+petaltongue ui --scenario sandbox/scenarios/live-ecosystem.json
 
 # Watch (tiny screen)
 PETAL_SENSORY_OVERRIDE="touch:454x454" \
-petal-tongue ui --scenario sandbox/scenarios/live-ecosystem.json
+petaltongue ui --scenario sandbox/scenarios/live-ecosystem.json
 
 # Terminal (headless)
 petal-tongue-headless --scenario sandbox/scenarios/live-ecosystem.json --mode terminal
 
 # VR (future - 3D rendering)
 PETAL_SENSORY_OVERRIDE="stereoscopic3d:1920x1080" \
-petal-tongue ui --scenario sandbox/scenarios/live-ecosystem.json
+petaltongue ui --scenario sandbox/scenarios/live-ecosystem.json
 ```
 
 ---

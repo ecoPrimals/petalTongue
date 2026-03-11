@@ -123,4 +123,22 @@ mod tests {
         let response = primals_handler(State(data_service)).await.into_response();
         assert_eq!(response.status(), 200);
     }
+
+    #[tokio::test]
+    async fn test_health_endpoint() {
+        let response = health_handler().await.into_response();
+        assert_eq!(response.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn test_index_endpoint_returns_html() {
+        let html = index_handler().await;
+        assert!(!html.0.is_empty());
+    }
+
+    #[test]
+    fn test_bind_address_parse() {
+        let addr: SocketAddr = "127.0.0.1:8080".parse().expect("valid bind");
+        assert_eq!(addr.port(), 8080);
+    }
 }

@@ -69,6 +69,7 @@ impl DevicePanel {
     }
 
     /// Update devices from provider
+    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
     pub async fn refresh(&mut self, devices: Vec<Device>) {
         debug!("🔄 Refreshing device panel with {} devices", devices.len());
         self.devices = devices;
@@ -523,5 +524,172 @@ mod tests {
         assert_eq!(device_icon(DeviceType::Network), "🌐");
         assert_eq!(device_icon(DeviceType::Memory), "🔲");
         assert_eq!(device_icon(DeviceType::Other), "❓");
+    }
+
+    #[tokio::test]
+    async fn test_device_panel_selected_device() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut panel = DevicePanel::new(event_handler);
+
+        let devices = vec![Device {
+            id: "dev-1".to_string(),
+            name: "Device 1".to_string(),
+            device_type: DeviceType::GPU,
+            status: DeviceStatus::Online,
+            resource_usage: 0.5,
+            assigned_to: None,
+            metadata: serde_json::json!({}),
+        }];
+        panel.refresh(devices).await;
+        assert!(panel.selected_device().is_none());
+
+        panel.selected = Some("dev-1".to_string());
+        let selected = panel.selected_device().expect("selected");
+        assert_eq!(selected.id, "dev-1");
+    }
+
+    #[tokio::test]
+    async fn test_device_panel_device_filter_variants() {
+        assert_eq!(DeviceFilter::All, DeviceFilter::All);
+        assert_ne!(DeviceFilter::All, DeviceFilter::Available);
+        assert_ne!(DeviceFilter::Available, DeviceFilter::Assigned);
+    }
+
+    #[tokio::test]
+    async fn test_device_panel_device_removed_clears_selection() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut panel = DevicePanel::new(event_handler.clone());
+
+        panel
+            .refresh(vec![Device {
+                id: "gpu-0".to_string(),
+                name: "GPU".to_string(),
+                device_type: DeviceType::GPU,
+                status: DeviceStatus::Online,
+                resource_usage: 0.5,
+                assigned_to: None,
+                metadata: serde_json::json!({}),
+            }])
+            .await;
+        panel.selected = Some("gpu-0".to_string());
+
+        event_handler
+            .write()
+            .await
+            .handle_event(UIEvent::DeviceRemoved("gpu-0".to_string()))
+            .await;
+        panel.process_events().await;
+
+        assert!(panel.selected.is_none());
+        assert!(panel.devices.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_device_panel_device_assigned_event() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut panel = DevicePanel::new(event_handler.clone());
+
+        panel
+            .refresh(vec![Device {
+                id: "cpu-0".to_string(),
+                name: "CPU".to_string(),
+                device_type: DeviceType::CPU,
+                status: DeviceStatus::Online,
+                resource_usage: 0.0,
+                assigned_to: None,
+                metadata: serde_json::json!({}),
+            }])
+            .await;
+
+        event_handler
+            .write()
+            .await
+            .handle_event(UIEvent::DeviceAssigned(
+                "cpu-0".to_string(),
+                "primal-x".to_string(),
+            ))
+            .await;
+        panel.process_events().await;
+
+        assert_eq!(panel.devices[0].assigned_to, Some("primal-x".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_device_panel_device_unassigned_event() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut panel = DevicePanel::new(event_handler.clone());
+
+        panel
+            .refresh(vec![Device {
+                id: "cpu-0".to_string(),
+                name: "CPU".to_string(),
+                device_type: DeviceType::CPU,
+                status: DeviceStatus::Online,
+                resource_usage: 0.0,
+                assigned_to: Some("primal-x".to_string()),
+                metadata: serde_json::json!({}),
+            }])
+            .await;
+
+        event_handler
+            .write()
+            .await
+            .handle_event(UIEvent::DeviceUnassigned(
+                "cpu-0".to_string(),
+                "primal-x".to_string(),
+            ))
+            .await;
+        panel.process_events().await;
+
+        assert!(panel.devices[0].assigned_to.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_device_panel_device_usage_changed_event() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut panel = DevicePanel::new(event_handler.clone());
+
+        panel
+            .refresh(vec![Device {
+                id: "gpu-0".to_string(),
+                name: "GPU".to_string(),
+                device_type: DeviceType::GPU,
+                status: DeviceStatus::Online,
+                resource_usage: 0.3,
+                assigned_to: None,
+                metadata: serde_json::json!({}),
+            }])
+            .await;
+
+        event_handler
+            .write()
+            .await
+            .handle_event(UIEvent::DeviceUsageChanged("gpu-0".to_string(), 0.95))
+            .await;
+        panel.process_events().await;
+
+        assert!((panel.devices[0].resource_usage - 0.95).abs() < f64::EPSILON);
+    }
+
+    #[tokio::test]
+    async fn test_device_panel_search_by_id() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut panel = DevicePanel::new(event_handler);
+
+        panel
+            .refresh(vec![Device {
+                id: "gpu-nvidia-0".to_string(),
+                name: "Graphics".to_string(),
+                device_type: DeviceType::GPU,
+                status: DeviceStatus::Online,
+                resource_usage: 0.5,
+                assigned_to: None,
+                metadata: serde_json::json!({}),
+            }])
+            .await;
+
+        panel.search_query = "nvidia".to_string();
+        assert_eq!(panel.filtered_devices().len(), 1);
+        assert_eq!(panel.filtered_devices()[0].id, "gpu-nvidia-0");
     }
 }

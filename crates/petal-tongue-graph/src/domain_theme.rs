@@ -254,4 +254,48 @@ mod tests {
         assert_eq!(palette_for_domain("Physics").primary, PHYSICS.primary);
         assert_eq!(palette_for_domain("ECOLOGY").primary, ECOLOGY.primary);
     }
+
+    #[test]
+    fn palette_hydrology_returns_atmospheric() {
+        let p = palette_for_domain("hydrology");
+        assert_eq!(p.primary, ATMOSPHERIC.primary);
+    }
+
+    #[test]
+    fn palette_agriculture_returns_atmospheric() {
+        let p = palette_for_domain("agriculture");
+        assert_eq!(p.primary, ATMOSPHERIC.primary);
+    }
+
+    #[test]
+    fn palette_surrogate_returns_neural() {
+        let p = palette_for_domain("surrogate");
+        assert_eq!(p.primary, NEURAL.primary);
+    }
+
+    #[test]
+    fn palette_uncertainty_returns_measurement() {
+        let p = palette_for_domain("uncertainty");
+        assert_eq!(p.primary, MEASUREMENT.primary);
+    }
+
+    #[test]
+    fn palette_calibration_returns_measurement() {
+        let p = palette_for_domain("calibration");
+        assert_eq!(p.primary, MEASUREMENT.primary);
+    }
+
+    #[test]
+    fn domain_palette_has_all_fields() {
+        let p = palette_for_domain("health");
+        let _ = p.primary;
+        let _ = p.secondary;
+        let _ = p.positive;
+        let _ = p.caution;
+        let _ = p.negative;
+        let _ = p.info;
+        let _ = p.bg_card;
+        let _ = p.text_dim;
+        let _ = p.text_bright;
+    }
 }

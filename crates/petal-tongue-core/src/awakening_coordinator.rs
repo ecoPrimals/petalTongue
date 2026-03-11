@@ -644,4 +644,107 @@ mod tests {
         let timeline = AwakeningTimeline::standard(&config);
         assert!((timeline.duration() - 4.0).abs() < f32::EPSILON);
     }
+
+    #[test]
+    fn test_timeline_all_modalities_disabled() {
+        let config = AwakeningConfig {
+            modality: crate::awakening::AwakeningModalityFlags {
+                visual_enabled: false,
+                audio_enabled: false,
+                text_enabled: false,
+            },
+            ..Default::default()
+        };
+        let timeline = AwakeningTimeline::standard(&config);
+        // Should still have stage transitions and complete
+        let stage_transitions: Vec<_> = timeline
+            .events()
+            .iter()
+            .filter(|e| matches!(e.event_type, TimelineEventType::StageTransition { .. }))
+            .collect();
+        assert_eq!(stage_transitions.len(), 5);
+        assert!(!timeline.events().is_empty());
+    }
+
+    #[test]
+    fn test_timeline_stage_order() {
+        let config = AwakeningConfig::default();
+        let timeline = AwakeningTimeline::standard(&config);
+        let stages: Vec<_> = timeline
+            .events()
+            .iter()
+            .filter_map(|e| {
+                if let TimelineEventType::StageTransition { stage } = &e.event_type {
+                    Some(*stage)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        assert_eq!(stages[0], AwakeningStage::Awakening);
+        assert_eq!(stages[1], AwakeningStage::SelfKnowledge);
+        assert_eq!(stages[2], AwakeningStage::Discovery);
+        assert_eq!(stages[3], AwakeningStage::Tutorial);
+        assert_eq!(stages[4], AwakeningStage::Complete);
+    }
+
+    #[test]
+    fn test_timeline_events_in_range_exclusive_end() {
+        let config = AwakeningConfig::default();
+        let timeline = AwakeningTimeline::standard(&config);
+        let events_at_0 = timeline.events_in_range(0.0, 0.0);
+        assert!(events_at_0.is_empty());
+        let events_at_start = timeline.events_in_range(0.0, 0.01);
+        assert!(!events_at_start.is_empty());
+    }
+
+    #[test]
+    fn test_timeline_visual_frame_event_type() {
+        let event = TimelineEvent {
+            time: 1.0,
+            stage: AwakeningStage::Awakening,
+            event_type: TimelineEventType::VisualFrame { frame: 42 },
+        };
+        assert!((event.time - 1.0).abs() < f32::EPSILON);
+        assert_eq!(event.stage, AwakeningStage::Awakening);
+        assert!(matches!(
+            event.event_type,
+            TimelineEventType::VisualFrame { frame: 42 }
+        ));
+    }
+
+    #[test]
+    fn test_timeline_audio_stop_event_type() {
+        let event = TimelineEvent {
+            time: 2.0,
+            stage: AwakeningStage::SelfKnowledge,
+            event_type: TimelineEventType::AudioStop {
+                layer: "heartbeat".to_string(),
+            },
+        };
+        assert!(matches!(
+            event.event_type,
+            TimelineEventType::AudioStop { layer } if layer == "heartbeat"
+        ));
+    }
+
+    #[test]
+    fn test_timeline_zero_duration_stages() {
+        let config = AwakeningConfig {
+            stage_1_duration: 0,
+            stage_2_duration: 0,
+            stage_3_duration: 0,
+            stage_4_duration: 0,
+            ..Default::default()
+        };
+        let timeline = AwakeningTimeline::standard(&config);
+        assert!((timeline.duration() - 0.0).abs() < f32::EPSILON);
+        assert!(!timeline.events().is_empty());
+    }
+
+    #[test]
+    fn test_awakening_stage_equality() {
+        assert_eq!(AwakeningStage::Awakening, AwakeningStage::Awakening);
+        assert_ne!(AwakeningStage::Awakening, AwakeningStage::Complete);
+    }
 }

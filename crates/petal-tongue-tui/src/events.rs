@@ -127,7 +127,10 @@ impl EventHandler {
     }
 
     /// Read terminal event (async)
-    #[allow(clippy::unused_async)]
+    #[expect(
+        clippy::unused_async,
+        reason = "async for future non-blocking crossterm API"
+    )]
     async fn read_terminal_event() -> Result<Option<TUIEvent>> {
         // Poll for event with timeout
         if crossterm::event::poll(Duration::from_millis(100))? {

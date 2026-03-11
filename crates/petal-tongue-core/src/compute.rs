@@ -69,6 +69,18 @@ impl ComputeRegistry {
         self.providers.insert(name, provider);
     }
 
+    /// Number of registered compute providers.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.providers.len()
+    }
+
+    /// Returns true if no compute providers are registered.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.providers.is_empty()
+    }
+
     /// Get provider by name
     #[must_use]
     pub fn get(&self, name: &str) -> Option<&dyn ComputeProvider> {
@@ -139,12 +151,12 @@ mod tests {
         let mut registry = ComputeRegistry::new();
 
         registry.register(Box::new(MockComputeProvider {
-            name: "toadstool".to_string(),
+            name: "gpu-compute".to_string(),
             caps: vec![ComputeCapability::LayoutComputation],
             available: true,
         }));
 
-        assert!(registry.get("toadstool").is_some());
+        assert!(registry.get("gpu-compute").is_some());
 
         let provider = registry
             .get_with_capability(ComputeCapability::LayoutComputation)

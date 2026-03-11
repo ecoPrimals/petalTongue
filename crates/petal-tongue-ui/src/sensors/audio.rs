@@ -123,6 +123,7 @@ impl Sensor for AudioSensor {
 }
 
 /// Discover audio capabilities
+#[expect(clippy::unused_async, reason = "async for trait compatibility")]
 pub async fn discover() -> Option<AudioSensor> {
     // Try to discover audio output
     let has_output = probe_audio_output();
@@ -153,11 +154,53 @@ fn probe_audio_output() -> bool {
     }
 }
 
+/// Check if audio input (microphone) is available.
+///
+/// Synchronous probe for use in UI availability checks.
+#[must_use]
+pub fn has_audio_input() -> bool {
+    probe_audio_input()
+}
+
 /// Probe for audio input
+///
+/// On Linux: checks /proc/asound and /sys/class/sound for capture devices.
 fn probe_audio_input() -> bool {
-    // Audio input requires more complex setup
-    // For Phase 1, we'll just assume it's not available
-    false
+    #[cfg(target_os = "linux")]
+    {
+        // Check /proc/asound/pcm for capture devices (format: "00-00: ... : capture")
+        if let Ok(content) = std::fs::read_to_string("/proc/asound/pcm") {
+            if content.to_lowercase().contains("capture") {
+                return true;
+            }
+        }
+        // Check /sys/class/sound/card*/ for pcm*D*c (capture) subdirs
+        if let Ok(entries) = std::fs::read_dir("/sys/class/sound") {
+            for entry in entries.flatten() {
+                let name = entry.file_name();
+                let name_str = name.to_string_lossy();
+                if name_str.starts_with("card") {
+                    let card_path = entry.path();
+                    if let Ok(pcm_entries) = std::fs::read_dir(&card_path) {
+                        for pcm_entry in pcm_entries.flatten() {
+                            let pcm_name = pcm_entry.file_name();
+                            let pcm_name_str = pcm_name.to_string_lossy();
+                            // pcmC0D0c = capture, pcmC0D0p = playback
+                            if pcm_name_str.ends_with('c') {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        false
+    }
 }
 
 #[cfg(test)]
@@ -195,5 +238,49 @@ mod tests {
                 .await
                 .expect("beep should complete within 5s");
         assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_audio_sensor_name_output_only() {
+        let sensor = AudioSensor::new(true, false);
+        assert_eq!(sensor.name(), "Audio Output (Speaker)");
+    }
+
+    #[tokio::test]
+    async fn test_audio_sensor_name_input_only() {
+        let sensor = AudioSensor::new(false, true);
+        assert_eq!(sensor.name(), "Audio Input (Microphone)");
+    }
+
+    #[tokio::test]
+    async fn test_audio_sensor_name_bidirectional() {
+        let sensor = AudioSensor::new(true, true);
+        assert_eq!(sensor.name(), "Audio (Bidirectional)");
+    }
+
+    #[tokio::test]
+    async fn test_audio_sensor_is_available() {
+        assert!(AudioSensor::new(true, false).is_available());
+        assert!(AudioSensor::new(false, true).is_available());
+        assert!(AudioSensor::new(true, true).is_available());
+    }
+
+    #[tokio::test]
+    async fn test_audio_sensor_not_available() {
+        let sensor = AudioSensor::new(false, false);
+        assert!(!sensor.is_available());
+    }
+
+    #[tokio::test]
+    async fn test_audio_sensor_capabilities_spatial() {
+        let sensor = AudioSensor::new(true, false);
+        assert!(!sensor.capabilities().spatial);
+        assert!(sensor.capabilities().temporal);
+        assert!(sensor.capabilities().continuous);
+    }
+
+    #[tokio::test]
+    async fn test_has_audio_input() {
+        let _ = has_audio_input();
     }
 }

@@ -1,11 +1,12 @@
 # PetalTongue Documentation Manifest
-# Updated: March 9, 2026
-# Version: 1.4.4
+# Updated: March 11, 2026
+# Version: 1.6.1
 
 ## Core Documentation
 README.md
 START_HERE.md
 PROJECT_STATUS.md
+EVOLUTION_TRACKER.md
 CHANGELOG.md
 ENV_VARS.md
 
@@ -17,11 +18,24 @@ specs/INTERACTION_ENGINE_ARCHITECTURE.md
 specs/BIDIRECTIONAL_UUI_ARCHITECTURE.md
 specs/UNIVERSAL_USER_INTERFACE_SPECIFICATION.md
 specs/JSONRPC_PROTOCOL_SPECIFICATION.md
+specs/REALTIME_COLLABORATIVE_PIPELINE.md
+specs/NEURAL_API_INTEGRATION_SPECIFICATION.md
+
+## Docs (docs/)
+docs/LIVE_TESTING.md
+docs/architecture/
+docs/features/
+docs/integration/
+docs/operations/
+docs/planning/
+docs/technical/
+docs/guides/
 
 ## Archive
 archive/                    # Fossil record: session reports, legacy crates, plans, scripts
 
 ## Statistics
-Total Root MD Files: 5
-Spec Files: 7+
-Archived Dirs: 20
+Total Root MD Files: 6
+Spec Files: 24
+Docs Files: 26
+Archived Dirs: 20+

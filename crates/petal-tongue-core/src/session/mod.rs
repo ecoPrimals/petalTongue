@@ -74,10 +74,10 @@ mod tests {
         let temp = std::env::temp_dir().join("petal-session-test.ron");
         let _ = std::fs::remove_file(&temp);
 
-        state.save(&temp).unwrap();
+        state.save(&temp).expect("save session");
         assert!(temp.exists());
 
-        let loaded = SessionState::load(&temp).unwrap();
+        let loaded = SessionState::load(&temp).expect("load session");
         assert_eq!(loaded.version, state.version);
         assert_eq!(loaded.instance_id, state.instance_id);
 
@@ -108,8 +108,8 @@ mod tests {
         let temp = std::env::temp_dir().join("petal-export-test.ron");
         let _ = std::fs::remove_file(&temp);
 
-        state.export(&temp).unwrap();
-        let imported = SessionState::import(&temp).unwrap();
+        state.export(&temp).expect("export session");
+        let imported = SessionState::import(&temp).expect("import session");
         assert_eq!(imported.nodes.len(), 1);
         assert_eq!(imported.nodes[0].id, "n1");
 
@@ -181,7 +181,7 @@ mod tests {
     #[test]
     fn test_session_manager_creation() {
         let id = InstanceId::new();
-        let manager = SessionManager::new(&id).unwrap();
+        let manager = SessionManager::new(&id).expect("create manager");
 
         assert!(manager.current_state().is_none());
         assert!(!manager.is_dirty());
@@ -192,9 +192,9 @@ mod tests {
         let temp = std::env::temp_dir()
             .join("petal-manager-test")
             .join("sess.ron");
-        std::fs::create_dir_all(temp.parent().unwrap()).unwrap();
+        std::fs::create_dir_all(temp.parent().expect("parent dir")).expect("create dir");
 
-        let manager = SessionManager::with_session_path(temp.clone()).unwrap();
+        let manager = SessionManager::with_session_path(temp.clone()).expect("create manager");
         assert_eq!(manager.session_path(), temp.as_path());
         assert!(!manager.is_dirty());
 
@@ -207,13 +207,13 @@ mod tests {
         let temp = std::env::temp_dir()
             .join("petal-dirty-track-test")
             .join(format!("{}.ron", id.as_str()));
-        std::fs::create_dir_all(temp.parent().unwrap()).unwrap();
-        let mut manager = SessionManager::with_session_path(temp.clone()).unwrap();
+        std::fs::create_dir_all(temp.parent().expect("parent dir")).expect("create dir");
+        let mut manager = SessionManager::with_session_path(temp.clone()).expect("create manager");
 
-        manager.load_or_create(id).unwrap();
+        manager.load_or_create(id).expect("load or create");
         assert!(manager.is_dirty());
 
-        manager.save().unwrap();
+        manager.save().expect("save");
         assert!(!manager.is_dirty());
 
         manager.mark_dirty();
@@ -225,8 +225,8 @@ mod tests {
     #[test]
     fn test_session_manager_save_without_state() {
         let temp = std::env::temp_dir().join("petal-save-test").join("s.ron");
-        std::fs::create_dir_all(temp.parent().unwrap()).unwrap();
-        let mut manager = SessionManager::with_session_path(temp.clone()).unwrap();
+        std::fs::create_dir_all(temp.parent().expect("parent dir")).expect("create dir");
+        let mut manager = SessionManager::with_session_path(temp.clone()).expect("create manager");
 
         let result = manager.save();
         assert!(result.is_err());
@@ -238,10 +238,12 @@ mod tests {
     #[test]
     fn test_session_manager_auto_save_disabled() {
         let temp = std::env::temp_dir().join("petal-autosave").join("s.ron");
-        std::fs::create_dir_all(temp.parent().unwrap()).unwrap();
-        let mut manager = SessionManager::with_session_path(temp.clone()).unwrap();
-        manager.load_or_create(InstanceId::new()).unwrap();
-        manager.save().unwrap();
+        std::fs::create_dir_all(temp.parent().expect("parent dir")).expect("create dir");
+        let mut manager = SessionManager::with_session_path(temp.clone()).expect("create manager");
+        manager
+            .load_or_create(InstanceId::new())
+            .expect("load or create");
+        manager.save().expect("save");
         manager.set_auto_save(false);
         manager.mark_dirty();
 
@@ -256,8 +258,8 @@ mod tests {
         let id = InstanceId::new();
         let temp1 = std::env::temp_dir().join("petal-merge1").join("a.ron");
         let temp2 = std::env::temp_dir().join("petal-merge2").join("b.ron");
-        std::fs::create_dir_all(temp1.parent().unwrap()).unwrap();
-        std::fs::create_dir_all(temp2.parent().unwrap()).unwrap();
+        std::fs::create_dir_all(temp1.parent().expect("parent dir")).expect("create dir");
+        std::fs::create_dir_all(temp2.parent().expect("parent dir")).expect("create dir");
 
         let mut state2 = SessionState::new(InstanceId::new());
         state2.nodes.push(PrimalInfo::new(
@@ -269,14 +271,14 @@ mod tests {
             PrimalHealthStatus::Healthy,
             0,
         ));
-        state2.save(&temp2).unwrap();
+        state2.save(&temp2).expect("save state2");
 
-        let mut manager = SessionManager::with_session_path(temp1.clone()).unwrap();
-        manager.load_or_create(id).unwrap();
-        manager.merge_session(&temp2).unwrap();
+        let mut manager = SessionManager::with_session_path(temp1.clone()).expect("create manager");
+        manager.load_or_create(id).expect("load or create");
+        manager.merge_session(&temp2).expect("merge session");
 
-        assert_eq!(manager.current_state().unwrap().nodes.len(), 1);
-        assert_eq!(manager.current_state().unwrap().nodes[0].id, "node2");
+        assert_eq!(manager.current_state().expect("state").nodes.len(), 1);
+        assert_eq!(manager.current_state().expect("state").nodes[0].id, "node2");
 
         let _ = std::fs::remove_dir_all(temp1.parent().unwrap());
         let _ = std::fs::remove_dir_all(temp2.parent().unwrap());
@@ -315,5 +317,76 @@ mod tests {
         assert_eq!(state1.nodes.len(), 2);
         assert!(state1.nodes.iter().any(|n| n.id == "node1"));
         assert!(state1.nodes.iter().any(|n| n.id == "node2"));
+    }
+
+    #[test]
+    fn test_session_manager_current_state_mut_marks_dirty() {
+        let temp = std::env::temp_dir().join("petal-mut-test").join("s.ron");
+        std::fs::create_dir_all(temp.parent().expect("parent")).expect("create dir");
+        let mut manager = SessionManager::with_session_path(temp.clone()).expect("create manager");
+        manager.load_or_create(InstanceId::new()).expect("load");
+        manager.save().expect("save");
+        assert!(!manager.is_dirty());
+        let _ = manager.current_state_mut();
+        assert!(manager.is_dirty());
+        let _ = std::fs::remove_dir_all(temp.parent().expect("parent"));
+    }
+
+    #[test]
+    fn test_session_manager_update_state() {
+        let temp = std::env::temp_dir().join("petal-update-test").join("s.ron");
+        std::fs::create_dir_all(temp.parent().expect("parent")).expect("create dir");
+        let mut manager = SessionManager::with_session_path(temp.clone()).expect("create manager");
+        let mut new_state = SessionState::new(InstanceId::new());
+        new_state.nodes.push(PrimalInfo::new(
+            "n",
+            "N",
+            "T",
+            "http://x",
+            vec![],
+            PrimalHealthStatus::Healthy,
+            0,
+        ));
+        manager.update_state(new_state);
+        assert!(manager.is_dirty());
+        assert_eq!(manager.current_state().expect("state").nodes.len(), 1);
+        let _ = std::fs::remove_dir_all(temp.parent().expect("parent"));
+    }
+
+    #[test]
+    fn test_session_manager_force_save() {
+        let temp = std::env::temp_dir().join("petal-force-save").join("s.ron");
+        std::fs::create_dir_all(temp.parent().expect("parent")).expect("create dir");
+        let mut manager = SessionManager::with_session_path(temp.clone()).expect("create manager");
+        manager.load_or_create(InstanceId::new()).expect("load");
+        manager.save().expect("save");
+        manager.force_save().expect("force save");
+        assert!(!manager.is_dirty());
+        let _ = std::fs::remove_dir_all(temp.parent().expect("parent"));
+    }
+
+    #[test]
+    fn test_session_manager_set_auto_save_interval() {
+        let temp = std::env::temp_dir().join("petal-interval").join("s.ron");
+        std::fs::create_dir_all(temp.parent().expect("parent")).expect("create dir");
+        let mut manager = SessionManager::with_session_path(temp.clone()).expect("create manager");
+        manager.set_auto_save_interval(0);
+        manager.set_auto_save_interval(60);
+        let _ = std::fs::remove_dir_all(temp.parent().expect("parent"));
+    }
+
+    #[test]
+    fn test_session_manager_has_unsaved_changes() {
+        let id = InstanceId::new();
+        let manager = SessionManager::new(&id).expect("create");
+        assert!(!manager.has_unsaved_changes());
+    }
+
+    #[test]
+    fn test_session_error_display() {
+        let err = SessionError::NotFound("x".to_string());
+        assert!(err.to_string().contains('x'));
+        let err = SessionError::NoState;
+        assert!(!err.to_string().is_empty());
     }
 }

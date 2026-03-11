@@ -14,5 +14,8 @@ demo.svg
 freedoom1.wad
 freedoom.zip
 
+# Environment (secrets, local overrides)
+.env
+
 # Build artifacts
 petal-tongue.sha256

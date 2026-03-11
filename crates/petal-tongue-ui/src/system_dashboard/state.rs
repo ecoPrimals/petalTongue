@@ -8,13 +8,13 @@ use crate::live_data::LiveMetric;
 use crate::multimodal_stream::{
     CpuStream, MemoryStream, ModalityPreferences, MultiModalRenderer, SystemMetricRenderer,
 };
+use crate::proc_stats::{ProcStats, SOURCE_ID};
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
-use sysinfo::System;
 
 /// Compact system dashboard for sidebar with multimodal output
 pub struct SystemDashboard {
-    pub(crate) system: System,
+    pub(crate) stats: ProcStats,
     pub(crate) last_refresh: Instant,
     pub(crate) refresh_interval: Duration,
     pub(crate) cpu_metric: LiveMetric,
@@ -36,17 +36,15 @@ pub struct SystemDashboard {
 
 impl Default for SystemDashboard {
     fn default() -> Self {
-        let mut system = System::new_all();
-        system.refresh_all();
-
-        let total_memory = system.total_memory();
+        let stats = ProcStats::new();
+        let total_memory = stats.total_memory();
 
         Self {
-            system,
+            stats,
             last_refresh: Instant::now(),
             refresh_interval: Duration::from_secs(1),
-            cpu_metric: LiveMetric::new("CPU".to_string(), "sysinfo".to_string(), 1.0),
-            memory_metric: LiveMetric::new("Memory".to_string(), "sysinfo".to_string(), 1.0),
+            cpu_metric: LiveMetric::new("CPU".to_string(), SOURCE_ID.to_string(), 1.0),
+            memory_metric: LiveMetric::new("Memory".to_string(), SOURCE_ID.to_string(), 1.0),
             cpu_history: VecDeque::new(),
             mem_history: VecDeque::new(),
             max_history: 30, // 30 seconds for mini view
@@ -86,16 +84,8 @@ impl SystemDashboard {
     pub(crate) fn refresh(&mut self, audio_system: Option<&AudioSystemV2>) {
         let now = Instant::now();
         if now.duration_since(self.last_refresh) >= self.refresh_interval {
-            self.system.refresh_all();
+            let cpu_usage = self.stats.cpu_usage();
             self.last_refresh = now;
-
-            // Calculate CPU usage
-            let cpus = self.system.cpus();
-            let cpu_usage = if cpus.is_empty() {
-                0.0
-            } else {
-                cpus.iter().map(sysinfo::Cpu::cpu_usage).sum::<f32>() / cpus.len() as f32
-            };
 
             self.cpu_history.push_back(cpu_usage);
             if self.cpu_history.len() > self.max_history {
@@ -106,8 +96,8 @@ impl SystemDashboard {
             self.cpu_stream.push_value(f64::from(cpu_usage / 100.0));
 
             // Calculate memory usage
-            let used_mem = self.system.used_memory();
-            let total_mem = self.system.total_memory();
+            let used_mem = self.stats.used_memory();
+            let total_mem = self.stats.total_memory();
             let mem_percent = if total_mem > 0 {
                 ((used_mem as f64 / total_mem as f64) * 100.0) as f32
             } else {
@@ -181,5 +171,47 @@ impl SystemDashboard {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_system_dashboard_default() {
+        let dashboard = SystemDashboard::default();
+        assert!(dashboard.cpu_history.is_empty());
+        assert!(dashboard.mem_history.is_empty());
+        assert_eq!(dashboard.max_history, 30);
+    }
+
+    #[test]
+    fn test_set_audio_enabled() {
+        let mut dashboard = SystemDashboard::default();
+        assert!(!dashboard.is_audio_enabled()); // Default is opt-in
+        dashboard.set_audio_enabled(true);
+        assert!(dashboard.is_audio_enabled());
+        dashboard.set_audio_enabled(false);
+        assert!(!dashboard.is_audio_enabled());
+    }
+
+    #[test]
+    fn test_set_audio_volume() {
+        let mut dashboard = SystemDashboard::default();
+        dashboard.set_audio_volume(0.5);
+        assert!((dashboard.modality_prefs.audio_volume - 0.5).abs() < f32::EPSILON);
+        dashboard.set_audio_volume(1.5);
+        assert!((dashboard.modality_prefs.audio_volume - 1.0).abs() < f32::EPSILON);
+        dashboard.set_audio_volume(-0.1);
+        assert!(dashboard.modality_prefs.audio_volume < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_modality_prefs_mut() {
+        let mut dashboard = SystemDashboard::default();
+        let prefs = dashboard.modality_prefs_mut();
+        prefs.audio_enabled = false;
+        assert!(!dashboard.is_audio_enabled());
     }
 }

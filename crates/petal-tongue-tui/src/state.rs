@@ -389,7 +389,12 @@ mod tests {
         // Should keep only last 1000
         let logs = state.get_logs().await;
         assert_eq!(logs.len(), 1000);
-        assert!(logs.last().unwrap().message.contains("1099"));
+        assert!(
+            logs.last()
+                .expect("logs not empty")
+                .message
+                .contains("1099")
+        );
     }
 
     #[tokio::test]

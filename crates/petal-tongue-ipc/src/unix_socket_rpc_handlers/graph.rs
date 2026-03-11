@@ -6,7 +6,10 @@ use crate::json_rpc::{JsonRpcResponse, error_codes};
 use serde_json::{Value, json};
 
 /// Internal: render graph data (used by ui.render for content_type "graph")
-#[allow(clippy::unused_async)]
+#[expect(
+    clippy::unused_async,
+    reason = "async trait requirement for RPC handler"
+)]
 pub async fn render_graph_data(_handlers: &RpcHandlers, data: Value) -> anyhow::Result<()> {
     tracing::debug!("Rendering graph data: {:?}", data);
     Ok(())
@@ -16,7 +19,10 @@ pub async fn render_graph_data(_handlers: &RpcHandlers, data: Value) -> anyhow::
 ///
 /// **Fallback**: When graph data is unavailable or rendering is not implemented,
 /// returns empty/placeholder with clear logging. Callers should handle empty responses.
-#[allow(clippy::unused_async)]
+#[expect(
+    clippy::unused_async,
+    reason = "async trait requirement for RPC handler"
+)]
 pub async fn render_graph(_handlers: &RpcHandlers, params: Value, id: Value) -> JsonRpcResponse {
     let format = params["format"].as_str().unwrap_or("svg");
 

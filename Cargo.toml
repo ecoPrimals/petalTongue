@@ -39,7 +39,7 @@ repository.workspace = true
 authors.workspace = true
 
 [workspace.package]
-version = "1.6.0"
+version = "1.6.1"
 edition = "2024"
 license = "AGPL-3.0-only"
 repository = "https://github.com/ecoPrimals/petalTongue"
@@ -98,6 +98,9 @@ base64 = "0.22"
 # Time and dates
 chrono = "0.4"
 
+# Property testing
+proptest = "1.4"
+
 # RPC frameworks for inter-primal communication
 # Following ecosystem pattern: tarpc PRIMARY, JSON-RPC fallback, HTTPS optional
 tarpc = { version = "0.34", features = ["full"] }
@@ -119,12 +122,11 @@ module_name_repetitions = "allow"
 cast_precision_loss = "allow"
 cast_lossless = "allow"
 similar_names = "allow"
-wildcard_imports = "allow"
+wildcard_imports = "warn"
 doc_markdown = "allow"
 default_trait_access = "allow"
 wildcard_in_or_patterns = "allow"
 items_after_statements = "allow"
-unused_async = "allow"
 
 # Audio (placeholder - will use rodio or cpal in production)
 # For now, we'll design the API without actual audio output
@@ -140,6 +142,7 @@ petal-tongue-ipc = { path = "crates/petal-tongue-ipc" }
 
 # Optional UI (can be disabled for minimal build)
 petal-tongue-ui = { path = "crates/petal-tongue-ui", optional = true }
+petal-tongue-tui = { path = "crates/petal-tongue-tui" }
 eframe = { workspace = true, optional = true }
 egui = { workspace = true, optional = true }
 

@@ -558,4 +558,114 @@ mod tests {
         assert!(desc.contains("silent"));
         assert!(desc.contains("No primals"));
     }
+
+    #[test]
+    fn test_master_volume_zero_silence() {
+        let graph = create_test_graph();
+        let mut renderer = AudioSonificationRenderer::new(graph);
+        renderer.set_master_volume(0.0);
+        let attrs = renderer.generate_audio_attributes();
+        for (_, a) in &attrs {
+            assert!((a.volume - 0.0).abs() < f32::EPSILON);
+        }
+    }
+
+    #[test]
+    fn test_master_volume_max() {
+        let graph = create_test_graph();
+        let mut renderer = AudioSonificationRenderer::new(graph);
+        renderer.set_master_volume(1.0);
+        assert!((renderer.master_volume() - 1.0).abs() < f32::EPSILON);
+        let attrs = renderer.generate_audio_attributes();
+        for (_, a) in &attrs {
+            assert!(a.volume <= 1.0);
+        }
+    }
+
+    #[test]
+    fn test_activity_to_volume_zero_capabilities() {
+        let mut graph = GraphEngine::new();
+        let mut node =
+            petal_tongue_core::test_fixtures::primals::test_primal_with_type("zero-cap", "Compute");
+        node.capabilities = vec![];
+        graph.add_node(node);
+        graph.set_layout(LayoutAlgorithm::Circular);
+        graph.layout(1);
+        let renderer = AudioSonificationRenderer::new(Arc::new(RwLock::new(graph)));
+        let attrs = renderer.generate_audio_attributes();
+        let vol = attrs
+            .iter()
+            .find(|(id, _)| *id == "zero-cap")
+            .unwrap()
+            .1
+            .volume;
+        assert!((0.0..=1.0).contains(&vol));
+        assert!(vol < 0.5, "Zero capabilities should have lower volume");
+    }
+
+    #[test]
+    fn test_describe_soundscape_all_critical() {
+        let mut graph = GraphEngine::new();
+        let mut n1 =
+            petal_tongue_core::test_fixtures::primals::test_primal_with_type("n1", "Compute");
+        n1.health = PrimalHealthStatus::Critical;
+        graph.add_node(n1);
+        let mut n2 =
+            petal_tongue_core::test_fixtures::primals::test_primal_with_type("n2", "Storage");
+        n2.health = PrimalHealthStatus::Critical;
+        graph.add_node(n2);
+        graph.set_layout(LayoutAlgorithm::Circular);
+        graph.layout(1);
+        let renderer = AudioSonificationRenderer::new(Arc::new(RwLock::new(graph)));
+        let desc = renderer.describe_soundscape();
+        assert!(desc.contains("critical"));
+        assert!(desc.contains("Dissonant"));
+    }
+
+    #[test]
+    fn test_describe_soundscape_all_healthy() {
+        let mut graph = GraphEngine::new();
+        let mut n1 = petal_tongue_core::test_fixtures::primals::test_primal_with_type("n1", "AI");
+        n1.health = PrimalHealthStatus::Healthy;
+        graph.add_node(n1);
+        graph.set_layout(LayoutAlgorithm::Circular);
+        graph.layout(1);
+        let renderer = AudioSonificationRenderer::new(Arc::new(RwLock::new(graph)));
+        let desc = renderer.describe_soundscape();
+        assert!(desc.contains("harmony"));
+    }
+
+    #[test]
+    fn test_position_to_pan_fractional() {
+        let graph = create_test_graph();
+        let renderer = AudioSonificationRenderer::new(graph);
+        let pos = Position::new_2d(250.0, 0.0);
+        let pan = renderer.position_to_pan(pos);
+        assert!((pan - 0.5).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_audio_attributes_pan_range() {
+        let graph = create_test_graph();
+        let renderer = AudioSonificationRenderer::new(graph);
+        let attrs = renderer.generate_audio_attributes();
+        for (_, a) in &attrs {
+            assert!(a.pan >= -1.0 && a.pan <= 1.0, "Pan must be in [-1, 1]");
+        }
+    }
+
+    #[test]
+    fn test_describe_node_audio_critical() {
+        let mut graph = GraphEngine::new();
+        let mut node =
+            petal_tongue_core::test_fixtures::primals::test_primal_with_type("critical-node", "AI");
+        node.name = "Critical AI".to_string();
+        node.health = PrimalHealthStatus::Critical;
+        graph.add_node(node);
+        graph.set_layout(LayoutAlgorithm::Circular);
+        graph.layout(1);
+        let renderer = AudioSonificationRenderer::new(Arc::new(RwLock::new(graph)));
+        let desc = renderer.describe_node_audio("critical-node").unwrap();
+        assert!(desc.contains("dissonant"));
+    }
 }

@@ -93,7 +93,9 @@ pub fn determine_ui_complexity(caps: &SensoryCapabilities) -> UIComplexity {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sensory_capabilities::types::KeyboardInputCapability;
+    use crate::sensory_capabilities::types::{
+        AudioOutputCapability, KeyboardInputCapability, TouchInputCapability,
+    };
 
     #[test]
     fn test_ui_complexity_display() {
@@ -137,6 +139,72 @@ mod tests {
                 layout: "QWERTY".to_string(),
                 has_numpad: false,
                 modifier_keys: 3,
+            }],
+            ..Default::default()
+        };
+        assert_eq!(determine_ui_complexity(&caps), UIComplexity::Standard);
+    }
+
+    #[test]
+    fn test_ui_complexity_audio_only_minimal() {
+        let caps = SensoryCapabilities {
+            visual_outputs: vec![],
+            audio_outputs: vec![AudioOutputCapability::Stereo {
+                sample_rate: 48000,
+                bit_depth: 16,
+            }],
+            keyboard_inputs: vec![KeyboardInputCapability::Physical {
+                layout: "QWERTY".to_string(),
+                has_numpad: false,
+                modifier_keys: 3,
+            }],
+            ..Default::default()
+        };
+        assert_eq!(determine_ui_complexity(&caps), UIComplexity::Minimal);
+    }
+
+    #[test]
+    fn test_ui_complexity_simple_touch_no_keyboard() {
+        let caps = SensoryCapabilities {
+            visual_outputs: vec![VisualOutputCapability::TwoD {
+                resolution: (800, 600),
+                refresh_rate: 60,
+                color_depth: 8,
+                size_mm: None,
+            }],
+            touch_inputs: vec![TouchInputCapability {
+                max_touch_points: 5,
+                supports_pressure: false,
+                supports_hover: false,
+                screen_size_mm: None,
+            }],
+            ..Default::default()
+        };
+        assert_eq!(determine_ui_complexity(&caps), UIComplexity::Simple);
+    }
+
+    #[test]
+    fn test_ui_complexity_simple_small_screen() {
+        let caps = SensoryCapabilities {
+            visual_outputs: vec![VisualOutputCapability::TwoD {
+                resolution: (454, 454),
+                refresh_rate: 60,
+                color_depth: 8,
+                size_mm: Some((35, 35)),
+            }],
+            ..Default::default()
+        };
+        assert_eq!(determine_ui_complexity(&caps), UIComplexity::Simple);
+    }
+
+    #[test]
+    fn test_ui_complexity_fallback_standard() {
+        let caps = SensoryCapabilities {
+            visual_outputs: vec![VisualOutputCapability::TwoD {
+                resolution: (800, 600),
+                refresh_rate: 60,
+                color_depth: 8,
+                size_mm: None,
             }],
             ..Default::default()
         };

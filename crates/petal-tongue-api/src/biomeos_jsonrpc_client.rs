@@ -286,7 +286,60 @@ mod tests {
     #[tokio::test]
     async fn test_health_check_unavailable() {
         let client = BiomeOSJsonRpcClient::with_socket_path("/tmp/nonexistent-biomeos-health.sock");
-        let healthy = client.health_check().await.unwrap();
+        let healthy = client.health_check().await.expect("health_check");
         assert!(!healthy);
+    }
+
+    #[test]
+    fn test_jsonrpc_request_structure() {
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": "neural_api.health",
+            "params": {},
+            "id": 1
+        });
+        assert_eq!(request["jsonrpc"], "2.0");
+        assert_eq!(request["method"], "neural_api.health");
+        assert!(request["params"].is_object());
+    }
+
+    #[test]
+    fn test_jsonrpc_discover_primals_request() {
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": "neural_api.get_primals",
+            "params": {},
+            "id": 42
+        });
+        assert_eq!(request["method"], "neural_api.get_primals");
+        assert_eq!(request["id"], 42);
+    }
+
+    #[test]
+    fn test_jsonrpc_get_topology_request() {
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": "neural_api.get_topology",
+            "params": {},
+            "id": 1
+        });
+        assert_eq!(request["method"], "neural_api.get_topology");
+    }
+
+    #[test]
+    fn test_with_socket_path_pathbuf() {
+        let client = BiomeOSJsonRpcClient::with_socket_path(std::path::PathBuf::from("/x/y.sock"));
+        drop(client);
+    }
+
+    #[test]
+    fn test_jsonrpc_error_response_structure() {
+        let error_response = json!({
+            "jsonrpc": "2.0",
+            "error": {"code": -32603, "message": "Internal error"},
+            "id": 1
+        });
+        assert!(error_response.get("error").is_some());
+        assert!(error_response.get("result").is_none());
     }
 }

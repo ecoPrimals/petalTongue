@@ -324,7 +324,7 @@ mod tests {
         // Should succeed (at least audio should be detected)
         assert!(result.is_ok());
 
-        let caps = result.unwrap();
+        let caps = result.expect("discover should succeed");
 
         // Should have some output capability
         assert!(caps.has_minimal_output());
@@ -403,5 +403,20 @@ mod tests {
         }];
 
         assert_eq!(caps.determine_ui_complexity(), UIComplexity::Immersive);
+    }
+
+    #[test]
+    fn test_mock_capabilities_audio_only() {
+        let caps = mock_capabilities(None, false, false, false);
+        assert!(caps.has_minimal_output());
+        assert!(!caps.has_minimal_input());
+        assert_eq!(caps.determine_ui_complexity(), UIComplexity::Minimal);
+    }
+
+    #[test]
+    fn test_mock_capabilities_visual_none() {
+        let caps = mock_capabilities(None, true, true, false);
+        assert!(caps.visual_outputs.is_empty());
+        assert!(!caps.audio_outputs.is_empty());
     }
 }

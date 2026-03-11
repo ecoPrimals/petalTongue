@@ -44,25 +44,25 @@ read -rp "Enter choice [1-6]: " choice
 case $choice in
   1)
     echo -e "${BLUE}Launching Live Ecosystem...${NC}"
-    ../target/release/petal-tongue ui \
+    ../target/release/petaltongue ui \
       --scenario scenarios/live-ecosystem.json \
       --mode live
     ;;
   2)
     echo -e "${BLUE}Launching Graph Builder Studio...${NC}"
-    ../target/release/petal-tongue ui \
+    ../target/release/petaltongue ui \
       --scenario scenarios/graph-studio.json \
       --mode graph-builder
     ;;
   3)
     echo -e "${BLUE}Launching RootPulse Visualization...${NC}"
-    ../target/release/petal-tongue ui \
+    ../target/release/petaltongue ui \
       --scenario scenarios/rootpulse-demo.json \
       --mode rootpulse
     ;;
   4)
     echo -e "${BLUE}Launching Neural API Learning...${NC}"
-    ../target/release/petal-tongue ui \
+    ../target/release/petaltongue ui \
       --scenario scenarios/neural-api-test.json \
       --mode neural
     ;;
@@ -78,25 +78,25 @@ case $choice in
     
     # Live Ecosystem
     echo -e "${GREEN}[1/4] Live Ecosystem${NC}"
-    timeout 30s ../target/release/petal-tongue ui \
+    timeout 30s ../target/release/petaltongue ui \
       --scenario scenarios/live-ecosystem.json \
       --mode live || true
     
     # Graph Builder
     echo -e "${GREEN}[2/4] Graph Builder Studio${NC}"
-    timeout 30s ../target/release/petal-tongue ui \
+    timeout 30s ../target/release/petaltongue ui \
       --scenario scenarios/graph-studio.json \
       --mode graph-builder || true
     
     # RootPulse
     echo -e "${GREEN}[3/4] RootPulse Visualization${NC}"
-    timeout 30s ../target/release/petal-tongue ui \
+    timeout 30s ../target/release/petaltongue ui \
       --scenario scenarios/rootpulse-demo.json \
       --mode rootpulse || true
     
     # Neural Learning
     echo -e "${GREEN}[4/4] Neural API Learning${NC}"
-    timeout 30s ../target/release/petal-tongue ui \
+    timeout 30s ../target/release/petaltongue ui \
       --scenario scenarios/neural-api-test.json \
       --mode neural || true
     

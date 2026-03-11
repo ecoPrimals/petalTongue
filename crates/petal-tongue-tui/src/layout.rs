@@ -154,4 +154,46 @@ mod tests {
         assert_eq!(layout.bottom.height, 12);
         assert_eq!(layout.top.width, 80);
     }
+
+    #[test]
+    fn split_layout_uneven_percentages() {
+        let area = Rect::new(0, 0, 100, 20);
+        let layout = SplitLayout::new(area, 30);
+        assert_eq!(layout.top.height, 6);
+        assert_eq!(layout.bottom.height, 14);
+    }
+
+    #[test]
+    fn two_column_layout_minimal_area() {
+        let area = Rect::new(0, 0, 10, 5);
+        let layout = TwoColumnLayout::new(area, 3);
+        assert_eq!(layout.sidebar.width, 3);
+        assert_eq!(layout.main.width, 7);
+        assert_eq!(layout.sidebar.x, 0);
+        assert_eq!(layout.main.x, 3);
+    }
+
+    #[test]
+    fn three_column_layout_small_center() {
+        let area = Rect::new(0, 0, 50, 10);
+        let layout = ThreeColumnLayout::new(area, 10, 15);
+        assert_eq!(layout.left.width, 10);
+        assert_eq!(layout.right.width, 15);
+        assert_eq!(layout.center.width, 25);
+    }
+
+    #[test]
+    fn standard_layout_requires_frame() {
+        let backend = ratatui::backend::TestBackend::new(80, 24);
+        let mut terminal = ratatui::Terminal::new(backend).expect("terminal");
+        terminal
+            .draw(|frame| {
+                let layout = StandardLayout::new(frame);
+                assert_eq!(layout.header.height, 3);
+                assert_eq!(layout.body.height, 18);
+                assert_eq!(layout.footer.height, 3);
+                assert_eq!(layout.header.width, 80);
+            })
+            .expect("draw");
+    }
 }
