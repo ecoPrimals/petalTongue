@@ -175,19 +175,19 @@ pub struct NetworkConfig {
 }
 
 impl NetworkConfig {
-    fn merge(_base: Self, other: Self) -> Self {
+    const fn merge(_base: Self, other: Self) -> Self {
         other // Simple override for now; could be more sophisticated
     }
 
     /// Get web socket address
     #[must_use]
-    pub fn web_addr(&self) -> SocketAddr {
+    pub const fn web_addr(&self) -> SocketAddr {
         SocketAddr::new(self.web_bind, self.web_port)
     }
 
     /// Get headless socket address
     #[must_use]
-    pub fn headless_addr(&self) -> SocketAddr {
+    pub const fn headless_addr(&self) -> SocketAddr {
         SocketAddr::new(self.headless_bind, self.headless_port)
     }
 }
@@ -271,7 +271,7 @@ pub struct DiscoveryConfig {
 }
 
 impl DiscoveryConfig {
-    fn merge(_base: Self, other: Self) -> Self {
+    const fn merge(_base: Self, other: Self) -> Self {
         other
     }
 }
@@ -311,7 +311,7 @@ pub struct ThresholdsConfig {
 }
 
 impl ThresholdsConfig {
-    fn merge(_base: Self, other: Self) -> Self {
+    const fn merge(_base: Self, other: Self) -> Self {
         other
     }
 }
@@ -347,7 +347,7 @@ pub struct PerformanceConfig {
 }
 
 impl PerformanceConfig {
-    fn merge(_base: Self, other: Self) -> Self {
+    const fn merge(_base: Self, other: Self) -> Self {
         other
     }
 }

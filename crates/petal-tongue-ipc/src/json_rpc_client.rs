@@ -144,7 +144,7 @@ impl JsonRpcClient {
 
     /// Get the configured timeout
     #[must_use]
-    pub fn timeout(&self) -> Duration {
+    pub const fn timeout(&self) -> Duration {
         self.timeout
     }
 

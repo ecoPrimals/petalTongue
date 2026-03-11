@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Tests for scenario_loader module.
+//! Tests for `scenario_loader` module.
 //!
-//! Verifies parsing of healthSpring-style scenario JSON produced by dump_scenarios.
+//! Verifies parsing of healthSpring-style scenario JSON produced by `dump_scenarios`.
 
 #![allow(clippy::float_cmp)]
 
 use petal_tongue_core::{DataBinding, LoadedScenario};
 use std::path::Path;
 
-/// healthSpring-style scenario JSON matching dump_scenarios output.
+/// healthSpring-style scenario JSON matching `dump_scenarios` output.
 const HEALTHSPRING_SCENARIO_JSON: &str = r#"{
     "name": "PK/PD Demo",
     "description": "Oral pharmacokinetics and gut microbiome visualization",

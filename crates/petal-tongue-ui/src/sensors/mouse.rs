@@ -21,7 +21,7 @@ pub struct MouseSensor {
 impl MouseSensor {
     /// Create new mouse sensor
     #[must_use]
-    pub fn new(pointer_type: PointerType) -> Self {
+    pub const fn new(pointer_type: PointerType) -> Self {
         let capabilities = SensorCapabilities {
             sensor_type: SensorType::Mouse,
             input: true,
@@ -125,7 +125,7 @@ pub enum PointerType {
 }
 
 /// Map crossterm button to our `MouseButton` enum
-fn map_button(btn: CrosstermButton) -> MouseButton {
+const fn map_button(btn: CrosstermButton) -> MouseButton {
     match btn {
         CrosstermButton::Left => MouseButton::Left,
         CrosstermButton::Right => MouseButton::Right,

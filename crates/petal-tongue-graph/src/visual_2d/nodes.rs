@@ -252,7 +252,7 @@ fn capability_to_icon_and_color(capability: &str) -> (&'static str, Color32) {
 }
 
 /// Map health status to colors
-pub fn health_to_colors(health: PrimalHealthStatus) -> (Color32, Color32) {
+pub const fn health_to_colors(health: PrimalHealthStatus) -> (Color32, Color32) {
     match health {
         PrimalHealthStatus::Healthy => (
             Color32::from_rgb(40, 180, 40),
@@ -274,7 +274,7 @@ pub fn health_to_colors(health: PrimalHealthStatus) -> (Color32, Color32) {
 }
 
 /// Map trust level to colors
-pub fn trust_level_to_colors(trust_level: Option<u8>) -> (Color32, Color32) {
+pub const fn trust_level_to_colors(trust_level: Option<u8>) -> (Color32, Color32) {
     match trust_level {
         None | Some(0) => (
             Color32::from_rgb(100, 100, 100),

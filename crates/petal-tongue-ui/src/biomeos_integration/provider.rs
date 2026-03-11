@@ -14,7 +14,7 @@ use super::types::{Device, NicheTemplate, Primal};
 
 /// Cached data for graceful degradation
 #[derive(Debug, Clone, Default)]
-pub(crate) struct ProviderCache {
+pub struct ProviderCache {
     /// Cached device list
     pub devices: Vec<Device>,
     /// Cached primal list
@@ -400,13 +400,12 @@ impl BiomeOSProvider {
             if let Some(healthy) = res.get("healthy").and_then(serde_json::Value::as_bool) {
                 return Ok(if healthy { "healthy" } else { "unhealthy" }.to_string());
             }
-            Ok("healthy".to_string())
         } else {
             // Fallback to health.ping
             self.call_jsonrpc("health.ping", serde_json::json!({}))
                 .await?;
-            Ok("healthy".to_string())
         }
+        Ok("healthy".to_string())
     }
 
     /// Expose endpoint for VisualizationDataProvider trait impl

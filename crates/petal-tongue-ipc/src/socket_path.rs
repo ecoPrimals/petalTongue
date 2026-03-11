@@ -216,15 +216,9 @@ pub fn discover_primal_socket(
         return Ok(PathBuf::from(socket_path));
     }
 
-    let family = match family_id {
-        Some(f) => f.to_string(),
-        None => get_family_id(),
-    };
+    let family = family_id.map_or_else(get_family_id, ToString::to_string);
 
-    let node = match node_id {
-        Some(n) => n.to_string(),
-        None => "default".to_string(),
-    };
+    let node = node_id.map_or_else(|| "default".to_string(), ToString::to_string);
 
     // Priority 2: XDG runtime directory
     if let Ok(runtime_dir) = get_runtime_dir() {

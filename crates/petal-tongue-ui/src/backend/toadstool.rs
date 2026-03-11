@@ -108,24 +108,13 @@ impl UIBackend for ToadstoolBackend {
 
         tracing::info!("🔧 Initializing Toadstool backend...");
 
-        // NOTE: Legacy stub - no actual connection
-        if std::env::var("PETALTONGUE_TOADSTOOL_STUB").is_ok() {
-            tracing::warn!("⚠️  Using Toadstool STUB implementation");
-            tracing::warn!("   Set PETALTONGUE_TOADSTOOL_STUB to enable");
-            tracing::warn!("   This will not actually display anything!");
-            // Continue with stub
-        } else {
-            anyhow::bail!(
-                "Toadstool display service not available. \
-                 Is Toadstool running? \
-                 See TOADSTOOL_DISPLAY_BACKEND_REQUEST.md"
-            );
-        }
-
-        self.initialized = true;
-        tracing::info!("✅ Toadstool backend initialized (stub mode)");
-
-        Ok(())
+        // Legacy UIBackend: Full tarpc integration lives in display::backends::toadstool_v2.
+        // This module reports unavailability with graceful degradation—no stub env vars.
+        anyhow::bail!(
+            "Toadstool display service not available. \
+             Use DisplayManager with display::backends::toadstool_v2 for GPU rendering. \
+             See TOADSTOOL_DISPLAY_BACKEND_REQUEST.md"
+        );
     }
 
     async fn run(

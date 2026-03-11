@@ -14,6 +14,13 @@ fn test_empty_graph_validation() {
 }
 
 #[test]
+fn test_empty_graph_execution_order() {
+    let graph = VisualGraph::new("test".to_string());
+    let order = GraphValidator::get_execution_order(&graph);
+    assert_eq!(order, Some(vec![]));
+}
+
+#[test]
 fn test_single_node_valid() {
     let mut graph = VisualGraph::new("test".to_string());
     let mut node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
@@ -57,7 +64,7 @@ fn test_cycle_detection() {
         .add_edge(GraphEdge::dependency(id1.clone(), id2.clone()))
         .expect("edge");
     graph
-        .add_edge(GraphEdge::dependency(id2.clone(), id1.clone()))
+        .add_edge(GraphEdge::dependency(id2, id1))
         .expect("edge");
 
     let result = GraphValidator::validate(&graph);

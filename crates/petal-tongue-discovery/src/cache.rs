@@ -42,7 +42,7 @@ impl<T> CachedEntry<T> {
 
 /// Cache key for different data types
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub(crate) enum CacheKey {
+pub enum CacheKey {
     Primals,
     Topology,
     Health,

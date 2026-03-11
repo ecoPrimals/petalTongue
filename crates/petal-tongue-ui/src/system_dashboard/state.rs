@@ -60,23 +60,23 @@ impl Default for SystemDashboard {
 
 impl SystemDashboard {
     /// Enable/disable audio sonification
-    pub fn set_audio_enabled(&mut self, enabled: bool) {
+    pub const fn set_audio_enabled(&mut self, enabled: bool) {
         self.modality_prefs.audio_enabled = enabled;
     }
 
     /// Get audio enabled state
     #[must_use]
-    pub fn is_audio_enabled(&self) -> bool {
+    pub const fn is_audio_enabled(&self) -> bool {
         self.modality_prefs.audio_enabled
     }
 
     /// Set audio volume
-    pub fn set_audio_volume(&mut self, volume: f32) {
+    pub const fn set_audio_volume(&mut self, volume: f32) {
         self.modality_prefs.audio_volume = volume.clamp(0.0, 1.0);
     }
 
     /// Get modality preferences (for UI controls)
-    pub fn modality_prefs_mut(&mut self) -> &mut ModalityPreferences {
+    pub const fn modality_prefs_mut(&mut self) -> &mut ModalityPreferences {
         &mut self.modality_prefs
     }
 

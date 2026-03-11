@@ -23,7 +23,7 @@ pub use haptic::{HapticCommand, HapticPattern};
 /// Output of a modality compiler.
 ///
 /// Uses `bytes::Bytes` for binary/text payloads to enable zero-copy sharing
-/// across the visualization pipeline (UNIVERSAL_VISUALIZATION_PIPELINE spec).
+/// across the visualization pipeline (`UNIVERSAL_VISUALIZATION_PIPELINE` spec).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ModalityOutput {
     /// SVG document (UTF-8 bytes, zero-copy).

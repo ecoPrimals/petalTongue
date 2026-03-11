@@ -19,7 +19,7 @@ pub struct AudioSensor {
 impl AudioSensor {
     /// Create new audio sensor
     #[must_use]
-    pub fn new(has_output: bool, has_input: bool) -> Self {
+    pub const fn new(has_output: bool, has_input: bool) -> Self {
         let bidirectional = has_output && has_input;
 
         let capabilities = SensorCapabilities {
@@ -67,7 +67,6 @@ impl AudioSensor {
         }
 
         tracing::info!("Audio Canvas unavailable, using terminal bell");
-        println!("\x07");
 
         self.last_audio_event = Some(Instant::now());
         Ok(())
@@ -142,7 +141,7 @@ pub async fn discover() -> Option<AudioSensor> {
 }
 
 /// Probe for audio output
-fn probe_audio_output() -> bool {
+const fn probe_audio_output() -> bool {
     #[cfg(feature = "audio")]
     {
         false

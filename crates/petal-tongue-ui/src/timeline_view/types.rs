@@ -43,7 +43,7 @@ pub enum EventStatus {
 impl EventStatus {
     /// Get color for this status
     #[must_use]
-    pub fn color(&self) -> Color32 {
+    pub const fn color(&self) -> Color32 {
         match self {
             Self::Success => Color32::from_rgb(100, 255, 100),
             Self::Failure => Color32::from_rgb(255, 100, 100),

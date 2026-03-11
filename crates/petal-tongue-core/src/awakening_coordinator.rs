@@ -213,7 +213,7 @@ impl AwakeningTimeline {
 
     /// Get total duration
     #[must_use]
-    pub fn duration(&self) -> f32 {
+    pub const fn duration(&self) -> f32 {
         self.duration
     }
 

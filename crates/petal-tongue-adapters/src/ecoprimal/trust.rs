@@ -86,7 +86,7 @@ impl EcoPrimalTrustAdapter {
             .map(Self::from_config)
     }
 
-    fn get_level_index(&self, level: u8) -> Option<usize> {
+    const fn get_level_index(&self, level: u8) -> Option<usize> {
         if level >= self.config.min_level && level <= self.config.max_level {
             Some((level - self.config.min_level) as usize)
         } else {

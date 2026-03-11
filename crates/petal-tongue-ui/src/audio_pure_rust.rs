@@ -10,7 +10,7 @@ use std::f32::consts::PI;
 pub const SAMPLE_RATE: u32 = 44100;
 
 /// Simple audio waveforms that can be generated without dependencies
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Waveform {
     /// Sine wave (smooth, pure tone)
     Sine,
@@ -69,12 +69,17 @@ fn generate_square(frequency: f32, t: f32) -> f32 {
 
 /// Generate a sawtooth wave sample
 fn generate_sawtooth(frequency: f32, t: f32) -> f32 {
-    2.0 * (frequency * t - (frequency * t + 0.5).floor())
+    2.0 * frequency.mul_add(t, -frequency.mul_add(t, 0.5).floor())
 }
 
 /// Generate a triangle wave sample
 fn generate_triangle(frequency: f32, t: f32) -> f32 {
-    4.0 * (frequency * t - (frequency * t + 0.5).floor()).abs() - 1.0
+    4.0f32.mul_add(
+        frequency
+            .mul_add(t, -frequency.mul_add(t, 0.5).floor())
+            .abs(),
+        -1.0,
+    )
 }
 
 /// Generate white noise sample
@@ -85,8 +90,7 @@ fn generate_noise() -> f32 {
         .unwrap_or_default()
         .as_nanos() as f32)
         .sin()
-        * 2.0
-        - 1.0
+        .mul_add(2.0, -1.0)
 }
 
 /// Apply ADSR envelope (Attack, Decay, Sustain, Release)

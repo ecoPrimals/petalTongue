@@ -383,4 +383,79 @@ mod tests {
         assert_eq!(scenario.edges[0].to, "b");
         assert_eq!(scenario.edges[0].edge_type, "feeds");
     }
+
+    #[test]
+    fn from_file_valid_temp() {
+        let temp = std::env::temp_dir().join("petal-scenario-from-file-test.json");
+        let json = r#"{
+            "name": "File Test",
+            "description": "Loaded from file",
+            "ecosystem": {"primals": [{"id": "f1", "name": "File Node"}]}
+        }"#;
+        std::fs::write(&temp, json).expect("write temp file");
+        let scenario = LoadedScenario::from_file(&temp).expect("load from file");
+        assert_eq!(scenario.name, "File Test");
+        assert_eq!(scenario.ecosystem.primals[0].id, "f1");
+        let _ = std::fs::remove_file(&temp);
+    }
+
+    #[test]
+    fn scenario_node_construction() {
+        let node = ScenarioNode {
+            id: "n1".to_string(),
+            name: "Node 1".to_string(),
+            node_type: "healthspring".to_string(),
+            family: "healthSpring".to_string(),
+            status: "healthy".to_string(),
+            health: 95,
+            data_channels: vec![],
+            clinical_ranges: vec![],
+            capabilities: vec!["viz".to_string()],
+        };
+        assert_eq!(node.id, "n1");
+        assert_eq!(node.health, 95);
+        assert_eq!(node.capabilities.len(), 1);
+    }
+
+    #[test]
+    fn scenario_edge_construction() {
+        let edge = ScenarioEdge {
+            from: "src".to_string(),
+            to: "dst".to_string(),
+            edge_type: "renders".to_string(),
+            label: "renders".to_string(),
+        };
+        assert_eq!(edge.from, "src");
+        assert_eq!(edge.to, "dst");
+    }
+
+    #[test]
+    fn scenario_ecosystem_construction() {
+        let eco = ScenarioEcosystem {
+            primals: vec![ScenarioNode {
+                id: "p1".to_string(),
+                name: "P1".to_string(),
+                node_type: String::new(),
+                family: String::new(),
+                status: String::new(),
+                health: 0,
+                data_channels: vec![],
+                clinical_ranges: vec![],
+                capabilities: vec![],
+            }],
+        };
+        assert_eq!(eco.primals.len(), 1);
+    }
+
+    #[test]
+    fn loaded_scenario_serde_roundtrip() {
+        let scenario = LoadedScenario::from_json(MINIMAL_SCENARIO).expect("parse");
+        let json = serde_json::to_string(&scenario).expect("serialize");
+        let decoded = LoadedScenario::from_json(&json).expect("deserialize");
+        assert_eq!(decoded.name, scenario.name);
+        assert_eq!(
+            decoded.ecosystem.primals.len(),
+            scenario.ecosystem.primals.len()
+        );
+    }
 }

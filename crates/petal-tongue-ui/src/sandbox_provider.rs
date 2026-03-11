@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Sandbox Mock Data Provider
+//! Sandbox Scenario Provider
 //!
-//! Loads mock data from sandbox/scenarios/ for demonstrations and testing
+//! Loads demonstration scenarios from `sandbox/scenarios/*.json` for:
+//! - Tutorial mode (SHOWCASE_MODE=true)
+//! - Development and demonstrations
+//!
+//! This is NOT a mock—it loads real JSON files. Use `--features mock` to enable
+//! (or when running tests). Production builds without the feature use empty tutorial.
 
 use petal_tongue_core::constants::{DEFAULT_SANDBOX_DISCOVERY_PORT, DEFAULT_SANDBOX_SECURITY_PORT};
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, Properties};
@@ -153,7 +158,7 @@ pub fn get_default_scenario() -> SandboxScenario {
         return scenario;
     }
 
-    // Fallback to hardcoded simple scenario
+    // Fallback to hardcoded simple scenario when sandbox/scenarios/simple.json not found
     warn!("⚠️  Using fallback scenario (sandbox/scenarios/simple.json not found)");
 
     SandboxScenario {

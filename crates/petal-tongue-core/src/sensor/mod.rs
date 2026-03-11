@@ -340,4 +340,54 @@ mod tests {
         assert!(events.is_empty());
         assert!(registry.stats().last_poll.is_some());
     }
+
+    #[test]
+    fn test_sensor_event_batch_construction() {
+        let batch = SensorEventBatch::new("sub-123".to_string());
+        assert_eq!(batch.subscription_id, "sub-123");
+        assert!(batch.is_empty());
+        assert_eq!(batch.len(), 0);
+    }
+
+    #[test]
+    fn test_sensor_event_batch_with_events() {
+        let mut batch = SensorEventBatch::new("sub".to_string());
+        batch.events.push(SensorEventIpc::PointerMove {
+            x: 1.0,
+            y: 2.0,
+            timestamp_ms: 1000,
+        });
+        assert!(!batch.is_empty());
+        assert_eq!(batch.len(), 1);
+    }
+
+    #[test]
+    fn test_key_modifiers_ipc_construction() {
+        let mods = KeyModifiersIpc {
+            ctrl: true,
+            alt: false,
+            shift: true,
+            meta: false,
+        };
+        assert!(mods.ctrl && mods.shift);
+    }
+
+    #[test]
+    fn test_key_modifiers_ipc_default() {
+        let mods = KeyModifiersIpc::default();
+        assert!(!mods.ctrl && !mods.alt && !mods.shift && !mods.meta);
+    }
+
+    #[test]
+    fn test_sensor_event_ipc_serde_roundtrip() {
+        let event = SensorEventIpc::Click {
+            x: 10.0,
+            y: 20.0,
+            button: "right".to_string(),
+            timestamp_ms: 5000,
+        };
+        let json = serde_json::to_string(&event).expect("serialize");
+        let decoded: SensorEventIpc = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(decoded, event);
+    }
 }

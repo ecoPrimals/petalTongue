@@ -17,9 +17,11 @@ pub struct Color {
 }
 
 impl Color {
+    #[must_use]
     pub const fn rgba(r: f32, g: f32, b: f32, a: f32) -> Self {
         Self { r, g, b, a }
     }
+    #[must_use]
     pub const fn rgb(r: f32, g: f32, b: f32) -> Self {
         Self { r, g, b, a: 1.0 }
     }
@@ -28,6 +30,7 @@ impl Color {
     pub const TRANSPARENT: Self = Self::rgba(0.0, 0.0, 0.0, 0.0);
 
     /// Convert from 8-bit RGBA.
+    #[must_use]
     pub fn from_rgba8(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self {
             r: f32::from(r) / 255.0,
@@ -211,6 +214,7 @@ pub enum Primitive {
 
 impl Primitive {
     /// Get the data object ID for hit-testing, if any.
+    #[must_use]
     pub fn data_id(&self) -> Option<&str> {
         match self {
             Self::Point { data_id, .. }
@@ -225,6 +229,7 @@ impl Primitive {
     }
 
     /// Returns true if this primitive carries a data reference.
+    #[must_use]
     pub fn carries_data(&self) -> bool {
         self.data_id().is_some()
     }
@@ -550,5 +555,262 @@ mod tests {
         let decoded: Primitive =
             serde_json::from_str(&json).expect("deserialization should succeed");
         assert_eq!(arc, decoded);
+    }
+
+    #[test]
+    fn serialization_roundtrip_text() {
+        let text = Primitive::Text {
+            x: 10.0,
+            y: 20.0,
+            content: "Hello World".to_string(),
+            font_size: 14.0,
+            color: Color::BLACK,
+            anchor: AnchorPoint::Center,
+            bold: true,
+            italic: false,
+            data_id: Some("text-id".to_string()),
+        };
+        let json = serde_json::to_string(&text).expect("serialization should succeed");
+        let decoded: Primitive =
+            serde_json::from_str(&json).expect("deserialization should succeed");
+        assert_eq!(text, decoded);
+    }
+
+    #[test]
+    fn serialization_roundtrip_polygon() {
+        let poly = Primitive::Polygon {
+            points: vec![[0.0, 0.0], [10.0, 0.0], [5.0, 10.0]],
+            fill: Color::rgba(0.5, 0.5, 0.5, 0.8),
+            stroke: Some(StrokeStyle::default()),
+            fill_rule: FillRule::NonZero,
+            data_id: None,
+        };
+        let json = serde_json::to_string(&poly).expect("serialization should succeed");
+        let decoded: Primitive =
+            serde_json::from_str(&json).expect("deserialization should succeed");
+        assert_eq!(poly, decoded);
+    }
+
+    #[test]
+    fn serialization_roundtrip_bezier_path() {
+        let path = Primitive::BezierPath {
+            start: [0.0, 0.0],
+            segments: vec![BezierSegment {
+                cp1: [1.0, 2.0],
+                cp2: [3.0, 4.0],
+                end: [5.0, 6.0],
+            }],
+            stroke: StrokeStyle::default(),
+            fill: Some(Color::WHITE),
+            fill_rule: FillRule::EvenOdd,
+            data_id: Some("path-id".to_string()),
+        };
+        let json = serde_json::to_string(&path).expect("serialization should succeed");
+        let decoded: Primitive =
+            serde_json::from_str(&json).expect("deserialization should succeed");
+        assert_eq!(path, decoded);
+    }
+
+    #[test]
+    fn serialization_roundtrip_mesh() {
+        let mesh = Primitive::Mesh {
+            vertices: vec![MeshVertex {
+                position: [1.0, 2.0, 3.0],
+                normal: [0.0, 1.0, 0.0],
+                color: Color::WHITE,
+            }],
+            indices: vec![0, 1, 2],
+            data_id: Some("mesh-id".to_string()),
+        };
+        let json = serde_json::to_string(&mesh).expect("serialization should succeed");
+        let decoded: Primitive =
+            serde_json::from_str(&json).expect("deserialization should succeed");
+        assert_eq!(mesh, decoded);
+    }
+
+    #[test]
+    fn color_serialization_roundtrip() {
+        let c = Color::rgba(0.25, 0.5, 0.75, 0.9);
+        let json = serde_json::to_string(&c).expect("serialization should succeed");
+        let decoded: Color = serde_json::from_str(&json).expect("deserialization should succeed");
+        assert!((c.r - decoded.r).abs() < EPS);
+        assert!((c.g - decoded.g).abs() < EPS);
+        assert!((c.b - decoded.b).abs() < EPS);
+        assert!((c.a - decoded.a).abs() < EPS);
+    }
+
+    #[test]
+    fn stroke_style_serialization_roundtrip() {
+        let s = StrokeStyle {
+            color: Color::from_rgba8(255, 0, 0, 255),
+            width: 2.5,
+            cap: LineCap::Round,
+            join: LineJoin::Bevel,
+        };
+        let json = serde_json::to_string(&s).expect("serialization should succeed");
+        let decoded: StrokeStyle =
+            serde_json::from_str(&json).expect("deserialization should succeed");
+        assert_eq!(s.color.r, decoded.color.r);
+        assert!((s.width - decoded.width).abs() < EPS);
+        assert_eq!(s.cap, decoded.cap);
+        assert_eq!(s.join, decoded.join);
+    }
+
+    #[test]
+    fn line_cap_serialization_roundtrip() {
+        for cap in [LineCap::Butt, LineCap::Round, LineCap::Square] {
+            let json = serde_json::to_string(&cap).expect("serialization should succeed");
+            let decoded: LineCap =
+                serde_json::from_str(&json).expect("deserialization should succeed");
+            assert_eq!(cap, decoded);
+        }
+    }
+
+    #[test]
+    fn line_join_serialization_roundtrip() {
+        for join in [LineJoin::Miter, LineJoin::Round, LineJoin::Bevel] {
+            let json = serde_json::to_string(&join).expect("serialization should succeed");
+            let decoded: LineJoin =
+                serde_json::from_str(&json).expect("deserialization should succeed");
+            assert_eq!(join, decoded);
+        }
+    }
+
+    #[test]
+    fn fill_rule_serialization_roundtrip() {
+        for rule in [FillRule::EvenOdd, FillRule::NonZero] {
+            let json = serde_json::to_string(&rule).expect("serialization should succeed");
+            let decoded: FillRule =
+                serde_json::from_str(&json).expect("deserialization should succeed");
+            assert_eq!(rule, decoded);
+        }
+    }
+
+    #[test]
+    fn anchor_point_serialization_roundtrip() {
+        let anchors = [
+            AnchorPoint::TopLeft,
+            AnchorPoint::TopCenter,
+            AnchorPoint::TopRight,
+            AnchorPoint::CenterLeft,
+            AnchorPoint::Center,
+            AnchorPoint::CenterRight,
+            AnchorPoint::BottomLeft,
+            AnchorPoint::BottomCenter,
+            AnchorPoint::BottomRight,
+        ];
+        for anchor in anchors {
+            let json = serde_json::to_string(&anchor).expect("serialization should succeed");
+            let decoded: AnchorPoint =
+                serde_json::from_str(&json).expect("deserialization should succeed");
+            assert_eq!(anchor, decoded);
+        }
+    }
+
+    #[test]
+    fn bezier_segment_serialization_roundtrip() {
+        let seg = BezierSegment {
+            cp1: [1.0, 2.0],
+            cp2: [3.0, 4.0],
+            end: [5.0, 6.0],
+        };
+        let json = serde_json::to_string(&seg).expect("serialization should succeed");
+        let decoded: BezierSegment =
+            serde_json::from_str(&json).expect("deserialization should succeed");
+        assert!((seg.cp1[0] - decoded.cp1[0]).abs() < 1e-10);
+        assert!((seg.end[1] - decoded.end[1]).abs() < 1e-10);
+    }
+
+    #[test]
+    fn mesh_vertex_serialization_roundtrip() {
+        let v = MeshVertex {
+            position: [1.0, 2.0, 3.0],
+            normal: [0.0, 1.0, 0.0],
+            color: Color::WHITE,
+        };
+        let json = serde_json::to_string(&v).expect("serialization should succeed");
+        let decoded: MeshVertex =
+            serde_json::from_str(&json).expect("deserialization should succeed");
+        assert!((v.position[2] - decoded.position[2]).abs() < 1e-10);
+    }
+
+    #[test]
+    fn color_debug_formatting() {
+        let c = Color::rgb(1.0, 0.0, 0.0);
+        let s = format!("{c:?}");
+        assert!(!s.is_empty());
+    }
+
+    #[test]
+    fn primitive_debug_formatting() {
+        let p = Primitive::Point {
+            x: 0.0,
+            y: 0.0,
+            radius: 1.0,
+            fill: None,
+            stroke: None,
+            data_id: None,
+        };
+        let s = format!("{p:?}");
+        assert!(s.contains("Point"));
+    }
+
+    #[test]
+    fn primitive_line_closed() {
+        let line = Primitive::Line {
+            points: vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
+            stroke: StrokeStyle::default(),
+            closed: true,
+            data_id: None,
+        };
+        assert!(!line.carries_data());
+        assert_eq!(line.data_id(), None);
+    }
+
+    #[test]
+    fn primitive_bezier_path_empty_segments() {
+        let path = Primitive::BezierPath {
+            start: [0.0, 0.0],
+            segments: vec![],
+            stroke: StrokeStyle::default(),
+            fill: None,
+            fill_rule: FillRule::NonZero,
+            data_id: None,
+        };
+        assert_eq!(path.data_id(), None);
+        assert!(!path.carries_data());
+    }
+
+    #[test]
+    fn primitive_mesh_empty_vertices() {
+        let mesh = Primitive::Mesh {
+            vertices: vec![],
+            indices: vec![],
+            data_id: None,
+        };
+        assert_eq!(mesh.data_id(), None);
+    }
+
+    #[test]
+    fn stroke_style_clone() {
+        let s = StrokeStyle::default();
+        let cloned = s;
+        assert_eq!(s.color.r, cloned.color.r);
+    }
+
+    #[test]
+    fn color_clone() {
+        let c = Color::rgb(0.5, 0.5, 0.5);
+        let cloned = c;
+        assert_eq!(c, cloned);
+    }
+
+    #[test]
+    fn color_partial_eq() {
+        let a = Color::rgb(1.0, 0.0, 0.0);
+        let b = Color::rgb(1.0, 0.0, 0.0);
+        let c = Color::rgb(0.0, 1.0, 0.0);
+        assert_eq!(a, b);
+        assert_ne!(a, c);
     }
 }

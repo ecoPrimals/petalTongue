@@ -69,11 +69,9 @@ pub(super) fn process_sensory_feedback(app: &mut PetalTongueApp, ctx: &egui::Con
     if now.duration_since(app.last_display_verification) > Duration::from_secs(5) {
         app.last_display_verification = now;
 
-        let last_interaction_secs = if let Ok(awareness) = app.rendering_awareness.read() {
+        let last_interaction_secs = app.rendering_awareness.read().map_or(999.0, |awareness| {
             awareness.time_since_last_interaction().as_secs_f32()
-        } else {
-            999.0
-        };
+        });
 
         let verification = crate::display_verification::continuous_verification(
             PRIMAL_NAME,

@@ -236,13 +236,13 @@ impl StartupAudio {
 
     /// Get embedded startup music data
     #[must_use]
-    pub fn get_embedded_music() -> &'static [u8] {
+    pub const fn get_embedded_music() -> &'static [u8] {
         EMBEDDED_STARTUP_MUSIC
     }
 
     /// Check if embedded music is available
     #[must_use]
-    pub fn has_embedded_music() -> bool {
+    pub const fn has_embedded_music() -> bool {
         !EMBEDDED_STARTUP_MUSIC.is_empty()
     }
 
@@ -367,30 +367,30 @@ impl StartupAudio {
     }
 
     /// Enable/disable signature tone
-    pub fn set_play_signature(&mut self, play: bool) {
+    pub const fn set_play_signature(&mut self, play: bool) {
         self.play_signature = play;
     }
 
     /// Enable/disable startup music
-    pub fn set_play_music(&mut self, play: bool) {
+    pub const fn set_play_music(&mut self, play: bool) {
         self.play_music = play;
     }
 
     /// Check if startup music is available (embedded or external)
     #[must_use]
-    pub fn has_startup_music(&self) -> bool {
+    pub const fn has_startup_music(&self) -> bool {
         self.startup_music_path.is_some() || (self.use_embedded && Self::has_embedded_music())
     }
 
     /// Get startup music path (external only)
     #[must_use]
-    pub fn startup_music_path(&self) -> Option<&PathBuf> {
+    pub const fn startup_music_path(&self) -> Option<&PathBuf> {
         self.startup_music_path.as_ref()
     }
 
     /// Check if using embedded music
     #[must_use]
-    pub fn is_using_embedded(&self) -> bool {
+    pub const fn is_using_embedded(&self) -> bool {
         self.use_embedded && Self::has_embedded_music()
     }
 }

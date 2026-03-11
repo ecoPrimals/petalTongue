@@ -125,7 +125,7 @@ impl Instance {
     }
 
     /// Set the window ID for this instance
-    pub fn set_window_id(&mut self, window_id: u64) {
+    pub const fn set_window_id(&mut self, window_id: u64) {
         self.window_id = Some(window_id);
     }
 
@@ -244,7 +244,7 @@ mod tests {
                 let id = InstanceId::new();
                 let instance = Instance::new(id.clone(), Some("test".to_string())).unwrap();
 
-                registry.register(instance.clone()).unwrap();
+                registry.register(instance).unwrap();
 
                 assert_eq!(registry.count(), 1);
                 assert!(registry.get(&id).is_some());
@@ -303,9 +303,9 @@ mod tests {
                 let id2 = InstanceId::new();
                 let id3 = InstanceId::new();
 
-                let instance1 = Instance::new(id1.clone(), Some("test1".to_string())).unwrap();
-                let instance2 = Instance::new(id2.clone(), Some("test2".to_string())).unwrap();
-                let instance3 = Instance::new(id3.clone(), None).unwrap();
+                let instance1 = Instance::new(id1, Some("test1".to_string())).unwrap();
+                let instance2 = Instance::new(id2, Some("test2".to_string())).unwrap();
+                let instance3 = Instance::new(id3, None).unwrap();
 
                 registry.register(instance1).unwrap();
                 registry.register(instance2).unwrap();
@@ -332,7 +332,7 @@ mod tests {
                 let mut registry = InstanceRegistry::new();
                 let id = InstanceId::new();
 
-                let instance_result = Instance::new(id.clone(), None);
+                let instance_result = Instance::new(id, None);
                 let mut instance = match instance_result {
                     Ok(i) => i,
                     Err(InstanceError::IoError(msg)) if msg.contains("Permission denied") => {
@@ -359,7 +359,7 @@ mod tests {
             || {
                 let mut registry = InstanceRegistry::new();
                 let id = InstanceId::new();
-                let instance = Instance::new(id.clone(), None).unwrap();
+                let instance = Instance::new(id, None).unwrap();
                 let pid = instance.pid;
 
                 registry.register(instance).unwrap();
@@ -398,7 +398,7 @@ mod tests {
     fn test_registry_update_nonexistent() {
         let mut registry = InstanceRegistry::new();
         let id = InstanceId::new();
-        let instance = Instance::new(id.clone(), None).unwrap();
+        let instance = Instance::new(id, None).unwrap();
 
         let result = registry.update(instance);
         assert!(result.is_err());
@@ -441,7 +441,7 @@ mod tests {
                 let id1 = InstanceId::new();
                 let id2 = InstanceId::new();
                 let instance1 = Instance::new(id1.clone(), None).unwrap();
-                let instance2 = Instance::new(id2.clone(), None).unwrap();
+                let instance2 = Instance::new(id2, None).unwrap();
 
                 registry.register(instance1).unwrap();
                 assert_eq!(registry.count(), 1);

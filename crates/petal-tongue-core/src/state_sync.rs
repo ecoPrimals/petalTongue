@@ -86,7 +86,7 @@ impl DeviceState {
     }
 
     /// Merge state from another device
-    pub fn merge(&mut self, other: &DeviceState) {
+    pub fn merge(&mut self, other: &Self) {
         // Merge UI state (prefer newer)
         if other.last_updated > self.last_updated {
             for (key, value) in &other.ui_state {
@@ -132,7 +132,7 @@ impl LocalStatePersistence {
 
     /// Create with explicit base directory (for testing)
     #[cfg(test)]
-    pub fn with_base_dir(base_dir: PathBuf) -> Self {
+    pub const fn with_base_dir(base_dir: PathBuf) -> Self {
         Self { base_dir }
     }
 
@@ -237,7 +237,7 @@ impl StateSync {
 
     /// Get current state
     #[must_use]
-    pub fn current(&self) -> Option<&DeviceState> {
+    pub const fn current(&self) -> Option<&DeviceState> {
         self.current_state.as_ref()
     }
 

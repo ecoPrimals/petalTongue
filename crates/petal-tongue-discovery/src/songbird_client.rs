@@ -106,13 +106,13 @@ impl SongbirdClient {
 
     /// Create client with explicit socket path (for testing)
     #[must_use]
-    pub fn with_socket_path(socket_path: PathBuf) -> Self {
+    pub const fn with_socket_path(socket_path: PathBuf) -> Self {
         Self { socket_path }
     }
 
     /// Get the socket path (for metadata/debugging)
     #[must_use]
-    pub fn socket_path(&self) -> &PathBuf {
+    pub const fn socket_path(&self) -> &PathBuf {
         &self.socket_path
     }
 

@@ -38,7 +38,8 @@ impl Default for EquationCompiler {
 }
 
 impl EquationCompiler {
-    pub fn new(font_size: f64, color: Color) -> Self {
+    #[must_use]
+    pub const fn new(font_size: f64, color: Color) -> Self {
         Self {
             font_size,
             color,
@@ -48,13 +49,14 @@ impl EquationCompiler {
     }
 
     #[must_use]
-    pub fn at(mut self, x: f64, y: f64) -> Self {
+    pub const fn at(mut self, x: f64, y: f64) -> Self {
         self.origin_x = x;
         self.origin_y = y;
         self
     }
 
     /// Compile a LaTeX-like math string to primitives.
+    #[must_use]
     pub fn compile(&self, latex: &str) -> Vec<Primitive> {
         let mut primitives = Vec::new();
         let mut cursor = Cursor {
@@ -179,7 +181,7 @@ impl EquationCompiler {
 
                 let mut num_cursor = Cursor {
                     x: frac_x + frac_width * 0.1,
-                    y: cursor.y - cursor.font_size * 0.5,
+                    y: cursor.font_size.mul_add(-0.5, cursor.y),
                     font_size: cursor.font_size * 0.8,
                     color: cursor.color,
                 };
@@ -198,13 +200,13 @@ impl EquationCompiler {
 
                 let mut den_cursor = Cursor {
                     x: frac_x + frac_width * 0.1,
-                    y: cursor.y + cursor.font_size * 0.6,
+                    y: cursor.font_size.mul_add(0.6, cursor.y),
                     font_size: cursor.font_size * 0.8,
                     color: cursor.color,
                 };
                 self.parse_expr(&den, &mut den_cursor, out);
 
-                cursor.x = frac_x + frac_width + cursor.font_size * 0.2;
+                cursor.x = cursor.font_size.mul_add(0.2, frac_x + frac_width);
             }
             "sqrt" => {
                 let arg = Self::read_arg(chars, i);
@@ -227,10 +229,10 @@ impl EquationCompiler {
                 out.push(Primitive::Line {
                     points: vec![
                         [
-                            start_x + cursor.font_size * 0.7,
-                            cursor.y - cursor.font_size * 0.5,
+                            cursor.font_size.mul_add(0.7, start_x),
+                            cursor.font_size.mul_add(-0.5, cursor.y),
                         ],
-                        [cursor.x, cursor.y - cursor.font_size * 0.5],
+                        [cursor.x, cursor.font_size.mul_add(-0.5, cursor.y)],
                     ],
                     stroke: StrokeStyle {
                         color: cursor.color,

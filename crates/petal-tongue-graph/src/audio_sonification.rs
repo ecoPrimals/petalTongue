@@ -51,7 +51,7 @@ pub struct AudioSonificationRenderer {
 
 impl AudioSonificationRenderer {
     /// Create a new audio sonification renderer
-    pub fn new(graph: Arc<RwLock<GraphEngine>>) -> Self {
+    pub const fn new(graph: Arc<RwLock<GraphEngine>>) -> Self {
         Self {
             graph,
             master_volume: 0.7,
@@ -99,7 +99,7 @@ impl AudioSonificationRenderer {
 
     /// Map health status to pitch
     /// Healthy = harmonic (0.7-0.8), Warning = off-key (0.5-0.6), Critical = dissonant (0.2-0.3)
-    fn health_to_pitch(&self, health: &PrimalHealthStatus) -> f32 {
+    const fn health_to_pitch(&self, health: &PrimalHealthStatus) -> f32 {
         match health {
             PrimalHealthStatus::Healthy => 0.75,  // Harmonic, pleasant
             PrimalHealthStatus::Warning => 0.55,  // Slightly off-key
@@ -128,22 +128,22 @@ impl AudioSonificationRenderer {
     }
 
     /// Set master volume (0.0 to 1.0)
-    pub fn set_master_volume(&mut self, volume: f32) {
+    pub const fn set_master_volume(&mut self, volume: f32) {
         self.master_volume = volume.clamp(0.0, 1.0);
     }
 
     /// Get master volume
-    pub fn master_volume(&self) -> f32 {
+    pub const fn master_volume(&self) -> f32 {
         self.master_volume
     }
 
     /// Enable/disable audio
-    pub fn set_enabled(&mut self, enabled: bool) {
+    pub const fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
     }
 
     /// Check if audio is enabled
-    pub fn is_enabled(&self) -> bool {
+    pub const fn is_enabled(&self) -> bool {
         self.enabled
     }
 

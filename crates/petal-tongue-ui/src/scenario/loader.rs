@@ -15,7 +15,7 @@ impl Scenario {
         let contents = std::fs::read_to_string(path)
             .with_context(|| format!("Failed to read scenario file: {}", path.display()))?;
 
-        let scenario: Scenario = serde_json::from_str(&contents)
+        let scenario: Self = serde_json::from_str(&contents)
             .with_context(|| format!("Failed to parse scenario JSON: {}", path.display()))?;
 
         // ✅ Explicit validation

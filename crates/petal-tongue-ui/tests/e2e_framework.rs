@@ -51,7 +51,7 @@ pub struct E2ETestResult {
 impl E2ETestResult {
     /// Check if test passed
     #[must_use]
-    pub fn passed(&self) -> bool {
+    pub const fn passed(&self) -> bool {
         self.success
     }
 }
@@ -65,7 +65,7 @@ pub struct E2ETestRunner {
 impl E2ETestRunner {
     /// Create a new E2E test runner
     #[must_use]
-    pub fn new(config: E2ETestConfig) -> Self {
+    pub const fn new(config: E2ETestConfig) -> Self {
         Self {
             config,
             results: Vec::new(),

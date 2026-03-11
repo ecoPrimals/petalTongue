@@ -152,7 +152,7 @@ impl Vec2 {
     pub fn distance(&self, other: &Self) -> f32 {
         let dx = self.x - other.x;
         let dy = self.y - other.y;
-        (dx * dx + dy * dy).sqrt()
+        dx.hypot(dy)
     }
 
     /// Snap to grid
@@ -276,7 +276,7 @@ impl NodeType {
 impl GraphEdge {
     /// Create a new edge
     #[must_use]
-    pub fn new(from: String, to: String, edge_type: EdgeType) -> Self {
+    pub const fn new(from: String, to: String, edge_type: EdgeType) -> Self {
         Self {
             from,
             to,
@@ -286,7 +286,7 @@ impl GraphEdge {
 
     /// Create a dependency edge
     #[must_use]
-    pub fn dependency(from: String, to: String) -> Self {
+    pub const fn dependency(from: String, to: String) -> Self {
         Self::new(from, to, EdgeType::Dependency)
     }
 }

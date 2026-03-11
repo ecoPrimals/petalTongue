@@ -195,7 +195,7 @@ fn load_icon() -> Arc<crate::egui::IconData> {
             let fy = y as f32;
             let dx = fx - cx;
             let dy = fy - cy;
-            let dist = (dx * dx + dy * dy).sqrt();
+            let dist = dx.hypot(dy);
             let angle = dy.atan2(dx);
 
             let idx = (y * size + x) * 4;
@@ -215,7 +215,7 @@ fn load_icon() -> Arc<crate::egui::IconData> {
                     let angle_diff = (angle - petal_angle).abs();
                     let angle_diff = angle_diff.min(std::f32::consts::TAU - angle_diff);
                     // Petal: teardrop shape, wider near center
-                    let r = 12.0 * (1.0 - 0.4 * angle_diff);
+                    let r = 12.0 * 0.4f32.mul_add(-angle_diff, 1.0);
                     if dist < r {
                         in_petal = true;
                         break;

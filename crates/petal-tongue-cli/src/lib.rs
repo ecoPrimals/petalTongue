@@ -333,11 +333,10 @@ async fn status_instances() -> Result<()> {
                         format!("({}s)", status.uptime_seconds).dimmed(),
                         status.node_count,
                         status.edge_count,
-                        if let Some(name) = &status.name {
-                            format!(" | {name}")
-                        } else {
-                            String::new()
-                        }
+                        status
+                            .name
+                            .as_ref()
+                            .map_or_else(String::new, |name| format!(" | {name}"))
                     );
                 }
                 _ => {
@@ -372,6 +371,7 @@ pub fn parse_args(args: &[&str]) -> std::result::Result<Commands, clap::Error> {
 
 /// Format show output as plain text (for testing; excludes ANSI colors).
 #[cfg(test)]
+#[must_use]
 pub fn format_show_output(status: &petal_tongue_ipc::InstanceStatus) -> String {
     let mut out = String::new();
     let _ = writeln!(out, "  ID:       {}", status.instance_id.as_str());
@@ -405,18 +405,21 @@ pub fn format_show_output(status: &petal_tongue_ipc::InstanceStatus) -> String {
 
 /// Format raise success output (for testing).
 #[cfg(test)]
+#[must_use]
 pub fn format_raise_success(instance_id: &InstanceId) -> String {
     format!("Instance {} raised", instance_id.as_str())
 }
 
 /// Format ping success output (for testing).
 #[cfg(test)]
+#[must_use]
 pub fn format_ping_success(instance_id: &InstanceId) -> String {
     format!("Instance {} is responsive", instance_id.as_str())
 }
 
 /// Format ping failure output (for testing).
 #[cfg(test)]
+#[must_use]
 pub fn format_ping_failure(instance_id: &InstanceId, error: &str) -> String {
     format!(
         "Instance {} is unresponsive\n   Error: {error}",
@@ -699,9 +702,7 @@ mod tests {
             node_count: 5,
             edge_count: 10,
             window_visible: true,
-            metadata: [("key".to_string(), "value".to_string())]
-                .into_iter()
-                .collect(),
+            metadata: std::iter::once(("key".to_string(), "value".to_string())).collect(),
         };
         let out = format_show_output(&status);
         assert!(out.contains("550e8400-e29b-41d4-a716-446655440000"));

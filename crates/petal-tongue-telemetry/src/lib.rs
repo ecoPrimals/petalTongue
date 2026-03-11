@@ -324,7 +324,7 @@ impl TelemetryCollector {
 
     /// Get aggregation interval
     #[must_use]
-    pub fn aggregation_interval(&self) -> Duration {
+    pub const fn aggregation_interval(&self) -> Duration {
         self.aggregation_interval
     }
 }

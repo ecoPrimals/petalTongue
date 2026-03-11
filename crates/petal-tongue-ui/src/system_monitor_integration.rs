@@ -215,8 +215,11 @@ impl SystemMonitorTool {
             .enumerate()
             .map(|(i, &value)| {
                 #[expect(clippy::cast_precision_loss)]
-                let x = rect.left() + (i as f32 / (data.len() - 1).max(1) as f32) * rect.width();
-                let y = rect.bottom() - (value / max_value).min(1.0) * rect.height();
+                let x =
+                    (i as f32 / (data.len() - 1).max(1) as f32).mul_add(rect.width(), rect.left());
+                let y = (value / max_value)
+                    .min(1.0)
+                    .mul_add(-rect.height(), rect.bottom());
                 Pos2::new(x, y)
             })
             .collect();

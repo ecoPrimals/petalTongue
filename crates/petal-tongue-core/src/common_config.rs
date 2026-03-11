@@ -39,7 +39,7 @@ fn default_host() -> String {
     "127.0.0.1".to_string()
 }
 
-fn default_port() -> u16 {
+const fn default_port() -> u16 {
     8080
 }
 
@@ -55,6 +55,32 @@ mod tests {
     fn test_default_config() {
         let config = CommonConfig::default();
         assert_eq!(config.name, "primal");
+        assert_eq!(config.host, "127.0.0.1");
+        assert_eq!(config.port, 8080);
+        assert_eq!(config.log_level, "info");
+    }
+
+    #[test]
+    fn test_config_serialization_roundtrip() {
+        let config = CommonConfig {
+            name: "test-primal".to_string(),
+            host: "0.0.0.0".to_string(),
+            port: 9000,
+            log_level: "debug".to_string(),
+        };
+        let json = serde_json::to_string(&config).expect("serialize");
+        let restored: CommonConfig = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(config.name, restored.name);
+        assert_eq!(config.host, restored.host);
+        assert_eq!(config.port, restored.port);
+        assert_eq!(config.log_level, restored.log_level);
+    }
+
+    #[test]
+    fn test_config_deserialize_with_defaults() {
+        let json = r#"{"name": "minimal"}"#;
+        let config: CommonConfig = serde_json::from_str(json).expect("deserialize");
+        assert_eq!(config.name, "minimal");
         assert_eq!(config.host, "127.0.0.1");
         assert_eq!(config.port, 8080);
         assert_eq!(config.log_level, "info");

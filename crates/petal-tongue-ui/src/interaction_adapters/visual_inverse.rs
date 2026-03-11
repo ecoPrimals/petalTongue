@@ -43,7 +43,7 @@ struct HitTarget {
 impl VisualInversePipeline {
     /// Create a new visual inverse pipeline.
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             hit_targets: Vec::new(),
             node_half_width: 30.0,
@@ -52,7 +52,7 @@ impl VisualInversePipeline {
     }
 
     /// Set the node dimensions used for hit-testing.
-    pub fn set_node_size(&mut self, half_width: f32, half_height: f32) {
+    pub const fn set_node_size(&mut self, half_width: f32, half_height: f32) {
         self.node_half_width = half_width;
         self.node_half_height = half_height;
     }
@@ -176,20 +176,23 @@ impl InversePipeline for VisualInversePipeline {
         let (world_x, world_y) = self.screen_to_world(screen_x, screen_y, context);
         let zoom = context.zoom as f32;
 
-        if let Some(target) = self.hit_test(world_x, world_y, zoom) {
-            Some(InteractionTarget::DataRow {
-                data_id: target.data_id.clone(),
-            })
-        } else {
-            Some(InteractionTarget::Region {
-                bounds: BoundingBox::from_corners(
-                    f64::from(world_x),
-                    f64::from(world_y),
-                    f64::from(world_x),
-                    f64::from(world_y),
-                ),
-            })
-        }
+        self.hit_test(world_x, world_y, zoom).map_or_else(
+            || {
+                Some(InteractionTarget::Region {
+                    bounds: BoundingBox::from_corners(
+                        f64::from(world_x),
+                        f64::from(world_y),
+                        f64::from(world_x),
+                        f64::from(world_y),
+                    ),
+                })
+            },
+            |target| {
+                Some(InteractionTarget::DataRow {
+                    data_id: target.data_id.clone(),
+                })
+            },
+        )
     }
 
     fn nearest_primitive(&self, target: &InteractionTarget) -> Option<PrimitiveId> {

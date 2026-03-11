@@ -6,7 +6,7 @@ use petal_tongue_core::PrimalId;
 
 /// Edge being drafted (during drag-to-connect)
 #[derive(Debug, Clone)]
-pub(crate) struct EdgeDraft {
+pub struct EdgeDraft {
     /// Source node ID
     pub from: PrimalId,
     /// Current cursor position

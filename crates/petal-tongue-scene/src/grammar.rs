@@ -220,12 +220,14 @@ impl GrammarExpr {
     }
 
     /// Count of bound variables (data dimensions).
-    pub fn data_dimensions(&self) -> usize {
+    #[must_use]
+    pub const fn data_dimensions(&self) -> usize {
         self.variables.len()
     }
 
     /// Count of unique values implied by color aesthetic.
     /// Returns 0 if no color aesthetic is set.
+    #[must_use]
     pub fn color_category_count(&self) -> usize {
         self.color_category_count_with_data(None)
     }
@@ -233,6 +235,7 @@ impl GrammarExpr {
     /// Count unique string values in the category aesthetic field from data.
     /// When `data` is `Some`, extracts the Fill aesthetic field and counts
     /// unique string values in that column. When `data` is `None`, returns 0.
+    #[must_use]
     pub fn color_category_count_with_data(&self, data: Option<&[serde_json::Value]>) -> usize {
         let field = self.aesthetics.iter().find_map(|a| {
             if let Aesthetic::Fill(f) = a {
@@ -263,12 +266,14 @@ impl GrammarExpr {
     }
 
     /// Whether faceting is configured.
-    pub fn has_facets(&self) -> bool {
+    #[must_use]
+    pub const fn has_facets(&self) -> bool {
         self.facets.is_some()
     }
 
     /// Whether the coordinate system is 3D.
-    pub fn uses_3d_coord(&self) -> bool {
+    #[must_use]
+    pub const fn uses_3d_coord(&self) -> bool {
         matches!(self.coordinate, CoordinateSystem::Perspective3D)
     }
 }

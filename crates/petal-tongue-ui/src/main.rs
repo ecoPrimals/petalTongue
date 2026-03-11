@@ -42,7 +42,7 @@ fn main() -> anyhow::Result<()> {
     // Parse CLI args
     let cli = Cli::parse();
     let scenario_path = match &cli.command {
-        Some(Commands::Ui { scenario }) => scenario.clone().or(cli.scenario.clone()),
+        Some(Commands::Ui { scenario }) => scenario.clone().or_else(|| cli.scenario.clone()),
         None => cli.scenario.clone(),
     };
 
@@ -211,7 +211,7 @@ fn run_with_eframe(
             app.set_visualization_state(Arc::clone(&shared_viz_state));
 
             let ipc_handles = start_ipc_server(
-                app.graph_handle(),
+                &app.graph_handle(),
                 app.motor_sender(),
                 Arc::clone(app.rendering_awareness()),
                 Arc::clone(&shared_viz_state),
@@ -245,12 +245,12 @@ struct IpcHandles {
 ///
 /// Returns `None` only when the server fails to construct (e.g. socket path error).
 fn start_ipc_server(
-    graph: Arc<RwLock<GraphEngine>>,
+    graph: &Arc<RwLock<GraphEngine>>,
     motor_tx: std::sync::mpsc::Sender<MotorCommand>,
     rendering_awareness: Arc<RwLock<petal_tongue_core::RenderingAwareness>>,
     viz_state: Arc<RwLock<petal_tongue_ipc::visualization_handler::VisualizationState>>,
 ) -> Option<IpcHandles> {
-    let server = match petal_tongue_ipc::UnixSocketServer::new(Arc::clone(&graph)) {
+    let server = match petal_tongue_ipc::UnixSocketServer::new(Arc::clone(graph)) {
         Ok(s) => s
             .with_motor_sender(motor_tx)
             .with_rendering_awareness(rendering_awareness)

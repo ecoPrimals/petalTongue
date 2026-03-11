@@ -8,13 +8,14 @@
 //! # Module structure
 //!
 //! `types` — Request/response DTOs for the IPC contract
-//! - `state` — VisualizationState: session lifecycle, render, stream, grammar, validate, export, dismiss
-//! - `interaction` — InteractionSubscriberRegistry: poll-based event subscriptions for springs
-//! - `stream` — binding_id, apply_operation: incremental DataBinding updates
-//! - `modality` — compile_modality: scene graph → SVG/audio/description (internal)
+//! - `state` — `VisualizationState`: session lifecycle, render, stream, grammar, validate, export, dismiss
+//! - `interaction` — `InteractionSubscriberRegistry`: poll-based event subscriptions for springs
+//! - `stream` — `binding_id`, `apply_operation`: incremental `DataBinding` updates
+//! - `modality` — `compile_modality`: scene graph → SVG/audio/description (internal)
 
 mod interaction;
 mod modality;
+pub mod pipeline;
 mod state;
 mod stream;
 mod types;
@@ -22,12 +23,14 @@ mod types;
 pub use interaction::{
     InteractionEventNotification, InteractionSubscriberRegistry, SensorStreamRegistry,
 };
+pub use pipeline::PipelineRegistry;
 pub use state::{RenderSession, VisualizationState};
 pub use stream::{apply_operation, binding_id};
 pub use types::{
-    ConstraintResult, DashboardRenderRequest, DashboardRenderResponse, DismissRequest,
-    DismissResponse, ExportRequest, ExportResponse, GrammarRenderRequest, GrammarRenderResponse,
-    InteractionApplyRequest, InteractionApplyResponse, Perspective, StreamOperation,
-    StreamUpdateRequest, StreamUpdateResponse, UiConfig, ValidateRequest, ValidateResponse,
-    VisualizationRenderRequest, VisualizationRenderResponse,
+    BackpressureConfig, ConstraintResult, DashboardRenderRequest, DashboardRenderResponse,
+    DismissRequest, DismissResponse, ExportRequest, ExportResponse, GrammarRenderRequest,
+    GrammarRenderResponse, InteractionApplyRequest, InteractionApplyResponse, Perspective,
+    SessionStatusRequest, SessionStatusResponse, StreamOperation, StreamUpdateRequest,
+    StreamUpdateResponse, UiConfig, ValidateRequest, ValidateResponse, VisualizationRenderRequest,
+    VisualizationRenderResponse,
 };

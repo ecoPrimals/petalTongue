@@ -39,7 +39,7 @@ pub struct UiConfig {
     pub initial_zoom: String,
 }
 
-fn default_true() -> bool {
+const fn default_true() -> bool {
     true
 }
 

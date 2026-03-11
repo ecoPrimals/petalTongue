@@ -20,7 +20,7 @@ pub struct KeyboardSensor {
 impl KeyboardSensor {
     /// Create new keyboard sensor
     #[must_use]
-    pub fn new(input_type: InputType) -> Self {
+    pub const fn new(input_type: InputType) -> Self {
         let capabilities = SensorCapabilities {
             sensor_type: SensorType::Keyboard,
             input: true,
@@ -97,7 +97,7 @@ pub enum InputType {
 }
 
 /// Map crossterm keycode to our Key enum
-fn map_keycode(code: KeyCode) -> Key {
+const fn map_keycode(code: KeyCode) -> Key {
     match code {
         KeyCode::Char(c) => Key::Char(c),
         KeyCode::Esc => Key::Escape,
@@ -115,7 +115,7 @@ fn map_keycode(code: KeyCode) -> Key {
 }
 
 /// Map crossterm modifiers to our Modifiers struct
-fn map_modifiers(mods: KeyModifiers) -> Modifiers {
+const fn map_modifiers(mods: KeyModifiers) -> Modifiers {
     Modifiers {
         ctrl: mods.contains(KeyModifiers::CONTROL),
         alt: mods.contains(KeyModifiers::ALT),

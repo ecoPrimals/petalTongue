@@ -23,7 +23,7 @@ pub enum EntropyCapture {
 impl EntropyCapture {
     /// Get the overall quality score for this entropy capture
     #[must_use]
-    pub fn quality(&self) -> f64 {
+    pub const fn quality(&self) -> f64 {
         match self {
             Self::Audio(data) => data.quality_metrics.overall_quality,
             Self::Visual(data) => data.quality_metrics.overall_quality,
@@ -35,7 +35,7 @@ impl EntropyCapture {
 
     /// Get the modality name
     #[must_use]
-    pub fn modality(&self) -> &'static str {
+    pub const fn modality(&self) -> &'static str {
         match self {
             Self::Audio(_) => "audio",
             Self::Visual(_) => "visual",

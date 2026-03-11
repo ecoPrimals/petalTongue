@@ -12,7 +12,7 @@ pub(super) enum EntropyModality {
 }
 
 impl EntropyModality {
-    pub(super) fn name(&self) -> &'static str {
+    pub(super) const fn name(&self) -> &'static str {
         match self {
             Self::Audio => "🎵 Audio (Sing a Song)",
             Self::Visual => "🎨 Visual (Draw/Paint)",
@@ -22,7 +22,7 @@ impl EntropyModality {
         }
     }
 
-    pub(super) fn description(&self) -> &'static str {
+    pub(super) const fn description(&self) -> &'static str {
         match self {
             Self::Audio => {
                 "Capture entropy from your voice - sing a song, tell a story, or just speak naturally."

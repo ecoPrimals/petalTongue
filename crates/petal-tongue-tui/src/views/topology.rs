@@ -18,7 +18,7 @@ use ratatui::{
 
 use crate::state::TUIState;
 
-fn health_icon_for_status(health: petal_tongue_core::PrimalHealthStatus) -> &'static str {
+const fn health_icon_for_status(health: petal_tongue_core::PrimalHealthStatus) -> &'static str {
     match health {
         petal_tongue_core::PrimalHealthStatus::Healthy => "✅",
         petal_tongue_core::PrimalHealthStatus::Warning => "⚠️",
@@ -170,7 +170,7 @@ fn render_graph(
 ///
 /// - Repulsive force between all node pairs: Fr = k²/d
 /// - Attractive force along edges: Fa = d²/k
-/// - k = sqrt(area/num_nodes)
+/// - k = `sqrt(area/num_nodes)`
 /// - Iterates with cooling temperature
 fn force_directed_layout(
     primals: &[PrimalInfo],
@@ -199,8 +199,8 @@ fn force_directed_layout(
         .map(|i| {
             let angle = 2.0 * std::f64::consts::PI * (i as f64) / (n as f64);
             (
-                width / 2.0 + (width / 4.0) * angle.cos(),
-                height / 2.0 + (height / 4.0) * angle.sin(),
+                (width / 4.0).mul_add(angle.cos(), width / 2.0),
+                (height / 4.0).mul_add(angle.sin(), height / 2.0),
             )
         })
         .collect();
@@ -215,7 +215,7 @@ fn force_directed_layout(
             for j in (i + 1)..n {
                 let dx = positions[i].0 - positions[j].0;
                 let dy = positions[i].1 - positions[j].1;
-                let d = (dx * dx + dy * dy).sqrt().max(0.01);
+                let d = dx.hypot(dy).max(0.01);
                 let fr = k * k / d;
                 let fx = (dx / d) * fr;
                 let fy = (dy / d) * fr;
@@ -236,7 +236,7 @@ fn force_directed_layout(
             {
                 let dx = positions[i].0 - positions[j].0;
                 let dy = positions[i].1 - positions[j].1;
-                let d = (dx * dx + dy * dy).sqrt().max(0.01);
+                let d = dx.hypot(dy).max(0.01);
                 let fa = d * d / k;
                 let fx = (dx / d) * fa;
                 let fy = (dy / d) * fa;
@@ -250,7 +250,7 @@ fn force_directed_layout(
         // Apply displacement with cooling
         for i in 0..n {
             let (dx, dy) = disp[i];
-            let len = (dx * dx + dy * dy).sqrt().max(0.01);
+            let len = dx.hypot(dy).max(0.01);
             let lim = len.min(temperature);
             positions[i].0 += (dx / len) * lim;
             positions[i].1 += (dy / len) * lim;
@@ -270,7 +270,7 @@ fn force_directed_layout(
 }
 
 /// Render ASCII graph with force-directed layout
-pub(crate) fn render_ascii_graph<'a>(
+pub fn render_ascii_graph<'a>(
     primals: &'a [PrimalInfo],
     topology: &'a [TopologyEdge],
 ) -> Vec<Line<'a>> {

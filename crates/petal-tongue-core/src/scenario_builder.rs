@@ -32,7 +32,7 @@ pub struct VisualizationScene {
 
 impl VisualizationScene {
     /// Create a new empty scene with metadata.
-    pub fn new(metadata: ScenarioMetadata) -> Self {
+    pub const fn new(metadata: ScenarioMetadata) -> Self {
         Self {
             metadata,
             bindings: vec![],

@@ -41,7 +41,7 @@ pub fn sparkline_points(
         .iter()
         .enumerate()
         .map(|(i, &value)| {
-            let x = x_start + (i as f32 / (history.len() - 1) as f32) * width;
+            let x = (i as f32 / (history.len() - 1) as f32).mul_add(width, x_start);
             let normalized = (value - min_val) / range;
             let y = y_start + height - normalized * height;
             [x, y]

@@ -60,6 +60,7 @@ pub mod scenario_loader; // healthSpring-style scenario JSON loader
 pub mod session; // Session state persistence (Phase 2)
 pub mod state_sync; // State synchronization across devices
 pub mod system_info; // System information utilities (safe FFI wrappers)
+pub mod telemetry_adapter; // JSONL telemetry adapter (hotSpring ingestion)
 pub mod types;
 #[cfg(test)]
 mod types_tests;
@@ -139,6 +140,9 @@ pub use scenario_builder::{ScenarioBuilder, ScenarioMetadata, VisualizationScene
 
 /// Loaded scenario from healthSpring-style JSON
 pub use scenario_loader::LoadedScenario;
+
+/// JSONL telemetry adapter (hotSpring ingestion → DataBinding::TimeSeries)
+pub use telemetry_adapter::TelemetryAdapter;
 
 /// Dynamic schema system (Live evolution, no recompilation)
 pub use dynamic_schema::{
@@ -237,7 +241,7 @@ pub struct PetalTongue {
 impl PetalTongue {
     /// Create a new petalTongue instance.
     #[must_use]
-    pub fn new(config: PetalTongueConfig) -> Self {
+    pub const fn new(config: PetalTongueConfig) -> Self {
         Self {
             config,
             state: PrimalState::Created,

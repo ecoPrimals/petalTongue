@@ -117,7 +117,7 @@ mod visual_2d_tests {
     #[test]
     fn test_animation_engine_integration() {
         let graph = create_test_graph();
-        let mut renderer = Visual2DRenderer::new(graph.clone());
+        let mut renderer = Visual2DRenderer::new(graph);
 
         assert!(!renderer.is_animation_enabled());
 

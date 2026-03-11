@@ -249,7 +249,7 @@ mod tests {
         let mut p = Perspective::new(1);
         let id = DataObjectId::new("src", serde_json::json!("a"));
         p.add_to_selection(id.clone());
-        p.add_to_selection(id.clone());
+        p.add_to_selection(id);
         assert_eq!(p.selection.len(), 1);
     }
 

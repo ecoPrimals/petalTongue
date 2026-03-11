@@ -89,16 +89,12 @@ pub fn paint_primitive(painter: &Painter, prim: &Primitive, transform: &Transfor
             content,
             font_size,
             color,
-            bold,
+            bold: _bold,
             ..
         } => {
             let (tx, ty) = transform.apply(*x, *y);
             let pos = Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y);
-            let font = if *bold {
-                egui::FontId::proportional(*font_size as f32)
-            } else {
-                egui::FontId::proportional(*font_size as f32)
-            };
+            let font = egui::FontId::proportional(*font_size as f32);
             painter.text(
                 pos,
                 egui::Align2::LEFT_TOP,
@@ -151,7 +147,7 @@ pub struct SceneWidget<'a> {
 }
 
 impl<'a> SceneWidget<'a> {
-    pub fn new(plan: &'a RenderPlan) -> Self {
+    pub const fn new(plan: &'a RenderPlan) -> Self {
         Self {
             plan,
             desired_size: Vec2::new(400.0, 300.0),
@@ -159,7 +155,7 @@ impl<'a> SceneWidget<'a> {
     }
 
     #[must_use]
-    pub fn desired_size(mut self, size: Vec2) -> Self {
+    pub const fn desired_size(mut self, size: Vec2) -> Self {
         self.desired_size = size;
         self
     }

@@ -161,13 +161,13 @@ impl GraphEngine {
     }
 
     /// Set the layout algorithm
-    pub fn set_layout(&mut self, layout: LayoutAlgorithm) {
+    pub const fn set_layout(&mut self, layout: LayoutAlgorithm) {
         self.layout = layout;
     }
 
     /// Get the current layout algorithm
     #[must_use]
-    pub fn get_layout(&self) -> LayoutAlgorithm {
+    pub const fn get_layout(&self) -> LayoutAlgorithm {
         self.layout
     }
 

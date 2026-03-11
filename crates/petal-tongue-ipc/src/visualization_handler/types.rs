@@ -110,6 +110,61 @@ pub struct StreamUpdateResponse {
     pub binding_id: String,
     /// Whether the update was accepted
     pub accepted: bool,
+    /// Whether the server is experiencing backpressure (springs should throttle)
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub backpressure_active: bool,
+}
+
+/// Server-side backpressure configuration for stream rate limiting.
+///
+/// Matches the client-side `BackpressureConfig` from wetSpring/healthSpring.
+/// When a session receives updates faster than the budget allows, the server
+/// signals `backpressure_active: true` so springs can throttle.
+#[derive(Debug, Clone)]
+pub struct BackpressureConfig {
+    /// Maximum updates per second per session before entering backpressure.
+    pub max_updates_per_sec: u32,
+    /// Cooldown duration after entering backpressure state.
+    pub cooldown: std::time::Duration,
+    /// Consecutive fast updates before activating backpressure.
+    pub burst_tolerance: u32,
+}
+
+impl Default for BackpressureConfig {
+    fn default() -> Self {
+        Self {
+            max_updates_per_sec: 120,
+            cooldown: std::time::Duration::from_millis(200),
+            burst_tolerance: 10,
+        }
+    }
+}
+
+/// Request for `visualization.session.status`: query session health metrics.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionStatusRequest {
+    /// Session ID to query.
+    pub session_id: String,
+}
+
+/// Response for `visualization.session.status`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionStatusResponse {
+    /// Session ID (echoed back).
+    pub session_id: String,
+    /// Whether the session exists.
+    pub exists: bool,
+    /// Total stream updates received by this session.
+    pub frame_count: u64,
+    /// Seconds since last update.
+    pub last_update_secs: f64,
+    /// Whether backpressure is currently active.
+    pub backpressure_active: bool,
+    /// Number of bindings in the session.
+    pub binding_count: usize,
+    /// Domain hint.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub domain: Option<String>,
 }
 
 /// Request payload for `visualization.render.grammar` (declarative scene engine path).
@@ -184,7 +239,7 @@ pub struct ValidateResponse {
 /// Result of evaluating a single Tufte constraint.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConstraintResult {
-    /// Constraint name (e.g. "DataInkRatio", "ChartjunkDetection").
+    /// Constraint name (e.g. "`DataInkRatio`", "`ChartjunkDetection`").
     pub name: String,
     /// Numeric score (0.0 to 1.0).
     pub score: f64,
@@ -234,7 +289,7 @@ pub struct DashboardRenderRequest {
     pub max_columns: usize,
 }
 
-fn default_dashboard_columns() -> usize {
+const fn default_dashboard_columns() -> usize {
     3
 }
 
@@ -305,6 +360,6 @@ pub struct Perspective {
     pub modalities: Vec<String>,
     /// Current selection.
     pub selection: Vec<String>,
-    /// Sync mode (e.g. "shared_selection").
+    /// Sync mode (e.g. "`shared_selection`").
     pub sync_mode: String,
 }

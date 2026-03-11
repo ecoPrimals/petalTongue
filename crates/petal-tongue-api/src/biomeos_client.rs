@@ -111,7 +111,7 @@ impl BiomeOSClient {
 
     /// Enable mock mode (for development/testing)
     #[must_use]
-    pub fn with_mock_mode(mut self, enabled: bool) -> Self {
+    pub const fn with_mock_mode(mut self, enabled: bool) -> Self {
         self.mock_mode = enabled;
         self
     }
@@ -130,10 +130,11 @@ impl BiomeOSClient {
         }
 
         let url = format!("{}/api/v1/health", self.base_url);
-        match self.client.get(&url).send().await {
-            Ok(response) => Ok(response.status().is_success()),
-            Err(_) => Ok(false),
-        }
+        self.client
+            .get(&url)
+            .send()
+            .await
+            .map_or_else(|_| Ok(false), |response| Ok(response.status().is_success()))
     }
 
     /// Discover primals from `BiomeOS`/Songbird

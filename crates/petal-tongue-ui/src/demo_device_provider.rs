@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Mock Provider - Testing and Graceful Degradation
+//! Demo Device Provider - Graceful Fallback
 //!
 //! Provides demo device/primal/niche data for:
 //! - Development and testing
 //! - Graceful fallback when biomeOS unavailable
 //! - Demo/showcase mode
 //!
-//! # Mocks vs Production
+//! # Fallback vs Mock
 //!
-//! **IMPORTANT**: Mocks are ONLY for testing! This provider should never be
-//! used in production unless explicitly requested (`SHOWCASE_MODE=true`) or as
-//! a graceful fallback when the real provider is unavailable.
+//! This is a **fallback** provider, not a mock. It provides degraded but real
+//! functionality when biomeOS is unavailable. Use `--features mock` to enable
+//! (or when running tests). Production builds without the feature use empty panels.
 
 use super::biomeos_integration::{Device, DeviceStatus, DeviceType, Health, NicheTemplate, Primal};
 use anyhow::Result;
@@ -19,21 +19,21 @@ use petal_tongue_core::{PrimalInfo, TopologyEdge};
 use petal_tongue_discovery::{ProviderMetadata, VisualizationDataProvider};
 use tracing::{info, warn};
 
-/// Mock provider for testing and graceful degradation
+/// Demo provider for graceful fallback when biomeOS unavailable
 ///
 /// Provides realistic demo data that showcases the UI without requiring
 /// actual device management infrastructure.
-pub struct MockDeviceProvider {
+pub struct DemoDeviceProvider {
     devices: Vec<Device>,
     primals: Vec<Primal>,
     templates: Vec<NicheTemplate>,
 }
 
-impl MockDeviceProvider {
-    /// Create a new mock provider with demo data
+impl DemoDeviceProvider {
+    /// Create a new demo provider with showcase data
     #[must_use]
     pub fn new() -> Self {
-        info!("📚 Creating mock device provider (demo data)");
+        info!("📚 Creating demo device provider (fallback data)");
 
         Self {
             devices: Self::create_demo_devices(),
@@ -42,9 +42,9 @@ impl MockDeviceProvider {
         }
     }
 
-    /// Check if mock mode is requested
+    /// Check if demo/showcase mode is requested
     #[must_use]
-    pub fn is_mock_mode_requested() -> bool {
+    pub fn is_demo_mode_requested() -> bool {
         std::env::var("SHOWCASE_MODE")
             .unwrap_or_else(|_| "false".to_string())
             .to_lowercase()
@@ -303,7 +303,7 @@ impl MockDeviceProvider {
     }
 }
 
-impl Default for MockDeviceProvider {
+impl Default for DemoDeviceProvider {
     fn default() -> Self {
         Self::new()
     }
@@ -311,7 +311,7 @@ impl Default for MockDeviceProvider {
 
 /// Implement `VisualizationDataProvider` for backward compatibility
 #[async_trait]
-impl VisualizationDataProvider for MockDeviceProvider {
+impl VisualizationDataProvider for DemoDeviceProvider {
     async fn get_primals(&self) -> Result<Vec<PrimalInfo>> {
         // Convert our Primal to core PrimalInfo
         Ok(self
@@ -320,8 +320,8 @@ impl VisualizationDataProvider for MockDeviceProvider {
             .map(|p| PrimalInfo {
                 id: p.id.clone().into(),
                 name: p.name.clone(),
-                primal_type: "mock".to_string(),
-                endpoint: format!("mock://{}", p.name),
+                primal_type: "demo".to_string(),
+                endpoint: format!("demo://{}", p.name),
                 capabilities: p.capabilities.clone(),
                 health: match p.health {
                     Health::Healthy => petal_tongue_core::PrimalHealthStatus::Healthy,
@@ -344,7 +344,7 @@ impl VisualizationDataProvider for MockDeviceProvider {
     }
 
     async fn get_topology(&self) -> Result<Vec<TopologyEdge>> {
-        // Mock topology showing some connections
+        // Demo topology showing connections
         Ok(vec![
             TopologyEdge {
                 from: "primal-discovery".to_string().into(),
@@ -374,18 +374,18 @@ impl VisualizationDataProvider for MockDeviceProvider {
     }
 
     async fn health_check(&self) -> Result<String> {
-        Ok("healthy (mock)".to_string())
+        Ok("healthy (demo fallback)".to_string())
     }
 
     fn get_metadata(&self) -> ProviderMetadata {
-        warn!("⚠️ Using mock provider - NOT for production!");
+        warn!("⚠️ Using demo device provider (biomeOS unavailable)");
         ProviderMetadata {
-            name: "Mock Device Provider (DEMO ONLY)".to_string(),
-            endpoint: "mock://demo".to_string(),
-            protocol: "mock".to_string(),
+            name: "Demo Device Provider (Fallback)".to_string(),
+            endpoint: "demo://fallback".to_string(),
+            protocol: "demo".to_string(),
             capabilities: vec![
-                "device.discovery (mock)".to_string(),
-                "niche.templates (mock)".to_string(),
+                "device.discovery (demo)".to_string(),
+                "niche.templates (demo)".to_string(),
             ],
         }
     }
@@ -396,8 +396,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_mock_provider_devices() {
-        let provider = MockDeviceProvider::new();
+    fn test_demo_provider_devices() {
+        let provider = DemoDeviceProvider::new();
         let devices = provider.get_devices();
 
         assert!(!devices.is_empty(), "Should have demo devices");
@@ -412,8 +412,8 @@ mod tests {
     }
 
     #[test]
-    fn test_mock_provider_primals() {
-        let provider = MockDeviceProvider::new();
+    fn test_demo_provider_primals() {
+        let provider = DemoDeviceProvider::new();
         let primals = provider.get_primals_extended();
 
         assert!(!primals.is_empty(), "Should have demo primals");
@@ -428,8 +428,8 @@ mod tests {
     }
 
     #[test]
-    fn test_mock_provider_templates() {
-        let provider = MockDeviceProvider::new();
+    fn test_demo_provider_templates() {
+        let provider = DemoDeviceProvider::new();
         let templates = provider.get_niche_templates();
 
         assert_eq!(templates.len(), 3, "Should have 3 templates");
@@ -448,8 +448,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_mock_provider_as_visualization_provider() {
-        let provider = MockDeviceProvider::new();
+    async fn test_demo_provider_as_visualization_provider() {
+        let provider = DemoDeviceProvider::new();
 
         let primals = provider.get_primals().await.unwrap();
         assert!(!primals.is_empty(), "Should return primals");
@@ -462,15 +462,15 @@ mod tests {
     }
 
     #[test]
-    fn test_mock_mode_detection() {
+    fn test_demo_mode_detection() {
         use petal_tongue_core::test_fixtures::env_test_helpers;
 
         env_test_helpers::with_env_var_removed("SHOWCASE_MODE", || {
-            assert!(!MockDeviceProvider::is_mock_mode_requested());
+            assert!(!DemoDeviceProvider::is_demo_mode_requested());
         });
 
         env_test_helpers::with_env_var("SHOWCASE_MODE", "true", || {
-            assert!(MockDeviceProvider::is_mock_mode_requested());
+            assert!(DemoDeviceProvider::is_demo_mode_requested());
         });
     }
 }

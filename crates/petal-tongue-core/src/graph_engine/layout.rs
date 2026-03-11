@@ -28,7 +28,7 @@ pub(super) fn force_directed_layout(nodes: &mut [Node], edges: &[TopologyEdge], 
             for j in (i + 1)..nodes.len() {
                 let delta_x = nodes[i].position.x - nodes[j].position.x;
                 let delta_y = nodes[i].position.y - nodes[j].position.y;
-                let distance = (delta_x * delta_x + delta_y * delta_y).sqrt().max(0.01);
+                let distance = delta_x.hypot(delta_y).max(0.01);
 
                 let repulsion = K * K / distance;
                 let force_x = (delta_x / distance) * repulsion;
@@ -49,7 +49,7 @@ pub(super) fn force_directed_layout(nodes: &mut [Node], edges: &[TopologyEdge], 
             ) {
                 let delta_x = nodes[from_idx].position.x - nodes[to_idx].position.x;
                 let delta_y = nodes[from_idx].position.y - nodes[to_idx].position.y;
-                let distance = (delta_x * delta_x + delta_y * delta_y).sqrt().max(0.01);
+                let distance = delta_x.hypot(delta_y).max(0.01);
 
                 let attraction = distance * distance / K;
                 let force_x = (delta_x / distance) * attraction;
@@ -64,8 +64,7 @@ pub(super) fn force_directed_layout(nodes: &mut [Node], edges: &[TopologyEdge], 
 
         // Apply velocities with cooling
         for node in nodes.iter_mut() {
-            let v_len =
-                (node.velocity.x * node.velocity.x + node.velocity.y * node.velocity.y).sqrt();
+            let v_len = node.velocity.x.hypot(node.velocity.y);
             if v_len > 0.0 {
                 let displacement = v_len.min(temperature);
                 node.position.x += (node.velocity.x / v_len) * displacement;

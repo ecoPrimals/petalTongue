@@ -68,7 +68,7 @@ pub enum ColorScheme {
 impl ColorScheme {
     /// Get the name of the color scheme
     #[must_use]
-    pub fn name(self) -> &'static str {
+    pub const fn name(self) -> &'static str {
         match self {
             Self::Default => "Default",
             Self::HighContrast => "High Contrast",
@@ -82,7 +82,7 @@ impl ColorScheme {
 
     /// Get all available color schemes
     #[must_use]
-    pub fn all() -> &'static [Self] {
+    pub const fn all() -> &'static [Self] {
         &[
             Self::Default,
             Self::HighContrast,
@@ -111,7 +111,7 @@ pub enum FontSize {
 impl FontSize {
     /// Get the multiplier for this font size
     #[must_use]
-    pub fn multiplier(self) -> f32 {
+    pub const fn multiplier(self) -> f32 {
         match self {
             Self::Small => 0.85,
             Self::Medium => 1.0,
@@ -122,7 +122,7 @@ impl FontSize {
 
     /// Get the name of this font size
     #[must_use]
-    pub fn name(self) -> &'static str {
+    pub const fn name(self) -> &'static str {
         match self {
             Self::Small => "Small",
             Self::Medium => "Medium",
@@ -133,7 +133,7 @@ impl FontSize {
 
     /// Increase font size (clamped at ExtraLarge).
     #[must_use]
-    pub fn increase(self) -> Self {
+    pub const fn increase(self) -> Self {
         match self {
             Self::Small => Self::Medium,
             Self::Medium => Self::Large,
@@ -143,7 +143,7 @@ impl FontSize {
 
     /// Decrease font size (clamped at Small).
     #[must_use]
-    pub fn decrease(self) -> Self {
+    pub const fn decrease(self) -> Self {
         match self {
             Self::Small => Self::Small,
             Self::Medium => Self::Small,
@@ -179,7 +179,7 @@ pub struct ColorPalette {
 impl ColorPalette {
     /// Get the color palette for a given scheme
     #[must_use]
-    pub fn from_scheme(scheme: ColorScheme) -> Self {
+    pub const fn from_scheme(scheme: ColorScheme) -> Self {
         match scheme {
             ColorScheme::Default => Self::default(),
             ColorScheme::HighContrast => Self::high_contrast(),
@@ -192,7 +192,7 @@ impl ColorPalette {
     }
 
     /// Default color palette
-    fn default() -> Self {
+    const fn default() -> Self {
         Self {
             healthy: Color32::from_rgb(50, 200, 100),  // Green
             warning: Color32::from_rgb(255, 180, 50),  // Orange
@@ -207,7 +207,7 @@ impl ColorPalette {
     }
 
     /// High contrast palette (WCAG AAA)
-    fn high_contrast() -> Self {
+    const fn high_contrast() -> Self {
         Self {
             healthy: Color32::from_rgb(0, 255, 100), // Bright green
             warning: Color32::from_rgb(255, 200, 0), // Bright yellow
@@ -223,7 +223,7 @@ impl ColorPalette {
 
     /// Deuteranopia-friendly (red-green color blind - most common)
     /// Uses blue/yellow instead of red/green
-    fn deuteranopia() -> Self {
+    const fn deuteranopia() -> Self {
         Self {
             healthy: Color32::from_rgb(50, 150, 255), // Blue (good)
             warning: Color32::from_rgb(255, 200, 50), // Yellow (warning)
@@ -238,7 +238,7 @@ impl ColorPalette {
     }
 
     /// Protanopia-friendly (red-blind)
-    fn protanopia() -> Self {
+    const fn protanopia() -> Self {
         Self {
             healthy: Color32::from_rgb(50, 180, 255),  // Cyan
             warning: Color32::from_rgb(255, 220, 100), // Yellow
@@ -253,7 +253,7 @@ impl ColorPalette {
     }
 
     /// Tritanopia-friendly (blue-yellow color blind)
-    fn tritanopia() -> Self {
+    const fn tritanopia() -> Self {
         Self {
             healthy: Color32::from_rgb(50, 255, 150),  // Green
             warning: Color32::from_rgb(255, 150, 150), // Pink
@@ -268,12 +268,12 @@ impl ColorPalette {
     }
 
     /// Dark mode palette
-    fn dark() -> Self {
+    const fn dark() -> Self {
         Self::default() // Already dark by default
     }
 
     /// Light mode palette
-    fn light() -> Self {
+    const fn light() -> Self {
         Self {
             healthy: Color32::from_rgb(0, 150, 50),       // Dark green
             warning: Color32::from_rgb(200, 140, 0),      // Dark orange
@@ -304,7 +304,7 @@ pub struct LiveIndicator {
 impl LiveIndicator {
     /// Create a new live indicator
     #[must_use]
-    pub fn new(source: String, update_interval: f64) -> Self {
+    pub const fn new(source: String, update_interval: f64) -> Self {
         Self {
             is_live: false,
             last_update_secs: 0.0,
@@ -316,7 +316,7 @@ impl LiveIndicator {
     /// Create indicator with fixed last-update time (for testing age_string branches)
     #[cfg(test)]
     #[must_use]
-    pub fn new_with_last_update(
+    pub const fn new_with_last_update(
         source: String,
         update_interval: f64,
         last_update_secs: f64,

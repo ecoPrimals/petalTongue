@@ -54,7 +54,7 @@ pub(super) fn create_app(
     tracing::info!("✅ Using shared graph from DataService - zero data duplication!");
 
     // Load scenario if provided
-    let (scenario, scenario_path_for_provider) = if let Some(path) = scenario_path {
+    let (scenario, scenario_path_for_provider) = scenario_path.map_or((None, None), |path| {
         match crate::scenario::Scenario::load(&path) {
             Ok(s) => {
                 tracing::info!("✅ Scenario loaded successfully: {}", s.name);
@@ -65,9 +65,7 @@ pub(super) fn create_app(
                 (None, None)
             }
         }
-    } else {
-        (None, None)
-    };
+    });
 
     // Initialize tutorial mode (checks SHOWCASE_MODE environment variable)
     let tutorial_mode = if scenario.is_some() {
@@ -224,7 +222,7 @@ fn discover_data_providers(
         #[cfg(feature = "mock")]
         {
             vec![
-                Box::new(petal_tongue_discovery::MockVisualizationProvider::new())
+                Box::new(petal_tongue_discovery::DemoVisualizationProvider::new())
                     as Box<dyn VisualizationDataProvider>,
             ]
         }
@@ -244,7 +242,7 @@ fn discover_data_providers(
                             {
                                 tracing::info!("💡 Using tutorial data as graceful fallback");
                                 vec![Box::new(
-                                    petal_tongue_discovery::MockVisualizationProvider::new(),
+                                    petal_tongue_discovery::DemoVisualizationProvider::new(),
                                 )
                                     as Box<dyn VisualizationDataProvider>]
                             }
@@ -280,7 +278,7 @@ fn discover_data_providers(
                         {
                             tracing::info!("💡 Using tutorial data as graceful fallback");
                             vec![
-                                Box::new(petal_tongue_discovery::MockVisualizationProvider::new())
+                                Box::new(petal_tongue_discovery::DemoVisualizationProvider::new())
                                     as Box<dyn VisualizationDataProvider>,
                             ]
                         }

@@ -636,31 +636,31 @@ impl PetalTongueApp {
 
     /// Access the rendering awareness (read-only).
     #[must_use]
-    pub fn rendering_awareness(&self) -> &Arc<RwLock<RenderingAwareness>> {
+    pub const fn rendering_awareness(&self) -> &Arc<RwLock<RenderingAwareness>> {
         &self.rendering_awareness
     }
 
     /// Access the frame count.
     #[must_use]
-    pub fn frame_count(&self) -> u64 {
+    pub const fn frame_count(&self) -> u64 {
         self.frame_count
     }
 
     /// Whether the keyboard shortcuts help overlay is visible.
     #[must_use]
-    pub fn is_help_visible(&self) -> bool {
+    pub const fn is_help_visible(&self) -> bool {
         self.keyboard_shortcuts.show_help
     }
 
     /// Whether continuous 60 Hz mode is active.
     #[must_use]
-    pub fn is_continuous_mode(&self) -> bool {
+    pub const fn is_continuous_mode(&self) -> bool {
         self.continuous_mode
     }
 
     /// Access the tick clock for introspection.
     #[must_use]
-    pub fn tick_clock(&self) -> &TickClock {
+    pub const fn tick_clock(&self) -> &TickClock {
         &self.tick_clock
     }
 

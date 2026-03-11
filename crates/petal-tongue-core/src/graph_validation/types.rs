@@ -30,7 +30,7 @@ pub struct ValidationIssue {
 impl ValidationIssue {
     /// Create an error
     #[must_use]
-    pub fn error(message: String) -> Self {
+    pub const fn error(message: String) -> Self {
         Self {
             severity: ValidationSeverity::Error,
             node_id: None,
@@ -42,7 +42,7 @@ impl ValidationIssue {
 
     /// Create an error for a specific node
     #[must_use]
-    pub fn node_error(node_id: String, message: String) -> Self {
+    pub const fn node_error(node_id: String, message: String) -> Self {
         Self {
             severity: ValidationSeverity::Error,
             node_id: Some(node_id),
@@ -54,7 +54,7 @@ impl ValidationIssue {
 
     /// Create a warning
     #[must_use]
-    pub fn warning(message: String) -> Self {
+    pub const fn warning(message: String) -> Self {
         Self {
             severity: ValidationSeverity::Warning,
             node_id: None,
@@ -66,7 +66,7 @@ impl ValidationIssue {
 
     /// Create a warning for a specific node
     #[must_use]
-    pub fn node_warning(node_id: String, message: String) -> Self {
+    pub const fn node_warning(node_id: String, message: String) -> Self {
         Self {
             severity: ValidationSeverity::Warning,
             node_id: Some(node_id),
@@ -94,7 +94,7 @@ pub struct ValidationResult {
 impl ValidationResult {
     /// Create a new validation result
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { issues: Vec::new() }
     }
 
@@ -260,5 +260,33 @@ mod tests {
         assert!(r.is_valid());
         assert!(!r.has_errors());
         assert!(!r.has_warnings());
+    }
+
+    #[test]
+    fn test_validation_issue_edge_index() {
+        let issue = ValidationIssue {
+            severity: ValidationSeverity::Error,
+            node_id: None,
+            edge_index: Some(3),
+            message: "edge err".to_string(),
+            suggestion: None,
+        };
+        assert_eq!(issue.edge_index, Some(3));
+    }
+
+    #[test]
+    fn test_validation_issue_node_warning_with_suggestion() {
+        let issue = ValidationIssue::node_warning("n1".to_string(), "warn".to_string())
+            .with_suggestion("fix it".to_string());
+        assert_eq!(issue.suggestion.as_deref(), Some("fix it"));
+    }
+
+    #[test]
+    fn test_validation_result_multiple_errors() {
+        let mut r = ValidationResult::new();
+        r.add_issue(ValidationIssue::error("e1".to_string()));
+        r.add_issue(ValidationIssue::error("e2".to_string()));
+        assert_eq!(r.errors().len(), 2);
+        assert!(!r.is_valid());
     }
 }

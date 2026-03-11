@@ -297,7 +297,6 @@ impl MdnsVisualizationProvider {
 
         // Parse answer records
         let mut service_port: Option<u16> = None;
-        let mut _service_host: Option<String> = None;
         let mut txt_records: Vec<crate::dns_parser::TxtRecord> = Vec::new();
         let mut a_records: Vec<Ipv4Addr> = Vec::new();
 
@@ -313,7 +312,6 @@ impl MdnsVisualizationProvider {
                 Some(RecordType::SRV) => {
                     if let Ok(srv) = record.as_srv(data, rdata_offset) {
                         service_port = Some(srv.port);
-                        _service_host = Some(srv.target.clone());
                         tracing::debug!("Found SRV record: {}:{}", srv.target, srv.port);
                     }
                 }
@@ -391,7 +389,7 @@ impl MdnsVisualizationProvider {
             endpoint
         );
 
-        Ok(Box::new(MdnsVisualizationProvider::new(endpoint, metadata)))
+        Ok(Box::new(Self::new(endpoint, metadata)))
     }
 }
 
@@ -602,7 +600,7 @@ mod tests {
             capabilities: vec!["viz".to_string()],
         };
         let provider =
-            MdnsVisualizationProvider::new("http://192.0.2.1:8080".to_string(), metadata.clone());
+            MdnsVisualizationProvider::new("http://192.0.2.1:8080".to_string(), metadata);
         assert_eq!(provider.get_metadata().name, "Test Provider");
         assert_eq!(provider.get_metadata().endpoint, "http://192.0.2.1:8080");
     }

@@ -43,7 +43,9 @@ impl LiveBadge {
             (Color32::from_rgb(200, 140, 0), "STALE")
         } else if age < 1.0 {
             // Pulse animation for very fresh data
-            let pulse = (self.last_render.elapsed().as_secs_f32() * 2.0).sin() * 0.3 + 0.7;
+            let pulse = (self.last_render.elapsed().as_secs_f32() * 2.0)
+                .sin()
+                .mul_add(0.3, 0.7);
             let green = (180.0 * pulse) as u8;
             (Color32::from_rgb(0, green + 75, 50), "● LIVE")
         } else {
@@ -218,7 +220,7 @@ pub struct ConnectionStatus {
 impl ConnectionStatus {
     /// Create a new connection status
     #[must_use]
-    pub fn new(target: String) -> Self {
+    pub const fn new(target: String) -> Self {
         Self {
             connected: false,
             target,
@@ -233,7 +235,7 @@ impl ConnectionStatus {
     }
 
     /// Mark as disconnected
-    pub fn mark_disconnected(&mut self) {
+    pub const fn mark_disconnected(&mut self) {
         self.connected = false;
     }
 

@@ -2,6 +2,55 @@
 
 All notable changes to petalTongue will be documented in this file.
 
+## [1.6.2] - 2026-03-11
+
+### Added - Spring Absorption: Backpressure, JSONL Telemetry, Diverging Palette, Pipeline DAG
+
+- **Server-side backpressure** (`BackpressureConfig`): Rate limiting for 60 Hz streaming
+  sessions. Configurable `max_updates_per_sec`, `cooldown`, `burst_tolerance`. Active
+  sessions that exceed the rate are cooldown-gated; `StreamUpdateResponse` now includes
+  `backpressure_active` flag. Absorbed from wetSpring, healthSpring, ludoSpring patterns.
+- **JSONL telemetry adapter** (`telemetry_adapter.rs`): `TelemetryAdapter` parses
+  hotSpring's line-delimited JSON telemetry into `DataBinding::TimeSeries` grouped by
+  section and observable. Supports file, reader, and string input. Enables visualization
+  of computational physics telemetry without custom parsers.
+- **Diverging color scale** (`DivergingScale`): Three-stop color interpolation for
+  continuous heatmap data (low→mid→high). `kokkos_parity()` constructor provides
+  neuralSpring S139-compatible blue-white-red scale. `interpolate()` for any value in
+  `[low, high]` range.
+- **Game domain palette**: 7th domain palette (`"game"` / `"ludology"`) with warm amber
+  `(220, 160, 80)` base for ludoSpring visualization theming.
+- **Session health IPC** (`visualization.session.status`): Query active session health
+  including `frame_count`, `uptime_secs`, `backpressure_active`, `is_active`. Uses
+  `SessionStatusRequest`/`SessionStatusResponse` DTOs.
+- **Provider registry IPC** (`provider.register_capability`): Accept capability
+  announcements per toadStool S145 `ProviderRegistry` protocol. Logs capability,
+  socket path, provider name, version, and methods.
+- **Pipeline DAG orchestration** (`PipelineRegistry`): Multi-stage visualization
+  pipelines with topological sort (Kahn's algorithm). `submit()` validates DAG acyclicity,
+  `update_stage()` enforces dependency ordering, `completed_bindings()` collects
+  all finished stage outputs. Absorbed from neuralSpring and groundSpring patterns.
+- **+17 new tests**: TelemetryAdapter (5), BackpressureConfig (3), DivergingScale (3),
+  PipelineRegistry (6).
+
+### Changed
+
+- `VisualizationState` now tracks per-session frame count, recent update timestamps,
+  and backpressure state.
+- `RenderSession` extended with `frame_count`, `recent_updates`, `backpressure_active`,
+  `cooldown_until` fields.
+- `domain_palette.rs` extended with `DivergingScale`, `lerp_color()`, game palette.
+- IPC dispatcher updated with 2 new method routes.
+
+### Quality
+
+- **3,409 tests**, 0 failures, 17 ignored
+- **0 clippy warnings** (pedantic + nursery)
+- **0 unsafe blocks** in new code
+- All new files under 300 lines
+
+---
+
 ## [1.6.1] - 2026-03-11
 
 ### Added - Live Ecosystem Wiring: Sensor Feed, Interaction Broadcast, Neural API, Game Channels

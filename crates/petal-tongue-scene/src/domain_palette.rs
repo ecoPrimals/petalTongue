@@ -165,6 +165,99 @@ pub const NEURAL: DomainPalette = DomainPalette {
     categorical: &NEURAL_CATEGORICAL,
 };
 
+/// Game domain palette (ludoSpring).
+pub const GAME: DomainPalette = DomainPalette {
+    domain: "game",
+    primary: Color::rgb(0.863, 0.627, 0.314), // warm gold (220, 160, 80)
+    secondary: Color::rgb(0.400, 0.600, 0.800), // steel blue
+    accent: Color::rgb(0.900, 0.400, 0.200),  // ember
+    warning: Color::rgb(0.902, 0.671, 0.008),
+    critical: Color::rgb(0.839, 0.153, 0.157),
+    normal: Color::rgb(0.173, 0.627, 0.173),
+    chart_bg: Color::rgba(0.06, 0.05, 0.08, 1.0),
+    categorical: &GAME_CATEGORICAL,
+};
+
+const GAME_CATEGORICAL: [Color; 6] = [
+    Color::rgb(0.863, 0.627, 0.314), // warm gold
+    Color::rgb(0.400, 0.600, 0.800), // steel blue
+    Color::rgb(0.900, 0.400, 0.200), // ember
+    Color::rgb(0.200, 0.800, 0.400), // neon green
+    Color::rgb(0.700, 0.300, 0.700), // magenta
+    Color::rgb(0.180, 0.800, 0.800), // cyan
+];
+
+/// A three-stop diverging color scale for continuous value → color mapping.
+///
+/// Used by neuralSpring for Kokkos parity heatmaps: green at/below `mid`,
+/// yellow near `mid`, red above `high`.
+#[derive(Debug, Clone)]
+pub struct DivergingScale {
+    /// Value at which the low color is fully saturated.
+    pub low: f64,
+    /// Value at which the mid color is shown.
+    pub mid: f64,
+    /// Value at which the high color is fully saturated.
+    pub high: f64,
+    /// Color for values at or below `low`.
+    pub low_color: Color,
+    /// Color for values at `mid`.
+    pub mid_color: Color,
+    /// Color for values at or above `high`.
+    pub high_color: Color,
+}
+
+impl DivergingScale {
+    /// Interpolate a value to a color on this scale.
+    #[must_use]
+    pub fn interpolate(&self, value: f64) -> Color {
+        if value <= self.low {
+            return self.low_color;
+        }
+        if value >= self.high {
+            return self.high_color;
+        }
+        if value <= self.mid {
+            let range = self.mid - self.low;
+            if range.abs() < f64::EPSILON {
+                return self.low_color;
+            }
+            let t = ((value - self.low) / range) as f32;
+            lerp_color(&self.low_color, &self.mid_color, t)
+        } else {
+            let range = self.high - self.mid;
+            if range.abs() < f64::EPSILON {
+                return self.high_color;
+            }
+            let t = ((value - self.mid) / range) as f32;
+            lerp_color(&self.mid_color, &self.high_color, t)
+        }
+    }
+
+    /// Default diverging scale: green ≤1.0×, yellow 1.0-2.0×, red ≥2.0×
+    /// (neuralSpring Kokkos parity convention).
+    #[must_use]
+    pub const fn kokkos_parity() -> Self {
+        Self {
+            low: 0.0,
+            mid: 1.0,
+            high: 2.0,
+            low_color: Color::rgb(0.173, 0.627, 0.173), // green
+            mid_color: Color::rgb(0.902, 0.671, 0.008), // yellow
+            high_color: Color::rgb(0.839, 0.153, 0.157), // red
+        }
+    }
+}
+
+fn lerp_color(a: &Color, b: &Color, t: f32) -> Color {
+    Color::rgba(
+        a.r + (b.r - a.r) * t,
+        a.g + (b.g - a.g) * t,
+        a.b + (b.b - a.b) * t,
+        a.a + (b.a - a.a) * t,
+    )
+}
+
 /// Resolve a domain string to its palette. Falls back to MEASUREMENT for unknown domains.
 #[must_use]
 pub fn palette_for_domain(domain: &str) -> &'static DomainPalette {
@@ -174,6 +267,7 @@ pub fn palette_for_domain(domain: &str) -> &'static DomainPalette {
         "ecology" | "metagenomics" => &ECOLOGY,
         "agriculture" | "atmospheric" => &AGRICULTURE,
         "ml" | "neural" => &NEURAL,
+        "game" | "ludology" => &GAME,
         // "measurement", "calibration", and any unknown domain fall back to MEASUREMENT
         _ => &MEASUREMENT,
     }
@@ -236,5 +330,83 @@ mod tests {
                 "Domain {domain} should have 6 categorical colors"
             );
         }
+    }
+
+    #[test]
+    fn palette_primary_secondary_differ() {
+        for domain in &["health", "physics", "ecology"] {
+            let p = palette_for_domain(domain);
+            assert!(
+                (p.primary.r - p.secondary.r).abs() > 0.01
+                    || (p.primary.g - p.secondary.g).abs() > 0.01
+                    || (p.primary.b - p.secondary.b).abs() > 0.01,
+                "Domain {domain} primary and secondary should differ"
+            );
+        }
+    }
+
+    #[test]
+    fn categorical_color_index_zero() {
+        let palette = palette_for_domain("health");
+        let c = categorical_color(palette, 0);
+        assert!((c.r - palette.categorical[0].r).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn categorical_color_index_large_wraps() {
+        let palette = palette_for_domain("measurement");
+        let c7 = categorical_color(palette, 7);
+        let c1 = categorical_color(palette, 1);
+        assert!((c7.r - c1.r).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn game_domain_resolves() {
+        assert_eq!(palette_for_domain("game").domain, "game");
+        assert_eq!(palette_for_domain("ludology").domain, "game");
+    }
+
+    #[test]
+    fn game_palette_has_warm_gold_primary() {
+        let p = palette_for_domain("game");
+        assert!((p.primary.r - 0.863).abs() < 0.01);
+        assert!((p.primary.g - 0.627).abs() < 0.01);
+    }
+
+    #[test]
+    fn diverging_scale_kokkos_parity() {
+        let scale = DivergingScale::kokkos_parity();
+        let low = scale.interpolate(0.0);
+        assert!((low.g - 0.627).abs() < 0.01, "should be green at 0.0");
+        let mid = scale.interpolate(1.0);
+        assert!((mid.r - 0.902).abs() < 0.01, "should be yellow at 1.0");
+        let high = scale.interpolate(2.0);
+        assert!((high.r - 0.839).abs() < 0.01, "should be red at 2.0");
+    }
+
+    #[test]
+    fn diverging_scale_interpolates_between_stops() {
+        let scale = DivergingScale::kokkos_parity();
+        let mid_low = scale.interpolate(0.5);
+        assert!(mid_low.g > 0.3, "between green and yellow");
+        let mid_high = scale.interpolate(1.5);
+        assert!(mid_high.r > 0.5, "between yellow and red");
+    }
+
+    #[test]
+    fn diverging_scale_clamps_extremes() {
+        let scale = DivergingScale::kokkos_parity();
+        let below = scale.interpolate(-1.0);
+        assert!((below.g - scale.low_color.g).abs() < f32::EPSILON);
+        let above = scale.interpolate(10.0);
+        assert!((above.r - scale.high_color.r).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn domain_palette_has_all_status_colors() {
+        let p = palette_for_domain("health");
+        assert!(p.warning.r > 0.0 || p.warning.g > 0.0 || p.warning.b > 0.0);
+        assert!(p.critical.r > 0.0 || p.critical.g > 0.0 || p.critical.b > 0.0);
+        assert!(p.normal.r > 0.0 || p.normal.g > 0.0 || p.normal.b > 0.0);
     }
 }

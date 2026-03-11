@@ -13,7 +13,7 @@ use super::{EdgeDrawState, GraphCanvas};
 /// Node fill and stroke colors based on state.
 /// Returns (fill_rgb, stroke_rgb).
 #[must_use]
-pub(crate) fn node_colors(selected: bool, hovered: bool, has_error: bool) -> ([u8; 3], [u8; 3]) {
+pub const fn node_colors(selected: bool, hovered: bool, has_error: bool) -> ([u8; 3], [u8; 3]) {
     if selected {
         ([245, 166, 35], [200, 130, 20])
     } else if hovered {
@@ -27,7 +27,7 @@ pub(crate) fn node_colors(selected: bool, hovered: bool, has_error: bool) -> ([u
 
 /// Edge color as RGB based on edge type and accent.
 #[must_use]
-pub(crate) fn edge_color_rgb(edge_type: &EdgeType, accent: [u8; 3]) -> [u8; 3] {
+pub const fn edge_color_rgb(edge_type: &EdgeType, accent: [u8; 3]) -> [u8; 3] {
     match edge_type {
         EdgeType::Dependency => accent,
         EdgeType::DataFlow => [150, 150, 150],
@@ -36,7 +36,7 @@ pub(crate) fn edge_color_rgb(edge_type: &EdgeType, accent: [u8; 3]) -> [u8; 3] {
 
 /// Arrow triangle geometry for directed edges.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) struct ArrowPoints {
+pub struct ArrowPoints {
     pub tip: [f32; 2],
     pub left: [f32; 2],
     pub right: [f32; 2],
@@ -44,11 +44,11 @@ pub(crate) struct ArrowPoints {
 
 /// Compute arrow triangle vertices from line segment and zoom.
 #[must_use]
-pub(crate) fn arrow_geometry(from: [f32; 2], to: [f32; 2], zoom: f32) -> ArrowPoints {
+pub fn arrow_geometry(from: [f32; 2], to: [f32; 2], zoom: f32) -> ArrowPoints {
     let arrow_size = 8.0 * zoom;
     let dx = to[0] - from[0];
     let dy = to[1] - from[1];
-    let len = (dx * dx + dy * dy).sqrt();
+    let len = dx.hypot(dy);
     if len < f32::EPSILON {
         return ArrowPoints {
             tip: to,
@@ -60,23 +60,24 @@ pub(crate) fn arrow_geometry(from: [f32; 2], to: [f32; 2], zoom: f32) -> ArrowPo
     let dir_y = dy / len;
     let perp_x = -dir_y;
     let perp_y = dir_x;
-    let base_x = to[0] - dir_x * arrow_size * 2.0;
-    let base_y = to[1] - dir_y * arrow_size * 2.0;
+    let base_x = (dir_x * arrow_size).mul_add(-2.0, to[0]);
+    let base_y = (dir_y * arrow_size).mul_add(-2.0, to[1]);
     ArrowPoints {
         tip: to,
-        left: [base_x + perp_x * arrow_size, base_y + perp_y * arrow_size],
-        right: [base_x - perp_x * arrow_size, base_y - perp_y * arrow_size],
+        left: [
+            perp_x.mul_add(arrow_size, base_x),
+            perp_y.mul_add(arrow_size, base_y),
+        ],
+        right: [
+            perp_x.mul_add(-arrow_size, base_x),
+            perp_y.mul_add(-arrow_size, base_y),
+        ],
     }
 }
 
 /// Grid line positions along one axis.
 #[must_use]
-pub(crate) fn grid_line_positions(
-    rect_min: f32,
-    rect_max: f32,
-    grid_size: f32,
-    offset: f32,
-) -> Vec<f32> {
+pub fn grid_line_positions(rect_min: f32, rect_max: f32, grid_size: f32, offset: f32) -> Vec<f32> {
     let mut positions = Vec::new();
     let mut x = rect_min - offset;
     while x < rect_max {
@@ -156,7 +157,7 @@ impl GraphCanvas {
             painter.text(
                 Pos2::new(
                     node_rect.center().x,
-                    node_rect.min.y + 15.0 * self.camera.zoom,
+                    15.0f32.mul_add(self.camera.zoom, node_rect.min.y),
                 ),
                 egui::Align2::CENTER_CENTER,
                 icon,
@@ -167,7 +168,7 @@ impl GraphCanvas {
             painter.text(
                 Pos2::new(
                     node_rect.center().x,
-                    node_rect.max.y - 10.0 * self.camera.zoom,
+                    10.0f32.mul_add(-self.camera.zoom, node_rect.max.y),
                 ),
                 egui::Align2::CENTER_CENTER,
                 name,

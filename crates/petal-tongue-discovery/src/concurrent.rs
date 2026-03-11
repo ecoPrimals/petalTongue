@@ -229,7 +229,7 @@ pub enum HealthStatus {
 
 impl ProviderHealth {
     #[must_use]
-    pub fn is_healthy(&self) -> bool {
+    pub const fn is_healthy(&self) -> bool {
         matches!(self.status, HealthStatus::Healthy { .. })
     }
 }
@@ -237,14 +237,14 @@ impl ProviderHealth {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mock_provider::MockVisualizationProvider;
+    use crate::demo_provider::DemoVisualizationProvider;
 
     #[tokio::test]
     async fn test_parallel_health_checks() {
         let providers: Vec<Box<dyn VisualizationDataProvider>> = vec![
-            Box::new(MockVisualizationProvider::new()),
-            Box::new(MockVisualizationProvider::new()),
-            Box::new(MockVisualizationProvider::new()),
+            Box::new(DemoVisualizationProvider::new()),
+            Box::new(DemoVisualizationProvider::new()),
+            Box::new(DemoVisualizationProvider::new()),
         ];
 
         let start = std::time::Instant::now();
@@ -262,8 +262,8 @@ mod tests {
     #[tokio::test]
     async fn test_first_available_success() {
         let providers: Vec<Box<dyn VisualizationDataProvider>> = vec![
-            Box::new(MockVisualizationProvider::new()),
-            Box::new(MockVisualizationProvider::new()),
+            Box::new(DemoVisualizationProvider::new()),
+            Box::new(DemoVisualizationProvider::new()),
         ];
 
         let result = discover_first_available(providers, Duration::from_secs(1)).await;
@@ -282,7 +282,7 @@ mod tests {
     async fn test_concurrent_with_failures() {
         // Test graceful degradation when some sources fail
         let result = ConcurrentDiscoveryResult {
-            providers: vec![Box::new(MockVisualizationProvider::new())],
+            providers: vec![Box::new(DemoVisualizationProvider::new())],
             failures: vec![
                 DiscoveryFailure::new("mDNS", "Timeout"),
                 DiscoveryFailure::new("HTTP", "Connection refused"),
@@ -342,9 +342,9 @@ mod tests {
     async fn test_parallel_faster_than_sequential() {
         // Verify parallel execution is actually faster
         let providers: Vec<Box<dyn VisualizationDataProvider>> = vec![
-            Box::new(MockVisualizationProvider::new()),
-            Box::new(MockVisualizationProvider::new()),
-            Box::new(MockVisualizationProvider::new()),
+            Box::new(DemoVisualizationProvider::new()),
+            Box::new(DemoVisualizationProvider::new()),
+            Box::new(DemoVisualizationProvider::new()),
         ];
 
         let start = std::time::Instant::now();

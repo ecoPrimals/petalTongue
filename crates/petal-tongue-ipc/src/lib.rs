@@ -99,11 +99,13 @@ pub use protocol::{InstanceStatus, IpcCommand, IpcResponse};
 pub use server::{IpcServer, IpcServerError};
 pub use unix_socket_server::UnixSocketServer;
 pub use visualization_handler::{
-    ConstraintResult, DismissRequest, DismissResponse, ExportRequest, ExportResponse,
-    GrammarRenderRequest, GrammarRenderResponse, InteractionApplyRequest, InteractionApplyResponse,
-    InteractionEventNotification, InteractionSubscriberRegistry, Perspective, SensorStreamRegistry,
-    StreamOperation, StreamUpdateRequest, StreamUpdateResponse, ValidateRequest, ValidateResponse,
-    VisualizationRenderRequest, VisualizationRenderResponse, VisualizationState,
+    BackpressureConfig, ConstraintResult, DismissRequest, DismissResponse, ExportRequest,
+    ExportResponse, GrammarRenderRequest, GrammarRenderResponse, InteractionApplyRequest,
+    InteractionApplyResponse, InteractionEventNotification, InteractionSubscriberRegistry,
+    Perspective, PipelineRegistry, SensorStreamRegistry, SessionStatusRequest,
+    SessionStatusResponse, StreamOperation, StreamUpdateRequest, StreamUpdateResponse,
+    ValidateRequest, ValidateResponse, VisualizationRenderRequest, VisualizationRenderResponse,
+    VisualizationState,
 };
 
 // tarpc (PRIMARY - primal-to-primal)

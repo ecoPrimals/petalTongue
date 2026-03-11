@@ -51,7 +51,7 @@ impl TerminalUI {
 
     /// Create with explicit width
     #[must_use]
-    pub fn with_width(mut self, width: usize) -> Self {
+    pub const fn with_width(mut self, width: usize) -> Self {
         self.width = width;
         self
     }

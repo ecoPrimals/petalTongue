@@ -10,14 +10,14 @@ use petal_tongue_core::DataBinding;
 use super::draw_channel;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum GaugeStatus {
+pub enum GaugeStatus {
     Normal,
     Warning,
     Critical,
 }
 
 #[must_use]
-pub(crate) fn gauge_status_for_value(
+pub fn gauge_status_for_value(
     value: f64,
     normal_range: &[f64; 2],
     warning_range: &[f64; 2],
@@ -32,7 +32,7 @@ pub(crate) fn gauge_status_for_value(
 }
 
 #[must_use]
-pub(crate) fn distribution_bins(values: &[f64], n_bins: usize) -> Option<(f64, f64, Vec<u32>)> {
+pub fn distribution_bins(values: &[f64], n_bins: usize) -> Option<(f64, f64, Vec<u32>)> {
     if values.is_empty() || n_bins == 0 {
         return None;
     }
@@ -54,7 +54,7 @@ pub(crate) fn distribution_bins(values: &[f64], n_bins: usize) -> Option<(f64, f
     Some((lo, hi, counts))
 }
 
-pub(crate) fn draw_timeseries(
+pub fn draw_timeseries(
     ui: &mut Ui,
     label: &str,
     x_label: &str,
@@ -84,7 +84,7 @@ pub(crate) fn draw_timeseries(
         });
 }
 
-pub(crate) fn draw_distribution(
+pub fn draw_distribution(
     ui: &mut Ui,
     label: &str,
     values: &[f64],
@@ -110,7 +110,7 @@ pub(crate) fn draw_distribution(
         .iter()
         .enumerate()
         .map(|(i, &c)| {
-            let center = lo + (i as f64 + 0.5) * bin_width;
+            let center = (i as f64 + 0.5).mul_add(bin_width, lo);
             Bar::new(center, f64::from(c))
                 .width(bin_width * 0.9)
                 .fill(clinical_theme::POPULATION.gamma_multiply(0.7))
@@ -141,7 +141,7 @@ pub(crate) fn draw_distribution(
             );
             if comparison_value > 0.0 {
                 plot_ui.vline(
-                    VLine::new(lo + comparison_value * (hi - lo))
+                    VLine::new(comparison_value.mul_add(hi - lo, lo))
                         .color(clinical_theme::WARNING)
                         .name("Value"),
                 );
@@ -149,7 +149,7 @@ pub(crate) fn draw_distribution(
         });
 }
 
-pub(crate) fn draw_bar_chart(ui: &mut Ui, label: &str, categories: &[String], values: &[f64]) {
+pub fn draw_bar_chart(ui: &mut Ui, label: &str, categories: &[String], values: &[f64]) {
     ui.label(
         RichText::new(label)
             .strong()
@@ -182,7 +182,7 @@ pub(crate) fn draw_bar_chart(ui: &mut Ui, label: &str, categories: &[String], va
     clippy::too_many_arguments,
     reason = "matches DataBinding::Gauge fields"
 )]
-pub(crate) fn draw_gauge(
+pub fn draw_gauge(
     ui: &mut Ui,
     label: &str,
     value: f64,
@@ -219,9 +219,12 @@ pub(crate) fn draw_gauge(
     let normal_left = ((normal_range[0] - min) / (max - min)).clamp(0.0, 1.0);
     let normal_right = ((normal_range[1] - min) / (max - min)).clamp(0.0, 1.0);
     let nr = egui::Rect::from_min_max(
-        egui::pos2(rect.left() + rect.width() * normal_left as f32, rect.top()),
         egui::pos2(
-            rect.left() + rect.width() * normal_right as f32,
+            rect.width().mul_add(normal_left as f32, rect.left()),
+            rect.top(),
+        ),
+        egui::pos2(
+            rect.width().mul_add(normal_right as f32, rect.left()),
             rect.bottom(),
         ),
     );

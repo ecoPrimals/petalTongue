@@ -59,7 +59,7 @@ impl EcoPrimalCapabilityAdapter {
 
     /// Create adapter from configuration
     #[must_use]
-    pub fn from_config(config: CapabilityIconConfig) -> Self {
+    pub const fn from_config(config: CapabilityIconConfig) -> Self {
         Self { config }
     }
 

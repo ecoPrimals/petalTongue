@@ -299,7 +299,7 @@ impl PropertyPanel {
 
     /// Get currently editing node ID
     #[must_use]
-    pub fn get_editing_node(&self) -> Option<&String> {
+    pub const fn get_editing_node(&self) -> Option<&String> {
         self.editing_node.as_ref()
     }
 

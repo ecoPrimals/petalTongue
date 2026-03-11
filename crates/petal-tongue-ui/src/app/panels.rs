@@ -172,10 +172,8 @@ pub fn render_all_panels(ctx: &egui::Context, app: &mut PetalTongueApp) {
                             .update(provider.as_ref())
                             .await;
                     });
-                    app.neural_proprioception_panel.render(ui);
-                } else {
-                    app.neural_proprioception_panel.render(ui);
                 }
+                app.neural_proprioception_panel.render(ui);
             });
     }
 

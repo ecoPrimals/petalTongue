@@ -11,25 +11,25 @@ use super::manager::SensoryUIRenderer;
 
 /// Format topology summary as single line
 #[must_use]
-pub(crate) fn format_topology_summary(node_count: usize, edge_count: usize) -> String {
+pub fn format_topology_summary(node_count: usize, edge_count: usize) -> String {
     format!("Topology: {node_count} nodes, {edge_count} edges")
 }
 
 /// Format CPU metric
 #[must_use]
-pub(crate) fn format_cpu_metrics(cpu_percent: f64) -> String {
+pub fn format_cpu_metrics(cpu_percent: f64) -> String {
     format!("CPU: {cpu_percent:.1}%")
 }
 
 /// Format memory metric
 #[must_use]
-pub(crate) fn format_memory_metrics(memory_percent: f64) -> String {
+pub fn format_memory_metrics(memory_percent: f64) -> String {
     format!("Memory: {memory_percent:.1}%")
 }
 
 /// Format proprioception as label-value pairs for display
 #[must_use]
-pub(crate) fn format_proprioception_summary(
+pub fn format_proprioception_summary(
     health_percentage: f32,
     status: &str,
     confidence: f32,
@@ -43,37 +43,37 @@ pub(crate) fn format_proprioception_summary(
 
 /// Format nodes count
 #[must_use]
-pub(crate) fn format_topology_nodes(node_count: usize) -> String {
+pub fn format_topology_nodes(node_count: usize) -> String {
     format!("Nodes: {node_count}")
 }
 
 /// Format edges count
 #[must_use]
-pub(crate) fn format_topology_edges(edge_count: usize) -> String {
+pub fn format_topology_edges(edge_count: usize) -> String {
     format!("Edges: {edge_count}")
 }
 
 /// Format average degree
 #[must_use]
-pub(crate) fn format_avg_degree(avg_degree: f32) -> String {
+pub fn format_avg_degree(avg_degree: f32) -> String {
     format!("Avg Degree: {avg_degree:.1}")
 }
 
 /// Format capabilities count
 #[must_use]
-pub(crate) fn format_capabilities_count(count: usize) -> String {
+pub fn format_capabilities_count(count: usize) -> String {
     format!("{count} caps")
 }
 
 /// Format combined CPU and memory for compact display
 #[must_use]
-pub(crate) fn format_cpu_memory_combined(cpu_percent: f64, memory_percent: f64) -> String {
+pub fn format_cpu_memory_combined(cpu_percent: f64, memory_percent: f64) -> String {
     format!("CPU: {cpu_percent:.1}% | Memory: {memory_percent:.1}%")
 }
 
 /// Format health and confidence for compact display
 #[must_use]
-pub(crate) fn format_health_confidence(health_percentage: f32, confidence: f32) -> String {
+pub fn format_health_confidence(health_percentage: f32, confidence: f32) -> String {
     format!("Health: {health_percentage:.0}% | Confidence: {confidence:.0}%")
 }
 
@@ -85,7 +85,7 @@ pub(crate) fn format_health_confidence(health_percentage: f32, confidence: f32) 
 pub(super) struct MinimalSensoryUI;
 
 impl MinimalSensoryUI {
-    pub(super) fn new() -> Self {
+    pub(super) const fn new() -> Self {
         Self
     }
 }
@@ -145,7 +145,7 @@ impl SensoryUIRenderer for MinimalSensoryUI {
 pub(super) struct SimpleSensoryUI;
 
 impl SimpleSensoryUI {
-    pub(super) fn new() -> Self {
+    pub(super) const fn new() -> Self {
         Self
     }
 }
@@ -221,7 +221,7 @@ impl SensoryUIRenderer for SimpleSensoryUI {
 pub(super) struct StandardSensoryUI;
 
 impl StandardSensoryUI {
-    pub(super) fn new() -> Self {
+    pub(super) const fn new() -> Self {
         Self
     }
 }
@@ -299,7 +299,7 @@ impl SensoryUIRenderer for StandardSensoryUI {
 pub(super) struct RichSensoryUI;
 
 impl RichSensoryUI {
-    pub(super) fn new() -> Self {
+    pub(super) const fn new() -> Self {
         Self
     }
 }
@@ -423,7 +423,7 @@ impl SensoryUIRenderer for RichSensoryUI {
 pub(super) struct ImmersiveSensoryUI;
 
 impl ImmersiveSensoryUI {
-    pub(super) fn new() -> Self {
+    pub(super) const fn new() -> Self {
         Self
     }
 }

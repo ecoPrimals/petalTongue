@@ -106,7 +106,7 @@ doom = ["dep:doom-core"]  # Doom integration for platform testing
 
 # Mock provider for dev/test only - NEVER use in production (sovereignty compliance)
 # When disabled: biomeOS unavailable → empty panels. When enabled: graceful degradation with demo data.
-# Enables MockVisualizationProvider, MockDeviceProvider, and BiomeOSClient mock mode.
+# Enables DemoVisualizationProvider, DemoDeviceProvider, and BiomeOSClient demo mode.
 mock = ["petal-tongue-discovery/test-fixtures", "petal-tongue-api/test-fixtures", "petal-tongue-core/test-fixtures"]
 
 # Legacy features (maintained for compatibility)

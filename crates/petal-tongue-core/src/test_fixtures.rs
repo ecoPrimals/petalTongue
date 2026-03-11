@@ -2,6 +2,9 @@
 //! Test fixtures and constants
 //!
 //! Centralized location for all test data to avoid hardcoding throughout tests.
+//!
+//! **Gated**: This entire module is only compiled when `test` or `test-fixtures` feature
+//! is enabled. Production builds (default) do NOT include this code.
 
 use crate::{PrimalHealthStatus as HealthStatus, PrimalInfo};
 

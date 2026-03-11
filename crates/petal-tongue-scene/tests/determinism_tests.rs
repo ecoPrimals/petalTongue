@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Determinism tests for the scene compiler.
 //!
-//! Compiles the same GrammarExpr + data multiple times and asserts
+//! Compiles the same `GrammarExpr` + data multiple times and asserts
 //! byte-identical output. Uses flattened primitives (depth-first order)
-//! for serialization since SceneGraph's HashMap has non-deterministic key order.
+//! for serialization since `SceneGraph`'s `HashMap` has non-deterministic key order.
 
 use petal_tongue_scene::{
     GrammarCompiler,

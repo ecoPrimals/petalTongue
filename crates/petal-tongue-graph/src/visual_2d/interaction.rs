@@ -33,7 +33,7 @@ pub fn handle_input(
     if response.hovered() {
         let scroll_delta = response.ctx.input(|i| i.raw_scroll_delta.y);
         if scroll_delta != 0.0 {
-            let zoom_factor = 1.0 + (scroll_delta * 0.001);
+            let zoom_factor = scroll_delta.mul_add(0.001, 1.0);
             renderer.zoom = (renderer.zoom * zoom_factor).clamp(0.1, 10.0);
         }
     }
@@ -372,7 +372,7 @@ mod tests {
     #[test]
     fn zoom_factor_clamp_logic() {
         let apply_zoom = |current: f32, scroll: f32| {
-            let factor = 1.0 + (scroll * 0.001);
+            let factor = scroll.mul_add(0.001, 1.0);
             (current * factor).clamp(0.1, 10.0)
         };
         assert!((apply_zoom(1.0, 100.0) - 1.1).abs() < f32::EPSILON);
@@ -383,7 +383,7 @@ mod tests {
     #[test]
     fn drag_delta_threshold() {
         const EDGE_DRAG_THRESHOLD: f32 = 10.0;
-        let exceeds = |dx: f32, dy: f32| (dx * dx + dy * dy).sqrt() > EDGE_DRAG_THRESHOLD;
+        let exceeds = |dx: f32, dy: f32| dx.hypot(dy) > EDGE_DRAG_THRESHOLD;
         assert!(!exceeds(5.0, 5.0)); // sqrt(50) < 10
         assert!(!exceeds(10.0, 0.0)); // length exactly 10, not > 10
         assert!(exceeds(15.0, 0.0));

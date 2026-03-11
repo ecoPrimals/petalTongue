@@ -235,7 +235,7 @@ fn test_multiple_formats_from_same_graph() -> Result<()> {
     let terminal = terminal_ui.render_to_string()?;
     assert!(terminal.contains("petalTongue"));
 
-    let json_ui = TextUI::new(graph.clone()).with_format(ExportFormat::Json);
+    let json_ui = TextUI::new(graph).with_format(ExportFormat::Json);
     let json = json_ui.render_to_string()?;
     let _parsed: serde_json::Value = serde_json::from_str(&json)?;
 

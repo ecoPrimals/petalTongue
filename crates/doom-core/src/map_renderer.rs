@@ -115,8 +115,8 @@ impl MapRenderer {
         reason = "screen coordinates fit in i32"
     )]
     fn world_to_screen(&self, x: i16, y: i16) -> (i32, i32) {
-        let screen_x = (f32::from(x) * self.scale + self.offset_x) as i32;
-        let screen_y = (-f32::from(y) * self.scale + self.offset_y) as i32;
+        let screen_x = f32::from(x).mul_add(self.scale, self.offset_x) as i32;
+        let screen_y = (-f32::from(y)).mul_add(self.scale, self.offset_y) as i32;
         (screen_x, screen_y)
     }
 

@@ -44,7 +44,7 @@ pub struct Visual2DRenderer {
 
 impl Visual2DRenderer {
     /// Create a new visual 2D renderer
-    pub fn new(graph: Arc<RwLock<GraphEngine>>) -> Self {
+    pub const fn new(graph: Arc<RwLock<GraphEngine>>) -> Self {
         Self {
             graph,
             camera_offset: Vec2::ZERO,
@@ -69,29 +69,29 @@ impl Visual2DRenderer {
     }
 
     /// Enable or disable animation
-    pub fn set_animation_enabled(&mut self, enabled: bool) {
+    pub const fn set_animation_enabled(&mut self, enabled: bool) {
         self.animation_enabled = enabled;
     }
 
     /// Check if animation is enabled
     #[must_use]
-    pub fn is_animation_enabled(&self) -> bool {
+    pub const fn is_animation_enabled(&self) -> bool {
         self.animation_enabled
     }
 
     /// Enable or disable graph statistics window
-    pub fn set_show_stats(&mut self, show: bool) {
+    pub const fn set_show_stats(&mut self, show: bool) {
         self.show_stats = show;
     }
 
     /// Check if statistics window is enabled
     #[must_use]
-    pub fn show_stats(&self) -> bool {
+    pub const fn show_stats(&self) -> bool {
         self.show_stats
     }
 
     /// Set the zoom level directly (motor efferent command).
-    pub fn set_zoom(&mut self, level: f32) {
+    pub const fn set_zoom(&mut self, level: f32) {
         self.zoom = level.clamp(0.1, 10.0);
     }
 
@@ -135,13 +135,13 @@ impl Visual2DRenderer {
     }
 
     /// Enable or disable interactive mode (create/edit nodes)
-    pub fn set_interactive_mode(&mut self, enabled: bool) {
+    pub const fn set_interactive_mode(&mut self, enabled: bool) {
         self.interactive_mode = enabled;
     }
 
     /// Check if interactive mode is enabled
     #[must_use]
-    pub fn is_interactive(&self) -> bool {
+    pub const fn is_interactive(&self) -> bool {
         self.interactive_mode
     }
 
@@ -228,8 +228,8 @@ impl Visual2DRenderer {
     /// Convert world coordinates to screen coordinates
     pub(crate) fn world_to_screen(&self, world_pos: Position, screen_center: Pos2) -> Pos2 {
         Pos2::new(
-            screen_center.x + (world_pos.x * self.zoom) + self.camera_offset.x,
-            screen_center.y + (world_pos.y * self.zoom) + self.camera_offset.y,
+            world_pos.x.mul_add(self.zoom, screen_center.x) + self.camera_offset.x,
+            world_pos.y.mul_add(self.zoom, screen_center.y) + self.camera_offset.y,
         )
     }
 
@@ -242,7 +242,7 @@ impl Visual2DRenderer {
     }
 
     /// Reset camera to default position
-    pub fn reset_camera(&mut self) {
+    pub const fn reset_camera(&mut self) {
         self.camera_offset = Vec2::ZERO;
         self.zoom = 1.0;
     }

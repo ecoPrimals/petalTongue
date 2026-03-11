@@ -329,7 +329,7 @@ impl MultiModalRenderer for SystemMetricRenderer {
         if label.contains("CPU") {
             // CPU: Frequency mapping (200Hz at 0% to 2000Hz at 100%)
             Some(AudioRepresentation {
-                frequency: 200.0 + (value * 1800.0),
+                frequency: value.mul_add(1800.0, 200.0),
                 volume: 0.3,
                 waveform: crate::audio_pure_rust::Waveform::Sine,
                 duration: Duration::from_millis(200),

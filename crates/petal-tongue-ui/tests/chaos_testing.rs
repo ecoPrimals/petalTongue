@@ -61,7 +61,7 @@ impl Default for ChaosTestRunner {
 impl ChaosTestRunner {
     /// Create a new chaos test runner
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             results: Vec::new(),
         }

@@ -151,7 +151,7 @@ pub struct SelfAssessment {
 impl SelfAssessment {
     /// Check if everything is working
     #[must_use]
-    pub fn is_healthy(&self) -> bool {
+    pub const fn is_healthy(&self) -> bool {
         self.can_render && self.can_sense && self.is_complete_loop && self.substrate_responsive
     }
 
@@ -225,4 +225,121 @@ pub struct RenderingMetrics {
     pub frames_confirmed: u64,
     /// Number of user interactions detected
     pub user_interactions: u64,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn self_assessment_is_healthy_all_true() {
+        let assessment = SelfAssessment {
+            can_render: true,
+            frames_sent: 100,
+            can_sense: true,
+            frames_confirmed: 100,
+            is_complete_loop: true,
+            confirmation_rate: 1.0,
+            user_visibility: VisibilityState::Confirmed,
+            user_interactivity: InteractivityState::Active,
+            substrate_responsive: true,
+        };
+        assert!(assessment.is_healthy());
+    }
+
+    #[test]
+    fn self_assessment_is_healthy_false_when_cannot_render() {
+        let assessment = SelfAssessment {
+            can_render: false,
+            frames_sent: 0,
+            can_sense: true,
+            frames_confirmed: 0,
+            is_complete_loop: false,
+            confirmation_rate: 0.0,
+            user_visibility: VisibilityState::Unknown,
+            user_interactivity: InteractivityState::Unconfirmed,
+            substrate_responsive: true,
+        };
+        assert!(!assessment.is_healthy());
+    }
+
+    #[test]
+    fn self_assessment_health_percentage_full() {
+        let assessment = SelfAssessment {
+            can_render: true,
+            frames_sent: 100,
+            can_sense: true,
+            frames_confirmed: 100,
+            is_complete_loop: true,
+            confirmation_rate: 1.0,
+            user_visibility: VisibilityState::Confirmed,
+            user_interactivity: InteractivityState::Active,
+            substrate_responsive: true,
+        };
+        let pct = assessment.health_percentage();
+        // Max score: 20+20+30+10 + (1.0*0.2).min(20) = 80.2
+        assert!((79.0..=81.0).contains(&pct));
+    }
+
+    #[test]
+    fn self_assessment_health_percentage_zero() {
+        let assessment = SelfAssessment {
+            can_render: false,
+            frames_sent: 0,
+            can_sense: false,
+            frames_confirmed: 0,
+            is_complete_loop: false,
+            confirmation_rate: 0.0,
+            user_visibility: VisibilityState::Unknown,
+            user_interactivity: InteractivityState::Unconfirmed,
+            substrate_responsive: false,
+        };
+        let pct = assessment.health_percentage();
+        assert!(pct < 10.0);
+    }
+
+    #[test]
+    fn self_assessment_health_percentage_partial_confirmation() {
+        let assessment = SelfAssessment {
+            can_render: true,
+            frames_sent: 100,
+            can_sense: true,
+            frames_confirmed: 50,
+            is_complete_loop: true,
+            confirmation_rate: 0.5,
+            user_visibility: VisibilityState::Probable,
+            user_interactivity: InteractivityState::Idle,
+            substrate_responsive: true,
+        };
+        let pct = assessment.health_percentage();
+        assert!(pct > 70.0 && pct < 95.0);
+    }
+
+    #[test]
+    fn panel_id_custom_serialization() {
+        let custom = PanelId::Custom("my-panel".to_string());
+        let json = serde_json::to_string(&custom).expect("serialize");
+        let restored: PanelId = serde_json::from_str(&json).expect("deserialize");
+        assert!(matches!(restored, PanelId::Custom(s) if s == "my-panel"));
+    }
+
+    #[test]
+    fn rendering_metrics_default() {
+        let m = RenderingMetrics::default();
+        assert_eq!(m.commands_sent, 0);
+        assert_eq!(m.frames_confirmed, 0);
+        assert_eq!(m.user_interactions, 0);
+    }
+
+    #[test]
+    fn visibility_state_equality() {
+        assert_eq!(VisibilityState::Confirmed, VisibilityState::Confirmed);
+        assert_ne!(VisibilityState::Confirmed, VisibilityState::Unknown);
+    }
+
+    #[test]
+    fn interactivity_state_equality() {
+        assert_eq!(InteractivityState::Active, InteractivityState::Active);
+        assert_ne!(InteractivityState::Active, InteractivityState::Unconfirmed);
+    }
 }

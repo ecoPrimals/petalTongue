@@ -141,7 +141,7 @@ pub struct InteractionContext {
 impl InteractionContext {
     /// Create a minimal context for testing.
     #[must_use]
-    pub fn default_for_perspective(perspective_id: PerspectiveId) -> Self {
+    pub const fn default_for_perspective(perspective_id: PerspectiveId) -> Self {
         Self {
             perspective_id,
             viewport_center_x: 0.0,

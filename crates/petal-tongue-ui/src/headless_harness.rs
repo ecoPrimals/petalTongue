@@ -183,7 +183,7 @@ impl HeadlessHarness {
 
     /// The total number of frames executed so far.
     #[must_use]
-    pub fn frame_count(&self) -> u64 {
+    pub const fn frame_count(&self) -> u64 {
         self.app.frame_count()
     }
 
@@ -203,18 +203,18 @@ impl HeadlessHarness {
 
     /// Borrow the underlying app (for advanced queries).
     #[must_use]
-    pub fn app(&self) -> &PetalTongueApp {
+    pub const fn app(&self) -> &PetalTongueApp {
         &self.app
     }
 
     /// Mutably borrow the underlying app (for motor commands, etc).
-    pub fn app_mut(&mut self) -> &mut PetalTongueApp {
+    pub const fn app_mut(&mut self) -> &mut PetalTongueApp {
         &mut self.app
     }
 
     /// Borrow the egui context.
     #[must_use]
-    pub fn ctx(&self) -> &egui::Context {
+    pub const fn ctx(&self) -> &egui::Context {
         &self.ctx
     }
 

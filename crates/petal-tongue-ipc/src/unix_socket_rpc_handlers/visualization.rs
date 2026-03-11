@@ -8,7 +8,8 @@ use super::RpcHandlers;
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse, error_codes};
 use crate::visualization_handler::{
     DashboardRenderRequest, DismissRequest, ExportRequest, GrammarRenderRequest,
-    InteractionApplyRequest, StreamUpdateRequest, ValidateRequest, VisualizationRenderRequest,
+    InteractionApplyRequest, SessionStatusRequest, StreamUpdateRequest, ValidateRequest,
+    VisualizationRenderRequest,
 };
 use serde_json::Value;
 
@@ -370,7 +371,37 @@ pub fn handle_interact_perspectives(handlers: &RpcHandlers, id: Value) -> JsonRp
     JsonRpcResponse::success(id, serde_json::json!({ "perspectives": perspectives }))
 }
 
-/// Handle visualization.capabilities: return supported DataBinding variant names
+/// Handle visualization.session.status: return session health metrics
+pub fn handle_session_status(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
+    let params = match serde_json::from_value::<SessionStatusRequest>(req.params) {
+        Ok(p) => p,
+        Err(e) => {
+            return JsonRpcResponse::error(
+                req.id,
+                error_codes::INVALID_PARAMS,
+                format!("Invalid params: {e}"),
+            );
+        }
+    };
+    let response = handlers
+        .viz_state
+        .read()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .handle_session_status(&params);
+    let value = match serde_json::to_value(&response) {
+        Ok(v) => v,
+        Err(e) => {
+            return JsonRpcResponse::error(
+                req.id,
+                error_codes::INTERNAL_ERROR,
+                format!("Serialization failed: {e}"),
+            );
+        }
+    };
+    JsonRpcResponse::success(req.id, value)
+}
+
+/// Handle visualization.capabilities: return supported `DataBinding` variant names
 pub fn handle_capabilities(_handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
     let variants = [
         "TimeSeries",

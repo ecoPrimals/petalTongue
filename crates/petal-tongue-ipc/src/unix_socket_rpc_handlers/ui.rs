@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Handlers for ui.render and ui.display_status JSON-RPC methods.
+//! Handlers for ui.render and `ui.display_status` JSON-RPC methods.
 
 use super::RpcHandlers;
 use super::graph;
@@ -21,7 +21,7 @@ pub async fn handle_ui_render(handlers: &RpcHandlers, request: JsonRpcRequest) -
         .and_then(|v| v.as_str())
         .unwrap_or("graph");
 
-    let data = params.get("data").cloned().unwrap_or(json!({}));
+    let data = params.get("data").cloned().unwrap_or_else(|| json!({}));
 
     match content_type {
         "graph" => {
@@ -51,7 +51,7 @@ pub async fn handle_ui_render(handlers: &RpcHandlers, request: JsonRpcRequest) -
     }
 }
 
-/// Handle ui.display_status: update status for a primal
+/// Handle `ui.display_status`: update status for a primal
 pub fn handle_ui_display_status(
     _handlers: &RpcHandlers,
     request: JsonRpcRequest,
@@ -69,7 +69,7 @@ pub fn handle_ui_display_status(
         .and_then(|v| v.as_str())
         .unwrap_or("unknown");
 
-    let status = params.get("status").cloned().unwrap_or(json!({}));
+    let status = params.get("status").cloned().unwrap_or_else(|| json!({}));
 
     tracing::debug!("Status update for {}: {:?}", primal_name, status);
 

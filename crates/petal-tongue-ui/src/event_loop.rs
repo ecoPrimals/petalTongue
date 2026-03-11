@@ -9,6 +9,7 @@ use petal_tongue_core::{RenderingAwareness, SensorRegistry};
 use std::sync::{Arc, RwLock};
 
 /// Start the sensory event loop (background task)
+///
 /// NOTE: Currently disabled - egui already provides perfect sensory feedback!
 /// The bidirectional loop works via egui input events in the `update()` loop.
 /// This function is here for future async sensor support (camera, network sensors, etc.)

@@ -200,11 +200,10 @@ impl ToolPanel for GraphMetricsPlotter {
     }
 
     fn status_message(&self) -> Option<String> {
-        if let Some(last) = self.history.back() {
-            Some(format!("N:{} E:{}", last.node_count, last.edge_count))
-        } else {
-            Some("No data".to_string())
-        }
+        self.history.back().map_or_else(
+            || Some("No data".to_string()),
+            |last| Some(format!("N:{} E:{}", last.node_count, last.edge_count)),
+        )
     }
 }
 

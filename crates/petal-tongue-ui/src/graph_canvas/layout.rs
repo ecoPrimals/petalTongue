@@ -11,8 +11,8 @@ pub(super) fn world_to_screen(
     position: &Vec2,
     zoom: f32,
 ) -> Pos2 {
-    let screen_x = canvas_rect.center().x + (world_pos.x - position.x) * zoom;
-    let screen_y = canvas_rect.center().y + (world_pos.y - position.y) * zoom;
+    let screen_x = (world_pos.x - position.x).mul_add(zoom, canvas_rect.center().x);
+    let screen_y = (world_pos.y - position.y).mul_add(zoom, canvas_rect.center().y);
     Pos2::new(screen_x, screen_y)
 }
 

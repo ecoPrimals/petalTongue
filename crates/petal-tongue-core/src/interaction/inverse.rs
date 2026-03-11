@@ -70,7 +70,7 @@ pub struct NoOpInversePipeline {
 impl NoOpInversePipeline {
     /// Create a no-op pipeline for a given modality.
     #[must_use]
-    pub fn new(modality: OutputModality) -> Self {
+    pub const fn new(modality: OutputModality) -> Self {
         Self { modality }
     }
 }
@@ -104,6 +104,7 @@ impl InversePipeline for NoOpInversePipeline {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::interaction::target::DataObjectId;
     use std::time::Instant;
 
     #[test]
@@ -130,5 +131,46 @@ mod tests {
                 .resolve_to_data_id(&InteractionTarget::Nothing)
                 .is_none()
         );
+    }
+
+    #[test]
+    fn noop_pipeline_modality_gui() {
+        let pipeline = NoOpInversePipeline::new(OutputModality::Gui);
+        assert_eq!(pipeline.modality(), OutputModality::Gui);
+    }
+
+    #[test]
+    fn noop_pipeline_modality_tui() {
+        let pipeline = NoOpInversePipeline::new(OutputModality::Tui);
+        assert_eq!(pipeline.modality(), OutputModality::Tui);
+    }
+
+    #[test]
+    fn noop_pipeline_modality_audio() {
+        let pipeline = NoOpInversePipeline::new(OutputModality::Audio);
+        assert_eq!(pipeline.modality(), OutputModality::Audio);
+    }
+
+    #[test]
+    fn noop_pipeline_modality_png() {
+        let pipeline = NoOpInversePipeline::new(OutputModality::Png);
+        assert_eq!(pipeline.modality(), OutputModality::Png);
+    }
+
+    #[test]
+    fn noop_pipeline_modality_headless() {
+        let pipeline = NoOpInversePipeline::new(OutputModality::Headless);
+        assert_eq!(pipeline.modality(), OutputModality::Headless);
+    }
+
+    #[test]
+    fn noop_pipeline_resolve_with_data_row_target() {
+        let pipeline = NoOpInversePipeline::new(OutputModality::Json);
+        let target = InteractionTarget::DataRow {
+            data_id: DataObjectId::new("cap", serde_json::json!({"row": 0})),
+        };
+        assert!(pipeline.nearest_primitive(&target).is_none());
+        assert!(pipeline.data_at(&target).is_none());
+        assert!(pipeline.resolve_to_data_id(&target).is_none());
     }
 }

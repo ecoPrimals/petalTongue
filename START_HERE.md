@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: March 10, 2026
+**Updated**: March 11, 2026
 
 ---
 
@@ -43,7 +43,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace                          # 2,025 tests
+cargo test --workspace                          # 3,409 tests
 cargo clippy --workspace -- -D warnings         # Lint (clean)
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
@@ -78,7 +78,8 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 - `constants.rs` -- Centralized self-knowledge (name, ports, socket names)
 - `graph_engine.rs` -- Graph data model (nodes, edges, layout)
 - `config_system.rs` -- XDG-compliant configuration (env > file > defaults)
-- `data_channel.rs` -- DataChannel enum (TimeSeries, Distribution, Bar, Gauge)
+- `data_channel.rs` -- DataChannel enum (9 variants: TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter, Scatter3D, FieldMap)
+- `telemetry_adapter.rs` -- JSONL telemetry ingestion (hotSpring)
 
 ### IPC (`petal-tongue-ipc`)
 - `unix_socket_server.rs` -- JSON-RPC 2.0 server over Unix sockets
@@ -101,9 +102,13 @@ Architectural specifications in `specs/` -- read these before making major chang
 
 ## Cross-Primal Integration
 
-- **biomeOS** -- Topology visualization (JSON-RPC)
-- **healthSpring** -- Diagnostic data channels, clinical theme
-- **ToadStool** -- Display backend (tarpc, capability-discovered)
+- **biomeOS** -- Topology visualization (JSON-RPC), Neural API lifecycle
+- **healthSpring** -- Diagnostic data channels, clinical theme, streaming sessions
+- **hotSpring** -- JSONL telemetry ingestion to TimeSeries
+- **neuralSpring** -- Pipeline DAGs, diverging color scales
+- **wetSpring** -- Backpressure-aware streaming, Scatter 2D ordinations
+- **ludoSpring** -- 7 GameDataChannel types, 60 Hz sensor feed
+- **ToadStool** -- Display backend (tarpc, capability-discovered), provider registry
 - **barraCuda** -- GPU compute offload for heavy visualization
 - **Songbird** -- Discovery protocol
 

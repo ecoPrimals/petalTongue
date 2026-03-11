@@ -33,7 +33,7 @@ impl VisualizationCapability {
     ///
     /// This is what we query for in mDNS or capability registries.
     #[must_use]
-    pub fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         match self {
             Self::PrimalProvider => "visualization.primal-provider",
             Self::TopologyProvider => "visualization.topology-provider",
@@ -44,7 +44,7 @@ impl VisualizationCapability {
 
     /// Get all visualization capabilities
     #[must_use]
-    pub fn all() -> &'static [VisualizationCapability] {
+    pub const fn all() -> &'static [Self] {
         &[
             Self::PrimalProvider,
             Self::TopologyProvider,

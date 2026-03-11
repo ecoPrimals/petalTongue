@@ -38,7 +38,7 @@ use petal_tongue_core::{
 
 /// Device type to use for rendering (Unknown defaults to Desktop)
 #[must_use]
-pub(crate) fn effective_device_for_rendering(device_type: DeviceType) -> DeviceType {
+pub(crate) const fn effective_device_for_rendering(device_type: DeviceType) -> DeviceType {
     match device_type {
         DeviceType::Unknown => DeviceType::Desktop,
         other => other,
@@ -47,7 +47,7 @@ pub(crate) fn effective_device_for_rendering(device_type: DeviceType) -> DeviceT
 
 /// CLI-style status text for primal health
 #[must_use]
-pub(crate) fn format_cli_primal_status(health: PrimalHealthStatus) -> &'static str {
+pub(crate) const fn format_cli_primal_status(health: PrimalHealthStatus) -> &'static str {
     match health {
         PrimalHealthStatus::Healthy => "OK",
         PrimalHealthStatus::Warning => "WARN",
@@ -68,7 +68,7 @@ pub(crate) fn format_watch_health_summary(healthy: usize, total: usize) -> Strin
 
 /// Phone-style status icon for primal health
 #[must_use]
-pub(crate) fn format_phone_primal_icon(health: PrimalHealthStatus) -> &'static str {
+pub(crate) const fn format_phone_primal_icon(health: PrimalHealthStatus) -> &'static str {
     match health {
         PrimalHealthStatus::Healthy => "✅",
         PrimalHealthStatus::Warning => "⚠️",
@@ -79,7 +79,7 @@ pub(crate) fn format_phone_primal_icon(health: PrimalHealthStatus) -> &'static s
 
 /// Desktop/tablet status indicator (text, rgb color)
 #[must_use]
-pub(crate) fn format_desktop_primal_indicator(
+pub(crate) const fn format_desktop_primal_indicator(
     health: PrimalHealthStatus,
 ) -> (&'static str, [u8; 3]) {
     match health {
@@ -121,13 +121,13 @@ impl AdaptiveUIManager {
 
     /// Get current device type
     #[must_use]
-    pub fn device_type(&self) -> DeviceType {
+    pub const fn device_type(&self) -> DeviceType {
         self.capabilities.device_type
     }
 
     /// Get UI complexity level
     #[must_use]
-    pub fn ui_complexity(&self) -> UIComplexity {
+    pub const fn ui_complexity(&self) -> UIComplexity {
         self.capabilities.ui_complexity
     }
 
@@ -174,7 +174,7 @@ trait AdaptiveUIRenderer: Send + Sync {
 struct DesktopUIRenderer;
 
 impl DesktopUIRenderer {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self
     }
 }
@@ -247,7 +247,7 @@ impl AdaptiveUIRenderer for DesktopUIRenderer {
 struct PhoneUIRenderer;
 
 impl PhoneUIRenderer {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self
     }
 }
@@ -310,7 +310,7 @@ impl AdaptiveUIRenderer for PhoneUIRenderer {
 struct WatchUIRenderer;
 
 impl WatchUIRenderer {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self
     }
 }
@@ -365,7 +365,7 @@ impl AdaptiveUIRenderer for WatchUIRenderer {
 struct CliUIRenderer;
 
 impl CliUIRenderer {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self
     }
 }
@@ -405,7 +405,7 @@ impl AdaptiveUIRenderer for CliUIRenderer {
 struct TabletUIRenderer;
 
 impl TabletUIRenderer {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self
     }
 }
@@ -457,7 +457,7 @@ impl AdaptiveUIRenderer for TabletUIRenderer {
 struct TvUIRenderer;
 
 impl TvUIRenderer {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self
     }
 }

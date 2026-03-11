@@ -1,8 +1,8 @@
 # Next Evolution Paths for petalTongue
 
-**Current State**: v1.6.0 — Grammar of Graphics + DataBinding compiler + Dashboard + Scenario loader  
+**Current State**: v1.6.2 — Spring absorption + backpressure + pipeline DAG + JSONL telemetry  
 **Grade**: A+ (10/10)  
-**Date**: March 10, 2026 (header updated; historical content below from Jan 10, 2026)  
+**Date**: March 11, 2026 (header updated; historical content below from Jan 10, 2026)  
 
 ## Recently Completed ✅
 

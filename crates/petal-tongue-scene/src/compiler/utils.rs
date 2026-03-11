@@ -10,7 +10,7 @@ use crate::grammar::{GrammarExpr, VariableRole};
 use crate::primitive::Primitive;
 
 /// Get the x field name from variable bindings.
-pub(crate) fn x_field(expr: &GrammarExpr) -> Option<&str> {
+pub fn x_field(expr: &GrammarExpr) -> Option<&str> {
     expr.variables
         .iter()
         .find(|v| v.role == VariableRole::X)
@@ -18,7 +18,7 @@ pub(crate) fn x_field(expr: &GrammarExpr) -> Option<&str> {
 }
 
 /// Get the y field name from variable bindings.
-pub(crate) fn y_field(expr: &GrammarExpr) -> Option<&str> {
+pub fn y_field(expr: &GrammarExpr) -> Option<&str> {
     expr.variables
         .iter()
         .find(|v| v.role == VariableRole::Y)
@@ -26,7 +26,7 @@ pub(crate) fn y_field(expr: &GrammarExpr) -> Option<&str> {
 }
 
 /// Extract a numeric value from JSON for a given key.
-pub(crate) fn get_number(obj: &serde_json::Map<String, Value>, key: &str) -> Option<f64> {
+pub fn get_number(obj: &serde_json::Map<String, Value>, key: &str) -> Option<f64> {
     obj.get(key).and_then(|v| match v {
         Value::Number(n) => n.as_f64(),
         Value::String(s) => s.parse().ok(),
@@ -37,7 +37,7 @@ pub(crate) fn get_number(obj: &serde_json::Map<String, Value>, key: &str) -> Opt
 /// Partition data rows by a JSON field value, preserving insertion order.
 /// Uses `Arc<str>` for facet keys to avoid cloning when the same key appears
 /// in multiple rows (zero-copy sharing across groups).
-pub(crate) fn partition_by_field(data: &[Value], field: &str) -> Vec<(Arc<str>, Vec<Value>)> {
+pub fn partition_by_field(data: &[Value], field: &str) -> Vec<(Arc<str>, Vec<Value>)> {
     let mut groups: BTreeMap<Arc<str>, Vec<Value>> = BTreeMap::new();
     for row in data {
         let key: Arc<str> = row.as_object().and_then(|o| o.get(field)).map_or_else(
@@ -53,7 +53,7 @@ pub(crate) fn partition_by_field(data: &[Value], field: &str) -> Vec<(Arc<str>, 
 }
 
 /// Offset a primitive's position by (dx, dy).
-pub(crate) fn offset_primitive(p: &mut Primitive, dx: f64, dy: f64) {
+pub fn offset_primitive(p: &mut Primitive, dx: f64, dy: f64) {
     match p {
         Primitive::Point { x, y, .. }
         | Primitive::Text { x, y, .. }

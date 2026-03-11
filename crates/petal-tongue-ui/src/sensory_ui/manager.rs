@@ -50,7 +50,7 @@ impl SensoryUIManager {
 
     /// Get current UI complexity
     #[must_use]
-    pub fn ui_complexity(&self) -> SensoryUIComplexity {
+    pub const fn ui_complexity(&self) -> SensoryUIComplexity {
         self.ui_complexity
     }
 

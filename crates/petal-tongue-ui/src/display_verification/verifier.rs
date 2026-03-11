@@ -14,7 +14,7 @@ use super::types::{DisplayTopology, DisplayVerification, ViewerLocation};
 
 /// Map seconds since last interaction to interactivity state
 #[must_use]
-pub(crate) fn interactivity_state_from_seconds(secs: f32) -> InteractivityState {
+pub fn interactivity_state_from_seconds(secs: f32) -> InteractivityState {
     if secs < 5.0 {
         InteractivityState::Active
     } else if secs < 30.0 {
@@ -28,7 +28,7 @@ pub(crate) fn interactivity_state_from_seconds(secs: f32) -> InteractivityState 
 
 /// Human-readable topology description for status messages
 #[must_use]
-pub(crate) fn topology_description(topology: &DisplayTopology) -> &'static str {
+pub const fn topology_description(topology: &DisplayTopology) -> &'static str {
     match topology {
         DisplayTopology::DirectLocal => "Direct local display",
         DisplayTopology::Forwarded => "Forwarded display",
@@ -40,7 +40,7 @@ pub(crate) fn topology_description(topology: &DisplayTopology) -> &'static str {
 
 /// Status message when user is actively interacting
 #[must_use]
-pub(crate) fn format_active_interaction_status(topology: &DisplayTopology) -> String {
+pub fn format_active_interaction_status(topology: &DisplayTopology) -> String {
     match topology {
         DisplayTopology::DirectLocal => {
             "Direct local display - user actively interacting".to_string()
@@ -62,7 +62,7 @@ pub(crate) fn format_active_interaction_status(topology: &DisplayTopology) -> St
 
 /// Status message for recent interaction (5-30s ago)
 #[must_use]
-pub(crate) fn format_recent_interaction_status(topology: &DisplayTopology, secs: f32) -> String {
+pub fn format_recent_interaction_status(topology: &DisplayTopology, secs: f32) -> String {
     format!(
         "{} - recent interaction ({secs:.0}s ago) suggests viewer can still see output",
         topology_description(topology)
@@ -71,7 +71,7 @@ pub(crate) fn format_recent_interaction_status(topology: &DisplayTopology, secs:
 
 /// Suggested action when no interaction for 5+ minutes
 #[must_use]
-pub(crate) fn suggested_action_for_prolonged_idle(secs: f32) -> Option<String> {
+pub fn suggested_action_for_prolonged_idle(secs: f32) -> Option<String> {
     if secs > 300.0 {
         Some(
             "No interaction for 5+ minutes. If viewing remotely, verify connection and window visibility.".to_string()

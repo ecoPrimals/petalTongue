@@ -138,7 +138,7 @@ pub struct ProprioceptionPanelFactory;
 impl ProprioceptionPanelFactory {
     /// Create a new factory for proprioception (self-awareness) panels
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self
     }
 }

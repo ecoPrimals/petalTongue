@@ -12,16 +12,18 @@ use petal_tongue_scene::tufte::{ChartjunkDetection, DataInkRatio, TufteConstrain
 use super::modality;
 use super::stream::{apply_operation, binding_id};
 use super::types::{
-    ConstraintResult, DashboardRenderRequest, DashboardRenderResponse, DismissRequest,
-    DismissResponse, ExportRequest, ExportResponse, GrammarRenderRequest, GrammarRenderResponse,
-    StreamUpdateRequest, StreamUpdateResponse, UiConfig, ValidateRequest, ValidateResponse,
-    VisualizationRenderRequest, VisualizationRenderResponse,
+    BackpressureConfig, ConstraintResult, DashboardRenderRequest, DashboardRenderResponse,
+    DismissRequest, DismissResponse, ExportRequest, ExportResponse, GrammarRenderRequest,
+    GrammarRenderResponse, SessionStatusRequest, SessionStatusResponse, StreamUpdateRequest,
+    StreamUpdateResponse, UiConfig, ValidateRequest, ValidateResponse, VisualizationRenderRequest,
+    VisualizationRenderResponse,
 };
 
 /// Manages active visualization sessions from springs/primals
 pub struct VisualizationState {
     sessions: std::collections::HashMap<String, RenderSession>,
     grammar_scenes: std::collections::HashMap<String, petal_tongue_scene::scene_graph::SceneGraph>,
+    backpressure_config: BackpressureConfig,
 }
 
 /// A single visualization session with its bindings and metadata
@@ -38,6 +40,14 @@ pub struct RenderSession {
     pub ui_config: Option<UiConfig>,
     /// Last update timestamp
     pub updated_at: std::time::Instant,
+    /// Total stream updates received
+    pub frame_count: u64,
+    /// Timestamps of recent updates for rate calculation
+    recent_updates: std::collections::VecDeque<std::time::Instant>,
+    /// Whether backpressure is currently active
+    pub backpressure_active: bool,
+    /// When backpressure cooldown ends
+    cooldown_until: Option<std::time::Instant>,
 }
 
 impl VisualizationState {
@@ -47,7 +57,15 @@ impl VisualizationState {
         Self {
             sessions: std::collections::HashMap::new(),
             grammar_scenes: std::collections::HashMap::new(),
+            backpressure_config: BackpressureConfig::default(),
         }
+    }
+
+    /// Create with a custom backpressure configuration.
+    #[must_use]
+    pub const fn with_backpressure(mut self, config: BackpressureConfig) -> Self {
+        self.backpressure_config = config;
+        self
     }
 
     /// Handle a visualization.render request, creating or replacing a session
@@ -65,6 +83,10 @@ impl VisualizationState {
                 domain: req.domain.clone(),
                 ui_config: req.ui_config.clone(),
                 updated_at: std::time::Instant::now(),
+                frame_count: 0,
+                recent_updates: std::collections::VecDeque::with_capacity(128),
+                backpressure_active: false,
+                cooldown_until: None,
             },
         );
         // Auto-compile DataBindings to scene graphs via Grammar of Graphics
@@ -85,33 +107,122 @@ impl VisualizationState {
         }
     }
 
-    /// Handle a visualization.render.stream incremental update
+    /// Handle a visualization.render.stream incremental update.
+    ///
+    /// Enforces server-side backpressure: when a session exceeds the configured
+    /// update rate, `backpressure_active` is set in the response so springs can
+    /// throttle. Updates are still accepted during backpressure to avoid data loss.
     pub fn handle_stream_update(&mut self, req: StreamUpdateRequest) -> StreamUpdateResponse {
-        let accepted = if let Some(session) = self.sessions.get_mut(&req.session_id) {
+        let max_rate = self.backpressure_config.max_updates_per_sec;
+        let cooldown = self.backpressure_config.cooldown;
+        let burst_tolerance = self.backpressure_config.burst_tolerance;
+
+        let (accepted, bp_active) = if let Some(session) = self.sessions.get_mut(&req.session_id) {
+            let now = std::time::Instant::now();
+
+            // Check cooldown
+            if let Some(until) = session.cooldown_until {
+                if now < until {
+                    // Still in cooldown — accept but signal backpressure
+                    if let Some(binding) = session
+                        .bindings
+                        .iter_mut()
+                        .find(|b| binding_id(b) == req.binding_id)
+                    {
+                        apply_operation(binding, &req.operation);
+                        session.updated_at = now;
+                        session.frame_count += 1;
+                        return StreamUpdateResponse {
+                            session_id: req.session_id,
+                            binding_id: req.binding_id,
+                            accepted: true,
+                            backpressure_active: true,
+                        };
+                    }
+                    return StreamUpdateResponse {
+                        session_id: req.session_id,
+                        binding_id: req.binding_id,
+                        accepted: false,
+                        backpressure_active: true,
+                    };
+                }
+                session.cooldown_until = None;
+                session.backpressure_active = false;
+            }
+
+            // Sliding window: remove entries older than 1 second
+            let one_sec_ago = now
+                .checked_sub(std::time::Duration::from_secs(1))
+                .unwrap_or(now);
+            while session
+                .recent_updates
+                .front()
+                .is_some_and(|&t| t < one_sec_ago)
+            {
+                session.recent_updates.pop_front();
+            }
+
+            // Check rate
+            let rate_exceeded =
+                session.recent_updates.len() as u32 >= max_rate.saturating_add(burst_tolerance);
+            if rate_exceeded && !session.backpressure_active {
+                session.backpressure_active = true;
+                session.cooldown_until = Some(now + cooldown);
+            }
+
+            session.recent_updates.push_back(now);
+
             if let Some(binding) = session
                 .bindings
                 .iter_mut()
                 .find(|b| binding_id(b) == req.binding_id)
             {
                 apply_operation(binding, &req.operation);
-                session.updated_at = std::time::Instant::now();
-                true
+                session.updated_at = now;
+                session.frame_count += 1;
+                (true, session.backpressure_active)
             } else {
-                false
+                (false, session.backpressure_active)
             }
         } else {
-            false
+            (false, false)
         };
         StreamUpdateResponse {
             session_id: req.session_id,
             binding_id: req.binding_id,
             accepted,
+            backpressure_active: bp_active,
         }
+    }
+
+    /// Handle `visualization.session.status`: return session health metrics.
+    #[must_use]
+    pub fn handle_session_status(&self, req: &SessionStatusRequest) -> SessionStatusResponse {
+        self.sessions.get(&req.session_id).map_or_else(
+            || SessionStatusResponse {
+                session_id: req.session_id.clone(),
+                exists: false,
+                frame_count: 0,
+                last_update_secs: 0.0,
+                backpressure_active: false,
+                binding_count: 0,
+                domain: None,
+            },
+            |session| SessionStatusResponse {
+                session_id: req.session_id.clone(),
+                exists: true,
+                frame_count: session.frame_count,
+                last_update_secs: session.updated_at.elapsed().as_secs_f64(),
+                backpressure_active: session.backpressure_active,
+                binding_count: session.bindings.len(),
+                domain: session.domain.clone(),
+            },
+        )
     }
 
     /// Get all active sessions (for rendering)
     #[must_use]
-    pub fn sessions(&self) -> &std::collections::HashMap<String, RenderSession> {
+    pub const fn sessions(&self) -> &std::collections::HashMap<String, RenderSession> {
         &self.sessions
     }
 
@@ -215,6 +326,7 @@ impl VisualizationState {
     }
 
     /// Handle `visualization.validate`: validate grammar + data against Tufte constraints.
+    #[must_use]
     pub fn handle_validate(&self, req: &ValidateRequest) -> ValidateResponse {
         let compiler = GrammarCompiler;
         let scene = compiler.compile(&req.grammar, &req.data);
@@ -249,6 +361,7 @@ impl VisualizationState {
     }
 
     /// Handle `visualization.export`: export a session to the requested format.
+    #[must_use]
     pub fn handle_export(&self, req: ExportRequest) -> ExportResponse {
         if let Some(scene) = self.grammar_scenes.get(&req.session_id) {
             let (output, format) = modality::compile_modality(scene, &req.format);
@@ -366,7 +479,7 @@ mod tests {
         let req = VisualizationRenderRequest {
             session_id: "s1".to_string(),
             title: "Dashboard".to_string(),
-            bindings: bindings.clone(),
+            bindings,
             thresholds: vec![],
             domain: Some("health".to_string()),
             ui_config: None,
@@ -507,8 +620,8 @@ mod tests {
         ];
         let req = GrammarRenderRequest {
             session_id: "gram-s1".to_string(),
-            grammar: grammar.clone(),
-            data: data.clone(),
+            grammar,
+            data,
             modality: "svg".to_string(),
             validate_tufte: true,
             domain: None,

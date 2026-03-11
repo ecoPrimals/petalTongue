@@ -71,12 +71,12 @@ impl GraphCanvas {
 
     /// Get reference to current graph
     #[must_use]
-    pub fn graph(&self) -> &Graph {
+    pub const fn graph(&self) -> &Graph {
         &self.graph
     }
 
     /// Get mutable reference to current graph
-    pub fn graph_mut(&mut self) -> &mut Graph {
+    pub const fn graph_mut(&mut self) -> &mut Graph {
         &mut self.graph
     }
 
@@ -95,7 +95,7 @@ impl GraphCanvas {
         if response.hovered() {
             let scroll_delta = ui.input(|i| i.smooth_scroll_delta.y);
             if scroll_delta != 0.0 {
-                self.zoom *= 1.0 + scroll_delta * 0.001;
+                self.zoom *= scroll_delta.mul_add(0.001, 1.0);
                 self.zoom = self.zoom.clamp(0.1, 5.0);
             }
         }
@@ -261,8 +261,8 @@ impl GraphCanvas {
 
     /// Convert world coordinates to screen coordinates
     fn world_to_screen(&self, world_pos: Pos2, rect: Rect) -> Pos2 {
-        let screen_x = rect.left() + (world_pos.x * self.zoom) + self.pan.x;
-        let screen_y = rect.top() + (world_pos.y * self.zoom) + self.pan.y;
+        let screen_x = world_pos.x.mul_add(self.zoom, rect.left()) + self.pan.x;
+        let screen_y = world_pos.y.mul_add(self.zoom, rect.top()) + self.pan.y;
         Pos2::new(screen_x, screen_y)
     }
 
@@ -286,7 +286,7 @@ impl GraphCanvas {
 
     /// Get selected nodes
     #[must_use]
-    pub fn selected_nodes(&self) -> &HashSet<String> {
+    pub const fn selected_nodes(&self) -> &HashSet<String> {
         &self.selected_nodes
     }
 
@@ -296,7 +296,7 @@ impl GraphCanvas {
     }
 
     /// Reset view
-    pub fn reset_view(&mut self) {
+    pub const fn reset_view(&mut self) {
         self.pan = Vec2::ZERO;
         self.zoom = 1.0;
     }

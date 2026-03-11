@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Stream update utilities for DataBinding.
+//! Stream update utilities for `DataBinding`.
 //!
 //! Provides `binding_id` and `apply_operation` for incremental updates
-//! to visualization bindings (TimeSeries append, Gauge set_value, etc.).
+//! to visualization bindings (`TimeSeries` append, Gauge `set_value`, etc.).
 
 use petal_tongue_core::DataBinding;
 use tracing::warn;

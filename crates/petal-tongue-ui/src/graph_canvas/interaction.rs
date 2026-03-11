@@ -11,7 +11,7 @@ use super::{DragState, EdgeDrawState, GraphCanvas};
 
 /// Hit-test: find node at world position. Returns first matching node ID.
 #[must_use]
-pub(crate) fn hit_test_nodes(
+pub fn hit_test_nodes(
     world_x: f32,
     world_y: f32,
     nodes: &[GraphNode],
@@ -30,7 +30,7 @@ pub(crate) fn hit_test_nodes(
 
 /// Nodes whose screen positions fall inside the selection box.
 #[must_use]
-pub(crate) fn nodes_in_rect(
+pub fn nodes_in_rect(
     box_min: [f32; 2],
     box_max: [f32; 2],
     nodes: &[GraphNode],
@@ -49,8 +49,8 @@ pub(crate) fn nodes_in_rect(
 
     let mut result = Vec::new();
     for node in nodes {
-        let screen_x = center_x + (node.position.x - camera_pos.x) * zoom;
-        let screen_y = center_y + (node.position.y - camera_pos.y) * zoom;
+        let screen_x = (node.position.x - camera_pos.x).mul_add(zoom, center_x);
+        let screen_y = (node.position.y - camera_pos.y).mul_add(zoom, center_y);
         if screen_x >= min_x && screen_x <= max_x && screen_y >= min_y && screen_y <= max_y {
             result.push(node.id.clone());
         }
@@ -60,8 +60,8 @@ pub(crate) fn nodes_in_rect(
 
 /// Compute new zoom from scroll delta.
 #[must_use]
-pub(crate) fn compute_zoom(current_zoom: f32, scroll_delta: f32) -> f32 {
-    let zoom_factor = 1.0 + scroll_delta * 0.001;
+pub fn compute_zoom(current_zoom: f32, scroll_delta: f32) -> f32 {
+    let zoom_factor = scroll_delta.mul_add(0.001, 1.0);
     (current_zoom * zoom_factor).clamp(0.25, 3.0)
 }
 

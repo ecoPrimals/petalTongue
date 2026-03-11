@@ -10,7 +10,7 @@ use super::types::{ColorScheme, TrafficFlow, TrafficMetrics};
 /// Bezier control points for flow curve from (from_x, from_y) to (to_x, to_y).
 /// Returns (ctrl1, ctrl2) as [x, y] arrays.
 #[must_use]
-pub(crate) fn bezier_control_points(
+pub fn bezier_control_points(
     from_x: f32,
     from_y: f32,
     to_x: f32,
@@ -26,7 +26,7 @@ pub(crate) fn bezier_control_points(
 /// Compute lane positions for primals in the traffic view.
 /// Returns for each index: (y, left_center_x, right_center_x).
 #[must_use]
-pub(crate) fn primal_lane_layout(
+pub fn primal_lane_layout(
     primal_count: usize,
     rect_min_x: f32,
     rect_min_y: f32,
@@ -38,12 +38,12 @@ pub(crate) fn primal_lane_layout(
     if primal_count == 0 {
         return Vec::new();
     }
-    let node_height = (rect_max_y - rect_min_y - 2.0 * margin) / primal_count as f32;
+    let node_height = 2.0f32.mul_add(-margin, rect_max_y - rect_min_y) / primal_count as f32;
     let left_center_x = rect_min_x + margin + node_width / 2.0;
     let right_center_x = rect_max_x - margin - node_width / 2.0;
     (0..primal_count)
         .map(|i| {
-            let y = rect_min_y + margin + node_height * (i as f32 + 0.5);
+            let y = node_height.mul_add(i as f32 + 0.5, rect_min_y + margin);
             (y, left_center_x, right_center_x)
         })
         .collect()
@@ -109,7 +109,7 @@ impl TrafficView {
 
     /// Get number of flows (for testing)
     #[must_use]
-    pub fn flow_count(&self) -> usize {
+    pub const fn flow_count(&self) -> usize {
         self.flows.len()
     }
 
@@ -122,7 +122,7 @@ impl TrafficView {
     /// Get show_metrics (for testing)
     #[cfg(test)]
     #[must_use]
-    pub fn show_metrics(&self) -> bool {
+    pub const fn show_metrics(&self) -> bool {
         self.show_metrics
     }
 
@@ -145,8 +145,8 @@ impl TrafficView {
                 to: edge.to.as_str().to_string(),
                 metrics: TrafficMetrics {
                     bytes_per_second: 1000 + (edge.from.as_str().len() * 100) as u64,
-                    requests_per_second: 10.0 + (edge.to.as_str().len() as f64 * 0.5),
-                    avg_latency_ms: 5.0 + (edge.from.as_str().len() as f64 * 0.2),
+                    requests_per_second: (edge.to.as_str().len() as f64).mul_add(0.5, 10.0),
+                    avg_latency_ms: (edge.from.as_str().len() as f64).mul_add(0.2, 5.0),
                     error_rate: 0.01, // 1% default
                 },
                 color: Self::calculate_flow_color(&TrafficMetrics::default(), ColorScheme::Volume),
@@ -199,7 +199,7 @@ impl TrafficView {
             .unwrap_or(1);
 
         let normalized = metrics.bytes_per_second as f32 / max_volume as f32;
-        self.min_flow_width + (self.max_flow_width - self.min_flow_width) * normalized
+        (self.max_flow_width - self.min_flow_width).mul_add(normalized, self.min_flow_width)
     }
 
     /// Render the traffic view
@@ -411,8 +411,10 @@ impl TrafficView {
             let mt2 = mt * mt;
             let mt3 = mt2 * mt;
 
-            let x = mt3 * start.x + 3.0 * mt2 * t * ctrl1.x + 3.0 * mt * t2 * ctrl2.x + t3 * end.x;
-            let y = mt3 * start.y + 3.0 * mt2 * t * ctrl1.y + 3.0 * mt * t2 * ctrl2.y + t3 * end.y;
+            let x = (3.0 * mt * t2).mul_add(ctrl2.x, mt3 * start.x + 3.0 * mt2 * t * ctrl1.x)
+                + t3 * end.x;
+            let y = (3.0 * mt * t2).mul_add(ctrl2.y, mt3 * start.y + 3.0 * mt2 * t * ctrl1.y)
+                + t3 * end.y;
 
             points.push(Pos2::new(x, y));
         }
@@ -521,8 +523,8 @@ mod tests {
         let (ctrl1, ctrl2) = bezier_control_points(400.0, 50.0, 100.0, 100.0);
         let dx: f32 = 100.0 - 400.0;
         let offset = dx.abs() * 0.3;
-        assert!((ctrl1[0] - (400.0 + dx.signum() * offset)).abs() < f32::EPSILON);
-        assert!((ctrl2[0] - (100.0 - dx.signum() * offset)).abs() < f32::EPSILON);
+        assert!((ctrl1[0] - dx.signum().mul_add(offset, 400.0)).abs() < f32::EPSILON);
+        assert!((ctrl2[0] - dx.signum().mul_add(-offset, 100.0)).abs() < f32::EPSILON);
     }
 
     #[test]

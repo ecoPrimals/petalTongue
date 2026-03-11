@@ -17,7 +17,7 @@ pub struct SvgCompiler;
 impl SvgCompiler {
     /// Create a new SVG compiler.
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self
     }
 }
@@ -204,7 +204,7 @@ impl SvgCompiler {
                 let large = (end_angle - start_angle).abs() > std::f64::consts::PI;
                 let d = format!(
                     "M {x1} {y1} A {radius} {radius} 0 {} 1 {x2} {y2}",
-                    large as i32
+                    i32::from(large)
                 );
                 let fill_attr = fill
                     .map(Self::color_attr)

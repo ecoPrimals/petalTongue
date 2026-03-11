@@ -35,7 +35,7 @@ pub struct AwakeningAudio {
 impl AwakeningAudio {
     /// Create new awakening audio generator
     #[must_use]
-    pub fn new(sample_rate: u32) -> Self {
+    pub const fn new(sample_rate: u32) -> Self {
         Self {
             sample_rate,
             time: 0.0,
@@ -475,5 +475,40 @@ mod tests {
         for &s in &samples {
             assert!((-1.0..=1.0).contains(&s));
         }
+    }
+
+    #[test]
+    fn test_audio_layer_enum_variants() {
+        assert_eq!(AudioLayer::SignatureTone, AudioLayer::SignatureTone);
+        assert_eq!(AudioLayer::EmbeddedMusic, AudioLayer::EmbeddedMusic);
+        assert_eq!(AudioLayer::NatureSounds, AudioLayer::NatureSounds);
+        assert_eq!(AudioLayer::DiscoveryChimes, AudioLayer::DiscoveryChimes);
+        assert_ne!(AudioLayer::SignatureTone, AudioLayer::NatureSounds);
+    }
+
+    #[test]
+    fn test_audio_layer_debug_clone() {
+        let layer = AudioLayer::SignatureTone;
+        let cloned = layer;
+        assert_eq!(layer, cloned);
+        let debug_str = format!("{layer:?}");
+        assert!(debug_str.contains("SignatureTone"));
+    }
+
+    #[test]
+    fn test_awakening_audio_time_advances() {
+        let mut audio = AwakeningAudio::new(48000);
+        let _ = audio.generate_signature_tone(0.5);
+        let _ = audio.generate_heartbeat(0.5);
+        let samples = audio.generate_discovery_chime(2);
+        assert!(!samples.is_empty());
+    }
+
+    #[test]
+    fn test_mix_layers_single_layer() {
+        let layer = vec![0.5, 0.3, 0.7];
+        let mixed = mix_layers(vec![layer]);
+        assert_eq!(mixed.len(), 3);
+        assert!((mixed[0] - 0.5).abs() < 0.01);
     }
 }

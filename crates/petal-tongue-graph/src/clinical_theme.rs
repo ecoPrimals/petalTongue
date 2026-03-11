@@ -26,7 +26,7 @@ pub const TEXT_DIM: Color32 = Color32::from_rgb(128, 128, 160);
 
 /// Map a health score (0..100) to a clinical color.
 #[must_use]
-pub fn health_color(health: u8) -> Color32 {
+pub const fn health_color(health: u8) -> Color32 {
     if health >= 90 {
         HEALTHY
     } else if health >= 50 {
@@ -67,5 +67,33 @@ mod tests {
         assert_ne!(HEALTHY, CRITICAL);
         assert_ne!(WARNING, CRITICAL);
         assert_ne!(INFO, TEXT_PRIMARY);
+    }
+
+    #[test]
+    fn test_health_color_boundary_89_90() {
+        assert_eq!(health_color(89), WARNING);
+        assert_eq!(health_color(90), HEALTHY);
+    }
+
+    #[test]
+    fn test_health_color_boundary_49_50() {
+        assert_eq!(health_color(49), CRITICAL);
+        assert_eq!(health_color(50), WARNING);
+    }
+
+    #[test]
+    fn test_health_color_all_constants_used() {
+        let healthy = health_color(100);
+        let warning = health_color(70);
+        let critical = health_color(0);
+        assert_eq!(healthy, HEALTHY);
+        assert_eq!(warning, WARNING);
+        assert_eq!(critical, CRITICAL);
+    }
+
+    #[test]
+    fn test_theme_background_colors() {
+        assert_ne!(BG_PANEL, BG_CARD);
+        assert_ne!(TEXT_PRIMARY, TEXT_DIM);
     }
 }

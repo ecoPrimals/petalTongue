@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Curve types: FunctionPlot (y=f(x)) and ParametricCurve ((x(t), y(t))).
+//! Curve types: `FunctionPlot` (y=f(x)) and `ParametricCurve` ((x(t), y(t))).
 
 use serde::{Deserialize, Serialize};
 
@@ -51,7 +51,8 @@ impl FunctionPlot {
     }
 
     /// Create from pre-computed points.
-    pub fn from_points(points: Vec<[f64; 2]>, axes: &Axes, stroke: StrokeStyle) -> Self {
+    #[must_use]
+    pub const fn from_points(points: Vec<[f64; 2]>, axes: &Axes, stroke: StrokeStyle) -> Self {
         let (x_min, x_max, _) = axes.x_range;
         let (y_min, y_max, _) = axes.y_range;
         Self {
@@ -71,8 +72,8 @@ impl FunctionPlot {
         let (y_min, y_max) = self.y_range;
         let tx = (x - x_min) / (x_max - x_min);
         let ty = (y - y_min) / (y_max - y_min);
-        let sx = self.origin.0 + tx * self.width;
-        let sy = self.origin.1 - ty * self.height;
+        let sx = tx.mul_add(self.width, self.origin.0);
+        let sy = ty.mul_add(-self.height, self.origin.1);
         (sx, sy)
     }
 }
@@ -119,7 +120,7 @@ impl ParametricCurve {
         let (t0, t1) = t_range;
         let mut points = Vec::with_capacity(num_samples);
         for i in 0..num_samples {
-            let t = t0 + (t1 - t0) * (i as f64 / (num_samples - 1) as f64);
+            let t = (t1 - t0).mul_add(i as f64 / (num_samples - 1) as f64, t0);
             points.push([x_fn(t), y_fn(t)]);
         }
         Self {
@@ -138,5 +139,101 @@ impl MathObject for ParametricCurve {
             closed: self.closed,
             data_id: None,
         }]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::primitive::StrokeStyle;
+
+    #[test]
+    fn function_plot_sample_linear() {
+        let axes = Axes::default();
+        let plot = FunctionPlot::sample(&axes, |x| x, StrokeStyle::default());
+        assert_eq!(plot.points.len(), 200);
+        assert!((plot.points[0][1] - plot.points[0][0]).abs() < 1e-6);
+        assert!((plot.points[199][1] - plot.points[199][0]).abs() < 1e-6);
+    }
+
+    #[test]
+    fn function_plot_sample_constant() {
+        let axes = Axes::default();
+        let plot = FunctionPlot::sample(&axes, |_| 42.0, StrokeStyle::default());
+        assert_eq!(plot.points.len(), 200);
+        for pt in &plot.points {
+            assert!((pt[1] - 42.0).abs() < 1e-6);
+        }
+    }
+
+    #[test]
+    fn parametric_curve_sample_line() {
+        let curve =
+            ParametricCurve::sample(|t| t, |t| t * 2.0, (0.0, 1.0), 11, StrokeStyle::default());
+        assert_eq!(curve.points.len(), 11);
+        assert!((curve.points[0][0] - 0.0).abs() < 1e-10);
+        assert!((curve.points[10][0] - 1.0).abs() < 1e-10);
+        assert!((curve.points[0][1] - 0.0).abs() < 1e-10);
+        assert!((curve.points[10][1] - 2.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn parametric_curve_sample_circle() {
+        let curve = ParametricCurve::sample(
+            f64::cos,
+            f64::sin,
+            (0.0, std::f64::consts::TAU),
+            64,
+            StrokeStyle::default(),
+        );
+        assert_eq!(curve.points.len(), 64);
+        let first = curve.points[0];
+        let last = curve.points[63];
+        assert!((first[0] - last[0]).abs() < 0.1);
+        assert!((first[1] - last[1]).abs() < 0.1);
+    }
+
+    #[test]
+    fn function_plot_from_points_to_primitives() {
+        let axes = Axes::default();
+        let points = vec![[0.0, 0.0], [1.0, 1.0], [2.0, 4.0]];
+        let plot = FunctionPlot::from_points(points, &axes, StrokeStyle::default());
+        let prims = plot.to_primitives();
+        assert_eq!(prims.len(), 1);
+        if let Primitive::Line { points: pts, .. } = &prims[0] {
+            assert_eq!(pts.len(), 3);
+        }
+    }
+
+    #[test]
+    fn parametric_curve_to_primitives_closed() {
+        let curve = ParametricCurve {
+            points: vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]],
+            stroke: StrokeStyle::default(),
+            closed: true,
+        };
+        let prims = curve.to_primitives();
+        assert_eq!(prims.len(), 1);
+        if let Primitive::Line { closed, .. } = &prims[0] {
+            assert!(*closed);
+        }
+    }
+
+    #[test]
+    fn function_plot_serialization_roundtrip() {
+        let axes = Axes::default();
+        let plot = FunctionPlot::sample(&axes, |x| x * x, StrokeStyle::default());
+        let json = serde_json::to_string(&plot).expect("serialize");
+        let restored: FunctionPlot = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(plot.points.len(), restored.points.len());
+        assert!((plot.x_range.0 - restored.x_range.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn parametric_curve_serialization_roundtrip() {
+        let curve = ParametricCurve::sample(|t| t, |t| t, (0.0, 1.0), 5, StrokeStyle::default());
+        let json = serde_json::to_string(&curve).expect("serialize");
+        let restored: ParametricCurve = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(curve.points.len(), restored.points.len());
     }
 }

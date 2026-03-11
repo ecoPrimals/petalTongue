@@ -90,7 +90,7 @@ pub struct VisualEntropyCapture {
 impl VisualEntropyCapture {
     /// Create a new visual entropy capturer
     #[must_use]
-    pub fn new(canvas_width: u32, canvas_height: u32) -> Self {
+    pub const fn new(canvas_width: u32, canvas_height: u32) -> Self {
         Self {
             strokes: Vec::new(),
             canvas_size: (canvas_width, canvas_height),

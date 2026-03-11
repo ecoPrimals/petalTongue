@@ -23,9 +23,9 @@ pub enum PropertyValue {
     /// Boolean value
     Boolean(bool),
     /// Nested object (recursive properties)
-    Object(HashMap<String, PropertyValue>),
+    Object(HashMap<String, Self>),
     /// Array of values
-    Array(Vec<PropertyValue>),
+    Array(Vec<Self>),
     /// Null/None value
     Null,
 }
@@ -35,16 +35,16 @@ impl PropertyValue {
     #[must_use]
     pub fn as_string(&self) -> Option<&str> {
         match self {
-            PropertyValue::String(s) => Some(s),
+            Self::String(s) => Some(s),
             _ => None,
         }
     }
 
     /// Try to get as number
     #[must_use]
-    pub fn as_number(&self) -> Option<f64> {
+    pub const fn as_number(&self) -> Option<f64> {
         match self {
-            PropertyValue::Number(n) => Some(*n),
+            Self::Number(n) => Some(*n),
             _ => None,
         }
     }
@@ -66,35 +66,35 @@ impl PropertyValue {
 
     /// Try to get as boolean
     #[must_use]
-    pub fn as_bool(&self) -> Option<bool> {
+    pub const fn as_bool(&self) -> Option<bool> {
         match self {
-            PropertyValue::Boolean(b) => Some(*b),
+            Self::Boolean(b) => Some(*b),
             _ => None,
         }
     }
 
     /// Try to get as object
     #[must_use]
-    pub fn as_object(&self) -> Option<&HashMap<String, PropertyValue>> {
+    pub const fn as_object(&self) -> Option<&HashMap<String, Self>> {
         match self {
-            PropertyValue::Object(obj) => Some(obj),
+            Self::Object(obj) => Some(obj),
             _ => None,
         }
     }
 
     /// Try to get as array
     #[must_use]
-    pub fn as_array(&self) -> Option<&Vec<PropertyValue>> {
+    pub const fn as_array(&self) -> Option<&Vec<Self>> {
         match self {
-            PropertyValue::Array(arr) => Some(arr),
+            Self::Array(arr) => Some(arr),
             _ => None,
         }
     }
 
     /// Check if this is null
     #[must_use]
-    pub fn is_null(&self) -> bool {
-        matches!(self, PropertyValue::Null)
+    pub const fn is_null(&self) -> bool {
+        matches!(self, Self::Null)
     }
 }
 

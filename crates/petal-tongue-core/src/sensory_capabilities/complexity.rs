@@ -94,7 +94,8 @@ pub fn determine_ui_complexity(caps: &SensoryCapabilities) -> UIComplexity {
 mod tests {
     use super::*;
     use crate::sensory_capabilities::types::{
-        AudioOutputCapability, KeyboardInputCapability, TouchInputCapability,
+        AudioOutputCapability, HapticOutputCapability, KeyboardInputCapability,
+        PointerInputCapability, TouchInputCapability, VisualOutputCapability,
     };
 
     #[test]
@@ -209,5 +210,73 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(determine_ui_complexity(&caps), UIComplexity::Standard);
+    }
+
+    #[test]
+    fn test_ui_complexity_immersive_all_required() {
+        let caps = SensoryCapabilities {
+            visual_outputs: vec![VisualOutputCapability::ThreeD {
+                resolution_per_eye: (1920, 1080),
+                field_of_view: (110.0, 90.0),
+                refresh_rate: 90,
+                has_depth_tracking: true,
+                has_hand_tracking: true,
+            }],
+            audio_outputs: vec![AudioOutputCapability::Spatial {
+                channels: 8,
+                sample_rate: 48000,
+                has_head_tracking: true,
+            }],
+            haptic_outputs: vec![HapticOutputCapability::ForceFeedback {
+                axes: 3,
+                precision: 16,
+            }],
+            ..Default::default()
+        };
+        assert_eq!(determine_ui_complexity(&caps), UIComplexity::Immersive);
+    }
+
+    #[test]
+    fn test_ui_complexity_rich_all_required() {
+        let caps = SensoryCapabilities {
+            visual_outputs: vec![VisualOutputCapability::TwoD {
+                resolution: (1920, 1080),
+                refresh_rate: 60,
+                color_depth: 8,
+                size_mm: None,
+            }],
+            pointer_inputs: vec![PointerInputCapability::TwoD {
+                precision: 2.0,
+                has_wheel: true,
+                has_pressure: false,
+                button_count: 3,
+            }],
+            keyboard_inputs: vec![KeyboardInputCapability::Physical {
+                layout: "QWERTY".to_string(),
+                has_numpad: true,
+                modifier_keys: 4,
+            }],
+            ..Default::default()
+        };
+        assert_eq!(determine_ui_complexity(&caps), UIComplexity::Rich);
+    }
+
+    #[test]
+    fn test_ui_complexity_simple_small_screen_with_keyboard() {
+        let caps = SensoryCapabilities {
+            visual_outputs: vec![VisualOutputCapability::TwoD {
+                resolution: (454, 454),
+                refresh_rate: 60,
+                color_depth: 8,
+                size_mm: Some((35, 35)),
+            }],
+            keyboard_inputs: vec![KeyboardInputCapability::Physical {
+                layout: "QWERTY".to_string(),
+                has_numpad: false,
+                modifier_keys: 3,
+            }],
+            ..Default::default()
+        };
+        assert_eq!(determine_ui_complexity(&caps), UIComplexity::Simple);
     }
 }

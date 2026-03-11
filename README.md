@@ -56,7 +56,13 @@ petaltongue
 - **Geometry & faceting** -- Tile (heatmap/fieldmap), Arc (gauge), faceting (small multiples), threshold coloring
 - **Dashboard layout engine** -- multi-panel grid with domain theming and SVG export
 - **Tufte constraints** -- machine-checked visualization quality
-- **Domain-aware rendering** -- automatic palette selection per domain (health, physics, ecology...)
+- **Domain-aware rendering** -- automatic palette selection per domain (health, physics, ecology, game...)
+- **Diverging color scales** -- three-stop interpolation for heatmaps (neuralSpring Kokkos parity)
+- **Server-side backpressure** -- rate limiting for 60 Hz streaming (configurable `BackpressureConfig`)
+- **JSONL telemetry ingestion** -- hotSpring telemetry parsed to `DataBinding::TimeSeries`
+- **Pipeline DAG orchestration** -- multi-stage visualization workflows with topological sort
+- **Provider registry** -- `provider.register_capability` IPC for toadStool S145 compliance
+- **Session health** -- `visualization.session.status` queries backpressure and frame metrics
 - **Spring IPC** -- springs push data via `visualization.render`, petalTongue auto-compiles and renders
 - **Scenario loader** -- load JSON scenario files from disk (`--scenario` CLI flag)
 
@@ -87,14 +93,14 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 2,025 passing, 0 failures, 2 ignored |
+| Tests | 3,409 passing, 0 failures, 17 ignored |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings, pedantic enabled (`clippy::pedantic` via `[workspace.lints.clippy]`) |
+| Clippy | Zero warnings, pedantic + nursery enabled (`[workspace.lints.clippy]`) |
 | Docs | `RUSTDOCFLAGS="-D warnings" cargo doc` clean |
-| Coverage | 63% line / 67% function (llvm-cov) |
+| Coverage | 77.4% region / 79.2% function (llvm-cov) — target 90% |
 | Unsafe | `#![forbid(unsafe_code)]` workspace-wide, zero C deps |
 | License | AGPL-3.0-only, SPDX headers on all source files |
-| Files | All production files under 820 lines (max: `math_objects.rs` 818) |
+| Files | All production files under 1,000 lines (max: `animation.rs` 1,086 — refactor pending) |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None -- pure Rust (`rustix` for syscalls) |
 

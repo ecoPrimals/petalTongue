@@ -36,7 +36,7 @@ pub struct GraphManagerPanel {
 impl GraphManagerPanel {
     /// Create a new graph manager panel
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             available_graphs: Vec::new(),
             last_refresh: None,

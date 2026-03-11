@@ -94,7 +94,7 @@ impl GraphNode {
 
     /// Set position
     #[must_use]
-    pub fn with_position(mut self, x: f32, y: f32) -> Self {
+    pub const fn with_position(mut self, x: f32, y: f32) -> Self {
         self.position = (x, y);
         self
     }
@@ -127,19 +127,19 @@ impl GraphNode {
 
     /// Check if node is running
     #[must_use]
-    pub fn is_running(&self) -> bool {
+    pub const fn is_running(&self) -> bool {
         matches!(self.state, NodeState::Running { .. })
     }
 
     /// Check if node is completed
     #[must_use]
-    pub fn is_completed(&self) -> bool {
+    pub const fn is_completed(&self) -> bool {
         matches!(self.state, NodeState::Completed)
     }
 
     /// Check if node is failed
     #[must_use]
-    pub fn is_failed(&self) -> bool {
+    pub const fn is_failed(&self) -> bool {
         matches!(self.state, NodeState::Failed { .. })
     }
 
@@ -155,7 +155,7 @@ impl GraphNode {
 
     /// Get display color based on state
     #[must_use]
-    pub fn display_color(&self) -> [u8; 3] {
+    pub const fn display_color(&self) -> [u8; 3] {
         match &self.state {
             NodeState::Pending => [128, 128, 128],      // Gray
             NodeState::Running { .. } => [0, 128, 255], // Blue
@@ -167,7 +167,7 @@ impl GraphNode {
 
     /// Get display icon based on state
     #[must_use]
-    pub fn display_icon(&self) -> &'static str {
+    pub const fn display_icon(&self) -> &'static str {
         match &self.state {
             NodeState::Pending => "⚪",
             NodeState::Running { .. } => "🔵",
