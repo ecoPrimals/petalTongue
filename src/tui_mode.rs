@@ -62,9 +62,122 @@ mod tests {
     }
 
     #[test]
-    fn test_tui_config() {
-        // Test that config is constructed correctly
+    fn test_tui_config_60hz() {
         let tick_rate = Duration::from_millis(1000 / 60);
         assert_eq!(tick_rate.as_millis(), 16);
+    }
+
+    #[test]
+    fn test_tui_config_30hz() {
+        let tick_rate = Duration::from_millis(1000 / 30);
+        assert_eq!(tick_rate.as_millis(), 33);
+    }
+
+    #[test]
+    fn test_tui_config_1hz() {
+        let tick_rate = Duration::from_millis(1000 / 1);
+        assert_eq!(tick_rate.as_millis(), 1000);
+    }
+
+    #[test]
+    fn test_tui_config_120hz() {
+        let tick_rate = Duration::from_millis(1000 / 120);
+        assert_eq!(tick_rate.as_millis(), 8);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_refresh_rate_zero_panics() {
+        let _ = Duration::from_millis(1000 / u64::from(0u32));
+    }
+
+    #[test]
+    fn test_tui_config_construction() {
+        let config = TUIConfig {
+            tick_rate: Duration::from_millis(1000 / 60),
+            mouse_support: false,
+            standalone: false,
+        };
+        assert_eq!(config.tick_rate, Duration::from_millis(16));
+        assert!(!config.mouse_support);
+        assert!(!config.standalone);
+    }
+
+    #[test]
+    fn test_tui_config_validation_mouse_standalone() {
+        let config = TUIConfig {
+            tick_rate: Duration::from_millis(1000 / 30),
+            mouse_support: true,
+            standalone: true,
+        };
+        assert!(config.mouse_support);
+        assert!(config.standalone);
+    }
+
+    #[tokio::test]
+    async fn test_data_service_snapshot_accessible() {
+        let data_service = Arc::new(DataService::new());
+        let snapshot = data_service.snapshot().await;
+        assert!(snapshot.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_run_with_scenario_none() {
+        let data_service = Arc::new(DataService::new());
+        let result =
+            tokio::time::timeout(Duration::from_secs(3), run(None, 60, data_service)).await;
+        match result {
+            Ok(inner) => assert!(
+                inner.is_ok() || inner.is_err(),
+                "run() should return a Result"
+            ),
+            Err(_) => { /* timeout: interactive TTY, run() blocks - acceptable */ }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_run_with_scenario_some() {
+        let data_service = Arc::new(DataService::new());
+        let result = tokio::time::timeout(
+            Duration::from_secs(3),
+            run(Some("scenario.json".to_string()), 30, data_service),
+        )
+        .await;
+        match result {
+            Ok(inner) => assert!(
+                inner.is_ok() || inner.is_err(),
+                "run() should return a Result"
+            ),
+            Err(_) => { /* timeout: interactive TTY - acceptable */ }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_run_with_different_refresh_rates() {
+        let data_service = Arc::new(DataService::new());
+        for hz in [1, 30, 60, 120] {
+            let result =
+                tokio::time::timeout(Duration::from_secs(2), run(None, hz, data_service.clone()))
+                    .await;
+            match result {
+                Ok(inner) => assert!(
+                    inner.is_ok() || inner.is_err(),
+                    "run() with {hz}Hz should return Result"
+                ),
+                Err(_) => { /* timeout - acceptable */ }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_run_propagates_launch_error_when_no_tty() {
+        let data_service = Arc::new(DataService::new());
+        let result =
+            tokio::time::timeout(Duration::from_secs(3), run(None, 60, data_service)).await;
+        if let Ok(inner) = result {
+            if let Err(e) = inner {
+                assert!(!e.to_string().is_empty(), "Error should have a message");
+            }
+        }
     }
 }

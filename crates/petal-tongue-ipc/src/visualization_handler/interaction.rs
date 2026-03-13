@@ -643,4 +643,48 @@ mod tests {
             serde_json::from_str(&json).expect("deserialize");
         assert_eq!(parsed.perspective_id, None);
     }
+
+    #[test]
+    fn test_apply_interaction_no_subscribers() {
+        let mut reg = InteractionSubscriberRegistry::new();
+        let req = InteractionApplyRequest {
+            intent: "select".to_string(),
+            targets: vec!["t1".to_string()],
+            grammar_id: None,
+        };
+        let resp = reg.apply_interaction(&req);
+        assert!(resp.accepted);
+        assert_eq!(resp.targets_resolved, 1);
+        assert_eq!(reg.subscriber_count(), 0);
+    }
+
+    #[test]
+    fn test_pending_callbacks_multiple_mixed() {
+        let mut reg = InteractionSubscriberRegistry::new();
+        reg.subscribe_with_filter("with_cb_events", vec![], Some("cb2".to_string()), None);
+        let event = InteractionEventNotification {
+            event_type: "select".to_string(),
+            targets: vec![],
+            timestamp: String::new(),
+            perspective_id: None,
+        };
+        reg.broadcast(&event);
+        reg.subscribe_with_filter("with_cb_empty", vec![], Some("cb1".to_string()), None);
+        let pending = reg.pending_callbacks();
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].0, "with_cb_events");
+        assert_eq!(pending[0].2.len(), 1);
+    }
+
+    #[test]
+    fn test_subscribe_with_filter_grammar_id_ignored() {
+        let mut reg = InteractionSubscriberRegistry::new();
+        assert!(reg.subscribe_with_filter(
+            "sub1",
+            vec!["select".to_string()],
+            Some("cb".to_string()),
+            Some("grammar-1".to_string()),
+        ));
+        assert_eq!(reg.callback_method("sub1"), Some("cb"));
+    }
 }

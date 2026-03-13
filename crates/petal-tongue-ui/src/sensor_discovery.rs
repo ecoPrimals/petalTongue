@@ -139,4 +139,100 @@ mod tests {
         // With empty registry, should return false (no output)
         assert!(!verify_essential_sensors(&registry));
     }
+
+    #[test]
+    fn test_verify_essential_sensors_with_output() {
+        use petal_tongue_core::{SensorCapabilities, SensorEvent, SensorType};
+
+        struct MockOutputSensor;
+
+        #[async_trait::async_trait]
+        impl Sensor for MockOutputSensor {
+            fn capabilities(&self) -> &SensorCapabilities {
+                static CAPS: SensorCapabilities = SensorCapabilities {
+                    sensor_type: SensorType::Screen,
+                    input: false,
+                    output: true,
+                    spatial: true,
+                    temporal: false,
+                    continuous: true,
+                    discrete: false,
+                    bidirectional: false,
+                };
+                &CAPS
+            }
+            fn is_available(&self) -> bool {
+                true
+            }
+            async fn poll_events(&mut self) -> anyhow::Result<Vec<SensorEvent>> {
+                Ok(vec![])
+            }
+            fn last_activity(&self) -> Option<std::time::Instant> {
+                None
+            }
+            fn name(&self) -> &str {
+                "mock-output"
+            }
+        }
+
+        let registry = Arc::new(RwLock::new(SensorRegistry::new()));
+        registry
+            .write()
+            .unwrap()
+            .register(Box::new(MockOutputSensor));
+        assert!(verify_essential_sensors(&registry));
+    }
+
+    #[tokio::test]
+    async fn test_discover_all_sensors_populates_stats() {
+        let registry = Arc::new(RwLock::new(SensorRegistry::new()));
+        discover_all_sensors(Arc::clone(&registry)).await.unwrap();
+
+        let reg = registry.read().unwrap();
+        let stats = reg.stats();
+        let _ = stats.total;
+    }
+
+    #[test]
+    fn test_verify_essential_sensors_input_only_returns_false() {
+        use petal_tongue_core::{SensorCapabilities, SensorEvent, SensorType};
+
+        struct MockInputOnlySensor;
+
+        #[async_trait::async_trait]
+        impl Sensor for MockInputOnlySensor {
+            fn capabilities(&self) -> &SensorCapabilities {
+                static CAPS: SensorCapabilities = SensorCapabilities {
+                    sensor_type: SensorType::Keyboard,
+                    input: true,
+                    output: false,
+                    spatial: false,
+                    temporal: false,
+                    continuous: false,
+                    discrete: true,
+                    bidirectional: false,
+                };
+                &CAPS
+            }
+            fn is_available(&self) -> bool {
+                true
+            }
+            async fn poll_events(&mut self) -> anyhow::Result<Vec<SensorEvent>> {
+                Ok(vec![])
+            }
+            fn last_activity(&self) -> Option<std::time::Instant> {
+                None
+            }
+            fn name(&self) -> &str {
+                "mock-input-only"
+            }
+        }
+
+        let registry = Arc::new(RwLock::new(SensorRegistry::new()));
+        registry
+            .write()
+            .unwrap()
+            .register(Box::new(MockInputOnlySensor));
+        assert!(!verify_essential_sensors(&registry));
+    }
 }

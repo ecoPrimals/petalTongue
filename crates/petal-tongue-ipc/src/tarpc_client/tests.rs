@@ -179,3 +179,73 @@ fn test_tarpc_client_error_display() {
     let err = TarpcClientError::Timeout("5s".to_string());
     assert!(format!("{err}").contains("5s"));
 }
+
+#[test]
+fn test_parse_endpoint_empty_after_prefix() {
+    let result = TarpcClient::parse_endpoint("tarpc://");
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_client_creation_various_urls() {
+    let c1 = TarpcClient::new("tarpc://0.0.0.0:1234").expect("0.0.0.0");
+    assert_eq!(c1.addr().port(), 1234);
+
+    let c2 = TarpcClient::new("tarpc://10.0.0.1:5678").expect("10.0.0.1");
+    assert_eq!(c2.addr().port(), 5678);
+}
+
+#[tokio::test]
+async fn test_get_capabilities_connection_failure() {
+    let client = TarpcClient::new("tarpc://127.0.0.1:1")
+        .expect("create")
+        .with_timeout(Duration::from_millis(50));
+    let result = client.get_capabilities().await;
+    assert!(result.is_err());
+    let err_str = result.unwrap_err().to_string();
+    assert!(
+        err_str.contains("Connection")
+            || err_str.contains("Timeout")
+            || err_str.contains("refused"),
+        "expected connection/timeout error: {err_str}"
+    );
+}
+
+#[tokio::test]
+async fn test_call_method_capability_list_connection_failure() {
+    let client = TarpcClient::new("tarpc://127.0.0.1:1")
+        .expect("create")
+        .with_timeout(Duration::from_millis(50));
+    let result = client.call_method("capability.list", None).await;
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn test_call_method_health_check_connection_failure() {
+    let client = TarpcClient::new("tarpc://127.0.0.1:1")
+        .expect("create")
+        .with_timeout(Duration::from_millis(50));
+    let result = client.call_method("health.check", None).await;
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn test_call_method_discover_capability_with_param() {
+    let client = TarpcClient::new("tarpc://127.0.0.1:1")
+        .expect("create")
+        .with_timeout(Duration::from_millis(50));
+    let result = client
+        .call_method(
+            "discovery.find_capability",
+            Some(serde_json::json!({"capability": "visualization"})),
+        )
+        .await;
+    assert!(result.is_err());
+    let err_str = result.unwrap_err().to_string();
+    assert!(
+        err_str.contains("Connection")
+            || err_str.contains("Timeout")
+            || err_str.contains("refused"),
+        "expected connection error: {err_str}"
+    );
+}

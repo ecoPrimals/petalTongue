@@ -338,6 +338,149 @@ mod tests {
         assert!(matches!(cli.command, Commands::Status { .. }));
     }
 
-    // All tests run in parallel (default)
-    // No sleeps needed - tests are deterministic
+    #[test]
+    fn test_cli_parse_ui_with_scenario() {
+        let cli = Cli::parse_from(["petaltongue", "ui", "--scenario", "test.json"]);
+        let Commands::Ui { scenario, no_audio } = cli.command else {
+            unreachable!("CLI parsed 'ui' subcommand")
+        };
+        assert_eq!(scenario.as_deref(), Some("test.json"));
+        assert!(!no_audio);
+    }
+
+    #[test]
+    fn test_cli_parse_ui_no_audio() {
+        let cli = Cli::parse_from(["petaltongue", "ui", "--no-audio"]);
+        let Commands::Ui { no_audio, .. } = cli.command else {
+            unreachable!("CLI parsed 'ui' subcommand")
+        };
+        assert!(no_audio);
+    }
+
+    #[test]
+    fn test_cli_parse_tui_with_refresh_rate() {
+        let cli = Cli::parse_from(["petaltongue", "tui", "--refresh-rate", "30"]);
+        let Commands::Tui { refresh_rate, .. } = cli.command else {
+            unreachable!("CLI parsed 'tui' subcommand")
+        };
+        assert_eq!(refresh_rate, 30);
+    }
+
+    #[test]
+    fn test_cli_parse_web_with_bind() {
+        let cli = Cli::parse_from(["petaltongue", "web", "--bind", "127.0.0.1:9090"]);
+        let Commands::Web { bind, workers, .. } = cli.command else {
+            unreachable!("CLI parsed 'web' subcommand")
+        };
+        assert_eq!(bind.as_deref(), Some("127.0.0.1:9090"));
+        assert_eq!(workers, 4);
+    }
+
+    #[test]
+    fn test_cli_parse_web_with_workers() {
+        let cli = Cli::parse_from(["petaltongue", "web", "--workers", "8"]);
+        let Commands::Web { workers, .. } = cli.command else {
+            unreachable!("CLI parsed 'web' subcommand")
+        };
+        assert_eq!(workers, 8);
+    }
+
+    #[test]
+    fn test_cli_parse_headless_with_all_options() {
+        let cli = Cli::parse_from([
+            "petaltongue",
+            "headless",
+            "--bind",
+            "0.0.0.0:7070",
+            "--workers",
+            "2",
+        ]);
+        let Commands::Headless { bind, workers } = cli.command else {
+            unreachable!("CLI parsed 'headless' subcommand")
+        };
+        assert_eq!(bind.as_deref(), Some("0.0.0.0:7070"));
+        assert_eq!(workers, 2);
+    }
+
+    #[test]
+    fn test_cli_parse_status_verbose_json() {
+        let cli = Cli::parse_from(["petaltongue", "status", "--verbose", "--format", "json"]);
+        let Commands::Status { verbose, format } = cli.command else {
+            unreachable!("CLI parsed 'status' subcommand")
+        };
+        assert!(verbose);
+        assert_eq!(format, "json");
+    }
+
+    #[test]
+    fn test_cli_default_log_level() {
+        let cli = Cli::parse_from(["petaltongue", "status"]);
+        assert_eq!(cli.log_level, "info");
+        assert_eq!(cli.log_format, "pretty");
+    }
+
+    #[test]
+    fn test_cli_custom_log_level() {
+        let cli = Cli::parse_from(["petaltongue", "--log-level", "debug", "status"]);
+        assert_eq!(cli.log_level, "debug");
+    }
+
+    #[test]
+    fn test_cli_gui_alias() {
+        let cli = Cli::parse_from(["petaltongue", "gui"]);
+        assert!(matches!(cli.command, Commands::Ui { .. }));
+    }
+
+    #[test]
+    fn test_commands_debug() {
+        let cmd = Commands::Status {
+            verbose: false,
+            format: "text".to_string(),
+        };
+        let debug_str = format!("{cmd:?}");
+        assert!(debug_str.contains("Status"));
+    }
+
+    // init_tracing tests - tracing can only be initialized once per process.
+    // Run test_init_tracing_invalid_level first (doesn't init).
+    // test_init_tracing_formats exercises all format branches and double-init error.
+
+    #[test]
+    fn test_init_tracing_invalid_level() {
+        // "crate=invalid_level" - invalid level fails at EnvFilter::try_new (does not call try_init)
+        let result = init_tracing("crate=invalid_level", "pretty");
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("log level") || err_msg.contains("parse"));
+    }
+
+    #[test]
+    fn test_init_tracing_formats() {
+        // Tracing can only be initialized once per process. Run formats test first (single-threaded
+        // or before any other init). If another test already initialized, all inits here will fail.
+        // 1. JSON format init (first successful init in this test)
+        let result = init_tracing("info", "json");
+        assert!(
+            result.is_ok(),
+            "first init with json format should succeed: {result:?}"
+        );
+
+        // 2. Compact format - fails because already initialized (exercises compact branch)
+        let result = init_tracing("debug", "compact");
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("compact") || err_msg.contains("init"),
+            "expected compact init error: {err_msg}"
+        );
+
+        // 3. Pretty format - fails because already initialized (exercises default branch)
+        let result = init_tracing("info", "pretty");
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("pretty") || err_msg.contains("init"),
+            "expected pretty init error: {err_msg}"
+        );
+    }
 }

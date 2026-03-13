@@ -141,4 +141,103 @@ mod tests {
         let addr: SocketAddr = "127.0.0.1:8080".parse().expect("valid bind");
         assert_eq!(addr.port(), 8080);
     }
+
+    #[test]
+    fn test_invalid_bind_address() {
+        let result: Result<SocketAddr, _> = "not-an-address".parse();
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_snapshot_endpoint() {
+        let data_service = Arc::new(DataService::new());
+        let response = snapshot_handler(State(data_service)).await.into_response();
+        assert_eq!(response.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn test_status_response_body() {
+        let response = status_handler().await.into_response();
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["status"], "ok");
+        assert_eq!(json["mode"], "web");
+        assert_eq!(json["pure_rust"], true);
+        assert!(json["version"].is_string());
+    }
+
+    #[tokio::test]
+    async fn test_health_response_body() {
+        let response = health_handler().await.into_response();
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["status"], "ok");
+    }
+
+    #[tokio::test]
+    async fn test_primals_response_structure() {
+        let data_service = Arc::new(DataService::new());
+        let response = primals_handler(State(data_service)).await.into_response();
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert!(json["primals"].is_array());
+        assert!(json["timestamp"].is_number());
+    }
+
+    #[tokio::test]
+    async fn test_snapshot_response_structure() {
+        let data_service = Arc::new(DataService::new());
+        let response = snapshot_handler(State(data_service)).await.into_response();
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert!(json["primals"].is_array());
+        assert!(json["edges"].is_array());
+        assert!(json["timestamp"].is_number());
+    }
+
+    #[tokio::test]
+    async fn test_router_construction() {
+        use axum::body::Body;
+
+        let data_service = Arc::new(DataService::new());
+        let app = Router::new()
+            .route("/", get(index_handler))
+            .route("/health", get(health_handler))
+            .route("/api/status", get(status_handler))
+            .route("/api/primals", get(primals_handler))
+            .route("/api/api/snapshot", get(snapshot_handler))
+            .with_state(data_service);
+
+        let req = axum::http::Request::builder()
+            .uri("/health")
+            .body(Body::empty())
+            .unwrap();
+        let response = tower::ServiceExt::oneshot(app, req).await.unwrap();
+        assert_eq!(response.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn test_router_status_endpoint() {
+        use axum::body::Body;
+
+        let data_service = Arc::new(DataService::new());
+        let app = Router::new()
+            .route("/api/status", get(status_handler))
+            .with_state(data_service);
+
+        let req = axum::http::Request::builder()
+            .uri("/api/status")
+            .body(Body::empty())
+            .unwrap();
+        let response = tower::ServiceExt::oneshot(app, req).await.unwrap();
+        assert_eq!(response.status(), 200);
+    }
 }

@@ -1,7 +1,7 @@
 # petalTongue — Evolution Tracker
 
 **Living document**: Updated as evolution progresses.
-**Last updated**: March 11, 2026
+**Last updated**: March 13, 2026
 
 ---
 
@@ -9,17 +9,17 @@
 
 | Metric | Value |
 |--------|-------|
-| Tests | 3,409 passing, 17 ignored |
-| Coverage (region) | 77.4% |
-| Coverage (function) | 79.2% |
-| Clippy | Zero warnings (pedantic) |
+| Tests | 3,711 passing, 5 ignored |
+| Coverage (line) | 79.5% |
+| Coverage (function) | 81.1% |
+| Clippy | Zero errors (pedantic + nursery); advisory warnings only |
 | `cargo fmt` | Clean |
 | `cargo deny` | Clean (advisories, bans, licenses, sources) |
-| `cargo doc` | Clean (`-D warnings`) |
-| Unsafe code | `#![forbid(unsafe_code)]` workspace-wide |
-| Largest file | 1,086 lines (`animation.rs` — refactor pending; all others under 1,000) |
+| `cargo doc` | Clean (`--all-features --no-deps`) |
+| Unsafe code | `#![forbid(unsafe_code)]` on all 16 crates |
+| Largest file | 988 lines (`visualization_handler/state.rs`); all files under 1,000 |
 | External C deps | Zero |
-| SPDX headers | All source files |
+| SPDX headers | All 467 source files |
 
 ---
 
@@ -129,8 +129,30 @@ No active gaps. Next evolution targets:
 - `visualization.interact.sync` (perspective sync mode)
 - `visualization.render.stream` grammar subscription mode
 - Capability-based data resolution (`"source": "capability:X"`)
-- Coverage target: 90% (currently 77.4%)
-- `animation.rs` refactor (split test module to meet 1,000-line limit)
+- Coverage target: 90% (currently 79.5%)
+
+### Coverage Expansion (March 12, 2026)
+
++302 tests (3,409 → 3,711). Major additions across 35+ files:
+
+| Crate | Key areas covered |
+|-------|-------------------|
+| `petal-tongue-core` | state_sync, dynamic_schema, engine, toadstool_compute |
+| `petal-tongue-ui` | traffic_view, timeline_view, scene_bridge, sensory_ui, trust_dashboard |
+| `petal-tongue-graph` | domain_charts, basic_charts |
+| `petal-tongue-scene` | scene_graph, animation |
+| `petal-tongue-ipc` | json_rpc_client, server, tarpc_client, visualization_handler |
+| `petal-tongue-discovery` | cache |
+| `petal-tongue-tui` | app, state |
+| `petal-tongue-cli` | resolve_instance_id, format_show_output |
+| `petal-tongue-animation` | visual_flower |
+| workspace root | main, cli_mode, web_mode, data_service, tui_mode, ui_mode, headless_mode |
+
+Idiomatic Rust improvements: `let-else` patterns, moved `use` to top of
+test functions, tightened drop scopes, removed stale `#[expect]` attributes.
+
+Smart refactoring: `petal-tongue-telemetry` split into `types.rs` + `collector.rs`
+(847 → 787 lines across 3 files).
 
 ---
 
@@ -199,5 +221,6 @@ the collaborative intelligence.
 | Logic extraction | 3,180 | 77.4% / 79.2% | March 10 |
 | Real-time pipeline | 3,211 | TBD | March 10 |
 | Ecosystem wiring | 3,245 | TBD | March 11 |
-| Spring absorption | 3,409 | TBD | March 11 |
+| Spring absorption | 3,409 | 77.4% / 79.2% | March 11 |
+| Deep coverage expansion | 3,711 | 79.5% / 81.1% | March 12 |
 | Target | TBD | 90% / 90% | — |

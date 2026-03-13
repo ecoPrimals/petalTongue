@@ -2,6 +2,44 @@
 
 All notable changes to petalTongue will be documented in this file.
 
+## [1.6.3] - 2026-03-12
+
+### Added - Deep Coverage Expansion & Idiomatic Rust Evolution
+
+- **+302 new tests** (3,409 → 3,711): Comprehensive coverage expansion across 35+
+  files in 10 crates. Zero failures. Coverage: 79.5% line / 81.1% function.
+- **Idiomatic Rust evolution**: `if let ... else { panic!() }` patterns replaced
+  with `let-else` + `unreachable!()` in main.rs tests. `use` statements moved to
+  top of test functions (web_mode.rs). Drop scopes tightened (data_service.rs).
+  Stale `#[expect(dead_code)]` removed where tests now cover the code.
+- **Smart refactoring**: `petal-tongue-telemetry` split into `types.rs` (127 lines)
+  and `collector.rs` (620 lines) with `lib.rs` re-exports (40 lines). Total reduced
+  from 847 to 787 lines.
+- **New test files**: `animation_tests.rs` (petal-tongue-scene), headless egui
+  rendering tests for sensory_ui manager/renderers and scene_bridge.
+- **Coverage highlights**: state_sync (concurrent persistence, conflict resolution),
+  dynamic_schema (empty/duplicate/nested schemas, JSON loading), engine lifecycle,
+  traffic/timeline view pure functions, IPC client/server Unix socket routing,
+  discovery cache (concurrent access, custom TTL), TUI app/state edge cases,
+  CLI instance resolution, visual_flower animation states.
+
+### Changed
+
+- All files now under 1,000 lines (largest: 988, `visualization_handler/state.rs`)
+- `animation.rs` in petal-tongue-scene split: tests extracted to separate file
+- `petal-tongue-telemetry` refactored from 1 file to 3-file module structure
+
+### Quality
+
+- **3,711 tests**, 0 failures, 5 ignored
+- **0 clippy errors** (pedantic + nursery)
+- **0 unsafe blocks** workspace-wide
+- **79.5% line coverage** (was 77.4%)
+- **`cargo fmt --check`** clean
+- **`cargo doc --all-features --no-deps`** clean
+
+---
+
 ## [1.6.2] - 2026-03-11
 
 ### Added - Spring Absorption: Backpressure, JSONL Telemetry, Diverging Palette, Pipeline DAG

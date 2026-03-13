@@ -8,21 +8,52 @@ use anyhow::Result;
 use petal_tongue_core::{RenderingAwareness, SensorRegistry};
 use std::sync::{Arc, RwLock};
 
-/// Start the sensory event loop (background task)
+/// Start the sensory event loop (background task).
 ///
-/// NOTE: Currently disabled - egui already provides perfect sensory feedback!
-/// The bidirectional loop works via egui input events in the `update()` loop.
-/// This function is here for future async sensor support (camera, network sensors, etc.)
+/// For GUI mode, egui already provides input events in the `update()` loop,
+/// making a separate poll unnecessary. This function spawns a lightweight
+/// task that bridges async sensors (network, external devices) into
+/// `RenderingAwareness` for non-egui sensor sources.
+///
+/// Uses `spawn_blocking` because `std::sync::RwLock` guards are `!Send`.
 pub fn start_event_loop(
-    _sensor_registry: Arc<RwLock<SensorRegistry>>,
-    _rendering_awareness: Arc<RwLock<RenderingAwareness>>,
+    sensor_registry: Arc<RwLock<SensorRegistry>>,
+    rendering_awareness: Arc<RwLock<RenderingAwareness>>,
 ) -> tokio::task::JoinHandle<()> {
-    tracing::info!("🔄 Sensory loop active (via egui input events)");
+    tracing::info!("Sensory event loop started");
 
-    // Placeholder task that completes immediately
-    // Real implementation will use tokio::sync::RwLock instead of std::sync::RwLock
-    tokio::spawn(async {
-        // Sensory feedback happens via egui - no separate task needed!
+    tokio::spawn(async move {
+        let reg = sensor_registry;
+        let aw = rendering_awareness;
+        loop {
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
+            let reg_clone = Arc::clone(&reg);
+            let aw_clone = Arc::clone(&aw);
+            let result = tokio::task::spawn_blocking(move || {
+                reg_clone.write().map_or(0, |mut registry| {
+                    let rt = tokio::runtime::Handle::current();
+                    match rt.block_on(registry.poll_all()) {
+                        Ok(events) if !events.is_empty() => {
+                            if let Ok(mut awareness) = aw_clone.write() {
+                                for event in &events {
+                                    awareness.sensory_feedback(event);
+                                }
+                            }
+                            events.len()
+                        }
+                        _ => 0,
+                    }
+                })
+            })
+            .await;
+
+            match result {
+                Ok(0) => {}
+                Ok(n) => tracing::trace!("Polled {n} sensor events"),
+                Err(e) => tracing::debug!("Sensor poll task error: {e}"),
+            }
+        }
     })
 }
 
@@ -67,19 +98,19 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_event_loop_starts() {
+    async fn test_event_loop_starts_and_polls() {
         let registry = Arc::new(RwLock::new(SensorRegistry::new()));
         let awareness = Arc::new(RwLock::new(RenderingAwareness::new()));
 
-        // Start event loop (currently a placeholder that completes immediately)
         let handle = start_event_loop(Arc::clone(&registry), Arc::clone(&awareness));
 
-        // Placeholder task completes immediately - await with timeout to avoid blocking forever
-        let result = tokio::time::timeout(Duration::from_secs(1), handle).await;
-        assert!(result.is_ok(), "Task should complete within timeout");
+        // Let the loop run a few poll cycles, then abort
+        tokio::time::sleep(Duration::from_millis(250)).await;
+        handle.abort();
+        let result = handle.await;
         assert!(
-            result.expect("already asserted ok").is_ok(),
-            "Task should not panic"
+            result.is_err(),
+            "Aborted task should return JoinError (cancelled)"
         );
     }
 

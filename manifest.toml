@@ -1,0 +1,76 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# genomeBin Manifest -- petalTongue
+#
+# Describes the deployment identity of petalTongue as an autonomous organism.
+# Per GENOMEBIN_ARCHITECTURE_STANDARD.md from wateringHole.
+
+[organism]
+name = "petaltongue"
+display_name = "petalTongue"
+description = "Universal Visualization Primal for ecoPrimals"
+version = "1.6.2"
+license = "AGPL-3.0-only"
+
+[organism.binary]
+name = "petaltongue"
+entry_point = "src/main.rs"
+
+[organism.capabilities]
+domains = ["visualization", "interaction", "sensor"]
+methods = [
+    "visualization.render",
+    "visualization.render.stream",
+    "visualization.interact",
+    "visualization.interact.select",
+    "visualization.interact.subscribe",
+    "visualization.interact.sync",
+    "interaction.subscribe",
+    "sensor.stream.subscribe",
+    "sensor.stream.unsubscribe",
+    "sensor.stream.poll",
+    "health.check",
+    "capability.list",
+    "lifecycle.register",
+]
+
+[organism.ipc]
+primary = "json-rpc"
+secondary = "tarpc"
+fallback = "http"
+socket_pattern = "${XDG_RUNTIME_DIR}/biomeos/petaltongue-${FAMILY_ID}.sock"
+
+[organism.modes]
+server = { description = "IPC server (germination mode)", subcommand = "server" }
+ui = { description = "Desktop GUI (egui)", subcommand = "ui" }
+tui = { description = "Terminal UI (ratatui)", subcommand = "tui" }
+web = { description = "Web dashboard", subcommand = "web" }
+headless = { description = "Headless mode (no GUI)", subcommand = "headless" }
+status = { description = "Health and capability info", subcommand = "status" }
+
+[organism.signals]
+sigterm = "graceful_shutdown"
+sigint = "graceful_shutdown"
+
+[organism.exit_codes]
+success = 0
+general_error = 1
+config_error = 2
+network_error = 3
+
+[organism.health]
+endpoint = "health.check"
+heartbeat_interval_secs = 30
+
+[ecobin]
+pure_rust = true
+unsafe_code = false
+c_dependencies = []
+cross_targets = [
+    "x86_64-unknown-linux-musl",
+    "aarch64-unknown-linux-musl",
+]
+
+[deploy]
+graph = "graphs/petaltongue_deploy.toml"
+dependencies = ["beardog", "songbird"]
+optional_dependencies = ["toadstool"]

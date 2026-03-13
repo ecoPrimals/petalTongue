@@ -95,6 +95,14 @@ pub enum MotorCommand {
         path: String,
     },
 
+    // === Audio (sonification intent from UI) ===
+    /// Play an audio cue. The render layer declares intent; the motor system
+    /// executes it. Tests validate the command without needing speakers.
+    PlayAudio {
+        /// Sound identifier (e.g. "success", "warning", "notification")
+        sound: String,
+    },
+
     // === Continuous mode (game loop) ===
     /// Enable or disable 60 Hz continuous rendering (game loop)
     SetContinuousMode {
@@ -341,5 +349,25 @@ mod tests {
     fn interactivity_state_equality() {
         assert_eq!(InteractivityState::Active, InteractivityState::Active);
         assert_ne!(InteractivityState::Active, InteractivityState::Unconfirmed);
+    }
+
+    #[test]
+    fn motor_command_play_audio() {
+        let cmd = MotorCommand::PlayAudio {
+            sound: "success".to_string(),
+        };
+        let debug = format!("{cmd:?}");
+        assert!(debug.contains("PlayAudio"));
+        assert!(debug.contains("success"));
+    }
+
+    #[test]
+    fn motor_command_play_audio_clone() {
+        let cmd = MotorCommand::PlayAudio {
+            sound: "warning".to_string(),
+        };
+        #[allow(clippy::redundant_clone)]
+        let cloned = cmd.clone();
+        assert!(format!("{cloned:?}").contains("warning"));
     }
 }

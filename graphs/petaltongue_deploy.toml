@@ -1,0 +1,103 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# petalTongue Deploy Graph -- Spring-as-Niche Deployment Standard v1.0.0
+#
+# Defines the germination order and capability wiring for deploying
+# petalTongue as a niche within biomeOS.
+
+[graph]
+id = "petaltongue_deploy"
+description = "petalTongue visualization niche atop Node Atomic"
+coordination = "Sequential"
+
+# Phase 1: Tower Atomic (security + discovery foundation)
+[[nodes]]
+id = "germinate_beardog"
+output = "beardog_genesis"
+
+[nodes.primal]
+by_capability = "crypto"
+
+[nodes.operation]
+name = "start"
+
+[nodes.operation.params]
+mode = "server"
+family_id = "${FAMILY_ID}"
+
+[nodes.constraints]
+timeout_ms = 15000
+
+[nodes.capabilities_provided]
+"crypto.encrypt" = "crypto.encrypt"
+"crypto.sign" = "crypto.sign"
+
+[[nodes]]
+id = "germinate_songbird"
+depends_on = ["germinate_beardog"]
+output = "songbird_genesis"
+
+[nodes.primal]
+by_capability = "discovery"
+
+[nodes.operation]
+name = "start"
+
+[nodes.operation.params]
+mode = "server"
+family_id = "${FAMILY_ID}"
+
+[nodes.constraints]
+timeout_ms = 15000
+
+[nodes.capabilities_provided]
+"discovery.query" = "discovery.query"
+"ipc.register" = "ipc.register"
+"ipc.resolve" = "ipc.resolve"
+
+# Phase 2: petalTongue visualization primal
+[[nodes]]
+id = "germinate_petaltongue"
+depends_on = ["germinate_beardog", "germinate_songbird"]
+output = "petaltongue_genesis"
+capabilities = ["visualization", "interaction", "sensor"]
+
+[nodes.primal]
+by_capability = "visualization"
+
+[nodes.operation]
+name = "start"
+
+[nodes.operation.params]
+mode = "server"
+family_id = "${FAMILY_ID}"
+
+[nodes.operation.environment]
+BIOMEOS_SOCKET_DIR = "${XDG_RUNTIME_DIR}/biomeos"
+FAMILY_ID = "${FAMILY_ID}"
+
+[nodes.constraints]
+timeout_ms = 15000
+
+[nodes.capabilities_provided]
+"visualization.render" = "visualization.render"
+"visualization.render.stream" = "visualization.render.stream"
+"visualization.interact" = "visualization.interact"
+"visualization.interact.select" = "visualization.interact.select"
+"visualization.interact.subscribe" = "visualization.interact.subscribe"
+"interaction.subscribe" = "interaction.subscribe"
+"sensor.stream.subscribe" = "sensor.stream.subscribe"
+"health.check" = "health.check"
+"capability.list" = "capability.list"
+
+# Phase 3: Validation
+[[nodes]]
+id = "validate_petaltongue_atomic"
+depends_on = ["germinate_beardog", "germinate_songbird", "germinate_petaltongue"]
+output = "petaltongue_validated"
+
+[nodes.operation]
+name = "health_check"
+
+[nodes.operation.params]
+check_petaltongue = true
+timeout_seconds = 15

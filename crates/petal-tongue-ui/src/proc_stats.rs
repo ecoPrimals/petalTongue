@@ -10,8 +10,18 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
-/// Linux page size (bytes). Standard on x86_64/aarch64.
-const PAGE_SIZE: u64 = 4096;
+/// Linux page size (bytes), queried from the kernel at runtime.
+fn page_size() -> u64 {
+    #[cfg(target_os = "linux")]
+    {
+        // rustix provides a safe, zero-overhead wrapper around sysconf(_SC_PAGESIZE)
+        u64::try_from(rustix::param::page_size()).unwrap_or(4096)
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        4096
+    }
+}
 
 /// Source identifier for live metrics (replaces "sysinfo")
 pub const SOURCE_ID: &str = "proc";
@@ -279,7 +289,7 @@ fn collect_processes(
             pid,
             name: comm,
             cpu_usage: cpu_pct as f32,
-            memory: rss * PAGE_SIZE,
+            memory: rss * page_size(),
         });
     }
 
@@ -392,13 +402,14 @@ mod tests {
 
     #[test]
     fn process_info_memory_uses_page_size() {
+        let ps = page_size();
         let p = ProcessInfo {
             pid: 1,
             name: "test".to_string(),
             cpu_usage: 0.0,
-            memory: 100 * PAGE_SIZE,
+            memory: 100 * ps,
         };
-        assert_eq!(p.memory, 100 * 4096);
+        assert_eq!(p.memory, 100 * ps);
     }
 
     #[test]

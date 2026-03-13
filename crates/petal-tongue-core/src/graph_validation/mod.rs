@@ -9,7 +9,6 @@ mod structure;
 mod types;
 
 #[cfg(test)]
-#[allow(unused_must_use)]
 mod tests;
 
 pub use types::{ValidationIssue, ValidationResult, ValidationSeverity};

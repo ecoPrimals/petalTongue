@@ -66,6 +66,7 @@ winit = "0.30"
 # See: src/audio_canvas.rs for implementation
 
 # External tool integrations - ecoBin v3.0: pure Rust /proc parsing (see proc_stats.rs)
+rustix = { version = "0.38", features = ["param"] }  # Runtime page_size() for /proc RSS
 
 # Pure Rust display system (crossterm = 100% pure Rust)
 crossterm = "0.28"  # Terminal input/output for sensors (rustix backend, no libc)

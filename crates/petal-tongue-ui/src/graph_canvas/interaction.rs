@@ -111,7 +111,7 @@ impl GraphCanvas {
     }
 
     /// Handle mouse interactions (clicks, drags)
-    fn handle_mouse_interaction(&mut self, ui: &mut Ui, response: &Response, canvas_rect: Rect) {
+    fn handle_mouse_interaction(&mut self, ui: &Ui, response: &Response, canvas_rect: Rect) {
         let ctrl_held = ui.input(|i| i.modifiers.ctrl);
         let shift_held = ui.input(|i| i.modifiers.shift);
 
@@ -270,7 +270,7 @@ impl GraphCanvas {
     }
 
     /// Update which node is being hovered
-    fn update_hovered_node(&mut self, ui: &mut Ui, response: &Response) {
+    fn update_hovered_node(&mut self, ui: &Ui, response: &Response) {
         self.hovered_node = None;
 
         if let Some(pointer_pos) = response.hover_pos() {

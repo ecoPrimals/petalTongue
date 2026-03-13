@@ -88,7 +88,7 @@ async fn main() -> Result<()> {
         last_frame_time = frame_start;
 
         // Run egui frame
-        let output = ctx.run(Default::default(), |ctx| {
+        let output = ctx.run(egui::RawInput::default(), |ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
                 ui.heading("🌸 petalTongue - Framebuffer Demo");
                 ui.separator();
@@ -124,6 +124,7 @@ async fn main() -> Result<()> {
                     println!("Button clicked at frame {i}");
                 }
 
+                #[allow(clippy::cast_precision_loss)]
                 let mut value = i as f32 / 60.0;
                 ui.add(egui::Slider::new(&mut value, 0.0..=1.0).text("Progress"));
             });

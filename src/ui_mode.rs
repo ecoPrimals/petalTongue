@@ -100,6 +100,11 @@ pub async fn run(
 
 #[cfg(test)]
 mod tests {
+    #[cfg(not(feature = "ui"))]
+    use std::sync::Arc;
+
+    #[cfg(not(feature = "ui"))]
+    use super::*;
 
     #[tokio::test]
     #[cfg(feature = "ui")]
@@ -111,8 +116,82 @@ mod tests {
     #[tokio::test]
     #[cfg(not(feature = "ui"))]
     async fn test_ui_mode_not_available() {
-        let result = run(None, false).await;
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let result = run(None, false, data_service).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not available"));
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("not available"));
+    }
+
+    #[tokio::test]
+    #[cfg(not(feature = "ui"))]
+    async fn test_ui_mode_error_suggests_alternatives() {
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let result = run(None, false, data_service).await;
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("tui"));
+        assert!(err_msg.contains("web"));
+    }
+
+    #[tokio::test]
+    #[cfg(not(feature = "ui"))]
+    async fn test_ui_mode_with_scenario_still_fails() {
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let result = run(Some("scenario.json".to_string()), true, data_service).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    #[cfg(not(feature = "ui"))]
+    async fn test_ui_mode_error_contains_rebuild_tip() {
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let result = run(None, false, data_service).await;
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("--features ui") || err_msg.contains("Rebuild"),
+            "Error should suggest rebuild: {err_msg}"
+        );
+    }
+
+    #[tokio::test]
+    #[cfg(not(feature = "ui"))]
+    async fn test_ui_mode_no_audio_arg_still_fails() {
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let result = run(None, true, data_service).await;
+        assert!(
+            result.is_err(),
+            "no_audio=true should still fail when ui disabled"
+        );
+    }
+
+    #[tokio::test]
+    #[cfg(not(feature = "ui"))]
+    async fn test_ui_mode_empty_scenario_string_still_fails() {
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let result = run(Some(String::new()), false, data_service).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    #[cfg(not(feature = "ui"))]
+    async fn test_ui_mode_invalid_path_scenario_still_fails() {
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let result = run(
+            Some("/nonexistent/path/to/scenario.json".to_string()),
+            false,
+            data_service,
+        )
+        .await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    #[cfg(not(feature = "ui"))]
+    async fn test_ui_mode_error_is_anyhow() {
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let result = run(None, false, data_service).await;
+        let err = result.unwrap_err();
+        // Verify it's a proper anyhow chain (has at least one error in chain)
+        assert!(err.chain().next().is_some());
     }
 }

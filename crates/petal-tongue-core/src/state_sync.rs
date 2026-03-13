@@ -292,6 +292,14 @@ mod tests {
                 Self { storage },
             )
         }
+
+        fn with_shared_storage(
+            storage: &std::sync::Arc<Mutex<HashMap<String, DeviceState>>>,
+        ) -> Self {
+            Self {
+                storage: std::sync::Arc::clone(storage),
+            }
+        }
     }
 
     impl StatePersistence for InMemoryPersistence {
@@ -729,6 +737,122 @@ mod tests {
         assert!(json.contains("device_id"));
         let restored: DeviceState = serde_json::from_str(&json).unwrap();
         assert_eq!(restored.device_type, DeviceType::Watch);
+    }
+
+    #[test]
+    fn test_concurrent_persistence_access() {
+        let storage = std::sync::Arc::new(Mutex::new(HashMap::new()));
+        let p1 = InMemoryPersistence::with_shared_storage(&storage);
+        let p2 = InMemoryPersistence::with_shared_storage(&storage);
+        let p3 = InMemoryPersistence::with_shared_storage(&storage);
+        let h1 = std::thread::spawn(move || {
+            let mut sync = StateSync::with_persistence(Box::new(p1));
+            sync.init("dev-a".to_string(), DeviceType::Desktop).unwrap();
+            sync.set_ui_state("k".to_string(), DynamicValue::String("v1".to_string()))
+                .unwrap();
+        });
+        let h2 = std::thread::spawn(move || {
+            let mut sync = StateSync::with_persistence(Box::new(p2));
+            sync.init("dev-b".to_string(), DeviceType::Phone).unwrap();
+            sync.set_ui_state("k".to_string(), DynamicValue::String("v2".to_string()))
+                .unwrap();
+        });
+        h1.join().unwrap();
+        h2.join().unwrap();
+        let a = p3.load("dev-a").unwrap();
+        let b = p3.load("dev-b").unwrap();
+        assert!(a.is_some());
+        assert!(b.is_some());
+        assert_eq!(
+            a.unwrap().get_ui_state("k").and_then(|v| v.as_str()),
+            Some("v1")
+        );
+        assert_eq!(
+            b.unwrap().get_ui_state("k").and_then(|v| v.as_str()),
+            Some("v2")
+        );
+    }
+
+    #[test]
+    fn test_state_transition_init_update_cycle() {
+        let (persistence, reader) = InMemoryPersistence::shared();
+        let mut sync = StateSync::with_persistence(Box::new(persistence));
+        sync.init("dev".to_string(), DeviceType::Desktop).unwrap();
+        let mut state = sync.current().unwrap().clone();
+        state.set_ui_state(
+            "phase".to_string(),
+            DynamicValue::String("running".to_string()),
+        );
+        sync.update(state).unwrap();
+        let loaded = reader.load("dev").unwrap().unwrap();
+        assert_eq!(
+            loaded.get_ui_state("phase").and_then(|v| v.as_str()),
+            Some("running")
+        );
+    }
+
+    #[test]
+    fn test_conflict_resolution_merge_timestamp() {
+        let mut state1 = DeviceState::new("dev1".to_string(), DeviceType::Desktop);
+        state1.set_ui_state("x".to_string(), DynamicValue::String("old".to_string()));
+        state1.last_updated = Utc::now() - chrono::Duration::seconds(5);
+
+        let mut state2 = DeviceState::new("dev2".to_string(), DeviceType::Phone);
+        state2.set_ui_state("x".to_string(), DynamicValue::String("new".to_string()));
+        state2.set_ui_state("y".to_string(), DynamicValue::Number(1.0));
+        state2.last_updated = Utc::now();
+
+        state1.merge(&state2);
+        assert_eq!(
+            state1.get_ui_state("x").and_then(|v| v.as_str()),
+            Some("new")
+        );
+    }
+
+    #[test]
+    fn test_device_state_merge_multiple_preferences() {
+        let mut state1 = DeviceState::new("dev1".to_string(), DeviceType::Desktop);
+        state1.set_preference("a".to_string(), DynamicValue::String("1".to_string()));
+        state1.set_preference("b".to_string(), DynamicValue::Number(2.0));
+
+        let mut state2 = DeviceState::new("dev2".to_string(), DeviceType::Phone);
+        state2.set_preference("b".to_string(), DynamicValue::Number(99.0));
+        state2.set_preference("c".to_string(), DynamicValue::Boolean(true));
+        state2.last_updated = state1.last_updated - chrono::Duration::seconds(1);
+
+        state1.merge(&state2);
+        assert_eq!(
+            state1.get_preference("a").and_then(|v| v.as_str()),
+            Some("1")
+        );
+        assert_eq!(
+            state1.get_preference("b").and_then(DynamicValue::as_f64),
+            Some(99.0)
+        );
+        assert_eq!(
+            state1.get_preference("c").and_then(DynamicValue::as_bool),
+            Some(true)
+        );
+    }
+
+    #[test]
+    fn test_in_memory_persistence_shared_isolation() {
+        let (p1, p2) = InMemoryPersistence::shared();
+        let state = DeviceState::new("dev".to_string(), DeviceType::Desktop);
+        p1.save(&state).unwrap();
+        let loaded = p2.load("dev").unwrap();
+        assert!(loaded.is_some());
+        assert_eq!(loaded.unwrap().device_id, "dev");
+    }
+
+    #[test]
+    fn test_state_sync_init_twice_returns_cached() {
+        let persistence = InMemoryPersistence::new();
+        let mut sync = StateSync::with_persistence(Box::new(persistence));
+        let s1 = sync.init("dev".to_string(), DeviceType::Desktop).unwrap();
+        let s2 = sync.init("dev".to_string(), DeviceType::Phone).unwrap();
+        assert_eq!(s1.device_id, s2.device_id);
+        assert_eq!(s2.device_type, DeviceType::Phone);
     }
 }
 

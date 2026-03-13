@@ -125,69 +125,120 @@ pub enum SensorType {
     Unknown,
 }
 
-/// Events from sensors
-#[allow(missing_docs)]
+/// Events emitted by sensors (input devices, display backends, etc.).
+///
+/// Each variant carries a `timestamp` for ordering and latency measurement.
 #[derive(Debug, Clone)]
 pub enum SensorEvent {
     /// Mouse/pointer position update
-    Position { x: f32, y: f32, timestamp: Instant },
+    Position {
+        /// X coordinate
+        x: f32,
+        /// Y coordinate
+        y: f32,
+        /// When the event occurred
+        timestamp: Instant,
+    },
 
     /// Mouse/pointer click event
     Click {
+        /// X coordinate
         x: f32,
+        /// Y coordinate
         y: f32,
+        /// Which button was pressed
         button: MouseButton,
+        /// When the event occurred
         timestamp: Instant,
     },
 
     /// Scroll wheel event
     Scroll {
+        /// Horizontal scroll delta
         delta_x: f32,
+        /// Vertical scroll delta
         delta_y: f32,
+        /// When the event occurred
         timestamp: Instant,
     },
 
     /// Keyboard key press event
     KeyPress {
+        /// Key that was pressed
         key: Key,
+        /// Modifier keys held at press time
         modifiers: Modifiers,
+        /// When the event occurred
         timestamp: Instant,
     },
 
     /// Keyboard key release event
     KeyRelease {
+        /// Key that was released
         key: Key,
+        /// Modifier keys held at release time
         modifiers: Modifiers,
+        /// When the event occurred
         timestamp: Instant,
     },
 
     /// Generic button press event
-    ButtonPress { button: u8, timestamp: Instant },
+    ButtonPress {
+        /// Button identifier
+        button: u8,
+        /// When the event occurred
+        timestamp: Instant,
+    },
 
     /// Audio input level measurement
     AudioLevel {
+        /// Amplitude level
         amplitude: f32,
+        /// Dominant frequency if available
         frequency: Option<f32>,
+        /// When the event occurred
         timestamp: Instant,
     },
 
     /// Temperature sensor reading
-    Temperature { celsius: f32, timestamp: Instant },
+    Temperature {
+        /// Temperature in Celsius
+        celsius: f32,
+        /// When the event occurred
+        timestamp: Instant,
+    },
 
     /// Heartbeat confirmation from display backend
     Heartbeat {
+        /// Round-trip latency
         latency: std::time::Duration,
+        /// When the event occurred
         timestamp: Instant,
     },
 
     /// Confirmation that a rendered frame was displayed
-    FrameAcknowledged { frame_id: u64, timestamp: Instant },
+    FrameAcknowledged {
+        /// Frame identifier
+        frame_id: u64,
+        /// When the event occurred
+        timestamp: Instant,
+    },
 
     /// Display visibility changed (app focused/unfocused)
-    DisplayVisible { visible: bool, timestamp: Instant },
+    DisplayVisible {
+        /// Whether the display is visible to the user
+        visible: bool,
+        /// When the event occurred
+        timestamp: Instant,
+    },
 
     /// Generic event for extensibility
-    Generic { data: String, timestamp: Instant },
+    Generic {
+        /// Event payload
+        data: String,
+        /// When the event occurred
+        timestamp: Instant,
+    },
 }
 
 impl SensorEvent {
@@ -232,47 +283,65 @@ impl SensorEvent {
     }
 }
 
-/// Mouse button identifier
-#[allow(missing_docs)]
+/// Mouse button identifier for click events.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MouseButton {
+    /// Left mouse button (primary click)
     Left,
+    /// Right mouse button (secondary click)
     Right,
+    /// Middle mouse button (scroll wheel click)
     Middle,
+    /// Other button with raw identifier
     Other(u8),
 }
 
-/// Key identifier (no hardcoded keyboard layout)
-#[allow(missing_docs)]
+/// Key identifier for keyboard events (layout-agnostic).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Key {
+    /// Printable character key
     Char(char),
+    /// Named key (e.g. "Space", "CapsLock") for non-printable keys
     Named(String),
+    /// Escape key
     Escape,
+    /// Enter/Return key
     Enter,
+    /// Tab key
     Tab,
+    /// Backspace key
     Backspace,
+    /// Delete key
     Delete,
+    /// Arrow up
     Up,
+    /// Arrow down
     Down,
+    /// Arrow left
     Left,
+    /// Arrow right
     Right,
+    /// Function key (F1 = F(1), etc.)
     F(u8),
+    /// Unknown or unmapped key
     Unknown,
 }
 
-/// Keyboard modifiers
-#[allow(missing_docs)]
+/// Keyboard modifier state (Ctrl, Alt, Shift, Meta/Cmd).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Modifiers {
+    /// Control key held
     pub ctrl: bool,
+    /// Alt/Option key held
     pub alt: bool,
+    /// Shift key held
     pub shift: bool,
+    /// Meta/Windows/Cmd key held
     pub meta: bool,
 }
 
 impl Modifiers {
-    #[allow(missing_docs)]
+    /// No modifiers pressed.
     #[must_use]
     pub const fn none() -> Self {
         Self {
@@ -283,7 +352,7 @@ impl Modifiers {
         }
     }
 
-    #[allow(missing_docs)]
+    /// Ctrl modifier only.
     #[must_use]
     pub const fn ctrl() -> Self {
         Self {

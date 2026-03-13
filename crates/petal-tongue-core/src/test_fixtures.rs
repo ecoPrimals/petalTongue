@@ -78,6 +78,17 @@ pub mod env_test_helpers {
             .collect();
         temp_env::async_with_vars(owned, f()).await
     }
+
+    /// Async version: temporarily remove multiple env vars for testing.
+    pub async fn with_env_vars_removed_async<F, Fut, R>(keys: &[&str], f: F) -> R
+    where
+        F: FnOnce() -> Fut,
+        Fut: std::future::Future<Output = R>,
+    {
+        let owned: Vec<(String, Option<String>)> =
+            keys.iter().map(|k| (k.to_string(), None)).collect();
+        temp_env::async_with_vars(owned, f()).await
+    }
 }
 
 /// Test endpoint constants

@@ -414,7 +414,7 @@ impl Default for VisualizationState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::visualization_handler::types::StreamOperation;
+    use crate::visualization_handler::types::{BackpressureConfig, StreamOperation};
     use petal_tongue_core::DataBinding;
     use petal_tongue_scene::grammar::{GeometryType, GrammarExpr};
 
@@ -893,5 +893,96 @@ mod tests {
             session.ui_config.as_ref().expect("config").mode.as_deref(),
             Some("clinical")
         );
+    }
+
+    #[test]
+    fn test_handle_session_status_nonexistent() {
+        let state = VisualizationState::new();
+        let req = SessionStatusRequest {
+            session_id: "nonexistent".to_string(),
+        };
+        let resp = state.handle_session_status(&req);
+        assert!(!resp.exists);
+        assert_eq!(resp.session_id, "nonexistent");
+        assert_eq!(resp.frame_count, 0);
+        assert_eq!(resp.binding_count, 0);
+        assert!(!resp.backpressure_active);
+    }
+
+    #[test]
+    fn test_handle_session_status_exists() {
+        let mut state = VisualizationState::new();
+        state.handle_render(VisualizationRenderRequest {
+            session_id: "s1".to_string(),
+            title: "T".to_string(),
+            bindings: vec![make_timeseries("b1")],
+            thresholds: vec![],
+            domain: Some("health".to_string()),
+            ui_config: None,
+        });
+        let req = SessionStatusRequest {
+            session_id: "s1".to_string(),
+        };
+        let resp = state.handle_session_status(&req);
+        assert!(resp.exists);
+        assert_eq!(resp.session_id, "s1");
+        assert_eq!(resp.binding_count, 1);
+        assert_eq!(resp.domain.as_deref(), Some("health"));
+    }
+
+    #[test]
+    fn test_with_backpressure_config() {
+        let config = BackpressureConfig {
+            max_updates_per_sec: 10,
+            cooldown: std::time::Duration::from_millis(100),
+            burst_tolerance: 2,
+        };
+        let mut state = VisualizationState::new().with_backpressure(config);
+        state.handle_render(VisualizationRenderRequest {
+            session_id: "bp".to_string(),
+            title: "BP".to_string(),
+            bindings: vec![make_timeseries("b1")],
+            thresholds: vec![],
+            domain: None,
+            ui_config: None,
+        });
+        for _ in 0..15 {
+            let _ = state.handle_stream_update(StreamUpdateRequest {
+                session_id: "bp".to_string(),
+                binding_id: "b1".to_string(),
+                operation: StreamOperation::Append {
+                    x_values: vec![1.0],
+                    y_values: vec![1.0],
+                },
+            });
+        }
+        let req = SessionStatusRequest {
+            session_id: "bp".to_string(),
+        };
+        let resp = state.handle_session_status(&req);
+        assert!(resp.exists);
+    }
+
+    #[test]
+    fn test_handle_dismiss_removes_binding_scenes() {
+        let mut state = VisualizationState::new();
+        state.handle_render(VisualizationRenderRequest {
+            session_id: "ds".to_string(),
+            title: "T".to_string(),
+            bindings: vec![make_timeseries("b1"), make_gauge("b2", 50.0)],
+            thresholds: vec![],
+            domain: None,
+            ui_config: None,
+        });
+        assert!(state.grammar_scene("ds:b1").is_some());
+        assert!(state.grammar_scene("ds:b2").is_some());
+        let req = DismissRequest {
+            session_id: "ds".to_string(),
+        };
+        let resp = state.handle_dismiss(req);
+        assert!(resp.dismissed);
+        assert!(state.grammar_scene("ds:b1").is_none());
+        assert!(state.grammar_scene("ds:b2").is_none());
+        assert!(state.sessions().get("ds").is_none());
     }
 }

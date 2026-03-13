@@ -207,12 +207,7 @@ impl ToadstoolDisplay {
     }
 
     /// Create window via tarpc
-    async fn create_window(
-        &mut self,
-        title: &str,
-        width: u32,
-        height: u32,
-    ) -> Result<WindowResponse> {
+    async fn create_window(&self, title: &str, width: u32, height: u32) -> Result<WindowResponse> {
         info!("🌸 Creating {}x{} window via tarpc...", width, height);
 
         let params = serde_json::json!({

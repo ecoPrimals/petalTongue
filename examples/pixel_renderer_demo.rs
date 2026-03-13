@@ -20,7 +20,7 @@ fn main() -> Result<()> {
     println!("✅ Created egui context");
 
     // Create a simple UI
-    let output = ctx.run(Default::default(), |ctx| {
+    let output = ctx.run(egui::RawInput::default(), |ctx| {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("🌸 petalTongue");
             ui.label("Pure Rust Pixel Rendering");

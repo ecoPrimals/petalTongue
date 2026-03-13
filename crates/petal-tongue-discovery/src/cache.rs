@@ -384,4 +384,85 @@ mod tests {
         assert!(cache.get(CacheKey::Topology).await.is_some());
         assert!(cache.get(CacheKey::Health).await.is_some());
     }
+
+    #[tokio::test]
+    async fn test_empty_cache_behavior() {
+        let cache: ProviderCache<Vec<String>> = ProviderCache::new(10);
+        assert!(cache.get_primals().await.is_none());
+        assert!(cache.get_topology().await.is_none());
+        assert!(cache.get_health().await.is_none());
+        let stats = cache.stats().await;
+        assert_eq!(stats.total, 3);
+        assert_eq!(stats.hit_rate, 0.0);
+    }
+
+    #[tokio::test]
+    async fn test_invalidate_all() {
+        let cache = ProviderCache::new(10);
+        cache.put_primals(vec!["a".to_string()]).await;
+        cache.put_topology(vec!["b".to_string()]).await;
+        cache.put_health(vec!["c".to_string()]).await;
+        cache.invalidate_all().await;
+        assert!(cache.get_primals().await.is_none());
+        assert!(cache.get_topology().await.is_none());
+        assert!(cache.get_health().await.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_access() {
+        let cache = Arc::new(ProviderCache::new(100));
+        let mut handles = Vec::new();
+        for i in 0..10 {
+            let c = Arc::clone(&cache);
+            handles.push(tokio::spawn(async move {
+                c.put_primals(vec![format!("primal-{i}")]).await;
+                c.get_primals().await
+            }));
+        }
+        for h in handles {
+            let result = h.await.unwrap();
+            assert!(result.is_some());
+        }
+        let stats = cache.stats().await;
+        assert!(stats.hits >= 1);
+    }
+
+    #[tokio::test]
+    async fn test_with_ttls() {
+        let cache = ProviderCache::with_ttls(
+            10,
+            Duration::from_secs(5),
+            Duration::from_secs(10),
+            Duration::from_secs(15),
+        );
+        cache.put_primals(vec!["x".to_string()]).await;
+        assert!(cache.get_primals().await.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_zero_capacity_uses_minimum() {
+        let cache: ProviderCache<Vec<String>> = ProviderCache::new(0);
+        cache.put_primals(vec!["min".to_string()]).await;
+        assert!(cache.get_primals().await.is_some());
+    }
+
+    #[test]
+    fn test_cache_stats_display() {
+        let stats = CacheStats {
+            hits: 10,
+            misses: 5,
+            total: 15,
+            hit_rate: 66.666,
+        };
+        let s = format!("{stats}");
+        assert!(s.contains("10"));
+        assert!(s.contains("5"));
+        assert!(s.contains("66.7"));
+    }
+
+    #[test]
+    fn test_cache_key_equality() {
+        assert_eq!(CacheKey::Primals, CacheKey::Primals);
+        assert_ne!(CacheKey::Primals, CacheKey::Topology);
+    }
 }
