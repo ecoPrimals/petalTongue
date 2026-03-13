@@ -117,6 +117,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::significant_drop_tightening)]
     fn test_poison_error_conversion() {
         use std::sync::{Arc, RwLock};
 
@@ -124,7 +125,7 @@ mod tests {
         let lock = Arc::new(RwLock::new(0));
         let lock_clone = Arc::clone(&lock);
 
-        // Poison the lock by panicking while holding it
+        // Poison the lock by panicking while holding it (guard must stay for poison)
         let _ = std::panic::catch_unwind(|| {
             let mut data = lock_clone.write().unwrap();
             *data = 1;
@@ -132,12 +133,10 @@ mod tests {
         });
 
         // Try to acquire the poisoned lock
+        #[allow(clippy::significant_drop_tightening)]
         let result = lock.write();
         assert!(result.is_err());
-
-        // Convert to PetalTongueError
-        let poison_err = result.unwrap_err();
-        let err: PetalTongueError = poison_err.into();
+        let err: PetalTongueError = result.unwrap_err().into();
         let msg = format!("{err}");
         assert!(msg.contains("lock poisoned"));
     }

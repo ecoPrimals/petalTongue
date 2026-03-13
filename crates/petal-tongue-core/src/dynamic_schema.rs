@@ -311,6 +311,13 @@ impl DynamicData {
         self.fields.insert(key, value);
     }
 
+    /// Merge fields from another schema. For conflicting keys, values from `other` overwrite.
+    pub fn merge(&mut self, other: &Self) {
+        for (k, v) in &other.fields {
+            self.fields.insert(k.clone(), v.clone());
+        }
+    }
+
     /// Parse from JSON string
     pub fn from_json_str(json: &str) -> Result<Self> {
         serde_json::from_str(json).context("Failed to parse dynamic data from JSON")
@@ -824,5 +831,82 @@ mod proptest_tests {
         }
         proptest!(|(n in proptest::num::f64::NORMAL)| prop_num(n)?);
         proptest!(|(s in "\\PC*")| prop_str(s)?);
+    }
+
+    /// Schema merge is associative: (a.merge(b)).merge(c) has same fields as a.merge(b.merge(c)).
+    #[test]
+    #[allow(clippy::many_single_char_names)]
+    fn prop_schema_merge_associative() {
+        fn prop(
+            key1: String,
+            val1: f64,
+            key2: String,
+            val2: f64,
+            key3: String,
+            val3: f64,
+        ) -> Result<(), TestCaseError> {
+            let name1 = if key1.is_empty() {
+                "alpha".to_string()
+            } else {
+                key1
+            };
+            let name2 = if key2.is_empty() {
+                "beta".to_string()
+            } else {
+                key2
+            };
+            let name3 = if key3.is_empty() {
+                "gamma".to_string()
+            } else {
+                key3
+            };
+            let mut data_a = DynamicData::new();
+            data_a.set(name1, DynamicValue::Number(val1));
+            let mut data_b = DynamicData::new();
+            data_b.set(name2, DynamicValue::Number(val2));
+            let mut data_c = DynamicData::new();
+            data_c.set(name3, DynamicValue::Number(val3));
+            let mut left = data_a.clone();
+            left.merge(&data_b);
+            left.merge(&data_c);
+            let mut bc_merged = data_b.clone();
+            bc_merged.merge(&data_c);
+            let mut right = data_a.clone();
+            right.merge(&bc_merged);
+            for key in left.fields.keys().chain(right.fields.keys()) {
+                let lhs = left.get(key).and_then(DynamicValue::as_f64);
+                let rhs = right.get(key).and_then(DynamicValue::as_f64);
+                prop_assert_eq!(lhs, rhs, "merge associative: key={}", key);
+            }
+            prop_assert_eq!(left.fields.len(), right.fields.len());
+            Ok(())
+        }
+        proptest!(|(key1 in "\\w{1,5}", val1 in proptest::num::f64::NORMAL, key2 in "\\w{1,5}", val2 in proptest::num::f64::NORMAL, key3 in "\\w{1,5}", val3 in proptest::num::f64::NORMAL)| prop(key1, val1, key2, val2, key3, val3)?);
+    }
+
+    /// Schema validation (from_json_str) is deterministic: same input yields same output.
+    #[test]
+    fn prop_schema_validation_deterministic() {
+        #[allow(clippy::needless_pass_by_value)]
+        fn prop(key: String, val: f64) -> Result<(), TestCaseError> {
+            let key = if key.is_empty() {
+                "k".to_string()
+            } else {
+                key.chars()
+                    .filter(|c| c.is_ascii_alphanumeric() || *c == '_')
+                    .collect()
+            };
+            let key = if key.is_empty() { "k".to_string() } else { key };
+            let json = format!("{{\"{key}\":{val}}}");
+            let r1 = DynamicData::from_json_str(&json);
+            let r2 = DynamicData::from_json_str(&json);
+            prop_assert_eq!(r1.is_ok(), r2.is_ok());
+            if let (Ok(d1), Ok(d2)) = (&r1, &r2) {
+                prop_assert_eq!(d1.fields.len(), d2.fields.len());
+                prop_assert_eq!(d1.get_f64(&key), d2.get_f64(&key));
+            }
+            Ok(())
+        }
+        proptest!(|(key in "\\w{0,20}", val in proptest::num::f64::NORMAL)| prop(key, val)?);
     }
 }

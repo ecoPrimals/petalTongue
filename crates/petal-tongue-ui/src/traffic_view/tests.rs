@@ -574,7 +574,7 @@ fn test_primal_lane_layout_many() {
 fn test_bezier_control_points_vertical() {
     let (ctrl1, ctrl2) = bezier_control_points(100.0, 0.0, 100.0, 200.0);
     let dx = 0.0_f32;
-    let offset = dx.abs() * 0.3;
+    let _offset = dx.abs() * 0.3;
     assert!((ctrl1[0] - 100.0).abs() < f32::EPSILON);
     assert!((ctrl1[1] - 0.0).abs() < f32::EPSILON);
     assert!((ctrl2[0] - 100.0).abs() < f32::EPSILON);

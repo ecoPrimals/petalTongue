@@ -99,9 +99,7 @@ impl RetryPolicy {
             }
         }
 
-        Err(last_error.unwrap_or_else(|| {
-            unreachable!("last_error is always Some after loop exhausts all attempts with failures")
-        }))
+        Err(last_error.expect("last_error is always Some after loop exhausts all attempts"))
     }
 
     /// Execute with timeout per attempt

@@ -104,135 +104,15 @@ View dehydration → Time collapse animation
 See anchors → Multiple orderings
 ```
 
-### 4. **Deployment Theater** (`scenarios/deployment-demo.json`)
-**Showcase**: Live spore deployment with genetic lineage
-
-**What You See**:
-- Cold spore → Live awakening animation
-- Genetic lineage tree
-- Parent → child relationship
-- Deployment progress bars
-- Real-time status updates
-- Success celebration
-
-**Deployment Flow**:
-1. Select parent spore (desktop tower)
-2. Create USB sibling
-3. Watch spore creation (blue → gray)
-4. Insert USB animation
-5. Boot sequence (orange → yellow → green)
-6. Live awakening celebration
-
-**User Experience**:
-```
-Click "Deploy Spore" → Modal opens
-Select parent → Family tree highlights
-Create sibling → Animation begins
-Watch deployment → Real-time progress
-Success! → Celebration animation
-```
-
-### 5. **Neural API Learning** (`scenarios/neural-learning.json`)
-**Showcase**: Adaptive optimization and pattern discovery
-
-**What You See**:
-- Usage heatmap (frequently used paths)
-- Learning curves (optimization over time)
-- Pattern discovery (emerging workflows)
-- Pathway optimization (route changes)
-- Bidirectional feedback loops
-
-**Learning Phases**:
-- **Forward**: Execute and observe
-- **Backward**: Analyze and learn
-- **Adapt**: Optimize pathways
-- **Evolve**: Discover patterns
-
-**User Experience**:
-```
-View heatmap → See usage patterns
-Watch optimization → Paths change color
-Discover pattern → New workflow emerges
-See improvement → Performance graphs
-```
-
-### 6. **Multi-Modal Studio** (`scenarios/multimodal-demo.json`)
-**Showcase**: Audio + Visual + Haptic rendering
-
-**What You See**:
-- Visual topology (main canvas)
-- Audio waveforms (sonification)
-- Terminal output (TUI mode)
-- Haptic feedback indicators
-- Mode switching (smooth transitions)
-
-**Modalities**:
-- **Visual**: egui GUI (primary)
-- **Audio**: Data sonification
-- **Terminal**: ASCII art topology
-- **Haptic**: Future integration
-
-**User Experience**:
-```
-Toggle audio → Hear primal activity
-Switch to TUI → Terminal visualization
-Enable haptic → Feel system pulse
-Return to GUI → Smooth transition
-```
-
 ---
 
-## 🎮 Interactive Demonstrations
+## Interactive Demonstrations
 
 ### **benchTop Experience** (`demo-benchtop.sh`)
 
-**Full Desktop Environment Showcase**:
 ```bash
 ./sandbox/demo-benchtop.sh
 ```
-
-**Features**:
-1. **Launcher** - Modern app launcher (like steamOS)
-2. **System Monitor** - Live metrics dashboard
-3. **Graph Studio** - Visual graph builder
-4. **Deployment Manager** - Spore deployment UI
-5. **Discovery Explorer** - Capability browser
-6. **Settings** - System configuration
-
-**Design Principles**:
-- **Smooth**: 60+ FPS always
-- **Beautiful**: Modern, thoughtful design
-- **Intuitive**: No manual needed
-- **Powerful**: Full system control
-- **Adaptive**: Learns and evolves
-
-### **Neural API Showcase** (`demo-neural.sh`)
-
-**Adaptive Orchestration**:
-```bash
-./sandbox/demo-neural.sh
-```
-
-**Demonstrates**:
-1. Graph execution
-2. Bidirectional learning
-3. Pathway optimization
-4. Pattern discovery
-5. Multi-primal coordination
-
-### **RootPulse Showcase** (`demo-rootpulse.sh`)
-
-**Temporal Coordination**:
-```bash
-./sandbox/demo-rootpulse.sh
-```
-
-**Demonstrates**:
-1. DAG timeline (branching)
-2. Linear history (immutable)
-3. Commit visualization
-4. Semantic attribution
-5. Temporal dehydration
 
 ---
 
@@ -320,22 +200,19 @@ cargo build --release
 **Graph Builder**:
 ```bash
 ./target/release/petaltongue ui \
-  --scenario sandbox/scenarios/graph-studio.json \
-  --mode graph-builder
+  --scenario sandbox/scenarios/graph-studio.json
 ```
 
 **RootPulse**:
 ```bash
 ./target/release/petaltongue ui \
-  --scenario sandbox/scenarios/rootpulse-demo.json \
-  --mode rootpulse
+  --scenario sandbox/scenarios/rootpulse-demo.json
 ```
 
-**Neural Learning**:
+**Neural API**:
 ```bash
 ./target/release/petaltongue ui \
-  --scenario sandbox/scenarios/neural-learning.json \
-  --mode neural-api
+  --scenario sandbox/scenarios/neural-api-test.json
 ```
 
 ---

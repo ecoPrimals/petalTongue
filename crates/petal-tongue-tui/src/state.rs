@@ -477,6 +477,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[allow(clippy::cast_sign_loss)]
     async fn test_get_status() {
         let state = TUIState::new();
         state

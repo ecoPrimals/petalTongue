@@ -52,7 +52,7 @@ use tracing::{debug, info};
 pub struct ToadstoolDisplay {
     /// biomeOS socket path
     biomeos_socket: std::path::PathBuf,
-    /// Window ID (from `toadstool.display.create_window`)
+    /// Window ID (from `display.create_window`)
     window_id: Option<String>,
     /// Buffer handle (from toadstool)
     buffer_handle: Option<String>,
@@ -216,12 +216,12 @@ impl ToadstoolDisplay {
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
     }
 
-    /// Query toadStool display capabilities via biomeOS
+    /// Query display capabilities via biomeOS (capability-based, provider-agnostic)
     async fn query_capabilities(&self) -> Result<DisplayCapabilitiesResponse> {
-        info!("🌸 Querying toadStool display capabilities via biomeOS...");
+        info!("🌸 Querying display capabilities via biomeOS...");
 
         let result = self
-            .send_request("toadstool.display.query_capabilities", json!({}))
+            .send_request("display.query_capabilities", json!({}))
             .await?;
 
         let caps: DisplayCapabilitiesResponse = serde_json::from_value(result)
@@ -236,12 +236,9 @@ impl ToadstoolDisplay {
         Ok(caps)
     }
 
-    /// Create window via biomeOS → toadStool
+    /// Create window via biomeOS display capability provider
     async fn create_window(&self, title: &str, width: u32, height: u32) -> Result<WindowResponse> {
-        info!(
-            "🌸 Creating {}x{} window via biomeOS → toadStool...",
-            width, height
-        );
+        info!("🌸 Creating {width}x{height} window via biomeOS display provider...");
 
         let params = json!({
             "title": title,
@@ -249,9 +246,7 @@ impl ToadstoolDisplay {
             "height": height,
         });
 
-        let result = self
-            .send_request("toadstool.display.create_window", params)
-            .await?;
+        let result = self.send_request("display.create_window", params).await?;
 
         let window: WindowResponse = serde_json::from_value(result)
             .map_err(|e| anyhow!("Failed to parse window response: {e}"))?;
@@ -288,8 +283,7 @@ impl ToadstoolDisplay {
             buffer.len()
         );
 
-        self.send_request("toadstool.display.commit_frame", params)
-            .await?;
+        self.send_request("display.commit_frame", params).await?;
 
         debug!("✅ Frame committed successfully");
 

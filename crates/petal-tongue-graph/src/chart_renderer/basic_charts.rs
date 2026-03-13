@@ -565,7 +565,7 @@ mod tests {
 
     #[test]
     fn distribution_bins_large_dataset() {
-        let values: Vec<f64> = (0..1000).map(|i| (i as f64) / 10.0).collect();
+        let values: Vec<f64> = (0..1000).map(|i| f64::from(i) / 10.0).collect();
         let result = distribution_bins(&values, 20);
         let (lo, hi, counts) = result.expect("large dataset valid");
         assert!((lo - 0.0).abs() < f64::EPSILON);
@@ -613,8 +613,8 @@ mod tests {
 
     #[test]
     fn bar_chart_values_more_than_categories() {
-        let categories = vec!["A".to_string(), "B".to_string()];
-        let values = vec![1.0, 2.0, 3.0];
+        let categories: Vec<String> = ["A".to_string(), "B".to_string()].into();
+        let values: Vec<f64> = [1.0, 2.0, 3.0].into();
         assert!(values.len() > categories.len());
         let name_for = |i: usize| categories.get(i).map_or("?", String::as_str);
         assert_eq!(name_for(0), "A");
@@ -632,11 +632,11 @@ mod tests {
 
     #[test]
     fn bar_chart_single_bar() {
-        let categories = vec!["Only".to_string()];
-        let values = vec![42.0];
+        let categories: Vec<String> = ["Only".to_string()].into();
+        let values: Vec<f64> = [42.0].into();
         let name_for = |i: usize| categories.get(i).map_or("?", String::as_str);
         assert_eq!(name_for(0), "Only");
-        assert_eq!(values[0], 42.0);
+        assert!((values[0] - 42.0).abs() < f64::EPSILON);
     }
 
     #[test]

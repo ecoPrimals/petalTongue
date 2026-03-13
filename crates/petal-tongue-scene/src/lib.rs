@@ -36,6 +36,7 @@ pub mod math_objects {
 pub mod game_loop;
 pub mod gpu_compiler;
 pub mod modality;
+pub mod node_id;
 pub mod physics;
 pub mod primitive;
 pub mod render_plan;

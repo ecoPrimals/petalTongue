@@ -456,7 +456,7 @@ mod tests {
         };
         let s = format!("{stats}");
         assert!(s.contains("10"));
-        assert!(s.contains("5"));
+        assert!(s.contains('5'));
         assert!(s.contains("66.7"));
     }
 

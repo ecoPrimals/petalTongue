@@ -49,14 +49,9 @@ petalTongue is the Universal User Interface for the ecoPrimals ecosystem, provid
 ### **1. Build Binary**
 ```bash
 cd petalTongue
-archive/scripts-mar_2026/build_for_biomeos.sh
+cargo build --release
+cp target/release/petaltongue ../biomeOS/plasmidBin/
 ```
-
-This will:
-- Build release binary
-- Copy to `../biomeOS/plasmidBin/petaltongue`
-- Create version info file
-- Test binary execution
 
 ### **2. Run petalTongue**
 ```bash

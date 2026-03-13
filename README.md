@@ -45,25 +45,19 @@ petaltongue
 
 ### Architecture
 
-- **JSON-RPC 2.0** over Unix sockets (primary IPC)
-- **tarpc** binary RPC with `bytes::Bytes` zero-copy (secondary)
+- **tarpc** binary RPC with `bytes::Bytes` zero-copy (primary primal-to-primal)
+- **JSON-RPC 2.0** over Unix sockets (secondary, local IPC and debugging)
 - **HTTP** for browser/external clients only (fallback)
-- **Capability-based discovery** via Songbird (zero hardcoded primal names)
+- **Capability-based discovery** -- zero hardcoded primal names, runtime-only
 - **Self-knowledge only** -- other primals discovered at runtime
 - **Graceful degradation** -- works standalone or in full ecosystem
 - **Grammar of Graphics** -- composable data→visualization pipeline
-- **DataBinding auto-compiler** -- all 9 chart types (TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter, Scatter3D, FieldMap) auto-compile to grammar
-- **Geometry & faceting** -- Tile (heatmap/fieldmap), Arc (gauge), faceting (small multiples), threshold coloring
-- **Dashboard layout engine** -- multi-panel grid with domain theming and SVG export
+- **DataBinding auto-compiler** -- all 9 chart types auto-compile to grammar
 - **Tufte constraints** -- machine-checked visualization quality
-- **Domain-aware rendering** -- automatic palette selection per domain (health, physics, ecology, game...)
-- **Diverging color scales** -- three-stop interpolation for heatmaps (neuralSpring Kokkos parity)
-- **Server-side backpressure** -- rate limiting for 60 Hz streaming (configurable `BackpressureConfig`)
-- **JSONL telemetry ingestion** -- hotSpring telemetry parsed to `DataBinding::TimeSeries`
+- **Dashboard layout engine** -- multi-panel grid with domain theming and SVG export
+- **Domain-aware rendering** -- automatic palette selection per domain
+- **Server-side backpressure** -- rate limiting for 60 Hz streaming
 - **Pipeline DAG orchestration** -- multi-stage visualization workflows with topological sort
-- **Provider registry** -- `provider.register_capability` IPC for toadStool S145 compliance
-- **Session health** -- `visualization.session.status` queries backpressure and frame metrics
-- **Spring IPC** -- springs push data via `visualization.render`, petalTongue auto-compiles and renders
 - **Scenario loader** -- load JSON scenario files from disk (`--scenario` CLI flag)
 
 ### Crates (16)
@@ -93,14 +87,15 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 3,409 passing, 0 failures, 17 ignored |
+| Tests | 3,752 passing, 0 failures, 17 ignored |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings, pedantic + nursery enabled (`[workspace.lints.clippy]`) |
+| Clippy | Zero warnings (`-D warnings`) |
 | Docs | `RUSTDOCFLAGS="-D warnings" cargo doc` clean |
-| Coverage | 77.4% region / 79.2% function (llvm-cov) — target 90% |
-| Unsafe | `#![forbid(unsafe_code)]` workspace-wide, zero C deps |
+| Coverage | 79.8% region / 81.0% function (llvm-cov) -- target 90% |
+| Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
 | License | AGPL-3.0-only, SPDX headers on all source files |
-| Files | All production files under 1,000 lines (max: `animation.rs` 1,086 — refactor pending) |
+| Files | All production files under 1,000 lines (CI enforced) |
+| Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None -- pure Rust (`rustix` for syscalls) |
 

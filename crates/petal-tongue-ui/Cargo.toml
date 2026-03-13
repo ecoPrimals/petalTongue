@@ -134,3 +134,4 @@ doc = false
 petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }  # For tests that use test_fixtures (run: cargo test --features test-fixtures or --features mock)
 tokio = { workspace = true, features = ["test-util", "macros"] }
 tempfile = "3.10"
+proptest = { workspace = true }

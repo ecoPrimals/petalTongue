@@ -665,6 +665,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[allow(clippy::cast_sign_loss)]
     async fn data_update_primals_affects_item_count() {
         let state = crate::state::TUIState::new();
         state.set_view(crate::state::View::Primals).await;

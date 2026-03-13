@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![forbid(unsafe_code)]
 //! petalTongue ecoBud - Production `UniBin`
 //!
 //! # Architecture
@@ -482,5 +483,18 @@ mod tests {
             err_msg.contains("pretty") || err_msg.contains("init"),
             "expected pretty init error: {err_msg}"
         );
+    }
+
+    #[tokio::test]
+    async fn test_register_with_discovery_service_completes() {
+        // Registration runs to completion (gracefully handles service unavailability)
+        register_with_discovery_service().await;
+    }
+
+    #[test]
+    fn test_config_from_env_loads() {
+        let config = Config::from_env().expect("Config::from_env should load");
+        assert!(config.network.web_port > 0);
+        assert!(config.network.headless_port > 0);
     }
 }
