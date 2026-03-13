@@ -754,4 +754,209 @@ mod tests {
         assert!(csv.contains("Success"));
         assert!(csv.contains("summary"));
     }
+
+    #[test]
+    fn format_events_csv_escaped_payload() {
+        let event = TimelineEvent {
+            id: "ev1".to_string(),
+            from: "a".to_string(),
+            to: "b".to_string(),
+            event_type: "msg".to_string(),
+            timestamp: chrono::Utc::now(),
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: Some("line1,line2\n\"quoted\"".to_string()),
+        };
+        let csv = format_events_csv(vec![&event]);
+        assert!(csv.contains("\"line1,line2"));
+        assert!(csv.contains("\"\"quoted\"\""));
+    }
+
+    #[test]
+    fn escape_csv_with_carriage_return() {
+        assert_eq!(escape_csv("a\rb"), "\"a\rb\"");
+    }
+
+    #[test]
+    fn apply_intents_toggle_details() {
+        let mut view = TimelineView::new();
+        assert!(view.show_details());
+        view.apply_intents(&[TimelineIntent::ToggleDetails]);
+        assert!(!view.show_details());
+        view.apply_intents(&[TimelineIntent::ToggleDetails]);
+        assert!(view.show_details());
+    }
+
+    #[test]
+    fn apply_intents_export_csv_no_panic() {
+        let mut view = TimelineView::new();
+        view.add_event(TimelineEvent {
+            id: "e1".to_string(),
+            from: "a".to_string(),
+            to: "b".to_string(),
+            event_type: "test".to_string(),
+            timestamp: chrono::Utc::now(),
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        view.apply_intents(&[TimelineIntent::ExportCsv]);
+        // ExportCsv writes to platform data dir or temp - should not panic
+    }
+
+    #[test]
+    fn filtered_event_count_with_type_filter() {
+        let mut view = TimelineView::new();
+        let base = chrono::Utc::now();
+        view.add_event(TimelineEvent {
+            id: "1".to_string(),
+            from: "a".to_string(),
+            to: "b".to_string(),
+            event_type: "discover".to_string(),
+            timestamp: base,
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        view.add_event(TimelineEvent {
+            id: "2".to_string(),
+            from: "b".to_string(),
+            to: "c".to_string(),
+            event_type: "invoke".to_string(),
+            timestamp: base + chrono::Duration::seconds(1),
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        assert_eq!(view.filtered_event_count(), 2);
+        view.set_event_type_filter(Some("discover".to_string()));
+        assert_eq!(view.filtered_event_count(), 1);
+    }
+
+    #[test]
+    fn filtered_event_count_with_primal_filter() {
+        let mut view = TimelineView::new();
+        let base = chrono::Utc::now();
+        view.add_event(TimelineEvent {
+            id: "1".to_string(),
+            from: "alice".to_string(),
+            to: "bob".to_string(),
+            event_type: "x".to_string(),
+            timestamp: base,
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        view.add_event(TimelineEvent {
+            id: "2".to_string(),
+            from: "bob".to_string(),
+            to: "charlie".to_string(),
+            event_type: "x".to_string(),
+            timestamp: base + chrono::Duration::seconds(1),
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        view.set_primal_filter(Some("alice".to_string()));
+        assert_eq!(view.filtered_event_count(), 1);
+    }
+
+    #[test]
+    fn filtered_event_count_with_time_range() {
+        let mut view = TimelineView::new();
+        let base = chrono::DateTime::parse_from_rfc3339("2025-01-15T12:00:00Z")
+            .expect("valid")
+            .with_timezone(&chrono::Utc);
+        view.add_event(TimelineEvent {
+            id: "1".to_string(),
+            from: "a".to_string(),
+            to: "b".to_string(),
+            event_type: "x".to_string(),
+            timestamp: base - chrono::Duration::seconds(30),
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        view.add_event(TimelineEvent {
+            id: "2".to_string(),
+            from: "a".to_string(),
+            to: "b".to_string(),
+            event_type: "x".to_string(),
+            timestamp: base,
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        view.add_event(TimelineEvent {
+            id: "3".to_string(),
+            from: "a".to_string(),
+            to: "b".to_string(),
+            event_type: "x".to_string(),
+            timestamp: base + chrono::Duration::seconds(30),
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        view.set_time_range(
+            Some(base - chrono::Duration::seconds(10)),
+            Some(base + chrono::Duration::seconds(10)),
+        );
+        assert_eq!(view.filtered_event_count(), 1);
+    }
+
+    #[test]
+    fn get_primals_for_test_returns_sorted_unique() {
+        let mut view = TimelineView::new();
+        let base = chrono::Utc::now();
+        view.add_event(TimelineEvent {
+            id: "1".to_string(),
+            from: "charlie".to_string(),
+            to: "alice".to_string(),
+            event_type: "x".to_string(),
+            timestamp: base,
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        view.add_event(TimelineEvent {
+            id: "2".to_string(),
+            from: "bob".to_string(),
+            to: "charlie".to_string(),
+            event_type: "x".to_string(),
+            timestamp: base + chrono::Duration::seconds(1),
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        let primals = view.get_primals_for_test();
+        assert_eq!(primals, vec!["alice", "bob", "charlie"]);
+    }
+
+    #[test]
+    fn event_ids_ordered_by_timestamp() {
+        let mut view = TimelineView::new();
+        let base = chrono::Utc::now();
+        view.add_event(TimelineEvent {
+            id: "second".to_string(),
+            from: "a".to_string(),
+            to: "b".to_string(),
+            event_type: "x".to_string(),
+            timestamp: base + chrono::Duration::seconds(1),
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        view.add_event(TimelineEvent {
+            id: "first".to_string(),
+            from: "a".to_string(),
+            to: "b".to_string(),
+            event_type: "x".to_string(),
+            timestamp: base,
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        let ids = view.event_ids_ordered();
+        assert_eq!(ids, vec!["first", "second"]);
+    }
 }

@@ -226,6 +226,8 @@ impl UniversalRenderingEngine {
     }
 
     /// Start rendering in specific modality
+    /// Lock must be held across await for modality's &mut self (initialize, render)
+    #[allow(clippy::significant_drop_tightening)]
     pub async fn render(self: Arc<Self>, modality_name: &str) -> Result<()> {
         let mut registry = self.modalities.write().await;
 
@@ -331,6 +333,7 @@ mod tests {
         let state = engine.state.read().await;
         assert_eq!(state.view_mode, ViewMode::Graph);
         assert!(state.selection.is_empty());
+        drop(state);
     }
 
     #[tokio::test]
@@ -346,6 +349,7 @@ mod tests {
         let state = engine.state.read().await;
         assert_eq!(state.selection.len(), 1);
         assert!(state.selection.contains("node1"));
+        drop(state);
     }
 
     #[tokio::test]
@@ -359,6 +363,7 @@ mod tests {
         assert!((state.viewport.center_x - 100.0).abs() < f32::EPSILON);
         assert!((state.viewport.center_y - 200.0).abs() < f32::EPSILON);
         assert!((state.viewport.zoom - 1.5).abs() < f32::EPSILON);
+        drop(state);
     }
 
     #[tokio::test]
@@ -570,6 +575,7 @@ mod tests {
         let _ = engine.set_selection(empty).await;
         let state = engine.state.read().await;
         assert!(state.selection.is_empty());
+        drop(state);
     }
 
     #[tokio::test]
@@ -585,6 +591,7 @@ mod tests {
         assert!(state.selection.contains("a"));
         assert!(state.selection.contains("b"));
         assert!(state.selection.contains("c"));
+        drop(state);
     }
 
     #[tokio::test]
@@ -593,6 +600,7 @@ mod tests {
         let _ = engine.set_viewport(0.0, 0.0, 0.5).await;
         let state = engine.state.read().await;
         assert!((state.viewport.zoom - 0.5).abs() < f32::EPSILON);
+        drop(state);
     }
 
     #[tokio::test]

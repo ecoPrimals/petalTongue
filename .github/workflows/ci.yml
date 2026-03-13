@@ -74,13 +74,13 @@ jobs:
         run: |
           COVERAGE=$(cargo llvm-cov --workspace --summary-only 2>&1 | tail -1 | awk '{print $10}' | tr -d '%')
           echo "Coverage: ${COVERAGE}%"
-          # Warn if below 80%, fail if below 70%
-          if [ "$(echo "$COVERAGE < 70" | bc -l)" -eq 1 ]; then
-            echo "::error::Coverage ${COVERAGE}% is below 70% minimum"
+          # Aligned with llvm-cov.toml fail-under = 90
+          if [ "$(echo "$COVERAGE < 80" | bc -l)" -eq 1 ]; then
+            echo "::error::Coverage ${COVERAGE}% is below 80% minimum"
             exit 1
           fi
-          if [ "$(echo "$COVERAGE < 80" | bc -l)" -eq 1 ]; then
-            echo "::warning::Coverage ${COVERAGE}% is below 80% target"
+          if [ "$(echo "$COVERAGE < 90" | bc -l)" -eq 1 ]; then
+            echo "::warning::Coverage ${COVERAGE}% is below 90% target"
           fi
 
   file-size:

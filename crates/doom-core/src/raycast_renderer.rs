@@ -6,6 +6,8 @@
 use crate::wad_loader::{MapData, Vertex};
 use std::f32::consts::PI;
 
+const TWO_PI: f32 = 2.0 * PI;
+
 /// First-person raycasting renderer.
 pub struct RaycastRenderer {
     width: usize,
@@ -231,15 +233,16 @@ impl RaycastRenderer {
         self.player_y += strafe_angle.sin() * amount;
     }
 
-    /// Rotate player (turn).
+    /// Rotate player (turn). Angle is normalized to [0, 2π).
     pub fn rotate(&mut self, amount: f32) {
         self.player_angle += amount;
-
+        #[allow(clippy::while_float)]
         while self.player_angle < 0.0 {
-            self.player_angle += 2.0 * PI;
+            self.player_angle += TWO_PI;
         }
-        while self.player_angle >= 2.0 * PI {
-            self.player_angle -= 2.0 * PI;
+        #[allow(clippy::while_float)]
+        while self.player_angle >= TWO_PI {
+            self.player_angle -= TWO_PI;
         }
     }
 }

@@ -291,7 +291,9 @@ impl JsonRpcClient {
         let request_json = serde_json::to_string(request)
             .map_err(|e| JsonRpcClientError::Serialization(format!("Serialize request: {e}")))?;
 
-        let request_bytes: Bytes = Bytes::from(format!("{request_json}\n"));
+        let mut request_bytes = request_json.into_bytes();
+        request_bytes.push(b'\n');
+        let request_bytes: Bytes = Bytes::from(request_bytes);
         timeout(self.timeout, writer.write_all(&request_bytes))
             .await
             .map_err(|_| JsonRpcClientError::Timeout("Write timeout".to_string()))??;
@@ -299,8 +301,8 @@ impl JsonRpcClient {
             .await
             .map_err(|_| JsonRpcClientError::Timeout("Flush timeout".to_string()))??;
 
-        let mut line = String::new();
-        timeout(self.timeout, reader.read_line(&mut line))
+        let mut line = Vec::new();
+        timeout(self.timeout, reader.read_until(b'\n', &mut line))
             .await
             .map_err(|_| JsonRpcClientError::Timeout("Read timeout".to_string()))??;
 
@@ -310,7 +312,7 @@ impl JsonRpcClient {
             ));
         }
 
-        let response: JsonRpcResponse = serde_json::from_str(&line).map_err(|e| {
+        let response: JsonRpcResponse = serde_json::from_slice(&line).map_err(|e| {
             JsonRpcClientError::InvalidResponse(format!("Invalid JSON response: {e}"))
         })?;
 
@@ -346,7 +348,9 @@ impl JsonRpcClient {
         let (_reader, mut writer) = stream.into_split();
         let request_json = serde_json::to_string(request)
             .map_err(|e| JsonRpcClientError::Serialization(format!("Serialize request: {e}")))?;
-        let request_bytes: Bytes = Bytes::from(format!("{request_json}\n"));
+        let mut request_bytes = request_json.into_bytes();
+        request_bytes.push(b'\n');
+        let request_bytes: Bytes = Bytes::from(request_bytes);
         timeout(self.timeout, writer.write_all(&request_bytes))
             .await
             .map_err(|_| JsonRpcClientError::Timeout("Write timeout".to_string()))??;

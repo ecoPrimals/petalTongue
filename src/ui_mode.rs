@@ -6,7 +6,20 @@
 
 use anyhow::{Context, Result};
 use petal_tongue_core::constants::PRIMAL_NAME;
+use std::path::PathBuf;
 use std::sync::Arc;
+
+/// Convert scenario string to PathBuf (pure, testable without GUI).
+#[must_use]
+pub fn scenario_to_path(scenario: Option<String>) -> Option<PathBuf> {
+    scenario.map(PathBuf::from)
+}
+
+/// Build the main window title (pure, testable without launching GUI).
+#[must_use]
+pub fn window_title() -> String {
+    format!("🌸 {PRIMAL_NAME} - Universal Representation System")
+}
 
 #[cfg(feature = "ui")]
 pub async fn run(
@@ -34,7 +47,6 @@ fn run_ui_blocking(
 ) -> Result<()> {
     use petal_tongue_core::{InstanceId, RenderingCapabilities};
     use petal_tongue_ui::PetalTongueApp;
-    use std::path::PathBuf;
 
     // Create instance
     let instance_id = InstanceId::new();
@@ -45,7 +57,7 @@ fn run_ui_blocking(
     );
 
     // Convert scenario to PathBuf
-    let scenario_path = scenario.map(PathBuf::from);
+    let scenario_path = scenario_to_path(scenario);
 
     // Detect rendering capabilities
     let capabilities = RenderingCapabilities::detect();
@@ -55,9 +67,7 @@ fn run_ui_blocking(
         viewport: petal_tongue_ui::egui::ViewportBuilder::default()
             .with_inner_size([1400.0, 900.0])
             .with_min_inner_size([800.0, 600.0])
-            .with_title(format!(
-                "🌸 {PRIMAL_NAME} - Universal Representation System"
-            ))
+            .with_title(window_title())
             .with_visible(true)
             .with_active(true),
         ..Default::default()
@@ -103,8 +113,39 @@ mod tests {
     #[cfg(not(feature = "ui"))]
     use std::sync::Arc;
 
-    #[cfg(not(feature = "ui"))]
     use super::*;
+
+    #[test]
+    fn test_scenario_to_path_none() {
+        assert!(scenario_to_path(None).is_none());
+    }
+
+    #[test]
+    fn test_scenario_to_path_some() {
+        let path = scenario_to_path(Some("scenario.json".to_string()));
+        assert!(path.is_some());
+        assert_eq!(path.as_ref().unwrap().as_os_str(), "scenario.json");
+    }
+
+    #[test]
+    fn test_scenario_to_path_empty_string() {
+        let path = scenario_to_path(Some(String::new()));
+        assert!(path.is_some());
+        assert_eq!(path.as_ref().unwrap().as_os_str(), "");
+    }
+
+    #[test]
+    fn test_window_title_contains_primal_name() {
+        let title = window_title();
+        assert!(
+            title.contains("petalTongue"),
+            "Title should contain primal name: {title}"
+        );
+        assert!(
+            title.contains("Universal Representation System"),
+            "Title should contain subtitle: {title}"
+        );
+    }
 
     #[tokio::test]
     #[cfg(feature = "ui")]

@@ -37,6 +37,7 @@ test-fixtures = ["petal-tongue-core/test-fixtures"]
 integration-tests = []
 
 [dev-dependencies]
+proptest = { workspace = true }
 tokio = { workspace = true, features = ["test-util", "macros"] }
 tempfile = "3.10"
 

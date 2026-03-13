@@ -1,7 +1,7 @@
 # petalTongue -- Project Status
 
 **Updated**: March 13, 2026  
-**Version**: 1.6.2  
+**Version**: 1.6.3  
 **Edition**: 2024 (all crates)
 
 ---
@@ -11,18 +11,18 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 3,711 passing, 0 failures, 5 ignored |
+| Tests | 3,752 passing, 0 failures, 17 ignored |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero errors; pedantic + nursery enabled (advisory warnings only: docs, casts) |
-| Rustdoc | Clean (`cargo doc --all-features --no-deps`) |
+| Clippy | Zero warnings (`-D warnings`) |
+| Rustdoc | Clean (`cargo doc --workspace --no-deps`) |
 | cargo deny | Clean (advisories, bans, licenses, sources) |
-| Unsafe | `#![forbid(unsafe_code)]` on all 16 crates, zero C deps, zero production `unsafe` blocks |
-| Files | All files under 1,000 lines (largest: 988, `visualization_handler/state.rs`) |
-| License | AGPL-3.0-only, SPDX on all 467 source files |
+| Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
+| Files | All files under 1,000 lines (CI enforced) |
+| License | AGPL-3.0-only, SPDX on all source files |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None (`ring` eliminated, `libc`/`nix`/`atty` removed, using `rustix`) |
 | ecoBin | Compliant (no ring, aws-lc-sys, openssl-sys, native-tls, zstd-sys) |
-| Coverage | 79.5% line / 81.1% function (llvm-cov, workspace) — target 90% |
+| Coverage | 79.8% line / 81.0% function (llvm-cov, workspace) -- target 90% |
 | JSON-RPC | Semantic method naming (`domain.operation`), 16 visualization methods |
 | Mocks | All gated behind `#[cfg(test)]` or `#[cfg(feature = "test-fixtures")]`; PETALTONGUE_MOCK_MODE test-only |
 | Primal names | Capability-based constants, zero hardcoded external primal names |

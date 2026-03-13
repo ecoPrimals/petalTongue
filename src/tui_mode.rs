@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn test_tui_config_1hz() {
-        let tick_rate = Duration::from_millis(1000 / 1);
+        let tick_rate = Duration::from_millis(1000);
         assert_eq!(tick_rate.as_millis(), 1000);
     }
 
@@ -86,7 +86,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "divide")]
     fn test_refresh_rate_zero_panics() {
         let _ = Duration::from_millis(1000 / u64::from(0u32));
     }
@@ -126,13 +126,13 @@ mod tests {
         let data_service = Arc::new(DataService::new());
         let result =
             tokio::time::timeout(Duration::from_secs(3), run(None, 60, data_service)).await;
-        match result {
-            Ok(inner) => assert!(
+        if let Ok(inner) = result {
+            assert!(
                 inner.is_ok() || inner.is_err(),
                 "run() should return a Result"
-            ),
-            Err(_) => { /* timeout: interactive TTY, run() blocks - acceptable */ }
+            );
         }
+        // else: timeout: interactive TTY, run() blocks - acceptable
     }
 
     #[tokio::test]
@@ -143,13 +143,13 @@ mod tests {
             run(Some("scenario.json".to_string()), 30, data_service),
         )
         .await;
-        match result {
-            Ok(inner) => assert!(
+        if let Ok(inner) = result {
+            assert!(
                 inner.is_ok() || inner.is_err(),
                 "run() should return a Result"
-            ),
-            Err(_) => { /* timeout: interactive TTY - acceptable */ }
+            );
         }
+        // else: timeout: interactive TTY - acceptable
     }
 
     #[tokio::test]
@@ -159,13 +159,13 @@ mod tests {
             let result =
                 tokio::time::timeout(Duration::from_secs(2), run(None, hz, data_service.clone()))
                     .await;
-            match result {
-                Ok(inner) => assert!(
+            if let Ok(inner) = result {
+                assert!(
                     inner.is_ok() || inner.is_err(),
                     "run() with {hz}Hz should return Result"
-                ),
-                Err(_) => { /* timeout - acceptable */ }
+                );
             }
+            // else: timeout - acceptable
         }
     }
 
@@ -174,10 +174,8 @@ mod tests {
         let data_service = Arc::new(DataService::new());
         let result =
             tokio::time::timeout(Duration::from_secs(3), run(None, 60, data_service)).await;
-        if let Ok(inner) = result {
-            if let Err(e) = inner {
-                assert!(!e.to_string().is_empty(), "Error should have a message");
-            }
+        if let Ok(Err(e)) = result {
+            assert!(!e.to_string().is_empty(), "Error should have a message");
         }
     }
 }

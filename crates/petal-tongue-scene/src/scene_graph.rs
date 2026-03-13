@@ -7,8 +7,7 @@ use std::collections::HashMap;
 use crate::primitive::Primitive;
 use crate::transform::Transform2D;
 
-/// Stable identifier for a scene node.
-pub type NodeId = String;
+pub use crate::node_id::NodeId;
 
 /// A node in the scene graph.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -107,7 +106,7 @@ impl SceneGraph {
     /// Get the root node ID.
     #[must_use]
     pub fn root_id(&self) -> &str {
-        &self.root_id
+        self.root_id.as_str()
     }
 
     /// Add a node to the graph, parented to the given parent.
@@ -128,7 +127,7 @@ impl SceneGraph {
     pub fn add_to_root(&mut self, node: SceneNode) {
         let child_id = node.id.clone();
         self.nodes.insert(child_id.clone(), node);
-        if let Some(root) = self.nodes.get_mut(&self.root_id) {
+        if let Some(root) = self.nodes.get_mut(self.root_id.as_str()) {
             root.children.push(child_id);
         }
     }
@@ -146,19 +145,19 @@ impl SceneGraph {
 
     /// Remove a node and all its descendants.
     pub fn remove(&mut self, id: &str) -> Option<SceneNode> {
-        if id == self.root_id {
+        if self.root_id == id {
             return None; // cannot remove root
         }
         // Remove from parent's children
         for node in self.nodes.values_mut() {
-            node.children.retain(|c| c != id);
+            node.children.retain(|c| c.as_str() != id);
         }
-        // Collect descendants
-        let mut to_remove = vec![id.to_string()];
+        // Collect descendants (reuse Arc clones, no string allocation)
+        let mut to_remove: Vec<NodeId> = vec![id.into()];
         let mut i = 0;
         while i < to_remove.len() {
-            if let Some(node) = self.nodes.get(&to_remove[i]) {
-                to_remove.extend(node.children.clone());
+            if let Some(node) = self.nodes.get(to_remove[i].as_str()) {
+                to_remove.extend(node.children.iter().cloned());
             }
             i += 1;
         }
@@ -185,7 +184,7 @@ impl SceneGraph {
 
     /// Iterate all node IDs.
     pub fn node_ids(&self) -> impl Iterator<Item = &str> {
-        self.nodes.keys().map(String::as_str)
+        self.nodes.keys().map(NodeId::as_str)
     }
 
     /// Collect the flattened list of (transform, primitive) pairs via depth-first traversal.
@@ -193,7 +192,7 @@ impl SceneGraph {
     #[must_use]
     pub fn flatten(&self) -> Vec<(Transform2D, &Primitive)> {
         let mut result = Vec::new();
-        self.flatten_node(&self.root_id, Transform2D::IDENTITY, &mut result);
+        self.flatten_node(self.root_id.as_str(), Transform2D::IDENTITY, &mut result);
         result
     }
 
@@ -214,7 +213,7 @@ impl SceneGraph {
             out.push((world_transform, prim));
         }
         for child_id in &node.children {
-            self.flatten_node(child_id, world_transform, out);
+            self.flatten_node(child_id.as_str(), world_transform, out);
         }
     }
 
@@ -261,7 +260,8 @@ mod tests {
             g.get("root")
                 .expect("root should exist")
                 .children
-                .contains(&"child1".to_string()),
+                .iter()
+                .any(|c| c.as_str() == "child1"),
             "root should have child1"
         );
     }
@@ -278,7 +278,8 @@ mod tests {
             g.get("parent")
                 .expect("parent should exist")
                 .children
-                .contains(&"child".to_string()),
+                .iter()
+                .any(|c| c.as_str() == "child"),
             "parent should have child"
         );
     }
@@ -536,7 +537,7 @@ mod tests {
             data_id: None,
         };
         let root = g.get_mut("root").expect("root exists");
-        root.children.push("phantom".to_string());
+        root.children.push("phantom".into());
         root.primitives.push(prim);
         let flat = g.flatten();
         assert_eq!(
@@ -557,7 +558,7 @@ mod tests {
         assert_eq!(g.node_count(), 2);
         assert!(g.get("leaf").is_none());
         let parent = g.get("parent").expect("parent exists");
-        assert!(!parent.children.contains(&"leaf".to_string()));
+        assert!(!parent.children.iter().any(|c| c.as_str() == "leaf"));
     }
 
     #[test]
@@ -785,7 +786,7 @@ mod tests {
         g.add_to_root(SceneNode::new("a"));
         g.add_node(SceneNode::new("b"), "a");
         let root = g.get_mut("root").expect("root");
-        root.children.push("a".to_string());
+        root.children.push("a".into());
         let flat = g.flatten();
         assert!(
             flat.len() <= 2,
@@ -858,5 +859,90 @@ mod tests {
         assert_eq!(ids.len(), 2);
         assert!(ids.contains(&"root"));
         assert!(ids.contains(&"x"));
+    }
+}
+
+#[cfg(test)]
+mod proptest_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    /// Adding N nodes (to root) results in exactly 1 + N nodes (root + N).
+    #[test]
+    fn prop_add_n_nodes_gives_n_plus_one_total() {
+        fn prop(n: u8) -> Result<(), TestCaseError> {
+            let n = n as usize;
+            let mut g = SceneGraph::new();
+            for i in 0..n {
+                let id = format!("node-{i}");
+                g.add_to_root(SceneNode::new(id));
+            }
+            prop_assert_eq!(
+                g.node_count(),
+                1 + n,
+                "root + {} added = {} total",
+                n,
+                1 + n
+            );
+            Ok(())
+        }
+        proptest!(|(n in 0u8..50u8)| prop(n)?);
+    }
+
+    /// Removing a node removes it from all children lists.
+    #[test]
+    fn prop_remove_node_removes_from_children() {
+        fn prop(removed_id: String) -> Result<(), TestCaseError> {
+            let removed_id = if removed_id.is_empty() || removed_id == "root" {
+                "to_remove".to_string()
+            } else {
+                removed_id
+            };
+            let mut g = SceneGraph::new();
+            g.add_to_root(SceneNode::new("parent"));
+            g.add_node(SceneNode::new(removed_id.clone()), "parent");
+            g.add_node(SceneNode::new("sibling"), "parent");
+            let _ = g.remove(&removed_id);
+            for node in g.node_ids() {
+                let n = g.get(node).unwrap();
+                prop_assert!(
+                    !n.children.iter().any(|c| c.as_str() == removed_id),
+                    "removed node {:?} must not appear in any children list",
+                    removed_id
+                );
+            }
+            Ok(())
+        }
+        proptest!(|(removed_id in "\\w{1,20}")| prop(removed_id)?);
+    }
+
+    /// Scene graph serialization/deserialization roundtrips.
+    #[test]
+    fn prop_scene_graph_serialization_roundtrip() {
+        fn prop(node_ids: Vec<String>) -> Result<(), TestCaseError> {
+            let mut g = SceneGraph::new();
+            for (i, id) in node_ids.into_iter().enumerate().take(20) {
+                let id = if id.is_empty() || id == "root" {
+                    format!("n{i}")
+                } else {
+                    id
+                };
+                g.add_to_root(SceneNode::new(id));
+            }
+            let json = serde_json::to_string(&g).map_err(|_| TestCaseError::reject("serialize"))?;
+            let decoded: SceneGraph =
+                serde_json::from_str(&json).map_err(|_| TestCaseError::reject("deserialize"))?;
+            prop_assert_eq!(g.root_id(), decoded.root_id());
+            prop_assert_eq!(g.node_count(), decoded.node_count());
+            for id in g.node_ids() {
+                prop_assert!(
+                    decoded.get(id).is_some(),
+                    "node {} must exist after roundtrip",
+                    id
+                );
+            }
+            Ok(())
+        }
+        proptest!(|(node_ids in prop::collection::vec("[a-zA-Z0-9_]{0,10}", 0..25))| prop(node_ids)?);
     }
 }

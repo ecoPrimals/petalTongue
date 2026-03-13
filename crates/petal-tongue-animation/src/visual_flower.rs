@@ -466,9 +466,7 @@ mod tests {
         let expected = (1.5 / 3.0 - 0.1) / 0.8;
         assert!(
             (p - expected).abs() < 0.02,
-            "opening percent ~{} should be near {}",
-            p,
-            expected
+            "opening percent ~{p} should be near {expected}",
         );
     }
 

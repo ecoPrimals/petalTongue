@@ -475,13 +475,12 @@ mod tests {
         let timeline = AwakeningTimeline::standard(&config);
 
         // Check stage transitions exist
-        let stage_transitions: Vec<_> = timeline
+        let stage_transition_count = timeline
             .events()
             .iter()
             .filter(|e| matches!(e.event_type, TimelineEventType::StageTransition { .. }))
-            .collect();
-
-        assert_eq!(stage_transitions.len(), 5); // 4 stages + complete
+            .count();
+        assert_eq!(stage_transition_count, 5); // 4 stages + complete
     }
 
     #[test]
@@ -490,13 +489,11 @@ mod tests {
         let timeline = AwakeningTimeline::standard(&config);
 
         // Check audio events exist
-        let audio_starts: Vec<_> = timeline
+        let has_audio_starts = timeline
             .events()
             .iter()
-            .filter(|e| matches!(e.event_type, TimelineEventType::AudioStart { .. }))
-            .collect();
-
-        assert!(!audio_starts.is_empty());
+            .any(|e| matches!(e.event_type, TimelineEventType::AudioStart { .. }));
+        assert!(has_audio_starts);
     }
 
     #[test]
@@ -505,13 +502,11 @@ mod tests {
         let timeline = AwakeningTimeline::standard(&config);
 
         // Check text events exist
-        let text_messages: Vec<_> = timeline
+        let has_text_messages = timeline
             .events()
             .iter()
-            .filter(|e| matches!(e.event_type, TimelineEventType::TextMessage { .. }))
-            .collect();
-
-        assert!(!text_messages.is_empty());
+            .any(|e| matches!(e.event_type, TimelineEventType::TextMessage { .. }));
+        assert!(has_text_messages);
     }
 
     #[test]
@@ -576,12 +571,12 @@ mod tests {
     fn test_timeline_discovery_events() {
         let config = AwakeningConfig::default();
         let timeline = AwakeningTimeline::standard(&config);
-        let discoveries: Vec<_> = timeline
+        let discovery_count = timeline
             .events()
             .iter()
             .filter(|e| matches!(e.event_type, TimelineEventType::Discovery { .. }))
-            .collect();
-        assert_eq!(discoveries.len(), 3);
+            .count();
+        assert_eq!(discovery_count, 3);
     }
 
     #[test]
@@ -605,12 +600,11 @@ mod tests {
             ..Default::default()
         };
         let timeline = AwakeningTimeline::standard(&config);
-        let audio_starts: Vec<_> = timeline
+        let has_audio_starts = timeline
             .events()
             .iter()
-            .filter(|e| matches!(e.event_type, TimelineEventType::AudioStart { .. }))
-            .collect();
-        assert!(audio_starts.is_empty());
+            .any(|e| matches!(e.event_type, TimelineEventType::AudioStart { .. }));
+        assert!(!has_audio_starts);
     }
 
     #[test]
@@ -624,12 +618,11 @@ mod tests {
             ..Default::default()
         };
         let timeline = AwakeningTimeline::standard(&config);
-        let text_events: Vec<_> = timeline
+        let has_text_events = timeline
             .events()
             .iter()
-            .filter(|e| matches!(e.event_type, TimelineEventType::TextMessage { .. }))
-            .collect();
-        assert!(text_events.is_empty());
+            .any(|e| matches!(e.event_type, TimelineEventType::TextMessage { .. }));
+        assert!(!has_text_events);
     }
 
     #[test]
@@ -657,12 +650,12 @@ mod tests {
         };
         let timeline = AwakeningTimeline::standard(&config);
         // Should still have stage transitions and complete
-        let stage_transitions: Vec<_> = timeline
+        let stage_transition_count = timeline
             .events()
             .iter()
             .filter(|e| matches!(e.event_type, TimelineEventType::StageTransition { .. }))
-            .collect();
-        assert_eq!(stage_transitions.len(), 5);
+            .count();
+        assert_eq!(stage_transition_count, 5);
         assert!(!timeline.events().is_empty());
     }
 

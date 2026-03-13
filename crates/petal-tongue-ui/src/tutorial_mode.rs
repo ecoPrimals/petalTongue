@@ -207,8 +207,9 @@ impl TutorialMode {
             .unwrap_or_default()
             .as_secs();
 
-        let socket_dir =
-            std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/run/user/1000".to_string());
+        let socket_dir = petal_tongue_core::system_info::get_user_runtime_dir()
+            .to_string_lossy()
+            .into_owned();
 
         graph.add_node(PrimalInfo {
             id: "petaltongue-tutorial".into(),

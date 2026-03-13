@@ -181,11 +181,13 @@ impl DataService {
     }
 
     /// Subscribe to data updates (public API for streaming consumers).
+    #[allow(dead_code)]
     pub fn subscribe(&self) -> broadcast::Receiver<DataUpdate> {
         self.update_tx.subscribe()
     }
 
     /// Check if Neural API is available.
+    #[allow(dead_code)]
     pub const fn has_neural_api(&self) -> bool {
         self.neural_api.is_some()
     }

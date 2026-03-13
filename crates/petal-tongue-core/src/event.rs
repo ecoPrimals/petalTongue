@@ -147,8 +147,10 @@ impl EventBus {
 
     /// Subscribe to events
     pub async fn subscribe(&self) -> broadcast::Receiver<EngineEvent> {
-        let mut count = self.subscriber_count.write().await;
-        *count += 1;
+        {
+            let mut count = self.subscriber_count.write().await;
+            *count += 1;
+        }
         self.tx.subscribe()
     }
 

@@ -52,6 +52,11 @@ impl TelemetryCollector {
         self.update_metrics(event);
     }
 
+    /// Add a telemetry subscriber to receive future events.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the subscribers lock is poisoned (e.g. from a panic in a subscriber callback).
     pub fn add_subscriber(&self, subscriber: Box<dyn TelemetrySubscriber>) {
         let mut subscribers = self
             .subscribers
@@ -60,6 +65,11 @@ impl TelemetryCollector {
         subscribers.push(subscriber);
     }
 
+    /// Get a snapshot of current telemetry metrics.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the metrics lock is poisoned (e.g. from a panic during metrics update).
     #[must_use]
     pub fn get_metrics(&self) -> TelemetryMetrics {
         self.metrics
@@ -107,12 +117,16 @@ impl TelemetryCollector {
             } => {
                 metrics.total_api_calls += 1;
 
+                // f64 mantissa is 52 bits; precision loss acceptable for running-average math
+                #[allow(clippy::cast_precision_loss)]
                 let total = metrics.total_api_calls as f64;
                 let prev_avg = metrics.avg_latency_ms;
                 metrics.avg_latency_ms = (prev_avg * (total - 1.0) + latency_ms) / total;
 
                 if let Some(pm) = metrics.primal_metrics.get_mut(from) {
                     pm.calls_made += 1;
+                    // f64 mantissa is 52 bits; precision loss acceptable for per-primal averages
+                    #[allow(clippy::cast_precision_loss)]
                     let pm_total = pm.calls_made as f64;
                     pm.avg_latency_ms =
                         (pm.avg_latency_ms * (pm_total - 1.0) + latency_ms) / pm_total;
@@ -257,13 +271,13 @@ mod tests {
         assert_eq!(metrics.total_api_calls, 1);
         assert!((metrics.avg_latency_ms - 10.0).abs() < f64::EPSILON);
 
-        let primal_a_metrics = metrics.primal_metrics.get("primal-a").unwrap();
-        assert_eq!(primal_a_metrics.calls_made, 1);
-        assert_eq!(primal_a_metrics.calls_received, 0);
+        let metrics_a = metrics.primal_metrics.get("primal-a").unwrap();
+        assert_eq!(metrics_a.calls_made, 1);
+        assert_eq!(metrics_a.calls_received, 0);
 
-        let primal_b_metrics = metrics.primal_metrics.get("primal-b").unwrap();
-        assert_eq!(primal_b_metrics.calls_made, 0);
-        assert_eq!(primal_b_metrics.calls_received, 1);
+        let metrics_b = metrics.primal_metrics.get("primal-b").unwrap();
+        assert_eq!(metrics_b.calls_made, 0);
+        assert_eq!(metrics_b.calls_received, 1);
     }
 
     #[test]
@@ -289,8 +303,8 @@ mod tests {
         let metrics = collector.get_metrics();
         assert_eq!(metrics.total_bytes, 1024);
 
-        let primal_a_metrics = metrics.primal_metrics.get("primal-a").unwrap();
-        assert_eq!(primal_a_metrics.bytes_sent, 1024);
+        let metrics_a = metrics.primal_metrics.get("primal-a").unwrap();
+        assert_eq!(metrics_a.bytes_sent, 1024);
     }
 
     #[test]

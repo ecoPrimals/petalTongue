@@ -268,58 +268,68 @@ impl StateSync {
 mod tests {
     use super::*;
     use std::collections::HashMap;
-    use std::sync::Mutex;
+    use std::sync::{Arc, Mutex};
 
     /// In-memory StatePersistence for deterministic tests
     struct InMemoryPersistence {
-        storage: std::sync::Arc<Mutex<HashMap<String, DeviceState>>>,
+        storage: Arc<Mutex<HashMap<String, Arc<DeviceState>>>>,
     }
 
     impl InMemoryPersistence {
         fn new() -> Self {
             Self {
-                storage: std::sync::Arc::new(Mutex::new(HashMap::new())),
+                storage: Arc::new(Mutex::new(HashMap::new())),
             }
         }
 
         /// Create a pair that shares storage (for tests that need to verify persistence)
         fn shared() -> (Self, Self) {
-            let storage = std::sync::Arc::new(Mutex::new(HashMap::new()));
+            let storage = Arc::new(Mutex::new(HashMap::new()));
             (
                 Self {
-                    storage: std::sync::Arc::clone(&storage),
+                    storage: Arc::clone(&storage),
                 },
                 Self { storage },
             )
         }
 
-        fn with_shared_storage(
-            storage: &std::sync::Arc<Mutex<HashMap<String, DeviceState>>>,
-        ) -> Self {
+        fn with_shared_storage(storage: &Arc<Mutex<HashMap<String, Arc<DeviceState>>>>) -> Self {
             Self {
-                storage: std::sync::Arc::clone(storage),
+                storage: Arc::clone(storage),
             }
         }
     }
 
     impl StatePersistence for InMemoryPersistence {
+        /// # Panics
+        ///
+        /// Panics if the internal lock is poisoned (a thread panicked while holding it).
         fn save(&self, state: &DeviceState) -> Result<()> {
+            let key = state.device_id.clone();
+            let value = Arc::new(state.clone());
             self.storage
                 .lock()
                 .expect("state_sync: lock poisoned — unrecoverable")
-                .insert(state.device_id.clone(), state.clone());
+                .insert(key, value);
             Ok(())
         }
 
+        /// # Panics
+        ///
+        /// Panics if the internal lock is poisoned (a thread panicked while holding it).
         fn load(&self, device_id: &str) -> Result<Option<DeviceState>> {
-            Ok(self
+            let arc = self
                 .storage
                 .lock()
                 .expect("state_sync: lock poisoned — unrecoverable")
                 .get(device_id)
-                .cloned())
+                .map(Arc::clone);
+            Ok(arc.map(|a| (*a).clone()))
         }
 
+        /// # Panics
+        ///
+        /// Panics if the internal lock is poisoned (a thread panicked while holding it).
         fn delete(&self, device_id: &str) -> Result<()> {
             self.storage
                 .lock()

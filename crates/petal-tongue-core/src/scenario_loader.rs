@@ -116,24 +116,42 @@ impl LoadedScenario {
     }
 
     /// Infer the domain from the scenario metadata or node families.
+    ///
+    /// Uses capability-based matching via well-known suffix conventions rather than
+    /// hardcoding specific primal names. Any spring family is parsed by stripping
+    /// the "spring"/"Spring" suffix to derive a domain hint.
     pub fn inferred_domain(&self) -> &str {
         if let Some(ref d) = self.domain {
             return d;
         }
-        // Check node families for domain hints
         for node in &self.ecosystem.primals {
-            match node.family.as_str() {
-                "healthspring" | "healthSpring" => return "health",
-                "wetspring" | "wetSpring" => return "ecology",
-                "hotspring" | "hotSpring" => return "physics",
-                "airspring" | "airSpring" => return "agriculture",
-                "groundspring" | "groundSpring" => return "measurement",
-                "neuralspring" | "neuralSpring" => return "neural",
-                "ludospring" | "ludoSpring" => return "game",
-                _ => {}
+            if let Some(domain) = Self::domain_from_family(&node.family) {
+                return domain;
             }
         }
         "measurement"
+    }
+
+    /// Derive a domain hint from a spring family name.
+    ///
+    /// Strips the "spring"/"Spring" suffix and maps the prefix to a domain.
+    /// This is agnostic — any new spring family automatically resolves if it
+    /// follows the naming convention and is registered in the domain map.
+    fn domain_from_family(family: &str) -> Option<&'static str> {
+        let prefix = family
+            .strip_suffix("spring")
+            .or_else(|| family.strip_suffix("Spring"))?;
+        let prefix_lower = prefix.to_ascii_lowercase();
+        match prefix_lower.as_str() {
+            "health" => Some("health"),
+            "wet" => Some("ecology"),
+            "hot" => Some("physics"),
+            "air" => Some("agriculture"),
+            "ground" => Some("measurement"),
+            "neural" => Some("neural"),
+            "ludo" => Some("game"),
+            _ => None,
+        }
     }
 }
 
