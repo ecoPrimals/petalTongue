@@ -552,4 +552,122 @@ mod tests {
             GaugeStatus::Critical
         );
     }
+
+    #[test]
+    fn distribution_bins_single_data_point_returns_none() {
+        let values = vec![42.0];
+        let result = distribution_bins(&values, 5);
+        assert!(
+            result.is_none(),
+            "single point has zero range, bin_width <= 0"
+        );
+    }
+
+    #[test]
+    fn distribution_bins_large_dataset() {
+        let values: Vec<f64> = (0..1000).map(|i| (i as f64) / 10.0).collect();
+        let result = distribution_bins(&values, 20);
+        let (lo, hi, counts) = result.expect("large dataset valid");
+        assert!((lo - 0.0).abs() < f64::EPSILON);
+        assert!((hi - 99.9).abs() < 0.01);
+        assert_eq!(counts.len(), 20);
+        assert_eq!(counts.iter().sum::<u32>(), 1000);
+    }
+
+    #[test]
+    fn distribution_bins_with_nan_uses_finite_range() {
+        let values = vec![1.0, f64::NAN, 3.0];
+        let result = distribution_bins(&values, 5);
+        assert!(
+            result.is_some(),
+            "min/max ignores NaN, range 1..3 is finite"
+        );
+        let (lo, hi, counts) = result.unwrap();
+        assert!((lo - 1.0).abs() < f64::EPSILON);
+        assert!((hi - 3.0).abs() < f64::EPSILON);
+        assert_eq!(counts.iter().sum::<u32>(), 3);
+    }
+
+    #[test]
+    fn distribution_bins_neg_infinity_returns_none() {
+        let values = vec![1.0, f64::NEG_INFINITY, 3.0];
+        let result = distribution_bins(&values, 5);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn gauge_status_value_at_min_boundary() {
+        assert_eq!(
+            gauge_status_for_value(0.0, &[0.0, 100.0], &[-10.0, 110.0]),
+            GaugeStatus::Normal
+        );
+    }
+
+    #[test]
+    fn gauge_status_value_at_max_boundary() {
+        assert_eq!(
+            gauge_status_for_value(100.0, &[0.0, 100.0], &[-10.0, 110.0]),
+            GaugeStatus::Normal
+        );
+    }
+
+    #[test]
+    fn bar_chart_values_more_than_categories() {
+        let categories = vec!["A".to_string(), "B".to_string()];
+        let values = vec![1.0, 2.0, 3.0];
+        assert!(values.len() > categories.len());
+        let name_for = |i: usize| categories.get(i).map_or("?", String::as_str);
+        assert_eq!(name_for(0), "A");
+        assert_eq!(name_for(1), "B");
+        assert_eq!(name_for(2), "?");
+    }
+
+    #[test]
+    fn bar_chart_empty_values() {
+        let categories: Vec<String> = vec![];
+        let _values: Vec<f64> = vec![];
+        let name_for = |i: usize| categories.get(i).map_or("?", String::as_str);
+        assert_eq!(name_for(0), "?");
+    }
+
+    #[test]
+    fn bar_chart_single_bar() {
+        let categories = vec!["Only".to_string()];
+        let values = vec![42.0];
+        let name_for = |i: usize| categories.get(i).map_or("?", String::as_str);
+        assert_eq!(name_for(0), "Only");
+        assert_eq!(values[0], 42.0);
+    }
+
+    #[test]
+    fn bar_chart_negative_values() {
+        let values = vec![-5.0, 0.0, 5.0];
+        let result = distribution_bins(&values, 3);
+        let (lo, hi, counts) = result.expect("negative range valid");
+        assert!((lo - (-5.0)).abs() < f64::EPSILON);
+        assert!((hi - 5.0).abs() < f64::EPSILON);
+        assert_eq!(counts.iter().sum::<u32>(), 3);
+    }
+
+    #[test]
+    fn node_detail_clone() {
+        let node = NodeDetail {
+            name: "x".to_string(),
+            health: 50,
+            status: "ok".to_string(),
+            capabilities: vec!["a".to_string()],
+            data_bindings: vec![],
+        };
+        let cloned = node.clone();
+        assert_eq!(cloned.name, node.name);
+        assert_eq!(cloned.health, node.health);
+    }
+
+    #[test]
+    fn gauge_status_overlapping_ranges_normal_takes_precedence() {
+        assert_eq!(
+            gauge_status_for_value(50.0, &[0.0, 100.0], &[0.0, 100.0]),
+            GaugeStatus::Normal
+        );
+    }
 }

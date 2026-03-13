@@ -16,6 +16,8 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use colored::Colorize;
+#[cfg(test)]
+use petal_tongue_core::Instance;
 use petal_tongue_core::{InstanceId, InstanceRegistry};
 use petal_tongue_ipc::{IpcClient, IpcCommand, IpcResponse};
 #[cfg(test)]
@@ -802,5 +804,130 @@ mod tests {
         };
         let _ = Commands::Gc { force: false };
         let _ = Commands::Status;
+    }
+
+    #[test]
+    fn test_resolve_instance_id_prefix_match() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
+            "XDG_DATA_HOME",
+            temp_dir.path().to_str().unwrap(),
+            || {
+                let mut registry = InstanceRegistry::new();
+                let id = InstanceId::parse("550e8400-e29b-41d4-a716-446655440000").unwrap();
+                let instance = Instance::new(id.clone(), Some("test".to_string())).unwrap();
+                registry.register(instance).unwrap();
+
+                let result = resolve_instance_id("550e");
+                assert!(result.is_ok());
+                assert_eq!(
+                    result.unwrap().as_str(),
+                    "550e8400-e29b-41d4-a716-446655440000"
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn test_resolve_instance_id_prefix_ambiguous() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
+            "XDG_DATA_HOME",
+            temp_dir.path().to_str().unwrap(),
+            || {
+                let mut registry = InstanceRegistry::new();
+                let id1 = InstanceId::parse("550e8400-e29b-41d4-a716-446655440001").unwrap();
+                let id2 = InstanceId::parse("550e8400-e29b-41d4-a716-446655440002").unwrap();
+                registry
+                    .register(Instance::new(id1, Some("a".to_string())).unwrap())
+                    .unwrap();
+                registry
+                    .register(Instance::new(id2, Some("b".to_string())).unwrap())
+                    .unwrap();
+
+                let result = resolve_instance_id("550e");
+                assert!(result.is_err());
+                let err = result.unwrap_err();
+                assert!(err.to_string().contains("Ambiguous"));
+                assert!(err.to_string().contains("2"));
+            },
+        );
+    }
+
+    #[test]
+    fn test_resolve_instance_id_prefix_no_match() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
+            "XDG_DATA_HOME",
+            temp_dir.path().to_str().unwrap(),
+            || {
+                let mut registry = InstanceRegistry::new();
+                let id = InstanceId::parse("550e8400-e29b-41d4-a716-446655440000").unwrap();
+                registry
+                    .register(Instance::new(id, Some("test".to_string())).unwrap())
+                    .unwrap();
+
+                let result = resolve_instance_id("ffff");
+                assert!(result.is_err());
+                assert!(
+                    result
+                        .unwrap_err()
+                        .to_string()
+                        .contains("No instance found")
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn test_resolve_instance_id_error_message_invalid() {
+        let result = resolve_instance_id("not-a-uuid");
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("Invalid") || err.contains("No instance found"));
+    }
+
+    #[test]
+    fn test_format_show_output_with_window_id() {
+        use petal_tongue_core::InstanceId;
+        use petal_tongue_ipc::InstanceStatus;
+
+        let status = InstanceStatus {
+            instance_id: InstanceId::parse("550e8400-e29b-41d4-a716-446655440000").unwrap(),
+            pid: 1,
+            window_id: Some(0x1234),
+            name: None,
+            uptime_seconds: 0,
+            node_count: 0,
+            edge_count: 0,
+            window_visible: false,
+            metadata: std::collections::HashMap::new(),
+        };
+        let out = format_show_output(&status);
+        assert!(out.contains("0x1234"));
+    }
+
+    #[test]
+    fn test_format_show_output_with_metadata() {
+        use petal_tongue_core::InstanceId;
+        use petal_tongue_ipc::InstanceStatus;
+
+        let mut metadata = std::collections::HashMap::new();
+        metadata.insert("version".to_string(), "1.0".to_string());
+        let status = InstanceStatus {
+            instance_id: InstanceId::parse("550e8400-e29b-41d4-a716-446655440000").unwrap(),
+            pid: 1,
+            window_id: None,
+            name: None,
+            uptime_seconds: 0,
+            node_count: 0,
+            edge_count: 0,
+            window_visible: false,
+            metadata,
+        };
+        let out = format_show_output(&status);
+        assert!(out.contains("Metadata"));
+        assert!(out.contains("version"));
+        assert!(out.contains("1.0"));
     }
 }

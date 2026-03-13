@@ -101,6 +101,10 @@ pub fn apply_motor_command(app: &mut PetalTongueApp, cmd: MotorCommand) {
             app.tick_clock.config_mut().animation_enabled = enabled;
             tracing::debug!("Motor: SetSceneAnimation({enabled})");
         }
+        MotorCommand::PlayAudio { ref sound } => {
+            app.audio_system.play(sound);
+            tracing::debug!("Motor: PlayAudio({sound})");
+        }
     }
     app.neural_proprioception_panel
         .record_motor_command(&cmd_description);

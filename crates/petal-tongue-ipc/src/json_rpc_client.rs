@@ -694,4 +694,135 @@ mod tests {
         assert_eq!(json["nodes"].as_array().expect("nodes").len(), 2);
         assert_eq!(json["edges"].as_array().expect("edges").len(), 1);
     }
+
+    #[tokio::test]
+    async fn test_send_request_invalid_json_response() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let sock = dir.path().join("invalid-json.sock");
+        let listener = tokio::net::UnixListener::bind(&sock).expect("bind");
+        tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.expect("accept");
+            let (mut reader, mut writer) = stream.into_split();
+            let mut buf = [0u8; 1024];
+            let _ = tokio::io::AsyncReadExt::read(&mut reader, &mut buf).await;
+            writer.write_all(b"{not valid json\n").await.expect("write");
+            writer.flush().await.expect("flush");
+        });
+        let client = JsonRpcClient::with_timeout(sock.as_os_str(), Duration::from_millis(500))
+            .expect("client");
+        let req = JsonRpcRequest::new("test.method", serde_json::json!({}), serde_json::json!(1));
+        let result = client.send_request(&req).await;
+        assert!(result.is_err());
+        if let Err(JsonRpcClientError::InvalidResponse(msg)) = result {
+            assert!(msg.contains("Invalid JSON") || msg.contains("invalid"));
+        } else {
+            panic!("Expected InvalidResponse");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_send_request_rpc_error_response() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let sock = dir.path().join("rpc-error.sock");
+        let listener = tokio::net::UnixListener::bind(&sock).expect("bind");
+        tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.expect("accept");
+            let (mut reader, mut writer) = stream.into_split();
+            let mut buf = [0u8; 1024];
+            let _ = tokio::io::AsyncReadExt::read(&mut reader, &mut buf).await;
+            let err_resp =
+                r#"{"jsonrpc":"2.0","error":{"code":-32601,"message":"Method not found"},"id":1}"#;
+            writer
+                .write_all(format!("{err_resp}\n").as_bytes())
+                .await
+                .expect("write");
+            writer.flush().await.expect("flush");
+        });
+        let client = JsonRpcClient::with_timeout(sock.as_os_str(), Duration::from_millis(500))
+            .expect("client");
+        let req = JsonRpcRequest::new("test.method", serde_json::json!({}), serde_json::json!(1));
+        let result = client.send_request(&req).await;
+        assert!(result.is_err());
+        if let Err(JsonRpcClientError::RpcError { code, message, .. }) = result {
+            assert_eq!(code, -32601);
+            assert!(message.contains("Method not found"));
+        } else {
+            panic!("Expected RpcError");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_send_request_empty_response() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let sock = dir.path().join("empty.sock");
+        let listener = tokio::net::UnixListener::bind(&sock).expect("bind");
+        tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.expect("accept");
+            let (mut reader, mut writer) = stream.into_split();
+            let mut buf = [0u8; 1024];
+            let _ = tokio::io::AsyncReadExt::read(&mut reader, &mut buf).await;
+            writer.write_all(b"\n").await.expect("write");
+            writer.flush().await.expect("flush");
+        });
+        let client = JsonRpcClient::with_timeout(sock.as_os_str(), Duration::from_millis(500))
+            .expect("client");
+        let req = JsonRpcRequest::new("test.method", serde_json::json!({}), serde_json::json!(1));
+        let result = client.send_request(&req).await;
+        assert!(result.is_err());
+        assert!(result.is_err());
+        let err_str = format!("{}", result.unwrap_err());
+        assert!(
+            err_str.contains("Empty") || err_str.contains("empty") || err_str.contains("Invalid"),
+            "expected empty/invalid response error: {err_str}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_call_success_via_mock_server() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let sock = dir.path().join("success.sock");
+        let listener = tokio::net::UnixListener::bind(&sock).expect("bind");
+        tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.expect("accept");
+            let (reader, mut writer) = stream.into_split();
+            let mut line = String::new();
+            tokio::io::AsyncBufReadExt::read_line(
+                &mut tokio::io::BufReader::new(reader),
+                &mut line,
+            )
+            .await
+            .expect("read");
+            let resp = r#"{"jsonrpc":"2.0","result":{"ok":true},"id":1}"#;
+            writer
+                .write_all(format!("{resp}\n").as_bytes())
+                .await
+                .expect("write");
+            writer.flush().await.expect("flush");
+        });
+        let client = JsonRpcClient::with_timeout(sock.as_os_str(), Duration::from_millis(500))
+            .expect("client");
+        let result = client.call("test.method", serde_json::json!({})).await;
+        assert!(result.is_ok());
+        let val = result.expect("ok");
+        assert_eq!(val["ok"], true);
+    }
+
+    #[tokio::test]
+    async fn test_connection_timeout_to_nonexistent() {
+        let client = JsonRpcClient::with_timeout(
+            "/tmp/nonexistent-timeout-test-99999.sock",
+            Duration::from_millis(10),
+        )
+        .expect("client");
+        let result = client.call("health.check", serde_json::json!({})).await;
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        let err_str = format!("{err}");
+        assert!(
+            err_str.contains("Timeout")
+                || err_str.contains("Connection")
+                || err_str.contains("Failed"),
+            "expected timeout or connection error, got: {err_str}"
+        );
+    }
 }

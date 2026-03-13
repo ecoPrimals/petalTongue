@@ -2,6 +2,7 @@
 //! Unit tests for sensory UI.
 
 use super::*;
+use petal_tongue_core::PrimalInfo;
 use petal_tongue_core::SensoryCapabilities;
 use petal_tongue_core::sensory_capabilities::{
     AudioOutputCapability, KeyboardInputCapability, PointerInputCapability,
@@ -167,4 +168,162 @@ fn test_with_capabilities_rich() {
     };
     let manager = SensoryUIManager::with_capabilities(caps);
     assert_eq!(manager.ui_complexity(), SensoryUIComplexity::Rich);
+}
+
+/// Headless egui test: render_primal_list does not panic
+#[test]
+fn test_render_primal_list_headless() {
+    use petal_tongue_core::{PrimalHealthStatus, PrimalId};
+
+    let caps = SensoryCapabilities {
+        audio_outputs: vec![AudioOutputCapability::Stereo {
+            sample_rate: 48000,
+            bit_depth: 16,
+        }],
+        ..Default::default()
+    };
+    let mut manager = SensoryUIManager::with_capabilities(caps);
+    let primals = vec![PrimalInfo::new(
+        PrimalId::from("p1"),
+        "Test Primal",
+        "Compute",
+        "http://localhost:8080",
+        vec!["compute".to_string()],
+        PrimalHealthStatus::Healthy,
+        0,
+    )];
+
+    let ctx = egui::Context::default();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            manager.render_primal_list(ui, &primals);
+        });
+    });
+}
+
+/// Headless egui test: render_topology does not panic
+#[test]
+fn test_render_topology_headless() {
+    use petal_tongue_core::{GraphEngine, PrimalHealthStatus, PrimalId};
+
+    let caps = SensoryCapabilities {
+        visual_outputs: vec![VisualOutputCapability::TwoD {
+            resolution: (1280, 720),
+            refresh_rate: 60,
+            color_depth: 8,
+            size_mm: None,
+        }],
+        pointer_inputs: vec![PointerInputCapability::TwoD {
+            precision: 1.0,
+            has_wheel: true,
+            has_pressure: false,
+            button_count: 3,
+        }],
+        keyboard_inputs: vec![KeyboardInputCapability::Physical {
+            layout: "QWERTY".to_string(),
+            has_numpad: false,
+            modifier_keys: 3,
+        }],
+        ..Default::default()
+    };
+    let mut manager = SensoryUIManager::with_capabilities(caps);
+    let mut graph = GraphEngine::new();
+    graph.add_node(PrimalInfo::new(
+        PrimalId::from("n1"),
+        "Node1",
+        "Compute",
+        "http://localhost:8080",
+        vec![],
+        PrimalHealthStatus::Healthy,
+        0,
+    ));
+
+    let ctx = egui::Context::default();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            manager.render_topology(ui, &graph);
+        });
+    });
+}
+
+/// Headless egui test: render_metrics does not panic (with and without metrics)
+#[test]
+fn test_render_metrics_headless() {
+    use petal_tongue_core::metrics::{NeuralApiMetrics, SystemResourceMetrics};
+
+    let caps = SensoryCapabilities {
+        audio_outputs: vec![AudioOutputCapability::Stereo {
+            sample_rate: 48000,
+            bit_depth: 16,
+        }],
+        ..Default::default()
+    };
+    let mut manager = SensoryUIManager::with_capabilities(caps);
+
+    let ctx = egui::Context::default();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            manager.render_metrics(ui, None);
+        });
+    });
+
+    let metrics = petal_tongue_core::SystemMetrics {
+        timestamp: chrono::Utc::now(),
+        system: SystemResourceMetrics {
+            cpu_percent: 45.0,
+            memory_used_mb: 512,
+            memory_total_mb: 1024,
+            memory_percent: 50.0,
+            uptime_seconds: 3600,
+        },
+        neural_api: NeuralApiMetrics {
+            family_id: "test".to_string(),
+            active_primals: 2,
+            graphs_available: 1,
+            active_executions: 0,
+        },
+    };
+
+    let ctx = egui::Context::default();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            manager.render_metrics(ui, Some(&metrics));
+        });
+    });
+}
+
+/// Headless egui test: render_proprioception does not panic (with and without data)
+#[test]
+fn test_render_proprioception_headless() {
+    use petal_tongue_core::proprioception::{HealthData, HealthStatus};
+
+    let caps = SensoryCapabilities {
+        audio_outputs: vec![AudioOutputCapability::Stereo {
+            sample_rate: 48000,
+            bit_depth: 16,
+        }],
+        ..Default::default()
+    };
+    let mut manager = SensoryUIManager::with_capabilities(caps);
+
+    let ctx = egui::Context::default();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            manager.render_proprioception(ui, None);
+        });
+    });
+
+    let mut proprio = petal_tongue_core::ProprioceptionData::empty("test");
+    proprio.health = HealthData {
+        percentage: 85.0,
+        status: HealthStatus::Healthy,
+    };
+    proprio.confidence = 92.5;
+
+    let ctx = egui::Context::default();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            manager.render_proprioception(ui, Some(&proprio));
+        });
+    });
 }

@@ -785,4 +785,78 @@ mod tests {
     fn validate_spectrum_mismatched() {
         assert!(!validate_spectrum_lengths(5, 6));
     }
+
+    #[test]
+    fn scatter3d_bands_single_band() {
+        let x = vec![1.0, 2.0, 3.0];
+        let y = vec![1.0, 2.0, 3.0];
+        let z = vec![0.0, 0.5, 1.0];
+        let bands = scatter3d_bands(&x, &y, &z, 1).expect("valid input");
+        assert_eq!(bands.len(), 1);
+        assert_eq!(bands[0].len(), 3);
+    }
+
+    #[test]
+    fn scatter3d_bands_norm_exactly_one_in_last_band() {
+        let x = vec![1.0, 2.0];
+        let y = vec![1.0, 2.0];
+        let z = vec![0.0, 1.0];
+        let bands = scatter3d_bands(&x, &y, &z, 2).expect("valid input");
+        assert_eq!(bands.len(), 2);
+        assert_eq!(bands[0].len(), 1);
+        assert_eq!(bands[1].len(), 1);
+    }
+
+    #[test]
+    fn scatter3d_bands_many_points_large_dataset() {
+        let n = 100;
+        let x: Vec<f64> = (0..n).map(|i| i as f64).collect();
+        let y: Vec<f64> = (0..n).map(|i| (i * 2) as f64).collect();
+        let z: Vec<f64> = (0..n).map(|i| (i as f64) / n as f64).collect();
+        let bands = scatter3d_bands(&x, &y, &z, 10).expect("valid input");
+        assert_eq!(bands.len(), 10);
+        let total: usize = bands.iter().map(Vec::len).sum();
+        assert_eq!(total, n);
+    }
+
+    #[test]
+    fn scatter3d_bands_negative_z_values() {
+        let x = vec![1.0, 2.0, 3.0];
+        let y = vec![1.0, 2.0, 3.0];
+        let z = vec![-10.0, 0.0, 10.0];
+        let bands = scatter3d_bands(&x, &y, &z, 3).expect("valid input");
+        assert_eq!(bands.len(), 3);
+        let total: usize = bands.iter().map(Vec::len).sum();
+        assert_eq!(total, 3);
+    }
+
+    #[test]
+    fn scatter2d_params_with_empty_labels() {
+        let x = vec![1.0, 2.0];
+        let y = vec![3.0, 4.0];
+        let params = Scatter2dParams {
+            label: "t",
+            x_vals: &x,
+            y_vals: &y,
+            point_labels: &[],
+            x_label: "X",
+            y_label: "Y",
+            unit: "u",
+            domain: None,
+        };
+        assert!(params.point_labels.is_empty());
+        assert_eq!(params.x_vals.len(), params.y_vals.len());
+    }
+
+    #[test]
+    fn heatmap_dimensions_exact_match() {
+        assert!(validate_heatmap_dimensions(10, 20, 200));
+        assert!(!validate_heatmap_dimensions(10, 20, 199));
+        assert!(!validate_heatmap_dimensions(10, 20, 201));
+    }
+
+    #[test]
+    fn spectrum_lengths_single_point() {
+        assert!(validate_spectrum_lengths(1, 1));
+    }
 }

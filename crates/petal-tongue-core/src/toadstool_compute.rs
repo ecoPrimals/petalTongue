@@ -365,8 +365,18 @@ mod tests {
 
     #[tokio::test]
     async fn test_toadstool_without_discovery() {
-        // Without environment variables, should not find service
-        let provider = ToadstoolCompute::new().await.unwrap();
+        use crate::test_fixtures::env_test_helpers;
+
+        let provider = env_test_helpers::with_env_vars_removed_async(
+            &[
+                "GPU_RENDERING_ENDPOINT",
+                "COMPUTE_PROVIDER_ENDPOINT",
+                "GPU_COMPUTE_ENDPOINT",
+                "XDG_RUNTIME_DIR",
+            ],
+            || async { ToadstoolCompute::new().await.unwrap() },
+        )
+        .await;
         assert!(!provider.is_available().await);
     }
 

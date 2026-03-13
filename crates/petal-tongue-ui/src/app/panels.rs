@@ -140,8 +140,16 @@ pub fn render_all_panels(ctx: &egui::Context, app: &mut PetalTongueApp) {
             )
             .show(ctx, |ui| {
                 let font_scale = app.accessibility_panel.settings.font_size.multiplier();
-                app.trust_dashboard
-                    .render(ui, &palette, font_scale, Some(&app.audio_system));
+                let intents =
+                    app.trust_dashboard
+                        .render(ui, &palette, font_scale, Some(&app.audio_system));
+                for intent in intents {
+                    match intent {
+                        crate::trust_dashboard::TrustIntent::PlayAudio { sound } => {
+                            app.audio_system.play(&sound);
+                        }
+                    }
+                }
             });
     }
 

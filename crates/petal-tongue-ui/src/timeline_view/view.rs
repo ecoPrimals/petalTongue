@@ -3,6 +3,10 @@
 //!
 //! Displays temporal sequences of primal interactions with time scrubbing capabilities.
 //! Implements Phase 4 of the UI specification.
+//!
+//! Architecture: headless-first. Pure functions (`time_to_x`, `prepare_event_detail`,
+//! `format_events_csv`, `escape_csv`) produce testable data. The render method returns
+//! `Vec<TimelineIntent>` rather than mutating state directly.
 
 use chrono::{DateTime, Utc};
 use egui::{Pos2, Rect, Stroke, Vec2};
@@ -13,6 +17,39 @@ use std::path::PathBuf;
 
 use super::filtering::{filtered_events, get_primals};
 use super::types::TimelineEvent;
+
+// ============================================================================
+// Intent and display state types (headless-testable)
+// ============================================================================
+
+/// User interaction intent produced by the timeline view render method.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TimelineIntent {
+    ZoomIn,
+    ZoomOut,
+    ToggleDetails,
+    SelectEvent(String),
+    DeselectEvent,
+    Clear,
+    ExportCsv,
+}
+
+/// Pre-computed display data for a selected event detail panel.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EventDetailDisplay {
+    pub status_icon: &'static str,
+    pub status_label: String,
+    pub from: String,
+    pub to: String,
+    pub event_type: String,
+    pub time_str: String,
+    pub duration_str: Option<String>,
+    pub payload: Option<String>,
+}
+
+// ============================================================================
+// Pure functions (fully testable, no &self, no egui context)
+// ============================================================================
 
 /// Map a timestamp to an x-coordinate within the time area.
 /// Returns x in [0, rect_width] for the given time range.
@@ -27,23 +64,46 @@ pub fn time_to_x(time: f64, start_time: f64, end_time: f64, rect_width: f32) -> 
     fraction as f32 * rect_width
 }
 
+/// Prepare an `EventDetailDisplay` from a `TimelineEvent` (pure computation).
+#[must_use]
+pub fn prepare_event_detail(event: &TimelineEvent) -> EventDetailDisplay {
+    EventDetailDisplay {
+        status_icon: event.status.icon(),
+        status_label: format!("{:?}", event.status),
+        from: event.from.clone(),
+        to: event.to.clone(),
+        event_type: event.event_type.clone(),
+        time_str: event.timestamp.format("%H:%M:%S%.3f").to_string(),
+        duration_str: event.duration_ms.map(|d| format!("{d:.2}ms")),
+        payload: event.payload_summary.clone(),
+    }
+}
+
+/// Compute zoom level after a zoom-in action.
+#[must_use]
+pub fn zoom_in(current: f32) -> f32 {
+    (current * 1.2).min(10.0)
+}
+
+/// Compute zoom level after a zoom-out action.
+#[must_use]
+pub fn zoom_out(current: f32) -> f32 {
+    (current / 1.2).max(0.1)
+}
+
+// ============================================================================
+// TimelineView
+// ============================================================================
+
 /// Timeline View - Sequence diagram of primal interactions
 pub struct TimelineView {
-    /// Events to display
     events: Vec<TimelineEvent>,
-    /// Selected event (for detail panel)
     selected_event: Option<String>,
-    /// Time range start (None = auto)
     time_range_start: Option<DateTime<Utc>>,
-    /// Time range end (None = auto)
     time_range_end: Option<DateTime<Utc>>,
-    /// Zoom level (1.0 = default)
     zoom: f32,
-    /// Show event details panel
     show_details: bool,
-    /// Filter by event type
     event_type_filter: Option<String>,
-    /// Filter by primal
     primal_filter: Option<String>,
 }
 
@@ -54,7 +114,6 @@ impl Default for TimelineView {
 }
 
 impl TimelineView {
-    /// Create a new timeline view
     #[must_use]
     pub const fn new() -> Self {
         Self {
@@ -69,20 +128,16 @@ impl TimelineView {
         }
     }
 
-    /// Add an event to the timeline
     pub fn add_event(&mut self, event: TimelineEvent) {
         self.events.push(event);
-        // Sort by timestamp
         self.events.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
     }
 
-    /// Clear all events
     pub fn clear(&mut self) {
         self.events.clear();
         self.selected_event = None;
     }
 
-    /// Set time range for display
     pub const fn set_time_range(
         &mut self,
         start: Option<DateTime<Utc>>,
@@ -92,17 +147,14 @@ impl TimelineView {
         self.time_range_end = end;
     }
 
-    /// Set event type filter (for testing and UI)
     pub fn set_event_type_filter(&mut self, filter: Option<String>) {
         self.event_type_filter = filter;
     }
 
-    /// Set primal filter (for testing and UI)
     pub fn set_primal_filter(&mut self, filter: Option<String>) {
         self.primal_filter = filter;
     }
 
-    /// Get count of filtered events (for testing)
     #[must_use]
     pub fn filtered_event_count(&self) -> usize {
         self.filtered_events().len()
@@ -122,47 +174,76 @@ impl TimelineView {
         get_primals(&self.events)
     }
 
-    /// Get primals (for testing).
     #[doc(hidden)]
     #[must_use]
     pub fn get_primals_for_test(&self) -> Vec<String> {
         get_primals(&self.events)
     }
 
-    /// Get event IDs in timestamp order (for testing).
     #[doc(hidden)]
     #[must_use]
     pub fn event_ids_ordered(&self) -> Vec<String> {
         self.events.iter().map(|e| e.id.clone()).collect()
     }
 
-    /// Render the timeline view
-    pub fn render(&mut self, ui: &mut egui::Ui) {
-        // Top control bar
+    /// Read-only access to the currently selected event ID (for headless testing).
+    #[must_use]
+    pub fn selected_event(&self) -> Option<&str> {
+        self.selected_event.as_deref()
+    }
+
+    /// Current zoom level (for headless testing).
+    #[must_use]
+    pub const fn zoom(&self) -> f32 {
+        self.zoom
+    }
+
+    #[cfg(test)]
+    #[must_use]
+    pub const fn show_details(&self) -> bool {
+        self.show_details
+    }
+
+    /// Apply intents produced by `render()`. Call after render returns.
+    pub fn apply_intents(&mut self, intents: &[TimelineIntent]) {
+        for intent in intents {
+            match intent {
+                TimelineIntent::ZoomIn => self.zoom = zoom_in(self.zoom),
+                TimelineIntent::ZoomOut => self.zoom = zoom_out(self.zoom),
+                TimelineIntent::ToggleDetails => self.show_details = !self.show_details,
+                TimelineIntent::SelectEvent(id) => self.selected_event = Some(id.clone()),
+                TimelineIntent::DeselectEvent => self.selected_event = None,
+                TimelineIntent::Clear => self.clear(),
+                TimelineIntent::ExportCsv => self.export_csv(),
+            }
+        }
+    }
+
+    /// Render the timeline view. Returns intents for the caller to apply.
+    pub fn render(&mut self, ui: &mut egui::Ui) -> Vec<TimelineIntent> {
+        let mut intents = Vec::new();
+
         ui.horizontal(|ui| {
             ui.heading("📊 Timeline View");
             ui.separator();
 
-            // Zoom controls
             ui.label("Zoom:");
             if ui.button("➖").clicked() {
-                self.zoom = (self.zoom / 1.2).max(0.1);
+                intents.push(TimelineIntent::ZoomOut);
             }
             ui.label(format!("{:.0}%", self.zoom * 100.0));
             if ui.button("➕").clicked() {
-                self.zoom = (self.zoom * 1.2).min(10.0);
+                intents.push(TimelineIntent::ZoomIn);
             }
 
             ui.separator();
 
-            // Event count
             let filtered_count = self.filtered_events().len();
             let total_count = self.events.len();
             ui.label(format!("Events: {filtered_count}/{total_count}"));
 
             ui.separator();
 
-            // Toggle details panel
             if ui
                 .button(if self.show_details {
                     "Hide Details"
@@ -171,52 +252,53 @@ impl TimelineView {
                 })
                 .clicked()
             {
-                self.show_details = !self.show_details;
+                intents.push(TimelineIntent::ToggleDetails);
             }
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ui.button("Clear").clicked() {
-                    self.clear();
+                    intents.push(TimelineIntent::Clear);
                 }
                 if ui.button("Export CSV").clicked() {
-                    self.export_csv();
+                    intents.push(TimelineIntent::ExportCsv);
                 }
             });
         });
 
         ui.separator();
 
-        // Main layout: Timeline + Details (if enabled)
         if self.show_details && self.selected_event.is_some() {
             ui.horizontal(|ui| {
-                // Timeline (left side - 70%)
                 ui.allocate_ui_with_layout(
                     Vec2::new(ui.available_width() * 0.7, ui.available_height()),
                     egui::Layout::top_down(egui::Align::Min),
                     |ui| {
-                        self.render_timeline(ui);
+                        let diagram_intents = self.render_timeline(ui);
+                        intents.extend(diagram_intents);
                     },
                 );
 
                 ui.separator();
 
-                // Details panel (right side - 30%)
                 ui.allocate_ui_with_layout(
                     Vec2::new(ui.available_width(), ui.available_height()),
                     egui::Layout::top_down(egui::Align::Min),
                     |ui| {
-                        self.render_details_panel(ui);
+                        let panel_intents = self.render_details_panel(ui);
+                        intents.extend(panel_intents);
                     },
                 );
             });
         } else {
-            // Full-width timeline
-            self.render_timeline(ui);
+            let diagram_intents = self.render_timeline(ui);
+            intents.extend(diagram_intents);
         }
+
+        intents
     }
 
-    /// Render the main timeline visualization
-    fn render_timeline(&mut self, ui: &mut egui::Ui) {
+    fn render_timeline(&self, ui: &mut egui::Ui) -> Vec<TimelineIntent> {
+        let mut intents = Vec::new();
         let available_size = ui.available_size();
         let (response, painter) = ui.allocate_painter(available_size, egui::Sense::click());
 
@@ -225,7 +307,6 @@ impl TimelineView {
 
         let primals = self.get_primals();
         if primals.is_empty() {
-            // No events yet
             painter.text(
                 rect.center(),
                 egui::Align2::CENTER_CENTER,
@@ -233,32 +314,27 @@ impl TimelineView {
                 egui::FontId::proportional(16.0),
                 egui::Color32::GRAY,
             );
-            return;
+            return intents;
         }
 
-        // Calculate layout
         let primal_count = primals.len();
         let lane_height = rect.height() / (primal_count as f32 + 1.0);
-        let time_width = rect.width() - 100.0; // Reserve 100px for primal labels
+        let time_width = rect.width() - 100.0;
 
-        // Build primal -> lane mapping
         let primal_lanes: HashMap<_, _> = primals
             .iter()
             .enumerate()
             .map(|(i, p)| (p.clone(), i))
             .collect();
 
-        // Draw primal lanes (horizontal lines)
         for (idx, primal) in primals.iter().enumerate() {
             let y = rect.min.y + lane_height * (idx as f32 + 1.0);
 
-            // Lane line
             painter.line_segment(
                 [Pos2::new(rect.min.x + 100.0, y), Pos2::new(rect.max.x, y)],
                 Stroke::new(1.0, egui::Color32::from_rgb(50, 50, 60)),
             );
 
-            // Primal label
             painter.text(
                 Pos2::new(rect.min.x + 50.0, y),
                 egui::Align2::CENTER_CENTER,
@@ -268,16 +344,12 @@ impl TimelineView {
             );
         }
 
-        // Draw events
         let filtered_events = self.filtered_events();
         let (Some(first), Some(last)) = (filtered_events.first(), filtered_events.last()) else {
-            return;
+            return intents;
         };
         let min_time = first.timestamp;
         let max_time = last.timestamp;
-
-        // Collect event IDs for click detection
-        let mut clicked_event_id: Option<String> = None;
 
         let start_ms = min_time.timestamp_millis() as f64;
         let end_ms = max_time.timestamp_millis() as f64;
@@ -292,47 +364,36 @@ impl TimelineView {
                 let from_y = rect.min.y + lane_height * (*from_lane as f32 + 1.0);
                 let to_y = rect.min.y + lane_height * (*to_lane as f32 + 1.0);
 
-                // Draw event arrow
                 let from_pos = Pos2::new(x, from_y);
                 let to_pos = Pos2::new(x, to_y);
 
                 painter.line_segment([from_pos, to_pos], Stroke::new(2.0, event.status.color()));
-
-                // Draw event marker (circle)
                 painter.circle_filled(from_pos, 4.0, event.status.color());
                 painter.circle_filled(to_pos, 4.0, event.status.color());
 
-                // Check for click
                 let click_rect = Rect::from_center_size(from_pos, Vec2::splat(10.0));
                 if response.clicked()
                     && let Some(pointer_pos) = response.interact_pointer_pos()
                     && click_rect.contains(pointer_pos)
                 {
-                    clicked_event_id = Some(event.id.clone());
+                    intents.push(TimelineIntent::SelectEvent(event.id.clone()));
                 }
             }
         }
 
-        // Apply click after borrowing events
-        if let Some(event_id) = clicked_event_id {
-            self.selected_event = Some(event_id);
-        }
+        intents
     }
 
-    /// Render event details panel
-    fn render_details_panel(&mut self, ui: &mut egui::Ui) {
+    /// Render event details panel using pre-computed display state. Returns intents.
+    fn render_details_panel(&self, ui: &mut egui::Ui) -> Vec<TimelineIntent> {
+        let mut intents = Vec::new();
+
         ui.heading("Event Details");
         ui.separator();
 
         if let Some(ref event_id) = self.selected_event {
             if let Some(event) = self.events.iter().find(|e| &e.id == event_id) {
-                let event_from = event.from.clone();
-                let event_to = event.to.clone();
-                let event_type = event.event_type.clone();
-                let event_timestamp = event.timestamp;
-                let event_duration = event.duration_ms;
-                let event_payload = event.payload_summary.clone();
-                let event_status = event.status.clone();
+                let detail = prepare_event_detail(event);
 
                 egui::Grid::new("event_details_grid")
                     .num_columns(2)
@@ -340,34 +401,34 @@ impl TimelineView {
                     .show(ui, |ui| {
                         ui.label("Status:");
                         ui.horizontal(|ui| {
-                            ui.label(event_status.icon());
-                            ui.label(format!("{event_status:?}"));
+                            ui.label(detail.status_icon);
+                            ui.label(&detail.status_label);
                         });
                         ui.end_row();
 
                         ui.label("From:");
-                        ui.label(&event_from);
+                        ui.label(&detail.from);
                         ui.end_row();
 
                         ui.label("To:");
-                        ui.label(&event_to);
+                        ui.label(&detail.to);
                         ui.end_row();
 
                         ui.label("Type:");
-                        ui.label(&event_type);
+                        ui.label(&detail.event_type);
                         ui.end_row();
 
                         ui.label("Time:");
-                        ui.label(event_timestamp.format("%H:%M:%S%.3f").to_string());
+                        ui.label(&detail.time_str);
                         ui.end_row();
 
-                        if let Some(duration) = event_duration {
+                        if let Some(ref duration) = detail.duration_str {
                             ui.label("Duration:");
-                            ui.label(format!("{duration:.2}ms"));
+                            ui.label(duration);
                             ui.end_row();
                         }
 
-                        if let Some(ref payload) = event_payload {
+                        if let Some(ref payload) = detail.payload {
                             ui.label("Payload:");
                             ui.label(payload);
                             ui.end_row();
@@ -377,18 +438,16 @@ impl TimelineView {
                 ui.add_space(16.0);
 
                 if ui.button("Close Details").clicked() {
-                    self.selected_event = None;
+                    intents.push(TimelineIntent::DeselectEvent);
                 }
             }
         } else {
             ui.label("Click on an event to see details");
         }
+
+        intents
     }
 
-    /// Export events to CSV format
-    ///
-    /// Writes to `{XDG_DATA_HOME}/petalTongue/exports/timeline_events.csv`
-    /// or temp dir if platform_dirs is unavailable.
     fn export_csv(&self) {
         let path = self.export_csv_path();
         let events = self.filtered_events();
@@ -461,6 +520,148 @@ mod tests {
     use super::super::types::EventStatus;
     use super::*;
 
+    // === Pure function tests ===
+
+    #[test]
+    fn prepare_event_detail_complete() {
+        let event = TimelineEvent {
+            id: "evt1".to_string(),
+            from: "alice".to_string(),
+            to: "bob".to_string(),
+            event_type: "discover".to_string(),
+            timestamp: chrono::DateTime::parse_from_rfc3339("2025-01-15T12:30:45.123Z")
+                .expect("valid datetime")
+                .with_timezone(&chrono::Utc),
+            duration_ms: Some(42.5),
+            status: EventStatus::Success,
+            payload_summary: Some("payload data".to_string()),
+        };
+        let d = prepare_event_detail(&event);
+        assert_eq!(d.status_icon, "✅");
+        assert_eq!(d.status_label, "Success");
+        assert_eq!(d.from, "alice");
+        assert_eq!(d.to, "bob");
+        assert_eq!(d.event_type, "discover");
+        assert_eq!(d.time_str, "12:30:45.123");
+        assert_eq!(d.duration_str.as_deref(), Some("42.50ms"));
+        assert_eq!(d.payload.as_deref(), Some("payload data"));
+    }
+
+    #[test]
+    fn prepare_event_detail_no_optional_fields() {
+        let event = TimelineEvent {
+            id: "evt2".to_string(),
+            from: "a".to_string(),
+            to: "b".to_string(),
+            event_type: "invoke".to_string(),
+            timestamp: chrono::DateTime::parse_from_rfc3339("2025-06-01T00:00:00Z")
+                .expect("valid datetime")
+                .with_timezone(&chrono::Utc),
+            duration_ms: None,
+            status: EventStatus::Failure,
+            payload_summary: None,
+        };
+        let d = prepare_event_detail(&event);
+        assert_eq!(d.status_icon, "❌");
+        assert_eq!(d.status_label, "Failure");
+        assert!(d.duration_str.is_none());
+        assert!(d.payload.is_none());
+    }
+
+    #[test]
+    fn prepare_event_detail_timeout() {
+        let event = TimelineEvent {
+            id: "evt3".to_string(),
+            from: "x".to_string(),
+            to: "y".to_string(),
+            event_type: "ping".to_string(),
+            timestamp: chrono::Utc::now(),
+            duration_ms: Some(5000.0),
+            status: EventStatus::Timeout,
+            payload_summary: None,
+        };
+        let d = prepare_event_detail(&event);
+        assert_eq!(d.status_icon, "⏱️");
+        assert_eq!(d.status_label, "Timeout");
+        assert_eq!(d.duration_str.as_deref(), Some("5000.00ms"));
+    }
+
+    #[test]
+    fn prepare_event_detail_in_progress() {
+        let event = TimelineEvent {
+            id: "evt4".to_string(),
+            from: "x".to_string(),
+            to: "y".to_string(),
+            event_type: "stream".to_string(),
+            timestamp: chrono::Utc::now(),
+            duration_ms: None,
+            status: EventStatus::InProgress,
+            payload_summary: Some("streaming...".to_string()),
+        };
+        let d = prepare_event_detail(&event);
+        assert_eq!(d.status_icon, "⏳");
+        assert_eq!(d.payload.as_deref(), Some("streaming..."));
+    }
+
+    #[test]
+    fn zoom_in_increases() {
+        assert!(zoom_in(1.0) > 1.0);
+    }
+
+    #[test]
+    fn zoom_in_caps_at_10() {
+        assert!((zoom_in(10.0) - 10.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn zoom_out_decreases() {
+        assert!(zoom_out(1.0) < 1.0);
+    }
+
+    #[test]
+    fn zoom_out_floors_at_0_1() {
+        let result = zoom_out(0.1);
+        assert!((result - 0.1).abs() < 0.01);
+    }
+
+    #[test]
+    fn apply_intents_zoom() {
+        let mut view = TimelineView::new();
+        let initial = view.zoom();
+        view.apply_intents(&[TimelineIntent::ZoomIn]);
+        assert!(view.zoom() > initial);
+        view.apply_intents(&[TimelineIntent::ZoomOut, TimelineIntent::ZoomOut]);
+        assert!(view.zoom() < initial);
+    }
+
+    #[test]
+    fn apply_intents_select_deselect() {
+        let mut view = TimelineView::new();
+        view.apply_intents(&[TimelineIntent::SelectEvent("evt1".to_string())]);
+        assert_eq!(view.selected_event(), Some("evt1"));
+        view.apply_intents(&[TimelineIntent::DeselectEvent]);
+        assert!(view.selected_event().is_none());
+    }
+
+    #[test]
+    fn apply_intents_clear() {
+        let mut view = TimelineView::new();
+        view.add_event(TimelineEvent {
+            id: "e".to_string(),
+            from: "a".to_string(),
+            to: "b".to_string(),
+            event_type: "t".to_string(),
+            timestamp: chrono::Utc::now(),
+            duration_ms: None,
+            status: EventStatus::Success,
+            payload_summary: None,
+        });
+        view.apply_intents(&[TimelineIntent::Clear]);
+        assert_eq!(view.filtered_event_count(), 0);
+    }
+
+    // === Existing tests ===
+
     #[test]
     fn time_to_x_start() {
         let x = time_to_x(100.0, 100.0, 200.0, 500.0);
@@ -509,7 +710,6 @@ mod tests {
 
     #[test]
     fn escape_csv_with_quote() {
-        // RFC 4180: wrap in quotes and double internal quotes
         assert_eq!(escape_csv("say \"hi\""), "\"say \"\"hi\"\"\"");
     }
 

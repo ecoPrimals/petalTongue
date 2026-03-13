@@ -157,6 +157,7 @@ impl DataService {
             // Extract PrimalInfo from Node wrappers
             let primals = graph.nodes().iter().map(|node| node.info.clone()).collect();
             let edges = graph.edges().to_vec();
+            drop(graph);
 
             (primals, edges)
         };
@@ -180,13 +181,11 @@ impl DataService {
     }
 
     /// Subscribe to data updates (public API for streaming consumers).
-    #[allow(dead_code)]
     pub fn subscribe(&self) -> broadcast::Receiver<DataUpdate> {
         self.update_tx.subscribe()
     }
 
     /// Check if Neural API is available.
-    #[allow(dead_code)]
     pub const fn has_neural_api(&self) -> bool {
         self.neural_api.is_some()
     }
@@ -247,6 +246,7 @@ mod tests {
         let guard = graph.read().unwrap();
         assert!(guard.nodes().is_empty());
         assert!(guard.edges().is_empty());
+        drop(guard);
     }
 
     #[tokio::test]
@@ -270,5 +270,71 @@ mod tests {
         let service = DataService::new();
         let result = service.refresh().await;
         assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_init_without_neural_api() {
+        let mut service = DataService::new();
+        let result = service.init().await;
+        assert!(result.is_ok());
+        // Without a running API endpoint, neural_api stays None
+    }
+
+    #[tokio::test]
+    async fn test_snapshot_serialization() {
+        let service = DataService::new();
+        let snapshot = service.snapshot().await.unwrap();
+        let json = serde_json::to_string(&snapshot).unwrap();
+        let deser: DataSnapshot = serde_json::from_str(&json).unwrap();
+        assert_eq!(deser.primals.len(), snapshot.primals.len());
+        assert_eq!(deser.edges.len(), snapshot.edges.len());
+        assert_eq!(deser.timestamp, snapshot.timestamp);
+    }
+
+    #[tokio::test]
+    async fn test_graph_shared_across_clones() {
+        let service = DataService::new();
+        let graph1 = service.graph();
+        let graph2 = service.graph();
+        assert!(Arc::ptr_eq(&graph1, &graph2));
+    }
+
+    #[tokio::test]
+    async fn test_multiple_snapshots_consistent() {
+        let service = DataService::new();
+        let snap1 = service.snapshot().await.unwrap();
+        let snap2 = service.snapshot().await.unwrap();
+        assert_eq!(snap1.primals.len(), snap2.primals.len());
+        assert_eq!(snap1.edges.len(), snap2.edges.len());
+    }
+
+    #[tokio::test]
+    async fn test_data_update_debug() {
+        let update = DataUpdate::TopologyUpdated;
+        let debug = format!("{update:?}");
+        assert!(debug.contains("TopologyUpdated"));
+    }
+
+    #[tokio::test]
+    async fn test_data_update_clone() {
+        let update = DataUpdate::TopologyUpdated;
+        #[allow(clippy::redundant_clone)]
+        let cloned = update.clone();
+        assert!(matches!(cloned, DataUpdate::TopologyUpdated));
+    }
+
+    #[tokio::test]
+    async fn test_subscribe_multiple_receivers() {
+        let service = DataService::new();
+        let _rx1 = service.subscribe();
+        let _rx2 = service.subscribe();
+    }
+
+    #[tokio::test]
+    async fn test_refresh_then_snapshot() {
+        let service = DataService::new();
+        service.refresh().await.unwrap();
+        let snapshot = service.snapshot().await.unwrap();
+        assert!(snapshot.primals.is_empty());
     }
 }

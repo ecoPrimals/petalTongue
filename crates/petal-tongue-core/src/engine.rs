@@ -464,4 +464,183 @@ mod tests {
         assert!((state.time.current - 0.0).abs() < f64::EPSILON);
         assert!(!state.time.paused);
     }
+
+    #[tokio::test]
+    async fn test_engine_lifecycle_new_succeeds() {
+        let engine = UniversalRenderingEngine::new();
+        assert!(engine.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_engine_modality_initialize_error_propagates() {
+        struct FailingModality;
+        #[async_trait]
+        impl crate::modality::GUIModality for FailingModality {
+            fn name(&self) -> &'static str {
+                "failing"
+            }
+            fn is_available(&self) -> bool {
+                true
+            }
+            fn tier(&self) -> ModalityTier {
+                ModalityTier::AlwaysAvailable
+            }
+            async fn initialize(
+                &mut self,
+                _engine: Arc<UniversalRenderingEngine>,
+            ) -> anyhow::Result<()> {
+                anyhow::bail!("init failed")
+            }
+            async fn render(&mut self) -> anyhow::Result<()> {
+                Ok(())
+            }
+            async fn handle_event(&mut self, _event: EngineEvent) -> anyhow::Result<()> {
+                Ok(())
+            }
+            async fn shutdown(&mut self) -> anyhow::Result<()> {
+                Ok(())
+            }
+            fn capabilities(&self) -> ModalityCapabilities {
+                ModalityCapabilities::default()
+            }
+        }
+        let engine = UniversalRenderingEngine::new().expect("engine");
+        {
+            let modalities = engine.modalities();
+            let mut guard = modalities.write().await;
+            guard.register(Box::new(FailingModality));
+        }
+        let engine = Arc::new(engine);
+        let _sub = engine.events().subscribe().await;
+        let result = engine.clone().render("failing").await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("init failed"));
+    }
+
+    #[tokio::test]
+    async fn test_engine_modality_render_error_propagates() {
+        struct RenderFailingModality;
+        #[async_trait]
+        impl crate::modality::GUIModality for RenderFailingModality {
+            fn name(&self) -> &'static str {
+                "render_fail"
+            }
+            fn is_available(&self) -> bool {
+                true
+            }
+            fn tier(&self) -> ModalityTier {
+                ModalityTier::AlwaysAvailable
+            }
+            async fn initialize(
+                &mut self,
+                _engine: Arc<UniversalRenderingEngine>,
+            ) -> anyhow::Result<()> {
+                Ok(())
+            }
+            async fn render(&mut self) -> anyhow::Result<()> {
+                anyhow::bail!("render failed")
+            }
+            async fn handle_event(&mut self, _event: EngineEvent) -> anyhow::Result<()> {
+                Ok(())
+            }
+            async fn shutdown(&mut self) -> anyhow::Result<()> {
+                Ok(())
+            }
+            fn capabilities(&self) -> ModalityCapabilities {
+                ModalityCapabilities::default()
+            }
+        }
+        let engine = UniversalRenderingEngine::new().expect("engine");
+        {
+            let modalities = engine.modalities();
+            let mut guard = modalities.write().await;
+            guard.register(Box::new(RenderFailingModality));
+        }
+        let engine = Arc::new(engine);
+        let _sub = engine.events().subscribe().await;
+        let result = engine.clone().render("render_fail").await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("render failed"));
+    }
+
+    #[tokio::test]
+    async fn test_engine_set_selection_empty() {
+        let engine = UniversalRenderingEngine::new().expect("engine");
+        let empty: HashSet<String> = HashSet::new();
+        let _ = engine.set_selection(empty).await;
+        let state = engine.state.read().await;
+        assert!(state.selection.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_engine_set_selection_multiple() {
+        let engine = UniversalRenderingEngine::new().expect("engine");
+        let mut selected = HashSet::new();
+        selected.insert("a".to_string());
+        selected.insert("b".to_string());
+        selected.insert("c".to_string());
+        let _ = engine.set_selection(selected.clone()).await;
+        let state = engine.state.read().await;
+        assert_eq!(state.selection.len(), 3);
+        assert!(state.selection.contains("a"));
+        assert!(state.selection.contains("b"));
+        assert!(state.selection.contains("c"));
+    }
+
+    #[tokio::test]
+    async fn test_engine_set_viewport_zero_zoom() {
+        let engine = UniversalRenderingEngine::new().expect("engine");
+        let _ = engine.set_viewport(0.0, 0.0, 0.5).await;
+        let state = engine.state.read().await;
+        assert!((state.viewport.zoom - 0.5).abs() < f32::EPSILON);
+    }
+
+    #[tokio::test]
+    async fn test_engine_render_multi_empty_list() {
+        let engine = UniversalRenderingEngine::new().expect("engine");
+        let engine = Arc::new(engine);
+        let result = engine.clone().render_multi(vec![]).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_engine_render_multi_one_fails() {
+        let engine = UniversalRenderingEngine::new().expect("engine");
+        {
+            let modalities = engine.modalities();
+            let mut guard = modalities.write().await;
+            guard.register(Box::new(MockModality {
+                name: "ok",
+                tier: ModalityTier::AlwaysAvailable,
+            }));
+        }
+        let engine = Arc::new(engine);
+        let _sub = engine.events().subscribe().await;
+        let result = engine.clone().render_multi(vec!["ok", "nonexistent"]).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_viewport_copy() {
+        let v = Viewport {
+            center_x: 1.0,
+            center_y: 2.0,
+            zoom: 3.0,
+        };
+        let v2 = v;
+        assert!((v2.center_x - 1.0).abs() < f32::EPSILON);
+        assert!((v2.zoom - 3.0).abs() < f32::EPSILON);
+    }
+
+    #[tokio::test]
+    async fn test_time_state_copy() {
+        let t = TimeState {
+            current: 10.0,
+            scale: 2.0,
+            paused: true,
+        };
+        let t2 = t;
+        assert!((t2.current - 10.0).abs() < f64::EPSILON);
+        assert!(t2.paused);
+    }
 }

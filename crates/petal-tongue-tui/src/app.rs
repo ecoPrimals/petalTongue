@@ -607,4 +607,108 @@ mod tests {
         let debug_str = format!("{config:?}");
         assert!(debug_str.contains("TUIConfig"));
     }
+
+    #[tokio::test]
+    async fn external_event_log_formats_match_handle_external() {
+        let state = crate::state::TUIState::new();
+        let discovered = format!("Discovered primal: {}", "songbird");
+        state
+            .add_log(crate::state::LogMessage {
+                timestamp: chrono::Utc::now(),
+                source: None,
+                level: crate::state::LogLevel::Info,
+                message: discovered.clone(),
+            })
+            .await;
+        let logs = state.get_logs().await;
+        assert_eq!(logs.len(), 1);
+        assert_eq!(logs[0].message, "Discovered primal: songbird");
+
+        let status = format!(
+            "Primal {} status: {}",
+            "toadstool",
+            if true { "healthy" } else { "unhealthy" }
+        );
+        state
+            .add_log(crate::state::LogMessage {
+                timestamp: chrono::Utc::now(),
+                source: None,
+                level: crate::state::LogLevel::Info,
+                message: status,
+            })
+            .await;
+        let logs = state.get_logs().await;
+        assert_eq!(logs[1].message, "Primal toadstool status: healthy");
+
+        let source = "src";
+        let message = "msg";
+        let log_msg = format!("[{source}] {message}");
+        state
+            .add_log(crate::state::LogMessage {
+                timestamp: chrono::Utc::now(),
+                source: None,
+                level: crate::state::LogLevel::Info,
+                message: log_msg,
+            })
+            .await;
+        let logs = state.get_logs().await;
+        assert_eq!(logs[2].message, "[src] msg");
+    }
+
+    #[tokio::test]
+    async fn view_switch_resets_selection() {
+        let state = crate::state::TUIState::new();
+        state.set_view(crate::state::View::Primals).await;
+        state.set_selected_index(3).await;
+        state.set_view(crate::state::View::Topology).await;
+        assert_eq!(state.get_selected_index().await, 0);
+    }
+
+    #[tokio::test]
+    async fn data_update_primals_affects_item_count() {
+        let state = crate::state::TUIState::new();
+        state.set_view(crate::state::View::Primals).await;
+        assert_eq!(state.primal_count().await, 0);
+        state
+            .update_primals(vec![
+                petal_tongue_core::PrimalInfo::new(
+                    "p1",
+                    "primal1",
+                    "Test",
+                    "unix:///tmp/p1.sock",
+                    vec![],
+                    petal_tongue_core::PrimalHealthStatus::Healthy,
+                    chrono::Utc::now().timestamp() as u64,
+                ),
+                petal_tongue_core::PrimalInfo::new(
+                    "p2",
+                    "primal2",
+                    "Test",
+                    "unix:///tmp/p2.sock",
+                    vec![],
+                    petal_tongue_core::PrimalHealthStatus::Healthy,
+                    chrono::Utc::now().timestamp() as u64,
+                ),
+            ])
+            .await;
+        assert_eq!(state.primal_count().await, 2);
+    }
+
+    #[tokio::test]
+    async fn standalone_mode_blocks_refresh_logic() {
+        let state = crate::state::TUIState::new();
+        state.set_standalone_mode(true).await;
+        assert!(state.is_standalone().await);
+    }
+
+    #[tokio::test]
+    async fn key_action_switch_view_index_bounds() {
+        let views = crate::state::View::all();
+        for (i, _) in views.iter().enumerate() {
+            let action = KeyAction::SwitchView(i);
+            if let KeyAction::SwitchView(idx) = action {
+                assert!(idx < views.len());
+            }
+        }
+    }
 }

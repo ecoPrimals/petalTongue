@@ -39,7 +39,7 @@ repository.workspace = true
 authors.workspace = true
 
 [workspace.package]
-version = "1.6.2"
+version = "1.6.3"
 edition = "2024"
 license = "AGPL-3.0-only"
 repository = "https://github.com/ecoPrimals/petalTongue"
@@ -190,9 +190,6 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
-# System info (Pure Rust!)
-num_cpus = "1.16"
-
 # Scene engine (for examples and future integration)
 petal-tongue-scene = { path = "crates/petal-tongue-scene" }
 
@@ -203,6 +200,11 @@ png = { version = "0.17", optional = true }
 [dev-dependencies]
 petal-tongue-core = { path = "crates/petal-tongue-core", features = ["test-fixtures"] }
 tempfile = "3.10"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "grammar_compiler"
+harness = false
 
 [features]
 default = ["ui"]

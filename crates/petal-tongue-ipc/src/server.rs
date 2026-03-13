@@ -620,4 +620,162 @@ mod tests {
         let s = transport.to_string();
         assert!(s.starts_with("tcp:"));
     }
+
+    #[tokio::test]
+    async fn test_server_request_routing_via_unix_socket() {
+        let instance_id = InstanceId::new();
+        let instance =
+            Instance::new(instance_id.clone(), Some("routing-test".to_string())).expect("instance");
+        let mut server = IpcServer::start(&instance).await.expect("server");
+
+        let transport = server.transport().clone();
+        let socket_path = match &transport {
+            IpcTransport::Unix(p) => p.clone(),
+            IpcTransport::Tcp(_) => return,
+        };
+
+        let client_handle = tokio::spawn(async move {
+            let (reader, mut writer) = tokio::net::UnixStream::connect(&socket_path)
+                .await
+                .expect("connect")
+                .into_split();
+
+            let cmd = crate::protocol::IpcCommand::Ping;
+            let cmd_json = serde_json::to_string(&cmd).expect("serialize");
+            writer
+                .write_all(format!("{cmd_json}\n").as_bytes())
+                .await
+                .expect("write");
+            writer.flush().await.expect("flush");
+
+            let mut line = String::new();
+            tokio::io::AsyncBufReadExt::read_line(
+                &mut tokio::io::BufReader::new(reader),
+                &mut line,
+            )
+            .await
+            .expect("read");
+            line
+        });
+
+        let (cmd, response_tx) = server.recv_command().await.expect("recv command");
+        assert!(matches!(cmd, IpcCommand::Ping));
+        response_tx
+            .send(crate::protocol::IpcResponse::Pong)
+            .expect("send response");
+
+        let line = client_handle.await.expect("client");
+        let response: crate::protocol::IpcResponse =
+            serde_json::from_str(line.trim()).expect("parse");
+        assert!(matches!(response, crate::protocol::IpcResponse::Pong));
+    }
+
+    #[tokio::test]
+    async fn test_server_error_response_routing() {
+        let instance_id = InstanceId::new();
+        let instance =
+            Instance::new(instance_id, Some("error-response-test".to_string())).expect("instance");
+        let mut server = IpcServer::start(&instance).await.expect("server");
+
+        let transport = server.transport();
+        let socket_path = match transport {
+            IpcTransport::Unix(p) => p.clone(),
+            IpcTransport::Tcp(_) => return,
+        };
+
+        let client_handle = tokio::spawn(async move {
+            let (reader, mut writer) = tokio::net::UnixStream::connect(&socket_path)
+                .await
+                .expect("connect")
+                .into_split();
+
+            let cmd = crate::protocol::IpcCommand::GetState;
+            let cmd_json = serde_json::to_string(&cmd).expect("serialize");
+            writer
+                .write_all(format!("{cmd_json}\n").as_bytes())
+                .await
+                .expect("write");
+            writer.flush().await.expect("flush");
+
+            let mut line = String::new();
+            tokio::io::AsyncBufReadExt::read_line(
+                &mut tokio::io::BufReader::new(reader),
+                &mut line,
+            )
+            .await
+            .expect("read");
+            line
+        });
+
+        let (_cmd, response_tx) = server.recv_command().await.expect("recv");
+        let err_resp = crate::protocol::IpcResponse::error("State not available");
+        response_tx.send(err_resp).expect("send");
+
+        let line = client_handle.await.expect("client");
+        let response: crate::protocol::IpcResponse =
+            serde_json::from_str(line.trim()).expect("parse");
+        assert!(response.is_error());
+        assert_eq!(response.error_message(), Some("State not available"));
+    }
+
+    #[tokio::test]
+    async fn test_server_get_status_command_routing() {
+        let instance_id = InstanceId::new();
+        let instance =
+            Instance::new(instance_id.clone(), Some("status-test".to_string())).expect("instance");
+        let mut server = IpcServer::start(&instance).await.expect("server");
+
+        let transport = server.transport();
+        let socket_path = match transport {
+            IpcTransport::Unix(p) => p.clone(),
+            IpcTransport::Tcp(_) => return,
+        };
+
+        let client_handle = tokio::spawn(async move {
+            let (reader, mut writer) = tokio::net::UnixStream::connect(&socket_path)
+                .await
+                .expect("connect")
+                .into_split();
+
+            let cmd = crate::protocol::IpcCommand::GetStatus;
+            let cmd_json = serde_json::to_string(&cmd).expect("serialize");
+            writer
+                .write_all(format!("{cmd_json}\n").as_bytes())
+                .await
+                .expect("write");
+            writer.flush().await.expect("flush");
+
+            let mut line = String::new();
+            tokio::io::AsyncBufReadExt::read_line(
+                &mut tokio::io::BufReader::new(reader),
+                &mut line,
+            )
+            .await
+            .expect("read");
+            line
+        });
+
+        let (cmd, response_tx) = server.recv_command().await.expect("recv");
+        assert!(matches!(cmd, IpcCommand::GetStatus));
+        let status = crate::protocol::InstanceStatus {
+            instance_id: instance_id.clone(),
+            pid: std::process::id(),
+            window_id: None,
+            name: Some("status-test".to_string()),
+            uptime_seconds: 0,
+            node_count: 0,
+            edge_count: 0,
+            window_visible: true,
+            metadata: std::collections::HashMap::new(),
+        };
+        response_tx
+            .send(crate::protocol::IpcResponse::Status(status))
+            .expect("send");
+
+        let line = client_handle.await.expect("client");
+        let response: crate::protocol::IpcResponse =
+            serde_json::from_str(line.trim()).expect("parse");
+        assert!(!response.is_error());
+        assert!(matches!(response, crate::protocol::IpcResponse::Status(_)));
+    }
 }

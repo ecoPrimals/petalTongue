@@ -644,6 +644,119 @@ mod tests {
     fn test_dynamic_value_as_bool_false() {
         assert_eq!(DynamicValue::Boolean(false).as_bool(), Some(false));
     }
+
+    #[test]
+    fn test_dynamic_data_empty_schema() {
+        let data = DynamicData::new();
+        assert!(data.fields.is_empty());
+        assert!(data.version.is_none());
+        assert!(data.get("any").is_none());
+    }
+
+    #[test]
+    fn test_dynamic_data_duplicate_field_overwrites() {
+        let mut data = DynamicData::new();
+        data.set("dup".to_string(), DynamicValue::String("first".to_string()));
+        data.set(
+            "dup".to_string(),
+            DynamicValue::String("second".to_string()),
+        );
+        assert_eq!(data.get_str("dup"), Some("second"));
+    }
+
+    #[test]
+    fn test_dynamic_data_deeply_nested_schema() {
+        let json = r#"{"level1":{"level2":{"level3":{"leaf":42}}}}"#;
+        let data = DynamicData::from_json_str(json).unwrap();
+        let v = data
+            .get("level1")
+            .and_then(DynamicValue::as_object)
+            .and_then(|o| o.get("level2"))
+            .and_then(DynamicValue::as_object)
+            .and_then(|o| o.get("level3"))
+            .and_then(DynamicValue::as_object)
+            .and_then(|o| o.get("leaf"))
+            .and_then(DynamicValue::as_f64);
+        assert_eq!(v, Some(42.0));
+    }
+
+    #[test]
+    fn test_dynamic_data_from_json_file() {
+        let dir = std::env::temp_dir().join("petal-schema-test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("schema.json");
+        std::fs::write(&path, r#"{"version":"1.0.0","name":"test","count":100}"#).unwrap();
+        let data = DynamicData::from_json_file(&path).unwrap();
+        assert_eq!(data.version, Some(SchemaVersion::new(1, 0, 0)));
+        assert_eq!(data.get_str("name"), Some("test"));
+        assert_eq!(data.get_f64("count"), Some(100.0));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_dynamic_data_from_json_file_nonexistent() {
+        let result = DynamicData::from_json_file(std::path::Path::new("/nonexistent/schema.json"));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_schema_version_parse_struct_format() {
+        let json = r#"{"version":{"major":3,"minor":2,"patch":1},"x":1}"#;
+        let data: DynamicData = serde_json::from_str(json).unwrap();
+        assert_eq!(data.version, Some(SchemaVersion::new(3, 2, 1)));
+        assert_eq!(data.get_f64("x"), Some(1.0));
+    }
+
+    #[test]
+    fn test_dynamic_value_from_into_json_value() {
+        let v = DynamicValue::Array(vec![DynamicValue::Boolean(true), DynamicValue::Null]);
+        let j: serde_json::Value = v.clone().into();
+        let back = DynamicValue::from(j);
+        assert_eq!(v, back);
+    }
+
+    #[test]
+    fn test_migration_registry_skips_non_matching() {
+        struct V1ToV2;
+        impl SchemaMigration for V1ToV2 {
+            fn can_migrate(&self, from: SchemaVersion, to: SchemaVersion) -> bool {
+                from.major == 1 && to.major == 2
+            }
+            fn migrate(
+                &self,
+                data: &mut DynamicData,
+                _from: SchemaVersion,
+                _to: SchemaVersion,
+            ) -> Result<()> {
+                data.set("migrated".to_string(), DynamicValue::Boolean(true));
+                Ok(())
+            }
+        }
+        let mut registry = MigrationRegistry::new();
+        registry.register(Box::new(V1ToV2));
+        let mut data = DynamicData::new();
+        data.set("x".to_string(), DynamicValue::String("y".to_string()));
+        let from = SchemaVersion::new(2, 0, 0);
+        let to = SchemaVersion::new(3, 0, 0);
+        assert!(registry.migrate(&mut data, from, to).is_err());
+        assert_eq!(data.get_str("x"), Some("y"));
+    }
+
+    #[test]
+    fn test_dynamic_data_empty_json_array() {
+        let json = r#"{"arr":[]}"#;
+        let data = DynamicData::from_json_str(json).unwrap();
+        let arr = data.get("arr").and_then(DynamicValue::as_array);
+        assert!(arr.is_some());
+        assert!(arr.unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_schema_version_display() {
+        let v = SchemaVersion::new(2, 5, 3);
+        assert_eq!(v.to_string(), "2.5.3");
+    }
 }
 
 #[cfg(test)]

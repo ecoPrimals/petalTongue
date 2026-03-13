@@ -11,6 +11,7 @@ use petal_tongue_ui::display::{DisplayManager, EguiPixelRenderer};
 use std::time::{Duration, Instant};
 
 #[tokio::main]
+#[allow(clippy::cast_precision_loss)]
 async fn main() -> Result<()> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
@@ -50,7 +51,7 @@ async fn main() -> Result<()> {
         let frame_start = Instant::now();
 
         // Create UI
-        let output = ctx.run(Default::default(), |ctx| {
+        let output = ctx.run(egui::RawInput::default(), |ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
                 ui.heading("🌸 petalTongue");
                 ui.label("Pure Rust GUI Rendering");

@@ -11,4 +11,7 @@ mod view;
 mod tests;
 
 pub use types::{ColorScheme, TrafficFlow, TrafficMetrics};
-pub use view::TrafficView;
+pub use view::{
+    TrafficIntent, TrafficView, bezier_control_points, calculate_flow_color, calculate_flow_width,
+    prepare_flow_detail, primal_lane_layout,
+};

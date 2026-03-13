@@ -212,4 +212,129 @@ mod tests {
         assert!(help.contains("doom_game"));
         assert!(help.contains("web_view"));
     }
+
+    #[test]
+    fn test_panel_config_error() {
+        let err = ScenarioError::panel_config("Invalid layout", Some(2), Some("scatter_plot"));
+        assert!(err.to_string().contains("Panel configuration error"));
+        assert!(err.to_string().contains("Invalid layout"));
+        if let ScenarioError::PanelConfig {
+            panel_index,
+            panel_type,
+            ..
+        } = &err
+        {
+            assert_eq!(*panel_index, Some(2));
+            assert_eq!(panel_type.as_deref(), Some("scatter_plot"));
+        } else {
+            panic!("Expected PanelConfig");
+        }
+    }
+
+    #[test]
+    fn test_panel_config_no_index() {
+        let err = ScenarioError::panel_config("Missing size", None::<usize>, None::<String>);
+        assert!(err.to_string().contains("Missing size"));
+        if let ScenarioError::PanelConfig {
+            panel_index,
+            panel_type,
+            ..
+        } = &err
+        {
+            assert!(panel_index.is_none());
+            assert!(panel_type.is_none());
+        }
+    }
+
+    #[test]
+    fn test_capability_error() {
+        let err = ScenarioError::capability(
+            "Invalid modality",
+            "output",
+            "haptic",
+            vec!["visual", "auditory", "textual"],
+        );
+        assert!(err.to_string().contains("Capability validation error"));
+        let help = err.help_text().unwrap();
+        assert!(help.contains("visual"));
+        assert!(help.contains("auditory"));
+        assert!(help.contains("textual"));
+    }
+
+    #[test]
+    fn test_capability_error_fields() {
+        let err =
+            ScenarioError::capability("Bad input", "input", "brainwave", vec!["keyboard", "mouse"]);
+        if let ScenarioError::CapabilityError {
+            capability_type,
+            invalid_value,
+            valid_options,
+            ..
+        } = &err
+        {
+            assert_eq!(capability_type, "input");
+            assert_eq!(invalid_value, "brainwave");
+            assert_eq!(valid_options, &["keyboard", "mouse"]);
+        } else {
+            panic!("Expected CapabilityError");
+        }
+    }
+
+    #[test]
+    fn test_sensory_config_error() {
+        let err = ScenarioError::SensoryConfigError {
+            message: "Rate too high".to_string(),
+            field: "poll_rate".to_string(),
+            suggestion: "Use 60 or lower".to_string(),
+        };
+        assert!(err.to_string().contains("Sensory configuration error"));
+        assert!(err.to_string().contains("Rate too high"));
+    }
+
+    #[test]
+    fn test_generic_error() {
+        let err = ScenarioError::Generic("Something went wrong".to_string());
+        assert_eq!(err.to_string(), "Something went wrong");
+        assert!(err.help_text().is_none());
+    }
+
+    #[test]
+    fn test_io_error_conversion() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file missing");
+        let err: ScenarioError = io_err.into();
+        assert!(err.to_string().contains("IO error"));
+        assert!(err.help_text().is_none());
+    }
+
+    #[test]
+    fn test_json_error_conversion() {
+        let json_err = serde_json::from_str::<serde_json::Value>("not json").unwrap_err();
+        let err: ScenarioError = json_err.into();
+        assert!(err.to_string().contains("JSON parsing error"));
+        assert!(err.help_text().is_none());
+    }
+
+    #[test]
+    fn test_missing_field_no_suggestion() {
+        let err = ScenarioError::missing_field("title", None::<String>);
+        let help = err.help_text().unwrap();
+        assert!(help.contains("Add the 'title' field"));
+        assert!(!help.contains("Example"));
+    }
+
+    #[test]
+    fn test_help_text_panel_config_none() {
+        let err = ScenarioError::panel_config("test", None::<usize>, None::<String>);
+        assert!(err.help_text().is_none());
+    }
+
+    #[test]
+    fn test_help_text_sensory_config_none() {
+        let err = ScenarioError::SensoryConfigError {
+            message: "test".to_string(),
+            field: "f".to_string(),
+            suggestion: "s".to_string(),
+        };
+        assert!(err.help_text().is_none());
+    }
 }

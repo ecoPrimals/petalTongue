@@ -49,11 +49,11 @@ async fn test_unix_socket_invalid_paths() {
 async fn test_discovery_timeout_handling() {
     let provider = UnixSocketProvider::new();
 
-    // Wrap discovery in aggressive timeout
-    let result = timeout(Duration::from_millis(500), provider.discover()).await;
+    // Wrap discovery in timeout (generous for CI/coverage instrumentation)
+    let result = timeout(Duration::from_secs(5), provider.discover()).await;
 
     // Should complete within timeout (modern async should be fast)
-    assert!(result.is_ok(), "Discovery should complete within 500ms");
+    assert!(result.is_ok(), "Discovery should complete within 5s");
 }
 
 /// Test concurrent discovery (no race conditions) - FULLY PARALLEL

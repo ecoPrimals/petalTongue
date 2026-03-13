@@ -76,7 +76,7 @@ async fn main() -> Result<()> {
         awakening.update(delta_time)?;
 
         // Create UI
-        let output = ctx.run(Default::default(), |ctx| {
+        let output = ctx.run(egui::RawInput::default(), |ctx| {
             awakening.render(ctx);
         });
 

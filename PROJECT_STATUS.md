@@ -1,7 +1,7 @@
 # petalTongue -- Project Status
 
-**Updated**: March 11, 2026  
-**Version**: 1.6.1  
+**Updated**: March 13, 2026  
+**Version**: 1.6.2  
 **Edition**: 2024 (all crates)
 
 ---
@@ -11,22 +11,22 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 3,409 passing, 0 failures, 17 ignored |
+| Tests | 3,711 passing, 0 failures, 5 ignored |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings, pedantic + nursery enabled (strategic `#[expect]` with documented reasons) |
-| Rustdoc | Clean (`RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps`) |
+| Clippy | Zero errors; pedantic + nursery enabled (advisory warnings only: docs, casts) |
+| Rustdoc | Clean (`cargo doc --all-features --no-deps`) |
 | cargo deny | Clean (advisories, bans, licenses, sources) |
-| Unsafe | `#![forbid(unsafe_code)]` workspace-wide, zero C deps, zero `unsafe` blocks |
-| Files | All production files under 1,000 lines (exception: `animation.rs` at 1,086 — refactor pending) |
-| License | AGPL-3.0-only, SPDX on all source and config files |
+| Unsafe | `#![forbid(unsafe_code)]` on all 16 crates, zero C deps, zero production `unsafe` blocks |
+| Files | All files under 1,000 lines (largest: 988, `visualization_handler/state.rs`) |
+| License | AGPL-3.0-only, SPDX on all 467 source files |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None (`ring` eliminated, `libc`/`nix`/`atty` removed, using `rustix`) |
 | ecoBin | Compliant (no ring, aws-lc-sys, openssl-sys, native-tls, zstd-sys) |
-| Coverage | 77.4% region / 79.2% function (llvm-cov, workspace) — target 90% |
+| Coverage | 79.5% line / 81.1% function (llvm-cov, workspace) — target 90% |
 | JSON-RPC | Semantic method naming (`domain.operation`), 16 visualization methods |
 | Mocks | All gated behind `#[cfg(test)]` or `#[cfg(feature = "test-fixtures")]`; PETALTONGUE_MOCK_MODE test-only |
 | Primal names | Capability-based constants, zero hardcoded external primal names |
-| Hardcoding | Socket names, ports, endpoints all configurable via env vars |
+| Hardcoding | Socket names, ports, endpoints all configurable via env vars; PAGE_SIZE via `rustix::param::page_size()` |
 | Domain theming | 7 domain palettes (health, physics, ecology, agriculture, measurement, neural, game) + diverging color scales |
 | GUI logic extraction | All UI business logic in pure functions, 16 headless integration tests |
 | Game loop | Wired: TickClock in app, begin_frame_with_dt, continuous mode motor commands |
@@ -76,9 +76,9 @@
 
 ## Known Debt
 
-### Stubs and TODOs (1 item in active code)
+### Stubs and TODOs (0 items in active production code)
 
-Active TODO: Animation capability test exception in `capability_integration_tests.rs`.
+Sole remaining TODO is a test-only exception marker in `capability_integration_tests.rs` (Animation capability test).
 
 Delegated/roadmap items (not TODOs, documented as roadmap markers):
 - mDNS full DNS packet building (delegate to songbird)
@@ -98,7 +98,7 @@ Delegated/roadmap items (not TODOs, documented as roadmap markers):
 
 ### Test Coverage Gap
 
-Current: 77.4% region coverage, 79.2% function coverage (3,409 tests).
+Current: 79.5% line coverage, 81.1% function coverage (3,711 tests).
 Target: 90%.
 
 Well-covered areas (>80%):
@@ -133,18 +133,10 @@ tests already cover keyboard shortcuts, motor commands, and panel navigation.
 - `legacy-audio`: Audio providers (rodio-based)
 - `legacy-http`: HTTP discovery provider
 
-### File Size Exception
-
-`animation.rs` is 1,086 lines due to test additions (boundary tests for all easing
-functions). Refactor pending: split test module to `tests/animation_tests.rs`.
-
 ### Missing Infrastructure
 
-- No CI/CD pipeline
-- No genomeBin manifest
 - No validation binaries (hotSpring pattern: hardcoded expected, exit 0/1)
 - No Python baselines for cross-validation
-- No benchmark suite (criterion/iai/divan)
 
 Property-based testing (`proptest`) added for: dynamic_schema, SVG modality,
 Tufte constraints, state sync.

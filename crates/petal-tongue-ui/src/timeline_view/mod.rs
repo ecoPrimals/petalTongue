@@ -11,6 +11,8 @@ mod view;
 #[cfg(test)]
 mod tests;
 
-// Re-export public API
 pub use types::{EventStatus, TimelineEvent};
-pub use view::TimelineView;
+pub use view::{
+    EventDetailDisplay, TimelineIntent, TimelineView, escape_csv, format_events_csv,
+    prepare_event_detail, time_to_x, zoom_in, zoom_out,
+};

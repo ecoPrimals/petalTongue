@@ -198,7 +198,7 @@ impl HumanEntropyWindow {
         });
     }
 
-    fn render_processing_state(&mut self, ui: &mut egui::Ui) {
+    fn render_processing_state(&self, ui: &mut egui::Ui) {
         ui.vertical_centered(|ui| {
             ui.add_space(20.0);
             ui.spinner();

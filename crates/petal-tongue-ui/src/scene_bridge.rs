@@ -342,4 +342,219 @@ mod tests {
         assert_eq!(converted.b(), egui_c.b());
         assert_eq!(converted.a(), egui_c.a());
     }
+
+    #[test]
+    fn paint_primitive_line_open() {
+        let prim = Primitive::Line {
+            points: vec![[0.0, 0.0], [100.0, 50.0]],
+            stroke: StrokeStyle {
+                color: Color::BLACK,
+                width: 2.0,
+                ..StrokeStyle::default()
+            },
+            closed: false,
+            data_id: None,
+        };
+        let transform = Transform2D::IDENTITY;
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let (response, painter) =
+                    ui.allocate_painter(egui::Vec2::new(200.0, 100.0), egui::Sense::hover());
+                paint_primitive(&painter, &prim, &transform, response.rect.min.to_vec2());
+            });
+        });
+    }
+
+    #[test]
+    fn paint_primitive_line_closed() {
+        let prim = Primitive::Line {
+            points: vec![[0.0, 0.0], [100.0, 0.0], [100.0, 100.0], [0.0, 100.0]],
+            stroke: StrokeStyle {
+                color: Color::WHITE,
+                width: 1.0,
+                ..StrokeStyle::default()
+            },
+            closed: true,
+            data_id: None,
+        };
+        let transform = Transform2D::IDENTITY;
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let (response, painter) =
+                    ui.allocate_painter(egui::Vec2::new(200.0, 200.0), egui::Sense::hover());
+                paint_primitive(&painter, &prim, &transform, response.rect.min.to_vec2());
+            });
+        });
+    }
+
+    #[test]
+    fn paint_primitive_rect() {
+        let prim = Primitive::Rect {
+            x: 10.0,
+            y: 20.0,
+            width: 80.0,
+            height: 40.0,
+            fill: Some(Color::rgb(1.0, 0.0, 0.0)),
+            stroke: Some(StrokeStyle {
+                color: Color::BLACK,
+                width: 1.0,
+                ..StrokeStyle::default()
+            }),
+            corner_radius: 4.0,
+            data_id: None,
+        };
+        let transform = Transform2D::IDENTITY;
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let (response, painter) =
+                    ui.allocate_painter(egui::Vec2::new(200.0, 200.0), egui::Sense::hover());
+                paint_primitive(&painter, &prim, &transform, response.rect.min.to_vec2());
+            });
+        });
+    }
+
+    #[test]
+    fn paint_primitive_text() {
+        use petal_tongue_scene::primitive::AnchorPoint;
+
+        let prim = Primitive::Text {
+            x: 50.0,
+            y: 50.0,
+            content: "Test Label".to_string(),
+            font_size: 14.0,
+            color: Color::BLACK,
+            anchor: AnchorPoint::TopLeft,
+            bold: false,
+            italic: false,
+            data_id: None,
+        };
+        let transform = Transform2D::IDENTITY;
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let (response, painter) =
+                    ui.allocate_painter(egui::Vec2::new(200.0, 200.0), egui::Sense::hover());
+                paint_primitive(&painter, &prim, &transform, response.rect.min.to_vec2());
+            });
+        });
+    }
+
+    #[test]
+    fn paint_primitive_polygon() {
+        use petal_tongue_scene::primitive::FillRule;
+
+        let prim = Primitive::Polygon {
+            points: vec![[0.0, 0.0], [100.0, 0.0], [50.0, 86.6]],
+            fill: Color::rgb(0.0, 0.5, 1.0),
+            stroke: None,
+            fill_rule: FillRule::NonZero,
+            data_id: None,
+        };
+        let transform = Transform2D::IDENTITY;
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let (response, painter) =
+                    ui.allocate_painter(egui::Vec2::new(200.0, 200.0), egui::Sense::hover());
+                paint_primitive(&painter, &prim, &transform, response.rect.min.to_vec2());
+            });
+        });
+    }
+
+    #[test]
+    fn paint_primitive_line_single_point_no_draw() {
+        let prim = Primitive::Line {
+            points: vec![[50.0, 50.0]],
+            stroke: StrokeStyle::default(),
+            closed: false,
+            data_id: None,
+        };
+        let transform = Transform2D::IDENTITY;
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let (response, painter) =
+                    ui.allocate_painter(egui::Vec2::new(200.0, 200.0), egui::Sense::hover());
+                paint_primitive(&painter, &prim, &transform, response.rect.min.to_vec2());
+            });
+        });
+    }
+
+    #[test]
+    fn paint_primitive_polygon_insufficient_points_no_draw() {
+        use petal_tongue_scene::primitive::FillRule;
+
+        let prim = Primitive::Polygon {
+            points: vec![[0.0, 0.0], [100.0, 0.0]],
+            fill: Color::BLACK,
+            stroke: None,
+            fill_rule: FillRule::NonZero,
+            data_id: None,
+        };
+        let transform = Transform2D::IDENTITY;
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let (response, painter) =
+                    ui.allocate_painter(egui::Vec2::new(200.0, 200.0), egui::Sense::hover());
+                paint_primitive(&painter, &prim, &transform, response.rect.min.to_vec2());
+            });
+        });
+    }
+
+    #[test]
+    fn paint_scene_with_offset() {
+        let mut graph = SceneGraph::new();
+        graph.add_to_root(SceneNode::new("pt").with_primitive(Primitive::Point {
+            x: 0.0,
+            y: 0.0,
+            radius: 5.0,
+            fill: Some(Color::BLACK),
+            stroke: None,
+            data_id: None,
+        }));
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let (response, painter) =
+                    ui.allocate_painter(egui::Vec2::new(400.0, 300.0), egui::Sense::hover());
+                paint_scene(&painter, &graph, response.rect.min.to_vec2());
+            });
+        });
+    }
+
+    #[test]
+    fn scene_widget_show_headless() {
+        let mut graph = SceneGraph::new();
+        graph.add_to_root(SceneNode::new("pt").with_primitive(Primitive::Point {
+            x: 10.0,
+            y: 20.0,
+            radius: 3.0,
+            fill: Some(Color::rgb(0.0, 1.0, 0.0)),
+            stroke: None,
+            data_id: None,
+        }));
+        let grammar = GrammarExpr::new("data", GeometryType::Point);
+        let plan = RenderPlan::new(graph, grammar);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let _response = SceneWidget::new(&plan)
+                    .desired_size(egui::Vec2::new(400.0, 300.0))
+                    .show(ui);
+            });
+        });
+    }
 }

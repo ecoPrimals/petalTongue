@@ -25,3 +25,7 @@ anyhow = "1.0"
 colored = "2.1"
 uuid = "1.9"
 
+[dev-dependencies]
+petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
+tempfile = "3.8"
+

@@ -436,4 +436,99 @@ mod tests {
         assert!((renderer.current_time - 0.0).abs() < f32::EPSILON);
         assert_eq!(renderer.current_state(), FlowerState::Closed);
     }
+
+    #[test]
+    fn test_progress_clamping_above_one() {
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(10.0);
+        assert_eq!(renderer.current_state(), FlowerState::Open);
+        assert!((renderer.opening_percent() - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_opening_interpolation_exact_boundaries() {
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(0.0);
+        assert_eq!(renderer.current_state(), FlowerState::Closed);
+        renderer.update(0.09);
+        assert_eq!(renderer.current_state(), FlowerState::Closed);
+        renderer.update(2.7);
+        assert_eq!(renderer.current_state(), FlowerState::Open);
+        renderer.update(3.0);
+        assert_eq!(renderer.current_state(), FlowerState::Open);
+    }
+
+    #[test]
+    fn test_opening_percent_linear_midpoint() {
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(1.5);
+        let p = renderer.opening_percent();
+        let expected = (1.5 / 3.0 - 0.1) / 0.8;
+        assert!(
+            (p - expected).abs() < 0.02,
+            "opening percent ~{} should be near {}",
+            p,
+            expected
+        );
+    }
+
+    #[test]
+    fn test_state_transition_closed_to_opening() {
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(0.05);
+        assert_eq!(renderer.current_state(), FlowerState::Closed);
+        renderer.update(0.35);
+        assert!(matches!(renderer.current_state(), FlowerState::Opening(_)));
+    }
+
+    #[test]
+    fn test_state_transition_opening_to_open() {
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(1.0);
+        assert!(matches!(renderer.current_state(), FlowerState::Opening(_)));
+        renderer.update(2.8);
+        assert_eq!(renderer.current_state(), FlowerState::Open);
+    }
+
+    #[test]
+    fn test_opening_percent_increments_with_time() {
+        let mut renderer = VisualFlowerRenderer::new();
+        let p0 = renderer.opening_percent();
+        renderer.update(0.5);
+        let p1 = renderer.opening_percent();
+        renderer.update(0.5);
+        let p2 = renderer.opening_percent();
+        assert!(p0 < p1);
+        assert!(p1 < p2);
+    }
+
+    #[test]
+    fn test_update_accumulates_delta() {
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(0.1);
+        renderer.update(0.2);
+        renderer.update(0.3);
+        assert!((renderer.current_time - 0.6).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_reset_after_open_returns_to_closed() {
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(5.0);
+        assert_eq!(renderer.current_state(), FlowerState::Open);
+        renderer.reset();
+        assert_eq!(renderer.current_state(), FlowerState::Closed);
+        assert!((renderer.opening_percent() - 0.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_opening_state_percent_range() {
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(0.5);
+        if let FlowerState::Opening(p) = renderer.current_state() {
+            assert!(p > 0 && p < 100);
+        } else {
+            panic!("expected Opening");
+        }
+    }
 }
