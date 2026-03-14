@@ -10,6 +10,7 @@ use crate::audio::AudioSystemV2;
 use crate::awakening_overlay::AwakeningOverlay;
 use crate::graph_canvas::GraphCanvas;
 use crate::graph_metrics_plotter::GraphMetricsPlotter;
+use crate::interaction_bridge::EguiInteractionBridge;
 use crate::keyboard_shortcuts::KeyboardShortcuts;
 use crate::metrics_dashboard::MetricsDashboard;
 use crate::panel_registry::{PanelInstance, PanelRegistry};
@@ -174,6 +175,9 @@ pub(super) fn create_app(
         show_graph_builder: false,
         tick_clock: TickClock::new(TickConfig::default()),
         continuous_mode: false,
+        physics_world: petal_tongue_scene::physics::PhysicsWorld::new(),
+        animation_player: petal_tongue_scene::animation::AnimationPlayer::new(),
+        active_scene: petal_tongue_scene::scene_graph::SceneGraph::new(),
         visualization_state: None,
         last_session_poll: Instant::now(),
         sensor_stream: None,
@@ -183,6 +187,7 @@ pub(super) fn create_app(
         motor_rx,
         motor_tx,
         show_top_menu: true,
+        interaction_bridge: EguiInteractionBridge::new(),
     };
 
     finalize_app_startup(&mut app, &scenario, &tutorial_mode, needs_fallback);

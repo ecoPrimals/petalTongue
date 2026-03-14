@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Proprioception Panel - Display SAME DAVE self-awareness
 //!
-//! Phase 1.4: Shows the system's self-knowledge using the SAME DAVE framework:
+//! Shows the system's self-knowledge using the SAME DAVE framework:
 //! - Sensory: What the system perceives (active sockets)
 //! - Awareness: What the system knows (primals, capabilities)
 //! - Motor: What the system can do (deploy, execute, coordinate)

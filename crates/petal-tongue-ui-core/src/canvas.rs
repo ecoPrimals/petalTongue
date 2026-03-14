@@ -7,6 +7,7 @@
 use crate::trait_def::{ExportFormat, UICapability, UniversalUI};
 use crate::utils::health_to_color;
 use anyhow::Result;
+use bytes::Bytes;
 use petal_tongue_core::GraphEngine;
 use std::sync::{Arc, RwLock};
 use tiny_skia::{Color, FillRule, Paint, PathBuilder, Pixmap, Stroke, Transform};
@@ -53,7 +54,7 @@ impl CanvasUI {
     ///
     /// Uses tiny-skia to render the graph topology: nodes as filled circles,
     /// edges as lines. Transforms graph coordinates to fit the canvas with padding.
-    fn render_png(&self) -> Result<Vec<u8>> {
+    fn render_png(&self) -> Result<Bytes> {
         let graph = match self.graph.read() {
             Ok(guard) => guard,
             Err(e) => return Err(anyhow::anyhow!("graph lock poisoned: {e}")),
@@ -73,6 +74,7 @@ impl CanvasUI {
         if nodes.is_empty() {
             return pixmap
                 .encode_png()
+                .map(Bytes::from)
                 .map_err(|e| anyhow::anyhow!("PNG encode failed: {e}"));
         }
 
@@ -151,6 +153,7 @@ impl CanvasUI {
 
         pixmap
             .encode_png()
+            .map(Bytes::from)
             .map_err(|e| anyhow::anyhow!("PNG encode failed: {e}"))
     }
 }
@@ -183,7 +186,7 @@ impl UniversalUI for CanvasUI {
         anyhow::bail!("Canvas UI only supports binary export (PNG)")
     }
 
-    fn render_to_bytes(&self) -> Result<Vec<u8>> {
+    fn render_to_bytes(&self) -> Result<Bytes> {
         self.render_png()
     }
 

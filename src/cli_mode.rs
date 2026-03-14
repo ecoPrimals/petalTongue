@@ -583,8 +583,7 @@ mod tests {
             name: "test".to_string(),
             pure_rust: true,
         };
-        #[allow(clippy::redundant_clone)]
-        let cloned = mode.clone();
+        let cloned = Clone::clone(&mode);
         assert_eq!(cloned.name, "test");
         assert!(cloned.pure_rust);
     }
@@ -597,8 +596,7 @@ mod tests {
             pure_rust: true,
             command: "petaltongue tui".to_string(),
         };
-        #[allow(clippy::redundant_clone)]
-        let cloned = mode.clone();
+        let cloned = Clone::clone(&mode);
         assert_eq!(cloned.name, "tui");
         assert_eq!(cloned.command, "petaltongue tui");
     }

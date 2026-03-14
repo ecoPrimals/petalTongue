@@ -520,4 +520,109 @@ mod tests {
         let tarpc_err = super::jsonrpc_to_tarpc_error(jsonrpc_err);
         assert!(matches!(tarpc_err, TarpcClientError::Connection(_)));
     }
+
+    #[test]
+    fn test_jsonrpc_to_tarpc_error_rpc_error_code_ranges() {
+        use petal_tongue_ipc::{JsonRpcClientError, TarpcClientError};
+
+        // Parse error (-32700)
+        let err = JsonRpcClientError::RpcError {
+            code: -32700,
+            message: "Parse error".to_string(),
+            data: None,
+        };
+        let tarpc = super::jsonrpc_to_tarpc_error(err);
+        assert!(matches!(tarpc, TarpcClientError::Rpc(_)));
+
+        // Invalid params (-32602)
+        let err = JsonRpcClientError::RpcError {
+            code: -32602,
+            message: "Invalid params".to_string(),
+            data: Some(serde_json::json!({"hint": "x"})),
+        };
+        let tarpc = super::jsonrpc_to_tarpc_error(err);
+        assert!(matches!(tarpc, TarpcClientError::Rpc(_)));
+
+        // Server error range (-32000 to -32099)
+        let err = JsonRpcClientError::RpcError {
+            code: -32000,
+            message: "Server error".to_string(),
+            data: None,
+        };
+        let tarpc = super::jsonrpc_to_tarpc_error(err);
+        assert!(matches!(tarpc, TarpcClientError::Rpc(_)));
+    }
+
+    #[test]
+    fn test_protocol_debug() {
+        assert!(format!("{:?}", Protocol::Tarpc).contains("Tarpc"));
+        assert!(format!("{:?}", Protocol::JsonRpc).contains("JsonRpc"));
+        assert!(format!("{:?}", Protocol::Https).contains("Https"));
+    }
+
+    #[test]
+    fn test_detected_protocol_debug() {
+        let d = DetectedProtocol {
+            protocol: Protocol::Tarpc,
+            endpoint: "tarpc://host:1".to_string(),
+        };
+        let s = format!("{:?}", d);
+        assert!(s.contains("Tarpc"));
+        assert!(s.contains("tarpc://host:1"));
+    }
+
+    #[test]
+    fn test_parse_unix_socket_path_ipc_empty() {
+        let path = super::parse_unix_socket_path("ipc://").expect("ipc empty path valid");
+        assert_eq!(path.to_string_lossy(), "");
+    }
+
+    #[test]
+    fn test_parse_unix_socket_path_relative() {
+        let path = super::parse_unix_socket_path("unix://./relative.sock").unwrap();
+        assert_eq!(path.to_string_lossy(), "./relative.sock");
+    }
+
+    #[test]
+    fn test_parse_unix_socket_path_malformed_no_scheme() {
+        assert!(super::parse_unix_socket_path("").is_err());
+        assert!(super::parse_unix_socket_path("/tmp/sock").is_err());
+    }
+
+    #[tokio::test]
+    async fn test_connect_with_priority_tarpc_unavailable() {
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            connect_with_priority("tarpc://127.0.0.1:19999"),
+        )
+        .await;
+        assert!(result.is_ok(), "should not hang");
+        let conn_result = result.unwrap();
+        assert!(conn_result.is_err(), "no server on port 19999");
+    }
+
+    #[tokio::test]
+    async fn test_connect_with_priority_unix_unavailable() {
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            connect_with_priority("unix:///tmp/nonexistent-socket-xyz-12345.sock"),
+        )
+        .await;
+        assert!(result.is_ok(), "should not hang");
+        let conn_result = result.unwrap();
+        assert!(conn_result.is_err(), "socket does not exist");
+    }
+
+    #[tokio::test]
+    async fn test_connect_with_priority_https_unavailable() {
+        // Use localhost with no server - fails quickly (connection refused)
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            connect_with_priority("https://127.0.0.1:19998/"),
+        )
+        .await;
+        assert!(result.is_ok(), "should not hang");
+        let conn_result = result.unwrap();
+        assert!(conn_result.is_err(), "no server on port 19998");
+    }
 }

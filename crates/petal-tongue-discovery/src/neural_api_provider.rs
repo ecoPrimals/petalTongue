@@ -212,10 +212,12 @@ impl VisualizationDataProvider for NeuralApiProvider {
     async fn get_primals(&self) -> Result<Vec<PrimalInfo>> {
         debug!("Querying Neural API for all primals");
 
-        let result = self.call_method("neural_api.get_primals", None).await?;
+        let result = self.call_method("primal.list", None).await?;
 
+        // Support both formats: direct array or { primals: [...] }
         let primals_array = result["primals"]
             .as_array()
+            .or_else(|| result.as_array())
             .ok_or_else(|| anyhow::anyhow!("Expected primals array"))?;
 
         let mut primals = Vec::new();
@@ -336,12 +338,12 @@ mod tests {
     fn test_jsonrpc_request_format() {
         let request = json!({
             "jsonrpc": "2.0",
-            "method": "neural_api.get_primals",
+            "method": "primal.list",
             "params": {},
             "id": 1
         });
         assert_eq!(request["jsonrpc"], "2.0");
-        assert_eq!(request["method"], "neural_api.get_primals");
+        assert_eq!(request["method"], "primal.list");
         assert!(request["params"].is_object());
     }
 

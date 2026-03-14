@@ -27,6 +27,31 @@ pub struct TimelineEvent {
     pub payload_summary: Option<String>,
 }
 
+/// User interaction intent produced by the timeline view render method.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TimelineIntent {
+    ZoomIn,
+    ZoomOut,
+    ToggleDetails,
+    SelectEvent(String),
+    DeselectEvent,
+    Clear,
+    ExportCsv,
+}
+
+/// Pre-computed display data for a selected event detail panel.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EventDetailDisplay {
+    pub status_icon: &'static str,
+    pub status_label: String,
+    pub from: String,
+    pub to: String,
+    pub event_type: String,
+    pub time_str: String,
+    pub duration_str: Option<String>,
+    pub payload: Option<String>,
+}
+
 /// Status of a timeline event
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum EventStatus {

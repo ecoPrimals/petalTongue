@@ -9,17 +9,17 @@
 
 | Metric | Value |
 |--------|-------|
-| Tests | 3,776+ passing, 17 ignored |
-| Coverage (line) | ~82% |
-| Coverage (function) | ~82% |
-| Clippy | Zero errors (pedantic + nursery); advisory warnings only |
+| Tests | 3,940+ passing, 17 ignored |
+| Coverage (line) | ~83% |
+| Coverage (function) | ~83% |
+| Clippy | Zero warnings (pedantic + nursery, `--all-targets --all-features`) |
 | `cargo fmt` | Clean |
 | `cargo deny` | Clean (advisories, bans, licenses, sources) |
 | `cargo doc` | Clean (`--all-features --no-deps`) |
 | Unsafe code | `#![forbid(unsafe_code)]` on all 16 crates |
-| Largest file | 730 lines (after refactoring); all files under 1,000 |
+| Largest file | 943 lines (test file); all files under 1,000 |
 | External C deps | Zero |
-| SPDX headers | All 467 source files |
+| SPDX headers | All source files |
 
 ---
 
@@ -33,6 +33,18 @@
 - SPDX `AGPL-3.0-only` headers on all source files
 - `ring` crate eliminated (ecoBin compliance)
 - `users` crate replaced with pure Rust `rustix`
+
+### Deep Debt Phase 2 (March 14, 2026)
+
+- All 9 `#[allow(...)]` → `#[expect(..., reason = "...")]` with justifications
+- 50+ `String` clone eliminations in graph validation (borrowed `&str` lifetimes)
+- `impl Into<String>` APIs across graph builder, canvas, state sync modules
+- `ScenarioBuilder` trait returns `&'static str` (eliminates `unnecessary_literal_bound`)
+- TRUE PRIMAL: hardcoded primal names in shader lineage → generic origins, test-gated
+- `spawn_heartbeat` migrated to `tokio::spawn` async (was `std::thread::Builder`)
+- mDNS discovery stub → real `MdnsVisualizationProvider` delegation
+- Manual hypotenuse → `f64::hypot()`
+- Stale demo version "1.5.0" → "1.6.3"
 
 ### Technical Debt Elimination
 
@@ -129,7 +141,7 @@ No active gaps. Next evolution targets:
 - `visualization.interact.sync` (perspective sync mode)
 - `visualization.render.stream` grammar subscription mode
 - Capability-based data resolution (`"source": "capability:X"`)
-- Coverage target: 90% (currently ~82%)
+- Coverage target: 90% (currently ~83%)
 
 ### Coverage Expansion (March 12, 2026)
 
@@ -224,4 +236,5 @@ the collaborative intelligence.
 | Spring absorption | 3,409 | 77.4% / 79.2% | March 11 |
 | Deep coverage expansion | 3,711 | 79.5% / 81.1% | March 12 |
 | March 14 audit & refactor | 3,776+ | ~82% / ~82% | March 14 |
+| March 14 deep debt phase 2 | 3,940+ | ~83% / ~83% | March 14 |
 | Target | TBD | 90% / 90% | — |

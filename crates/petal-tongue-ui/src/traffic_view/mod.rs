@@ -4,14 +4,16 @@
 //! Visualizes data flow and traffic patterns between primals.
 //! Implements Phase 4 of the UI specification.
 
+mod helpers;
 mod types;
 mod view;
 
 #[cfg(test)]
 mod tests;
 
-pub use types::{ColorScheme, TrafficFlow, TrafficMetrics};
-pub use view::{
-    TrafficIntent, TrafficView, bezier_control_points, calculate_flow_color, calculate_flow_width,
-    prepare_flow_detail, primal_lane_layout,
+pub use helpers::{
+    bezier_control_points, calculate_flow_color, calculate_flow_width, prepare_flow_detail,
+    primal_lane_layout,
 };
+pub use types::{ColorScheme, TrafficFlow, TrafficIntent, TrafficMetrics};
+pub use view::TrafficView;

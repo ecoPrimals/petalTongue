@@ -87,7 +87,7 @@ async fn main() -> Result<()> {
         let buffer = renderer.render(&primitives)?;
 
         // Present via display backend
-        display.present(&buffer).await?;
+        display.present(buffer.as_ref()).await?;
 
         frame_count += 1;
 

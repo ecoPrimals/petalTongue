@@ -172,8 +172,8 @@ impl UniversalUI for TerminalUI {
         self.render_terminal()
     }
 
-    fn render_to_bytes(&self) -> Result<Vec<u8>> {
-        Ok(self.render_terminal()?.into_bytes())
+    fn render_to_bytes(&self) -> Result<bytes::Bytes> {
+        Ok(bytes::Bytes::from(self.render_terminal()?.into_bytes()))
     }
 
     fn recommended_format(&self) -> ExportFormat {

@@ -86,15 +86,11 @@ fn test_no_false_positives() {
 
     for cap in detector.get_all() {
         if cap.status == ModalityStatus::Available {
-            // If a capability is marked as available, it must have been tested
-            // Exception: Animation (TODO - needs testing implementation)
-            if cap.modality != Modality::Animation {
-                assert!(
-                    cap.tested,
-                    "{:?} claims to be available but wasn't tested! This is a critical bug.",
-                    cap.modality
-                );
-            }
+            assert!(
+                cap.tested,
+                "{:?} claims to be available but wasn't tested! This is a critical bug.",
+                cap.modality
+            );
 
             // The reason should not contain failure indicators
             let reason_lower = cap.reason.to_lowercase();

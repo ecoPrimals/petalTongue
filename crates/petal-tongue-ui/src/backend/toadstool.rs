@@ -11,7 +11,7 @@
 //!
 //! # Migration Guide
 //!
-//! ```rust
+//! ```rust,ignore
 //! // OLD (this module - deprecated)
 //! use crate::backend::toadstool::ToadstoolBackend;
 //!

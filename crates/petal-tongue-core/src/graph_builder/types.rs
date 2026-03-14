@@ -198,8 +198,8 @@ impl GraphNode {
     }
 
     /// Set a parameter value
-    pub fn set_parameter(&mut self, key: String, value: String) {
-        self.parameters.insert(key, value);
+    pub fn set_parameter(&mut self, key: impl Into<String>, value: impl Into<String>) {
+        self.parameters.insert(key.into(), value.into());
     }
 
     /// Get a parameter value
@@ -276,17 +276,17 @@ impl NodeType {
 impl GraphEdge {
     /// Create a new edge
     #[must_use]
-    pub const fn new(from: String, to: String, edge_type: EdgeType) -> Self {
+    pub fn new(from: impl Into<String>, to: impl Into<String>, edge_type: EdgeType) -> Self {
         Self {
-            from,
-            to,
+            from: from.into(),
+            to: to.into(),
             edge_type,
         }
     }
 
     /// Create a dependency edge
     #[must_use]
-    pub const fn dependency(from: String, to: String) -> Self {
+    pub fn dependency(from: impl Into<String>, to: impl Into<String>) -> Self {
         Self::new(from, to, EdgeType::Dependency)
     }
 }

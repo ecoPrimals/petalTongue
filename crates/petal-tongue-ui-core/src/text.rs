@@ -230,8 +230,8 @@ impl UniversalUI for TextUI {
         }
     }
 
-    fn render_to_bytes(&self) -> Result<Vec<u8>> {
-        Ok(self.render_to_string()?.into_bytes())
+    fn render_to_bytes(&self) -> Result<bytes::Bytes> {
+        Ok(bytes::Bytes::from(self.render_to_string()?.into_bytes()))
     }
 
     fn recommended_format(&self) -> ExportFormat {

@@ -163,6 +163,8 @@ impl Default for EguiInteractionBridge {
 
 #[cfg(test)]
 mod tests {
+    use petal_tongue_core::interaction::DataObjectId;
+
     use super::*;
 
     #[test]
@@ -171,6 +173,12 @@ mod tests {
         assert_eq!(bridge.engine.adapter_count(), 2);
         assert_eq!(bridge.engine.inverse_pipeline_count(), 1);
         assert!(bridge.engine.perspective(bridge.perspective_id).is_some());
+    }
+
+    #[test]
+    fn bridge_default() {
+        let bridge = EguiInteractionBridge::default();
+        assert_eq!(bridge.engine.adapter_count(), 2);
     }
 
     #[test]
@@ -185,8 +193,70 @@ mod tests {
     }
 
     #[test]
+    fn build_context_various_window_sizes() {
+        let bridge = EguiInteractionBridge::new();
+
+        let ctx = bridge.build_context(1920.0, 1080.0, 0.0, 0.0, 1.0);
+        assert!((ctx.screen_width - 1920.0).abs() < f32::EPSILON);
+        assert!((ctx.screen_height - 1080.0).abs() < f32::EPSILON);
+        assert!((ctx.zoom - 1.0).abs() < f64::EPSILON);
+
+        let ctx = bridge.build_context(320.0, 240.0, -50.5, 100.25, 0.5);
+        assert!((ctx.screen_width - 320.0).abs() < f32::EPSILON);
+        assert!((ctx.screen_height - 240.0).abs() < f32::EPSILON);
+        assert!((ctx.viewport_center_x - (-50.5)).abs() < f64::EPSILON);
+        assert!((ctx.viewport_center_y - 100.25).abs() < f64::EPSILON);
+        assert!((ctx.zoom - 0.5).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn build_context_zero_dimensions() {
+        let bridge = EguiInteractionBridge::new();
+        let ctx = bridge.build_context(0.0, 0.0, 0.0, 0.0, 1.0);
+        assert_eq!(ctx.screen_width, 0.0);
+        assert_eq!(ctx.screen_height, 0.0);
+    }
+
+    #[test]
     fn selected_data_ids_empty_initially() {
         let bridge = EguiInteractionBridge::new();
+        assert!(bridge.selected_data_ids().is_empty());
+    }
+
+    #[test]
+    fn selected_data_ids_with_selection() {
+        let mut bridge = EguiInteractionBridge::new();
+        let id_a = DataObjectId::new("test", serde_json::json!("a"));
+        let id_b = DataObjectId::new("test", serde_json::json!("b"));
+
+        if let Some(p) = bridge.engine.perspective_mut(bridge.perspective_id) {
+            p.select(id_a.clone());
+        }
+        let ids = bridge.selected_data_ids();
+        assert_eq!(ids.len(), 1);
+        assert_eq!(ids[0], id_a);
+
+        if let Some(p) = bridge.engine.perspective_mut(bridge.perspective_id) {
+            p.add_to_selection(id_b.clone());
+        }
+        let ids = bridge.selected_data_ids();
+        assert_eq!(ids.len(), 2);
+        assert!(ids.contains(&id_a));
+        assert!(ids.contains(&id_b));
+    }
+
+    #[test]
+    fn selected_data_ids_after_clear() {
+        let mut bridge = EguiInteractionBridge::new();
+        let id = DataObjectId::new("test", serde_json::json!("x"));
+        if let Some(p) = bridge.engine.perspective_mut(bridge.perspective_id) {
+            p.select(id);
+        }
+        assert_eq!(bridge.selected_data_ids().len(), 1);
+
+        if let Some(p) = bridge.engine.perspective_mut(bridge.perspective_id) {
+            p.clear_selection();
+        }
         assert!(bridge.selected_data_ids().is_empty());
     }
 
@@ -194,5 +264,37 @@ mod tests {
     fn focused_data_id_none_initially() {
         let bridge = EguiInteractionBridge::new();
         assert!(bridge.focused_data_id().is_none());
+    }
+
+    #[test]
+    fn focused_data_id_with_focus() {
+        let mut bridge = EguiInteractionBridge::new();
+        let id = DataObjectId::new("metrics", serde_json::json!("node-1"));
+
+        if let Some(p) = bridge.engine.perspective_mut(bridge.perspective_id) {
+            p.focus = Some(id.clone());
+        }
+        assert_eq!(bridge.focused_data_id(), Some(id));
+    }
+
+    #[test]
+    fn focused_data_id_cleared() {
+        let mut bridge = EguiInteractionBridge::new();
+        let id = DataObjectId::new("test", serde_json::json!("f"));
+        if let Some(p) = bridge.engine.perspective_mut(bridge.perspective_id) {
+            p.focus = Some(id);
+        }
+        assert!(bridge.focused_data_id().is_some());
+
+        if let Some(p) = bridge.engine.perspective_mut(bridge.perspective_id) {
+            p.focus = None;
+        }
+        assert!(bridge.focused_data_id().is_none());
+    }
+
+    #[test]
+    fn inverse_pipeline_mut_accessible() {
+        let mut bridge = EguiInteractionBridge::new();
+        let _ = bridge.inverse_pipeline_mut();
     }
 }

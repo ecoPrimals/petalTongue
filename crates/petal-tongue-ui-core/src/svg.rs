@@ -187,8 +187,8 @@ impl UniversalUI for SvgUI {
         self.render_svg()
     }
 
-    fn render_to_bytes(&self) -> Result<Vec<u8>> {
-        Ok(self.render_svg()?.into_bytes())
+    fn render_to_bytes(&self) -> Result<bytes::Bytes> {
+        Ok(bytes::Bytes::from(self.render_svg()?.into_bytes()))
     }
 
     fn recommended_format(&self) -> ExportFormat {

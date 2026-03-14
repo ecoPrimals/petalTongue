@@ -4,6 +4,7 @@
 //! Defines the platform-agnostic interface that all UI implementations must satisfy.
 
 use anyhow::Result;
+use bytes::Bytes;
 use std::path::Path;
 
 /// Export format for visualizations
@@ -107,7 +108,7 @@ pub trait UniversalUI: Send + Sync {
     ///
     /// Returns the rendered visualization as bytes.
     /// Suitable for PNG, binary formats.
-    fn render_to_bytes(&self) -> Result<Vec<u8>>;
+    fn render_to_bytes(&self) -> Result<Bytes>;
 
     /// Export to file
     ///
@@ -116,10 +117,10 @@ pub trait UniversalUI: Send + Sync {
     fn export(&self, path: &Path, format: ExportFormat) -> Result<()> {
         let content = match format {
             ExportFormat::Png => self.render_to_bytes()?,
-            _ => self.render_to_string()?.into_bytes(),
+            _ => Bytes::from(self.render_to_string()?.into_bytes()),
         };
 
-        std::fs::write(path, content)?;
+        std::fs::write(path, content.as_ref())?;
         tracing::info!("Exported to {} ({:?})", path.display(), format);
         Ok(())
     }

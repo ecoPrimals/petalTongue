@@ -35,7 +35,7 @@ fn build_properties_from_info(info: &PrimalInfo) -> Properties {
     props
 }
 
-#[allow(dead_code)] // Used in tests
+#[cfg_attr(not(test), allow(dead_code))]
 #[must_use]
 const fn health_status_display(health: PrimalHealthStatus) -> (&'static str, egui::Color32) {
     let rgb = health_status_rgb(health);

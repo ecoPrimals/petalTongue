@@ -200,10 +200,7 @@ impl JsonRpcClient {
     pub async fn discover_primals(&self) -> JsonRpcResult<Vec<PrimalInfo>> {
         let result = match self.call("discovery.primals", serde_json::json!({})).await {
             Ok(r) => r,
-            Err(_) => {
-                self.call("neural_api.get_primals", serde_json::json!({}))
-                    .await?
-            }
+            Err(_) => self.call("primal.list", serde_json::json!({})).await?,
         };
 
         let primals: Vec<PrimalInfo> = serde_json::from_value(result).map_err(|e| {

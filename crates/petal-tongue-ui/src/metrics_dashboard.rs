@@ -4,50 +4,9 @@
 //! Displays CPU, memory, uptime, and Neural API statistics with sparklines.
 //! Updates automatically every 5 seconds with fresh data from Neural API.
 
+use crate::metrics_dashboard_helpers::{prepare_metrics_display, sparkline_points_in_rect};
 use egui::{Color32, ProgressBar, RichText, Stroke, Ui, Vec2};
 use petal_tongue_core::{CpuHistory, MemoryHistory, SystemMetrics};
-
-/// Map value to RGB color based on warning/critical thresholds.
-/// Green below warning, yellow between warning and critical, red at/above critical.
-#[must_use]
-pub fn threshold_color_rgb(value: f32, warning_threshold: f32, critical_threshold: f32) -> [u8; 3] {
-    if value < warning_threshold {
-        [34, 197, 94] // green-500
-    } else if value < critical_threshold {
-        [234, 179, 8] // yellow-500
-    } else {
-        [239, 68, 68] // red-500
-    }
-}
-
-/// Generate sparkline point coordinates from history data.
-/// Returns Vec of [x, y] in rect (x_start, y_start) with given width and height.
-#[must_use]
-pub fn sparkline_points(
-    history: &[f32],
-    x_start: f32,
-    y_start: f32,
-    width: f32,
-    height: f32,
-) -> Vec<[f32; 2]> {
-    if history.len() < 2 {
-        return Vec::new();
-    }
-    let min_val = history.iter().copied().fold(f32::INFINITY, f32::min);
-    let max_val = history.iter().copied().fold(f32::NEG_INFINITY, f32::max);
-    let range = (max_val - min_val).max(0.1);
-
-    history
-        .iter()
-        .enumerate()
-        .map(|(i, &value)| {
-            let x = (i as f32 / (history.len() - 1) as f32).mul_add(width, x_start);
-            let normalized = (value - min_val) / range;
-            let y = y_start + height - normalized * height;
-            [x, y]
-        })
-        .collect()
-}
 use petal_tongue_discovery::NeuralApiProvider;
 use std::time::{Duration, Instant};
 use tracing::{debug, warn};
@@ -142,13 +101,27 @@ impl MetricsDashboard {
         ui.separator();
 
         if let Some(data) = &self.data {
-            self.render_cpu_section(ui, data);
+            let cpu: Vec<f64> = self
+                .cpu_history
+                .values()
+                .into_iter()
+                .map(f64::from)
+                .collect();
+            let mem: Vec<f64> = self
+                .memory_history
+                .values()
+                .into_iter()
+                .map(f64::from)
+                .collect();
+            let state = prepare_metrics_display(data, &cpu, &mem);
+
+            Self::render_cpu_section(ui, &state);
             ui.add_space(12.0);
-            self.render_memory_section(ui, data);
+            Self::render_memory_section(ui, &state);
             ui.add_space(12.0);
-            self.render_system_info(ui, data);
+            Self::render_system_info(ui, &state);
             ui.add_space(12.0);
-            self.render_neural_api_info(ui, data);
+            Self::render_neural_api_info(ui, &state);
         } else {
             ui.label(
                 RichText::new("No metrics data available").color(Color32::from_rgb(156, 163, 175)),
@@ -157,38 +130,40 @@ impl MetricsDashboard {
         }
     }
 
-    /// Render CPU usage section with sparkline
-    fn render_cpu_section(&self, ui: &mut Ui, data: &SystemMetrics) {
+    /// Render CPU usage section with sparkline (thin egui wrapper)
+    fn render_cpu_section(
+        ui: &mut Ui,
+        state: &crate::metrics_dashboard_helpers::MetricDisplayState,
+    ) {
         ui.group(|ui| {
             ui.label(RichText::new("CPU Usage").strong().size(14.0));
 
-            // Progress bar with color coding
-            let threshold = data.cpu_threshold();
-            let (r, g, b) = threshold.color_rgb();
+            let (r, g, b) = state.cpu_color;
             let color = Color32::from_rgb(r, g, b);
 
-            let progress = data.system.cpu_percent / 100.0;
+            let progress = (state.cpu_percent / 100.0) as f32;
             ui.add(
                 ProgressBar::new(progress)
                     .fill(color)
-                    .text(format!("{:.1}%", data.system.cpu_percent)),
+                    .text(format!("{:.1}%", state.cpu_percent)),
             );
 
-            // Sparkline
-            if self.cpu_history.has_sufficient_data() {
+            let cpu_values: Vec<f32> = state.cpu_history.iter().map(|&v| v as f32).collect();
+            if cpu_values.len() >= 3 {
                 ui.add_space(4.0);
-                self.render_sparkline(ui, &self.cpu_history.values(), "CPU History", color);
+                Self::render_sparkline(ui, &cpu_values, "CPU History", color);
             }
 
-            // Stats
-            if !self.cpu_history.values().is_empty() {
+            if !state.cpu_history.is_empty() {
+                let avg = state.cpu_history.iter().sum::<f64>() / state.cpu_history.len() as f64;
+                let max = state.cpu_history.iter().copied().fold(0.0_f64, f64::max);
                 ui.horizontal(|ui| {
                     ui.label(
-                        RichText::new(format!("Avg: {:.1}%", self.cpu_history.average()))
+                        RichText::new(format!("Avg: {:.1}%", avg))
                             .color(Color32::from_rgb(156, 163, 175)),
-                    ); // gray-400
+                    );
                     ui.label(
-                        RichText::new(format!("Max: {:.1}%", self.cpu_history.max()))
+                        RichText::new(format!("Max: {:.1}%", max))
                             .color(Color32::from_rgb(156, 163, 175)),
                     );
                 });
@@ -196,68 +171,69 @@ impl MetricsDashboard {
         });
     }
 
-    /// Render memory usage section with sparkline
-    fn render_memory_section(&self, ui: &mut Ui, data: &SystemMetrics) {
+    /// Render memory usage section with sparkline (thin egui wrapper)
+    fn render_memory_section(
+        ui: &mut Ui,
+        state: &crate::metrics_dashboard_helpers::MetricDisplayState,
+    ) {
         ui.group(|ui| {
             ui.label(RichText::new("Memory Usage").strong().size(14.0));
 
-            // Progress bar with color coding
-            let threshold = data.memory_threshold();
-            let (r, g, b) = threshold.color_rgb();
+            let (r, g, b) = state.memory_color;
             let color = Color32::from_rgb(r, g, b);
 
-            let progress = data.system.memory_percent / 100.0;
+            let progress = (state.memory_percent / 100.0) as f32;
             ui.add(
                 ProgressBar::new(progress)
                     .fill(color)
-                    .text(format!("{:.1}%", data.system.memory_percent)),
+                    .text(format!("{:.1}%", state.memory_percent)),
             );
 
-            // Memory details
             ui.label(format!(
                 "{} MB / {} MB",
-                data.system.memory_used_mb, data.system.memory_total_mb
+                state.memory_used_mb, state.memory_total_mb
             ));
 
-            // Sparkline
-            if self.memory_history.current().is_some() {
+            if !state.memory_history.is_empty() {
                 ui.add_space(4.0);
-                self.render_sparkline(ui, &self.memory_history.values(), "Memory History", color);
+                let mem_values: Vec<f32> = state.memory_history.iter().map(|&v| v as f32).collect();
+                Self::render_sparkline(ui, &mem_values, "Memory History", color);
             }
         });
     }
 
-    /// Render system information
-    fn render_system_info(&self, ui: &mut Ui, data: &SystemMetrics) {
+    /// Render system information (thin egui wrapper)
+    fn render_system_info(
+        ui: &mut Ui,
+        state: &crate::metrics_dashboard_helpers::MetricDisplayState,
+    ) {
         ui.group(|ui| {
             ui.label(RichText::new("System Information").strong().size(14.0));
 
             ui.horizontal(|ui| {
                 ui.label("⏱️ Uptime:");
-                ui.label(
-                    RichText::new(data.uptime_formatted()).color(Color32::from_rgb(59, 130, 246)),
-                ); // blue-500
+                ui.label(RichText::new(&state.uptime_text).color(Color32::from_rgb(59, 130, 246))); // blue-500
             });
         });
     }
 
-    /// Render Neural API information
-    fn render_neural_api_info(&self, ui: &mut Ui, data: &SystemMetrics) {
+    /// Render Neural API information (thin egui wrapper)
+    fn render_neural_api_info(
+        ui: &mut Ui,
+        state: &crate::metrics_dashboard_helpers::MetricDisplayState,
+    ) {
         ui.group(|ui| {
             ui.label(RichText::new("Neural API Status").strong().size(14.0));
 
             ui.horizontal(|ui| {
                 ui.label("🧬 Family:");
-                ui.label(
-                    RichText::new(&data.neural_api.family_id)
-                        .color(Color32::from_rgb(168, 85, 247)),
-                ); // purple-500
+                ui.label(RichText::new(&state.family_id).color(Color32::from_rgb(168, 85, 247))); // purple-500
             });
 
             ui.horizontal(|ui| {
                 ui.label("🌸 Active Primals:");
                 ui.label(
-                    RichText::new(format!("{}", data.neural_api.active_primals))
+                    RichText::new(format!("{}", state.active_primals))
                         .strong()
                         .color(Color32::from_rgb(34, 197, 94)),
                 ); // green-500
@@ -265,25 +241,23 @@ impl MetricsDashboard {
 
             ui.horizontal(|ui| {
                 ui.label("📊 Available Graphs:");
-                ui.label(format!("{}", data.neural_api.graphs_available));
+                ui.label(format!("{}", state.graphs_available));
             });
 
             ui.horizontal(|ui| {
                 ui.label("⚡ Active Executions:");
-                let color = if data.neural_api.active_executions > 0 {
+                let color = if state.active_executions > 0 {
                     Color32::from_rgb(34, 197, 94) // green-500 (active)
                 } else {
                     Color32::from_rgb(156, 163, 175) // gray-400 (idle)
                 };
-                ui.label(
-                    RichText::new(format!("{}", data.neural_api.active_executions)).color(color),
-                );
+                ui.label(RichText::new(format!("{}", state.active_executions)).color(color));
             });
         });
     }
 
-    /// Render a sparkline chart
-    fn render_sparkline(&self, ui: &mut Ui, values: &[f32], label: &str, color: Color32) {
+    /// Render a sparkline chart (thin egui wrapper) (thin egui wrapper)
+    fn render_sparkline(ui: &mut Ui, values: &[f32], label: &str, color: Color32) {
         if values.len() < 2 {
             return;
         }
@@ -292,11 +266,16 @@ impl MetricsDashboard {
         let (rect, _response) = ui.allocate_exact_size(desired_size, egui::Sense::hover());
 
         if ui.is_rect_visible(rect) {
-            let points: Vec<egui::Pos2> =
-                sparkline_points(values, rect.left(), rect.top(), rect.width(), rect.height())
-                    .into_iter()
-                    .map(|[x, y]| egui::pos2(x, y))
-                    .collect();
+            let points: Vec<egui::Pos2> = sparkline_points_in_rect(
+                values,
+                rect.left(),
+                rect.top(),
+                rect.width(),
+                rect.height(),
+            )
+            .into_iter()
+            .map(|(x, y)| egui::pos2(x, y))
+            .collect();
 
             // Draw line
             if points.len() >= 2 {

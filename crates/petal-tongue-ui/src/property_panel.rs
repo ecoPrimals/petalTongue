@@ -34,18 +34,16 @@ impl PropertyPanel {
 
     /// Set the node being edited
     pub fn set_editing_node(&mut self, node_id: Option<String>, graph: &VisualGraph) {
-        self.editing_node = node_id.clone();
         self.temp_params.clear();
         self.errors.clear();
 
-        // Load current parameters
-        if let Some(id) = &node_id
-            && let Some(node) = graph.get_node(id)
-        {
-            for (key, value) in &node.parameters {
-                self.temp_params.insert(key.clone(), value.clone());
+        if let Some(ref id) = node_id {
+            if let Some(node) = graph.get_node(id) {
+                self.temp_params
+                    .extend(node.parameters.iter().map(|(k, v)| (k.clone(), v.clone())));
             }
         }
+        self.editing_node = node_id;
     }
 
     /// Render the property panel

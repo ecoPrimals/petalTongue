@@ -69,7 +69,7 @@ async fn handle_connection(stream: UnixStream) {
         // Parse request
         if let Ok(request) = serde_json::from_str::<JsonRpcRequest>(&line) {
             let response = match request.method.as_str() {
-                "get_primals_extended" => JsonRpcResponse {
+                "primal.list" => JsonRpcResponse {
                     jsonrpc: "2.0".to_string(),
                     result: Some(serde_json::json!([
                         {

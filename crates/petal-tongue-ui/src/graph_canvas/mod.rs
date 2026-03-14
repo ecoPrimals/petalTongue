@@ -11,6 +11,8 @@ mod rendering;
 use crate::accessibility::ColorPalette;
 use egui::{Pos2, Rect, Sense, Ui, Vec2 as EguiVec2};
 use petal_tongue_core::graph_builder::{GraphNode, NodeType, Vec2, VisualGraph};
+use petal_tongue_scene::primitive::{Color as SceneColor, Primitive, StrokeStyle};
+use petal_tongue_scene::scene_graph::{SceneGraph, SceneNode};
 use std::collections::HashSet;
 
 /// Interactive graph canvas for building Neural API graphs
@@ -49,7 +51,7 @@ pub struct GraphCanvas {
 impl GraphCanvas {
     /// Create a new graph canvas
     #[must_use]
-    pub fn new(graph_name: String) -> Self {
+    pub fn new(graph_name: impl Into<String>) -> Self {
         Self {
             graph: VisualGraph::new(graph_name),
             camera: Camera::default(),
@@ -100,7 +102,7 @@ impl GraphCanvas {
     }
 
     /// Convert world coordinates to screen coordinates (used in coordinate conversion tests)
-    #[allow(dead_code)]
+    #[cfg_attr(not(test), allow(dead_code))]
     fn world_to_screen(&self, world_pos: Vec2, canvas_rect: Rect) -> Pos2 {
         layout::world_to_screen(
             world_pos,
@@ -150,12 +152,13 @@ impl GraphCanvas {
     }
 
     /// Select node
-    pub fn select_node(&mut self, node_id: String) {
-        self.selected_nodes.insert(node_id);
+    pub fn select_node(&mut self, node_id: impl Into<String>) {
+        self.selected_nodes.insert(node_id.into());
     }
 
     /// Toggle node selection
-    pub fn toggle_node_selection(&mut self, node_id: String) {
+    pub fn toggle_node_selection(&mut self, node_id: impl Into<String>) {
+        let node_id = node_id.into();
         if self.selected_nodes.contains(&node_id) {
             self.selected_nodes.remove(&node_id);
         } else {
@@ -174,6 +177,96 @@ impl GraphCanvas {
     /// Reset camera to center
     pub fn reset_camera(&mut self) {
         self.camera = Camera::default();
+    }
+
+    /// Produce a `SceneGraph` representation of the current graph state.
+    ///
+    /// Every node becomes a `Primitive::Rect` with `data_id = node.id`,
+    /// every edge becomes a `Primitive::Line` with `data_id = "edge:<from>:<to>"`.
+    /// The resulting scene graph is fully traceable back to the data model.
+    #[must_use]
+    pub fn to_scene(&self, canvas_rect: Rect) -> SceneGraph {
+        let mut scene = SceneGraph::new();
+        let nw = f64::from(self.node_size.x * self.camera.zoom);
+        let nh = f64::from(self.node_size.y * self.camera.zoom);
+
+        for edge in &self.graph.edges {
+            let from_node = self.graph.get_node(&edge.from);
+            let to_node = self.graph.get_node(&edge.to);
+            if let (Some(from), Some(to)) = (from_node, to_node) {
+                let from_pos = layout::world_to_screen(
+                    from.position,
+                    canvas_rect,
+                    &self.camera.position,
+                    self.camera.zoom,
+                );
+                let to_pos = layout::world_to_screen(
+                    to.position,
+                    canvas_rect,
+                    &self.camera.position,
+                    self.camera.zoom,
+                );
+                let edge_id = format!("edge_{}_{}", edge.from, edge.to);
+                let data_id = format!("edge:{}:{}", edge.from, edge.to);
+                scene.add_to_root(SceneNode::new(edge_id).with_primitive(Primitive::Line {
+                    points: vec![
+                        [f64::from(from_pos.x), f64::from(from_pos.y)],
+                        [f64::from(to_pos.x), f64::from(to_pos.y)],
+                    ],
+                    stroke: StrokeStyle {
+                        color: SceneColor::from_rgba8(150, 150, 150, 255),
+                        width: 2.0,
+                        ..StrokeStyle::default()
+                    },
+                    closed: false,
+                    data_id: Some(data_id),
+                }));
+            }
+        }
+
+        for node in &self.graph.nodes {
+            let screen_pos = layout::world_to_screen(
+                node.position,
+                canvas_rect,
+                &self.camera.position,
+                self.camera.zoom,
+            );
+            let (fill_rgb, stroke_rgb) = rendering::node_colors(
+                self.selected_nodes.contains(&node.id),
+                Some(&node.id) == self.hovered_node.as_ref(),
+                node.visual_state.has_error,
+            );
+            let x = f64::from(screen_pos.x) - nw / 2.0;
+            let y = f64::from(screen_pos.y) - nh / 2.0;
+            scene.add_to_root(SceneNode::new(format!("node_{}", node.id)).with_primitive(
+                Primitive::Rect {
+                    x,
+                    y,
+                    width: nw,
+                    height: nh,
+                    fill: Some(SceneColor::from_rgba8(
+                        fill_rgb[0],
+                        fill_rgb[1],
+                        fill_rgb[2],
+                        255,
+                    )),
+                    stroke: Some(StrokeStyle {
+                        color: SceneColor::from_rgba8(
+                            stroke_rgb[0],
+                            stroke_rgb[1],
+                            stroke_rgb[2],
+                            255,
+                        ),
+                        width: 2.0 * self.camera.zoom,
+                        ..StrokeStyle::default()
+                    }),
+                    corner_radius: 5.0,
+                    data_id: Some(node.id.clone()),
+                },
+            ));
+        }
+
+        scene
     }
 }
 

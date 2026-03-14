@@ -140,7 +140,7 @@ async fn main() -> Result<()> {
 
         // Present buffer via display backend
         let present_start = Instant::now();
-        display_manager.present(&buffer).await?;
+        display_manager.present(buffer.as_ref()).await?;
         let present_time = present_start.elapsed();
 
         let frame_time = frame_start.elapsed();

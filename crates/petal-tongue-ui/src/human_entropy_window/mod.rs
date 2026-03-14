@@ -4,6 +4,7 @@
 //! Provides a user-friendly interface for multi-modal entropy capture.
 
 mod rendering;
+mod rendering_helpers;
 mod state;
 mod types;
 

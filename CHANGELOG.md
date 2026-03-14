@@ -2,7 +2,43 @@
 
 All notable changes to petalTongue will be documented in this file.
 
-## [1.6.3] - 2026-03-12
+## [1.6.3] - 2026-03-14
+
+### Added - Deep Debt Phase 2: Modern Idiomatic Rust Evolution
+
+- **+164 new tests** (3,776 → 3,940): Coverage expansion to ~83% line coverage.
+- **TRUE PRIMAL compliance**: Hardcoded primal names in `shader_lineage.rs` replaced
+  with generic origins; demo builders gated behind `#[cfg(any(test, feature = "test-fixtures"))]`.
+- **`#[allow]` → `#[expect]`**: All 9 bare `#[allow(...)]` attributes replaced with
+  `#[expect(..., reason = "...")]` providing explicit justifications.
+- **Clone elimination**: 50+ `String` clones removed from `graph_validation/structure.rs`
+  by converting to borrowed `&str` lifetimes. Unnecessary clone in `property_panel.rs` removed.
+- **`impl Into<String>` APIs**: `GraphNode::set_parameter`, `GraphEdge::new/dependency`,
+  `VisualGraph::new`, `GraphCanvas::new/select_node/toggle_node_selection`,
+  `DeviceState::new/set_ui_state/set_preference`, `StateSyncManager::init/set_ui_state`
+  all accept `impl Into<String>` instead of owned `String`.
+- **`&'static str` returns**: `ScenarioBuilder` trait methods `id()`, `name()`, `domain()`
+  now return `&'static str` (was `&str`), eliminating `unnecessary_literal_bound` warnings
+  across all 9 implementations.
+- **Tokio heartbeat**: `neural_registration::spawn_heartbeat` migrated from
+  `std::thread::Builder` + `rt.block_on()` to `tokio::spawn` async task.
+- **Real mDNS discovery**: `mdns_discovery.rs` stub replaced with delegation to
+  `MdnsVisualizationProvider::discover()` for actual UDP multicast.
+- **`f64::hypot()`**: Manual hypotenuse in `ground_spring.rs` replaced with `hypot()`.
+- **Stale version**: Demo device provider version updated from "1.5.0" to "1.6.3".
+
+### Quality
+
+- **3,940 tests**, 0 failures, 17 ignored
+- **0 clippy warnings** (pedantic + nursery, `--all-targets --all-features`)
+- **0 unsafe blocks** workspace-wide
+- **~83% line coverage**
+- **`cargo fmt --check`** clean
+- **`cargo doc --workspace --no-deps`** clean
+
+---
+
+## [1.6.3] - 2026-03-12 (initial)
 
 ### Added - Deep Coverage Expansion & Idiomatic Rust Evolution
 

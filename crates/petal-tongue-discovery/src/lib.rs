@@ -165,7 +165,7 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
         }
     }
 
-    // Priority 3: Try mDNS auto-discovery (Phase 1 implementation)
+    // Priority 3: Try mDNS auto-discovery
     let enable_mdns = std::env::var("PETALTONGUE_ENABLE_MDNS")
         .unwrap_or_else(|_| "true".to_string())
         .to_lowercase()

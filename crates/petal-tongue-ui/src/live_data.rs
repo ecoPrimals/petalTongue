@@ -4,6 +4,9 @@
 //! Visual components that prove data is LIVE with timestamps, badges, and source labels
 
 use crate::accessibility::LiveIndicator;
+use crate::live_data_helpers::{
+    badge_display_state, connection_status_display, format_age_for_display, format_metric_value,
+};
 use egui::{Color32, Context, RichText, Ui};
 use petal_tongue_core::constants;
 use std::time::{Duration, Instant};
@@ -35,24 +38,21 @@ impl LiveBadge {
     pub fn render(&mut self, ui: &mut Ui) {
         let age = self.indicator.age_seconds();
         let is_stale = self.indicator.is_stale();
+        let badge = badge_display_state(age, is_stale, self.indicator.is_live);
 
-        // Color based on freshness
-        let (color, text) = if !self.indicator.is_live {
-            (Color32::GRAY, "WAITING")
-        } else if is_stale {
-            (Color32::from_rgb(200, 140, 0), "STALE")
-        } else if age < 1.0 {
-            // Pulse animation for very fresh data
+        // Pulse animation for very fresh data (age < 1)
+        let color = if badge.label == "● LIVE" && age < 1.0 {
             let pulse = (self.last_render.elapsed().as_secs_f32() * 2.0)
                 .sin()
                 .mul_add(0.3, 0.7);
             let green = (180.0 * pulse) as u8;
-            (Color32::from_rgb(0, green + 75, 50), "● LIVE")
+            Color32::from_rgb(0, green + 75, 50)
         } else {
-            (Color32::from_rgb(0, 200, 100), "LIVE")
+            let (r, g, b) = badge.color_rgb;
+            Color32::from_rgb(r, g, b)
         };
 
-        ui.label(RichText::new(text).size(11.0).strong().color(color));
+        ui.label(RichText::new(badge.label).size(11.0).strong().color(color));
 
         self.last_render = Instant::now();
     }
@@ -195,7 +195,8 @@ impl LiveMetric {
             ui.add_space(2.0);
 
             let value_text = if let Some(ref unit) = self.unit {
-                format!("{}{}", self.value, unit)
+                let v = self.value.parse().unwrap_or(0.0);
+                format_metric_value(v, unit)
             } else {
                 self.value.clone()
             };
@@ -241,15 +242,22 @@ impl ConnectionStatus {
 
     /// Render the status
     pub fn render(&self, ui: &mut Ui) {
-        let (color, symbol, status_text) = if self.connected {
-            (Color32::from_rgb(0, 200, 100), "●", "Connected")
+        let disconnected_secs = if self.connected {
+            None
         } else {
-            (Color32::from_rgb(200, 50, 50), "○", "Disconnected")
+            self.last_connection
+                .map(|last| last.elapsed().as_secs_f64())
         };
+        let display = connection_status_display(self.connected, disconnected_secs);
+        let color = Color32::from_rgb(
+            display.color_rgb.0,
+            display.color_rgb.1,
+            display.color_rgb.2,
+        );
 
         ui.horizontal(|ui| {
-            ui.label(RichText::new(symbol).size(14.0).color(color));
-            ui.label(RichText::new(status_text).size(12.0).color(color));
+            ui.label(RichText::new(display.symbol).size(14.0).color(color));
+            ui.label(RichText::new(display.status_text).size(12.0).color(color));
             ui.label(
                 RichText::new(format!("• {}", self.target))
                     .size(10.0)
@@ -291,21 +299,9 @@ pub fn default_connection_target() -> String {
     constants::default_biomeos_connection_target()
 }
 
-fn format_age_for_display(age_secs: f32) -> String {
-    if age_secs < 1.0 {
-        "Just now".to_string()
-    } else if age_secs < 60.0 {
-        format!("{age_secs:.1}s ago")
-    } else if age_secs < 3600.0 {
-        format!("{:.1}m ago", age_secs / 60.0)
-    } else {
-        format!("{:.1}h ago", age_secs / 3600.0)
-    }
-}
-
 /// Helper function to render a timestamp
 pub fn render_timestamp(ui: &mut Ui, instant: Instant) {
-    let age = instant.elapsed().as_secs_f32();
+    let age = instant.elapsed().as_secs_f64();
     let text = format_age_for_display(age);
     ui.label(RichText::new(text).size(10.0).color(Color32::GRAY));
 }
@@ -378,21 +374,6 @@ mod tests {
     }
 
     #[test]
-    fn test_format_age_for_display() {
-        assert_eq!(format_age_for_display(0.5), "Just now");
-        assert_eq!(format_age_for_display(0.0), "Just now");
-        assert_eq!(format_age_for_display(0.99), "Just now");
-        assert_eq!(format_age_for_display(1.0), "1.0s ago");
-        assert_eq!(format_age_for_display(30.0), "30.0s ago");
-        assert_eq!(format_age_for_display(59.9), "59.9s ago");
-        assert_eq!(format_age_for_display(60.0), "1.0m ago");
-        assert_eq!(format_age_for_display(90.0), "1.5m ago");
-        assert_eq!(format_age_for_display(3600.0), "1.0h ago");
-        assert_eq!(format_age_for_display(7200.0), "2.0h ago");
-        assert_eq!(format_age_for_display(86400.0), "24.0h ago");
-    }
-
-    #[test]
     fn test_live_badge_new_and_mark_updated() {
         let mut badge = LiveBadge::new(String::new(), 0.5);
         badge.mark_updated();
@@ -452,19 +433,6 @@ mod tests {
         let target = "biomeOS at 127.0.0.1:8080".to_string();
         let status = ConnectionStatus::new(target.clone());
         assert_eq!(status.target, target);
-    }
-
-    #[test]
-    fn test_format_age_boundary_seconds() {
-        assert_eq!(format_age_for_display(0.1), "Just now");
-        assert_eq!(format_age_for_display(1.0), "1.0s ago");
-        assert_eq!(format_age_for_display(59.0), "59.0s ago");
-    }
-
-    #[test]
-    fn test_format_age_boundary_minutes() {
-        assert_eq!(format_age_for_display(60.0), "1.0m ago");
-        assert_eq!(format_age_for_display(3599.0), "60.0m ago");
     }
 
     #[test]

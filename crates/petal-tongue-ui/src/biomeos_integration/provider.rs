@@ -139,7 +139,7 @@ impl BiomeOSProvider {
 
         // JSON-RPC call via capability-discovered endpoint
         let response = self
-            .call_jsonrpc("devices.list", serde_json::json!({}))
+            .call_jsonrpc("device.list", serde_json::json!({}))
             .await?;
 
         // Parse device list
@@ -161,7 +161,7 @@ impl BiomeOSProvider {
 
         // JSON-RPC call via capability-discovered endpoint
         let response = self
-            .call_jsonrpc("primals.list_extended", serde_json::json!({}))
+            .call_jsonrpc("primal.list", serde_json::json!({}))
             .await?;
 
         // Parse primal list
@@ -183,7 +183,7 @@ impl BiomeOSProvider {
 
         // JSON-RPC call via capability-discovered endpoint
         let response = self
-            .call_jsonrpc("niches.list_templates", serde_json::json!({}))
+            .call_jsonrpc("niche.list_templates", serde_json::json!({}))
             .await?;
 
         // Parse template list
@@ -209,7 +209,7 @@ impl BiomeOSProvider {
             "primal_id": primal_id,
         });
 
-        self.call_jsonrpc("devices.assign", params).await?;
+        self.call_jsonrpc("device.assign", params).await?;
 
         info!("✅ Device assigned successfully");
         Ok(())
@@ -228,7 +228,7 @@ impl BiomeOSProvider {
             "metadata": niche.metadata,
         });
 
-        let response = self.call_jsonrpc("niches.deploy", params).await?;
+        let response = self.call_jsonrpc("niche.deploy", params).await?;
 
         // Extract niche ID from response
         let niche_id: String = serde_json::from_value(

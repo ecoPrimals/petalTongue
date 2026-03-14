@@ -3,9 +3,9 @@
 
 use chrono::Utc;
 
-use super::types::{EventStatus, TimelineEvent};
-use super::view::{
-    TimelineIntent, TimelineView, escape_csv, format_events_csv, time_to_x, zoom_in, zoom_out,
+use super::{
+    EventStatus, TimelineEvent, TimelineIntent, TimelineView, escape_csv, format_events_csv,
+    time_to_x, zoom_in, zoom_out,
 };
 
 #[test]

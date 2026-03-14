@@ -49,7 +49,7 @@ This specification defines petalTongue's implementation of **JSON-RPC 2.0** over
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "get_primals_extended",
+  "method": "primal.list",
   "params": null,
   "id": 1
 }
@@ -57,7 +57,7 @@ This specification defines petalTongue's implementation of **JSON-RPC 2.0** over
 
 **Serialized** (line-delimited):
 ```
-{"jsonrpc":"2.0","method":"get_primals_extended","params":null,"id":1}\n
+{"jsonrpc":"2.0","method":"primal.list","params":null,"id":1}\n
 ```
 
 ### Response Format (Success)
@@ -170,21 +170,21 @@ impl JsonRpcProvider {
 #[async_trait]
 impl VisualizationDataProvider for JsonRpcProvider {
     async fn get_primals(&self) -> Result<Vec<PrimalInfo>> {
-        let result = self.call("get_primals_extended", None).await?;
+        let result = self.call("primal.list", None).await?;
         Ok(serde_json::from_value(result)?)
     }
     
     async fn get_topology(&self) -> Result<Vec<TopologyEdge>> {
         // Optional method - graceful fallback
-        match self.call("get_topology", None).await {
+        match self.call("topology.get", None).await {
             Ok(result) => Ok(serde_json::from_value(result)?),
             Err(_) => Ok(Vec::new()),  // Not all providers support topology
         }
     }
     
     async fn health_check(&self) -> Result<String> {
-        // Use get_primals as health check
-        self.call("get_primals_extended", None).await?;
+        // Use primal.list as health check
+        self.call("primal.list", None).await?;
         Ok(format!("JSON-RPC provider at {} is healthy", self.socket_path.display()))
     }
     
@@ -242,24 +242,24 @@ if let Ok(url) = std::env::var("BIOMEOS_URL") {
 
 ## 📋 **Supported Methods**
 
-### biomeOS Methods
+### biomeOS Methods (wateringHole semantic naming: `{domain}.{operation}[.{variant}]`)
 
 | Method | Params | Returns | Description |
 |--------|--------|---------|-------------|
-| `get_devices` | None | `Vec<Device>` | List system devices |
-| `get_primals_extended` | None | `Vec<PrimalInfo>` | List primals with health |
-| `get_niche_templates` | None | `Vec<NicheTemplate>` | List niche templates |
-| `assign_device` | `{device_id, primal_id}` | `AssignmentResult` | Assign device to primal |
-| `validate_niche` | `NicheConfig` | `ValidationResult` | Validate niche config |
-| `deploy_niche` | `NicheConfig` | `DeploymentResult` | Deploy niche |
+| `device.list` | None | `Vec<Device>` | List system devices |
+| `primal.list` | None | `Vec<PrimalInfo>` | List primals with health |
+| `niche.list_templates` | None | `Vec<NicheTemplate>` | List niche templates |
+| `device.assign` | `{device_id, primal_id}` | `AssignmentResult` | Assign device to primal |
+| `niche.validate` | `NicheConfig` | `ValidationResult` | Validate niche config |
+| `niche.deploy` | `NicheConfig` | `DeploymentResult` | Deploy niche |
 
 ### Optional Methods (Graceful Fallback)
 
 | Method | Fallback Behavior |
 |--------|-------------------|
-| `get_topology` | Return empty `Vec<TopologyEdge>` |
-| `get_capabilities` | Return empty capabilities list |
-| `subscribe_events` | Log warning, no-op |
+| `topology.get` | Return empty `Vec<TopologyEdge>` |
+| `capability.list` | Return empty capabilities list |
+| `events.subscribe` | Log warning, no-op |
 
 ---
 

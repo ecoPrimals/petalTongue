@@ -17,6 +17,7 @@
 //! ```
 
 use anyhow::{Result, anyhow};
+use bytes::Bytes;
 use egui::{ClippedPrimitive, TexturesDelta};
 use epaint::{Mesh, Primitive, TessellationOptions, Tessellator};
 use std::collections::HashMap;
@@ -120,7 +121,7 @@ impl EguiPixelRenderer {
     /// Render egui primitives to pixel buffer
     ///
     /// Returns RGBA8 pixel buffer (width * height * 4 bytes)
-    pub fn render(&mut self, primitives: &[ClippedPrimitive]) -> Result<Vec<u8>> {
+    pub fn render(&mut self, primitives: &[ClippedPrimitive]) -> Result<Bytes> {
         // Create pixmap for rendering
         let mut pixmap = Pixmap::new(self.width, self.height)
             .ok_or_else(|| anyhow!("Failed to create pixmap"))?;
@@ -160,30 +161,22 @@ impl EguiPixelRenderer {
             }
         }
 
-        // Convert pixmap to RGBA8 buffer
-        // tiny-skia stores pixels as PremultipliedColorU8
-        // For now, we'll use encode_png and then decode to get RGBA8
-        // Optimized pixel conversion: Direct RGBA8 to u32
-        // Layout: 0xAABBGGRR (little-endian) = RGBA in memory
-        let png_data = pixmap
-            .encode_png()
-            .map_err(|e| anyhow!("Failed to encode PNG: {e}"))?;
-
-        // Decode PNG to get RGBA8
-        let decoder = png::Decoder::new(png_data.as_slice());
-        let mut reader = decoder
-            .read_info()
-            .map_err(|e| anyhow!("Failed to decode PNG: {e}"))?;
-
-        let mut buffer = vec![0u8; reader.output_buffer_size()];
-        let info = reader
-            .next_frame(&mut buffer)
-            .map_err(|e| anyhow!("Failed to read PNG frame: {e}"))?;
-
-        // Ensure we have RGBA8
-        buffer.truncate(info.buffer_size());
-
-        Ok(buffer)
+        // Convert pixmap to RGBA8 buffer (un-premultiply alpha)
+        // tiny-skia stores pixels in premultiplied RGBA format
+        let data = pixmap.data();
+        let mut buffer = Vec::with_capacity(data.len());
+        for chunk in data.chunks_exact(4) {
+            let a = chunk[3];
+            if a == 0 {
+                buffer.extend_from_slice(&[0, 0, 0, 0]);
+            } else {
+                let r = (u16::from(chunk[0]) * 255 / u16::from(a)) as u8;
+                let g = (u16::from(chunk[1]) * 255 / u16::from(a)) as u8;
+                let b = (u16::from(chunk[2]) * 255 / u16::from(a)) as u8;
+                buffer.extend_from_slice(&[r, g, b, a]);
+            }
+        }
+        Ok(Bytes::from(buffer))
     }
 
     /// Render a single mesh

@@ -75,6 +75,27 @@ pub enum CapabilityTaxonomy {
     #[serde(rename = "ui.framebuffer")]
     UIFramebuffer,
 
+    // ===== Visualization Capabilities (biomeOS capability domain) =====
+    /// Universal visualization rendering (accepts DataBinding, produces SceneGraph)
+    #[serde(rename = "visualization.render")]
+    VisualizationRender,
+
+    /// Streaming visualization updates (incremental data append/replace)
+    #[serde(rename = "visualization.render.stream")]
+    VisualizationRenderStream,
+
+    /// Interactive selection/hover on rendered visualizations
+    #[serde(rename = "visualization.interact")]
+    VisualizationInteract,
+
+    /// Subscribe to visualization interaction events
+    #[serde(rename = "visualization.interact.subscribe")]
+    VisualizationInteractSubscribe,
+
+    /// Golden pixel testing and provenance verification
+    #[serde(rename = "visualization.provenance")]
+    VisualizationProvenance,
+
     // ===== Input Capabilities =====
     /// Keyboard input capability
     ///
@@ -155,6 +176,13 @@ impl CapabilityTaxonomy {
             Self::UIAudio => "ui.audio",
             Self::UIFramebuffer => "ui.framebuffer",
 
+            // Visualization Capabilities
+            Self::VisualizationRender => "visualization.render",
+            Self::VisualizationRenderStream => "visualization.render.stream",
+            Self::VisualizationInteract => "visualization.interact",
+            Self::VisualizationInteractSubscribe => "visualization.interact.subscribe",
+            Self::VisualizationProvenance => "visualization.provenance",
+
             // Input Capabilities
             Self::UIInputKeyboard => "ui.input.keyboard",
             Self::UIInputMouse => "ui.input.mouse",
@@ -188,6 +216,33 @@ impl CapabilityTaxonomy {
             Self::UIAudio,
             Self::UIFramebuffer,
         ]
+    }
+
+    /// Get all visualization capabilities
+    ///
+    /// Returns capabilities in the "visualization.*" domain
+    #[must_use]
+    pub fn visualization_capabilities() -> Vec<Self> {
+        vec![
+            Self::VisualizationRender,
+            Self::VisualizationRenderStream,
+            Self::VisualizationInteract,
+            Self::VisualizationInteractSubscribe,
+            Self::VisualizationProvenance,
+        ]
+    }
+
+    /// Check if this is a visualization capability
+    #[must_use]
+    pub const fn is_visualization(&self) -> bool {
+        matches!(
+            self,
+            Self::VisualizationRender
+                | Self::VisualizationRenderStream
+                | Self::VisualizationInteract
+                | Self::VisualizationInteractSubscribe
+                | Self::VisualizationProvenance
+        )
     }
 
     /// Get all input-related capabilities
@@ -268,6 +323,13 @@ impl FromStr for CapabilityTaxonomy {
             "ui.terminal" => Ok(Self::UITerminal),
             "ui.audio" => Ok(Self::UIAudio),
             "ui.framebuffer" => Ok(Self::UIFramebuffer),
+
+            // Visualization Capabilities
+            "visualization.render" => Ok(Self::VisualizationRender),
+            "visualization.render.stream" => Ok(Self::VisualizationRenderStream),
+            "visualization.interact" => Ok(Self::VisualizationInteract),
+            "visualization.interact.subscribe" => Ok(Self::VisualizationInteractSubscribe),
+            "visualization.provenance" => Ok(Self::VisualizationProvenance),
 
             // Input Capabilities
             "ui.input.keyboard" => Ok(Self::UIInputKeyboard),

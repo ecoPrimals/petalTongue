@@ -59,7 +59,7 @@ fn main() -> Result<()> {
 
     // Save as PNG for verification
     let output_path = "/tmp/petaltongue_pixel_render_demo.png";
-    save_as_png(&buffer, 800, 600, output_path)?;
+    save_as_png(buffer.as_ref(), 800, 600, output_path)?;
     println!("✅ Saved to: {output_path}");
 
     println!("\n════════════════════════════════════════════════════════════");

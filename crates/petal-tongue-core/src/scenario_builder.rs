@@ -73,13 +73,13 @@ impl VisualizationScene {
 /// Each builder can produce one or more scenes.
 pub trait ScenarioBuilder: Send + Sync {
     /// Unique identifier for this builder (e.g., "healthspring.pkpd", "hotspring.plasma").
-    fn id(&self) -> &str;
+    fn id(&self) -> &'static str;
 
     /// Human-readable name.
-    fn name(&self) -> &str;
+    fn name(&self) -> &'static str;
 
     /// Domain this builder belongs to (for theme selection).
-    fn domain(&self) -> &str;
+    fn domain(&self) -> &'static str;
 
     /// List available scenes this builder can produce.
     fn available_scenes(&self) -> Vec<String>;
