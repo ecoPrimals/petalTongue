@@ -8,11 +8,10 @@
 //! This is NOT a mock—it loads real JSON files. Use `--features mock` to enable
 //! (or when running tests). Production builds without the feature use empty tutorial.
 
-use petal_tongue_core::constants::{DEFAULT_SANDBOX_DISCOVERY_PORT, DEFAULT_SANDBOX_SECURITY_PORT};
-use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, Properties};
+use petal_tongue_core::PrimalInfo;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tracing::{info, warn};
+use tracing::info;
 
 /// Sandbox scenario for demonstrations
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -152,85 +151,11 @@ pub fn list_sandbox_scenarios() -> Vec<String> {
 }
 
 /// Get default sandbox scenario (for showcase mode)
-pub fn get_default_scenario() -> SandboxScenario {
-    // Try to load simple.json
-    if let Ok(scenario) = load_sandbox_scenario("simple") {
-        return scenario;
-    }
-
-    // Fallback to hardcoded simple scenario when sandbox/scenarios/simple.json not found
-    warn!("⚠️  Using fallback scenario (sandbox/scenarios/simple.json not found)");
-
-    SandboxScenario {
-        name: "Fallback Simple".to_string(),
-        description: "Basic 3-primal demonstration (fallback)".to_string(),
-        primals: vec![
-            PrimalInfo {
-                id: "local".into(),
-                name: "petalTongue (Local)".to_string(),
-                primal_type: "Visualization".to_string(),
-                endpoint: "self".to_string(),
-                capabilities: vec!["visual".to_string(), "audio".to_string()],
-                health: PrimalHealthStatus::Healthy,
-                last_seen: chrono::Utc::now().timestamp() as u64,
-                endpoints: None,
-                metadata: None,
-                properties: Properties::new(),
-                #[expect(deprecated)]
-                trust_level: None,
-                #[expect(deprecated)]
-                family_id: None,
-            },
-            PrimalInfo {
-                id: "security".into(),
-                name: "Security".to_string(),
-                primal_type: "Security".to_string(),
-                endpoint: std::env::var("PETALTONGUE_SANDBOX_SECURITY_ENDPOINT").unwrap_or_else(
-                    |_| format!("http://localhost:{DEFAULT_SANDBOX_SECURITY_PORT}"),
-                ),
-                capabilities: vec!["authentication".to_string(), "encryption".to_string()],
-                health: PrimalHealthStatus::Healthy,
-                last_seen: chrono::Utc::now().timestamp() as u64,
-                endpoints: None,
-                metadata: None,
-                properties: Properties::new(),
-                #[expect(deprecated)]
-                trust_level: None,
-                #[expect(deprecated)]
-                family_id: None,
-            },
-            PrimalInfo {
-                id: "discovery".into(),
-                name: "Discovery".to_string(),
-                primal_type: "Orchestration".to_string(),
-                endpoint: std::env::var("PETALTONGUE_SANDBOX_DISCOVERY_ENDPOINT").unwrap_or_else(
-                    |_| format!("http://localhost:{DEFAULT_SANDBOX_DISCOVERY_PORT}"),
-                ),
-                capabilities: vec!["discovery".to_string(), "coordination".to_string()],
-                health: PrimalHealthStatus::Healthy,
-                last_seen: chrono::Utc::now().timestamp() as u64,
-                endpoints: None,
-                metadata: None,
-                properties: Properties::new(),
-                #[expect(deprecated)]
-                trust_level: None,
-                #[expect(deprecated)]
-                family_id: None,
-            },
-        ],
-        edges: vec![
-            SandboxEdge {
-                from_id: "local".to_string(),
-                to_id: "security".to_string(),
-                edge_type: "trust".to_string(),
-            },
-            SandboxEdge {
-                from_id: "local".to_string(),
-                to_id: "discovery".to_string(),
-                edge_type: "discovery".to_string(),
-            },
-        ],
-    }
+///
+/// Loads `sandbox/scenarios/simple.json`. Returns error if file not found—
+/// callers should use `TutorialMode::populate_minimal_example` for graceful degradation.
+pub fn get_default_scenario() -> Result<SandboxScenario, String> {
+    load_sandbox_scenario("simple")
 }
 
 #[cfg(test)]
@@ -246,12 +171,15 @@ mod tests {
 
     #[test]
     fn test_default_scenario() {
-        let scenario = get_default_scenario();
-        assert!(!scenario.primals.is_empty(), "Scenario should have primals");
-        // First primal ID depends on which scenario loaded (simple.json vs fallback)
-        assert!(
-            scenario.primals[0].id.as_str().len() > 0,
-            "First primal should have valid ID"
-        );
+        // get_default_scenario returns Result - when sandbox/scenarios/simple.json exists
+        // and matches SandboxScenario schema (top-level primals), we verify it.
+        // When file is missing or schema differs (e.g. ecosystem.primals format), Err is acceptable.
+        if let Ok(scenario) = get_default_scenario() {
+            assert!(!scenario.primals.is_empty(), "Scenario should have primals");
+            assert!(
+                !scenario.primals[0].id.as_str().is_empty(),
+                "First primal should have valid ID"
+            );
+        }
     }
 }

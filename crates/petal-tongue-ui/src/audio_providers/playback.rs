@@ -9,7 +9,7 @@ use tracing::info;
 /// Play audio samples using Audio Canvas (direct hardware!)
 ///
 /// EVOLVED: Like WGPU for graphics - direct device access!
-pub(crate) fn play_samples(samples: &[f32], _sample_rate: u32) -> Result<(), String> {
+pub fn play_samples(samples: &[f32], _sample_rate: u32) -> Result<(), String> {
     use crate::audio_canvas::AudioCanvas;
 
     info!(
@@ -32,7 +32,7 @@ pub(crate) fn play_samples(samples: &[f32], _sample_rate: u32) -> Result<(), Str
 }
 
 /// Play audio file using Audio Canvas + symphonia (100% pure Rust!)
-pub(crate) fn play_file(path: &Path) -> Result<(), String> {
+pub fn play_file(path: &Path) -> Result<(), String> {
     use crate::audio_canvas::AudioCanvas;
     use std::fs;
 

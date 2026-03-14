@@ -470,4 +470,41 @@ mod tests {
             "Unknown Screen"
         );
     }
+
+    #[test]
+    fn test_display_type_clone_copy_eq() {
+        let a = DisplayType::Terminal;
+        let b = DisplayType::Terminal;
+        assert_eq!(a, b);
+        assert_eq!(a.clone(), a);
+        let c = DisplayType::Window;
+        assert_ne!(a, c);
+    }
+
+    #[test]
+    fn test_display_type_debug() {
+        let s = format!("{:?}", DisplayType::Framebuffer);
+        assert!(s.contains("Framebuffer"));
+    }
+
+    #[tokio::test]
+    async fn test_poll_without_heartbeat_still_returns_display_visible() {
+        let mut sensor = ScreenSensor::new(DisplayType::Window, 1920, 1080);
+        // Don't call send_heartbeat - last_heartbeat is None
+        let events = sensor.poll_events().await.unwrap();
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, SensorEvent::DisplayVisible { .. })),
+            "DisplayVisible should be emitted even without heartbeat"
+        );
+    }
+
+    #[test]
+    fn test_query_framebuffer_invalid_path_returns_error() {
+        let result = query_framebuffer_dimensions("/nonexistent/fb999");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("Cannot read") || err.to_string().contains("fb999"));
+    }
 }

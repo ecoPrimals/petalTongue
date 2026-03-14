@@ -181,15 +181,21 @@ impl DataService {
     }
 
     /// Subscribe to data updates (public API for streaming consumers).
-    #[allow(dead_code)]
+    #[allow(dead_code)] // Public API; used in tests; GUI/TUI streaming not yet wired
     pub fn subscribe(&self) -> broadcast::Receiver<DataUpdate> {
         self.update_tx.subscribe()
     }
 
     /// Check if Neural API is available.
-    #[allow(dead_code)]
+    #[allow(dead_code)] // Public API; used in tests; GUI/TUI capability check not yet wired
     pub const fn has_neural_api(&self) -> bool {
         self.neural_api.is_some()
+    }
+
+    /// Send a test update (for subscription tests when neural_api is None).
+    #[cfg(test)]
+    pub(crate) fn send_test_update(&self) {
+        let _ = self.update_tx.send(DataUpdate::TopologyUpdated);
     }
 }
 
@@ -256,8 +262,8 @@ mod tests {
         let service = DataService::new();
         let mut rx = service.subscribe();
 
-        // Send update
-        let _ = service.update_tx.send(DataUpdate::TopologyUpdated);
+        // Trigger update (refresh doesn't send when neural_api is None)
+        service.send_test_update();
 
         // Should receive it (with timeout to avoid blocking forever)
         let update = tokio::time::timeout(Duration::from_secs(1), rx.recv())

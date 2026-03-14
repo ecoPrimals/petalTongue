@@ -9,7 +9,7 @@ use serde::Serialize;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct SystemStatus {
     version: String,
     mode: String,
@@ -20,14 +20,14 @@ struct SystemStatus {
     detailed: Option<DetailedStatus>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct UniBinStatus {
     compliant: bool,
     binary_count: u8,
     mode_count: u8,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct EcoBinStatus {
     percentage: u8,
     pure_rust_modes: u8,
@@ -35,13 +35,13 @@ struct EcoBinStatus {
     modes: Vec<ModeInfo>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct ModeInfo {
     name: String,
     pure_rust: bool,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct SystemInfo {
     os: String,
     arch: String,
@@ -51,14 +51,14 @@ struct SystemInfo {
     memory_total: Option<u64>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct DetailedStatus {
     modes: Vec<ModeDetails>,
     features: Vec<String>,
     dependencies: DependencyInfo,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct ModeDetails {
     name: String,
     description: String,
@@ -66,7 +66,7 @@ struct ModeDetails {
     command: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct DependencyInfo {
     total: usize,
     c_deps: usize,
@@ -345,62 +345,6 @@ fn print_status_text(status: &SystemStatus) {
         println!("  Total: {}", detailed.dependencies.total);
         println!("  Pure Rust: {}", detailed.dependencies.rust_deps);
         println!("  C deps: {} (only GUI mode)", detailed.dependencies.c_deps);
-    }
-}
-
-// Derive Clone for SystemStatus for testing
-impl Clone for SystemStatus {
-    fn clone(&self) -> Self {
-        Self {
-            version: self.version.clone(),
-            mode: self.mode.clone(),
-            unibin: UniBinStatus {
-                compliant: self.unibin.compliant,
-                binary_count: self.unibin.binary_count,
-                mode_count: self.unibin.mode_count,
-            },
-            ecobin: EcoBinStatus {
-                percentage: self.ecobin.percentage,
-                pure_rust_modes: self.ecobin.pure_rust_modes,
-                total_modes: self.ecobin.total_modes,
-                modes: self.ecobin.modes.clone(),
-            },
-            system: SystemInfo {
-                os: self.system.os.clone(),
-                arch: self.system.arch.clone(),
-                cpu_count: self.system.cpu_count,
-                memory_total: self.system.memory_total,
-            },
-            detailed: self.detailed.as_ref().map(|d| DetailedStatus {
-                modes: d.modes.clone(),
-                features: d.features.clone(),
-                dependencies: DependencyInfo {
-                    total: d.dependencies.total,
-                    c_deps: d.dependencies.c_deps,
-                    rust_deps: d.dependencies.rust_deps,
-                },
-            }),
-        }
-    }
-}
-
-impl Clone for ModeInfo {
-    fn clone(&self) -> Self {
-        Self {
-            name: self.name.clone(),
-            pure_rust: self.pure_rust,
-        }
-    }
-}
-
-impl Clone for ModeDetails {
-    fn clone(&self) -> Self {
-        Self {
-            name: self.name.clone(),
-            description: self.description.clone(),
-            pure_rust: self.pure_rust,
-            command: self.command.clone(),
-        }
     }
 }
 

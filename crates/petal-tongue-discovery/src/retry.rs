@@ -3,6 +3,7 @@
 //!
 //! Modern async retry patterns for transient failures.
 
+use petal_tongue_core::constants;
 use std::future::Future;
 use std::time::Duration;
 use tokio::time::sleep;
@@ -26,8 +27,8 @@ impl Default for RetryPolicy {
     fn default() -> Self {
         Self {
             max_attempts: 3,
-            initial_delay: Duration::from_millis(100),
-            max_delay: Duration::from_secs(10),
+            initial_delay: constants::default_retry_initial_delay(),
+            max_delay: constants::default_retry_max_delay(),
             backoff_factor: 2.0,
             jitter: true,
         }

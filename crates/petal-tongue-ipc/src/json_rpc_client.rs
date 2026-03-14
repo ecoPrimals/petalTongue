@@ -121,7 +121,7 @@ impl JsonRpcClient {
         }
         Ok(Self {
             socket_path: path,
-            timeout: Duration::from_secs(5),
+            timeout: petal_tongue_core::constants::default_rpc_timeout(),
             request_id: std::sync::Arc::new(AtomicU64::new(1)),
         })
     }

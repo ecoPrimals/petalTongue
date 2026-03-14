@@ -631,6 +631,91 @@ mod tests {
         });
     }
 
+    /// Headless egui: SimpleSensoryUI renders with topology and metrics
+    #[test]
+    fn test_simple_renderer_headless() {
+        use crate::sensory_ui::manager::SensoryUIManager;
+        use petal_tongue_core::sensory_capabilities::{
+            PointerInputCapability, SensoryCapabilities, VisualOutputCapability,
+        };
+
+        let caps = SensoryCapabilities {
+            visual_outputs: vec![VisualOutputCapability::TwoD {
+                resolution: (800, 600),
+                refresh_rate: 60,
+                color_depth: 8,
+                size_mm: None,
+            }],
+            pointer_inputs: vec![PointerInputCapability::TwoD {
+                precision: 1.0,
+                has_wheel: false,
+                has_pressure: false,
+                button_count: 1,
+            }],
+            ..Default::default()
+        };
+        let mut manager = SensoryUIManager::with_capabilities(caps);
+        let graph = petal_tongue_core::GraphEngine::new();
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                manager.render_topology(ui, &graph);
+                manager.render_metrics(ui, None);
+            });
+        });
+    }
+
+    /// Headless egui: StandardSensoryUI renders with topology and proprioception
+    #[test]
+    fn test_standard_renderer_headless() {
+        use crate::sensory_ui::manager::SensoryUIManager;
+        use petal_tongue_core::sensory_capabilities::{
+            KeyboardInputCapability, PointerInputCapability, SensoryCapabilities,
+            VisualOutputCapability,
+        };
+
+        let caps = SensoryCapabilities {
+            visual_outputs: vec![VisualOutputCapability::TwoD {
+                resolution: (1920, 1080),
+                refresh_rate: 60,
+                color_depth: 8,
+                size_mm: None,
+            }],
+            pointer_inputs: vec![PointerInputCapability::TwoD {
+                precision: 1.5,
+                has_wheel: true,
+                has_pressure: false,
+                button_count: 3,
+            }],
+            keyboard_inputs: vec![KeyboardInputCapability::Physical {
+                layout: "QWERTY".to_string(),
+                has_numpad: true,
+                modifier_keys: 4,
+            }],
+            ..Default::default()
+        };
+        let mut manager = SensoryUIManager::with_capabilities(caps);
+        let mut graph = petal_tongue_core::GraphEngine::new();
+        graph.add_node(petal_tongue_core::PrimalInfo::new(
+            petal_tongue_core::PrimalId::from("test"),
+            "Test Primal",
+            "Compute",
+            "http://localhost",
+            vec![],
+            petal_tongue_core::PrimalHealthStatus::Healthy,
+            0,
+        ));
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                manager.render_topology(ui, &graph);
+                manager.render_proprioception(ui, None);
+            });
+        });
+    }
+
     /// Headless egui: ImmersiveSensoryUI renders (hits format_cpu_memory_combined, format_health_confidence)
     #[test]
     fn test_immersive_renderer_headless() {

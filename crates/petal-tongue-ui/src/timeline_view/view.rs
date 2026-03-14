@@ -959,4 +959,41 @@ mod tests {
         let ids = view.event_ids_ordered();
         assert_eq!(ids, vec!["first", "second"]);
     }
+
+    /// Headless egui: TimelineView::render runs without panic
+    #[test]
+    fn timeline_view_render_headless() {
+        let mut view = TimelineView::new();
+        view.add_event(TimelineEvent {
+            id: "evt1".to_string(),
+            from: "alice".to_string(),
+            to: "bob".to_string(),
+            event_type: "discover".to_string(),
+            timestamp: chrono::Utc::now(),
+            duration_ms: Some(42.5),
+            status: EventStatus::Success,
+            payload_summary: Some("test".to_string()),
+        });
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let intents = view.render(ui);
+                view.apply_intents(&intents);
+            });
+        });
+    }
+
+    /// Headless egui: TimelineView::render with empty events shows "No events"
+    #[test]
+    fn timeline_view_render_empty_headless() {
+        let mut view = TimelineView::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let intents = view.render(ui);
+                assert!(intents.is_empty());
+            });
+        });
+    }
 }

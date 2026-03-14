@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: March 13, 2026
+**Updated**: March 14, 2026
 
 ---
 
@@ -24,6 +24,16 @@ Priority: Environment > Config file > Defaults
 export PETALTONGUE_WEB_PORT=8080
 export PETALTONGUE_HEADLESS_PORT=9000
 export BIOMEOS_NEURAL_API_SOCKET=/run/user/$(id -u)/biomeos-neural-api.sock
+
+# Tuning & timing (optional)
+export PETALTONGUE_RPC_TIMEOUT_SECS=5
+export PETALTONGUE_HEARTBEAT_INTERVAL_SECS=30
+export PETALTONGUE_REFRESH_INTERVAL_SECS=2
+export PETALTONGUE_DISCOVERY_TIMEOUT_SECS=5
+export PETALTONGUE_TUI_TICK_MS=100
+export PETALTONGUE_TELEMETRY_BUFFER=10000
+export PETALTONGUE_RETRY_INITIAL_MS=100
+export PETALTONGUE_RETRY_MAX_SECS=10
 ```
 
 ```toml
@@ -43,7 +53,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace                          # 3,752 tests
+cargo test --workspace                          # 3,776+ tests
 cargo clippy --workspace -- -D warnings         # Lint (clean)
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
@@ -84,6 +94,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 ### IPC (`petal-tongue-ipc`)
 - `unix_socket_server.rs` -- JSON-RPC 2.0 server over Unix sockets
 - `tarpc_client.rs` -- tarpc binary RPC client
+- `tarpc_types/` -- tarpc types split into submodules
 - `socket_path.rs` -- XDG-compliant socket path discovery
 
 ### Discovery (`petal-tongue-discovery`)

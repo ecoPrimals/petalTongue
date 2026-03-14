@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Demo visualization data provider - Graceful fallback
+//! Demo visualization data provider - Test/sandbox only
 //!
 //! **ISOLATED**: This module is only compiled when `test-fixtures` feature is enabled
 //! or when running tests. Production builds (default) do NOT include this code.
 //!
-//! When used (via `--features mock` in petal-tongue-ui), provides demo data as a
-//! graceful fallback when no real discovery providers are available.
+//! Used for:
+//! - `cargo test` (tests instantiate DemoVisualizationProvider directly)
+//! - `--features mock` in petal-tongue-ui (graceful fallback when no providers found)
+//!
+//! Never used in production discovery path—`discover_visualization_providers()` returns
+//! empty vec when no real providers found; DemoVisualizationProvider is only injected
+//! by init code when mock feature is enabled.
 
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 use async_trait::async_trait;

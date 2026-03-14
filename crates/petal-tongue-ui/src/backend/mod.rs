@@ -259,9 +259,12 @@ async fn create_eframe_backend() -> Result<Box<dyn UIBackend>> {
 }
 
 /// Create Toadstool backend
-#[expect(
-    clippy::unused_async,
-    reason = "async when legacy-toadstool feature enabled"
+#[cfg_attr(
+    not(feature = "legacy-toadstool"),
+    expect(
+        clippy::unused_async,
+        reason = "async when legacy-toadstool feature enabled"
+    )
 )]
 async fn create_toadstool_backend() -> Result<Box<dyn UIBackend>> {
     #[cfg(feature = "legacy-toadstool")]

@@ -34,15 +34,15 @@ impl RecordType {
     }
 }
 
-/// DNS class
-#[allow(dead_code)] // RFC 1035 completeness; used in tests
+/// DNS class (RFC 1035 completeness; used in tests)
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecordClass {
     IN = 1, // Internet
 }
 
-/// Parsed DNS header
-#[allow(dead_code)] // RFC 1035 completeness; authority/additional used in tests
+/// Parsed DNS header (RFC 1035; authority/additional used in tests)
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct DnsHeader {
     pub transaction_id: u16,
@@ -243,9 +243,9 @@ impl ARecord {
     }
 }
 
-/// AAAA record data (IPv6)
+/// AAAA record data (IPv6; used in tests; reserved for future IPv6 mDNS)
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
-#[allow(dead_code)] // Used in tests; reserved for future IPv6 mDNS support
 pub struct AaaaRecord {
     pub addr: Ipv6Addr,
 }
@@ -267,8 +267,8 @@ impl AaaaRecord {
     }
 }
 
-/// Generic DNS resource record
-#[allow(dead_code)] // RFC 1035 completeness; rclass/ttl used in tests
+/// Generic DNS resource record (rclass/ttl used in tests)
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct ResourceRecord {
     pub name: String,
@@ -333,8 +333,8 @@ impl ResourceRecord {
         ARecord::parse(&self.rdata)
     }
 
-    /// Parse as AAAA record
-    #[allow(dead_code)] // Used in tests
+    /// Parse as AAAA record (used in tests)
+    #[allow(dead_code)]
     pub fn as_aaaa(&self) -> Result<AaaaRecord> {
         AaaaRecord::parse(&self.rdata)
     }
@@ -528,6 +528,34 @@ mod tests {
         let (rr, _) = ResourceRecord::parse(&data, 0).expect("parse");
         let txt = rr.as_txt().expect("TXT record");
         assert_eq!(txt.get("ver"), Some("1.0.0"));
+    }
+
+    #[test]
+    fn test_resource_record_as_aaaa() {
+        let mut data = [0u8; 32]; // name(6) + header(10) + AAAA rdata(16)
+        data[0] = 4;
+        data[1] = b't';
+        data[2] = b'e';
+        data[3] = b's';
+        data[4] = b't';
+        data[5] = 0;
+        data[6] = 0x00;
+        data[7] = 0x1c; // AAAA type
+        data[8] = 0x00;
+        data[9] = 0x01;
+        data[10] = 0x00;
+        data[11] = 0x00;
+        data[12] = 0x00;
+        data[13] = 0x3c;
+        data[14] = 0x00;
+        data[15] = 0x10; // rdlength 16
+        data[16] = 0x20;
+        data[17] = 0x01;
+        data[18] = 0x0d;
+        data[19] = 0xb8;
+        let (rr, _) = ResourceRecord::parse(&data, 0).expect("parse");
+        let aaaa = rr.as_aaaa().expect("AAAA record");
+        assert!(aaaa.addr.to_string().starts_with("2001:"));
     }
 
     #[test]

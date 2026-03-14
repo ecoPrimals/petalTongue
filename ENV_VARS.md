@@ -341,7 +341,7 @@ Force audio rendering on/off. By default, petalTongue detects audio capabilities
 **Required**: No  
 **Example**: `PETALTONGUE_REFRESH_INTERVAL=2.0`
 
-Auto-refresh interval for topology updates (in seconds).
+Auto-refresh interval for topology updates (in seconds). Superseded by `PETALTONGUE_REFRESH_INTERVAL_SECS` for the biomeOS UI manager (the old one controlled topology auto-refresh as float seconds; the new one controls UI manager refresh as integer seconds).
 
 **Trade-offs**:
 - Lower values (1-2s): More responsive, higher network/CPU usage
@@ -361,6 +361,88 @@ Maximum frame rate for rendering.
 - `60`: Smooth animations, high CPU usage
 - `30`: Balanced performance
 - `15-20`: Low-power mode
+
+---
+
+## Tuning & Timing
+
+### **PETALTONGUE_RPC_TIMEOUT_SECS**
+**Type**: Integer (seconds)  
+**Default**: `5`  
+**Required**: No  
+**Example**: `PETALTONGUE_RPC_TIMEOUT_SECS=10`
+
+Timeout for JSON-RPC and tarpc client requests.
+
+---
+
+### **PETALTONGUE_HEARTBEAT_INTERVAL_SECS**
+**Type**: Integer (seconds)  
+**Default**: `30`  
+**Required**: No  
+**Example**: `PETALTONGUE_HEARTBEAT_INTERVAL_SECS=60`
+
+Interval between Neural API lifecycle heartbeats.
+
+---
+
+### **PETALTONGUE_REFRESH_INTERVAL_SECS**
+**Type**: Integer (seconds)  
+**Default**: `2`  
+**Required**: No  
+**Example**: `PETALTONGUE_REFRESH_INTERVAL_SECS=5`
+
+biomeOS UI manager refresh interval for data updates.
+
+---
+
+### **PETALTONGUE_DISCOVERY_TIMEOUT_SECS**
+**Type**: Integer (seconds)  
+**Default**: `5`  
+**Required**: No  
+**Example**: `PETALTONGUE_DISCOVERY_TIMEOUT_SECS=10`
+
+Timeout for mDNS and capability discovery operations.
+
+---
+
+### **PETALTONGUE_TUI_TICK_MS**
+**Type**: Integer (milliseconds)  
+**Default**: `100`  
+**Required**: No  
+**Example**: `PETALTONGUE_TUI_TICK_MS=50`
+
+Terminal UI event loop tick rate.
+
+---
+
+### **PETALTONGUE_TELEMETRY_BUFFER**
+**Type**: Integer (event count)  
+**Default**: `10000`  
+**Required**: No  
+**Example**: `PETALTONGUE_TELEMETRY_BUFFER=50000`
+
+Maximum telemetry event buffer size before oldest events are dropped.
+
+---
+
+### **PETALTONGUE_RETRY_INITIAL_MS**
+**Type**: Integer (milliseconds)  
+**Default**: `100`  
+**Required**: No  
+**Example**: `PETALTONGUE_RETRY_INITIAL_MS=200`
+
+Initial delay for exponential backoff retry on failed connections.
+
+---
+
+### **PETALTONGUE_RETRY_MAX_SECS**
+**Type**: Integer (seconds)  
+**Default**: `10`  
+**Required**: No  
+**Example**: `PETALTONGUE_RETRY_MAX_SECS=30`
+
+Maximum delay cap for exponential backoff retry.
 
 ---
 
@@ -505,7 +587,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: March 11, 2026  
+**Last Updated**: March 14, 2026  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-only
 

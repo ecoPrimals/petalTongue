@@ -4,6 +4,7 @@
 //! Provides fault injection and resilience testing for petalTongue.
 //! Tests system behavior under adverse conditions.
 
+use anyhow::Result;
 use petal_tongue_core::{GraphEngine, PrimalHealthStatus, PrimalInfo};
 use std::sync::{Arc, RwLock};
 
@@ -68,7 +69,7 @@ impl ChaosTestRunner {
     }
 
     /// Run all chaos scenarios
-    pub fn run_all(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn run_all(&mut self) -> Result<()> {
         tracing::info!("Starting chaos test suite");
 
         // Scenario 1: Primal churn
@@ -91,7 +92,7 @@ impl ChaosTestRunner {
 
     /// Test: Primal churn (rapid add/remove)
     #[allow(clippy::unnecessary_wraps)]
-    fn test_primal_churn(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    fn test_primal_churn(&mut self) -> Result<()> {
         let start = std::time::Instant::now();
         let scenario_name = "primal_churn";
         let count = 50;
@@ -164,7 +165,7 @@ impl ChaosTestRunner {
 
     /// Test: High update rate
     #[allow(clippy::unnecessary_wraps)]
-    fn test_high_update_rate(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    fn test_high_update_rate(&mut self) -> Result<()> {
         let start = std::time::Instant::now();
         let scenario_name = "high_update_rate";
         let updates_per_sec = 1000;
@@ -235,7 +236,7 @@ impl ChaosTestRunner {
 
     /// Test: Random health changes
     #[allow(clippy::unnecessary_wraps)]
-    fn test_random_health_changes(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    fn test_random_health_changes(&mut self) -> Result<()> {
         let start = std::time::Instant::now();
         let scenario_name = "random_health_changes";
         let changes = 500;
@@ -304,7 +305,7 @@ impl ChaosTestRunner {
 
     /// Test: Concurrent modifications
     #[allow(clippy::unnecessary_wraps)]
-    fn test_concurrent_modifications(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    fn test_concurrent_modifications(&mut self) -> Result<()> {
         let start = std::time::Instant::now();
         let scenario_name = "concurrent_modifications";
         let threads = 4;

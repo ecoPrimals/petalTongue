@@ -12,6 +12,7 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+petal-tongue-core = { path = "../petal-tongue-core" }
 tokio = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }

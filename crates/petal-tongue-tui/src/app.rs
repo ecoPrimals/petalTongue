@@ -9,6 +9,7 @@ use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
+use petal_tongue_core::constants;
 use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
 use std::time::Duration;
@@ -38,7 +39,7 @@ pub struct TUIConfig {
 impl Default for TUIConfig {
     fn default() -> Self {
         Self {
-            tick_rate: Duration::from_millis(100),
+            tick_rate: constants::default_tui_tick_rate(),
             mouse_support: false,
             standalone: false,
         }

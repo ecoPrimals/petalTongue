@@ -4,6 +4,7 @@
 // This test validates that petalTongue can discover primals from a running biomeOS API server
 
 #[cfg(feature = "legacy-http")]
+#[allow(deprecated)]
 use petal_tongue_discovery::{
     HttpVisualizationProvider, VisualizationDataProvider, discover_visualization_providers,
 };
@@ -11,6 +12,7 @@ use petal_tongue_discovery::{
 #[tokio::test]
 #[ignore = "Only run when biomeOS API is actually running"]
 #[cfg(feature = "legacy-http")]
+#[expect(deprecated, reason = "legacy-http test validates HTTP fallback path")]
 async fn test_live_biomeos_integration() {
     // This test expects biomeOS API running on localhost:3000
     let biomeos_url =

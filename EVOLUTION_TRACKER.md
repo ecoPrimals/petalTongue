@@ -1,7 +1,7 @@
 # petalTongue — Evolution Tracker
 
 **Living document**: Updated as evolution progresses.
-**Last updated**: March 13, 2026
+**Last updated**: March 14, 2026
 
 ---
 
@@ -9,15 +9,15 @@
 
 | Metric | Value |
 |--------|-------|
-| Tests | 3,711 passing, 5 ignored |
-| Coverage (line) | 79.5% |
-| Coverage (function) | 81.1% |
+| Tests | 3,776+ passing, 17 ignored |
+| Coverage (line) | ~82% |
+| Coverage (function) | ~82% |
 | Clippy | Zero errors (pedantic + nursery); advisory warnings only |
 | `cargo fmt` | Clean |
 | `cargo deny` | Clean (advisories, bans, licenses, sources) |
 | `cargo doc` | Clean (`--all-features --no-deps`) |
 | Unsafe code | `#![forbid(unsafe_code)]` on all 16 crates |
-| Largest file | 988 lines (`visualization_handler/state.rs`); all files under 1,000 |
+| Largest file | 730 lines (after refactoring); all files under 1,000 |
 | External C deps | Zero |
 | SPDX headers | All 467 source files |
 
@@ -129,7 +129,7 @@ No active gaps. Next evolution targets:
 - `visualization.interact.sync` (perspective sync mode)
 - `visualization.render.stream` grammar subscription mode
 - Capability-based data resolution (`"source": "capability:X"`)
-- Coverage target: 90% (currently 79.5%)
+- Coverage target: 90% (currently ~82%)
 
 ### Coverage Expansion (March 12, 2026)
 
@@ -223,4 +223,5 @@ the collaborative intelligence.
 | Ecosystem wiring | 3,245 | TBD | March 11 |
 | Spring absorption | 3,409 | 77.4% / 79.2% | March 11 |
 | Deep coverage expansion | 3,711 | 79.5% / 81.1% | March 12 |
+| March 14 audit & refactor | 3,776+ | ~82% / ~82% | March 14 |
 | Target | TBD | 90% / 90% | — |

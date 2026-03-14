@@ -4,6 +4,7 @@
 //! Provides infrastructure for full-stack integration testing of petalTongue.
 //! Tests the complete flow from `BiomeOS` API → UI rendering → User interaction.
 
+use anyhow::Result;
 use petal_tongue_api::BiomeOSClient;
 use petal_tongue_core::{GraphEngine, PrimalHealthStatus, PrimalInfo, TopologyEdge};
 use std::sync::{Arc, RwLock};
@@ -73,7 +74,7 @@ impl E2ETestRunner {
     }
 
     /// Run all E2E tests
-    pub async fn run_all(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn run_all(&mut self) -> Result<()> {
         tracing::info!("Starting E2E test suite");
 
         // Test 1: Basic discovery cycle
@@ -98,13 +99,13 @@ impl E2ETestRunner {
     }
 
     /// Test 1: Full discovery cycle
-    async fn test_discovery_cycle(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_discovery_cycle(&mut self) -> Result<()> {
         let start = std::time::Instant::now();
         let test_name = "discovery_cycle";
         let total_steps = 4;
         let mut steps_completed = 0;
 
-        let result = async {
+        let result: Result<()> = async {
             // Step 1: Create BiomeOS client
             let client =
                 BiomeOSClient::new(petal_tongue_core::test_fixtures::endpoints::MOCK_BIOMEOS)
@@ -114,7 +115,7 @@ impl E2ETestRunner {
             // Step 2: Discover primals
             let primals = client.discover_primals().await?;
             if primals.is_empty() {
-                return Err("No primals discovered".into());
+                return Err(anyhow::anyhow!("No primals discovered"));
             }
             steps_completed += 1;
 
@@ -127,11 +128,11 @@ impl E2ETestRunner {
 
             // Step 4: Verify graph state
             if graph.nodes().is_empty() {
-                return Err("Graph has no nodes after discovery".into());
+                return Err(anyhow::anyhow!("Graph has no nodes after discovery"));
             }
             steps_completed += 1;
 
-            Ok::<(), Box<dyn std::error::Error>>(())
+            Ok(())
         }
         .await;
 
@@ -157,13 +158,13 @@ impl E2ETestRunner {
     }
 
     /// Test 2: Graph topology rendering
-    async fn test_topology_rendering(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_topology_rendering(&mut self) -> Result<()> {
         let start = std::time::Instant::now();
         let test_name = "topology_rendering";
         let total_steps = 3;
         let mut steps_completed = 0;
 
-        let result = async {
+        let result: Result<()> = async {
             // Step 1: Create graph with test data
             let mut graph = GraphEngine::new();
             graph.add_node(PrimalInfo {
@@ -197,11 +198,11 @@ impl E2ETestRunner {
 
             // Step 3: Verify topology
             if graph.nodes().len() != 1 || graph.edges().len() != 1 {
-                return Err("Topology not correctly constructed".into());
+                return Err(anyhow::anyhow!("Topology not correctly constructed"));
             }
             steps_completed += 1;
 
-            Ok::<(), Box<dyn std::error::Error>>(())
+            Ok(())
         }
         .await;
 
@@ -227,13 +228,13 @@ impl E2ETestRunner {
     }
 
     /// Test 3: Health status updates
-    async fn test_health_updates(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_health_updates(&mut self) -> Result<()> {
         let start = std::time::Instant::now();
         let test_name = "health_updates";
         let total_steps = 3;
         let mut steps_completed = 0;
 
-        let result = async {
+        let result: Result<()> = async {
             // Step 1: Create graph with primal
             let graph = Arc::new(RwLock::new(GraphEngine::new()));
             {
@@ -272,12 +273,12 @@ impl E2ETestRunner {
                 if let Some(node) = g.get_node("test1")
                     && node.info.health != PrimalHealthStatus::Warning
                 {
-                    return Err("Health status not updated".into());
+                    return Err(anyhow::anyhow!("Health status not updated"));
                 }
             }
             steps_completed += 1;
 
-            Ok::<(), Box<dyn std::error::Error>>(())
+            Ok(())
         }
         .await;
 
@@ -303,13 +304,13 @@ impl E2ETestRunner {
     }
 
     /// Test 4: Edge lifecycle
-    async fn test_edge_lifecycle(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_edge_lifecycle(&mut self) -> Result<()> {
         let start = std::time::Instant::now();
         let test_name = "edge_lifecycle";
         let total_steps = 4;
         let mut steps_completed = 0;
 
-        let result = async {
+        let result: Result<()> = async {
             // Step 1: Create graph with nodes
             let mut graph = GraphEngine::new();
             graph.add_node(PrimalInfo {
@@ -356,7 +357,7 @@ impl E2ETestRunner {
                 metrics: None,
             });
             if graph.edges().len() != 1 {
-                return Err("Edge not added".into());
+                return Err(anyhow::anyhow!("Edge not added"));
             }
             steps_completed += 1;
 
@@ -367,18 +368,18 @@ impl E2ETestRunner {
                 .filter(|e| e.from == "node1" && e.to == "node2")
                 .collect();
             if edges.is_empty() {
-                return Err("Edge not found".into());
+                return Err(anyhow::anyhow!("Edge not found"));
             }
             steps_completed += 1;
 
             // Step 4: Clear and verify
             graph.clear();
             if !graph.edges().is_empty() || !graph.nodes().is_empty() {
-                return Err("Graph not cleared".into());
+                return Err(anyhow::anyhow!("Graph not cleared"));
             }
             steps_completed += 1;
 
-            Ok::<(), Box<dyn std::error::Error>>(())
+            Ok(())
         }
         .await;
 
@@ -404,13 +405,13 @@ impl E2ETestRunner {
     }
 
     /// Test 5: Capability detection
-    async fn test_capability_detection(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_capability_detection(&mut self) -> Result<()> {
         let start = std::time::Instant::now();
         let test_name = "capability_detection";
         let total_steps = 2;
         let mut steps_completed = 0;
 
-        let result = async {
+        let result: Result<()> = async {
             // Step 1: Create capability detector
             let detector = petal_tongue_core::CapabilityDetector::default();
             steps_completed += 1;
@@ -418,11 +419,11 @@ impl E2ETestRunner {
             // Step 2: Verify capabilities detected
             let caps = detector.get_all();
             if caps.is_empty() {
-                return Err("No capabilities detected".into());
+                return Err(anyhow::anyhow!("No capabilities detected"));
             }
             steps_completed += 1;
 
-            Ok::<(), Box<dyn std::error::Error>>(())
+            Ok(())
         }
         .await;
 

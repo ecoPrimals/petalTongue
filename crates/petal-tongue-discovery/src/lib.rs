@@ -345,30 +345,26 @@ mod tests {
     async fn test_discover_returns_empty_without_config() {
         use petal_tongue_core::test_fixtures::env_test_helpers;
 
-        env_test_helpers::with_env_var_removed_async("BIOMEOS_URL", || async {
-            env_test_helpers::with_env_var_removed_async("PETALTONGUE_DISCOVERY_HINTS", || async {
-                env_test_helpers::with_env_var_removed_async("PETALTONGUE_MOCK_MODE", || async {
-                    env_test_helpers::with_env_var_removed_async(
-                        "PETALTONGUE_ENABLE_MDNS",
-                        || async {
-                            let result = discover_visualization_providers().await;
-                            assert!(
-                                result.is_ok(),
-                                "Discovery should succeed even without explicit config"
-                            );
-                            let providers = result.unwrap();
-                            tracing::info!(
-                                "Discovered {} provider(s) without explicit config",
-                                providers.len()
-                            );
-                        },
-                    )
-                    .await;
-                })
-                .await;
-            })
-            .await;
-        })
+        env_test_helpers::with_env_vars_async(
+            &[
+                ("BIOMEOS_URL", None),
+                ("PETALTONGUE_DISCOVERY_HINTS", None),
+                ("PETALTONGUE_MOCK_MODE", None),
+                ("PETALTONGUE_ENABLE_MDNS", None),
+            ],
+            || async {
+                let result = discover_visualization_providers().await;
+                assert!(
+                    result.is_ok(),
+                    "Discovery should succeed even without explicit config"
+                );
+                let providers = result.unwrap();
+                tracing::info!(
+                    "Discovered {} provider(s) without explicit config",
+                    providers.len()
+                );
+            },
+        )
         .await;
     }
 
@@ -376,30 +372,27 @@ mod tests {
     async fn test_discover_graceful_degradation_returns_ok() {
         use petal_tongue_core::test_fixtures::env_test_helpers;
 
-        env_test_helpers::with_env_var_removed_async("BIOMEOS_URL", || async {
-            env_test_helpers::with_env_var_removed_async("PETALTONGUE_DISCOVERY_HINTS", || async {
-                env_test_helpers::with_env_var_removed_async("FAMILY_ID", || async {
-                    env_test_helpers::with_env_var_removed_async(
-                        "PETALTONGUE_ENABLE_MDNS",
-                        || async {
-                            let result = discover_visualization_providers().await;
-                            assert!(
-                                result.is_ok(),
-                                "Discovery must never panic - graceful degradation"
-                            );
-                            let providers = result.unwrap();
-                            assert!(
-                                providers.is_empty(),
-                                "Without config, expect empty (or mock in test-fixtures)"
-                            );
-                        },
-                    )
-                    .await;
-                })
-                .await;
-            })
-            .await;
-        })
+        env_test_helpers::with_env_vars_async(
+            &[
+                ("BIOMEOS_URL", None),
+                ("PETALTONGUE_DISCOVERY_HINTS", None),
+                ("FAMILY_ID", None),
+                ("PETALTONGUE_MOCK_MODE", None),
+                ("PETALTONGUE_ENABLE_MDNS", None),
+            ],
+            || async {
+                let result = discover_visualization_providers().await;
+                assert!(
+                    result.is_ok(),
+                    "Discovery must never panic - graceful degradation"
+                );
+                let providers = result.unwrap();
+                assert!(
+                    providers.is_empty(),
+                    "Without config, expect empty (or mock in test-fixtures)"
+                );
+            },
+        )
         .await;
     }
 

@@ -7,7 +7,7 @@ fn main() {
     println!("🔊 Generating test audio...");
 
     // Generate 440Hz (A note) sine wave for 0.5 seconds
-    let samples = generate_tone(0.5, 440.0, Waveform::Sine, 0.7);
+    let samples = generate_tone(440.0, 0.5, Waveform::Sine, 0.7);
 
     // Export to WAV
     let wav_bytes = export_wav(&samples);

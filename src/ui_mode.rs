@@ -147,6 +147,30 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_window_title_starts_with_flower_emoji() {
+        let title = window_title();
+        assert!(
+            title.starts_with("🌸"),
+            "Title should start with flower emoji: {title}"
+        );
+    }
+
+    #[test]
+    fn test_scenario_to_path_with_path_separators() {
+        let path = scenario_to_path(Some("/home/user/scenarios/demo.json".to_string()));
+        assert!(path.is_some());
+        let p = path.unwrap();
+        assert!(p.to_string_lossy().contains("demo.json"));
+    }
+
+    #[test]
+    fn test_scenario_to_path_with_relative_path() {
+        let path = scenario_to_path(Some("./relative/path.json".to_string()));
+        assert!(path.is_some());
+        assert_eq!(path.as_ref().unwrap().as_os_str(), "./relative/path.json");
+    }
+
     #[tokio::test]
     #[cfg(feature = "ui")]
     async fn test_ui_mode_signature() {
