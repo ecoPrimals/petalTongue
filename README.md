@@ -89,14 +89,14 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 3,776+ passing, 0 failures, 17 ignored |
+| Tests | 3,940+ passing, 0 failures, 17 ignored |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery, `--all-targets --all-features`) |
 | Docs | `RUSTDOCFLAGS="-D warnings" cargo doc` clean |
-| Coverage | ~82% line (llvm-cov) -- target 90% |
+| Coverage | ~83% line (llvm-cov) -- target 90% |
 | Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
 | License | AGPL-3.0-only, SPDX headers on all source files |
-| Files | All under 1,000 lines; largest 730 lines after refactoring |
+| Files | All under 1,000 lines; largest 943 lines (test file) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None -- pure Rust (`rustix` for syscalls) |

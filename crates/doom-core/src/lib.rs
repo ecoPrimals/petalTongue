@@ -23,6 +23,7 @@
 //! We start by loading a real Doom WAD file and displaying the map geometry.
 //! This validates our asset loading and rendering capabilities.
 
+use petal_tongue_scene::scene_graph::SceneGraph;
 use std::collections::HashSet;
 use std::path::Path;
 use thiserror::Error;
@@ -310,6 +311,22 @@ impl DoomInstance {
                 renderer.move_strafe(move_speed);
             }
         }
+    }
+
+    /// Render the current frame as a scene graph.
+    ///
+    /// Every pixel region in the output maps to a `Primitive::Rect` with a
+    /// `data_id` so the full frame is traceable.
+    #[must_use]
+    pub fn render_scene(&self) -> SceneGraph {
+        if let (Some(wad_data), Some(map_name)) = (&self.wad_data, &self.current_map)
+            && let Some(map) = wad_data.get_map(map_name)
+            && self.first_person_mode
+            && let Some(renderer) = &self.raycast_renderer
+        {
+            return renderer.render_to_scene(map);
+        }
+        SceneGraph::new()
     }
 
     /// Get the current framebuffer (RGBA format).

@@ -36,7 +36,7 @@ async fn handle_mock_connection(stream: UnixStream) {
     while reader.read_line(&mut line).await.is_ok() && !line.is_empty() {
         if let Ok(request) = serde_json::from_str::<JsonRpcRequest>(&line) {
             let response = match request.method.as_str() {
-                "get_primals_extended" => JsonRpcResponse {
+                "primal.list" => JsonRpcResponse {
                     jsonrpc: "2.0".to_string(),
                     result: Some(serde_json::json!([
                         {
@@ -83,14 +83,14 @@ async fn handle_mock_connection(stream: UnixStream) {
 async fn test_jsonrpc_request_serialization() {
     let request = JsonRpcRequest {
         jsonrpc: "2.0".to_string(),
-        method: "get_primals_extended".to_string(),
+        method: "primal.list".to_string(),
         params: None,
         id: 1,
     };
 
     let json = serde_json::to_string(&request).unwrap();
     assert!(json.contains("\"jsonrpc\":\"2.0\""));
-    assert!(json.contains("\"method\":\"get_primals_extended\""));
+    assert!(json.contains("\"method\":\"primal.list\""));
     assert!(json.contains("\"id\":1"));
 }
 

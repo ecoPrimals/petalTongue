@@ -2,34 +2,38 @@
 //! mDNS-based discovery of visualization data providers
 //!
 //! Discovers primals via multicast DNS that advertise visualization capabilities.
+//! Delegates to [`crate::mdns_provider::MdnsVisualizationProvider`] for the real
+//! network implementation.
 
 use crate::VisualizationCapability;
+use crate::mdns_provider::MdnsVisualizationProvider;
 use crate::traits::VisualizationDataProvider;
 
-/// Discover providers via mDNS/multicast
+/// Discover providers via mDNS/multicast.
 ///
-/// Queries for primals advertising visualization capabilities.
-/// Real mDNS implementation lives in [`crate::mdns_provider::MdnsVisualizationProvider`].
-/// This function delegates to it; returns empty on failure.
-///
-/// Gated by `mdns` feature. Stub reserved for future mDNS integration.
-#[allow(dead_code)] // Used by test_mdns_discovery_stub; appears dead when lib compiled without test harness
-#[expect(clippy::unused_async, reason = "async for future mDNS implementation")]
+/// Delegates to [`MdnsVisualizationProvider::discover`] which performs real
+/// UDP multicast service discovery on the local network.
+#[cfg_attr(not(test), allow(dead_code))]
 pub async fn discover_via_mdns() -> anyhow::Result<Vec<Box<dyn VisualizationDataProvider>>> {
     tracing::debug!("mDNS discovery: delegating to MdnsVisualizationProvider");
-    Ok(Vec::new())
+    MdnsVisualizationProvider::discover().await
 }
 
-/// Query mDNS for a specific capability
+/// Query mDNS for a specific capability.
 ///
-/// Full mDNS implementation is in [`crate::mdns_provider`].
+/// Performs real mDNS discovery and filters providers by the requested capability.
 #[expect(
     dead_code,
-    reason = "Phase 1: mDNS discovery stub; reserved for future mDNS integration"
+    reason = "API reserved for direct capability queries; callers currently use discover_via_mdns"
 )]
-#[expect(clippy::unused_async, reason = "async for future mDNS implementation")]
-pub async fn query_capability(_capability: VisualizationCapability) -> anyhow::Result<Vec<String>> {
-    Ok(Vec::new())
+pub async fn query_capability(capability: VisualizationCapability) -> anyhow::Result<Vec<String>> {
+    let providers = MdnsVisualizationProvider::discover().await?;
+    let cap_str = capability.as_str();
+    Ok(providers
+        .iter()
+        .filter(|p| p.get_metadata().capabilities.iter().any(|c| c == cap_str))
+        .map(|p| p.get_metadata().endpoint.clone())
+        .collect())
 }
 
 #[cfg(test)]
@@ -37,9 +41,8 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_mdns_discovery_stub() {
-        // Until mDNS is implemented, should return empty
-        let providers = discover_via_mdns().await.unwrap();
-        assert!(providers.is_empty());
+    async fn discover_via_mdns_returns_result() {
+        let result = discover_via_mdns().await;
+        assert!(result.is_ok());
     }
 }

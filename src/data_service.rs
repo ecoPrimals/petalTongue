@@ -180,14 +180,14 @@ impl DataService {
         Arc::clone(&self.graph)
     }
 
-    /// Subscribe to data updates (public API for streaming consumers).
-    #[allow(dead_code)] // Public API; used in tests; GUI/TUI streaming not yet wired
+    /// Subscribe to data updates (streaming consumers, GUI/TUI wiring pending).
+    #[cfg_attr(not(test), allow(dead_code))]
     pub fn subscribe(&self) -> broadcast::Receiver<DataUpdate> {
         self.update_tx.subscribe()
     }
 
     /// Check if Neural API is available.
-    #[allow(dead_code)] // Public API; used in tests; GUI/TUI capability check not yet wired
+    #[cfg_attr(not(test), allow(dead_code))]
     pub const fn has_neural_api(&self) -> bool {
         self.neural_api.is_some()
     }
@@ -326,8 +326,7 @@ mod tests {
     #[tokio::test]
     async fn test_data_update_clone() {
         let update = DataUpdate::TopologyUpdated;
-        #[allow(clippy::redundant_clone)]
-        let cloned = update.clone();
+        let cloned = Clone::clone(&update);
         assert!(matches!(cloned, DataUpdate::TopologyUpdated));
     }
 

@@ -54,49 +54,33 @@ pub async fn register_with_neural_api(
     Ok(Arc::new(provider))
 }
 
-/// Spawn a background heartbeat thread that sends `lifecycle.status` every 30s.
+/// Spawn a background heartbeat task that sends `lifecycle.status` every 30s.
 ///
-/// The thread is non-blocking and exits when the `NeuralApiProvider` is dropped
-/// or the socket becomes unreachable.
+/// Runs as a tokio task — no extra OS thread or runtime. Exits when the
+/// `NeuralApiProvider` call fails (e.g., socket becomes unreachable).
 pub fn spawn_heartbeat(provider: Arc<NeuralApiProvider>, our_socket: PathBuf) {
-    std::thread::Builder::new()
-        .name("neural-heartbeat".into())
-        .spawn(move || {
-            let rt = match tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-            {
-                Ok(rt) => rt,
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(HEARTBEAT_INTERVAL).await;
+
+            let params = json!({
+                "name": petal_tongue_core::constants::PRIMAL_NAME,
+                "socket_path": our_socket.to_string_lossy(),
+                "status": "healthy",
+                "pid": std::process::id(),
+            });
+
+            match provider.call_method("lifecycle.status", Some(params)).await {
+                Ok(_) => tracing::trace!("Neural API heartbeat sent"),
                 Err(e) => {
-                    tracing::error!("Failed to create heartbeat runtime: {e}");
-                    return;
-                }
-            };
-
-            loop {
-                std::thread::sleep(HEARTBEAT_INTERVAL);
-
-                let params = json!({
-                    "name": petal_tongue_core::constants::PRIMAL_NAME,
-                    "socket_path": our_socket.to_string_lossy(),
-                    "status": "healthy",
-                    "pid": std::process::id(),
-                });
-
-                let result = rt.block_on(provider.call_method("lifecycle.status", Some(params)));
-
-                match result {
-                    Ok(_) => tracing::trace!("Neural API heartbeat sent"),
-                    Err(e) => {
-                        tracing::debug!("Neural API heartbeat failed: {e}");
-                        break;
-                    }
+                    tracing::debug!("Neural API heartbeat failed: {e}");
+                    break;
                 }
             }
+        }
 
-            tracing::info!("Neural API heartbeat thread exiting");
-        })
-        .ok();
+        tracing::info!("Neural API heartbeat task exiting");
+    });
 }
 
 #[cfg(test)]

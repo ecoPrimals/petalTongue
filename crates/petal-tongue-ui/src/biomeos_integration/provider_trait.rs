@@ -53,8 +53,7 @@ impl VisualizationDataProvider for BiomeOSProvider {
     }
 
     async fn get_topology(&self) -> anyhow::Result<Vec<TopologyEdge>> {
-        // For Phase 1, return empty topology
-        // Phase 2 will implement actual topology discovery
+        // Default: empty topology (override in concrete providers)
         Ok(Vec::new())
     }
 

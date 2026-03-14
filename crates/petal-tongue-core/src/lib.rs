@@ -48,7 +48,7 @@ mod error_tests;
 pub mod graph_builder; // SAME DAVE proprioception data (Neural API)
 pub mod graph_engine;
 pub mod graph_validation; // Graph validation (cycle detection, dependencies)
-pub mod instance; // Instance management (Phase 1)
+pub mod instance; // Instance management
 pub mod lifecycle;
 pub mod metrics; // System metrics (CPU, memory, Neural API stats)
 pub mod platform_dirs; // Pure Rust directory resolution (zero deps!)
@@ -57,7 +57,10 @@ pub mod property; // Generic property system
 pub mod proprioception;
 pub mod scenario_builder; // ScenarioBuilder trait for springs and primals
 pub mod scenario_loader; // healthSpring-style scenario JSON loader
+pub mod scenarios; // Scenario builders for unintegrated springs (airSpring, groundSpring)
 pub mod session; // Session state persistence (Phase 2)
+pub mod shader_lineage; // Cross-spring shader lineage tracking and visualization
+pub mod spring_adapter; // Universal spring data adapter (multi-format normalization)
 pub mod state_sync; // State synchronization across devices
 pub mod system_info; // System information utilities (safe FFI wrappers)
 pub mod telemetry_adapter; // JSONL telemetry adapter (hotSpring ingestion)
@@ -141,6 +144,14 @@ pub use scenario_builder::{ScenarioBuilder, ScenarioMetadata, VisualizationScene
 /// Loaded scenario from healthSpring-style JSON
 pub use scenario_loader::LoadedScenario;
 
+/// Domain scenario builders (airSpring, groundSpring)
+pub use scenarios::{
+    AirSpringCropCoefficientScenario, AirSpringDroughtIndexScenario, AirSpringET0Scenario,
+    AirSpringRichardsPDEScenario, GroundSpringAndersonLocalizationScenario,
+    GroundSpringSeismicScenario, GroundSpringSensorDriftScenario,
+    GroundSpringSpectralReconstructionScenario,
+};
+
 /// JSONL telemetry adapter (hotSpring ingestion → DataBinding::TimeSeries)
 pub use telemetry_adapter::TelemetryAdapter;
 
@@ -154,6 +165,15 @@ pub use adaptive_rendering::{
     AdaptiveRenderer, DeviceType, HapticPrecision, InputMethod, PerformanceTier,
     RenderingCapabilities, RenderingModality, UIComplexity,
 };
+
+/// Cross-spring shader lineage tracking
+pub use shader_lineage::{
+    ShaderDelegation, ShaderLineage, ShaderLineageNode, ShaderLineageScenario,
+    ShaderValidationStatus,
+};
+
+/// Universal spring data adapter (multi-format → DataBinding normalization)
+pub use spring_adapter::{GameChannelType, SpringAdapterError, SpringDataAdapter, SpringPayloadFormat};
 
 /// State synchronization (Cross-device state)
 pub use state_sync::{DeviceState, LocalStatePersistence, StatePersistence, StateSync};

@@ -4,6 +4,9 @@
 //! This is our first test of the panel system. As we implement this,
 //! we'll discover gaps in petalTongue's architecture and evolve to fill them.
 
+use super::doom_helpers::{
+    compute_fps, compute_keys_diff, egui_to_doom_key_static, prepare_doom_display,
+};
 use doom_core::{DoomInstance, DoomKey, Result};
 use egui::{ColorImage, Key, TextureHandle, Ui};
 use std::collections::HashSet;
@@ -81,8 +84,8 @@ impl DoomPanel {
         // Update FPS counter
         self.frames_since_fps_update += 1;
         let fps_elapsed = self.last_fps_update.elapsed();
-        if fps_elapsed.as_secs_f32() >= 1.0 {
-            self.fps = self.frames_since_fps_update as f32 / fps_elapsed.as_secs_f32();
+        if fps_elapsed.as_secs_f64() >= 1.0 {
+            self.fps = compute_fps(self.frames_since_fps_update, fps_elapsed.as_secs_f64());
             self.frames_since_fps_update = 0;
             self.last_fps_update = Instant::now();
         }
@@ -189,27 +192,22 @@ impl DoomPanel {
                 .copied()
                 .collect();
 
-            // Send key_down for newly pressed keys
-            for key in &current_keys {
-                if !self.prev_keys_down.contains(key)
-                    && let Some(doom_key) = Self::egui_to_doom_key_static(*key)
-                {
+            let (newly_pressed, newly_released) =
+                compute_keys_diff(&self.prev_keys_down, &current_keys);
+
+            for key in &newly_pressed {
+                if let Some(doom_key) = egui_to_doom_key_static(*key) {
                     doom.key_down(doom_key);
                     tracing::debug!("🎮 Key DOWN: {:?}", key);
                 }
             }
-
-            // Send key_up for newly released keys
-            for key in &self.prev_keys_down {
-                if !current_keys.contains(key)
-                    && let Some(doom_key) = Self::egui_to_doom_key_static(*key)
-                {
+            for key in &newly_released {
+                if let Some(doom_key) = egui_to_doom_key_static(*key) {
                     doom.key_up(doom_key);
                     tracing::debug!("🎮 Key UP: {:?}", key);
                 }
             }
 
-            // Update previous state
             self.prev_keys_down = current_keys;
 
             // 🖥️ REMOVED: Event processing
@@ -226,56 +224,15 @@ impl DoomPanel {
         }
     }
 
-    /// Map egui keys to Doom keys (static helper)
-    ///
-    /// Modern FPS controls:
-    /// - WASD: W/S move, A/D strafe (modern)
-    /// - Arrows: Up/Down move, Left/Right turn (classic)
-    const fn egui_to_doom_key_static(key: Key) -> Option<DoomKey> {
-        Some(match key {
-            // Arrow keys: Classic Doom controls (move + turn)
-            Key::ArrowUp => DoomKey::Up,
-            Key::ArrowDown => DoomKey::Down,
-            Key::ArrowLeft => DoomKey::Left,
-            Key::ArrowRight => DoomKey::Right,
-
-            // WASD: Modern FPS controls (move + strafe)
-            Key::W => DoomKey::Up,
-            Key::S => DoomKey::Down,
-            Key::A => DoomKey::StrafeLeft,  // Strafe, not turn!
-            Key::D => DoomKey::StrafeRight, // Strafe, not turn!
-
-            // Q/E: Alternative strafe (for those who prefer it)
-            Key::Q => DoomKey::StrafeLeft,
-            Key::E => DoomKey::StrafeRight,
-
-            // Actions
-            Key::Space => DoomKey::Use,
-            Key::Enter => DoomKey::Enter,
-            Key::Escape => DoomKey::Escape,
-
-            // Weapons
-            Key::Num1 => DoomKey::Weapon1,
-            Key::Num2 => DoomKey::Weapon2,
-            Key::Num3 => DoomKey::Weapon3,
-            Key::Num4 => DoomKey::Weapon4,
-            Key::Num5 => DoomKey::Weapon5,
-
-            // Other
-            Key::Tab => DoomKey::Map,
-
-            _ => return None,
-        })
-    }
-
     /// Render debug overlay
     fn render_debug_overlay(&self, ui: &mut Ui) {
-        if let Some(doom) = &self.doom {
+        let display_state = prepare_doom_display(self.doom.as_ref(), self.fps, self.show_debug);
+        if display_state.initialized && display_state.show_debug {
             ui.separator();
             ui.horizontal(|ui| {
-                ui.label(format!("FPS: {:.1}", self.fps));
+                ui.label(format!("FPS: {:.1}", display_state.fps));
                 ui.label(format!("Frame: {}", self.frame_count));
-                ui.label(format!("State: {:?}", doom.state()));
+                ui.label(format!("State: {}", display_state.state_text));
             });
 
             ui.horizontal(|ui| {

@@ -68,39 +68,40 @@ impl RetryPolicy {
         E: std::fmt::Display,
     {
         let mut delay = self.initial_delay;
-        let mut last_error = None;
+        let attempts = self.max_attempts.max(1);
+        let mut last_error: Option<E> = None;
 
-        for attempt in 1..=self.max_attempts {
+        for attempt in 1..=attempts {
             match f().await {
                 Ok(result) => {
                     if attempt > 1 {
-                        tracing::info!("Succeeded on attempt {}/{}", attempt, self.max_attempts);
+                        tracing::info!("Succeeded on attempt {}/{attempts}", attempt);
                     }
                     return Ok(result);
                 }
                 Err(e) => {
-                    tracing::warn!("Attempt {}/{} failed: {}", attempt, self.max_attempts, e);
+                    tracing::warn!("Attempt {attempt}/{attempts} failed: {e}");
 
                     last_error = Some(e);
 
-                    if attempt < self.max_attempts {
+                    if attempt < attempts {
                         let sleep_duration = if self.jitter {
                             add_jitter(delay)
                         } else {
                             delay
                         };
 
-                        tracing::debug!("Retrying in {:?}...", sleep_duration);
+                        tracing::debug!("Retrying in {sleep_duration:?}...");
                         sleep(sleep_duration).await;
 
-                        // Exponential backoff
                         delay = (delay.mul_f64(self.backoff_factor)).min(self.max_delay);
                     }
                 }
             }
         }
 
-        Err(last_error.expect("last_error is always Some after loop exhausts all attempts"))
+        // SAFETY: loop always runs at least once (attempts >= 1), so last_error is always Some
+        Err(last_error.expect("at least one attempt always executes"))
     }
 
     /// Execute with timeout per attempt

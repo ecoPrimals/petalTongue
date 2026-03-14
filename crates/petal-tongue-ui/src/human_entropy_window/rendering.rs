@@ -3,27 +3,12 @@
 
 #![allow(unexpected_cfgs)]
 
+use super::rendering_helpers::{
+    capture_state_display, format_recording_duration, quality_color_rgb,
+};
 use super::state::HumanEntropyWindow;
 use super::types::{CaptureWindowState, EntropyModality};
 use eframe::egui;
-
-/// Map quality (0.0–1.0) to RGB color: green (good), yellow (medium), red (poor).
-#[must_use]
-pub fn quality_color_rgb(quality: f32) -> [u8; 3] {
-    if quality > 0.7 {
-        [0, 255, 0] // green
-    } else if quality > 0.4 {
-        [255, 255, 0] // yellow
-    } else {
-        [255, 0, 0] // red
-    }
-}
-
-/// Format recording duration in seconds as human-readable string.
-#[must_use]
-pub fn format_recording_duration(elapsed_secs: f64) -> String {
-    format!("{elapsed_secs:.1}s")
-}
 
 impl HumanEntropyWindow {
     /// Render the window
@@ -84,6 +69,7 @@ impl HumanEntropyWindow {
     }
 
     fn render_modality_selector(&mut self, ui: &mut egui::Ui) {
+        let display = capture_state_display(&self.state, self.current_quality, None);
         ui.label("Choose Modality:");
 
         ui.horizontal(|ui| {
@@ -94,7 +80,7 @@ impl HumanEntropyWindow {
                 EntropyModality::Gesture,
                 EntropyModality::Video,
             ] {
-                let enabled = modality.is_available() && self.state == CaptureWindowState::Idle;
+                let enabled = modality.is_available() && display.can_start;
 
                 ui.add_enabled_ui(enabled, |ui| {
                     if ui
@@ -117,12 +103,15 @@ impl HumanEntropyWindow {
     }
 
     fn render_idle_state(&mut self, ui: &mut egui::Ui) {
+        let display = capture_state_display(&self.state, self.current_quality, None);
         ui.vertical_centered(|ui| {
             ui.add_space(20.0);
 
-            if ui.button("🎙️ Start Capture").clicked() {
-                self.start_capture();
-            }
+            ui.add_enabled_ui(display.can_start, |ui| {
+                if ui.button(format!("🎙️ {}", display.action_label)).clicked() {
+                    self.start_capture();
+                }
+            });
 
             ui.add_space(10.0);
             ui.label("Click to begin capturing entropy");
@@ -164,10 +153,13 @@ impl HumanEntropyWindow {
         ui.add_space(20.0);
 
         // Stop button
+        let display = capture_state_display(&self.state, self.current_quality, None);
         ui.vertical_centered(|ui| {
-            if ui.button("⏹️ Stop Capture").clicked() {
-                self.stop_capture();
-            }
+            ui.add_enabled_ui(display.can_stop, |ui| {
+                if ui.button(format!("⏹️ {}", display.action_label)).clicked() {
+                    self.stop_capture();
+                }
+            });
         });
     }
 
@@ -186,14 +178,17 @@ impl HumanEntropyWindow {
 
             ui.add_space(20.0);
 
+            let display = capture_state_display(&self.state, self.current_quality, None);
             ui.horizontal(|ui| {
-                if ui.button("✅ Send to Entropy Source").clicked() {
+                if ui.button(format!("✅ {}", display.action_label)).clicked() {
                     self.finalize_and_stream();
                 }
 
-                if ui.button("🗑️ Discard").clicked() {
-                    self.discard();
-                }
+                ui.add_enabled_ui(display.can_discard, |ui| {
+                    if ui.button("🗑️ Discard").clicked() {
+                        self.discard();
+                    }
+                });
             });
         });
     }
@@ -211,42 +206,10 @@ impl HumanEntropyWindow {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::super::rendering_helpers::format_recording_duration;
 
     #[test]
-    fn quality_color_rgb_good() {
-        let rgb = quality_color_rgb(0.8f32);
-        assert_eq!(rgb, [0, 255, 0]);
-    }
-
-    #[test]
-    fn quality_color_rgb_medium() {
-        let rgb = quality_color_rgb(0.5f32);
-        assert_eq!(rgb, [255, 255, 0]);
-    }
-
-    #[test]
-    fn quality_color_rgb_poor() {
-        let rgb = quality_color_rgb(0.3f32);
-        assert_eq!(rgb, [255, 0, 0]);
-    }
-
-    #[test]
-    fn quality_color_rgb_boundary_07() {
-        let rgb = quality_color_rgb(0.71f32);
-        assert_eq!(rgb, [0, 255, 0]);
-    }
-
-    #[test]
-    fn quality_color_rgb_boundary_04() {
-        let rgb = quality_color_rgb(0.41f32);
-        assert_eq!(rgb, [255, 255, 0]);
-    }
-
-    #[test]
-    fn test_format_recording_duration() {
-        assert_eq!(super::format_recording_duration(0.0), "0.0s");
-        assert_eq!(super::format_recording_duration(42.5), "42.5s");
-        assert_eq!(super::format_recording_duration(123.456), "123.5s");
+    fn render_ui_smoke() {
+        let _ = format_recording_duration(1.0);
     }
 }

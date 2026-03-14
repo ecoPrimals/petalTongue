@@ -666,34 +666,38 @@ mod tests {
     }
 
     #[tokio::test]
-    #[allow(clippy::cast_sign_loss)]
+    #[expect(clippy::cast_sign_loss, reason = "test primal counts are always positive")]
     async fn data_update_primals_affects_item_count() {
-        let state = crate::state::TUIState::new();
-        state.set_view(crate::state::View::Primals).await;
-        assert_eq!(state.primal_count().await, 0);
-        state
-            .update_primals(vec![
-                petal_tongue_core::PrimalInfo::new(
-                    "p1",
-                    "primal1",
-                    "Test",
-                    "unix:///tmp/p1.sock",
-                    vec![],
-                    petal_tongue_core::PrimalHealthStatus::Healthy,
-                    chrono::Utc::now().timestamp() as u64,
-                ),
-                petal_tongue_core::PrimalInfo::new(
-                    "p2",
-                    "primal2",
-                    "Test",
-                    "unix:///tmp/p2.sock",
-                    vec![],
-                    petal_tongue_core::PrimalHealthStatus::Healthy,
-                    chrono::Utc::now().timestamp() as u64,
-                ),
-            ])
-            .await;
-        assert_eq!(state.primal_count().await, 2);
+        tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            let state = crate::state::TUIState::new();
+            state.set_view(crate::state::View::Primals).await;
+            assert_eq!(state.primal_count().await, 0);
+            state
+                .update_primals(vec![
+                    petal_tongue_core::PrimalInfo::new(
+                        "p1",
+                        "primal1",
+                        "Test",
+                        "unix:///tmp/p1.sock",
+                        vec![],
+                        petal_tongue_core::PrimalHealthStatus::Healthy,
+                        chrono::Utc::now().timestamp() as u64,
+                    ),
+                    petal_tongue_core::PrimalInfo::new(
+                        "p2",
+                        "primal2",
+                        "Test",
+                        "unix:///tmp/p2.sock",
+                        vec![],
+                        petal_tongue_core::PrimalHealthStatus::Healthy,
+                        chrono::Utc::now().timestamp() as u64,
+                    ),
+                ])
+                .await;
+            assert_eq!(state.primal_count().await, 2);
+        })
+        .await
+        .expect("test timed out after 5s");
     }
 
     #[tokio::test]

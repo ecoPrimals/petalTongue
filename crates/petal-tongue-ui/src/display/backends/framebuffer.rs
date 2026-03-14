@@ -127,7 +127,12 @@ impl FramebufferDisplay {
 
 impl Default for FramebufferDisplay {
     fn default() -> Self {
-        Self::new().expect("FramebufferDisplay::new always succeeds")
+        Self::new().unwrap_or_else(|_| Self {
+            width: 1920,
+            height: 1080,
+            fb_device: None,
+            buffer: Vec::new(),
+        })
     }
 }
 

@@ -7,10 +7,15 @@
 #[cfg(feature = "doom")]
 pub mod doom_factory;
 #[cfg(feature = "doom")]
+pub mod doom_helpers;
+#[cfg(feature = "doom")]
 pub mod doom_panel;
+#[cfg(feature = "doom")]
+pub mod doom_stats_display;
 #[cfg(feature = "doom")]
 pub mod doom_stats_panel;
 pub mod metrics_panel;
+pub mod metrics_panel_display;
 pub mod proprioception_panel;
 
 #[cfg(feature = "doom")]

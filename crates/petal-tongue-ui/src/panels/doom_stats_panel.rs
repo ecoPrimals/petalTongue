@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Doom Stats Panel - Display game metrics
 //!
-//! Phase 1.4: Shows real-time Doom game statistics including:
+//! Shows real-time Doom game statistics including:
 //! - Map name
 //! - View mode
 //! - Player position and orientation
@@ -9,8 +9,9 @@
 //! - Game state
 
 use crate::panel_registry::{PanelFactory, PanelInstance};
+use crate::panels::doom_stats_display::prepare_doom_stats_display;
 use crate::scenario::CustomPanelConfig;
-use doom_core::{DoomInstance, DoomState, GameStats, ViewMode};
+use doom_core::{DoomInstance, GameStats};
 use std::sync::{Arc, RwLock};
 
 /// Panel that displays Doom game statistics
@@ -60,54 +61,28 @@ impl PanelInstance for DoomStatsPanel {
         self.update_stats();
 
         if let Some(stats) = &self.last_stats {
+            let display = prepare_doom_stats_display(stats);
+
             ui.heading("🎮 Doom Stats");
             ui.separator();
 
-            // Game state
-            let state_text = match stats.state {
-                DoomState::Uninitialized => "❌ Uninitialized",
-                DoomState::Loading => "⏳ Loading",
-                DoomState::Menu => "📋 Menu",
-                DoomState::Playing => "▶️ Playing",
-                DoomState::Paused => "⏸️ Paused",
-                DoomState::Error => "❌ Error",
-            };
-            ui.label(format!("State: {state_text}"));
-
+            ui.label(format!("State: {}", display.state_text));
+            ui.separator();
+            ui.label(format!("Map: {}", display.map_name));
+            ui.label(format!("View: {}", display.view_mode));
             ui.separator();
 
-            // Map info
-            if let Some(map_name) = &stats.current_map {
-                ui.label(format!("Map: {map_name} (Hangar)"));
-            } else {
-                ui.label("Map: None");
-            }
-
-            // View mode
-            let view_text = match stats.view_mode {
-                ViewMode::FirstPerson => "First-Person (3D)",
-                ViewMode::TopDown => "Top-Down (2D)",
-            };
-            ui.label(format!("View: {view_text}"));
-
-            ui.separator();
-
-            // Player position
-            if let (Some(x), Some(y), Some(angle)) =
-                (stats.player_x, stats.player_y, stats.player_angle)
-            {
+            if let Some(position) = &display.position {
                 ui.label("Player Position:");
-                ui.label(format!("  X: {x:.0}"));
-                ui.label(format!("  Y: {y:.0}"));
-                ui.label(format!("  Angle: {:.0}°", angle.to_degrees()));
+                for line in position.lines() {
+                    ui.label(line);
+                }
             } else {
                 ui.label("Player: Not initialized");
             }
 
             ui.separator();
-
-            // Performance
-            ui.label(format!("Frame: {}", stats.frame_count));
+            ui.label(format!("Frame: {}", display.frame_count));
             ui.label(format!(
                 "Resolution: {}x{}",
                 stats.dimensions.0, stats.dimensions.1

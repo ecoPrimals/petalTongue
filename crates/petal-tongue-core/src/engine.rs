@@ -226,8 +226,7 @@ impl UniversalRenderingEngine {
     }
 
     /// Start rendering in specific modality
-    /// Lock must be held across await for modality's &mut self (initialize, render)
-    #[allow(clippy::significant_drop_tightening)]
+    #[expect(clippy::significant_drop_tightening, reason = "RwLock guard must span both initialize and render awaits")]
     pub async fn render(self: Arc<Self>, modality_name: &str) -> Result<()> {
         let mut registry = self.modalities.write().await;
 

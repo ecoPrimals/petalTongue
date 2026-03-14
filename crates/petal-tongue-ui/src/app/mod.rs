@@ -31,6 +31,7 @@ use crate::accessibility_panel::AccessibilityPanel;
 use crate::audio::AudioSystemV2;
 use crate::awakening_overlay::AwakeningOverlay;
 use crate::graph_canvas::GraphCanvas;
+use crate::interaction_bridge::EguiInteractionBridge;
 use crate::keyboard_shortcuts::{KeyboardShortcuts, ShortcutAction};
 use crate::metrics_dashboard::MetricsDashboard;
 use crate::panel_registry::PanelInstance;
@@ -156,6 +157,12 @@ pub struct PetalTongueApp {
     tick_clock: TickClock,
     /// Whether continuous 60 Hz mode is active
     continuous_mode: bool,
+    /// Physics world for fixed-timestep simulation (barraCuda delegates here)
+    physics_world: petal_tongue_scene::physics::PhysicsWorld,
+    /// Animation player for scene-graph keyframe interpolation
+    animation_player: petal_tongue_scene::animation::AnimationPlayer,
+    /// Active scene graph — the single source of truth for all rendering
+    active_scene: petal_tongue_scene::scene_graph::SceneGraph,
 
     // === IPC visualization bridge ===
     /// Shared visualization state (written by IPC server, read by UI)
@@ -180,6 +187,9 @@ pub struct PetalTongueApp {
     motor_tx: mpsc::Sender<MotorCommand>,
     /// Show top menu bar (controllable via motor commands)
     show_top_menu: bool,
+
+    /// Bridge between egui events and the InteractionEngine (inverse pipeline for hit-target registration)
+    interaction_bridge: EguiInteractionBridge,
 }
 
 impl PetalTongueApp {
@@ -428,6 +438,9 @@ impl PetalTongueApp {
     /// so that the same code path can be exercised by both the real GUI and
     /// the headless harness.
     pub fn update_headless(&mut self, ctx: &egui::Context) {
+        self.interaction_bridge
+            .inverse_pipeline_mut()
+            .clear_targets();
         sensory::process_sensory_feedback(self, ctx);
         events::drain_motor_commands(self);
 
@@ -588,7 +601,12 @@ impl PetalTongueApp {
         if self.continuous_mode {
             let dt = ctx.input(|i| i.stable_dt);
             self.tick_clock.begin_frame_with_dt(dt);
-            let tick_result = tick_frame(&mut self.tick_clock, None, None, None);
+            let tick_result = tick_frame(
+                &mut self.tick_clock,
+                Some(&mut self.physics_world),
+                Some(&mut self.animation_player),
+                Some(&mut self.active_scene),
+            );
             if tick_result.scene_dirty {
                 ctx.request_repaint();
             }

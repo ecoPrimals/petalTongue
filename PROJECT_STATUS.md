@@ -11,23 +11,23 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 3,776+ passing, 0 failures, 17 ignored |
+| Tests | 3,940+ passing, 0 failures, 17 ignored |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery, `--all-targets --all-features`) |
 | Rustdoc | Clean (`cargo doc --workspace --no-deps`) |
 | cargo deny | Clean (advisories, bans, licenses, sources) |
 | Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
-| Files | All files under 1,000 lines (CI enforced); largest file 730 lines after refactoring |
+| Files | All 508 files under 1,000 lines (CI enforced); largest file 943 lines after module extraction |
 | License | AGPL-3.0-only, SPDX on all source files |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None (`ring` eliminated, `libc`/`nix`/`atty` removed, using `rustix`) |
 | ecoBin | Compliant (no ring, aws-lc-sys, openssl-sys, native-tls, zstd-sys) |
-| Coverage | ~82% line (llvm-cov, workspace) -- target 90%, 24 new tests added for low-coverage UI paths |
+| Coverage | ~83% line (llvm-cov, workspace) -- target 90% |
 | JSON-RPC | Semantic method naming (`domain.operation`), 16 visualization methods |
 | Mocks | All gated behind `#[cfg(test)]` or `#[cfg(feature = "test-fixtures")]`; production mock code eliminated |
 | Primal names | Capability-based constants, zero hardcoded external primal names |
-| Hardcoding | All timeouts, ports, intervals, endpoints configurable via env vars; centralized in `constants.rs` |
-| Zero-copy | `Arc<DeviceState>` in state_sync, `Arc<Vec<...>>` in TUI state; `bytes::Bytes` in IPC |
+| Hardcoding | All timeouts, ports, intervals, endpoints configurable via env vars; centralized in `constants.rs`; default bind 127.0.0.1 (was 0.0.0.0) |
+| Zero-copy | `bytes::Bytes` in rendering pipeline, IPC, and audio; `Arc<DeviceState>` in state_sync, `Arc<Vec<...>>` in TUI |
 | Domain theming | 7 domain palettes (health, physics, ecology, agriculture, measurement, neural, game) + diverging color scales |
 | GUI logic extraction | All UI business logic in pure functions, 16 headless integration tests |
 | Game loop | Wired: TickClock in app, begin_frame_with_dt, continuous mode motor commands |
@@ -79,7 +79,7 @@
 
 ### Stubs and TODOs (0 items in active production code)
 
-Sole remaining TODO is a test-only exception marker in `capability_integration_tests.rs` (Animation capability test).
+No TODO, FIXME, HACK, `todo!()`, or `unimplemented!()` markers in production code.
 
 Delegated/roadmap items (not TODOs, documented as roadmap markers):
 - mDNS full DNS packet building (delegate to songbird)
@@ -99,7 +99,7 @@ Delegated/roadmap items (not TODOs, documented as roadmap markers):
 
 ### Test Coverage Gap
 
-Current: ~82% line coverage (3,776+ tests, 24 new tests added March 14).
+Current: ~83% line coverage (3,940+ tests).
 Target: 90%.
 
 Well-covered areas (>80%):

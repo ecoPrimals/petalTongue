@@ -16,10 +16,11 @@
 //! - NO external dependencies (mpv, ffplay, aplay, etc.)
 //! - Self-stable operation guaranteed
 
-use crate::audio::AudioSystemV2; // EVOLVED: Substrate-agnostic
+use crate::audio::AudioSystemV2;
 #[cfg(test)]
 use crate::audio_pure_rust::SAMPLE_RATE;
 use crate::audio_pure_rust::{Waveform, generate_tone};
+use bytes::Bytes;
 use std::path::{Path, PathBuf};
 use tracing::{info, warn};
 
@@ -43,7 +44,7 @@ fn play_audio_pure_rust(samples: &[f32]) -> Result<(), String> {
 }
 
 /// Play embedded MP3 using Audio Canvas + symphonia (100% pure Rust!)
-fn play_embedded_mp3_pure_rust(mp3_data: &[u8]) -> Result<(), String> {
+fn play_embedded_mp3_pure_rust(mp3_data: Bytes) -> Result<(), String> {
     use crate::audio_canvas::AudioCanvas;
 
     // Decode MP3 with symphonia (pure Rust!)
@@ -63,7 +64,7 @@ fn play_embedded_mp3_pure_rust(mp3_data: &[u8]) -> Result<(), String> {
 }
 
 /// Decode audio with symphonia (pure Rust!)
-pub fn decode_audio_symphonia(audio_data: &[u8]) -> Result<DecodedAudio, String> {
+pub fn decode_audio_symphonia(audio_data: Bytes) -> Result<DecodedAudio, String> {
     use std::io::Cursor;
     use symphonia::core::audio::{AudioBufferRef, Signal};
     use symphonia::core::codecs::DecoderOptions;
@@ -72,8 +73,7 @@ pub fn decode_audio_symphonia(audio_data: &[u8]) -> Result<DecodedAudio, String>
     use symphonia::core::meta::MetadataOptions;
     use symphonia::core::probe::Hint;
 
-    // Own the data to satisfy lifetime requirements
-    let cursor = Cursor::new(audio_data.to_vec());
+    let cursor = Cursor::new(audio_data);
     let mss = MediaSourceStream::new(Box::new(cursor), Default::default());
 
     let mut hint = Hint::new();
@@ -145,12 +145,9 @@ fn play_file_pure_rust(path: &Path) -> Result<(), String> {
     use crate::audio_canvas::AudioCanvas;
     use std::fs;
 
-    // Read file
-    let data = fs::read(path).map_err(|e| format!("Failed to read audio file: {e}"))?;
-
-    // Decode with symphonia
+    let data = Bytes::from(fs::read(path).map_err(|e| format!("Failed to read audio file: {e}"))?);
     let decoded =
-        decode_audio_symphonia(&data).map_err(|e| format!("Failed to decode audio: {e}"))?;
+        decode_audio_symphonia(data).map_err(|e| format!("Failed to decode audio: {e}"))?;
 
     // Open audio canvas
     let mut canvas =
@@ -337,8 +334,9 @@ impl StartupAudio {
                 if Self::has_embedded_music() {
                     info!("🎵 Playing embedded startup music (pure Rust)...");
 
-                    // EVOLVED: Play embedded MP3 with pure Rust!
-                    match play_embedded_mp3_pure_rust(Self::get_embedded_music()) {
+                    match play_embedded_mp3_pure_rust(
+                        Bytes::from_static(Self::get_embedded_music()),
+                    ) {
                         Ok(()) => {
                             info!("✅ Embedded startup music played successfully (rodio)");
                         }
@@ -635,7 +633,7 @@ mod tests {
 
     #[test]
     fn test_decode_audio_symphonia_invalid_data() {
-        let result = decode_audio_symphonia(&[0u8; 10]);
+        let result = decode_audio_symphonia(Bytes::from(vec![0u8; 10]));
         assert!(result.is_err());
     }
 }

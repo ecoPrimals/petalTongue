@@ -85,9 +85,16 @@ pub const DEFAULT_TERMINAL_ROWS: u16 = 24;
 /// Max FPS for rendering (overridable via config)
 pub const DEFAULT_MAX_FPS: u32 = 60;
 
-/// Default bind address for servers (0.0.0.0 = all interfaces).
-/// Overridable via `--bind` CLI or config; port comes from `PETALTONGUE_WEB_PORT` / `PETALTONGUE_HEADLESS_PORT`.
-pub const DEFAULT_BIND_ADDR: &str = "0.0.0.0";
+/// Default bind address for servers (loopback-only for security).
+///
+/// Overridable via `--bind` CLI, config, or `PETALTONGUE_BIND_ADDR` env var.
+/// Port comes from `PETALTONGUE_WEB_PORT` / `PETALTONGUE_HEADLESS_PORT`.
+pub fn default_bind_addr() -> &'static str {
+    static BIND: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    BIND.get_or_init(|| {
+        std::env::var("PETALTONGUE_BIND_ADDR").unwrap_or_else(|_| "127.0.0.1".to_string())
+    })
+}
 
 /// Legacy /tmp socket fallback path prefix.
 /// Used when XDG_RUNTIME_DIR is unavailable; configurable via explicit socket env vars.
@@ -102,7 +109,8 @@ pub fn default_web_bind() -> String {
         .ok()
         .and_then(|s| s.parse::<u16>().ok())
         .unwrap_or(DEFAULT_WEB_PORT);
-    format!("{DEFAULT_BIND_ADDR}:{port}")
+    let addr = default_bind_addr();
+    format!("{addr}:{port}")
 }
 
 /// Build a default headless bind address
@@ -114,7 +122,8 @@ pub fn default_headless_bind() -> String {
         .ok()
         .and_then(|s| s.parse::<u16>().ok())
         .unwrap_or(DEFAULT_HEADLESS_PORT);
-    format!("{DEFAULT_BIND_ADDR}:{port}")
+    let addr = default_bind_addr();
+    format!("{addr}:{port}")
 }
 
 /// Build a legacy biomeOS socket path (/tmp/biomeos-neural-api.sock)
@@ -272,6 +281,26 @@ pub mod thresholds {
     pub const MEMORY_WARNING: f64 = 50.0;
 }
 
+/// Tufte visualization tolerances (absorbed from ludoSpring V14).
+///
+/// These constants define maximum acceptable deviations for golden pixel
+/// testing and data-ink ratio validation.
+pub mod tufte_tolerances {
+    /// Maximum fraction of non-data-ink pixels tolerated in a visualization.
+    /// A ratio of 0.01 means ≤1% chartjunk is acceptable.
+    pub const UI_DATA_INK_TOL: f64 = 0.01;
+
+    /// Maximum fraction of viewport area that may remain uncovered by data.
+    /// A ratio of 0.05 means ≥95% coverage is required.
+    pub const UI_COVERAGE_TOL: f64 = 0.05;
+
+    /// Maximum tolerable distance error in raycaster depth calculations.
+    pub const RAYCASTER_DISTANCE_TOL: f64 = 0.001;
+
+    /// Minimum coherence threshold for noise-based procedural generation.
+    pub const NOISE_COHERENCE_TOL: f64 = 0.01;
+}
+
 /// Default client RPC timeout (overridable via PETALTONGUE_RPC_TIMEOUT_SECS)
 pub const DEFAULT_RPC_TIMEOUT_SECS: u64 = 5;
 
@@ -401,6 +430,13 @@ mod tests {
     }
 
     #[test]
+    fn test_default_bind_addr_is_loopback() {
+        env_test_helpers::with_env_var_removed("PETALTONGUE_BIND_ADDR", || {
+            assert_eq!(super::default_bind_addr(), "127.0.0.1");
+        });
+    }
+
+    #[test]
     fn test_default_web_bind() {
         env_test_helpers::with_env_vars(
             &[
@@ -408,7 +444,11 @@ mod tests {
                 ("PETALTONGUE_HEADLESS_PORT", None),
             ],
             || {
-                assert_eq!(super::default_web_bind(), "0.0.0.0:3000");
+                let bind = super::default_web_bind();
+                assert!(
+                    bind.ends_with(":3000"),
+                    "should use default web port: {bind}"
+                );
             },
         );
     }
@@ -421,7 +461,11 @@ mod tests {
                 ("PETALTONGUE_HEADLESS_PORT", None),
             ],
             || {
-                assert_eq!(super::default_headless_bind(), "0.0.0.0:8080");
+                let bind = super::default_headless_bind();
+                assert!(
+                    bind.ends_with(":8080"),
+                    "should use default headless port: {bind}"
+                );
             },
         );
     }
@@ -429,14 +473,22 @@ mod tests {
     #[test]
     fn test_default_web_bind_env_override() {
         env_test_helpers::with_env_var("PETALTONGUE_WEB_PORT", "4000", || {
-            assert_eq!(super::default_web_bind(), "0.0.0.0:4000");
+            let bind = super::default_web_bind();
+            assert!(
+                bind.ends_with(":4000"),
+                "should use overridden port: {bind}"
+            );
         });
     }
 
     #[test]
     fn test_default_headless_bind_env_override() {
         env_test_helpers::with_env_var("PETALTONGUE_HEADLESS_PORT", "9000", || {
-            assert_eq!(super::default_headless_bind(), "0.0.0.0:9000");
+            let bind = super::default_headless_bind();
+            assert!(
+                bind.ends_with(":9000"),
+                "should use overridden port: {bind}"
+            );
         });
     }
 

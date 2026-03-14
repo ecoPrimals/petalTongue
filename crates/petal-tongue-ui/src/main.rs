@@ -46,7 +46,6 @@ fn main() -> anyhow::Result<()> {
         None => cli.scenario.clone(),
     };
 
-    // ===== Phase 1: Instance Management Integration =====
     // Create unique instance ID for this petalTongue instance
     let instance_id = InstanceId::new();
     let id_str = instance_id.as_str();
@@ -92,9 +91,6 @@ fn main() -> anyhow::Result<()> {
         "Instance ID will be passed to app: {}",
         instance_id.as_str()
     );
-    // ===== End Phase 1 Integration =====
-
-    tracing::info!("🔄 Phase 1 complete, starting Phase 2...");
     tracing::info!("🌸 Starting petalTongue Universal Representation System");
 
     // ===== Phase 2.5: Device Capability Detection =====

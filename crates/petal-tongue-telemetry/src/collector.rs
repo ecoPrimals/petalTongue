@@ -52,30 +52,21 @@ impl TelemetryCollector {
         self.update_metrics(event);
     }
 
-    /// Add a telemetry subscriber to receive future events.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the subscribers lock is poisoned (e.g. from a panic in a subscriber callback).
     pub fn add_subscriber(&self, subscriber: Box<dyn TelemetrySubscriber>) {
-        let mut subscribers = self
-            .subscribers
-            .write()
-            .expect("SAFETY: Telemetry subscribers lock poisoned - indicates panic in subscriber");
+        let Ok(mut subscribers) = self.subscribers.write() else {
+            tracing::error!("Telemetry subscribers lock poisoned");
+            return;
+        };
         subscribers.push(subscriber);
     }
 
-    /// Get a snapshot of current telemetry metrics.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the metrics lock is poisoned (e.g. from a panic during metrics update).
     #[must_use]
     pub fn get_metrics(&self) -> TelemetryMetrics {
-        self.metrics
-            .read()
-            .expect("SAFETY: Telemetry metrics lock poisoned - indicates panic in metrics update")
-            .clone()
+        let Ok(metrics) = self.metrics.read() else {
+            tracing::error!("Telemetry metrics lock poisoned");
+            return TelemetryMetrics::default();
+        };
+        metrics.clone()
     }
 
     #[must_use]
@@ -117,16 +108,14 @@ impl TelemetryCollector {
             } => {
                 metrics.total_api_calls += 1;
 
-                // f64 mantissa is 52 bits; precision loss acceptable for running-average math
-                #[allow(clippy::cast_precision_loss)]
+                #[expect(clippy::cast_precision_loss, reason = "f64 mantissa covers u64 counts for running-average math")]
                 let total = metrics.total_api_calls as f64;
                 let prev_avg = metrics.avg_latency_ms;
                 metrics.avg_latency_ms = (prev_avg * (total - 1.0) + latency_ms) / total;
 
                 if let Some(pm) = metrics.primal_metrics.get_mut(from) {
                     pm.calls_made += 1;
-                    // f64 mantissa is 52 bits; precision loss acceptable for per-primal averages
-                    #[allow(clippy::cast_precision_loss)]
+                    #[expect(clippy::cast_precision_loss, reason = "f64 mantissa covers u64 counts for per-primal averages")]
                     let pm_total = pm.calls_made as f64;
                     pm.avg_latency_ms =
                         (pm.avg_latency_ms * (pm_total - 1.0) + latency_ms) / pm_total;

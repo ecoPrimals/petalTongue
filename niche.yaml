@@ -1,0 +1,127 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# petalTongue Niche Definition
+# Follows SPRING_AS_NICHE_DEPLOYMENT_STANDARD v1.0.0
+#
+# This niche provides universal visualization capabilities to the ecoPrimals
+# ecosystem. It can compose with any spring that produces DataBinding payloads.
+
+niche:
+  id: petaltongue-visualization
+  name: "petalTongue Visualization"
+  version: "1.6.3"
+  description: >-
+    Universal UI and visualization niche. Accepts DataBinding payloads from any
+    spring and renders them through the deterministic pixel pipeline with full
+    provenance tracking.
+  family: petalTongue
+
+# Capabilities this niche provides to the ecosystem
+capabilities_provided:
+  - visualization.render
+  - visualization.render.stream
+  - visualization.interact
+  - visualization.interact.subscribe
+  - visualization.provenance
+  - interaction.subscribe
+  - sensor.stream.subscribe
+  - health.check
+  - capability.list
+
+# Capabilities this niche requires from the ecosystem
+capabilities_required:
+  # Security foundation (bearDog or equivalent)
+  - domain: crypto
+    operations: [encrypt, sign]
+    required: true
+  # Discovery (songbird or equivalent)
+  - domain: discovery
+    operations: [query]
+    required: true
+
+# Optional capabilities that enhance functionality
+capabilities_optional:
+  # GPU compute (toadStool / barraCuda)
+  - domain: compute
+    operations: [dispatch, status]
+    description: "GPU acceleration for shader-based rendering"
+  # AI interaction adaptation (SQUIRREL)
+  - domain: interaction
+    operations: [subscribe]
+    description: "AI-driven interaction adaptation"
+  # Ecosystem events (biomeOS)
+  - domain: events
+    operations: [stream]
+    description: "Real-time ecosystem topology updates via SSE"
+
+# Deployment configuration
+deployment:
+  deploy_graph: "graphs/petaltongue_deploy.toml"
+  coordination: sequential
+  phases:
+    - name: foundation
+      description: "Security and discovery foundation"
+      primals:
+        - capability: crypto
+          mode: server
+        - capability: discovery
+          mode: server
+    - name: visualization
+      description: "petalTongue visualization primal"
+      primals:
+        - capability: visualization
+          mode: server
+    - name: validation
+      description: "Health and capability verification"
+      operations:
+        - health_check
+
+# Runtime modes supported by this niche
+modes:
+  - id: ui
+    description: "Full GUI mode with egui"
+    default: true
+  - id: tui
+    description: "Terminal UI mode with ratatui"
+  - id: cli
+    description: "Command-line interface mode"
+  - id: web
+    description: "Web interface mode"
+  - id: headless
+    description: "Headless API mode for testing and automation"
+
+# Spring data format compatibility
+data_formats:
+  # Standard spring push format
+  - format: "bindings[]"
+    description: "neuralSpring/healthSpring/wetSpring standard"
+    supported: true
+  # ludoSpring game channel format
+  - format: "data/channel"
+    description: "ludoSpring GameChannelType payload"
+    supported: true
+    adapter: SpringDataAdapter
+  # ecoPrimals time-series standard
+  - format: "ecoPrimals/time-series/v1"
+    description: "Cross-spring time-series interchange format"
+    supported: true
+    adapter: SpringDataAdapter
+
+# IPC endpoints
+ipc:
+  json_rpc:
+    socket: "${XDG_RUNTIME_DIR}/biomeos/petaltongue.sock"
+    methods:
+      - visualization.render
+      - visualization.render.stream
+      - visualization.interact
+      - visualization.interact.select
+      - visualization.interact.subscribe
+      - interaction.subscribe
+      - interaction.poll
+      - sensor.stream.subscribe
+      - health.check
+      - health.ping
+      - capability.list
+  sse:
+    endpoint: "/api/v1/events/stream"
+    description: "Consumes biomeOS ecosystem events"

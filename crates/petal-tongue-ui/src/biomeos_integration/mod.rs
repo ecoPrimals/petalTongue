@@ -39,6 +39,7 @@
 mod events;
 mod provider;
 mod provider_trait;
+pub mod sse;
 mod types;
 
 #[cfg(test)]
@@ -47,4 +48,5 @@ mod tests;
 // Re-export public API (unchanged from original single-file module)
 pub use events::BiomeOSEvent;
 pub use provider::BiomeOSProvider;
+pub use sse::{EcosystemEvent, SseConnectionState, SseEventConsumer};
 pub use types::{Device, DeviceStatus, DeviceType, Health, NicheTemplate, Primal};

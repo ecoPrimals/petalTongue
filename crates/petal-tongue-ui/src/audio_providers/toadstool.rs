@@ -2,6 +2,7 @@
 //! Toadstool audio provider — advanced synthesis via primal HTTP API.
 
 use super::AudioProvider;
+use bytes::Bytes;
 use tracing::{info, warn};
 
 /// Toadstool audio provider (advanced synthesis via primal)
@@ -31,7 +32,7 @@ impl ToadstoolAudioProvider {
 
     /// Request audio synthesis from Toadstool
     #[expect(dead_code, reason = "Reserved for future parametric synthesis API")]
-    async fn request_synthesis(&self, params: &str) -> Result<Vec<u8>, String> {
+    async fn request_synthesis(&self, params: &str) -> Result<Bytes, String> {
         let endpoint = self.endpoint.as_ref().ok_or("Toadstool not configured")?;
 
         let url = format!("{endpoint}/api/v1/audio/synthesize");
@@ -71,7 +72,6 @@ impl ToadstoolAudioProvider {
             ));
         }
 
-        // Get audio bytes
         let audio_bytes = response
             .bytes()
             .await
@@ -81,7 +81,7 @@ impl ToadstoolAudioProvider {
             "✅ Received {} bytes of audio from Toadstool",
             audio_bytes.len()
         );
-        Ok(audio_bytes.to_vec())
+        Ok(audio_bytes)
     }
 }
 

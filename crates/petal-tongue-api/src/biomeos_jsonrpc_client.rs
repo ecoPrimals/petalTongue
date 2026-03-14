@@ -139,11 +139,11 @@ impl BiomeOSJsonRpcClient {
         }
     }
 
-    /// Discover primals (semantic: `neural_api.get_primals`)
+    /// Discover primals (semantic: `primal.list`)
     pub async fn discover_primals(&self) -> Result<Vec<PrimalInfo>> {
         let request = json!({
             "jsonrpc": "2.0",
-            "method": "neural_api.get_primals",
+            "method": "primal.list",
             "params": {},
             "id": self.next_request_id(),
         });
@@ -307,11 +307,11 @@ mod tests {
     fn test_jsonrpc_discover_primals_request() {
         let request = json!({
             "jsonrpc": "2.0",
-            "method": "neural_api.get_primals",
+            "method": "primal.list",
             "params": {},
             "id": 42
         });
-        assert_eq!(request["method"], "neural_api.get_primals");
+        assert_eq!(request["method"], "primal.list");
         assert_eq!(request["id"], 42);
     }
 

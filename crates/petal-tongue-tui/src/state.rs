@@ -252,11 +252,14 @@ impl TUIState {
     /// Update system status
     async fn update_status(&self) {
         let primal_count = self.primals.read().await.len();
-        let old = self.status.read().await;
+        let (discovered_devices, uptime) = {
+            let old = self.status.read().await;
+            (old.discovered_devices, old.uptime)
+        };
         let new_status = Arc::new(SystemStatus {
             active_primals: primal_count,
-            discovered_devices: old.discovered_devices,
-            uptime: old.uptime,
+            discovered_devices,
+            uptime,
             last_update: Utc::now(),
         });
         *self.status.write().await = new_status;
@@ -483,22 +486,26 @@ mod tests {
     }
 
     #[tokio::test]
-    #[allow(clippy::cast_sign_loss)]
+    #[expect(clippy::cast_sign_loss, reason = "test timestamps are always positive")]
     async fn test_get_status() {
-        let state = TUIState::new();
-        state
-            .update_primals(vec![petal_tongue_core::PrimalInfo::new(
-                "p1",
-                "primal1",
-                "Test",
-                "unix:///tmp/p1.sock",
-                vec![],
-                petal_tongue_core::PrimalHealthStatus::Healthy,
-                chrono::Utc::now().timestamp().max(0) as u64,
-            )])
-            .await;
-        let status = state.get_status().await;
-        assert_eq!(status.active_primals, 1);
+        tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            let state = TUIState::new();
+            state
+                .update_primals(vec![petal_tongue_core::PrimalInfo::new(
+                    "p1",
+                    "primal1",
+                    "Test",
+                    "unix:///tmp/p1.sock",
+                    vec![],
+                    petal_tongue_core::PrimalHealthStatus::Healthy,
+                    chrono::Utc::now().timestamp().max(0) as u64,
+                )])
+                .await;
+            let status = state.get_status().await;
+            assert_eq!(status.active_primals, 1);
+        })
+        .await
+        .expect("test timed out after 5s");
     }
 
     #[tokio::test]

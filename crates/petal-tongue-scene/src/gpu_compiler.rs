@@ -58,6 +58,60 @@ pub enum GpuDrawCommand {
     Clear { color: [f32; 4] },
 }
 
+/// A GPU draw command with provenance for primitive ID buffer (barraCuda).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GpuCommandWithProvenance {
+    pub command: GpuDrawCommand,
+    pub node_id: Option<String>,
+    pub data_id: Option<String>,
+    pub primitive_index: usize,
+}
+
+/// Maps command indices to their scene-graph source for GPU provenance.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GpuProvenanceMap {
+    entries: Vec<GpuProvenanceEntry>,
+}
+
+/// Single provenance entry mapping a command index to scene-graph source.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GpuProvenanceEntry {
+    pub command_index: usize,
+    pub node_id: String,
+    pub data_id: Option<String>,
+    pub primitive_index: usize,
+}
+
+impl GpuProvenanceMap {
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+
+    pub fn register(&mut self, entry: GpuProvenanceEntry) {
+        self.entries.push(entry);
+    }
+
+    #[must_use]
+    pub fn query_command(&self, command_index: usize) -> Option<&GpuProvenanceEntry> {
+        self.entries
+            .iter()
+            .find(|e| e.command_index == command_index)
+    }
+
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
 /// Compiles scene graph to GPU draw commands.
 ///
 /// The output is `ModalityOutput::GpuCommands` containing a bincode/JSON
@@ -182,6 +236,67 @@ impl GpuCompiler {
             }
         }
     }
+
+    /// Compile scene to GPU commands with provenance for primitive ID buffer.
+    ///
+    /// Returns both the command buffer (each draw command wrapped with provenance)
+    /// and a map from command indices to scene-graph source. SetViewport and Clear
+    /// have no provenance; only draw commands (Circle, Polyline, FillRect, Mesh)
+    /// are registered in the map.
+    #[must_use]
+    pub fn compile_with_provenance(
+        &self,
+        scene: &SceneGraph,
+    ) -> (Vec<GpuCommandWithProvenance>, GpuProvenanceMap) {
+        let mut commands = vec![
+            GpuCommandWithProvenance {
+                command: GpuDrawCommand::SetViewport {
+                    x: 0.0,
+                    y: 0.0,
+                    width: self.viewport_width,
+                    height: self.viewport_height,
+                },
+                node_id: None,
+                data_id: None,
+                primitive_index: 0,
+            },
+            GpuCommandWithProvenance {
+                command: GpuDrawCommand::Clear {
+                    color: [0.0, 0.0, 0.0, 1.0],
+                },
+                node_id: None,
+                data_id: None,
+                primitive_index: 0,
+            },
+        ];
+        let mut provenance = GpuProvenanceMap::new();
+        let mut primitive_index = 0_usize;
+
+        for (transform, prim, node_id) in scene.flatten_with_ids() {
+            let mut temp = Vec::new();
+            Self::compile_primitive(prim, &transform, &mut temp);
+            if let Some(cmd) = temp.into_iter().next() {
+                let command_index = commands.len();
+                let node_id_str = node_id.as_str().to_string();
+                let data_id = prim.data_id().map(str::to_string);
+                commands.push(GpuCommandWithProvenance {
+                    command: cmd,
+                    node_id: Some(node_id_str.clone()),
+                    data_id: data_id.clone(),
+                    primitive_index,
+                });
+                provenance.register(GpuProvenanceEntry {
+                    command_index,
+                    node_id: node_id_str,
+                    data_id,
+                    primitive_index,
+                });
+                primitive_index += 1;
+            }
+        }
+
+        (commands, provenance)
+    }
 }
 
 impl ModalityCompiler for GpuCompiler {
@@ -287,5 +402,67 @@ mod tests {
             .filter(|c| matches!(c, GpuDrawCommand::Mesh { .. }))
             .count();
         assert_eq!(mesh_count, 1);
+    }
+
+    #[test]
+    fn compile_with_provenance_empty_scene() {
+        let graph = SceneGraph::new();
+        let (commands, provenance) = GpuCompiler::new(800.0, 600.0).compile_with_provenance(&graph);
+        assert_eq!(commands.len(), 2);
+        assert!(matches!(
+            commands[0].command,
+            GpuDrawCommand::SetViewport { .. }
+        ));
+        assert!(matches!(commands[1].command, GpuDrawCommand::Clear { .. }));
+        assert!(commands[0].node_id.is_none());
+        assert!(commands[1].node_id.is_none());
+        assert!(provenance.is_empty());
+    }
+
+    #[test]
+    fn compile_with_provenance_point_produces_entry() {
+        let mut graph = SceneGraph::new();
+        graph.add_to_root(SceneNode::new("p").with_primitive(Primitive::Point {
+            x: 100.0,
+            y: 200.0,
+            radius: 5.0,
+            fill: Some(Color::WHITE),
+            stroke: None,
+            data_id: Some("d1".to_string()),
+        }));
+        let (commands, provenance) = GpuCompiler::new(800.0, 600.0).compile_with_provenance(&graph);
+        assert_eq!(commands.len(), 3);
+        assert!(matches!(commands[2].command, GpuDrawCommand::Circle { .. }));
+        assert_eq!(commands[2].node_id.as_deref(), Some("p"));
+        assert_eq!(commands[2].data_id.as_deref(), Some("d1"));
+        assert_eq!(commands[2].primitive_index, 0);
+        assert_eq!(provenance.len(), 1);
+        let entry = provenance.query_command(2).unwrap();
+        assert_eq!(entry.node_id, "p");
+        assert_eq!(entry.data_id.as_deref(), Some("d1"));
+        assert_eq!(entry.primitive_index, 0);
+    }
+
+    #[test]
+    fn gpu_provenance_map_register_and_query() {
+        let mut map = GpuProvenanceMap::new();
+        assert!(map.is_empty());
+        map.register(GpuProvenanceEntry {
+            command_index: 2,
+            node_id: "n1".to_string(),
+            data_id: Some("d1".to_string()),
+            primitive_index: 0,
+        });
+        map.register(GpuProvenanceEntry {
+            command_index: 3,
+            node_id: "n2".to_string(),
+            data_id: None,
+            primitive_index: 1,
+        });
+        assert_eq!(map.len(), 2);
+        let e = map.query_command(2).unwrap();
+        assert_eq!(e.node_id, "n1");
+        assert_eq!(e.data_id.as_deref(), Some("d1"));
+        assert!(map.query_command(0).is_none());
     }
 }

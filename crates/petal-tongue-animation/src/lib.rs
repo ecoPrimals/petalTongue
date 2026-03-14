@@ -260,7 +260,7 @@ impl AnimationEngine {
 
         // Spawn new particles based on spawn rate
         self.spawn_accumulator += delta_seconds * self.spawn_rate;
-        #[allow(clippy::while_float)]
+        #[expect(clippy::while_float, reason = "spawn accumulator drains integer units from float counter")]
         while self.spawn_accumulator >= 1.0 {
             // Spawn one particle on each active edge
             for anim in &mut self.edge_animations {

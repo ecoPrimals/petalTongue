@@ -199,11 +199,9 @@ impl JsonRpcProvider {
 #[async_trait]
 impl VisualizationDataProvider for JsonRpcProvider {
     async fn get_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
-        debug!("Calling get_primals_extended via JSON-RPC");
+        debug!("Calling primal.list via JSON-RPC");
 
-        let result = self
-            .call_with_retry("get_primals_extended", None, 3)
-            .await?;
+        let result = self.call_with_retry("primal.list", None, 3).await?;
 
         let primals: Vec<PrimalInfo> = serde_json::from_value(result)
             .map_err(|e| anyhow::anyhow!("Failed to parse primals: {e}"))?;
@@ -247,7 +245,7 @@ impl VisualizationDataProvider for JsonRpcProvider {
     async fn health_check(&self) -> anyhow::Result<String> {
         debug!("Performing JSON-RPC health check");
 
-        self.call("get_primals_extended", None).await?;
+        self.call("primal.list", None).await?;
 
         Ok(format!(
             "JSON-RPC provider at {} is healthy",

@@ -4,6 +4,8 @@
 //! Renders Doom maps from a first-person perspective using raycasting.
 
 use crate::wad_loader::{MapData, Vertex};
+use petal_tongue_scene::primitive::{Color as SceneColor, Primitive};
+use petal_tongue_scene::scene_graph::{SceneGraph, SceneNode};
 use std::f32::consts::PI;
 
 const TWO_PI: f32 = 2.0 * PI;
@@ -214,6 +216,119 @@ impl RaycastRenderer {
         }
     }
 
+    /// Render the map to a `SceneGraph` instead of a raw framebuffer.
+    ///
+    /// Every pixel region is represented by a `Primitive::Rect` with a `data_id`
+    /// encoding its origin: `"sky"`, `"floor"`, or `"wall:<linedef_index>:<column>"`.
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "screen dimensions and indices fit losslessly in f64/f32"
+    )]
+    pub fn render_to_scene(&self, map: &MapData) -> SceneGraph {
+        let mut scene = SceneGraph::new();
+        let scene_width = self.width as f64;
+        let scene_height = self.height as f64;
+        let half_height = scene_height / 2.0;
+
+        scene.add_to_root(SceneNode::new("sky").with_primitive(Primitive::Rect {
+            x: 0.0,
+            y: 0.0,
+            width: scene_width,
+            height: half_height,
+            fill: Some(SceneColor::from_rgba8(100, 150, 200, 255)),
+            stroke: None,
+            corner_radius: 0.0,
+            data_id: Some("sky".to_string()),
+        }));
+        scene.add_to_root(SceneNode::new("floor").with_primitive(Primitive::Rect {
+            x: 0.0,
+            y: half_height,
+            width: scene_width,
+            height: half_height,
+            fill: Some(SceneColor::from_rgba8(64, 64, 64, 255)),
+            stroke: None,
+            corner_radius: 0.0,
+            data_id: Some("floor".to_string()),
+        }));
+
+        for x in 0..self.width {
+            let ray_angle = self.calculate_ray_angle(x);
+            if let Some((distance, wall_color, linedef_idx)) =
+                self.cast_ray_with_linedef(map, ray_angle)
+            {
+                let wall_height = self.calculate_wall_height(distance);
+                let shading = (1.0 - (distance / self.render_distance)).max(0.0);
+                let r = (f32::from(wall_color[0]) * shading) / 255.0;
+                let g = (f32::from(wall_color[1]) * shading) / 255.0;
+                let b = (f32::from(wall_color[2]) * shading) / 255.0;
+
+                let screen_center = self.height / 2;
+                let half_height = wall_height / 2;
+                let y_start = screen_center.saturating_sub(half_height);
+                let y_end = (screen_center + half_height).min(self.height);
+                let col_height = (y_end - y_start) as f64;
+
+                if col_height > 0.0 {
+                    let node_id = format!("wall_{x}");
+                    let data_id = format!("wall:{linedef_idx}:{x}");
+                    scene.add_to_root(SceneNode::new(node_id).with_primitive(Primitive::Rect {
+                        x: x as f64,
+                        y: y_start as f64,
+                        width: 1.0,
+                        height: col_height,
+                        fill: Some(SceneColor::rgba(r, g, b, 1.0)),
+                        stroke: None,
+                        corner_radius: 0.0,
+                        data_id: Some(data_id),
+                    }));
+                }
+            }
+        }
+
+        scene
+    }
+
+    /// Like `cast_ray` but also returns the linedef index that was hit.
+    #[expect(clippy::similar_names, reason = "standard raycasting names")]
+    fn cast_ray_with_linedef(&self, map: &MapData, angle: f32) -> Option<(f32, [u8; 3], usize)> {
+        let ray_dx = angle.cos();
+        let ray_dy = angle.sin();
+
+        let mut nearest_distance = self.render_distance;
+        let mut nearest_color = [255u8, 255, 255];
+        let mut nearest_linedef = 0usize;
+
+        for (idx, linedef) in map.linedefs.iter().enumerate() {
+            if linedef.start_vertex >= map.vertices.len()
+                || linedef.end_vertex >= map.vertices.len()
+            {
+                continue;
+            }
+            let v1 = map.vertices[linedef.start_vertex];
+            let v2 = map.vertices[linedef.end_vertex];
+
+            if let Some(distance) =
+                Self::ray_line_intersection(self.player_x, self.player_y, ray_dx, ray_dy, v1, v2)
+                && distance < nearest_distance
+                && distance > 0.1
+            {
+                nearest_distance = distance;
+                nearest_linedef = idx;
+                nearest_color = if linedef.flags & 0x0001 != 0 {
+                    [180, 180, 180]
+                } else {
+                    [100, 100, 100]
+                };
+            }
+        }
+
+        if nearest_distance < self.render_distance {
+            Some((nearest_distance, nearest_color, nearest_linedef))
+        } else {
+            None
+        }
+    }
+
     /// Get the rendered framebuffer.
     #[must_use]
     pub fn framebuffer(&self) -> &[u8] {
@@ -236,11 +351,11 @@ impl RaycastRenderer {
     /// Rotate player (turn). Angle is normalized to [0, 2π).
     pub fn rotate(&mut self, amount: f32) {
         self.player_angle += amount;
-        #[allow(clippy::while_float)]
+        #[expect(clippy::while_float, reason = "angle normalization requires iterative float wrapping")]
         while self.player_angle < 0.0 {
             self.player_angle += TWO_PI;
         }
-        #[allow(clippy::while_float)]
+        #[expect(clippy::while_float, reason = "angle normalization requires iterative float wrapping")]
         while self.player_angle >= TWO_PI {
             self.player_angle -= TWO_PI;
         }

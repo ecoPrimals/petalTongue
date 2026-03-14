@@ -94,7 +94,7 @@ pub mod startup_audio;
 pub mod tutorial_mode; // Concrete InputAdapter implementations (pointer, keyboard)
 // bingocube is a primalTool (ecoPrimals/primalTools/bingoCube)
 // Discovered at runtime via IPC, not compiled into petalTongue
-pub mod biomeos_integration; // biomeOS UI Integration - Phase 1 (device management provider)
+pub mod biomeos_integration; // biomeOS UI Integration (device management provider)
 pub mod biomeos_ui_manager; // biomeOS UI Manager - Phase 5 (integration & wiring)
 pub mod data_source;
 #[cfg(feature = "mock")]
@@ -112,8 +112,10 @@ pub mod human_entropy_window;
 pub mod input_verification; // Universal input verification (keyboard, pointer, etc.)
 pub mod keyboard_shortcuts;
 pub mod live_data;
+mod live_data_helpers;
 pub mod live_sessions;
 pub mod metrics_dashboard; // System metrics dashboard with sparklines (Neural API)
+mod metrics_dashboard_helpers;
 pub mod mode_presets; // Mode presets — named bundles of motor commands (SAME DAVE efferent)
 /// Multimodal data streaming (audio, visual, haptic, etc.)
 pub mod multimodal_stream;
@@ -134,6 +136,7 @@ pub mod egui_compiler;
 pub mod game_data_channel;
 pub mod interaction_bridge;
 pub mod neural_registration;
+pub mod squirrel_adapter;
 #[cfg(any(test, feature = "mock"))]
 pub mod sandbox_provider;
 pub mod scene_bridge;

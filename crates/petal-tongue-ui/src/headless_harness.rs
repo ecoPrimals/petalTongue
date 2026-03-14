@@ -13,6 +13,7 @@
 
 use crate::app::PetalTongueApp;
 use anyhow::Result;
+use bytes::Bytes;
 use petal_tongue_core::{FrameIntrospection, MotorCommand, PanelKind};
 
 /// Default virtual screen size for the headless harness (1280x720).
@@ -222,5 +223,30 @@ impl HeadlessHarness {
     #[must_use]
     pub fn tessellate(&self) -> Vec<egui::ClippedPrimitive> {
         self.ctx.tessellate(Vec::new(), self.ctx.pixels_per_point())
+    }
+
+    /// Tessellate the last frame and render to an RGBA8 pixel buffer.
+    ///
+    /// Returns the pixel buffer and the screen dimensions used.
+    pub fn render_pixels(&self) -> Result<(Bytes, u32, u32)> {
+        let primitives = self.tessellate();
+        let width = self.screen_width as u32;
+        let height = self.screen_height as u32;
+        let mut renderer = crate::display::renderer::EguiPixelRenderer::new(width, height);
+        let buffer = renderer.render(&primitives)?;
+        Ok((buffer, width, height))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn headless_harness_render_pixels() {
+        let mut harness = HeadlessHarness::new().unwrap();
+        harness.run_frame();
+        let (buffer, width, height) = harness.render_pixels().unwrap();
+        assert_eq!(buffer.len(), (width * height * 4) as usize);
     }
 }

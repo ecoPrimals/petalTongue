@@ -11,11 +11,11 @@ use super::types::{GraphEdge, GraphLayout, GraphNode, VisualGraph};
 impl VisualGraph {
     /// Create a new empty graph
     #[must_use]
-    pub fn new(name: String) -> Self {
+    pub fn new(name: impl Into<String>) -> Self {
         let now = Utc::now();
         Self {
             id: uuid::Uuid::new_v4().to_string(),
-            name,
+            name: name.into(),
             description: None,
             nodes: Vec::new(),
             edges: Vec::new(),

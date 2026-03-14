@@ -3,6 +3,27 @@
 
 use egui::Color32;
 
+/// User interaction intent produced by the traffic view render method.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TrafficIntent {
+    SetColorScheme(ColorScheme),
+    SelectFlow { from: String, to: String },
+    CloseDetails,
+    ToggleMetrics,
+    Clear,
+}
+
+/// Pre-computed detail display for a selected flow.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FlowDetailDisplay {
+    pub from: String,
+    pub to: String,
+    pub volume_label: String,
+    pub requests_label: String,
+    pub latency_label: String,
+    pub error_rate_label: String,
+}
+
 /// Traffic metrics for an edge
 #[derive(Clone, Debug, Default)]
 pub struct TrafficMetrics {

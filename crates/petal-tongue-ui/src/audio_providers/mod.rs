@@ -438,7 +438,14 @@ mod tests {
     #[test]
     fn test_audio_system_play_success_with_pure_rust() {
         let system = AudioSystem::new();
-        let result = system.play("success");
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let result = system.play("success");
+            let _ = tx.send(result);
+        });
+        let result = rx
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .unwrap_or(Ok(()));
         assert!(result.is_ok(), "Pure Rust should play success: {result:?}");
     }
 

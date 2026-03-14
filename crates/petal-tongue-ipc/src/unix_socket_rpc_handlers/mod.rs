@@ -169,7 +169,6 @@ impl RpcHandlers {
     }
 
     /// Handle `visualization.render_graph`: render graph to specified format (svg, png, terminal)
-    #[allow(clippy::unused_async)]
     pub async fn render_graph(
         &self,
         params: serde_json::Value,

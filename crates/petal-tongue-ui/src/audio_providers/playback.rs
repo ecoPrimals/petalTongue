@@ -38,11 +38,9 @@ pub fn play_file(path: &Path) -> Result<(), String> {
 
     info!("🎨 Playing audio file: {} (Audio Canvas)", path.display());
 
-    // Read file
-    let data = fs::read(path).map_err(|e| format!("Failed to read audio file: {e}"))?;
-
-    // Decode with symphonia (pure Rust!)
-    let decoded = crate::startup_audio::decode_audio_symphonia(&data)
+    let data =
+        bytes::Bytes::from(fs::read(path).map_err(|e| format!("Failed to read audio file: {e}"))?);
+    let decoded = crate::startup_audio::decode_audio_symphonia(data)
         .map_err(|e| format!("Failed to decode audio: {e}"))?;
 
     // Open audio canvas

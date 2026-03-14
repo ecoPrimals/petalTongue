@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! System Metrics Panel - Display real-time system and biomeOS metrics
 //!
-//! Phase 1.4: Integrates with Neural API to show:
+//! Integrates with Neural API to show:
 //! - CPU usage
 //! - Memory usage and availability
 //! - System uptime
@@ -9,6 +9,7 @@
 //! - Available graphs
 
 use crate::panel_registry::{PanelFactory, PanelInstance};
+use crate::panels::metrics_panel_display::prepare_metrics_panel_display;
 use crate::scenario::CustomPanelConfig;
 use petal_tongue_discovery::NeuralApiProvider;
 use serde::{Deserialize, Serialize};
@@ -74,20 +75,6 @@ impl MetricsPanel {
             error_message: None,
         }
     }
-
-    fn format_uptime(seconds: u64) -> String {
-        let days = seconds / 86400;
-        let hours = (seconds % 86400) / 3600;
-        let minutes = (seconds % 3600) / 60;
-
-        if days > 0 {
-            format!("{days}d {hours}h {minutes}m")
-        } else if hours > 0 {
-            format!("{hours}h {minutes}m")
-        } else {
-            format!("{minutes}m")
-        }
-    }
 }
 
 impl PanelInstance for MetricsPanel {
@@ -142,20 +129,26 @@ impl PanelInstance for MetricsPanel {
             });
         }
 
+        let display = prepare_metrics_panel_display(
+            &self.last_metrics,
+            self.last_update,
+            &self.error_message,
+        );
+
         ui.heading("📊 System Metrics");
         ui.separator();
 
-        if let Some(error) = &self.error_message {
+        if let Some(error) = &display.error_message {
             ui.colored_label(egui::Color32::RED, format!("⚠️  {error}"));
             ui.separator();
         }
 
-        if let Some(metrics) = &self.last_metrics {
+        if let Some(summary) = &display.metrics_summary {
             // System section
             ui.label("System:");
 
             // CPU bar
-            let cpu = metrics.system.cpu_percent;
+            let cpu = summary.cpu_percent;
             ui.horizontal(|ui| {
                 ui.label(format!("CPU: {cpu:.1}%"));
             });
@@ -168,13 +161,13 @@ impl PanelInstance for MetricsPanel {
             ui.add_space(4.0);
 
             // Memory bar
-            let mem = metrics.system.memory_percent;
+            let mem = summary.memory_percent;
             ui.horizontal(|ui| {
                 ui.label(format!("Memory: {mem:.1}%"));
             });
             ui.label(format!(
                 "  {} / {} MB",
-                metrics.system.memory_used_mb, metrics.system.memory_total_mb
+                summary.memory_used_mb, summary.memory_total_mb
             ));
             ui.add(
                 egui::ProgressBar::new((mem / 100.0) as f32)
@@ -185,35 +178,32 @@ impl PanelInstance for MetricsPanel {
             ui.add_space(4.0);
 
             // Uptime
-            let uptime_str = Self::format_uptime(metrics.system.uptime_seconds);
-            ui.label(format!("Uptime: {uptime_str}"));
+            ui.label(format!("Uptime: {}", summary.uptime_str));
 
             ui.separator();
 
             // Neural API section
             ui.label("biomeOS (Neural API):");
-            ui.label(format!("  Family: {}", metrics.neural_api.family_id));
-            ui.label(format!(
-                "  Active Primals: {}",
-                metrics.neural_api.active_primals
-            ));
-            ui.label(format!("  Graphs: {}", metrics.neural_api.graphs_available));
+            ui.label(format!("  Family: {}", summary.family_id));
+            ui.label(format!("  Active Primals: {}", summary.active_primals));
+            ui.label(format!("  Graphs: {}", summary.graphs_available));
 
-            if metrics.neural_api.active_executions > 0 {
+            if summary.active_executions > 0 {
                 ui.colored_label(
                     egui::Color32::YELLOW,
-                    format!("  ⚡ Executions: {}", metrics.neural_api.active_executions),
+                    format!("  ⚡ Executions: {}", summary.active_executions),
                 );
             }
 
             ui.add_space(4.0);
 
             // Last update time
-            let age = self.last_update.elapsed().as_secs();
-            if age < 5 {
-                ui.label(format!("📡 Updated {age}s ago"));
-            } else {
-                ui.colored_label(egui::Color32::YELLOW, format!("⏳ Updated {age}s ago"));
+            if let Some(age_text) = &display.update_age_text {
+                if display.is_stale {
+                    ui.colored_label(egui::Color32::YELLOW, format!("⏳ {age_text}"));
+                } else {
+                    ui.label(format!("📡 {age_text}"));
+                }
             }
         } else if self.provider.is_none() {
             ui.label("⏳ Neural API not available");
@@ -276,6 +266,8 @@ impl Default for MetricsPanelFactory {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::panels::metrics_panel_display::format_uptime;
+    use std::time::Duration;
 
     #[test]
     fn test_metrics_panel_creation() {
@@ -308,12 +300,12 @@ mod tests {
 
     #[test]
     fn test_uptime_formatting() {
-        assert_eq!(MetricsPanel::format_uptime(59), "0m");
-        assert_eq!(MetricsPanel::format_uptime(60), "1m");
-        assert_eq!(MetricsPanel::format_uptime(3600), "1h 0m");
-        assert_eq!(MetricsPanel::format_uptime(3661), "1h 1m");
-        assert_eq!(MetricsPanel::format_uptime(86400), "1d 0h 0m");
-        assert_eq!(MetricsPanel::format_uptime(90061), "1d 1h 1m");
+        assert_eq!(format_uptime(Duration::from_secs(59)), "0m");
+        assert_eq!(format_uptime(Duration::from_secs(60)), "1m");
+        assert_eq!(format_uptime(Duration::from_secs(3600)), "1h 0m");
+        assert_eq!(format_uptime(Duration::from_secs(3661)), "1h 1m");
+        assert_eq!(format_uptime(Duration::from_secs(86400)), "1d 0h 0m");
+        assert_eq!(format_uptime(Duration::from_secs(90061)), "1d 1h 1m");
     }
 
     #[test]
