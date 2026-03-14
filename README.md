@@ -59,6 +59,8 @@ petaltongue
 - **Server-side backpressure** -- rate limiting for 60 Hz streaming
 - **Pipeline DAG orchestration** -- multi-stage visualization workflows with topological sort
 - **Scenario loader** -- load JSON scenario files from disk (`--scenario` CLI flag)
+- **Zero-copy state management** -- Arc-wrapped shared state
+- **Centralized configurable constants** -- all timeouts, ports env-overridable
 
 ### Crates (16)
 
@@ -87,14 +89,14 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 3,752 passing, 0 failures, 17 ignored |
+| Tests | 3,776+ passing, 0 failures, 17 ignored |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings (`-D warnings`) |
+| Clippy | Zero warnings (pedantic + nursery, `--all-targets --all-features`) |
 | Docs | `RUSTDOCFLAGS="-D warnings" cargo doc` clean |
-| Coverage | 79.8% region / 81.0% function (llvm-cov) -- target 90% |
+| Coverage | ~82% line (llvm-cov) -- target 90% |
 | Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
 | License | AGPL-3.0-only, SPDX headers on all source files |
-| Files | All production files under 1,000 lines (CI enforced) |
+| Files | All under 1,000 lines; largest 730 lines after refactoring |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None -- pure Rust (`rustix` for syscalls) |

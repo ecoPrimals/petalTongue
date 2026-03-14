@@ -169,7 +169,10 @@ impl TelemetryCollector {
 
 impl Default for TelemetryCollector {
     fn default() -> Self {
-        Self::new(10_000, Duration::from_secs(1))
+        Self::new(
+            petal_tongue_core::constants::default_telemetry_buffer(),
+            Duration::from_secs(1),
+        )
     }
 }
 

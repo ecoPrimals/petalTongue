@@ -843,7 +843,7 @@ tokio::spawn({
 
 **Deliverables:**
 - `crates/petal-tongue-core/` (engine, traits, registry)
-- `crates/petal-tongue-modalities/` (all modalities)
+- `crates/petal-tongue-scene/src/modality/` (modality compilers)
 - Updated binaries use new system
 
 **Success Criteria:**

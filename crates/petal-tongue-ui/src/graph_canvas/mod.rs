@@ -99,7 +99,7 @@ impl GraphCanvas {
         }
     }
 
-    /// Convert world coordinates to screen coordinates (used by add_node_at_screen and coordinate conversion tests)
+    /// Convert world coordinates to screen coordinates (used in coordinate conversion tests)
     #[allow(dead_code)]
     fn world_to_screen(&self, world_pos: Vec2, canvas_rect: Rect) -> Pos2 {
         layout::world_to_screen(

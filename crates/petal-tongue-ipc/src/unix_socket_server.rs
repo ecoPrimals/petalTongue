@@ -21,7 +21,7 @@ pub struct UnixSocketServer {
     motor_tx: Option<std::sync::mpsc::Sender<petal_tongue_core::MotorCommand>>,
 }
 
-// new/with_* builders used by UI; get_* methods invoked via RPC handlers
+// new/with_* builders used by UI; get_* methods invoked via RPC handlers and tests
 #[allow(dead_code)]
 impl UnixSocketServer {
     /// Create a new Unix socket server with graph and visualization state

@@ -231,7 +231,7 @@ impl DoomPanel {
     /// Modern FPS controls:
     /// - WASD: W/S move, A/D strafe (modern)
     /// - Arrows: Up/Down move, Left/Right turn (classic)
-    fn egui_to_doom_key_static(key: Key) -> Option<DoomKey> {
+    const fn egui_to_doom_key_static(key: Key) -> Option<DoomKey> {
         Some(match key {
             // Arrow keys: Classic Doom controls (move + turn)
             Key::ArrowUp => DoomKey::Up,
@@ -285,7 +285,7 @@ impl DoomPanel {
     }
 
     /// Toggle debug overlay
-    pub fn toggle_debug(&mut self) {
+    pub const fn toggle_debug(&mut self) {
         self.show_debug = !self.show_debug;
     }
 }

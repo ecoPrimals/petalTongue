@@ -17,8 +17,9 @@
 //! - Self-stable operation guaranteed
 
 use crate::audio::AudioSystemV2; // EVOLVED: Substrate-agnostic
-#[allow(unused_imports)]
-use crate::audio_pure_rust::{SAMPLE_RATE, Waveform, generate_tone};
+#[cfg(test)]
+use crate::audio_pure_rust::SAMPLE_RATE;
+use crate::audio_pure_rust::{Waveform, generate_tone};
 use std::path::{Path, PathBuf};
 use tracing::{info, warn};
 

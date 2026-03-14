@@ -55,6 +55,10 @@ impl ToadstoolBackend {
     ///
     /// This attempts to connect to Toadstool display service.
     /// Returns error if Toadstool is not running or not available.
+    #[expect(
+        clippy::unused_async,
+        reason = "async for future Toadstool capability discovery"
+    )]
     pub async fn new() -> Result<Self> {
         tracing::info!("🍄 Creating Toadstool backend");
 

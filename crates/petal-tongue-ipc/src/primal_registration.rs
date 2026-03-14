@@ -239,7 +239,7 @@ impl RegistrationManager {
         Self {
             client: SongbirdClient::new(),
             registration,
-            heartbeat_interval: Duration::from_secs(30),
+            heartbeat_interval: constants::default_heartbeat_interval(),
         }
     }
 

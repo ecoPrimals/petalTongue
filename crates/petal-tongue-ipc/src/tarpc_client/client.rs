@@ -4,6 +4,7 @@
 use std::net::SocketAddr;
 use std::time::Duration;
 
+use petal_tongue_core::constants;
 use serde_json::Value;
 use tracing::{debug, info, warn};
 
@@ -25,7 +26,7 @@ impl TarpcClient {
             endpoint: endpoint.to_string(),
             addr,
             connection: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
-            timeout: Duration::from_secs(5),
+            timeout: constants::default_rpc_timeout(),
         })
     }
 

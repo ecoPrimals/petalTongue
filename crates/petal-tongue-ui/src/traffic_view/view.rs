@@ -907,4 +907,64 @@ mod tests {
         assert_eq!(TrafficIntent::ToggleMetrics, TrafficIntent::ToggleMetrics);
         assert_eq!(TrafficIntent::Clear, TrafficIntent::Clear);
     }
+
+    /// Headless egui: TrafficView::render runs without panic
+    #[test]
+    fn traffic_view_render_headless() {
+        use petal_tongue_core::PrimalId;
+
+        let mut view = TrafficView::new();
+        view.add_flow(TrafficFlow {
+            from: "alpha".to_string(),
+            to: "beta".to_string(),
+            metrics: TrafficMetrics {
+                bytes_per_second: 5000,
+                requests_per_second: 10.0,
+                avg_latency_ms: 5.0,
+                error_rate: 0.01,
+            },
+            color: Color32::GREEN,
+        });
+        view.set_primals(vec![
+            petal_tongue_core::PrimalInfo::new(
+                PrimalId::from("alpha"),
+                "Alpha",
+                "Compute",
+                "http://localhost",
+                vec![],
+                petal_tongue_core::PrimalHealthStatus::Healthy,
+                0,
+            ),
+            petal_tongue_core::PrimalInfo::new(
+                PrimalId::from("beta"),
+                "Beta",
+                "Storage",
+                "http://localhost",
+                vec![],
+                petal_tongue_core::PrimalHealthStatus::Healthy,
+                0,
+            ),
+        ]);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let intents = view.render(ui);
+                view.apply_intents(&intents);
+            });
+        });
+    }
+
+    /// Headless egui: TrafficView::render with empty flows shows "No traffic data"
+    #[test]
+    fn traffic_view_render_empty_headless() {
+        let mut view = TrafficView::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let intents = view.render(ui);
+                assert!(intents.is_empty());
+            });
+        });
+    }
 }

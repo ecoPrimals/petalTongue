@@ -135,22 +135,23 @@ impl Default for SystemStatus {
 ///
 /// All state is managed here, with proper async locking.
 /// No global state, no unsafe code.
+/// Uses Arc-wrapped collections for zero-copy reads (Arc::clone is O(1)).
 #[derive(Clone)]
 pub struct TUIState {
     /// Current view
     view: Arc<RwLock<View>>,
 
-    /// Discovered primals (capability-based)
-    primals: Arc<RwLock<Vec<PrimalInfo>>>,
+    /// Discovered primals (capability-based) — Arc for zero-copy get_primals
+    primals: Arc<RwLock<Arc<Vec<PrimalInfo>>>>,
 
-    /// Topology edges (if Songbird available)
-    topology: Arc<RwLock<Vec<TopologyEdge>>>,
+    /// Topology edges (if Songbird available) — Arc for zero-copy get_topology
+    topology: Arc<RwLock<Arc<Vec<TopologyEdge>>>>,
 
-    /// Log messages (ring buffer)
+    /// Log messages (ring buffer) — Vec; add_log is write-heavy, clone on read acceptable
     logs: Arc<RwLock<Vec<LogMessage>>>,
 
-    /// System status
-    status: Arc<RwLock<SystemStatus>>,
+    /// System status — Arc for zero-copy get_status
+    status: Arc<RwLock<Arc<SystemStatus>>>,
 
     /// Selected item in current view (generic selection)
     selected_index: Arc<RwLock<usize>>,
@@ -168,10 +169,10 @@ impl TUIState {
     pub fn new() -> Self {
         Self {
             view: Arc::new(RwLock::new(View::Dashboard)),
-            primals: Arc::new(RwLock::new(Vec::new())),
-            topology: Arc::new(RwLock::new(Vec::new())),
+            primals: Arc::new(RwLock::new(Arc::new(Vec::new()))),
+            topology: Arc::new(RwLock::new(Arc::new(Vec::new()))),
             logs: Arc::new(RwLock::new(Vec::new())),
-            status: Arc::new(RwLock::new(SystemStatus::default())),
+            status: Arc::new(RwLock::new(Arc::new(SystemStatus::default()))),
             selected_index: Arc::new(RwLock::new(0)),
             capabilities: Arc::new(DashMap::new()),
             standalone_mode: Arc::new(RwLock::new(false)),
@@ -190,9 +191,9 @@ impl TUIState {
         *self.selected_index.write().await = 0;
     }
 
-    /// Get primals
-    pub async fn get_primals(&self) -> Vec<PrimalInfo> {
-        self.primals.read().await.clone()
+    /// Get primals (zero-copy: returns Arc, Arc::clone is O(1))
+    pub async fn get_primals(&self) -> Arc<Vec<PrimalInfo>> {
+        Arc::clone(&*self.primals.read().await)
     }
 
     /// Get primal count (no clone)
@@ -202,13 +203,13 @@ impl TUIState {
 
     /// Update primals (from discovery)
     pub async fn update_primals(&self, primals: Vec<PrimalInfo>) {
-        *self.primals.write().await = primals;
+        *self.primals.write().await = Arc::new(primals);
         self.update_status().await;
     }
 
-    /// Get topology
-    pub async fn get_topology(&self) -> Vec<TopologyEdge> {
-        self.topology.read().await.clone()
+    /// Get topology (zero-copy: returns Arc, Arc::clone is O(1))
+    pub async fn get_topology(&self) -> Arc<Vec<TopologyEdge>> {
+        Arc::clone(&*self.topology.read().await)
     }
 
     /// Get topology edge count (no clone)
@@ -218,7 +219,7 @@ impl TUIState {
 
     /// Update topology (from Songbird)
     pub async fn update_topology(&self, topology: Vec<TopologyEdge>) {
-        *self.topology.write().await = topology;
+        *self.topology.write().await = Arc::new(topology);
     }
 
     /// Add log message
@@ -233,7 +234,7 @@ impl TUIState {
         }
     }
 
-    /// Get logs
+    /// Get logs (clone required; add_log is write-heavy so Arc would hurt append path)
     pub async fn get_logs(&self) -> Vec<LogMessage> {
         self.logs.read().await.clone()
     }
@@ -243,17 +244,22 @@ impl TUIState {
         self.logs.read().await.len()
     }
 
-    /// Get system status
-    pub async fn get_status(&self) -> SystemStatus {
-        self.status.read().await.clone()
+    /// Get system status (zero-copy: returns Arc, Arc::clone is O(1))
+    pub async fn get_status(&self) -> Arc<SystemStatus> {
+        Arc::clone(&*self.status.read().await)
     }
 
     /// Update system status
     async fn update_status(&self) {
-        let primals = self.primals.read().await;
-        let mut status = self.status.write().await;
-        status.active_primals = primals.len();
-        status.last_update = Utc::now();
+        let primal_count = self.primals.read().await.len();
+        let old = self.status.read().await;
+        let new_status = Arc::new(SystemStatus {
+            active_primals: primal_count,
+            discovered_devices: old.discovered_devices,
+            uptime: old.uptime,
+            last_update: Utc::now(),
+        });
+        *self.status.write().await = new_status;
     }
 
     /// Get selected index

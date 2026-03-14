@@ -53,7 +53,6 @@ pub fn normalize_value(value: f64, vmin: f64, range: f64) -> f32 {
 
 /// Assign scatter3d points to z-bands for color/size encoding (testable without egui).
 #[must_use]
-#[allow(dead_code)] // Used in tests; draw_scatter3d uses inline loop for egui integration
 pub fn scatter3d_bands(
     x_vals: &[f64],
     y_vals: &[f64],
@@ -249,7 +248,6 @@ pub fn draw_scatter3d(ui: &mut Ui, params: &Scatter3dParams<'_>) {
         .fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), &val| {
             (lo.min(val), hi.max(val))
         });
-    let z_range = (z_max - z_min).max(f64::EPSILON);
 
     let has_labels = point_labels.len() == count;
 
@@ -292,28 +290,17 @@ pub fn draw_scatter3d(ui: &mut Ui, params: &Scatter3dParams<'_>) {
         });
     }
 
-    plot.show(ui, |plot_ui| {
-        for band in 0..Z_BANDS {
-            let band_lo = band as f64 / Z_BANDS as f64;
-            let band_hi = (band + 1) as f64 / Z_BANDS as f64;
-            let band_center = f64::midpoint(band_lo, band_hi);
-            let band_vec: Vec<[f64; 2]> = x_vals
-                .iter()
-                .zip(y_vals.iter())
-                .zip(z_vals.iter())
-                .filter_map(|((&xv, &yv), &zv)| {
-                    let norm = ((zv - z_min) / z_range).clamp(0.0, 1.0);
-                    if norm >= band_lo && norm < band_hi {
-                        Some([xv, yv])
-                    } else {
-                        None
-                    }
-                })
-                .collect();
+    let bands = scatter3d_bands(x_vals, y_vals, z_vals, Z_BANDS).expect("validated scatter3d data");
 
+    plot.show(ui, |plot_ui| {
+        for (band, band_vec) in bands.into_iter().enumerate() {
             if band_vec.is_empty() {
                 continue;
             }
+
+            let band_lo = band as f64 / Z_BANDS as f64;
+            let band_hi = (band + 1) as f64 / Z_BANDS as f64;
+            let band_center = f64::midpoint(band_lo, band_hi);
 
             let band_points: PlotPoints = band_vec.into();
             let color = base_color.gamma_multiply(0.7f32.mul_add(1.0 - band_center as f32, 0.3));

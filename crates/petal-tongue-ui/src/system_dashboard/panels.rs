@@ -504,4 +504,81 @@ mod tests {
     fn memory_percent_near_full() {
         assert!((memory_percent(99, 100) - 99.0).abs() < f64::EPSILON);
     }
+
+    /// Headless egui: render_compact runs without panic
+    #[test]
+    fn render_compact_headless() {
+        use crate::accessibility::ColorScheme;
+
+        let mut dashboard = SystemDashboard::default();
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                dashboard.render_compact(ui, &palette, 1.0, None);
+            });
+        });
+    }
+
+    /// Headless egui: render_full runs without panic
+    #[test]
+    fn render_full_headless() {
+        use crate::accessibility::ColorScheme;
+
+        let mut dashboard = SystemDashboard::default();
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                dashboard.render_full(ui, &palette, 1.0, None);
+            });
+        });
+    }
+
+    /// Headless egui: render_proprioception_status runs without panic
+    #[test]
+    fn render_proprioception_status_headless() {
+        use crate::accessibility::ColorScheme;
+        use crate::proprioception::ProprioceptionSystem;
+
+        let mut proprioception = ProprioceptionSystem::new();
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                SystemDashboard::render_proprioception_status(
+                    ui,
+                    &palette,
+                    1.0,
+                    &mut proprioception,
+                );
+            });
+        });
+    }
+
+    /// Headless egui: render_sensory_status runs without panic
+    #[test]
+    fn render_sensory_status_headless() {
+        use crate::accessibility::ColorScheme;
+
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+        let rendering_awareness = Arc::new(RwLock::new(RenderingAwareness::new()));
+        let sensor_registry = Arc::new(RwLock::new(SensorRegistry::new()));
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                SystemDashboard::render_sensory_status(
+                    ui,
+                    &palette,
+                    1.0,
+                    &rendering_awareness,
+                    &sensor_registry,
+                );
+            });
+        });
+    }
 }

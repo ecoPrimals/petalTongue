@@ -366,8 +366,9 @@ mod tests {
         let cmd = MotorCommand::PlayAudio {
             sound: "warning".to_string(),
         };
-        #[allow(clippy::redundant_clone)]
         let cloned = cmd.clone();
         assert!(format!("{cloned:?}").contains("warning"));
+        // Verify clone is independent
+        assert_eq!(format!("{cmd:?}"), format!("{cloned:?}"));
     }
 }

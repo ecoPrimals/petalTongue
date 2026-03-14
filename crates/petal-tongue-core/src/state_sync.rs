@@ -24,6 +24,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 /// Device state (serializable, transferable)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -195,8 +196,8 @@ pub struct StateSync {
     /// Local persistence
     persistence: Box<dyn StatePersistence>,
 
-    /// Current device state
-    current_state: Option<DeviceState>,
+    /// Current device state (Arc for zero-copy sharing)
+    current_state: Option<Arc<DeviceState>>,
 }
 
 impl StateSync {
@@ -218,41 +219,46 @@ impl StateSync {
     }
 
     /// Initialize state for this device
-    pub fn init(&mut self, device_id: String, device_type: DeviceType) -> Result<DeviceState> {
+    ///
+    /// Returns `Arc<DeviceState>` for zero-copy sharing; `Arc::clone` is O(1).
+    pub fn init(&mut self, device_id: String, device_type: DeviceType) -> Result<Arc<DeviceState>> {
         // Try to load existing state
         if let Some(mut state) = self.persistence.load(&device_id)? {
             tracing::info!("📂 Loaded existing state for device {}", device_id);
             state.device_type = device_type; // Update device type
             state.last_updated = Utc::now();
-            self.current_state = Some(state.clone());
+            let state = Arc::new(state);
+            self.current_state = Some(Arc::clone(&state));
             return Ok(state);
         }
 
         // Create new state
         tracing::info!("🆕 Creating new state for device {}", device_id);
-        let state = DeviceState::new(device_id, device_type);
-        self.current_state = Some(state.clone());
+        let state = Arc::new(DeviceState::new(device_id, device_type));
+        self.current_state = Some(Arc::clone(&state));
         Ok(state)
     }
 
-    /// Get current state
+    /// Get current state (reference into shared Arc)
     #[must_use]
-    pub const fn current(&self) -> Option<&DeviceState> {
-        self.current_state.as_ref()
+    pub fn current(&self) -> Option<&DeviceState> {
+        self.current_state.as_deref()
     }
 
     /// Update current state
     pub fn update(&mut self, state: DeviceState) -> Result<()> {
         self.persistence.save(&state)?;
-        self.current_state = Some(state);
+        self.current_state = Some(Arc::new(state));
         Ok(())
     }
 
     /// Set UI state value
     pub fn set_ui_state(&mut self, key: String, value: DynamicValue) -> Result<()> {
-        if let Some(state) = &mut self.current_state {
+        if let Some(arc) = &self.current_state {
+            let mut state = (**arc).clone();
             state.set_ui_state(key, value);
-            self.persistence.save(state)?;
+            self.persistence.save(&state)?;
+            self.current_state = Some(Arc::new(state));
         }
         Ok(())
     }

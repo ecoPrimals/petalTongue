@@ -433,6 +433,49 @@ mod tests {
     }
 
     #[test]
+    fn test_cli_parse_ui_with_scenario_and_no_audio() {
+        let cli = Cli::parse_from(["petaltongue", "ui", "--scenario", "demo.json", "--no-audio"]);
+        let Commands::Ui { scenario, no_audio } = cli.command else {
+            unreachable!("CLI parsed 'ui' subcommand")
+        };
+        assert_eq!(scenario.as_deref(), Some("demo.json"));
+        assert!(no_audio);
+    }
+
+    #[test]
+    fn test_cli_parse_web_with_scenario() {
+        let cli = Cli::parse_from(["petaltongue", "web", "--scenario", "tutorial.json"]);
+        let Commands::Web { scenario, .. } = cli.command else {
+            unreachable!("CLI parsed 'web' subcommand")
+        };
+        assert_eq!(scenario.as_deref(), Some("tutorial.json"));
+    }
+
+    #[test]
+    fn test_cli_custom_log_format() {
+        let cli = Cli::parse_from(["petaltongue", "--log-format", "compact", "status"]);
+        assert_eq!(cli.log_format, "compact");
+    }
+
+    #[test]
+    fn test_cli_parse_headless_default_workers() {
+        let cli = Cli::parse_from(["petaltongue", "headless"]);
+        let Commands::Headless { workers, .. } = cli.command else {
+            unreachable!("CLI parsed 'headless' subcommand")
+        };
+        assert_eq!(workers, 4);
+    }
+
+    #[test]
+    fn test_cli_parse_status_default_format() {
+        let cli = Cli::parse_from(["petaltongue", "status"]);
+        let Commands::Status { format, .. } = cli.command else {
+            unreachable!("CLI parsed 'status' subcommand")
+        };
+        assert_eq!(format, "text");
+    }
+
+    #[test]
     fn test_commands_debug() {
         let cmd = Commands::Status {
             verbose: false,

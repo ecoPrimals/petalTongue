@@ -9,7 +9,7 @@
 //! ```text
 //! ┌─────────────────────────────────────────────────────────────┐
 //! │ BiomeOSUIManager                                            │
-//! │  ├─ Provider (BiomeOSProvider or MockProvider)              │
+//! │  ├─ Provider (BiomeOSProvider or DemoDeviceProvider when mock)  │
 //! │  ├─ EventHandler (centralized event dispatch)               │
 //! │  ├─ DevicePanel (device management)                         │
 //! │  ├─ PrimalPanel (primal status)                             │
@@ -27,6 +27,7 @@ use crate::primal_panel::PrimalPanel;
 use crate::ui_events::UIEventHandler;
 use anyhow::Result;
 use egui::Ui;
+use petal_tongue_core::constants;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
@@ -112,7 +113,7 @@ impl BiomeOSUIManager {
             niche_designer: NicheDesigner::new(event_handler.clone()),
             current_tab: UITab::Devices,
             last_refresh: std::time::Instant::now(),
-            refresh_interval: std::time::Duration::from_secs(2),
+            refresh_interval: constants::default_refresh_interval(),
         }
     }
 

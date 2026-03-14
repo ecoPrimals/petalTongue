@@ -18,8 +18,7 @@ pub struct VisualFlowerRenderer {
     /// Current time for animation
     current_time: f32,
 
-    /// Base color (hue in HSV) — reserved for future color customization
-    #[allow(dead_code, reason = "reserved for GPU/SVG renderer color theming")]
+    /// Base color (hue in HSV) — used by egui renderer for petal coloring
     base_hue: f32,
 }
 
@@ -65,8 +64,7 @@ impl VisualFlowerRenderer {
         }
     }
 
-    /// Get opening percentage (0.0 to 1.0) — reserved for future use in custom renderers
-    #[allow(dead_code, reason = "reserved for GPU/SVG renderer opening animation")]
+    /// Get opening percentage (0.0 to 1.0) — used by egui renderer
     fn opening_percent(&self) -> f32 {
         match self.current_state() {
             FlowerState::Closed => 0.0,

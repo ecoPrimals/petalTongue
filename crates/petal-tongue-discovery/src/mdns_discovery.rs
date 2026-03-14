@@ -13,10 +13,7 @@ use crate::traits::VisualizationDataProvider;
 /// This function delegates to it; returns empty on failure.
 ///
 /// Gated by `mdns` feature. Stub reserved for future mDNS integration.
-#[expect(
-    dead_code,
-    reason = "Phase 1: mDNS discovery stub; used by tests when mdns feature enabled"
-)]
+#[allow(dead_code)] // Used by test_mdns_discovery_stub; appears dead when lib compiled without test harness
 #[expect(clippy::unused_async, reason = "async for future mDNS implementation")]
 pub async fn discover_via_mdns() -> anyhow::Result<Vec<Box<dyn VisualizationDataProvider>>> {
     tracing::debug!("mDNS discovery: delegating to MdnsVisualizationProvider");

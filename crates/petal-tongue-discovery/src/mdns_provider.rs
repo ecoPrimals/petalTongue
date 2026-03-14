@@ -10,7 +10,7 @@ use crate::dns_parser::{DnsHeader, RecordType, ResourceRecord};
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use petal_tongue_core::{PrimalInfo, TopologyEdge};
+use petal_tongue_core::{PrimalInfo, TopologyEdge, constants};
 use socket2::{Domain, Protocol, Socket, Type};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::time::Duration;
@@ -25,9 +25,6 @@ const MDNS_PORT: u16 = 5353;
 
 /// Service name for visualization providers
 const SERVICE_NAME: &str = "_visualization-provider._tcp.local";
-
-/// Discovery timeout
-const DISCOVERY_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// mDNS-based visualization provider
 ///
@@ -101,7 +98,8 @@ impl MdnsVisualizationProvider {
         let socket = UdpSocket::from_std(socket).context("Failed to convert to tokio socket")?;
 
         // Query for services
-        let providers = match timeout(DISCOVERY_TIMEOUT, Self::query_services(socket)).await {
+        let discovery_timeout = constants::default_discovery_timeout();
+        let providers = match timeout(discovery_timeout, Self::query_services(socket)).await {
             Ok(Ok(providers)) => {
                 tracing::info!("mDNS discovery found {} provider(s)", providers.len());
                 providers
@@ -111,7 +109,7 @@ impl MdnsVisualizationProvider {
                 vec![]
             }
             Err(_) => {
-                tracing::warn!("mDNS discovery timed out after {:?}", DISCOVERY_TIMEOUT);
+                tracing::warn!("mDNS discovery timed out after {:?}", discovery_timeout);
                 vec![]
             }
         };

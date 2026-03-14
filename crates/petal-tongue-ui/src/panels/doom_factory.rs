@@ -22,13 +22,11 @@ impl PanelFactory for DoomPanelFactory {
         let _height = config.height.unwrap_or(480);
 
         // Parse panel-specific config (optional)
-        let show_debug = if let Some(cfg) = config.config.as_object() {
+        let show_debug = config.config.as_object().is_none_or(|cfg| {
             cfg.get("show_debug")
                 .and_then(serde_json::Value::as_bool)
                 .unwrap_or(true)
-        } else {
-            true
-        };
+        });
 
         let mut panel = DoomPanel::new();
         if !show_debug {

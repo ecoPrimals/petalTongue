@@ -104,7 +104,7 @@ impl TutorialMode {
             info!("📦 Loading tutorial scenario: {}", self.scenario_name);
             info!("🌸 Seamless transition from awakening to tutorial experience");
 
-            // Try to load requested scenario
+            // Try to load requested scenario, then simple.json, else use minimal example
             let scenario = match load_sandbox_scenario(&self.scenario_name) {
                 Ok(s) => {
                     info!("✅ Loaded tutorial scenario: {}", s.name);
@@ -113,8 +113,25 @@ impl TutorialMode {
                 }
                 Err(e) => {
                     warn!("Failed to load scenario '{}': {}", self.scenario_name, e);
-                    info!("Using default tutorial scenario");
-                    get_default_scenario()
+                    match get_default_scenario() {
+                        Ok(s) => {
+                            info!("Using default scenario: {}", s.name);
+                            s
+                        }
+                        Err(e2) => {
+                            warn!("Sandbox scenarios unavailable: {}", e2);
+                            info!("Using minimal example (no sandbox files found)");
+                            let mut graph = graph
+                                .write()
+                                .unwrap_or_else(std::sync::PoisonError::into_inner);
+                            *graph = GraphEngine::new();
+                            Self::populate_minimal_example(&mut graph);
+                            graph.set_layout(layout);
+                            graph.layout(100);
+                            info!("✅ Tutorial data loaded (minimal example)");
+                            return;
+                        }
+                    }
                 }
             };
 

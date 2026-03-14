@@ -4,6 +4,8 @@
 //! Self-knowledge only -- no hardcoded knowledge of other primals.
 //! Other primals are discovered at runtime via socket/mDNS/JSON-RPC.
 
+use std::time::Duration;
+
 /// Display name for this primal
 pub const PRIMAL_NAME: &str = "petalTongue";
 
@@ -270,6 +272,109 @@ pub mod thresholds {
     pub const MEMORY_WARNING: f64 = 50.0;
 }
 
+/// Default client RPC timeout (overridable via PETALTONGUE_RPC_TIMEOUT_SECS)
+pub const DEFAULT_RPC_TIMEOUT_SECS: u64 = 5;
+
+/// Default heartbeat interval (overridable via PETALTONGUE_HEARTBEAT_INTERVAL_SECS)
+pub const DEFAULT_HEARTBEAT_INTERVAL_SECS: u64 = 30;
+
+/// Default biomeOS refresh interval (overridable via PETALTONGUE_REFRESH_INTERVAL_SECS)
+pub const DEFAULT_REFRESH_INTERVAL_SECS: u64 = 2;
+
+/// Default telemetry buffer size (overridable via PETALTONGUE_TELEMETRY_BUFFER)
+pub const DEFAULT_TELEMETRY_BUFFER: usize = 10_000;
+
+/// Default discovery timeout (overridable via PETALTONGUE_DISCOVERY_TIMEOUT_SECS)
+pub const DEFAULT_DISCOVERY_TIMEOUT_SECS: u64 = 5;
+
+/// Default retry initial delay in ms (overridable via PETALTONGUE_RETRY_INITIAL_MS)
+pub const DEFAULT_RETRY_INITIAL_MS: u64 = 100;
+
+/// Default retry max delay in secs (overridable via PETALTONGUE_RETRY_MAX_SECS)
+pub const DEFAULT_RETRY_MAX_SECS: u64 = 10;
+
+/// Default TUI tick rate in ms (overridable via PETALTONGUE_TUI_TICK_MS)
+pub const DEFAULT_TUI_TICK_MS: u64 = 100;
+
+/// Default RPC timeout. Env: `PETALTONGUE_RPC_TIMEOUT_SECS`.
+#[must_use]
+pub fn default_rpc_timeout() -> Duration {
+    let secs = std::env::var("PETALTONGUE_RPC_TIMEOUT_SECS")
+        .ok()
+        .and_then(|s| s.parse::<u64>().ok())
+        .unwrap_or(DEFAULT_RPC_TIMEOUT_SECS);
+    Duration::from_secs(secs)
+}
+
+/// Default heartbeat interval. Env: `PETALTONGUE_HEARTBEAT_INTERVAL_SECS`.
+#[must_use]
+pub fn default_heartbeat_interval() -> Duration {
+    let secs = std::env::var("PETALTONGUE_HEARTBEAT_INTERVAL_SECS")
+        .ok()
+        .and_then(|s| s.parse::<u64>().ok())
+        .unwrap_or(DEFAULT_HEARTBEAT_INTERVAL_SECS);
+    Duration::from_secs(secs)
+}
+
+/// Default biomeOS refresh interval. Env: `PETALTONGUE_REFRESH_INTERVAL_SECS`.
+#[must_use]
+pub fn default_refresh_interval() -> Duration {
+    let secs = std::env::var("PETALTONGUE_REFRESH_INTERVAL_SECS")
+        .ok()
+        .and_then(|s| s.parse::<u64>().ok())
+        .unwrap_or(DEFAULT_REFRESH_INTERVAL_SECS);
+    Duration::from_secs(secs)
+}
+
+/// Default telemetry buffer size. Env: `PETALTONGUE_TELEMETRY_BUFFER`.
+#[must_use]
+pub fn default_telemetry_buffer() -> usize {
+    std::env::var("PETALTONGUE_TELEMETRY_BUFFER")
+        .ok()
+        .and_then(|s| s.parse::<usize>().ok())
+        .unwrap_or(DEFAULT_TELEMETRY_BUFFER)
+}
+
+/// Default discovery timeout. Env: `PETALTONGUE_DISCOVERY_TIMEOUT_SECS`.
+#[must_use]
+pub fn default_discovery_timeout() -> Duration {
+    let secs = std::env::var("PETALTONGUE_DISCOVERY_TIMEOUT_SECS")
+        .ok()
+        .and_then(|s| s.parse::<u64>().ok())
+        .unwrap_or(DEFAULT_DISCOVERY_TIMEOUT_SECS);
+    Duration::from_secs(secs)
+}
+
+/// Default retry initial delay. Env: `PETALTONGUE_RETRY_INITIAL_MS`.
+#[must_use]
+pub fn default_retry_initial_delay() -> Duration {
+    let ms = std::env::var("PETALTONGUE_RETRY_INITIAL_MS")
+        .ok()
+        .and_then(|s| s.parse::<u64>().ok())
+        .unwrap_or(DEFAULT_RETRY_INITIAL_MS);
+    Duration::from_millis(ms)
+}
+
+/// Default retry max delay. Env: `PETALTONGUE_RETRY_MAX_SECS`.
+#[must_use]
+pub fn default_retry_max_delay() -> Duration {
+    let secs = std::env::var("PETALTONGUE_RETRY_MAX_SECS")
+        .ok()
+        .and_then(|s| s.parse::<u64>().ok())
+        .unwrap_or(DEFAULT_RETRY_MAX_SECS);
+    Duration::from_secs(secs)
+}
+
+/// Default TUI tick rate. Env: `PETALTONGUE_TUI_TICK_MS`.
+#[must_use]
+pub fn default_tui_tick_rate() -> Duration {
+    let ms = std::env::var("PETALTONGUE_TUI_TICK_MS")
+        .ok()
+        .and_then(|s| s.parse::<u64>().ok())
+        .unwrap_or(DEFAULT_TUI_TICK_MS);
+    Duration::from_millis(ms)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -459,5 +564,138 @@ mod tests {
                 assert!(events.contains(":7777/"), "events URL should use port 7777");
             },
         );
+    }
+
+    #[test]
+    fn test_default_rpc_timeout() {
+        env_test_helpers::with_env_var_removed("PETALTONGUE_RPC_TIMEOUT_SECS", || {
+            assert_eq!(
+                default_rpc_timeout(),
+                Duration::from_secs(DEFAULT_RPC_TIMEOUT_SECS)
+            );
+        });
+    }
+
+    #[test]
+    fn test_default_rpc_timeout_env_override() {
+        env_test_helpers::with_env_var("PETALTONGUE_RPC_TIMEOUT_SECS", "15", || {
+            assert_eq!(default_rpc_timeout(), Duration::from_secs(15));
+        });
+    }
+
+    #[test]
+    fn test_default_heartbeat_interval() {
+        env_test_helpers::with_env_var_removed("PETALTONGUE_HEARTBEAT_INTERVAL_SECS", || {
+            assert_eq!(
+                default_heartbeat_interval(),
+                Duration::from_secs(DEFAULT_HEARTBEAT_INTERVAL_SECS)
+            );
+        });
+    }
+
+    #[test]
+    fn test_default_heartbeat_interval_env_override() {
+        env_test_helpers::with_env_var("PETALTONGUE_HEARTBEAT_INTERVAL_SECS", "60", || {
+            assert_eq!(default_heartbeat_interval(), Duration::from_secs(60));
+        });
+    }
+
+    #[test]
+    fn test_default_refresh_interval() {
+        env_test_helpers::with_env_var_removed("PETALTONGUE_REFRESH_INTERVAL_SECS", || {
+            assert_eq!(
+                default_refresh_interval(),
+                Duration::from_secs(DEFAULT_REFRESH_INTERVAL_SECS)
+            );
+        });
+    }
+
+    #[test]
+    fn test_default_refresh_interval_env_override() {
+        env_test_helpers::with_env_var("PETALTONGUE_REFRESH_INTERVAL_SECS", "5", || {
+            assert_eq!(default_refresh_interval(), Duration::from_secs(5));
+        });
+    }
+
+    #[test]
+    fn test_default_telemetry_buffer() {
+        env_test_helpers::with_env_var_removed("PETALTONGUE_TELEMETRY_BUFFER", || {
+            assert_eq!(default_telemetry_buffer(), DEFAULT_TELEMETRY_BUFFER);
+        });
+    }
+
+    #[test]
+    fn test_default_telemetry_buffer_env_override() {
+        env_test_helpers::with_env_var("PETALTONGUE_TELEMETRY_BUFFER", "5000", || {
+            assert_eq!(default_telemetry_buffer(), 5000);
+        });
+    }
+
+    #[test]
+    fn test_default_discovery_timeout() {
+        env_test_helpers::with_env_var_removed("PETALTONGUE_DISCOVERY_TIMEOUT_SECS", || {
+            assert_eq!(
+                default_discovery_timeout(),
+                Duration::from_secs(DEFAULT_DISCOVERY_TIMEOUT_SECS)
+            );
+        });
+    }
+
+    #[test]
+    fn test_default_discovery_timeout_env_override() {
+        env_test_helpers::with_env_var("PETALTONGUE_DISCOVERY_TIMEOUT_SECS", "10", || {
+            assert_eq!(default_discovery_timeout(), Duration::from_secs(10));
+        });
+    }
+
+    #[test]
+    fn test_default_retry_initial_delay() {
+        env_test_helpers::with_env_var_removed("PETALTONGUE_RETRY_INITIAL_MS", || {
+            assert_eq!(
+                default_retry_initial_delay(),
+                Duration::from_millis(DEFAULT_RETRY_INITIAL_MS)
+            );
+        });
+    }
+
+    #[test]
+    fn test_default_retry_initial_delay_env_override() {
+        env_test_helpers::with_env_var("PETALTONGUE_RETRY_INITIAL_MS", "500", || {
+            assert_eq!(default_retry_initial_delay(), Duration::from_millis(500));
+        });
+    }
+
+    #[test]
+    fn test_default_retry_max_delay() {
+        env_test_helpers::with_env_var_removed("PETALTONGUE_RETRY_MAX_SECS", || {
+            assert_eq!(
+                default_retry_max_delay(),
+                Duration::from_secs(DEFAULT_RETRY_MAX_SECS)
+            );
+        });
+    }
+
+    #[test]
+    fn test_default_retry_max_delay_env_override() {
+        env_test_helpers::with_env_var("PETALTONGUE_RETRY_MAX_SECS", "30", || {
+            assert_eq!(default_retry_max_delay(), Duration::from_secs(30));
+        });
+    }
+
+    #[test]
+    fn test_default_tui_tick_rate() {
+        env_test_helpers::with_env_var_removed("PETALTONGUE_TUI_TICK_MS", || {
+            assert_eq!(
+                default_tui_tick_rate(),
+                Duration::from_millis(DEFAULT_TUI_TICK_MS)
+            );
+        });
+    }
+
+    #[test]
+    fn test_default_tui_tick_rate_env_override() {
+        env_test_helpers::with_env_var("PETALTONGUE_TUI_TICK_MS", "50", || {
+            assert_eq!(default_tui_tick_rate(), Duration::from_millis(50));
+        });
     }
 }
