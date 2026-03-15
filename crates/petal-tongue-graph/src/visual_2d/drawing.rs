@@ -64,4 +64,26 @@ mod tests {
         assert!((left.x - right.x).abs() > 0.1);
         assert!((left.y - right.y).abs() < 0.001);
     }
+
+    #[test]
+    fn arrow_head_vertices_diagonal() {
+        let from = Pos2::new(0.0, 0.0);
+        let to = Pos2::new(100.0, 100.0);
+        let (tip, left, right) = arrow_head_vertices(from, to, 1.0);
+        assert!(tip.x < to.x);
+        assert!(tip.y < to.y);
+        assert!((tip.x - tip.y).abs() < 1.0);
+        let tip_to_left = (left - tip).length();
+        let tip_to_right = (right - tip).length();
+        assert!(tip_to_left > 0.1);
+        assert!(tip_to_right > 0.1);
+    }
+
+    #[test]
+    fn arrow_head_vertices_zero_zoom() {
+        let from = Pos2::new(0.0, 0.0);
+        let to = Pos2::new(100.0, 0.0);
+        let (tip, _left, _right) = arrow_head_vertices(from, to, 0.1);
+        assert!(tip.x < to.x);
+    }
 }

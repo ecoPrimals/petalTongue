@@ -77,7 +77,7 @@ pub trait PetalTongueRpc {
     /// List of protocol info (tarpc, jsonrpc, https)
     async fn protocols_list() -> Vec<ProtocolInfo>;
 
-    /// Render graph topology (semantic: `ui.render_graph`)
+    /// Render graph topology (semantic: `ui.render.graph`)
     ///
     /// Renders a graph topology visualization.
     /// Only available if primal has "visualization" capability.

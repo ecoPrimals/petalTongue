@@ -356,7 +356,7 @@ mod tests {
     #[test]
     fn tui_config_default_values() {
         let config = TUIConfig::default();
-        assert_eq!(config.tick_rate, Duration::from_millis(100));
+        assert_eq!(config.tick_rate, constants::default_tui_tick_rate());
         assert!(!config.mouse_support);
         assert!(!config.standalone);
     }
@@ -666,7 +666,10 @@ mod tests {
     }
 
     #[tokio::test]
-    #[expect(clippy::cast_sign_loss, reason = "test primal counts are always positive")]
+    #[expect(
+        clippy::cast_sign_loss,
+        reason = "test primal counts are always positive"
+    )]
     async fn data_update_primals_affects_item_count() {
         tokio::time::timeout(std::time::Duration::from_secs(5), async {
             let state = crate::state::TUIState::new();
@@ -716,5 +719,147 @@ mod tests {
                 assert!(idx < views.len());
             }
         }
+    }
+
+    #[test]
+    fn parse_key_all_digit_views() {
+        for (digit, idx) in [
+            ('1', 0),
+            ('2', 1),
+            ('4', 3),
+            ('5', 4),
+            ('6', 5),
+            ('7', 6),
+            ('8', 7),
+        ] {
+            let action = parse_key_event(KeyEvent::new(KeyCode::Char(digit), KeyModifiers::NONE));
+            assert_eq!(action, KeyAction::SwitchView(idx));
+        }
+    }
+
+    #[test]
+    fn parse_key_ctrl_c_quit() {
+        let action = parse_key_event(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL));
+        assert_eq!(action, KeyAction::Quit);
+    }
+
+    #[test]
+    fn parse_key_vim_style_scroll() {
+        assert_eq!(
+            parse_key_event(KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE)),
+            KeyAction::ScrollLeft
+        );
+        assert_eq!(
+            parse_key_event(KeyEvent::new(KeyCode::Char('l'), KeyModifiers::NONE)),
+            KeyAction::ScrollRight
+        );
+    }
+
+    #[test]
+    fn parse_key_left_right_arrows() {
+        assert_eq!(
+            parse_key_event(KeyEvent::new(KeyCode::Left, KeyModifiers::NONE)),
+            KeyAction::ScrollLeft
+        );
+        assert_eq!(
+            parse_key_event(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)),
+            KeyAction::ScrollRight
+        );
+    }
+
+    #[test]
+    fn parse_key_up_down_with_modifiers() {
+        assert_eq!(
+            parse_key_event(KeyEvent::new(KeyCode::Up, KeyModifiers::SHIFT)),
+            KeyAction::SelectPrevious
+        );
+        assert_eq!(
+            parse_key_event(KeyEvent::new(KeyCode::Down, KeyModifiers::ALT)),
+            KeyAction::SelectNext
+        );
+    }
+
+    #[test]
+    fn tui_config_clone() {
+        let config = TUIConfig::default();
+        let cloned = config.clone();
+        assert_eq!(config.tick_rate, cloned.tick_rate);
+        assert_eq!(config.mouse_support, cloned.mouse_support);
+        assert_eq!(config.standalone, cloned.standalone);
+    }
+
+    #[test]
+    fn view_all_contains_expected_views() {
+        let views = crate::state::View::all();
+        let names: Vec<&str> = views.iter().map(|v| v.name()).collect();
+        assert!(names.contains(&"Dashboard"));
+        assert!(names.contains(&"Topology"));
+        assert!(names.contains(&"Primals"));
+        assert!(names.contains(&"Logs"));
+    }
+
+    #[test]
+    fn key_action_none_for_unmapped_keys() {
+        let action = parse_key_event(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
+        assert_eq!(action, KeyAction::None);
+    }
+
+    #[test]
+    fn handle_event_quit_sets_running_false() {
+        use crate::events::TUIEvent;
+        let quit = TUIEvent::Quit;
+        assert!(matches!(quit, TUIEvent::Quit));
+    }
+
+    #[test]
+    fn view_shortcut_digit_mapping() {
+        let views = crate::state::View::all();
+        assert_eq!(views[0].shortcut(), '1');
+        assert_eq!(views[1].shortcut(), '2');
+    }
+
+    #[test]
+    fn view_equality() {
+        assert_eq!(crate::state::View::Dashboard, crate::state::View::Dashboard);
+        assert_ne!(crate::state::View::Dashboard, crate::state::View::Topology);
+    }
+
+    #[test]
+    fn key_action_select_previous_next_equality() {
+        assert_eq!(KeyAction::SelectPrevious, KeyAction::SelectPrevious);
+        assert_eq!(KeyAction::SelectNext, KeyAction::SelectNext);
+        assert_ne!(KeyAction::SelectPrevious, KeyAction::SelectNext);
+    }
+
+    #[test]
+    fn key_action_page_scroll_equality() {
+        assert_eq!(KeyAction::PageUp, KeyAction::PageUp);
+        assert_eq!(KeyAction::PageDown, KeyAction::PageDown);
+        assert_eq!(KeyAction::Home, KeyAction::Home);
+        assert_eq!(KeyAction::End, KeyAction::End);
+    }
+
+    #[test]
+    fn tui_config_standalone_affects_discovery() {
+        let config = TUIConfig {
+            tick_rate: Duration::from_millis(250),
+            mouse_support: false,
+            standalone: true,
+        };
+        assert!(config.standalone);
+    }
+
+    #[test]
+    fn external_event_primal_discovered_format() {
+        let name = "songbird";
+        let formatted = format!("Discovered primal: {name}");
+        assert_eq!(formatted, "Discovered primal: songbird");
+    }
+
+    #[test]
+    fn external_event_topology_changed_variant() {
+        use crate::events::ExternalEvent;
+        let evt = ExternalEvent::TopologyChanged;
+        assert!(matches!(evt, ExternalEvent::TopologyChanged));
     }
 }

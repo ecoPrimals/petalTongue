@@ -460,4 +460,51 @@ mod tests {
         assert_eq!(restored.endpoint, reg.endpoint);
         assert_eq!(restored.capabilities.len(), reg.capabilities.len());
     }
+
+    #[test]
+    fn test_register_request_json_structure() {
+        let reg = PrimalRegistration::petaltongue();
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": "ipc.register",
+            "params": {
+                "name": reg.name,
+                "endpoint": reg.endpoint,
+                "capabilities": reg.capabilities,
+                "version": reg.version,
+                "metadata": reg.metadata,
+            },
+            "id": 1,
+        });
+        assert_eq!(request["method"], "ipc.register");
+        assert_eq!(request["params"]["name"], reg.name);
+        assert!(request["params"]["capabilities"].is_array());
+    }
+
+    #[test]
+    fn test_heartbeat_request_json_structure() {
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": "ipc.heartbeat",
+            "params": {"name": "petaltongue"},
+            "id": 1,
+        });
+        assert_eq!(request["method"], "ipc.heartbeat");
+        assert_eq!(request["params"]["name"], "petaltongue");
+    }
+
+    #[test]
+    fn test_registration_with_optional_metadata() {
+        let reg = PrimalRegistration {
+            name: "custom".to_string(),
+            endpoint: "/primal/custom".to_string(),
+            capabilities: vec!["test.cap".to_string()],
+            version: "0.1.0".to_string(),
+            metadata: None,
+        };
+        let json = serde_json::to_string(&reg).expect("serialize");
+        assert!(!json.contains("metadata") || json.contains("null"));
+        let restored: PrimalRegistration = serde_json::from_str(&json).expect("deserialize");
+        assert!(restored.metadata.is_none());
+    }
 }

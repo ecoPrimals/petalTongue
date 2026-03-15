@@ -13,6 +13,32 @@ use ratatui::{
 };
 
 use crate::state::TUIState;
+use petal_tongue_core::PrimalHealthStatus;
+
+#[must_use]
+pub const fn format_primal_health_list(health: PrimalHealthStatus) -> (&'static str, Color) {
+    match health {
+        PrimalHealthStatus::Healthy => ("✅", Color::Green),
+        PrimalHealthStatus::Warning => ("⚠️", Color::Yellow),
+        PrimalHealthStatus::Critical => ("❌", Color::Red),
+        PrimalHealthStatus::Unknown => ("❓", Color::Gray),
+    }
+}
+
+#[must_use]
+pub const fn format_primal_health_details(health: PrimalHealthStatus) -> (&'static str, Color) {
+    match health {
+        PrimalHealthStatus::Healthy => ("Healthy", Color::Green),
+        PrimalHealthStatus::Warning => ("Warning", Color::Yellow),
+        PrimalHealthStatus::Critical => ("Critical", Color::Red),
+        PrimalHealthStatus::Unknown => ("Unknown", Color::Gray),
+    }
+}
+
+#[must_use]
+pub fn format_primal_list_title(count: usize) -> String {
+    format!("🌸 Primals ({count} total)")
+}
 
 /// Render primals view
 pub fn render(frame: &mut Frame, area: Rect, state: &TUIState) {
@@ -84,8 +110,6 @@ fn render_primal_list(
     primals: &[petal_tongue_core::PrimalInfo],
     selected: usize,
 ) {
-    use petal_tongue_core::PrimalHealthStatus;
-
     let items: Vec<ListItem> = if primals.is_empty() {
         vec![
             ListItem::new(Line::from("")),
@@ -101,12 +125,7 @@ fn render_primal_list(
             .iter()
             .enumerate()
             .map(|(idx, primal)| {
-                let (health_icon, health_color) = match primal.health {
-                    PrimalHealthStatus::Healthy => ("✅", Color::Green),
-                    PrimalHealthStatus::Warning => ("⚠️", Color::Yellow),
-                    PrimalHealthStatus::Critical => ("❌", Color::Red),
-                    PrimalHealthStatus::Unknown => ("❓", Color::Gray),
-                };
+                let (health_icon, health_color) = format_primal_health_list(primal.health);
 
                 let is_selected = idx == selected;
                 let style = if is_selected {
@@ -127,7 +146,7 @@ fn render_primal_list(
             .collect()
     };
 
-    let title = format!("🌸 Primals ({} total)", primals.len());
+    let title = format_primal_list_title(primals.len());
 
     let list = List::new(items).block(
         Block::default()
@@ -146,8 +165,6 @@ fn render_primal_details(
     primals: &[petal_tongue_core::PrimalInfo],
     selected: usize,
 ) {
-    use petal_tongue_core::PrimalHealthStatus;
-
     let lines = if primals.is_empty() {
         vec![
             Line::from(""),
@@ -167,12 +184,7 @@ fn render_primal_details(
     } else {
         let primal = &primals[selected];
 
-        let (health_text, health_color) = match primal.health {
-            PrimalHealthStatus::Healthy => ("Healthy", Color::Green),
-            PrimalHealthStatus::Warning => ("Warning", Color::Yellow),
-            PrimalHealthStatus::Critical => ("Critical", Color::Red),
-            PrimalHealthStatus::Unknown => ("Unknown", Color::Gray),
-        };
+        let (health_text, health_color) = format_primal_health_details(primal.health);
 
         vec![
             Line::from(""),
@@ -223,4 +235,76 @@ fn render_primal_details(
     );
 
     frame.render_widget(paragraph, area);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use petal_tongue_core::PrimalHealthStatus;
+
+    #[test]
+    fn format_primal_health_list_healthy() {
+        let (icon, _) = format_primal_health_list(PrimalHealthStatus::Healthy);
+        assert_eq!(icon, "✅");
+    }
+
+    #[test]
+    fn format_primal_health_list_warning() {
+        let (icon, _) = format_primal_health_list(PrimalHealthStatus::Warning);
+        assert_eq!(icon, "⚠️");
+    }
+
+    #[test]
+    fn format_primal_health_list_critical() {
+        let (icon, _) = format_primal_health_list(PrimalHealthStatus::Critical);
+        assert_eq!(icon, "❌");
+    }
+
+    #[test]
+    fn format_primal_health_list_unknown() {
+        let (icon, _) = format_primal_health_list(PrimalHealthStatus::Unknown);
+        assert_eq!(icon, "❓");
+    }
+
+    #[test]
+    fn format_primal_health_details_healthy() {
+        let (text, _) = format_primal_health_details(PrimalHealthStatus::Healthy);
+        assert_eq!(text, "Healthy");
+    }
+
+    #[test]
+    fn format_primal_health_details_critical() {
+        let (text, _) = format_primal_health_details(PrimalHealthStatus::Critical);
+        assert_eq!(text, "Critical");
+    }
+
+    #[test]
+    fn format_primal_list_title_empty() {
+        assert_eq!(format_primal_list_title(0), "🌸 Primals (0 total)");
+    }
+
+    #[test]
+    fn format_primal_list_title_many() {
+        assert_eq!(format_primal_list_title(42), "🌸 Primals (42 total)");
+    }
+
+    #[test]
+    fn format_primal_health_list_colors() {
+        let (_, c_healthy) = format_primal_health_list(PrimalHealthStatus::Healthy);
+        let (_, c_warning) = format_primal_health_list(PrimalHealthStatus::Warning);
+        let (_, c_critical) = format_primal_health_list(PrimalHealthStatus::Critical);
+        let (_, c_unknown) = format_primal_health_list(PrimalHealthStatus::Unknown);
+        assert_eq!(c_healthy, Color::Green);
+        assert_eq!(c_warning, Color::Yellow);
+        assert_eq!(c_critical, Color::Red);
+        assert_eq!(c_unknown, Color::Gray);
+    }
+
+    #[test]
+    fn format_primal_health_details_all_variants() {
+        let (text, _) = format_primal_health_details(PrimalHealthStatus::Warning);
+        assert_eq!(text, "Warning");
+        let (text, _) = format_primal_health_details(PrimalHealthStatus::Unknown);
+        assert_eq!(text, "Unknown");
+    }
 }

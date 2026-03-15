@@ -102,6 +102,11 @@ struct WindowResponse {
     buffer_handle: String,
 }
 
+#[must_use]
+pub const fn expected_rgba8_buffer_size(width: u32, height: u32) -> usize {
+    (width as usize) * (height as usize) * 4
+}
+
 impl ToadstoolDisplay {
     /// Create new Toadstool display (discovers biomeOS socket)
     pub fn new() -> Result<Self> {
@@ -345,8 +350,7 @@ impl DisplayBackend for ToadstoolDisplay {
     }
 
     async fn present(&mut self, buffer: &[u8]) -> Result<()> {
-        // Verify buffer size
-        let expected_size = (self.width * self.height * 4) as usize; // RGBA8
+        let expected_size = expected_rgba8_buffer_size(self.width, self.height);
         if buffer.len() != expected_size {
             return Err(anyhow!(
                 "Invalid buffer size: expected {} bytes ({}x{}x4), got {}",
@@ -433,7 +437,20 @@ mod tests {
 
     #[test]
     fn test_socket_discovery() {
-        // Should not panic even if socket doesn't exist
         let _display = ToadstoolDisplay::new();
+    }
+
+    #[test]
+    fn test_expected_rgba8_buffer_size() {
+        assert_eq!(expected_rgba8_buffer_size(1920, 1080), 1920 * 1080 * 4);
+        assert_eq!(expected_rgba8_buffer_size(640, 480), 640 * 480 * 4);
+        assert_eq!(expected_rgba8_buffer_size(100, 100), 40_000);
+        assert_eq!(expected_rgba8_buffer_size(1, 1), 4);
+    }
+
+    #[test]
+    fn test_with_socket_custom_path() {
+        let display = ToadstoolDisplay::with_socket("/tmp/custom.sock");
+        assert_eq!(display.dimensions(), (1920, 1080));
     }
 }

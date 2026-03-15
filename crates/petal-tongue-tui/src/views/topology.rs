@@ -584,4 +584,144 @@ mod tests {
         assert_eq!(counts.get("connection"), Some(&2));
         assert_eq!(counts.get("data"), Some(&1));
     }
+
+    #[test]
+    fn force_directed_layout_empty() {
+        let primals: Vec<PrimalInfo> = vec![];
+        let topology: Vec<TopologyEdge> = vec![];
+        let positions = force_directed_layout(&primals, &topology, 70.0, 20.0, 10);
+        assert!(positions.is_empty());
+    }
+
+    #[test]
+    fn render_ascii_graph_critical_unknown_health() {
+        let primals = vec![
+            PrimalInfo::new(
+                PrimalId::from("c"),
+                "Critical",
+                "T",
+                "http://c",
+                vec![],
+                PrimalHealthStatus::Critical,
+                0,
+            ),
+            PrimalInfo::new(
+                PrimalId::from("u"),
+                "Unknown",
+                "T",
+                "http://u",
+                vec![],
+                PrimalHealthStatus::Unknown,
+                0,
+            ),
+        ];
+        let topology: Vec<TopologyEdge> = vec![];
+        let lines = render_ascii_graph(&primals, &topology);
+        let all_text: String = lines.iter().map(line_text).collect::<Vec<_>>().join("\n");
+        assert!(all_text.contains("Critical"));
+        assert!(all_text.contains("Unknown"));
+        assert!(all_text.contains("❌"));
+        assert!(all_text.contains("❓"));
+    }
+
+    #[test]
+    fn force_directed_layout_two_nodes_one_edge() {
+        let primals = vec![
+            PrimalInfo::new(
+                "a",
+                "A",
+                "Compute",
+                "http://a",
+                vec![],
+                PrimalHealthStatus::Healthy,
+                0,
+            ),
+            PrimalInfo::new(
+                "b",
+                "B",
+                "Storage",
+                "http://b",
+                vec![],
+                PrimalHealthStatus::Healthy,
+                0,
+            ),
+        ];
+        let topology = vec![TopologyEdge {
+            from: PrimalId::from("a"),
+            to: PrimalId::from("b"),
+            edge_type: "conn".to_string(),
+            label: None,
+            capability: None,
+            metrics: None,
+        }];
+        let positions = force_directed_layout(&primals, &topology, 70.0, 20.0, 20);
+        assert_eq!(positions.len(), 2);
+        let id_a = PrimalId::from("a");
+        let id_b = PrimalId::from("b");
+        assert!(positions.contains_key(&id_a));
+        assert!(positions.contains_key(&id_b));
+        let (x1, y1) = positions.get(&id_a).unwrap();
+        let (x2, y2) = positions.get(&id_b).unwrap();
+        assert!(*x1 >= 0.0 && *x1 <= 70.0);
+        assert!(*y1 >= 0.0 && *y1 <= 20.0);
+        assert!(*x2 >= 0.0 && *x2 <= 70.0);
+        assert!(*y2 >= 0.0 && *y2 <= 20.0);
+    }
+
+    #[test]
+    fn force_directed_layout_three_nodes() {
+        let primals = vec![
+            PrimalInfo::new(
+                "a",
+                "A",
+                "T",
+                "http://a",
+                vec![],
+                PrimalHealthStatus::Healthy,
+                0,
+            ),
+            PrimalInfo::new(
+                "b",
+                "B",
+                "T",
+                "http://b",
+                vec![],
+                PrimalHealthStatus::Healthy,
+                0,
+            ),
+            PrimalInfo::new(
+                "c",
+                "C",
+                "T",
+                "http://c",
+                vec![],
+                PrimalHealthStatus::Healthy,
+                0,
+            ),
+        ];
+        let topology = vec![
+            TopologyEdge {
+                from: PrimalId::from("a"),
+                to: PrimalId::from("b"),
+                edge_type: "e1".to_string(),
+                label: None,
+                capability: None,
+                metrics: None,
+            },
+            TopologyEdge {
+                from: PrimalId::from("b"),
+                to: PrimalId::from("c"),
+                edge_type: "e2".to_string(),
+                label: None,
+                capability: None,
+                metrics: None,
+            },
+        ];
+        let positions = force_directed_layout(&primals, &topology, 100.0, 50.0, 30);
+        assert_eq!(positions.len(), 3);
+        for (_, (x, y)) in &positions {
+            assert!(*x >= 0.0 && *x <= 100.0);
+            assert!(*y >= 0.0 && *y <= 50.0);
+        }
+    }
 }

@@ -91,4 +91,31 @@ mod tests {
         assert!((r.x - 50.0).abs() < 0.001);
         assert!((r.y - 25.0).abs() < 0.001);
     }
+
+    #[test]
+    fn lerp_position_partial() {
+        let a = Position::new_2d(0.0, 0.0);
+        let b = Position::new_2d(100.0, 100.0);
+        let r = lerp_position(a, b, 0.25);
+        assert!((r.x - 25.0).abs() < 0.001);
+        assert!((r.y - 25.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn lerp_position_same_point() {
+        let a = Position::new_2d(50.0, 50.0);
+        let b = Position::new_2d(50.0, 50.0);
+        let r = lerp_position(a, b, 0.5);
+        assert!((r.x - 50.0).abs() < 0.001);
+        assert!((r.y - 50.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn lerp_position_negative() {
+        let a = Position::new_2d(-100.0, 0.0);
+        let b = Position::new_2d(100.0, 0.0);
+        let r = lerp_position(a, b, 0.5);
+        assert!((r.x - 0.0).abs() < 0.001);
+        assert!((r.y - 0.0).abs() < 0.001);
+    }
 }

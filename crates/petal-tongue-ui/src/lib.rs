@@ -136,11 +136,11 @@ pub mod egui_compiler;
 pub mod game_data_channel;
 pub mod interaction_bridge;
 pub mod neural_registration;
-pub mod squirrel_adapter;
 #[cfg(any(test, feature = "mock"))]
 pub mod sandbox_provider;
 pub mod scene_bridge;
 pub mod sensor_feed;
+pub mod squirrel_adapter;
 pub mod state;
 pub mod status_reporter;
 pub mod system_dashboard;

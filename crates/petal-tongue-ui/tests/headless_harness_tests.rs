@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Headless harness integration tests.
 //!
-//! These tests exercise the UI through the `HeadlessHarness`, proving that
-//! petalTongue can introspect its own visual state without a display.
+//! Core tests: mode switching, panel toggles, basic rendering.
+//! See headless_motor_command_tests.rs and headless_integration_tests.rs for more.
 
 use petal_tongue_core::PanelKind;
 use petal_tongue_ui::headless_harness::HeadlessHarness;
@@ -232,27 +232,6 @@ fn custom_screen_size_works() {
 }
 
 #[test]
-fn motor_command_changes_panel_visibility() {
-    let mut harness = HeadlessHarness::new().unwrap();
-    harness.run_frame();
-    assert!(harness.is_panel_visible(PanelKind::Controls));
-
-    let sender = harness.app_mut().motor_sender();
-    sender
-        .send(petal_tongue_core::MotorCommand::SetPanelVisibility {
-            panel: petal_tongue_core::PanelId::LeftSidebar,
-            visible: false,
-        })
-        .unwrap();
-
-    harness.run_frame();
-    assert!(
-        !harness.is_panel_visible(PanelKind::Controls),
-        "Controls panel should be hidden after motor command"
-    );
-}
-
-#[test]
 fn visible_panel_count_matches() {
     let mut harness = HeadlessHarness::new().unwrap();
     let intro = harness.run_frame();
@@ -277,104 +256,142 @@ fn tessellate_does_not_panic() {
 }
 
 #[test]
-fn tutorial_data_reflects_current_architecture() {
-    use petal_tongue_core::LayoutAlgorithm;
-    use petal_tongue_ui::tutorial_mode::TutorialMode;
-
+fn ctrl_a_toggles_accessibility_panel() {
     let mut harness = HeadlessHarness::new().unwrap();
-    let graph = harness.app_mut().graph_handle();
-
-    TutorialMode::create_fallback_scenario(graph, LayoutAlgorithm::ForceDirected);
-
     harness.run_frame();
-    let intro = harness.run_frame();
+    assert!(!harness.is_panel_visible(PanelKind::Accessibility));
 
-    let has_bound_data = !intro.bound_data.is_empty();
+    harness.key_press_with_modifiers(
+        petal_tongue_ui::egui::Key::A,
+        petal_tongue_ui::egui::Modifiers::CTRL,
+    );
+    harness.run_frame();
     assert!(
-        has_bound_data,
-        "After loading tutorial data, introspection should report bound data objects"
+        harness.is_panel_visible(PanelKind::Accessibility),
+        "Ctrl+A should show accessibility panel"
     );
 
-    let has_petaltongue = intro
-        .bound_data
-        .iter()
-        .any(|d| d.data_object_id.contains("petaltongue"));
+    harness.key_press_with_modifiers(
+        petal_tongue_ui::egui::Key::A,
+        petal_tongue_ui::egui::Modifiers::CTRL,
+    );
+    harness.run_frame();
     assert!(
-        has_petaltongue,
-        "Tutorial data should include a petalTongue node in bound data"
+        !harness.is_panel_visible(PanelKind::Accessibility),
+        "Second Ctrl+A should hide accessibility panel"
     );
 }
 
 #[test]
-fn tutorial_primals_use_capability_taxonomy() {
-    use petal_tongue_core::{GraphEngine, LayoutAlgorithm};
-    use petal_tongue_ui::tutorial_mode::TutorialMode;
-    use std::sync::{Arc, RwLock};
-
-    let graph = Arc::new(RwLock::new(GraphEngine::new()));
-    TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
-
-    let graph = graph.read().unwrap();
-    let petal = graph
-        .nodes()
-        .iter()
-        .find(|n| n.info.id == "petaltongue-tutorial")
-        .expect("petalTongue tutorial node should exist");
-
-    assert!(
-        petal.info.capabilities.iter().any(|c| c.starts_with("ui.")),
-        "petalTongue should have ui.* capabilities"
+fn keyboard_escape_closes_overlays() {
+    let mut harness = HeadlessHarness::new().unwrap();
+    harness.run_frame();
+    harness.key_press_with_modifiers(
+        petal_tongue_ui::egui::Key::A,
+        petal_tongue_ui::egui::Modifiers::CTRL,
     );
-    assert!(
-        petal
-            .info
-            .capabilities
-            .iter()
-            .any(|c| c.starts_with("ipc.")),
-        "petalTongue should have ipc.* capabilities"
+    harness.run_frame();
+    assert!(harness.is_panel_visible(PanelKind::Accessibility));
+
+    harness.key_press(petal_tongue_ui::egui::Key::Escape);
+    harness.run_frame();
+    assert!(!harness.is_panel_visible(PanelKind::Accessibility));
+}
+
+#[test]
+fn keyboard_tab_cycles_focus() {
+    let mut harness = HeadlessHarness::new().unwrap();
+    harness.run_frame();
+    harness.key_press(petal_tongue_ui::egui::Key::Tab);
+    harness.run_frame();
+    harness.key_press(petal_tongue_ui::egui::Key::Tab);
+    harness.run_frame();
+    let _ = harness.tessellate();
+}
+
+#[test]
+fn keyboard_enter_submits() {
+    let mut harness = HeadlessHarness::new().unwrap();
+    harness.run_frame();
+    harness.key_press(petal_tongue_ui::egui::Key::Enter);
+    harness.run_frame();
+    let _ = harness.tessellate();
+}
+
+#[test]
+fn keyboard_arrows_navigate() {
+    let mut harness = HeadlessHarness::new().unwrap();
+    harness.run_frame();
+    harness.key_press(petal_tongue_ui::egui::Key::ArrowUp);
+    harness.run_frame();
+    harness.key_press(petal_tongue_ui::egui::Key::ArrowDown);
+    harness.run_frame();
+    harness.key_press(petal_tongue_ui::egui::Key::ArrowLeft);
+    harness.run_frame();
+    harness.key_press(petal_tongue_ui::egui::Key::ArrowRight);
+    harness.run_frame();
+    let _ = harness.tessellate();
+}
+
+#[test]
+fn ctrl_d_toggles_dashboard() {
+    let mut harness = HeadlessHarness::new().unwrap();
+    harness.run_frame();
+    let initial = harness.is_panel_visible(PanelKind::Dashboard);
+
+    harness.key_press_with_modifiers(
+        petal_tongue_ui::egui::Key::D,
+        petal_tongue_ui::egui::Modifiers::CTRL,
     );
+    harness.run_frame();
+    assert_eq!(harness.is_panel_visible(PanelKind::Dashboard), !initial);
+}
+
+#[test]
+fn multiple_frames_stability() {
+    let mut harness = HeadlessHarness::new().unwrap();
+    harness.run_frame();
+
+    for _ in 0..5 {
+        harness.run_frame();
+    }
+
+    assert!(harness.frame_count() >= 6);
+    let intro = harness.last_introspection().expect("frame ran");
+    assert!(!intro.visible_panels.is_empty());
+}
+
+#[test]
+fn panel_count_consistency() {
+    let mut harness = HeadlessHarness::new().unwrap();
+    let intro = harness.run_frame();
+    let initial_count = intro.visible_panel_count();
     assert!(
-        petal.info.endpoint.starts_with("unix://"),
-        "Endpoint should be a Unix socket URI"
+        initial_count > 0,
+        "After first frame, panel_count should be > 0"
     );
 
-    let security = graph
-        .nodes()
-        .iter()
-        .find(|n| n.info.id == "security-example")
-        .expect("Security example node should exist");
-
-    assert!(
-        security
-            .info
-            .capabilities
-            .iter()
-            .any(|c| c.starts_with("security.")),
-        "Security example should have security.* capabilities"
+    harness.run_frame();
+    harness.run_frame();
+    let later = harness.last_introspection().expect("frames ran");
+    assert_eq!(
+        later.visible_panel_count(),
+        initial_count,
+        "Panel count should stay stable across frames"
     );
+}
 
-    let discovery = graph
-        .nodes()
-        .iter()
-        .find(|n| n.info.id == "discovery-example")
-        .expect("Discovery example node should exist");
-
-    assert!(
-        discovery
-            .info
-            .capabilities
-            .iter()
-            .any(|c| c.starts_with("discovery.")),
-        "Discovery example should have discovery.* capabilities"
+#[test]
+fn accessibility_panel_then_escape() {
+    let mut harness = HeadlessHarness::new().unwrap();
+    harness.run_frame();
+    harness.key_press_with_modifiers(
+        petal_tongue_ui::egui::Key::A,
+        petal_tongue_ui::egui::Modifiers::CTRL,
     );
-
-    let edges = graph.edges();
-    assert!(
-        edges.iter().any(|e| e.edge_type == "ipc.discovery"),
-        "Should have semantic ipc.discovery edge"
-    );
-    assert!(
-        edges.iter().any(|e| e.edge_type == "ipc.trust"),
-        "Should have semantic ipc.trust edge"
-    );
+    harness.run_frame();
+    assert!(harness.is_panel_visible(PanelKind::Accessibility));
+    harness.key_press(petal_tongue_ui::egui::Key::Escape);
+    harness.run_frame();
+    assert!(!harness.is_panel_visible(PanelKind::Accessibility));
 }

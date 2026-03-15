@@ -521,6 +521,29 @@ mod tests {
         assert_eq!(format_gb(16 * 1_073_741_824), "16.0");
     }
 
+    #[test]
+    fn format_gb_fractional() {
+        assert_eq!(format_gb(1_610_612_736), "1.5");
+    }
+
+    #[test]
+    fn threshold_color_zero() {
+        let normal = Color32::from_rgb(100, 100, 100);
+        let c = threshold_color(0.0, 90.0, 70.0, normal);
+        assert_eq!(c, normal);
+    }
+
+    #[test]
+    fn sparkline_points_three_data() {
+        let mut data = VecDeque::new();
+        data.push_back(0.0);
+        data.push_back(50.0);
+        data.push_back(100.0);
+        let pts = compute_sparkline_points(&data, 100.0, 50.0, 100.0);
+        assert_eq!(pts.len(), 3);
+        assert!((pts[1][0] - 50.0).abs() < f32::EPSILON);
+    }
+
     // === Display state tests ===
 
     #[test]

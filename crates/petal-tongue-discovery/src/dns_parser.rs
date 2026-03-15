@@ -592,6 +592,25 @@ mod tests {
     }
 
     #[test]
+    fn test_srv_record_parse_success() {
+        let mut packet = [0u8; 12];
+        packet[6] = 4;
+        packet[7] = b't';
+        packet[8] = b'e';
+        packet[9] = b's';
+        packet[10] = b't';
+        packet[11] = 0;
+        let rdata = [
+            0x00, 0x00, 0x00, 0x00, 0x1F, 0x90, 4, b't', b'e', b's', b't', 0,
+        ];
+        let result = SrvRecord::parse(&packet, 0, &rdata);
+        assert!(result.is_ok());
+        let srv = result.unwrap();
+        assert_eq!(srv.port, 8080);
+        assert_eq!(srv.target, "test");
+    }
+
+    #[test]
     fn test_record_class_in() {
         let _ = RecordClass::IN;
     }
@@ -603,5 +622,39 @@ mod tests {
         let (name, len) = parser.parse_name(0).expect("parse");
         assert_eq!(name, "test");
         assert_eq!(len, 6);
+    }
+
+    #[test]
+    fn test_txt_record_multiple_pairs() {
+        let data = [
+            3, b'a', b'=', b'1', 3, b'b', b'=', b'2', 5, b'k', b'e', b'y', b'=', b'x',
+        ];
+        let txt = TxtRecord::parse(&data).expect("parse");
+        assert_eq!(txt.attributes.len(), 3);
+        assert_eq!(txt.get("a"), Some("1"));
+        assert_eq!(txt.get("b"), Some("2"));
+        assert_eq!(txt.get("key"), Some("x"));
+    }
+
+    #[test]
+    fn test_record_type_ns_cname() {
+        assert_eq!(RecordType::from_u16(2), Some(RecordType::NS));
+        assert_eq!(RecordType::from_u16(5), Some(RecordType::CNAME));
+    }
+
+    #[test]
+    fn test_dns_header_flags_query() {
+        let data = [
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+        let header = DnsHeader::parse(&data).expect("parse");
+        assert!(!header.is_response());
+    }
+
+    #[test]
+    fn test_txt_record_empty_rdata() {
+        let data: [u8; 0] = [];
+        let txt = TxtRecord::parse(&data).expect("parse");
+        assert!(txt.attributes.is_empty());
     }
 }

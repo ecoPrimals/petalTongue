@@ -421,4 +421,126 @@ mod visual_2d_tests {
         let graph_read = graph_arc.read().expect("lock poisoned");
         assert_eq!(graph_read.nodes().len(), 3);
     }
+
+    #[test]
+    fn test_set_zoom_clamps_min() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph);
+        renderer.set_zoom(0.05);
+        assert!((renderer.zoom - 0.1).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_set_zoom_clamps_max() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph);
+        renderer.set_zoom(15.0);
+        assert!((renderer.zoom - 10.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_set_zoom_within_range() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph);
+        renderer.set_zoom(2.5);
+        assert!((renderer.zoom - 2.5).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_fit_to_view_empty_graph() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let mut renderer = Visual2DRenderer::new(graph.clone());
+        renderer.zoom = 2.0;
+        renderer.camera_offset = Vec2::new(100.0, 50.0);
+        renderer.fit_to_view(&graph);
+        assert!((renderer.zoom - 2.0).abs() < f32::EPSILON);
+        assert_eq!(renderer.camera_offset, Vec2::new(100.0, 50.0));
+    }
+
+    #[test]
+    fn test_fit_to_view_with_nodes() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph.clone());
+        renderer.fit_to_view(&graph);
+        assert!(renderer.zoom >= 0.1 && renderer.zoom <= 5.0);
+        assert!(renderer.camera_offset.x != 0.0 || renderer.camera_offset.y != 0.0);
+    }
+
+    #[test]
+    fn test_navigate_to_node_existing() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph.clone());
+        renderer.zoom = 1.0;
+        renderer.navigate_to_node("node1", &graph);
+        let g = graph.read().expect("lock");
+        let node = g.get_node("node1").expect("node1");
+        let expected_offset = Vec2::new(-node.position.x, -node.position.y);
+        drop(g);
+        assert!((renderer.camera_offset.x - expected_offset.x).abs() < 1.0);
+        assert!((renderer.camera_offset.y - expected_offset.y).abs() < 1.0);
+    }
+
+    #[test]
+    fn test_navigate_to_node_missing() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph.clone());
+        renderer.camera_offset = Vec2::new(50.0, 25.0);
+        renderer.navigate_to_node("nonexistent", &graph);
+        assert_eq!(renderer.camera_offset, Vec2::new(50.0, 25.0));
+    }
+
+    #[test]
+    fn test_select_node_by_id() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph);
+        renderer.select_node(Some("node1"));
+        assert_eq!(renderer.selected_node(), Some("node1"));
+        renderer.select_node(None);
+        assert!(renderer.selected_node().is_none());
+    }
+
+    #[test]
+    fn test_interactive_mode_toggle() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph);
+        assert!(!renderer.is_interactive());
+        renderer.set_interactive_mode(true);
+        assert!(renderer.is_interactive());
+        renderer.set_interactive_mode(false);
+        assert!(!renderer.is_interactive());
+    }
+
+    #[test]
+    fn test_show_stats_toggle() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph);
+        assert!(renderer.show_stats());
+        renderer.set_show_stats(false);
+        assert!(!renderer.show_stats());
+    }
+
+    #[test]
+    fn test_render_headless() {
+        let graph = create_test_graph();
+        let mut renderer = Visual2DRenderer::new(graph);
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                renderer.render(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_empty_graph_headless() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let mut renderer = Visual2DRenderer::new(graph);
+        renderer.set_show_stats(false);
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                renderer.render(ui);
+            });
+        });
+    }
 }

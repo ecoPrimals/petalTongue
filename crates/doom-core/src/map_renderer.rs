@@ -199,6 +199,52 @@ mod tests {
     }
 
     #[test]
+    fn test_render_empty_map() {
+        let mut renderer = MapRenderer::new(64, 64);
+        let map = MapData {
+            name: "EMPTY".to_string(),
+            vertices: vec![],
+            linedefs: vec![],
+            sectors: vec![],
+            things: vec![],
+        };
+        renderer.render(&map);
+        assert_eq!(renderer.framebuffer().len(), 64 * 64 * 4);
+        assert_eq!(renderer.framebuffer()[0], 32);
+        assert_eq!(renderer.framebuffer()[3], 255);
+    }
+
+    #[test]
+    fn test_render_map_with_things() {
+        use crate::wad_loader::Thing;
+        let mut renderer = MapRenderer::new(64, 64);
+        let map = MapData {
+            name: "THINGS".to_string(),
+            vertices: vec![Vertex { x: 0, y: 0 }, Vertex { x: 100, y: 0 }],
+            linedefs: vec![],
+            sectors: vec![],
+            things: vec![
+                Thing {
+                    x: 32,
+                    y: 32,
+                    angle: 0,
+                    thing_type: 1,
+                    flags: 0,
+                },
+                Thing {
+                    x: 50,
+                    y: 50,
+                    angle: 90,
+                    thing_type: 2,
+                    flags: 0,
+                },
+            ],
+        };
+        renderer.render(&map);
+        assert_eq!(renderer.framebuffer().len(), 64 * 64 * 4);
+    }
+
+    #[test]
     fn test_render_simple_map() {
         let mut renderer = MapRenderer::new(320, 240);
 

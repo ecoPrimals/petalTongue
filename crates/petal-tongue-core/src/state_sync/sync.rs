@@ -38,7 +38,11 @@ impl StateSync {
     }
 
     /// Initialize state for this device
-    pub fn init(&mut self, device_id: impl Into<String>, device_type: DeviceType) -> Result<Arc<DeviceState>> {
+    pub fn init(
+        &mut self,
+        device_id: impl Into<String>,
+        device_type: DeviceType,
+    ) -> Result<Arc<DeviceState>> {
         let device_id = device_id.into();
         if let Some(mut state) = self.persistence.load(&device_id)? {
             tracing::info!("📂 Loaded existing state for device {}", device_id);

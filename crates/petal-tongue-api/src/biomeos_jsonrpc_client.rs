@@ -342,4 +342,48 @@ mod tests {
         assert!(error_response.get("error").is_some());
         assert!(error_response.get("result").is_none());
     }
+
+    #[test]
+    fn test_jsonrpc_success_response_parsing() {
+        let response = json!({
+            "jsonrpc": "2.0",
+            "result": [{"id": "p1", "name": "Primal1"}],
+            "id": 1
+        });
+        assert!(response.get("result").is_some());
+        let result = response.get("result").cloned().unwrap();
+        let primals: Vec<serde_json::Value> = serde_json::from_value(result).unwrap();
+        assert_eq!(primals.len(), 1);
+    }
+
+    #[test]
+    fn test_jsonrpc_response_no_result_fails() {
+        let response = json!({
+            "jsonrpc": "2.0",
+            "id": 1
+        });
+        assert!(response.get("result").is_none());
+    }
+
+    #[test]
+    fn test_primal_list_request_params() {
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": "primal.list",
+            "params": {},
+            "id": 1
+        });
+        assert_eq!(request["params"], json!({}));
+    }
+
+    #[test]
+    fn test_topology_request_params() {
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": "neural_api.get_topology",
+            "params": {},
+            "id": 1
+        });
+        assert!(request["params"].is_object());
+    }
 }

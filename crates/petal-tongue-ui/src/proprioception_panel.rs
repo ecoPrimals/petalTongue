@@ -207,15 +207,8 @@ impl ProprioceptionPanel {
     fn render_confidence_meter(&self, ui: &mut Ui, data: &ProprioceptionData) {
         ui.label(RichText::new("Confidence").strong());
 
-        // Progress bar with color coding
         let progress = data.confidence / 100.0;
-        let color = if data.is_confident() {
-            Color32::from_rgb(34, 197, 94) // green-500
-        } else if data.confidence >= 50.0 {
-            Color32::from_rgb(234, 179, 8) // yellow-500
-        } else {
-            Color32::from_rgb(239, 68, 68) // red-500
-        };
+        let color = confidence_bar_color(data.confidence);
 
         ui.add(
             ProgressBar::new(progress)
@@ -391,15 +384,7 @@ impl ProprioceptionPanel {
         ui.horizontal(|ui| {
             ui.label(RichText::new("⚖️ Evaluative:").strong());
 
-            let status_text = if data.is_healthy() && data.is_confident() {
-                "System is healthy and confident"
-            } else if data.is_healthy() {
-                "System is healthy but low confidence"
-            } else if data.is_confident() {
-                "System is confident but degraded"
-            } else {
-                "System requires attention"
-            };
+            let status_text = evaluative_status_text(data.is_healthy(), data.is_confident());
 
             let color = if data.is_healthy() && data.is_confident() {
                 Color32::from_rgb(34, 197, 94) // green-500
@@ -414,11 +399,7 @@ impl ProprioceptionPanel {
     /// Render timestamp and freshness indicator
     fn render_timestamp(&self, ui: &mut Ui, data: &ProprioceptionData) {
         let age_secs = data.age().num_seconds();
-        let age_text = if age_secs < 60 {
-            format!("{age_secs}s ago")
-        } else {
-            format!("{}m ago", age_secs / 60)
-        };
+        let age_text = format_age_seconds(age_secs);
 
         let color = if data.is_stale() {
             Color32::from_rgb(239, 68, 68) // red-500 (stale)
@@ -476,11 +457,7 @@ impl ProprioceptionPanel {
                 let display_count = self.motor_history.len().min(8);
                 for entry in self.motor_history.iter().rev().take(display_count) {
                     let age = entry.timestamp.elapsed().as_secs();
-                    let age_text = if age < 60 {
-                        format!("{age}s ago")
-                    } else {
-                        format!("{}m ago", age / 60)
-                    };
+                    let age_text = format_age_seconds(i64::try_from(age).unwrap_or(i64::MAX));
                     ui.horizontal(|ui| {
                         ui.label(
                             RichText::new(&entry.command).color(Color32::from_rgb(156, 163, 175)),
@@ -500,6 +477,39 @@ impl ProprioceptionPanel {
 impl Default for ProprioceptionPanel {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[must_use]
+pub fn format_age_seconds(age_secs: i64) -> String {
+    if age_secs < 60 {
+        format!("{age_secs}s ago")
+    } else {
+        format!("{}m ago", age_secs / 60)
+    }
+}
+
+#[must_use]
+pub fn confidence_bar_color(confidence: f32) -> egui::Color32 {
+    if confidence >= 80.0 {
+        egui::Color32::from_rgb(34, 197, 94)
+    } else if confidence >= 50.0 {
+        egui::Color32::from_rgb(234, 179, 8)
+    } else {
+        egui::Color32::from_rgb(239, 68, 68)
+    }
+}
+
+#[must_use]
+pub const fn evaluative_status_text(is_healthy: bool, is_confident: bool) -> &'static str {
+    if is_healthy && is_confident {
+        "System is healthy and confident"
+    } else if is_healthy {
+        "System is healthy but low confidence"
+    } else if is_confident {
+        "System is confident but degraded"
+    } else {
+        "System requires attention"
     }
 }
 
@@ -738,5 +748,48 @@ mod tests {
         let panel = ProprioceptionPanel::default();
         assert!(panel.data.is_none());
         assert_eq!(panel.current_mode, "default");
+    }
+
+    #[test]
+    fn test_format_age_seconds() {
+        assert_eq!(format_age_seconds(0), "0s ago");
+        assert_eq!(format_age_seconds(30), "30s ago");
+        assert_eq!(format_age_seconds(59), "59s ago");
+        assert_eq!(format_age_seconds(60), "1m ago");
+        assert_eq!(format_age_seconds(120), "2m ago");
+        assert_eq!(format_age_seconds(90), "1m ago");
+    }
+
+    #[test]
+    fn test_confidence_bar_color() {
+        let green = egui::Color32::from_rgb(34, 197, 94);
+        let yellow = egui::Color32::from_rgb(234, 179, 8);
+        let red = egui::Color32::from_rgb(239, 68, 68);
+        assert_eq!(confidence_bar_color(80.0), green);
+        assert_eq!(confidence_bar_color(100.0), green);
+        assert_eq!(confidence_bar_color(50.0), yellow);
+        assert_eq!(confidence_bar_color(79.9), yellow);
+        assert_eq!(confidence_bar_color(49.9), red);
+        assert_eq!(confidence_bar_color(0.0), red);
+    }
+
+    #[test]
+    fn test_evaluative_status_text() {
+        assert_eq!(
+            evaluative_status_text(true, true),
+            "System is healthy and confident"
+        );
+        assert_eq!(
+            evaluative_status_text(true, false),
+            "System is healthy but low confidence"
+        );
+        assert_eq!(
+            evaluative_status_text(false, true),
+            "System is confident but degraded"
+        );
+        assert_eq!(
+            evaluative_status_text(false, false),
+            "System requires attention"
+        );
     }
 }

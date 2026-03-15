@@ -172,6 +172,25 @@ mod tests {
     use petal_tongue_core::proprioception::HealthStatus;
 
     #[test]
+    fn test_proprioception_panel_default() {
+        let panel = ProprioceptionPanel::default();
+        assert_eq!(panel.title(), "System Health");
+    }
+
+    #[test]
+    fn test_proprioception_panel_factory_default() {
+        let factory = ProprioceptionPanelFactory;
+        assert_eq!(factory.panel_type(), "proprioception");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_proprioception_panel_on_open_on_close() {
+        let mut panel = ProprioceptionPanel::new();
+        assert!(panel.on_open().is_ok());
+        assert!(panel.on_close().is_ok());
+    }
+
+    #[test]
     fn test_proprioception_panel_creation() {
         let panel = ProprioceptionPanel::new();
         assert_eq!(panel.title(), "System Health");

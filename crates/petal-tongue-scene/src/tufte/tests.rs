@@ -267,3 +267,106 @@ fn data_density_no_data_fails() {
     assert!(!result.passed);
     assert!((result.score - 0.0).abs() < 1e-10);
 }
+
+#[test]
+fn constraint_severity_variants() {
+    let info = ConstraintSeverity::Info;
+    let warning = ConstraintSeverity::Warning;
+    let error = ConstraintSeverity::Error;
+    assert!(matches!(info, ConstraintSeverity::Info));
+    assert!(matches!(warning, ConstraintSeverity::Warning));
+    assert!(matches!(error, ConstraintSeverity::Error));
+}
+
+#[test]
+fn constraint_severity_serde() {
+    let severities = [
+        ConstraintSeverity::Info,
+        ConstraintSeverity::Warning,
+        ConstraintSeverity::Error,
+    ];
+    for sev in &severities {
+        let json = serde_json::to_string(sev).unwrap();
+        let restored: ConstraintSeverity = serde_json::from_str(&json).unwrap();
+        assert_eq!(*sev, restored);
+    }
+}
+
+#[test]
+fn constraint_result_construction() {
+    let result = ConstraintResult {
+        passed: true,
+        score: 0.9,
+        message: "test".to_string(),
+    };
+    assert!(result.passed);
+    assert!((result.score - 0.9).abs() < 1e-10);
+    assert_eq!(result.message, "test");
+}
+
+#[test]
+fn constraint_result_serde() {
+    let result = ConstraintResult {
+        passed: false,
+        score: 0.5,
+        message: "failed".to_string(),
+    };
+    let json = serde_json::to_string(&result).unwrap();
+    let restored: ConstraintResult = serde_json::from_str(&json).unwrap();
+    assert_eq!(result.passed, restored.passed);
+    assert!((result.score - restored.score).abs() < 1e-10);
+    assert_eq!(result.message, restored.message);
+}
+
+#[test]
+fn tufte_report_construction() {
+    let report = TufteReport {
+        overall_score: 0.85,
+        results: vec![(
+            "DataInkRatio".to_string(),
+            ConstraintResult {
+                passed: true,
+                score: 0.9,
+                message: "ok".to_string(),
+            },
+        )],
+        corrections_applied: vec![],
+    };
+    assert!((report.overall_score - 0.85).abs() < 1e-10);
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.results[0].0, "DataInkRatio");
+    assert!(report.corrections_applied.is_empty());
+}
+
+#[test]
+fn tufte_report_serde() {
+    let report = TufteReport {
+        overall_score: 0.7,
+        results: vec![(
+            "Test".to_string(),
+            ConstraintResult {
+                passed: true,
+                score: 0.7,
+                message: "msg".to_string(),
+            },
+        )],
+        corrections_applied: vec!["fix1".to_string()],
+    };
+    let json = serde_json::to_string(&report).unwrap();
+    let restored: TufteReport = serde_json::from_str(&json).unwrap();
+    assert!((report.overall_score - restored.overall_score).abs() < 1e-10);
+    assert_eq!(report.results.len(), restored.results.len());
+    assert_eq!(
+        report.corrections_applied.len(),
+        restored.corrections_applied.len()
+    );
+}
+
+#[test]
+fn tufte_constraint_severity_and_auto_correctable() {
+    assert_eq!(DataInkRatio.severity(), ConstraintSeverity::Warning);
+    assert!(!DataInkRatio.auto_correctable());
+    assert_eq!(DataDensity.severity(), ConstraintSeverity::Info);
+    assert_eq!(ChartjunkDetection.severity(), ConstraintSeverity::Warning);
+    assert_eq!(LieFactor.severity(), ConstraintSeverity::Warning);
+}

@@ -7,9 +7,8 @@
 use super::RpcHandlers;
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse, error_codes};
 use crate::visualization_handler::{
-    DashboardRenderRequest, DismissRequest, ExportRequest, GrammarRenderRequest,
-    InteractionApplyRequest, SessionStatusRequest, StreamUpdateRequest, ValidateRequest,
-    VisualizationRenderRequest,
+    DashboardRenderRequest, ExportRequest, GrammarRenderRequest, InteractionApplyRequest,
+    StreamUpdateRequest, ValidateRequest, VisualizationRenderRequest,
 };
 use serde_json::Value;
 
@@ -121,16 +120,52 @@ pub fn handle_showing(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcRes
     )
 }
 
-/// Handle visualization.render: create or replace a visualization session
+/// Handle visualization.render: create or replace a visualization session.
+///
+/// Accepts either the canonical `VisualizationRenderRequest` format or any
+/// spring-native format recognized by `SpringDataAdapter` (ludoSpring game
+/// channels, ecoPrimals/time-series/v1, bare `DataBinding` arrays).
 pub fn handle_render(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
-    let params = match serde_json::from_value::<VisualizationRenderRequest>(req.params) {
+    let params = match serde_json::from_value::<VisualizationRenderRequest>(req.params.clone()) {
         Ok(p) => p,
-        Err(e) => {
-            return JsonRpcResponse::error(
-                req.id,
-                error_codes::INVALID_PARAMS,
-                format!("Invalid params: {e}"),
-            );
+        Err(canonical_err) => {
+            // Try SpringDataAdapter for native spring formats before failing
+            match petal_tongue_core::spring_adapter::SpringDataAdapter::adapt(&req.params) {
+                Ok(bindings) if !bindings.is_empty() => {
+                    let session_id = req
+                        .params
+                        .get("session_id")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("spring-session")
+                        .to_string();
+                    let title = req
+                        .params
+                        .get("title")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("Spring Data")
+                        .to_string();
+                    let domain = req
+                        .params
+                        .get("domain")
+                        .and_then(|v| v.as_str())
+                        .map(String::from);
+                    VisualizationRenderRequest {
+                        session_id,
+                        title,
+                        bindings,
+                        thresholds: Vec::new(),
+                        domain,
+                        ui_config: None,
+                    }
+                }
+                _ => {
+                    return JsonRpcResponse::error(
+                        req.id,
+                        error_codes::INVALID_PARAMS,
+                        format!("Invalid params: {canonical_err}"),
+                    );
+                }
+            }
         }
     };
     let response = handlers
@@ -301,36 +336,6 @@ pub fn handle_export(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResp
     JsonRpcResponse::success(req.id, value)
 }
 
-/// Handle visualization.dismiss: remove a session
-pub fn handle_dismiss(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
-    let params = match serde_json::from_value::<DismissRequest>(req.params) {
-        Ok(p) => p,
-        Err(e) => {
-            return JsonRpcResponse::error(
-                req.id,
-                error_codes::INVALID_PARAMS,
-                format!("Invalid params: {e}"),
-            );
-        }
-    };
-    let response = handlers
-        .viz_state
-        .write()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .handle_dismiss(params);
-    let value = match serde_json::to_value(&response) {
-        Ok(v) => v,
-        Err(e) => {
-            return JsonRpcResponse::error(
-                req.id,
-                error_codes::INTERNAL_ERROR,
-                format!("Serialization failed: {e}"),
-            );
-        }
-    };
-    JsonRpcResponse::success(req.id, value)
-}
-
 /// Handle visualization.interact.apply: apply interaction intent and broadcast
 pub fn handle_interact_apply(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
     let params = match serde_json::from_value::<InteractionApplyRequest>(req.params) {
@@ -371,36 +376,6 @@ pub fn handle_interact_perspectives(handlers: &RpcHandlers, id: Value) -> JsonRp
     JsonRpcResponse::success(id, serde_json::json!({ "perspectives": perspectives }))
 }
 
-/// Handle visualization.session.status: return session health metrics
-pub fn handle_session_status(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
-    let params = match serde_json::from_value::<SessionStatusRequest>(req.params) {
-        Ok(p) => p,
-        Err(e) => {
-            return JsonRpcResponse::error(
-                req.id,
-                error_codes::INVALID_PARAMS,
-                format!("Invalid params: {e}"),
-            );
-        }
-    };
-    let response = handlers
-        .viz_state
-        .read()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .handle_session_status(&params);
-    let value = match serde_json::to_value(&response) {
-        Ok(v) => v,
-        Err(e) => {
-            return JsonRpcResponse::error(
-                req.id,
-                error_codes::INTERNAL_ERROR,
-                format!("Serialization failed: {e}"),
-            );
-        }
-    };
-    JsonRpcResponse::success(req.id, value)
-}
-
 /// Handle visualization.capabilities: return supported `DataBinding` variant names
 pub fn handle_capabilities(_handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
     let variants = [
@@ -428,6 +403,60 @@ pub fn handle_capabilities(_handlers: &RpcHandlers, id: Value) -> JsonRpcRespons
             "output_modalities": output_modalities,
             "tufte_constraints": tufte_constraints,
             "scene_engine": true,
+        }),
+    )
+}
+
+/// Handle visualization.render.scene: directly submit a serialized SceneGraph.
+///
+/// Bypasses the grammar/data-binding pipeline; the SceneGraph is stored directly
+/// so springs can submit arbitrary visual scenes.
+pub fn handle_render_scene(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
+    let session_id = req
+        .params
+        .get("session_id")
+        .and_then(Value::as_str)
+        .unwrap_or("scene-session")
+        .to_string();
+
+    let scene_value = match req.params.get("scene") {
+        Some(v) => v.clone(),
+        None => {
+            return JsonRpcResponse::error(
+                req.id,
+                error_codes::INVALID_PARAMS,
+                "Missing 'scene' field",
+            );
+        }
+    };
+
+    let scene: petal_tongue_scene::scene_graph::SceneGraph =
+        match serde_json::from_value(scene_value) {
+            Ok(s) => s,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INVALID_PARAMS,
+                    format!("Invalid SceneGraph: {e}"),
+                );
+            }
+        };
+
+    let node_count = scene.node_count();
+    {
+        let mut state = handlers
+            .viz_state
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state.grammar_scenes.insert(session_id.clone(), scene);
+    }
+
+    JsonRpcResponse::success(
+        req.id,
+        serde_json::json!({
+            "session_id": session_id,
+            "nodes_accepted": node_count,
+            "status": "scene_stored",
         }),
     )
 }
@@ -728,18 +757,6 @@ mod tests {
     }
 
     #[test]
-    fn handle_dismiss_valid_params_succeeds() {
-        let h = test_handlers();
-        let req = JsonRpcRequest::new(
-            "visualization.dismiss",
-            json!({"session_id": "s1"}),
-            json!(1),
-        );
-        let resp = handle_dismiss(&h, req);
-        assert!(resp.error.is_none());
-    }
-
-    #[test]
     fn handle_interact_apply_valid_params_succeeds() {
         let h = test_handlers();
         let req = JsonRpcRequest::new(
@@ -763,5 +780,143 @@ mod tests {
                 .as_array()
                 .is_some()
         );
+    }
+
+    #[test]
+    fn handle_render_scene_missing_scene_returns_error() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "visualization.render.scene",
+            json!({"session_id": "s1"}),
+            json!(1),
+        );
+        let resp = handle_render_scene(&h, req);
+        assert!(resp.error.is_some());
+        assert_eq!(
+            resp.error.as_ref().expect("err").code,
+            error_codes::INVALID_PARAMS
+        );
+    }
+
+    #[test]
+    fn handle_render_scene_invalid_scene_returns_error() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "visualization.render.scene",
+            json!({"session_id": "s1", "scene": "not a valid scene"}),
+            json!(1),
+        );
+        let resp = handle_render_scene(&h, req);
+        assert!(resp.error.is_some());
+    }
+
+    #[test]
+    fn handle_render_scene_valid_succeeds() {
+        let h = test_handlers();
+        let scene = petal_tongue_scene::scene_graph::SceneGraph::new();
+        let scene_value = serde_json::to_value(&scene).expect("serialize");
+        let req = JsonRpcRequest::new(
+            "visualization.render.scene",
+            json!({"session_id": "scene-session", "scene": scene_value}),
+            json!(1),
+        );
+        let resp = handle_render_scene(&h, req);
+        assert!(resp.error.is_none());
+        let r = resp.result.expect("result");
+        assert_eq!(r["session_id"], "scene-session");
+        assert_eq!(r["status"], "scene_stored");
+    }
+
+    #[test]
+    fn handle_grammar_render_invalid_params_returns_error() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "visualization.render.grammar",
+            json!({"invalid": "params"}),
+            json!(1),
+        );
+        let resp = handle_grammar_render(&h, req);
+        assert!(resp.error.is_some());
+    }
+
+    #[test]
+    fn handle_grammar_render_valid_params_succeeds() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "visualization.render.grammar",
+            json!({
+                "session_id": "gram-s1",
+                "grammar": {
+                    "data_source": "tbl",
+                    "geometry": "Point",
+                    "variables": [
+                        {"name": "x", "field": "a", "role": "X"},
+                        {"name": "y", "field": "b", "role": "Y"}
+                    ],
+                    "scales": [],
+                    "coordinate": "Cartesian",
+                    "facets": null,
+                    "aesthetics": []
+                },
+                "data": [{"a": 1.0, "b": 2.0}, {"a": 3.0, "b": 4.0}],
+                "modality": "svg"
+            }),
+            json!(1),
+        );
+        let resp = handle_grammar_render(&h, req);
+        assert!(resp.error.is_none());
+        let r = resp.result.expect("result");
+        assert_eq!(r["session_id"], "gram-s1");
+        assert_eq!(r["modality"], "svg");
+    }
+
+    #[test]
+    fn handle_dashboard_render_invalid_params_returns_error() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("visualization.render.dashboard", json!({}), json!(1));
+        let resp = handle_dashboard_render(&h, req);
+        assert!(resp.error.is_some());
+    }
+
+    #[test]
+    fn handle_dashboard_render_valid_params_succeeds() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "visualization.render.dashboard",
+            json!({
+                "session_id": "dash1",
+                "title": "Test Dashboard",
+                "bindings": []
+            }),
+            json!(1),
+        );
+        let resp = handle_dashboard_render(&h, req);
+        assert!(resp.error.is_none());
+        let r = resp.result.expect("result");
+        assert_eq!(r["session_id"], "dash1");
+        assert_eq!(r["panel_count"], 0);
+    }
+
+    #[test]
+    fn handle_export_invalid_params_returns_error() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("visualization.export", json!({"session_id": 123}), json!(1));
+        let resp = handle_export(&h, req);
+        assert!(resp.error.is_some());
+    }
+
+    #[test]
+    fn handle_render_scene_default_session_id() {
+        let h = test_handlers();
+        let scene = petal_tongue_scene::scene_graph::SceneGraph::new();
+        let scene_value = serde_json::to_value(&scene).expect("serialize");
+        let req = JsonRpcRequest::new(
+            "visualization.render.scene",
+            json!({"scene": scene_value}),
+            json!(1),
+        );
+        let resp = handle_render_scene(&h, req);
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.expect("result")["session_id"], "scene-session");
     }
 }

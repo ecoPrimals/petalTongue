@@ -186,23 +186,7 @@ pub async fn discover() -> Option<ScreenSensor> {
     None
 }
 
-/// Query framebuffer dimensions via sysfs (100% safe Rust).
-///
-/// Reads `/sys/class/graphics/{fb}/virtual_size` which exports the
-/// framebuffer resolution as a text file. 100% safe Rust, no ioctl.
-fn query_framebuffer_dimensions(fb_path: &str) -> Result<(usize, usize)> {
-    // Extract device name from path (e.g. "/dev/fb0" -> "fb0")
-    let fb_name = std::path::Path::new(fb_path)
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("fb0");
-
-    let sysfs_path = format!("/sys/class/graphics/{fb_name}/virtual_size");
-
-    let content = std::fs::read_to_string(&sysfs_path)
-        .map_err(|e| anyhow::anyhow!("Cannot read framebuffer sysfs at {sysfs_path}: {e}"))?;
-
-    // Format: "WIDTH,HEIGHT\n"
+pub fn parse_virtual_size_content(content: &str) -> Result<(usize, usize)> {
     let parts: Vec<&str> = content.trim().split(',').collect();
     if parts.len() >= 2 {
         let width: usize = parts[0]
@@ -213,11 +197,22 @@ fn query_framebuffer_dimensions(fb_path: &str) -> Result<(usize, usize)> {
             .map_err(|e| anyhow::anyhow!("Invalid framebuffer height '{}': {e}", parts[1]))?;
         Ok((width, height))
     } else {
-        anyhow::bail!(
-            "Unexpected sysfs format in {sysfs_path}: '{}'",
-            content.trim()
-        )
+        anyhow::bail!("Unexpected sysfs format: '{}'", content.trim())
     }
+}
+
+fn query_framebuffer_dimensions(fb_path: &str) -> Result<(usize, usize)> {
+    let fb_name = std::path::Path::new(fb_path)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("fb0");
+
+    let sysfs_path = format!("/sys/class/graphics/{fb_name}/virtual_size");
+
+    let content = std::fs::read_to_string(&sysfs_path)
+        .map_err(|e| anyhow::anyhow!("Cannot read framebuffer sysfs at {sysfs_path}: {e}"))?;
+
+    parse_virtual_size_content(&content).map_err(|e| anyhow::anyhow!("{e} in {sysfs_path}"))
 }
 
 /// Query display dimensions from X11/Wayland/native APIs
@@ -506,5 +501,32 @@ mod tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(err.to_string().contains("Cannot read") || err.to_string().contains("fb999"));
+    }
+
+    #[test]
+    fn test_parse_virtual_size_content_valid() {
+        assert_eq!(
+            parse_virtual_size_content("1920,1080").unwrap(),
+            (1920, 1080)
+        );
+        assert_eq!(parse_virtual_size_content("800,600\n").unwrap(), (800, 600));
+        assert_eq!(parse_virtual_size_content("1024,768").unwrap(), (1024, 768));
+    }
+
+    #[test]
+    fn test_parse_virtual_size_content_invalid() {
+        assert!(parse_virtual_size_content("").is_err());
+        assert!(parse_virtual_size_content("1920").is_err());
+        assert!(parse_virtual_size_content("abc,1080").is_err());
+        assert!(parse_virtual_size_content("1920,xyz").is_err());
+    }
+
+    #[test]
+    fn test_screen_sensor_capabilities_spatial_temporal() {
+        let sensor = ScreenSensor::new(DisplayType::Window, 1920, 1080);
+        let caps = sensor.capabilities();
+        assert!(caps.spatial);
+        assert!(caps.temporal);
+        assert!(caps.discrete);
     }
 }

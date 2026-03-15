@@ -159,8 +159,119 @@ impl ModalityCompiler for TerminalCompiler {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::modality::test_utils::rich_test_scene;
     use crate::primitive::{AnchorPoint, Color, Primitive};
     use crate::scene_graph::{SceneGraph, SceneNode};
+
+    #[test]
+    fn terminal_compiler_empty_scene() {
+        let graph = SceneGraph::new();
+        let out = TerminalCompiler::new(80, 24).compile(&graph);
+        let ModalityOutput::TerminalCells(grid) = &out else {
+            panic!("expected TerminalCells");
+        };
+        assert_eq!(grid.len(), 24);
+        assert_eq!(grid[0].len(), 80);
+        let all_space = grid.iter().all(|row| row.iter().all(|&c| c == ' '));
+        assert!(all_space);
+    }
+
+    #[test]
+    fn terminal_compiler_single_point() {
+        let mut graph = SceneGraph::new();
+        let prim = Primitive::Point {
+            x: 400.0,
+            y: 300.0,
+            radius: 5.0,
+            fill: Some(Color::BLACK),
+            stroke: None,
+            data_id: None,
+        };
+        graph.add_to_root(SceneNode::new("p").with_primitive(prim));
+        let out = TerminalCompiler::new(80, 24).compile(&graph);
+        let ModalityOutput::TerminalCells(grid) = &out else {
+            panic!("expected TerminalCells");
+        };
+        let has_marker = grid.iter().any(|row| row.contains(&'●'));
+        assert!(has_marker);
+    }
+
+    #[test]
+    fn terminal_compiler_line() {
+        let mut graph = SceneGraph::new();
+        let prim = Primitive::Line {
+            points: vec![[0.0, 0.0], [800.0, 600.0]],
+            stroke: crate::primitive::StrokeStyle::default(),
+            closed: false,
+            data_id: None,
+        };
+        graph.add_to_root(SceneNode::new("line").with_primitive(prim));
+        let out = TerminalCompiler::new(80, 24).compile(&graph);
+        let ModalityOutput::TerminalCells(grid) = &out else {
+            panic!("expected TerminalCells");
+        };
+        let has_line_char = grid
+            .iter()
+            .any(|row| row.iter().any(|&c| c == '─' || c == '│' || c == '·'));
+        assert!(has_line_char);
+    }
+
+    #[test]
+    fn terminal_compiler_rect() {
+        let mut graph = SceneGraph::new();
+        let prim = Primitive::Rect {
+            x: 100.0,
+            y: 100.0,
+            width: 200.0,
+            height: 100.0,
+            fill: Some(Color::BLACK),
+            stroke: None,
+            corner_radius: 0.0,
+            data_id: None,
+        };
+        graph.add_to_root(SceneNode::new("rect").with_primitive(prim));
+        let out = TerminalCompiler::new(80, 24).compile(&graph);
+        let ModalityOutput::TerminalCells(grid) = &out else {
+            panic!("expected TerminalCells");
+        };
+        let has_rect_char = grid
+            .iter()
+            .any(|row| row.iter().any(|&c| c == '─' || c == '│'));
+        assert!(has_rect_char);
+    }
+
+    #[test]
+    fn terminal_compiler_multiple_primitives() {
+        let scene = rich_test_scene();
+        let out = TerminalCompiler::new(80, 24).compile(&scene);
+        let ModalityOutput::TerminalCells(grid) = &out else {
+            panic!("expected TerminalCells");
+        };
+        assert_eq!(grid.len(), 24);
+        assert_eq!(grid[0].len(), 80);
+        let has_content = grid.iter().any(|row| row.iter().any(|&c| c != ' '));
+        assert!(has_content);
+    }
+
+    #[test]
+    fn terminal_compiler_custom_sizes() {
+        let mut graph = SceneGraph::new();
+        let prim = Primitive::Point {
+            x: 400.0,
+            y: 300.0,
+            radius: 5.0,
+            fill: None,
+            stroke: None,
+            data_id: None,
+        };
+        graph.add_to_root(SceneNode::new("p").with_primitive(prim));
+        let out = TerminalCompiler::new(40, 10).compile(&graph);
+        let ModalityOutput::TerminalCells(grid) = &out else {
+            panic!("expected TerminalCells");
+        };
+        assert_eq!(grid.len(), 10);
+        assert_eq!(grid[0].len(), 40);
+    }
 
     #[test]
     fn terminal_compiler_plots_points() {

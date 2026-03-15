@@ -127,11 +127,6 @@ toadstool-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys"]
 # - macOS: CoreAudio (via system APIs)
 # - Windows: WASAPI (via system APIs)
 
-[[bin]]
-name = "petal-tongue"
-path = "src/main.rs"
-doc = false
-
 [dev-dependencies]
 petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }  # For tests that use test_fixtures (run: cargo test --features test-fixtures or --features mock)
 tokio = { workspace = true, features = ["test-util", "macros"] }

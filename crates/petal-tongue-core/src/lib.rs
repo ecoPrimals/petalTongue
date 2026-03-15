@@ -49,6 +49,8 @@ pub mod graph_builder; // SAME DAVE proprioception data (Neural API)
 pub mod graph_engine;
 pub mod graph_validation; // Graph validation (cycle detection, dependencies)
 pub mod instance; // Instance management
+#[cfg(test)]
+mod lib_tests;
 pub mod lifecycle;
 pub mod metrics; // System metrics (CPU, memory, Neural API stats)
 pub mod platform_dirs; // Pure Rust directory resolution (zero deps!)
@@ -173,7 +175,9 @@ pub use shader_lineage::{
 };
 
 /// Universal spring data adapter (multi-format → DataBinding normalization)
-pub use spring_adapter::{GameChannelType, SpringAdapterError, SpringDataAdapter, SpringPayloadFormat};
+pub use spring_adapter::{
+    GameChannelType, SpringAdapterError, SpringDataAdapter, SpringPayloadFormat,
+};
 
 /// State synchronization (Cross-device state)
 pub use state_sync::{DeviceState, LocalStatePersistence, StatePersistence, StateSync};

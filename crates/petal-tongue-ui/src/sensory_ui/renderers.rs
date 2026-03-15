@@ -552,6 +552,44 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_format_proprioception_summary_edge_cases() {
+        let pairs = format_proprioception_summary(0.0, "Offline", 0.0);
+        assert_eq!(pairs[0].1, "0%");
+        assert_eq!(pairs[2].1, "0.0");
+        let pairs = format_proprioception_summary(100.0, "Healthy", 100.0);
+        assert_eq!(pairs[0].1, "100%");
+        assert_eq!(pairs[2].1, "100.0");
+    }
+
+    #[test]
+    fn test_format_cpu_metrics_edge_cases() {
+        assert_eq!(format_cpu_metrics(99.9), "CPU: 99.9%");
+        assert_eq!(format_cpu_metrics(0.1), "CPU: 0.1%");
+    }
+
+    #[test]
+    fn test_format_memory_metrics_edge_cases() {
+        assert_eq!(format_memory_metrics(100.0), "Memory: 100.0%");
+    }
+
+    #[test]
+    fn test_format_capabilities_count_single() {
+        assert_eq!(format_capabilities_count(1), "1 caps");
+    }
+
+    #[test]
+    fn test_format_cpu_memory_combined_edge_cases() {
+        assert_eq!(
+            format_cpu_memory_combined(0.0, 0.0),
+            "CPU: 0.0% | Memory: 0.0%"
+        );
+        assert_eq!(
+            format_cpu_memory_combined(100.0, 100.0),
+            "CPU: 100.0% | Memory: 100.0%"
+        );
+    }
+
     /// Headless egui: MinimalSensoryUI renders without panic (via manager)
     #[test]
     fn test_minimal_renderer_headless() {

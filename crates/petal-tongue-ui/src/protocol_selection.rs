@@ -49,37 +49,7 @@ impl HttpsClient {
     async fn health(&self) -> TarpcResult<petal_tongue_ipc::HealthStatus> {
         for path in Self::HEALTH_PATHS {
             if let Ok(value) = self.fetch_json(path).await {
-                let status = value
-                    .get("status")
-                    .and_then(|s| s.as_str())
-                    .unwrap_or("unknown")
-                    .to_string();
-                let version = value
-                    .get("version")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .to_string();
-                let uptime_seconds = value
-                    .get("uptime_seconds")
-                    .and_then(serde_json::Value::as_u64)
-                    .unwrap_or(0);
-                let capabilities = value
-                    .get("capabilities")
-                    .or_else(|| value.get("modalities_active"))
-                    .and_then(|c| c.as_array())
-                    .map(|arr| {
-                        arr.iter()
-                            .filter_map(|v| v.as_str().map(String::from))
-                            .collect()
-                    })
-                    .unwrap_or_default();
-                return Ok(petal_tongue_ipc::HealthStatus {
-                    status,
-                    version,
-                    uptime_seconds,
-                    capabilities,
-                    details: std::collections::HashMap::new(),
-                });
+                return Ok(parse_health_from_json(&value));
             }
         }
         Err(TarpcClientError::Connection(format!(
@@ -91,24 +61,75 @@ impl HttpsClient {
     async fn get_capabilities(&self) -> TarpcResult<Vec<String>> {
         for path in Self::CAPABILITIES_PATHS {
             if let Ok(value) = self.fetch_json(path).await {
-                let capabilities = value
-                    .get("capabilities")
-                    .and_then(|c| c.as_array())
-                    .ok_or_else(|| {
-                        TarpcClientError::Configuration(
-                            "HTTPS capabilities response missing 'capabilities' array".to_string(),
-                        )
-                    })?;
-                let strings: Vec<String> = capabilities
-                    .iter()
-                    .filter_map(|v| v.as_str().map(String::from))
-                    .collect();
-                return Ok(strings);
+                return parse_capabilities_from_json(&value);
             }
         }
         Err(TarpcClientError::Configuration(
             "No capabilities endpoint responded".to_string(),
         ))
+    }
+}
+
+#[must_use]
+pub fn parse_health_from_json(value: &serde_json::Value) -> petal_tongue_ipc::HealthStatus {
+    let status = value
+        .get("status")
+        .and_then(|s| s.as_str())
+        .unwrap_or("unknown")
+        .to_string();
+    let version = value
+        .get("version")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let uptime_seconds = value
+        .get("uptime_seconds")
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0);
+    let capabilities = value
+        .get("capabilities")
+        .or_else(|| value.get("modalities_active"))
+        .and_then(|c| c.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_default();
+    petal_tongue_ipc::HealthStatus {
+        status,
+        version,
+        uptime_seconds,
+        capabilities,
+        details: std::collections::HashMap::new(),
+    }
+}
+
+pub fn parse_capabilities_from_json(
+    value: &serde_json::Value,
+) -> Result<Vec<String>, TarpcClientError> {
+    value
+        .get("capabilities")
+        .and_then(|c| c.as_array())
+        .ok_or_else(|| {
+            TarpcClientError::Configuration("Response missing 'capabilities' array".to_string())
+        })
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect()
+        })
+}
+
+#[must_use]
+pub fn https_fallback_urls(endpoint: &str) -> Vec<String> {
+    if endpoint.starts_with("https://") {
+        vec![
+            endpoint.to_string(),
+            endpoint.replacen("https://", "http://", 1),
+        ]
+    } else {
+        vec![endpoint.to_string()]
     }
 }
 
@@ -219,17 +240,7 @@ async fn connect_https(endpoint: &str) -> TarpcResult<PrimalConnection> {
         .build()
         .map_err(|e| TarpcClientError::Configuration(format!("reqwest client: {e}")))?;
 
-    // Try HTTPS first, then fall back to HTTP
-    let urls_to_try: Vec<String> = if endpoint.starts_with("https://") {
-        vec![
-            endpoint.to_string(),
-            endpoint.replacen("https://", "http://", 1),
-        ]
-    } else {
-        vec![endpoint.to_string()]
-    };
-
-    for base_url in urls_to_try {
+    for base_url in https_fallback_urls(endpoint) {
         let scheme = if base_url.starts_with("https://") {
             "HTTPS"
         } else {
@@ -294,20 +305,7 @@ impl PrimalConnection {
                     .get_capabilities()
                     .await
                     .map_err(jsonrpc_to_tarpc_error)?;
-                let capabilities = value
-                    .get("capabilities")
-                    .and_then(|c| c.as_array())
-                    .ok_or_else(|| {
-                        TarpcClientError::Configuration(
-                            "JSON-RPC capabilities response missing 'capabilities' array"
-                                .to_string(),
-                        )
-                    })?;
-                let strings: Vec<String> = capabilities
-                    .iter()
-                    .filter_map(|v| v.as_str().map(String::from))
-                    .collect();
-                Ok(strings)
+                parse_capabilities_from_json(&value)
             }
             Self::Https(client) => client.get_capabilities().await,
         }
@@ -322,37 +320,7 @@ impl PrimalConnection {
                     .health_check()
                     .await
                     .map_err(jsonrpc_to_tarpc_error)?;
-                let status = value
-                    .get("status")
-                    .and_then(|s| s.as_str())
-                    .unwrap_or("unknown")
-                    .to_string();
-                let version = value
-                    .get("version")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .to_string();
-                let uptime_seconds = value
-                    .get("uptime_seconds")
-                    .and_then(serde_json::Value::as_u64)
-                    .unwrap_or(0);
-                let capabilities = value
-                    .get("capabilities")
-                    .or_else(|| value.get("modalities_active"))
-                    .and_then(|c| c.as_array())
-                    .map(|arr| {
-                        arr.iter()
-                            .filter_map(|v| v.as_str().map(String::from))
-                            .collect()
-                    })
-                    .unwrap_or_default();
-                Ok(petal_tongue_ipc::HealthStatus {
-                    status,
-                    version,
-                    uptime_seconds,
-                    capabilities,
-                    details: std::collections::HashMap::new(),
-                })
+                Ok(parse_health_from_json(&value))
             }
             Self::Https(client) => client.health().await,
         }
@@ -624,5 +592,60 @@ mod tests {
         assert!(result.is_ok(), "should not hang");
         let conn_result = result.unwrap();
         assert!(conn_result.is_err(), "no server on port 19998");
+    }
+
+    #[test]
+    fn test_detect_protocol_tarpc_variants() {
+        assert_eq!(detect_protocol("tarpc://127.0.0.1:9001"), Protocol::Tarpc);
+        assert_eq!(
+            detect_protocol("tarpc://host.example.com:12345"),
+            Protocol::Tarpc
+        );
+    }
+
+    #[test]
+    fn test_detect_protocol_https_variants() {
+        assert_eq!(detect_protocol("https://example.com/api"), Protocol::Https);
+        assert_eq!(detect_protocol("http://localhost"), Protocol::Https);
+    }
+
+    #[test]
+    fn test_protocol_ord_consistency() {
+        assert!(Protocol::Tarpc <= Protocol::Tarpc);
+        assert!(Protocol::JsonRpc > Protocol::Tarpc);
+        assert!(Protocol::Https > Protocol::JsonRpc);
+    }
+
+    #[test]
+    fn test_parse_health_from_json() {
+        let v = serde_json::json!({
+            "status": "ok",
+            "version": "1.0",
+            "uptime_seconds": 100,
+            "capabilities": ["a", "b"]
+        });
+        let h = parse_health_from_json(&v);
+        assert_eq!(h.status, "ok");
+        assert_eq!(h.version, "1.0");
+        assert_eq!(h.uptime_seconds, 100);
+        assert_eq!(h.capabilities, vec!["a", "b"]);
+    }
+
+    #[test]
+    fn test_parse_capabilities_from_json() {
+        let v = serde_json::json!({"capabilities": ["x", "y"]});
+        let c = parse_capabilities_from_json(&v).unwrap();
+        assert_eq!(c, vec!["x", "y"]);
+    }
+
+    #[test]
+    fn test_https_fallback_urls() {
+        let urls = https_fallback_urls("https://example.com");
+        assert_eq!(urls.len(), 2);
+        assert_eq!(urls[0], "https://example.com");
+        assert_eq!(urls[1], "http://example.com");
+        let urls = https_fallback_urls("http://x");
+        assert_eq!(urls.len(), 1);
+        assert_eq!(urls[0], "http://x");
     }
 }

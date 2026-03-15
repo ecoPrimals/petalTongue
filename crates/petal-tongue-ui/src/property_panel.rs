@@ -168,7 +168,7 @@ impl PropertyPanel {
         // Show field-specific help text
         ui.indent("help", |ui| {
             ui.label(
-                RichText::new(self.get_parameter_help(param_name))
+                RichText::new(Self::get_parameter_help(param_name))
                     .size(10.0)
                     .color(palette.text_dim),
             );
@@ -177,8 +177,8 @@ impl PropertyPanel {
         ui.add_space(4.0);
     }
 
-    /// Get help text for a parameter (TRUE PRIMAL: context-aware, not hardcoded!)
-    fn get_parameter_help(&self, param_name: &str) -> &'static str {
+    #[must_use]
+    pub fn get_parameter_help(param_name: &str) -> &'static str {
         match param_name {
             "primal_name" => "Name of the primal to start (discovered at runtime)",
             "family_id" => "Family ID for the primal (e.g., nat0)",
@@ -546,5 +546,29 @@ mod tests {
         assert!(panel.get_editing_node().is_none());
         panel.set_editing_node(Some(node_id.clone()), &graph);
         assert_eq!(panel.get_editing_node(), Some(&node_id));
+    }
+
+    #[test]
+    fn test_get_parameter_help() {
+        assert_eq!(
+            PropertyPanel::get_parameter_help("primal_name"),
+            "Name of the primal to start (discovered at runtime)"
+        );
+        assert_eq!(
+            PropertyPanel::get_parameter_help("family_id"),
+            "Family ID for the primal (e.g., nat0)"
+        );
+        assert_eq!(
+            PropertyPanel::get_parameter_help("timeout"),
+            "Timeout in seconds (e.g., 30)"
+        );
+        assert_eq!(
+            PropertyPanel::get_parameter_help("condition"),
+            "Condition to wait for or evaluate"
+        );
+        assert_eq!(
+            PropertyPanel::get_parameter_help("unknown_param"),
+            "Enter value for this parameter"
+        );
     }
 }

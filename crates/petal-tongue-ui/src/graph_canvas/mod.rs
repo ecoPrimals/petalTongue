@@ -488,4 +488,47 @@ mod tests {
         assert!((pos.x % 50.0).abs() < 1.0 || (pos.x % 50.0 - 50.0).abs() < 1.0);
         assert!((pos.y % 50.0).abs() < 1.0 || (pos.y % 50.0 - 50.0).abs() < 1.0);
     }
+
+    #[test]
+    fn test_toggle_node_selection_add() {
+        let mut canvas = GraphCanvas::new("test".to_string());
+        canvas.toggle_node_selection("n1");
+        assert!(canvas.selected_nodes.contains("n1"));
+    }
+
+    #[test]
+    fn test_toggle_node_selection_remove() {
+        let mut canvas = GraphCanvas::new("test".to_string());
+        canvas.select_node("n1");
+        canvas.toggle_node_selection("n1");
+        assert!(!canvas.selected_nodes.contains("n1"));
+    }
+
+    #[test]
+    fn test_reset_camera() {
+        let mut canvas = GraphCanvas::new("test".to_string());
+        canvas.camera.position = Vec2::new(100.0, 200.0);
+        canvas.camera.zoom = 2.5;
+        canvas.reset_camera();
+        assert!((canvas.camera.position.x - 0.0).abs() < f32::EPSILON);
+        assert!((canvas.camera.position.y - 0.0).abs() < f32::EPSILON);
+        assert!((canvas.camera.zoom - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_to_scene_edge_data_id() {
+        let mut canvas = GraphCanvas::new("test".to_string());
+        let canvas_rect = Rect::from_min_size(Pos2::ZERO, EguiVec2::new(800.0, 600.0));
+        canvas.add_node_at_screen(NodeType::PrimalStart, Pos2::new(100.0, 100.0), canvas_rect);
+        canvas.add_node_at_screen(NodeType::Verification, Pos2::new(200.0, 200.0), canvas_rect);
+        let id1 = canvas.graph().nodes[0].id.clone();
+        let id2 = canvas.graph().nodes[1].id.clone();
+        let _ = canvas
+            .graph_mut()
+            .add_edge(GraphEdge::dependency(id1.clone(), id2.clone()));
+        let scene = canvas.to_scene(canvas_rect);
+        let edge_id = format!("edge:{}:{}", id1, id2);
+        let found = scene.find_by_data_id(&edge_id);
+        assert!(!found.is_empty());
+    }
 }

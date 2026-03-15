@@ -256,4 +256,20 @@ mod tests {
         assert!(path_str.ends_with(".sock"));
         assert!(path_str.contains("petaltongue"));
     }
+
+    #[test]
+    fn test_get_socket_path_with_uid_env() {
+        let instance_id = InstanceId::new();
+        let result = petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
+            "UID",
+            "12345",
+            || get_socket_path(&instance_id),
+        );
+        if let Ok(path) = result {
+            let path_str = path.to_string_lossy();
+            if path_str.contains("/run/user/") {
+                assert!(path_str.contains("12345"));
+            }
+        }
+    }
 }

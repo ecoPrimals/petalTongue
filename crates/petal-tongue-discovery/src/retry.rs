@@ -228,4 +228,53 @@ mod tests {
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("timed out"));
     }
+
+    #[test]
+    fn test_retry_policy_default() {
+        let policy = RetryPolicy::default();
+        assert_eq!(policy.max_attempts, 3);
+        assert_eq!(policy.backoff_factor, 2.0);
+        assert!(policy.jitter);
+    }
+
+    #[test]
+    fn test_retry_policy_new() {
+        let policy = RetryPolicy::new(5);
+        assert_eq!(policy.max_attempts, 5);
+    }
+
+    #[tokio::test]
+    async fn test_retry_succeeds_immediately() {
+        let policy = RetryPolicy::default();
+        let result = policy
+            .execute(|| async { Ok::<_, &str>("immediate") })
+            .await;
+        assert_eq!(result.unwrap(), "immediate");
+    }
+
+    #[tokio::test]
+    async fn test_retry_max_delay_capped() {
+        let policy = RetryPolicy {
+            max_attempts: 2,
+            initial_delay: Duration::from_secs(1),
+            max_delay: Duration::from_millis(50),
+            backoff_factor: 10.0,
+            jitter: false,
+        };
+        let counter = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let c = counter.clone();
+        let result = policy
+            .execute(|| {
+                let counter = c.clone();
+                async move {
+                    if counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst) < 1 {
+                        Err::<(), _>("fail")
+                    } else {
+                        Ok(())
+                    }
+                }
+            })
+            .await;
+        assert!(result.is_ok());
+    }
 }

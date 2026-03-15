@@ -134,6 +134,19 @@ impl SceneGraph {
         result
     }
 
+    /// Flatten with accumulated opacity per primitive.
+    #[must_use]
+    pub fn flatten_with_opacity(&self) -> Vec<(Transform2D, &Primitive, &NodeId, f32)> {
+        let mut result = Vec::new();
+        self.flatten_node_opacity(
+            self.root_id.as_str(),
+            Transform2D::IDENTITY,
+            1.0,
+            &mut result,
+        );
+        result
+    }
+
     fn flatten_node<'a>(
         &'a self,
         node_id: &str,
@@ -152,6 +165,29 @@ impl SceneGraph {
         }
         for child_id in &node.children {
             self.flatten_node(child_id.as_str(), world_transform, out);
+        }
+    }
+
+    fn flatten_node_opacity<'a>(
+        &'a self,
+        node_id: &str,
+        parent_transform: Transform2D,
+        parent_opacity: f32,
+        out: &mut Vec<(Transform2D, &'a Primitive, &'a NodeId, f32)>,
+    ) {
+        let Some(node) = self.nodes.get(node_id) else {
+            return;
+        };
+        if !node.visible {
+            return;
+        }
+        let world_transform = parent_transform.then(node.transform);
+        let accumulated_opacity = parent_opacity * node.opacity;
+        for prim in &node.primitives {
+            out.push((world_transform, prim, &node.id, accumulated_opacity));
+        }
+        for child_id in &node.children {
+            self.flatten_node_opacity(child_id.as_str(), world_transform, accumulated_opacity, out);
         }
     }
 

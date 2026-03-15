@@ -209,8 +209,7 @@ impl SpringDataAdapter {
                     id,
                     label,
                     x_label: extract_string(data, "x_label").unwrap_or_else(|| "Time".to_string()),
-                    y_label: extract_string(data, "y_label")
-                        .unwrap_or_else(|| "Value".to_string()),
+                    y_label: extract_string(data, "y_label").unwrap_or_else(|| "Value".to_string()),
                     unit,
                     x_values,
                     y_values,
@@ -413,9 +412,7 @@ mod tests {
         let result = SpringDataAdapter::adapt(&json).unwrap();
         assert_eq!(result.len(), 1);
         match &result[0] {
-            DataBinding::Bar {
-                id, categories, ..
-            } => {
+            DataBinding::Bar { id, categories, .. } => {
                 assert_eq!(id, "ft1");
                 assert_eq!(categories.len(), 3);
             }

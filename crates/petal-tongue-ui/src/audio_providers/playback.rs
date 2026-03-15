@@ -56,3 +56,25 @@ pub fn play_file(path: &Path) -> Result<(), String> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    #[test]
+    fn play_file_nonexistent_fails() {
+        let result = play_file(Path::new("/nonexistent/path/audio.wav"));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Failed to read"));
+    }
+
+    #[test]
+    fn play_file_invalid_audio_fails() {
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), b"not valid audio data").unwrap();
+        let result = play_file(temp.path());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("decode"));
+    }
+}

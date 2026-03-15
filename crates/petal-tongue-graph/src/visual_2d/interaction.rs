@@ -477,4 +477,99 @@ mod tests {
         let g = graph.read().expect("read graph");
         assert_eq!(g.nodes().len(), 0);
     }
+
+    #[test]
+    fn create_edge_duplicate_skipped() {
+        use crate::visual_2d::Visual2DRenderer;
+        use petal_tongue_core::graph_engine::{GraphEngine, Position};
+        use std::sync::{Arc, RwLock};
+
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let mut renderer = Visual2DRenderer::new(graph.clone());
+        renderer.interactive_mode = true;
+
+        create_node_at(&mut renderer, Position::new_2d(0.0, 0.0));
+        create_node_at(&mut renderer, Position::new_2d(100.0, 100.0));
+
+        create_edge(
+            &mut renderer,
+            PrimalId::from("interactive-node-1"),
+            PrimalId::from("interactive-node-2"),
+        );
+        create_edge(
+            &mut renderer,
+            PrimalId::from("interactive-node-1"),
+            PrimalId::from("interactive-node-2"),
+        );
+
+        let g = graph.read().expect("read graph");
+        assert_eq!(g.edges().len(), 1);
+    }
+
+    #[test]
+    fn create_edge_reverse_duplicate_skipped() {
+        use crate::visual_2d::Visual2DRenderer;
+        use petal_tongue_core::graph_engine::{GraphEngine, Position};
+        use std::sync::{Arc, RwLock};
+
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let mut renderer = Visual2DRenderer::new(graph.clone());
+        renderer.interactive_mode = true;
+
+        create_node_at(&mut renderer, Position::new_2d(0.0, 0.0));
+        create_node_at(&mut renderer, Position::new_2d(100.0, 100.0));
+
+        create_edge(
+            &mut renderer,
+            PrimalId::from("interactive-node-1"),
+            PrimalId::from("interactive-node-2"),
+        );
+        create_edge(
+            &mut renderer,
+            PrimalId::from("interactive-node-2"),
+            PrimalId::from("interactive-node-1"),
+        );
+
+        let g = graph.read().expect("read graph");
+        assert_eq!(g.edges().len(), 1);
+    }
+
+    #[test]
+    fn screen_to_world_zoom_scaling() {
+        let screen_to_world =
+            |screen: (f32, f32), center: (f32, f32), zoom: f32, offset: (f32, f32)| {
+                (
+                    (screen.0 - center.0) / zoom + offset.0,
+                    (screen.1 - center.1) / zoom + offset.1,
+                )
+            };
+        let (wx, wy) = screen_to_world((200.0, 100.0), (100.0, 100.0), 2.0, (0.0, 0.0));
+        assert!((wx - 50.0).abs() < f32::EPSILON);
+        assert!((wy - 0.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn edge_drag_threshold_boundary() {
+        let len = |dx: f32, dy: f32| dx.hypot(dy);
+        assert!((len(10.0, 0.0) - 10.0).abs() < f32::EPSILON);
+        assert!(len(10.0, 0.0) <= 10.0);
+    }
+
+    #[test]
+    fn interactive_node_id_zero() {
+        assert_eq!(interactive_node_id(0), "interactive-node-1");
+    }
+
+    #[test]
+    fn is_edge_duplicate_reverse() {
+        assert!(is_edge_duplicate("a", "b", "b", "a"));
+        assert!(!is_edge_duplicate("a", "b", "c", "b"));
+    }
+
+    #[test]
+    fn hit_radius_at_boundary() {
+        use petal_tongue_core::graph_engine::Position;
+        let dist = Position::new_2d(0.0, 0.0).distance_to(Position::new_2d(20.0, 0.0));
+        assert!((dist - 20.0).abs() < f32::EPSILON);
+    }
 }

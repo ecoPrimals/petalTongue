@@ -102,7 +102,10 @@ impl Default for SensorRegistry {
 }
 
 /// Sensor statistics for runtime tracking
-#[expect(missing_docs, reason = "field names are self-documenting for runtime sensor statistics")]
+#[expect(
+    missing_docs,
+    reason = "field names are self-documenting for runtime sensor statistics"
+)]
 #[derive(Debug, Clone)]
 pub struct SensorStats {
     pub total: usize,

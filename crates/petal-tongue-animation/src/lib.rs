@@ -260,7 +260,10 @@ impl AnimationEngine {
 
         // Spawn new particles based on spawn rate
         self.spawn_accumulator += delta_seconds * self.spawn_rate;
-        #[expect(clippy::while_float, reason = "spawn accumulator drains integer units from float counter")]
+        #[expect(
+            clippy::while_float,
+            reason = "spawn accumulator drains integer units from float counter"
+        )]
         while self.spawn_accumulator >= 1.0 {
             // Spawn one particle on each active edge
             for anim in &mut self.edge_animations {
@@ -350,6 +353,122 @@ mod tests {
         assert_eq!(engine.edge_animations.len(), 1);
 
         engine.update();
-        // Verify no crashes
+    }
+
+    #[test]
+    fn test_flow_particle_is_complete() {
+        let mut particle = FlowParticle::new("a".to_string(), "b".to_string());
+        assert!(!particle.is_complete());
+        particle.update(Duration::from_secs(2));
+        assert!(particle.is_complete());
+    }
+
+    #[test]
+    fn test_flow_particle_wraps_after_complete() {
+        let mut particle = FlowParticle::new("a".to_string(), "b".to_string());
+        particle.update(Duration::from_secs(2));
+        assert!(particle.is_complete());
+        particle.update(Duration::from_secs(1));
+        assert!(particle.progress < 0.1);
+    }
+
+    #[test]
+    fn test_node_pulse_radius_multiplier() {
+        let pulse = NodePulse::new("n1".to_string(), 1.0);
+        let r = pulse.radius_multiplier();
+        assert!(r >= 0.5 && r <= 1.5);
+    }
+
+    #[test]
+    fn test_node_pulse_alpha() {
+        let pulse = NodePulse::new("n1".to_string(), 1.0);
+        let a = pulse.alpha();
+        assert!(a >= 0.0 && a <= 1.0);
+    }
+
+    #[test]
+    fn test_node_pulse_phase_wraps() {
+        let mut pulse = NodePulse::new("n1".to_string(), 2.0);
+        pulse.update(Duration::from_secs(1));
+        assert!(pulse.phase <= 1.0);
+    }
+
+    #[test]
+    fn test_edge_animation_thickness_multiplier() {
+        let mut edge = EdgeAnimation::new("a".to_string(), "b".to_string());
+        edge.bandwidth = 0.5;
+        edge.update(Duration::ZERO);
+        assert!((edge.thickness_multiplier - 2.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_animation_engine_set_node_pulse_updates_existing() {
+        let mut engine = AnimationEngine::new();
+        engine.set_node_pulse("n1".to_string(), 1.0);
+        engine.set_node_pulse("n1".to_string(), 2.0);
+        assert_eq!(engine.node_pulses.len(), 1);
+        assert!((engine.node_pulses[0].frequency - 2.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_animation_engine_set_edge_animation_updates_existing() {
+        let mut engine = AnimationEngine::new();
+        engine.set_edge_animation("a".to_string(), "b".to_string(), 0.3);
+        engine.set_edge_animation("a".to_string(), "b".to_string(), 0.8);
+        assert_eq!(engine.edge_animations.len(), 1);
+        assert!((engine.edge_animations[0].bandwidth - 0.8).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_animation_engine_remove_node_pulse() {
+        let mut engine = AnimationEngine::new();
+        engine.set_node_pulse("n1".to_string(), 1.0);
+        engine.remove_node_pulse("n1");
+        assert!(engine.node_pulses.is_empty());
+    }
+
+    #[test]
+    fn test_animation_engine_remove_edge_animation() {
+        let mut engine = AnimationEngine::new();
+        engine.set_edge_animation("a".to_string(), "b".to_string(), 0.5);
+        engine.remove_edge_animation("a", "b");
+        assert!(engine.edge_animations.is_empty());
+    }
+
+    #[test]
+    fn test_animation_engine_clear() {
+        let mut engine = AnimationEngine::new();
+        engine.set_node_pulse("n1".to_string(), 1.0);
+        engine.set_edge_animation("a".to_string(), "b".to_string(), 0.5);
+        engine.clear();
+        assert!(engine.node_pulses.is_empty());
+        assert!(engine.edge_animations.is_empty());
+    }
+
+    #[test]
+    fn test_animation_engine_default() {
+        let engine = AnimationEngine::default();
+        assert!(engine.node_pulses.is_empty());
+        assert!(engine.edge_animations.is_empty());
+    }
+
+    #[test]
+    fn test_animation_engine_spawns_particles_with_bandwidth() {
+        let mut engine = AnimationEngine::new();
+        engine.set_edge_animation("a".to_string(), "b".to_string(), 0.5);
+        engine.update();
+        std::thread::sleep(Duration::from_millis(600));
+        engine.update();
+        assert!(!engine.edge_animations[0].particles.is_empty());
+    }
+
+    #[test]
+    fn test_animation_engine_no_spawn_with_low_bandwidth() {
+        let mut engine = AnimationEngine::new();
+        engine.set_edge_animation("a".to_string(), "b".to_string(), 0.05);
+        for _ in 0..5 {
+            engine.update();
+        }
+        assert!(engine.edge_animations[0].particles.is_empty());
     }
 }

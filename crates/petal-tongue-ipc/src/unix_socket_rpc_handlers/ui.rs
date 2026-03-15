@@ -81,3 +81,103 @@ pub fn handle_ui_display_status(
         }),
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::unix_socket_rpc_handlers::RpcHandlers;
+    use crate::visualization_handler::VisualizationState;
+    use petal_tongue_core::graph_engine::GraphEngine;
+    use serde_json::json;
+    use std::sync::{Arc, RwLock};
+
+    fn test_handlers() -> RpcHandlers {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let viz_state = Arc::new(RwLock::new(VisualizationState::new()));
+        RpcHandlers::new(graph, "test".to_string(), viz_state)
+    }
+
+    #[tokio::test]
+    async fn render_params_not_object_returns_error() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("ui.render", json!([]), json!(1));
+        let resp = handle_ui_render(&h, req).await;
+        assert!(resp.error.is_some());
+        assert_eq!(
+            resp.error.as_ref().expect("err").code,
+            error_codes::INVALID_PARAMS
+        );
+    }
+
+    #[tokio::test]
+    async fn render_graph_content_type_succeeds() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "ui.render",
+            json!({"content_type": "graph", "data": {}}),
+            json!(1),
+        );
+        let resp = handle_ui_render(&h, req).await;
+        assert!(resp.error.is_none());
+        let r = resp.result.unwrap();
+        assert_eq!(r["rendered"], true);
+        assert_eq!(r["modality"], "visual");
+    }
+
+    #[tokio::test]
+    async fn render_unsupported_content_type_returns_error() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("ui.render", json!({"content_type": "unknown"}), json!(1));
+        let resp = handle_ui_render(&h, req).await;
+        assert!(resp.error.is_some());
+        assert_eq!(
+            resp.error.as_ref().expect("err").code,
+            error_codes::INVALID_PARAMS
+        );
+    }
+
+    #[tokio::test]
+    async fn render_default_content_type_is_graph() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("ui.render", json!({}), json!(1));
+        let resp = handle_ui_render(&h, req).await;
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["rendered"], true);
+    }
+
+    #[test]
+    fn display_status_params_not_object_returns_error() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("ui.display_status", json!([]), json!(1));
+        let resp = handle_ui_display_status(&h, req);
+        assert!(resp.error.is_some());
+        assert_eq!(
+            resp.error.as_ref().expect("err").code,
+            error_codes::INVALID_PARAMS
+        );
+    }
+
+    #[test]
+    fn display_status_with_primal_name() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "ui.display_status",
+            json!({"primal_name": "spring-1", "status": {"health": "ok"}}),
+            json!(1),
+        );
+        let resp = handle_ui_display_status(&h, req);
+        assert!(resp.error.is_none());
+        let r = resp.result.unwrap();
+        assert_eq!(r["updated"], true);
+        assert_eq!(r["primal"], "spring-1");
+    }
+
+    #[test]
+    fn display_status_default_primal_unknown() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("ui.display_status", json!({}), json!(1));
+        let resp = handle_ui_display_status(&h, req);
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["primal"], "unknown");
+    }
+}

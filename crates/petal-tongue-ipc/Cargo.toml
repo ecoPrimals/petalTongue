@@ -40,4 +40,5 @@ integration-tests = []
 proptest = { workspace = true }
 tokio = { workspace = true, features = ["test-util", "macros"] }
 tempfile = "3.10"
+petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
 

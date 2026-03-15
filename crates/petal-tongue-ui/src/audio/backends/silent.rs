@@ -72,6 +72,7 @@ impl AudioBackend for SilentBackend {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::audio::traits::BackendType;
 
     #[tokio::test]
     async fn test_silent_backend() {
@@ -82,5 +83,43 @@ mod tests {
 
         let samples = vec![0.0; 1000];
         assert!(backend.play_samples(&samples, 44100).await.is_ok());
+    }
+
+    #[test]
+    fn test_silent_backend_metadata() {
+        let backend = SilentBackend::new();
+        let meta = backend.metadata();
+        assert_eq!(meta.name, "Silent Mode");
+        assert_eq!(meta.backend_type, BackendType::Silent);
+        assert!(meta.description.contains("visual-only"));
+    }
+
+    #[test]
+    fn test_silent_backend_priority() {
+        let backend = SilentBackend::new();
+        assert_eq!(backend.priority(), 255);
+    }
+
+    #[test]
+    fn test_silent_backend_capabilities() {
+        let backend = SilentBackend::new();
+        let caps = backend.capabilities();
+        assert!(!caps.can_play);
+        assert!(!caps.can_record);
+        assert_eq!(caps.max_sample_rate, 0);
+        assert_eq!(caps.max_channels, 0);
+        assert_eq!(caps.latency_estimate_ms, 0);
+    }
+
+    #[test]
+    fn test_silent_backend_default() {
+        let backend = SilentBackend;
+        assert_eq!(backend.metadata().name, "Silent Mode");
+    }
+
+    #[tokio::test]
+    async fn test_silent_backend_empty_samples() {
+        let mut backend = SilentBackend::new();
+        assert!(backend.play_samples(&[], 48000).await.is_ok());
     }
 }

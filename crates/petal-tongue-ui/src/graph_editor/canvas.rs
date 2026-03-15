@@ -12,6 +12,70 @@ use super::node::GraphNode;
 
 // --- Pure logic (testable, no egui) ---
 
+/// World to screen coordinate conversion.
+#[must_use]
+pub fn world_to_screen(world_pos: Pos2, rect: Rect, pan: egui::Vec2, zoom: f32) -> Pos2 {
+    let screen_x = world_pos.x.mul_add(zoom, rect.left()) + pan.x;
+    let screen_y = world_pos.y.mul_add(zoom, rect.top()) + pan.y;
+    Pos2::new(screen_x, screen_y)
+}
+
+/// Screen to world coordinate conversion.
+#[must_use]
+pub fn screen_to_world(screen_pos: Pos2, rect: Rect, pan: egui::Vec2, zoom: f32) -> Pos2 {
+    let world_x = (screen_pos.x - rect.left() - pan.x) / zoom;
+    let world_y = (screen_pos.y - rect.top() - pan.y) / zoom;
+    Pos2::new(world_x, world_y)
+}
+
+#[must_use]
+pub fn editor_grid_params(zoom: f32, base_size: f32) -> (f32, f32) {
+    let grid_size = base_size * zoom;
+    (grid_size, grid_size)
+}
+
+#[must_use]
+pub fn editor_edge_stroke_width(zoom: f32) -> f32 {
+    2.0 * zoom
+}
+
+#[must_use]
+pub const fn editor_selected_stroke_width(selected: bool) -> f32 {
+    if selected { 3.0 } else { 1.0 }
+}
+
+#[must_use]
+pub fn editor_arrow_vertices(
+    from_x: f32,
+    from_y: f32,
+    to_x: f32,
+    to_y: f32,
+    zoom: f32,
+) -> ((f32, f32), (f32, f32), (f32, f32)) {
+    let arrow_size = 10.0 * zoom;
+    let arrow_angle = std::f32::consts::PI / 6.0;
+    let dx = to_x - from_x;
+    let dy = to_y - from_y;
+    let len = dx.hypot(dy);
+    if len < f32::EPSILON {
+        return ((to_x, to_y), (to_x, to_y), (to_x, to_y));
+    }
+    let dir_x = dx / len;
+    let dir_y = dy / len;
+    let perp_x = -dir_y;
+    let perp_y = dir_x;
+    let half = arrow_size * arrow_angle.sin();
+    let tip = (to_x, to_y);
+    let left = (to_x - perp_x * half, to_y - perp_y * half);
+    let right = (to_x + perp_x * half, to_y + perp_y * half);
+    (tip, left, right)
+}
+
+#[must_use]
+pub fn format_node_label(icon: &str, name: &str) -> String {
+    format!("{icon} {name}")
+}
+
 /// Editor node fill and stroke colors from base color and state.
 /// Returns (fill_rgb, stroke_rgb). Uses multiply factors: selected=0.8, else 0.6.
 #[must_use]
@@ -119,7 +183,7 @@ impl GraphCanvas {
 
     /// Draw background grid
     fn draw_grid(&self, painter: &egui::Painter, rect: Rect) {
-        let grid_size = 50.0 * self.zoom;
+        let (grid_size, _) = editor_grid_params(self.zoom, 50.0);
         let color = Color32::from_gray(40);
 
         // Vertical lines
@@ -151,7 +215,12 @@ impl GraphCanvas {
         node: &GraphNode,
         response: &Response,
     ) {
-        let screen_pos = self.world_to_screen(Pos2::new(node.position.0, node.position.1), rect);
+        let screen_pos = world_to_screen(
+            Pos2::new(node.position.0, node.position.1),
+            rect,
+            self.pan,
+            self.zoom,
+        );
 
         // Node size
         let node_size = Vec2::new(120.0, 60.0) * self.zoom;
@@ -173,7 +242,7 @@ impl GraphCanvas {
         painter.rect_stroke(
             node_rect,
             5.0,
-            Stroke::new(if is_selected { 3.0 } else { 1.0 }, stroke_color),
+            Stroke::new(editor_selected_stroke_width(is_selected), stroke_color),
         );
 
         // Draw node label
@@ -181,7 +250,7 @@ impl GraphCanvas {
         painter.text(
             screen_pos,
             egui::Align2::CENTER_CENTER,
-            format!("{} {}", node.display_icon(), node.name),
+            format_node_label(node.display_icon(), &node.name),
             font_id,
             Color32::WHITE,
         );
@@ -228,54 +297,45 @@ impl GraphCanvas {
             self.graph.nodes.get(&edge.from),
             self.graph.nodes.get(&edge.to),
         ) {
-            let from_pos =
-                self.world_to_screen(Pos2::new(from_node.position.0, from_node.position.1), rect);
-            let to_pos =
-                self.world_to_screen(Pos2::new(to_node.position.0, to_node.position.1), rect);
+            let from_pos = world_to_screen(
+                Pos2::new(from_node.position.0, from_node.position.1),
+                rect,
+                self.pan,
+                self.zoom,
+            );
+            let to_pos = world_to_screen(
+                Pos2::new(to_node.position.0, to_node.position.1),
+                rect,
+                self.pan,
+                self.zoom,
+            );
 
             // Edge color
             let rgb = edge.display_color();
             let edge_color = Color32::from_rgb(rgb[0], rgb[1], rgb[2]);
 
-            // Draw line
-            painter.line_segment([from_pos, to_pos], Stroke::new(2.0 * self.zoom, edge_color));
-
-            // Draw arrow head
-            let direction = (to_pos - from_pos).normalized();
-            let arrow_size = 10.0 * self.zoom;
-            let arrow_angle = std::f32::consts::PI / 6.0; // 30 degrees
-
-            let arrow_left = to_pos - direction.rot90() * arrow_size * arrow_angle.sin();
-            let arrow_right = to_pos + direction.rot90() * arrow_size * arrow_angle.sin();
-
             painter.line_segment(
-                [to_pos, arrow_left],
-                Stroke::new(2.0 * self.zoom, edge_color),
+                [from_pos, to_pos],
+                Stroke::new(editor_edge_stroke_width(self.zoom), edge_color),
+            );
+
+            let (_tip, left, right) =
+                editor_arrow_vertices(from_pos.x, from_pos.y, to_pos.x, to_pos.y, self.zoom);
+            let stroke_w = editor_edge_stroke_width(self.zoom);
+            painter.line_segment(
+                [Pos2::new(to_pos.x, to_pos.y), Pos2::new(left.0, left.1)],
+                Stroke::new(stroke_w, edge_color),
             );
             painter.line_segment(
-                [to_pos, arrow_right],
-                Stroke::new(2.0 * self.zoom, edge_color),
+                [Pos2::new(to_pos.x, to_pos.y), Pos2::new(right.0, right.1)],
+                Stroke::new(stroke_w, edge_color),
             );
         }
     }
 
-    /// Convert world coordinates to screen coordinates
-    fn world_to_screen(&self, world_pos: Pos2, rect: Rect) -> Pos2 {
-        let screen_x = world_pos.x.mul_add(self.zoom, rect.left()) + self.pan.x;
-        let screen_y = world_pos.y.mul_add(self.zoom, rect.top()) + self.pan.y;
-        Pos2::new(screen_x, screen_y)
-    }
-
-    /// Convert screen coordinates to world coordinates
-    fn screen_to_world(&self, screen_pos: Pos2, rect: Rect) -> Pos2 {
-        let world_x = (screen_pos.x - rect.left() - self.pan.x) / self.zoom;
-        let world_y = (screen_pos.y - rect.top() - self.pan.y) / self.zoom;
-        Pos2::new(world_x, world_y)
-    }
-
     /// Add a node at screen position
     pub fn add_node_at_screen_pos(&mut self, screen_pos: Pos2, rect: Rect, node_type: String) {
-        let world_pos = self.screen_to_world(screen_pos, rect);
+        let world_pos = screen_to_world(screen_pos, rect, self.pan, self.zoom);
 
         let node_id = format!("node-{}", uuid::Uuid::new_v4());
         let mut node = GraphNode::new(node_id, node_type);
@@ -304,7 +364,51 @@ impl GraphCanvas {
 
 #[cfg(test)]
 mod tests {
-    use super::editor_node_colors;
+    use super::{
+        editor_arrow_vertices, editor_edge_stroke_width, editor_grid_params, editor_node_colors,
+        editor_selected_stroke_width, format_node_label, screen_to_world, world_to_screen,
+    };
+    use egui::{Pos2, Rect, Vec2};
+
+    #[test]
+    fn test_world_to_screen_origin() {
+        let rect = Rect::from_min_size(Pos2::ZERO, Vec2::new(800.0, 600.0));
+        let pan = Vec2::ZERO;
+        let zoom = 1.0;
+        let screen = world_to_screen(Pos2::new(0.0, 0.0), rect, pan, zoom);
+        assert!((screen.x - 0.0).abs() < f32::EPSILON);
+        assert!((screen.y - 0.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_world_to_screen_with_zoom() {
+        let rect = Rect::from_min_size(Pos2::ZERO, Vec2::new(800.0, 600.0));
+        let pan = Vec2::ZERO;
+        let screen = world_to_screen(Pos2::new(100.0, 50.0), rect, pan, 2.0);
+        assert!((screen.x - 200.0).abs() < f32::EPSILON);
+        assert!((screen.y - 100.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_world_to_screen_with_pan() {
+        let rect = Rect::from_min_size(Pos2::ZERO, Vec2::new(800.0, 600.0));
+        let pan = Vec2::new(50.0, 25.0);
+        let screen = world_to_screen(Pos2::new(0.0, 0.0), rect, pan, 1.0);
+        assert!((screen.x - 50.0).abs() < f32::EPSILON);
+        assert!((screen.y - 25.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_screen_to_world_roundtrip() {
+        let rect = Rect::from_min_size(Pos2::ZERO, Vec2::new(800.0, 600.0));
+        let pan = Vec2::new(10.0, 20.0);
+        let zoom = 1.5;
+        let world = Pos2::new(100.0, 200.0);
+        let screen = world_to_screen(world, rect, pan, zoom);
+        let back = screen_to_world(screen, rect, pan, zoom);
+        assert!((back.x - world.x).abs() < 0.01);
+        assert!((back.y - world.y).abs() < 0.01);
+    }
 
     #[test]
     fn test_editor_node_colors_selected() {
@@ -327,5 +431,38 @@ mod tests {
         let base = [128, 128, 128];
         let (fill, _) = editor_node_colors(base, false, true);
         assert_eq!(fill, [77, 77, 77]); // 0.6 * 128 rounded
+    }
+
+    #[test]
+    fn test_editor_grid_params() {
+        let (gs, _) = editor_grid_params(1.0, 50.0);
+        assert!((gs - 50.0).abs() < f32::EPSILON);
+        let (gs, _) = editor_grid_params(2.0, 50.0);
+        assert!((gs - 100.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_editor_edge_stroke_width() {
+        assert!((editor_edge_stroke_width(1.0) - 2.0).abs() < f32::EPSILON);
+        assert!((editor_edge_stroke_width(2.0) - 4.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_editor_selected_stroke_width() {
+        assert_eq!(editor_selected_stroke_width(true), 3.0);
+        assert_eq!(editor_selected_stroke_width(false), 1.0);
+    }
+
+    #[test]
+    fn test_editor_arrow_vertices() {
+        let (tip, left, right) = editor_arrow_vertices(0.0, 0.0, 100.0, 0.0, 1.0);
+        assert!((tip.0 - 100.0).abs() < 0.01);
+        assert!((tip.1 - 0.0).abs() < 0.01);
+        assert!(left.1 != right.1);
+    }
+
+    #[test]
+    fn test_format_node_label() {
+        assert_eq!(format_node_label("●", "node1"), "● node1");
     }
 }

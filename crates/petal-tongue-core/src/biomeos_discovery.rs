@@ -476,4 +476,116 @@ mod tests {
         let endpoint: PrimalEndpoint = biomeos_primal.into();
         assert_eq!(endpoint.capabilities.len(), 1);
     }
+
+    #[tokio::test]
+    async fn test_biomeos_query_unavailable_socket() {
+        let backend = BiomeOsBackend::new("/nonexistent/path/neural-api-12345.sock");
+        let query = CapabilityQuery {
+            domain: "test".to_string(),
+            operation: Some("op".to_string()),
+            version_req: None,
+        };
+        let result = backend.query(&query).await;
+        assert!(result.is_err());
+        if let Err(DiscoveryError::CommunicationError(msg)) = result {
+            assert!(!msg.is_empty());
+        }
+    }
+
+    #[tokio::test]
+    async fn test_biomeos_subscribe_returns_ok() {
+        let backend = BiomeOsBackend::new("/tmp/nonexistent.sock");
+        let query = CapabilityQuery {
+            domain: "test".to_string(),
+            operation: None,
+            version_req: None,
+        };
+        let result = backend.subscribe(&query).await;
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_jsonrpc_request_serialization() {
+        let request = serde_json::json!({
+            "jsonrpc": "2.0",
+            "method": "discovery.query_capability",
+            "params": {"domain": "crypto", "operation": "encrypt", "version_req": null},
+            "id": 1
+        });
+        assert_eq!(request["method"], "discovery.query_capability");
+        assert_eq!(request["params"]["domain"], "crypto");
+    }
+
+    #[test]
+    fn test_jsonrpc_response_error_parsing() {
+        let json = r#"{"jsonrpc":"2.0","error":{"message":"capability not found"},"id":1}"#;
+        let response: JsonRpcResponse = serde_json::from_str(json).unwrap();
+        assert!(response.error.is_some());
+        assert!(
+            response
+                .error
+                .as_ref()
+                .unwrap()
+                .message
+                .contains("not found")
+        );
+    }
+
+    #[test]
+    fn test_jsonrpc_response_result_parsing() {
+        let json = r#"{"jsonrpc":"2.0","result":[{"id":"p1","capabilities":[],"health":"healthy"}],"id":1}"#;
+        let response: JsonRpcResponse = serde_json::from_str(json).unwrap();
+        assert!(response.result.is_some());
+    }
+
+    #[test]
+    fn test_biomeos_discovery_event_serialization_roundtrip() {
+        let json = r#"{"type":"PrimalStatus","primal_id":"p1","health":"degraded"}"#;
+        let event: BiomeOSDiscoveryEvent = serde_json::from_str(json).expect("parse");
+        let serialized = serde_json::to_string(&event).expect("serialize");
+        let restored: BiomeOSDiscoveryEvent = serde_json::from_str(&serialized).expect("parse");
+        match (&event, &restored) {
+            (
+                BiomeOSDiscoveryEvent::PrimalStatus {
+                    primal_id: a,
+                    health: b,
+                },
+                BiomeOSDiscoveryEvent::PrimalStatus {
+                    primal_id: c,
+                    health: d,
+                },
+            ) => {
+                assert_eq!(a, c);
+                assert_eq!(b, d);
+            }
+            _ => panic!("expected PrimalStatus"),
+        }
+    }
+
+    #[test]
+    fn test_biomeos_discovery_event_topology_serialization() {
+        let json =
+            r#"{"type":"TopologyUpdate","primals":["a","b","c"],"edges":[["a","b"],["b","c"]]}"#;
+        let event: BiomeOSDiscoveryEvent = serde_json::from_str(json).expect("parse");
+        match &event {
+            BiomeOSDiscoveryEvent::TopologyUpdate { primals, edges } => {
+                assert_eq!(primals.len(), 3);
+                assert_eq!(edges.len(), 2);
+            }
+            _ => panic!("expected TopologyUpdate"),
+        }
+    }
+
+    #[test]
+    fn test_biomeos_primal_capability_domain_operation_parsing() {
+        let biomeos_primal = BiomeOsPrimal {
+            id: "cap-test".to_string(),
+            capabilities: vec!["domain.operation".to_string(), "single".to_string()],
+            tarpc_endpoint: None,
+            jsonrpc_endpoint: None,
+            health: "healthy".to_string(),
+        };
+        let endpoint: PrimalEndpoint = biomeos_primal.into();
+        assert_eq!(endpoint.capabilities.len(), 2);
+    }
 }

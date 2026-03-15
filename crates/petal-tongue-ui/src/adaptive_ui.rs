@@ -56,6 +56,15 @@ pub(crate) const fn format_cli_primal_status(health: PrimalHealthStatus) -> &'st
     }
 }
 
+/// Count primals with healthy status
+#[must_use]
+pub(crate) fn count_healthy_primals(primals: &[PrimalInfo]) -> usize {
+    primals
+        .iter()
+        .filter(|p| matches!(p.health, PrimalHealthStatus::Healthy))
+        .count()
+}
+
 /// Watch-style health summary (healthy/total)
 #[must_use]
 pub(crate) fn format_watch_health_summary(healthy: usize, total: usize) -> String {
@@ -63,6 +72,42 @@ pub(crate) fn format_watch_health_summary(healthy: usize, total: usize) -> Strin
         format!("✅ {healthy}/{total} OK")
     } else {
         format!("⚠️ {healthy}/{total}")
+    }
+}
+
+#[must_use]
+pub(crate) const fn watch_health_all_ok(healthy: usize, total: usize) -> bool {
+    healthy == total
+}
+
+#[must_use]
+pub(crate) fn format_cli_primal_line(status: &str, name: &str) -> String {
+    format!("[{status}] {name}")
+}
+
+#[must_use]
+pub(crate) fn format_topology_node_count(count: usize) -> String {
+    format!("Topology: {count} nodes")
+}
+
+#[must_use]
+pub(crate) fn format_metrics_line(metrics_data: &str) -> String {
+    format!("Metrics: {metrics_data}")
+}
+
+#[must_use]
+pub(crate) fn format_watch_topology_count(count: usize) -> String {
+    format!("🕸️ {count}")
+}
+
+/// Phone-style status color RGB for primal health
+#[must_use]
+pub(crate) const fn format_phone_primal_color_rgb(health: PrimalHealthStatus) -> [u8; 3] {
+    match health {
+        PrimalHealthStatus::Healthy => [0, 255, 0],
+        PrimalHealthStatus::Warning => [255, 255, 0],
+        PrimalHealthStatus::Critical => [255, 0, 0],
+        PrimalHealthStatus::Unknown => [128, 128, 128],
     }
 }
 
@@ -266,12 +311,8 @@ impl AdaptiveUIRenderer for PhoneUIRenderer {
             for primal in primals {
                 ui.horizontal(|ui| {
                     let icon = format_phone_primal_icon(primal.health);
-                    let color = match primal.health {
-                        PrimalHealthStatus::Healthy => egui::Color32::GREEN,
-                        PrimalHealthStatus::Warning => egui::Color32::YELLOW,
-                        PrimalHealthStatus::Critical => egui::Color32::RED,
-                        PrimalHealthStatus::Unknown => egui::Color32::GRAY,
-                    };
+                    let rgb = format_phone_primal_color_rgb(primal.health);
+                    let color = egui::Color32::from_rgb(rgb[0], rgb[1], rgb[2]);
                     ui.colored_label(color, icon);
                     ui.label(&primal.name);
                 });
@@ -322,14 +363,10 @@ impl AdaptiveUIRenderer for WatchUIRenderer {
         primals: &[PrimalInfo],
         _caps: &RenderingCapabilities,
     ) {
-        // Watch: Glanceable summary only
-        let healthy = primals
-            .iter()
-            .filter(|p| matches!(p.health, PrimalHealthStatus::Healthy))
-            .count();
+        let healthy = count_healthy_primals(primals);
         let total = primals.len();
         let summary = format_watch_health_summary(healthy, total);
-        let color = if healthy == total {
+        let color = if watch_health_all_ok(healthy, total) {
             egui::Color32::GREEN
         } else {
             egui::Color32::YELLOW
@@ -343,8 +380,7 @@ impl AdaptiveUIRenderer for WatchUIRenderer {
         primals: &[PrimalInfo],
         _caps: &RenderingCapabilities,
     ) {
-        // Watch: Icon + count only
-        ui.label(format!("🕸️ {}", primals.len()));
+        ui.label(format_watch_topology_count(primals.len()));
     }
 
     fn render_metrics(
@@ -377,10 +413,9 @@ impl AdaptiveUIRenderer for CliUIRenderer {
         primals: &[PrimalInfo],
         _caps: &RenderingCapabilities,
     ) {
-        // CLI: Plain text list
         for primal in primals {
             let status = format_cli_primal_status(primal.health);
-            ui.monospace(format!("[{status}] {}", primal.name));
+            ui.monospace(format_cli_primal_line(status, &primal.name));
         }
     }
 
@@ -390,11 +425,11 @@ impl AdaptiveUIRenderer for CliUIRenderer {
         primals: &[PrimalInfo],
         _caps: &RenderingCapabilities,
     ) {
-        ui.monospace(format!("Topology: {} nodes", primals.len()));
+        ui.monospace(format_topology_node_count(primals.len()));
     }
 
     fn render_metrics(&self, ui: &mut egui::Ui, metrics_data: &str, _caps: &RenderingCapabilities) {
-        ui.monospace(format!("Metrics: {metrics_data}"));
+        ui.monospace(format_metrics_line(metrics_data));
     }
 }
 
@@ -667,8 +702,88 @@ mod tests {
         assert_eq!(text, "●");
         assert_eq!(rgb, [0, 255, 0]);
 
+        let (text, rgb) = format_desktop_primal_indicator(PrimalHealthStatus::Warning);
+        assert_eq!(text, "●");
+        assert_eq!(rgb, [255, 255, 0]);
+
+        let (text, rgb) = format_desktop_primal_indicator(PrimalHealthStatus::Critical);
+        assert_eq!(text, "●");
+        assert_eq!(rgb, [255, 0, 0]);
+
         let (text, rgb) = format_desktop_primal_indicator(PrimalHealthStatus::Unknown);
         assert_eq!(text, "○");
         assert_eq!(rgb, [128, 128, 128]);
+    }
+
+    #[test]
+    fn test_format_watch_health_summary_edge_cases() {
+        assert_eq!(format_watch_health_summary(0, 5), "⚠️ 0/5");
+        assert_eq!(format_watch_health_summary(1, 1), "✅ 1/1 OK");
+        assert_eq!(format_watch_health_summary(0, 0), "✅ 0/0 OK");
+    }
+
+    #[test]
+    fn test_format_phone_primal_color_rgb() {
+        let rgb = format_phone_primal_color_rgb(PrimalHealthStatus::Healthy);
+        assert_eq!(rgb, [0, 255, 0]);
+        let rgb = format_phone_primal_color_rgb(PrimalHealthStatus::Warning);
+        assert_eq!(rgb, [255, 255, 0]);
+        let rgb = format_phone_primal_color_rgb(PrimalHealthStatus::Critical);
+        assert_eq!(rgb, [255, 0, 0]);
+        let rgb = format_phone_primal_color_rgb(PrimalHealthStatus::Unknown);
+        assert_eq!(rgb, [128, 128, 128]);
+    }
+
+    #[test]
+    fn test_watch_health_all_ok() {
+        assert!(watch_health_all_ok(5, 5));
+        assert!(!watch_health_all_ok(3, 5));
+    }
+
+    #[test]
+    fn test_format_cli_primal_line() {
+        assert_eq!(format_cli_primal_line("OK", "primal1"), "[OK] primal1");
+    }
+
+    #[test]
+    fn test_format_topology_node_count() {
+        assert_eq!(format_topology_node_count(10), "Topology: 10 nodes");
+    }
+
+    #[test]
+    fn test_format_metrics_line() {
+        assert_eq!(format_metrics_line("cpu: 50%"), "Metrics: cpu: 50%");
+    }
+
+    #[test]
+    fn test_format_watch_topology_count() {
+        assert_eq!(format_watch_topology_count(3), "🕸️ 3");
+    }
+
+    #[test]
+    fn test_count_healthy_primals() {
+        use petal_tongue_core::{PrimalId, PrimalInfo};
+        let primals = vec![
+            PrimalInfo::new(
+                PrimalId::from("a"),
+                "a",
+                "",
+                "http://localhost",
+                vec![],
+                PrimalHealthStatus::Healthy,
+                0,
+            ),
+            PrimalInfo::new(
+                PrimalId::from("b"),
+                "b",
+                "",
+                "http://localhost",
+                vec![],
+                PrimalHealthStatus::Warning,
+                0,
+            ),
+        ];
+        assert_eq!(count_healthy_primals(&primals), 1);
+        assert_eq!(count_healthy_primals(&[]), 0);
     }
 }

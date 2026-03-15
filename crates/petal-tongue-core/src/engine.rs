@@ -226,7 +226,10 @@ impl UniversalRenderingEngine {
     }
 
     /// Start rendering in specific modality
-    #[expect(clippy::significant_drop_tightening, reason = "RwLock guard must span both initialize and render awaits")]
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "RwLock guard must span both initialize and render awaits"
+    )]
     pub async fn render(self: Arc<Self>, modality_name: &str) -> Result<()> {
         let mut registry = self.modalities.write().await;
 
@@ -649,5 +652,115 @@ mod tests {
         let t2 = t;
         assert!((t2.current - 10.0).abs() < f64::EPSILON);
         assert!(t2.paused);
+    }
+
+    #[tokio::test]
+    async fn test_set_selection_updates_state_even_when_broadcast_fails() {
+        let engine = UniversalRenderingEngine::new().expect("engine");
+        let mut selected = HashSet::new();
+        selected.insert("node1".to_string());
+        let result = engine.set_selection(selected).await;
+        let state = engine.state.read().await;
+        assert_eq!(state.selection.len(), 1);
+        assert!(state.selection.contains("node1"));
+        drop(state);
+        if result.is_err() {
+            assert!(result.unwrap_err().to_string().contains("broadcast"));
+        }
+    }
+
+    #[tokio::test]
+    async fn test_set_viewport_updates_state_even_when_broadcast_fails() {
+        let engine = UniversalRenderingEngine::new().expect("engine");
+        let result = engine.set_viewport(50.0, 75.0, 2.0).await;
+        let state = engine.state.read().await;
+        assert!((state.viewport.center_x - 50.0).abs() < f32::EPSILON);
+        assert!((state.viewport.center_y - 75.0).abs() < f32::EPSILON);
+        assert!((state.viewport.zoom - 2.0).abs() < f32::EPSILON);
+        drop(state);
+        if result.is_err() {
+            assert!(result.unwrap_err().to_string().contains("broadcast"));
+        }
+    }
+
+    #[tokio::test]
+    async fn test_set_selection_succeeds_with_subscriber() {
+        let engine = UniversalRenderingEngine::new().expect("engine");
+        let _sub = engine.events().subscribe().await;
+        let mut selected = HashSet::new();
+        selected.insert("a".to_string());
+        let result = engine.set_selection(selected).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_set_viewport_succeeds_with_subscriber() {
+        let engine = UniversalRenderingEngine::new().expect("engine");
+        let _sub = engine.events().subscribe().await;
+        let result = engine.set_viewport(1.0, 2.0, 1.0).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_render_completes_and_broadcasts_stop() {
+        struct TrackStopModality;
+        #[async_trait]
+        impl crate::modality::GUIModality for TrackStopModality {
+            fn name(&self) -> &'static str {
+                "track_stop"
+            }
+            fn is_available(&self) -> bool {
+                true
+            }
+            fn tier(&self) -> ModalityTier {
+                ModalityTier::AlwaysAvailable
+            }
+            async fn initialize(
+                &mut self,
+                _engine: Arc<UniversalRenderingEngine>,
+            ) -> anyhow::Result<()> {
+                Ok(())
+            }
+            async fn render(&mut self) -> anyhow::Result<()> {
+                Ok(())
+            }
+            async fn handle_event(&mut self, _event: EngineEvent) -> anyhow::Result<()> {
+                Ok(())
+            }
+            async fn shutdown(&mut self) -> anyhow::Result<()> {
+                Ok(())
+            }
+            fn capabilities(&self) -> ModalityCapabilities {
+                ModalityCapabilities::default()
+            }
+        }
+        let engine = UniversalRenderingEngine::new().expect("engine");
+        {
+            let modalities = engine.modalities();
+            let mut guard = modalities.write().await;
+            guard.register(Box::new(TrackStopModality));
+        }
+        let engine = Arc::new(engine);
+        let _sub = engine.events().subscribe().await;
+        let result = engine.clone().render("track_stop").await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_engine_state_view_mode_variants() {
+        assert_eq!(ViewMode::Graph, ViewMode::Graph);
+        assert_eq!(ViewMode::List, ViewMode::List);
+        assert_eq!(ViewMode::Tree, ViewMode::Tree);
+        assert_eq!(ViewMode::Timeline, ViewMode::Timeline);
+    }
+
+    #[tokio::test]
+    async fn test_render_multi_propagates_error() {
+        let engine = UniversalRenderingEngine::new().expect("engine");
+        let engine = Arc::new(engine);
+        let result = engine.clone().render_multi(vec!["nonexistent"]).await;
+        assert!(result.is_err());
+        let err_str = result.unwrap_err().to_string();
+        assert!(err_str.contains("Modality not found"));
     }
 }

@@ -135,6 +135,35 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_stats_panel_title() {
+        let doom = Arc::new(RwLock::new(DoomInstance::new(640, 480).unwrap()));
+        let panel = DoomStatsPanel::new(doom);
+        assert_eq!(panel.title(), "Game Stats");
+    }
+
+    #[test]
+    fn test_stats_panel_on_open_on_close() {
+        let doom = Arc::new(RwLock::new(DoomInstance::new(640, 480).unwrap()));
+        let mut panel = DoomStatsPanel::new(doom);
+        assert!(panel.on_open().is_ok());
+        assert!(panel.on_close().is_ok());
+    }
+
+    #[test]
+    fn test_stats_panel_on_event() {
+        let doom = Arc::new(RwLock::new(DoomInstance::new(640, 480).unwrap()));
+        let mut panel = DoomStatsPanel::new(doom);
+        panel.on_event(&egui::Event::PointerMoved(egui::Pos2::ZERO));
+    }
+
+    #[test]
+    fn test_stats_panel_update() {
+        let doom = Arc::new(RwLock::new(DoomInstance::new(640, 480).unwrap()));
+        let mut panel = DoomStatsPanel::new(doom);
+        panel.update();
+    }
+
+    #[test]
     fn test_stats_panel_creation() {
         let doom = Arc::new(RwLock::new(DoomInstance::new(640, 480).unwrap()));
         let panel = DoomStatsPanel::new(doom);

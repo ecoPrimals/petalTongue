@@ -7,7 +7,7 @@
 //! primitive, node, and data object.
 
 use egui::{Color32, Painter, Pos2, Rect, Rounding, Sense, Stroke, Ui, Vec2};
-use petal_tongue_scene::primitive::{Color, Primitive};
+use petal_tongue_scene::primitive::{AnchorPoint, Color, Primitive};
 use petal_tongue_scene::render_plan::RenderPlan;
 use petal_tongue_scene::scene_graph::SceneGraph;
 use petal_tongue_scene::transform::Transform2D;
@@ -79,10 +79,14 @@ impl FrameHitMap {
 }
 
 /// Render a scene graph into an egui `Painter`, building a `FrameHitMap`.
+///
+/// Applies accumulated node opacity to each primitive's colors.
 pub fn paint_scene_tracked(painter: &Painter, scene: &SceneGraph, offset: Vec2) -> FrameHitMap {
     let mut hit_map = FrameHitMap::new();
-    for (idx, (transform, prim, node_id)) in scene.flatten_with_ids().into_iter().enumerate() {
-        let screen_rect = paint_primitive(painter, prim, &transform, offset);
+    for (idx, (transform, prim, node_id, opacity)) in
+        scene.flatten_with_opacity().into_iter().enumerate()
+    {
+        let screen_rect = paint_primitive(painter, prim, &transform, offset, opacity);
         if let Some(rect) = screen_rect {
             let (wx, wy) = primitive_origin(prim);
             let (wx, wy) = transform.apply(wx, wy);
@@ -103,8 +107,8 @@ pub fn paint_scene_tracked(painter: &Painter, scene: &SceneGraph, offset: Vec2) 
 
 /// Legacy entry point — renders without tracking.
 pub fn paint_scene(painter: &Painter, scene: &SceneGraph, offset: Vec2) {
-    for (transform, prim) in scene.flatten() {
-        paint_primitive(painter, prim, &transform, offset);
+    for (transform, prim, _node_id, opacity) in scene.flatten_with_opacity() {
+        paint_primitive(painter, prim, &transform, offset, opacity);
     }
 }
 
@@ -122,16 +126,41 @@ fn primitive_origin(prim: &Primitive) -> (f64, f64) {
     }
 }
 
-/// Render a single primitive with its world transform.
+/// Map `AnchorPoint` to `egui::Align2`.
+const fn anchor_to_align2(anchor: &AnchorPoint) -> egui::Align2 {
+    match anchor {
+        AnchorPoint::TopLeft => egui::Align2::LEFT_TOP,
+        AnchorPoint::TopCenter => egui::Align2::CENTER_TOP,
+        AnchorPoint::TopRight => egui::Align2::RIGHT_TOP,
+        AnchorPoint::CenterLeft => egui::Align2::LEFT_CENTER,
+        AnchorPoint::Center => egui::Align2::CENTER_CENTER,
+        AnchorPoint::CenterRight => egui::Align2::RIGHT_CENTER,
+        AnchorPoint::BottomLeft => egui::Align2::LEFT_BOTTOM,
+        AnchorPoint::BottomCenter => egui::Align2::CENTER_BOTTOM,
+        AnchorPoint::BottomRight => egui::Align2::RIGHT_BOTTOM,
+    }
+}
+
+/// Apply accumulated opacity to a `Color32`.
+fn apply_opacity(c: Color32, opacity: f32) -> Color32 {
+    if opacity >= 1.0 {
+        return c;
+    }
+    let a = (f32::from(c.a()) * opacity).round() as u8;
+    Color32::from_rgba_premultiplied(c.r(), c.g(), c.b(), a)
+}
+
+/// Render a single primitive with its world transform and accumulated opacity.
 ///
 /// Returns the bounding `Rect` on screen for the rendered shape, or `None`
-/// if the primitive was not drawn (e.g. degenerate or GPU-only).
+/// if the primitive was not drawn (e.g. degenerate).
 #[expect(clippy::cast_possible_truncation, reason = "scene f64 to screen f32")]
 pub fn paint_primitive(
     painter: &Painter,
     prim: &Primitive,
     transform: &Transform2D,
     offset: Vec2,
+    opacity: f32,
 ) -> Option<Rect> {
     match prim {
         Primitive::Point {
@@ -145,8 +174,11 @@ pub fn paint_primitive(
             let (tx, ty) = transform.apply(*x, *y);
             let center = Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y);
             let r = *radius as f32;
-            let fill_c = fill.map(to_color32).unwrap_or(Color32::TRANSPARENT);
-            let stroke_s = stroke.map(to_stroke).unwrap_or(Stroke::NONE);
+            let fill_c = apply_opacity(
+                fill.map(to_color32).unwrap_or(Color32::TRANSPARENT),
+                opacity,
+            );
+            let stroke_s = stroke.as_ref().map_or(Stroke::NONE, to_egui_stroke);
             painter.circle(center, r, fill_c, stroke_s);
             Some(Rect::from_center_size(center, egui::vec2(r * 2.0, r * 2.0)))
         }
@@ -157,7 +189,7 @@ pub fn paint_primitive(
             closed,
             ..
         } => {
-            let egui_stroke = to_stroke_style(s);
+            let egui_stroke = to_egui_stroke(s);
             let pts: Vec<Pos2> = points
                 .iter()
                 .map(|[x, y]| {
@@ -194,8 +226,11 @@ pub fn paint_primitive(
                 Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y),
                 Pos2::new(tx2 as f32 + offset.x, ty2 as f32 + offset.y),
             );
-            let fill_c = fill.map(to_color32).unwrap_or(Color32::TRANSPARENT);
-            let stroke_s = stroke.map(to_stroke).unwrap_or(Stroke::NONE);
+            let fill_c = apply_opacity(
+                fill.map(to_color32).unwrap_or(Color32::TRANSPARENT),
+                opacity,
+            );
+            let stroke_s = stroke.as_ref().map_or(Stroke::NONE, to_egui_stroke);
             let rounding = Rounding::same(*corner_radius as f32);
             painter.rect(rect, rounding, fill_c, stroke_s);
             Some(rect)
@@ -207,19 +242,16 @@ pub fn paint_primitive(
             content,
             font_size,
             color,
+            anchor,
             bold: _bold,
             ..
         } => {
             let (tx, ty) = transform.apply(*x, *y);
             let pos = Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y);
             let font = egui::FontId::proportional(*font_size as f32);
-            let galley = painter.text(
-                pos,
-                egui::Align2::LEFT_TOP,
-                content,
-                font,
-                to_color32(*color),
-            );
+            let align = anchor_to_align2(anchor);
+            let text_color = apply_opacity(to_color32(*color), opacity);
+            let galley = painter.text(pos, align, content, font, text_color);
             Some(galley)
         }
 
@@ -236,8 +268,8 @@ pub fn paint_primitive(
                     Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y)
                 })
                 .collect();
-            let fill_c = to_color32(*fill);
-            let stroke_s = stroke.map(to_stroke).unwrap_or(Stroke::NONE);
+            let fill_c = apply_opacity(to_color32(*fill), opacity);
+            let stroke_s = stroke.as_ref().map_or(Stroke::NONE, to_egui_stroke);
             if pts.len() >= 3 {
                 let rect = bounding_rect(&pts);
                 painter.add(egui::Shape::convex_polygon(pts, fill_c, stroke_s));
@@ -247,7 +279,124 @@ pub fn paint_primitive(
             }
         }
 
-        Primitive::Arc { .. } | Primitive::BezierPath { .. } | Primitive::Mesh { .. } => None,
+        Primitive::Arc {
+            cx,
+            cy,
+            radius,
+            start_angle,
+            end_angle,
+            fill,
+            stroke,
+            ..
+        } => {
+            let segments = 32;
+            let angle_span = end_angle - start_angle;
+            let pts: Vec<Pos2> = (0..=segments)
+                .map(|i| {
+                    let t = *start_angle + angle_span * (i as f64 / segments as f64);
+                    let px = cx + radius * t.cos();
+                    let py = cy + radius * t.sin();
+                    let (tx, ty) = transform.apply(px, py);
+                    Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y)
+                })
+                .collect();
+            if let Some(fill_color) = fill {
+                let mut fan = vec![{
+                    let (tx, ty) = transform.apply(*cx, *cy);
+                    Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y)
+                }];
+                fan.extend_from_slice(&pts);
+                let fill_c = apply_opacity(to_color32(*fill_color), opacity);
+                painter.add(egui::Shape::convex_polygon(fan, fill_c, Stroke::NONE));
+            }
+            let rect = bounding_rect(&pts);
+            if let Some(s) = stroke {
+                painter.add(egui::Shape::line(pts, to_egui_stroke(s)));
+            }
+            Some(rect)
+        }
+
+        Primitive::BezierPath {
+            start,
+            segments,
+            stroke: s,
+            fill,
+            ..
+        } => {
+            let mut pts = Vec::new();
+            let (sx, sy) = transform.apply(start[0], start[1]);
+            pts.push(Pos2::new(sx as f32 + offset.x, sy as f32 + offset.y));
+
+            let mut cur = *start;
+            for seg in segments {
+                let steps = 16;
+                let p0 = cur;
+                for i in 1..=steps {
+                    let t = i as f64 / steps as f64;
+                    let mt = 1.0 - t;
+                    let mt2 = mt * mt;
+                    let mt3 = mt2 * mt;
+                    let t2 = t * t;
+                    let t3 = t2 * t;
+                    let px = mt3 * p0[0]
+                        + 3.0 * mt2 * t * seg.cp1[0]
+                        + 3.0 * mt * t2 * seg.cp2[0]
+                        + t3 * seg.end[0];
+                    let py = mt3 * p0[1]
+                        + 3.0 * mt2 * t * seg.cp1[1]
+                        + 3.0 * mt * t2 * seg.cp2[1]
+                        + t3 * seg.end[1];
+                    let (tx, ty) = transform.apply(px, py);
+                    pts.push(Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y));
+                }
+                cur = seg.end;
+            }
+
+            if pts.len() < 2 {
+                return None;
+            }
+
+            let rect = bounding_rect(&pts);
+            if let Some(fill_color) = fill {
+                let fill_c = apply_opacity(to_color32(*fill_color), opacity);
+                painter.add(egui::Shape::convex_polygon(
+                    pts.clone(),
+                    fill_c,
+                    Stroke::NONE,
+                ));
+            }
+            painter.add(egui::Shape::line(pts, to_egui_stroke(s)));
+            Some(rect)
+        }
+
+        Primitive::Mesh {
+            vertices, indices, ..
+        } => {
+            if vertices.is_empty() || indices.is_empty() {
+                return None;
+            }
+            let mut mesh = egui::Mesh::default();
+            for v in vertices {
+                let (tx, ty) = transform.apply(v.position[0], v.position[1]);
+                let color = Color32::from_rgba_unmultiplied(
+                    (v.color.r * 255.0) as u8,
+                    (v.color.g * 255.0) as u8,
+                    (v.color.b * 255.0) as u8,
+                    ((v.color.a * opacity) * 255.0) as u8,
+                );
+                mesh.vertices.push(egui::epaint::Vertex {
+                    pos: Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y),
+                    uv: Pos2::ZERO,
+                    color,
+                });
+            }
+            for idx in indices {
+                mesh.indices.push(*idx);
+            }
+            let rect = mesh.calc_bounds();
+            painter.add(egui::Shape::mesh(mesh));
+            Some(rect)
+        }
     }
 }
 
@@ -329,11 +478,7 @@ fn to_color32(c: Color) -> Color32 {
     )
 }
 
-fn to_stroke(s: petal_tongue_scene::primitive::StrokeStyle) -> Stroke {
-    Stroke::new(s.width, to_color32(s.color))
-}
-
-fn to_stroke_style(s: &petal_tongue_scene::primitive::StrokeStyle) -> Stroke {
+fn to_egui_stroke(s: &petal_tongue_scene::primitive::StrokeStyle) -> Stroke {
     Stroke::new(s.width, to_color32(s.color))
 }
 
@@ -344,6 +489,19 @@ mod tests {
     use petal_tongue_scene::primitive::StrokeStyle;
     use petal_tongue_scene::render_plan::RenderPlan;
     use petal_tongue_scene::scene_graph::SceneNode;
+
+    fn with_egui_painter(size: Vec2, f: impl FnOnce(&Painter, Vec2)) {
+        let ctx = egui::Context::default();
+        let mut f = Some(f);
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let (response, painter) = ui.allocate_painter(size, Sense::hover());
+                if let Some(callback) = f.take() {
+                    callback(&painter, response.rect.min.to_vec2());
+                }
+            });
+        });
+    }
 
     #[test]
     fn color_conversion_preserves_extremes() {
@@ -371,7 +529,7 @@ mod tests {
             width: 2.0,
             ..StrokeStyle::default()
         };
-        let egui_s = to_stroke(s);
+        let egui_s = to_egui_stroke(&s);
         assert!((egui_s.width - 2.0).abs() < f32::EPSILON);
     }
 
@@ -382,7 +540,7 @@ mod tests {
             width: 3.0,
             ..StrokeStyle::default()
         };
-        let egui_s = to_stroke_style(&s);
+        let egui_s = to_egui_stroke(&s);
         assert!((egui_s.width - 3.0).abs() < f32::EPSILON);
     }
 
@@ -508,14 +666,8 @@ mod tests {
             data_id: None,
         };
         let transform = Transform2D::IDENTITY;
-
-        let ctx = egui::Context::default();
-        let _ = ctx.run(egui::RawInput::default(), |ctx| {
-            egui::CentralPanel::default().show(ctx, |ui| {
-                let (response, painter) =
-                    ui.allocate_painter(egui::Vec2::new(200.0, 100.0), egui::Sense::hover());
-                paint_primitive(&painter, &prim, &transform, response.rect.min.to_vec2());
-            });
+        with_egui_painter(Vec2::new(200.0, 100.0), |painter, offset| {
+            paint_primitive(painter, &prim, &transform, offset, 1.0);
         });
     }
 
@@ -532,14 +684,8 @@ mod tests {
             data_id: None,
         };
         let transform = Transform2D::IDENTITY;
-
-        let ctx = egui::Context::default();
-        let _ = ctx.run(egui::RawInput::default(), |ctx| {
-            egui::CentralPanel::default().show(ctx, |ui| {
-                let (response, painter) =
-                    ui.allocate_painter(egui::Vec2::new(200.0, 200.0), egui::Sense::hover());
-                paint_primitive(&painter, &prim, &transform, response.rect.min.to_vec2());
-            });
+        with_egui_painter(Vec2::new(200.0, 200.0), |painter, offset| {
+            paint_primitive(painter, &prim, &transform, offset, 1.0);
         });
     }
 
@@ -560,14 +706,8 @@ mod tests {
             data_id: None,
         };
         let transform = Transform2D::IDENTITY;
-
-        let ctx = egui::Context::default();
-        let _ = ctx.run(egui::RawInput::default(), |ctx| {
-            egui::CentralPanel::default().show(ctx, |ui| {
-                let (response, painter) =
-                    ui.allocate_painter(egui::Vec2::new(200.0, 200.0), egui::Sense::hover());
-                paint_primitive(&painter, &prim, &transform, response.rect.min.to_vec2());
-            });
+        with_egui_painter(Vec2::new(200.0, 200.0), |painter, offset| {
+            paint_primitive(painter, &prim, &transform, offset, 1.0);
         });
     }
 
@@ -587,14 +727,8 @@ mod tests {
             data_id: None,
         };
         let transform = Transform2D::IDENTITY;
-
-        let ctx = egui::Context::default();
-        let _ = ctx.run(egui::RawInput::default(), |ctx| {
-            egui::CentralPanel::default().show(ctx, |ui| {
-                let (response, painter) =
-                    ui.allocate_painter(egui::Vec2::new(200.0, 200.0), egui::Sense::hover());
-                paint_primitive(&painter, &prim, &transform, response.rect.min.to_vec2());
-            });
+        with_egui_painter(Vec2::new(200.0, 200.0), |painter, offset| {
+            paint_primitive(painter, &prim, &transform, offset, 1.0);
         });
     }
 
@@ -610,14 +744,8 @@ mod tests {
             data_id: None,
         };
         let transform = Transform2D::IDENTITY;
-
-        let ctx = egui::Context::default();
-        let _ = ctx.run(egui::RawInput::default(), |ctx| {
-            egui::CentralPanel::default().show(ctx, |ui| {
-                let (response, painter) =
-                    ui.allocate_painter(egui::Vec2::new(200.0, 200.0), egui::Sense::hover());
-                paint_primitive(&painter, &prim, &transform, response.rect.min.to_vec2());
-            });
+        with_egui_painter(Vec2::new(200.0, 200.0), |painter, offset| {
+            paint_primitive(painter, &prim, &transform, offset, 1.0);
         });
     }
 
@@ -630,14 +758,8 @@ mod tests {
             data_id: None,
         };
         let transform = Transform2D::IDENTITY;
-
-        let ctx = egui::Context::default();
-        let _ = ctx.run(egui::RawInput::default(), |ctx| {
-            egui::CentralPanel::default().show(ctx, |ui| {
-                let (response, painter) =
-                    ui.allocate_painter(egui::Vec2::new(200.0, 200.0), egui::Sense::hover());
-                paint_primitive(&painter, &prim, &transform, response.rect.min.to_vec2());
-            });
+        with_egui_painter(Vec2::new(200.0, 200.0), |painter, offset| {
+            paint_primitive(painter, &prim, &transform, offset, 1.0);
         });
     }
 
@@ -653,14 +775,8 @@ mod tests {
             data_id: None,
         };
         let transform = Transform2D::IDENTITY;
-
-        let ctx = egui::Context::default();
-        let _ = ctx.run(egui::RawInput::default(), |ctx| {
-            egui::CentralPanel::default().show(ctx, |ui| {
-                let (response, painter) =
-                    ui.allocate_painter(egui::Vec2::new(200.0, 200.0), egui::Sense::hover());
-                paint_primitive(&painter, &prim, &transform, response.rect.min.to_vec2());
-            });
+        with_egui_painter(Vec2::new(200.0, 200.0), |painter, offset| {
+            paint_primitive(painter, &prim, &transform, offset, 1.0);
         });
     }
 
@@ -675,14 +791,8 @@ mod tests {
             stroke: None,
             data_id: None,
         }));
-
-        let ctx = egui::Context::default();
-        let _ = ctx.run(egui::RawInput::default(), |ctx| {
-            egui::CentralPanel::default().show(ctx, |ui| {
-                let (response, painter) =
-                    ui.allocate_painter(egui::Vec2::new(400.0, 300.0), egui::Sense::hover());
-                paint_scene(&painter, &graph, response.rect.min.to_vec2());
-            });
+        with_egui_painter(Vec2::new(400.0, 300.0), |painter, offset| {
+            paint_scene(painter, &graph, offset);
         });
     }
 
@@ -699,12 +809,11 @@ mod tests {
         }));
         let grammar = GrammarExpr::new("data", GeometryType::Point);
         let plan = RenderPlan::new(graph, grammar);
-
         let ctx = egui::Context::default();
         let _ = ctx.run(egui::RawInput::default(), |ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
-                let _response = SceneWidget::new(&plan)
-                    .desired_size(egui::Vec2::new(400.0, 300.0))
+                SceneWidget::new(&plan)
+                    .desired_size(Vec2::new(400.0, 300.0))
                     .show(ui);
             });
         });

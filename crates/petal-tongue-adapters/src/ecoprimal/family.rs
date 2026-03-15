@@ -183,4 +183,109 @@ mod tests {
         let adapter = EcoPrimalFamilyAdapter::default();
         assert!(adapter.handles("family_id"));
     }
+
+    #[test]
+    fn test_node_decoration_family_id_as_number() {
+        let adapter = EcoPrimalFamilyAdapter::new();
+        let mut props = Properties::new();
+        props.insert("family_id".to_string(), PropertyValue::Number(42.0));
+        assert!(adapter.node_decoration(&props).is_none());
+    }
+
+    #[test]
+    fn test_node_decoration_family_id_missing() {
+        let adapter = EcoPrimalFamilyAdapter::new();
+        let mut props = Properties::new();
+        props.insert(
+            "other_key".to_string(),
+            PropertyValue::String("val".to_string()),
+        );
+        assert!(adapter.node_decoration(&props).is_none());
+    }
+
+    #[test]
+    fn test_node_decoration_empty_family_id() {
+        let adapter = EcoPrimalFamilyAdapter::new();
+        let mut props = Properties::new();
+        props.insert(
+            "family_id".to_string(),
+            PropertyValue::String(String::new()),
+        );
+        let decoration = adapter.node_decoration(&props).unwrap();
+        assert!(decoration.ring_color.is_some());
+    }
+
+    #[test]
+    fn test_family_id_to_color_empty_string() {
+        let color = EcoPrimalFamilyAdapter::family_id_to_color("");
+        assert_eq!(color, Color32::from_rgb(80, 80, 80));
+    }
+
+    #[test]
+    fn test_family_id_to_color_min_brightness() {
+        let color = EcoPrimalFamilyAdapter::family_id_to_color("a");
+        let (r, g, b, _) = color.to_tuple();
+        assert!(r >= 80);
+        assert!(g >= 80);
+        assert!(b >= 80);
+    }
+
+    #[test]
+    fn test_render_family_id_invalid_value() {
+        let adapter = EcoPrimalFamilyAdapter::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                adapter.render("family_id", &PropertyValue::Number(1.0), ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_dna_invalid_value() {
+        let adapter = EcoPrimalFamilyAdapter::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                adapter.render("dna", &PropertyValue::Boolean(true), ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_unknown_key_no_op() {
+        let adapter = EcoPrimalFamilyAdapter::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                adapter.render("other", &PropertyValue::String("x".to_string()), ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_family_id_valid() {
+        let adapter = EcoPrimalFamilyAdapter::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                adapter.render(
+                    "family_id",
+                    &PropertyValue::String("fam-xyz".to_string()),
+                    ui,
+                );
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_dna_valid() {
+        let adapter = EcoPrimalFamilyAdapter::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                adapter.render("dna", &PropertyValue::String("ACTG".to_string()), ui);
+            });
+        });
+    }
 }

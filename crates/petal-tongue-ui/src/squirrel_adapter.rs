@@ -188,9 +188,7 @@ impl SquirrelAdapter {
             "ai.focus" => event
                 .targets
                 .first()
-                .map(|t| AiInteractionCommand::Focus {
-                    target: t.clone(),
-                }),
+                .map(|t| AiInteractionCommand::Focus { target: t.clone() }),
             "ai.select" => Some(AiInteractionCommand::Select {
                 targets: event.targets.clone(),
             }),

@@ -246,4 +246,28 @@ mod tests {
         assert!(response.result.is_some());
         assert!(response.error.is_none());
     }
+
+    #[test]
+    fn test_json_rpc_response_error_with_data() {
+        let response = JsonRpcResponse::error_with_data(
+            json!(1),
+            error_codes::INVALID_PARAMS,
+            "Invalid params",
+            json!({"field": "session_id"}),
+        );
+        assert!(response.result.is_none());
+        let err = response.error.expect("error");
+        assert_eq!(err.code, error_codes::INVALID_PARAMS);
+        assert_eq!(err.message, "Invalid params");
+        assert_eq!(err.data, Some(json!({"field": "session_id"})));
+    }
+
+    #[test]
+    fn test_error_codes_constants() {
+        assert_eq!(error_codes::PARSE_ERROR, -32700);
+        assert_eq!(error_codes::INVALID_REQUEST, -32600);
+        assert_eq!(error_codes::METHOD_NOT_FOUND, -32601);
+        assert_eq!(error_codes::INVALID_PARAMS, -32602);
+        assert_eq!(error_codes::INTERNAL_ERROR, -32603);
+    }
 }

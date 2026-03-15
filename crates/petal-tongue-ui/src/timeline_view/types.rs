@@ -4,7 +4,6 @@
 //! Core data types for the timeline event sequence visualization.
 
 use chrono::{DateTime, Utc};
-use egui::Color32;
 
 /// Event in the timeline
 #[derive(Clone, Debug)]
@@ -66,15 +65,20 @@ pub enum EventStatus {
 }
 
 impl EventStatus {
-    /// Get color for this status
     #[must_use]
-    pub const fn color(&self) -> Color32 {
+    pub const fn color_rgba(&self) -> [u8; 4] {
         match self {
-            Self::Success => Color32::from_rgb(100, 255, 100),
-            Self::Failure => Color32::from_rgb(255, 100, 100),
-            Self::InProgress => Color32::from_rgb(255, 200, 100),
-            Self::Timeout => Color32::from_rgb(200, 100, 255),
+            Self::Success => [76, 175, 80, 255],
+            Self::Failure => [244, 67, 54, 255],
+            Self::InProgress => [255, 152, 0, 255],
+            Self::Timeout => [156, 39, 176, 255],
         }
+    }
+
+    #[must_use]
+    pub fn color(&self) -> egui::Color32 {
+        let [r, g, b, a] = self.color_rgba();
+        egui::Color32::from_rgba_unmultiplied(r, g, b, a)
     }
 
     /// Get icon for this status
@@ -94,22 +98,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn event_status_color_all_variants() {
+    fn event_status_color_rgba_all_variants() {
+        assert_eq!(EventStatus::Success.color_rgba(), [76, 175, 80, 255]);
+        assert_eq!(EventStatus::Failure.color_rgba(), [244, 67, 54, 255]);
+        assert_eq!(EventStatus::InProgress.color_rgba(), [255, 152, 0, 255]);
+        assert_eq!(EventStatus::Timeout.color_rgba(), [156, 39, 176, 255]);
+    }
+
+    #[test]
+    fn event_status_color_from_rgba() {
         assert_eq!(
             EventStatus::Success.color(),
-            Color32::from_rgb(100, 255, 100)
-        );
-        assert_eq!(
-            EventStatus::Failure.color(),
-            Color32::from_rgb(255, 100, 100)
-        );
-        assert_eq!(
-            EventStatus::InProgress.color(),
-            Color32::from_rgb(255, 200, 100)
-        );
-        assert_eq!(
-            EventStatus::Timeout.color(),
-            Color32::from_rgb(200, 100, 255)
+            egui::Color32::from_rgba_unmultiplied(76, 175, 80, 255)
         );
     }
 

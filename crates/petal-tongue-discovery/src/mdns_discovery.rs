@@ -45,4 +45,20 @@ mod tests {
         let result = discover_via_mdns().await;
         assert!(result.is_ok());
     }
+
+    #[cfg(feature = "mdns")]
+    #[tokio::test]
+    async fn query_capability_returns_result() {
+        let result = query_capability(VisualizationCapability::PrimalProvider).await;
+        assert!(result.is_ok());
+    }
+
+    #[cfg(feature = "mdns")]
+    #[tokio::test]
+    async fn query_capability_all_variants() {
+        for cap in VisualizationCapability::all() {
+            let result = query_capability(*cap).await;
+            assert!(result.is_ok());
+        }
+    }
 }

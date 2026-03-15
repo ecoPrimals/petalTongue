@@ -670,4 +670,93 @@ mod tests {
             GaugeStatus::Normal
         );
     }
+
+    #[test]
+    fn distribution_bins_bar_center_formula() {
+        let values = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let (lo, hi, counts) = distribution_bins(&values, 5).expect("valid");
+        let bin_width = (hi - lo) / 5.0;
+        for (i, &c) in counts.iter().enumerate() {
+            if c > 0 {
+                let center = (i as f64 + 0.5).mul_add(bin_width, lo);
+                assert!(center >= lo && center <= hi);
+            }
+        }
+    }
+
+    #[test]
+    fn gauge_frac_computation() {
+        let frac = |value: f64, min: f64, max: f64| ((value - min) / (max - min)).clamp(0.0, 1.0);
+        assert!((frac(50.0, 0.0, 100.0) - 0.5).abs() < f64::EPSILON);
+        assert!((frac(0.0, 0.0, 100.0) - 0.0).abs() < f64::EPSILON);
+        assert!((frac(100.0, 0.0, 100.0) - 1.0).abs() < f64::EPSILON);
+        assert!(frac(-10.0, 0.0, 100.0) <= 0.0);
+        assert!(frac(150.0, 0.0, 100.0) >= 1.0);
+    }
+
+    #[test]
+    fn gauge_normal_range_fraction() {
+        let normal_left =
+            |n0: f64, _n1: f64, min: f64, max: f64| ((n0 - min) / (max - min)).clamp(0.0, 1.0);
+        let normal_right =
+            |_n0: f64, n1: f64, min: f64, max: f64| ((n1 - min) / (max - min)).clamp(0.0, 1.0);
+        let min = 0.0;
+        let max = 100.0;
+        let nl = normal_left(20.0, 80.0, min, max);
+        let nr = normal_right(20.0, 80.0, min, max);
+        assert!((nl - 0.2).abs() < f64::EPSILON);
+        assert!((nr - 0.8).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn distribution_bins_idx_floor() {
+        let values = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let (lo, hi, counts) = distribution_bins(&values, 5).expect("valid");
+        let bin_width = (hi - lo) / 5.0;
+        let idx_for = |v: f64| {
+            let idx = ((v - lo) / bin_width).floor() as usize;
+            idx.min(4)
+        };
+        assert_eq!(idx_for(1.0), 0);
+        assert_eq!(idx_for(2.0), 1);
+        assert_eq!(idx_for(3.0), 2);
+        assert_eq!(idx_for(4.0), 3);
+        assert_eq!(idx_for(5.0), 4);
+        assert_eq!(counts.iter().sum::<u32>(), 5, "all values must be binned");
+    }
+
+    #[test]
+    fn gauge_status_warning_at_upper_bound() {
+        assert_eq!(
+            gauge_status_for_value(120.0, &[0.0, 100.0], &[100.0, 120.0]),
+            GaugeStatus::Warning
+        );
+    }
+
+    #[test]
+    fn gauge_status_critical_above_warning() {
+        assert_eq!(
+            gauge_status_for_value(200.0, &[0.0, 100.0], &[100.0, 150.0]),
+            GaugeStatus::Critical
+        );
+    }
+
+    #[test]
+    fn distribution_bins_nan_in_values() {
+        let values = vec![1.0, f64::NAN, 5.0];
+        let result = distribution_bins(&values, 3);
+        assert!(result.is_some());
+        let (lo, hi, counts) = result.unwrap();
+        assert!((lo - 1.0).abs() < f64::EPSILON);
+        assert!((hi - 5.0).abs() < f64::EPSILON);
+        assert_eq!(counts.iter().sum::<u32>(), 3);
+    }
+
+    #[test]
+    fn gauge_status_normal_inner() {
+        assert_eq!(
+            gauge_status_for_value(50.0, &[20.0, 80.0], &[10.0, 90.0]),
+            GaugeStatus::Normal
+        );
+    }
 }

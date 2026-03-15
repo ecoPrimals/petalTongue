@@ -668,4 +668,124 @@ mod tests {
         let desc = renderer.describe_node_audio("critical-node").unwrap();
         assert!(desc.contains("dissonant"));
     }
+
+    #[test]
+    fn test_describe_node_audio_unknown_health() {
+        let mut graph = GraphEngine::new();
+        let mut node =
+            petal_tongue_core::test_fixtures::primals::test_primal_with_type("unknown-node", "AI");
+        node.name = "Unknown AI".to_string();
+        node.health = PrimalHealthStatus::Unknown;
+        graph.add_node(node);
+        graph.set_layout(LayoutAlgorithm::Circular);
+        graph.layout(1);
+        let renderer = AudioSonificationRenderer::new(Arc::new(RwLock::new(graph)));
+        let desc = renderer.describe_node_audio("unknown-node").unwrap();
+        assert!(desc.contains("neutral"));
+    }
+
+    #[test]
+    fn test_describe_node_audio_position_left() {
+        let mut graph = GraphEngine::new();
+        let node = petal_tongue_core::test_fixtures::primals::test_primal_with_type(
+            "left-node",
+            "Compute",
+        );
+        graph.add_node(node);
+        graph.set_layout(LayoutAlgorithm::Circular);
+        graph.layout(1);
+        if let Some(n) = graph.get_node_mut("left-node") {
+            n.position = Position::new_2d(-400.0, 0.0);
+        }
+        let renderer = AudioSonificationRenderer::new(Arc::new(RwLock::new(graph)));
+        let desc = renderer.describe_node_audio("left-node").unwrap();
+        assert!(desc.contains("left"));
+    }
+
+    #[test]
+    fn test_describe_node_audio_position_right() {
+        let mut graph = GraphEngine::new();
+        let node = petal_tongue_core::test_fixtures::primals::test_primal_with_type(
+            "right-node",
+            "Compute",
+        );
+        graph.add_node(node);
+        graph.set_layout(LayoutAlgorithm::Circular);
+        graph.layout(1);
+        if let Some(n) = graph.get_node_mut("right-node") {
+            n.position = Position::new_2d(400.0, 0.0);
+        }
+        let renderer = AudioSonificationRenderer::new(Arc::new(RwLock::new(graph)));
+        let desc = renderer.describe_node_audio("right-node").unwrap();
+        assert!(desc.contains("right"));
+    }
+
+    #[test]
+    fn test_describe_node_audio_position_center() {
+        let mut graph = GraphEngine::new();
+        let node = petal_tongue_core::test_fixtures::primals::test_primal_with_type(
+            "center-node",
+            "Compute",
+        );
+        graph.add_node(node);
+        graph.set_layout(LayoutAlgorithm::Circular);
+        graph.layout(1);
+        if let Some(n) = graph.get_node_mut("center-node") {
+            n.position = Position::new_2d(0.0, 0.0);
+        }
+        let renderer = AudioSonificationRenderer::new(Arc::new(RwLock::new(graph)));
+        let desc = renderer.describe_node_audio("center-node").unwrap();
+        assert!(desc.contains("centered"));
+    }
+
+    #[test]
+    fn test_activity_to_volume_formula() {
+        let activity = |cap_count: usize| {
+            let normalized = (cap_count as f32 / 10.0).min(1.0);
+            0.3 + (normalized * 0.7)
+        };
+        assert!((activity(0) - 0.3).abs() < f32::EPSILON);
+        assert!((activity(10) - 1.0).abs() < f32::EPSILON);
+        assert!(activity(5) > activity(0));
+        assert!(activity(5) < activity(10));
+    }
+
+    #[test]
+    fn test_health_to_pitch_all_variants() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let renderer = AudioSonificationRenderer::new(graph);
+        let h = renderer.health_to_pitch(&PrimalHealthStatus::Healthy);
+        let w = renderer.health_to_pitch(&PrimalHealthStatus::Warning);
+        let c = renderer.health_to_pitch(&PrimalHealthStatus::Critical);
+        let u = renderer.health_to_pitch(&PrimalHealthStatus::Unknown);
+        assert!(c < u && u < w && w < h);
+    }
+
+    #[test]
+    fn test_instrument_enum_variants() {
+        assert_ne!(Instrument::Bass, Instrument::Drums);
+        assert_ne!(Instrument::Chimes, Instrument::Strings);
+        assert_eq!(Instrument::Default, Instrument::Default);
+    }
+
+    #[test]
+    fn test_audio_attributes_clone() {
+        let attrs = AudioAttributes {
+            instrument: Instrument::Synth,
+            pitch: 0.75,
+            volume: 0.8,
+            pan: 0.0,
+        };
+        let cloned = attrs.clone();
+        assert_eq!(cloned.instrument, attrs.instrument);
+        assert!((cloned.pitch - attrs.pitch).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_generate_audio_attributes_empty_graph() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let renderer = AudioSonificationRenderer::new(graph);
+        let attrs = renderer.generate_audio_attributes();
+        assert!(attrs.is_empty());
+    }
 }

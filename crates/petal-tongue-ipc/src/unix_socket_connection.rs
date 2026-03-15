@@ -52,6 +52,7 @@ pub async fn handle_connection(handler: &RpcHandlers, stream: UnixStream) -> Res
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn parse_json_rpc_request_line() {
@@ -75,5 +76,40 @@ mod tests {
         let line = r#"{"jsonrpc":"2.0","method":}"#;
         let result: Result<JsonRpcRequest, _> = serde_json::from_str(line);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn json_rpc_response_error_serialization() {
+        let response = JsonRpcResponse::error(
+            json!(null),
+            error_codes::PARSE_ERROR,
+            "Parse error: invalid json",
+        );
+        let json = serde_json::to_string(&response).expect("serialize");
+        assert!(json.contains("\"error\""));
+        let restored: JsonRpcResponse = serde_json::from_str(&json).expect("deserialize");
+        assert!(restored.error.is_some());
+        assert_eq!(restored.error.unwrap().code, error_codes::PARSE_ERROR);
+    }
+
+    #[test]
+    fn json_rpc_response_error_with_data() {
+        let response = JsonRpcResponse::error_with_data(
+            json!(1),
+            error_codes::INVALID_PARAMS,
+            "Invalid params",
+            json!({"field": "session_id"}),
+        );
+        assert!(response.error.is_some());
+        let err = response.error.unwrap();
+        assert_eq!(err.code, error_codes::INVALID_PARAMS);
+        assert!(err.data.is_some());
+    }
+
+    #[test]
+    fn json_rpc_request_missing_params_deserializes() {
+        let line = r#"{"jsonrpc":"2.0","method":"health.get","id":1}"#;
+        let request: JsonRpcRequest = serde_json::from_str(line).expect("parse");
+        assert_eq!(request.method, "health.get");
     }
 }

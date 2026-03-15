@@ -668,4 +668,33 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_tutorial_mode_default() {
+        let t = TutorialMode::default();
+        assert_eq!(t.scenario_name(), "simple");
+    }
+
+    #[test]
+    fn test_minimal_example_edge_labels() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        TutorialMode::create_fallback_scenario(Arc::clone(&graph), LayoutAlgorithm::ForceDirected);
+
+        let graph = graph
+            .read()
+            .expect("SAFETY: Graph lock poisoned - indicates panic in graph thread");
+        let edges = graph.edges();
+
+        let disc_edge = edges
+            .iter()
+            .find(|e| e.from == "petaltongue-tutorial" && e.to == "discovery-example")
+            .unwrap();
+        assert_eq!(disc_edge.label.as_deref(), Some("discovers"));
+
+        let trust_edge = edges
+            .iter()
+            .find(|e| e.from == "discovery-example" && e.to == "security-example")
+            .unwrap();
+        assert_eq!(trust_edge.label.as_deref(), Some("authenticates"));
+    }
 }

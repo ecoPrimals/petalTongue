@@ -207,7 +207,8 @@ impl SseEventConsumer {
                         buffer = buffer[pos + 2..].to_string();
 
                         for line in message.lines() {
-                            if let Some(data) = line.strip_prefix("data: ")
+                            if let Some(data) = line
+                                .strip_prefix("data: ")
                                 .or_else(|| line.strip_prefix("data:"))
                             {
                                 if let Some(event) = Self::parse_sse_data(data.trim()) {
@@ -326,8 +327,7 @@ mod tests {
 
     #[test]
     fn parse_sse_data_valid() {
-        let data =
-            r#"{"type":"PrimalDiscovered","primal_id":"x","name":"X","capabilities":["a"]}"#;
+        let data = r#"{"type":"PrimalDiscovered","primal_id":"x","name":"X","capabilities":["a"]}"#;
         let event = SseEventConsumer::parse_sse_data(data);
         assert!(event.is_some());
     }
@@ -340,7 +340,52 @@ mod tests {
     #[test]
     fn sse_consumer_construction() {
         let consumer = SseEventConsumer::new("http://localhost:8080/api/v1/events/stream");
-        assert_eq!(consumer.endpoint, "http://localhost:8080/api/v1/events/stream");
+        assert_eq!(
+            consumer.endpoint,
+            "http://localhost:8080/api/v1/events/stream"
+        );
+    }
+
+    #[test]
+    fn parse_sse_data_with_data_prefix() {
+        let data = r#"{"type":"PrimalDiscovered","primal_id":"x","name":"X","capabilities":["a"]}"#;
+        let event = SseEventConsumer::parse_sse_data(data);
+        assert!(event.is_some());
+        let ev = event.unwrap();
+        match ev {
+            EcosystemEvent::PrimalDiscovered { primal_id, .. } => assert_eq!(primal_id, "x"),
+            _ => panic!("expected PrimalDiscovered"),
+        }
+    }
+
+    #[test]
+    fn sse_connection_state_variants() {
+        assert_eq!(
+            SseConnectionState::Disconnected,
+            SseConnectionState::Disconnected
+        );
+        assert_ne!(
+            SseConnectionState::Disconnected,
+            SseConnectionState::Connected
+        );
+    }
+
+    #[test]
+    fn ecosystem_event_serde_tag() {
+        let json =
+            r#"{"type":"HealthChanged","primal_id":"p1","previous":"ok","current":"degraded"}"#;
+        let parsed: EcosystemEvent = serde_json::from_str(json).unwrap();
+        match parsed {
+            EcosystemEvent::HealthChanged { current, .. } => assert_eq!(current, "degraded"),
+            _ => panic!("expected HealthChanged"),
+        }
+    }
+
+    #[test]
+    fn sse_from_defaults_creates_consumer() {
+        let consumer = SseEventConsumer::from_defaults();
+        assert!(!consumer.endpoint.is_empty());
+        assert!(consumer.endpoint.contains("stream"));
     }
 
     #[tokio::test]

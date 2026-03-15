@@ -10,6 +10,8 @@ mod view;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_extended;
 
 pub use helpers::{
     bezier_control_points, calculate_flow_color, calculate_flow_width, prepare_flow_detail,

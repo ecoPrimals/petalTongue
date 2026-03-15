@@ -163,4 +163,91 @@ mod tests {
             .await;
         assert!(provider.is_some());
     }
+
+    #[test]
+    fn test_compute_registry_default() {
+        let registry = ComputeRegistry::default();
+        assert!(registry.is_empty());
+        assert_eq!(registry.len(), 0);
+    }
+
+    #[test]
+    fn test_compute_registry_is_empty() {
+        let mut registry = ComputeRegistry::new();
+        assert!(registry.is_empty());
+        registry.register(Box::new(MockComputeProvider {
+            name: "test".to_string(),
+            caps: vec![],
+            available: true,
+        }));
+        assert!(!registry.is_empty());
+    }
+
+    #[test]
+    fn test_compute_registry_len() {
+        let mut registry = ComputeRegistry::new();
+        assert_eq!(registry.len(), 0);
+        registry.register(Box::new(MockComputeProvider {
+            name: "a".to_string(),
+            caps: vec![],
+            available: true,
+        }));
+        assert_eq!(registry.len(), 1);
+        registry.register(Box::new(MockComputeProvider {
+            name: "b".to_string(),
+            caps: vec![],
+            available: true,
+        }));
+        assert_eq!(registry.len(), 2);
+    }
+
+    #[test]
+    fn test_compute_registry_get_mut() {
+        let mut registry = ComputeRegistry::new();
+        registry.register(Box::new(MockComputeProvider {
+            name: "test".to_string(),
+            caps: vec![ComputeCapability::PhysicsSimulation],
+            available: true,
+        }));
+        let provider = registry.get_mut("test");
+        assert!(provider.is_some());
+        assert!(registry.get_mut("missing").is_none());
+    }
+
+    #[tokio::test]
+    async fn test_compute_registry_get_with_capability_unavailable() {
+        let mut registry = ComputeRegistry::new();
+        registry.register(Box::new(MockComputeProvider {
+            name: "unavail".to_string(),
+            caps: vec![ComputeCapability::LayoutComputation],
+            available: false,
+        }));
+        let provider = registry
+            .get_with_capability(ComputeCapability::LayoutComputation)
+            .await;
+        assert!(provider.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_compute_registry_get_with_capability_missing() {
+        let mut registry = ComputeRegistry::new();
+        registry.register(Box::new(MockComputeProvider {
+            name: "other".to_string(),
+            caps: vec![ComputeCapability::ImageProcessing],
+            available: true,
+        }));
+        let provider = registry
+            .get_with_capability(ComputeCapability::RayTracing)
+            .await;
+        assert!(provider.is_none());
+    }
+
+    #[test]
+    fn test_compute_capability_variants() {
+        let _ = ComputeCapability::LayoutComputation;
+        let _ = ComputeCapability::PhysicsSimulation;
+        let _ = ComputeCapability::RayTracing;
+        let _ = ComputeCapability::ParticleEffects;
+        let _ = ComputeCapability::ImageProcessing;
+    }
 }

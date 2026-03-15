@@ -5,8 +5,8 @@
 //! biodiversity) via JSON-RPC but has no petalTongue scenario builders.
 //! These builders generate representative visualization data for each domain.
 
-use crate::scenario_builder::{ScenarioBuilder, ScenarioMetadata, VisualizationScene};
 use crate::DataBinding;
+use crate::scenario_builder::{ScenarioBuilder, ScenarioMetadata, VisualizationScene};
 
 /// ET0 (reference evapotranspiration) time series scenario.
 pub struct AirSpringET0Scenario;
@@ -358,6 +358,61 @@ mod tests {
         let builder = AirSpringET0Scenario;
         let scenes = builder.build_all();
         assert_eq!(scenes.len(), 2);
+    }
+
+    #[test]
+    fn et0_daily_formula() {
+        let builder = AirSpringET0Scenario;
+        let scene = builder.build_scene("daily_et0").unwrap();
+        match &scene.bindings[0] {
+            DataBinding::TimeSeries {
+                x_values, y_values, ..
+            } => {
+                let d = x_values[0];
+                let expected = 3.0 + 1.5 * (d * std::f64::consts::TAU / 30.0).sin();
+                assert!((y_values[0] - expected).abs() < 1e-10);
+            }
+            _ => panic!("expected TimeSeries"),
+        }
+    }
+
+    #[test]
+    fn richards_field_formula() {
+        let builder = AirSpringRichardsPDEScenario;
+        let scene = builder.build_scene("moisture_field").unwrap();
+        match &scene.bindings[0] {
+            DataBinding::FieldMap {
+                grid_x,
+                grid_y,
+                values,
+                ..
+            } => {
+                let row = 0_usize;
+                let col = 0_usize;
+                let depth = row as f64 / grid_y.len() as f64;
+                let lateral = col as f64 / grid_x.len() as f64;
+                let expected = 0.35 - 0.15 * depth + 0.05 * (lateral * std::f64::consts::PI).sin();
+                let idx = row * grid_x.len() + col;
+                assert!((values[idx] - expected).abs() < 1e-10);
+            }
+            _ => panic!("expected FieldMap"),
+        }
+    }
+
+    #[test]
+    fn spi_timeseries_formula() {
+        let builder = AirSpringDroughtIndexScenario;
+        let scene = builder.build_scene("spi_timeseries").unwrap();
+        match &scene.bindings[0] {
+            DataBinding::TimeSeries {
+                x_values, y_values, ..
+            } => {
+                let m = x_values[0];
+                let expected = 0.5 * (m * std::f64::consts::TAU / 12.0).sin() - 0.3;
+                assert!((y_values[0] - expected).abs() < 1e-10);
+            }
+            _ => panic!("expected TimeSeries"),
+        }
     }
 
     #[test]

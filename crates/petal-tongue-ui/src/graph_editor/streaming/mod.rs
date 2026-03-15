@@ -412,4 +412,38 @@ mod tests {
             "Progress should be clamped to 1.0"
         );
     }
+
+    #[tokio::test]
+    async fn test_stream_handler_default() {
+        let handler = StreamHandler::default();
+        assert_eq!(handler.subscriber_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_progress_clamp_negative() {
+        let handler = StreamHandler::new();
+        let mut rx = handler.subscribe();
+
+        handler
+            .send_progress(
+                "test-graph".to_string(),
+                "node-1".to_string(),
+                -0.5,
+                "Negative".to_string(),
+            )
+            .await
+            .unwrap();
+
+        let msg = tokio::time::timeout(Duration::from_secs(1), rx.recv())
+            .await
+            .expect("recv timed out")
+            .expect("recv failed");
+        assert!(
+            matches!(
+                msg,
+                StreamMessage::Progress { progress, .. } if progress == 0.0
+            ),
+            "Progress should be clamped to 0.0"
+        );
+    }
 }

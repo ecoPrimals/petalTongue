@@ -265,6 +265,22 @@ pub fn render_all_panels(ctx: &egui::Context, app: &mut PetalTongueApp) {
             });
     }
 
+    // Live IPC visualization sessions from springs
+    if let Some(ref viz_state) = app.visualization_state {
+        let has_sessions = {
+            let summaries = crate::live_sessions::active_session_summaries(viz_state);
+            !summaries.is_empty()
+        };
+        if has_sessions {
+            egui::TopBottomPanel::bottom("live_sessions_panel")
+                .default_height(120.0)
+                .resizable(true)
+                .show(ctx, |ui| {
+                    crate::live_sessions::render_sessions_panel(ui, viz_state);
+                });
+        }
+    }
+
     egui::CentralPanel::default().show(ctx, |ui| {
         if let Some(tool) = app.tools.visible_tool() {
             tool.render_panel(ui);

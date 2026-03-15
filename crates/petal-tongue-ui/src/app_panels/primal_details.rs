@@ -525,6 +525,70 @@ mod tests {
     }
 
     #[test]
+    fn primal_details_summary_uses_existing_properties() {
+        let mut info = test_primal_info();
+        let mut props = Properties::new();
+        props.insert(
+            "custom".to_string(),
+            PropertyValue::String("value".to_string()),
+        );
+        info.properties = props;
+        let summary = PrimalDetailsSummary::from_primal_info(&info, 2_000_000);
+        assert_eq!(
+            summary.properties.get("custom"),
+            Some(&PropertyValue::String("value".to_string()))
+        );
+    }
+
+    #[test]
+    fn extract_node_detail_with_data_bindings_json() {
+        let mut props = Properties::new();
+        props.insert(
+            "data_bindings_json".to_string(),
+            PropertyValue::String(
+                r#"[{"channel_type":"gauge","id":"ch1","label":"ch1","value":0,"min":0,"max":100,"unit":"","normal_range":[0,100],"warning_range":[10,90]}]"#
+                    .to_string(),
+            ),
+        );
+        props.insert("health".to_string(), PropertyValue::Number(80.0));
+        let info = PrimalInfo::new(
+            PrimalId::from("bind-test"),
+            "Bind Test",
+            "sensor",
+            petal_tongue_core::constants::default_headless_url(),
+            vec!["sensor".to_string()],
+            PrimalHealthStatus::Healthy,
+            0,
+        );
+        let detail = extract_node_detail_for_bindings(&info, &props);
+        assert!(detail.is_some());
+        let d = detail.unwrap();
+        assert_eq!(d.name, "Bind Test");
+        assert_eq!(d.health, 80);
+        assert_eq!(d.data_bindings.len(), 1);
+    }
+
+    #[test]
+    fn extract_node_detail_empty_bindings_returns_none() {
+        let mut props = Properties::new();
+        props.insert(
+            "data_bindings_json".to_string(),
+            PropertyValue::String("[]".to_string()),
+        );
+        let info = PrimalInfo::new(
+            PrimalId::from("empty"),
+            "Empty",
+            "compute",
+            petal_tongue_core::constants::default_headless_url(),
+            vec![],
+            PrimalHealthStatus::Healthy,
+            0,
+        );
+        let detail = extract_node_detail_for_bindings(&info, &props);
+        assert!(detail.is_none());
+    }
+
+    #[test]
     fn build_properties_from_info_empty_capabilities() {
         let endpoint = petal_tongue_core::constants::default_headless_url();
         let info = PrimalInfo::new(

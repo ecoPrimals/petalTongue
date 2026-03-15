@@ -220,4 +220,142 @@ mod tests {
         assert_eq!(decoration.badge, Some("🟠".to_string()));
         assert!(decoration.tooltip.is_some());
     }
+
+    #[test]
+    fn test_from_config() {
+        let config = TrustConfig {
+            min_level: 0,
+            max_level: 2,
+            level_names: vec!["A".to_string(), "B".to_string(), "C".to_string()],
+            level_emojis: vec!["1".to_string(), "2".to_string(), "3".to_string()],
+            level_colors: vec![
+                "#FF0000".to_string(),
+                "#00FF00".to_string(),
+                "#0000FF".to_string(),
+            ],
+        };
+        let adapter = EcoPrimalTrustAdapter::from_config(config);
+        assert_eq!(adapter.get_level_index(0), Some(0));
+        assert_eq!(adapter.get_level_index(2), Some(2));
+        assert_eq!(adapter.get_level_index(3), None);
+    }
+
+    #[test]
+    fn test_from_capability_spec_valid() {
+        let spec = serde_json::json!({
+            "min_level": 0,
+            "max_level": 1,
+            "level_names": ["Low", "High"],
+            "level_emojis": ["L", "H"],
+            "level_colors": ["#111111", "#222222"]
+        });
+        let adapter = EcoPrimalTrustAdapter::from_capability_spec(&spec).unwrap();
+        assert!(adapter.handles("trust_level"));
+    }
+
+    #[test]
+    fn test_from_capability_spec_invalid() {
+        let spec = serde_json::json!({"invalid": true});
+        assert!(EcoPrimalTrustAdapter::from_capability_spec(&spec).is_none());
+    }
+
+    #[test]
+    fn test_parse_hex_color_with_hash() {
+        let color = parse_hex_color("#FFFFFF").unwrap();
+        assert_eq!(color, Color32::from_rgb(255, 255, 255));
+    }
+
+    #[test]
+    fn test_parse_hex_color_without_hash() {
+        let color = parse_hex_color("FF00FF").unwrap();
+        assert_eq!(color, Color32::from_rgb(255, 0, 255));
+    }
+
+    #[test]
+    fn test_parse_hex_color_invalid() {
+        assert!(parse_hex_color("").is_none());
+        assert!(parse_hex_color("FF").is_none());
+        assert!(parse_hex_color("GGGGGG").is_none());
+    }
+
+    #[test]
+    fn test_node_decoration_out_of_range() {
+        let adapter = EcoPrimalTrustAdapter::new();
+        let mut props = Properties::new();
+        props.insert("trust_level".to_string(), PropertyValue::Number(99.0));
+        assert!(adapter.node_decoration(&props).is_none());
+    }
+
+    #[test]
+    fn test_node_decoration_clamped() {
+        let adapter = EcoPrimalTrustAdapter::new();
+        let mut props = Properties::new();
+        props.insert("trust_level".to_string(), PropertyValue::Number(1.5));
+        let decoration = adapter.node_decoration(&props).unwrap();
+        assert_eq!(decoration.badge, Some("🟡".to_string()));
+    }
+
+    #[test]
+    fn test_render_invalid_trust_level() {
+        let adapter = EcoPrimalTrustAdapter::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                adapter.render("trust_level", &PropertyValue::String("bad".to_string()), ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_unknown_level() {
+        let adapter = EcoPrimalTrustAdapter::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                adapter.render("trust_level", &PropertyValue::Number(10.0), ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_valid_level() {
+        let adapter = EcoPrimalTrustAdapter::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                adapter.render("trust_level", &PropertyValue::Number(3.0), ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_default_config() {
+        let config = TrustConfig::default();
+        assert_eq!(config.min_level, 0);
+        assert_eq!(config.max_level, 3);
+        assert_eq!(config.level_names.len(), 4);
+    }
+
+    #[test]
+    fn test_adapter_name_priority() {
+        let adapter = EcoPrimalTrustAdapter::new();
+        assert_eq!(adapter.name(), "ecoprimal-trust");
+        assert_eq!(adapter.priority(), 10);
+    }
+
+    #[test]
+    fn test_config_invalid_hex_fallback() {
+        let config = TrustConfig {
+            min_level: 0,
+            max_level: 0,
+            level_names: vec!["X".to_string()],
+            level_emojis: vec!["X".to_string()],
+            level_colors: vec!["invalid".to_string()],
+        };
+        let adapter = EcoPrimalTrustAdapter::from_config(config);
+        let mut props = Properties::new();
+        props.insert("trust_level".to_string(), PropertyValue::Number(0.0));
+        let decoration = adapter.node_decoration(&props).unwrap();
+        assert!(decoration.fill_color.is_some());
+    }
 }

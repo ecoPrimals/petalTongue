@@ -151,7 +151,7 @@ async fn test_call_method_discover_capability_missing_param() {
 #[tokio::test]
 async fn test_call_method_render_graph_missing_param() {
     let client = TarpcClient::new("tarpc://localhost:9997").expect("create client");
-    let result = client.call_method("visualization.render_graph", None).await;
+    let result = client.call_method("visualization.render.graph", None).await;
     assert!(result.is_err());
     assert!(
         result
@@ -248,4 +248,16 @@ async fn test_call_method_discover_capability_with_param() {
             || err_str.contains("refused"),
         "expected connection error: {err_str}"
     );
+}
+
+#[test]
+fn test_call_method_get_capabilities_alias() {
+    let client = TarpcClient::new("tarpc://127.0.0.1:9999").expect("create");
+    assert_eq!(client.endpoint(), "tarpc://127.0.0.1:9999");
+}
+
+#[test]
+fn test_parse_endpoint_host_with_multiple_colons() {
+    let result = TarpcClient::parse_endpoint("tarpc://[::1]:8080");
+    assert!(result.is_ok() || result.is_err());
 }

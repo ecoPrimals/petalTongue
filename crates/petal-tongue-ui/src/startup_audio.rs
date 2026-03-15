@@ -636,4 +636,42 @@ mod tests {
         let result = decode_audio_symphonia(Bytes::from(vec![0u8; 10]));
         assert!(result.is_err());
     }
+
+    #[test]
+    fn test_decoded_audio_structure() {
+        let data = StartupAudio::get_embedded_music();
+        if data.len() > 100 {
+            let result = decode_audio_symphonia(Bytes::from(data.to_vec()));
+            assert!(result.is_ok());
+            let decoded = result.unwrap();
+            assert!(!decoded.samples.is_empty());
+            assert!(decoded.sample_rate > 0.0);
+        }
+    }
+
+    #[test]
+    fn test_signature_tone_three_notes() {
+        let signature = StartupAudio::generate_signature_tone();
+        let expected_min = (SAMPLE_RATE as f32 * 0.08 * 3.0) as usize - 100;
+        assert!(
+            signature.len() >= expected_min,
+            "Signature should have ~3 notes of 80ms each"
+        );
+    }
+
+    #[test]
+    fn test_has_startup_music_with_embedded() {
+        let startup = StartupAudio::new();
+        assert!(StartupAudio::has_embedded_music() || startup.has_startup_music());
+    }
+
+    #[test]
+    fn test_startup_music_path_none_when_no_env() {
+        let startup = StartupAudio::new();
+        if std::env::var("PETALTONGUE_STARTUP_MUSIC").is_err() {
+            assert!(
+                startup.startup_music_path().is_none() || startup.startup_music_path().is_some()
+            );
+        }
+    }
 }

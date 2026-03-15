@@ -307,10 +307,25 @@ mod tests {
     }
 
     #[test]
+    fn test_discover_provided_provider() {
+        let primal = create_test_primal("p1", "Provider", &["api-provider", "compute"]);
+        let provided = discover_provided_capabilities(&primal);
+        assert!(provided.contains(&"api-provider".to_string()));
+    }
+
+    #[test]
     fn test_discover_required_client() {
         let primal = create_test_primal("p1", "Client", &["api-client", "require-auth"]);
         let required = discover_required_capabilities(&primal);
         assert!(required.contains(&"api-client".to_string()));
+        assert!(required.contains(&"require-auth".to_string()));
+    }
+
+    #[test]
+    fn test_discover_required_require() {
+        let primal = create_test_primal("p1", "Service", &["require-storage", "compute"]);
+        let required = discover_required_capabilities(&primal);
+        assert!(required.contains(&"require-storage".to_string()));
     }
 
     #[test]

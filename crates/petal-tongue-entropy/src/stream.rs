@@ -268,6 +268,22 @@ mod tests {
     }
 
     #[test]
+    fn test_stream_confirmation_serde_roundtrip() {
+        let conf = StreamConfirmation {
+            receipt_id: "r-123".to_string(),
+            timestamp: 12345,
+            quality: 0.85,
+            message: "Accepted".to_string(),
+        };
+        let json = serde_json::to_value(&conf).unwrap();
+        let restored: StreamConfirmation = serde_json::from_value(json).unwrap();
+        assert_eq!(conf.receipt_id, restored.receipt_id);
+        assert_eq!(conf.timestamp, restored.timestamp);
+        assert!((conf.quality - restored.quality).abs() < f64::EPSILON);
+        assert_eq!(conf.message, restored.message);
+    }
+
+    #[test]
     fn test_stream_confirmation_fields() {
         let conf = StreamConfirmation {
             receipt_id: String::new(),

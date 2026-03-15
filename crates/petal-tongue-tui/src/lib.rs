@@ -91,3 +91,28 @@ pub async fn launch_with_config(config: TUIConfig) -> Result<()> {
     let mut tui = RichTUI::with_config(config).await?;
     tui.run().await
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn launch_config_accepts_standalone() {
+        let config = TUIConfig {
+            tick_rate: std::time::Duration::from_millis(100),
+            mouse_support: false,
+            standalone: true,
+        };
+        assert!(config.standalone);
+    }
+
+    #[test]
+    fn tui_config_reexport() {
+        let _config = TUIConfig::default();
+    }
+
+    #[test]
+    fn view_reexport() {
+        let _ = View::all();
+    }
+}

@@ -351,11 +351,17 @@ impl RaycastRenderer {
     /// Rotate player (turn). Angle is normalized to [0, 2π).
     pub fn rotate(&mut self, amount: f32) {
         self.player_angle += amount;
-        #[expect(clippy::while_float, reason = "angle normalization requires iterative float wrapping")]
+        #[expect(
+            clippy::while_float,
+            reason = "angle normalization requires iterative float wrapping"
+        )]
         while self.player_angle < 0.0 {
             self.player_angle += TWO_PI;
         }
-        #[expect(clippy::while_float, reason = "angle normalization requires iterative float wrapping")]
+        #[expect(
+            clippy::while_float,
+            reason = "angle normalization requires iterative float wrapping"
+        )]
         while self.player_angle >= TWO_PI {
             self.player_angle -= TWO_PI;
         }
@@ -466,5 +472,207 @@ mod tests {
 
         renderer.move_strafe(10.0);
         assert!((renderer.player_y - 10.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_ray_line_intersection_parallel() {
+        use crate::wad_loader::Vertex;
+        let v1 = Vertex { x: 0, y: 10 };
+        let v2 = Vertex { x: 100, y: 10 };
+        let dist = RaycastRenderer::ray_line_intersection(0.0, 0.0, 1.0, 0.0, v1, v2);
+        assert!(dist.is_none());
+    }
+
+    #[test]
+    fn test_ray_line_intersection_behind() {
+        use crate::wad_loader::Vertex;
+        let v1 = Vertex { x: -10, y: -5 };
+        let v2 = Vertex { x: -10, y: 5 };
+        let dist = RaycastRenderer::ray_line_intersection(0.0, 0.0, 1.0, 0.0, v1, v2);
+        assert!(dist.is_none());
+    }
+
+    #[test]
+    fn test_ray_line_intersection_u_out_of_range() {
+        use crate::wad_loader::Vertex;
+        let v1 = Vertex { x: 10, y: 10 };
+        let v2 = Vertex { x: 10, y: 20 };
+        let dist = RaycastRenderer::ray_line_intersection(0.0, 0.0, 1.0, 0.0, v1, v2);
+        assert!(dist.is_none());
+    }
+
+    #[test]
+    fn test_ray_line_intersection_t_negative() {
+        use crate::wad_loader::Vertex;
+        let v1 = Vertex { x: -50, y: -10 };
+        let v2 = Vertex { x: -50, y: 10 };
+        let dist = RaycastRenderer::ray_line_intersection(0.0, 0.0, 1.0, 0.0, v1, v2);
+        assert!(dist.is_none());
+    }
+
+    #[test]
+    fn test_linedef_invalid_vertex_skipped() {
+        use crate::wad_loader::{LineDef, MapData, Vertex};
+
+        let mut renderer = RaycastRenderer::new(64, 64);
+        renderer.player_x = 0.0;
+        renderer.player_y = 0.0;
+        renderer.player_angle = 0.0;
+
+        let map = MapData {
+            name: "INVALID".to_string(),
+            vertices: vec![Vertex { x: 100, y: 0 }],
+            linedefs: vec![
+                LineDef {
+                    start_vertex: 0,
+                    end_vertex: 99,
+                    flags: 0,
+                    line_type: 0,
+                    sector_tag: 0,
+                },
+                LineDef {
+                    start_vertex: 99,
+                    end_vertex: 0,
+                    flags: 0,
+                    line_type: 0,
+                    sector_tag: 0,
+                },
+            ],
+            sectors: vec![],
+            things: vec![],
+        };
+        renderer.render(&map);
+        assert_eq!(renderer.framebuffer().len(), 64 * 64 * 4);
+    }
+
+    #[test]
+    fn test_calculate_wall_height() {
+        let renderer = RaycastRenderer::new(320, 240);
+        let h_close = renderer.calculate_wall_height(50.0);
+        let h_far = renderer.calculate_wall_height(500.0);
+        assert!(h_close > h_far);
+        assert!(h_close <= 480);
+        assert!(h_far > 0);
+    }
+
+    #[test]
+    fn test_calculate_wall_height_capped() {
+        let renderer = RaycastRenderer::new(64, 64);
+        let h = renderer.calculate_wall_height(0.1);
+        assert!(h <= 128);
+    }
+
+    #[test]
+    fn test_render_to_scene_empty_map() {
+        use crate::wad_loader::MapData;
+
+        let renderer = RaycastRenderer::new(64, 64);
+        let map = MapData {
+            name: "TEST".to_string(),
+            vertices: vec![],
+            linedefs: vec![],
+            sectors: vec![],
+            things: vec![],
+        };
+        let scene = renderer.render_to_scene(&map);
+        assert!(scene.get("sky").is_some());
+        assert!(scene.get("floor").is_some());
+    }
+
+    #[test]
+    fn test_render_with_wall_produces_wall_pixels() {
+        use crate::wad_loader::{LineDef, MapData, Vertex};
+
+        let mut renderer = RaycastRenderer::new(64, 64);
+        renderer.player_x = 0.0;
+        renderer.player_y = 0.0;
+        renderer.player_angle = 0.0;
+
+        let map = MapData {
+            name: "TEST".to_string(),
+            vertices: vec![Vertex { x: 100, y: -50 }, Vertex { x: 100, y: 50 }],
+            linedefs: vec![LineDef {
+                start_vertex: 0,
+                end_vertex: 1,
+                flags: 0,
+                line_type: 0,
+                sector_tag: 0,
+            }],
+            sectors: vec![],
+            things: vec![],
+        };
+        renderer.render(&map);
+        let fb = renderer.framebuffer();
+        let mid = fb.len() / 2;
+        let has_floor = fb[mid] == 64 && fb[mid + 1] == 64 && fb[mid + 2] == 64;
+        assert!(has_floor);
+    }
+
+    #[test]
+    fn test_linedef_flags_blocking() {
+        use crate::wad_loader::{LineDef, MapData, Vertex};
+
+        let mut renderer = RaycastRenderer::new(64, 64);
+        renderer.player_x = 0.0;
+        renderer.player_y = 0.0;
+        renderer.player_angle = 0.0;
+
+        let map_blocking = MapData {
+            name: "BLOCK".to_string(),
+            vertices: vec![Vertex { x: 50, y: -20 }, Vertex { x: 50, y: 20 }],
+            linedefs: vec![LineDef {
+                start_vertex: 0,
+                end_vertex: 1,
+                flags: 0x0001,
+                line_type: 0,
+                sector_tag: 0,
+            }],
+            sectors: vec![],
+            things: vec![],
+        };
+        renderer.render(&map_blocking);
+
+        let map_non_blocking = MapData {
+            name: "NON".to_string(),
+            vertices: vec![Vertex { x: 50, y: -20 }, Vertex { x: 50, y: 20 }],
+            linedefs: vec![LineDef {
+                start_vertex: 0,
+                end_vertex: 1,
+                flags: 0,
+                line_type: 0,
+                sector_tag: 0,
+            }],
+            sectors: vec![],
+            things: vec![],
+        };
+        renderer.render(&map_non_blocking);
+        assert_eq!(renderer.framebuffer().len(), 64 * 64 * 4);
+    }
+
+    #[test]
+    fn test_render_to_scene_with_wall() {
+        use crate::wad_loader::{LineDef, MapData, Vertex};
+
+        let mut renderer = RaycastRenderer::new(64, 64);
+        renderer.player_x = 0.0;
+        renderer.player_y = 0.0;
+        renderer.player_angle = 0.0;
+
+        let map = MapData {
+            name: "WALL".to_string(),
+            vertices: vec![Vertex { x: 100, y: -50 }, Vertex { x: 100, y: 50 }],
+            linedefs: vec![LineDef {
+                start_vertex: 0,
+                end_vertex: 1,
+                flags: 0,
+                line_type: 0,
+                sector_tag: 0,
+            }],
+            sectors: vec![],
+            things: vec![],
+        };
+        let scene = renderer.render_to_scene(&map);
+        assert!(scene.get("sky").is_some());
+        assert!(scene.get("floor").is_some());
     }
 }

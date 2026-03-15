@@ -15,7 +15,8 @@ mod tests;
 mod tests_extended;
 
 pub use helpers::{
-    escape_csv, format_events_csv, prepare_event_detail, time_to_x, zoom_in, zoom_out,
+    build_primal_lanes, compute_lane_height, escape_csv, event_screen_rect, format_events_csv,
+    prepare_event_detail, time_to_x, zoom_in, zoom_out,
 };
 pub use types::{EventDetailDisplay, EventStatus, TimelineEvent, TimelineIntent};
 pub use view::TimelineView;

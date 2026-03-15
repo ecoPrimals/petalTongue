@@ -826,4 +826,51 @@ mod tests {
             "expected timeout or connection error, got: {err_str}"
         );
     }
+
+    #[test]
+    fn test_topology_data_deserialization_roundtrip() {
+        let json = serde_json::json!({
+            "nodes": [{"id": "n1", "x": 0.0}, {"id": "n2", "x": 1.0}],
+            "edges": [{"from": "n1", "to": "n2"}]
+        });
+        let data: TopologyData = serde_json::from_value(json.clone()).expect("deserialize");
+        let serialized = serde_json::to_value(&data).expect("serialize");
+        assert_eq!(serialized["nodes"].as_array().unwrap().len(), 2);
+        assert_eq!(serialized["edges"].as_array().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_request_notification_null_id() {
+        use crate::json_rpc::JsonRpcRequest;
+        let req = JsonRpcRequest::new(
+            "notify.method",
+            serde_json::json!({}),
+            serde_json::Value::Null,
+        );
+        let json = serde_json::to_string(&req).expect("serialize");
+        assert!(json.contains("null"));
+        assert!(req.id.is_null());
+    }
+
+    #[test]
+    fn test_primal_info_deserialization_from_discover_format() {
+        let json = serde_json::json!([{
+            "id": "p1",
+            "name": "petaltongue",
+            "primal_type": "petaltongue",
+            "endpoint": "/primal/petaltongue",
+            "capabilities": ["ui.render", "graph.topology"],
+            "health": "Healthy",
+            "last_seen": 1234567890
+        }]);
+        let primals: Vec<petal_tongue_core::PrimalInfo> =
+            serde_json::from_value(json).expect("deserialize");
+        assert_eq!(primals.len(), 1);
+        assert_eq!(primals[0].id.as_str(), "p1");
+        assert_eq!(primals[0].name, "petaltongue");
+        assert!(matches!(
+            primals[0].health,
+            petal_tongue_core::PrimalHealthStatus::Healthy
+        ));
+    }
 }

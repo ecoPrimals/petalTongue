@@ -620,6 +620,53 @@ mod tests {
     }
 
     #[test]
+    fn test_game_stats_clone() {
+        let stats = GameStats {
+            state: DoomState::Playing,
+            frame_count: 100,
+            dimensions: (320, 240),
+            current_map: Some("E1M1".to_string()),
+            view_mode: ViewMode::FirstPerson,
+            player_x: Some(100.0),
+            player_y: Some(50.0),
+            player_angle: Some(1.57),
+        };
+        let cloned = stats.clone();
+        assert_eq!(cloned.state, stats.state);
+        assert_eq!(cloned.frame_count, stats.frame_count);
+        assert_eq!(cloned.dimensions, stats.dimensions);
+        assert_eq!(cloned.current_map, stats.current_map);
+        assert_eq!(cloned.view_mode, stats.view_mode);
+        assert_eq!(cloned.player_x, stats.player_x);
+    }
+
+    #[test]
+    fn test_view_mode_variants() {
+        assert_eq!(ViewMode::TopDown, ViewMode::TopDown);
+        assert_eq!(ViewMode::FirstPerson, ViewMode::FirstPerson);
+        assert_ne!(ViewMode::TopDown, ViewMode::FirstPerson);
+    }
+
+    #[test]
+    fn test_game_stats_without_raycast() {
+        let doom = DoomInstance::new(320, 240).unwrap();
+        let stats = doom.stats();
+        assert!(stats.player_x.is_none());
+        assert!(stats.player_y.is_none());
+        assert!(stats.player_angle.is_none());
+    }
+
+    #[test]
+    fn test_doom_key_hash_set() {
+        use std::collections::HashSet;
+        let mut keys = HashSet::new();
+        keys.insert(DoomKey::Up);
+        keys.insert(DoomKey::Fire);
+        assert!(keys.contains(&DoomKey::Up));
+        assert!(!keys.contains(&DoomKey::Down));
+    }
+
+    #[test]
     fn test_doom_key_all_codes() {
         assert_eq!(DoomKey::Down.to_doom_code(), 0xAF);
         assert_eq!(DoomKey::Left.to_doom_code(), 0xAC);
@@ -654,6 +701,60 @@ mod tests {
     }
 
     #[test]
+    fn test_doom_error_initialization_failed() {
+        let e = DoomError::InitializationFailed("msg".to_string());
+        assert!(e.to_string().contains("msg"));
+    }
+
+    #[test]
+    fn test_render_scene_empty_when_uninitialized() {
+        let doom = DoomInstance::new(320, 240).unwrap();
+        let scene = doom.render_scene();
+        assert_eq!(scene.node_count(), 1);
+    }
+
+    #[test]
+    fn test_pause_when_not_playing_no_effect() {
+        let mut doom = DoomInstance::new(320, 240).unwrap();
+        doom.pause();
+        assert_eq!(doom.state(), DoomState::Uninitialized);
+    }
+
+    #[test]
+    fn test_resume_when_not_paused_no_effect() {
+        let mut doom = DoomInstance::new(320, 240).unwrap();
+        doom.resume_game();
+        assert_eq!(doom.state(), DoomState::Uninitialized);
+    }
+
+    #[test]
+    fn test_tick_when_uninitialized_returns_ok() {
+        let mut doom = DoomInstance::new(320, 240).unwrap();
+        assert!(doom.tick().is_ok());
+    }
+
+    #[test]
+    fn test_load_map_not_found() {
+        let wad_bytes = create_minimal_wad_bytes();
+        let path = std::env::temp_dir().join("petaltongue_doom_loadmap_test2.wad");
+        std::fs::write(&path, &wad_bytes).unwrap();
+        let mut doom = DoomInstance::new(320, 240).unwrap();
+        doom.init_with_wad(Some(&path)).unwrap();
+        std::fs::remove_file(&path).ok();
+        let result = doom.load_map("NONEXISTENT");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_view_mode_top_down_after_toggle() {
+        let mut doom = DoomInstance::new(320, 240).unwrap();
+        doom.toggle_view_mode();
+        assert!(!doom.is_first_person());
+        let stats = doom.stats();
+        assert_eq!(stats.view_mode, ViewMode::TopDown);
+    }
+
+    #[test]
     fn test_game_stats_view_mode() {
         let doom = DoomInstance::new(320, 240).unwrap();
         let stats = doom.stats();
@@ -670,6 +771,14 @@ mod tests {
         std::fs::remove_file(&path).ok();
         assert!(doom.load_map("E1M1").is_ok());
         assert_eq!(doom.current_map(), Some("E1M1"));
+    }
+
+    #[test]
+    fn test_init_with_nonexistent_wad_path() {
+        let mut doom = DoomInstance::new(320, 240).unwrap();
+        let path = std::path::Path::new("/nonexistent/doom1.wad");
+        let result = doom.init_with_wad(Some(path));
+        assert!(result.is_err());
     }
 
     #[expect(

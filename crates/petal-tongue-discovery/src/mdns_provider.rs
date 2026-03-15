@@ -612,14 +612,52 @@ mod tests {
 
     #[tokio::test]
     async fn test_discover_timeout() {
-        // Discovery should timeout gracefully if no responses
         let result = MdnsVisualizationProvider::discover().await;
-
-        // Should succeed but return empty list (no providers on localhost by default)
         assert!(result.is_ok());
         let providers = result.unwrap();
-
-        // Might find providers or might not - both are valid
         tracing::info!("Discovery found {} providers", providers.len());
+    }
+
+    #[test]
+    fn test_build_mdns_query_ptr_type_class() {
+        let query = MdnsVisualizationProvider::build_mdns_query("_svc._tcp.local");
+        let q_start = 12;
+        let name_len = "_svc._tcp.local"
+            .split('.')
+            .map(|l| 1 + l.len())
+            .sum::<usize>()
+            + 1;
+        let type_offset = q_start + name_len;
+        assert_eq!(&query[type_offset..type_offset + 2], &[0x00, 0x0C]);
+        assert_eq!(&query[type_offset + 2..type_offset + 4], &[0x00, 0x01]);
+    }
+
+    #[test]
+    fn test_build_mdns_query_long_label() {
+        let query = MdnsVisualizationProvider::build_mdns_query("a.b.c.d.e.local");
+        assert!(query.len() > 20);
+        assert_eq!(query[12], 1);
+        assert_eq!(query[13], b'a');
+    }
+
+    #[test]
+    fn test_mdns_provider_get_metadata() {
+        let metadata = ProviderMetadata {
+            name: "mDNS Test".to_string(),
+            endpoint: "http://10.0.0.1:9000".to_string(),
+            protocol: "http".to_string(),
+            capabilities: vec!["viz".to_string()],
+        };
+        let provider =
+            MdnsVisualizationProvider::new("http://10.0.0.1:9000".to_string(), metadata.clone());
+        assert_eq!(provider.get_metadata().name, metadata.name);
+        assert_eq!(provider.get_metadata().capabilities, metadata.capabilities);
+    }
+
+    #[test]
+    fn test_build_mdns_query_empty_service_name() {
+        let query = MdnsVisualizationProvider::build_mdns_query("");
+        assert!(query.len() >= 12);
+        assert_eq!(&query[4..6], &[0x00, 0x01]);
     }
 }

@@ -8,8 +8,10 @@ use super::super::types::BackpressureConfig;
 
 /// Manages active visualization sessions from springs/primals
 pub struct VisualizationState {
-    pub(super) sessions: std::collections::HashMap<String, RenderSession>,
-    pub(super) grammar_scenes:
+    /// Active visualization sessions keyed by session ID.
+    pub sessions: std::collections::HashMap<String, RenderSession>,
+    /// Grammar-compiled scene graphs keyed by `"session_id:binding_id"`.
+    pub grammar_scenes:
         std::collections::HashMap<String, petal_tongue_scene::scene_graph::SceneGraph>,
     pub(super) backpressure_config: BackpressureConfig,
 }
