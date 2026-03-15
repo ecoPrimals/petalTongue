@@ -75,10 +75,12 @@ pub mod capability_detection;
 pub mod client;
 pub mod json_rpc;
 pub mod json_rpc_client;
-/// Physics bridge: async IPC for barraCuda `math.physics.nbody`
+/// Compute bridge: async IPC for barraCuda math/physics/stat/tessellate/project operations
 pub mod physics_bridge;
 pub mod primal_registration;
 pub mod protocol;
+/// Provenance trio: rhizoCrypt + sweetGrass + loamSpine session lineage
+pub mod provenance_trio;
 pub mod server;
 pub mod socket_path;
 pub mod tarpc_client;

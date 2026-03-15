@@ -11,7 +11,7 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 5,168 passing, 0 failures, ~17 ignored |
+| Tests | 5,188 passing, 0 failures, ~17 ignored |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery, `--all-targets --all-features`) |
 | Rustdoc | Clean (`cargo doc --workspace --no-deps`) |
@@ -46,6 +46,10 @@
 | Faceting | `compile_faceted()` supports `FacetLayout::Wrap` and Grid small multiples |
 | Threshold coloring | `compile_with_thresholds()` maps ThresholdRange status to domain palette colors |
 | Dependencies | Updated: base64→0.22, socket2→0.6, lru→0.16, mdns-sd→0.18 |
+| Provenance trio client | rhizoCrypt + sweetGrass + loamSpine |
+| Compute bridge expansion | math.stat.*, math.tessellate.*, math.project.* |
+| Full capability registration | 35 capabilities announced to Songbird |
+| Niche YAML | organisms/interactions/customization |
 
 ---
 
@@ -100,7 +104,7 @@ Delegated/roadmap items (not TODOs, documented as roadmap markers):
 
 ### Test Coverage Gap
 
-Current: ~85% line / ~86% branch coverage (5,168 tests, llvm-cov `--all-features --workspace`).
+Current: ~85% line / ~86% branch coverage (5,188 tests, llvm-cov `--all-features --workspace`).
 Target: 90%.
 
 Per-crate coverage:

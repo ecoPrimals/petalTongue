@@ -50,18 +50,61 @@ impl PrimalRegistration {
             "ui_modes".to_string(),
             json!(["desktop", "tui", "web", "headless"]),
         );
+        metadata.insert(
+            "modalities".to_string(),
+            json!([
+                "visual",
+                "terminal",
+                "audio",
+                "haptic",
+                "braille",
+                "description",
+                "gpu"
+            ]),
+        );
 
         Self {
             name: "petaltongue".to_string(),
             endpoint: "/primal/petaltongue".to_string(),
             capabilities: vec![
+                // UI capabilities
                 "ui.render".to_string(),
                 "ui.visualization".to_string(),
                 "ui.graph".to_string(),
+                "ui.terminal".to_string(),
+                "ui.audio".to_string(),
+                // Visualization domain (biomeOS capability)
+                "visualization.render".to_string(),
+                "visualization.render.stream".to_string(),
+                "visualization.render.grammar".to_string(),
+                "visualization.render.dashboard".to_string(),
+                "visualization.interact".to_string(),
+                "visualization.interact.subscribe".to_string(),
+                "visualization.provenance".to_string(),
+                "visualization.export".to_string(),
+                "visualization.validate".to_string(),
+                // Graph capabilities
                 "graph.topology".to_string(),
                 "graph.builder".to_string(),
+                // Interaction domain
+                "interaction.subscribe".to_string(),
+                "interaction.poll".to_string(),
+                // Sensor streaming
+                "sensor.stream.subscribe".to_string(),
+                // Motor commands
+                "motor.set_panel".to_string(),
+                "motor.set_zoom".to_string(),
+                "motor.set_mode".to_string(),
+                // Modality outputs
                 "modality.visual".to_string(),
                 "modality.audio".to_string(),
+                "modality.terminal".to_string(),
+                "modality.haptic".to_string(),
+                "modality.braille".to_string(),
+                "modality.description".to_string(),
+                // System
+                "health.check".to_string(),
+                "capability.list".to_string(),
             ],
             version: env!("CARGO_PKG_VERSION").to_string(),
             metadata: Some(metadata),
@@ -334,6 +377,11 @@ mod tests {
         assert!(!reg.capabilities.is_empty());
         assert!(reg.capabilities.contains(&"ui.render".to_string()));
         assert!(reg.capabilities.contains(&"graph.topology".to_string()));
+        assert!(
+            reg.capabilities
+                .contains(&"visualization.render".to_string())
+        );
+        assert!(reg.capabilities.contains(&"modality.visual".to_string()));
     }
 
     #[tokio::test]
@@ -350,6 +398,7 @@ mod tests {
         let meta = reg.metadata.as_ref().unwrap();
         assert!(meta.contains_key("description"));
         assert!(meta.contains_key("ui_modes"));
+        assert!(meta.contains_key("modalities"));
     }
 
     #[test]
@@ -393,10 +442,33 @@ mod tests {
             "ui.render",
             "ui.visualization",
             "ui.graph",
+            "ui.terminal",
+            "ui.audio",
+            "visualization.render",
+            "visualization.render.stream",
+            "visualization.render.grammar",
+            "visualization.render.dashboard",
+            "visualization.interact",
+            "visualization.interact.subscribe",
+            "visualization.provenance",
+            "visualization.export",
+            "visualization.validate",
             "graph.topology",
             "graph.builder",
+            "interaction.subscribe",
+            "interaction.poll",
+            "sensor.stream.subscribe",
+            "motor.set_panel",
+            "motor.set_zoom",
+            "motor.set_mode",
             "modality.visual",
             "modality.audio",
+            "modality.terminal",
+            "modality.haptic",
+            "modality.braille",
+            "modality.description",
+            "health.check",
+            "capability.list",
         ];
         for cap in expected {
             assert!(

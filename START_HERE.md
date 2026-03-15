@@ -53,7 +53,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace                          # 5,168 tests
+cargo test --workspace                          # 5,188 tests
 cargo clippy --workspace -- -D warnings         # Lint (clean)
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)

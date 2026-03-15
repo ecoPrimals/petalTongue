@@ -89,7 +89,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,168 passing, 0 failures |
+| Tests | 5,188 passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery, `--all-targets --all-features`) |
 | Docs | `RUSTDOCFLAGS="-D warnings" cargo doc` clean |
