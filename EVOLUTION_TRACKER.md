@@ -9,7 +9,7 @@
 
 | Metric | Value |
 |--------|-------|
-| Tests | 5,168 passing |
+| Tests | 5,188 passing |
 | Coverage (line) | ~85% |
 | Coverage (branch) | ~86% |
 | Clippy | Zero warnings (pedantic + nursery, `--all-targets --all-features`) |
@@ -237,5 +237,5 @@ the collaborative intelligence.
 | Deep coverage expansion | 3,711 | 79.5% / 81.1% | March 12 |
 | March 14 audit & refactor | 3,776+ | ~82% / ~82% | March 14 |
 | March 14 deep debt phase 2 | 3,940+ | ~83% / ~83% | March 14 |
-| March 15 verified | 5,168 | ~85% / ~86% | March 15 |
+| March 15 verified | 5,188 | ~85% / ~86% | March 15 |
 | Target | TBD | 90% / 90% | — |

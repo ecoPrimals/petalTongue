@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Physics bridge: async IPC client for GPU-accelerated physics simulation.
+//! Compute bridge: async IPC client for barraCuda GPU compute operations.
 //!
-//! Discovers compute primals at runtime (capability `gpu.dispatch`) and sends
-//! physics world state for GPU-accelerated N-body / molecular dynamics.
-//! Falls back to CPU Euler integration when no compute primal is available
-//! (primal sovereignty -- no hard dependency).
+//! Discovers compute primals at runtime (capability `gpu.dispatch`) and dispatches
+//! operations via JSON-RPC. Falls back to empty results when no compute primal
+//! is available (primal sovereignty -- no hard dependency).
 //!
-//! # barraCuda IPC contract (v0.3.3+)
+//! # Operation families
 //!
-//! barraCuda's `barracuda.compute.dispatch` currently supports ops:
-//! `zeros`, `ones`, `read`. Custom physics ops (`math.physics.nbody`)
-//! are planned but not yet in barraCuda's dispatch table.
-//!
-//! Until barraCuda exposes a physics op, this bridge always falls back to
-//! CPU Euler. The IPC path is wired and tested for when barraCuda adds it.
+//! - **Physics**: `math.physics.nbody` — N-body / molecular dynamics (CPU Euler fallback)
+//! - **Statistics**: `math.stat.kde`, `math.stat.smooth`, `math.stat.bin`, `math.stat.summary`
+//! - **Tessellation**: `math.tessellate.sphere`, `math.tessellate.cylinder`, `math.tessellate.isosurface`
+//! - **Projection**: `math.project.perspective`, `math.project.lighting`
 
 use petal_tongue_scene::physics::PhysicsWorld;
 use serde_json::json;
@@ -28,6 +25,19 @@ pub struct PhysicsStepResult {
     pub bodies_updated: usize,
     /// Step duration in seconds (wall clock).
     pub step_duration_secs: f64,
+}
+
+/// Result of a compute dispatch operation.
+#[derive(Debug, Clone)]
+pub struct ComputeDispatchResult {
+    /// Whether GPU compute was used.
+    pub gpu_accelerated: bool,
+    /// Operation that was dispatched.
+    pub operation: String,
+    /// Result from compute primal (or null when fallback).
+    pub result: serde_json::Value,
+    /// Duration in seconds (wall clock).
+    pub duration_secs: f64,
 }
 
 /// Attempt a GPU-accelerated physics step via compute primal IPC.
@@ -57,6 +67,90 @@ pub async fn step_physics(world: &mut PhysicsWorld) -> PhysicsStepResult {
             }
         }
     }
+}
+
+/// Dispatch a statistical operation to barraCuda.
+///
+/// Supported ops: `math.stat.kde`, `math.stat.smooth`, `math.stat.bin`, `math.stat.summary`
+pub async fn dispatch_stat(op: &str, params: serde_json::Value) -> ComputeDispatchResult {
+    dispatch_compute("barracuda.compute.dispatch", op, params).await
+}
+
+/// Dispatch a tessellation operation to barraCuda.
+///
+/// Supported ops: `math.tessellate.sphere`, `math.tessellate.cylinder`, `math.tessellate.isosurface`
+pub async fn dispatch_tessellate(op: &str, params: serde_json::Value) -> ComputeDispatchResult {
+    dispatch_compute("barracuda.compute.dispatch", op, params).await
+}
+
+/// Dispatch a projection operation to barraCuda.
+///
+/// Supported ops: `math.project.perspective`, `math.project.lighting`
+pub async fn dispatch_project(op: &str, params: serde_json::Value) -> ComputeDispatchResult {
+    dispatch_compute("barracuda.compute.dispatch", op, params).await
+}
+
+/// Generic compute dispatch to barraCuda via JSON-RPC.
+///
+/// Falls back to an empty result when compute primal is unavailable.
+async fn dispatch_compute(
+    method: &str,
+    op: &str,
+    params: serde_json::Value,
+) -> ComputeDispatchResult {
+    let start = std::time::Instant::now();
+
+    match try_dispatch(method, op, &params).await {
+        Ok(result) => {
+            debug!("Compute dispatch {op} via GPU: success");
+            ComputeDispatchResult {
+                gpu_accelerated: true,
+                operation: op.to_string(),
+                result,
+                duration_secs: start.elapsed().as_secs_f64(),
+            }
+        }
+        Err(e) => {
+            debug!("GPU compute unavailable for {op} ({e}), returning empty result");
+            ComputeDispatchResult {
+                gpu_accelerated: false,
+                operation: op.to_string(),
+                result: serde_json::Value::Null,
+                duration_secs: start.elapsed().as_secs_f64(),
+            }
+        }
+    }
+}
+
+async fn try_dispatch(
+    method: &str,
+    op: &str,
+    params: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let socket_path = discover_compute_socket()?;
+
+    let request = json!({
+        "jsonrpc": "2.0",
+        "method": method,
+        "params": {
+            "op": op,
+            "data": params,
+        },
+        "id": 1
+    });
+
+    let response = send_jsonrpc_unix(&socket_path, &request)
+        .await
+        .map_err(|e| format!("IPC send failed: {e}"))?;
+
+    response.get("result").cloned().ok_or_else(|| {
+        let err = response
+            .get("error")
+            .and_then(|e| e.get("message"))
+            .and_then(|m| m.as_str())
+            .unwrap_or("unknown error");
+        format!("Compute primal error: {err}")
+    })
 }
 
 /// Try to send physics state to a compute primal via JSON-RPC.
@@ -170,6 +264,7 @@ async fn send_jsonrpc_unix(
 mod tests {
     use super::*;
     use petal_tongue_scene::physics::{CollisionShape, PhysicsBody};
+    use serde_json::json;
 
     #[test]
     fn discover_barracuda_returns_err_when_absent() {
@@ -292,5 +387,42 @@ mod tests {
         let r2 = r.clone();
         assert_eq!(r.gpu_accelerated, r2.gpu_accelerated);
         assert_eq!(r.bodies_updated, r2.bodies_updated);
+    }
+
+    #[tokio::test]
+    async fn dispatch_stat_falls_back_without_barracuda() {
+        let result = dispatch_stat("math.stat.kde", json!({"values": [1.0, 2.0, 3.0]})).await;
+        assert!(!result.gpu_accelerated);
+        assert_eq!(result.operation, "math.stat.kde");
+    }
+
+    #[tokio::test]
+    async fn dispatch_tessellate_falls_back_without_barracuda() {
+        let result = dispatch_tessellate(
+            "math.tessellate.sphere",
+            json!({"radius": 1.0, "segments": 32}),
+        )
+        .await;
+        assert!(!result.gpu_accelerated);
+        assert_eq!(result.operation, "math.tessellate.sphere");
+    }
+
+    #[tokio::test]
+    async fn dispatch_project_falls_back_without_barracuda() {
+        let result = dispatch_project("math.project.perspective", json!({"fov": 60.0})).await;
+        assert!(!result.gpu_accelerated);
+        assert_eq!(result.operation, "math.project.perspective");
+    }
+
+    #[test]
+    fn compute_dispatch_result_structure() {
+        let r = ComputeDispatchResult {
+            gpu_accelerated: false,
+            operation: "math.stat.kde".to_string(),
+            result: json!(null),
+            duration_secs: 0.001,
+        };
+        assert!(!r.gpu_accelerated);
+        assert_eq!(r.operation, "math.stat.kde");
     }
 }

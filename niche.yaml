@@ -53,6 +53,178 @@ capabilities_optional:
     operations: [stream]
     description: "Real-time ecosystem topology updates via SSE"
 
+# Organism definitions for BYOB deployment
+organisms:
+  primals:
+    petaltongue:
+      type: "petaltongue"
+      required: true
+      role: "visualization"
+      capabilities:
+        - visualization.render
+        - visualization.render.stream
+        - visualization.render.grammar
+        - visualization.render.dashboard
+        - visualization.interact
+        - visualization.interact.subscribe
+        - visualization.export
+        - visualization.validate
+        - visualization.provenance
+        - interaction.subscribe
+        - sensor.stream.subscribe
+        - health.check
+        - capability.list
+      config:
+        mode: "${PETALTONGUE_MODE:-ui}"
+        family_id: "${FAMILY_ID}"
+
+    beardog:
+      type: "beardog"
+      required: true
+      role: "security"
+      capabilities:
+        - crypto.encrypt
+        - crypto.sign
+
+    songbird:
+      type: "songbird"
+      required: true
+      role: "discovery"
+      capabilities:
+        - discovery.query
+        - ipc.register
+        - ipc.resolve
+
+    toadstool:
+      type: "toadstool"
+      required: false
+      role: "compute"
+      capabilities:
+        - compute.dispatch
+        - gpu.info
+        - display.backend
+
+    barracuda:
+      type: "barracuda"
+      required: false
+      role: "math"
+      capabilities:
+        - barracuda.compute.dispatch
+        - math.stat.kde
+        - math.stat.smooth
+        - math.tessellate.sphere
+        - math.project.perspective
+
+    rhizocrypt:
+      type: "rhizocrypt"
+      required: false
+      role: "provenance"
+      capabilities:
+        - dag.session
+        - dag.vertex.create
+
+    sweetgrass:
+      type: "sweetgrass"
+      required: false
+      role: "attribution"
+      capabilities:
+        - braid.create
+        - contribution.record
+
+    loamspine:
+      type: "loamspine"
+      required: false
+      role: "ledger"
+      capabilities:
+        - spine.create
+        - entry.append
+        - certificate.mint
+
+  chimeras: {}
+
+# Interaction definitions for BYOB deployment
+interactions:
+  - from: "petaltongue"
+    to: "beardog"
+    type: "capability_call"
+    config:
+      capabilities: ["crypto.encrypt", "crypto.sign"]
+
+  - from: "petaltongue"
+    to: "songbird"
+    type: "capability_call"
+    config:
+      capabilities: ["discovery.query", "ipc.register", "ipc.resolve"]
+
+  - from: "petaltongue"
+    to: "barracuda"
+    type: "capability_call"
+    config:
+      capabilities: ["barracuda.compute.dispatch"]
+      optional: true
+
+  - from: "petaltongue"
+    to: "toadstool"
+    type: "capability_call"
+    config:
+      capabilities: ["display.backend", "compute.dispatch"]
+      optional: true
+
+  - from: "petaltongue"
+    to: "rhizocrypt"
+    type: "capability_call"
+    config:
+      capabilities: ["dag.session", "dag.vertex.create"]
+      optional: true
+
+  - from: "petaltongue"
+    to: "sweetgrass"
+    type: "capability_call"
+    config:
+      capabilities: ["braid.create", "contribution.record"]
+      optional: true
+
+  - from: "petaltongue"
+    to: "loamspine"
+    type: "capability_call"
+    config:
+      capabilities: ["spine.create", "entry.append"]
+      optional: true
+
+  # Inbound: springs push data to petalTongue
+  - from: "*"
+    to: "petaltongue"
+    type: "capability_call"
+    config:
+      capabilities: ["visualization.render", "visualization.render.stream"]
+      description: "Any spring can push DataBinding payloads for visualization"
+
+# Customization options for BYOB deployment
+customization:
+  - id: "default_mode"
+    label: "Default UI Mode"
+    type: "select"
+    options: ["ui", "tui", "cli", "web", "headless"]
+    default: "ui"
+
+  - id: "enable_provenance"
+    label: "Enable Provenance Tracking"
+    type: "boolean"
+    default: true
+    description: "Track visualization lineage via provenance trio"
+
+  - id: "enable_gpu"
+    label: "Enable GPU Acceleration"
+    type: "boolean"
+    default: false
+    description: "Use barraCuda/toadStool for GPU-accelerated rendering"
+
+  - id: "modalities"
+    label: "Output Modalities"
+    type: "multiselect"
+    options: ["visual", "terminal", "audio", "haptic", "braille", "description"]
+    default: ["visual", "terminal"]
+
 # Deployment configuration
 deployment:
   deploy_graph: "graphs/petaltongue_deploy.toml"

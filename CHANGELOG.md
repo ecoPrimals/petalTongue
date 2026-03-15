@@ -6,7 +6,7 @@ All notable changes to petalTongue will be documented in this file.
 
 ### Added - Deep Debt Phase 2: Modern Idiomatic Rust Evolution
 
-- **+1,392 new tests** (3,776 → 5,168): Coverage expansion to ~85% line / ~86% branch.
+- **+1,392 new tests** (3,776 → 5,188): Coverage expansion to ~85% line / ~86% branch.
 - **TRUE PRIMAL compliance**: Hardcoded primal names in `shader_lineage.rs` replaced
   with generic origins; demo builders gated behind `#[cfg(any(test, feature = "test-fixtures"))]`.
 - **`#[allow]` → `#[expect]`**: All 9 bare `#[allow(...)]` attributes replaced with
@@ -29,7 +29,7 @@ All notable changes to petalTongue will be documented in this file.
 
 ### Quality
 
-- **5,168 tests**, 0 failures
+- **5,188 tests**, 0 failures
 - **0 clippy warnings** (pedantic + nursery, `--all-targets --all-features`)
 - **0 unsafe blocks** workspace-wide
 - **~85% line / ~86% branch coverage**
