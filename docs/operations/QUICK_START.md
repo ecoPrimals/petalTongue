@@ -1,6 +1,6 @@
 # Quick Start -- petalTongue
 
-**Last Updated**: March 13, 2026
+**Last Updated**: March 15, 2026
 **Version**: 1.6.3
 
 ---
@@ -20,7 +20,7 @@ petaltongue status      # System status
 ## Development
 
 ```bash
-cargo test --workspace                          # 3,752 tests
+cargo test --workspace                          # 5,188 tests
 cargo clippy --workspace -- -D warnings         # Lint (pedantic, clean)
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)

@@ -29,7 +29,7 @@ pub struct PrimalRegistration {
     /// Capabilities this primal provides
     pub capabilities: Vec<String>,
 
-    /// Version string (e.g., "1.4.0")
+    /// Version string (e.g., "1.6.3")
     pub version: String,
 
     /// Optional metadata
