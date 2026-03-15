@@ -26,6 +26,17 @@ const fn modality_tested_text(tested: bool) -> &'static str {
     if tested { "tested" } else { "not tested" }
 }
 
+#[must_use]
+pub const fn audio_tier_label(has_toadstool: bool, has_user_sounds: bool) -> &'static str {
+    if has_toadstool {
+        "Active tier: Toadstool Synthesis"
+    } else if has_user_sounds {
+        "Active tier: User Sound Files"
+    } else {
+        "Active tier: Pure Rust Tones"
+    }
+}
+
 /// Render the top menu bar
 /// Returns true if refresh was clicked
 pub fn render_top_menu_bar(
@@ -258,14 +269,7 @@ pub fn render_audio_panel(
 
                 let has_user_sounds = std::env::var("PETALTONGUE_SOUNDS_DIR").is_ok();
                 let has_toadstool = std::env::var("TOADSTOOL_URL").is_ok();
-
-                let tier_label = if has_toadstool {
-                    "Active tier: Toadstool Synthesis"
-                } else if has_user_sounds {
-                    "Active tier: User Sound Files"
-                } else {
-                    "Active tier: Pure Rust Tones"
-                };
+                let tier_label = audio_tier_label(has_toadstool, has_user_sounds);
 
                 ui.label(
                     egui::RichText::new(tier_label)
@@ -519,5 +523,50 @@ mod tests {
         assert_ne!(avail, unavail);
         assert_ne!(avail, disabled);
         assert_ne!(unavail, disabled);
+    }
+
+    #[test]
+    fn primal_name_constant_matches_capability_panel() {
+        assert_eq!(PRIMAL_NAME, "petalTongue");
+    }
+
+    #[test]
+    fn modality_status_icon_and_color_all_variants() {
+        let (icon, _) = modality_status_icon_and_color(ModalityStatus::Available);
+        assert_eq!(icon, "✅");
+        let (icon, _) = modality_status_icon_and_color(ModalityStatus::NotInitialized);
+        assert_eq!(icon, "⚠️");
+        let (icon, _) = modality_status_icon_and_color(ModalityStatus::Unavailable);
+        assert_eq!(icon, "❌");
+        let (icon, _) = modality_status_icon_and_color(ModalityStatus::Disabled);
+        assert_eq!(icon, "🔇");
+    }
+
+    #[test]
+    fn audio_tier_label_toadstool() {
+        assert_eq!(
+            audio_tier_label(true, false),
+            "Active tier: Toadstool Synthesis"
+        );
+        assert_eq!(
+            audio_tier_label(true, true),
+            "Active tier: Toadstool Synthesis"
+        );
+    }
+
+    #[test]
+    fn audio_tier_label_user_sounds() {
+        assert_eq!(
+            audio_tier_label(false, true),
+            "Active tier: User Sound Files"
+        );
+    }
+
+    #[test]
+    fn audio_tier_label_pure_rust() {
+        assert_eq!(
+            audio_tier_label(false, false),
+            "Active tier: Pure Rust Tones"
+        );
     }
 }

@@ -283,9 +283,16 @@ mod tests {
     #[test]
     fn test_generator_creation() {
         let generator = AudioFileGenerator::new();
-        assert_eq!(generator.quality.sample_rate, 48000);
-        assert_eq!(generator.quality.bits_per_sample, 16);
-        assert_eq!(generator.quality.channels, 2);
+        let attrs = AudioAttributes {
+            instrument: Instrument::Bass,
+            pitch: 0.5,
+            volume: 0.5,
+            pan: 0.0,
+        };
+        let temp = std::env::temp_dir().join("test_creation.wav");
+        assert!(generator.export_tone(&temp, &attrs, 0.1).is_ok());
+        assert!(temp.exists());
+        let _ = std::fs::remove_file(temp);
     }
 
     #[test]
@@ -342,5 +349,180 @@ mod tests {
 
         // Cleanup
         let _ = std::fs::remove_file(temp_path);
+    }
+
+    #[test]
+    fn test_audio_quality_default() {
+        let q = AudioQuality::default();
+        assert_eq!(q.sample_rate, 48000);
+        assert_eq!(q.bits_per_sample, 16);
+        assert_eq!(q.channels, 2);
+    }
+
+    #[test]
+    fn test_with_quality() {
+        let q = AudioQuality {
+            sample_rate: 22050,
+            bits_per_sample: 24,
+            channels: 1,
+        };
+        let generator = AudioFileGenerator::new().with_quality(q);
+        let attrs = AudioAttributes {
+            instrument: Instrument::Bass,
+            pitch: 0.5,
+            volume: 0.5,
+            pan: 0.0,
+        };
+        let temp = std::env::temp_dir().join("test_quality.wav");
+        assert!(generator.export_tone(&temp, &attrs, 0.1).is_ok());
+        assert!(temp.exists());
+        let _ = std::fs::remove_file(temp);
+    }
+
+    #[test]
+    fn test_with_volume() {
+        let generator = AudioFileGenerator::new().with_volume(0.5);
+        let attrs = AudioAttributes {
+            instrument: Instrument::Bass,
+            pitch: 0.5,
+            volume: 1.0,
+            pan: 0.0,
+        };
+        let temp = std::env::temp_dir().join("test_vol.wav");
+        let _ = generator.export_tone(&temp, &attrs, 0.1);
+        assert!(temp.exists());
+        let _ = std::fs::remove_file(temp);
+    }
+
+    #[test]
+    fn test_export_tone_drums() {
+        let generator = AudioFileGenerator::new();
+        let attrs = AudioAttributes {
+            instrument: Instrument::Drums,
+            pitch: 0.5,
+            volume: 0.5,
+            pan: 0.0,
+        };
+        let temp = std::env::temp_dir().join("test_drums.wav");
+        assert!(generator.export_tone(&temp, &attrs, 0.1).is_ok());
+        assert!(temp.exists());
+        let _ = std::fs::remove_file(temp);
+    }
+
+    #[test]
+    fn test_export_tone_strings() {
+        let generator = AudioFileGenerator::new();
+        let attrs = AudioAttributes {
+            instrument: Instrument::Strings,
+            pitch: 0.5,
+            volume: 0.5,
+            pan: 0.0,
+        };
+        let temp = std::env::temp_dir().join("test_strings.wav");
+        assert!(generator.export_tone(&temp, &attrs, 0.1).is_ok());
+        assert!(temp.exists());
+        let _ = std::fs::remove_file(temp);
+    }
+
+    #[test]
+    fn test_export_tone_synth() {
+        let generator = AudioFileGenerator::new();
+        let attrs = AudioAttributes {
+            instrument: Instrument::Synth,
+            pitch: 0.5,
+            volume: 0.5,
+            pan: 0.0,
+        };
+        let temp = std::env::temp_dir().join("test_synth.wav");
+        assert!(generator.export_tone(&temp, &attrs, 0.1).is_ok());
+        assert!(temp.exists());
+        let _ = std::fs::remove_file(temp);
+    }
+
+    #[test]
+    fn test_export_tone_default_instrument() {
+        let generator = AudioFileGenerator::new();
+        let attrs = AudioAttributes {
+            instrument: Instrument::Default,
+            pitch: 0.5,
+            volume: 0.5,
+            pan: 0.0,
+        };
+        let temp = std::env::temp_dir().join("test_default.wav");
+        assert!(generator.export_tone(&temp, &attrs, 0.1).is_ok());
+        assert!(temp.exists());
+        let _ = std::fs::remove_file(temp);
+    }
+
+    #[test]
+    fn test_export_tone_mono() {
+        let q = AudioQuality {
+            sample_rate: 44100,
+            bits_per_sample: 16,
+            channels: 1,
+        };
+        let generator = AudioFileGenerator::new().with_quality(q);
+        let attrs = AudioAttributes {
+            instrument: Instrument::Bass,
+            pitch: 0.5,
+            volume: 0.5,
+            pan: 0.0,
+        };
+        let temp = std::env::temp_dir().join("test_mono.wav");
+        assert!(generator.export_tone(&temp, &attrs, 0.1).is_ok());
+        assert!(temp.exists());
+        let _ = std::fs::remove_file(temp);
+    }
+
+    #[test]
+    fn test_export_tone_pan_left() {
+        let generator = AudioFileGenerator::new();
+        let attrs = AudioAttributes {
+            instrument: Instrument::Bass,
+            pitch: 0.5,
+            volume: 0.5,
+            pan: -1.0,
+        };
+        let temp = std::env::temp_dir().join("test_pan_left.wav");
+        assert!(generator.export_tone(&temp, &attrs, 0.1).is_ok());
+        assert!(temp.exists());
+        let _ = std::fs::remove_file(temp);
+    }
+
+    #[test]
+    fn test_export_tone_pan_right() {
+        let generator = AudioFileGenerator::new();
+        let attrs = AudioAttributes {
+            instrument: Instrument::Bass,
+            pitch: 0.5,
+            volume: 0.5,
+            pan: 1.0,
+        };
+        let temp = std::env::temp_dir().join("test_pan_right.wav");
+        assert!(generator.export_tone(&temp, &attrs, 0.1).is_ok());
+        assert!(temp.exists());
+        let _ = std::fs::remove_file(temp);
+    }
+
+    #[test]
+    fn test_audio_file_generator_default() {
+        let generator = AudioFileGenerator::default();
+        let attrs = AudioAttributes {
+            instrument: Instrument::Bass,
+            pitch: 0.5,
+            volume: 0.5,
+            pan: 0.0,
+        };
+        let temp = std::env::temp_dir().join("test_default_gen.wav");
+        assert!(generator.export_tone(&temp, &attrs, 0.1).is_ok());
+        assert!(temp.exists());
+        let _ = std::fs::remove_file(temp);
+    }
+
+    #[test]
+    fn test_frequency_formula() {
+        let freq = |pitch: f32| pitch.mul_add(700.0, 100.0);
+        assert!((freq(0.0) - 100.0).abs() < f32::EPSILON);
+        assert!((freq(1.0) - 800.0).abs() < f32::EPSILON);
     }
 }

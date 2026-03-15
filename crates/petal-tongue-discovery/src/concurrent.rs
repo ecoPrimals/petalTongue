@@ -340,7 +340,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_parallel_faster_than_sequential() {
-        // Verify parallel execution is actually faster
         let providers: Vec<Box<dyn VisualizationDataProvider>> = vec![
             Box::new(DemoVisualizationProvider::new()),
             Box::new(DemoVisualizationProvider::new()),
@@ -351,12 +350,62 @@ mod tests {
         let health = check_all_providers_health(&providers, Duration::from_secs(1)).await;
         let elapsed = start.elapsed();
 
-        // If sequential, would take 3 * provider_delay
-        // Parallel should be much faster
         assert_eq!(health.len(), 3);
         assert!(
             elapsed < Duration::from_millis(500),
             "Parallel execution should be fast, took {elapsed:?}"
         );
+    }
+
+    #[tokio::test]
+    async fn test_discover_concurrent_single_success() {
+        let ok_providers =
+            vec![Box::new(DemoVisualizationProvider::new()) as Box<dyn VisualizationDataProvider>];
+        let result = discover_concurrent(
+            vec![("success", || async { Ok(ok_providers) })],
+            Duration::from_secs(2),
+        )
+        .await;
+
+        assert_eq!(result.providers.len(), 1);
+        assert!(result.failures.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_discover_concurrent_single_fail() {
+        let result = discover_concurrent(
+            vec![("fail", || async {
+                Err(anyhow::anyhow!("Intentional failure"))
+            })],
+            Duration::from_secs(2),
+        )
+        .await;
+
+        assert!(result.providers.is_empty());
+        assert_eq!(result.failures.len(), 1);
+        assert_eq!(result.failures[0].source, "fail");
+    }
+
+    #[tokio::test]
+    async fn test_provider_health_timeout_variant() {
+        let ph = ProviderHealth {
+            name: "t".to_string(),
+            endpoint: "e".to_string(),
+            status: HealthStatus::Timeout {
+                duration: Duration::from_secs(5),
+            },
+            checked_at: std::time::Instant::now(),
+        };
+        assert!(!ph.is_healthy());
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_discovery_result_structure() {
+        let result = ConcurrentDiscoveryResult {
+            providers: vec![],
+            failures: vec![DiscoveryFailure::new("src", "err")],
+        };
+        assert!(result.providers.is_empty());
+        assert_eq!(result.failures[0].error, "err");
     }
 }

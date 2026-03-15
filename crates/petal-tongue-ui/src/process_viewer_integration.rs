@@ -64,6 +64,34 @@ enum SortColumn {
     Memory,
 }
 
+#[must_use]
+fn cpu_usage_color_tier(cpu_usage: f32) -> u8 {
+    if cpu_usage > 50.0 {
+        2
+    } else {
+        u8::from(cpu_usage > 20.0)
+    }
+}
+
+#[must_use]
+pub fn format_memory_mb(memory_bytes: u64) -> String {
+    let mb = memory_bytes as f64 / 1_048_576.0;
+    format!("{mb:.1} MB")
+}
+
+#[must_use]
+pub fn format_cpu_percent(cpu_usage: f32) -> String {
+    format!("{cpu_usage:.1}")
+}
+
+pub const fn cpu_usage_color(tier: u8) -> egui::Color32 {
+    match tier {
+        2 => egui::Color32::from_rgb(200, 50, 50),
+        1 => egui::Color32::from_rgb(200, 150, 50),
+        _ => egui::Color32::LIGHT_GRAY,
+    }
+}
+
 fn filter_and_sort_processes(
     mut processes: Vec<ProcessInfo>,
     filter_text: &str,
@@ -186,18 +214,12 @@ impl ProcessViewerTool {
                             ui.label(&process.name);
                         });
                         row.col(|ui| {
-                            let color = if process.cpu_usage > 50.0 {
-                                egui::Color32::from_rgb(200, 50, 50)
-                            } else if process.cpu_usage > 20.0 {
-                                egui::Color32::from_rgb(200, 150, 50)
-                            } else {
-                                egui::Color32::LIGHT_GRAY
-                            };
-                            ui.colored_label(color, format!("{:.1}", process.cpu_usage));
+                            let tier = cpu_usage_color_tier(process.cpu_usage);
+                            let color = cpu_usage_color(tier);
+                            ui.colored_label(color, format_cpu_percent(process.cpu_usage));
                         });
                         row.col(|ui| {
-                            let mb = process.memory as f64 / 1_048_576.0;
-                            ui.label(format!("{mb:.1} MB"));
+                            ui.label(format_memory_mb(process.memory));
                         });
                     });
                 }
@@ -284,11 +306,6 @@ impl ToolPanel for ProcessViewerTool {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn format_memory_mb(memory: u64) -> String {
-        let mb = memory as f64 / 1_048_576.0;
-        format!("{mb:.1} MB")
-    }
 
     #[test]
     fn process_viewer_default() {
@@ -474,5 +491,39 @@ mod tests {
     fn process_viewer_refresh_interval() {
         let pv = ProcessViewerTool::default();
         assert_eq!(pv.refresh_interval, std::time::Duration::from_secs(2));
+    }
+
+    #[test]
+    fn cpu_usage_color_tier_low() {
+        assert_eq!(cpu_usage_color_tier(0.0), 0);
+        assert_eq!(cpu_usage_color_tier(10.0), 0);
+        assert_eq!(cpu_usage_color_tier(20.0), 0);
+    }
+
+    #[test]
+    fn cpu_usage_color_tier_medium() {
+        assert_eq!(cpu_usage_color_tier(20.1), 1);
+        assert_eq!(cpu_usage_color_tier(35.0), 1);
+        assert_eq!(cpu_usage_color_tier(50.0), 1);
+    }
+
+    #[test]
+    fn cpu_usage_color_tier_high() {
+        assert_eq!(cpu_usage_color_tier(50.1), 2);
+        assert_eq!(cpu_usage_color_tier(75.0), 2);
+        assert_eq!(cpu_usage_color_tier(100.0), 2);
+    }
+
+    #[test]
+    fn format_cpu_percent_values() {
+        assert_eq!(format_cpu_percent(5.5), "5.5");
+        assert_eq!(format_cpu_percent(0.0), "0.0");
+    }
+
+    #[test]
+    fn cpu_usage_color_tiers() {
+        let _ = cpu_usage_color(0);
+        let _ = cpu_usage_color(1);
+        let _ = cpu_usage_color(2);
     }
 }

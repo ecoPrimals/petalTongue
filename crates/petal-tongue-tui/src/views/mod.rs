@@ -190,6 +190,296 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_render_topology_standalone() {
+        let state = TUIState::new();
+        state.set_standalone_mode(true).await;
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_topology(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_dashboard_standalone() {
+        let state = TUIState::new();
+        state.set_standalone_mode(true).await;
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_dashboard(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_devices_standalone() {
+        let state = TUIState::new();
+        state.set_standalone_mode(true).await;
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_devices(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_primals_standalone() {
+        let state = TUIState::new();
+        state.set_standalone_mode(true).await;
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_primals(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_dashboard_with_primals() {
+        let state = TUIState::new();
+        state.set_standalone_mode(false).await;
+        state
+            .update_primals(vec![petal_tongue_core::PrimalInfo::new(
+                "p1",
+                "TestPrimal",
+                "Compute",
+                "unix:///tmp/p1.sock",
+                vec![],
+                petal_tongue_core::PrimalHealthStatus::Healthy,
+                0,
+            )])
+            .await;
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_dashboard(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_topology_with_primals() {
+        let state = TUIState::new();
+        state.set_standalone_mode(false).await;
+        state
+            .update_primals(vec![petal_tongue_core::PrimalInfo::new(
+                "p1",
+                "A",
+                "T",
+                "unix:///tmp/p1.sock",
+                vec![],
+                petal_tongue_core::PrimalHealthStatus::Healthy,
+                0,
+            )])
+            .await;
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_topology(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_topology_with_topology_edges() {
+        let state = TUIState::new();
+        state.set_standalone_mode(false).await;
+        state
+            .update_primals(vec![
+                petal_tongue_core::PrimalInfo::new(
+                    "a",
+                    "A",
+                    "T",
+                    "unix:///tmp/a.sock",
+                    vec![],
+                    petal_tongue_core::PrimalHealthStatus::Healthy,
+                    0,
+                ),
+                petal_tongue_core::PrimalInfo::new(
+                    "b",
+                    "B",
+                    "T",
+                    "unix:///tmp/b.sock",
+                    vec![],
+                    petal_tongue_core::PrimalHealthStatus::Healthy,
+                    0,
+                ),
+            ])
+            .await;
+        state
+            .update_topology(vec![petal_tongue_core::TopologyEdge {
+                from: petal_tongue_core::PrimalId::from("a"),
+                to: petal_tongue_core::PrimalId::from("b"),
+                edge_type: "conn".to_string(),
+                label: None,
+                capability: None,
+                metrics: None,
+            }])
+            .await;
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_topology(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_primals_with_data() {
+        let state = TUIState::new();
+        state.set_standalone_mode(false).await;
+        state
+            .update_primals(vec![petal_tongue_core::PrimalInfo::new(
+                "p1",
+                "Primal1",
+                "Compute",
+                "unix:///tmp/p1.sock",
+                vec![],
+                petal_tongue_core::PrimalHealthStatus::Healthy,
+                0,
+            )])
+            .await;
+        state.set_selected_index(0).await;
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_primals(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_devices_with_count() {
+        let state = TUIState::new();
+        state.set_standalone_mode(false).await;
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_devices(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
+    async fn test_render_dashboard_with_topology() {
+        let state = TUIState::new();
+        state.set_standalone_mode(false).await;
+        state
+            .update_primals(vec![
+                petal_tongue_core::PrimalInfo::new(
+                    "a",
+                    "A",
+                    "T",
+                    "unix:///tmp/a.sock",
+                    vec![],
+                    petal_tongue_core::PrimalHealthStatus::Healthy,
+                    0,
+                ),
+                petal_tongue_core::PrimalInfo::new(
+                    "b",
+                    "B",
+                    "T",
+                    "unix:///tmp/b.sock",
+                    vec![],
+                    petal_tongue_core::PrimalHealthStatus::Healthy,
+                    0,
+                ),
+            ])
+            .await;
+        state
+            .update_topology(vec![
+                petal_tongue_core::TopologyEdge {
+                    from: petal_tongue_core::PrimalId::from("a"),
+                    to: petal_tongue_core::PrimalId::from("b"),
+                    edge_type: "e1".to_string(),
+                    label: None,
+                    capability: None,
+                    metrics: None,
+                },
+                petal_tongue_core::TopologyEdge {
+                    from: petal_tongue_core::PrimalId::from("b"),
+                    to: petal_tongue_core::PrimalId::from("a"),
+                    edge_type: "e2".to_string(),
+                    label: None,
+                    capability: None,
+                    metrics: None,
+                },
+                petal_tongue_core::TopologyEdge {
+                    from: petal_tongue_core::PrimalId::from("a"),
+                    to: petal_tongue_core::PrimalId::from("b"),
+                    edge_type: "e3".to_string(),
+                    label: None,
+                    capability: None,
+                    metrics: None,
+                },
+                petal_tongue_core::TopologyEdge {
+                    from: petal_tongue_core::PrimalId::from("b"),
+                    to: petal_tongue_core::PrimalId::from("a"),
+                    edge_type: "e4".to_string(),
+                    label: None,
+                    capability: None,
+                    metrics: None,
+                },
+                petal_tongue_core::TopologyEdge {
+                    from: petal_tongue_core::PrimalId::from("a"),
+                    to: petal_tongue_core::PrimalId::from("b"),
+                    edge_type: "e5".to_string(),
+                    label: None,
+                    capability: None,
+                    metrics: None,
+                },
+                petal_tongue_core::TopologyEdge {
+                    from: petal_tongue_core::PrimalId::from("b"),
+                    to: petal_tongue_core::PrimalId::from("a"),
+                    edge_type: "e6".to_string(),
+                    label: None,
+                    capability: None,
+                    metrics: None,
+                },
+            ])
+            .await;
+        tokio::task::spawn_blocking(move || {
+            let backend = TestBackend::new(80, 24);
+            let mut terminal = Terminal::new(backend).expect("terminal");
+            terminal
+                .draw(|frame| render_dashboard(frame, &state))
+                .expect("render");
+        })
+        .await
+        .expect("spawn");
+    }
+
+    #[tokio::test]
     async fn test_render_devices_no_panic() {
         let state = TUIState::new();
         tokio::task::spawn_blocking(move || {

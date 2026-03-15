@@ -1,6 +1,6 @@
 # petalTongue -- Project Status
 
-**Updated**: March 14, 2026  
+**Updated**: March 15, 2026  
 **Version**: 1.6.3  
 **Edition**: 2024 (all crates)
 
@@ -11,25 +11,25 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 3,940+ passing, 0 failures, 17 ignored |
+| Tests | 5,168 passing, 0 failures, ~17 ignored |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery, `--all-targets --all-features`) |
 | Rustdoc | Clean (`cargo doc --workspace --no-deps`) |
 | cargo deny | Clean (advisories, bans, licenses, sources) |
 | Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
-| Files | All 508 files under 1,000 lines (CI enforced); largest file 943 lines after module extraction |
+| Files | All 528 files under 1,000 lines (CI enforced); largest file 957 lines (`scene_bridge.rs`) |
 | License | AGPL-3.0-only, SPDX on all source files |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None (`ring` eliminated, `libc`/`nix`/`atty` removed, using `rustix`) |
 | ecoBin | Compliant (no ring, aws-lc-sys, openssl-sys, native-tls, zstd-sys) |
-| Coverage | ~83% line (llvm-cov, workspace) -- target 90% |
-| JSON-RPC | Semantic method naming (`domain.operation`), 16 visualization methods |
+| Coverage | ~85% line / ~86% branch (llvm-cov, `--all-features --workspace`) -- target 90% |
+| JSON-RPC | Semantic method naming (`domain.operation[.variant]`), 40 methods compliant |
 | Mocks | All gated behind `#[cfg(test)]` or `#[cfg(feature = "test-fixtures")]`; production mock code eliminated |
 | Primal names | Capability-based constants, zero hardcoded external primal names |
 | Hardcoding | All timeouts, ports, intervals, endpoints configurable via env vars; centralized in `constants.rs`; default bind 127.0.0.1 (was 0.0.0.0) |
 | Zero-copy | `bytes::Bytes` in rendering pipeline, IPC, and audio; `Arc<DeviceState>` in state_sync, `Arc<Vec<...>>` in TUI |
 | Domain theming | 7 domain palettes (health, physics, ecology, agriculture, measurement, neural, game) + diverging color scales |
-| GUI logic extraction | All UI business logic in pure functions, 16 headless integration tests |
+| GUI logic extraction | All UI business logic in pure functions, 102 headless integration tests |
 | Game loop | Wired: TickClock in app, begin_frame_with_dt, continuous mode motor commands |
 | IPC-to-UI bridge | Complete: shared VisualizationState, LiveSessionsPanel, session polling |
 | Sensor streaming | Complete: SensorEventBatch/IPC types, SensorStreamRegistry, subscribe/unsubscribe/poll handlers |
@@ -55,8 +55,9 @@
 
 - **JSON-RPC 2.0**: Primary protocol for local IPC (Unix sockets)
 - **tarpc**: High-performance binary RPC with `bytes::Bytes` for zero-copy payloads
-- **Semantic naming**: All methods follow `{domain}.{operation}` convention
+- **Semantic naming**: All 40 methods follow `{domain}.{operation}[.{variant}]` convention
 - **Legacy fallbacks**: Clients try semantic names first, fall back to legacy for compatibility
+- **UniBin**: Single `petaltongue` binary at workspace root; crate-level extra binaries removed
 
 ### ecoBin Compliance
 
@@ -99,34 +100,35 @@ Delegated/roadmap items (not TODOs, documented as roadmap markers):
 
 ### Test Coverage Gap
 
-Current: ~83% line coverage (3,940+ tests).
+Current: ~85% line / ~86% branch coverage (5,168 tests, llvm-cov `--all-features --workspace`).
 Target: 90%.
 
-Well-covered areas (>80%):
-- Core engine, graph builder, graph validation, types, interaction engine
-- Session, data channel, telemetry, data bindings, config, constants
-- Discovery (JSON-RPC, HTTP, Songbird, cache, unix socket)
-- IPC (Unix socket, tarpc client, JSON-RPC handlers, server, visualization)
-- Scenario builder, domain theme, filtering, timeline types
-- Rendering awareness, state sync, awakening coordinator, sensor
-- Dynamic schema, instance lifecycle/registry, capabilities
-- CLI argument parsing, process viewer, graph metrics
-- Proprioception, sensory capabilities, display traits, entropy state
-- TUI rendering via TestBackend (all 8 views tested)
-- Scene engine: determinism tests (100-run identical output), modality round-trips
-- Math objects: edge cases (NaN, infinity, degenerate parameters)
-- Animation: all easing functions at boundaries, sequences, zero duration
-- Tufte constraints: data-ink ratio, chartjunk, data density
+Per-crate coverage:
+- petal-tongue-core: 93.1%, petal-tongue-scene: 93.8%, petal-tongue-adapters: 94.9%
+- petal-tongue-telemetry: 96.5%, petal-tongue-entropy: 92.7%, petal-tongue-graph: 92.5%
+- petal-tongue-tui: 90.6%, petal-tongue-ipc: 90.2%
+- petal-tongue-discovery: 88.2%, petal-tongue-cli: 87.2%, doom-core: 87.1%
+- petal-tongue-animation: 86.9%, petal-tongue-ui-core: 86.3%, petal-tongue-api: 83.5%
+- petal-tongue-ui: 75.7% (8 of 13 crates above 90%)
+
+Architecture patterns applied:
+- `EventStatus::color_rgba()` returns `[u8; 4]` RGBA, `color()` wraps for egui compat
+- `TrafficFlow.color` is `[u8; 4]`, converted to `Color32` at render boundary
+- `TrustLevelRow.color` is `[u8; 4]`, `health_display_data()` returns `[u8; 3]`
+- Pure layout helpers: `build_primal_lanes`, `compute_lane_height`, `event_screen_rect`
+- Pure interaction helpers: `selection_box_bounds`, `compute_pan_camera_position`, `hit_test_nodes`
+- Pure format helpers: `format_cpu_percent`, `format_memory_mb`, `quality_to_percent_display`
 
 Remaining uncovered areas:
-- egui rendering adapter layer (thin `Ui` calls after pure logic extraction)
-- Visual 2D renderer, animation renderer (egui-dependent drawing)
-- Chart renderer rendering bodies (egui `Ui` drawing)
+- egui rendering adapter layer (~8000 lines of thin `Ui` calls after extraction)
+- Async network paths (mDNS, Songbird, Neural API clients)
+- Display backends (ToadStool, framebuffer, software renderer)
 
-Strategy: Logic extraction complete — all business logic in pure testable
-functions. Remaining coverage gap is the thin rendering adapter layer, which
-requires the headless harness for integration testing. 16 headless integration
-tests already cover keyboard shortcuts, motor commands, and panel navigation.
+Strategy: All business logic extracted to pure testable functions. 102 headless
+integration tests exercise rendering pipelines through full app context. The
+remaining gap is concentrated in egui `Painter`/`Ui` drawing calls and async
+network I/O paths. Further gains require either mock network infrastructure
+or deeper headless scenario coverage.
 
 ### Legacy Modules (feature-gated, frozen)
 

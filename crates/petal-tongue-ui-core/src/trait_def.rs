@@ -156,4 +156,44 @@ mod tests {
         assert_eq!(ExportFormat::Png.mime_type(), "image/png");
         assert_eq!(ExportFormat::Json.mime_type(), "application/json");
     }
+
+    #[test]
+    fn test_export_format_all_extensions() {
+        assert_eq!(ExportFormat::Svg.extension(), "svg");
+        assert_eq!(ExportFormat::Png.extension(), "png");
+        assert_eq!(ExportFormat::Text.extension(), "txt");
+        assert_eq!(ExportFormat::Json.extension(), "json");
+        assert_eq!(ExportFormat::Dot.extension(), "dot");
+    }
+
+    #[test]
+    fn test_export_format_all_mime_types() {
+        assert_eq!(ExportFormat::Text.mime_type(), "text/plain");
+        assert_eq!(ExportFormat::Dot.mime_type(), "text/vnd.graphviz");
+    }
+
+    #[test]
+    fn test_ui_capability_variants() {
+        use super::UICapability;
+        assert!(matches!(
+            UICapability::RenderToString,
+            UICapability::RenderToString
+        ));
+        assert!(matches!(
+            UICapability::RenderToBytes,
+            UICapability::RenderToBytes
+        ));
+        assert!(matches!(
+            UICapability::Interactive,
+            UICapability::Interactive
+        ));
+        assert!(matches!(UICapability::Export, UICapability::Export));
+        assert!(matches!(UICapability::RealTime, UICapability::RealTime));
+    }
+
+    #[test]
+    fn test_export_format_equality() {
+        assert_eq!(ExportFormat::Svg, ExportFormat::Svg);
+        assert_ne!(ExportFormat::Svg, ExportFormat::Png);
+    }
 }

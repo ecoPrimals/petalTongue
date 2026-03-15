@@ -155,6 +155,16 @@ pub fn draw_channel(ui: &mut Ui, binding: &DataBinding, domain: Option<&str>) {
 mod tests {
     use super::basic_charts::{GaugeStatus, distribution_bins, gauge_status_for_value};
     use super::*;
+    use petal_tongue_core::DataBinding;
+
+    fn run_draw_channel(binding: &DataBinding, domain: Option<&str>) {
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                draw_channel(ui, binding, domain);
+            });
+        });
+    }
 
     #[test]
     fn test_node_detail_default() {
@@ -283,5 +293,269 @@ mod tests {
         assert!((lo - 0.0).abs() < f64::EPSILON);
         assert!((hi - 9.0).abs() < f64::EPSILON);
         assert_eq!(counts.iter().sum::<u32>(), 10);
+    }
+
+    fn binding_label(binding: &DataBinding) -> &str {
+        match binding {
+            DataBinding::TimeSeries { label, .. } => label,
+            DataBinding::Distribution { label, .. } => label,
+            DataBinding::Bar { label, .. } => label,
+            DataBinding::Gauge { label, .. } => label,
+            DataBinding::Heatmap { label, .. } => label,
+            DataBinding::Scatter { label, .. } => label,
+            DataBinding::Scatter3D { label, .. } => label,
+            DataBinding::FieldMap { label, .. } => label,
+            DataBinding::Spectrum { label, .. } => label,
+        }
+    }
+
+    #[test]
+    fn test_draw_channel_dispatch_timeseries() {
+        let b = DataBinding::TimeSeries {
+            id: "t1".to_string(),
+            label: "TS".to_string(),
+            x_label: "X".to_string(),
+            y_label: "Y".to_string(),
+            unit: "u".to_string(),
+            x_values: vec![0.0, 1.0],
+            y_values: vec![1.0, 2.0],
+        };
+        assert_eq!(binding_label(&b), "TS");
+        run_draw_channel(&b, None);
+    }
+
+    #[test]
+    fn test_draw_channel_dispatch_distribution() {
+        let b = DataBinding::Distribution {
+            id: "d1".to_string(),
+            label: "Dist".to_string(),
+            unit: "u".to_string(),
+            values: vec![1.0, 2.0],
+            mean: 1.5,
+            std: 0.5,
+            comparison_value: 1.8,
+        };
+        assert_eq!(binding_label(&b), "Dist");
+        run_draw_channel(&b, None);
+    }
+
+    #[test]
+    fn test_draw_channel_dispatch_bar() {
+        let b = DataBinding::Bar {
+            id: "b1".to_string(),
+            label: "Bar".to_string(),
+            categories: vec!["A".to_string()],
+            values: vec![1.0],
+            unit: "u".to_string(),
+        };
+        assert_eq!(binding_label(&b), "Bar");
+        run_draw_channel(&b, None);
+    }
+
+    #[test]
+    fn test_draw_channel_dispatch_gauge() {
+        let b = DataBinding::Gauge {
+            id: "g1".to_string(),
+            label: "Gauge".to_string(),
+            value: 50.0,
+            min: 0.0,
+            max: 100.0,
+            unit: "u".to_string(),
+            normal_range: [20.0, 80.0],
+            warning_range: [10.0, 90.0],
+        };
+        assert_eq!(binding_label(&b), "Gauge");
+        run_draw_channel(&b, None);
+    }
+
+    #[test]
+    fn test_draw_channel_dispatch_heatmap() {
+        let b = DataBinding::Heatmap {
+            id: "h1".to_string(),
+            label: "Heatmap".to_string(),
+            x_labels: vec!["A".to_string()],
+            y_labels: vec!["B".to_string()],
+            values: vec![1.0],
+            unit: "u".to_string(),
+        };
+        assert_eq!(binding_label(&b), "Heatmap");
+        run_draw_channel(&b, Some("health"));
+    }
+
+    #[test]
+    fn test_draw_channel_dispatch_scatter() {
+        let b = DataBinding::Scatter {
+            id: "s1".to_string(),
+            label: "Scatter".to_string(),
+            x: vec![1.0],
+            y: vec![2.0],
+            point_labels: vec![],
+            x_label: String::new(),
+            y_label: String::new(),
+            unit: "u".to_string(),
+        };
+        assert_eq!(binding_label(&b), "Scatter");
+        run_draw_channel(&b, None);
+    }
+
+    #[test]
+    fn test_draw_channel_dispatch_scatter3d() {
+        let b = DataBinding::Scatter3D {
+            id: "s3".to_string(),
+            label: "Scatter3D".to_string(),
+            x: vec![1.0],
+            y: vec![2.0],
+            z: vec![3.0],
+            point_labels: vec![],
+            x_label: String::new(),
+            y_label: String::new(),
+            z_label: String::new(),
+            unit: "u".to_string(),
+        };
+        assert_eq!(binding_label(&b), "Scatter3D");
+        run_draw_channel(&b, None);
+    }
+
+    #[test]
+    fn test_draw_channel_dispatch_fieldmap() {
+        let b = DataBinding::FieldMap {
+            id: "f1".to_string(),
+            label: "FieldMap".to_string(),
+            grid_x: vec![0.0, 1.0],
+            grid_y: vec![0.0],
+            values: vec![1.0, 2.0],
+            unit: "u".to_string(),
+        };
+        assert_eq!(binding_label(&b), "FieldMap");
+        run_draw_channel(&b, None);
+    }
+
+    #[test]
+    fn test_draw_channel_dispatch_spectrum() {
+        let b = DataBinding::Spectrum {
+            id: "sp1".to_string(),
+            label: "Spectrum".to_string(),
+            frequencies: vec![1.0],
+            amplitudes: vec![0.5],
+            unit: "u".to_string(),
+        };
+        assert_eq!(binding_label(&b), "Spectrum");
+        run_draw_channel(&b, None);
+    }
+
+    #[test]
+    fn test_binding_label_all_variants() {
+        let variants = [
+            (
+                "TS",
+                DataBinding::TimeSeries {
+                    id: "".to_string(),
+                    label: "TS".to_string(),
+                    x_label: "".to_string(),
+                    y_label: "".to_string(),
+                    unit: "".to_string(),
+                    x_values: vec![],
+                    y_values: vec![],
+                },
+            ),
+            (
+                "Dist",
+                DataBinding::Distribution {
+                    id: "".to_string(),
+                    label: "Dist".to_string(),
+                    unit: "".to_string(),
+                    values: vec![],
+                    mean: 0.0,
+                    std: 0.0,
+                    comparison_value: 0.0,
+                },
+            ),
+            (
+                "Bar",
+                DataBinding::Bar {
+                    id: "".to_string(),
+                    label: "Bar".to_string(),
+                    categories: vec![],
+                    values: vec![],
+                    unit: "".to_string(),
+                },
+            ),
+            (
+                "G",
+                DataBinding::Gauge {
+                    id: "".to_string(),
+                    label: "G".to_string(),
+                    value: 0.0,
+                    min: 0.0,
+                    max: 100.0,
+                    unit: "".to_string(),
+                    normal_range: [0.0, 100.0],
+                    warning_range: [0.0, 100.0],
+                },
+            ),
+            (
+                "H",
+                DataBinding::Heatmap {
+                    id: "".to_string(),
+                    label: "H".to_string(),
+                    x_labels: vec![],
+                    y_labels: vec![],
+                    values: vec![],
+                    unit: "".to_string(),
+                },
+            ),
+            (
+                "S",
+                DataBinding::Scatter {
+                    id: "".to_string(),
+                    label: "S".to_string(),
+                    x: vec![],
+                    y: vec![],
+                    point_labels: vec![],
+                    x_label: "".to_string(),
+                    y_label: "".to_string(),
+                    unit: "".to_string(),
+                },
+            ),
+            (
+                "S3",
+                DataBinding::Scatter3D {
+                    id: "".to_string(),
+                    label: "S3".to_string(),
+                    x: vec![],
+                    y: vec![],
+                    z: vec![],
+                    point_labels: vec![],
+                    x_label: "".to_string(),
+                    y_label: "".to_string(),
+                    z_label: "".to_string(),
+                    unit: "".to_string(),
+                },
+            ),
+            (
+                "F",
+                DataBinding::FieldMap {
+                    id: "".to_string(),
+                    label: "F".to_string(),
+                    grid_x: vec![],
+                    grid_y: vec![],
+                    values: vec![],
+                    unit: "".to_string(),
+                },
+            ),
+            (
+                "Sp",
+                DataBinding::Spectrum {
+                    id: "".to_string(),
+                    label: "Sp".to_string(),
+                    frequencies: vec![],
+                    amplitudes: vec![],
+                    unit: "".to_string(),
+                },
+            ),
+        ];
+        for (expected, binding) in variants {
+            assert_eq!(binding_label(&binding), expected);
+        }
     }
 }

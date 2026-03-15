@@ -4,7 +4,11 @@
 //! Displays CPU, memory, uptime, and Neural API statistics with sparklines.
 //! Updates automatically every 5 seconds with fresh data from Neural API.
 
-use crate::metrics_dashboard_helpers::{prepare_metrics_display, sparkline_points_in_rect};
+use crate::metrics_dashboard_helpers::{
+    active_executions_color_rgb, cpu_history_avg_max, format_cpu_avg_display,
+    format_cpu_max_display, format_cpu_percent, format_memory_used_total, prepare_metrics_display,
+    sparkline_points_in_rect,
+};
 use egui::{Color32, ProgressBar, RichText, Stroke, Ui, Vec2};
 use petal_tongue_core::{CpuHistory, MemoryHistory, SystemMetrics};
 use petal_tongue_discovery::NeuralApiProvider;
@@ -145,7 +149,7 @@ impl MetricsDashboard {
             ui.add(
                 ProgressBar::new(progress)
                     .fill(color)
-                    .text(format!("{:.1}%", state.cpu_percent)),
+                    .text(format_cpu_percent(state.cpu_percent)),
             );
 
             let cpu_values: Vec<f32> = state.cpu_history.iter().map(|&v| v as f32).collect();
@@ -155,15 +159,14 @@ impl MetricsDashboard {
             }
 
             if !state.cpu_history.is_empty() {
-                let avg = state.cpu_history.iter().sum::<f64>() / state.cpu_history.len() as f64;
-                let max = state.cpu_history.iter().copied().fold(0.0_f64, f64::max);
+                let (avg, max) = cpu_history_avg_max(&state.cpu_history);
                 ui.horizontal(|ui| {
                     ui.label(
-                        RichText::new(format!("Avg: {:.1}%", avg))
+                        RichText::new(format_cpu_avg_display(avg))
                             .color(Color32::from_rgb(156, 163, 175)),
                     );
                     ui.label(
-                        RichText::new(format!("Max: {:.1}%", max))
+                        RichText::new(format_cpu_max_display(max))
                             .color(Color32::from_rgb(156, 163, 175)),
                     );
                 });
@@ -186,12 +189,12 @@ impl MetricsDashboard {
             ui.add(
                 ProgressBar::new(progress)
                     .fill(color)
-                    .text(format!("{:.1}%", state.memory_percent)),
+                    .text(format_cpu_percent(state.memory_percent)),
             );
 
-            ui.label(format!(
-                "{} MB / {} MB",
-                state.memory_used_mb, state.memory_total_mb
+            ui.label(format_memory_used_total(
+                state.memory_used_mb,
+                state.memory_total_mb,
             ));
 
             if !state.memory_history.is_empty() {
@@ -246,11 +249,8 @@ impl MetricsDashboard {
 
             ui.horizontal(|ui| {
                 ui.label("⚡ Active Executions:");
-                let color = if state.active_executions > 0 {
-                    Color32::from_rgb(34, 197, 94) // green-500 (active)
-                } else {
-                    Color32::from_rgb(156, 163, 175) // gray-400 (idle)
-                };
+                let rgb = active_executions_color_rgb(state.active_executions);
+                let color = Color32::from_rgb(rgb[0], rgb[1], rgb[2]);
                 ui.label(RichText::new(format!("{}", state.active_executions)).color(color));
             });
         });
@@ -438,5 +438,96 @@ mod tests {
         };
         let formatted = metrics.uptime_formatted();
         assert!(formatted.contains('h') || formatted.contains("1") || formatted.len() > 0);
+    }
+
+    #[test]
+    fn test_prepare_metrics_display_cpu_critical() {
+        use crate::metrics_dashboard_helpers::prepare_metrics_display;
+
+        let metrics = SystemMetrics {
+            timestamp: chrono::Utc::now(),
+            system: SystemResourceMetrics {
+                cpu_percent: 95.0,
+                memory_used_mb: 1_000,
+                memory_total_mb: 2_000,
+                memory_percent: 50.0,
+                uptime_seconds: 0,
+            },
+            neural_api: NeuralApiMetrics {
+                family_id: "fam".to_string(),
+                active_primals: 0,
+                graphs_available: 0,
+                active_executions: 0,
+            },
+        };
+        let state = prepare_metrics_display(&metrics, &[], &[]);
+        assert_eq!(state.cpu_color, (239, 68, 68));
+        assert_eq!(state.memory_color, (234, 179, 8));
+    }
+
+    #[test]
+    fn test_prepare_metrics_display_empty_history() {
+        use crate::metrics_dashboard_helpers::prepare_metrics_display;
+
+        let metrics = SystemMetrics {
+            timestamp: chrono::Utc::now(),
+            system: SystemResourceMetrics {
+                cpu_percent: 25.0,
+                memory_used_mb: 0,
+                memory_total_mb: 0,
+                memory_percent: 25.0,
+                uptime_seconds: 60,
+            },
+            neural_api: NeuralApiMetrics {
+                family_id: "".to_string(),
+                active_primals: 0,
+                graphs_available: 0,
+                active_executions: 0,
+            },
+        };
+        let state = prepare_metrics_display(&metrics, &[], &[]);
+        assert!(state.cpu_history.is_empty());
+        assert!(state.memory_history.is_empty());
+        assert_eq!(state.uptime_text, "1m");
+    }
+
+    #[test]
+    fn test_sparkline_points_in_rect_empty() {
+        use crate::metrics_dashboard_helpers::sparkline_points_in_rect;
+
+        let pts = sparkline_points_in_rect(&[], 0.0, 0.0, 100.0, 40.0);
+        assert!(pts.is_empty());
+
+        let pts = sparkline_points_in_rect(&[42.0], 0.0, 0.0, 100.0, 40.0);
+        assert!(pts.is_empty());
+    }
+
+    #[test]
+    fn test_sparkline_points_in_rect_constant() {
+        use crate::metrics_dashboard_helpers::sparkline_points_in_rect;
+
+        let pts = sparkline_points_in_rect(&[50.0, 50.0, 50.0], 10.0, 20.0, 80.0, 30.0);
+        assert_eq!(pts.len(), 3);
+        assert_eq!(pts[0].0, 10.0);
+        assert_eq!(pts[2].0, 90.0);
+    }
+
+    #[test]
+    fn test_format_bytes_edge_cases() {
+        use crate::metrics_dashboard_helpers::format_bytes;
+
+        assert_eq!(format_bytes(1), "1 B");
+        assert_eq!(format_bytes(999), "999 B");
+        assert!(format_bytes(2048).contains("2.0 KB"));
+        assert!(format_bytes(1_073_741_824).contains("1.0 GB"));
+    }
+
+    #[test]
+    fn test_format_uptime_display_edge_cases() {
+        use crate::metrics_dashboard_helpers::format_uptime_display;
+
+        assert_eq!(format_uptime_display(30), "0m");
+        assert_eq!(format_uptime_display(3661), "1h 1m");
+        assert_eq!(format_uptime_display(90061), "1d 1h 1m");
     }
 }

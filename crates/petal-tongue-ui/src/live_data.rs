@@ -456,4 +456,62 @@ mod tests {
         header.mark_updated();
         assert!(header.badge.indicator.is_live);
     }
+
+    #[test]
+    fn test_badge_display_state_integration() {
+        use crate::live_data_helpers::badge_display_state;
+        let s = badge_display_state(0.5, false, true);
+        assert_eq!(s.label, "● LIVE");
+        let s = badge_display_state(10.0, true, true);
+        assert_eq!(s.label, "STALE");
+        let s = badge_display_state(0.0, false, false);
+        assert_eq!(s.label, "WAITING");
+    }
+
+    #[test]
+    fn test_connection_status_display_integration() {
+        use crate::live_data_helpers::connection_status_display;
+        let s = connection_status_display(true, None);
+        assert_eq!(s.symbol, "●");
+        assert_eq!(s.status_text, "Connected");
+        let s = connection_status_display(false, Some(30.0));
+        assert_eq!(s.symbol, "○");
+        assert_eq!(s.status_text, "Disconnected");
+    }
+
+    #[test]
+    fn test_format_age_for_display_integration() {
+        use crate::live_data_helpers::format_age_for_display;
+        assert_eq!(format_age_for_display(0.5), "Just now");
+        assert_eq!(format_age_for_display(45.0), "45.0s ago");
+        assert_eq!(format_age_for_display(3660.0), "1.0h ago");
+    }
+
+    #[test]
+    fn test_format_metric_value_integration() {
+        use crate::live_data_helpers::format_metric_value;
+        assert_eq!(format_metric_value(72.5, "°F"), "72.5°F");
+        assert_eq!(format_metric_value(42.0, ""), "42");
+    }
+
+    #[test]
+    fn test_live_metric_render_large_invalid_parse() {
+        let mut metric = LiveMetric::new("Temp".to_string(), "sensor".to_string(), 1.0);
+        metric.update("not_a_number".to_string(), Some("°C".to_string()));
+        assert_eq!(metric.value, "not_a_number");
+    }
+
+    #[test]
+    fn test_connection_status_empty_target() {
+        let status = ConnectionStatus::new(String::new());
+        assert_eq!(status.target, "");
+        assert!(!status.connected);
+    }
+
+    #[test]
+    fn test_live_badge_source_preserved() {
+        let badge = LiveBadge::new("test_source".to_string(), 2.0);
+        assert_eq!(badge.indicator.source, "test_source");
+        assert!((badge.indicator.update_interval - 2.0).abs() < f64::EPSILON);
+    }
 }

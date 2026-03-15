@@ -14,6 +14,16 @@ use ratatui::{
 
 use crate::state::TUIState;
 
+#[must_use]
+pub fn format_device_entry(index: usize, status: &str) -> (String, String) {
+    (format!("Device {index}"), status.to_string())
+}
+
+#[must_use]
+pub fn format_device_count_display(count: usize) -> String {
+    format!("Discovered {count} devices:")
+}
+
 /// Render devices view
 pub fn render(frame: &mut Frame, area: Rect, state: &TUIState) {
     let standalone = tokio::runtime::Handle::current().block_on(state.is_standalone());
@@ -97,7 +107,7 @@ fn render_device_list(frame: &mut Frame, area: Rect, status: &crate::state::Syst
         // Show discovered devices
         let mut items = vec![
             ListItem::new(Line::from(vec![Span::styled(
-                format!("Discovered {device_count} devices:"),
+                format_device_count_display(device_count),
                 Style::default()
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
@@ -107,11 +117,12 @@ fn render_device_list(frame: &mut Frame, area: Rect, status: &crate::state::Syst
 
         // Placeholder device entries
         for i in 1..=device_count.min(10) {
+            let (name, status) = format_device_entry(i, "Available");
             items.push(ListItem::new(Line::from(vec![
                 Span::styled("📱 ", Style::default().fg(Color::Cyan)),
-                Span::raw(format!("Device {i}")),
+                Span::raw(name),
                 Span::raw(" ("),
-                Span::styled("Available", Style::default().fg(Color::Green)),
+                Span::styled(status, Style::default().fg(Color::Green)),
                 Span::raw(")"),
             ])));
         }
@@ -181,4 +192,33 @@ fn render_device_details(frame: &mut Frame, area: Rect, status: &crate::state::S
     );
 
     frame.render_widget(paragraph, area);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn format_device_entry_first() {
+        let (name, status) = format_device_entry(1, "Available");
+        assert_eq!(name, "Device 1");
+        assert_eq!(status, "Available");
+    }
+
+    #[test]
+    fn format_device_entry_tenth() {
+        let (name, status) = format_device_entry(10, "Offline");
+        assert_eq!(name, "Device 10");
+        assert_eq!(status, "Offline");
+    }
+
+    #[test]
+    fn format_device_count_zero() {
+        assert_eq!(format_device_count_display(0), "Discovered 0 devices:");
+    }
+
+    #[test]
+    fn format_device_count_many() {
+        assert_eq!(format_device_count_display(42), "Discovered 42 devices:");
+    }
 }

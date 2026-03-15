@@ -82,3 +82,75 @@ impl PanelInstance for DoomPanelWrapper {
 pub fn create_doom_factory() -> Arc<dyn PanelFactory> {
     Arc::new(DoomPanelFactory)
 }
+
+#[cfg(all(test, feature = "doom"))]
+mod tests {
+    use super::*;
+
+    fn config_with_show_debug(show_debug: bool) -> CustomPanelConfig {
+        CustomPanelConfig {
+            panel_type: "doom_game".to_string(),
+            title: "Test Doom".to_string(),
+            width: Some(320),
+            height: Some(240),
+            fullscreen: false,
+            config: if show_debug {
+                serde_json::Value::Null
+            } else {
+                serde_json::json!({"show_debug": false})
+            },
+        }
+    }
+
+    #[test]
+    fn factory_panel_type() {
+        let factory = DoomPanelFactory;
+        assert_eq!(factory.panel_type(), "doom_game");
+    }
+
+    #[test]
+    fn factory_description() {
+        let factory = DoomPanelFactory;
+        assert!(factory.description().contains("Doom"));
+    }
+
+    #[test]
+    fn factory_create_returns_panel() {
+        let factory = DoomPanelFactory;
+        let config = config_with_show_debug(true);
+        let panel = factory.create(&config).unwrap();
+        assert_eq!(panel.title(), "Test Doom");
+        assert!(panel.wants_keyboard_input());
+        assert!(panel.wants_mouse_input());
+        assert!(panel.wants_exclusive_input());
+    }
+
+    #[test]
+    fn factory_create_with_show_debug_false() {
+        let factory = DoomPanelFactory;
+        let config = config_with_show_debug(false);
+        let panel = factory.create(&config).unwrap();
+        assert_eq!(panel.title(), "Test Doom");
+    }
+
+    #[test]
+    fn factory_create_uses_width_height_defaults() {
+        let factory = DoomPanelFactory;
+        let config = CustomPanelConfig {
+            panel_type: "doom_game".to_string(),
+            title: "Minimal".to_string(),
+            width: None,
+            height: None,
+            fullscreen: false,
+            config: serde_json::Value::Null,
+        };
+        let panel = factory.create(&config).unwrap();
+        assert_eq!(panel.title(), "Minimal");
+    }
+
+    #[test]
+    fn create_doom_factory_returns_arc() {
+        let factory = create_doom_factory();
+        assert_eq!(factory.panel_type(), "doom_game");
+    }
+}

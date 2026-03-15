@@ -7,7 +7,7 @@
 //! - `motor` — motor.* (UI efferent bridge)
 //! - `system` — health.check, capability.*, topology.get
 //! - `ui` — ui.render, ui.display_status
-//! - `graph` — visualization.render_graph
+//! - `graph` — visualization.render.graph
 
 mod graph;
 mod interaction;
@@ -15,6 +15,7 @@ mod motor;
 mod system;
 mod ui;
 mod visualization;
+mod visualization_session;
 
 use crate::visualization_handler::VisualizationState;
 use petal_tongue_core::RenderingAwareness;
@@ -82,22 +83,28 @@ impl RpcHandlers {
             "ui.render" => ui::handle_ui_render(self, req).await,
             "ui.display_status" => ui::handle_ui_display_status(self, req),
             "capability.list" => system::get_capabilities(self, req.id),
-            "visualization.render_graph" => graph::render_graph(self, req.params, req.id).await,
+            "visualization.render.graph" => graph::render_graph(self, req.params, req.id).await,
             "health.get" => system::get_health(self, req.id),
             "topology.get" => system::get_topology(self, req.id),
             "visualization.render" => visualization::handle_render(self, req),
+            "visualization.render.scene" => visualization::handle_render_scene(self, req),
+            "visualization.session.list" => {
+                visualization_session::handle_session_list(self, req.id)
+            }
             "visualization.render.stream" => visualization::handle_stream(self, req),
             "visualization.render.grammar" => visualization::handle_grammar_render(self, req),
             "visualization.render.dashboard" => visualization::handle_dashboard_render(self, req),
             "visualization.validate" => visualization::handle_validate(self, req),
             "visualization.export" => visualization::handle_export(self, req),
-            "visualization.dismiss" => visualization::handle_dismiss(self, req),
+            "visualization.dismiss" => visualization_session::handle_dismiss(self, req),
             "visualization.interact.apply" => visualization::handle_interact_apply(self, req),
             "visualization.interact.perspectives" => {
                 visualization::handle_interact_perspectives(self, req.id)
             }
             "visualization.capabilities" => visualization::handle_capabilities(self, req.id),
-            "visualization.session.status" => visualization::handle_session_status(self, req),
+            "visualization.session.status" => {
+                visualization_session::handle_session_status(self, req)
+            }
             "visualization.introspect" => visualization::handle_introspect(self, req.id),
             "visualization.panels" => visualization::handle_panels(self, req.id),
             "visualization.showing" => visualization::handle_showing(self, req),
@@ -168,7 +175,7 @@ impl RpcHandlers {
         system::get_topology(self, id)
     }
 
-    /// Handle `visualization.render_graph`: render graph to specified format (svg, png, terminal)
+    /// Handle `visualization.render.graph`: render graph to specified format (svg, png, terminal)
     pub async fn render_graph(
         &self,
         params: serde_json::Value,
@@ -246,7 +253,17 @@ impl RpcHandlers {
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let batch = reg.poll(&subscription_id);
-        JsonRpcResponse::success(req.id, serde_json::to_value(&batch).unwrap_or_default())
+        let value = match serde_json::to_value(&batch) {
+            Ok(v) => v,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INTERNAL_ERROR,
+                    format!("Serialization failed: {e}"),
+                );
+            }
+        };
+        JsonRpcResponse::success(req.id, value)
     }
 }
 
@@ -374,5 +391,287 @@ mod tests {
         let resp = h.handle_request(req).await;
         assert!(resp.result.is_some());
         assert_eq!(resp.result.unwrap()["subscribed"], true);
+    }
+
+    #[tokio::test]
+    async fn dispatch_unknown_method_returns_method_not_found() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("unknown.method", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_some());
+        assert_eq!(
+            resp.error.as_ref().expect("err").code,
+            error_codes::METHOD_NOT_FOUND
+        );
+        assert!(resp.result.is_none());
+    }
+
+    #[tokio::test]
+    async fn dispatch_visualization_introspect() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("visualization.introspect", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_some());
+    }
+
+    #[tokio::test]
+    async fn dispatch_topology_get() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("topology.get", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        let r = resp.result.unwrap();
+        assert!(r["nodes"].is_array());
+        assert!(r["edges"].is_array());
+    }
+
+    #[tokio::test]
+    async fn dispatch_health_check() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("health.check", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["status"], "healthy");
+    }
+
+    #[tokio::test]
+    async fn dispatch_capability_list() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("capability.list", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert!(resp.result.unwrap()["capabilities"].as_array().is_some());
+    }
+
+    #[tokio::test]
+    async fn dispatch_visualization_capabilities() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("visualization.capabilities", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert!(
+            resp.result.unwrap()["data_binding_variants"]
+                .as_array()
+                .is_some()
+        );
+    }
+
+    #[tokio::test]
+    async fn dispatch_sensor_stream_subscribe() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("interaction.sensor_stream.subscribe", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert!(resp.result.unwrap()["subscription_id"].as_str().is_some());
+    }
+
+    #[tokio::test]
+    async fn dispatch_sensor_stream_unsubscribe_empty_id_returns_error() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "interaction.sensor_stream.unsubscribe",
+            json!({"subscription_id": ""}),
+            json!(1),
+        );
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_some());
+        assert_eq!(
+            resp.error.as_ref().expect("err").code,
+            error_codes::INVALID_PARAMS
+        );
+    }
+
+    #[tokio::test]
+    async fn dispatch_sensor_stream_poll_empty_id_returns_error() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "interaction.sensor_stream.poll",
+            json!({"subscription_id": ""}),
+            json!(1),
+        );
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_some());
+        assert_eq!(
+            resp.error.as_ref().expect("err").code,
+            error_codes::INVALID_PARAMS
+        );
+    }
+
+    #[tokio::test]
+    async fn dispatch_sensor_stream_subscribe_and_unsubscribe() {
+        let h = test_handlers();
+        let sub_req =
+            JsonRpcRequest::new("interaction.sensor_stream.subscribe", json!({}), json!(1));
+        let sub_resp = h.handle_request(sub_req).await;
+        let sub_id = sub_resp.result.unwrap()["subscription_id"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        let unsub_req = JsonRpcRequest::new(
+            "interaction.sensor_stream.unsubscribe",
+            json!({"subscription_id": sub_id}),
+            json!(2),
+        );
+        let unsub_resp = h.handle_request(unsub_req).await;
+        assert!(unsub_resp.result.is_some());
+        assert_eq!(unsub_resp.result.unwrap()["unsubscribed"], true);
+    }
+
+    #[tokio::test]
+    async fn dispatch_sensor_stream_poll_with_valid_id() {
+        let h = test_handlers();
+        let sub_req =
+            JsonRpcRequest::new("interaction.sensor_stream.subscribe", json!({}), json!(1));
+        let sub_resp = h.handle_request(sub_req).await;
+        let sub_id = sub_resp.result.unwrap()["subscription_id"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        let poll_req = JsonRpcRequest::new(
+            "interaction.sensor_stream.poll",
+            json!({"subscription_id": sub_id}),
+            json!(2),
+        );
+        let poll_resp = h.handle_request(poll_req).await;
+        assert!(poll_resp.result.is_some());
+    }
+
+    #[tokio::test]
+    async fn dispatch_ui_render() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("ui.render", json!({"content_type": "graph"}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["rendered"], true);
+    }
+
+    #[tokio::test]
+    async fn dispatch_ui_display_status() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "ui.display_status",
+            json!({"primal_name": "test-primal"}),
+            json!(1),
+        );
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["primal"], "test-primal");
+    }
+
+    #[tokio::test]
+    async fn dispatch_health_get() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("health.get", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["status"], "healthy");
+    }
+
+    #[tokio::test]
+    async fn dispatch_provider_register_capability() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "provider.register_capability",
+            json!({
+                "capability": "test.cap",
+                "provider_name": "test-provider",
+                "socket_path": "/tmp/test.sock"
+            }),
+            json!(1),
+        );
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["registered"], true);
+    }
+
+    #[tokio::test]
+    async fn dispatch_visualization_session_list() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("visualization.session.list", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        let r = resp.result.unwrap();
+        assert!(r["sessions"].as_array().is_some());
+    }
+
+    #[tokio::test]
+    async fn dispatch_visualization_interact_perspectives() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("visualization.interact.perspectives", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert!(resp.result.unwrap()["perspectives"].as_array().is_some());
+    }
+
+    #[tokio::test]
+    async fn dispatch_interaction_poll_missing_subscriber_id() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("interaction.poll", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_some());
+        assert_eq!(
+            resp.error.as_ref().expect("err").code,
+            error_codes::INVALID_PARAMS
+        );
+    }
+
+    #[tokio::test]
+    async fn dispatch_interaction_unsubscribe_missing_subscriber_id() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("interaction.unsubscribe", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_some());
+        assert_eq!(
+            resp.error.as_ref().expect("err").code,
+            error_codes::INVALID_PARAMS
+        );
+    }
+
+    #[tokio::test]
+    async fn dispatch_visualization_interact_subscribe_alias() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "visualization.interact.subscribe",
+            json!({"subscriber_id": "viz-sub"}),
+            json!(1),
+        );
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["subscribed"], true);
+    }
+
+    #[tokio::test]
+    async fn dispatch_interaction_subscribe_with_event_filter() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "interaction.subscribe",
+            json!({
+                "subscriber_id": "filtered-sub",
+                "events": ["select", "hover"]
+            }),
+            json!(1),
+        );
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["subscribed"], true);
+    }
+
+    #[tokio::test]
+    async fn dispatch_interaction_unsubscribe_alias() {
+        let h = test_handlers();
+        let sub_req = JsonRpcRequest::new(
+            "interaction.subscribe",
+            json!({"subscriber_id": "unsub-alias"}),
+            json!(1),
+        );
+        h.handle_request(sub_req).await;
+        let unsub_req = JsonRpcRequest::new(
+            "visualization.interact.unsubscribe",
+            json!({"subscriber_id": "unsub-alias"}),
+            json!(2),
+        );
+        let resp = h.handle_request(unsub_req).await;
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["unsubscribed"], true);
     }
 }

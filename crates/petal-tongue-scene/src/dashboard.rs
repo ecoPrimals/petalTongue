@@ -119,14 +119,60 @@ pub fn compose_dashboard(panels: &[(String, SceneGraph)], config: &DashboardConf
 
     let palette = palette_for_domain(config.domain.as_deref().unwrap_or("measurement"));
 
+    let ctx = PanelContext {
+        config,
+        primary_color: palette.primary,
+        panel_stroke: StrokeStyle {
+            color: Color::rgba(
+                palette.secondary.r,
+                palette.secondary.g,
+                palette.secondary.b,
+                0.4,
+            ),
+            width: 1.0,
+            cap: crate::primitive::LineCap::Butt,
+            join: crate::primitive::LineJoin::Miter,
+        },
+    };
+
     let title_offset = if config.title.is_some() { 40.0 } else { 0.0 };
     let total_width =
         (columns as f64).mul_add(config.panel_width + config.spacing, -config.spacing);
     let total_height =
         (rows as f64).mul_add(config.panel_height + config.spacing, -config.spacing) + title_offset;
 
-    let mut scene = SceneGraph::new();
+    let mut scene = setup_dashboard_root(total_width, total_height, palette, config);
 
+    for (idx, (title, panel_scene)) in panels.iter().enumerate() {
+        let col = idx % columns.max(1);
+        let row = idx / columns.max(1);
+        let x = col as f64 * (config.panel_width + config.spacing);
+        let y = (row as f64).mul_add(config.panel_height + config.spacing, title_offset);
+
+        add_panel(&mut scene, idx, title, panel_scene, (x, y), &ctx);
+    }
+
+    Dashboard {
+        scene,
+        panel_count,
+        columns,
+        rows,
+    }
+}
+
+struct PanelContext<'a> {
+    config: &'a DashboardConfig,
+    primary_color: Color,
+    panel_stroke: StrokeStyle,
+}
+
+fn setup_dashboard_root(
+    total_width: f64,
+    total_height: f64,
+    palette: &crate::domain_palette::DomainPalette,
+    config: &DashboardConfig,
+) -> SceneGraph {
+    let mut scene = SceneGraph::new();
     if let Some(root) = scene.get_mut("root") {
         root.label = Some("dashboard".to_string());
         root.primitives.push(Primitive::Rect {
@@ -154,76 +200,62 @@ pub fn compose_dashboard(panels: &[(String, SceneGraph)], config: &DashboardConf
             });
         }
     }
+    scene
+}
 
-    let panel_stroke = StrokeStyle {
-        color: Color::rgba(
-            palette.secondary.r,
-            palette.secondary.g,
-            palette.secondary.b,
-            0.4,
-        ),
-        width: 1.0,
-        cap: crate::primitive::LineCap::Butt,
-        join: crate::primitive::LineJoin::Miter,
-    };
+fn add_panel(
+    scene: &mut SceneGraph,
+    idx: usize,
+    title: &str,
+    panel_scene: &SceneGraph,
+    pos: (f64, f64),
+    ctx: &PanelContext<'_>,
+) {
+    let panel_id = format!("panel_{idx}");
+    let mut panel_node = SceneNode::new(&panel_id);
+    panel_node.transform = Transform2D::translate(pos.0, pos.1);
+    panel_node.label = Some(title.to_string());
 
-    for (idx, (title, panel_scene)) in panels.iter().enumerate() {
-        let col = idx % columns.max(1);
-        let row = idx / columns.max(1);
-        let x = col as f64 * (config.panel_width + config.spacing);
-        let y = (row as f64).mul_add(config.panel_height + config.spacing, title_offset);
+    panel_node.primitives.push(Primitive::Rect {
+        x: 0.0,
+        y: 0.0,
+        width: ctx.config.panel_width,
+        height: ctx.config.panel_height,
+        fill: Some(Color::rgba(1.0, 1.0, 1.0, 0.12)),
+        stroke: Some(ctx.panel_stroke),
+        corner_radius: 4.0,
+        data_id: None,
+    });
 
-        let panel_id = format!("panel_{idx}");
-        let mut panel_node = SceneNode::new(&panel_id);
-        panel_node.transform = Transform2D::translate(x, y);
-        panel_node.label = Some(title.clone());
-
-        panel_node.primitives.push(Primitive::Rect {
-            x: 0.0,
-            y: 0.0,
-            width: config.panel_width,
-            height: config.panel_height,
-            fill: Some(Color::rgba(1.0, 1.0, 1.0, 0.12)),
-            stroke: Some(panel_stroke),
-            corner_radius: 4.0,
+    if !title.is_empty() {
+        let c = ctx.primary_color;
+        panel_node.primitives.push(Primitive::Text {
+            x: ctx.config.panel_width / 2.0,
+            y: 16.0,
+            content: title.to_string(),
+            font_size: 13.0,
+            color: Color::rgba(c.r, c.g, c.b, 0.86),
+            anchor: AnchorPoint::Center,
+            bold: false,
+            italic: false,
             data_id: None,
         });
-
-        if !title.is_empty() {
-            panel_node.primitives.push(Primitive::Text {
-                x: config.panel_width / 2.0,
-                y: 16.0,
-                content: title.clone(),
-                font_size: 13.0,
-                color: Color::rgba(
-                    palette.primary.r,
-                    palette.primary.g,
-                    palette.primary.b,
-                    0.86,
-                ),
-                anchor: AnchorPoint::Center,
-                bold: false,
-                italic: false,
-                data_id: None,
-            });
-        }
-
-        scene.add_to_root(panel_node);
-
-        let content_id = format!("panel_{idx}_content");
-        let mut content_node = SceneNode::new(&content_id);
-        for (_transform, primitive) in panel_scene.flatten() {
-            content_node.primitives.push(primitive.clone());
-        }
-        scene.add_node(content_node, &panel_id);
     }
 
-    Dashboard {
-        scene,
-        panel_count,
-        columns,
-        rows,
+    scene.add_to_root(panel_node);
+
+    let content_id = format!("panel_{idx}_content");
+    let mut content_node = SceneNode::new(&content_id);
+    let content_area_h = ctx.config.panel_height - 30.0;
+    let sx = ctx.config.panel_width / 400.0;
+    let sy = content_area_h / 400.0;
+    let scale_factor = sx.min(sy);
+    content_node.transform =
+        Transform2D::translate(0.0, 30.0).then(Transform2D::scale(scale_factor, scale_factor));
+    for (_transform, primitive) in panel_scene.flatten() {
+        content_node.primitives.push(primitive.clone());
     }
+    scene.add_node(content_node, &panel_id);
 }
 
 fn grid_dimensions(n: usize, layout: &DashboardLayout) -> (usize, usize) {

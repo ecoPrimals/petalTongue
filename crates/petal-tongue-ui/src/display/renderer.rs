@@ -24,6 +24,39 @@ use std::collections::HashMap;
 use tiny_skia::{Color, Paint, PathBuilder, Pixmap, Transform};
 use tracing::warn;
 
+#[must_use]
+pub fn clip_rect_to_pixel_coords(
+    clip_min_x: f32,
+    clip_min_y: f32,
+    clip_max_x: f32,
+    clip_max_y: f32,
+    pixels_per_point: f32,
+) -> (u32, u32, u32, u32) {
+    (
+        (clip_min_x * pixels_per_point) as u32,
+        (clip_min_y * pixels_per_point) as u32,
+        (clip_max_x * pixels_per_point) as u32,
+        (clip_max_y * pixels_per_point) as u32,
+    )
+}
+
+#[must_use]
+pub fn unpremultiply_rgba(data: &[u8]) -> Vec<u8> {
+    let mut buffer = Vec::with_capacity(data.len());
+    for chunk in data.chunks_exact(4) {
+        let a = chunk[3];
+        if a == 0 {
+            buffer.extend_from_slice(&[0, 0, 0, 0]);
+        } else {
+            let r = (u16::from(chunk[0]) * 255 / u16::from(a)) as u8;
+            let g = (u16::from(chunk[1]) * 255 / u16::from(a)) as u8;
+            let b = (u16::from(chunk[2]) * 255 / u16::from(a)) as u8;
+            buffer.extend_from_slice(&[r, g, b, a]);
+        }
+    }
+    buffer
+}
+
 /// Egui pixel renderer
 ///
 /// Converts egui paint commands to RGBA8 pixel buffer using pure Rust rendering.
@@ -132,12 +165,13 @@ impl EguiPixelRenderer {
         // Render each clipped primitive
         for clipped_primitive in primitives {
             let clip_rect = clipped_primitive.clip_rect;
-
-            // Convert egui clip rect to tiny-skia clip rect
-            let clip_min_x = (clip_rect.min.x * self.pixels_per_point) as u32;
-            let clip_min_y = (clip_rect.min.y * self.pixels_per_point) as u32;
-            let clip_max_x = (clip_rect.max.x * self.pixels_per_point) as u32;
-            let clip_max_y = (clip_rect.max.y * self.pixels_per_point) as u32;
+            let (clip_min_x, clip_min_y, clip_max_x, clip_max_y) = clip_rect_to_pixel_coords(
+                clip_rect.min.x,
+                clip_rect.min.y,
+                clip_rect.max.x,
+                clip_rect.max.y,
+                self.pixels_per_point,
+            );
 
             // Skip if clip rect is outside bounds
             if clip_min_x >= self.width || clip_min_y >= self.height {
@@ -161,21 +195,8 @@ impl EguiPixelRenderer {
             }
         }
 
-        // Convert pixmap to RGBA8 buffer (un-premultiply alpha)
-        // tiny-skia stores pixels in premultiplied RGBA format
         let data = pixmap.data();
-        let mut buffer = Vec::with_capacity(data.len());
-        for chunk in data.chunks_exact(4) {
-            let a = chunk[3];
-            if a == 0 {
-                buffer.extend_from_slice(&[0, 0, 0, 0]);
-            } else {
-                let r = (u16::from(chunk[0]) * 255 / u16::from(a)) as u8;
-                let g = (u16::from(chunk[1]) * 255 / u16::from(a)) as u8;
-                let b = (u16::from(chunk[2]) * 255 / u16::from(a)) as u8;
-                buffer.extend_from_slice(&[r, g, b, a]);
-            }
-        }
+        let buffer = unpremultiply_rgba(data);
         Ok(Bytes::from(buffer))
     }
 
@@ -287,7 +308,74 @@ mod tests {
     fn test_pixels_per_point() {
         let mut renderer = EguiPixelRenderer::new(100, 100);
         renderer.set_pixels_per_point(2.0);
-        // Just ensure it doesn't panic
         assert_eq!(renderer.dimensions(), (100, 100));
+    }
+
+    #[test]
+    fn test_unpremultiply_rgba_transparent() {
+        let data = [0u8, 0, 0, 0];
+        let result = unpremultiply_rgba(&data);
+        assert_eq!(result, [0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_unpremultiply_rgba_opaque_red() {
+        let data = [255u8, 0, 0, 255];
+        let result = unpremultiply_rgba(&data);
+        assert_eq!(result, [255, 0, 0, 255]);
+    }
+
+    #[test]
+    fn test_unpremultiply_rgba_half_alpha() {
+        let data = [128u8, 0, 0, 128];
+        let result = unpremultiply_rgba(&data);
+        assert_eq!(result, [255, 0, 0, 128]);
+    }
+
+    #[test]
+    fn test_unpremultiply_rgba_multiple_pixels() {
+        let data = [255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255];
+        let result = unpremultiply_rgba(&data);
+        assert_eq!(result.len(), 12);
+        assert_eq!(result[0..4], [255, 0, 0, 255]);
+        assert_eq!(result[4..8], [0, 255, 0, 255]);
+        assert_eq!(result[8..12], [0, 0, 255, 255]);
+    }
+
+    #[test]
+    fn test_unpremultiply_rgba_zero_alpha_preserves_transparent() {
+        let data = [100, 50, 25, 0];
+        let result = unpremultiply_rgba(&data);
+        assert_eq!(result, [0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_unpremultiply_rgba_quarter_alpha() {
+        let data = [64, 0, 0, 64];
+        let result = unpremultiply_rgba(&data);
+        assert_eq!(result[0], 255);
+        assert_eq!(result[3], 64);
+    }
+
+    #[test]
+    fn test_renderer_set_pixels_per_point_preserves_dimensions() {
+        let mut renderer = EguiPixelRenderer::new(800, 600);
+        renderer.set_pixels_per_point(2.0);
+        assert_eq!(renderer.dimensions(), (800, 600));
+    }
+
+    #[test]
+    fn test_clip_rect_to_pixel_coords() {
+        let (min_x, min_y, max_x, max_y) = clip_rect_to_pixel_coords(0.0, 0.0, 100.0, 50.0, 1.0);
+        assert_eq!(min_x, 0);
+        assert_eq!(min_y, 0);
+        assert_eq!(max_x, 100);
+        assert_eq!(max_y, 50);
+
+        let (min_x, min_y, max_x, max_y) = clip_rect_to_pixel_coords(10.0, 20.0, 110.0, 70.0, 2.0);
+        assert_eq!(min_x, 20);
+        assert_eq!(min_y, 40);
+        assert_eq!(max_x, 220);
+        assert_eq!(max_y, 140);
     }
 }

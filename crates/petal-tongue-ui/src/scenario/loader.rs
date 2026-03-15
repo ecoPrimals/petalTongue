@@ -69,4 +69,42 @@ mod tests {
         let result = Scenario::load("/nonexistent/path/scenario.json");
         assert!(result.is_err());
     }
+
+    #[test]
+    fn load_invalid_json_fails() {
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "{ invalid json }").unwrap();
+        let result = Scenario::load(temp.path());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("parse"));
+    }
+
+    #[test]
+    fn load_empty_json_fails() {
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "{}").unwrap();
+        let result = Scenario::load(temp.path());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn load_malformed_missing_required_fields() {
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), r#"{"name": "x"}"#).unwrap();
+        let result = Scenario::load(temp.path());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn load_valid_json_validation_fails() {
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(
+            temp.path(),
+            r#"{"name":"","description":"","version":"2.0.0","mode":"x","ui_config":{},"ecosystem":{},"neural_api":{},"sensory_config":{},"edges":[]}"#,
+        )
+        .unwrap();
+        let result = Scenario::load(temp.path());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("validation"));
+    }
 }

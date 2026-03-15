@@ -381,4 +381,36 @@ mod tests {
         });
         assert!(map_game_channel(&payload).is_some());
     }
+
+    #[test]
+    fn all_channel_variants_parse() {
+        assert!(GameChannel::from_str("EngagementCurve").is_some());
+        assert!(GameChannel::from_str("DifficultyProfile").is_some());
+        assert!(GameChannel::from_str("FlowTimeline").is_some());
+        assert!(GameChannel::from_str("InteractionCostMap").is_some());
+        assert!(GameChannel::from_str("GenerationPreview").is_some());
+        assert!(GameChannel::from_str("AccessibilityReport").is_some());
+        assert!(GameChannel::from_str("UiAnalysis").is_some());
+    }
+
+    #[test]
+    fn engagement_curve_empty_y_returns_none() {
+        let payload = json!({
+            "channel": "EngagementCurve",
+            "timestamps": [0.0, 1.0],
+            "engagement": []
+        });
+        assert!(map_game_channel(&payload).is_none());
+    }
+
+    #[test]
+    fn scatter_point_labels_optional() {
+        let payload = json!({
+            "channel": "GenerationPreview",
+            "x": [1.0, 2.0],
+            "y": [3.0, 4.0]
+        });
+        let binding = map_game_channel(&payload).expect("should map");
+        assert!(matches!(binding, DataBinding::Scatter { .. }));
+    }
 }

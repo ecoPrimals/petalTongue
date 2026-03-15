@@ -40,6 +40,26 @@ pub enum PrimalFilter {
     Degraded,
 }
 
+#[must_use]
+pub fn load_bar_color_rgb(load: f64) -> [u8; 3] {
+    if load > 0.9 {
+        [255, 0, 0]
+    } else if load > 0.7 {
+        [255, 255, 0]
+    } else {
+        [0, 255, 0]
+    }
+}
+
+#[must_use]
+pub const fn health_display_data(health: &Health) -> (&'static str, [u8; 3]) {
+    match health {
+        Health::Healthy => ("● Healthy", [0, 255, 0]),
+        Health::Degraded => ("● Degraded", [255, 255, 0]),
+        Health::Offline => ("● Offline", [255, 0, 0]),
+    }
+}
+
 /// Primal panel - main UI component for primal status management
 pub struct PrimalPanel {
     /// All primals (updated from provider)
@@ -191,24 +211,8 @@ impl PrimalPanel {
         });
     }
 
-    /// Render stats
     fn render_stats(&self, ui: &mut Ui) {
-        let total = self.primals.len();
-        let healthy = self
-            .primals
-            .iter()
-            .filter(|p| p.health == Health::Healthy)
-            .count();
-        let degraded = self
-            .primals
-            .iter()
-            .filter(|p| p.health == Health::Degraded)
-            .count();
-        let error = self
-            .primals
-            .iter()
-            .filter(|p| p.health == Health::Offline)
-            .count();
+        let (total, healthy, degraded, error) = Self::compute_primal_stats(&self.primals);
 
         ui.horizontal(|ui| {
             ui.label(format!("Total: {total}"));
@@ -240,13 +244,8 @@ impl PrimalPanel {
                         ui.label(RichText::new(&primal.name).strong().size(16.0));
 
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            // Health indicator
-                            let (color, text) = match primal.health {
-                                Health::Healthy => (Color32::GREEN, "● Healthy"),
-                                Health::Degraded => (Color32::YELLOW, "● Degraded"),
-                                Health::Offline => (Color32::RED, "● Offline"),
-                            };
-                            ui.colored_label(color, text);
+                            let (text, rgb) = health_display_data(&primal.health);
+                            ui.colored_label(Color32::from_rgb(rgb[0], rgb[1], rgb[2]), text);
                         });
                     });
 
@@ -257,13 +256,7 @@ impl PrimalPanel {
                         // Load bar
                         ui.label("Load:");
                         let load = primal.load;
-                        let bar_color = if load > 0.9 {
-                            Color32::RED
-                        } else if load > 0.7 {
-                            Color32::YELLOW
-                        } else {
-                            Color32::GREEN
-                        };
+                        let bar_color = Self::load_bar_color(load);
 
                         ui.add(
                             egui::ProgressBar::new(load as f32)
@@ -349,7 +342,30 @@ impl PrimalPanel {
         ui.add_space(4.0);
     }
 
-    /// Get filtered primals based on current filter and search
+    #[must_use]
+    pub fn load_bar_color(load: f64) -> Color32 {
+        let rgb = load_bar_color_rgb(load);
+        Color32::from_rgb(rgb[0], rgb[1], rgb[2])
+    }
+
+    #[must_use]
+    pub fn compute_primal_stats(primals: &[Primal]) -> (usize, usize, usize, usize) {
+        let total = primals.len();
+        let healthy = primals
+            .iter()
+            .filter(|p| p.health == Health::Healthy)
+            .count();
+        let degraded = primals
+            .iter()
+            .filter(|p| p.health == Health::Degraded)
+            .count();
+        let error = primals
+            .iter()
+            .filter(|p| p.health == Health::Offline)
+            .count();
+        (total, healthy, degraded, error)
+    }
+
     fn filtered_primals(&self) -> Vec<&Primal> {
         self.primals
             .iter()
@@ -392,6 +408,7 @@ impl PrimalPanel {
 mod tests {
     use super::*;
     use crate::biomeos_integration::Health;
+    use egui::Color32;
 
     #[tokio::test]
     async fn test_primal_panel_creation() {
@@ -704,6 +721,93 @@ mod tests {
 
         assert_eq!(panel.primals.len(), 1);
         assert_eq!(panel.primals[0].name, "New Primal");
+    }
+
+    #[tokio::test]
+    async fn test_compute_primal_stats() {
+        let primals = vec![
+            Primal {
+                id: "h1".to_string(),
+                name: "H1".to_string(),
+                health: Health::Healthy,
+                capabilities: vec![],
+                load: 0.0,
+                assigned_devices: vec![],
+                metadata: serde_json::json!({}),
+            },
+            Primal {
+                id: "h2".to_string(),
+                name: "H2".to_string(),
+                health: Health::Healthy,
+                capabilities: vec![],
+                load: 0.0,
+                assigned_devices: vec![],
+                metadata: serde_json::json!({}),
+            },
+            Primal {
+                id: "d1".to_string(),
+                name: "D1".to_string(),
+                health: Health::Degraded,
+                capabilities: vec![],
+                load: 0.0,
+                assigned_devices: vec![],
+                metadata: serde_json::json!({}),
+            },
+            Primal {
+                id: "o1".to_string(),
+                name: "O1".to_string(),
+                health: Health::Offline,
+                capabilities: vec![],
+                load: 0.0,
+                assigned_devices: vec![],
+                metadata: serde_json::json!({}),
+            },
+        ];
+        let (total, healthy, degraded, error) = PrimalPanel::compute_primal_stats(&primals);
+        assert_eq!(total, 4);
+        assert_eq!(healthy, 2);
+        assert_eq!(degraded, 1);
+        assert_eq!(error, 1);
+    }
+
+    #[tokio::test]
+    async fn test_compute_primal_stats_empty() {
+        let (total, healthy, degraded, error) = PrimalPanel::compute_primal_stats(&[]);
+        assert_eq!(total, 0);
+        assert_eq!(healthy, 0);
+        assert_eq!(degraded, 0);
+        assert_eq!(error, 0);
+    }
+
+    #[test]
+    fn test_load_bar_color() {
+        assert_eq!(PrimalPanel::load_bar_color(0.0), Color32::GREEN);
+        assert_eq!(PrimalPanel::load_bar_color(0.5), Color32::GREEN);
+        assert_eq!(PrimalPanel::load_bar_color(0.7), Color32::GREEN);
+        assert_eq!(PrimalPanel::load_bar_color(0.71), Color32::YELLOW);
+        assert_eq!(PrimalPanel::load_bar_color(0.9), Color32::YELLOW);
+        assert_eq!(PrimalPanel::load_bar_color(0.91), Color32::RED);
+        assert_eq!(PrimalPanel::load_bar_color(1.0), Color32::RED);
+    }
+
+    #[test]
+    fn test_load_bar_color_rgb() {
+        assert_eq!(load_bar_color_rgb(0.0), [0, 255, 0]);
+        assert_eq!(load_bar_color_rgb(0.71), [255, 255, 0]);
+        assert_eq!(load_bar_color_rgb(0.91), [255, 0, 0]);
+    }
+
+    #[test]
+    fn test_health_display_data() {
+        let (text, rgb) = health_display_data(&Health::Healthy);
+        assert_eq!(text, "● Healthy");
+        assert_eq!(rgb, [0, 255, 0]);
+        let (text, rgb) = health_display_data(&Health::Degraded);
+        assert_eq!(text, "● Degraded");
+        assert_eq!(rgb, [255, 255, 0]);
+        let (text, rgb) = health_display_data(&Health::Offline);
+        assert_eq!(text, "● Offline");
+        assert_eq!(rgb, [255, 0, 0]);
     }
 
     #[tokio::test]

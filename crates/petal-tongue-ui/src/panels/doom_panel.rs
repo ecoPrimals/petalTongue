@@ -252,3 +252,36 @@ impl Default for DoomPanel {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_doom_panel_new() {
+        let panel = DoomPanel::new();
+        assert!(panel.doom.is_none());
+        assert!(panel.texture.is_none());
+        assert!(panel.show_debug);
+        assert_eq!(panel.frame_count, 0);
+        assert_eq!(panel.fps, 0.0);
+        assert!(panel.prev_keys_down.is_empty());
+    }
+
+    #[test]
+    fn test_doom_panel_default() {
+        let panel = DoomPanel::default();
+        assert!(panel.doom.is_none());
+        assert!(panel.show_debug);
+    }
+
+    #[test]
+    fn test_doom_panel_toggle_debug() {
+        let mut panel = DoomPanel::new();
+        assert!(panel.show_debug);
+        panel.toggle_debug();
+        assert!(!panel.show_debug);
+        panel.toggle_debug();
+        assert!(panel.show_debug);
+    }
+}

@@ -108,14 +108,20 @@ impl TelemetryCollector {
             } => {
                 metrics.total_api_calls += 1;
 
-                #[expect(clippy::cast_precision_loss, reason = "f64 mantissa covers u64 counts for running-average math")]
+                #[expect(
+                    clippy::cast_precision_loss,
+                    reason = "f64 mantissa covers u64 counts for running-average math"
+                )]
                 let total = metrics.total_api_calls as f64;
                 let prev_avg = metrics.avg_latency_ms;
                 metrics.avg_latency_ms = (prev_avg * (total - 1.0) + latency_ms) / total;
 
                 if let Some(pm) = metrics.primal_metrics.get_mut(from) {
                     pm.calls_made += 1;
-                    #[expect(clippy::cast_precision_loss, reason = "f64 mantissa covers u64 counts for per-primal averages")]
+                    #[expect(
+                        clippy::cast_precision_loss,
+                        reason = "f64 mantissa covers u64 counts for per-primal averages"
+                    )]
                     let pm_total = pm.calls_made as f64;
                     pm.avg_latency_ms =
                         (pm.avg_latency_ms * (pm_total - 1.0) + latency_ms) / pm_total;

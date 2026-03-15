@@ -846,4 +846,69 @@ mod tests {
     fn spectrum_lengths_single_point() {
         assert!(validate_spectrum_lengths(1, 1));
     }
+
+    #[test]
+    fn scatter3d_bands_x_y_preserved() {
+        let x = vec![10.0, 20.0];
+        let y = vec![30.0, 40.0];
+        let z = vec![0.0, 1.0];
+        let bands = scatter3d_bands(&x, &y, &z, 2).expect("valid");
+        assert_eq!(bands[0].len(), 1);
+        assert_eq!(bands[0][0], [10.0, 30.0]);
+        assert_eq!(bands[1].len(), 1);
+        assert_eq!(bands[1][0], [20.0, 40.0]);
+    }
+
+    #[test]
+    fn scatter3d_bands_nan_z_excluded() {
+        let x = vec![1.0];
+        let y = vec![2.0];
+        let z = vec![f64::NAN];
+        let result = scatter3d_bands(&x, &y, &z, 4);
+        assert!(result.is_some());
+        let bands = result.unwrap();
+        let total: usize = bands.iter().map(Vec::len).sum();
+        assert_eq!(total, 0);
+    }
+
+    #[test]
+    fn normalize_value_nan_input_clamps() {
+        let t = normalize_value(f64::NAN, 0.0, 10.0);
+        assert!(t.is_nan() || (0.0..=1.0).contains(&t));
+    }
+
+    #[test]
+    fn value_range_very_small() {
+        let values = vec![1.0e-100, 2.0e-100];
+        let (vmin, vmax, range) = value_range(&values).expect("finite range");
+        assert!((vmin - 1.0e-100).abs() < 1e-110);
+        assert!((vmax - 2.0e-100).abs() < 1e-110);
+        assert!(range > 0.0);
+    }
+
+    #[test]
+    fn scatter3d_bands_all_in_one_band() {
+        let x = vec![1.0, 2.0, 3.0];
+        let y = vec![1.0, 2.0, 3.0];
+        let z = vec![0.5, 0.5, 0.5];
+        let bands = scatter3d_bands(&x, &y, &z, 4).expect("valid");
+        let total: usize = bands.iter().map(Vec::len).sum();
+        assert_eq!(total, 3);
+    }
+
+    #[test]
+    fn validate_heatmap_single_cell() {
+        assert!(validate_heatmap_dimensions(1, 1, 1));
+    }
+
+    #[test]
+    fn validate_spectrum_empty_freq() {
+        assert!(!validate_spectrum_lengths(0, 10));
+    }
+
+    #[test]
+    fn normalize_value_infinity_clamps() {
+        let t = normalize_value(f64::INFINITY, 0.0, 10.0);
+        assert!(t >= 1.0_f32 - f32::EPSILON);
+    }
 }

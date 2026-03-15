@@ -368,6 +368,69 @@ mod tests {
     }
 
     #[test]
+    fn test_cli_parse_tui_default_refresh_rate() {
+        let cli = Cli::parse_from(["petaltongue", "tui"]);
+        let Commands::Tui { refresh_rate, .. } = cli.command else {
+            unreachable!("CLI parsed 'tui' subcommand")
+        };
+        assert_eq!(refresh_rate, 60);
+    }
+
+    #[test]
+    fn test_cli_parse_tui_with_scenario() {
+        let cli = Cli::parse_from(["petaltongue", "tui", "--scenario", "demo.json"]);
+        let Commands::Tui { scenario, .. } = cli.command else {
+            unreachable!("CLI parsed 'tui' subcommand")
+        };
+        assert_eq!(scenario.as_deref(), Some("demo.json"));
+    }
+
+    #[test]
+    fn test_cli_parse_status_default_verbose() {
+        let cli = Cli::parse_from(["petaltongue", "status"]);
+        let Commands::Status { verbose, .. } = cli.command else {
+            unreachable!("CLI parsed 'status' subcommand")
+        };
+        assert!(!verbose);
+    }
+
+    #[test]
+    fn test_cli_parse_status_verbose() {
+        let cli = Cli::parse_from(["petaltongue", "status", "--verbose"]);
+        let Commands::Status { verbose, .. } = cli.command else {
+            unreachable!("CLI parsed 'status' subcommand")
+        };
+        assert!(verbose);
+    }
+
+    #[test]
+    fn test_cli_parse_status_text_format() {
+        let cli = Cli::parse_from(["petaltongue", "status", "--format", "text"]);
+        let Commands::Status { format, .. } = cli.command else {
+            unreachable!("CLI parsed 'status' subcommand")
+        };
+        assert_eq!(format, "text");
+    }
+
+    #[test]
+    fn test_cli_log_level_trace() {
+        let cli = Cli::parse_from(["petaltongue", "--log-level", "trace", "status"]);
+        assert_eq!(cli.log_level, "trace");
+    }
+
+    #[test]
+    fn test_cli_log_level_warn() {
+        let cli = Cli::parse_from(["petaltongue", "--log-level", "warn", "status"]);
+        assert_eq!(cli.log_level, "warn");
+    }
+
+    #[test]
+    fn test_cli_log_format_json() {
+        let cli = Cli::parse_from(["petaltongue", "--log-format", "json", "status"]);
+        assert_eq!(cli.log_format, "json");
+    }
+
+    #[test]
     fn test_cli_parse_web_with_bind() {
         let cli = Cli::parse_from(["petaltongue", "web", "--bind", "127.0.0.1:9090"]);
         let Commands::Web { bind, workers, .. } = cli.command else {

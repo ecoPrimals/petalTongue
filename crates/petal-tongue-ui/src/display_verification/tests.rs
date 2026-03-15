@@ -203,3 +203,78 @@ fn test_suggested_action_for_prolonged_idle() {
     let action = action.expect("some");
     assert!(action.contains("5+ minutes"));
 }
+
+#[test]
+fn test_suggested_action_boundary() {
+    assert!(suggested_action_for_prolonged_idle(299.9).is_none());
+    assert!(suggested_action_for_prolonged_idle(300.1).is_some());
+}
+
+#[test]
+fn test_topology_description_nested() {
+    assert_eq!(
+        topology_description(&DisplayTopology::Nested),
+        "Nested display"
+    );
+}
+
+#[test]
+fn test_format_active_interaction_status_all_variants() {
+    let s = format_active_interaction_status(&DisplayTopology::Nested);
+    assert!(s.contains("Nested"));
+    assert!(s.contains("user interaction proves visibility"));
+
+    let s = format_active_interaction_status(&DisplayTopology::Virtual);
+    assert!(s.contains("Virtual"));
+    assert!(s.contains("unusual but confirmed"));
+
+    let s = format_active_interaction_status(&DisplayTopology::Unknown);
+    assert!(s.contains("unknown"));
+    assert!(s.contains("user interaction confirms visibility"));
+}
+
+#[test]
+fn test_format_recent_interaction_status_variants() {
+    let s = format_recent_interaction_status(&DisplayTopology::Forwarded, 10.0);
+    assert!(s.contains("Forwarded display"));
+    assert!(s.contains("10"));
+    assert!(s.contains("recent interaction"));
+
+    let s = format_recent_interaction_status(&DisplayTopology::Virtual, 25.5);
+    assert!(s.contains("Virtual display"));
+    assert!(s.contains("26"));
+}
+
+#[test]
+fn test_interactivity_state_boundaries() {
+    assert_eq!(
+        interactivity_state_from_seconds(5.0),
+        InteractivityState::Recent
+    );
+    assert_eq!(
+        interactivity_state_from_seconds(30.0),
+        InteractivityState::Idle
+    );
+    assert_eq!(
+        interactivity_state_from_seconds(300.0),
+        InteractivityState::Unconfirmed
+    );
+    assert_eq!(
+        interactivity_state_from_seconds(0.0),
+        InteractivityState::Active
+    );
+}
+
+#[test]
+fn test_display_verification_probable_status() {
+    let evidence = vec!["test".to_string()];
+    let v = DisplayVerification::probable(DisplayTopology::Virtual, evidence);
+    assert!(v.status_message.contains("uncertain"));
+}
+
+#[test]
+fn test_display_verification_failed_suggested_action() {
+    let v = DisplayVerification::failed("reason");
+    assert!(v.suggested_action.is_some());
+    assert!(v.suggested_action.unwrap().contains("DISPLAY"));
+}

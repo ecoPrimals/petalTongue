@@ -4,6 +4,43 @@
 //! UI for saving, loading, and executing graphs via Neural API.
 
 use crate::accessibility::ColorPalette;
+
+#[must_use]
+fn is_graph_selected(selected_id: &Option<String>, graph_id: &str) -> bool {
+    selected_id.as_deref() == Some(graph_id)
+}
+
+#[must_use]
+fn save_description_opt(description: &str) -> Option<String> {
+    if description.is_empty() {
+        None
+    } else {
+        Some(description.to_string())
+    }
+}
+
+#[must_use]
+fn format_graph_stats(node_count: usize, edge_count: usize) -> (String, String) {
+    (
+        format!("📊 {node_count} nodes"),
+        format!("🔗 {edge_count} edges"),
+    )
+}
+
+#[must_use]
+fn format_modified_at(modified_at: &str) -> String {
+    format!("Modified: {modified_at}")
+}
+
+#[must_use]
+fn format_execution_status(status: &str) -> String {
+    format!("Execution: {status}")
+}
+
+#[must_use]
+fn format_error_display(error: &str) -> String {
+    format!("❌ Error: {error}")
+}
 use egui::{Color32, RichText, Ui};
 use petal_tongue_core::graph_builder::VisualGraph;
 use petal_tongue_discovery::{GraphMetadata, NeuralApiProvider, NeuralGraphClient};
@@ -120,11 +157,7 @@ impl GraphManagerPanel {
                             if ui.button("✅ Save").clicked() {
                                 action = Some(GraphManagerAction::Save {
                                     name: self.save_name.clone(),
-                                    description: if self.save_description.is_empty() {
-                                        None
-                                    } else {
-                                        Some(self.save_description.clone())
-                                    },
+                                    description: save_description_opt(&self.save_description),
                                 });
                                 self.show_save_dialog = false;
                             }
@@ -152,7 +185,7 @@ impl GraphManagerPanel {
                         for graph_meta in &self.available_graphs {
                             ui.group(|ui| {
                                 let is_selected =
-                                    self.selected_graph_id.as_ref() == Some(&graph_meta.id);
+                                    is_graph_selected(&self.selected_graph_id, &graph_meta.id);
 
                                 let _bg_color = if is_selected {
                                     palette.accent.linear_multiply(0.2)
@@ -177,13 +210,17 @@ impl GraphManagerPanel {
                                     );
                                 }
 
+                                let (nodes_str, edges_str) = format_graph_stats(
+                                    graph_meta.node_count,
+                                    graph_meta.edge_count,
+                                );
                                 ui.horizontal(|ui| {
-                                    ui.label(format!("📊 {} nodes", graph_meta.node_count));
-                                    ui.label(format!("🔗 {} edges", graph_meta.edge_count));
+                                    ui.label(&nodes_str);
+                                    ui.label(&edges_str);
                                 });
 
                                 ui.label(
-                                    RichText::new(format!("Modified: {}", graph_meta.modified_at))
+                                    RichText::new(format_modified_at(&graph_meta.modified_at))
                                         .size(10.0)
                                         .color(palette.text_dim),
                                 );
@@ -216,7 +253,7 @@ impl GraphManagerPanel {
                 ui.add_space(12.0);
                 ui.separator();
                 ui.label(
-                    RichText::new(format!("Execution: {status}"))
+                    RichText::new(format_execution_status(status))
                         .color(Color32::from_rgb(40, 180, 40)),
                 );
             }
@@ -224,7 +261,7 @@ impl GraphManagerPanel {
             // Error message
             if let Some(error) = &self.error_message {
                 ui.add_space(12.0);
-                ui.colored_label(Color32::from_rgb(208, 2, 27), format!("❌ Error: {error}"));
+                ui.colored_label(Color32::from_rgb(208, 2, 27), format_error_display(error));
             }
         } else {
             ui.label(RichText::new("⚠️ Neural API not available").color(palette.text_dim));
@@ -487,5 +524,108 @@ mod tests {
             });
         }
         assert_eq!(panel.available_graphs.len(), 5);
+    }
+
+    #[test]
+    fn test_graph_manager_action_clone() {
+        let save = GraphManagerAction::Save {
+            name: "x".to_string(),
+            description: Some("y".to_string()),
+        };
+        let cloned = save.clone();
+        match (&save, &cloned) {
+            (
+                GraphManagerAction::Save { name: a, .. },
+                GraphManagerAction::Save { name: b, .. },
+            ) => assert_eq!(a, b),
+            _ => panic!(),
+        }
+
+        let load = GraphManagerAction::Load("id".to_string());
+        let _ = load.clone();
+
+        let _ = GraphManagerAction::Execute.clone();
+        let del = GraphManagerAction::Delete("d".to_string());
+        let _ = del.clone();
+    }
+
+    #[test]
+    fn test_graph_manager_action_debug() {
+        let s = format!("{:?}", GraphManagerAction::Execute);
+        assert!(s.contains("Execute"));
+
+        let s = format!("{:?}", GraphManagerAction::Load("x".to_string()));
+        assert!(s.contains("Load"));
+        assert!(s.contains("x"));
+    }
+
+    #[test]
+    fn test_panel_initial_state() {
+        let panel = GraphManagerPanel::new();
+        assert!(panel.last_refresh.is_none());
+        assert!(panel.execution_status.is_none());
+        assert!(panel.error_message.is_none());
+        assert!(!panel.show_save_dialog);
+    }
+
+    #[test]
+    fn test_is_graph_selected() {
+        assert!(is_graph_selected(&Some("a".to_string()), "a"));
+        assert!(!is_graph_selected(&Some("a".to_string()), "b"));
+        assert!(!is_graph_selected(&None, "a"));
+    }
+
+    #[test]
+    fn test_save_description_opt() {
+        assert_eq!(save_description_opt(""), None);
+        assert_eq!(save_description_opt("desc"), Some("desc".to_string()));
+    }
+
+    #[test]
+    fn test_format_graph_stats() {
+        let (n, e) = format_graph_stats(5, 3);
+        assert_eq!(n, "📊 5 nodes");
+        assert_eq!(e, "🔗 3 edges");
+    }
+
+    #[test]
+    fn test_format_modified_at() {
+        assert_eq!(format_modified_at("2026-01-01"), "Modified: 2026-01-01");
+    }
+
+    #[test]
+    fn test_format_execution_status() {
+        assert!(format_execution_status("Running").contains("Execution:"));
+    }
+
+    #[test]
+    fn test_format_error_display() {
+        assert!(format_error_display("fail").contains("Error:"));
+    }
+
+    #[test]
+    fn test_remove_graph_does_not_clear_other_selection() {
+        let mut panel = GraphManagerPanel::new();
+        panel.add_graph(GraphMetadata {
+            id: "g1".to_string(),
+            name: "G1".to_string(),
+            description: None,
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+            modified_at: "2026-01-01T01:00:00Z".to_string(),
+            node_count: 1,
+            edge_count: 0,
+        });
+        panel.add_graph(GraphMetadata {
+            id: "g2".to_string(),
+            name: "G2".to_string(),
+            description: None,
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+            modified_at: "2026-01-01T01:00:00Z".to_string(),
+            node_count: 2,
+            edge_count: 1,
+        });
+        panel.selected_graph_id = Some("g2".to_string());
+        panel.remove_graph("g1");
+        assert_eq!(panel.selected_graph_id.as_deref(), Some("g2"));
     }
 }

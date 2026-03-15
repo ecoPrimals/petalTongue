@@ -9,13 +9,15 @@
 
 use chrono::{DateTime, Utc};
 use egui::{Pos2, Rect, Stroke, Vec2};
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 
 use super::filtering::{filtered_events, get_primals};
-use super::helpers::{format_events_csv, prepare_event_detail, time_to_x, zoom_in, zoom_out};
+use super::helpers::{
+    build_primal_lanes, compute_lane_height, event_screen_rect, format_events_csv,
+    prepare_event_detail, time_to_x, zoom_in, zoom_out,
+};
 use super::types::{TimelineEvent, TimelineIntent};
 
 /// Timeline View - Sequence diagram of primal interactions
@@ -91,6 +93,13 @@ impl TimelineView {
             &self.time_range_start,
             &self.time_range_end,
         )
+    }
+
+    #[cfg(test)]
+    #[doc(hidden)]
+    #[must_use]
+    pub fn filtered_events_for_test(&self) -> Vec<&TimelineEvent> {
+        self.filtered_events()
     }
 
     fn get_primals(&self) -> Vec<String> {
@@ -241,14 +250,9 @@ impl TimelineView {
         }
 
         let primal_count = primals.len();
-        let lane_height = rect.height() / (primal_count as f32 + 1.0);
+        let lane_height = compute_lane_height(rect.height(), primal_count);
         let time_width = rect.width() - 100.0;
-
-        let primal_lanes: HashMap<_, _> = primals
-            .iter()
-            .enumerate()
-            .map(|(i, p)| (p.clone(), i))
-            .collect();
+        let primal_lanes = build_primal_lanes(&self.events);
 
         for (idx, primal) in primals.iter().enumerate() {
             let y = rect.min.y + lane_height * (idx as f32 + 1.0);
@@ -276,6 +280,7 @@ impl TimelineView {
 
         let start_ms = min_time.timestamp_millis() as f64;
         let end_ms = max_time.timestamp_millis() as f64;
+        let rect_min = (rect.min.x, rect.min.y);
 
         for event in filtered_events {
             if let (Some(from_lane), Some(to_lane)) =
@@ -294,12 +299,22 @@ impl TimelineView {
                 painter.circle_filled(from_pos, 4.0, event.status.color());
                 painter.circle_filled(to_pos, 4.0, event.status.color());
 
-                let click_rect = Rect::from_center_size(from_pos, Vec2::splat(10.0));
-                if response.clicked()
-                    && let Some(pointer_pos) = response.interact_pointer_pos()
-                    && click_rect.contains(pointer_pos)
-                {
-                    intents.push(TimelineIntent::SelectEvent(event.id.clone()));
+                if let Some((ex, ey, ew, eh)) = event_screen_rect(
+                    event,
+                    start_ms,
+                    end_ms,
+                    rect_min,
+                    time_width,
+                    lane_height,
+                    &primal_lanes,
+                ) {
+                    let event_rect = Rect::from_min_size(Pos2::new(ex, ey), Vec2::new(ew, eh));
+                    if response.clicked()
+                        && let Some(pointer_pos) = response.interact_pointer_pos()
+                        && event_rect.contains(pointer_pos)
+                    {
+                        intents.push(TimelineIntent::SelectEvent(event.id.clone()));
+                    }
                 }
             }
         }
@@ -399,5 +414,22 @@ impl TimelineView {
         let mut f = File::create(path)?;
         write!(f, "{}", format_events_csv(events))?;
         Ok(())
+    }
+
+    #[cfg(test)]
+    #[doc(hidden)]
+    #[must_use]
+    pub fn export_csv_path_for_test(&self) -> PathBuf {
+        self.export_csv_path()
+    }
+
+    #[cfg(test)]
+    #[doc(hidden)]
+    pub fn write_events_csv_for_test(
+        &self,
+        path: &PathBuf,
+        events: Vec<&TimelineEvent>,
+    ) -> std::io::Result<()> {
+        self.write_events_csv(path, events)
     }
 }

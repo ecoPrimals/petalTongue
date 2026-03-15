@@ -31,6 +31,30 @@ pub fn can_deploy(validation: &ValidationResult) -> bool {
     validation == &ValidationResult::Valid
 }
 
+#[must_use]
+pub const fn slot_placeholder_text(required: bool) -> &'static str {
+    if required {
+        "Drop primal here (required)"
+    } else {
+        "Drop primal here (optional)"
+    }
+}
+
+#[must_use]
+pub fn slot_drop_hover_text(capability: &str) -> String {
+    format!("Drop primal here to assign to {capability} capability")
+}
+
+#[must_use]
+pub const fn deploy_hint_message() -> &'static str {
+    "Complete all required assignments to deploy"
+}
+
+#[must_use]
+pub fn format_conflict_items(conflicts: &[String]) -> Vec<String> {
+    conflicts.iter().map(|c| format!("  • {c}")).collect()
+}
+
 impl NicheDesigner {
     /// Render the niche designer
     pub fn ui(&mut self, ui: &mut Ui) {
@@ -133,11 +157,12 @@ impl NicheDesigner {
                             self.unassign_primal(capability);
                         }
                     } else {
-                        let text = if required {
-                            RichText::new("Drop primal here (required)").color(Color32::RED)
-                        } else {
-                            RichText::new("Drop primal here (optional)").color(Color32::GRAY)
-                        };
+                        let text =
+                            RichText::new(slot_placeholder_text(required)).color(if required {
+                                Color32::RED
+                            } else {
+                                Color32::GRAY
+                            });
                         ui.label(text);
                     }
                 });
@@ -156,9 +181,7 @@ impl NicheDesigner {
             ui.painter()
                 .rect_stroke(highlight_rect, 4.0, (2.0, Color32::LIGHT_BLUE));
 
-            slot_response.on_hover_text(format!(
-                "Drop primal here to assign to {capability} capability"
-            ));
+            slot_response.on_hover_text(slot_drop_hover_text(capability));
 
             // Handle drop
             if !ui.input(|i| i.pointer.is_decidedly_dragging()) {
@@ -189,8 +212,8 @@ impl NicheDesigner {
                 ui.colored_label(color, format!("{icon} {text}"));
 
                 if let ValidationResult::Conflicts(conflicts) = &self.validation {
-                    for conflict in conflicts {
-                        ui.label(format!("  • {conflict}"));
+                    for line in format_conflict_items(conflicts) {
+                        ui.label(line);
                     }
                 }
             });
@@ -219,7 +242,7 @@ impl NicheDesigner {
         }
 
         if !deploy_allowed {
-            ui.colored_label(Color32::GRAY, "Complete all required assignments to deploy");
+            ui.colored_label(Color32::GRAY, deploy_hint_message());
         }
     }
 }
@@ -285,5 +308,48 @@ mod tests {
         assert!(!can_deploy(&ValidationResult::Conflicts(vec![
             "c".to_string()
         ])));
+    }
+
+    #[test]
+    fn validation_display_info_missing_empty() {
+        let (icon, text, rgb) =
+            validation_display_info(&ValidationResult::MissingRequirements(vec![]));
+        assert_eq!(icon, "✖");
+        assert!(text.contains("Missing required capabilities"));
+        assert_eq!(rgb, [255, 0, 0]);
+    }
+
+    #[test]
+    fn slot_placeholder_text_required() {
+        assert_eq!(slot_placeholder_text(true), "Drop primal here (required)");
+    }
+
+    #[test]
+    fn slot_placeholder_text_optional() {
+        assert_eq!(slot_placeholder_text(false), "Drop primal here (optional)");
+    }
+
+    #[test]
+    fn slot_drop_hover_text_format() {
+        assert!(slot_drop_hover_text("auth").contains("auth"));
+    }
+
+    #[test]
+    fn format_conflict_items_output() {
+        let items = format_conflict_items(&["c1".to_string(), "c2".to_string()]);
+        assert_eq!(items.len(), 2);
+        assert!(items[0].contains("c1"));
+        assert!(items[1].contains("c2"));
+    }
+
+    #[test]
+    fn validation_display_info_conflicts_multiple() {
+        let (icon, text, rgb) = validation_display_info(&ValidationResult::Conflicts(vec![
+            "c1".to_string(),
+            "c2".to_string(),
+        ]));
+        assert_eq!(icon, "✖");
+        assert_eq!(text, "Conflicts detected:");
+        assert_eq!(rgb, [255, 0, 0]);
     }
 }

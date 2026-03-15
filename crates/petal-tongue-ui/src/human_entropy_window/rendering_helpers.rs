@@ -42,6 +42,24 @@ pub fn format_recording_duration(elapsed_secs: f64) -> String {
     format!("{elapsed_secs:.1}s")
 }
 
+#[must_use]
+pub fn quality_to_percent_display(quality: f64) -> String {
+    format!("{:.1}%", quality * 100.0)
+}
+
+#[must_use]
+pub fn stopped_state_message(quality: Option<f64>) -> String {
+    quality.map_or_else(
+        || "Capture complete!".to_string(),
+        |q| format!("Capture complete! Quality: {:.1}%", q * 100.0),
+    )
+}
+
+#[must_use]
+pub const fn modality_selector_enabled(modality_available: bool, can_start: bool) -> bool {
+    modality_available && can_start
+}
+
 /// Compute capture window display state from state, quality, and elapsed time.
 #[must_use]
 pub fn capture_state_display(
@@ -216,5 +234,37 @@ mod tests {
         assert!(stopped.can_discard);
         assert!(!processing.can_discard);
         assert!(!processing.can_start);
+    }
+
+    #[test]
+    fn quality_to_percent_display_values() {
+        assert_eq!(quality_to_percent_display(0.0), "0.0%");
+        assert_eq!(quality_to_percent_display(0.5), "50.0%");
+        assert_eq!(quality_to_percent_display(1.0), "100.0%");
+    }
+
+    #[test]
+    fn stopped_state_message_with_quality() {
+        assert!(stopped_state_message(Some(0.85)).contains("85.0%"));
+    }
+
+    #[test]
+    fn stopped_state_message_without_quality() {
+        assert_eq!(stopped_state_message(None), "Capture complete!");
+    }
+
+    #[test]
+    fn modality_selector_enabled_both() {
+        assert!(modality_selector_enabled(true, true));
+    }
+
+    #[test]
+    fn modality_selector_enabled_unavailable() {
+        assert!(!modality_selector_enabled(false, true));
+    }
+
+    #[test]
+    fn modality_selector_enabled_cannot_start() {
+        assert!(!modality_selector_enabled(true, false));
     }
 }

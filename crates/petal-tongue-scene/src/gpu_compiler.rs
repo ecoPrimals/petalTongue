@@ -444,6 +444,120 @@ mod tests {
     }
 
     #[test]
+    fn gpu_draw_command_circle_serialization() {
+        let cmd = GpuDrawCommand::Circle {
+            center: [100.0, 200.0],
+            radius: 5.0,
+            color: [1.0, 0.0, 0.0, 1.0],
+        };
+        let json = serde_json::to_string(&cmd).unwrap();
+        let restored: GpuDrawCommand = serde_json::from_str(&json).unwrap();
+        match restored {
+            GpuDrawCommand::Circle {
+                center,
+                radius,
+                color,
+            } => {
+                assert_eq!(center, [100.0, 200.0]);
+                assert!((radius - 5.0).abs() < f32::EPSILON);
+                assert_eq!(color, [1.0, 0.0, 0.0, 1.0]);
+            }
+            _ => panic!("expected Circle"),
+        }
+    }
+
+    #[test]
+    fn gpu_draw_command_polyline_serialization() {
+        let cmd = GpuDrawCommand::Polyline {
+            vertices: vec![[0.0, 0.0], [1.0, 1.0]],
+            color: [0.0, 1.0, 0.0, 1.0],
+            width: 2.0,
+            closed: false,
+        };
+        let json = serde_json::to_string(&cmd).unwrap();
+        let restored: GpuDrawCommand = serde_json::from_str(&json).unwrap();
+        match restored {
+            GpuDrawCommand::Polyline {
+                vertices,
+                color,
+                width,
+                closed,
+            } => {
+                assert_eq!(vertices.len(), 2);
+                assert_eq!(color, [0.0, 1.0, 0.0, 1.0]);
+                assert!((width - 2.0).abs() < f32::EPSILON);
+                assert!(!closed);
+            }
+            _ => panic!("expected Polyline"),
+        }
+    }
+
+    #[test]
+    fn gpu_draw_command_fill_rect_serialization() {
+        let cmd = GpuDrawCommand::FillRect {
+            min: [10.0, 20.0],
+            max: [110.0, 120.0],
+            color: [0.0, 0.0, 1.0, 0.5],
+            corner_radius: 4.0,
+        };
+        let json = serde_json::to_string(&cmd).unwrap();
+        let restored: GpuDrawCommand = serde_json::from_str(&json).unwrap();
+        match restored {
+            GpuDrawCommand::FillRect {
+                min,
+                max,
+                color,
+                corner_radius,
+            } => {
+                assert_eq!(min, [10.0, 20.0]);
+                assert_eq!(max, [110.0, 120.0]);
+                assert_eq!(color[3], 0.5);
+                assert!((corner_radius - 4.0).abs() < f32::EPSILON);
+            }
+            _ => panic!("expected FillRect"),
+        }
+    }
+
+    #[test]
+    fn gpu_draw_command_set_viewport_serialization() {
+        let cmd = GpuDrawCommand::SetViewport {
+            x: 0.0,
+            y: 0.0,
+            width: 800.0,
+            height: 600.0,
+        };
+        let json = serde_json::to_string(&cmd).unwrap();
+        assert!(json.contains("SetViewport"));
+        assert!(json.contains("800"));
+    }
+
+    #[test]
+    fn gpu_draw_command_clear_serialization() {
+        let cmd = GpuDrawCommand::Clear {
+            color: [0.1, 0.2, 0.3, 1.0],
+        };
+        let json = serde_json::to_string(&cmd).unwrap();
+        let restored: GpuDrawCommand = serde_json::from_str(&json).unwrap();
+        match restored {
+            GpuDrawCommand::Clear { color } => assert_eq!(color[0], 0.1),
+            _ => panic!("expected Clear"),
+        }
+    }
+
+    #[test]
+    fn gpu_provenance_map_is_empty_new() {
+        let map = GpuProvenanceMap::new();
+        assert!(map.is_empty());
+        assert_eq!(map.len(), 0);
+    }
+
+    #[test]
+    fn gpu_provenance_map_query_nonexistent() {
+        let map = GpuProvenanceMap::new();
+        assert!(map.query_command(0).is_none());
+    }
+
+    #[test]
     fn gpu_provenance_map_register_and_query() {
         let mut map = GpuProvenanceMap::new();
         assert!(map.is_empty());

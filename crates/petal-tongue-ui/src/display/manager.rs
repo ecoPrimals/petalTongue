@@ -277,10 +277,21 @@ impl DisplayManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::display::traits::BackendPriority;
+
+    #[test]
+    fn backend_priority_ordering() {
+        assert!(BackendPriority::Toadstool < BackendPriority::Software);
+        assert!(BackendPriority::Software < BackendPriority::Framebuffer);
+        assert!(BackendPriority::Framebuffer < BackendPriority::External);
+        assert_eq!(
+            BackendPriority::Toadstool.cmp(&BackendPriority::External),
+            std::cmp::Ordering::Less
+        );
+    }
 
     #[tokio::test]
     async fn test_display_manager_init() {
-        // This test will succeed if at least one backend is available
         let result = DisplayManager::init().await;
         match result {
             Ok(manager) => {
@@ -296,5 +307,22 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn test_backend_priority_sort_order() {
+        use std::cmp::Ordering;
+        assert_eq!(
+            BackendPriority::Toadstool.cmp(&BackendPriority::Software),
+            Ordering::Less
+        );
+        assert_eq!(
+            BackendPriority::External.cmp(&BackendPriority::Toadstool),
+            Ordering::Greater
+        );
+        assert_eq!(
+            BackendPriority::Software.cmp(&BackendPriority::Software),
+            Ordering::Equal
+        );
     }
 }

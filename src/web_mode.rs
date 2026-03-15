@@ -240,4 +240,73 @@ mod tests {
         let response = tower::ServiceExt::oneshot(app, req).await.unwrap();
         assert_eq!(response.status(), 200);
     }
+
+    #[tokio::test]
+    async fn test_run_invalid_bind_address() {
+        let data_service = Arc::new(DataService::new());
+        let result = run("not-a-valid-address", None, 4, data_service).await;
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("parse") || err_msg.contains("bind"));
+    }
+
+    #[tokio::test]
+    async fn test_run_empty_bind_address() {
+        let data_service = Arc::new(DataService::new());
+        let result = run("", None, 4, data_service).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_run_invalid_port() {
+        let data_service = Arc::new(DataService::new());
+        let result = run("127.0.0.1:999999", None, 4, data_service).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_primals_handler_snapshot_error() {
+        let data_service = Arc::new(DataService::new());
+        let graph = data_service.graph();
+        let _ = std::thread::spawn(move || {
+            let _guard = graph.write().unwrap();
+            panic!("intentional panic to poison lock");
+        })
+        .join();
+
+        let response = primals_handler(State(data_service)).await.into_response();
+        assert_eq!(response.status(), 200);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert!(json["error"].as_str().is_some());
+        assert!(json["primals"].as_array().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_snapshot_handler_snapshot_error() {
+        let data_service = Arc::new(DataService::new());
+        let graph = data_service.graph();
+        let _ = std::thread::spawn(move || {
+            let _guard = graph.write().unwrap();
+            panic!("intentional panic to poison lock");
+        })
+        .join();
+
+        let response = snapshot_handler(State(data_service)).await.into_response();
+        assert_eq!(response.status(), 200);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert!(json["error"].as_str().is_some());
+    }
+
+    #[tokio::test]
+    async fn test_index_handler_contains_doctype() {
+        let html = index_handler().await;
+        assert!(html.0.contains("<!DOCTYPE html>"));
+        assert!(html.0.contains("petalTongue"));
+    }
 }

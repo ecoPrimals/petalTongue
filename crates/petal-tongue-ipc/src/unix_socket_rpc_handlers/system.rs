@@ -9,7 +9,11 @@ use serde_json::{Value, json};
 /// Handle health.check: return status, version, uptime, and modalities
 #[must_use]
 pub fn handle_health_check(handlers: &RpcHandlers, request: JsonRpcRequest) -> JsonRpcResponse {
+    use petal_tongue_core::capability_taxonomy::CapabilityTaxonomy;
+
     let modalities = capability_detection::detect_active_modalities();
+    let modality_strs: Vec<&str> = modalities.iter().map(CapabilityTaxonomy::as_str).collect();
+    let display_available = modalities.contains(&CapabilityTaxonomy::UIVisualization);
 
     JsonRpcResponse::success(
         request.id,
@@ -17,8 +21,8 @@ pub fn handle_health_check(handlers: &RpcHandlers, request: JsonRpcRequest) -> J
             "status": "healthy",
             "version": env!("CARGO_PKG_VERSION"),
             "uptime_seconds": handlers.uptime_seconds(),
-            "display_available": modalities.contains(&"visual"),
-            "modalities_active": modalities,
+            "display_available": display_available,
+            "modalities_active": modality_strs,
         }),
     )
 }
@@ -29,12 +33,12 @@ pub fn handle_announce_capabilities(
     _handlers: &RpcHandlers,
     request: JsonRpcRequest,
 ) -> JsonRpcResponse {
-    let capabilities = capability_detection::detect_capabilities();
+    let capability_strs = capability_detection::detect_capability_strings();
 
     JsonRpcResponse::success(
         request.id,
         json!({
-            "capabilities": capabilities,
+            "capabilities": capability_strs,
         }),
     )
 }
@@ -213,7 +217,7 @@ mod tests {
             r["modalities_active"]
                 .as_array()
                 .unwrap()
-                .contains(&serde_json::json!("terminal"))
+                .contains(&serde_json::json!("ui.terminal"))
         );
     }
 
@@ -268,5 +272,48 @@ mod tests {
         let r = resp.result.unwrap();
         assert!(r["nodes"].is_array());
         assert!(r["edges"].is_array());
+    }
+
+    #[test]
+    fn handle_provider_register_full_params() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "provider.register_capability",
+            serde_json::json!({
+                "capability": "gpu.dispatch",
+                "socket_path": "/tmp/gpu.sock",
+                "provider_name": "barracuda",
+                "version": "0.3.3",
+                "methods": ["compute.dispatch", "health.check"]
+            }),
+            serde_json::json!(1),
+        );
+        let resp = handle_provider_register(&h, req);
+        assert!(resp.result.is_some());
+        let r = resp.result.unwrap();
+        assert_eq!(r["registered"], true);
+        assert_eq!(r["capability"], "gpu.dispatch");
+        assert_eq!(r["provider_name"], "barracuda");
+        assert_eq!(r["socket_path"], "/tmp/gpu.sock");
+        assert_eq!(r["version"], "0.3.3");
+        let methods = r["methods"].as_array().expect("methods");
+        assert_eq!(methods.len(), 2);
+    }
+
+    #[test]
+    fn handle_provider_register_missing_params_uses_defaults() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "provider.register_capability",
+            serde_json::json!({}),
+            serde_json::json!(1),
+        );
+        let resp = handle_provider_register(&h, req);
+        assert!(resp.result.is_some());
+        let r = resp.result.unwrap();
+        assert_eq!(r["capability"], "");
+        assert_eq!(r["provider_name"], "unknown");
+        assert_eq!(r["version"], "0.0.0");
+        assert!(r["methods"].as_array().unwrap().is_empty());
     }
 }

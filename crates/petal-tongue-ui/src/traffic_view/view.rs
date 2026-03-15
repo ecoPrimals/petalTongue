@@ -140,8 +140,13 @@ impl TrafficView {
         }
     }
 
-    /// Max volume across all current flows.
-    fn max_volume(&self) -> u64 {
+    #[cfg(test)]
+    #[must_use]
+    pub fn max_volume(&self) -> u64 {
+        self.max_volume_impl()
+    }
+
+    fn max_volume_impl(&self) -> u64 {
         self.flows
             .iter()
             .map(|f| f.metrics.bytes_per_second)
@@ -284,7 +289,7 @@ impl TrafficView {
             })
             .collect();
 
-        let max_vol = self.max_volume();
+        let max_vol = self.max_volume_impl();
 
         for flow in &self.flows {
             if let (Some((_from_left, from_right)), Some((to_left, _to_right))) = (
@@ -305,7 +310,15 @@ impl TrafficView {
                 let ctrl1 = Pos2::new(ctrl1_arr[0], ctrl1_arr[1]);
                 let ctrl2 = Pos2::new(ctrl2_arr[0], ctrl2_arr[1]);
 
-                Self::draw_bezier_flow(&painter, start, ctrl1, ctrl2, end, width, flow.color);
+                Self::draw_bezier_flow(
+                    &painter,
+                    start,
+                    ctrl1,
+                    ctrl2,
+                    end,
+                    width,
+                    Self::to_color32(flow.color),
+                );
 
                 let click_rect = Rect::from_center_size(
                     Pos2::new(f32::midpoint(start.x, end.x), f32::midpoint(start.y, end.y)),
@@ -333,6 +346,10 @@ impl TrafficView {
         }
 
         intents
+    }
+
+    fn to_color32(rgba: [u8; 4]) -> Color32 {
+        Color32::from_rgba_unmultiplied(rgba[0], rgba[1], rgba[2], rgba[3])
     }
 
     fn draw_bezier_flow(

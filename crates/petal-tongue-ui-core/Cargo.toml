@@ -13,7 +13,7 @@ authors.workspace = true
 
 [dependencies]
 # Core dependencies
-petal-tongue-core = { path = "../petal-tongue-core" }
+petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
 petal-tongue-graph = { path = "../petal-tongue-graph" }
 
 # Async runtime

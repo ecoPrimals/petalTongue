@@ -322,4 +322,59 @@ mod tests {
         assert!((max - 7.0).abs() < f32::EPSILON);
         assert!((range - 7.0).abs() < f32::EPSILON);
     }
+
+    #[test]
+    fn compute_chart_bounds_all_same_positive() {
+        let data = [5.0, 5.0, 5.0];
+        let (min, max, range) = compute_chart_bounds(&data);
+        assert!((min - 0.0).abs() < f32::EPSILON);
+        assert!((max - 5.0).abs() < f32::EPSILON);
+        assert!((range - 5.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn add_snapshot_history_length_capped() {
+        let mut p = GraphMetricsPlotter::default();
+        for i in 0..150 {
+            p.add_snapshot(i, i);
+        }
+        assert_eq!(p.status_message(), Some("N:149 E:149".to_string()));
+    }
+
+    #[test]
+    fn add_snapshot_exactly_max_history() {
+        let mut p = GraphMetricsPlotter::default();
+        for i in 0..100 {
+            p.add_snapshot(i, i * 2);
+        }
+        assert_eq!(p.status_message(), Some("N:99 E:198".to_string()));
+    }
+
+    #[test]
+    fn compute_chart_bounds_large_values() {
+        let data = [1e6_f32, 2e6_f32, 1.5e6_f32];
+        let (min, max, range) = compute_chart_bounds(&data);
+        assert!((min - 0.0).abs() < f32::EPSILON);
+        assert!((max - 2e6).abs() < 1.0);
+        assert!((range - 2e6).abs() < 1.0);
+    }
+
+    #[test]
+    fn metadata_capabilities_include_plotting() {
+        let p = GraphMetricsPlotter::default();
+        let meta = p.metadata();
+        let cap_names: Vec<String> = meta
+            .capabilities
+            .iter()
+            .filter_map(|c| {
+                if let ToolCapability::Custom(s) = c {
+                    Some(s.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+        assert!(cap_names.iter().any(|s| s == "Plotting"));
+        assert!(cap_names.iter().any(|s| s == "Metrics"));
+    }
 }

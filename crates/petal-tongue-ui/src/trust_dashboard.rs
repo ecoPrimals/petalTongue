@@ -27,7 +27,7 @@ pub struct TrustLevelRow {
     pub count: usize,
     pub percentage: f32,
     pub emoji: &'static str,
-    pub color: Color32,
+    pub color: [u8; 4],
 }
 
 /// Pre-computed display data for the average trust indicator.
@@ -35,7 +35,7 @@ pub struct TrustLevelRow {
 pub struct AverageTrustDisplay {
     pub value: f64,
     pub emoji: &'static str,
-    pub color: Color32,
+    pub color: [u8; 4],
     pub label: &'static str,
     pub sound_name: &'static str,
 }
@@ -82,15 +82,15 @@ pub fn trust_level_to_display_row(label: &str, count: usize, total: usize) -> Tr
 
 /// Determine emoji and color for a trust level label string.
 #[must_use]
-pub fn trust_level_style(label: &str) -> (&'static str, Color32) {
+pub fn trust_level_style(label: &str) -> (&'static str, [u8; 4]) {
     if label.contains("Full") || label.contains("(3)") {
-        ("🟢", Color32::from_rgb(76, 175, 80))
+        ("🟢", [76, 175, 80, 255])
     } else if label.contains("Elevated") || label.contains("(2)") {
-        ("🟠", Color32::from_rgb(255, 152, 0))
+        ("🟠", [255, 152, 0, 255])
     } else if label.contains("Limited") || label.contains("(1)") {
-        ("🟡", Color32::from_rgb(255, 235, 59))
+        ("🟡", [255, 235, 59, 255])
     } else {
-        ("⚫", Color32::from_rgb(158, 158, 158))
+        ("⚫", [158, 158, 158, 255])
     }
 }
 
@@ -98,21 +98,11 @@ pub fn trust_level_style(label: &str) -> (&'static str, Color32) {
 #[must_use]
 pub const fn average_trust_display(avg: f64) -> AverageTrustDisplay {
     let (emoji, color, label, sound_name) = match avg.round() as i32 {
-        0 => ("⚫", Color32::from_rgb(158, 158, 158), "None", "error"),
-        1 => ("🟡", Color32::from_rgb(255, 235, 59), "Limited", "warning"),
-        2 => (
-            "🟠",
-            Color32::from_rgb(255, 152, 0),
-            "Elevated",
-            "notification",
-        ),
-        3 => ("🟢", Color32::from_rgb(76, 175, 80), "Full", "success"),
-        _ => (
-            "❓",
-            Color32::from_rgb(158, 158, 158),
-            "Unknown",
-            "notification",
-        ),
+        0 => ("⚫", [158, 158, 158, 255], "None", "error"),
+        1 => ("🟡", [255, 235, 59, 255], "Limited", "warning"),
+        2 => ("🟠", [255, 152, 0, 255], "Elevated", "notification"),
+        3 => ("🟢", [76, 175, 80, 255], "Full", "success"),
+        _ => ("❓", [158, 158, 158, 255], "Unknown", "notification"),
     };
     AverageTrustDisplay {
         value: avg,
@@ -151,6 +141,10 @@ fn trust_level_number_to_label(n: i32) -> String {
         3 => "Full (3)".to_string(),
         _ => format!("Unknown ({n})"),
     }
+}
+
+fn to_color32(rgba: [u8; 4]) -> Color32 {
+    Color32::from_rgba_unmultiplied(rgba[0], rgba[1], rgba[2], rgba[3])
 }
 
 // ============================================================================
@@ -330,7 +324,7 @@ impl TrustDashboard {
                 ui.label(
                     RichText::new(&row.label)
                         .size(12.0 * font_scale)
-                        .color(row.color),
+                        .color(to_color32(row.color)),
                 );
                 ui.label(
                     RichText::new(format!("{} ({:.0}%)", row.count, row.percentage))
@@ -355,7 +349,7 @@ impl TrustDashboard {
                 ui.label(
                     RichText::new(format!("{:.2}", avg.value))
                         .size(16.0 * font_scale)
-                        .color(avg.color)
+                        .color(to_color32(avg.color))
                         .strong(),
                 );
                 ui.label(
@@ -433,7 +427,7 @@ impl TrustDashboard {
                 ui.label(
                     RichText::new(format!("{:.1}", avg.value))
                         .size(12.0 * font_scale)
-                        .color(avg.color),
+                        .color(to_color32(avg.color)),
                 );
             } else {
                 ui.label(
@@ -495,7 +489,7 @@ mod tests {
     fn trust_level_to_display_row_full() {
         let row = trust_level_to_display_row("Full (3)", 5, 10);
         assert_eq!(row.emoji, "🟢");
-        assert_eq!(row.color, Color32::from_rgb(76, 175, 80));
+        assert_eq!(row.color, [76, 175, 80, 255]);
         assert!((row.percentage - 50.0).abs() < f32::EPSILON);
         assert_eq!(row.count, 5);
     }
@@ -504,7 +498,7 @@ mod tests {
     fn trust_level_to_display_row_elevated() {
         let row = trust_level_to_display_row("Elevated (2)", 3, 12);
         assert_eq!(row.emoji, "🟠");
-        assert_eq!(row.color, Color32::from_rgb(255, 152, 0));
+        assert_eq!(row.color, [255, 152, 0, 255]);
         assert!((row.percentage - 25.0).abs() < f32::EPSILON);
     }
 
@@ -512,7 +506,7 @@ mod tests {
     fn trust_level_to_display_row_limited() {
         let row = trust_level_to_display_row("Limited (1)", 2, 8);
         assert_eq!(row.emoji, "🟡");
-        assert_eq!(row.color, Color32::from_rgb(255, 235, 59));
+        assert_eq!(row.color, [255, 235, 59, 255]);
         assert!((row.percentage - 25.0).abs() < f32::EPSILON);
     }
 
@@ -520,7 +514,15 @@ mod tests {
     fn trust_level_to_display_row_none() {
         let row = trust_level_to_display_row("None (0)", 1, 4);
         assert_eq!(row.emoji, "⚫");
-        assert_eq!(row.color, Color32::from_rgb(158, 158, 158));
+        assert_eq!(row.color, [158, 158, 158, 255]);
+    }
+
+    #[test]
+    fn trust_level_to_display_row_unknown_label() {
+        let row = trust_level_to_display_row("Unknown (99)", 2, 10);
+        assert_eq!(row.emoji, "⚫");
+        assert_eq!(row.color, [158, 158, 158, 255]);
+        assert_eq!(row.label, "Unknown (99)");
     }
 
     #[test]
@@ -530,12 +532,19 @@ mod tests {
     }
 
     #[test]
+    fn trust_level_to_display_row_large_numbers() {
+        let row = trust_level_to_display_row("Full (3)", 1_000_000, 2_000_000);
+        assert_eq!(row.count, 1_000_000);
+        assert!((row.percentage - 50.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
     fn average_trust_display_full() {
         let d = average_trust_display(3.0);
         assert_eq!(d.emoji, "🟢");
         assert_eq!(d.label, "Full");
         assert_eq!(d.sound_name, "success");
-        assert_eq!(d.color, Color32::from_rgb(76, 175, 80));
+        assert_eq!(d.color, [76, 175, 80, 255]);
     }
 
     #[test]
@@ -578,6 +587,26 @@ mod tests {
     }
 
     #[test]
+    fn average_trust_display_negative() {
+        let d = average_trust_display(-1.0);
+        assert_eq!(d.emoji, "❓");
+        assert_eq!(d.label, "Unknown");
+    }
+
+    #[test]
+    fn average_trust_display_above_three() {
+        let d = average_trust_display(4.0);
+        assert_eq!(d.emoji, "❓");
+        assert_eq!(d.label, "Unknown");
+    }
+
+    #[test]
+    fn average_trust_display_rounds_1_5_to_elevated() {
+        let d = average_trust_display(1.5);
+        assert_eq!(d.label, "Elevated");
+    }
+
+    #[test]
     fn prepare_trust_display_empty() {
         let summary = TrustSummary::default();
         let ds = prepare_trust_display(&summary, 5);
@@ -585,6 +614,63 @@ mod tests {
         assert!(ds.rows.is_empty());
         assert!(ds.average.is_none());
         assert_eq!(ds.last_update_label, "Updated 5 seconds ago");
+    }
+
+    #[test]
+    fn prepare_trust_display_with_trust_properties() {
+        let mut dist = HashMap::new();
+        dist.insert("Full (3)".to_string(), 2);
+        dist.insert("Limited (1)".to_string(), 1);
+        let summary = TrustSummary {
+            trust_distribution: dist,
+            total_primals: 3,
+            family_count: 2,
+            unique_families: 1,
+            average_trust: Some(2.33),
+        };
+        let ds = prepare_trust_display(&summary, 10);
+        assert_eq!(ds.total_primals, 3);
+        assert_eq!(ds.rows.len(), 2);
+        assert!(ds.average.is_some());
+        assert_eq!(ds.average.as_ref().unwrap().label, "Elevated");
+    }
+
+    #[test]
+    fn prepare_trust_display_without_trust() {
+        let summary = TrustSummary {
+            trust_distribution: HashMap::new(),
+            total_primals: 5,
+            family_count: 3,
+            unique_families: 2,
+            average_trust: None,
+        };
+        let ds = prepare_trust_display(&summary, 0);
+        assert_eq!(ds.total_primals, 5);
+        assert!(ds.rows.is_empty());
+        assert!(ds.average.is_none());
+    }
+
+    #[test]
+    fn prepare_trust_display_mixed() {
+        let mut dist = HashMap::new();
+        dist.insert("Full (3)".to_string(), 1);
+        dist.insert("Elevated (2)".to_string(), 1);
+        dist.insert("Limited (1)".to_string(), 1);
+        dist.insert("None (0)".to_string(), 1);
+        dist.insert("Unknown (5)".to_string(), 1);
+        let summary = TrustSummary {
+            trust_distribution: dist,
+            total_primals: 5,
+            family_count: 4,
+            unique_families: 3,
+            average_trust: Some(1.6),
+        };
+        let ds = prepare_trust_display(&summary, 42);
+        assert_eq!(ds.total_primals, 5);
+        assert_eq!(ds.rows.len(), 5);
+        assert_eq!(ds.family_count, 4);
+        assert_eq!(ds.unique_families, 3);
+        assert_eq!(ds.last_update_label, "Updated 42 seconds ago");
     }
 
     #[test]
@@ -610,10 +696,37 @@ mod tests {
 
     #[test]
     fn trust_level_style_full_variants() {
-        let (emoji, _) = trust_level_style("Full (3)");
+        let (emoji, color) = trust_level_style("Full (3)");
         assert_eq!(emoji, "🟢");
-        let (emoji2, _) = trust_level_style("Something (3) else");
+        assert_eq!(color, [76, 175, 80, 255]);
+        let (emoji2, color2) = trust_level_style("Something (3) else");
         assert_eq!(emoji2, "🟢");
+        assert_eq!(color2, [76, 175, 80, 255]);
+    }
+
+    #[test]
+    fn trust_level_style_elevated_variants() {
+        let (emoji, color) = trust_level_style("Elevated (2)");
+        assert_eq!(emoji, "🟠");
+        assert_eq!(color, [255, 152, 0, 255]);
+        let (emoji2, _) = trust_level_style("(2)");
+        assert_eq!(emoji2, "🟠");
+    }
+
+    #[test]
+    fn trust_level_style_limited_variants() {
+        let (emoji, color) = trust_level_style("Limited (1)");
+        assert_eq!(emoji, "🟡");
+        assert_eq!(color, [255, 235, 59, 255]);
+        let (emoji2, _) = trust_level_style("(1)");
+        assert_eq!(emoji2, "🟡");
+    }
+
+    #[test]
+    fn trust_level_style_unknown() {
+        let (emoji, color) = trust_level_style("Custom");
+        assert_eq!(emoji, "⚫");
+        assert_eq!(color, [158, 158, 158, 255]);
     }
 
     // === Integration tests (tool-level) ===
@@ -834,5 +947,31 @@ mod tests {
         let dashboard = TrustDashboard::new();
         let ds = dashboard.display_state();
         assert_eq!(ds.total_primals, 0);
+    }
+
+    #[test]
+    fn trust_display_state_construction_and_field_access() {
+        let mut dist = HashMap::new();
+        dist.insert("Full (3)".to_string(), 2);
+        let summary = TrustSummary {
+            trust_distribution: dist,
+            total_primals: 2,
+            family_count: 1,
+            unique_families: 1,
+            average_trust: Some(3.0),
+        };
+        let ds = prepare_trust_display(&summary, 7);
+        assert_eq!(ds.total_primals, 2);
+        assert_eq!(ds.family_count, 1);
+        assert_eq!(ds.unique_families, 1);
+        assert_eq!(ds.last_update_label, "Updated 7 seconds ago");
+        assert_eq!(ds.rows.len(), 1);
+        assert_eq!(ds.rows[0].label, "Full (3)");
+        assert_eq!(ds.rows[0].count, 2);
+        assert_eq!(ds.rows[0].color, [76, 175, 80, 255]);
+        let avg = ds.average.as_ref().unwrap();
+        assert_eq!(avg.value, 3.0);
+        assert_eq!(avg.label, "Full");
+        assert_eq!(avg.color, [76, 175, 80, 255]);
     }
 }

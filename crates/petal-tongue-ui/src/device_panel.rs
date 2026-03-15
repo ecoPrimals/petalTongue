@@ -192,19 +192,31 @@ impl DevicePanel {
         });
     }
 
-    /// Render stats
-    fn render_stats(&self, ui: &mut Ui) {
-        let total = self.devices.len();
-        let online = self
-            .devices
+    #[must_use]
+    pub fn compute_device_stats(devices: &[Device]) -> (usize, usize, usize) {
+        let total = devices.len();
+        let online = devices
             .iter()
             .filter(|d| d.status == DeviceStatus::Online)
             .count();
-        let assigned = self
-            .devices
-            .iter()
-            .filter(|d| d.assigned_to.is_some())
-            .count();
+        let assigned = devices.iter().filter(|d| d.assigned_to.is_some()).count();
+        (total, online, assigned)
+    }
+
+    #[must_use]
+    pub fn usage_bar_color(usage: f64) -> Color32 {
+        if usage > 0.9 {
+            Color32::RED
+        } else if usage > 0.7 {
+            Color32::YELLOW
+        } else {
+            Color32::GREEN
+        }
+    }
+
+    /// Render stats
+    fn render_stats(&self, ui: &mut Ui) {
+        let (total, online, assigned) = Self::compute_device_stats(&self.devices);
 
         ui.horizontal(|ui| {
             ui.label(format!("Total: {total}"));
@@ -255,15 +267,8 @@ impl DevicePanel {
                     });
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        // Resource usage bar
                         let usage = device.resource_usage;
-                        let bar_color = if usage > 0.9 {
-                            Color32::RED
-                        } else if usage > 0.7 {
-                            Color32::YELLOW
-                        } else {
-                            Color32::GREEN
-                        };
+                        let bar_color = Self::usage_bar_color(usage);
 
                         ui.add(
                             egui::ProgressBar::new(usage as f32)
@@ -352,7 +357,8 @@ const fn device_icon(device_type: DeviceType) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::biomeos_integration::DeviceType;
+    use crate::biomeos_integration::{Device, DeviceStatus, DeviceType};
+    use egui::Color32;
 
     #[tokio::test]
     async fn test_device_panel_creation() {
@@ -691,5 +697,60 @@ mod tests {
         panel.search_query = "nvidia".to_string();
         assert_eq!(panel.filtered_devices().len(), 1);
         assert_eq!(panel.filtered_devices()[0].id, "gpu-nvidia-0");
+    }
+
+    #[test]
+    fn test_compute_device_stats() {
+        let devices = vec![
+            Device {
+                id: "d1".to_string(),
+                name: "D1".to_string(),
+                device_type: DeviceType::GPU,
+                status: DeviceStatus::Online,
+                resource_usage: 0.5,
+                assigned_to: Some("p1".to_string()),
+                metadata: serde_json::json!({}),
+            },
+            Device {
+                id: "d2".to_string(),
+                name: "D2".to_string(),
+                device_type: DeviceType::CPU,
+                status: DeviceStatus::Offline,
+                resource_usage: 0.0,
+                assigned_to: None,
+                metadata: serde_json::json!({}),
+            },
+            Device {
+                id: "d3".to_string(),
+                name: "D3".to_string(),
+                device_type: DeviceType::Storage,
+                status: DeviceStatus::Online,
+                resource_usage: 0.3,
+                assigned_to: None,
+                metadata: serde_json::json!({}),
+            },
+        ];
+        let (total, online, assigned) = DevicePanel::compute_device_stats(&devices);
+        assert_eq!(total, 3);
+        assert_eq!(online, 2);
+        assert_eq!(assigned, 1);
+    }
+
+    #[test]
+    fn test_compute_device_stats_empty() {
+        let (total, online, assigned) = DevicePanel::compute_device_stats(&[]);
+        assert_eq!(total, 0);
+        assert_eq!(online, 0);
+        assert_eq!(assigned, 0);
+    }
+
+    #[test]
+    fn test_usage_bar_color() {
+        assert_eq!(DevicePanel::usage_bar_color(0.0), Color32::GREEN);
+        assert_eq!(DevicePanel::usage_bar_color(0.7), Color32::GREEN);
+        assert_eq!(DevicePanel::usage_bar_color(0.71), Color32::YELLOW);
+        assert_eq!(DevicePanel::usage_bar_color(0.9), Color32::YELLOW);
+        assert_eq!(DevicePanel::usage_bar_color(0.91), Color32::RED);
+        assert_eq!(DevicePanel::usage_bar_color(1.0), Color32::RED);
     }
 }

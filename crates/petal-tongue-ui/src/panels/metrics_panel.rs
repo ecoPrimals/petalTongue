@@ -270,6 +270,31 @@ mod tests {
     use std::time::Duration;
 
     #[test]
+    fn test_metrics_panel_default() {
+        let panel = MetricsPanel::default();
+        assert_eq!(panel.title(), "System Metrics");
+    }
+
+    #[test]
+    fn test_metrics_panel_factory_default() {
+        let factory = MetricsPanelFactory;
+        assert_eq!(factory.panel_type(), "metrics");
+    }
+
+    #[test]
+    fn test_metrics_panel_update() {
+        let mut panel = MetricsPanel::new();
+        panel.update();
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_metrics_panel_on_open_on_close() {
+        let mut panel = MetricsPanel::new();
+        assert!(panel.on_open().is_ok());
+        assert!(panel.on_close().is_ok());
+    }
+
+    #[test]
     fn test_metrics_panel_creation() {
         let panel = MetricsPanel::new();
         assert_eq!(panel.title(), "System Metrics");
@@ -333,5 +358,44 @@ mod tests {
         let metrics = metrics.unwrap();
         assert_eq!(metrics.system.cpu_percent, 16.5);
         assert_eq!(metrics.neural_api.active_primals, 3);
+    }
+
+    #[test]
+    fn test_prepare_metrics_panel_display() {
+        use crate::panels::metrics_panel_display::prepare_metrics_panel_display;
+
+        let metrics = SystemMetrics {
+            timestamp: "2026-01-15T22:00:00Z".to_string(),
+            system: SystemStats {
+                cpu_percent: 25.0,
+                memory_used_mb: 4096,
+                memory_total_mb: 16384,
+                memory_percent: 25.0,
+                uptime_seconds: 7200,
+            },
+            neural_api: NeuralApiStats {
+                family_id: "test".to_string(),
+                active_primals: 2,
+                graphs_available: 4,
+                active_executions: 1,
+            },
+        };
+
+        let last_update = Instant::now() - Duration::from_secs(5);
+        let display = prepare_metrics_panel_display(&Some(metrics), last_update, &None);
+        assert!(display.metrics_summary.is_some());
+        let s = display.metrics_summary.unwrap();
+        assert_eq!(s.cpu_percent, 25.0);
+        assert_eq!(s.uptime_str, "2h 0m");
+        assert_eq!(s.active_executions, 1);
+    }
+
+    #[test]
+    fn test_format_update_age() {
+        use crate::panels::metrics_panel_display::format_update_age;
+
+        assert_eq!(format_update_age(0), "Updated 0s ago");
+        assert_eq!(format_update_age(29), "Updated 29s ago");
+        assert_eq!(format_update_age(30), "Stale (>30s)");
     }
 }

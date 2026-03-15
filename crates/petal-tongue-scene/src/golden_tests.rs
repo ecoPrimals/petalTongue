@@ -233,9 +233,13 @@ mod tests {
     #[test]
     fn tufte_full_coverage_passes() {
         let mut scene = SceneGraph::new();
-        scene.add_to_root(
-            SceneNode::new("bg").with_primitive(rect(0.0, 0.0, 10.0, 10.0, Some("bg"))),
-        );
+        scene.add_to_root(SceneNode::new("bg").with_primitive(rect(
+            0.0,
+            0.0,
+            10.0,
+            10.0,
+            Some("bg"),
+        )));
         let gt = GoldenTest::new("tufte_full", scene, 10, 10);
         let buf = gt.render();
         let result = gt.verify_tufte(&buf, 0.01, 0.05);
@@ -246,9 +250,13 @@ mod tests {
     #[test]
     fn tufte_low_coverage_fails() {
         let mut scene = SceneGraph::new();
-        scene.add_to_root(
-            SceneNode::new("tiny").with_primitive(rect(0.0, 0.0, 1.0, 1.0, Some("dot"))),
-        );
+        scene.add_to_root(SceneNode::new("tiny").with_primitive(rect(
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            Some("dot"),
+        )));
         let gt = GoldenTest::new("tufte_sparse", scene, 100, 100);
         let buf = gt.render();
         let result = gt.verify_tufte(&buf, 0.01, 0.05);

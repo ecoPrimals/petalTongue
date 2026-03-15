@@ -131,4 +131,38 @@ mod tests {
         let props = Properties::new();
         assert!(adapter.node_decoration(&props).is_none());
     }
+
+    #[test]
+    fn test_default_priority() {
+        let adapter = TestAdapter;
+        assert_eq!(adapter.priority(), 0);
+    }
+
+    struct PriorityAdapter;
+
+    impl PropertyAdapter for PriorityAdapter {
+        fn name(&self) -> &'static str {
+            "priority"
+        }
+
+        fn handles(&self, key: &str) -> bool {
+            key == "priority_prop"
+        }
+
+        fn render(&self, _key: &str, _value: &PropertyValue, _ui: &mut Ui) {}
+    }
+
+    #[test]
+    fn test_adapter_priority_override() {
+        let adapter = PriorityAdapter;
+        assert_eq!(adapter.priority(), 0);
+    }
+
+    #[test]
+    fn test_node_decoration_default_with_props() {
+        let adapter = TestAdapter;
+        let mut props = Properties::new();
+        props.insert("key".to_string(), PropertyValue::String("val".to_string()));
+        assert!(adapter.node_decoration(&props).is_none());
+    }
 }

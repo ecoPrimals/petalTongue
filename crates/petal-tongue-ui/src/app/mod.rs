@@ -190,6 +190,8 @@ pub struct PetalTongueApp {
 
     /// Bridge between egui events and the InteractionEngine (inverse pipeline for hit-target registration)
     interaction_bridge: EguiInteractionBridge,
+    /// SQUIRREL AI adapter for AI-driven interaction commands
+    squirrel_adapter: crate::squirrel_adapter::SquirrelAdapter,
 }
 
 impl PetalTongueApp {
@@ -233,6 +235,11 @@ impl PetalTongueApp {
     #[must_use]
     pub fn graph_handle(&self) -> Arc<RwLock<petal_tongue_core::GraphEngine>> {
         Arc::clone(&self.graph)
+    }
+
+    #[doc(hidden)]
+    pub const fn tools_mut(&mut self) -> &mut crate::tool_integration::ToolManager {
+        &mut self.tools
     }
 
     /// Inject the IPC sensor stream registry so egui events are broadcast to subscribers.
@@ -620,6 +627,23 @@ impl PetalTongueApp {
             }
         }
 
+        // SQUIRREL AI adapter: poll for AI-driven interaction commands.
+        if let Some(ref interaction_subs) = self.interaction_subscribers {
+            if let Ok(mut reg) = interaction_subs.try_write() {
+                self.squirrel_adapter.poll(&mut reg);
+                let commands = self.squirrel_adapter.drain_commands();
+                for cmd in &commands {
+                    crate::squirrel_adapter::SquirrelAdapter::apply_command(
+                        &mut self.interaction_bridge,
+                        cmd,
+                    );
+                }
+                if !commands.is_empty() {
+                    ctx.request_repaint();
+                }
+            }
+        }
+
         let mut style = (*ctx.style()).clone();
         let palette = self.accessibility_panel.get_palette();
         style.visuals.dark_mode = true;
@@ -708,11 +732,55 @@ impl eframe::App for PetalTongueApp {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn mode_presets_produce_commands() {
         let cmds = crate::mode_presets::commands_for_mode("clinical");
         assert!(!cmds.is_empty());
         let cmds = crate::mode_presets::commands_for_mode("developer");
         assert!(!cmds.is_empty());
+    }
+
+    #[test]
+    fn headless_app_introspect() {
+        let app = PetalTongueApp::new_headless().expect("headless app");
+        let introspection = app.introspect();
+        let _ = introspection.frame_id;
+        assert!(!introspection.visible_panels.is_empty());
+        assert!(
+            introspection
+                .active_modalities
+                .contains(&petal_tongue_core::interaction::perspective::OutputModality::Gui)
+        );
+    }
+
+    #[test]
+    fn headless_app_motor_sender() {
+        let app = PetalTongueApp::new_headless().expect("headless app");
+        let tx = app.motor_sender();
+        let _ = tx;
+    }
+
+    #[test]
+    fn headless_app_graph_handle() {
+        let app = PetalTongueApp::new_headless().expect("headless app");
+        let handle = app.graph_handle();
+        let _guard = handle.read().unwrap();
+    }
+
+    #[test]
+    fn headless_app_getters() {
+        let app = PetalTongueApp::new_headless().expect("headless app");
+        assert_eq!(app.frame_count(), 0);
+        assert!(!app.is_help_visible());
+        assert!(!app.is_continuous_mode());
+        assert_eq!(app.active_session_count(), 0);
+    }
+
+    #[test]
+    fn mode_presets_unknown_returns_empty() {
+        let cmds = crate::mode_presets::commands_for_mode("nonexistent_mode_xyz");
+        assert!(cmds.is_empty());
     }
 }

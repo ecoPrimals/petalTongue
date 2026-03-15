@@ -33,10 +33,6 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
-[[bin]]
-name = "petal-tongue-headless"
-path = "src/main.rs"
-
 [dev-dependencies]
 assert_cmd = "2.0"
 predicates = "3.0"

@@ -1,7 +1,47 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Timeline View - Pure helper functions (fully testable, no &self, no egui context)
 
+use std::collections::HashMap;
+
+use super::filtering::get_primals;
 use super::types::TimelineEvent;
+
+#[must_use]
+pub fn build_primal_lanes(events: &[TimelineEvent]) -> HashMap<String, usize> {
+    let primals = get_primals(events);
+    primals
+        .into_iter()
+        .enumerate()
+        .map(|(i, p)| (p, i))
+        .collect()
+}
+
+#[must_use]
+pub fn compute_lane_height(rect_height: f32, lane_count: usize) -> f32 {
+    rect_height / (lane_count as f32 + 1.0)
+}
+
+#[must_use]
+pub fn event_screen_rect<S: ::std::hash::BuildHasher>(
+    event: &TimelineEvent,
+    start_ms: f64,
+    end_ms: f64,
+    rect_min: (f32, f32),
+    time_width: f32,
+    lane_height: f32,
+    primal_lanes: &HashMap<String, usize, S>,
+) -> Option<(f32, f32, f32, f32)> {
+    let from_lane = *primal_lanes.get(&event.from)?;
+    let to_lane = *primal_lanes.get(&event.to)?;
+    let time_ms = event.timestamp.timestamp_millis() as f64;
+    let x_offset = time_to_x(time_ms, start_ms, end_ms, time_width);
+    let x_center = rect_min.0 + 100.0 + x_offset;
+    let from_y = rect_min.1 + lane_height * (from_lane as f32 + 1.0);
+    let to_y = rect_min.1 + lane_height * (to_lane as f32 + 1.0);
+    let y_min = from_y.min(to_y) - 4.0;
+    let height = (from_y - to_y).abs() + 8.0;
+    Some((x_center - 4.0, y_min, 8.0, height))
+}
 
 /// Map a timestamp to an x-coordinate within the time area.
 /// Returns x in [0, rect_width] for the given time range.

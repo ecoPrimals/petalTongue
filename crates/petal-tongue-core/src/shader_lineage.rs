@@ -134,8 +134,11 @@ impl ShaderLineage {
         }
 
         // Per-stage heatmap (origins × delegation types)
-        let mut delegation_types: Vec<String> =
-            self.delegations.iter().map(|d| d.delegation_type.clone()).collect();
+        let mut delegation_types: Vec<String> = self
+            .delegations
+            .iter()
+            .map(|d| d.delegation_type.clone())
+            .collect();
         delegation_types.sort();
         delegation_types.dedup();
 
@@ -367,7 +370,10 @@ mod tests {
     fn overall_pass_rate_calculation() {
         let lineage = build_demo_lineage();
         let rate = lineage.overall_pass_rate();
-        assert!(rate > 0.9, "demo lineage should have >90% pass rate: {rate}");
+        assert!(
+            rate > 0.9,
+            "demo lineage should have >90% pass rate: {rate}"
+        );
         assert!(rate < 1.0, "demo lineage has some failures: {rate}");
     }
 
@@ -385,12 +391,16 @@ mod tests {
         let lineage = build_demo_lineage();
         let bindings = lineage.to_bindings();
         assert_eq!(bindings.len(), 2);
-        assert!(bindings
-            .iter()
-            .any(|b| matches!(b, DataBinding::Bar { .. })));
-        assert!(bindings
-            .iter()
-            .any(|b| matches!(b, DataBinding::Heatmap { .. })));
+        assert!(
+            bindings
+                .iter()
+                .any(|b| matches!(b, DataBinding::Bar { .. }))
+        );
+        assert!(
+            bindings
+                .iter()
+                .any(|b| matches!(b, DataBinding::Heatmap { .. }))
+        );
     }
 
     #[test]

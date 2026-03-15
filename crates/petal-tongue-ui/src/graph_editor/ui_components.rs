@@ -24,6 +24,46 @@ pub fn node_status_display(status: &NodeStatus) -> (&'static str, [u8; 3], Strin
     }
 }
 
+/// Progress value (0.0–1.0) to percent display string.
+#[must_use]
+pub fn progress_percent_text(progress: f32) -> String {
+    format!("{:.0}%", progress * 100.0)
+}
+
+/// Resource usage display strings: (cpu, memory, disk_io, network).
+#[must_use]
+pub fn resource_usage_display(resources: &ResourceUsage) -> (String, String, String, String) {
+    (
+        format!("{:.1}%", resources.cpu_percent),
+        format!("{} MB", resources.memory_mb),
+        format!("{:.1} MB/s", resources.disk_io_mbps),
+        format!("{:.1} MB/s", resources.network_mbps),
+    )
+}
+
+/// Alternative display data: (description, confidence_str, reason_str).
+#[must_use]
+pub fn alternative_display(alt: &Alternative) -> (&str, String, String) {
+    (
+        &alt.description,
+        format!("({:.0}%)", alt.confidence * 100.0),
+        format!("→ {}", alt.reason_not_chosen),
+    )
+}
+
+/// Pattern display data: (description, relevance_str).
+#[must_use]
+pub fn pattern_display(pattern: &Pattern) -> (&str, String) {
+    (
+        &pattern.description,
+        format!(
+            "({}, {:.0}% relevant)",
+            pattern.source,
+            pattern.relevance * 100.0
+        ),
+    )
+}
+
 /// Confidence value (0.0–1.0) to RGB color.
 #[must_use]
 pub fn confidence_color_rgb(confidence: f32) -> [u8; 3] {
@@ -34,6 +74,40 @@ pub fn confidence_color_rgb(confidence: f32) -> [u8; 3] {
     } else {
         [255, 165, 0] // Orange
     }
+}
+
+#[must_use]
+pub fn error_header_text(error: &ErrorInfo) -> String {
+    format!("❌ {}", error.error_type)
+}
+
+#[must_use]
+pub fn error_recoverable_display(error: &ErrorInfo) -> (String, Option<String>) {
+    (
+        if error.recoverable {
+            "⚠️ Recoverable error".to_string()
+        } else {
+            "❌ Non-recoverable error".to_string()
+        },
+        error
+            .suggested_action
+            .as_ref()
+            .map(|a| format!("💡 Suggestion: {a}")),
+    )
+}
+
+#[must_use]
+pub const fn error_recoverable_color_rgb(recoverable: bool) -> [u8; 3] {
+    if recoverable {
+        [255, 165, 0]
+    } else {
+        [255, 0, 0]
+    }
+}
+
+#[must_use]
+pub fn confidence_percent_text(confidence: f32) -> String {
+    format!("{:.0}%", confidence * 100.0)
 }
 
 // --- UI widgets (use egui) ---
@@ -71,9 +145,8 @@ impl StatusDisplay {
     /// Render progress bar
     pub fn show_progress(ui: &mut Ui, progress: f32, message: &str) {
         ui.vertical(|ui| {
-            // Progress bar
             let progress_bar = egui::ProgressBar::new(progress)
-                .text(format!("{:.0}%", progress * 100.0))
+                .text(progress_percent_text(progress))
                 .animate(true);
 
             ui.add(progress_bar);
@@ -87,38 +160,40 @@ impl StatusDisplay {
 
     /// Render resource usage
     pub fn show_resources(ui: &mut Ui, resources: &ResourceUsage) {
+        let (cpu_str, mem_str, disk_str, net_str) = resource_usage_display(resources);
         ui.vertical(|ui| {
             ui.heading(RichText::new("Resources").size(14.0));
 
             ui.horizontal(|ui| {
                 ui.label("CPU:");
-                ui.label(RichText::new(format!("{:.1}%", resources.cpu_percent)).strong());
+                ui.label(RichText::new(cpu_str).strong());
             });
 
             ui.horizontal(|ui| {
                 ui.label("Memory:");
-                ui.label(RichText::new(format!("{} MB", resources.memory_mb)).strong());
+                ui.label(RichText::new(mem_str).strong());
             });
 
             ui.horizontal(|ui| {
                 ui.label("Disk I/O:");
-                ui.label(RichText::new(format!("{:.1} MB/s", resources.disk_io_mbps)).strong());
+                ui.label(RichText::new(disk_str).strong());
             });
 
             ui.horizontal(|ui| {
                 ui.label("Network:");
-                ui.label(RichText::new(format!("{:.1} MB/s", resources.network_mbps)).strong());
+                ui.label(RichText::new(net_str).strong());
             });
         });
     }
 
     /// Render error information
     pub fn show_error(ui: &mut Ui, error: &ErrorInfo) {
+        let header = error_header_text(error);
+        let (recoverable_msg, suggestion_msg) = error_recoverable_display(error);
+        let rgb = error_recoverable_color_rgb(error.recoverable);
+        let recoverable_color = Color32::from_rgb(rgb[0], rgb[1], rgb[2]);
         ui.vertical(|ui| {
-            ui.colored_label(
-                Color32::RED,
-                RichText::new(format!("❌ {}", error.error_type)).strong(),
-            );
+            ui.colored_label(Color32::RED, RichText::new(header).strong());
 
             ui.label(&error.message);
 
@@ -128,14 +203,9 @@ impl StatusDisplay {
                 });
             }
 
-            if error.recoverable {
-                ui.colored_label(Color32::from_rgb(255, 165, 0), "⚠️ Recoverable error");
-
-                if let Some(action) = &error.suggested_action {
-                    ui.colored_label(Color32::YELLOW, format!("💡 Suggestion: {action}"));
-                }
-            } else {
-                ui.colored_label(Color32::RED, "❌ Non-recoverable error");
+            ui.colored_label(recoverable_color, recoverable_msg);
+            if let Some(suggestion) = suggestion_msg {
+                ui.colored_label(Color32::YELLOW, suggestion);
             }
         });
     }
@@ -162,11 +232,8 @@ impl ReasoningDisplay {
 
                             ui.colored_label(
                                 confidence_color,
-                                RichText::new(format!(
-                                    "Confidence: {:.0}%",
-                                    reasoning.confidence * 100.0
-                                ))
-                                .strong(),
+                                RichText::new(format_confidence_display(reasoning.confidence))
+                                    .strong(),
                             );
                         });
                     });
@@ -186,7 +253,7 @@ impl ReasoningDisplay {
                         ui.label(RichText::new("Why:").strong());
                         for (i, reason) in reasoning.rationale.iter().enumerate() {
                             ui.horizontal(|ui| {
-                                ui.label(format!("  {}.", i + 1));
+                                ui.label(format_rationale_item(i));
                                 ui.label(reason);
                             });
                         }
@@ -207,7 +274,7 @@ impl ReasoningDisplay {
                         ui.label(RichText::new("Data Sources:").strong());
                         ui.horizontal_wrapped(|ui| {
                             for source in &reasoning.data_sources {
-                                ui.label(format!("  • {source}"));
+                                ui.label(format_data_source_item(source));
                             }
                         });
                         ui.add_space(8.0);
@@ -226,19 +293,16 @@ impl ReasoningDisplay {
 
     /// Show alternative option
     fn show_alternative(ui: &mut Ui, alt: &Alternative) {
+        let (desc, conf_str, reason_str) = alternative_display(alt);
         ui.horizontal(|ui| {
             ui.label("  •");
-            ui.label(&alt.description);
-            ui.label(
-                RichText::new(format!("({:.0}%)", alt.confidence * 100.0))
-                    .size(12.0)
-                    .color(Color32::GRAY),
-            );
+            ui.label(desc);
+            ui.label(RichText::new(conf_str).size(12.0).color(Color32::GRAY));
         });
 
         ui.indent("alt_reason", |ui| {
             ui.label(
-                RichText::new(format!("→ {}", alt.reason_not_chosen))
+                RichText::new(reason_str)
                     .size(12.0)
                     .italics()
                     .color(Color32::GRAY),
@@ -248,18 +312,11 @@ impl ReasoningDisplay {
 
     /// Show historical pattern
     fn show_pattern(ui: &mut Ui, pattern: &Pattern) {
+        let (desc, rel_str) = pattern_display(pattern);
         ui.horizontal(|ui| {
             ui.label("  •");
-            ui.label(&pattern.description);
-            ui.label(
-                RichText::new(format!(
-                    "({}, {:.0}% relevant)",
-                    pattern.source,
-                    pattern.relevance * 100.0
-                ))
-                .size(12.0)
-                .color(Color32::GRAY),
-            );
+            ui.label(desc);
+            ui.label(RichText::new(rel_str).size(12.0).color(Color32::GRAY));
         });
     }
 }
@@ -318,7 +375,7 @@ impl ConflictResolution {
                     // Header
                     ui.horizontal(|ui| {
                         ui.label(
-                            RichText::new("⚠️ Conflict Detected")
+                            RichText::new(conflict_header_text())
                                 .size(16.0)
                                 .strong()
                                 .color(Color32::YELLOW),
@@ -335,10 +392,11 @@ impl ConflictResolution {
                     ui.horizontal(|ui| {
                         // User change
                         ui.vertical(|ui| {
+                            let rgb = conflict_user_label_color_rgb();
                             ui.label(
-                                RichText::new("Your Change:")
+                                RichText::new(conflict_user_label_text())
                                     .strong()
-                                    .color(Color32::from_rgb(100, 200, 255)),
+                                    .color(Color32::from_rgb(rgb[0], rgb[1], rgb[2])),
                             );
                             egui::Frame::group(ui.style())
                                 .fill(Color32::from_rgb(30, 30, 40))
@@ -351,10 +409,11 @@ impl ConflictResolution {
 
                         // AI change
                         ui.vertical(|ui| {
+                            let rgb = conflict_ai_label_color_rgb();
                             ui.label(
-                                RichText::new("AI Suggestion:")
+                                RichText::new(conflict_ai_label_text())
                                     .strong()
-                                    .color(Color32::from_rgb(255, 200, 100)),
+                                    .color(Color32::from_rgb(rgb[0], rgb[1], rgb[2])),
                             );
                             egui::Frame::group(ui.style())
                                 .fill(Color32::from_rgb(30, 30, 40))
@@ -393,10 +452,101 @@ impl ConflictResolution {
     }
 }
 
+#[must_use]
+pub const fn conflict_user_label_color_rgb() -> [u8; 3] {
+    [100, 200, 255]
+}
+
+#[must_use]
+pub const fn conflict_ai_label_color_rgb() -> [u8; 3] {
+    [255, 200, 100]
+}
+
+#[must_use]
+pub const fn conflict_user_label_text() -> &'static str {
+    "Your Change:"
+}
+
+#[must_use]
+pub const fn conflict_ai_label_text() -> &'static str {
+    "AI Suggestion:"
+}
+
+#[must_use]
+pub const fn conflict_header_text() -> &'static str {
+    "⚠️ Conflict Detected"
+}
+
+#[must_use]
+pub fn format_confidence_display(confidence: f32) -> String {
+    format!("Confidence: {}", confidence_percent_text(confidence))
+}
+
+#[must_use]
+pub fn format_data_source_item(source: &str) -> String {
+    format!("  • {source}")
+}
+
+#[must_use]
+pub fn format_rationale_item(index: usize) -> String {
+    format!("  {}.", index + 1)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graph_editor::streaming::NodeStatus;
+    use crate::graph_editor::streaming::{
+        Alternative, ErrorInfo, NodeStatus, Pattern, ResourceUsage,
+    };
+
+    #[test]
+    fn test_progress_percent_text() {
+        assert_eq!(progress_percent_text(0.0), "0%");
+        assert_eq!(progress_percent_text(0.5), "50%");
+        assert_eq!(progress_percent_text(1.0), "100%");
+        assert_eq!(progress_percent_text(0.333), "33%");
+    }
+
+    #[test]
+    fn test_resource_usage_display() {
+        let r = ResourceUsage {
+            cpu_percent: 45.5,
+            memory_mb: 1024,
+            disk_io_mbps: 12.3,
+            network_mbps: 5.6,
+        };
+        let (cpu, mem, disk, net) = resource_usage_display(&r);
+        assert!(cpu.contains("45.5"));
+        assert!(mem.contains("1024"));
+        assert!(disk.contains("12.3"));
+        assert!(net.contains("5.6"));
+    }
+
+    #[test]
+    fn test_alternative_display() {
+        let alt = Alternative {
+            description: "Option A".to_string(),
+            confidence: 0.75,
+            reason_not_chosen: "Less reliable".to_string(),
+        };
+        let (desc, conf, reason) = alternative_display(&alt);
+        assert_eq!(desc, "Option A");
+        assert_eq!(conf, "(75%)");
+        assert!(reason.contains("Less reliable"));
+    }
+
+    #[test]
+    fn test_pattern_display() {
+        let p = Pattern {
+            description: "Similar case".to_string(),
+            source: "history".to_string(),
+            relevance: 0.9,
+        };
+        let (desc, rel) = pattern_display(&p);
+        assert_eq!(desc, "Similar case");
+        assert!(rel.contains("history"));
+        assert!(rel.contains("90"));
+    }
 
     #[test]
     fn test_node_status_display_pending() {
@@ -488,5 +638,89 @@ mod tests {
         ];
 
         assert_eq!(variants.len(), 4);
+    }
+
+    #[test]
+    fn test_error_header_text() {
+        let err = ErrorInfo {
+            error_type: "ConnectionError".to_string(),
+            message: "Failed".to_string(),
+            details: None,
+            recoverable: false,
+            suggested_action: None,
+        };
+        assert_eq!(error_header_text(&err), "❌ ConnectionError");
+    }
+
+    #[test]
+    fn test_error_recoverable_display_recoverable() {
+        let err = ErrorInfo {
+            error_type: "X".to_string(),
+            message: "Y".to_string(),
+            details: None,
+            recoverable: true,
+            suggested_action: Some("Retry".to_string()),
+        };
+        let (msg, sugg) = error_recoverable_display(&err);
+        assert_eq!(msg, "⚠️ Recoverable error");
+        assert_eq!(sugg, Some("💡 Suggestion: Retry".to_string()));
+    }
+
+    #[test]
+    fn test_error_recoverable_display_non_recoverable() {
+        let err = ErrorInfo {
+            error_type: "X".to_string(),
+            message: "Y".to_string(),
+            details: None,
+            recoverable: false,
+            suggested_action: None,
+        };
+        let (msg, sugg) = error_recoverable_display(&err);
+        assert_eq!(msg, "❌ Non-recoverable error");
+        assert_eq!(sugg, None);
+    }
+
+    #[test]
+    fn test_error_recoverable_color_rgb() {
+        assert_eq!(error_recoverable_color_rgb(true), [255, 165, 0]);
+        assert_eq!(error_recoverable_color_rgb(false), [255, 0, 0]);
+    }
+
+    #[test]
+    fn test_confidence_percent_text() {
+        assert_eq!(confidence_percent_text(0.0), "0%");
+        assert_eq!(confidence_percent_text(0.5), "50%");
+        assert_eq!(confidence_percent_text(1.0), "100%");
+        assert_eq!(confidence_percent_text(0.75), "75%");
+    }
+
+    #[test]
+    fn test_conflict_label_colors() {
+        assert_eq!(conflict_user_label_color_rgb(), [100, 200, 255]);
+        assert_eq!(conflict_ai_label_color_rgb(), [255, 200, 100]);
+    }
+
+    #[test]
+    fn test_conflict_label_texts() {
+        assert_eq!(conflict_user_label_text(), "Your Change:");
+        assert_eq!(conflict_ai_label_text(), "AI Suggestion:");
+        assert_eq!(conflict_header_text(), "⚠️ Conflict Detected");
+    }
+
+    #[test]
+    fn test_format_confidence_display() {
+        assert_eq!(format_confidence_display(0.5), "Confidence: 50%");
+        assert_eq!(format_confidence_display(1.0), "Confidence: 100%");
+    }
+
+    #[test]
+    fn test_format_data_source_item() {
+        assert_eq!(format_data_source_item("api"), "  • api");
+    }
+
+    #[test]
+    fn test_format_rationale_item() {
+        assert_eq!(format_rationale_item(0), "  1.");
+        assert_eq!(format_rationale_item(2), "  3.");
     }
 }

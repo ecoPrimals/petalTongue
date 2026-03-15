@@ -75,6 +75,39 @@ pub fn arrow_geometry(from: [f32; 2], to: [f32; 2], zoom: f32) -> ArrowPoints {
     }
 }
 
+/// Grid parameters for drawing: (grid_size, offset_x, offset_y).
+#[must_use]
+pub fn grid_params(
+    base_grid_size: f32,
+    camera_pos_x: f32,
+    camera_pos_y: f32,
+    zoom: f32,
+) -> (f32, f32, f32) {
+    let grid_size = base_grid_size * zoom;
+    let offset_x = (camera_pos_x * zoom) % grid_size;
+    let offset_y = (camera_pos_y * zoom) % grid_size;
+    (grid_size, offset_x, offset_y)
+}
+
+/// Node text layout: (text_size, icon_y, name_y) from zoom and node rect bounds.
+#[must_use]
+pub fn node_text_layout(zoom: f32, node_rect_min_y: f32, node_rect_max_y: f32) -> (f32, f32, f32) {
+    let text_size = 14.0 * zoom;
+    let icon_y = 15.0f32.mul_add(zoom, node_rect_min_y);
+    let name_y = (-10.0f32).mul_add(zoom, node_rect_max_y);
+    (text_size, icon_y, name_y)
+}
+
+#[must_use]
+pub const fn grid_color_alpha() -> u8 {
+    20
+}
+
+#[must_use]
+pub fn edge_stroke_width(zoom: f32) -> f32 {
+    2.0 * zoom
+}
+
 /// Grid line positions along one axis.
 #[must_use]
 pub fn grid_line_positions(rect_min: f32, rect_max: f32, grid_size: f32, offset: f32) -> Vec<f32> {
@@ -96,12 +129,15 @@ impl GraphCanvas {
             palette.text_dim.r(),
             palette.text_dim.g(),
             palette.text_dim.b(),
-            20,
+            grid_color_alpha(),
         );
 
-        let grid_size = self.grid_size * self.camera.zoom;
-        let offset_x = (self.camera.position.x * self.camera.zoom) % grid_size;
-        let offset_y = (self.camera.position.y * self.camera.zoom) % grid_size;
+        let (grid_size, offset_x, offset_y) = grid_params(
+            self.grid_size,
+            self.camera.position.x,
+            self.camera.position.y,
+            self.camera.zoom,
+        );
 
         for x in grid_line_positions(rect.min.x, rect.max.x, grid_size, offset_x) {
             painter.line_segment(
@@ -149,16 +185,14 @@ impl GraphCanvas {
             Stroke::new(2.0 * self.camera.zoom, stroke_color),
         );
 
-        let text_size = 14.0 * self.camera.zoom;
+        let (text_size, icon_y, name_y) =
+            node_text_layout(self.camera.zoom, node_rect.min.y, node_rect.max.y);
         if text_size > 8.0 {
             let icon = node.node_type.icon();
             let name = node.node_type.display_name();
 
             painter.text(
-                Pos2::new(
-                    node_rect.center().x,
-                    15.0f32.mul_add(self.camera.zoom, node_rect.min.y),
-                ),
+                Pos2::new(node_rect.center().x, icon_y),
                 egui::Align2::CENTER_CENTER,
                 icon,
                 egui::FontId::proportional(text_size * 1.2),
@@ -166,10 +200,7 @@ impl GraphCanvas {
             );
 
             painter.text(
-                Pos2::new(
-                    node_rect.center().x,
-                    10.0f32.mul_add(-self.camera.zoom, node_rect.max.y),
-                ),
+                Pos2::new(node_rect.center().x, name_y),
                 egui::Align2::CENTER_CENTER,
                 name,
                 egui::FontId::proportional(text_size * 0.8),
@@ -291,7 +322,7 @@ fn draw_arrow(
     edge_type: &EdgeType,
     zoom: f32,
 ) {
-    let stroke_width = 2.0 * zoom;
+    let stroke_width = edge_stroke_width(zoom);
     let stroke = match edge_type {
         EdgeType::Dependency => Stroke::new(stroke_width, color),
         EdgeType::DataFlow => Stroke::new(stroke_width, color),
@@ -418,5 +449,69 @@ mod tests {
         let positions = grid_line_positions(0.0, 50.0, 20.0, 5.0);
         assert!(!positions.is_empty());
         assert!((positions[0] - (-5.0)).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_node_colors_selected_over_error() {
+        let (fill, _) = node_colors(true, false, true);
+        assert_eq!(fill, [245, 166, 35]);
+    }
+
+    #[test]
+    fn test_node_colors_hovered_over_error() {
+        let (fill, _) = node_colors(false, true, true);
+        assert_eq!(fill, [100, 150, 255]);
+    }
+
+    #[test]
+    fn test_arrow_geometry_vertical() {
+        let from = [50.0, 0.0];
+        let to = [50.0, 100.0];
+        let points = arrow_geometry(from, to, 1.0);
+        assert_eq!(points.tip, to);
+        assert!((points.left[0] - 42.0).abs() < 1.0);
+        assert!((points.left[1] - 84.0).abs() < 1.0);
+        assert!((points.right[0] - 58.0).abs() < 1.0);
+        assert!((points.right[1] - 84.0).abs() < 1.0);
+    }
+
+    #[test]
+    fn test_grid_line_positions_empty_range() {
+        let positions = grid_line_positions(100.0, 50.0, 25.0, 0.0);
+        assert!(positions.is_empty());
+    }
+
+    #[test]
+    fn test_grid_params() {
+        let (gs, ox, oy) = grid_params(20.0, 0.0, 0.0, 1.0);
+        assert!((gs - 20.0).abs() < f32::EPSILON);
+        assert!((ox - 0.0).abs() < f32::EPSILON);
+        assert!((oy - 0.0).abs() < f32::EPSILON);
+
+        let (gs, ox, _) = grid_params(20.0, 10.0, 0.0, 2.0);
+        assert!((gs - 40.0).abs() < f32::EPSILON);
+        assert!(ox >= 0.0 && ox < 40.0);
+    }
+
+    #[test]
+    fn test_node_text_layout() {
+        let (text_size, icon_y, name_y) = node_text_layout(1.0, 100.0, 150.0);
+        assert!((text_size - 14.0).abs() < f32::EPSILON);
+        assert!((icon_y - 115.0).abs() < f32::EPSILON);
+        assert!((name_y - 140.0).abs() < f32::EPSILON);
+
+        let (text_size, _, _) = node_text_layout(2.0, 0.0, 50.0);
+        assert!((text_size - 28.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_grid_color_alpha() {
+        assert_eq!(grid_color_alpha(), 20);
+    }
+
+    #[test]
+    fn test_edge_stroke_width() {
+        assert!((edge_stroke_width(1.0) - 2.0).abs() < f32::EPSILON);
+        assert!((edge_stroke_width(2.0) - 4.0).abs() < f32::EPSILON);
     }
 }

@@ -363,3 +363,308 @@ pub struct Perspective {
     /// Sync mode (e.g. "`shared_selection`").
     pub sync_mode: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use petal_tongue_core::DataBinding;
+    use petal_tongue_scene::grammar::{GeometryType, GrammarExpr};
+    use serde_json::json;
+
+    #[test]
+    fn ui_config_default() {
+        let config = UiConfig::default();
+        assert!(config.show_panels.is_empty());
+        assert!(config.mode.is_none());
+        assert!(config.initial_zoom.is_none());
+        assert!(config.awakening_enabled.is_none());
+        assert!(config.theme.is_none());
+    }
+
+    #[test]
+    fn ui_config_serialization() {
+        let mut config = UiConfig::default();
+        config.show_panels.insert("left_sidebar".into(), true);
+        config.mode = Some("clinical".into());
+        let json = serde_json::to_string(&config).expect("serialize");
+        let restored: UiConfig = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.show_panels.get("left_sidebar"), Some(&true));
+        assert_eq!(restored.mode.as_deref(), Some("clinical"));
+    }
+
+    #[test]
+    fn visualization_render_request_roundtrip() {
+        let req = VisualizationRenderRequest {
+            session_id: "s1".into(),
+            title: "Test".into(),
+            bindings: vec![DataBinding::TimeSeries {
+                id: "ts1".into(),
+                label: "Series".into(),
+                x_label: "t".into(),
+                y_label: "v".into(),
+                unit: "".into(),
+                x_values: vec![1.0, 2.0],
+                y_values: vec![10.0, 20.0],
+            }],
+            thresholds: vec![],
+            domain: Some("health".into()),
+            ui_config: None,
+        };
+        let json = serde_json::to_string(&req).expect("serialize");
+        let restored: VisualizationRenderRequest =
+            serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.session_id, "s1");
+        assert_eq!(restored.bindings.len(), 1);
+    }
+
+    #[test]
+    fn visualization_render_response_roundtrip() {
+        let resp = VisualizationRenderResponse {
+            session_id: "s1".into(),
+            bindings_accepted: 3,
+            status: "rendering".into(),
+        };
+        let json = serde_json::to_string(&resp).expect("serialize");
+        let restored: VisualizationRenderResponse =
+            serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.bindings_accepted, 3);
+    }
+
+    #[test]
+    fn stream_operation_append_roundtrip() {
+        let op = StreamOperation::Append {
+            x_values: vec![1.0, 2.0],
+            y_values: vec![10.0, 20.0],
+        };
+        let json = serde_json::to_string(&op).expect("serialize");
+        let restored: StreamOperation = serde_json::from_str(&json).expect("deserialize");
+        match restored {
+            StreamOperation::Append { x_values, y_values } => {
+                assert_eq!(x_values, vec![1.0, 2.0]);
+                assert_eq!(y_values, vec![10.0, 20.0]);
+            }
+            _ => panic!("expected Append"),
+        }
+    }
+
+    #[test]
+    fn stream_operation_set_value_roundtrip() {
+        let op = StreamOperation::SetValue { value: 42.5 };
+        let json = serde_json::to_string(&op).expect("serialize");
+        let restored: StreamOperation = serde_json::from_str(&json).expect("deserialize");
+        match restored {
+            StreamOperation::SetValue { value } => assert_eq!(value, 42.5),
+            _ => panic!("expected SetValue"),
+        }
+    }
+
+    #[test]
+    fn stream_update_request_roundtrip() {
+        let req = StreamUpdateRequest {
+            session_id: "s1".into(),
+            binding_id: "b1".into(),
+            operation: StreamOperation::SetValue { value: 1.0 },
+        };
+        let json = serde_json::to_string(&req).expect("serialize");
+        let restored: StreamUpdateRequest = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.session_id, "s1");
+    }
+
+    #[test]
+    fn stream_update_response_backpressure_serialization() {
+        let resp = StreamUpdateResponse {
+            session_id: "s1".into(),
+            binding_id: "b1".into(),
+            accepted: true,
+            backpressure_active: true,
+        };
+        let json = serde_json::to_string(&resp).expect("serialize");
+        assert!(json.contains("backpressure_active"));
+    }
+
+    #[test]
+    fn backpressure_config_default() {
+        let config = BackpressureConfig::default();
+        assert_eq!(config.max_updates_per_sec, 120);
+        assert_eq!(config.cooldown, std::time::Duration::from_millis(200));
+        assert_eq!(config.burst_tolerance, 10);
+    }
+
+    #[test]
+    fn session_status_request_response_roundtrip() {
+        let req = SessionStatusRequest {
+            session_id: "s1".into(),
+        };
+        let json = serde_json::to_string(&req).expect("serialize");
+        let _: SessionStatusRequest = serde_json::from_str(&json).expect("deserialize");
+
+        let resp = SessionStatusResponse {
+            session_id: "s1".into(),
+            exists: true,
+            frame_count: 100,
+            last_update_secs: 0.5,
+            backpressure_active: false,
+            binding_count: 3,
+            domain: Some("health".into()),
+        };
+        let json = serde_json::to_string(&resp).expect("serialize");
+        let restored: SessionStatusResponse = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.frame_count, 100);
+    }
+
+    #[test]
+    fn grammar_render_request_defaults() {
+        let req = GrammarRenderRequest {
+            session_id: "s1".into(),
+            grammar: GrammarExpr::new("data", GeometryType::Point),
+            data: vec![json!({"x": 1, "y": 2})],
+            modality: "svg".into(),
+            validate_tufte: true,
+            domain: None,
+        };
+        let json = serde_json::to_string(&req).expect("serialize");
+        let restored: GrammarRenderRequest = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.modality, "svg");
+        assert!(restored.validate_tufte);
+    }
+
+    #[test]
+    fn grammar_render_response_roundtrip() {
+        let resp = GrammarRenderResponse {
+            session_id: "s1".into(),
+            output: json!("<svg></svg>"),
+            modality: "svg".into(),
+            scene_nodes: 5,
+            total_primitives: 10,
+            tufte_report: Some(json!({"score": 0.9})),
+        };
+        let json = serde_json::to_string(&resp).expect("serialize");
+        let restored: GrammarRenderResponse = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.scene_nodes, 5);
+    }
+
+    #[test]
+    fn validate_request_response_roundtrip() {
+        let req = ValidateRequest {
+            grammar: GrammarExpr::new("data", GeometryType::Line),
+            data: vec![],
+        };
+        let json = serde_json::to_string(&req).expect("serialize");
+        let _: ValidateRequest = serde_json::from_str(&json).expect("deserialize");
+
+        let resp = ValidateResponse {
+            score: 0.85,
+            passed: true,
+            constraints: vec![ConstraintResult {
+                name: "DataInkRatio".into(),
+                score: 0.9,
+                passed: true,
+                details: "Good".into(),
+            }],
+        };
+        let json = serde_json::to_string(&resp).expect("serialize");
+        let restored: ValidateResponse = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.constraints.len(), 1);
+    }
+
+    #[test]
+    fn export_request_response_roundtrip() {
+        let req = ExportRequest {
+            session_id: "s1".into(),
+            format: "svg".into(),
+        };
+        let json = serde_json::to_string(&req).expect("serialize");
+        let _: ExportRequest = serde_json::from_str(&json).expect("deserialize");
+
+        let resp = ExportResponse {
+            session_id: "s1".into(),
+            format: "svg".into(),
+            content: "<svg></svg>".into(),
+        };
+        let json = serde_json::to_string(&resp).expect("serialize");
+        let restored: ExportResponse = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.content, "<svg></svg>");
+    }
+
+    #[test]
+    fn dashboard_render_request_default_columns() {
+        let req = DashboardRenderRequest {
+            session_id: "s1".into(),
+            title: "Dashboard".into(),
+            bindings: vec![],
+            domain: None,
+            modality: "svg".into(),
+            max_columns: 3,
+        };
+        let json = serde_json::to_string(&req).expect("serialize");
+        let restored: DashboardRenderRequest = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.max_columns, 3);
+    }
+
+    #[test]
+    fn dashboard_render_response_roundtrip() {
+        let resp = DashboardRenderResponse {
+            session_id: "s1".into(),
+            output: json!("<svg></svg>"),
+            modality: "svg".into(),
+            panel_count: 2,
+            columns: 2,
+            rows: 1,
+            scene_nodes: 4,
+            total_primitives: 8,
+        };
+        let json = serde_json::to_string(&resp).expect("serialize");
+        let restored: DashboardRenderResponse = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.columns, 2);
+    }
+
+    #[test]
+    fn dismiss_request_response_roundtrip() {
+        let req = DismissRequest {
+            session_id: "s1".into(),
+        };
+        let json = serde_json::to_string(&req).expect("serialize");
+        let _: DismissRequest = serde_json::from_str(&json).expect("deserialize");
+
+        let resp = DismissResponse {
+            session_id: "s1".into(),
+            dismissed: true,
+        };
+        let json = serde_json::to_string(&resp).expect("serialize");
+        let restored: DismissResponse = serde_json::from_str(&json).expect("deserialize");
+        assert!(restored.dismissed);
+    }
+
+    #[test]
+    fn interaction_apply_request_response_roundtrip() {
+        let req = InteractionApplyRequest {
+            intent: "select".into(),
+            targets: vec!["t1".into()],
+            grammar_id: Some("g1".into()),
+        };
+        let json = serde_json::to_string(&req).expect("serialize");
+        let restored: InteractionApplyRequest = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.grammar_id, Some("g1".into()));
+
+        let resp = InteractionApplyResponse {
+            accepted: true,
+            targets_resolved: 1,
+        };
+        let json = serde_json::to_string(&resp).expect("serialize");
+        let restored: InteractionApplyResponse = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.targets_resolved, 1);
+    }
+
+    #[test]
+    fn perspective_roundtrip() {
+        let p = Perspective {
+            id: "p1".into(),
+            modalities: vec!["svg".into()],
+            selection: vec![],
+            sync_mode: "shared_selection".into(),
+        };
+        let json = serde_json::to_string(&p).expect("serialize");
+        let restored: Perspective = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.id, "p1");
+    }
+}

@@ -25,10 +25,7 @@ impl ScenarioBuilder for GroundSpringSeismicScenario {
     }
 
     fn available_scenes(&self) -> Vec<String> {
-        vec![
-            "wave_field".to_string(),
-            "arrival_times".to_string(),
-        ]
+        vec!["wave_field".to_string(), "arrival_times".to_string()]
     }
 
     fn build_scene(&self, scene_name: &str) -> Option<VisualizationScene> {
@@ -389,6 +386,83 @@ mod tests {
         let builder = GroundSpringSeismicScenario;
         let scenes = builder.build_all();
         assert_eq!(scenes.len(), 2);
+    }
+
+    #[test]
+    fn seismic_wave_field_formula() {
+        let builder = GroundSpringSeismicScenario;
+        let scene = builder.build_scene("wave_field").unwrap();
+        match &scene.bindings[0] {
+            DataBinding::FieldMap {
+                grid_x,
+                grid_y: _,
+                values,
+                ..
+            } => {
+                let row = 5_usize;
+                let col = 6_usize;
+                let x = col as f64 * 100.0;
+                let y = row as f64 * 50.0;
+                let r = (x - 600.0).hypot(y - 250.0);
+                let expected = (-(r / 200.0).powi(2)).exp() * (r / 80.0).sin();
+                let idx = row * grid_x.len() + col;
+                assert!((values[idx] - expected).abs() < 1e-10);
+            }
+            _ => panic!("expected FieldMap"),
+        }
+    }
+
+    #[test]
+    fn arrival_times_formula() {
+        let builder = GroundSpringSeismicScenario;
+        let scene = builder.build_scene("arrival_times").unwrap();
+        match &scene.bindings[0] {
+            DataBinding::TimeSeries {
+                x_values, y_values, ..
+            } => {
+                let s = x_values[0];
+                let expected = 0.5 + 0.1 * s + 0.02 * (s * 0.5).sin();
+                assert!((y_values[0] - expected).abs() < 1e-10);
+            }
+            _ => panic!("expected TimeSeries"),
+        }
+    }
+
+    #[test]
+    fn sensor_drift_formula() {
+        let builder = GroundSpringSensorDriftScenario;
+        let scene = builder.build_scene("drift_timeseries").unwrap();
+        match &scene.bindings[0] {
+            DataBinding::TimeSeries {
+                x_values, y_values, ..
+            } => {
+                let d = x_values[0];
+                let expected = 0.001 * d + 0.0005 * (d * 0.1).sin();
+                assert!((y_values[0] - expected).abs() < 1e-10);
+            }
+            _ => panic!("expected TimeSeries"),
+        }
+    }
+
+    #[test]
+    fn power_spectrum_formula() {
+        let builder = GroundSpringSpectralReconstructionScenario;
+        let scene = builder.build_scene("power_spectrum").unwrap();
+        match &scene.bindings[0] {
+            DataBinding::Spectrum {
+                frequencies,
+                amplitudes,
+                ..
+            } => {
+                let idx = 10;
+                let f = frequencies[idx];
+                let peak1 = (-((f - 5.0) / 1.5).powi(2)).exp() * 0.8;
+                let peak2 = (-((f - 15.0) / 2.0).powi(2)).exp() * 0.4;
+                let expected = peak1 + peak2 + 0.02;
+                assert!((amplitudes[idx] - expected).abs() < 1e-10);
+            }
+            _ => panic!("expected Spectrum"),
+        }
     }
 
     #[test]

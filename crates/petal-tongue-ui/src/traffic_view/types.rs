@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Traffic view data types
 
-use egui::Color32;
-
 /// User interaction intent produced by the traffic view render method.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TrafficIntent {
@@ -46,8 +44,8 @@ pub struct TrafficFlow {
     pub to: String,
     /// Traffic metrics
     pub metrics: TrafficMetrics,
-    /// Flow color (based on health/volume)
-    pub color: Color32,
+    /// Flow color RGBA (based on health/volume)
+    pub color: [u8; 4],
 }
 
 /// Color scheme for traffic visualization

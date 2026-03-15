@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Traffic View - Pure geometry and color functions (fully testable, no egui context)
 
-use egui::Color32;
-
 use super::types::{ColorScheme, TrafficFlow, TrafficMetrics};
 
 /// Bezier control points for flow curve from (from_x, from_y) to (to_x, to_y).
@@ -49,31 +47,34 @@ pub fn primal_lane_layout(
 
 /// Calculate flow color based on metrics and scheme (pure function).
 #[must_use]
-pub fn calculate_flow_color(metrics: &TrafficMetrics, scheme: ColorScheme) -> Color32 {
+pub fn calculate_flow_color(metrics: &TrafficMetrics, scheme: ColorScheme) -> [u8; 4] {
     match scheme {
         ColorScheme::Volume => {
             let normalized = (metrics.bytes_per_second as f32 / 100_000.0).min(1.0);
-            Color32::from_rgb(
+            [
                 (255.0 * normalized) as u8,
                 (255.0 * (1.0 - normalized)) as u8,
                 32,
-            )
+                255,
+            ]
         }
         ColorScheme::Latency => {
             let normalized = (metrics.avg_latency_ms as f32 / 100.0).min(1.0);
-            Color32::from_rgb(
+            [
                 (255.0 * normalized) as u8,
                 (255.0 * (1.0 - normalized)) as u8,
                 64,
-            )
+                255,
+            ]
         }
         ColorScheme::ErrorRate => {
             let normalized = (metrics.error_rate as f32 * 10.0).min(1.0);
-            Color32::from_rgb(
+            [
                 (255.0 * normalized) as u8,
                 (255.0 * (1.0 - normalized) * 0.8) as u8,
                 96,
-            )
+                255,
+            ]
         }
     }
 }

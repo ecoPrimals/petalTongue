@@ -490,4 +490,65 @@ mod tests {
         let primal_type = provider.infer_primal_type(&path, &[]);
         assert_eq!(primal_type, "beardog");
     }
+
+    #[test]
+    fn test_parse_capabilities_response() {
+        let provider = UnixSocketProvider::new();
+        let path = std::path::Path::new("/tmp/test-primal-nat0.sock");
+        let result = json!({
+            "capabilities": ["visualization.graph", "ui.render"],
+            "node_id": "test-node-123",
+            "version": "1.0.0"
+        });
+        let info = provider.parse_capabilities_response(path, result).unwrap();
+        assert_eq!(info.id.as_str(), "test-node-123");
+        assert_eq!(info.name, "test-primal-nat0");
+        assert_eq!(info.capabilities.len(), 2);
+        assert!(info.endpoint.contains("test-primal"));
+    }
+
+    #[test]
+    fn test_parse_capabilities_response_minimal() {
+        let provider = UnixSocketProvider::new();
+        let path = std::path::Path::new("/tmp/foo.sock");
+        let result = json!({});
+        let info = provider.parse_capabilities_response(path, result).unwrap();
+        assert_eq!(info.id.as_str(), "unknown");
+        assert_eq!(info.name, "foo");
+        assert!(info.capabilities.is_empty());
+    }
+
+    #[test]
+    fn test_capability_list_request_structure() {
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": "capability.list",
+            "params": {},
+            "id": 1
+        });
+        assert_eq!(request["method"], "capability.list");
+        assert!(request["params"].is_object());
+    }
+
+    #[test]
+    fn test_legacy_get_capabilities_request_structure() {
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": "get_capabilities",
+            "params": {},
+            "id": 1
+        });
+        assert_eq!(request["method"], "get_capabilities");
+    }
+
+    #[test]
+    fn test_jsonrpc_response_no_result() {
+        let response = json!({
+            "jsonrpc": "2.0",
+            "error": {"code": -32600, "message": "Invalid"},
+            "id": 1
+        });
+        let result = response.get("result");
+        assert!(result.is_none() || result == Some(&serde_json::Value::Null));
+    }
 }

@@ -479,4 +479,73 @@ mod tests {
         assert_eq!(primal_info.id, "test-1");
         assert_eq!(primal_info.health, PrimalHealthStatus::Healthy);
     }
+
+    #[test]
+    fn test_discovery_response_serialization() {
+        let response = DiscoveryResponse {
+            primals: vec![DiscoveredPrimal {
+                id: "p1".to_string(),
+                name: "Primal 1".to_string(),
+                primal_type: "Compute".to_string(),
+                endpoint: "http://localhost:8000".to_string(),
+                capabilities: vec!["compute".to_string()],
+                health: "healthy".to_string(),
+                last_seen: 0,
+            }],
+        };
+        let json = serde_json::to_string(&response).unwrap();
+        let parsed: DiscoveryResponse = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.primals.len(), 1);
+        assert_eq!(parsed.primals[0].id, "p1");
+    }
+
+    #[test]
+    fn test_topology_response_serialization() {
+        let response = TopologyResponse {
+            nodes: vec![TopologyNode {
+                id: "n1".to_string(),
+                name: "Node 1".to_string(),
+                node_type: "Compute".to_string(),
+                status: "healthy".to_string(),
+                trust_level: Some(3),
+                family_id: Some("fam-1".to_string()),
+                capabilities: vec!["compute".to_string()],
+            }],
+            edges: vec![TopologyEdge {
+                from: "n1".into(),
+                to: "n2".into(),
+                edge_type: "conn".to_string(),
+                label: None,
+                capability: None,
+                metrics: None,
+            }],
+            mode: "live".to_string(),
+        };
+        let json = serde_json::to_string(&response).unwrap();
+        let parsed: TopologyResponse = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.nodes.len(), 1);
+        assert_eq!(parsed.edges.len(), 1);
+    }
+
+    #[test]
+    fn test_discovered_primal_health_mapping() {
+        for (health_str, expected) in [
+            ("healthy", PrimalHealthStatus::Healthy),
+            ("warning", PrimalHealthStatus::Warning),
+            ("critical", PrimalHealthStatus::Critical),
+            ("unknown", PrimalHealthStatus::Unknown),
+        ] {
+            let discovered = DiscoveredPrimal {
+                id: "x".to_string(),
+                name: "X".to_string(),
+                primal_type: "T".to_string(),
+                endpoint: "http://x".to_string(),
+                capabilities: vec![],
+                health: health_str.to_string(),
+                last_seen: 0,
+            };
+            let info: PrimalInfo = discovered.into();
+            assert_eq!(info.health, expected);
+        }
+    }
 }

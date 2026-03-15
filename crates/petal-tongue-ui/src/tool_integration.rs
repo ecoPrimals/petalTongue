@@ -375,4 +375,63 @@ mod tests {
         tool.metadata.source = Some("https://example.com".to_string());
         assert_eq!(tool.metadata.source.as_deref(), Some("https://example.com"));
     }
+
+    #[test]
+    fn test_status_message_default() {
+        let tool = MockTool::new("NoStatus");
+        assert!(tool.status_message().is_none());
+    }
+
+    #[test]
+    fn test_tools_mut_empty() {
+        let mut manager = ToolManager::new();
+        let tools = manager.tools_mut();
+        assert!(tools.is_empty());
+    }
+
+    #[test]
+    fn test_tools_mut_modify() {
+        let mut manager = ToolManager::new();
+        manager.register_tool(Box::new(MockTool::new("T1")));
+        let tools = manager.tools_mut();
+        assert_eq!(tools.len(), 1);
+    }
+
+    #[test]
+    fn test_tool_capability_variants_eq() {
+        assert_eq!(ToolCapability::Visual, ToolCapability::Visual);
+        assert_eq!(ToolCapability::Audio, ToolCapability::Audio);
+        assert_ne!(ToolCapability::Visual, ToolCapability::Audio);
+        assert_eq!(ToolCapability::TextInput, ToolCapability::TextInput);
+        assert_eq!(ToolCapability::Progressive, ToolCapability::Progressive);
+        assert_eq!(ToolCapability::Export, ToolCapability::Export);
+    }
+
+    #[test]
+    fn test_tool_capability_hash() {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        let mut hasher = DefaultHasher::new();
+        ToolCapability::Visual.hash(&mut hasher);
+        let _ = hasher.finish();
+    }
+
+    #[test]
+    fn test_find_tool_empty_manager() {
+        let manager = ToolManager::new();
+        assert!(manager.find_tool("Any").is_none());
+    }
+
+    #[test]
+    fn test_visible_tool_multiple_registered() {
+        let mut manager = ToolManager::new();
+        let mut t1 = MockTool::new("T1");
+        t1.toggle_visibility();
+        manager.register_tool(Box::new(t1));
+        manager.register_tool(Box::new(MockTool::new("T2")));
+        let visible = manager.visible_tool();
+        assert!(visible.is_some());
+        assert_eq!(visible.unwrap().metadata().name, "T1");
+    }
 }

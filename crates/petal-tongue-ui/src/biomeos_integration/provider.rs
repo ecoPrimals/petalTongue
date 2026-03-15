@@ -12,6 +12,75 @@ use tracing::{debug, info, warn};
 use super::events::{BiomeOSEvent, EventStream};
 use super::types::{Device, NicheTemplate, Primal};
 
+#[must_use]
+pub fn build_jsonrpc_request(
+    method: &str,
+    params: serde_json::Value,
+    id: u64,
+) -> serde_json::Value {
+    serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": method,
+        "params": params,
+        "id": id,
+    })
+}
+
+#[must_use]
+pub fn parse_jsonrpc_result(response: &serde_json::Value) -> Option<serde_json::Value> {
+    response.get("result").cloned()
+}
+
+#[must_use]
+pub fn parse_jsonrpc_error(response: &serde_json::Value) -> Option<serde_json::Value> {
+    response.get("error").cloned()
+}
+
+#[must_use]
+pub fn health_response_status(value: &serde_json::Value) -> String {
+    value
+        .get("status")
+        .and_then(|s| s.as_str())
+        .unwrap_or("unknown")
+        .to_string()
+}
+
+#[must_use]
+pub fn health_response_healthy(value: &serde_json::Value) -> Option<bool> {
+    value.get("healthy").and_then(serde_json::Value::as_bool)
+}
+
+#[must_use]
+pub fn build_assign_device_params(device_id: &str, primal_id: &str) -> serde_json::Value {
+    serde_json::json!({
+        "device_id": device_id,
+        "primal_id": primal_id,
+    })
+}
+
+#[must_use]
+pub fn build_deploy_niche_params(niche: &NicheTemplate) -> serde_json::Value {
+    serde_json::json!({
+        "name": niche.name,
+        "description": niche.description,
+        "required_primals": niche.required_primals,
+        "optional_primals": niche.optional_primals,
+        "metadata": niche.metadata,
+    })
+}
+
+#[must_use]
+pub fn extract_niche_id_from_response(response: &serde_json::Value) -> Option<&serde_json::Value> {
+    response.get("niche_id")
+}
+
+#[must_use]
+pub fn build_subscribe_events_params() -> serde_json::Value {
+    serde_json::json!({
+        "events": ["device.added", "device.removed", "primal.status", "niche.deployed"]
+    })
+}
+
 /// Cached data for graceful degradation
 #[derive(Debug, Clone, Default)]
 pub struct ProviderCache {
@@ -203,13 +272,11 @@ impl BiomeOSProvider {
     pub async fn assign_device(&self, device_id: &str, primal_id: &str) -> Result<()> {
         info!("Assigning device {} to primal {}", device_id, primal_id);
 
-        // JSON-RPC call via capability-discovered endpoint
-        let params = serde_json::json!({
-            "device_id": device_id,
-            "primal_id": primal_id,
-        });
-
-        self.call_jsonrpc("device.assign", params).await?;
+        self.call_jsonrpc(
+            "device.assign",
+            build_assign_device_params(device_id, primal_id),
+        )
+        .await?;
 
         info!("✅ Device assigned successfully");
         Ok(())
@@ -219,21 +286,12 @@ impl BiomeOSProvider {
     pub async fn deploy_niche(&self, niche: &NicheTemplate) -> Result<String> {
         info!("Deploying niche: {}", niche.name);
 
-        // JSON-RPC call via capability-discovered endpoint
-        let params = serde_json::json!({
-            "name": niche.name,
-            "description": niche.description,
-            "required_primals": niche.required_primals,
-            "optional_primals": niche.optional_primals,
-            "metadata": niche.metadata,
-        });
+        let response = self
+            .call_jsonrpc("niche.deploy", build_deploy_niche_params(niche))
+            .await?;
 
-        let response = self.call_jsonrpc("niche.deploy", params).await?;
-
-        // Extract niche ID from response
         let niche_id: String = serde_json::from_value(
-            response
-                .get("niche_id")
+            extract_niche_id_from_response(&response)
                 .cloned()
                 .ok_or_else(|| anyhow::anyhow!("No niche_id in response"))?,
         )
@@ -252,12 +310,8 @@ impl BiomeOSProvider {
     pub async fn subscribe_events(&self) -> Result<()> {
         info!("Subscribing to real-time events from provider");
 
-        // JSON-RPC call to subscribe (registers interest)
-        let params = serde_json::json!({
-            "events": ["device.added", "device.removed", "primal.status", "niche.deployed"]
-        });
-
-        self.call_jsonrpc("events.subscribe", params).await?;
+        self.call_jsonrpc("events.subscribe", build_subscribe_events_params())
+            .await?;
 
         // Attempt WebSocket connection for real-time event stream
         // Derive WebSocket endpoint from Unix socket path
@@ -334,13 +388,7 @@ impl BiomeOSProvider {
             .await
             .map_err(|e| anyhow::anyhow!("Failed to connect to device management provider: {e}"))?;
 
-        // Build JSON-RPC 2.0 request
-        let request = serde_json::json!({
-            "jsonrpc": "2.0",
-            "method": method,
-            "params": params,
-            "id": 1,
-        });
+        let request = build_jsonrpc_request(method, params, 1);
 
         // Send request (line-delimited JSON-RPC)
         let request_str = serde_json::to_string(&request)?;
@@ -363,15 +411,11 @@ impl BiomeOSProvider {
         let response: serde_json::Value = serde_json::from_str(&response_line)
             .map_err(|e| anyhow::anyhow!("Failed to parse JSON-RPC response: {e}"))?;
 
-        // Check for error
-        if let Some(error) = response.get("error") {
+        if let Some(error) = parse_jsonrpc_error(&response) {
             return Err(anyhow::anyhow!("JSON-RPC error: {error}"));
         }
 
-        // Extract result
-        response
-            .get("result")
-            .cloned()
+        parse_jsonrpc_result(&response)
             .ok_or_else(|| anyhow::anyhow!("No result in JSON-RPC response"))
     }
 
@@ -394,10 +438,11 @@ impl BiomeOSProvider {
         let result = self.call_jsonrpc("health.check", params).await;
 
         if let Ok(res) = result {
-            if let Some(status) = res.get("status").and_then(serde_json::Value::as_str) {
-                return Ok(status.to_string());
+            let status = health_response_status(&res);
+            if status != "unknown" {
+                return Ok(status);
             }
-            if let Some(healthy) = res.get("healthy").and_then(serde_json::Value::as_bool) {
+            if let Some(healthy) = health_response_healthy(&res) {
                 return Ok(if healthy { "healthy" } else { "unhealthy" }.to_string());
             }
         } else {
@@ -468,5 +513,139 @@ mod provider_tests {
         let cloned = cache.clone();
         assert!(cloned.devices.is_empty());
         assert!(cloned.primals.is_empty());
+    }
+
+    #[test]
+    fn assign_device_params_structure() {
+        let params = serde_json::json!({
+            "device_id": "dev-1",
+            "primal_id": "primal-1"
+        });
+        assert_eq!(params["device_id"], "dev-1");
+        assert_eq!(params["primal_id"], "primal-1");
+    }
+
+    #[test]
+    fn deploy_niche_params_structure() {
+        let params = serde_json::json!({
+            "name": "test-niche",
+            "description": "A test",
+            "required_primals": ["p1"],
+            "optional_primals": [],
+            "metadata": {}
+        });
+        assert_eq!(params["name"], "test-niche");
+        assert!(params["required_primals"].is_array());
+    }
+
+    #[test]
+    fn jsonrpc_request_structure() {
+        let request = serde_json::json!({
+            "jsonrpc": "2.0",
+            "method": "device.list",
+            "params": {},
+            "id": 1
+        });
+        assert_eq!(request["jsonrpc"], "2.0");
+        assert_eq!(request["method"], "device.list");
+    }
+
+    #[test]
+    fn subscribe_events_params_structure() {
+        let params = serde_json::json!({
+            "events": ["device.added", "device.removed", "primal.status", "niche.deployed"]
+        });
+        let arr = params["events"].as_array().expect("array");
+        assert!(arr.contains(&serde_json::json!("device.added")));
+    }
+
+    #[test]
+    fn health_check_jsonrpc_params() {
+        let params = serde_json::json!({});
+        assert!(params.is_object());
+    }
+
+    #[test]
+    fn build_jsonrpc_request_structure() {
+        let req = build_jsonrpc_request("device.list", serde_json::json!({}), 1);
+        assert_eq!(req["jsonrpc"], "2.0");
+        assert_eq!(req["method"], "device.list");
+        assert_eq!(req["id"], 1);
+    }
+
+    #[test]
+    fn parse_jsonrpc_result_present() {
+        let res = serde_json::json!({"result": {"ok": true}, "id": 1});
+        let r = parse_jsonrpc_result(&res);
+        assert!(r.is_some());
+        assert_eq!(r.unwrap()["ok"], true);
+    }
+
+    #[test]
+    fn parse_jsonrpc_result_absent() {
+        let res = serde_json::json!({"id": 1});
+        assert!(parse_jsonrpc_result(&res).is_none());
+    }
+
+    #[test]
+    fn parse_jsonrpc_error_present() {
+        let res = serde_json::json!({"error": {"code": -32600, "message": "Invalid"}});
+        assert!(parse_jsonrpc_error(&res).is_some());
+    }
+
+    #[test]
+    fn test_health_response_status() {
+        let v = serde_json::json!({"status": "ok"});
+        assert_eq!(super::health_response_status(&v), "ok");
+    }
+
+    #[test]
+    fn test_health_response_status_unknown() {
+        let v = serde_json::json!({});
+        assert_eq!(super::health_response_status(&v), "unknown");
+    }
+
+    #[test]
+    fn test_health_response_healthy() {
+        let v = serde_json::json!({"healthy": true});
+        assert_eq!(super::health_response_healthy(&v), Some(true));
+    }
+
+    #[test]
+    fn test_build_assign_device_params() {
+        let params = build_assign_device_params("dev-1", "primal-1");
+        assert_eq!(params["device_id"], "dev-1");
+        assert_eq!(params["primal_id"], "primal-1");
+    }
+
+    #[test]
+    fn test_build_deploy_niche_params() {
+        use crate::biomeos_integration::NicheTemplate;
+        let niche = NicheTemplate {
+            id: "id1".to_string(),
+            name: "test".to_string(),
+            description: "desc".to_string(),
+            required_primals: vec!["p1".to_string()],
+            optional_primals: vec![],
+            metadata: serde_json::json!({}),
+        };
+        let params = build_deploy_niche_params(&niche);
+        assert_eq!(params["name"], "test");
+        assert!(params["required_primals"].is_array());
+    }
+
+    #[test]
+    fn test_extract_niche_id_from_response() {
+        let v = serde_json::json!({"niche_id": "niche-123"});
+        let id = extract_niche_id_from_response(&v);
+        assert!(id.is_some());
+        assert_eq!(id.unwrap(), "niche-123");
+    }
+
+    #[test]
+    fn test_build_subscribe_events_params() {
+        let params = build_subscribe_events_params();
+        let arr = params["events"].as_array().expect("array");
+        assert!(arr.contains(&serde_json::json!("device.added")));
     }
 }

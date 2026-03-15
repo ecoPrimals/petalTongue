@@ -381,4 +381,86 @@ mod tests {
         let props = Properties::new();
         assert!(registry.get_node_decoration(&props).is_none());
     }
+
+    #[test]
+    fn test_registry_duplicate_registration() {
+        let registry = AdapterRegistry::new();
+        registry.register(Box::new(TestAdapter {
+            name: "dup".to_string(),
+        }));
+        registry.register(Box::new(TestAdapter {
+            name: "dup".to_string(),
+        }));
+        assert_eq!(registry.adapter_count(), 2);
+        let names = registry.adapter_names();
+        assert_eq!(names.iter().filter(|n| *n == "dup").count(), 2);
+    }
+
+    #[test]
+    fn test_registry_render_property_no_adapter() {
+        use petal_tongue_core::property::PropertyValue;
+
+        let registry = AdapterRegistry::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                registry.render_property(
+                    "unknown_key",
+                    &PropertyValue::String("val".to_string()),
+                    ui,
+                );
+            });
+        });
+    }
+
+    #[test]
+    fn test_registry_render_property_with_adapter() {
+        use petal_tongue_core::property::PropertyValue;
+
+        let registry = AdapterRegistry::new();
+        registry.register(Box::new(TestAdapter {
+            name: "test".to_string(),
+        }));
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                registry.render_property("test", &PropertyValue::String("x".to_string()), ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_registry_generic_fallback_all_value_types() {
+        use petal_tongue_core::property::PropertyValue;
+
+        let registry = AdapterRegistry::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                registry.render_property("s", &PropertyValue::String("hello".to_string()), ui);
+                registry.render_property("n", &PropertyValue::Number(42.5), ui);
+                registry.render_property("b", &PropertyValue::Boolean(true), ui);
+                registry.render_property("b2", &PropertyValue::Boolean(false), ui);
+                registry.render_property("null", &PropertyValue::Null, ui);
+                registry.render_property("obj", &PropertyValue::Object(Default::default()), ui);
+                registry.render_property("arr", &PropertyValue::Array(vec![]), ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_registry_lookup_nonexistent_key_uses_generic() {
+        use petal_tongue_core::property::PropertyValue;
+
+        let registry = AdapterRegistry::new();
+        registry.register(Box::new(TestAdapter {
+            name: "test".to_string(),
+        }));
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                registry.render_property("other", &PropertyValue::Null, ui);
+            });
+        });
+    }
 }

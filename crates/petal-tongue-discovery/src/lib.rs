@@ -438,8 +438,42 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "legacy-http")]
     async fn test_try_connect_http_invalid() {
-        // Invalid URL should fail
         let result = try_connect_http("http://nonexistent-host-12345:99999").await;
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_discover_with_mdns_disabled() {
+        use petal_tongue_core::test_fixtures::env_test_helpers;
+
+        env_test_helpers::with_env_vars_async(
+            &[
+                ("PETALTONGUE_ENABLE_MDNS", Some("false")),
+                ("BIOMEOS_URL", None),
+                ("PETALTONGUE_DISCOVERY_HINTS", None),
+            ],
+            || async {
+                let result = discover_visualization_providers().await;
+                assert!(result.is_ok());
+            },
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn test_discover_with_empty_hints() {
+        use petal_tongue_core::test_fixtures::env_test_helpers;
+
+        env_test_helpers::with_env_vars_async(
+            &[
+                ("PETALTONGUE_DISCOVERY_HINTS", Some("")),
+                ("BIOMEOS_URL", None),
+            ],
+            || async {
+                let result = discover_visualization_providers().await;
+                assert!(result.is_ok());
+            },
+        )
+        .await;
     }
 }

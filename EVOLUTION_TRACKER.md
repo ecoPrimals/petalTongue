@@ -1,7 +1,7 @@
 # petalTongue — Evolution Tracker
 
 **Living document**: Updated as evolution progresses.
-**Last updated**: March 14, 2026
+**Last updated**: March 15, 2026
 
 ---
 
@@ -9,15 +9,15 @@
 
 | Metric | Value |
 |--------|-------|
-| Tests | 3,940+ passing, 17 ignored |
-| Coverage (line) | ~83% |
-| Coverage (function) | ~83% |
+| Tests | 5,168 passing |
+| Coverage (line) | ~85% |
+| Coverage (branch) | ~86% |
 | Clippy | Zero warnings (pedantic + nursery, `--all-targets --all-features`) |
 | `cargo fmt` | Clean |
 | `cargo deny` | Clean (advisories, bans, licenses, sources) |
 | `cargo doc` | Clean (`--all-features --no-deps`) |
 | Unsafe code | `#![forbid(unsafe_code)]` on all 16 crates |
-| Largest file | 943 lines (test file); all files under 1,000 |
+| Largest file | ~960 lines (scene_bridge.rs); all files under 1,000 |
 | External C deps | Zero |
 | SPDX headers | All source files |
 
@@ -141,7 +141,7 @@ No active gaps. Next evolution targets:
 - `visualization.interact.sync` (perspective sync mode)
 - `visualization.render.stream` grammar subscription mode
 - Capability-based data resolution (`"source": "capability:X"`)
-- Coverage target: 90% (currently ~83%)
+- Coverage target: 90% (currently ~85%)
 
 ### Coverage Expansion (March 12, 2026)
 
@@ -237,4 +237,5 @@ the collaborative intelligence.
 | Deep coverage expansion | 3,711 | 79.5% / 81.1% | March 12 |
 | March 14 audit & refactor | 3,776+ | ~82% / ~82% | March 14 |
 | March 14 deep debt phase 2 | 3,940+ | ~83% / ~83% | March 14 |
+| March 15 verified | 5,168 | ~85% / ~86% | March 15 |
 | Target | TBD | 90% / 90% | — |

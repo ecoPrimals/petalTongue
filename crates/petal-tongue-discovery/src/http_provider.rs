@@ -198,7 +198,10 @@ impl VisualizationDataProvider for HttpVisualizationProvider {
 }
 
 /// Convert discovered primal to `PrimalInfo`
-#[expect(deprecated, reason = "PrimalInfo conversion retained for backward-compatible API consumers")]
+#[expect(
+    deprecated,
+    reason = "PrimalInfo conversion retained for backward-compatible API consumers"
+)]
 impl From<DiscoveredPrimal> for PrimalInfo {
     fn from(primal: DiscoveredPrimal) -> Self {
         Self {

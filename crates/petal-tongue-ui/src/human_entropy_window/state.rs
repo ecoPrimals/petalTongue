@@ -400,4 +400,21 @@ mod tests {
         w.update();
         assert!(w.current_quality.is_some() || w.narrative_capturer.is_some());
     }
+
+    #[test]
+    fn reset_clears_waveform_buffer() {
+        let mut w = HumanEntropyWindow::new();
+        w.waveform_buffer = vec![1.0, 2.0, 3.0];
+        w.reset();
+        assert!(w.waveform_buffer.is_empty());
+    }
+
+    #[test]
+    fn stop_capture_sets_quality_for_narrative() {
+        let mut w = HumanEntropyWindow::new();
+        w.modality = EntropyModality::Narrative;
+        w.start_capture();
+        w.stop_capture();
+        assert_eq!(w.state, CaptureWindowState::Stopped);
+    }
 }

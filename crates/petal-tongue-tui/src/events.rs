@@ -340,4 +340,18 @@ mod tests {
             panic!("Expected external event");
         }
     }
+
+    #[test]
+    fn test_event_handler_new() {
+        let handler = EventHandler::new(Duration::from_secs(1));
+        let sender = handler.sender();
+        assert!(!sender.is_closed());
+    }
+
+    #[test]
+    fn test_key_action_debug_eq() {
+        assert_eq!(KeyAction::ScrollLeft, KeyAction::ScrollLeft);
+        assert_ne!(KeyAction::ScrollLeft, KeyAction::ScrollRight);
+        assert_eq!(KeyAction::Toggle, KeyAction::Toggle);
+    }
 }

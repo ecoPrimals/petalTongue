@@ -28,4 +28,5 @@ uuid = "1.9"
 [dev-dependencies]
 petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
 tempfile = "3.8"
+tokio = { workspace = true, features = ["rt", "macros"] }
 

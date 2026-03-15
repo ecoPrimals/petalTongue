@@ -576,4 +576,122 @@ mod tests {
         let primal = client.parse_primal(&json).expect("parse");
         assert!(matches!(primal.health, PrimalHealthStatus::Healthy));
     }
+
+    #[test]
+    fn test_discovery_query_request_structure() {
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": "discovery.query",
+            "params": {"capability": "visualization"},
+            "id": 1
+        });
+        assert_eq!(request["method"], "discovery.query");
+        assert_eq!(request["params"]["capability"], "visualization");
+    }
+
+    #[test]
+    fn test_health_check_request_structure() {
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": "health.check",
+            "params": {},
+            "id": 1
+        });
+        assert_eq!(request["method"], "health.check");
+    }
+
+    #[test]
+    fn test_get_all_primals_request_structure() {
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": "discovery.query",
+            "params": {"capability": "*"},
+            "id": 1
+        });
+        assert_eq!(request["params"]["capability"], "*");
+    }
+
+    #[test]
+    fn test_jsonrpc_response_deserialization() {
+        let json = r#"{"jsonrpc":"2.0","result":[{"id":"p1","name":"p1","endpoint":"unix:///tmp/p1.sock"}],"id":1}"#;
+        let response: JsonRpcResponse = serde_json::from_str(json).expect("deserialize");
+        assert!(response.result.is_some());
+        assert!(response.error.is_none());
+    }
+
+    #[test]
+    fn test_jsonrpc_error_deserialization() {
+        let json =
+            r#"{"jsonrpc":"2.0","error":{"code":-32601,"message":"Method not found"},"id":1}"#;
+        let response: JsonRpcResponse = serde_json::from_str(json).expect("deserialize");
+        assert!(response.error.is_some());
+        let err = response.error.as_ref().unwrap();
+        assert_eq!(err.code, -32601);
+        assert_eq!(err.message, "Method not found");
+    }
+
+    #[test]
+    fn test_jsonrpc_response_serialization() {
+        let response = JsonRpcResponse {
+            jsonrpc: "2.0".to_string(),
+            result: Some(json!([{"id": "p1"}])),
+            error: None,
+            id: json!(1),
+        };
+        let json = serde_json::to_string(&response).expect("serialize");
+        assert!(json.contains("2.0"));
+        assert!(json.contains("p1"));
+    }
+
+    #[test]
+    fn test_jsonrpc_error_serialization() {
+        let err = JsonRpcError {
+            code: -32600,
+            message: "Invalid request".to_string(),
+        };
+        let json = serde_json::to_string(&err).expect("serialize");
+        assert!(json.contains("-32600"));
+        assert!(json.contains("Invalid request"));
+    }
+
+    #[test]
+    fn test_get_search_paths_with_xdg() {
+        petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
+            "XDG_RUNTIME_DIR",
+            "/custom/xdg",
+            || {
+                let paths = SongbirdClient::get_search_paths();
+                assert_eq!(paths.first().and_then(|p| p.to_str()), Some("/custom/xdg"));
+            },
+        );
+    }
+
+    #[test]
+    fn test_parse_primal_capabilities_mixed_types() {
+        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let json = json!({
+            "id": "test",
+            "name": "test",
+            "endpoint": "unix:///tmp/test.sock",
+            "capabilities": ["cap1", "cap2"]
+        });
+        let primal = client.parse_primal(&json).unwrap();
+        assert_eq!(primal.capabilities, vec!["cap1", "cap2"]);
+    }
+
+    #[test]
+    fn test_health_check_response_parsing() {
+        let result = json!({"status": "healthy"});
+        let status = result["status"].as_str().unwrap_or("unknown").to_string();
+        assert_eq!(status, "healthy");
+    }
+
+    #[test]
+    fn test_discovery_socket_name_format() {
+        let family = "nat0";
+        let base = petal_tongue_core::constants::discovery_service_socket_name();
+        let socket_name = format!("{base}-{family}.sock");
+        assert!(socket_name.ends_with(".sock"));
+        assert!(socket_name.contains("nat0"));
+    }
 }

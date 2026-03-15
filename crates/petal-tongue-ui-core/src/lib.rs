@@ -100,11 +100,24 @@ mod tests {
 
     #[test]
     fn test_ui_mode_detection() {
-        // Should always return a valid mode
         let mode = detect_best_ui_mode();
         assert!(matches!(
             mode,
             UIMode::Headless | UIMode::Terminal | UIMode::Display
         ));
+    }
+
+    #[test]
+    fn test_ui_mode_variants() {
+        assert_eq!(UIMode::Headless, UIMode::Headless);
+        assert_eq!(UIMode::Terminal, UIMode::Terminal);
+        assert_eq!(UIMode::Display, UIMode::Display);
+        assert_ne!(UIMode::Headless, UIMode::Display);
+    }
+
+    #[test]
+    fn test_ui_mode_debug() {
+        let s = format!("{:?}", UIMode::Headless);
+        assert!(s.contains("Headless"));
     }
 }

@@ -369,4 +369,156 @@ mod tests {
             "paths should include /run/user/<uid>"
         );
     }
+
+    #[test]
+    fn test_parse_primal_full() {
+        let primal = serde_json::json!({
+            "id": "p1",
+            "primal_type": "airSpring",
+            "socket_path": "/run/user/1000/p1.sock",
+            "capabilities": ["science.et0", "visualization"],
+            "health": "healthy"
+        });
+        let info = NeuralApiProvider::parse_primal(&primal).unwrap();
+        assert_eq!(info.id.as_str(), "p1");
+        assert_eq!(info.name, "airSpring");
+        assert_eq!(info.endpoint, "/run/user/1000/p1.sock");
+        assert_eq!(info.capabilities.len(), 2);
+        assert_eq!(info.health, PrimalHealthStatus::Healthy);
+    }
+
+    #[test]
+    fn test_parse_primal_minimal() {
+        let primal = serde_json::json!({});
+        let info = NeuralApiProvider::parse_primal(&primal).unwrap();
+        assert_eq!(info.id.as_str(), "unknown");
+        assert_eq!(info.name, "unknown");
+        assert_eq!(info.endpoint, "");
+        assert!(info.capabilities.is_empty());
+        assert_eq!(info.health, PrimalHealthStatus::Unknown);
+    }
+
+    #[test]
+    fn test_parse_primal_health_unknown() {
+        let primal = serde_json::json!({
+            "id": "p2",
+            "primal_type": "test",
+            "health": "degraded"
+        });
+        let info = NeuralApiProvider::parse_primal(&primal).unwrap();
+        assert_eq!(info.health, PrimalHealthStatus::Unknown);
+    }
+
+    #[test]
+    fn test_parse_primal_capabilities_empty_array() {
+        let primal = serde_json::json!({
+            "id": "p3",
+            "primal_type": "test",
+            "capabilities": []
+        });
+        let info = NeuralApiProvider::parse_primal(&primal).unwrap();
+        assert!(info.capabilities.is_empty());
+    }
+
+    #[test]
+    fn test_jsonrpc_error_extraction() {
+        let response = serde_json::json!({
+            "jsonrpc": "2.0",
+            "error": {"code": -32600, "message": "Invalid request"},
+            "id": 1
+        });
+        let msg = response
+            .get("error")
+            .and_then(|e| e.get("message"))
+            .and_then(|m| m.as_str())
+            .unwrap_or("Unknown error");
+        assert_eq!(msg, "Invalid request");
+    }
+
+    #[test]
+    fn test_parse_primal_socket_path_empty() {
+        let primal = serde_json::json!({
+            "id": "p4",
+            "primal_type": "test",
+            "socket_path": ""
+        });
+        let info = NeuralApiProvider::parse_primal(&primal).unwrap();
+        assert_eq!(info.endpoint, "");
+    }
+
+    #[test]
+    fn test_parse_primal_capabilities_non_string_filtered() {
+        let primal = serde_json::json!({
+            "id": "p5",
+            "primal_type": "test",
+            "socket_path": "/tmp/p5.sock",
+            "capabilities": ["valid", 123, null, "also-valid"]
+        });
+        let info = NeuralApiProvider::parse_primal(&primal).unwrap();
+        assert_eq!(info.capabilities.len(), 2);
+        assert!(info.capabilities.contains(&"valid".to_string()));
+        assert!(info.capabilities.contains(&"also-valid".to_string()));
+    }
+
+    #[test]
+    fn test_topology_connection_parsing_structure() {
+        let conn = serde_json::json!({
+            "from": "primal-a",
+            "to": "primal-b",
+            "connection_type": "trust"
+        });
+        let from = conn["from"].as_str().unwrap_or("").to_string();
+        let to = conn["to"].as_str().unwrap_or("").to_string();
+        let edge_type = conn["connection_type"]
+            .as_str()
+            .unwrap_or("unknown")
+            .to_string();
+        assert_eq!(from, "primal-a");
+        assert_eq!(to, "primal-b");
+        assert_eq!(edge_type, "trust");
+    }
+
+    #[test]
+    fn test_topology_connection_missing_fields() {
+        let conn = serde_json::json!({});
+        let from = conn["from"].as_str().unwrap_or("").to_string();
+        let to = conn["to"].as_str().unwrap_or("").to_string();
+        assert_eq!(from, "");
+        assert_eq!(to, "");
+    }
+
+    #[test]
+    fn test_socket_name_format() {
+        let family = "nat0";
+        let socket_name = format!("biomeos-neural-api-{family}.sock");
+        assert_eq!(socket_name, "biomeos-neural-api-nat0.sock");
+    }
+
+    #[test]
+    fn test_jsonrpc_result_extraction() {
+        let response = serde_json::json!({
+            "jsonrpc": "2.0",
+            "result": {"health": {"status": "ok"}},
+            "id": 1
+        });
+        let result = response.get("result").cloned().unwrap();
+        let status = result["health"]["status"].as_str().unwrap();
+        assert_eq!(status, "ok");
+    }
+
+    #[test]
+    fn test_primals_array_format() {
+        let result = serde_json::json!({"primals": [{"id": "p1", "primal_type": "t"}]});
+        let primals = result["primals"].as_array().unwrap();
+        assert_eq!(primals.len(), 1);
+        assert_eq!(primals[0]["id"], "p1");
+    }
+
+    #[test]
+    fn test_primals_direct_array_format() {
+        let result = serde_json::json!([{"id": "p1", "primal_type": "t"}]);
+        let arr = result.as_array();
+        assert!(arr.is_some());
+        assert_eq!(arr.unwrap().len(), 1);
+    }
 }

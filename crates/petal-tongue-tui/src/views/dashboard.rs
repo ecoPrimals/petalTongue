@@ -14,6 +14,19 @@ use ratatui::{
 
 use crate::state::TUIState;
 use crate::widgets::StatusBar;
+use petal_tongue_core::PrimalHealthStatus;
+
+#[must_use]
+pub const fn format_primal_health_dashboard(
+    health: PrimalHealthStatus,
+) -> (&'static str, Color, &'static str) {
+    match health {
+        PrimalHealthStatus::Healthy => ("✅", Color::Green, "Healthy"),
+        PrimalHealthStatus::Warning => ("⚠️", Color::Yellow, "Warning"),
+        PrimalHealthStatus::Critical => ("❌", Color::Red, "Critical"),
+        PrimalHealthStatus::Unknown => ("❓", Color::Gray, "Unknown"),
+    }
+}
 
 /// Render dashboard view
 pub fn render(frame: &mut Frame, area: Rect, state: &TUIState) {
@@ -114,14 +127,8 @@ fn render_primal_list(frame: &mut Frame, area: Rect, state: &TUIState) {
         primals
             .iter()
             .map(|primal| {
-                use petal_tongue_core::PrimalHealthStatus;
-
-                let (health_icon, health_color, health_text) = match primal.health {
-                    PrimalHealthStatus::Healthy => ("✅", Color::Green, "Healthy"),
-                    PrimalHealthStatus::Warning => ("⚠️", Color::Yellow, "Warning"),
-                    PrimalHealthStatus::Critical => ("❌", Color::Red, "Critical"),
-                    PrimalHealthStatus::Unknown => ("❓", Color::Gray, "Unknown"),
-                };
+                let (health_icon, health_color, health_text) =
+                    format_primal_health_dashboard(primal.health);
 
                 ListItem::new(Line::from(vec![
                     Span::raw(format!("{health_icon} ")),
@@ -259,4 +266,49 @@ fn render_topology_summary(frame: &mut Frame, area: Rect, state: &TUIState) {
 fn render_bottom_status(frame: &mut Frame, area: Rect, state: &TUIState) {
     let status = tokio::runtime::Handle::current().block_on(state.get_status());
     StatusBar::render(frame, area, &status);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn format_primal_health_healthy() {
+        let (icon, _color, text) = format_primal_health_dashboard(PrimalHealthStatus::Healthy);
+        assert_eq!(icon, "✅");
+        assert_eq!(text, "Healthy");
+    }
+
+    #[test]
+    fn format_primal_health_warning() {
+        let (icon, _color, text) = format_primal_health_dashboard(PrimalHealthStatus::Warning);
+        assert_eq!(icon, "⚠️");
+        assert_eq!(text, "Warning");
+    }
+
+    #[test]
+    fn format_primal_health_critical() {
+        let (icon, _color, text) = format_primal_health_dashboard(PrimalHealthStatus::Critical);
+        assert_eq!(icon, "❌");
+        assert_eq!(text, "Critical");
+    }
+
+    #[test]
+    fn format_primal_health_unknown() {
+        let (icon, _color, text) = format_primal_health_dashboard(PrimalHealthStatus::Unknown);
+        assert_eq!(icon, "❓");
+        assert_eq!(text, "Unknown");
+    }
+
+    #[test]
+    fn format_primal_health_colors() {
+        let (_, c_healthy, _) = format_primal_health_dashboard(PrimalHealthStatus::Healthy);
+        let (_, c_warning, _) = format_primal_health_dashboard(PrimalHealthStatus::Warning);
+        let (_, c_critical, _) = format_primal_health_dashboard(PrimalHealthStatus::Critical);
+        let (_, c_unknown, _) = format_primal_health_dashboard(PrimalHealthStatus::Unknown);
+        assert_eq!(c_healthy, Color::Green);
+        assert_eq!(c_warning, Color::Yellow);
+        assert_eq!(c_critical, Color::Red);
+        assert_eq!(c_unknown, Color::Gray);
+    }
 }

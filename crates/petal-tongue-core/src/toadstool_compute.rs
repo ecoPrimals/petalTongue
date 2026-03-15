@@ -425,6 +425,65 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_capabilities_raytracing() {
+        let caps = vec!["ray-tracing".to_string(), "raytracing".to_string()];
+        let parsed = ToadstoolCompute::parse_capabilities(&caps);
+        assert_eq!(parsed.len(), 2);
+        assert!(parsed.iter().all(|c| *c == ComputeCapability::RayTracing));
+    }
+
+    #[test]
+    fn test_parse_capabilities_particle_effects() {
+        let caps = vec!["particle-effects".to_string(), "particles".to_string()];
+        let parsed = ToadstoolCompute::parse_capabilities(&caps);
+        assert_eq!(parsed.len(), 2);
+        assert!(
+            parsed
+                .iter()
+                .all(|c| *c == ComputeCapability::ParticleEffects)
+        );
+    }
+
+    #[test]
+    fn test_parse_capabilities_image_processing() {
+        let caps = vec!["image-processing".to_string(), "image".to_string()];
+        let parsed = ToadstoolCompute::parse_capabilities(&caps);
+        assert_eq!(parsed.len(), 2);
+        assert!(
+            parsed
+                .iter()
+                .all(|c| *c == ComputeCapability::ImageProcessing)
+        );
+    }
+
+    #[test]
+    fn test_parse_capabilities_legacy_strings() {
+        let caps = vec![
+            "layout-computation".to_string(),
+            "gpu-layout".to_string(),
+            "physics".to_string(),
+            "physics-simulation".to_string(),
+        ];
+        let parsed = ToadstoolCompute::parse_capabilities(&caps);
+        assert!(parsed.contains(&ComputeCapability::LayoutComputation));
+        assert!(parsed.contains(&ComputeCapability::PhysicsSimulation));
+    }
+
+    #[test]
+    fn test_parse_capabilities_display_skipped() {
+        let caps = vec!["display".to_string(), "shader.compile".to_string()];
+        let parsed = ToadstoolCompute::parse_capabilities(&caps);
+        assert!(parsed.is_empty());
+    }
+
+    #[test]
+    fn test_parse_capabilities_empty() {
+        let caps: Vec<String> = vec![];
+        let parsed = ToadstoolCompute::parse_capabilities(&caps);
+        assert!(parsed.is_empty());
+    }
+
+    #[test]
     fn test_toadstool_service_info() {
         let mut metadata = HashMap::new();
         metadata.insert("version".to_string(), "1.0.0".to_string());

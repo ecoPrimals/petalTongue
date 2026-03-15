@@ -4,7 +4,8 @@
 #![allow(unexpected_cfgs)]
 
 use super::rendering_helpers::{
-    capture_state_display, format_recording_duration, quality_color_rgb,
+    capture_state_display, format_recording_duration, modality_selector_enabled, quality_color_rgb,
+    quality_to_percent_display, stopped_state_message,
 };
 use super::state::HumanEntropyWindow;
 use super::types::{CaptureWindowState, EntropyModality};
@@ -80,7 +81,7 @@ impl HumanEntropyWindow {
                 EntropyModality::Gesture,
                 EntropyModality::Video,
             ] {
-                let enabled = modality.is_available() && display.can_start;
+                let enabled = modality_selector_enabled(modality.is_available(), display.can_start);
 
                 ui.add_enabled_ui(enabled, |ui| {
                     if ui
@@ -138,7 +139,7 @@ impl HumanEntropyWindow {
                 let [r, g, b] = quality_color_rgb(quality as f32);
                 let color = egui::Color32::from_rgb(r, g, b);
 
-                ui.colored_label(color, format!("{:.1}%", quality * 100.0));
+                ui.colored_label(color, quality_to_percent_display(quality));
             });
 
             // Quality bar
@@ -167,14 +168,7 @@ impl HumanEntropyWindow {
         ui.vertical_centered(|ui| {
             ui.add_space(20.0);
 
-            if let Some(quality) = self.current_quality {
-                ui.label(format!(
-                    "Capture complete! Quality: {:.1}%",
-                    quality * 100.0
-                ));
-            } else {
-                ui.label("Capture complete!");
-            }
+            ui.label(stopped_state_message(self.current_quality));
 
             ui.add_space(20.0);
 
@@ -206,10 +200,62 @@ impl HumanEntropyWindow {
 
 #[cfg(test)]
 mod tests {
-    use super::super::rendering_helpers::format_recording_duration;
+    use super::super::rendering_helpers::{
+        capture_state_display, format_recording_duration, quality_color_rgb,
+    };
+    use super::super::types::CaptureWindowState;
 
     #[test]
-    fn render_ui_smoke() {
-        let _ = format_recording_duration(1.0);
+    fn format_recording_duration_values() {
+        assert_eq!(format_recording_duration(0.0), "0.0s");
+        assert_eq!(format_recording_duration(1.0), "1.0s");
+        assert_eq!(format_recording_duration(65.5), "65.5s");
+    }
+
+    #[test]
+    fn quality_color_rgb_green() {
+        assert_eq!(quality_color_rgb(0.8), [0, 255, 0]);
+    }
+
+    #[test]
+    fn quality_color_rgb_yellow() {
+        assert_eq!(quality_color_rgb(0.5), [255, 255, 0]);
+    }
+
+    #[test]
+    fn quality_color_rgb_red() {
+        assert_eq!(quality_color_rgb(0.2), [255, 0, 0]);
+    }
+
+    #[test]
+    fn capture_state_display_idle() {
+        let d = capture_state_display(&CaptureWindowState::Idle, None, None);
+        assert_eq!(d.state_label, "Idle");
+        assert!(d.can_start);
+        assert!(!d.can_stop);
+    }
+
+    #[test]
+    fn capture_state_display_recording() {
+        let d = capture_state_display(&CaptureWindowState::Recording, Some(0.9), Some(10.0));
+        assert_eq!(d.state_label, "Recording");
+        assert!(!d.can_start);
+        assert!(d.can_stop);
+        assert_eq!(d.progress_percent, Some(90.0));
+    }
+
+    #[test]
+    fn capture_state_display_stopped() {
+        let d = capture_state_display(&CaptureWindowState::Stopped, Some(0.6), None);
+        assert_eq!(d.state_label, "Stopped");
+        assert!(d.can_discard);
+    }
+
+    #[test]
+    fn capture_state_display_processing() {
+        let d = capture_state_display(&CaptureWindowState::Processing, None, None);
+        assert_eq!(d.state_label, "Processing");
+        assert!(!d.can_start);
+        assert!(!d.can_discard);
     }
 }

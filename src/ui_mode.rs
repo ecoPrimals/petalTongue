@@ -171,6 +171,33 @@ mod tests {
         assert_eq!(path.as_ref().unwrap().as_os_str(), "./relative/path.json");
     }
 
+    #[test]
+    fn test_scenario_to_path_parent_dir() {
+        let path = scenario_to_path(Some("..".to_string()));
+        assert!(path.is_some());
+        assert_eq!(path.as_ref().unwrap().as_os_str(), "..");
+    }
+
+    #[test]
+    fn test_scenario_to_path_current_dir() {
+        let path = scenario_to_path(Some(".".to_string()));
+        assert!(path.is_some());
+        assert_eq!(path.as_ref().unwrap().as_os_str(), ".");
+    }
+
+    #[test]
+    fn test_scenario_to_path_whitespace() {
+        let path = scenario_to_path(Some("  path.json  ".to_string()));
+        assert!(path.is_some());
+        assert_eq!(path.as_ref().unwrap().as_os_str(), "  path.json  ");
+    }
+
+    #[test]
+    fn test_window_title_contains_representation() {
+        let title = window_title();
+        assert!(title.contains("Representation"));
+    }
+
     #[tokio::test]
     #[cfg(feature = "ui")]
     async fn test_ui_mode_signature() {

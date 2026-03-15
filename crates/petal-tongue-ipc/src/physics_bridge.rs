@@ -263,4 +263,34 @@ mod tests {
         assert_eq!(r.bodies_updated, 3);
         assert!((r.step_duration_secs - 0.001).abs() < f64::EPSILON);
     }
+
+    #[test]
+    fn physics_ipc_request_format() {
+        let mut world = PhysicsWorld::new();
+        world.gravity = [0.0, -9.81, 0.0];
+        world.time_step = 0.016;
+        world.add_body(PhysicsBody {
+            id: "b1".into(),
+            mass: 1.0,
+            position: [0.0, 0.0, 0.0],
+            velocity: [1.0, 0.0, 0.0],
+            collision_shape: CollisionShape::None,
+        });
+        let req = world.to_ipc_request();
+        assert!(req.is_object());
+        assert!(req.get("bodies").is_some());
+        assert!(req.get("bodies").and_then(|b| b.as_array()).unwrap().len() == 1);
+    }
+
+    #[test]
+    fn physics_step_result_clone() {
+        let r = PhysicsStepResult {
+            gpu_accelerated: true,
+            bodies_updated: 10,
+            step_duration_secs: 0.05,
+        };
+        let r2 = r.clone();
+        assert_eq!(r.gpu_accelerated, r2.gpu_accelerated);
+        assert_eq!(r.bodies_updated, r2.bodies_updated);
+    }
 }

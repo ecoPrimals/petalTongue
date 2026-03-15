@@ -188,6 +188,7 @@ pub(super) fn create_app(
         motor_tx,
         show_top_menu: true,
         interaction_bridge: EguiInteractionBridge::new(),
+        squirrel_adapter: crate::squirrel_adapter::SquirrelAdapter::new_deferred(),
     };
 
     finalize_app_startup(&mut app, &scenario, &tutorial_mode, needs_fallback);
@@ -570,5 +571,56 @@ fn finalize_app_startup(
         );
     } else {
         app.refresh_graph_data();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_create_adapter_registry() {
+        let registry = create_adapter_registry();
+        assert_eq!(registry.adapter_count(), 3);
+        let names = registry.adapter_names();
+        assert!(names.iter().any(|t| t.contains("trust")));
+        assert!(names.iter().any(|t| t.contains("family")));
+        assert!(names.iter().any(|t| t.contains("capabilities")));
+    }
+
+    #[test]
+    fn test_create_tool_manager() {
+        let tm = create_tool_manager();
+        assert!(!tm.tools().is_empty());
+    }
+
+    #[test]
+    fn test_create_renderers_empty_scenario() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let (visual, audio, _gen, anim) = create_renderers(graph, &None);
+        let _ = visual;
+        let _ = audio;
+        let _guard = anim.read().unwrap();
+    }
+
+    #[test]
+    fn test_create_status_reporter() {
+        let caps = CapabilityDetector::default();
+        let reporter = create_status_reporter(&caps);
+        assert!(Arc::strong_count(&reporter) >= 1);
+    }
+
+    #[test]
+    fn test_adapter_registry_names() {
+        let registry = create_adapter_registry();
+        let names = registry.adapter_names();
+        assert_eq!(names.len(), 3);
+    }
+
+    #[test]
+    fn test_tool_manager_has_graph_metrics() {
+        let tm = create_tool_manager();
+        let tools = tm.tools();
+        assert!(tools.iter().any(|t| t.metadata().name.contains("Graph")));
     }
 }

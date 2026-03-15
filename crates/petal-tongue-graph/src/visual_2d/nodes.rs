@@ -176,7 +176,7 @@ fn draw_capability_badges(
 }
 
 /// Map capability to icon and color
-fn capability_to_icon_and_color(capability: &str) -> (&'static str, Color32) {
+pub fn capability_to_icon_and_color(capability: &str) -> (&'static str, Color32) {
     let cap_lower = capability.to_lowercase();
 
     if cap_lower.contains("security") || cap_lower.contains("trust") || cap_lower.contains("auth") {
@@ -300,7 +300,7 @@ pub const fn trust_level_to_colors(trust_level: Option<u8>) -> (Color32, Color32
 }
 
 /// Map family ID to a consistent color
-fn family_id_to_color(family_id: &str) -> Color32 {
+pub fn family_id_to_color(family_id: &str) -> Color32 {
     let hash: u32 = family_id.bytes().map(u32::from).sum();
     let hue = (hash % 360) as f32;
     let (r, g, b) = hsv_to_rgb(hue, 0.7, 0.9);
@@ -374,5 +374,204 @@ mod tests {
     fn test_trust_level_to_colors_high() {
         let (fill, _) = trust_level_to_colors(Some(255));
         assert_eq!(fill, Color32::from_rgb(120, 120, 120));
+    }
+
+    #[test]
+    fn test_capability_to_icon_security() {
+        let (icon, _) = capability_to_icon_and_color("security");
+        assert_eq!(icon, "🔒");
+        let (icon2, _) = capability_to_icon_and_color("trust");
+        assert_eq!(icon2, "🔒");
+        let (icon3, _) = capability_to_icon_and_color("auth");
+        assert_eq!(icon3, "🔒");
+    }
+
+    #[test]
+    fn test_capability_to_icon_storage() {
+        let (icon, _) = capability_to_icon_and_color("storage");
+        assert_eq!(icon, "💾");
+        let (icon2, _) = capability_to_icon_and_color("persist");
+        assert_eq!(icon2, "💾");
+    }
+
+    #[test]
+    fn test_capability_to_icon_compute() {
+        let (icon, _) = capability_to_icon_and_color("compute");
+        assert_eq!(icon, "⚙️");
+        let (icon2, _) = capability_to_icon_and_color("container");
+        assert_eq!(icon2, "⚙️");
+    }
+
+    #[test]
+    fn test_capability_to_icon_discovery() {
+        let (icon, _) = capability_to_icon_and_color("discovery");
+        assert_eq!(icon, "🔍");
+        let (icon2, _) = capability_to_icon_and_color("orchestrate");
+        assert_eq!(icon2, "🔍");
+    }
+
+    #[test]
+    fn test_capability_to_icon_identity() {
+        let (icon, _) = capability_to_icon_and_color("identity");
+        assert_eq!(icon, "🆔");
+        let (icon2, _) = capability_to_icon_and_color("genetic");
+        assert_eq!(icon2, "🆔");
+    }
+
+    #[test]
+    fn test_capability_to_icon_encrypt() {
+        let (icon, _) = capability_to_icon_and_color("encrypt");
+        assert_eq!(icon, "🔐");
+    }
+
+    #[test]
+    fn test_capability_to_icon_ai() {
+        let (icon, _) = capability_to_icon_and_color("ai");
+        assert_eq!(icon, "🧠");
+        let (icon2, _) = capability_to_icon_and_color("intent");
+        assert_eq!(icon2, "🧠");
+        let (icon3, _) = capability_to_icon_and_color("planning");
+        assert_eq!(icon3, "🧠");
+    }
+
+    #[test]
+    fn test_capability_to_icon_network() {
+        let (icon, _) = capability_to_icon_and_color("network");
+        assert_eq!(icon, "🌐");
+        let (icon2, _) = capability_to_icon_and_color("tcp");
+        assert_eq!(icon2, "🌐");
+        let (icon3, _) = capability_to_icon_and_color("grpc");
+        assert_eq!(icon3, "🌐");
+    }
+
+    #[test]
+    fn test_capability_to_icon_visual() {
+        let (icon, _) = capability_to_icon_and_color("visual");
+        assert_eq!(icon, "👁️");
+    }
+
+    #[test]
+    fn test_capability_to_icon_audio() {
+        let (icon, _) = capability_to_icon_and_color("audio");
+        assert_eq!(icon, "🔊");
+    }
+
+    #[test]
+    fn test_capability_to_icon_default() {
+        let (icon, _) = capability_to_icon_and_color("unknown");
+        assert_eq!(icon, "•");
+    }
+
+    #[test]
+    fn test_family_id_to_color_deterministic() {
+        let c1 = family_id_to_color("family-a");
+        let c2 = family_id_to_color("family-a");
+        assert_eq!(c1, c2);
+    }
+
+    #[test]
+    fn test_family_id_to_color_different_ids() {
+        let c1 = family_id_to_color("family-a");
+        let c2 = family_id_to_color("family-b");
+        assert_ne!(c1, c2);
+    }
+
+    #[test]
+    fn test_family_id_to_color_empty() {
+        let _c = family_id_to_color("");
+    }
+
+    #[test]
+    fn test_badge_angle_formula() {
+        let angle_for = |i: usize, n: usize| (i as f32) * std::f32::consts::TAU / (n as f32);
+        assert!((angle_for(0, 4) - 0.0).abs() < f32::EPSILON);
+        assert!((angle_for(1, 4) - std::f32::consts::FRAC_PI_2).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_capability_to_icon_attribution() {
+        let (icon, _) = capability_to_icon_and_color("attribution");
+        assert_eq!(icon, "📋");
+    }
+
+    #[test]
+    fn test_capability_to_icon_provenance() {
+        let (icon, _) = capability_to_icon_and_color("provenance");
+        assert_eq!(icon, "📋");
+    }
+
+    #[test]
+    fn test_capability_to_icon_audit() {
+        let (icon, _) = capability_to_icon_and_color("audit");
+        assert_eq!(icon, "📋");
+    }
+
+    #[test]
+    fn test_capability_to_icon_data() {
+        let (icon, _) = capability_to_icon_and_color("data");
+        assert_eq!(icon, "💾");
+    }
+
+    #[test]
+    fn test_capability_to_icon_workload() {
+        let (icon, _) = capability_to_icon_and_color("workload");
+        assert_eq!(icon, "⚙️");
+    }
+
+    #[test]
+    fn test_capability_to_icon_federation() {
+        let (icon, _) = capability_to_icon_and_color("federation");
+        assert_eq!(icon, "🔍");
+    }
+
+    #[test]
+    fn test_capability_to_icon_lineage() {
+        let (icon, _) = capability_to_icon_and_color("lineage");
+        assert_eq!(icon, "🆔");
+    }
+
+    #[test]
+    fn test_capability_to_icon_crypto() {
+        let (icon, _) = capability_to_icon_and_color("crypto");
+        assert_eq!(icon, "🔐");
+        let (icon2, _) = capability_to_icon_and_color("sign");
+        assert_eq!(icon2, "🔐");
+    }
+
+    #[test]
+    fn test_capability_to_icon_inference() {
+        let (icon, _) = capability_to_icon_and_color("inference");
+        assert_eq!(icon, "🧠");
+    }
+
+    #[test]
+    fn test_capability_to_icon_http() {
+        let (icon, _) = capability_to_icon_and_color("http");
+        assert_eq!(icon, "🌐");
+    }
+
+    #[test]
+    fn test_capability_to_icon_display() {
+        let (icon, _) = capability_to_icon_and_color("display");
+        assert_eq!(icon, "👁️");
+    }
+
+    #[test]
+    fn test_capability_to_icon_sonification() {
+        let (icon, _) = capability_to_icon_and_color("sonification");
+        assert_eq!(icon, "🔊");
+    }
+
+    #[test]
+    fn test_trust_level_to_colors_stroke() {
+        let (fill, stroke) = trust_level_to_colors(Some(3));
+        assert_eq!(fill, Color32::from_rgb(40, 200, 80));
+        assert_eq!(stroke, Color32::from_rgb(20, 140, 60));
+    }
+
+    #[test]
+    fn test_health_to_colors_both() {
+        let (fill, stroke) = health_to_colors(PrimalHealthStatus::Healthy);
+        assert_ne!(fill, stroke);
     }
 }

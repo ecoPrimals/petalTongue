@@ -177,4 +177,80 @@ mod tests {
         let adapter = EcoPrimalCapabilityAdapter::from_config(config);
         assert_eq!(adapter.get_icon("custom"), "🎯");
     }
+
+    #[test]
+    fn test_render_invalid_capabilities() {
+        let adapter = EcoPrimalCapabilityAdapter::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                adapter.render(
+                    "capabilities",
+                    &PropertyValue::String("not-array".to_string()),
+                    ui,
+                );
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_empty_capabilities() {
+        let adapter = EcoPrimalCapabilityAdapter::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                adapter.render("capabilities", &PropertyValue::Array(vec![]), ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_capabilities_mixed_types() {
+        let adapter = EcoPrimalCapabilityAdapter::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                adapter.render(
+                    "capabilities",
+                    &PropertyValue::Array(vec![
+                        PropertyValue::String("security".to_string()),
+                        PropertyValue::Number(1.0),
+                        PropertyValue::String("ai/model".to_string()),
+                    ]),
+                    ui,
+                );
+            });
+        });
+    }
+
+    #[test]
+    fn test_node_decoration_always_none() {
+        let adapter = EcoPrimalCapabilityAdapter::new();
+        let mut props = Properties::new();
+        props.insert(
+            "capabilities".to_string(),
+            PropertyValue::Array(vec![PropertyValue::String("security".to_string())]),
+        );
+        assert!(adapter.node_decoration(&props).is_none());
+    }
+
+    #[test]
+    fn test_adapter_name_priority() {
+        let adapter = EcoPrimalCapabilityAdapter::new();
+        assert_eq!(adapter.name(), "ecoprimal-capabilities");
+        assert_eq!(adapter.priority(), 10);
+    }
+
+    #[test]
+    fn test_default_config_icons() {
+        let config = CapabilityIconConfig::default();
+        assert_eq!(config.icon_map.get("security"), Some(&"🔒".to_string()));
+        assert_eq!(config.default_icon, "⚙️");
+    }
+
+    #[test]
+    fn test_get_icon_case_insensitive_substring() {
+        let adapter = EcoPrimalCapabilityAdapter::new();
+        assert_eq!(adapter.get_icon("AI/LLM"), "🧠");
+    }
 }

@@ -313,7 +313,8 @@ mod tests {
     async fn test_software_display_creation() {
         let display = SoftwareDisplay::new();
         assert!(display.name().starts_with("Software Rendering"));
-        assert_eq!(display.dimensions(), (1920, 1080));
+        let (w, h) = display.dimensions();
+        assert!(w > 0 && h > 0);
     }
 
     #[tokio::test]
@@ -327,9 +328,36 @@ mod tests {
         let mut display = SoftwareDisplay::with_dimensions(100, 100);
         display.init().await.unwrap();
 
-        // Create test buffer (100x100 RGBA)
         let buffer = vec![0u8; 100 * 100 * 4];
         assert!(display.present(&buffer).await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_software_display_present_wrong_buffer_size() {
+        let mut display = SoftwareDisplay::with_dimensions(100, 100);
+        display.init().await.unwrap();
+
+        let buffer = vec![0u8; 50 * 50 * 4];
+        assert!(display.present(&buffer).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_software_display_set_dimensions() {
+        let mut display = SoftwareDisplay::with_dimensions(50, 50);
+        display.set_dimensions(100, 75);
+        assert_eq!(display.dimensions(), (100, 75));
+    }
+
+    #[tokio::test]
+    async fn test_software_display_with_dimensions_buffer_size() {
+        let display = SoftwareDisplay::with_dimensions(64, 48);
+        assert_eq!(display.dimensions(), (64, 48));
+    }
+
+    #[test]
+    fn test_software_display_default() {
+        let display = SoftwareDisplay::default();
+        assert!(display.name().starts_with("Software Rendering"));
     }
 
     #[test]

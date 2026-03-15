@@ -155,6 +155,48 @@ pub fn format_bytes(bytes: u64) -> String {
     }
 }
 
+/// Compute (avg, max) from a history slice. Returns (0.0, 0.0) for empty.
+#[must_use]
+pub fn cpu_history_avg_max(history: &[f64]) -> (f64, f64) {
+    if history.is_empty() {
+        return (0.0, 0.0);
+    }
+    let sum: f64 = history.iter().sum();
+    let avg = sum / history.len() as f64;
+    let max = history.iter().copied().fold(0.0_f64, f64::max);
+    (avg, max)
+}
+
+/// RGB color for active executions: green when > 0, gray when 0.
+#[must_use]
+pub const fn active_executions_color_rgb(active: u32) -> [u8; 3] {
+    if active > 0 {
+        [34, 197, 94]
+    } else {
+        [156, 163, 175]
+    }
+}
+
+#[must_use]
+pub fn format_cpu_percent(percent: f64) -> String {
+    format!("{percent:.1}%")
+}
+
+#[must_use]
+pub fn format_cpu_avg_display(avg: f64) -> String {
+    format!("Avg: {avg:.1}%")
+}
+
+#[must_use]
+pub fn format_cpu_max_display(max: f64) -> String {
+    format!("Max: {max:.1}%")
+}
+
+#[must_use]
+pub fn format_memory_used_total(used_mb: u64, total_mb: u64) -> String {
+    format!("{used_mb} MB / {total_mb} MB")
+}
+
 /// Format uptime seconds into human-readable string (e.g., "1d 2h 34m").
 #[must_use]
 pub fn format_uptime_display(uptime_secs: u64) -> String {
@@ -308,5 +350,53 @@ mod tests {
         assert_eq!(format_uptime_display(3_600), "1h 0m");
         assert_eq!(format_uptime_display(86_400), "1d 0h 0m");
         assert_eq!(format_uptime_display(90_061), "1d 1h 1m");
+    }
+
+    #[test]
+    fn test_cpu_history_avg_max() {
+        let (avg, max) = cpu_history_avg_max(&[]);
+        assert_eq!(avg, 0.0);
+        assert_eq!(max, 0.0);
+
+        let (avg, max) = cpu_history_avg_max(&[30.0, 50.0, 70.0]);
+        assert!((avg - 50.0).abs() < 0.01);
+        assert_eq!(max, 70.0);
+
+        let (avg, max) = cpu_history_avg_max(&[100.0]);
+        assert_eq!(avg, 100.0);
+        assert_eq!(max, 100.0);
+    }
+
+    #[test]
+    fn test_active_executions_color_rgb() {
+        let rgb = active_executions_color_rgb(0);
+        assert_eq!(rgb, [156, 163, 175]);
+
+        let rgb = active_executions_color_rgb(1);
+        assert_eq!(rgb, [34, 197, 94]);
+
+        let rgb = active_executions_color_rgb(5);
+        assert_eq!(rgb, [34, 197, 94]);
+    }
+
+    #[test]
+    fn test_format_cpu_percent() {
+        assert_eq!(format_cpu_percent(45.5), "45.5%");
+        assert_eq!(format_cpu_percent(100.0), "100.0%");
+    }
+
+    #[test]
+    fn test_format_cpu_avg_display() {
+        assert_eq!(format_cpu_avg_display(50.0), "Avg: 50.0%");
+    }
+
+    #[test]
+    fn test_format_cpu_max_display() {
+        assert_eq!(format_cpu_max_display(75.0), "Max: 75.0%");
+    }
+
+    #[test]
+    fn test_format_memory_used_total() {
+        assert_eq!(format_memory_used_total(1024, 2048), "1024 MB / 2048 MB");
     }
 }

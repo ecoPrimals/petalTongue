@@ -74,8 +74,161 @@ impl ModalityCompiler for AudioCompiler {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::modality::test_utils::rich_test_scene;
     use crate::primitive::{Color, Primitive};
     use crate::scene_graph::{SceneGraph, SceneNode};
+
+    #[test]
+    fn audio_compiler_empty_scene() {
+        let graph = SceneGraph::new();
+        let out = AudioCompiler::new().compile(&graph);
+        let ModalityOutput::AudioParams(params) = &out else {
+            panic!("expected AudioParams");
+        };
+        assert_eq!(params.len(), 0);
+    }
+
+    #[test]
+    fn audio_compiler_line_primitive() {
+        let mut graph = SceneGraph::new();
+        let prim = Primitive::Line {
+            points: vec![[100.0, 200.0], [300.0, 400.0]],
+            stroke: crate::primitive::StrokeStyle::default(),
+            closed: false,
+            data_id: Some("line".to_string()),
+        };
+        graph.add_to_root(SceneNode::new("line").with_primitive(prim));
+        let out = AudioCompiler::new().compile(&graph);
+        let ModalityOutput::AudioParams(params) = &out else {
+            panic!("expected AudioParams");
+        };
+        assert_eq!(params.len(), 1);
+        assert!(params[0].frequency >= 200.0 && params[0].frequency <= 2000.0);
+    }
+
+    #[test]
+    fn audio_compiler_multiple_primitives() {
+        let mut graph = SceneGraph::new();
+        graph.add_to_root(SceneNode::new("p1").with_primitive(Primitive::Point {
+            x: 100.0,
+            y: 200.0,
+            radius: 5.0,
+            fill: None,
+            stroke: None,
+            data_id: Some("a".to_string()),
+        }));
+        graph.add_to_root(SceneNode::new("p2").with_primitive(Primitive::Point {
+            x: 300.0,
+            y: 400.0,
+            radius: 5.0,
+            fill: None,
+            stroke: None,
+            data_id: Some("b".to_string()),
+        }));
+        graph.add_to_root(SceneNode::new("r").with_primitive(Primitive::Rect {
+            x: 200.0,
+            y: 100.0,
+            width: 50.0,
+            height: 50.0,
+            fill: Some(Color::BLACK),
+            stroke: None,
+            corner_radius: 0.0,
+            data_id: Some("r1".to_string()),
+        }));
+        let out = AudioCompiler::new().compile(&graph);
+        let ModalityOutput::AudioParams(params) = &out else {
+            panic!("expected AudioParams");
+        };
+        assert_eq!(params.len(), 3);
+    }
+
+    #[test]
+    fn audio_compiler_extreme_positions_origin() {
+        let mut graph = SceneGraph::new();
+        graph.add_to_root(SceneNode::new("p").with_primitive(Primitive::Point {
+            x: 0.0,
+            y: 0.0,
+            radius: 5.0,
+            fill: None,
+            stroke: None,
+            data_id: Some("d".to_string()),
+        }));
+        let out = AudioCompiler::new().compile(&graph);
+        let ModalityOutput::AudioParams(params) = &out else {
+            panic!("expected AudioParams");
+        };
+        assert_eq!(params.len(), 1);
+        assert!(params[0].pan >= -1.0 && params[0].pan <= 1.0);
+        assert!(params[0].frequency >= 200.0 && params[0].frequency <= 2000.0);
+    }
+
+    #[test]
+    fn audio_compiler_extreme_positions_max() {
+        let mut graph = SceneGraph::new();
+        graph.add_to_root(SceneNode::new("p").with_primitive(Primitive::Point {
+            x: 800.0,
+            y: 600.0,
+            radius: 5.0,
+            fill: None,
+            stroke: None,
+            data_id: Some("d".to_string()),
+        }));
+        let out = AudioCompiler::new().compile(&graph);
+        let ModalityOutput::AudioParams(params) = &out else {
+            panic!("expected AudioParams");
+        };
+        assert_eq!(params.len(), 1);
+        assert!(params[0].pan >= -1.0 && params[0].pan <= 1.0);
+        assert!(params[0].frequency >= 200.0 && params[0].frequency <= 2000.0);
+    }
+
+    #[test]
+    fn audio_compiler_large_radius() {
+        let mut graph = SceneGraph::new();
+        graph.add_to_root(SceneNode::new("p").with_primitive(Primitive::Point {
+            x: 400.0,
+            y: 300.0,
+            radius: 50.0,
+            fill: None,
+            stroke: None,
+            data_id: Some("d".to_string()),
+        }));
+        let out = AudioCompiler::new().compile(&graph);
+        let ModalityOutput::AudioParams(params) = &out else {
+            panic!("expected AudioParams");
+        };
+        assert_eq!(params.len(), 1);
+        assert!(params[0].amplitude <= 1.0);
+    }
+
+    #[test]
+    fn audio_compiler_zero_radius() {
+        let mut graph = SceneGraph::new();
+        graph.add_to_root(SceneNode::new("p").with_primitive(Primitive::Point {
+            x: 400.0,
+            y: 300.0,
+            radius: 0.0,
+            fill: None,
+            stroke: None,
+            data_id: Some("d".to_string()),
+        }));
+        let out = AudioCompiler::new().compile(&graph);
+        let ModalityOutput::AudioParams(params) = &out else {
+            panic!("expected AudioParams");
+        };
+        assert_eq!(params.len(), 1);
+        assert!(params[0].amplitude >= 0.0 && params[0].amplitude <= 1.0);
+    }
+
+    #[test]
+    fn audio_compiler_skips_text_polygon_arc_mesh() {
+        let scene = rich_test_scene();
+        let out = AudioCompiler::new().compile(&scene);
+        let ModalityOutput::AudioParams(params) = &out else {
+            panic!("expected AudioParams");
+        };
+        assert_eq!(params.len(), 4);
+    }
 
     #[test]
     fn audio_compiler_produces_params_from_points() {

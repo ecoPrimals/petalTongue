@@ -195,4 +195,47 @@ mod tests {
         let metadata = provider.get_metadata();
         assert_eq!(metadata.name, "Demo Provider");
     }
+
+    #[test]
+    fn demo_provider_default_equals_new() {
+        let a = DemoVisualizationProvider::new();
+        let b = DemoVisualizationProvider::default();
+        assert_eq!(std::mem::size_of_val(&a), std::mem::size_of_val(&b));
+    }
+
+    #[tokio::test]
+    async fn demo_provider_health_check() {
+        let provider = DemoVisualizationProvider::new();
+        let health = provider.health_check().await.unwrap();
+        assert!(!health.is_empty());
+        assert!(health.contains("healthy"));
+    }
+
+    #[tokio::test]
+    async fn demo_provider_metadata_fields() {
+        let provider = DemoVisualizationProvider::new();
+        let meta = provider.get_metadata();
+        assert_eq!(meta.endpoint, "demo://local");
+        assert_eq!(meta.protocol, "demo");
+        assert!(meta.capabilities.is_empty());
+    }
+
+    #[tokio::test]
+    async fn demo_provider_topology_structure() {
+        let provider = DemoVisualizationProvider::new();
+        let topology = provider.get_topology().await.unwrap();
+        assert_eq!(topology[0].from, "demo-beardog-1");
+        assert_eq!(topology[0].to, "demo-songbird-1");
+        assert_eq!(topology[0].edge_type, "trust");
+        assert_eq!(topology[0].label, Some("Trusted".to_string()));
+        assert_eq!(topology[1].label, None);
+    }
+
+    #[tokio::test]
+    async fn demo_provider_primals_third_has_no_family_id() {
+        let provider = DemoVisualizationProvider::new();
+        let primals = provider.get_primals().await.unwrap();
+        assert_eq!(primals[2].id, "demo-toadstool-1");
+        assert!(primals[2].properties.get("family_id").is_none());
+    }
 }

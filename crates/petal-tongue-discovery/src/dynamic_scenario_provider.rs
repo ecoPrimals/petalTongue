@@ -374,4 +374,56 @@ mod tests {
 
         std::fs::remove_file(&temp_file).ok();
     }
+
+    #[tokio::test]
+    async fn test_dynamic_topology_with_nucleus() {
+        let json = r#"{
+            "ecosystem": {
+                "primals": [
+                    {"id": "n1", "name": "NUCLEUS", "type": "nucleus", "status": "healthy"},
+                    {"id": "p1", "name": "P1", "type": "compute", "status": "healthy"}
+                ]
+            }
+        }"#;
+        let temp_file = std::env::temp_dir().join("test_dynamic_nucleus.json");
+        std::fs::write(&temp_file, json).unwrap();
+        let provider = DynamicScenarioProvider::from_file(&temp_file).unwrap();
+        let topology = provider.get_topology().await.unwrap();
+        assert_eq!(topology.len(), 1);
+        assert_eq!(topology[0].edge_type, "coordination");
+        std::fs::remove_file(&temp_file).ok();
+    }
+
+    #[tokio::test]
+    async fn test_dynamic_health_without_name() {
+        let json = r#"{"ecosystem": {"primals": []}}"#;
+        let temp_file = std::env::temp_dir().join("test_dynamic_no_name.json");
+        std::fs::write(&temp_file, json).unwrap();
+        let provider = DynamicScenarioProvider::from_file(&temp_file).unwrap();
+        let health = provider.health_check().await.unwrap();
+        assert!(health.contains("Dynamic Scenario"));
+        assert!(health.contains("0 primals"));
+        std::fs::remove_file(&temp_file).ok();
+    }
+
+    #[tokio::test]
+    async fn test_dynamic_status_variants() {
+        let json = r#"{
+            "ecosystem": {
+                "primals": [
+                    {"id": "w", "name": "W", "type": "t", "status": "warning"},
+                    {"id": "c", "name": "C", "type": "t", "status": "critical"},
+                    {"id": "u", "name": "U", "type": "t"}
+                ]
+            }
+        }"#;
+        let temp_file = std::env::temp_dir().join("test_dynamic_status.json");
+        std::fs::write(&temp_file, json).unwrap();
+        let provider = DynamicScenarioProvider::from_file(&temp_file).unwrap();
+        let primals = provider.get_primals().await.unwrap();
+        assert!(matches!(primals[0].health, PrimalHealthStatus::Warning));
+        assert!(matches!(primals[1].health, PrimalHealthStatus::Critical));
+        assert!(matches!(primals[2].health, PrimalHealthStatus::Unknown));
+        std::fs::remove_file(&temp_file).ok();
+    }
 }

@@ -718,6 +718,27 @@ mod tests {
         assert_eq!(response.error_message(), Some("State not available"));
     }
 
+    #[test]
+    fn test_ipc_response_serialize_roundtrip() {
+        use crate::protocol::IpcResponse;
+        let pong = IpcResponse::Pong;
+        let json = serde_json::to_string(&pong).expect("serialize");
+        let restored: IpcResponse = serde_json::from_str(&json).expect("deserialize");
+        matches!(restored, IpcResponse::Pong);
+
+        let err = IpcResponse::error("test error");
+        let json = serde_json::to_string(&err).expect("serialize");
+        let restored: IpcResponse = serde_json::from_str(&json).expect("deserialize");
+        assert!(restored.is_error());
+    }
+
+    #[test]
+    fn test_ipc_transport_clone_display() {
+        let t1 = IpcTransport::Unix(PathBuf::from("/tmp/x.sock"));
+        let t2 = t1.clone();
+        assert_eq!(t1.to_string(), t2.to_string());
+    }
+
     #[tokio::test]
     async fn test_server_get_status_command_routing() {
         let instance_id = InstanceId::new();
@@ -777,5 +798,50 @@ mod tests {
             serde_json::from_str(line.trim()).expect("parse");
         assert!(!response.is_error());
         assert!(matches!(response, crate::protocol::IpcResponse::Status(_)));
+    }
+
+    #[test]
+    fn test_ipc_transport_clone_equality() {
+        let unix = IpcTransport::Unix(PathBuf::from("/tmp/a.sock"));
+        let unix2 = unix.clone();
+        assert_eq!(unix.to_string(), unix2.to_string());
+
+        let addr: SocketAddr = "127.0.0.1:9999".parse().unwrap();
+        let tcp = IpcTransport::Tcp(addr);
+        let tcp2 = tcp.clone();
+        assert_eq!(tcp.to_string(), tcp2.to_string());
+    }
+
+    #[test]
+    fn test_ipc_command_all_variants_serialize() {
+        use crate::protocol::IpcCommand;
+        let variants = [
+            IpcCommand::Ping,
+            IpcCommand::GetStatus,
+            IpcCommand::GetState,
+            IpcCommand::Show,
+            IpcCommand::Hide,
+            IpcCommand::SetPanel {
+                panel: "left".to_string(),
+                visible: true,
+            },
+            IpcCommand::SetZoom { level: 1.5 },
+        ];
+        for cmd in variants {
+            let json = serde_json::to_string(&cmd).expect("serialize");
+            let restored: IpcCommand = serde_json::from_str(&json).expect("deserialize");
+            assert_eq!(
+                serde_json::to_string(&cmd).unwrap(),
+                serde_json::to_string(&restored).unwrap()
+            );
+        }
+    }
+
+    #[test]
+    fn test_ipc_response_error_message() {
+        use crate::protocol::IpcResponse;
+        let err = IpcResponse::error("test error");
+        assert!(err.is_error());
+        assert_eq!(err.error_message(), Some("test error"));
     }
 }
