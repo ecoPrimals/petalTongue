@@ -38,7 +38,7 @@ All notable changes to petalTongue will be documented in this file.
 
 ---
 
-## [1.6.3] - 2026-03-12 (initial)
+## [1.6.3-rc1] - 2026-03-12
 
 ### Added - Deep Coverage Expansion & Idiomatic Rust Evolution
 

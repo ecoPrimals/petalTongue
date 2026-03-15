@@ -1,8 +1,8 @@
 # Next Evolution Paths for petalTongue
 
-**Current State**: v1.6.3 — 3,711 tests, 79.5% coverage, deep idiomatic Rust evolution  
+**Current State**: v1.6.3 — 5,188 tests, ~85% line / ~86% branch coverage  
 **Grade**: A+ (10/10)  
-**Date**: March 13, 2026 (header updated; historical content below from Jan 10, 2026)  
+**Date**: March 15, 2026 (header updated; historical content below from Jan 10, 2026)  
 
 ## Recently Completed ✅
 
