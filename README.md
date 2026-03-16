@@ -102,7 +102,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,225 passing, 0 failures |
+| Tests | 5,244 passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery via workspace lints) |
 | Docs | `cargo doc --workspace --no-deps` clean |
@@ -122,7 +122,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust nightly (edition 2024)
 cargo build --workspace
-cargo test --workspace                       # 5,225 tests
+cargo test --workspace                       # 5,244 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
