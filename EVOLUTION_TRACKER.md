@@ -9,7 +9,7 @@
 
 | Metric | Value |
 |--------|-------|
-| Tests | 5,225 passing |
+| Tests | 5,244 passing |
 | Coverage (line) | ~86% |
 | Coverage (branch) | ~87% |
 | Clippy | Zero warnings (pedantic + nursery via workspace lints) |
@@ -17,7 +17,7 @@
 | `cargo deny` | Clean (advisories, bans, licenses, sources) |
 | `cargo doc` | Clean (`--no-deps`) |
 | Unsafe code | `#![forbid(unsafe_code)]` on all 16 crates |
-| Largest file | 876 lines (`json_rpc_client.rs`); all files under 1,000 |
+| Largest file | 902 lines (`json_rpc_client.rs`); all files under 1,000 |
 | External C deps | Zero |
 | SPDX headers | All source files |
 | Error handling | Typed `thiserror` throughout — zero `anyhow` in production code |
@@ -28,6 +28,25 @@
 ---
 
 ## Completed Work
+
+### Smart Refactoring, Clone Reduction & Debt Evolution (March 16, 2026)
+
+- **doom-core smart refactoring**: `lib.rs` (910 lines) decomposed into 5 cohesive
+  modules: `error.rs`, `key.rs`, `state.rs`, `instance.rs`, `tests.rs`. Public API
+  preserved via re-exports. lib.rs → 47 lines.
+- **petal-tongue-tui smart refactoring**: `app.rs` (887 lines) decomposed into `app/`
+  module: `config.rs`, `tui.rs`, `render.rs`, `update.rs`, `tests.rs`. No single file
+  over 520 lines.
+- **Clone reduction**: 5 production files analyzed. Eliminated unnecessary clones in
+  `property_panel.rs` (bulk clone, `mem::take`), `server.rs` (variable reuse),
+  `interaction/engine.rs` (move by value instead of clone). Arc clones and test clones
+  verified as necessary and left in place.
+- **IPC coverage push**: 19 new integration tests for `json_rpc_client` fallback chains,
+  `socket_path` edge cases, `server` malformed JSON handling, `client` error responses.
+- **Deprecated items audit**: All deprecated code confirmed behind feature gates
+  (`legacy-toadstool`, `legacy-audio`, `mock`). HTTP provider fallback docs improved.
+- **Clippy deep fix**: Resolved redundant_clone, implicit_clone, collapsible_if,
+  unit struct default, needless `&mut` at call sites across discovery and graph crates.
 
 ### UUI Evolution & Coverage Compliance (March 16, 2026)
 

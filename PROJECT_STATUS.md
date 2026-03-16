@@ -11,13 +11,13 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 5,225 passing, 0 failures |
+| Tests | 5,244 passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery via `[workspace.lints.clippy]`) |
 | Rustdoc | Clean (`cargo doc --workspace --no-deps`) |
 | cargo deny | Clean (advisories, bans, licenses, sources) |
 | Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
-| Files | All under 1,000 lines (CI enforced); largest file 876 lines (`json_rpc_client.rs`) |
+| Files | All under 1,000 lines (CI enforced); largest file 902 lines (`json_rpc_client.rs`) |
 | License | AGPL-3.0-or-later, SPDX on all source files |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None (`ring` eliminated, `libc`/`nix`/`atty` removed, using `rustix`) |

@@ -30,12 +30,24 @@ All notable changes to petalTongue will be documented in this file.
 - **Flaky test fix**: `test_discover_graceful_degradation_returns_ok` isolated via
   explicit mDNS disable.
 
-### Changed
+### Changed — Smart Refactoring, Clone Reduction & Debt Evolution
 
-- Tests: 5,113 → 5,225 passing (112 new tests).
+- **doom-core smart refactoring**: `lib.rs` (910→47 lines) decomposed into
+  `error.rs`, `key.rs`, `state.rs`, `instance.rs`, `tests.rs`.
+- **petal-tongue-tui smart refactoring**: `app.rs` (887 lines) decomposed into
+  `app/` module: `config.rs`, `tui.rs`, `render.rs`, `update.rs`, `tests.rs`.
+- **Clone reduction**: `property_panel.rs` (bulk clone, `mem::take`), `server.rs`
+  (variable reuse), `interaction/engine.rs` (move by value).
+- **IPC coverage**: 19 new integration tests for json_rpc_client, socket_path,
+  server, client error paths.
+- **Clippy deep fix**: redundant_clone, implicit_clone, collapsible_if, unit struct
+  default, needless `&mut` across discovery and graph crates.
+- **Deprecated items**: All confirmed behind feature gates. HTTP fallback docs improved.
+- Tests: 5,113 → 5,244 passing (131 new tests).
 - 13 of 15 non-UI crates now at or above 90% coverage.
 - `missing_docs` tracked via `#![expect(missing_docs, reason = "...")]` on evolving crates.
 - `specs/archive/` consolidated into `archive/`.
+- Largest file now 902 lines (was 910 before doom-core refactor).
 
 ## [1.6.5] - 2026-03-15
 
