@@ -130,48 +130,45 @@ async fn handle_connection(stream: UnixStream) {
 
 #[tokio::test]
 async fn test_jsonrpc_get_primals() {
-    let socket_path = "/tmp/test-jsonrpc-integration-primals.sock";
-    let _server = create_mock_server(socket_path).await.unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let socket_path = dir.path().join("primals.sock");
+    let path_str = socket_path.to_str().unwrap();
+    let _server = create_mock_server(path_str).await.unwrap();
 
-    let provider = JsonRpcProvider::new(socket_path);
+    let provider = JsonRpcProvider::new(path_str);
     let primals = provider.get_primals().await.unwrap();
 
     assert_eq!(primals.len(), 2);
     assert_eq!(primals[0].id, "songbird");
     assert_eq!(primals[1].id, "beardog");
-
-    // Cleanup
-    let _ = std::fs::remove_file(socket_path);
 }
 
 #[tokio::test]
 async fn test_jsonrpc_get_topology() {
-    let socket_path = "/tmp/test-jsonrpc-integration-topology.sock";
-    let _server = create_mock_server(socket_path).await.unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let socket_path = dir.path().join("topology.sock");
+    let path_str = socket_path.to_str().unwrap();
+    let _server = create_mock_server(path_str).await.unwrap();
 
-    let provider = JsonRpcProvider::new(socket_path);
+    let provider = JsonRpcProvider::new(path_str);
     let topology = provider.get_topology().await.unwrap();
 
     assert_eq!(topology.len(), 1);
     assert_eq!(topology[0].from, "songbird");
     assert_eq!(topology[0].to, "beardog");
-
-    // Cleanup
-    let _ = std::fs::remove_file(socket_path);
 }
 
 #[tokio::test]
 async fn test_jsonrpc_health_check() {
-    let socket_path = "/tmp/test-jsonrpc-integration-health.sock";
-    let _server = create_mock_server(socket_path).await.unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let socket_path = dir.path().join("health.sock");
+    let path_str = socket_path.to_str().unwrap();
+    let _server = create_mock_server(path_str).await.unwrap();
 
-    let provider = JsonRpcProvider::new(socket_path);
+    let provider = JsonRpcProvider::new(path_str);
     let health = provider.health_check().await.unwrap();
 
     assert!(health.contains("healthy"));
-
-    // Cleanup
-    let _ = std::fs::remove_file(socket_path);
 }
 
 #[tokio::test]
@@ -208,15 +205,17 @@ async fn test_jsonrpc_connection_timeout() {
 
 #[tokio::test]
 async fn test_jsonrpc_concurrent_requests() {
-    let socket_path = "/tmp/test-jsonrpc-integration-concurrent.sock";
-    let _server = create_mock_server(socket_path).await.unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let socket_path = dir.path().join("concurrent.sock");
+    let path_str = socket_path.to_str().unwrap();
+    let _server = create_mock_server(path_str).await.unwrap();
 
-    let _provider = JsonRpcProvider::new(socket_path);
+    let _provider = JsonRpcProvider::new(path_str);
 
     // Make 10 concurrent requests
     let mut handles = vec![];
     for _ in 0..10 {
-        let p = JsonRpcProvider::new(socket_path);
+        let p = JsonRpcProvider::new(path_str);
         let handle = tokio::spawn(async move { p.get_primals().await });
         handles.push(handle);
     }
@@ -227,32 +226,29 @@ async fn test_jsonrpc_concurrent_requests() {
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), 2);
     }
-
-    // Cleanup
-    let _ = std::fs::remove_file(socket_path);
 }
 
 #[tokio::test]
 async fn test_jsonrpc_error_response() {
-    let socket_path = "/tmp/test-jsonrpc-integration-error.sock";
-    let _server = create_mock_server(socket_path).await.unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let socket_path = dir.path().join("error.sock");
+    let path_str = socket_path.to_str().unwrap();
+    let _server = create_mock_server(path_str).await.unwrap();
 
-    let _provider = JsonRpcProvider::new(socket_path);
+    let _provider = JsonRpcProvider::new(path_str);
 
     // Call a method that returns an error (we'll need to modify call to be public for this)
     // For now, we test that unknown methods fail gracefully
-
-    // Cleanup
-    let _ = std::fs::remove_file(socket_path);
 }
 
 #[tokio::test]
 async fn test_jsonrpc_malformed_response() {
     // Create a server that sends malformed JSON
-    let socket_path = "/tmp/test-jsonrpc-integration-malformed.sock";
-    let _ = std::fs::remove_file(socket_path);
+    let dir = tempfile::tempdir().unwrap();
+    let socket_path = dir.path().join("malformed.sock");
+    let path_str = socket_path.to_str().unwrap();
 
-    let listener = UnixListener::bind(socket_path).unwrap();
+    let listener = UnixListener::bind(path_str).unwrap();
 
     let _handle = tokio::spawn(async move {
         if let Ok((stream, _)) = listener.accept().await {
@@ -265,28 +261,24 @@ async fn test_jsonrpc_malformed_response() {
 
     tokio::time::sleep(Duration::from_millis(50)).await;
 
-    let _provider = JsonRpcProvider::new(socket_path);
+    let _provider = JsonRpcProvider::new(path_str);
 
     // Note: We can't easily test malformed response without exposing internal `call` method
     // This is OK - the unit tests cover serialization/deserialization
-
-    // Cleanup
-    let _ = std::fs::remove_file(socket_path);
 }
 
 #[tokio::test]
 async fn test_jsonrpc_sequential_requests() {
-    let socket_path = "/tmp/test-jsonrpc-integration-sequential.sock";
-    let _server = create_mock_server(socket_path).await.unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let socket_path = dir.path().join("sequential.sock");
+    let path_str = socket_path.to_str().unwrap();
+    let _server = create_mock_server(path_str).await.unwrap();
 
-    let provider = JsonRpcProvider::new(socket_path);
+    let provider = JsonRpcProvider::new(path_str);
 
     // Make 5 sequential requests
     for _ in 0..5 {
         let primals = provider.get_primals().await.unwrap();
         assert_eq!(primals.len(), 2);
     }
-
-    // Cleanup
-    let _ = std::fs::remove_file(socket_path);
 }
