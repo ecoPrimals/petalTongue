@@ -873,4 +873,30 @@ mod tests {
             petal_tongue_core::PrimalHealthStatus::Healthy
         ));
     }
+
+    #[tokio::test]
+    async fn test_send_request_read_timeout() {
+        // Server accepts connection, reads request, but never sends response
+        let dir = tempfile::tempdir().expect("tempdir");
+        let sock = dir.path().join("read-timeout.sock");
+        let listener = tokio::net::UnixListener::bind(&sock).expect("bind");
+        tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.expect("accept");
+            let (mut reader, _writer) = stream.into_split();
+            let mut buf = [0u8; 1024];
+            let _ = tokio::io::AsyncReadExt::read(&mut reader, &mut buf).await;
+            // Never send response - client will timeout on read
+            tokio::time::sleep(Duration::from_secs(5)).await;
+        });
+        let client = JsonRpcClient::with_timeout(sock.as_os_str(), Duration::from_millis(100))
+            .expect("client");
+        let req = JsonRpcRequest::new("test.method", serde_json::json!({}), serde_json::json!(1));
+        let result = client.send_request(&req).await;
+        assert!(result.is_err());
+        let err_str = format!("{}", result.unwrap_err());
+        assert!(
+            err_str.contains("Timeout") || err_str.contains("timeout"),
+            "expected timeout error: {err_str}"
+        );
+    }
 }

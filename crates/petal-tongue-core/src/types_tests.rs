@@ -2,6 +2,7 @@
 //! Tests for types module
 
 #[cfg(test)]
+#[allow(deprecated)]
 mod tests {
     use super::super::types::*;
     use crate::PrimalId;
@@ -49,7 +50,6 @@ mod tests {
     }
 
     #[test]
-    #[expect(deprecated)]
     fn test_primal_info_creation() {
         let info = PrimalInfo {
             id: PrimalId::from("test-1"),
@@ -76,7 +76,6 @@ mod tests {
     }
 
     #[test]
-    #[expect(deprecated)]
     fn test_primal_info_clone() {
         let info = PrimalInfo {
             id: PrimalId::from("test-1"),
@@ -134,7 +133,6 @@ mod tests {
     }
 
     #[test]
-    #[expect(deprecated)]
     fn test_topology_graph() {
         let primal1 = PrimalInfo {
             id: PrimalId::from("primal-1"),
@@ -250,7 +248,6 @@ mod tests {
     }
 
     #[test]
-    #[expect(deprecated)]
     fn test_primal_info_serialization() {
         let info = PrimalInfo {
             id: PrimalId::from("test-1"),

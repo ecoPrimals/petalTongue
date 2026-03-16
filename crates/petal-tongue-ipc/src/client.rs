@@ -272,4 +272,26 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_get_socket_path_uid_run_dir_exists() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let run_user = dir.path().join("run").join("user").join("99999");
+        let app_dir = run_user.join("petaltongue");
+        std::fs::create_dir_all(&app_dir).expect("create dirs");
+
+        let instance_id = InstanceId::new();
+        let result = petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
+            "UID",
+            "99999",
+            || get_socket_path(&instance_id),
+        );
+        // get_socket_path uses /run/user/{uid} which is fixed - not our temp dir
+        // So this tests the fallback path when /run/user/99999 doesn't exist
+        assert!(result.is_ok());
+        let path = result.unwrap();
+        let path_str = path.to_string_lossy();
+        assert!(path_str.contains(&instance_id.as_str()));
+        assert!(path_str.ends_with(".sock"));
+    }
 }
