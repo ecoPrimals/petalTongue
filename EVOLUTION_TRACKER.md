@@ -274,4 +274,5 @@ the collaborative intelligence.
 | March 14 deep debt phase 2 | 3,940+ | ~83% / ~83% | March 14 |
 | March 15 verified | 5,188 | ~85% / ~86% | March 15 |
 | March 16 deep audit & evolution | 5,076 | ~87% / ~88% | March 16 |
+| March 15 spring absorption v1.6.4 | 5,113 | ~87% / ~88% | March 15 |
 | Target | TBD | 90% / 90% | — |

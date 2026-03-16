@@ -139,7 +139,7 @@ pause
 step 3 "Load advanced scenario via web endpoint"
 
 PORT=18711
-pid=$(start_petaltongue_bg web --port "$PORT")
+pid=$(start_petaltongue_bg web --bind "127.0.0.1:$PORT")
 if wait_for_port "$PORT" 8; then
     record_pass "petalTongue web started on port $PORT"
     

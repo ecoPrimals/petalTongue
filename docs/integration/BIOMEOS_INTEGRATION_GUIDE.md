@@ -433,6 +433,6 @@ echo '{"jsonrpc":"2.0","method":"health_check","params":{},"id":1}' | \
 ---
 
 **Last Updated**: 2026-03-16  
-**petalTongue Version**: v1.6.3  
+**petalTongue Version**: v1.6.4  
 **biomeOS Compatibility**: Phase 4 Ready
 

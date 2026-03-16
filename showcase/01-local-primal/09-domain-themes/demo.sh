@@ -20,7 +20,7 @@ step 1 "Check domain palette support via capabilities"
 
 # Start petalTongue web server in background
 PORT=18709
-pid=$(start_petaltongue_bg web --port "$PORT")
+pid=$(start_petaltongue_bg web --bind "127.0.0.1:$PORT")
 if wait_for_port "$PORT" 8; then
     record_pass "petalTongue web started on port $PORT"
 else

@@ -171,7 +171,7 @@ Text Dim:      #6c7086 (medium gray)
 
 **1. Build petalTongue**:
 ```bash
-cd /path/to/petalTongue
+cd petalTongue  # from your ecoPrimals workspace
 cargo build --release
 ```
 
@@ -292,10 +292,10 @@ cargo build --release
 
 ## 📚 Related Documentation
 
-- [Neural API Whitepaper](/path/to/whitePaper/neuralAPI/)
-- [RootPulse Whitepaper](/path/to/whitePaper/RootPulse/)
-- [petalTongue Human Interface](/path/to/biomeOS/docs/PETALTONGUE_HUMAN_INTERFACE.md)
-- [biomeOS Architecture](/path/to/biomeOS/docs/ARCHITECTURE_LAYERS.md)
+- Neural API Whitepaper — see `ecoPrimals/whitePaper/neuralAPI/`
+- RootPulse Whitepaper — see `ecoPrimals/whitePaper/RootPulse/`
+- petalTongue Human Interface — see `biomeOS/docs/PETALTONGUE_HUMAN_INTERFACE.md`
+- biomeOS Architecture — see `biomeOS/docs/ARCHITECTURE_LAYERS.md`
 
 ---
 

@@ -8,7 +8,7 @@
 niche:
   id: petaltongue-visualization
   name: "petalTongue Visualization"
-  version: "1.6.3"
+  version: "1.6.4"
   description: >-
     Universal UI and visualization niche. Accepts DataBinding payloads from any
     spring and renders them through the deterministic pixel pipeline with full

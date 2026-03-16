@@ -8,7 +8,7 @@
 name = "petaltongue"
 display_name = "petalTongue"
 description = "Universal Visualization Primal for ecoPrimals"
-version = "1.6.3"
+version = "1.6.4"
 license = "AGPL-3.0-only"
 
 [organism.binary]
