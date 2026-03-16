@@ -221,12 +221,10 @@ impl WadData {
         })
     }
 
-    #[expect(
-        clippy::cast_sign_loss,
-        reason = "WAD format uses i32 for offsets/sizes that are always non-negative"
-    )]
     fn read_directory(file: &mut File, header: &WadHeader) -> Result<Vec<Lump>, DoomError> {
-        file.seek(SeekFrom::Start(header.dir_offset as u64))
+        let dir_pos = u64::try_from(header.dir_offset)
+            .map_err(|_| DoomError::InvalidWad("directory offset must be non-negative".into()))?;
+        file.seek(SeekFrom::Start(dir_pos))
             .map_err(|e| DoomError::InvalidWad(format!("Failed to seek to directory: {e}")))?;
 
         let mut lumps = Vec::new();
@@ -264,12 +262,16 @@ impl WadData {
 
         for lump in &mut lumps {
             if lump.size > 0 {
-                file.seek(SeekFrom::Start(lump.offset as u64))
+                let lump_pos = u64::try_from(lump.offset)
+                    .map_err(|_| DoomError::InvalidWad(format!("lump offset for {} must be non-negative", lump.name)))?;
+                file.seek(SeekFrom::Start(lump_pos))
                     .map_err(|e| {
                         DoomError::InvalidWad(format!("Failed to seek to lump data: {e}"))
                     })?;
 
-                lump.data.resize(lump.size as usize, 0);
+                let lump_len = usize::try_from(lump.size)
+                    .map_err(|_| DoomError::InvalidWad(format!("lump size for {} must be non-negative", lump.name)))?;
+                lump.data.resize(lump_len, 0);
                 file.read_exact(&mut lump.data)
                     .map_err(|e| DoomError::InvalidWad(format!("Failed to read lump data: {e}")))?;
             }

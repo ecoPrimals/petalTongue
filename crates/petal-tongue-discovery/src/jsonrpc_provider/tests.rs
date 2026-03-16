@@ -113,42 +113,42 @@ async fn test_jsonrpc_error_response() {
 
 #[tokio::test]
 async fn test_jsonrpc_provider_get_primals() {
-    let socket_path = "/tmp/test-jsonrpc-primals.sock";
-    let _server = create_mock_server(socket_path).await.unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let socket_path = dir.path().join("primals.sock");
+    let path_str = socket_path.to_str().unwrap();
+    let _server = create_mock_server(path_str).await.unwrap();
 
-    let provider = JsonRpcProvider::new(socket_path);
+    let provider = JsonRpcProvider::new(path_str);
     let primals = provider.get_primals().await.unwrap();
 
     assert_eq!(primals.len(), 1);
     assert_eq!(primals[0].id, "test-primal");
-
-    let _ = std::fs::remove_file(socket_path);
 }
 
 #[tokio::test]
 async fn test_jsonrpc_provider_health_check() {
-    let socket_path = "/tmp/test-jsonrpc-health.sock";
-    let _server = create_mock_server(socket_path).await.unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let socket_path = dir.path().join("health.sock");
+    let path_str = socket_path.to_str().unwrap();
+    let _server = create_mock_server(path_str).await.unwrap();
 
-    let provider = JsonRpcProvider::new(socket_path);
+    let provider = JsonRpcProvider::new(path_str);
     let health = provider.health_check().await.unwrap();
 
     assert!(health.contains("healthy"));
-
-    let _ = std::fs::remove_file(socket_path);
 }
 
 #[tokio::test]
 async fn test_jsonrpc_provider_get_topology() {
-    let socket_path = "/tmp/test-jsonrpc-topology.sock";
-    let _server = create_mock_server(socket_path).await.unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let socket_path = dir.path().join("topology.sock");
+    let path_str = socket_path.to_str().unwrap();
+    let _server = create_mock_server(path_str).await.unwrap();
 
-    let provider = JsonRpcProvider::new(socket_path);
+    let provider = JsonRpcProvider::new(path_str);
     let topology = provider.get_topology().await.unwrap();
 
     assert_eq!(topology.len(), 0);
-
-    let _ = std::fs::remove_file(socket_path);
 }
 
 #[tokio::test]
@@ -186,13 +186,14 @@ async fn test_standard_socket_paths() {
 #[tokio::test]
 #[cfg(feature = "test-fixtures")]
 async fn test_jsonrpc_discover_with_biomeos_url() {
-    let socket_path = "/tmp/test-jsonrpc-discover.sock";
-    let _ = std::fs::remove_file(socket_path);
-    let _server = create_mock_server(socket_path).await.unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let socket_path = dir.path().join("discover.sock");
+    let path_str = socket_path.to_str().unwrap();
+    let _server = create_mock_server(path_str).await.unwrap();
 
     let result = petal_tongue_core::test_fixtures::env_test_helpers::with_env_var_async(
         "BIOMEOS_URL",
-        &format!("unix://{socket_path}"),
+        &format!("unix://{path_str}"),
         || async { JsonRpcProvider::discover().await },
     )
     .await;
@@ -203,24 +204,21 @@ async fn test_jsonrpc_discover_with_biomeos_url() {
         provider
             .get_metadata()
             .endpoint
-            .contains("test-jsonrpc-discover")
+            .contains("discover")
     );
-
-    let _ = std::fs::remove_file(socket_path);
 }
 
 #[tokio::test]
 async fn test_jsonrpc_get_topology_method_not_found() {
-    let socket_path = "/tmp/test-jsonrpc-topology-nf.sock";
-    let _ = std::fs::remove_file(socket_path);
-    let _server = create_mock_server(socket_path).await.unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let socket_path = dir.path().join("topology-nf.sock");
+    let path_str = socket_path.to_str().unwrap();
+    let _server = create_mock_server(path_str).await.unwrap();
 
-    let provider = JsonRpcProvider::new(socket_path);
+    let provider = JsonRpcProvider::new(path_str);
     let topology = provider.get_topology().await.unwrap();
 
     assert_eq!(topology.len(), 0);
-
-    let _ = std::fs::remove_file(socket_path);
 }
 
 #[tokio::test]
