@@ -74,7 +74,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
    Other primals discovered at runtime via capability-based discovery.
 2. **Constants centralized** -- All self-knowledge in `petal_tongue_core::constants`.
 3. **IPC priority** -- JSON-RPC over Unix sockets (primary), tarpc (secondary), HTTP (fallback).
-4. **Typed error handling** -- `thiserror` everywhere, no `anyhow` in production, no `unwrap()`.
+4. **Typed error handling** -- `thiserror` everywhere, no `anyhow` in production; `deny(unwrap_used, expect_used)` with `#[expect]` for justified cases.
 5. **`#![forbid(unsafe_code)]`** unless hardware FFI is unavoidable. Document with `// SAFETY:`.
 6. **Concurrent testing** -- No `thread::sleep`. Use `tokio::time::timeout`.
 7. **Files under 1,000 lines** -- Split into cohesive modules at ~800 lines.
@@ -90,7 +90,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 - `graph_engine.rs` -- Graph data model (nodes, edges, layout)
 - `config_system.rs` -- XDG-compliant configuration (env > file > defaults)
 - `data_channel.rs` -- DataChannel enum (11 variants: TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter, Scatter3D, FieldMap, GameScene, Soundscape)
-- `capability_names.rs` -- Centralized capability/method/socket constants (60 constants)
+- `capability_names.rs` -- Centralized capability/method/socket/primal constants (60+ capabilities, 15 primal identities)
 - `telemetry_adapter.rs` -- JSONL telemetry ingestion (hotSpring)
 
 ### IPC (`petal-tongue-ipc`)

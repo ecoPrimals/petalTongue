@@ -112,7 +112,7 @@ petaltongue
 # Prerequisites: Rust nightly (edition 2024)
 cargo build --workspace
 cargo test --workspace
-cargo clippy --workspace --all-targets -- -D warnings -W clippy::pedantic -W clippy::nursery
+cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
 cargo llvm-cov --workspace --summary-only   # Coverage
@@ -161,7 +161,7 @@ See `ecoPrimals/wateringHole/petaltongue/` for inter-primal standards:
 
 - Discover capabilities at runtime, never hardcode primal names
 - Pure Rust, edition 2024, `async`/`await`, `Arc`/`RwLock`
-- Typed error handling (`thiserror`, no `anyhow` in production, no `unwrap()`)
+- Typed error handling (`thiserror`, no `anyhow` in production); `deny(unwrap_used, expect_used)` with `#[expect]` for justified suppressions
 - `#![forbid(unsafe_code)]` unless hardware FFI is unavoidable
 - Semantic method naming (`domain.operation`)
 - JSON-RPC + tarpc first, HTTP fallback only

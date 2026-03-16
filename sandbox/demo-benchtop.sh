@@ -4,6 +4,10 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+PETALTONGUE="$PROJECT_ROOT/target/release/petaltongue"
+
 # Colors for output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -44,23 +48,23 @@ read -rp "Enter choice [1-6]: " choice
 case $choice in
   1)
     echo -e "${BLUE}Launching Live Ecosystem...${NC}"
-    ../target/release/petaltongue ui \
-      --scenario sandbox/scenarios/live-ecosystem.json
+    "$PETALTONGUE" ui \
+      --scenario "$PROJECT_ROOT/sandbox/scenarios/live-ecosystem.json"
     ;;
   2)
     echo -e "${BLUE}Launching Graph Builder Studio...${NC}"
-    ../target/release/petaltongue ui \
-      --scenario sandbox/scenarios/graph-studio.json
+    "$PETALTONGUE" ui \
+      --scenario "$PROJECT_ROOT/sandbox/scenarios/graph-studio.json"
     ;;
   3)
     echo -e "${BLUE}Launching RootPulse Visualization...${NC}"
-    ../target/release/petaltongue ui \
-      --scenario sandbox/scenarios/rootpulse-demo.json
+    "$PETALTONGUE" ui \
+      --scenario "$PROJECT_ROOT/sandbox/scenarios/rootpulse-demo.json"
     ;;
   4)
     echo -e "${BLUE}Launching Neural API Learning...${NC}"
-    ../target/release/petaltongue ui \
-      --scenario sandbox/scenarios/neural-api-test.json
+    "$PETALTONGUE" ui \
+      --scenario "$PROJECT_ROOT/sandbox/scenarios/neural-api-test.json"
     ;;
   5)
     echo -e "${BLUE}Starting Full Tour...${NC}"
@@ -74,23 +78,23 @@ case $choice in
     
     # Live Ecosystem
     echo -e "${GREEN}[1/4] Live Ecosystem${NC}"
-    timeout 30s ../target/release/petaltongue ui \
-      --scenario sandbox/scenarios/live-ecosystem.json || true
+    timeout 30s "$PETALTONGUE" ui \
+      --scenario "$PROJECT_ROOT/sandbox/scenarios/live-ecosystem.json" || true
     
     # Graph Builder
     echo -e "${GREEN}[2/4] Graph Builder Studio${NC}"
-    timeout 30s ../target/release/petaltongue ui \
-      --scenario sandbox/scenarios/graph-studio.json || true
+    timeout 30s "$PETALTONGUE" ui \
+      --scenario "$PROJECT_ROOT/sandbox/scenarios/graph-studio.json" || true
     
     # RootPulse
     echo -e "${GREEN}[3/4] RootPulse Visualization${NC}"
-    timeout 30s ../target/release/petaltongue ui \
-      --scenario sandbox/scenarios/rootpulse-demo.json || true
+    timeout 30s "$PETALTONGUE" ui \
+      --scenario "$PROJECT_ROOT/sandbox/scenarios/rootpulse-demo.json" || true
     
     # Neural Learning
     echo -e "${GREEN}[4/4] Neural API Learning${NC}"
-    timeout 30s ../target/release/petaltongue ui \
-      --scenario sandbox/scenarios/neural-api-test.json || true
+    timeout 30s "$PETALTONGUE" ui \
+      --scenario "$PROJECT_ROOT/sandbox/scenarios/neural-api-test.json" || true
     
     echo ""
     echo -e "${GREEN}Tour complete!${NC}"

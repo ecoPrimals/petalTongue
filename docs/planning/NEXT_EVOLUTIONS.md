@@ -1,11 +1,22 @@
 # Next Evolution Paths for petalTongue
 
-**Current State**: v1.6.4 — 5,113 tests, ~87% line / ~88% branch coverage
+**Current State**: v1.6.5 — 5,113 tests, ~87% line / ~88% branch coverage
 **Date**: March 15, 2026
 
 ---
 
-## Recently Completed (v1.6.4)
+## Recently Completed (v1.6.5)
+
+- **`deny(unwrap_used, expect_used)`**: Production code zero-unwrap; all 5 `expect()` evolved to safe fallbacks or justified `#[expect]`
+- **`primal_names` module**: 15 primal identity constants in `capability_names.rs`
+- **`#[allow]` → `#[expect]` migration**: All production `#[allow]` with documented reasons
+- **Enriched `capability.list`**: Returns `primal`, `version`, `transport`, `methods`, `depends_on`, `data_bindings`, `geometry_types`
+- **`SpringAdapterError` typed**: `MissingField`, `UnrecognizedFormat`, `UnsupportedChannelType` variants
+- **`PrimalRegistration` uses constants**: Zero hardcoded capability strings
+- **RwLock poison safety**: All `expect("lock poisoned")` → graceful fallbacks
+- **Explicit ecosystem needs doc**: Published to wateringHole
+
+## Previously Completed (v1.6.4)
 
 - **GameScene + Soundscape DataBinding variants**: 9 → 11 channel types for ludoSpring game scenes and layered audio
 - **Sprite/Tilemap/GameEntity primitives**: 2D game rendering support in `petal-tongue-scene`
@@ -107,3 +118,4 @@ Tier C (stays CPU): UI, IPC, discovery, scene_graph.
 | Dashboard Engine | v1.5.0 | Multi-panel grid, domain theming |
 | Deep Debt Evolution | v1.6.3 | Typed errors, pedantic lints, smart refactoring |
 | Spring Absorption | v1.6.4 | GameScene/Soundscape DataBinding, sprite/soundscape primitives, JSONL telemetry, capability_names |
+| Ecosystem Evolution | v1.6.5 | deny(unwrap/expect), primal_names, enriched capability.list, #[expect] migration |

@@ -27,6 +27,24 @@
 
 ## Completed Work
 
+### Ecosystem Evolution (March 15, 2026)
+
+- **`deny(unwrap_used, expect_used)`**: Production code zero-unwrap. All 5 production
+  `expect()` calls evolved to safe fallbacks (RwLock graceful recovery, SystemTime `map_or`)
+  or justified `#[expect(..., reason = "...")]`. Test code uses `cfg_attr(test, allow(...))`.
+- **`primal_names` module**: 15 primal identity constants in `capability_names.rs` for
+  discovery and logging without hardcoding.
+- **`#[allow]` → `#[expect]` migration**: All 8 production `#[allow]` attrs migrated to
+  `#[expect]` with documented justifications. Conditional `cfg_attr(not(test), ...)` for
+  dead_code that's used in tests.
+- **Enriched `capability.list`**: Returns `primal`, `version`, `transport[]`, `methods[]`,
+  `depends_on[{capability, required}]`, `data_bindings: 11`, `geometry_types: 10`.
+- **`PrimalRegistration` uses constants**: `primal_names::PETALTONGUE` +
+  `self_capabilities::ALL` — zero hardcoded strings in Songbird registration.
+- **`SpringAdapterError` typed**: `MissingField`, `UnrecognizedFormat`,
+  `UnsupportedChannelType` variants added.
+- **CI clippy simplified**: `-- -D warnings` (pedantic + nursery via workspace lints).
+
 ### Spring Absorption + ludoSpring Readiness (March 15, 2026)
 
 - **GameScene + Soundscape DataBinding variants**: 2 new channel types for 2D game
