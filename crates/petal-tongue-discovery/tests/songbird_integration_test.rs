@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Integration tests for Songbird discovery
 //!
 //! Tests the complete flow from Songbird client to visualization provider.

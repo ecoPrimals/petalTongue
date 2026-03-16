@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Integration tests exercising the full sensor → subscriber → visualization pipeline.
 //!
 //! These tests verify the wiring between petalTongue components without requiring

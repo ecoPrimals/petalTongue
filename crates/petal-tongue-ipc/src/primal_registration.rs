@@ -9,6 +9,7 @@
 //! - Graceful handling when Songbird is unavailable
 
 use crate::primal_registration_error::PrimalRegistrationError;
+use petal_tongue_core::capability_names::{primal_names, self_capabilities};
 use petal_tongue_core::constants;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -64,48 +65,12 @@ impl PrimalRegistration {
         );
 
         Self {
-            name: "petaltongue".to_string(),
-            endpoint: "/primal/petaltongue".to_string(),
-            capabilities: vec![
-                // UI capabilities
-                "ui.render".to_string(),
-                "ui.visualization".to_string(),
-                "ui.graph".to_string(),
-                "ui.terminal".to_string(),
-                "ui.audio".to_string(),
-                // Visualization domain (biomeOS capability)
-                "visualization.render".to_string(),
-                "visualization.render.stream".to_string(),
-                "visualization.render.grammar".to_string(),
-                "visualization.render.dashboard".to_string(),
-                "visualization.interact".to_string(),
-                "visualization.interact.subscribe".to_string(),
-                "visualization.provenance".to_string(),
-                "visualization.export".to_string(),
-                "visualization.validate".to_string(),
-                // Graph capabilities
-                "graph.topology".to_string(),
-                "graph.builder".to_string(),
-                // Interaction domain
-                "interaction.subscribe".to_string(),
-                "interaction.poll".to_string(),
-                // Sensor streaming
-                "sensor.stream.subscribe".to_string(),
-                // Motor commands
-                "motor.set_panel".to_string(),
-                "motor.set_zoom".to_string(),
-                "motor.set_mode".to_string(),
-                // Modality outputs
-                "modality.visual".to_string(),
-                "modality.audio".to_string(),
-                "modality.terminal".to_string(),
-                "modality.haptic".to_string(),
-                "modality.braille".to_string(),
-                "modality.description".to_string(),
-                // System
-                "health.check".to_string(),
-                "capability.list".to_string(),
-            ],
+            name: primal_names::PETALTONGUE.to_string(),
+            endpoint: format!("/primal/{}", primal_names::PETALTONGUE),
+            capabilities: self_capabilities::ALL
+                .iter()
+                .map(|s| (*s).to_string())
+                .collect(),
             version: env!("CARGO_PKG_VERSION").to_string(),
             metadata: Some(metadata),
         }

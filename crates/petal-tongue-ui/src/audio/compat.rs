@@ -206,8 +206,9 @@ impl AudioSystemV2 {
 }
 
 impl Default for AudioSystemV2 {
+    #[expect(clippy::expect_used, reason = "Default requires working audio; callers use new() for fallible init")]
     fn default() -> Self {
-        Self::new().expect("AudioSystemV2::default() requires working audio init (test-only)")
+        Self::new().expect("AudioSystemV2::default() requires working audio init")
     }
 }
 

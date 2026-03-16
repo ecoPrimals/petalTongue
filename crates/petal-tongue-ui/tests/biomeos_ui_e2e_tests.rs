@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! End-to-End Integration Tests for biomeOS UI
 //!
 //! These tests verify the complete flow from provider discovery through

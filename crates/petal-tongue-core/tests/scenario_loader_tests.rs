@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Tests for `scenario_loader` module.
 //!
 //! Verifies parsing of healthSpring-style scenario JSON produced by `dump_scenarios`.

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Integration tests for tarpc client
 //!
 //! These tests verify the tarpc client functionality.

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Comprehensive tests for demo provider
 //!
 //! Tests verify demo data generation and test isolation.

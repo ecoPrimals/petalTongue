@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Comprehensive tests for `graph_engine` module
 //!
 //! Tests verify the core graph structure, layout algorithms, and node positioning.

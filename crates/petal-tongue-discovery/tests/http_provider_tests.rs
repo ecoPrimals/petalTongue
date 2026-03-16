@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Comprehensive tests for HTTP provider
 //!
 //! Tests verify HTTP discovery, error handling, and capability-based routing.

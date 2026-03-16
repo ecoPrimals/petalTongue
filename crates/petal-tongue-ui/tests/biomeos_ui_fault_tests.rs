@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Fault Injection Tests for biomeOS UI
 //!
 //! These tests verify error handling, recovery, and resilience

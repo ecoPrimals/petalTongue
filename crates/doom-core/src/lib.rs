@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #![forbid(unsafe_code)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 //! Doom Core - Doom integration for petalTongue
 //!
 //! This crate provides the infrastructure for running Doom within petalTongue.

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 //! # petalTongue Rich TUI
 //!
 //! **Universal Terminal User Interface** for biomeOS and ecoPrimals.

@@ -94,6 +94,7 @@ impl HeadlessHarness {
 
         let introspection = self.app.introspect();
         self.frame_history.push(introspection);
+        #[expect(clippy::expect_used, reason = "element was just pushed, last() is always Some")]
         self.frame_history.last().expect("just pushed")
     }
 

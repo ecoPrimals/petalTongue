@@ -11,7 +11,7 @@
 //! naming per wateringHole `SEMANTIC_METHOD_NAMING_STANDARD.md`.
 
 /// Capabilities that petalTongue announces to the ecosystem.
-#[allow(missing_docs, reason = "constant names mirror their semantic values")]
+#[expect(missing_docs, reason = "constant names mirror their semantic values")]
 pub mod self_capabilities {
     pub const UI_RENDER: &str = "ui.render";
     pub const UI_VISUALIZATION: &str = "ui.visualization";
@@ -90,7 +90,7 @@ pub mod self_capabilities {
 ///
 /// These are NOT primal names — they are capability strings that any
 /// primal providing the service can announce.
-#[allow(missing_docs, reason = "constant names mirror their semantic values")]
+#[expect(missing_docs, reason = "constant names mirror their semantic values")]
 pub mod discovery_capabilities {
     pub const GPU_DISPATCH: &str = "gpu.dispatch";
     pub const GPU_SCIENCE_DISPATCH: &str = "science.gpu.dispatch";
@@ -104,7 +104,7 @@ pub mod discovery_capabilities {
 }
 
 /// Semantic IPC method names for JSON-RPC and tarpc.
-#[allow(missing_docs, reason = "constant names mirror their semantic values")]
+#[expect(missing_docs, reason = "constant names mirror their semantic values")]
 pub mod methods {
     pub const VISUALIZATION_RENDER: &str = "visualization.render";
     pub const VISUALIZATION_RENDER_STREAM: &str = "visualization.render.stream";
@@ -128,13 +128,37 @@ pub mod methods {
 ///
 /// These identify the *role* of a socket, not a specific primal.
 /// Any primal providing the capability can use these names.
-#[allow(missing_docs, reason = "constant names mirror their semantic values")]
+#[expect(missing_docs, reason = "constant names mirror their semantic values")]
 pub mod socket_roles {
     pub const NEURAL_API: &str = "biomeos-neural-api";
     pub const DEVICE_MANAGEMENT: &str = "biomeos-device-management";
     pub const UI_SERVICE: &str = "biomeos-ui";
     pub const DISCOVERY_SERVICE: &str = "discovery-service";
     pub const PHYSICS_COMPUTE: &str = "barracuda";
+}
+
+/// Well-known primal identifiers for discovery and logging.
+///
+/// These are the ecosystem-standard names primals announce with.
+/// Used for log context and capability filtering — **never** for
+/// hardcoded routing. Runtime discovery uses capability strings.
+#[expect(missing_docs, reason = "constant names mirror their semantic values")]
+pub mod primal_names {
+    pub const PETALTONGUE: &str = "petaltongue";
+    pub const BIOMEOS: &str = "biomeos";
+    pub const SONGBIRD: &str = "songbird";
+    pub const TOADSTOOL: &str = "toadstool";
+    pub const BARRACUDA: &str = "barracuda";
+    pub const CORALREEF: &str = "coralreef";
+    pub const BEARDOG: &str = "beardog";
+    pub const NESTGATE: &str = "nestgate";
+    pub const SQUIRREL: &str = "squirrel";
+    pub const RHIZOCRYPT: &str = "rhizocrypt";
+    pub const SWEETGRASS: &str = "sweetgrass";
+    pub const LOAMSPINE: &str = "loamspine";
+    pub const SKUNKBAT: &str = "skunkbat";
+    pub const SOURDOUGH: &str = "sourdough";
+    pub const PLASMIDBIN: &str = "plasmidbin";
 }
 
 #[cfg(test)]

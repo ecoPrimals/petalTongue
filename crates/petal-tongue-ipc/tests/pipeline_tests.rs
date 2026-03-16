@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Integration tests for the visualization pipeline and IPC handlers.
 
 use petal_tongue_core::graph_engine::GraphEngine;

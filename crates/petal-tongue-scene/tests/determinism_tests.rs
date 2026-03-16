@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Determinism tests for the scene compiler.
 //!
 //! Compiles the same `GrammarExpr` + data multiple times and asserts
