@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # petalTongue Showcase - Automated Tour
 # Runs all local demos (01-local-primal + 02-ipc-protocol) end-to-end.
 # No external dependencies required.

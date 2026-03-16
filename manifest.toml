@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # genomeBin Manifest -- petalTongue
 #
 # Describes the deployment identity of petalTongue as an autonomous organism.
@@ -8,8 +8,8 @@
 name = "petaltongue"
 display_name = "petalTongue"
 description = "Universal Visualization Primal for ecoPrimals"
-version = "1.6.5"
-license = "AGPL-3.0-only"
+version = "1.6.6"
+license = "AGPL-3.0-or-later"
 
 [organism.binary]
 name = "petaltongue"

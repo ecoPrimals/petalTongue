@@ -17,7 +17,7 @@ All notable changes to petalTongue will be documented in this file.
   non-human, hybrid), SAME DAVE model (sensory afferent, motor efferent).
 - **License correction**: AGPL-3.0-only → AGPL-3.0-or-later across all Cargo.toml
   files and SPDX headers, per `SCYBORG_PROVENANCE_TRIO_GUIDANCE.md`.
-- **Coverage improvements**: 112 new tests (5,113 → 5,225). Per-crate: discovery
+- **Coverage improvements**: Per-crate: discovery
   83→91%, animation 85→99% (egui), ui-core 86→93.5%, api 76→96%, cli 87→90%,
   doom-core 87→90%, error.rs 0→100%.
 - **Clippy deep clean**: 500+ pedantic/nursery warnings resolved. `cast_precision_loss`,
@@ -48,6 +48,15 @@ All notable changes to petalTongue will be documented in this file.
 - `missing_docs` tracked via `#![expect(missing_docs, reason = "...")]` on evolving crates.
 - `specs/archive/` consolidated into `archive/`.
 - Largest file now 902 lines (was 910 before doom-core refactor).
+- **Spring absorption audit**: Reviewed 7 Springs + 10 Primals for reusable patterns.
+  `temp_env` already absorbed, `TryFrom` safe casts applied to doom-core wad_loader
+  (3 dangerous `i32 as u64/usize` → `TryFrom` with error propagation), 12 tests
+  migrated from `/tmp/` to `tempfile::tempdir()`, all `println!` verified legitimate.
+- **Ecosystem doc propagation**: `PETALTONGUE_NEEDS_FROM_ECOSYSTEM.md` (v1.6.6, UUI),
+  `PETALTONGUE_LEVERAGE_GUIDE.md` (v1.1.0, UUI philosophy), `petaltongue/README.md`
+  updated at wateringHole.
+- Version references updated: `niche.yaml`, `manifest.toml`, `.docs-manifest.txt`,
+  docs, demo provider metadata all aligned to v1.6.6.
 
 ## [1.6.5] - 2026-03-15
 

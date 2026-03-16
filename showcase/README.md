@@ -2,7 +2,7 @@
 
 **Progressive demonstrations from local primal to full ecosystem**
 
-SPDX-License-Identifier: AGPL-3.0-only
+SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
 

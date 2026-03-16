@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Demo: Unix Socket Server (JSON-RPC over IPC)
 # Duration: ~45 seconds
 # Prerequisites: petalTongue built

@@ -109,7 +109,7 @@ petaltongue
 | Coverage | ~86% line / ~87% branch (llvm-cov) |
 | Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
-| Files | All under 1,000 lines; largest 876 lines (`json_rpc_client.rs`) |
+| Files | All under 1,000 lines; largest 902 lines (`json_rpc_client.rs`) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None -- pure Rust (`rustix` for syscalls) |

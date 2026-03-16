@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Demo 09: Domain-Aware Themes
 #
 # Demonstrates that petalTongue renders data with domain-specific color

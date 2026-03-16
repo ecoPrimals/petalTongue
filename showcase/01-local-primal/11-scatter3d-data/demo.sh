@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Demo 11: Scatter3D & Advanced DataBinding Types
 #
 # Demonstrates petalTongue's support for advanced DataBinding variants

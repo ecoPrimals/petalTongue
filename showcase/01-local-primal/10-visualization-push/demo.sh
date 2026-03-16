@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Demo 10: Visualization Push via IPC
 #
 # Demonstrates how springs push visualization data to petalTongue at
