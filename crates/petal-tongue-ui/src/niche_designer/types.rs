@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Niche Designer - Types and validation
 //!
 //! Core types for the visual niche editor and deployment UI.

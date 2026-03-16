@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Compiler utilities: field extraction, JSON helpers, faceting.
 
 use std::collections::BTreeMap;

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Input Verification - Universal awareness of input reaching our sensors
 //!
 //! Parallel to output verification - for ALL inputs:

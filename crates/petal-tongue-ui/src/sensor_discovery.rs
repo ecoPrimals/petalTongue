@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Runtime Sensor Discovery
 //!
 //! Discovers available input/output peripherals at startup.
@@ -9,6 +9,10 @@ use petal_tongue_core::{Sensor, SensorRegistry};
 use std::sync::{Arc, RwLock};
 
 /// Discover all available sensors and populate registry
+///
+/// # Errors
+///
+/// Currently always returns `Ok(())`; discovery failures are logged but do not propagate.
 pub async fn discover_all_sensors(registry: Arc<RwLock<SensorRegistry>>) -> Result<()> {
     tracing::info!("🔍 Starting sensor discovery...");
 
@@ -33,7 +37,7 @@ pub async fn discover_all_sensors(registry: Arc<RwLock<SensorRegistry>>) -> Resu
             discovered_count += 1;
         }
     } else {
-        tracing::info!("ℹ️  No keyboard sensor discovered (may be GUI-only)");
+        tracing::info!("ℹ️  No keyboard sensor discovered (may be display-only)");
     }
 
     // Discover mouse (spatial input)
@@ -44,7 +48,7 @@ pub async fn discover_all_sensors(registry: Arc<RwLock<SensorRegistry>>) -> Resu
             discovered_count += 1;
         }
     } else {
-        tracing::info!("ℹ️  No mouse sensor discovered (may be GUI-only)");
+        tracing::info!("ℹ️  No mouse sensor discovered (may be display-only)");
     }
 
     // Discover audio (input/output)

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Data binding and threshold range types for universal visualization.
 //!
 //! Schema for binding data sources to visualizations across all spring domains:

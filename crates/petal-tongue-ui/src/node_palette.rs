@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Node Palette - Available Node Types for Graph Builder
 //!
 //! Displays all available node types that can be added to a graph.

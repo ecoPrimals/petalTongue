@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Scenario builders for spring domains lacking native petalTongue integration.
 //!
 //! Springs that already push data via `visualization.render` (neuralSpring,

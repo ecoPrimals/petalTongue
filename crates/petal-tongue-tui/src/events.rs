@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Event System
 //!
 //! Handles keyboard, mouse, and async events for the TUI.
@@ -152,6 +152,9 @@ impl EventHandler {
     }
 
     /// Send external event
+    ///
+    /// # Errors
+    /// Returns `TuiError` if the event channel is closed.
     pub fn send_external(&self, event: ExternalEvent) -> Result<(), TuiError> {
         self.tx.send(TUIEvent::External(event))?;
         Ok(())

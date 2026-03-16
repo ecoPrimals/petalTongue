@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Graph Canvas Widget
 //!
 //! Interactive egui-based canvas for graph editing.
@@ -187,23 +187,25 @@ impl GraphCanvas {
         let color = Color32::from_gray(40);
 
         // Vertical lines
-        let mut x = (rect.left() - self.pan.x) % grid_size;
-        while x < rect.right() {
+        let start_x = (rect.left() - self.pan.x) % grid_size;
+        let count_x = ((rect.right() - start_x) / grid_size).ceil().max(0.0) as usize;
+        for i in 0..count_x {
+            let x = (i as f32).mul_add(grid_size, start_x);
             painter.line_segment(
                 [Pos2::new(x, rect.top()), Pos2::new(x, rect.bottom())],
                 Stroke::new(1.0, color),
             );
-            x += grid_size;
         }
 
         // Horizontal lines
-        let mut y = (rect.top() - self.pan.y) % grid_size;
-        while y < rect.bottom() {
+        let start_y = (rect.top() - self.pan.y) % grid_size;
+        let count_y = ((rect.bottom() - start_y) / grid_size).ceil().max(0.0) as usize;
+        for i in 0..count_y {
+            let y = (i as f32).mul_add(grid_size, start_y);
             painter.line_segment(
                 [Pos2::new(rect.left(), y), Pos2::new(rect.right(), y)],
                 Stroke::new(1.0, color),
             );
-            y += grid_size;
         }
     }
 

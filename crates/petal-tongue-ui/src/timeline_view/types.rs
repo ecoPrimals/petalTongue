@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Timeline View - Types and event status
 //!
 //! Core data types for the timeline event sequence visualization.

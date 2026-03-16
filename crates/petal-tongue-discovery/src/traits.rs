@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Traits for visualization data providers
 //!
 //! Any primal can implement `VisualizationDataProvider` to provide data

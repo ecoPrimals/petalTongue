@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Thread-safe status reporter implementation.
 
 use super::types::{
@@ -282,6 +282,10 @@ impl StatusReporter {
     }
 
     /// Get status as JSON string
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if JSON serialization fails.
     pub fn get_status_json(&self) -> Result<String, String> {
         let status = self.get_status();
         serde_json::to_string_pretty(&status).map_err(|e| e.to_string())

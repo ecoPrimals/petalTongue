@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Cross-spring shader lineage tracking and visualization.
 //!
 //! Tracks the evolution of shaders across the spring ecosystem:

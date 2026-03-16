@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Generalized animation system for scene properties.
 //!
 //! Animations interpolate between scene states using easing functions.

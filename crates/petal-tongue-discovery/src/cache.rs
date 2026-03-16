@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Provider caching layer
 //!
 //! Implements intelligent caching to reduce API calls and improve performance.
@@ -12,6 +12,10 @@
 //! - No blocking operations in async context
 
 #![allow(dead_code)] // Entire module is reserved for future use
+#![expect(
+    clippy::future_not_send,
+    reason = "ProviderCache holds generic T without Send/Sync; used in single-threaded contexts"
+)]
 
 use lru::LruCache;
 use std::num::NonZeroUsize;
@@ -130,47 +134,53 @@ impl<T> ProviderCache<T> {
 
     /// Get from cache (generic) - ASYNC-SAFE
     /// Returns `Arc::clone` for zero-copy cache hits (no deep clone)
+    #[expect(
+        clippy::option_if_let_else,
+        reason = "closure would need mutable cache borrow"
+    )]
     async fn get(&self, key: CacheKey) -> Option<Arc<T>> {
-        let mut cache = self.cache.write().await;
-
-        if let Some(entry) = cache.get(&key) {
-            if entry.is_expired() {
-                // Entry expired, remove it
-                cache.pop(&key);
-                *self.misses.write().await += 1;
-                tracing::debug!("Cache MISS (expired): {:?}", key);
-                None
+        let (result, is_hit) = {
+            let mut cache = self.cache.write().await;
+            let out = if let Some(entry) = cache.get(&key) {
+                if entry.is_expired() {
+                    cache.pop(&key);
+                    (None, false)
+                } else {
+                    (Some(Arc::clone(&entry.data)), true)
+                }
             } else {
-                // Cache hit! Arc::clone is cheap (no deep clone)
-                *self.hits.write().await += 1;
-                tracing::debug!("Cache HIT: {:?}", key);
-                Some(Arc::clone(&entry.data))
-            }
+                (None, false)
+            };
+            drop(cache);
+            out
+        };
+        if is_hit {
+            *self.hits.write().await += 1;
+            tracing::debug!("Cache HIT: {:?}", key);
         } else {
-            // Cache miss
             *self.misses.write().await += 1;
-            tracing::debug!("Cache MISS (not found): {:?}", key);
-            None
+            tracing::debug!("Cache MISS: {:?}", key);
         }
+        result
     }
 
     /// Put into cache (generic) - ASYNC-SAFE
     async fn put(&self, key: CacheKey, data: T, ttl: Duration) {
-        let mut cache = self.cache.write().await;
-        cache.put(key, CachedEntry::new(data, ttl));
+        self.cache
+            .write()
+            .await
+            .put(key, CachedEntry::new(data, ttl));
     }
 
     /// Invalidate all cache entries - ASYNC-SAFE
     pub async fn invalidate_all(&self) {
-        let mut cache = self.cache.write().await;
-        cache.clear();
+        self.cache.write().await.clear();
         tracing::info!("Cache invalidated (all entries cleared)");
     }
 
     /// Invalidate specific key - ASYNC-SAFE
     pub(crate) async fn invalidate(&self, key: CacheKey) {
-        let mut cache = self.cache.write().await;
-        cache.pop(&key);
+        self.cache.write().await.pop(&key);
         tracing::debug!("Cache invalidated: {:?}", key);
     }
 
@@ -194,6 +204,10 @@ impl<T> ProviderCache<T> {
         let hits = *self.hits.read().await;
         let misses = *self.misses.read().await;
         let total = hits + misses;
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "hits/total are small counts for display; u64→f64 safe for percentages"
+        )]
         let hit_rate = if total > 0 {
             (hits as f64 / total as f64) * 100.0
         } else {
@@ -310,6 +324,32 @@ mod tests {
         cache.invalidate_primals().await;
 
         assert!(cache.get_primals().await.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_cache_invalidate_topology() {
+        let cache = ProviderCache::new(10);
+        cache.put_topology(vec!["edge".to_string()]).await;
+        assert!(cache.get_topology().await.is_some());
+        cache.invalidate_topology().await;
+        assert!(cache.get_topology().await.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_cache_invalidate_health() {
+        let cache = ProviderCache::new(10);
+        cache.put_health(vec!["ok".to_string()]).await;
+        assert!(cache.get_health().await.is_some());
+        cache.invalidate_health().await;
+        assert!(cache.get_health().await.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_cache_stats_hit_rate_zero_when_no_access() {
+        let cache: ProviderCache<Vec<String>> = ProviderCache::new(10);
+        let stats = cache.stats().await;
+        assert_eq!(stats.total, 0);
+        assert_eq!(stats.hit_rate, 0.0);
     }
 
     #[tokio::test]

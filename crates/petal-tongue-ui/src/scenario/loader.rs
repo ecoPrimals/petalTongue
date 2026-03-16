@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Scenario loader and validation logic
 //!
 //! Handles loading scenario JSON files and validating their contents.
@@ -11,6 +11,10 @@ use crate::scenario::types::Scenario;
 
 impl Scenario {
     /// Load scenario from JSON file with validation
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be read, JSON parsing fails, or validation fails.
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
         let path = path.as_ref();
         let contents = std::fs::read_to_string(path).map_err(ScenarioError::from)?;

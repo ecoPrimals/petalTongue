@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Timeline View - Event filtering and data extraction
 //!
 //! Filtering logic for timeline events by type, primal, and time range.

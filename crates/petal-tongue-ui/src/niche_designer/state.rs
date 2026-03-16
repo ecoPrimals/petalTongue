@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Niche Designer - State and business logic
 //!
 //! Niche designer state, template selection, primal assignment, and validation.

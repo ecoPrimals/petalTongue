@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Frame introspection -- content-level self-awareness for petalTongue.
 //!
 //! `RenderingAwareness` tracks *that* frames were sent and acknowledged.
 //! `FrameIntrospection` tracks *what* each frame contains: which panels are
-//! visible, what data is bound, and what interactions are possible.
+//! perceivable, what data is bound, and what interactions are possible.
 //!
 //! Together they close the proprioceptive loop: petalTongue knows both that
 //! its arm moved AND what its hand is touching.
@@ -23,7 +23,7 @@ pub struct FrameIntrospection {
     pub frame_id: u64,
     /// When this snapshot was taken.
     pub timestamp: Instant,
-    /// All panels and their visibility state.
+    /// All panels and their perceivability state.
     pub visible_panels: Vec<PanelSnapshot>,
     /// Data objects currently bound to visual elements.
     pub bound_data: Vec<BoundDataObject>,
@@ -89,7 +89,7 @@ pub struct PanelSnapshot {
     pub id: PanelId,
     /// Semantic kind of this panel.
     pub kind: PanelKind,
-    /// Whether the panel is currently visible.
+    /// Whether the panel is currently perceivable.
     pub visible: bool,
     /// What data source feeds this panel (if any).
     pub data_source: Option<String>,
@@ -289,7 +289,7 @@ impl ContentAwareness {
             .unwrap_or_default()
     }
 
-    /// Whether specific data is currently shown.
+    /// Whether specific data is currently presented.
     #[must_use]
     pub fn is_showing_data(&self, data_id: &str) -> bool {
         self.current

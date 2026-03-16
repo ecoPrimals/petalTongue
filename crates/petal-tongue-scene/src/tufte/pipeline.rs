@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Validation pipeline - runs all Tufte constraints and produces a report.
 
 use crate::grammar::GrammarExpr;
@@ -20,6 +20,7 @@ pub fn evaluate_all(
         let result = c.evaluate(primitives, expr, data);
         results.push((c.name().to_string(), result));
     }
+    #[expect(clippy::cast_precision_loss, reason = "average score: f64 sufficient")]
     let overall_score = if results.is_empty() {
         1.0
     } else {

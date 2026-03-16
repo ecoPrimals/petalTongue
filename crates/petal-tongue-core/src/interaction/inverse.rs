@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Generalized inverse pipeline trait.
 //!
 //! The forward pipeline maps data to modality output (pixels, tones, cells).
@@ -47,7 +47,7 @@ pub trait InversePipeline: Send + Sync {
 
     /// Resolve an interaction target to actual data values.
     ///
-    /// Given a target (which may still be in screen/modality space),
+    /// Given a target (which may still be in display/modality space),
     /// return the data row it corresponds to.
     fn data_at(&self, target: &InteractionTarget) -> Option<DataRow>;
 

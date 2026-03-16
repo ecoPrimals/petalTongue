@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Sensory UI renderer implementations for each complexity level.
 
 use eframe::egui;
@@ -138,10 +138,10 @@ impl SensoryUIRenderer for MinimalSensoryUI {
 }
 
 // ============================================================================
-// Simple Sensory UI (Small screen, touch, limited capabilities)
+// Simple Sensory UI (Small display surface, touch, limited capabilities)
 // ============================================================================
 
-/// Simple renderer for small screens and touch input.
+/// Simple renderer for small display surfaces and touch input.
 pub(super) struct SimpleSensoryUI;
 
 impl SimpleSensoryUI {

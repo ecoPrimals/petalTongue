@@ -2,6 +2,41 @@
 
 All notable changes to petalTongue will be documented in this file.
 
+## [1.6.6] - 2026-03-16
+
+### Added - UUI Evolution: Universal User Interface Language, Coverage & Compliance
+
+- **Universal User Interface language evolution**: 200+ doc comments and user-facing
+  strings updated from GUI-centric to UUI vernacular across all 16 crates + UniBin.
+  Terminology: "GUI" → "display", "click" → "activate", "visible" → "perceivable",
+  "screen" → "display", "see" → "perceive", "without GUI" → "without display".
+- **UUI glossary module** (`petal-tongue-core/src/uui_glossary.rs`): Canonical
+  terminology constants — PRIMAL_ROLE, INTERFACE_PHILOSOPHY, DESIGN_PRINCIPLE,
+  modality names (visual, audio, haptic, terminal, braille, json_api, acoustic,
+  chemical), user types (human sighted/blind/mobility-limited/deaf, AI agent,
+  non-human, hybrid), SAME DAVE model (sensory afferent, motor efferent).
+- **License correction**: AGPL-3.0-only → AGPL-3.0-or-later across all Cargo.toml
+  files and SPDX headers, per `SCYBORG_PROVENANCE_TRIO_GUIDANCE.md`.
+- **Coverage improvements**: 112 new tests (5,113 → 5,225). Per-crate: discovery
+  83→91%, animation 85→99% (egui), ui-core 86→93.5%, api 76→96%, cli 87→90%,
+  doom-core 87→90%, error.rs 0→100%.
+- **Clippy deep clean**: 500+ pedantic/nursery warnings resolved. `cast_precision_loss`,
+  `suboptimal_flops`, `significant_drop_tightening`, `future_not_send`,
+  `similar_names`, `float_cmp`, `needless_collect` all fixed across all crates.
+- **`# Errors` doc sections**: 68 `Result`-returning functions in petal-tongue-core
+  fully documented with `# Errors` sections.
+- **Hardcoded address extraction**: Web/headless bind addresses centralized to
+  `config.network.web_addr()` / `config.network.headless_addr()`.
+- **Flaky test fix**: `test_discover_graceful_degradation_returns_ok` isolated via
+  explicit mDNS disable.
+
+### Changed
+
+- Tests: 5,113 → 5,225 passing (112 new tests).
+- 13 of 15 non-UI crates now at or above 90% coverage.
+- `missing_docs` tracked via `#![expect(missing_docs, reason = "...")]` on evolving crates.
+- `specs/archive/` consolidated into `archive/`.
+
 ## [1.6.5] - 2026-03-15
 
 ### Added - Ecosystem Evolution: deny(unwrap/expect), primal_names, enriched capability.list

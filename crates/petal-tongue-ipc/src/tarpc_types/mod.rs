@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! # 🚀 tarpc Types and Traits for petalTongue
 //!
 //! **HIGH-PERFORMANCE PRIMAL-TO-PRIMAL RPC**

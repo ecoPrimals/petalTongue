@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! SAME DAVE Channel Model — Neuroanatomy-based signal pathways
 //!
 //! SAME DAVE is neuroanatomy, not AI — the channel model maps specialized

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Session state persistence (Phase 2): load, save, and manage primal topology sessions.
 
 mod manager;

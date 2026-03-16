@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Handlers for ui.render and `ui.display_status` JSON-RPC methods.
 
 use super::RpcHandlers;

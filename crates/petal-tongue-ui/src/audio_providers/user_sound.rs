@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! User sound files provider — loads WAV, MP3, OGG from a directory.
 
 use std::path::PathBuf;

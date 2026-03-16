@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Stable node identifier for the scene graph.
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};

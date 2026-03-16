@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Graph Data Structure
 //!
 //! Core graph representation for collaborative intelligence.
@@ -12,7 +12,7 @@
 
 use crate::error::{GraphEditorError, Result};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use tracing::debug;
 
 use super::edge::GraphEdge;
@@ -86,6 +86,10 @@ impl Graph {
     /// Add a node to the graph
     ///
     /// Validates the node before adding. Returns error if invalid.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the node already exists or validation fails.
     pub fn add_node(&mut self, node: GraphNode) -> Result<()> {
         // Validate node doesn't already exist
         if self.nodes.contains_key(&node.id) {
@@ -96,7 +100,8 @@ impl Graph {
         GraphValidator::validate_node(&node)?;
 
         debug!("Adding node '{}' (type: {})", node.id, node.node_type);
-        self.nodes.insert(node.id.clone(), node);
+        let id = node.id.clone();
+        self.nodes.insert(id, node);
         self.version += 1;
 
         Ok(())
@@ -105,6 +110,10 @@ impl Graph {
     /// Remove a node from the graph
     ///
     /// Also removes all edges connected to this node.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the node does not exist.
     pub fn remove_node(&mut self, node_id: &str) -> Result<Vec<String>> {
         // Check node exists
         if !self.nodes.contains_key(node_id) {
@@ -136,6 +145,10 @@ impl Graph {
     }
 
     /// Modify a node in the graph
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the node does not exist, validation fails, or the node ID changes.
     pub fn modify_node(&mut self, node_id: &str, updated_node: GraphNode) -> Result<()> {
         // Check node exists
         if !self.nodes.contains_key(node_id) {
@@ -162,6 +175,10 @@ impl Graph {
     }
 
     /// Add an edge (dependency) between nodes
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if source or target node does not exist, the edge would create a cycle, or the edge already exists.
     pub fn add_edge(&mut self, edge: GraphEdge) -> Result<()> {
         // Validate nodes exist
         if !self.nodes.contains_key(&edge.from) {
@@ -201,6 +218,10 @@ impl Graph {
     }
 
     /// Remove an edge
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the edge does not exist.
     pub fn remove_edge(&mut self, edge_id: &str) -> Result<()> {
         let initial_len = self.edges.len();
         self.edges.retain(|edge| edge.id != edge_id);
@@ -252,32 +273,34 @@ impl Graph {
     }
 
     /// Validate the entire graph
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any node is invalid, edges reference missing nodes, or the graph contains cycles.
     pub fn validate(&self) -> Result<()> {
         GraphValidator::validate_graph(self)
     }
 
     /// Check if adding an edge would create a cycle
-    fn would_create_cycle(&self, new_edge: &GraphEdge) -> Result<bool> {
-        // Build adjacency list including the new edge
-        let mut adj: HashMap<String, Vec<String>> = HashMap::new();
+    fn would_create_cycle<'a>(&'a self, new_edge: &'a GraphEdge) -> Result<bool> {
+        // Build adjacency list borrowing from graph and new_edge (zero allocations)
+        let mut adj: HashMap<&str, Vec<&str>> = HashMap::new();
 
         for edge in &self.edges {
-            adj.entry(edge.from.clone())
+            adj.entry(edge.from.as_str())
                 .or_default()
-                .push(edge.to.clone());
+                .push(edge.to.as_str());
         }
 
-        // Add new edge
-        adj.entry(new_edge.from.clone())
+        adj.entry(new_edge.from.as_str())
             .or_default()
-            .push(new_edge.to.clone());
+            .push(new_edge.to.as_str());
 
-        // DFS to detect cycle starting from new_edge.to
         let mut visited = HashSet::new();
         let mut rec_stack = HashSet::new();
 
         Ok(Self::has_cycle_dfs(
-            &new_edge.to,
+            new_edge.to.as_str(),
             &adj,
             &mut visited,
             &mut rec_stack,
@@ -285,11 +308,11 @@ impl Graph {
     }
 
     /// DFS helper for cycle detection
-    fn has_cycle_dfs(
-        node: &str,
-        adj: &HashMap<String, Vec<String>>,
-        visited: &mut HashSet<String>,
-        rec_stack: &mut HashSet<String>,
+    fn has_cycle_dfs<'a>(
+        node: &'a str,
+        adj: &HashMap<&str, Vec<&'a str>>,
+        visited: &mut HashSet<&'a str>,
+        rec_stack: &mut HashSet<&'a str>,
     ) -> bool {
         if rec_stack.contains(node) {
             return true; // Cycle detected
@@ -299,11 +322,11 @@ impl Graph {
             return false; // Already processed
         }
 
-        visited.insert(node.to_string());
-        rec_stack.insert(node.to_string());
+        visited.insert(node);
+        rec_stack.insert(node);
 
         if let Some(neighbors) = adj.get(node) {
-            for neighbor in neighbors {
+            for &neighbor in neighbors {
                 if Self::has_cycle_dfs(neighbor, adj, visited, rec_stack) {
                     return true;
                 }
@@ -317,54 +340,54 @@ impl Graph {
     /// Get topological sort of nodes (execution order)
     ///
     /// Returns nodes in execution order (dependencies first).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the graph contains cycles.
     pub fn topological_sort(&self) -> Result<Vec<String>> {
-        let mut in_degree: HashMap<String, usize> = HashMap::new();
-        let mut adj: HashMap<String, Vec<String>> = HashMap::new();
+        let mut in_degree: HashMap<&str, usize> = HashMap::new();
+        let mut adj: HashMap<&str, Vec<&str>> = HashMap::new();
 
-        // Initialize
-        for node_id in self.nodes.keys() {
-            in_degree.insert(node_id.clone(), 0);
-            adj.insert(node_id.clone(), Vec::new());
+        for node_id in self.nodes.keys().map(String::as_str) {
+            in_degree.insert(node_id, 0);
+            adj.insert(node_id, Vec::new());
         }
 
-        // Build adjacency list and in-degree
         for edge in &self.edges {
-            adj.entry(edge.from.clone())
+            adj.entry(edge.from.as_str())
                 .or_default()
-                .push(edge.to.clone());
-            *in_degree.entry(edge.to.clone()).or_default() += 1;
+                .push(edge.to.as_str());
+            *in_degree.entry(edge.to.as_str()).or_default() += 1;
         }
 
-        // Kahn's algorithm
-        let mut queue: Vec<String> = in_degree
+        let mut queue: VecDeque<&str> = in_degree
             .iter()
             .filter(|&(_, degree)| *degree == 0)
-            .map(|(id, _)| id.clone())
+            .map(|(id, _)| *id)
             .collect();
 
-        let mut result = Vec::new();
+        let mut result = Vec::with_capacity(self.nodes.len());
 
-        while let Some(node) = queue.pop() {
-            result.push(node.clone());
+        while let Some(node) = queue.pop_front() {
+            result.push(node);
 
-            if let Some(neighbors) = adj.get(&node) {
-                for neighbor in neighbors {
+            if let Some(neighbors) = adj.get(node) {
+                for &neighbor in neighbors {
                     if let Some(degree) = in_degree.get_mut(neighbor) {
                         *degree -= 1;
                         if *degree == 0 {
-                            queue.push(neighbor.clone());
+                            queue.push_back(neighbor);
                         }
                     }
                 }
             }
         }
 
-        // Check if all nodes were processed (no cycles)
         if result.len() != self.nodes.len() {
             return Err(GraphEditorError::GraphContainsCycles.into());
         }
 
-        Ok(result)
+        Ok(result.into_iter().map(String::from).collect())
     }
 
     /// Get statistics about the graph
@@ -380,38 +403,37 @@ impl Graph {
 
     /// Calculate maximum depth of the graph
     fn max_depth(&self) -> usize {
-        let adj: HashMap<String, Vec<String>> =
-            self.edges.iter().fold(HashMap::new(), |mut acc, edge| {
-                acc.entry(edge.from.clone())
-                    .or_default()
-                    .push(edge.to.clone());
-                acc
-            });
+        let mut adj: HashMap<&str, Vec<&str>> = HashMap::new();
+        for edge in &self.edges {
+            adj.entry(edge.from.as_str())
+                .or_default()
+                .push(edge.to.as_str());
+        }
 
         self.nodes
             .keys()
-            .map(|node| self.calculate_depth(node, &adj, &mut HashSet::new()))
+            .map(|node| self.calculate_depth(node.as_str(), &adj, &mut HashSet::new()))
             .max()
             .unwrap_or(0)
     }
 
     /// Calculate depth for a node (DFS)
-    fn calculate_depth(
+    fn calculate_depth<'a>(
         &self,
-        node: &str,
-        adj: &HashMap<String, Vec<String>>,
-        visited: &mut HashSet<String>,
+        node: &'a str,
+        adj: &HashMap<&'a str, Vec<&'a str>>,
+        visited: &mut HashSet<&'a str>,
     ) -> usize {
         if visited.contains(node) {
             return 0; // Cycle or already visited
         }
 
-        visited.insert(node.to_string());
+        visited.insert(node);
 
         let depth = adj.get(node).map_or(1, |neighbors| {
             neighbors
                 .iter()
-                .map(|neighbor| self.calculate_depth(neighbor, adj, visited))
+                .map(|&neighbor| self.calculate_depth(neighbor, adj, visited))
                 .max()
                 .unwrap_or(0)
                 + 1

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Handlers for visualization.* JSON-RPC methods.
 //!
 //! Delegates to `VisualizationState` and `InteractionSubscriberRegistry` for
@@ -16,6 +16,10 @@ use serde_json::Value;
 mod tests;
 
 /// Handle visualization.introspect: return the full frame introspection snapshot
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "content() borrows from awareness guard"
+)]
 pub fn handle_introspect(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
     let Some(awareness_arc) = &handlers.rendering_awareness else {
         return JsonRpcResponse::error(
@@ -91,6 +95,10 @@ pub fn handle_introspect(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
 }
 
 /// Handle visualization.panels: return just the visible panel list
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "visible_panels() borrows from awareness guard"
+)]
 pub fn handle_panels(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
     let Some(awareness_arc) = &handlers.rendering_awareness else {
         return JsonRpcResponse::success(id, serde_json::json!({ "panels": [] }));

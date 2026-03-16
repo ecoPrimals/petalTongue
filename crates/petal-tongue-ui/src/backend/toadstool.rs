@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-//! Toadstool Backend - Legacy UIBackend (DEPRECATED)
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//! # Toadstool Backend - Legacy UIBackend (DEPRECATED)
 //!
-//! **⚠️ DEPRECATED**: Use `crate::display::backends::toadstool_v2` instead!
+//! **This module is deprecated.** It is a frozen stub maintained only for backward
+//! compatibility. Use `crate::display::backends::toadstool_v2` instead!
 //!
 //! The new `toadstool_v2` module provides a complete tarpc implementation with:
 //! - Capability-based discovery via biomeOS
@@ -35,10 +36,11 @@ use petal_tongue_core::{
     capability_discovery::{CapabilityDiscovery, CapabilityQuery},
 };
 
-/// Toadstool backend - Pure Rust GUI via Toadstool display service
+/// Toadstool backend - Pure Rust interface via Toadstool display service
 ///
 /// NOTE: Legacy module - frozen stub. Use `display::backends::toadstool_v2` instead.
 /// See `TOADSTOOL_DISPLAY_BACKEND_REQUEST.md` for complete specification.
+#[deprecated(since = "1.6.0", note = "Use display::backends::toadstool_v2 instead")]
 pub struct ToadstoolBackend {
     /// Toadstool display client (stub for now)
     client: Option<ToadstoolDisplayClient>,
@@ -55,6 +57,7 @@ impl ToadstoolBackend {
     ///
     /// This attempts to connect to Toadstool display service.
     /// Returns error if Toadstool is not running or not available.
+    #[deprecated(since = "1.6.0", note = "Use display::backends::toadstool_v2 instead")]
     #[expect(
         clippy::unused_async,
         reason = "async for future Toadstool capability discovery"

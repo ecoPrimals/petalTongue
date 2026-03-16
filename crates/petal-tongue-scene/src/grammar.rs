@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Grammar of Graphics expression types.
 //!
 //! A `GrammarExpr` declaratively describes a visualization:

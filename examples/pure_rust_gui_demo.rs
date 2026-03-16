@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-//! Pure Rust GUI Demo
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//! Pure Rust Display Demo
 //!
 //! Demonstrates the complete Pure Rust rendering pipeline:
 //! egui UI → `EguiPixelRenderer` → Display Backend
 //!
-//! This showcases the GUI sovereignty achieved by petalTongue.
+//! This showcases the display sovereignty achieved by petalTongue.
 
 use anyhow::Result;
 use petal_tongue_ui::display::{DisplayManager, EguiPixelRenderer};
@@ -16,8 +16,8 @@ async fn main() -> Result<()> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
 
-    println!("🌸 Pure Rust GUI Demo\n");
-    println!("Demonstrating complete GUI sovereignty:");
+    println!("🌸 Pure Rust Display Demo\n");
+    println!("Demonstrating complete display sovereignty:");
     println!("  egui → EguiPixelRenderer → Display Backend\n");
 
     // Initialize display system (discovers best backend)
@@ -54,7 +54,7 @@ async fn main() -> Result<()> {
         let output = ctx.run(egui::RawInput::default(), |ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
                 ui.heading("🌸 petalTongue");
-                ui.label("Pure Rust GUI Rendering");
+                ui.label("Pure Rust Display Rendering");
                 ui.separator();
 
                 ui.horizontal(|ui| {

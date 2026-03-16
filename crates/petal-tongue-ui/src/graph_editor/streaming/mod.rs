@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 mod execution_state;
 mod protocol;
@@ -32,6 +32,9 @@ impl StreamHandler {
         self.tx.subscribe()
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if the broadcast channel has no receivers (all subscribers dropped).
     pub async fn send(&self, message: StreamMessage) -> Result<()> {
         debug!("Sending stream message: {:?}", message);
 
@@ -47,6 +50,9 @@ impl StreamHandler {
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Currently always returns `Ok(())`.
     pub async fn start_execution(&self, graph_id: String) -> Result<()> {
         info!("Starting execution tracking for graph '{}'", graph_id);
 
@@ -58,17 +64,24 @@ impl StreamHandler {
             failed_nodes: Vec::new(),
         };
 
-        let mut executions = self.executions.write().await;
-        executions.insert(graph_id, state);
+        {
+            let mut executions = self.executions.write().await;
+            executions.insert(graph_id, state);
+        }
 
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Currently always returns `Ok(())`.
     pub async fn stop_execution(&self, graph_id: &str) -> Result<()> {
         info!("Stopping execution tracking for graph '{}'", graph_id);
 
-        let mut executions = self.executions.write().await;
-        executions.remove(graph_id);
+        {
+            let mut executions = self.executions.write().await;
+            executions.remove(graph_id);
+        }
 
         Ok(())
     }
@@ -78,6 +91,9 @@ impl StreamHandler {
         executions.get(graph_id).cloned()
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if the broadcast channel has no receivers.
     pub async fn send_node_status(
         &self,
         graph_id: String,
@@ -93,6 +109,9 @@ impl StreamHandler {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if the broadcast channel has no receivers.
     pub async fn send_progress(
         &self,
         graph_id: String,
@@ -110,6 +129,9 @@ impl StreamHandler {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if the broadcast channel has no receivers.
     pub async fn send_reasoning(&self, graph_id: String, reasoning: AIReasoning) -> Result<()> {
         self.send(StreamMessage::Reasoning {
             graph_id,
@@ -119,6 +141,9 @@ impl StreamHandler {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if the broadcast channel has no receivers.
     pub async fn send_error(
         &self,
         graph_id: String,

@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: AGPL-3.0-or-later
 [lints]
 workspace = true
 
@@ -20,6 +20,7 @@ egui = { workspace = true, optional = true }
 
 [features]
 default = []
+# Enable egui for full coverage: cargo llvm-cov -p petal-tongue-animation --features egui
 egui = ["dep:egui"]
 
 [dev-dependencies]

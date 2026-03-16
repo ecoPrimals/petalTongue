@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! State synchronization across devices
 //!
 //! This module enables petalTongue to maintain consistent state across

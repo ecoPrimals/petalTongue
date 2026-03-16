@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Read-only queries on visualization state.
 //!
 //! Session status, bindings access, and scene lookups.

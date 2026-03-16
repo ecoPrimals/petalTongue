@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Socket Audio Backend - Runtime Discovery of Socket-Based Audio Servers
 //!
 //! Discovers socket-based audio servers at runtime:

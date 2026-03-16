@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! UI Backend Abstraction Layer
 //!
 //! This module provides a trait-based abstraction for different UI backends,
@@ -174,6 +174,10 @@ impl BackendChoice {
 }
 
 /// Create a UI backend based on choice and availability
+///
+/// # Errors
+///
+/// Returns an error if no backends are available, eframe init fails, or Toadstool requires biomeOS and it is unavailable.
 ///
 /// This is the main entry point for creating backends. It handles:
 /// - Auto-detection of best available backend

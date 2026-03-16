@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Dashboard layout engine for multi-panel visualizations.
 //!
 //! Composes multiple compiled `SceneGraph`s into a single dashboard scene
@@ -136,8 +136,16 @@ pub fn compose_dashboard(panels: &[(String, SceneGraph)], config: &DashboardConf
     };
 
     let title_offset = if config.title.is_some() { 40.0 } else { 0.0 };
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "layout dimensions: f64 sufficient"
+    )]
     let total_width =
         (columns as f64).mul_add(config.panel_width + config.spacing, -config.spacing);
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "layout dimensions: f64 sufficient"
+    )]
     let total_height =
         (rows as f64).mul_add(config.panel_height + config.spacing, -config.spacing) + title_offset;
 
@@ -146,7 +154,9 @@ pub fn compose_dashboard(panels: &[(String, SceneGraph)], config: &DashboardConf
     for (idx, (title, panel_scene)) in panels.iter().enumerate() {
         let col = idx % columns.max(1);
         let row = idx / columns.max(1);
+        #[expect(clippy::cast_precision_loss, reason = "panel position: f64 sufficient")]
         let x = col as f64 * (config.panel_width + config.spacing);
+        #[expect(clippy::cast_precision_loss, reason = "panel position: f64 sufficient")]
         let y = (row as f64).mul_add(config.panel_height + config.spacing, title_offset);
 
         add_panel(&mut scene, idx, title, panel_scene, (x, y), &ctx);

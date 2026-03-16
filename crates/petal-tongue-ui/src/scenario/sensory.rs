@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Sensory capability configuration for adaptive rendering
 //!
 //! Allows scenarios to define required and optional capabilities,
@@ -31,6 +31,10 @@ fn default_complexity_hint() -> String {
 
 impl SensoryConfig {
     /// Validate sensory configuration
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `complexity_hint` is invalid or capability requirements contain invalid values.
     pub fn validate(&self) -> Result<()> {
         // Validate complexity hint
         let valid_hints = ["auto", "minimal", "simple", "standard", "rich", "immersive"];
@@ -141,6 +145,10 @@ pub struct CapabilityRequirements {
 
 impl CapabilityRequirements {
     /// Validate capability requirements
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any output or input capability value is not in the allowed list.
     pub fn validate(&self, context: &str) -> Result<()> {
         // Valid output modalities
         let valid_outputs = ["visual", "audio", "haptic"];

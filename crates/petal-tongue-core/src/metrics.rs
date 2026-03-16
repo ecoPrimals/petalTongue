@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! System Metrics - Real-time system resource and Neural API metrics
 //!
 //! This module provides data structures for real-time system metrics including:

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Stream update handler with backpressure.
 //!
 //! Enforces server-side rate limiting so springs can throttle when
@@ -65,6 +65,10 @@ impl VisualizationState {
             }
 
             // Check rate
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "rate count bounded by u32 for backpressure"
+            )]
             let rate_exceeded =
                 session.recent_updates.len() as u32 >= max_rate.saturating_add(burst_tolerance);
             if rate_exceeded && !session.backpressure_active {

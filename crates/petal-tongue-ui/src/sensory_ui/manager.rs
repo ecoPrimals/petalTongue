@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Sensory UI manager and renderer trait.
 
 use eframe::egui;
@@ -23,6 +23,10 @@ pub struct SensoryUIManager {
 
 impl SensoryUIManager {
     /// Create a new sensory UI manager with discovered capabilities
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if capability discovery fails.
     pub fn new() -> Result<Self, CapabilityError> {
         let capabilities = SensoryCapabilities::discover()?;
         let ui_complexity = capabilities.determine_ui_complexity();
@@ -61,6 +65,10 @@ impl SensoryUIManager {
     }
 
     /// Re-discover capabilities (for hot-reload when hardware changes)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if capability discovery fails.
     pub fn rediscover(&mut self) -> Result<(), CapabilityError> {
         // Only rediscover every 5 seconds to avoid overhead
         if self.last_discovery.elapsed().as_secs() < 5 {

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Niche Designer - Visual Niche Editor & Deployment UI
 //!
 //! Provides a visual interface for designing, validating, and deploying niches.

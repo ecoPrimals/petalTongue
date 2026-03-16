@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 use crate::json_rpc::JsonRpcRequest;
 use crate::server::IpcServerError;
@@ -94,8 +94,14 @@ impl UnixSocketServer {
     /// Start the server: bind socket and accept connections
     pub async fn start(self: Arc<Self>) -> Result<(), IpcServerError> {
         if self.socket_path.exists() {
-            std::fs::remove_file(&self.socket_path)
-                .map_err(|e| IpcServerError::IoError(format!("{e}")))?;
+            let remove_result = if self.socket_path.is_file() {
+                std::fs::remove_file(&self.socket_path)
+            } else if self.socket_path.is_dir() {
+                std::fs::remove_dir(&self.socket_path)
+            } else {
+                Ok(())
+            };
+            remove_result.map_err(|e| IpcServerError::IoError(format!("{e}")))?;
             debug!("Removed old socket: {}", self.socket_path.display());
         }
 
@@ -165,7 +171,15 @@ impl UnixSocketServer {
 impl Drop for UnixSocketServer {
     fn drop(&mut self) {
         if self.socket_path.exists() {
-            if let Err(e) = std::fs::remove_file(&self.socket_path) {
+            let result = if self.socket_path.is_file() {
+                std::fs::remove_file(&self.socket_path)
+            } else if self.socket_path.is_dir() {
+                // Socket path may be a directory if misconfigured (e.g. PETALTONGUE_SOCKET pointing to a dir)
+                std::fs::remove_dir(&self.socket_path)
+            } else {
+                Ok(())
+            };
+            if let Err(e) = result {
                 error!("Failed to remove socket: {}", e);
             } else {
                 info!("Cleaned up socket: {}", self.socket_path.display());
@@ -205,6 +219,48 @@ mod tests {
                     socket_str.contains("/tmp") || socket_str.contains("/run/user"),
                     "Socket path should use XDG runtime directory, got: {socket_str}"
                 );
+            },
+        );
+    }
+
+    #[test]
+    fn test_unix_socket_server_drop_removes_socket() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        env_test_helpers::with_env_vars(
+            &[
+                ("FAMILY_ID", Some("drop-test")),
+                ("XDG_RUNTIME_DIR", tmp.path().to_str()),
+                ("PETALTONGUE_NODE_ID", Some("node")),
+            ],
+            || {
+                let graph = Arc::new(RwLock::new(GraphEngine::new()));
+                let server = UnixSocketServer::new(graph).unwrap();
+                let socket_path = server.socket_path.clone();
+                std::fs::write(&socket_path, "stale").expect("create file");
+                assert!(socket_path.exists());
+                drop(server);
+                assert!(!socket_path.exists(), "Drop should remove socket file");
+            },
+        );
+    }
+
+    #[test]
+    fn test_unix_socket_server_drop_removes_socket_dir() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        env_test_helpers::with_env_vars(
+            &[
+                ("FAMILY_ID", Some("dir-drop")),
+                ("XDG_RUNTIME_DIR", tmp.path().to_str()),
+                ("PETALTONGUE_NODE_ID", Some("x")),
+            ],
+            || {
+                let graph = Arc::new(RwLock::new(GraphEngine::new()));
+                let server = UnixSocketServer::new(graph).unwrap();
+                let socket_path = server.socket_path.clone();
+                std::fs::create_dir(&socket_path).expect("create dir");
+                assert!(socket_path.is_dir());
+                drop(server);
+                assert!(!socket_path.exists(), "Drop should remove socket dir");
             },
         );
     }
@@ -397,6 +453,62 @@ mod tests {
             assert!(response.result.is_some());
             let result = response.result.unwrap();
             assert_eq!(result["primal"], "test");
+        });
+    }
+
+    #[test]
+    fn test_visualization_state_handle() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let handle = server.visualization_state_handle();
+            assert!(Arc::strong_count(&handle) >= 2);
+        });
+    }
+
+    #[test]
+    fn test_sensor_stream_handle() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let handle = server.sensor_stream_handle();
+            assert!(Arc::strong_count(&handle) >= 2);
+        });
+    }
+
+    #[test]
+    fn test_interaction_subscribers_handle() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph).unwrap();
+            let handle = server.interaction_subscribers_handle();
+            assert!(Arc::strong_count(&handle) >= 2);
+        });
+    }
+
+    #[test]
+    fn test_with_rendering_awareness() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let awareness = Arc::new(RwLock::new(petal_tongue_core::RenderingAwareness::default()));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph)
+                .unwrap()
+                .with_rendering_awareness(awareness);
+            let response = server.get_health(json!(1));
+            assert!(response.result.is_some());
+        });
+    }
+
+    #[test]
+    fn test_with_visualization_state() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let viz_state = Arc::new(RwLock::new(VisualizationState::new()));
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            let server = UnixSocketServer::new(graph)
+                .unwrap()
+                .with_visualization_state(viz_state);
+            let response = server.get_capabilities(json!(1));
+            assert!(response.result.is_some());
         });
     }
 

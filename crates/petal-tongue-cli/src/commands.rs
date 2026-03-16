@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! CLI command definitions and argument parsing.
 
 use clap::{Parser, Subcommand};
@@ -27,7 +27,7 @@ pub enum Commands {
         instance_id: String,
     },
 
-    /// Bring instance window to front
+    /// Bring instance window to foreground
     Raise {
         /// Instance ID (UUID or prefix)
         #[arg(value_name = "INSTANCE_ID")]

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Test fixtures and constants
 //!
 //! Centralized location for all test data to avoid hardcoding throughout tests.

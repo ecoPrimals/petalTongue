@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! System Dashboard - Panel rendering
 //!
 //! Compact sidebar, full panel, proprioception, and sensory status UI.
@@ -147,11 +147,11 @@ impl SystemDashboard {
 
     /// Render mini sparkline
     fn render_mini_sparkline(&self, ui: &mut Ui, data: &VecDeque<f32>, palette: &ColorPalette) {
+        use egui::{Pos2, Stroke};
+
         if data.is_empty() {
             return;
         }
-
-        use egui::{Pos2, Stroke};
 
         let height = 20.0;
         let (response, painter) = ui.allocate_painter(

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pure functions for trust display computation (fully testable, no egui context).
 
 use super::types::{AverageTrustDisplay, TrustDisplayState, TrustLevelRow, TrustSummary};

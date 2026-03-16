@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Neural API self-registration for petalTongue.
 //!
 //! On startup, discovers the local biomeOS Neural API and announces petalTongue's
@@ -29,6 +29,10 @@ pub fn petaltongue_capabilities() -> Vec<&'static str> {
 ///
 /// Discovers the Neural API, calls `lifecycle.register` with our socket path
 /// and capabilities, then returns the provider for heartbeat use.
+///
+/// # Errors
+///
+/// Returns an error if Neural API discovery fails or `lifecycle.register` fails.
 pub async fn register_with_neural_api(
     our_socket: &Path,
 ) -> crate::error::Result<Arc<NeuralApiProvider>> {

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Property Panel - Node Parameter Editor
 //!
 //! Provides forms for editing node parameters based on node type.

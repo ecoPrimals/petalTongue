@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Graph validation types: severity, issues, and results.
 
 /// Validation error severity
@@ -66,12 +66,12 @@ impl ValidationIssue {
 
     /// Create a warning for a specific node
     #[must_use]
-    pub const fn node_warning(node_id: String, message: String) -> Self {
+    pub fn node_warning(node_id: impl Into<String>, message: impl Into<String>) -> Self {
         Self {
             severity: ValidationSeverity::Warning,
-            node_id: Some(node_id),
+            node_id: Some(node_id.into()),
             edge_index: None,
-            message,
+            message: message.into(),
             suggestion: None,
         }
     }

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Deterministic audio synthesis and per-sample provenance.
 
 use std::f64::consts::PI;
@@ -23,10 +23,16 @@ impl AudioSynthesizer {
     #[must_use]
     pub fn synthesize(&self, param: &AudioParam) -> Vec<f32> {
         #[expect(
+            clippy::cast_possible_truncation,
             clippy::cast_sign_loss,
-            reason = "duration * sample_rate is non-negative"
+            reason = "duration * sample_rate is non-negative; truncation acceptable"
         )]
         let n = (param.duration_secs * f64::from(self.sample_rate)) as usize;
+        #[expect(clippy::cast_precision_loss, reason = "time for phase: f64 sufficient")]
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "PCM output clamped by amplitude"
+        )]
         (0..n)
             .map(|i| {
                 let t = i as f64 / f64::from(self.sample_rate);

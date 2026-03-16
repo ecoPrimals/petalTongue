@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! UI Events - Event-Driven Architecture for Real-Time Updates
 //!
 //! Defines all events that can occur in the device/niche management UI
@@ -167,8 +167,10 @@ impl UIEventHandler {
         debug!("📥 Handling event: {:?}", event);
 
         // Increment counter
-        let mut count = self.events_processed.write().await;
-        *count += 1;
+        {
+            let mut count = self.events_processed.write().await;
+            *count += 1;
+        }
 
         // Dispatch to appropriate panels based on event type
         match &event {

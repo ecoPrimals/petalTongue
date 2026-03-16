@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Audio Canvas - Direct Hardware Access (Pure Rust!)
 //!
 //! Inspired by Toadstool's WGPU pattern and framebuffer direct access.
@@ -28,6 +28,10 @@ impl AudioCanvas {
     /// Discover audio playback devices
     ///
     /// Scans `/dev/snd/` for PCM playback devices (pure Rust!)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `/dev/snd` cannot be read.
     pub fn discover() -> Result<Vec<PathBuf>> {
         let mut devices = Vec::new();
 
@@ -58,6 +62,10 @@ impl AudioCanvas {
     /// Open audio device for direct access
     ///
     /// Opens `/dev/snd/pcmC0D0p` directly - no ALSA library!
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the device cannot be opened for writing.
     pub fn open(device_path: &Path) -> Result<Self> {
         info!("🎨 Opening audio canvas: {}", device_path.display());
 
@@ -82,6 +90,10 @@ impl AudioCanvas {
     }
 
     /// Open default audio device
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no devices are discovered or the first device cannot be opened.
     pub fn open_default() -> Result<Self> {
         let devices = Self::discover()?;
 
@@ -97,6 +109,10 @@ impl AudioCanvas {
     ///
     /// Samples are f32 in range [-1.0, 1.0]
     /// Converted to i16 PCM and written directly to device
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if writing to the device or flushing fails.
     pub fn write_samples(&mut self, samples: &[f32]) -> Result<()> {
         debug!("🎨 Writing {} samples to audio canvas", samples.len());
 

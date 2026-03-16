@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Scene graph - flat map of nodes with hierarchical structure.
 
 use serde::{Deserialize, Serialize};

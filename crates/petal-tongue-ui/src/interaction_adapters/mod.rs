@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Concrete input adapter implementations.
 //!
 //! These bridge the existing [`Sensor`](petal_tongue_core::Sensor) system to

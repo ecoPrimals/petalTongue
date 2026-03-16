@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Node rendering for 2D graph visualization.
 
 use crate::color_utils::hsv_to_rgb;
@@ -301,6 +301,10 @@ pub const fn trust_level_to_colors(trust_level: Option<u8>) -> (Color32, Color32
 /// Map family ID to a consistent color
 pub fn family_id_to_color(family_id: &str) -> Color32 {
     let hash: u32 = family_id.bytes().map(u32::from).sum();
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "HSV hue 0-360, precision loss acceptable for color"
+    )]
     let hue = (hash % 360) as f32;
     let (r, g, b) = hsv_to_rgb(hue, 0.7, 0.9);
     Color32::from_rgb(r, g, b)

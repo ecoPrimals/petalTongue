@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! HTTP-based visualization data provider
 //!
 //! ⚠️  **DEPRECATED AS PRIMARY PROTOCOL** ⚠️
@@ -216,10 +216,6 @@ impl VisualizationDataProvider for HttpVisualizationProvider {
 }
 
 /// Convert discovered primal to `PrimalInfo`
-#[expect(
-    deprecated,
-    reason = "PrimalInfo conversion retained for backward-compatible API consumers"
-)]
 impl From<DiscoveredPrimal> for PrimalInfo {
     fn from(primal: DiscoveredPrimal) -> Self {
         Self {

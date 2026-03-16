@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! JSON-RPC provider implementation
 
 use std::path::{Path, PathBuf};
@@ -32,6 +32,9 @@ impl JsonRpcProvider {
     }
 
     /// Auto-discover JSON-RPC providers on standard Unix socket paths
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError` if no socket found or connection test fails.
     pub async fn discover() -> DiscoveryResult<Self> {
         info!("🔍 Auto-discovering JSON-RPC providers on Unix sockets...");
 

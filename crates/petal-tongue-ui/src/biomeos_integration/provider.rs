@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! biomeOS provider - capability-based discovery and integration.
 //!
 //! Discovers device management by capability, not by name (TRUE PRIMAL).
@@ -130,18 +130,23 @@ impl BiomeOSProvider {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if capability discovery fails or the backend health check fails.
     pub async fn discover() -> Result<Option<Self>> {
-        info!("🔍 Discovering device management provider (capability-based)...");
-
-        let capability = "device.management";
-
-        // Try capability discovery via biomeOS Neural API
         use petal_tongue_core::{
             biomeos_discovery::BiomeOsBackend,
             capability_discovery::{
                 CapabilityQuery, DiscoveryBackend, PrimalEndpoint, PrimalHealth,
             },
         };
+
+        info!("🔍 Discovering device management provider (capability-based)...");
+
+        let capability = "device.management";
+
+        // Try capability discovery via biomeOS Neural API
         if let Ok(backend) = BiomeOsBackend::from_env() {
             let query = CapabilityQuery::new("device").with_operation("management");
             match backend.query(&query).await {
@@ -203,6 +208,10 @@ impl BiomeOSProvider {
     }
 
     /// Get list of discovered devices
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the JSON-RPC call fails or the response cannot be parsed.
     pub async fn get_devices(&self) -> Result<Vec<Device>> {
         debug!("Fetching devices from device management provider");
 
@@ -216,15 +225,21 @@ impl BiomeOSProvider {
             .map_err(|e| BiomeOsIntegrationError::ParseDevicesResponse(e.to_string()))?;
 
         // Update cache for offline fallback
-        let mut cache = self.cache.write().await;
-        cache.devices = devices.clone();
-        cache.last_update = Some(std::time::Instant::now());
+        {
+            let mut cache = self.cache.write().await;
+            cache.devices = devices.clone();
+            cache.last_update = Some(std::time::Instant::now());
+        }
 
         debug!("✅ Fetched {} devices", devices.len());
         Ok(devices)
     }
 
     /// Get list of discovered primals
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the JSON-RPC call fails or the response cannot be parsed.
     pub async fn get_primals_extended(&self) -> Result<Vec<Primal>> {
         debug!("Fetching primals from device management provider");
 
@@ -238,15 +253,21 @@ impl BiomeOSProvider {
             .map_err(|e| BiomeOsIntegrationError::ParsePrimalsResponse(e.to_string()))?;
 
         // Update cache for offline fallback
-        let mut cache = self.cache.write().await;
-        cache.primals = primals.clone();
-        cache.last_update = Some(std::time::Instant::now());
+        {
+            let mut cache = self.cache.write().await;
+            cache.primals = primals.clone();
+            cache.last_update = Some(std::time::Instant::now());
+        }
 
         debug!("✅ Fetched {} primals", primals.len());
         Ok(primals)
     }
 
     /// Get niche templates
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the JSON-RPC call fails or the response cannot be parsed.
     pub async fn get_niche_templates(&self) -> Result<Vec<NicheTemplate>> {
         debug!("Fetching niche templates from device management provider");
 
@@ -260,15 +281,21 @@ impl BiomeOSProvider {
             .map_err(|e| BiomeOsIntegrationError::ParseNicheTemplates(e.to_string()))?;
 
         // Update cache for offline fallback
-        let mut cache = self.cache.write().await;
-        cache.niche_templates = templates.clone();
-        cache.last_update = Some(std::time::Instant::now());
+        {
+            let mut cache = self.cache.write().await;
+            cache.niche_templates = templates.clone();
+            cache.last_update = Some(std::time::Instant::now());
+        }
 
         debug!("✅ Fetched {} niche templates", templates.len());
         Ok(templates)
     }
 
     /// Assign device to primal
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the JSON-RPC call fails.
     pub async fn assign_device(&self, device_id: &str, primal_id: &str) -> Result<()> {
         info!("Assigning device {} to primal {}", device_id, primal_id);
 
@@ -283,6 +310,10 @@ impl BiomeOSProvider {
     }
 
     /// Deploy niche
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the JSON-RPC call fails, the response lacks `niche_id`, or parsing fails.
     pub async fn deploy_niche(&self, niche: &NicheTemplate) -> Result<String> {
         info!("Deploying niche: {}", niche.name);
 
@@ -307,6 +338,10 @@ impl BiomeOSProvider {
     /// - device.added, device.removed
     /// - primal.status
     /// - niche.deployed
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the JSON-RPC subscription call fails.
     pub async fn subscribe_events(&self) -> Result<()> {
         info!("Subscribing to real-time events from provider");
 
@@ -337,6 +372,7 @@ impl BiomeOSProvider {
                 }
             }
         }
+        drop(event_stream_guard);
 
         Ok(())
     }
@@ -344,6 +380,10 @@ impl BiomeOSProvider {
     /// Subscribe to events with a callback for real-time handling
     ///
     /// The callback will be invoked for each event received via WebSocket.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `subscribe_events` fails.
     pub async fn subscribe_events_with_callback<F>(&self, callback: F) -> Result<()>
     where
         F: Fn(BiomeOSEvent) + Send + Sync + 'static,
@@ -352,11 +392,13 @@ impl BiomeOSProvider {
         self.subscribe_events().await?;
 
         // Set callback on event stream
-        let mut event_stream_guard = self.event_stream.write().await;
+        {
+            let mut event_stream_guard = self.event_stream.write().await;
 
-        if let Some(ref mut event_stream) = *event_stream_guard {
-            event_stream.set_callback(callback);
-            info!("✅ Event callback registered");
+            if let Some(ref mut event_stream) = *event_stream_guard {
+                event_stream.set_callback(callback);
+                info!("✅ Event callback registered");
+            }
         }
 
         Ok(())
@@ -433,6 +475,10 @@ impl BiomeOSProvider {
     }
 
     /// Health check returning status string (for `VisualizationDataProvider`)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if both `health.check` and `health.ping` JSON-RPC calls fail.
     pub(super) async fn health_check_jsonrpc(&self) -> Result<String> {
         // Try health.check first (semantic method)
         let params = serde_json::json!({});

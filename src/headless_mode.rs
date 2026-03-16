@@ -1,8 +1,8 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-//! Headless mode - Pure Rust rendering without GUI
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//! Headless mode - Pure Rust rendering without display
 //!
 //! Pure Rust! ✅
-//! No GUI dependencies
+//! No display dependencies
 
 use crate::data_service::DataService;
 use crate::error::AppError;

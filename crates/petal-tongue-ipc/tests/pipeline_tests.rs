@@ -1,15 +1,18 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Integration tests for the visualization pipeline and IPC handlers.
 
 use petal_tongue_core::graph_engine::GraphEngine;
 use petal_tongue_ipc::VisualizationState;
 use petal_tongue_ipc::json_rpc::JsonRpcRequest;
+use petal_tongue_ipc::unix_socket_connection;
 use petal_tongue_ipc::unix_socket_rpc_handlers::RpcHandlers;
 use petal_tongue_scene::primitive::{Color, Primitive};
 use petal_tongue_scene::scene_graph::{SceneGraph, SceneNode};
 use serde_json::json;
 use std::sync::{Arc, RwLock};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::net::UnixStream;
 
 fn test_handlers() -> RpcHandlers {
     let graph = Arc::new(RwLock::new(GraphEngine::new()));
@@ -269,4 +272,51 @@ async fn test_sensor_stream_unsubscribe() {
     assert!(unsub_resp.error.is_none());
     let r = unsub_resp.result.expect("result");
     assert_eq!(r["unsubscribed"], true);
+}
+
+/// Test Unix socket connection handling: spawn listener, connect client, send JSON-RPC, verify response
+#[tokio::test]
+async fn test_unix_socket_connection_handle_request() {
+    let handlers = test_handlers();
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let socket_path = tmp.path().join("test.sock");
+
+    let listener = tokio::net::UnixListener::bind(&socket_path).expect("bind");
+    let handlers = Arc::new(handlers);
+
+    let server_handlers = Arc::clone(&handlers);
+    tokio::spawn(async move {
+        let (stream, _) = listener.accept().await.expect("accept");
+        unix_socket_connection::handle_connection(&server_handlers, stream)
+            .await
+            .expect("handle_connection");
+    });
+
+    let mut stream = UnixStream::connect(&socket_path).await.expect("connect");
+    let request = json!({
+        "jsonrpc": "2.0",
+        "method": "health.get",
+        "params": {},
+        "id": 1
+    });
+    let line = serde_json::to_string(&request).expect("serialize") + "\n";
+    stream.write_all(line.as_bytes()).await.expect("write");
+
+    let mut reader = BufReader::new(stream);
+    let mut response_line = String::new();
+    reader.read_line(&mut response_line).await.expect("read");
+    let response: serde_json::Value = serde_json::from_str(response_line.trim()).expect("parse");
+    assert!(response["result"].is_object());
+    assert_eq!(response["result"]["status"], "healthy");
+
+    // Send invalid JSON to exercise parse error path
+    stream = reader.into_inner();
+    stream.write_all(b"{invalid json}\n").await.expect("write");
+    response_line.clear();
+    reader = BufReader::new(stream);
+    reader.read_line(&mut response_line).await.expect("read");
+    let err_response: serde_json::Value =
+        serde_json::from_str(response_line.trim()).expect("parse");
+    assert!(err_response["error"].is_object());
+    assert_eq!(err_response["error"]["code"], -32700);
 }

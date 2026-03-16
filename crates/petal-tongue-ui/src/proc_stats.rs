@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pure Rust system stats via /proc parsing (ecoBin v3.0 compliant)
 //!
 //! Replaces sysinfo with zero C dependencies. Uses `std::fs` for /proc reads.

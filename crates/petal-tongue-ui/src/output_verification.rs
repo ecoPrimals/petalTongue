@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Output Verification - Universal awareness of output reaching end state
 //!
 //! This generalizes display verification to ALL outputs:

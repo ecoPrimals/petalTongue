@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-//! eframe Backend - Current GUI using egui/eframe
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//! eframe Backend - Current display using egui/eframe
 //!
-//! This backend wraps the existing eframe-based GUI implementation.
+//! This backend wraps the existing eframe-based display implementation.
 //! It provides compatibility with the current UI while enabling future
 //! migration to alternative backends.
 //!

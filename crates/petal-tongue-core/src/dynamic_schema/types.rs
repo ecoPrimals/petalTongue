@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 use serde::{Deserialize, Deserializer, Serialize};
 
@@ -61,6 +61,11 @@ impl SchemaVersion {
     }
 
     /// Parse version from string (e.g., "1.2.3")
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the string does not have exactly three dot-separated
+    /// parts, or if major, minor, or patch fail to parse as integers.
     pub fn parse(s: &str) -> Result<Self> {
         let parts: Vec<&str> = s.split('.').collect();
         if parts.len() != 3 {
@@ -298,6 +303,11 @@ impl DynamicData {
     }
 
     /// Parse from JSON string
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the string is not valid JSON or does not deserialize
+    /// to the expected structure.
     pub fn from_json_str(json: &str) -> Result<Self> {
         serde_json::from_str(json).map_err(|e| {
             PetalTongueError::Json(format!("Failed to parse dynamic data from JSON: {e}"))
@@ -305,6 +315,11 @@ impl DynamicData {
     }
 
     /// Parse from JSON file
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be read, or if its contents are not
+    /// valid JSON.
     pub fn from_json_file(path: &std::path::Path) -> Result<Self> {
         let contents = std::fs::read_to_string(path).map_err(|e| {
             PetalTongueError::Json(format!("Failed to read file {}: {e}", path.display()))
@@ -313,6 +328,10 @@ impl DynamicData {
     }
 
     /// Convert to JSON string
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if serialization fails (e.g. non-finite numbers).
     pub fn to_json_string(&self) -> Result<String> {
         serde_json::to_string_pretty(self)
             .map_err(|e| PetalTongueError::Json(format!("Failed to serialize to JSON: {e}")))

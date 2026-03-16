@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #![forbid(unsafe_code)]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![warn(missing_docs)]
@@ -11,7 +11,7 @@
 //!
 //! - `list` - List all running instances
 //! - `show <id>` - Show details of an instance
-//! - `raise <id>` - Bring an instance window to front
+//! - `raise <id>` - Bring an instance window to foreground
 //! - `ping <id>` - Check if instance is responsive
 //! - `gc` - Clean up dead instances from registry
 

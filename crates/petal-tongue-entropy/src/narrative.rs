@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Narrative entropy capture (storytelling, typing)
 //!
 //! Captures keystroke dynamics, typing rhythm, and content uniqueness.
@@ -24,6 +24,10 @@ pub fn compute_text_entropy(text: &str) -> f64 {
     }
 
     let chars: Vec<char> = text.chars().collect();
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "entropy calculation; f64 sufficient for probability"
+    )]
     let total = chars.len() as f64;
 
     let mut counts: std::collections::HashMap<char, usize> = std::collections::HashMap::new();
@@ -34,6 +38,10 @@ pub fn compute_text_entropy(text: &str) -> f64 {
     let entropy: f64 = counts
         .values()
         .map(|&count| {
+            #[expect(
+                clippy::cast_precision_loss,
+                reason = "entropy calculation; f64 sufficient for probability"
+            )]
             let p = count as f64 / total;
             -p * p.log2()
         })
@@ -64,25 +72,42 @@ pub fn narrative_complexity(text: &str) -> f64 {
 
     // 1. Vocabulary diversity: unique words / total words
     let unique_words: std::collections::HashSet<&str> = words.iter().copied().collect();
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "narrative complexity; f64 sufficient for ratio"
+    )]
     let vocab_diversity = unique_words.len() as f64 / total_words as f64;
 
     // 2. Average sentence length (words per sentence)
-    let sentences: Vec<&str> = text
+    let num_sentences = text
         .split(|c: char| ['.', '!', '?'].contains(&c))
         .map(str::trim)
         .filter(|s| !s.is_empty())
-        .collect();
-    let num_sentences = sentences.len().max(1);
+        .count()
+        .max(1);
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "narrative complexity; f64 sufficient for ratio"
+    )]
     let avg_sentence_len = total_words as f64 / num_sentences as f64;
     // Normalize: typical sentence 5-20 words → 0.2-0.8
     let sentence_component = (avg_sentence_len / 25.0).min(1.0);
 
     // 3. Punctuation density
     let punct_count = text.chars().filter(char::is_ascii_punctuation).count();
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "narrative complexity; f64 sufficient for ratio"
+    )]
     let punct_density = punct_count as f64 / text.len() as f64;
     let punct_component = (punct_density * 10.0).min(1.0);
 
-    (vocab_diversity * 0.5 + sentence_component * 0.25 + punct_component * 0.25).clamp(0.0, 1.0)
+    vocab_diversity
+        .mul_add(
+            0.5,
+            sentence_component.mul_add(0.25, punct_component * 0.25),
+        )
+        .clamp(0.0, 1.0)
 }
 
 /// Narrative entropy capturer
@@ -188,10 +213,12 @@ impl NarrativeEntropyCapture {
             return 0.0;
         }
         let positions: Vec<usize> = self.backspace_events.iter().map(|e| e.position).collect();
-        let buckets = crate::quality::create_histogram_buckets(
-            &positions.iter().map(|&p| p as f64).collect::<Vec<_>>(),
-            10,
-        );
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "histogram buckets; f64 sufficient for position indices"
+        )]
+        let positions_f64: Vec<f64> = positions.iter().map(|&p| p as f64).collect();
+        let buckets = crate::quality::create_histogram_buckets(&positions_f64, 10);
         if buckets.is_empty() {
             return 0.5;
         }
@@ -211,11 +238,20 @@ impl NarrativeEntropyCapture {
             return 0.0;
         }
         let raw_entropy = compute_text_entropy(&self.text);
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "entropy normalization; f64 sufficient for log2"
+        )]
         let max_entropy = (num_unique as f64).log2();
         (raw_entropy / max_entropy).min(1.0)
     }
 
     /// Finalize and create entropy data
+    ///
+    /// # Errors
+    ///
+    /// This function does not currently return errors but returns `Result` for API consistency
+    /// with other entropy capturers.
     pub fn finalize(self) -> Result<NarrativeEntropyData, crate::error::EntropyError> {
         let quality_metrics = self.assess_quality();
 

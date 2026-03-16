@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Proprioception Panel - Display SAME DAVE self-awareness
 //!
 //! Shows the system's self-knowledge using the SAME DAVE framework:
@@ -14,7 +14,7 @@ use petal_tongue_core::proprioception::ProprioceptionData;
 use petal_tongue_discovery::NeuralApiProvider;
 use std::time::{Duration, Instant};
 
-/// Panel that displays SAME DAVE proprioception
+/// Panel that presents SAME DAVE proprioception
 pub struct ProprioceptionPanel {
     provider: Option<NeuralApiProvider>,
     last_proprio: Option<ProprioceptionData>,

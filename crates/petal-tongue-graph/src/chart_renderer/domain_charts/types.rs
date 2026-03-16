@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Parameter structs for domain chart rendering.
 
 /// `Scatter` (2D) rendering parameters bundled to reduce argument count.

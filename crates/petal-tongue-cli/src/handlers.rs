@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! CLI command handlers and executors.
 
 use colored::Colorize;
@@ -416,6 +416,87 @@ mod tests {
 
                 let result = tokio::task::block_in_place(|| {
                     tokio::runtime::Handle::current().block_on(run(Commands::List))
+                });
+                assert!(result.is_ok());
+            },
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_run_list_with_instance_having_window_id() {
+        let temp = tempfile::tempdir().unwrap();
+        petal_tongue_core::test_fixtures::env_test_helpers::with_env_vars(
+            &[("XDG_DATA_HOME", Some(temp.path().to_str().unwrap()))],
+            || {
+                let id = InstanceId::parse("550e8400-e29b-41d4-a716-446655440004").unwrap();
+                let mut inst = Instance::new(id, Some("windowed".to_string())).unwrap();
+                inst.set_window_id(0x0012_3456);
+                let mut registry = InstanceRegistry::new();
+                registry.register(inst).unwrap();
+
+                let result = tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(run(Commands::List))
+                });
+                assert!(result.is_ok());
+            },
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_run_list_with_instance_no_name() {
+        let temp = tempfile::tempdir().unwrap();
+        petal_tongue_core::test_fixtures::env_test_helpers::with_env_vars(
+            &[("XDG_DATA_HOME", Some(temp.path().to_str().unwrap()))],
+            || {
+                let id = InstanceId::parse("550e8400-e29b-41d4-a716-446655440008").unwrap();
+                let inst = Instance::new(id, None).unwrap();
+                let mut registry = InstanceRegistry::new();
+                registry.register(inst).unwrap();
+
+                let result = tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(run(Commands::List))
+                });
+                assert!(result.is_ok());
+            },
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_run_list_with_mixed_alive_and_dead_instances() {
+        let temp = tempfile::tempdir().unwrap();
+        petal_tongue_core::test_fixtures::env_test_helpers::with_env_vars(
+            &[("XDG_DATA_HOME", Some(temp.path().to_str().unwrap()))],
+            || {
+                let id1 = InstanceId::parse("550e8400-e29b-41d4-a716-446655440006").unwrap();
+                let inst1 = Instance::new(id1, Some("alive".to_string())).unwrap();
+                let id2 = InstanceId::parse("550e8400-e29b-41d4-a716-446655440007").unwrap();
+                let mut inst2 = Instance::new(id2, Some("dead".to_string())).unwrap();
+                inst2.pid = 99_999_999;
+                let mut registry = InstanceRegistry::new();
+                registry.register(inst1).unwrap();
+                registry.register(inst2).unwrap();
+
+                let result = tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(run(Commands::List))
+                });
+                assert!(result.is_ok());
+            },
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_run_status_with_alive_instance_unreachable() {
+        let temp = tempfile::tempdir().unwrap();
+        petal_tongue_core::test_fixtures::env_test_helpers::with_env_vars(
+            &[("XDG_DATA_HOME", Some(temp.path().to_str().unwrap()))],
+            || {
+                let id = InstanceId::parse("550e8400-e29b-41d4-a716-446655440005").unwrap();
+                let inst = Instance::new(id, Some("alive-unreachable".to_string())).unwrap();
+                let mut registry = InstanceRegistry::new();
+                registry.register(inst).unwrap();
+
+                let result = tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(run(Commands::Status))
                 });
                 assert!(result.is_ok());
             },

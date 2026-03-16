@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Toadstool Display Backend - Production Ready! 🌸🦈
 //!
 //! TRUE PRIMAL Architecture: Discovery via biomeOS, Performance via tarpc
@@ -109,6 +109,10 @@ pub const fn expected_rgba8_buffer_size(width: u32, height: u32) -> usize {
 
 impl ToadstoolDisplay {
     /// Create new Toadstool display (discovers biomeOS socket)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if biomeOS socket cannot be discovered.
     pub fn new() -> Result<Self> {
         let biomeos_socket = Self::discover_biomeos_socket()?;
 

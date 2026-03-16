@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Audio sensor - Bidirectional I/O (speaker + microphone)
 //!
 //! Discovers audio capabilities for both output and input.
@@ -45,6 +45,10 @@ impl AudioSensor {
     ///
     /// EVOLVED: Capability-based audio using `AudioCanvas` (direct hardware)
     /// Primals discover audio capability at runtime rather than compile-time features
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the beep task panics (e.g., `spawn_blocking` join fails).
     pub async fn beep(&mut self, frequency: f32, duration_ms: u64) -> Result<()> {
         if !self.has_output {
             return Ok(());

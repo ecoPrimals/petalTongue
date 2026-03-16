@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Scenario JSON loader for healthSpring-style scenario format.
 //!
 //! Loads and parses scenario JSON from disk or string into structured data
@@ -85,6 +85,10 @@ pub struct ScenarioEdge {
 
 impl LoadedScenario {
     /// Load a scenario from a JSON file.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be read or the JSON cannot be parsed.
     pub fn from_file(path: &Path) -> anyhow::Result<Self> {
         let contents = std::fs::read_to_string(path)?;
         let scenario: Self = serde_json::from_str(&contents)?;
@@ -92,6 +96,10 @@ impl LoadedScenario {
     }
 
     /// Load from a JSON string.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the JSON cannot be parsed.
     pub fn from_json(json: &str) -> anyhow::Result<Self> {
         let scenario: Self = serde_json::from_str(json)?;
         Ok(scenario)

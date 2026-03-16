@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Sensory Capability System - Runtime I/O Discovery
 //!
 //! This module implements TRUE PRIMAL capability discovery by detecting

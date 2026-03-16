@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Capability-Based Discovery System
 //!
 //! TRUE PRIMAL principle: Primals have self-knowledge only.
@@ -235,6 +235,11 @@ impl CapabilityDiscovery {
     ///
     /// Returns the FIRST healthy primal found.
     /// For load balancing, use `discover_all()`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the discovery backend fails to query, or if no healthy
+    /// primal provides the requested capability.
     pub async fn discover_one(
         &self,
         query: &CapabilityQuery,
@@ -272,6 +277,11 @@ impl CapabilityDiscovery {
     }
 
     /// Discover all primals providing a capability
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the discovery backend fails to query, or if no primal
+    /// provides the requested capability.
     pub async fn discover_all(
         &self,
         query: &CapabilityQuery,

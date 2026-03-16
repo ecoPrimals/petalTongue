@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Machine-readable status reporter for AI and external system inspection
 //!
 //! This module makes petalTongue's internal state observable to:

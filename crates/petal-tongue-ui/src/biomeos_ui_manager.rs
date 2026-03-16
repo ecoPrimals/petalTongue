@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! biomeOS UI Integration Module
 //!
 //! This module wires together all the UI components (`DevicePanel`, `PrimalPanel`,
@@ -118,6 +118,10 @@ impl BiomeOSUIManager {
     }
 
     /// Refresh data from provider
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the biomeOS provider fails to fetch devices, primals, or templates.
     pub async fn refresh(&mut self) -> Result<()> {
         if self.last_refresh.elapsed() < self.refresh_interval {
             return Ok(());
@@ -285,27 +289,49 @@ impl BiomeOSUIRPC {
     }
 
     /// Show device panel
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the manager lock cannot be acquired.
     pub async fn show_device_panel(&self) -> Result<()> {
-        let mut manager = self.manager.write().await;
-        manager.current_tab = UITab::Devices;
+        {
+            let mut manager = self.manager.write().await;
+            manager.current_tab = UITab::Devices;
+        }
         Ok(())
     }
 
     /// Show primal panel
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the manager lock cannot be acquired.
     pub async fn show_primal_panel(&self) -> Result<()> {
-        let mut manager = self.manager.write().await;
-        manager.current_tab = UITab::Primals;
+        {
+            let mut manager = self.manager.write().await;
+            manager.current_tab = UITab::Primals;
+        }
         Ok(())
     }
 
     /// Show niche designer
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the manager lock cannot be acquired.
     pub async fn show_niche_designer(&self) -> Result<()> {
-        let mut manager = self.manager.write().await;
-        manager.current_tab = UITab::NicheDesigner;
+        {
+            let mut manager = self.manager.write().await;
+            manager.current_tab = UITab::NicheDesigner;
+        }
         Ok(())
     }
 
     /// Get device list
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the biomeOS provider fails to fetch devices.
     pub async fn get_devices(&self) -> Result<Vec<Device>> {
         let manager = self.manager.read().await;
         if manager.use_mock {
@@ -327,6 +353,10 @@ impl BiomeOSUIRPC {
     }
 
     /// Get primal list
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the biomeOS provider fails to fetch primals.
     pub async fn get_primals_extended(&self) -> Result<Vec<Primal>> {
         let manager = self.manager.read().await;
         if manager.use_mock {
@@ -348,6 +378,10 @@ impl BiomeOSUIRPC {
     }
 
     /// Get niche templates
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the biomeOS provider fails to fetch templates.
     pub async fn get_niche_templates(&self) -> Result<Vec<NicheTemplate>> {
         let manager = self.manager.read().await;
         if manager.use_mock {
@@ -369,6 +403,10 @@ impl BiomeOSUIRPC {
     }
 
     /// Refresh all data
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the manager refresh fails.
     pub async fn refresh(&self) -> Result<()> {
         let mut manager = self.manager.write().await;
         manager.refresh().await

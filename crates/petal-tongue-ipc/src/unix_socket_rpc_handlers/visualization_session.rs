@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Session-related visualization RPC handlers: status, list, dismiss.
 
 use super::RpcHandlers;
@@ -38,26 +38,28 @@ pub fn handle_session_status(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
 
 /// Handle visualization.session.list: return active session metadata.
 pub fn handle_session_list(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
-    let state = handlers
-        .viz_state
-        .read()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-
-    let sessions: Vec<Value> = state
-        .sessions
-        .iter()
-        .map(|(session_id, session)| {
-            serde_json::json!({
-                "session_id": session_id,
-                "title": session.title,
-                "domain": session.domain,
-                "binding_count": session.bindings.len(),
-                "frame_count": session.frame_count,
+    let (sessions, scene_count) = {
+        let state = handlers
+            .viz_state
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let sessions: Vec<Value> = state
+            .sessions
+            .iter()
+            .map(|(session_id, session)| {
+                serde_json::json!({
+                    "session_id": session_id,
+                    "title": session.title,
+                    "domain": session.domain,
+                    "binding_count": session.bindings.len(),
+                    "frame_count": session.frame_count,
+                })
             })
-        })
-        .collect();
-
-    let scene_count = state.grammar_scenes.len();
+            .collect();
+        let scene_count = state.grammar_scenes.len();
+        drop(state);
+        (sessions, scene_count)
+    };
 
     JsonRpcResponse::success(
         id,

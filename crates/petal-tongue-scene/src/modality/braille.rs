@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 use serde::{Deserialize, Serialize};
 
@@ -73,8 +73,10 @@ impl BrailleCompiler {
     }
 
     #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_precision_loss,
         clippy::cast_sign_loss,
-        reason = "clamped coordinates are non-negative"
+        reason = "clamped coordinates; Braille dimensions"
     )]
     fn set_dot(
         grid: &mut [Vec<BrailleCell>],
@@ -103,11 +105,7 @@ impl BrailleCompiler {
         clippy::too_many_arguments,
         reason = "Bresenham needs grid and coordinate params"
     )]
-    #[expect(
-        clippy::cast_sign_loss,
-        clippy::cast_possible_wrap,
-        reason = "grid indices bounded"
-    )]
+    #[expect(clippy::cast_sign_loss, reason = "grid indices bounded")]
     fn bresenham(
         grid: &mut [Vec<BrailleCell>],
         cols: usize,
@@ -119,22 +117,36 @@ impl BrailleCompiler {
         viewport_w: f64,
         viewport_h: f64,
     ) {
+        #[expect(clippy::cast_precision_loss, reason = "Braille cell dimensions")]
         let pixel_w = cols as f64 * 2.0;
+        #[expect(clippy::cast_precision_loss, reason = "Braille cell dimensions")]
         let pixel_h = rows as f64 * 4.0;
-        let to_px = |x: f64| (x / viewport_w * pixel_w).clamp(0.0, pixel_w - 1.0) as i32;
-        let to_py = |y: f64| (y / viewport_h * pixel_h).clamp(0.0, pixel_h - 1.0) as i32;
-        let mut px0 = to_px(x0);
-        let mut py0 = to_py(y0);
-        let px1 = to_px(x1);
-        let py1 = to_py(y1);
+        #[expect(clippy::cast_possible_truncation, reason = "clamped to pixel bounds")]
+        let x_to_pixel = |x: f64| (x / viewport_w * pixel_w).clamp(0.0, pixel_w - 1.0) as i32;
+        #[expect(clippy::cast_possible_truncation, reason = "clamped to pixel bounds")]
+        let y_to_pixel = |y: f64| (y / viewport_h * pixel_h).clamp(0.0, pixel_h - 1.0) as i32;
+        let mut px0 = x_to_pixel(x0);
+        let mut py0 = y_to_pixel(y0);
+        let px1 = x_to_pixel(x1);
+        let py1 = y_to_pixel(y1);
         let dx = (px1 - px0).abs();
         let dy = -(py1 - py0).abs();
         let sx: i32 = if px0 < px1 { 1 } else { -1 };
         let sy: i32 = if py0 < py1 { 1 } else { -1 };
         let mut err = dx + dy;
         loop {
-            let ux = px0.clamp(0, (cols * 2) as i32 - 1) as usize;
-            let uy = py0.clamp(0, (rows * 4) as i32 - 1) as usize;
+            let ux = px0.clamp(
+                0,
+                i32::try_from(cols * 2)
+                    .unwrap_or(i32::MAX)
+                    .saturating_sub(1),
+            ) as usize;
+            let uy = py0.clamp(
+                0,
+                i32::try_from(rows * 4)
+                    .unwrap_or(i32::MAX)
+                    .saturating_sub(1),
+            ) as usize;
             let cell_col = ux / 2;
             let cell_row = uy / 4;
             let dot_col = ux % 2;

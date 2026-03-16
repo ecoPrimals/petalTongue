@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! System Metrics Panel - Display real-time system and biomeOS metrics
 //!
 //! Integrates with Neural API to show:
@@ -54,7 +54,7 @@ pub struct NeuralApiStats {
     pub active_executions: u64,
 }
 
-/// Panel that displays system metrics
+/// Panel that presents system metrics
 pub struct MetricsPanel {
     provider: Option<NeuralApiProvider>,
     last_metrics: Option<SystemMetrics>,

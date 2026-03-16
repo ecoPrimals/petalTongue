@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! `BiomeOS` API Client (JSON-RPC over Unix Sockets)
 //!
 //! TRUE PRIMAL architecture: Uses JSON-RPC 2.0 over Unix sockets,
@@ -40,6 +40,9 @@ impl BiomeOSJsonRpcClient {
     /// 1. Environment variable: `BIOMEOS_SOCKET`
     /// 2. XDG runtime: `/run/user/<uid>/biomeos-neural-api.sock`
     /// 3. Fallback: `/tmp/biomeos-neural-api.sock`
+    ///
+    /// # Errors
+    /// Returns `BiomeOsClientError::SocketNotFound` if no socket found.
     pub fn new() -> Result<Self, BiomeOsClientError> {
         let socket_path = Self::discover_socket_path()?;
 
@@ -126,6 +129,9 @@ impl BiomeOSJsonRpcClient {
     }
 
     /// Health check (semantic: `neural_api.health`)
+    ///
+    /// # Errors
+    /// Returns `BiomeOsClientError` on socket or JSON-RPC failure.
     pub async fn health_check(&self) -> Result<bool, BiomeOsClientError> {
         let request = json!({
             "jsonrpc": "2.0",
@@ -141,6 +147,9 @@ impl BiomeOSJsonRpcClient {
     }
 
     /// Discover primals (semantic: `primal.list`)
+    ///
+    /// # Errors
+    /// Returns `BiomeOsClientError` on socket, JSON-RPC, or parse failure.
     pub async fn discover_primals(&self) -> Result<Vec<PrimalInfo>, BiomeOsClientError> {
         let request = json!({
             "jsonrpc": "2.0",
@@ -160,6 +169,9 @@ impl BiomeOSJsonRpcClient {
     }
 
     /// Get topology (semantic: `neural_api.get_topology`)
+    ///
+    /// # Errors
+    /// Returns `BiomeOsClientError` on socket, JSON-RPC, or parse failure.
     pub async fn get_topology(&self) -> Result<Vec<TopologyEdge>, BiomeOsClientError> {
         let request = json!({
             "jsonrpc": "2.0",

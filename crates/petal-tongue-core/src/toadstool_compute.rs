@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! # Toadstool Compute Provider
 //!
 //! GPU compute acceleration via Toadstool primal (discovered at runtime).
@@ -43,6 +43,10 @@ impl ToadstoolCompute {
     /// Create new Toadstool compute provider
     ///
     /// Attempts to discover Toadstool at creation time.
+    ///
+    /// # Errors
+    ///
+    /// Does not return errors; discovery failures result in an empty provider.
     pub async fn new() -> Result<Self> {
         // Attempt discovery
         let service = Self::discover_toadstool().await.ok();

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Graph Canvas - Interactive Visual Graph Editor
 //!
 //! Provides a canvas for building Neural API graphs through drag-and-drop interactions.

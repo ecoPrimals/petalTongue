@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Node validation rules: required parameters and type-specific checks.
 
 use crate::graph_builder::{NodeType, VisualGraph};

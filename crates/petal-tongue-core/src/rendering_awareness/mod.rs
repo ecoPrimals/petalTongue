@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Rendering awareness - petalTongue's self-knowledge of its display state
 //!
 //! This is the "central nervous system" - motor (output) + sensory (input) awareness.
@@ -104,7 +104,7 @@ impl RenderingAwareness {
         }
     }
 
-    /// Determine if user can see our output
+    /// Determine if user can perceive our output
     fn user_visibility(&self) -> VisibilityState {
         let confirmed_rate = self.validation.health().confirmation_rate;
 
@@ -146,12 +146,12 @@ impl RenderingAwareness {
     /// Record what a frame actually contains (content-level awareness).
     ///
     /// Called by the UI layer at the end of each `update()` cycle so the
-    /// primal knows *what* it is showing, not just *that* it rendered.
+    /// primal knows *what* it is presenting, not just *that* it rendered.
     pub fn record_frame_content(&mut self, introspection: FrameIntrospection) {
         self.content.record(introspection);
     }
 
-    /// The most recent frame introspection (what we are currently showing).
+    /// The most recent frame introspection (what we are currently presenting).
     #[must_use]
     pub const fn current_content(&self) -> Option<&FrameIntrospection> {
         self.content.current()

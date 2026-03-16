@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! IPC client implementation
 //!
 //! Client for connecting to and communicating with petalTongue instances.

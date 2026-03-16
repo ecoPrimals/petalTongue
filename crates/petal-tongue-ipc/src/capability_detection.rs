@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Runtime capability detection using `CapabilityTaxonomy`.
 //!
 //! Detects which display modalities and UI capabilities are available on the

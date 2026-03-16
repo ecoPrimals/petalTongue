@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Handlers for `visualization.render.graph` and graph rendering.
 //!
 //! Builds a `SceneGraph` from the `GraphEngine` topology and compiles it
@@ -14,6 +14,10 @@ use petal_tongue_scene::scene_graph::{SceneGraph, SceneNode};
 use serde_json::{Value, json};
 
 /// Build a `SceneGraph` from graph engine nodes and edges.
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "nodes/edges borrow from graph for iteration"
+)]
 fn graph_to_scene(handlers: &RpcHandlers) -> (SceneGraph, usize, usize) {
     let graph = handlers
         .graph
@@ -68,7 +72,7 @@ fn graph_to_scene(handlers: &RpcHandlers) -> (SceneGraph, usize, usize) {
         if let (Some((x1, y1)), Some((x2, y2))) = (from_pos, to_pos) {
             let mut edge_node = SceneNode::new(format!("edge-{idx}"));
             edge_node.primitives.push(Primitive::Line {
-                points: vec![[x1, y1], [x2, y2]],
+                points: vec![(x1, y1).into(), (x2, y2).into()],
                 stroke: StrokeStyle {
                     color: Color::rgba(0.5, 0.5, 0.5, 0.6),
                     width: 1.0,

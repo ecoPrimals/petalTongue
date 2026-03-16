@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! # Awakening Overlay for Egui
 //!
 //! Full-screen awakening experience with visual flower animation.
@@ -66,6 +66,10 @@ impl AwakeningOverlay {
     }
 
     /// Update awakening state
+    ///
+    /// # Errors
+    ///
+    /// Currently always returns `Ok(())`; reserved for future extensibility.
     pub fn update(&mut self, delta_time: f32) -> Result<()> {
         if !self.active {
             return Ok(());
@@ -122,7 +126,7 @@ impl AwakeningOverlay {
     }
 
     /// Render stage text
-    fn render_stage_text(&self, ui: &mut egui::Ui, rect: egui::Rect) {
+    fn render_stage_text(&self, ui: &egui::Ui, rect: egui::Rect) {
         let text = match self.current_stage {
             AwakeningStage::Awakening => "🌸 Awakening...",
             AwakeningStage::SelfKnowledge => "✨ I am petalTongue",

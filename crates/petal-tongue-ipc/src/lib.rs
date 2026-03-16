@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #![cfg_attr(not(test), forbid(unsafe_code))]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![warn(missing_docs)]
+#![allow(clippy::missing_errors_doc)]
 //! Inter-process communication for petalTongue
 //!
 //! This crate enables communication between petalTongue instances and other primals.

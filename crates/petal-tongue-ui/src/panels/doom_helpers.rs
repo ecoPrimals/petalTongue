@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Doom Panel - Pure helper functions (headless-testable, no egui rendering)
 
 use doom_core::{DoomInstance, DoomKey};

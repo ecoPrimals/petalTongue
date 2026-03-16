@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! `EguiCompiler`: a `ModalityCompiler` that emits egui `Shape`s.
 //!
 //! Places egui on equal footing with SVG, Audio, Terminal, and Description

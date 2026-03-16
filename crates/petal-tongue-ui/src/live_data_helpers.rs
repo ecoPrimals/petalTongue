@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pure display logic helpers for live data indicators.
 //!
 //! Extracted from `live_data.rs` for testability and separation of concerns.

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! biomeOS Discovery Backend
 //!
 //! Implements capability-based discovery via biomeOS Neural API.
@@ -44,6 +44,11 @@ impl BiomeOsBackend {
     /// 3. `/tmp/biomeos-neural-api.sock` - legacy fallback
     ///
     /// # TRUE PRIMAL: Zero hardcoded paths in discovery logic
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no biomeOS Neural API socket is found in any discovery
+    /// path (`BIOMEOS_NEURAL_API_SOCKET` env var, XDG runtime dir, or legacy `/tmp` fallback).
     pub fn from_env() -> Result<Self, DiscoveryError> {
         use crate::platform_dirs;
 
@@ -249,6 +254,11 @@ impl BiomeOsBackend {
     /// subscribes to topology and health events, and returns a receiver stream.
     /// Handles reconnection gracefully by spawning a background task that
     /// retries on disconnect.
+    ///
+    /// # Errors
+    ///
+    /// Never returns an error; always returns `Ok` with a receiver. The WebSocket
+    /// connection runs in a background task.
     #[expect(
         clippy::unused_async,
         reason = "async for API consistency with other discovery methods"

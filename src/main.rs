@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #![forbid(unsafe_code)]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 //! petalTongue ecoBud - Production `UniBin`
@@ -61,7 +61,7 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Launch native desktop GUI
+    /// Launch native desktop display
     #[command(visible_alias = "gui")]
     Ui {
         /// Scenario JSON file to load
@@ -110,7 +110,7 @@ enum Commands {
         workers: usize,
     },
 
-    /// Run IPC server (Unix socket JSON-RPC) without GUI
+    /// Run IPC server (Unix socket JSON-RPC) without display
     Server,
 
     /// Show status and system info (Pure Rust! ✅)
@@ -162,7 +162,7 @@ async fn main() -> Result<(), AppError> {
     // Execute command (all modes are fully async)
     let result = match cli.command {
         Commands::Ui { scenario, no_audio } => {
-            tracing::info!(mode = "ui", "Launching desktop GUI mode");
+            tracing::info!(mode = "ui", "Launching desktop display mode");
             ui_mode::run(scenario, no_audio, data_service).await
         }
         Commands::Tui {
@@ -182,7 +182,7 @@ async fn main() -> Result<(), AppError> {
             workers,
         } => {
             // Use explicit bind address or fall back to config (capability-based, no hardcoding)
-            let bind_addr = bind.unwrap_or_else(|| format!("0.0.0.0:{}", config.network.web_port));
+            let bind_addr = bind.unwrap_or_else(|| config.network.web_addr().to_string());
 
             tracing::info!(
                 mode = "web",
@@ -194,8 +194,7 @@ async fn main() -> Result<(), AppError> {
         }
         Commands::Headless { bind, workers } => {
             // Use explicit bind address or fall back to config (capability-based, no hardcoding)
-            let bind_addr =
-                bind.unwrap_or_else(|| format!("0.0.0.0:{}", config.network.headless_port));
+            let bind_addr = bind.unwrap_or_else(|| config.network.headless_addr().to_string());
 
             tracing::info!(
                 mode = "headless",
@@ -206,7 +205,7 @@ async fn main() -> Result<(), AppError> {
             headless_mode::run(&bind_addr, workers, data_service).await
         }
         Commands::Server => {
-            tracing::info!(mode = "server", "Launching IPC server (no GUI)");
+            tracing::info!(mode = "server", "Launching IPC server (no display)");
             server_mode::run(data_service).await
         }
         Commands::Status { verbose, format } => {

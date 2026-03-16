@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Graph Metrics Plotter Integration
 //!
 //! Visualizes graph metrics over time (node count, edge count, updates).

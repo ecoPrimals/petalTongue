@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Live IPC visualization sessions bridge.
 //!
 //! Polls `VisualizationState` (shared with the IPC server) for active sessions

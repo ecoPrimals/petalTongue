@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Accessibility Settings and Color Schemes
 //
 // Universal accessibility for ALL users - color-blind, blind, deaf, motor disabilities

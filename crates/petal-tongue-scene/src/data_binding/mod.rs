@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! `DataBinding` → `GrammarExpr` compiler.
 //!
 //! Converts healthSpring's typed data payloads into the Grammar of Graphics
@@ -34,10 +34,10 @@ impl DataBindingCompiler {
                 y_values,
                 ..
             } => {
-                let expr = GrammarExpr::new(id.clone(), GeometryType::Line)
+                let expr = GrammarExpr::new(id.as_str(), GeometryType::Line)
                     .with_x("x")
                     .with_y("y")
-                    .with_title(label.clone())
+                    .with_title(label.as_str())
                     .with_scale("x", ScaleType::Linear)
                     .with_scale("y", ScaleType::Linear);
                 let expr = if let Some(d) = domain {
@@ -56,10 +56,10 @@ impl DataBindingCompiler {
                 id, label, values, ..
             } => {
                 let (bins, counts) = utils::histogram_bins(values, 20);
-                let expr = GrammarExpr::new(id.clone(), GeometryType::Bar)
+                let expr = GrammarExpr::new(id.as_str(), GeometryType::Bar)
                     .with_x("x")
                     .with_y("y")
-                    .with_title(label.clone())
+                    .with_title(label.as_str())
                     .with_scale("x", ScaleType::Linear)
                     .with_scale("y", ScaleType::Linear);
                 let expr = if let Some(d) = domain {
@@ -81,10 +81,10 @@ impl DataBindingCompiler {
                 values,
                 ..
             } => {
-                let expr = GrammarExpr::new(id.clone(), GeometryType::Bar)
+                let expr = GrammarExpr::new(id.as_str(), GeometryType::Bar)
                     .with_x("x")
                     .with_y("y")
-                    .with_title(label.clone())
+                    .with_title(label.as_str())
                     .with_scale("x", ScaleType::Categorical)
                     .with_scale("y", ScaleType::Linear);
                 let expr = if let Some(d) = domain {
@@ -109,7 +109,7 @@ impl DataBindingCompiler {
                 unit,
                 ..
             } => {
-                let expr = GrammarExpr::new(id.clone(), GeometryType::Arc)
+                let expr = GrammarExpr::new(id.as_str(), GeometryType::Arc)
                     .with_x("x")
                     .with_y("y")
                     .with_title(format!("{label}: {value:.1} {unit}"));
@@ -133,10 +133,10 @@ impl DataBindingCompiler {
                 amplitudes,
                 ..
             } => {
-                let expr = GrammarExpr::new(id.clone(), GeometryType::Area)
+                let expr = GrammarExpr::new(id.as_str(), GeometryType::Area)
                     .with_x("x")
                     .with_y("y")
-                    .with_title(label.clone())
+                    .with_title(label.as_str())
                     .with_scale("x", ScaleType::Linear)
                     .with_scale("y", ScaleType::Linear);
                 let expr = if let Some(d) = domain {
@@ -159,10 +159,10 @@ impl DataBindingCompiler {
                 values,
                 ..
             } => {
-                let expr = GrammarExpr::new(id.clone(), GeometryType::Tile)
+                let expr = GrammarExpr::new(id.as_str(), GeometryType::Tile)
                     .with_x("x")
                     .with_y("y")
-                    .with_title(label.clone())
+                    .with_title(label.as_str())
                     .with_scale("x", ScaleType::Categorical)
                     .with_scale("y", ScaleType::Categorical);
                 let expr = if let Some(d) = domain {
@@ -186,10 +186,10 @@ impl DataBindingCompiler {
             DataBinding::Scatter {
                 id, label, x, y, ..
             } => {
-                let expr = GrammarExpr::new(id.clone(), GeometryType::Point)
+                let expr = GrammarExpr::new(id.as_str(), GeometryType::Point)
                     .with_x("x")
                     .with_y("y")
-                    .with_title(label.clone())
+                    .with_title(label.as_str())
                     .with_scale("x", ScaleType::Linear)
                     .with_scale("y", ScaleType::Linear);
                 let expr = if let Some(d) = domain {
@@ -213,10 +213,10 @@ impl DataBindingCompiler {
                 point_labels,
                 ..
             } => {
-                let mut expr = GrammarExpr::new(id.clone(), GeometryType::Point)
+                let mut expr = GrammarExpr::new(id.as_str(), GeometryType::Point)
                     .with_x("x")
                     .with_y("y")
-                    .with_title(label.clone());
+                    .with_title(label.as_str());
                 expr.coordinate = CoordinateSystem::Perspective3D;
                 expr.variables.push(VariableBinding {
                     name: "z".to_string(),
@@ -248,10 +248,10 @@ impl DataBindingCompiler {
                 values,
                 ..
             } => {
-                let expr = GrammarExpr::new(id.clone(), GeometryType::Tile)
+                let expr = GrammarExpr::new(id.as_str(), GeometryType::Tile)
                     .with_x("x")
                     .with_y("y")
-                    .with_title(label.clone())
+                    .with_title(label.as_str())
                     .with_scale("x", ScaleType::Linear)
                     .with_scale("y", ScaleType::Linear);
                 let expr = if let Some(d) = domain {
@@ -273,8 +273,8 @@ impl DataBindingCompiler {
                 (expr, data)
             }
             DataBinding::GameScene { id, label, scene } => {
-                let expr = GrammarExpr::new(id.clone(), GeometryType::Tile)
-                    .with_title(label.clone())
+                let expr = GrammarExpr::new(id.as_str(), GeometryType::Tile)
+                    .with_title(label.as_str())
                     .with_scale("x", ScaleType::Linear)
                     .with_scale("y", ScaleType::Linear);
                 let expr = if let Some(d) = domain {
@@ -290,7 +290,7 @@ impl DataBindingCompiler {
                 definition,
             } => {
                 let expr =
-                    GrammarExpr::new(id.clone(), GeometryType::Area).with_title(label.clone());
+                    GrammarExpr::new(id.as_str(), GeometryType::Area).with_title(label.as_str());
                 let expr = if let Some(d) = domain {
                     expr.with_domain(d)
                 } else {

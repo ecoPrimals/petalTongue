@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 #[cfg(test)]
 pub fn rich_test_scene() -> crate::scene_graph::SceneGraph {

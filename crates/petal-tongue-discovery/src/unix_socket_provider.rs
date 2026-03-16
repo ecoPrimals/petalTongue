@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Unix socket discovery provider
 //!
 //! Discovers primals via Unix domain sockets by scanning for .sock files
@@ -80,6 +80,9 @@ impl UnixSocketProvider {
     }
 
     /// Discover all primals via Unix sockets
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError` on I/O, JSON-RPC, or connection errors.
     pub async fn discover(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         let mut primals = Vec::new();
 

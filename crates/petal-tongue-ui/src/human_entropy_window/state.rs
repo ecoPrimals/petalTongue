@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Human entropy window state and entropy collection
 
 #![allow(unexpected_cfgs)]

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Domain-aware chart renderers for `Heatmap`, `Scatter3D`, `FieldMap`,
 //! and `Spectrum` variants. Colors are selected from `DomainPalette` based
 //! on an optional domain hint.

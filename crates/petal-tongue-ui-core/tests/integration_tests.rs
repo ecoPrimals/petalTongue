@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Integration tests for petal-tongue-ui-core
 
@@ -317,6 +317,43 @@ fn test_large_graph_rendering() -> Result<()> {
     assert_eq!(parsed["topology"]["primals"].as_array().unwrap().len(), 20);
 
     Ok(())
+}
+
+#[test]
+fn test_single_node_rendering() -> Result<()> {
+    use petal_tongue_core::test_fixtures::primals;
+
+    let graph = Arc::new(RwLock::new(GraphEngine::new()));
+    graph
+        .write()
+        .unwrap()
+        .add_node(primals::test_primal("single"));
+
+    let svg_ui = SvgUI::new(graph.clone(), 400, 300);
+    let svg = svg_ui.render_to_string()?;
+    assert!(svg.contains("<svg"));
+    assert!(svg.contains("single"));
+
+    let terminal_ui = TerminalUI::new(graph.clone());
+    let terminal = terminal_ui.render_to_string()?;
+    assert!(terminal.contains("single"));
+    assert!(terminal.contains("1 primals"));
+
+    let canvas_ui = CanvasUI::new(graph, 400, 300);
+    let png = canvas_ui.render_to_bytes()?;
+    assert!(!png.is_empty());
+
+    Ok(())
+}
+
+#[test]
+fn test_export_io_error() {
+    let graph = Arc::new(RwLock::new(GraphEngine::new()));
+    let ui = SvgUI::new(graph, 800, 600);
+    let path = std::path::Path::new("/nonexistent/directory/that/cannot/be/created/output.svg");
+    let result = ui.export(path, ExportFormat::Svg);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("IO"));
 }
 
 #[test]

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Concurrent discovery coordinator
 //!
 //! Modern async patterns for parallel provider discovery with timeout protection.
@@ -106,6 +106,12 @@ where
 /// Discover first available provider (race to first success)
 ///
 /// Returns immediately once ANY provider succeeds, cancelling other attempts.
+///
+/// # Errors
+///
+/// Returns `DiscoveryError::NoProvidersFound` if providers list is empty,
+/// `DiscoveryError::OperationTimedOut` if all health checks time out,
+/// or `DiscoveryError::AllProvidersFailed` if all providers fail.
 ///
 /// # Example
 ///
@@ -245,6 +251,35 @@ impl ProviderHealth {
 mod tests {
     use super::*;
     use crate::demo_provider::DemoVisualizationProvider;
+    use crate::errors::DiscoveryError;
+    use crate::traits::ProviderMetadata;
+
+    /// Provider that always fails health_check - for testing error paths
+    struct FailingProvider;
+
+    #[async_trait::async_trait]
+    impl VisualizationDataProvider for FailingProvider {
+        async fn get_primals(
+            &self,
+        ) -> crate::errors::DiscoveryResult<Vec<petal_tongue_core::PrimalInfo>> {
+            Ok(vec![])
+        }
+
+        async fn health_check(&self) -> crate::errors::DiscoveryResult<String> {
+            Err(DiscoveryError::ConfigError(
+                "Intentional failure".to_string(),
+            ))
+        }
+
+        fn get_metadata(&self) -> ProviderMetadata {
+            ProviderMetadata {
+                name: "Failing".to_string(),
+                endpoint: "fail://".to_string(),
+                protocol: "fail".to_string(),
+                capabilities: vec![],
+            }
+        }
+    }
 
     #[tokio::test]
     async fn test_parallel_health_checks() {
@@ -283,6 +318,33 @@ mod tests {
 
         let result = discover_first_available(providers, Duration::from_secs(1)).await;
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_first_available_all_fail() {
+        let providers: Vec<Box<dyn VisualizationDataProvider>> =
+            vec![Box::new(FailingProvider), Box::new(FailingProvider)];
+
+        let result = discover_first_available(providers, Duration::from_secs(1)).await;
+        assert!(result.is_err());
+        if let Err(e) = result {
+            assert!(
+                e.to_string().contains("All providers failed") || e.to_string().contains("failed")
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_check_all_providers_health_with_unhealthy() {
+        let providers: Vec<Box<dyn VisualizationDataProvider>> = vec![
+            Box::new(DemoVisualizationProvider::new()),
+            Box::new(FailingProvider),
+        ];
+
+        let health = check_all_providers_health(&providers, Duration::from_secs(1)).await;
+        assert_eq!(health.len(), 2);
+        assert!(health[0].is_healthy());
+        assert!(!health[1].is_healthy());
     }
 
     #[tokio::test]
@@ -393,6 +455,22 @@ mod tests {
         assert!(result.providers.is_empty());
         assert_eq!(result.failures.len(), 1);
         assert_eq!(result.failures[0].source, "fail");
+    }
+
+    #[tokio::test]
+    async fn test_discover_concurrent_timeout() {
+        let result = discover_concurrent(
+            vec![("slow", || async {
+                tokio::time::sleep(Duration::from_secs(10)).await;
+                Ok(vec![])
+            })],
+            Duration::from_millis(50),
+        )
+        .await;
+
+        assert!(result.providers.is_empty());
+        assert_eq!(result.failures.len(), 1);
+        assert_eq!(result.failures[0].source, "slow");
     }
 
     #[tokio::test]

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Topology View
 //!
 //! ASCII art graph visualization of primal connections.
@@ -185,6 +185,10 @@ fn force_directed_layout(
     }
 
     let area = width * height;
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "layout calculation, precision sufficient"
+    )]
     let k = (area / n as f64).sqrt().max(1.0);
     let mut temperature = (area / 10.0).sqrt();
 
@@ -197,6 +201,10 @@ fn force_directed_layout(
     // Initial positions (circle)
     let mut positions: Vec<(f64, f64)> = (0..n)
         .map(|i| {
+            #[expect(
+                clippy::cast_precision_loss,
+                reason = "circular layout, precision sufficient"
+            )]
             let angle = 2.0 * std::f64::consts::PI * (i as f64) / (n as f64);
             (
                 (width / 4.0).mul_add(angle.cos(), width / 2.0),
@@ -274,15 +282,15 @@ pub fn render_ascii_graph<'a>(
     primals: &'a [PrimalInfo],
     topology: &'a [TopologyEdge],
 ) -> Vec<Line<'a>> {
+    // Terminal dimensions for layout (chars)
+    const LAYOUT_WIDTH: f64 = 70.0;
+    const LAYOUT_HEIGHT: f64 = 20.0;
+
     let mut lines = vec![Line::from("")];
 
     if primals.is_empty() {
         return lines;
     }
-
-    // Terminal dimensions for layout (chars)
-    const LAYOUT_WIDTH: f64 = 70.0;
-    const LAYOUT_HEIGHT: f64 = 20.0;
 
     let positions = force_directed_layout(primals, topology, LAYOUT_WIDTH, LAYOUT_HEIGHT, 50);
 

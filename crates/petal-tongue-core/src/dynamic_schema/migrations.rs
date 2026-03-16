@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 use crate::error::{PetalTongueError, Result};
 
@@ -10,6 +10,11 @@ pub trait SchemaMigration {
     fn can_migrate(&self, from: SchemaVersion, to: SchemaVersion) -> bool;
 
     /// Perform the migration
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the migration fails (e.g. required fields missing or
+    /// incompatible data).
     fn migrate(&self, data: &mut DynamicData, from: SchemaVersion, to: SchemaVersion)
     -> Result<()>;
 }
@@ -35,6 +40,11 @@ impl MigrationRegistry {
     }
 
     /// Migrate data from one version to another
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no registered migration can handle the version upgrade
+    /// from `from` to `to`, or if the selected migration fails.
     pub fn migrate(
         &self,
         data: &mut DynamicData,

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pure Rust Audio File Export
 //!
 //! Generates WAV files from audio attributes without requiring system audio libraries.
@@ -109,7 +109,7 @@ impl AudioFileGenerator {
         for i in 0..num_samples {
             #[expect(clippy::cast_precision_loss)]
             let t = i as f32 / self.quality.sample_rate as f32;
-            let sample = self.generate_sample(t, frequency, &attrs.instrument, volume);
+            let sample = self.generate_sample(t, frequency, attrs.instrument, volume);
 
             // Write stereo samples with panning
             if self.quality.channels == 2 {
@@ -194,10 +194,14 @@ impl AudioFileGenerator {
             for (_id, attrs) in soundscape {
                 let frequency = attrs.pitch.mul_add(700.0, 100.0);
                 let volume = attrs.volume * self.master_volume;
-                mixed_sample += self.generate_sample(t, frequency, &attrs.instrument, volume);
+                mixed_sample += self.generate_sample(t, frequency, attrs.instrument, volume);
             }
 
             // Normalize to prevent clipping
+            #[expect(
+                clippy::cast_precision_loss,
+                reason = "RMS normalization, count fits f32 for audio"
+            )]
             let num_tones = soundscape.len() as f32;
             mixed_sample /= num_tones.sqrt(); // RMS normalization
 
@@ -224,7 +228,8 @@ impl AudioFileGenerator {
     }
 
     /// Generate a single sample value for a given waveform
-    fn generate_sample(&self, t: f32, frequency: f32, instrument: &Instrument, volume: f32) -> f32 {
+    #[expect(clippy::unused_self, reason = "trait-style method for consistency")]
+    fn generate_sample(&self, t: f32, frequency: f32, instrument: Instrument, volume: f32) -> f32 {
         use std::f32::consts::PI;
 
         let angle = 2.0 * PI * frequency * t;

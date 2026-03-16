@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Startup Audio System
 //!
 //! Plays signature audio tone followed by startup music when petalTongue launches.
@@ -64,17 +64,21 @@ fn play_embedded_mp3_pure_rust(mp3_data: Bytes) -> Result<(), String> {
 }
 
 /// Decode audio with symphonia (pure Rust!)
+///
+/// # Errors
+///
+/// Returns an error if format probing fails, no default track exists, decoder creation fails, or sample rate is missing.
 pub fn decode_audio_symphonia(audio_data: Bytes) -> Result<DecodedAudio, String> {
     use std::io::Cursor;
     use symphonia::core::audio::{AudioBufferRef, Signal};
     use symphonia::core::codecs::DecoderOptions;
     use symphonia::core::formats::FormatOptions;
-    use symphonia::core::io::MediaSourceStream;
+    use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
     use symphonia::core::meta::MetadataOptions;
     use symphonia::core::probe::Hint;
 
     let cursor = Cursor::new(audio_data);
-    let mss = MediaSourceStream::new(Box::new(cursor), Default::default());
+    let mss = MediaSourceStream::new(Box::new(cursor), MediaSourceStreamOptions::default());
 
     let mut hint = Hint::new();
     hint.with_extension("mp3");
@@ -298,11 +302,11 @@ impl StartupAudio {
 
         // Spawn background thread for audio playback
         std::thread::spawn(move || {
+            use crate::audio_pure_rust::export_wav;
+
             // 1. Play signature tone (pure Rust, always works)
             if play_signature {
                 let signature = Self::generate_signature_tone();
-                // Export to WAV and play using system
-                use crate::audio_pure_rust::export_wav;
 
                 let temp_dir = std::env::temp_dir();
                 let wav_path = temp_dir.join("petaltongue_signature.wav");

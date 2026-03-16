@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! # Modality System
 //!
-//! Defines the trait and types for GUI modalities.
+//! Defines the trait and types for output modalities.
 
 use async_trait::async_trait;
 
@@ -74,7 +74,7 @@ pub struct ModalityCapabilities {
     /// Can handle user input (interactive)
     pub interactive: bool,
 
-    /// Can display real-time updates
+    /// Can present real-time updates
     pub realtime: bool,
 
     /// Can export to files
@@ -99,7 +99,7 @@ pub struct ModalityCapabilities {
     pub accessibility: AccessibilityFeatures,
 }
 
-/// Universal GUI Modality
+/// Universal output modality
 ///
 /// Each modality provides a different representation of the same
 /// topology data. Modalities are discovered at runtime and can
@@ -206,7 +206,7 @@ impl ModalityRegistry {
     #[must_use]
     pub fn auto_select(&self) -> Option<&str> {
         // Try in order of preference:
-        // 1. Tier 3 (Enhancement) - interactive GUI
+        // 1. Tier 3 (Enhancement) - interactive display
         // 2. Tier 2 (Default) - audio or terminal
         // 3. Tier 1 (Always) - terminal fallback
 

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Sensory Event Loop
 //!
 //! Continuously polls sensors and feeds events to `RenderingAwareness`.
@@ -10,7 +10,7 @@ use std::sync::{Arc, RwLock};
 
 /// Start the sensory event loop (background task).
 ///
-/// For GUI mode, egui already provides input events in the `update()` loop,
+/// For display mode, egui already provides input events in the `update()` loop,
 /// making a separate poll unnecessary. This function spawns a lightweight
 /// task that bridges async sensors (network, external devices) into
 /// `RenderingAwareness` for non-egui sensor sources.
@@ -58,6 +58,11 @@ pub fn start_event_loop(
 }
 
 /// Poll sensors once (for synchronous contexts)
+///
+/// # Errors
+///
+/// Returns an error if the sensor registry fails to poll (e.g., network or I/O failure).
+#[expect(clippy::future_not_send, reason = "event loop runs on the main thread")]
 pub async fn poll_sensors_once(
     sensor_registry: &Arc<RwLock<SensorRegistry>>,
     rendering_awareness: &Arc<RwLock<RenderingAwareness>>,

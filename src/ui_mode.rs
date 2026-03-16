@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-//! UI mode - Desktop GUI
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//! UI mode - Desktop display
 //!
 //! Platform dependencies: wayland-sys, x11-sys (acceptable for ecoBud)
 //! This is the 1 mode (out of 5) that has platform dependencies
@@ -12,13 +12,13 @@ type Result<T> = std::result::Result<T, AppError>;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-/// Convert scenario string to `PathBuf` (pure, testable without GUI).
+/// Convert scenario string to `PathBuf` (pure, testable without display).
 #[must_use]
 pub fn scenario_to_path(scenario: Option<String>) -> Option<PathBuf> {
     scenario.map(PathBuf::from)
 }
 
-/// Build the main window title (pure, testable without launching GUI).
+/// Build the main window title (pure, testable without launching display).
 #[must_use]
 pub fn window_title() -> String {
     format!("🌸 {PRIMAL_NAME} - Universal Representation System")
@@ -33,7 +33,7 @@ pub async fn run(
     tracing::info!(
         scenario = ?scenario,
         no_audio,
-        "Starting desktop GUI mode"
+        "Starting desktop display mode"
     );
 
     // Run in blocking context (egui is not async)
@@ -78,7 +78,7 @@ fn run_ui_blocking(
 
     // Create and run app
     // IMPORTANT: We pass the shared graph from DataService directly
-    // This ensures the GUI uses the SAME data as all other modes
+    // This ensures the display uses the SAME data as all other modes
     let shared_graph = data_service.graph();
 
     petal_tongue_ui::eframe::run_native(
@@ -201,6 +201,20 @@ mod tests {
     async fn test_ui_mode_signature() {
         // Can't test actual UI in headless environment
         // This just verifies the function signature compiles
+    }
+
+    /// Exercises the TaskPanic error path used in run() when spawn_blocking panics.
+    /// Same map_err pattern as run() line 42.
+    #[tokio::test]
+    #[cfg(feature = "ui")]
+    async fn test_run_task_panic_error_path() {
+        let result = tokio::task::spawn_blocking(|| panic!("test panic for coverage"))
+            .await
+            .map_err(|e| AppError::TaskPanic(e.to_string()));
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("panicked"));
+        assert!(err.to_string().contains("test panic for coverage"));
     }
 
     #[tokio::test]

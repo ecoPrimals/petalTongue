@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! # Awakening Experience
 //!
 //! The default touchpoint: flower opening to sunrise, leading to tutorial.
@@ -130,6 +130,10 @@ impl AwakeningExperience {
     }
 
     /// Run the complete awakening experience
+    ///
+    /// # Errors
+    ///
+    /// Never returns an error; stage failures are logged but not propagated.
     pub async fn run(&self) -> Result<()> {
         if !self.config.enabled {
             tracing::info!("Awakening experience disabled, skipping");

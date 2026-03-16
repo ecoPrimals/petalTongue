@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Deterministic haptic sequence from commands.
 
 use crate::modality::{HapticCommand, HapticPattern};

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Visualization session state and handler logic.
 //!
 //! Manages active visualization sessions from springs/primals, including

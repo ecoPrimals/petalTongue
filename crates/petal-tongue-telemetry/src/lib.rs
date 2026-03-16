@@ -1,5 +1,9 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #![forbid(unsafe_code)]
+#![expect(
+    missing_docs,
+    reason = "telemetry types documentation tracked for incremental completion"
+)]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 //! Real-time telemetry and event streaming
 //!

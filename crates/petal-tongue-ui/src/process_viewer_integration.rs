@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Process Viewer Integration
 //!
 //! Real-time process monitoring via /proc parsing (ecoBin v3.0 compliant).

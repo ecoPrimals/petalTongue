@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Scene graph node - typed node with transform, primitives, and children.
 
 use serde::{Deserialize, Serialize};

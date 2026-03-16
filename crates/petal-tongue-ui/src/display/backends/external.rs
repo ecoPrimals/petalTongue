@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! External Display Server Backend
 //!
 //! Traditional display server support (X11/Wayland/Windows/macOS).

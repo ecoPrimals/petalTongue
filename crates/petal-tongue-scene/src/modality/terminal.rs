@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 use crate::primitive::Primitive;
 use crate::scene_graph::SceneGraph;
@@ -39,12 +39,14 @@ impl TerminalCompiler {
     fn to_cell(x: f64, y: f64, w: usize, h: usize) -> (usize, usize) {
         #[expect(
             clippy::cast_possible_truncation,
+            clippy::cast_precision_loss,
             clippy::cast_sign_loss,
             reason = "clamped to [0, w-1] and [0, h-1] before cast"
         )]
         let col = (x / 800.0 * w as f64).clamp(0.0, (w - 1) as f64) as usize;
         #[expect(
             clippy::cast_possible_truncation,
+            clippy::cast_precision_loss,
             clippy::cast_sign_loss,
             reason = "clamped to [0, w-1] and [0, h-1] before cast"
         )]

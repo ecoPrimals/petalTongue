@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Perspective system -- the "6 vs 9" solution.
 //!
 //! A [`Perspective`] is the complete context through which a human perceives
@@ -16,7 +16,7 @@ pub type PerspectiveId = u64;
 
 /// A complete viewing and interaction context.
 ///
-/// Includes which modalities are active, what subset of data is visible,
+/// Includes which modalities are active, what subset of data is perceivable,
 /// and what is selected. Multiple perspectives can coexist, each
 /// rendering the same underlying data differently.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -110,7 +110,7 @@ pub enum PerspectiveSync {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum OutputModality {
-    /// Graphical UI (egui, web canvas).
+    /// Graphical display (egui, web canvas).
     Gui,
     /// Terminal UI (ratatui).
     Tui,

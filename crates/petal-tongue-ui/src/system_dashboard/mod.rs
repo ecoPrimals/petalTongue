@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! System Dashboard Sidebar
 //!
 //! Compact live system metrics always visible in the main UI.

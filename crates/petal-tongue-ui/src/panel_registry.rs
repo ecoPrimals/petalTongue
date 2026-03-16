@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Panel Registry - Dynamic panel type registration and instantiation
 //!
 //! This module provides the infrastructure for registering custom panel types
@@ -53,6 +53,10 @@ pub trait PanelFactory: Send + Sync {
     fn panel_type(&self) -> &str;
 
     /// Create a new panel instance from configuration
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if panel creation fails (missing resources, invalid config, initialization error).
     fn create(&self, config: &CustomPanelConfig) -> Result<Box<dyn PanelInstance>>;
 
     /// Get human-readable description
@@ -116,12 +120,20 @@ pub trait PanelInstance: Send {
 
     /// Called when panel is first opened/created
     /// Use this to initialize resources (load assets, create connections, etc.)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if resource initialization fails.
     fn on_open(&mut self) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called when panel is about to close
     /// Use this to clean up resources (close files, disconnect, etc.)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if cleanup fails.
     fn on_close(&mut self) -> crate::error::Result<()> {
         Ok(())
     }
@@ -159,12 +171,20 @@ pub trait PanelInstance: Send {
 
     /// Save panel state to JSON
     /// Only called if `can_save_state()` returns true
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if serialization fails.
     fn save_state(&self) -> crate::error::Result<serde_json::Value> {
         Ok(serde_json::Value::Null)
     }
 
     /// Restore panel state from JSON
     /// Only called if `can_restore_state()` returns true
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if deserialization or state restoration fails.
     fn restore_state(&mut self, _state: serde_json::Value) -> crate::error::Result<()> {
         Ok(())
     }
@@ -208,6 +228,10 @@ impl PanelRegistry {
     }
 
     /// Create a panel instance from configuration
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the panel type is unknown or the factory fails to create the panel.
     pub fn create(&self, config: &CustomPanelConfig) -> Result<Box<dyn PanelInstance>> {
         let factory = self
             .factories

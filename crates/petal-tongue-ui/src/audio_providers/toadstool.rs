@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Toadstool audio provider — advanced synthesis via primal HTTP API.
 
 use super::AudioProvider;

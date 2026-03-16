@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! CLI mode - System status and information
 //!
 //! Pure Rust! ✅
@@ -243,7 +243,7 @@ async fn gather_detailed_status() -> DetailedStatus {
         modes: vec![
             ModeDetails {
                 name: "ui".to_string(),
-                description: "Desktop GUI (egui)".to_string(),
+                description: "Desktop display (egui)".to_string(),
                 pure_rust: false,
                 command: "petaltongue ui".to_string(),
             },
@@ -344,7 +344,10 @@ fn print_status_text(status: &SystemStatus) {
         println!("Dependencies:");
         println!("  Total: {}", detailed.dependencies.total);
         println!("  Pure Rust: {}", detailed.dependencies.rust_deps);
-        println!("  C deps: {} (only GUI mode)", detailed.dependencies.c_deps);
+        println!(
+            "  C deps: {} (only display mode)",
+            detailed.dependencies.c_deps
+        );
     }
 }
 

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Shared playback utilities for legacy audio providers.
 //!
 //! Uses Audio Canvas (direct hardware access) for sample and file playback.

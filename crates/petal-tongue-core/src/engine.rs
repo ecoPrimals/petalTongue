@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! # Universal Rendering Engine
 //!
 //! Core engine that manages topology state and coordinates modalities.
@@ -111,6 +111,10 @@ pub struct UniversalRenderingEngine {
 
 impl UniversalRenderingEngine {
     /// Create new engine
+    ///
+    /// # Errors
+    ///
+    /// Does not currently return errors.
     pub fn new() -> Result<Self> {
         Ok(Self {
             state: Arc::new(RwLock::new(EngineState::default())),
@@ -145,6 +149,10 @@ impl UniversalRenderingEngine {
     }
 
     /// Update selection
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the event broadcast fails (e.g., no subscribers).
     pub async fn set_selection(&self, selected: HashSet<String>) -> Result<()> {
         // Update state
         {
@@ -162,6 +170,10 @@ impl UniversalRenderingEngine {
     }
 
     /// Update viewport
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the event broadcast fails (e.g., no subscribers).
     pub async fn set_viewport(&self, center_x: f32, center_y: f32, zoom: f32) -> Result<()> {
         // Update state
         {
@@ -190,6 +202,10 @@ impl UniversalRenderingEngine {
     ///
     /// Queries the modality registry. Returns Ok(()) with empty registry
     /// when no modalities are registered (graceful degradation).
+    ///
+    /// # Errors
+    ///
+    /// Does not return errors.
     pub async fn discover_modalities(&self) -> Result<()> {
         let count = {
             let registry = self.modalities.read().await;
@@ -203,6 +219,10 @@ impl UniversalRenderingEngine {
     ///
     /// Queries the compute registry. Returns Ok(()) with empty registry
     /// when no compute providers are registered (graceful degradation).
+    ///
+    /// # Errors
+    ///
+    /// Does not return errors.
     pub async fn discover_compute(&self) -> Result<()> {
         let count = {
             let registry = self.compute.read().await;
@@ -213,6 +233,10 @@ impl UniversalRenderingEngine {
     }
 
     /// Start rendering in best available modality
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no modalities are registered, or if rendering fails.
     pub async fn render_auto(self: Arc<Self>) -> Result<()> {
         let modality_name = {
             let registry = self.modalities.read().await;
@@ -226,6 +250,11 @@ impl UniversalRenderingEngine {
     }
 
     /// Start rendering in specific modality
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the modality is not found, if event broadcast fails,
+    /// if modality initialization fails, or if modality rendering fails.
     #[expect(
         clippy::significant_drop_tightening,
         reason = "RwLock guard must span both initialize and render awaits"
@@ -263,6 +292,10 @@ impl UniversalRenderingEngine {
     }
 
     /// Start rendering in multiple modalities simultaneously
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any modality fails to render or if a spawned task panics.
     pub async fn render_multi(self: Arc<Self>, modality_names: Vec<&str>) -> Result<()> {
         let mut handles = Vec::new();
 

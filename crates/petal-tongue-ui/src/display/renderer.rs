@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Egui Pixel Renderer
 //!
 //! Renders egui UI to a pixel buffer (RGBA8) for display via backends.
@@ -98,6 +98,10 @@ impl EguiPixelRenderer {
     }
 
     /// Update textures from egui
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if pixmap creation fails for any texture.
     pub fn update_textures(&mut self, textures_delta: &TexturesDelta) -> Result<()> {
         // Handle texture updates
         for (id, delta) in &textures_delta.set {
@@ -154,6 +158,10 @@ impl EguiPixelRenderer {
     /// Render egui primitives to pixel buffer
     ///
     /// Returns RGBA8 pixel buffer (width * height * 4 bytes)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if pixmap creation fails or mesh rendering fails.
     pub fn render(&mut self, primitives: &[ClippedPrimitive]) -> Result<Bytes> {
         // Create pixmap for rendering
         let mut pixmap =

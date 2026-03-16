@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! IPC protocol definitions
 //!
 //! Defines the commands and responses used for inter-instance communication.
@@ -32,7 +32,7 @@ pub enum IpcCommand {
         edges: Vec<petal_tongue_core::TopologyEdge>,
     },
 
-    /// Bring window to front (show)
+    /// Bring window to front (present)
     Show,
 
     /// Hide window

@@ -1,15 +1,15 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Adaptive rendering system for multi-device support
 //!
-//! This module enables petalTongue to adapt its UI based on device capabilities:
-//! - Desktop: Full UI (1400x900, mouse + keyboard)
-//! - Phone: Touch-optimized UI (320x568 to 428x926, touch)
-//! - Watch: Glance UI (184x224 to 368x448, touch + crown)
-//! - CLI: Text-based UI (80x24 terminal)
+//! This module enables petalTongue to adapt its interface based on device capabilities:
+//! - Desktop: Full interface (1400x900, mouse + keyboard)
+//! - Phone: Touch-optimized interface (320x568 to 428x926, touch)
+//! - Watch: Glance interface (184x224 to 368x448, touch + crown)
+//! - CLI: Text-based interface (80x24 terminal)
 //!
 //! # Philosophy
 //!
-//! **The UI should adapt to the device, not vice versa.**
+//! **The interface should adapt to the device, not vice versa.**
 //!
 //! Don't force users into a single interaction model. Discover what the device
 //! can do and render accordingly.
@@ -37,7 +37,7 @@ pub enum DeviceType {
 }
 
 impl DeviceType {
-    /// Detect device type from screen size and input methods
+    /// Detect device type from display size and input methods
     #[must_use]
     pub fn detect(screen_size: Option<(f32, f32)>, has_mouse: bool, has_touch: bool) -> Self {
         match screen_size {
@@ -146,7 +146,7 @@ pub enum PerformanceTier {
 pub enum RenderingModality {
     /// 2D visual rendering
     Visual2D {
-        /// Screen resolution (width, height)
+        /// Display resolution (width, height)
         resolution: (f32, f32),
         /// Color depth (true for full color, false for monochrome)
         color: bool,
@@ -197,7 +197,7 @@ pub struct RenderingCapabilities {
     /// Available modalities
     pub modalities: Vec<RenderingModality>,
 
-    /// Screen size (if visual)
+    /// Display size (if visual)
     pub screen_size: Option<(f32, f32)>,
 
     /// Input methods available

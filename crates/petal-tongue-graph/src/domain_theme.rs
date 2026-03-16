@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Domain-aware theme system for multi-spring visualization.
 //!
 //! Each spring domain gets colors that are appropriate to its field,

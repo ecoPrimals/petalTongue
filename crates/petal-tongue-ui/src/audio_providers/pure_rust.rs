@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pure Rust audio provider — mathematical waveforms, no external dependencies.
 
 use super::AudioProvider;

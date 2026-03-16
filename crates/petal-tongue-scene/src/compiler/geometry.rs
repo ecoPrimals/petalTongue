@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Geometry compilation: map `GrammarExpr` geometry types to primitives.
 
 use std::collections::BTreeSet;
@@ -46,6 +46,7 @@ pub fn compile_geometry(
             .collect(),
 
         GeometryType::Bar => {
+            #[expect(clippy::cast_precision_loss, reason = "bar width: f64 sufficient")]
             let bar_width = if points.is_empty() {
                 0.0
             } else {
@@ -81,7 +82,7 @@ pub fn compile_geometry(
                 let screen_points: Vec<[f64; 2]> = points
                     .iter()
                     .map(|&[x, y]| axes.data_to_screen(x, y))
-                    .map(|(sx, sy)| [sx, sy])
+                    .map(|(sx, sy)| <[f64; 2]>::from((sx, sy)))
                     .collect();
                 vec![Primitive::Line {
                     points: screen_points,
@@ -99,7 +100,7 @@ pub fn compile_geometry(
                 let mut screen_points: Vec<[f64; 2]> = points
                     .iter()
                     .map(|&[x, y]| axes.data_to_screen(x, y))
-                    .map(|(sx, sy)| [sx, sy])
+                    .map(|(sx, sy)| <[f64; 2]>::from((sx, sy)))
                     .collect();
 
                 let (_, baseline_y) = axes.data_to_screen(0.0, 0.0);
@@ -123,7 +124,7 @@ pub fn compile_geometry(
                 let line_points: Vec<[f64; 2]> = points
                     .iter()
                     .map(|&[x, y]| axes.data_to_screen(x, y))
-                    .map(|(sx, sy)| [sx, sy])
+                    .map(|(sx, sy)| <[f64; 2]>::from((sx, sy)))
                     .collect();
                 prims.push(Primitive::Line {
                     points: line_points,
@@ -178,7 +179,15 @@ pub fn compile_geometry(
                 let y_vals: BTreeSet<i64> = points.iter().map(|p| (p[1] * 1000.0) as i64).collect();
                 let cols = x_vals.len().max(1);
                 let rows = y_vals.len().max(1);
+                #[expect(
+                    clippy::cast_precision_loss,
+                    reason = "tile dimensions: f64 sufficient"
+                )]
                 let tile_w = (axes.width / cols as f64).max(2.0);
+                #[expect(
+                    clippy::cast_precision_loss,
+                    reason = "tile dimensions: f64 sufficient"
+                )]
                 let tile_h = (axes.height / rows as f64).max(2.0);
 
                 points

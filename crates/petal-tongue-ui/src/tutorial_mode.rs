@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Tutorial Mode - Demonstration & Graceful Degradation
 //!
 //! Provides standalone demonstration data and scenarios when:
@@ -183,6 +183,7 @@ impl TutorialMode {
             Self::populate_minimal_example(&mut graph);
             graph.set_layout(layout);
             graph.layout(100);
+            drop(graph);
             info!("✅ Tutorial data loaded (minimal example)");
         }
     }
@@ -190,12 +191,12 @@ impl TutorialMode {
     /// Create fallback scenario when discovery fails
     ///
     /// This is a graceful degradation - when no real primals are found,
-    /// we provide a minimal working example so the user can still see
+    /// we provide a minimal working example so the user can still perceive
     /// how petalTongue works.
     pub fn create_fallback_scenario(graph: Arc<RwLock<GraphEngine>>, layout: LayoutAlgorithm) {
         warn!("🎭 GRACEFUL FALLBACK: No primals discovered");
         info!("💡 Loading minimal tutorial scenario so you can explore petalTongue");
-        info!("📚 To see your real primals, ensure they're running and discoverable");
+        info!("📚 To perceive your real primals, ensure they're running and discoverable");
 
         let mut graph = graph
             .write()
@@ -208,6 +209,7 @@ impl TutorialMode {
         // Apply layout
         graph.set_layout(layout);
         graph.layout(100);
+        drop(graph);
 
         info!("✅ Fallback scenario ready");
     }

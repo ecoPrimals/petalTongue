@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! JSONL telemetry adapter for hotSpring validation data.
 //!
 //! Parses hotSpring's `TelemetryWriter` format (one JSON object per line) and
@@ -39,12 +39,20 @@ impl TelemetryAdapter {
     }
 
     /// Parse JSONL from a reader (streaming, line-by-line).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if reading from the reader fails.
     pub fn from_reader<R: BufRead>(reader: R) -> std::io::Result<Self> {
         let events = parse_jsonl(reader);
         Ok(Self { events })
     }
 
     /// Parse JSONL from a file path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be opened or read.
     pub fn from_file(path: &std::path::Path) -> std::io::Result<Self> {
         let file = std::fs::File::open(path)?;
         let reader = std::io::BufReader::new(file);

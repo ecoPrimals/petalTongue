@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Comprehensive tests for discovery module
 //!
@@ -185,6 +185,51 @@ async fn test_malformed_hints() {
                 providers.is_ok() || providers.is_err(),
                 "Malformed hints handled"
             );
+        },
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn test_discovery_hints_unix_socket_path() {
+    // Hit the unix:// and /path hint parsing - connection will fail but path is exercised
+    env_test_helpers::with_env_vars_async(
+        &[
+            (
+                "PETALTONGUE_DISCOVERY_HINTS",
+                Some("unix:///tmp/nonexistent-discovery-12345.sock"),
+            ),
+            ("BIOMEOS_URL", None),
+            ("PETALTONGUE_ENABLE_MDNS", Some("false")),
+        ],
+        || async {
+            let result = discover_visualization_providers().await;
+            assert!(result.is_ok(), "Discovery should complete gracefully");
+            let providers = result.unwrap();
+            assert!(
+                providers.is_empty(),
+                "Non-existent socket should yield no providers"
+            );
+        },
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn test_discovery_hints_absolute_socket_path() {
+    // Hit the /path (no unix:// prefix) hint parsing
+    env_test_helpers::with_env_vars_async(
+        &[
+            (
+                "PETALTONGUE_DISCOVERY_HINTS",
+                Some("/tmp/another-nonexistent-54321.sock"),
+            ),
+            ("BIOMEOS_URL", None),
+            ("PETALTONGUE_ENABLE_MDNS", Some("false")),
+        ],
+        || async {
+            let result = discover_visualization_providers().await;
+            assert!(result.is_ok());
         },
     )
     .await;

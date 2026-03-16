@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Mode presets — named bundles of motor commands.
 //!
 //! A "mode" is a clinical / developer / presentation configuration that

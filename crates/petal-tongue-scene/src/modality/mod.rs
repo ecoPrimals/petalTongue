@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Modality compilers: scene graph to output formats.
 //!
 //! Each compiler produces a different output modality: SVG, terminal cells,

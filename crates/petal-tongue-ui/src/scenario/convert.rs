@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Type conversions for scenarios
 //!
 //! Converts scenario definitions to core types used by the visualization system.

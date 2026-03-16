@@ -1,15 +1,22 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #![forbid(unsafe_code)]
+#![allow(missing_docs, clippy::missing_errors_doc, clippy::cast_precision_loss)]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
-#![expect(clippy::format_push_string, reason = "format! into String is clearer for HTML/SVG builders")]
-#![expect(clippy::unnecessary_wraps, reason = "Result return for API consistency")]
+#![expect(
+    clippy::format_push_string,
+    reason = "format! into String is clearer for HTML/SVG builders"
+)]
+#![expect(
+    clippy::unnecessary_wraps,
+    reason = "Result return for API consistency"
+)]
 //! Pure Rust UI generation for petalTongue
 //!
 //! This crate provides platform-agnostic UI generation with ZERO native dependencies.
 //! It implements the three-tier UI architecture:
 //!
 //! - **Tier 1** (this crate): Pure Rust UI generation (terminal, SVG, text, canvas)
-//! - **Tier 2**: Native GUI enhancements (egui - optional)
+//! - **Tier 2**: Native display enhancements (egui - optional)
 //! - **Tier 3**: Web/advanced (WebAssembly - optional)
 //!
 //! # Philosophy

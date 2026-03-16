@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Data source management for topology and primal discovery
 //!
 //! This module handles fetching topology data from `BiomeOS` via capability-based discovery.
@@ -40,6 +40,10 @@ impl DataSource {
     ///
     /// - `Ok((primals, edges))` on success
     /// - `Err(...)` if `BiomeOS` unavailable and no fallback
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if primal discovery or topology fetch fails.
     pub async fn refresh_topology(&self) -> Result<(Vec<PrimalInfo>, Vec<TopologyEdge>), String> {
         // Discover primals via BiomeOS
         let primals = self
@@ -61,6 +65,10 @@ impl DataSource {
     /// Update graph engine with discovered data
     ///
     /// Takes discovered primals and topology, updates the graph engine.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the graph lock cannot be acquired.
     pub fn update_graph(
         &self,
         graph: &Arc<RwLock<GraphEngine>>,
@@ -83,6 +91,7 @@ impl DataSource {
         for edge in edges {
             graph.add_edge(edge);
         }
+        drop(graph);
 
         Ok(())
     }
@@ -90,6 +99,10 @@ impl DataSource {
     /// Refresh and update graph in one operation
     ///
     /// Convenience method that discovers topology and updates graph.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if topology refresh fails or graph update fails.
     pub async fn refresh_and_update(&self, graph: &Arc<RwLock<GraphEngine>>) -> Result<(), String> {
         let (primals, edges) = self.refresh_topology().await?;
         self.update_graph(graph, primals, edges)?;

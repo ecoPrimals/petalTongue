@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Doom Stats Panel - Display game metrics
 //!
 //! Shows real-time Doom game statistics including:
@@ -14,7 +14,7 @@ use crate::scenario::CustomPanelConfig;
 use doom_core::{DoomInstance, GameStats};
 use std::sync::{Arc, RwLock};
 
-/// Panel that displays Doom game statistics
+/// Panel that presents Doom game statistics
 pub struct DoomStatsPanel {
     doom: Arc<RwLock<DoomInstance>>,
     last_stats: Option<GameStats>,

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #![forbid(unsafe_code)]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 //! petalTongue Core
@@ -80,6 +80,7 @@ pub mod modality; // Modality system (trait and registry)
 pub mod rendering_awareness; // Bidirectional UUI awareness (motor + sensory)
 pub mod sensor; // Sensor abstraction layer
 pub mod toadstool_compute; // Toadstool GPU compute integration
+pub mod uui_glossary; // Universal User Interface glossary (canonical terminology)
 
 // Test fixtures available for this and dependent crates
 #[cfg(any(test, feature = "test-fixtures"))]

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Domain-specific color palettes for visualization theming.
 //!
 //! Each domain (health, physics, ecology, agriculture, measurement, neural)
@@ -222,6 +222,10 @@ impl DivergingScale {
             if range.abs() < f64::EPSILON {
                 return self.low_color;
             }
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "interpolation t clamped to 0..1"
+            )]
             let t = ((value - self.low) / range) as f32;
             lerp_color(&self.low_color, &self.mid_color, t)
         } else {
@@ -229,6 +233,10 @@ impl DivergingScale {
             if range.abs() < f64::EPSILON {
                 return self.high_color;
             }
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "interpolation t clamped to 0..1"
+            )]
             let t = ((value - self.mid) / range) as f32;
             lerp_color(&self.mid_color, &self.high_color, t)
         }

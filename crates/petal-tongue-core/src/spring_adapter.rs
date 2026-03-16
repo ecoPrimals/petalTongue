@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Universal spring data adapter for heterogeneous push formats.
 //!
 //! Springs push visualization data via JSON-RPC using different envelope formats:
@@ -199,10 +199,7 @@ impl SpringDataAdapter {
             .and_then(|v| v.as_str())
             .unwrap_or("Game Scene")
             .to_string();
-        let scene = obj
-            .get("scene")
-            .cloned()
-            .unwrap_or_default();
+        let scene = obj.get("scene").cloned().unwrap_or_default();
         Ok(vec![DataBinding::GameScene { id, label, scene }])
     }
 
@@ -221,10 +218,7 @@ impl SpringDataAdapter {
             .and_then(|v| v.as_str())
             .unwrap_or("Soundscape")
             .to_string();
-        let definition = obj
-            .get("definition")
-            .cloned()
-            .unwrap_or_default();
+        let definition = obj.get("definition").cloned().unwrap_or_default();
         Ok(vec![DataBinding::Soundscape {
             id,
             label,
@@ -345,7 +339,7 @@ pub enum SpringAdapterError {
     MissingField {
         /// The field that was expected.
         field: String,
-        /// Where the field was expected (e.g., "game_scene payload").
+        /// Where the field was expected (e.g., "`game_scene` payload").
         context: String,
     },
 

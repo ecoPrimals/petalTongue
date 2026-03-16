@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Framebuffer Direct Rendering Backend
 //!
-//! Writes directly to Linux framebuffer (/dev/fb0) for console-mode GUI.
+//! Writes directly to Linux framebuffer (/dev/fb0) for console-mode display.
 //! Perfect for embedded systems, kiosks, and headless servers.
 //!
 //! # Requirements
@@ -50,6 +50,10 @@ pub struct FramebufferDisplay {
 
 impl FramebufferDisplay {
     /// Create new framebuffer display
+    ///
+    /// # Errors
+    ///
+    /// Currently always returns `Ok`; reserved for future validation.
     pub const fn new() -> Result<Self> {
         Ok(Self {
             width: 1920,
@@ -60,6 +64,10 @@ impl FramebufferDisplay {
     }
 
     /// Create framebuffer display with specific dimensions
+    ///
+    /// # Errors
+    ///
+    /// Currently always returns `Ok`; reserved for future validation.
     pub fn with_dimensions(width: u32, height: u32) -> Result<Self> {
         Ok(Self {
             width,

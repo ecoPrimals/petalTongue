@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Equation rendering: LaTeX-like math notation to scene primitives.
 //!
 //! Converts a subset of LaTeX math notation into `Primitive` values
@@ -272,6 +272,10 @@ struct Cursor {
 }
 
 fn char_width_factor(s: &str) -> f64 {
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "char count for layout: f64 sufficient"
+    )]
     match s.len() {
         0 => 0.0,
         1 => 0.6,

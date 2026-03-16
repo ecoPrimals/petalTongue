@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Input focus management for panels
 //!
 //! This module provides explicit input routing to panels, solving the problem

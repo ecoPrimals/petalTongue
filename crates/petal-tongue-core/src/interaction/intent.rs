@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Semantic interaction intents.
 //!
-//! Device events are NOT interactions. A mouse click at (423, 187) is a
+//! Device events are NOT interactions. A pointer activation at (423, 187) is a
 //! physical signal. The *intent* is "select the object at this position."
 //! Input adapters translate device events into these semantic intents,
 //! which are modality-agnostic and shareable across perspectives.
@@ -12,7 +12,7 @@ use super::target::{DataObjectId, InteractionTarget};
 
 /// What the user wants to do, independent of input device.
 ///
-/// A mouse click, keyboard Enter, voice command "select that", and
+/// A pointer activation, keyboard Enter, voice command "select that", and
 /// Braille display routing key all produce the same variant when
 /// they mean the same thing.
 #[derive(Debug, Clone, Serialize, Deserialize)]

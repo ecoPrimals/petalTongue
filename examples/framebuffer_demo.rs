@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Framebuffer Demo - Pure Rust GUI via Direct Framebuffer
 //!
 //! This example demonstrates Tier 3 Pure Rust rendering:

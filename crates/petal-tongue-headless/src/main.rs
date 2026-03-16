@@ -1,17 +1,17 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #![forbid(unsafe_code)]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
-//! Headless petalTongue - Pure Rust UI (no GUI dependencies)
+//! Headless petalTongue - Pure Rust interface (no display dependencies)
 //!
 //! This binary demonstrates petalTongue's self-sovereignty:
-//! - Zero GUI dependencies
+//! - Zero display dependencies
 //! - Works on servers, containers, CI/CD
 //! - Exports to multiple formats
 //! - Runs over SSH
 //!
 //! # Philosophy
 //!
-//! External systems (egui) are enhancements, not dependencies.
+//! External display systems (egui) are enhancements, not dependencies.
 //! This binary proves petalTongue can run anywhere Rust runs.
 
 mod error;
@@ -156,7 +156,7 @@ ENVIRONMENT:
 
 PHILOSOPHY:
     This binary proves petalTongue's self-sovereignty.
-    Zero GUI dependencies. Works everywhere Rust runs.
+    Zero display dependencies. Works everywhere Rust runs.
     External systems (egui) are enhancements, not dependencies.
 "
     );
@@ -167,7 +167,7 @@ fn main() -> Result<(), HeadlessError> {
     tracing_subscriber::fmt::init();
 
     tracing::info!("🌸 petalTongue Headless - Pure Rust UI");
-    tracing::info!("Zero GUI dependencies. Universal representation system.");
+    tracing::info!("Zero display dependencies. Universal representation system.");
 
     // Parse arguments
     let args = Args::parse();
@@ -284,6 +284,7 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessError
 
     let node_count = g.nodes().len();
     let edge_count = g.edges().len();
+    drop(g);
     tracing::info!(
         "📊 Loaded: {} primals, {} connections",
         node_count,

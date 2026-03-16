@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Bridge between the declarative scene engine (`petal-tongue-scene`) and egui rendering.
 //!
 //! Translates scene graph primitives into egui paint commands, connecting the

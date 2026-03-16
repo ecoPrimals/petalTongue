@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! System Information Utilities
 //!
 //! Safe wrappers around system calls for discovering runtime information.

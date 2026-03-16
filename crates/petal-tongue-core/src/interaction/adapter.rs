@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Input adapter trait -- converts device events to semantic intents.
 //!
 //! Each input modality (mouse, keyboard, voice, Braille, gamepad) implements
@@ -132,7 +132,7 @@ pub struct InteractionContext {
     pub current_focus: Option<InteractionTarget>,
     /// Currently selected data objects.
     pub current_selection: Vec<super::target::DataObjectId>,
-    /// Canvas/screen dimensions in pixels.
+    /// Canvas/display dimensions in pixels.
     pub screen_width: f32,
     /// Canvas/screen height in pixels.
     pub screen_height: f32,

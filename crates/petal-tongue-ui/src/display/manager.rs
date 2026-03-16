@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Display Manager
 //!
 //! Manages multiple display backends with capability-based discovery.
@@ -30,6 +30,10 @@ struct BackendEntry {
 
 impl DisplayManager {
     /// Initialize display manager and discover available backends
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no display backends are available or initialization fails.
     pub async fn init() -> Result<Self> {
         info!("🌸 Discovering display backends via capabilities...");
 
@@ -196,6 +200,10 @@ impl DisplayManager {
     }
 
     /// Present frame to active backend
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no backend is active, presentation fails, or fallback fails.
     pub async fn present(&mut self, buffer: &[u8]) -> Result<()> {
         let idx = self
             .active_backend_idx
@@ -261,6 +269,10 @@ impl DisplayManager {
     }
 
     /// Shutdown all backends
+    ///
+    /// # Errors
+    ///
+    /// Currently always returns `Ok(())`; shutdown failures are logged but not propagated.
     pub async fn shutdown(&mut self) -> Result<()> {
         info!("🌸 Shutting down display manager...");
         for entry in &mut self.backends {

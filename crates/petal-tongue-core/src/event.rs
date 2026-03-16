@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! # Event System
 //!
 //! Coordinates events across multiple modalities.
@@ -163,6 +163,10 @@ impl EventBus {
     }
 
     /// Broadcast event to all subscribers
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if there are no subscribers to receive the event.
     #[expect(
         clippy::unused_async,
         reason = "async for future broadcast::Sender API"

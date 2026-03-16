@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pure Rust platform directory resolution
 //!
 //! Zero dependencies, maximum portability, TRUE PRIMAL compliant.
@@ -187,6 +187,10 @@ pub fn config_dir() -> Result<PathBuf, DirError> {
 /// - **Linux**: `$XDG_RUNTIME_DIR` or `/run/user/$UID`
 /// - **macOS**: `/tmp`
 /// - **Windows**: `%TEMP%`
+///
+/// # Errors
+///
+/// Returns an error on unsupported platforms (not Linux, macOS, or Windows).
 pub fn runtime_dir() -> Result<PathBuf, DirError> {
     #[cfg(target_os = "linux")]
     {

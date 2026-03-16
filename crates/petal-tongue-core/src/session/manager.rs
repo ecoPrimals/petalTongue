@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -25,6 +25,11 @@ pub struct SessionManager {
 
 impl SessionManager {
     /// Creates a manager with session path derived from `instance_id`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the data directory cannot be determined or the
+    /// sessions directory cannot be created.
     pub fn new(instance_id: &crate::instance::InstanceId) -> Result<Self, SessionError> {
         let session_path = persistence::get_session_path(instance_id)?;
 
@@ -39,6 +44,10 @@ impl SessionManager {
     }
 
     /// Creates a manager with an explicit session path; creates parent dirs if needed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the parent directory cannot be created.
     pub fn with_session_path(session_path: PathBuf) -> Result<Self, SessionError> {
         if let Some(parent) = session_path.parent() {
             fs::create_dir_all(parent).map_err(|e| {
@@ -62,6 +71,10 @@ impl SessionManager {
     }
 
     /// Loads session from disk if it exists, otherwise creates a new one.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the existing session file cannot be read or parsed.
     pub fn load_or_create(
         &mut self,
         instance_id: crate::instance::InstanceId,
@@ -104,6 +117,10 @@ impl SessionManager {
     }
 
     /// Saves the current state to disk and clears the dirty flag.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no state is loaded, or if saving to disk fails.
     pub fn save(&mut self) -> Result<(), SessionError> {
         if let Some(state) = &self.current_state {
             state.save(&self.session_path)?;
@@ -116,6 +133,11 @@ impl SessionManager {
     }
 
     /// Saves if dirty and interval elapsed; returns `true` if a save occurred.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a save occurred when no state is loaded and saving
+    /// fails.
     pub fn auto_save_if_needed(&mut self) -> Result<bool, SessionError> {
         if !self.auto_save_enabled || !self.dirty {
             return Ok(false);
@@ -134,6 +156,10 @@ impl SessionManager {
     }
 
     /// Saves immediately regardless of dirty flag; clears dirty.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no state is loaded, or if saving to disk fails.
     pub fn force_save(&mut self) -> Result<(), SessionError> {
         if let Some(state) = &self.current_state {
             state.save(&self.session_path)?;
@@ -162,6 +188,11 @@ impl SessionManager {
     }
 
     /// Exports the current state to the given path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no state is loaded, or if saving to the given path
+    /// fails.
     pub fn export(&self, path: &Path) -> Result<(), SessionError> {
         self.current_state
             .as_ref()
@@ -169,6 +200,10 @@ impl SessionManager {
     }
 
     /// Imports state from the given path, replacing the current state.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be read or parsed.
     pub fn import(&mut self, path: &Path) -> Result<(), SessionError> {
         let state = SessionState::import(path)?;
         self.current_state = Some(state);
@@ -183,16 +218,30 @@ impl SessionManager {
     }
 
     /// Exports the session to the given path (alias for `export`).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no state is loaded, or if saving to the given path
+    /// fails.
     pub fn export_session(&self, path: &Path) -> Result<(), SessionError> {
         self.export(path)
     }
 
     /// Imports a session from the given path (alias for `import`).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be read or parsed.
     pub fn import_session(&mut self, path: &Path) -> Result<(), SessionError> {
         self.import(path)
     }
 
     /// Merges nodes, edges, positions, and panels from another session file.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be read or parsed, or if no
+    /// current state is loaded.
     pub fn merge_session(&mut self, path: &Path) -> Result<(), SessionError> {
         let other_state = SessionState::import(path)?;
 

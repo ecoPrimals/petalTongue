@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Field Mode Demo - No Screen Required!
 //!
 //! Demonstrates bidirectional UUI with audio + keyboard only.

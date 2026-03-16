@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Neural API Graph Client
 //!
 //! Client for saving, loading, and executing graphs via Neural API.
@@ -95,6 +95,9 @@ impl<'a> NeuralGraphClient<'a> {
     /// # Arguments
     /// * `graph_json` - The graph as JSON (serialized `VisualGraph`)
     ///
+    /// # Errors
+    /// Returns `DiscoveryError` if the API call fails or response is invalid.
+    ///
     /// # Returns
     /// The graph ID assigned by Neural API
     pub async fn save_graph(&self, graph_json: serde_json::Value) -> DiscoveryResult<String> {
@@ -129,6 +132,9 @@ impl<'a> NeuralGraphClient<'a> {
     /// # Arguments
     /// * `graph_id` - The graph ID to load
     ///
+    /// # Errors
+    /// Returns `DiscoveryError` if the API call fails or response is invalid.
+    ///
     /// # Returns
     /// The graph as JSON (to be deserialized into `VisualGraph`)
     pub async fn load_graph(&self, graph_id: &str) -> DiscoveryResult<serde_json::Value> {
@@ -158,6 +164,9 @@ impl<'a> NeuralGraphClient<'a> {
     }
 
     /// List all available graphs
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError` if the API call fails or response is invalid.
     pub async fn list_graphs(&self) -> DiscoveryResult<Vec<GraphMetadata>> {
         let result = self
             .provider
@@ -189,6 +198,9 @@ impl<'a> NeuralGraphClient<'a> {
     /// # Arguments
     /// * `graph_id` - The graph ID to execute
     /// * `parameters` - Optional parameters for execution
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError` if the API call fails or response is invalid.
     ///
     /// # Returns
     /// Execution ID for tracking status
@@ -228,6 +240,9 @@ impl<'a> NeuralGraphClient<'a> {
     ///
     /// # Arguments
     /// * `execution_id` - The execution ID to check
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError` if the API call fails or response is invalid.
     pub async fn get_execution_status(
         &self,
         execution_id: &str,
@@ -258,6 +273,9 @@ impl<'a> NeuralGraphClient<'a> {
     ///
     /// # Arguments
     /// * `execution_id` - The execution ID to cancel
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError` if the API call fails.
     pub async fn cancel_execution(&self, execution_id: &str) -> DiscoveryResult<()> {
         let params = json!({
             "execution_id": execution_id
@@ -279,6 +297,9 @@ impl<'a> NeuralGraphClient<'a> {
     ///
     /// # Arguments
     /// * `graph_id` - The graph ID to delete
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError` if the API call fails.
     pub async fn delete_graph(&self, graph_id: &str) -> DiscoveryResult<()> {
         let params = json!({
             "graph_id": graph_id
@@ -302,6 +323,9 @@ impl<'a> NeuralGraphClient<'a> {
     /// * `graph_id` - The graph ID to update
     /// * `name` - New name (optional)
     /// * `description` - New description (optional)
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError` if the API call fails.
     pub async fn update_graph_metadata(
         &self,
         graph_id: &str,

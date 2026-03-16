@@ -1,7 +1,10 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #![forbid(unsafe_code)]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
-#![expect(missing_docs, reason = "scene graph modules evolving rapidly")]
+#![expect(
+    missing_docs,
+    reason = "scene graph modules evolving — docs tracked for incremental completion"
+)]
 //! Declarative scene graph with animation, grammar compilation, and modality dispatch.
 //!
 //! This crate is the intermediate representation between data sources and rendering

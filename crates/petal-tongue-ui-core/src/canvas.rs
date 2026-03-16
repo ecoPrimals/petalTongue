@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Canvas/PNG rendering (pure Rust)
 //!
 //! Pixel-perfect rendering using tiny-skia (no native dependencies).
@@ -54,6 +54,10 @@ impl CanvasUI {
     ///
     /// Uses tiny-skia to render the graph topology: nodes as filled circles,
     /// edges as lines. Transforms graph coordinates to fit the canvas with padding.
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "nodes/edges borrow from graph"
+    )]
     fn render_png(&self) -> Result<Bytes> {
         let graph = self.graph.read()?;
 

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! ecoPrimals-specific family/lineage adapter
 //!
 //! This adapter knows how to render genetic lineage (`family_id`, DNA) from

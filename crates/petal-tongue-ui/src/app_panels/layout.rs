@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Panel layout logic - graph layout selector and panel visibility structure.
 
 use petal_tongue_core::{GraphEngine, LayoutAlgorithm};

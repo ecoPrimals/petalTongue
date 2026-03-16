@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Capability-based edge validation
 //!
 //! Validates connections between primals based on their capabilities,
@@ -49,12 +49,12 @@ pub fn validate_connection(from: &PrimalInfo, to: &PrimalInfo) -> ValidationResu
     let to_requires = discover_required_capabilities(to);
 
     // Check for capability matches
-    let matches: Vec<&String> = from_provides
-        .iter()
-        .filter(|cap| to_requires.contains(cap))
-        .collect();
+    let has_match = from_provides.iter().any(|cap| to_requires.contains(cap));
 
-    if matches.is_empty() {
+    if has_match {
+        // Valid connection - source provides what target needs
+        ValidationResult::Valid
+    } else {
         // Check for bidirectional capabilities (coordination, discovery)
         let from_coord = has_coordination_capability(from);
         let to_coord = has_coordination_capability(to);
@@ -69,9 +69,6 @@ pub fn validate_connection(from: &PrimalInfo, to: &PrimalInfo) -> ValidationResu
                 from.name, to.name
             ))
         }
-    } else {
-        // Valid connection - source provides what target needs
-        ValidationResult::Valid
     }
 }
 

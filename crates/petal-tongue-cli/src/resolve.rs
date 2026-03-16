@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Instance ID resolution (UUID and prefix matching).
 
 use petal_tongue_core::{InstanceId, InstanceRegistry};

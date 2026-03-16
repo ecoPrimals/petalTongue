@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Metrics Dashboard - Real-time System and Neural API Metrics
 //!
 //! Displays CPU, memory, uptime, and Neural API statistics with sparklines.

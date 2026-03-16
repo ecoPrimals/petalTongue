@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Universal Discovery System
 //!
 //! **ZERO HARDCODED KNOWLEDGE** - Infant Discovery Pattern
@@ -114,6 +114,10 @@ impl UniversalDiscovery {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Currently always returns `Ok`; failed discovery methods are skipped and logged.
     pub async fn discover_capability(&self, capability: &str) -> Result<Vec<DiscoveredService>> {
         info!(
             "🔍 Discovering capability: '{}' (infant mode - zero assumptions)",

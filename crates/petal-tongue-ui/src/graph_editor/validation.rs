@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Graph Validation
 //!
 //! Validates graphs, nodes, and edges to ensure correctness.
@@ -13,6 +13,10 @@ pub struct GraphValidator;
 
 impl GraphValidator {
     /// Validate a single node
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the node ID is empty, node type is empty, or position has non-finite values.
     pub fn validate_node(node: &GraphNode) -> Result<()> {
         // Validate ID
         if node.id.is_empty() {
@@ -33,6 +37,10 @@ impl GraphValidator {
     }
 
     /// Validate entire graph
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any node is invalid, edges reference missing nodes, or the graph contains cycles.
     pub fn validate_graph(graph: &Graph) -> Result<()> {
         // Validate all nodes
         for node in graph.nodes.values() {
