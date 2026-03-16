@@ -451,7 +451,7 @@ mod tests {
         create_node_at(&mut renderer, Position::new_2d(100.0, 100.0));
 
         create_edge(
-            &mut renderer,
+            &renderer,
             PrimalId::from("interactive-node-1"),
             PrimalId::from("interactive-node-2"),
         );
@@ -476,7 +476,7 @@ mod tests {
             assert_eq!(g.nodes().len(), 1);
         }
 
-        delete_node(&mut renderer, "interactive-node-1");
+        delete_node(&renderer, "interactive-node-1");
 
         let g = graph.read().expect("read graph");
         assert_eq!(g.nodes().len(), 0);
@@ -496,12 +496,12 @@ mod tests {
         create_node_at(&mut renderer, Position::new_2d(100.0, 100.0));
 
         create_edge(
-            &mut renderer,
+            &renderer,
             PrimalId::from("interactive-node-1"),
             PrimalId::from("interactive-node-2"),
         );
         create_edge(
-            &mut renderer,
+            &renderer,
             PrimalId::from("interactive-node-1"),
             PrimalId::from("interactive-node-2"),
         );
@@ -524,12 +524,12 @@ mod tests {
         create_node_at(&mut renderer, Position::new_2d(100.0, 100.0));
 
         create_edge(
-            &mut renderer,
+            &renderer,
             PrimalId::from("interactive-node-1"),
             PrimalId::from("interactive-node-2"),
         );
         create_edge(
-            &mut renderer,
+            &renderer,
             PrimalId::from("interactive-node-2"),
             PrimalId::from("interactive-node-1"),
         );

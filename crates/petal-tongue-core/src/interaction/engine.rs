@@ -5,7 +5,7 @@
 //! adapters and IPC, translates them to semantic intents, resolves targets
 //! via inverse pipelines, applies state changes, and broadcasts results.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::sensor::SensorEvent;
 
@@ -133,12 +133,13 @@ impl InteractionEngine {
         // Step 2: Resolve -- use inverse pipelines to map targets to data space
         let resolved_targets = self.resolve_targets(&intent, event, context);
 
-        // Step 3: Apply -- update perspective state
-        let state_changes = self.apply_intent(&intent, &resolved_targets, context.perspective_id);
+        // Step 3: Apply -- update perspective state (clone once for result, consume in apply)
+        let resolved_for_result = resolved_targets.clone();
+        let state_changes = self.apply_intent(&intent, resolved_targets, context.perspective_id);
 
         Some(InteractionResult {
             intent,
-            resolved_targets,
+            resolved_targets: resolved_for_result,
             state_changes,
             perspective_id: context.perspective_id,
             timestamp_ms: self.clock.elapsed_ms(),
@@ -204,7 +205,7 @@ impl InteractionEngine {
     fn apply_intent(
         &mut self,
         intent: &InteractionIntent,
-        resolved_targets: &[DataObjectId],
+        resolved_targets: Vec<DataObjectId>,
         perspective_id: PerspectiveId,
     ) -> Vec<StateChange> {
         let mut changes = Vec::new();
@@ -214,21 +215,20 @@ impl InteractionEngine {
                 if let Some(perspective) = self.perspectives.get_mut(&perspective_id) {
                     match mode {
                         SelectionMode::Replace => {
-                            perspective.selection = resolved_targets.to_vec();
+                            perspective.selection = resolved_targets;
                         }
                         SelectionMode::Add => {
                             for target in resolved_targets {
-                                perspective.add_to_selection(target.clone());
+                                perspective.add_to_selection(target);
                             }
                         }
                         SelectionMode::Remove => {
-                            perspective
-                                .selection
-                                .retain(|s| !resolved_targets.contains(s));
+                            let resolved_set: HashSet<_> = resolved_targets.iter().collect();
+                            perspective.selection.retain(|s| !resolved_set.contains(s));
                         }
                         SelectionMode::Toggle => {
                             for target in resolved_targets {
-                                perspective.toggle_selection(target.clone());
+                                perspective.toggle_selection(target);
                             }
                         }
                     }
@@ -244,7 +244,7 @@ impl InteractionEngine {
 
             InteractionIntent::Focus { .. } => {
                 if let Some(perspective) = self.perspectives.get_mut(&perspective_id) {
-                    perspective.focus = resolved_targets.first().cloned();
+                    perspective.focus = resolved_targets.into_iter().next();
                     changes.push(StateChange::FocusChanged {
                         focused: perspective.focus.clone(),
                     });

@@ -206,7 +206,7 @@ mod tests {
 
     #[test]
     fn demo_provider_default_impl() {
-        let provider = DemoVisualizationProvider::default();
+        let provider = DemoVisualizationProvider;
         assert_eq!(
             std::mem::size_of_val(&provider),
             std::mem::size_of_val(&DemoVisualizationProvider::new())

@@ -6,18 +6,23 @@
 //! HTTP/REST is the **FALLBACK** protocol for external integrations only.
 //! The PRIMARY protocol for ecoPrimals is **JSON-RPC 2.0 over Unix sockets**.
 //!
+//! # When to Use This Provider (Fallback)
+//!
+//! This provider is kept for backward compatibility and specific use cases:
+//!
+//! - **External web integrations**: Web dashboards, remote monitoring UIs
+//! - **Remote access over network**: When primals are on different hosts
+//! - **Legacy systems**: Systems without Unix socket support
+//! - **CI/test environments**: When `BIOMEOS_URL=http://...` is simpler to configure
+//!
+//! Enable with: `cargo build --features legacy-http`
+//!
 //! # Why JSON-RPC First?
 //!
 //! - 100x faster (Unix sockets vs TCP/IP)
 //! - Port-free architecture
 //! - Secure by default (file permissions)
 //! - Compatible with all primals (Songbird, `BearDog`, `ToadStool`, etc.)
-//!
-//! # When to Use HTTP
-//!
-//! - External web integrations
-//! - Remote access over network
-//! - Legacy systems without Unix socket support
 //!
 //! # Migration
 //!

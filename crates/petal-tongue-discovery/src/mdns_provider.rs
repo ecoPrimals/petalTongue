@@ -692,13 +692,14 @@ mod tests {
             .mount(&mock_server)
             .await;
 
+        let uri = mock_server.uri();
         let metadata = ProviderMetadata {
             name: "mDNS Test".to_string(),
-            endpoint: mock_server.uri().to_string(),
+            endpoint: uri.clone(),
             protocol: "http".to_string(),
             capabilities: vec![],
         };
-        let provider = MdnsVisualizationProvider::new(mock_server.uri().to_string(), metadata);
+        let provider = MdnsVisualizationProvider::new(uri, metadata);
         let primals = provider.get_primals().await.unwrap();
         assert_eq!(primals.len(), 1);
         assert_eq!(primals[0].id, "mdns-primal");
@@ -723,13 +724,14 @@ mod tests {
             .mount(&mock_server)
             .await;
 
+        let uri = mock_server.uri();
         let metadata = ProviderMetadata {
             name: "mDNS Topology".to_string(),
-            endpoint: mock_server.uri().to_string(),
+            endpoint: uri.clone(),
             protocol: "http".to_string(),
             capabilities: vec![],
         };
-        let provider = MdnsVisualizationProvider::new(mock_server.uri().to_string(), metadata);
+        let provider = MdnsVisualizationProvider::new(uri, metadata);
         let edges = provider.get_topology().await.unwrap();
         assert_eq!(edges.len(), 1);
         assert_eq!(edges[0].from, "a");
@@ -745,13 +747,14 @@ mod tests {
             .mount(&mock_server)
             .await;
 
+        let uri = mock_server.uri();
         let metadata = ProviderMetadata {
             name: "mDNS Health".to_string(),
-            endpoint: mock_server.uri().to_string(),
+            endpoint: uri.clone(),
             protocol: "http".to_string(),
             capabilities: vec![],
         };
-        let provider = MdnsVisualizationProvider::new(mock_server.uri().to_string(), metadata);
+        let provider = MdnsVisualizationProvider::new(uri, metadata);
         let health = provider.health_check().await.unwrap();
         assert!(health.contains("healthy"));
     }
@@ -765,13 +768,14 @@ mod tests {
             .mount(&mock_server)
             .await;
 
+        let uri = mock_server.uri();
         let metadata = ProviderMetadata {
             name: "mDNS Error".to_string(),
-            endpoint: mock_server.uri().to_string(),
+            endpoint: uri.clone(),
             protocol: "http".to_string(),
             capabilities: vec![],
         };
-        let provider = MdnsVisualizationProvider::new(mock_server.uri().to_string(), metadata);
+        let provider = MdnsVisualizationProvider::new(uri, metadata);
         let result = provider.get_primals().await;
         assert!(result.is_err());
         if let Err(e) = result {

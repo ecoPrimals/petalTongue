@@ -372,4 +372,13 @@ mod tests {
             assert_eq!(runtime_dir, PathBuf::from(test_dir));
         });
     }
+
+    #[test]
+    fn test_get_runtime_dir_xdg_parent_exists() {
+        // XDG_RUNTIME_DIR can point to non-existent dir if parent exists
+        env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp/xdg-runtime-test", || {
+            let result = get_runtime_dir();
+            assert!(result.is_ok(), "parent /tmp exists");
+        });
+    }
 }

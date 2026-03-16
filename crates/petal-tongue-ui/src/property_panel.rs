@@ -39,8 +39,7 @@ impl PropertyPanel {
 
         if let Some(ref id) = node_id {
             if let Some(node) = graph.get_node(id) {
-                self.temp_params
-                    .extend(node.parameters.iter().map(|(k, v)| (k.clone(), v.clone())));
+                self.temp_params = node.parameters.clone();
             }
         }
         self.editing_node = node_id;
@@ -152,7 +151,7 @@ impl PropertyPanel {
             // Update temp params if changed
             if response.changed() {
                 self.temp_params
-                    .insert(param_name.to_string(), new_value.clone());
+                    .insert(param_name.to_string(), std::mem::take(&mut new_value));
                 // Clear error for this field
                 self.errors.remove(param_name);
             }
@@ -160,7 +159,11 @@ impl PropertyPanel {
             // Show error indicator
             if self.errors.contains_key(param_name) {
                 ui.label(RichText::new("❌").color(Color32::from_rgb(208, 2, 27)));
-            } else if !new_value.is_empty() {
+            } else if self
+                .temp_params
+                .get(param_name)
+                .is_some_and(|v| !v.is_empty())
+            {
                 ui.label(RichText::new("✅").color(Color32::from_rgb(40, 180, 40)));
             }
         });
@@ -271,7 +274,7 @@ impl PropertyPanel {
             } else {
                 // Apply all parameters
                 for (key, value) in &self.temp_params {
-                    node.set_parameter(key.clone(), value.clone());
+                    node.set_parameter(key.as_str(), value.as_str());
                 }
 
                 // Clear error state
@@ -289,9 +292,7 @@ impl PropertyPanel {
         if let Some(node_id) = &self.editing_node
             && let Some(node) = graph.get_node(node_id)
         {
-            for (key, value) in &node.parameters {
-                self.temp_params.insert(key.clone(), value.clone());
-            }
+            self.temp_params = node.parameters.clone();
         }
     }
 

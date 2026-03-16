@@ -83,8 +83,6 @@ impl IpcServer {
     ///
     /// Returns error only if BOTH Unix and TCP fail
     pub async fn start(instance: &Instance) -> Result<Self, IpcServerError> {
-        let _instance_id = instance.id.clone();
-
         // Phase 1: Try Unix sockets (optimal path)
         if let Ok(server) = Self::start_unix(instance).await {
             info!("✅ petalTongue IPC: Unix domain socket");
@@ -133,8 +131,9 @@ impl IpcServer {
 
         debug!("Unix socket bound at: {}", socket_path.display());
 
-        // Write discovery file
-        write_discovery_file(&IpcTransport::Unix(socket_path.clone()))?;
+        // Write discovery file (reuse transport to avoid extra clone)
+        let transport = IpcTransport::Unix(socket_path);
+        write_discovery_file(&transport)?;
 
         // Spawn listener task
         let (command_tx, command_rx) = mpsc::unbounded_channel();
@@ -144,7 +143,7 @@ impl IpcServer {
 
         Ok(Self {
             instance_id,
-            transport: IpcTransport::Unix(socket_path),
+            transport,
             command_rx,
             _shutdown_tx: shutdown_tx,
         })

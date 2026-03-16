@@ -8,7 +8,7 @@
 //! - Directory: array of lump entries (name, offset, size)
 //! - Data: raw lump data
 
-use crate::DoomError;
+use crate::error::DoomError;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;

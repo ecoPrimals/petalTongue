@@ -262,22 +262,22 @@ async fn create_jsonrpc_error_server(
                 let (reader, mut writer) = stream.into_split();
                 let mut reader = tokio::io::BufReader::new(reader);
                 let mut line = String::new();
-                if reader.read_line(&mut line).await.is_ok() {
-                    if let Ok(request) = serde_json::from_str::<JsonRpcRequest>(&line) {
-                        let response = JsonRpcResponse {
-                            jsonrpc: "2.0".to_string(),
-                            result: None,
-                            error: Some(JsonRpcError {
-                                code: -32600,
-                                message: "Invalid request".to_string(),
-                                data: Some(serde_json::json!("extra")),
-                            }),
-                            id: request.id,
-                        };
-                        let response_json = serde_json::to_string(&response).unwrap() + "\n";
-                        let _ = writer.write_all(response_json.as_bytes()).await;
-                        let _ = writer.flush().await;
-                    }
+                if reader.read_line(&mut line).await.is_ok()
+                    && let Ok(request) = serde_json::from_str::<JsonRpcRequest>(&line)
+                {
+                    let response = JsonRpcResponse {
+                        jsonrpc: "2.0".to_string(),
+                        result: None,
+                        error: Some(JsonRpcError {
+                            code: -32600,
+                            message: "Invalid request".to_string(),
+                            data: Some(serde_json::json!("extra")),
+                        }),
+                        id: request.id,
+                    };
+                    let response_json = serde_json::to_string(&response).unwrap() + "\n";
+                    let _ = writer.write_all(response_json.as_bytes()).await;
+                    let _ = writer.flush().await;
                 }
             });
         }
@@ -343,16 +343,6 @@ async fn handle_topology_fallback_connection(stream: UnixStream) {
                     error: None,
                     id: request.id,
                 },
-                "topology.get" => JsonRpcResponse {
-                    jsonrpc: "2.0".to_string(),
-                    result: None,
-                    error: Some(JsonRpcError {
-                        code: -32601,
-                        message: "Method not found".to_string(),
-                        data: None,
-                    }),
-                    id: request.id,
-                },
                 "get_topology" => JsonRpcResponse {
                     jsonrpc: "2.0".to_string(),
                     result: Some(serde_json::json!([
@@ -361,7 +351,7 @@ async fn handle_topology_fallback_connection(stream: UnixStream) {
                     error: None,
                     id: request.id,
                 },
-                _ => JsonRpcResponse {
+                "topology.get" | _ => JsonRpcResponse {
                     jsonrpc: "2.0".to_string(),
                     result: None,
                     error: Some(JsonRpcError {
