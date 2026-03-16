@@ -212,7 +212,7 @@ impl DemoDeviceProvider {
                 load: 0.45,
                 assigned_devices: vec!["ssd-0".to_string()],
                 metadata: serde_json::json!({
-                    "version": "1.6.5",
+                    "version": "1.6.6",
                     "uptime": "15d 3h"
                 }),
             },

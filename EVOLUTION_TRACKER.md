@@ -113,7 +113,7 @@
 - All clippy warnings eliminated (pedantic level)
 - `cargo deny` clean: license compliance, advisory compliance, ban compliance
 - `cargo fmt` clean across workspace
-- SPDX `AGPL-3.0-only` headers on all source files
+- SPDX `AGPL-3.0-or-later` headers on all source files
 - `ring` crate eliminated (ecoBin compliance)
 - `users` crate replaced with pure Rust `rustix`
 
@@ -288,7 +288,7 @@ Smart refactoring: `petal-tongue-telemetry` split into `types.rs` + `collector.r
    TUI, audio, SVG, braille, haptic, or accessibility description.
 
 7. **Sovereignty**: No telemetry, no cloud, no vendor lock-in. Data stays local.
-   Human controls modality. AGPL-3.0-only.
+   Human controls modality. AGPL-3.0-or-later.
 
 ---
 

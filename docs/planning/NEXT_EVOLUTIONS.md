@@ -1,11 +1,11 @@
 # Next Evolution Paths for petalTongue
 
-**Current State**: v1.6.5 — 5,113 tests, ~87% line / ~88% branch coverage
-**Date**: March 15, 2026
+**Current State**: v1.6.6 — 5,244 tests, ~86% line / ~87% branch coverage
+**Date**: March 16, 2026
 
 ---
 
-## Recently Completed (v1.6.5)
+## Recently Completed (v1.6.6)
 
 - **`deny(unwrap_used, expect_used)`**: Production code zero-unwrap; all 5 `expect()` evolved to safe fallbacks or justified `#[expect]`
 - **`primal_names` module**: 15 primal identity constants in `capability_names.rs`
@@ -119,3 +119,4 @@ Tier C (stays CPU): UI, IPC, discovery, scene_graph.
 | Deep Debt Evolution | v1.6.3 | Typed errors, pedantic lints, smart refactoring |
 | Spring Absorption | v1.6.4 | GameScene/Soundscape DataBinding, sprite/soundscape primitives, JSONL telemetry, capability_names |
 | Ecosystem Evolution | v1.6.5 | deny(unwrap/expect), primal_names, enriched capability.list, #[expect] migration |
+| UUI & Spring Absorption | v1.6.6 | Universal User Interface evolution, safe casts, tempfile isolation, ecosystem doc propagation |

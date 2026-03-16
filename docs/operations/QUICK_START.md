@@ -1,7 +1,7 @@
 # Quick Start -- petalTongue
 
-**Last Updated**: March 15, 2026
-**Version**: 1.6.5
+**Last Updated**: March 16, 2026
+**Version**: 1.6.6
 
 ---
 
@@ -66,4 +66,4 @@ petalTongue/
 
 ---
 
-**License**: AGPL-3.0-only
+**License**: AGPL-3.0-or-later
