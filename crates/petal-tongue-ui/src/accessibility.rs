@@ -335,8 +335,7 @@ impl LiveIndicator {
         self.is_live = true;
         self.last_update_secs = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .expect("System time before UNIX epoch - clock error")
-            .as_secs_f64();
+            .map_or(0.0, |d| d.as_secs_f64());
     }
 
     /// Get age of last update in seconds
@@ -345,8 +344,7 @@ impl LiveIndicator {
         use std::time::{SystemTime, UNIX_EPOCH};
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .expect("System time before UNIX epoch - clock error")
-            .as_secs_f64();
+            .map_or(0.0, |d| d.as_secs_f64());
         now - self.last_update_secs
     }
 

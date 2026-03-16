@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #![forbid(unsafe_code)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 //! Real-time telemetry and event streaming
 //!
 //! This crate provides telemetry collection, aggregation, and event streaming

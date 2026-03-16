@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #![forbid(unsafe_code)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 //! Capability-Based Discovery for Visualization Data Providers
 //!
 //! This crate enables petalTongue to discover ANY primal that provides

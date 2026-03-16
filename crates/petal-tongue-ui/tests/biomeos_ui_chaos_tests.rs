@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Chaos Tests for biomeOS UI
 //!
 //! These tests verify system behavior under adverse conditions,

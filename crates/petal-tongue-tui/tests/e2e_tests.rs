@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! End-to-End Tests for petalTongue Rich TUI
 //!
 //! Tests complete workflows and user interactions.

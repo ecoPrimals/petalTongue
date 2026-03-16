@@ -339,6 +339,23 @@ pub enum SpringAdapterError {
     /// JSON deserialization failed.
     #[error("failed to deserialize spring payload: {0}")]
     DeserializeFailed(serde_json::Error),
+
+    /// Required field missing from spring payload.
+    #[error("missing required field '{field}' in {context}")]
+    MissingField {
+        /// The field that was expected.
+        field: String,
+        /// Where the field was expected (e.g., "game_scene payload").
+        context: String,
+    },
+
+    /// Payload format could not be detected.
+    #[error("unrecognized spring payload format")]
+    UnrecognizedFormat,
+
+    /// Channel type not supported.
+    #[error("unsupported channel type: {0}")]
+    UnsupportedChannelType(String),
 }
 
 fn extract_f64_array(value: &serde_json::Value, key: &str) -> Option<Vec<f64>> {

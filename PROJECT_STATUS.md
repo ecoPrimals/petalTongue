@@ -1,7 +1,7 @@
 # petalTongue -- Project Status
 
 **Updated**: March 15, 2026  
-**Version**: 1.6.4  
+**Version**: 1.6.5  
 **Edition**: 2024 (all crates)
 
 ---

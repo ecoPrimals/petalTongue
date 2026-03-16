@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Chaos tests for SAME DAVE proprioception system
 //!
 //! These tests verify the system handles failures gracefully:

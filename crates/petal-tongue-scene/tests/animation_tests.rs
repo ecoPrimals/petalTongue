@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Comprehensive animation system tests.
 //!
 //! Extracted from `animation.rs` to keep source under 1,000 lines.

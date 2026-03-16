@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Integration tests for SAME DAVE proprioception system
 //!
 //! Tests the complete sensory-motor self-awareness system including:

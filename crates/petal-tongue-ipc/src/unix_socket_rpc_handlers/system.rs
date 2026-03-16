@@ -43,30 +43,48 @@ pub fn handle_announce_capabilities(
     )
 }
 
-/// Handle capability.list: return supported capabilities and protocol info
+/// Handle capability.list: return supported capabilities with enriched metadata.
+///
+/// Follows ecosystem `capability.list` standard (loamSpine/sweetGrass pattern):
+/// returns version, protocol, transport, methods, and dependency info.
 #[must_use]
 pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
+    use petal_tongue_core::capability_names::{self_capabilities, methods, primal_names, discovery_capabilities};
+
     JsonRpcResponse::success(
         id,
         json!({
-            "capabilities": [
-                "interaction.subscribe",
-                "ui.desktop-interface",
-                "ui.primal-interaction",
-                "visualization.graph-rendering",
-                "visualization.real-time-topology",
-                "visualization.flow-animation",
-                "ui.multi-modal",
-                "ui.awakening-experience",
-                "visualization.terminal",
-                "visualization.svg",
-                "visualization.png",
-                "visualization.egui"
-            ],
+            "primal": primal_names::PETALTONGUE,
             "version": env!("CARGO_PKG_VERSION"),
             "family_id": &handlers.family_id,
             "protocol": "json-rpc-2.0",
-            "transport": "unix-socket"
+            "transport": ["unix-socket", "tarpc"],
+            "capabilities": self_capabilities::ALL,
+            "methods": [
+                methods::VISUALIZATION_RENDER,
+                methods::VISUALIZATION_RENDER_STREAM,
+                methods::VISUALIZATION_RENDER_GRAMMAR,
+                methods::VISUALIZATION_RENDER_DASHBOARD,
+                methods::VISUALIZATION_RENDER_SCENE,
+                methods::VISUALIZATION_VALIDATE,
+                methods::VISUALIZATION_EXPORT,
+                methods::VISUALIZATION_CAPABILITIES,
+                methods::VISUALIZATION_DISMISS,
+                methods::VISUALIZATION_INTERACT_APPLY,
+                methods::VISUALIZATION_INTERACT_PERSPECTIVES,
+                methods::VISUALIZATION_INTROSPECT,
+                methods::VISUALIZATION_PANELS,
+                methods::VISUALIZATION_SHOWING,
+                methods::VISUALIZATION_SESSION_LIST,
+                methods::VISUALIZATION_SESSION_STATUS,
+            ],
+            "depends_on": [
+                { "capability": discovery_capabilities::DISPLAY_BACKEND, "required": false },
+                { "capability": discovery_capabilities::GPU_DISPATCH, "required": false },
+                { "capability": discovery_capabilities::SHADER_COMPILE, "required": false },
+            ],
+            "data_bindings": 11,
+            "geometry_types": 10,
         }),
     )
 }

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Headless pixel verification tests using `ProvenanceBuffer`.
 //!
 //! Verifies that rendered scene primitives produce provenance data

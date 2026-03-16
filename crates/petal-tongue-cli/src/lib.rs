@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #![forbid(unsafe_code)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![warn(missing_docs)]
 //! petalTongue CLI - Manage petalTongue instances from the command line
 //!

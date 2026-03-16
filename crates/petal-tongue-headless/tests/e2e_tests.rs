@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! End-to-end tests for petal-tongue-headless binary
 
 #![expect(deprecated)]

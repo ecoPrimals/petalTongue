@@ -197,7 +197,9 @@ pub fn draw_scatter3d(ui: &mut Ui, params: &Scatter3dParams<'_>) {
         });
     }
 
-    let bands = scatter3d_bands(x_vals, y_vals, z_vals, Z_BANDS).expect("validated scatter3d data");
+    let Some(bands) = scatter3d_bands(x_vals, y_vals, z_vals, Z_BANDS) else {
+        return;
+    };
 
     plot.show(ui, |plot_ui| {
         for (band, band_vec) in bands.into_iter().enumerate() {

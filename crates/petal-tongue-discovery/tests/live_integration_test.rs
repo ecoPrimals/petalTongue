@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 // Integration test for petalTongue with live biomeOS API
 //
 // This test validates that petalTongue can discover primals from a running biomeOS API server

@@ -21,7 +21,7 @@ pub fn threshold_color_rgb(value: f64, warning: f64, critical: f64) -> (u8, u8, 
 /// Generate sparkline point coordinates from history data.
 /// Returns points (x, y) in rect [0, width] x [0, height]; y=0 at top (min value).
 #[must_use]
-#[allow(dead_code)] // Public API for headless testing
+#[cfg_attr(not(test), expect(dead_code, reason = "public API for headless testing"))]
 pub fn sparkline_points(history: &[f64], width: f32, height: f32) -> Vec<(f32, f32)> {
     if history.len() < 2 {
         return Vec::new();
@@ -88,7 +88,7 @@ pub struct MetricDisplayState {
     /// Formatted uptime string
     pub uptime_text: String,
     /// Whether Neural API is connected (data available)
-    #[allow(dead_code)] // Part of display state API for headless testing
+    #[cfg_attr(not(test), expect(dead_code, reason = "display state API for headless testing"))]
     pub neural_api_connected: bool,
     /// Memory used in MB (for display)
     pub memory_used_mb: u64,
@@ -138,7 +138,7 @@ pub fn prepare_metrics_display(
 
 /// Format byte count as human-readable string (e.g., "1.5 MB").
 #[must_use]
-#[allow(dead_code)] // Public API for headless testing and future use
+#[cfg_attr(not(test), expect(dead_code, reason = "public API for headless testing"))]
 pub fn format_bytes(bytes: u64) -> String {
     const KB: u64 = 1024;
     const MB: u64 = KB * 1024;

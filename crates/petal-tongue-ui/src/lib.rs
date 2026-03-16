@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 //! # petal-tongue-ui
 //!
 //! Desktop UI application for petalTongue
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
-// UI rendering: precision loss in casts is acceptable (f32 for coordinates, u8 for colors)
-#![allow(clippy::cast_sign_loss)]
-// Large structs and long functions common in UI code
-#![allow(clippy::struct_excessive_bools)]
-#![allow(clippy::too_many_lines)]
-#![allow(clippy::too_many_arguments)]
+#![expect(clippy::cast_sign_loss, reason = "UI rendering: f32 coords, u8 colors")]
+#![expect(clippy::struct_excessive_bools, reason = "UI state structs need many flags")]
+#![expect(clippy::too_many_lines, reason = "UI rendering functions are inherently long")]
+#![expect(clippy::too_many_arguments, reason = "egui render callbacks receive many params")]
 #![allow(clippy::match_same_arms)]
 #![allow(clippy::ref_option)]
 #![allow(clippy::needless_pass_by_value)]

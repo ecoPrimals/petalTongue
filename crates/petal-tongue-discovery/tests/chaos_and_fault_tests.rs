@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Chaos and fault tolerance tests for discovery system
 //!
 //! Tests system behavior under adverse conditions:

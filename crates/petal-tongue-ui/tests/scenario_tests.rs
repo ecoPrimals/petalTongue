@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Unit tests for scenario loading and parsing
 //!
 //! Tests the modular UI control system introduced in v2.2.0

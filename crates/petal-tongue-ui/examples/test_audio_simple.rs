@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Simple audio test - generates and saves a WAV file
 
 use petal_tongue_ui::audio_pure_rust::{Waveform, export_wav, generate_tone};

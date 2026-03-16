@@ -47,33 +47,27 @@ impl AdapterRegistry {
     /// Adapters are checked in registration order (last registered = checked first)
     /// unless they specify a priority.
     pub fn register(&self, adapter: BoxedAdapter) {
-        let mut adapters = self
-            .adapters
-            .write()
-            .expect("adapter registry lock poisoned");
+        let Ok(mut adapters) = self.adapters.write() else {
+            return;
+        };
         adapters.push(adapter);
-
-        // Sort by priority (highest first)
         adapters.sort_by_key(|a| std::cmp::Reverse(a.priority()));
     }
 
     /// Render a property with the appropriate adapter or generic fallback
     pub fn render_property(&self, key: &str, value: &PropertyValue, ui: &mut Ui) {
         // Check if we have an adapter for this key
-        let has_adapter = {
-            let adapters = self
-                .adapters
-                .read()
-                .expect("adapter registry lock poisoned");
-            adapters.iter().any(|a| a.handles(key))
+        let Ok(adapters) = self.adapters.read() else {
+            self.render_generic_property(key, value, ui);
+            return;
         };
+        let has_adapter = adapters.iter().any(|a| a.handles(key));
+        drop(adapters);
 
         if has_adapter {
-            // Render with adapter
-            let adapters = self
-                .adapters
-                .read()
-                .expect("adapter registry lock poisoned");
+            let Ok(adapters) = self.adapters.read() else {
+                return;
+            };
             if let Some(adapter) = adapters.iter().find(|a| a.handles(key)) {
                 adapter.render(key, value, ui);
             }
@@ -88,10 +82,7 @@ impl AdapterRegistry {
     /// If multiple adapters provide decorations, they're merged (last wins).
     #[must_use]
     pub fn get_node_decoration(&self, properties: &Properties) -> Option<NodeDecoration> {
-        let adapters = self
-            .adapters
-            .read()
-            .expect("adapter registry lock poisoned");
+        let adapters = self.adapters.read().ok()?;
 
         let mut decoration: Option<NodeDecoration> = None;
 
@@ -160,10 +151,7 @@ impl AdapterRegistry {
     /// Get count of registered adapters
     #[must_use]
     pub fn adapter_count(&self) -> usize {
-        self.adapters
-            .read()
-            .expect("adapter registry lock poisoned")
-            .len()
+        self.adapters.read().map_or(0, |a| a.len())
     }
 
     /// Get names of all registered adapters (for debugging)
@@ -171,10 +159,7 @@ impl AdapterRegistry {
     pub fn adapter_names(&self) -> Vec<String> {
         self.adapters
             .read()
-            .expect("adapter registry lock poisoned")
-            .iter()
-            .map(|a| a.name().to_string())
-            .collect()
+            .map_or_else(|_| Vec::new(), |a| a.iter().map(|a| a.name().to_string()).collect())
     }
 }
 

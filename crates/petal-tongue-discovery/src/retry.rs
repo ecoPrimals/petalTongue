@@ -100,7 +100,7 @@ impl RetryPolicy {
             }
         }
 
-        // SAFETY: loop always runs at least once (attempts >= 1), so last_error is always Some
+        #[expect(clippy::expect_used, reason = "loop runs at least once, last_error is always Some")]
         Err(last_error.expect("at least one attempt always executes"))
     }
 

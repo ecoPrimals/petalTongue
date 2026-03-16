@@ -82,10 +82,9 @@ impl CapabilityDetector {
     ///
     /// Panics if the capabilities lock is poisoned (only happens if another thread panicked while holding the lock).
     pub fn detect_all(&self) {
-        let mut caps = self
-            .capabilities
-            .write()
-            .expect("capabilities lock poisoned");
+        let Ok(mut caps) = self.capabilities.write() else {
+            return;
+        };
         caps.clear();
 
         // Visual 2D - Always available if we have a window
@@ -156,10 +155,7 @@ impl CapabilityDetector {
     /// Panics if the capabilities lock is poisoned.
     #[must_use]
     pub fn get_status(&self, modality: Modality) -> Option<ModalityCapability> {
-        let caps = self
-            .capabilities
-            .read()
-            .expect("capabilities lock poisoned");
+        let caps = self.capabilities.read().ok()?;
         caps.iter().find(|c| c.modality == modality).cloned()
     }
 
@@ -172,8 +168,7 @@ impl CapabilityDetector {
     pub fn get_all(&self) -> Vec<ModalityCapability> {
         self.capabilities
             .read()
-            .expect("capabilities lock poisoned")
-            .clone()
+            .map_or_else(|_| Vec::new(), |caps| caps.clone())
     }
 
     /// Check if a modality is actually available (not just theoretically)

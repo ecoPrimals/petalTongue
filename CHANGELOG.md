@@ -2,6 +2,29 @@
 
 All notable changes to petalTongue will be documented in this file.
 
+## [1.6.5] - 2026-03-15
+
+### Added - Ecosystem Evolution: deny(unwrap/expect), primal_names, enriched capability.list
+
+- **`deny(clippy::unwrap_used, clippy::expect_used)`**: Production code is now zero-unwrap.
+  All 5 production `expect()` calls evolved to safe fallbacks or justified `#[expect]`.
+  Test code uses `#![cfg_attr(test, allow(...))]` per crate.
+- **`primal_names` module**: 15 primal identity constants in `capability_names.rs` for
+  discovery and logging without hardcoding.
+- **`#[allow]` → `#[expect]`**: All `#[allow(...)]` in production code migrated to
+  `#[expect(..., reason = "...")]` with documented justifications.
+- **Enriched `capability.list`**: Returns `primal`, `version`, `transport`, `methods`,
+  `depends_on` (with required flag), `data_bindings`, `geometry_types`. Follows
+  loamSpine/sweetGrass ecosystem pattern.
+- **`SpringAdapterError` typed enums**: Added `MissingField`, `UnrecognizedFormat`,
+  `UnsupportedChannelType` variants.
+- **`PrimalRegistration` uses constants**: `petaltongue()` uses `primal_names::PETALTONGUE`
+  and `self_capabilities::ALL` instead of hardcoded strings.
+- **RwLock poison safety**: All `RwLock::read/write().expect()` in production code evolved
+  to graceful fallbacks (return `None`, empty `Vec`, or skip operation).
+- **Explicit ecosystem needs doc**: `PETALTONGUE_NEEDS_FROM_ECOSYSTEM.md` in wateringHole
+  documenting 3D rendering pipeline, audio output gap, and GPU compute needs.
+
 ## [1.6.4] - 2026-03-15
 
 ### Added - Spring Absorption: Game Scenes, Soundscapes, JSONL Telemetry
