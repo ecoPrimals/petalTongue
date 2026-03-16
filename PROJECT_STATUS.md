@@ -108,7 +108,7 @@ Delegated/roadmap items (not TODOs, documented as roadmap markers):
 
 ### Test Coverage Gap
 
-Current: ~87% line / ~88% branch coverage (5,076 tests, llvm-cov `--workspace`).
+Current: ~87% line / ~88% branch coverage (5,113 tests, llvm-cov `--workspace`).
 Target: 90%.
 
 Per-crate coverage:

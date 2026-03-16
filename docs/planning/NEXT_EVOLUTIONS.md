@@ -1,11 +1,21 @@
 # Next Evolution Paths for petalTongue
 
-**Current State**: v1.6.3 — 5,076 tests, ~87% line / ~88% branch coverage
-**Date**: March 16, 2026
+**Current State**: v1.6.4 — 5,113 tests, ~87% line / ~88% branch coverage
+**Date**: March 15, 2026
 
 ---
 
-## Recently Completed (v1.6.3)
+## Recently Completed (v1.6.4)
+
+- **GameScene + Soundscape DataBinding variants**: 9 → 11 channel types for ludoSpring game scenes and layered audio
+- **Sprite/Tilemap/GameEntity primitives**: 2D game rendering support in `petal-tongue-scene`
+- **Soundscape synthesis**: 5 waveforms, stereo panning, fade envelopes, deterministic
+- **JSONL telemetry provider**: hotSpring bridge via `PETALTONGUE_TELEMETRY_DIR`
+- **Capability names module**: 60 centralized constants (`self_capabilities`, `discovery_capabilities`, `methods`, `socket_roles`)
+- **SpringDataAdapter evolution**: GameScene/Soundscape format detection; UiConfig + thresholds parsing from spring pushes
+- **Workspace lint evolution**: pedantic/nursery fully via `[workspace.lints.clippy]`
+
+## Previously Completed (v1.6.3)
 
 - Typed error handling: `anyhow` eliminated from all production code, `thiserror` everywhere
 - Clippy pedantic + nursery: zero warnings, enforced in CI
@@ -96,3 +106,4 @@ Tier C (stays CPU): UI, IPC, discovery, scene_graph.
 | Grammar of Graphics | v1.4.0 | Composable pipeline, Tufte constraints |
 | Dashboard Engine | v1.5.0 | Multi-panel grid, domain theming |
 | Deep Debt Evolution | v1.6.3 | Typed errors, pedantic lints, smart refactoring |
+| Spring Absorption | v1.6.4 | GameScene/Soundscape DataBinding, sprite/soundscape primitives, JSONL telemetry, capability_names |

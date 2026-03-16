@@ -21,7 +21,7 @@ step 1 "Start petalTongue with IPC socket"
 
 # Start with web mode which also opens the IPC socket
 PORT=18710
-pid=$(start_petaltongue_bg web --port "$PORT")
+pid=$(start_petaltongue_bg web --bind "127.0.0.1:$PORT")
 if wait_for_port "$PORT" 8; then
     record_pass "petalTongue web+IPC started on port $PORT"
 else

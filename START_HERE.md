@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: March 16, 2026
+**Updated**: March 15, 2026
 
 ---
 
@@ -54,8 +54,8 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace                          # 5,076 tests
-cargo clippy --workspace --all-targets -- -D warnings -W clippy::pedantic -W clippy::nursery
+cargo test --workspace                          # 5,113 tests
+cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
 cargo llvm-cov --workspace --summary-only       # Coverage (~87% line / ~88% branch)
@@ -89,7 +89,8 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 - `constants.rs` -- Centralized self-knowledge (name, ports, socket names)
 - `graph_engine.rs` -- Graph data model (nodes, edges, layout)
 - `config_system.rs` -- XDG-compliant configuration (env > file > defaults)
-- `data_channel.rs` -- DataChannel enum (9 variants: TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter, Scatter3D, FieldMap)
+- `data_channel.rs` -- DataChannel enum (11 variants: TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter, Scatter3D, FieldMap, GameScene, Soundscape)
+- `capability_names.rs` -- Centralized capability/method/socket constants (60 constants)
 - `telemetry_adapter.rs` -- JSONL telemetry ingestion (hotSpring)
 
 ### IPC (`petal-tongue-ipc`)

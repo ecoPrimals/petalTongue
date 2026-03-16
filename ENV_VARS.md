@@ -585,6 +585,19 @@ RUST_LOG=error
 
 ### Deployment Checklist
 
+### `PETALTONGUE_TELEMETRY_DIR`
+
+**Type**: String (directory path)  
+**Default**: Falls back to `$XDG_DATA_HOME/petaltongue/telemetry/` then `/tmp/petaltongue-telemetry/`  
+**Required**: No  
+**Example**: `PETALTONGUE_TELEMETRY_DIR=/var/lib/petaltongue/telemetry`
+
+Directory containing JSONL telemetry files for the file-based provider
+(hotSpring, groundSpring). Reads `{t, section, ...fields}` JSONL from
+all `.jsonl` files in this directory.
+
+---
+
 Before deploying to production:
 
 - [ ] Set `BIOMEOS_URL` to production endpoint
@@ -609,7 +622,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: March 16, 2026  
+**Last Updated**: March 15, 2026  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-only
 

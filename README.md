@@ -54,7 +54,7 @@ petaltongue
 - **Self-knowledge only** -- other primals discovered at runtime
 - **Graceful degradation** -- works standalone or in full ecosystem
 - **Grammar of Graphics** -- composable data→visualization pipeline
-- **DataBinding auto-compiler** -- all 9 chart types auto-compile to grammar
+- **DataBinding auto-compiler** -- all 11 chart types auto-compile to grammar
 - **Tufte constraints** -- machine-checked visualization quality
 - **Dashboard layout engine** -- multi-panel grid with domain theming and SVG export
 - **Domain-aware rendering** -- automatic palette selection per domain
@@ -91,9 +91,9 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,076 passing, 0 failures |
+| Tests | 5,113 passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings (pedantic + nursery enforced in CI) |
+| Clippy | Zero warnings (pedantic + nursery via workspace lints) |
 | Docs | `cargo doc --workspace --no-deps` clean |
 | Coverage | ~87% line / ~88% branch (llvm-cov) |
 | Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |

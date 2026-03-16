@@ -45,22 +45,22 @@ case $choice in
   1)
     echo -e "${BLUE}Launching Live Ecosystem...${NC}"
     ../target/release/petaltongue ui \
-      --scenario scenarios/live-ecosystem.json
+      --scenario sandbox/scenarios/live-ecosystem.json
     ;;
   2)
     echo -e "${BLUE}Launching Graph Builder Studio...${NC}"
     ../target/release/petaltongue ui \
-      --scenario scenarios/graph-studio.json
+      --scenario sandbox/scenarios/graph-studio.json
     ;;
   3)
     echo -e "${BLUE}Launching RootPulse Visualization...${NC}"
     ../target/release/petaltongue ui \
-      --scenario scenarios/rootpulse-demo.json
+      --scenario sandbox/scenarios/rootpulse-demo.json
     ;;
   4)
     echo -e "${BLUE}Launching Neural API Learning...${NC}"
     ../target/release/petaltongue ui \
-      --scenario scenarios/neural-api-test.json
+      --scenario sandbox/scenarios/neural-api-test.json
     ;;
   5)
     echo -e "${BLUE}Starting Full Tour...${NC}"
@@ -75,22 +75,22 @@ case $choice in
     # Live Ecosystem
     echo -e "${GREEN}[1/4] Live Ecosystem${NC}"
     timeout 30s ../target/release/petaltongue ui \
-      --scenario scenarios/live-ecosystem.json || true
+      --scenario sandbox/scenarios/live-ecosystem.json || true
     
     # Graph Builder
     echo -e "${GREEN}[2/4] Graph Builder Studio${NC}"
     timeout 30s ../target/release/petaltongue ui \
-      --scenario scenarios/graph-studio.json || true
+      --scenario sandbox/scenarios/graph-studio.json || true
     
     # RootPulse
     echo -e "${GREEN}[3/4] RootPulse Visualization${NC}"
     timeout 30s ../target/release/petaltongue ui \
-      --scenario scenarios/rootpulse-demo.json || true
+      --scenario sandbox/scenarios/rootpulse-demo.json || true
     
     # Neural Learning
     echo -e "${GREEN}[4/4] Neural API Learning${NC}"
     timeout 30s ../target/release/petaltongue ui \
-      --scenario scenarios/neural-api-test.json || true
+      --scenario sandbox/scenarios/neural-api-test.json || true
     
     echo ""
     echo -e "${GREEN}Tour complete!${NC}"
