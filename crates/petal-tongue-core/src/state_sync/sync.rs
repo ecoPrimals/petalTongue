@@ -30,6 +30,7 @@ impl StateSync {
 
     /// Create with custom persistence (for testing)
     #[cfg(test)]
+    #[must_use]
     pub fn with_persistence(persistence: Box<dyn StatePersistence>) -> Self {
         Self {
             persistence,

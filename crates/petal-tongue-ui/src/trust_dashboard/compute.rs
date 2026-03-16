@@ -74,7 +74,7 @@ pub fn prepare_trust_display(summary: &TrustSummary, elapsed_secs: u64) -> Trust
     }
 }
 
-/// Map trust level number to display label (used by update_from_primals and tests).
+/// Map trust level number to display label (used by `update_from_primals` and tests).
 #[must_use]
 pub fn trust_level_number_to_label(n: i32) -> String {
     match n {

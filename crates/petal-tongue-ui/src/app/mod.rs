@@ -3,7 +3,7 @@
 //!
 //! This is the **`EguiGUI` Modality** implementation - the native desktop GUI.
 //!
-//! ## Architecture (SMART_REFACTORING_POLICY)
+//! ## Architecture (`SMART_REFACTORING_POLICY`)
 //!
 //! This module is the application root - naturally centralized. Per
 //! `docs/operations/SMART_REFACTORING_POLICY.md`, app.rs may legitimately be
@@ -188,7 +188,7 @@ pub struct PetalTongueApp {
     /// Show top menu bar (controllable via motor commands)
     show_top_menu: bool,
 
-    /// Bridge between egui events and the InteractionEngine (inverse pipeline for hit-target registration)
+    /// Bridge between egui events and the `InteractionEngine` (inverse pipeline for hit-target registration)
     interaction_bridge: EguiInteractionBridge,
     /// SQUIRREL AI adapter for AI-driven interaction commands
     squirrel_adapter: crate::squirrel_adapter::SquirrelAdapter,

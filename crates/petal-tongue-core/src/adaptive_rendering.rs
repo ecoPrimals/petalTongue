@@ -264,7 +264,7 @@ impl RenderingCapabilities {
     /// Tries, in order:
     /// 1. Linux framebuffer: `/sys/class/graphics/fb0/virtual_size`
     /// 2. Terminal dimensions (when no graphical display)
-    /// 3. DISPLAY/WAYLAND_DISPLAY presence → sensible desktop defaults
+    /// 3. `DISPLAY/WAYLAND_DISPLAY` presence → sensible desktop defaults
     /// 4. Fallback: (1280, 720) when detection fails
     fn detect_screen_size() -> (f32, f32) {
         use terminal_size::{Height, Width};

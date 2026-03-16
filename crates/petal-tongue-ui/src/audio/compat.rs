@@ -73,7 +73,7 @@ impl AudioSystemV2 {
 
     /// Play audio file (synchronous API)
     ///
-    /// Decodes MP3/WAV via symphonia and plays through AudioManager.
+    /// Decodes MP3/WAV via symphonia and plays through `AudioManager`.
     pub fn play_file(&self, path: &Path) -> Result<()> {
         info!("🎵 Playing file: {}", path.display());
 

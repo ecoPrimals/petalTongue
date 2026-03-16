@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! ludoSpring GameDataChannel → petalTongue DataBinding mapping.
+//! ludoSpring `GameDataChannel` → petalTongue `DataBinding` mapping.
 //!
 //! When ludoSpring (or any game-domain primal) calls `visualization.render` with
 //! game science data, this module converts the JSON payload into the appropriate
 //! `DataBinding` variant so the live session panel can render it with game theming.
 //!
-//! ## Channel Mapping (from REALTIME_COLLABORATIVE_PIPELINE.md)
+//! ## Channel Mapping (from `REALTIME_COLLABORATIVE_PIPELINE.md`)
 //!
 //! | ludoSpring Channel      | DataBinding Variant | Notes                                      |
 //! |-------------------------|---------------------|--------------------------------------------|
@@ -34,6 +34,7 @@ pub enum GameChannel {
 
 impl GameChannel {
     /// Parse a channel name string into a known variant.
+    #[must_use]
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
             "EngagementCurve" | "engagement_curve" => Some(Self::EngagementCurve),
@@ -53,6 +54,7 @@ impl GameChannel {
 /// The `channel` field in the JSON selects the mapping. The remaining fields
 /// provide the data. Returns `None` if the channel is unrecognized or
 /// required fields are missing.
+#[must_use]
 pub fn map_game_channel(payload: &Value) -> Option<DataBinding> {
     let channel_name = payload.get("channel")?.as_str()?;
     let channel = GameChannel::from_str(channel_name)?;

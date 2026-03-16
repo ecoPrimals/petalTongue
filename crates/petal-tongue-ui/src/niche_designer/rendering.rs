@@ -10,7 +10,7 @@ use tracing::info;
 use super::state::NicheDesigner;
 use super::types::ValidationResult;
 
-/// Get (icon, text, color_rgb) for a validation result.
+/// Get (icon, text, `color_rgb`) for a validation result.
 #[must_use]
 pub fn validation_display_info(result: &ValidationResult) -> (&'static str, String, [u8; 3]) {
     match result {

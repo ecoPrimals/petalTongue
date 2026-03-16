@@ -31,7 +31,7 @@ pub enum AppError {
     #[error("TUI error: {0}")]
     Tui(String),
 
-    /// Task panic (e.g. spawn_blocking).
+    /// Task panic (e.g. `spawn_blocking`).
     #[error("Task panicked: {0}")]
     TaskPanic(String),
 

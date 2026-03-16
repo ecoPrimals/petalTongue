@@ -35,6 +35,7 @@ pub enum ValidationResult {
 /// # Returns
 ///
 /// Validation result indicating if connection is valid, with optional warnings
+#[must_use]
 pub fn validate_connection(from: &PrimalInfo, to: &PrimalInfo) -> ValidationResult {
     // Allow self-loops for testing/debugging
     if from.id == to.id {

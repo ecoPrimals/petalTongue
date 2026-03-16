@@ -15,6 +15,7 @@ use std::time::Duration;
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(30);
 
 /// petalTongue capabilities advertised to the Neural API.
+#[must_use]
 pub fn petaltongue_capabilities() -> Vec<&'static str> {
     vec![
         "ui.render",

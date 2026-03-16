@@ -33,6 +33,7 @@ pub struct SceneWidget<'a> {
 }
 
 impl<'a> SceneWidget<'a> {
+    #[must_use]
     pub const fn new(plan: &'a RenderPlan) -> Self {
         Self {
             plan,

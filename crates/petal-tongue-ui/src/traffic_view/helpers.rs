@@ -3,7 +3,7 @@
 
 use super::types::{ColorScheme, TrafficFlow, TrafficMetrics};
 
-/// Bezier control points for flow curve from (from_x, from_y) to (to_x, to_y).
+/// Bezier control points for flow curve from (`from_x`, `from_y`) to (`to_x`, `to_y`).
 /// Returns (ctrl1, ctrl2) as [x, y] arrays.
 #[must_use]
 pub fn bezier_control_points(
@@ -20,7 +20,7 @@ pub fn bezier_control_points(
 }
 
 /// Compute lane positions for primals in the traffic view.
-/// Returns for each index: (y, left_center_x, right_center_x).
+/// Returns for each index: (y, `left_center_x`, `right_center_x`).
 #[must_use]
 pub fn primal_lane_layout(
     primal_count: usize,

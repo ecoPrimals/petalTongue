@@ -215,7 +215,7 @@ pub fn paint_primitive(
             let angle_span = end_angle - start_angle;
             let pts: Vec<Pos2> = (0..=segments)
                 .map(|i| {
-                    let t = angle_span.mul_add(i as f64 / segments as f64, *start_angle);
+                    let t = angle_span.mul_add(f64::from(i) / f64::from(segments), *start_angle);
                     let px = cx + radius * t.cos();
                     let py = cy + radius * t.sin();
                     let (tx, ty) = transform.apply(px, py);
@@ -254,7 +254,7 @@ pub fn paint_primitive(
                 let steps = 16;
                 let p0 = cur;
                 for i in 1..=steps {
-                    let t = i as f64 / steps as f64;
+                    let t = f64::from(i) / f64::from(steps);
                     let mt = 1.0 - t;
                     let mt2 = mt * mt;
                     let mt3 = mt2 * mt;
@@ -355,6 +355,7 @@ pub fn paint_scene(painter: &Painter, scene: &SceneGraph, offset: Vec2) {
 }
 
 /// Render a full `RenderPlan` into an egui `Painter`, returning the hit map.
+#[must_use]
 pub fn paint_plan_tracked(painter: &Painter, plan: &RenderPlan, offset: Vec2) -> FrameHitMap {
     paint_scene_tracked(painter, &plan.scene, offset)
 }

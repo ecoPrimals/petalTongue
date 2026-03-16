@@ -10,7 +10,7 @@ use crate::proc_stats::{ProcStats, ProcessInfo as ProcProcessInfo};
 use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};
 use std::time::{Duration, Instant};
 
-/// Process information for display (wraps proc_stats::ProcessInfo for tests)
+/// Process information for display (wraps `proc_stats::ProcessInfo` for tests)
 #[derive(Clone, Debug)]
 struct ProcessInfo {
     pid: u32,
@@ -84,6 +84,7 @@ pub fn format_cpu_percent(cpu_usage: f32) -> String {
     format!("{cpu_usage:.1}")
 }
 
+#[must_use]
 pub const fn cpu_usage_color(tier: u8) -> egui::Color32 {
     match tier {
         2 => egui::Color32::from_rgb(200, 50, 50),

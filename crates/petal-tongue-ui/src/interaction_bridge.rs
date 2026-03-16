@@ -33,6 +33,7 @@ pub struct EguiInteractionBridge {
 
 impl EguiInteractionBridge {
     /// Create a new bridge with default pointer and keyboard adapters.
+    #[must_use]
     pub fn new() -> Self {
         let mut engine = InteractionEngine::new();
 
@@ -58,6 +59,7 @@ impl EguiInteractionBridge {
     }
 
     /// Collect `SensorEvent`s from an egui `Response`.
+    #[must_use]
     pub fn collect_events(&self, response: &egui::Response) -> Vec<SensorEvent> {
         let mut events = Vec::new();
         let now = Instant::now();
@@ -107,6 +109,7 @@ impl EguiInteractionBridge {
     }
 
     /// Build the `InteractionContext` for the current frame.
+    #[must_use]
     pub const fn build_context(
         &self,
         screen_width: f32,
@@ -140,6 +143,7 @@ impl EguiInteractionBridge {
     }
 
     /// Get the currently selected data object IDs.
+    #[must_use]
     pub fn selected_data_ids(&self) -> Vec<petal_tongue_core::interaction::DataObjectId> {
         self.engine
             .perspective(self.perspective_id)
@@ -148,6 +152,7 @@ impl EguiInteractionBridge {
     }
 
     /// Get the currently focused data object ID.
+    #[must_use]
     pub fn focused_data_id(&self) -> Option<petal_tongue_core::interaction::DataObjectId> {
         self.engine
             .perspective(self.perspective_id)

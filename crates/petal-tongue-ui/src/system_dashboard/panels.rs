@@ -505,7 +505,7 @@ mod tests {
         assert!((memory_percent(99, 100) - 99.0).abs() < f64::EPSILON);
     }
 
-    /// Headless egui: render_compact runs without panic
+    /// Headless egui: `render_compact` runs without panic
     #[test]
     fn render_compact_headless() {
         use crate::accessibility::ColorScheme;
@@ -521,7 +521,7 @@ mod tests {
         });
     }
 
-    /// Headless egui: render_full runs without panic
+    /// Headless egui: `render_full` runs without panic
     #[test]
     fn render_full_headless() {
         use crate::accessibility::ColorScheme;
@@ -537,7 +537,7 @@ mod tests {
         });
     }
 
-    /// Headless egui: render_proprioception_status runs without panic
+    /// Headless egui: `render_proprioception_status` runs without panic
     #[test]
     fn render_proprioception_status_headless() {
         use crate::accessibility::ColorScheme;
@@ -559,7 +559,7 @@ mod tests {
         });
     }
 
-    /// Headless egui: render_sensory_status runs without panic
+    /// Headless egui: `render_sensory_status` runs without panic
     #[test]
     fn render_sensory_status_headless() {
         use crate::accessibility::ColorScheme;

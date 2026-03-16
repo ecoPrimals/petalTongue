@@ -101,7 +101,7 @@ impl TrustDashboard {
                 #[expect(deprecated)]
                 if let Some(trust_level) = primal.trust_level {
                     trust_values.push(f64::from(trust_level));
-                    let trust_label = trust_level_number_to_label(trust_level as i32);
+                    let trust_label = trust_level_number_to_label(i32::from(trust_level));
                     *summary.trust_distribution.entry(trust_label).or_insert(0) += 1;
                 }
             }

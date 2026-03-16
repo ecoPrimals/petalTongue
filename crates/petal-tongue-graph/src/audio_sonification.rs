@@ -60,6 +60,7 @@ impl AudioSonificationRenderer {
     }
 
     /// Generate audio attributes for all nodes
+    #[must_use]
     pub fn generate_audio_attributes(&self) -> Vec<(String, AudioAttributes)> {
         let Ok(graph) = self.graph.read() else {
             return Vec::new();
@@ -133,6 +134,7 @@ impl AudioSonificationRenderer {
     }
 
     /// Get master volume
+    #[must_use]
     pub const fn master_volume(&self) -> f32 {
         self.master_volume
     }
@@ -143,11 +145,13 @@ impl AudioSonificationRenderer {
     }
 
     /// Check if audio is enabled
+    #[must_use]
     pub const fn is_enabled(&self) -> bool {
         self.enabled
     }
 
     /// Generate a textual description of the soundscape (for AI narration)
+    #[must_use]
     pub fn describe_soundscape(&self) -> String {
         let Ok(graph) = self.graph.read() else {
             return "Graph unavailable.".to_string();
@@ -225,6 +229,7 @@ impl AudioSonificationRenderer {
     }
 
     /// Get detailed information about a specific node's audio
+    #[must_use]
     pub fn describe_node_audio(&self, node_id: &str) -> Option<String> {
         let graph = self.graph.read().ok()?;
         let node = graph.get_node(node_id)?;

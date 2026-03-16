@@ -301,7 +301,7 @@ pub enum MouseButton {
 pub enum Key {
     /// Printable character key
     Char(char),
-    /// Named key (e.g. "Space", "CapsLock") for non-printable keys
+    /// Named key (e.g. "Space", "`CapsLock`") for non-printable keys
     Named(String),
     /// Escape key
     Escape,

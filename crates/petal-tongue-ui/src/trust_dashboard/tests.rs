@@ -13,7 +13,10 @@ use std::collections::HashMap;
 fn create_test_primal(id: &str, trust: Option<u8>, family: Option<&str>) -> PrimalInfo {
     let mut props = Properties::new();
     if let Some(t) = trust {
-        props.insert("trust_level".to_string(), PropertyValue::Number(t as f64));
+        props.insert(
+            "trust_level".to_string(),
+            PropertyValue::Number(f64::from(t)),
+        );
     }
     if let Some(f) = family {
         props.insert(

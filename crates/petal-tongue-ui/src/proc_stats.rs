@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Pure Rust system stats via /proc parsing (ecoBin v3.0 compliant)
 //!
-//! Replaces sysinfo with zero C dependencies. Uses std::fs for /proc reads.
+//! Replaces sysinfo with zero C dependencies. Uses `std::fs` for /proc reads.
 //! Linux-only; returns zeros/empty on non-Linux.
 
 #![allow(clippy::cast_precision_loss)]
@@ -132,7 +132,7 @@ impl ProcStats {
         }
     }
 
-    /// Used memory in bytes (MemTotal - MemAvailable)
+    /// Used memory in bytes (`MemTotal` - `MemAvailable`)
     #[must_use]
     pub fn used_memory(&self) -> u64 {
         #[cfg(target_os = "linux")]

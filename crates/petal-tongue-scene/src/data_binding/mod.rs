@@ -272,6 +272,32 @@ impl DataBindingCompiler {
                     .collect();
                 (expr, data)
             }
+            DataBinding::GameScene { id, label, scene } => {
+                let expr = GrammarExpr::new(id.clone(), GeometryType::Tile)
+                    .with_title(label.clone())
+                    .with_scale("x", ScaleType::Linear)
+                    .with_scale("y", ScaleType::Linear);
+                let expr = if let Some(d) = domain {
+                    expr.with_domain(d)
+                } else {
+                    expr
+                };
+                (expr, vec![scene.clone()])
+            }
+            DataBinding::Soundscape {
+                id,
+                label,
+                definition,
+            } => {
+                let expr =
+                    GrammarExpr::new(id.clone(), GeometryType::Area).with_title(label.clone());
+                let expr = if let Some(d) = domain {
+                    expr.with_domain(d)
+                } else {
+                    expr
+                };
+                (expr, vec![definition.clone()])
+            }
         }
     }
 

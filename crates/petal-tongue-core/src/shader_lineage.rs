@@ -188,6 +188,7 @@ impl ShaderLineage {
 /// rather than hardcoded primal names. In production, origins come from runtime
 /// discovery and are never hardcoded.
 #[cfg(any(test, feature = "test-fixtures"))]
+#[must_use]
 pub fn build_demo_lineage() -> ShaderLineage {
     let mut lineage = ShaderLineage::new();
 

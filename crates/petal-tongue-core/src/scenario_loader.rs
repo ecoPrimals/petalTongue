@@ -97,7 +97,8 @@ impl LoadedScenario {
         Ok(scenario)
     }
 
-    /// Extract all DataBindings from all nodes.
+    /// Extract all `DataBindings` from all nodes.
+    #[must_use]
     pub fn all_bindings(&self) -> Vec<&DataBinding> {
         self.ecosystem
             .primals
@@ -106,7 +107,8 @@ impl LoadedScenario {
             .collect()
     }
 
-    /// Extract all ThresholdRanges from all nodes.
+    /// Extract all `ThresholdRanges` from all nodes.
+    #[must_use]
     pub fn all_thresholds(&self) -> Vec<&ThresholdRange> {
         self.ecosystem
             .primals
@@ -120,6 +122,7 @@ impl LoadedScenario {
     /// Uses capability-based matching via well-known suffix conventions rather than
     /// hardcoding specific primal names. Any spring family is parsed by stripping
     /// the "spring"/"Spring" suffix to derive a domain hint.
+    #[must_use]
     pub fn inferred_domain(&self) -> &str {
         if let Some(ref d) = self.domain {
             return d;

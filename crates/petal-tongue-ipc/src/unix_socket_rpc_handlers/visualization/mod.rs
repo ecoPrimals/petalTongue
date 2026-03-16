@@ -8,7 +8,7 @@ use super::RpcHandlers;
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse, error_codes};
 use crate::visualization_handler::{
     DashboardRenderRequest, ExportRequest, GrammarRenderRequest, InteractionApplyRequest,
-    StreamUpdateRequest, ValidateRequest, VisualizationRenderRequest,
+    StreamUpdateRequest, UiConfig, ValidateRequest, VisualizationRenderRequest,
 };
 use serde_json::Value;
 
@@ -152,13 +152,22 @@ pub fn handle_render(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResp
                         .get("domain")
                         .and_then(|v| v.as_str())
                         .map(String::from);
+                    let ui_config = req
+                        .params
+                        .get("ui_config")
+                        .and_then(|v| serde_json::from_value::<UiConfig>(v.clone()).ok());
+                    let thresholds = req
+                        .params
+                        .get("thresholds")
+                        .and_then(|v| serde_json::from_value(v.clone()).ok())
+                        .unwrap_or_default();
                     VisualizationRenderRequest {
                         session_id,
                         title,
                         bindings,
-                        thresholds: Vec::new(),
+                        thresholds,
                         domain,
-                        ui_config: None,
+                        ui_config,
                     }
                 }
                 _ => {

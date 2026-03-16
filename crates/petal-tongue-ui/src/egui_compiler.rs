@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! EguiCompiler: a `ModalityCompiler` that emits egui `Shape`s.
+//! `EguiCompiler`: a `ModalityCompiler` that emits egui `Shape`s.
 //!
 //! Places egui on equal footing with SVG, Audio, Terminal, and Description
 //! compilers. The grammar pipeline flows:
 //!
-//!   Data → Grammar → RenderPlan → EguiCompiler → egui shapes
+//!   Data → Grammar → `RenderPlan` → `EguiCompiler` → egui shapes
 //!
 //! The output is `ModalityOutput::EguiShapes`, a serialized list of
 //! lightweight shape descriptors that the scene bridge can stamp onto
@@ -16,7 +16,7 @@ use petal_tongue_scene::render_plan::RenderPlan;
 use petal_tongue_scene::scene_graph::SceneGraph;
 use petal_tongue_scene::transform::Transform2D;
 
-/// Shape descriptor produced by the EguiCompiler.
+/// Shape descriptor produced by the `EguiCompiler`.
 ///
 /// These are data-only (no egui dependency at this layer) so they
 /// can be serialized over IPC. The scene bridge converts them to

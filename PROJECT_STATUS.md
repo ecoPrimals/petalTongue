@@ -1,7 +1,7 @@
 # petalTongue -- Project Status
 
-**Updated**: March 16, 2026  
-**Version**: 1.6.3  
+**Updated**: March 15, 2026  
+**Version**: 1.6.4  
 **Edition**: 2024 (all crates)
 
 ---
@@ -11,9 +11,9 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 5,076 passing, 0 failures, ~4 ignored |
+| Tests | 5,113 passing, 0 failures, ~4 ignored |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings (pedantic + nursery enforced in CI with `-W clippy::pedantic -W clippy::nursery`) |
+| Clippy | Zero warnings (pedantic + nursery via `[workspace.lints.clippy]`) |
 | Rustdoc | Clean (`cargo doc --workspace --no-deps`) |
 | cargo deny | Clean (advisories, bans, licenses, sources) |
 | Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
@@ -42,7 +42,7 @@
 | GameDataChannel mapping | Complete: 7 ludoSpring channels → DataBinding variants via `game_data_channel.rs` |
 | Spring IPC | healthSpring DataChannel auto-compile, dashboard layout, wetSpring Scatter/Spectrum, physics bridge, interaction aliases |
 | Spring absorption | Backpressure, JSONL telemetry, diverging palette, pipeline DAG, provider registry, session status |
-| DataChannel compiler | All 9 DataBinding variants (incl. Scatter 2D) auto-compiled to Grammar of Graphics |
+| DataChannel compiler | All 11 DataBinding variants (incl. GameScene, Soundscape) auto-compiled to Grammar of Graphics |
 | Dashboard engine | Multi-panel grid layout with domain theming and SVG export |
 | Scenario loader | JSON scenario files loaded from disk; `--scenario` CLI flag |
 | Geometry | Point, Line, Bar, Area, Ribbon (stub), Tile (heatmap/fieldmap), Arc (gauge), Mesh3D (stub) |

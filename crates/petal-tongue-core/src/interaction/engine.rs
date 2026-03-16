@@ -282,7 +282,7 @@ impl InteractionEngine {
         changes
     }
 
-    /// Propagate selection changes to perspectives with SharedSelection or FullSync.
+    /// Propagate selection changes to perspectives with `SharedSelection` or `FullSync`.
     fn propagate_selection(&mut self, source_id: PerspectiveId, _changes: &mut Vec<StateChange>) {
         let source_selection = self
             .perspectives

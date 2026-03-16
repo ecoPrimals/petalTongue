@@ -273,7 +273,7 @@ pub enum SensorError {
     Other(String),
 }
 
-/// BiomeOS integration errors (provider, events)
+/// `BiomeOS` integration errors (provider, events)
 #[derive(Debug, Error)]
 pub enum BiomeOsIntegrationError {
     #[error("Failed to parse devices response: {0}")]
@@ -307,7 +307,7 @@ pub enum BiomeOsIntegrationError {
     NoJsonRpcResult,
 }
 
-/// Graph editor errors (streaming, rpc_methods, validation, graph)
+/// Graph editor errors (streaming, `rpc_methods`, validation, graph)
 #[derive(Debug, Error)]
 pub enum GraphEditorError {
     #[error("Node with id '{0}' already exists")]

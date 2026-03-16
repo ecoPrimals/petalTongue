@@ -148,6 +148,12 @@ pub fn draw_channel(ui: &mut Ui, binding: &DataBinding, domain: Option<&str>) {
         } => {
             domain_charts::draw_spectrum(ui, label, frequencies, amplitudes, unit, domain);
         }
+        DataBinding::GameScene { label, .. } => {
+            ui.label(format!("🎮 {label} (game scene rendering)"));
+        }
+        DataBinding::Soundscape { label, .. } => {
+            ui.label(format!("🔊 {label} (soundscape)"));
+        }
     }
 }
 
@@ -305,7 +311,9 @@ mod tests {
             | DataBinding::Scatter { label, .. }
             | DataBinding::Scatter3D { label, .. }
             | DataBinding::FieldMap { label, .. }
-            | DataBinding::Spectrum { label, .. } => label,
+            | DataBinding::Spectrum { label, .. }
+            | DataBinding::GameScene { label, .. }
+            | DataBinding::Soundscape { label, .. } => label,
         }
     }
 

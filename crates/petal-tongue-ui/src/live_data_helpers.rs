@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Pure display logic helpers for live data indicators.
 //!
-//! Extracted from live_data.rs for testability and separation of concerns.
+//! Extracted from `live_data.rs` for testability and separation of concerns.
 
 /// Display state for the live badge (LIVE / STALE / WAITING).
 #[derive(Debug, Clone, PartialEq, Eq)]

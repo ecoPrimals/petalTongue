@@ -11,6 +11,7 @@ use petal_tongue_core::{KeyModifiersIpc, SensorEventIpc};
 ///
 /// Reads pointer position, clicks, key presses/releases, and scroll deltas.
 /// Returns an empty vec when no relevant input occurred.
+#[must_use]
 pub fn collect_sensor_events(ctx: &egui::Context) -> Vec<SensorEventIpc> {
     let mut events = Vec::new();
     let now_ms = epoch_ms();

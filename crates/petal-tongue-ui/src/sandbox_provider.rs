@@ -2,7 +2,7 @@
 //! Sandbox Scenario Provider
 //!
 //! Loads demonstration scenarios from `sandbox/scenarios/*.json` for:
-//! - Tutorial mode (SHOWCASE_MODE=true)
+//! - Tutorial mode (`SHOWCASE_MODE=true`)
 //! - Development and demonstrations
 //!
 //! This is NOT a mock—it loads real JSON files. Use `--features mock` to enable

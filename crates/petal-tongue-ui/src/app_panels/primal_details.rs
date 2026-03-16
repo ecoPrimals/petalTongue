@@ -104,7 +104,7 @@ pub struct PrimalDetailsSummary {
 }
 
 impl PrimalDetailsSummary {
-    /// Build summary from PrimalInfo (all data preparation logic)
+    /// Build summary from `PrimalInfo` (all data preparation logic)
     #[must_use]
     pub fn from_primal_info(info: &PrimalInfo, now_secs: u64) -> Self {
         let properties = if info.properties.is_empty() {
@@ -138,7 +138,7 @@ impl PrimalDetailsSummary {
     }
 }
 
-/// Extract NodeDetail for data bindings section if present
+/// Extract `NodeDetail` for data bindings section if present
 fn extract_node_detail_for_bindings(
     info: &PrimalInfo,
     properties: &Properties,

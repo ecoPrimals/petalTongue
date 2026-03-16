@@ -45,6 +45,8 @@ pub mod primitive;
 pub mod provenance;
 pub mod render_plan;
 pub mod scene_graph;
+pub mod soundscape;
+pub mod sprite;
 pub mod transform;
 pub mod tufte;
 

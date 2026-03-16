@@ -41,6 +41,7 @@ impl LocalStatePersistence {
 
     /// Create with explicit base directory (for testing)
     #[cfg(test)]
+    #[must_use]
     pub const fn with_base_dir(base_dir: PathBuf) -> Self {
         Self { base_dir }
     }

@@ -5,7 +5,7 @@
 
 use super::types::CaptureWindowState;
 
-/// Display state for the capture window (derived from CaptureWindowState + quality/elapsed).
+/// Display state for the capture window (derived from `CaptureWindowState` + quality/elapsed).
 #[derive(Debug, Clone, PartialEq)]
 pub struct CaptureDisplayState {
     /// Label for the current state (e.g. "Idle", "Recording", "Stopped", "Processing")

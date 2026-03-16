@@ -237,7 +237,7 @@ pub enum BiomeOSDiscoveryEvent {
     TopologyUpdate {
         /// List of primal IDs in the topology
         primals: Vec<String>,
-        /// Edges as (from_id, to_id) pairs
+        /// Edges as (`from_id`, `to_id`) pairs
         edges: Vec<(String, String)>,
     },
 }
