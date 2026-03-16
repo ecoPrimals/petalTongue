@@ -45,7 +45,7 @@ impl GraphEngine {
 
     /// Add a node to the graph
     ///
-    /// If the primal has position data in properties ("x"/"y" or "position_x"/"position_y"),
+    /// If the primal has position data in properties ("x"/"y" or "`position_x"/"position_y`"),
     /// that position is used. Otherwise the node is placed at (0, 0) for layout algorithms.
     pub fn add_node(&mut self, info: PrimalInfo) {
         let position = Self::extract_position_from_primal(&info);

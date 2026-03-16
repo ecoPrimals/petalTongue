@@ -19,6 +19,10 @@ pub enum SpringPayloadFormat {
     Bindings,
     /// ludoSpring `{ "data": {...}, "channel": "..." }`.
     GameChannel,
+    /// ludoSpring game scene `{ "channel_type": "game_scene", "scene": {...} }`.
+    GameScene,
+    /// Soundscape definition `{ "channel_type": "soundscape", "definition": {...} }`.
+    SoundscapePush,
     /// `ecoPrimals/time-series/v1` schema.
     EcoTimeSeries,
     /// Already a raw `DataBinding` array (pass-through).
@@ -101,6 +105,12 @@ impl SpringDataAdapter {
             if obj.contains_key("data") && obj.contains_key("channel") {
                 return SpringPayloadFormat::GameChannel;
             }
+            if obj.get("channel_type").and_then(|v| v.as_str()) == Some("game_scene") {
+                return SpringPayloadFormat::GameScene;
+            }
+            if obj.get("channel_type").and_then(|v| v.as_str()) == Some("soundscape") {
+                return SpringPayloadFormat::SoundscapePush;
+            }
         }
         if value.is_array() {
             return SpringPayloadFormat::Raw;
@@ -117,6 +127,8 @@ impl SpringDataAdapter {
         match Self::detect_format(value) {
             SpringPayloadFormat::Bindings => Self::adapt_bindings(value),
             SpringPayloadFormat::GameChannel => Self::adapt_game_channel(value),
+            SpringPayloadFormat::GameScene => Self::adapt_game_scene(value),
+            SpringPayloadFormat::SoundscapePush => Self::adapt_soundscape(value),
             SpringPayloadFormat::EcoTimeSeries => Self::adapt_eco_timeseries(value),
             SpringPayloadFormat::Raw => Self::adapt_raw(value),
         }
@@ -170,6 +182,54 @@ impl SpringDataAdapter {
             })
             .collect();
         Ok(bindings)
+    }
+
+    /// Parse a game scene push `{ "channel_type": "game_scene", "id": "...", "label": "...", "scene": {...} }`.
+    fn adapt_game_scene(value: &serde_json::Value) -> Result<Vec<DataBinding>, SpringAdapterError> {
+        let obj = value.as_object().ok_or_else(|| {
+            SpringAdapterError::DeserializeFailed(serde::de::Error::custom("expected object"))
+        })?;
+        let id = obj
+            .get("id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("game_scene")
+            .to_string();
+        let label = obj
+            .get("label")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Game Scene")
+            .to_string();
+        let scene = obj
+            .get("scene")
+            .cloned()
+            .unwrap_or_default();
+        Ok(vec![DataBinding::GameScene { id, label, scene }])
+    }
+
+    /// Parse a soundscape push `{ "channel_type": "soundscape", "id": "...", "label": "...", "definition": {...} }`.
+    fn adapt_soundscape(value: &serde_json::Value) -> Result<Vec<DataBinding>, SpringAdapterError> {
+        let obj = value.as_object().ok_or_else(|| {
+            SpringAdapterError::DeserializeFailed(serde::de::Error::custom("expected object"))
+        })?;
+        let id = obj
+            .get("id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("soundscape")
+            .to_string();
+        let label = obj
+            .get("label")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Soundscape")
+            .to_string();
+        let definition = obj
+            .get("definition")
+            .cloned()
+            .unwrap_or_default();
+        Ok(vec![DataBinding::Soundscape {
+            id,
+            label,
+            definition,
+        }])
     }
 
     /// Map a single `GameChannelPayload` to a `DataBinding`.
@@ -551,5 +611,90 @@ mod tests {
         });
         let result = SpringDataAdapter::adapt(&json).unwrap();
         assert!(matches!(&result[0], DataBinding::Heatmap { .. }));
+    }
+
+    #[test]
+    fn detect_game_scene_format() {
+        let json = serde_json::json!({
+            "channel_type": "game_scene",
+            "id": "dungeon_1",
+            "label": "Dungeon Level 1",
+            "scene": { "tilemap": null, "sprites": [], "entities": [] }
+        });
+        assert_eq!(
+            SpringDataAdapter::detect_format(&json),
+            SpringPayloadFormat::GameScene
+        );
+    }
+
+    #[test]
+    fn adapt_game_scene() {
+        let json = serde_json::json!({
+            "channel_type": "game_scene",
+            "id": "dungeon_1",
+            "label": "Dungeon Level 1",
+            "scene": {
+                "tilemap": { "dimensions": [10, 10], "tile_size": [16.0, 16.0], "tiles": [] },
+                "sprites": [],
+                "entities": [{ "id": "p1", "entity_type": "player", "position": [5.0, 5.0] }],
+                "camera_center": [5.0, 5.0],
+                "camera_zoom": 1.0
+            }
+        });
+        let result = SpringDataAdapter::adapt(&json).unwrap();
+        assert_eq!(result.len(), 1);
+        match &result[0] {
+            DataBinding::GameScene { id, label, scene } => {
+                assert_eq!(id, "dungeon_1");
+                assert_eq!(label, "Dungeon Level 1");
+                assert!(scene.get("entities").is_some());
+            }
+            other => panic!("expected GameScene, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn detect_soundscape_format() {
+        let json = serde_json::json!({
+            "channel_type": "soundscape",
+            "id": "forest",
+            "label": "Forest Ambience",
+            "definition": { "name": "forest", "duration_secs": 30.0, "layers": [] }
+        });
+        assert_eq!(
+            SpringDataAdapter::detect_format(&json),
+            SpringPayloadFormat::SoundscapePush
+        );
+    }
+
+    #[test]
+    fn adapt_soundscape() {
+        let json = serde_json::json!({
+            "channel_type": "soundscape",
+            "id": "forest",
+            "label": "Forest Ambience",
+            "definition": {
+                "name": "forest",
+                "duration_secs": 30.0,
+                "layers": [
+                    { "id": "wind", "waveform": "white_noise", "frequency": 0.0,
+                      "amplitude": 0.1, "duration_secs": 30.0 }
+                ]
+            }
+        });
+        let result = SpringDataAdapter::adapt(&json).unwrap();
+        assert_eq!(result.len(), 1);
+        match &result[0] {
+            DataBinding::Soundscape {
+                id,
+                label,
+                definition,
+            } => {
+                assert_eq!(id, "forest");
+                assert_eq!(label, "Forest Ambience");
+                assert!(definition.get("layers").is_some());
+            }
+            other => panic!("expected Soundscape, got {other:?}"),
+        }
     }
 }

@@ -590,7 +590,7 @@ mod tests {
         );
     }
 
-    /// Headless egui: MinimalSensoryUI renders without panic (via manager)
+    /// Headless egui: `MinimalSensoryUI` renders without panic (via manager)
     #[test]
     fn test_minimal_renderer_headless() {
         use crate::sensory_ui::manager::SensoryUIManager;
@@ -616,7 +616,7 @@ mod tests {
         });
     }
 
-    /// Headless egui: RichSensoryUI renders primals with capabilities (hits format_capabilities_count)
+    /// Headless egui: `RichSensoryUI` renders primals with capabilities (hits `format_capabilities_count`)
     #[test]
     fn test_rich_renderer_with_capabilities_headless() {
         use crate::sensory_ui::manager::SensoryUIManager;
@@ -669,7 +669,7 @@ mod tests {
         });
     }
 
-    /// Headless egui: SimpleSensoryUI renders with topology and metrics
+    /// Headless egui: `SimpleSensoryUI` renders with topology and metrics
     #[test]
     fn test_simple_renderer_headless() {
         use crate::sensory_ui::manager::SensoryUIManager;
@@ -704,7 +704,7 @@ mod tests {
         });
     }
 
-    /// Headless egui: StandardSensoryUI renders with topology and proprioception
+    /// Headless egui: `StandardSensoryUI` renders with topology and proprioception
     #[test]
     fn test_standard_renderer_headless() {
         use crate::sensory_ui::manager::SensoryUIManager;
@@ -754,7 +754,7 @@ mod tests {
         });
     }
 
-    /// Headless egui: ImmersiveSensoryUI renders (hits format_cpu_memory_combined, format_health_confidence)
+    /// Headless egui: `ImmersiveSensoryUI` renders (hits `format_cpu_memory_combined`, `format_health_confidence`)
     #[test]
     fn test_immersive_renderer_headless() {
         use crate::sensory_ui::manager::SensoryUIManager;

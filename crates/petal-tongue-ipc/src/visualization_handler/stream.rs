@@ -21,7 +21,9 @@ pub fn binding_id(binding: &DataBinding) -> &str {
         | DataBinding::Scatter3D { id, .. }
         | DataBinding::Scatter { id, .. }
         | DataBinding::FieldMap { id, .. }
-        | DataBinding::Spectrum { id, .. } => id,
+        | DataBinding::Spectrum { id, .. }
+        | DataBinding::GameScene { id, .. }
+        | DataBinding::Soundscape { id, .. } => id,
     }
 }
 

@@ -98,6 +98,7 @@ impl SquirrelAdapter {
     }
 
     /// Create without registering (for use when registry is not yet available).
+    #[must_use]
     pub fn new_deferred() -> Self {
         Self {
             subscriber_id: "squirrel-ui-adapter".to_string(),

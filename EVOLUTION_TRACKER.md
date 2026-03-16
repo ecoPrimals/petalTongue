@@ -1,7 +1,7 @@
 # petalTongue — Evolution Tracker
 
 **Living document**: Updated as evolution progresses.
-**Last updated**: March 16, 2026
+**Last updated**: March 15, 2026
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Metric | Value |
 |--------|-------|
-| Tests | 5,076 passing |
+| Tests | 5,113 passing |
 | Coverage (line) | ~87% |
 | Coverage (branch) | ~88% |
-| Clippy | Zero warnings (pedantic + nursery enforced in CI) |
+| Clippy | Zero warnings (pedantic + nursery via workspace lints) |
 | `cargo fmt` | Clean |
 | `cargo deny` | Clean (advisories, bans, licenses, sources) |
 | `cargo doc` | Clean (`--no-deps`) |
@@ -26,6 +26,23 @@
 ---
 
 ## Completed Work
+
+### Spring Absorption + ludoSpring Readiness (March 15, 2026)
+
+- **GameScene + Soundscape DataBinding variants**: 2 new channel types for 2D game
+  visualization and layered audio. All 11 variants now compile through Grammar of Graphics.
+- **Sprite/Tilemap/GameEntity primitives**: Pure data types for 2D game rendering
+  pushed by ludoSpring composable raid visualization.
+- **Soundscape synthesis**: 5 waveforms (sine, square, sawtooth, triangle, noise),
+  stereo panning, fade envelopes, layered mixing. Deterministic.
+- **JSONL telemetry provider**: File-based hotSpring bridge for `{t, section, fields}` telemetry.
+- **Capability names centralization**: 60 constants across 4 sub-modules
+  (`self_capabilities`, `discovery_capabilities`, `methods`, `socket_roles`).
+- **UiConfig in SpringDataAdapter**: Spring-native pushes now parse `ui_config` and
+  `thresholds` instead of dropping them.
+- **Workspace lint evolution**: `missing_errors_doc`, `missing_panics_doc`,
+  `must_use_candidate` controlled at workspace level; CI command simplified.
+- 37 new tests (5,076 → 5,113).
 
 ### Code Quality (Phase 1)
 

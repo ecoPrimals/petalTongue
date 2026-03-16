@@ -72,7 +72,7 @@ pub enum MotorCommand {
     // === Layout (efferent) ===
     /// Change the graph layout algorithm
     SetLayout {
-        /// Algorithm name (e.g. "ForceDirected", "Grid", "Radial")
+        /// Algorithm name (e.g. "`ForceDirected`", "Grid", "Radial")
         algorithm: String,
     },
 

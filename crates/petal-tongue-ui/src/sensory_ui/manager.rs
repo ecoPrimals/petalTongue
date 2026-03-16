@@ -90,6 +90,7 @@ impl SensoryUIManager {
 
     /// Create manager with given capabilities (for testing - bypasses discovery)
     #[cfg(test)]
+    #[must_use]
     pub fn with_capabilities(capabilities: SensoryCapabilities) -> Self {
         let ui_complexity = capabilities.determine_ui_complexity();
         let renderer = Self::create_renderer(ui_complexity);

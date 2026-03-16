@@ -19,32 +19,37 @@ pub const DEFAULT_WEB_PORT: u16 = 3000;
 pub const DEFAULT_HEADLESS_PORT: u16 = 8080;
 
 /// biomeOS socket name template (discovered, not hardcoded to a port)
-/// Overridable via BIOMEOS_SOCKET_NAME env var for custom deployments
+/// Overridable via `BIOMEOS_SOCKET_NAME` env var for custom deployments
+#[must_use]
 pub fn biomeos_socket_name() -> String {
     std::env::var("BIOMEOS_SOCKET_NAME").unwrap_or_else(|_| "biomeos-neural-api".to_string())
 }
 
 /// Device management socket name (capability: device management)
-/// Overridable via BIOMEOS_DEVICE_MANAGEMENT_SOCKET env var
+/// Overridable via `BIOMEOS_DEVICE_MANAGEMENT_SOCKET` env var
+#[must_use]
 pub fn biomeos_device_management_socket_name() -> String {
     std::env::var("BIOMEOS_DEVICE_MANAGEMENT_SOCKET")
         .unwrap_or_else(|_| "biomeos-device-management".to_string())
 }
 
 /// UI socket name (capability: UI/visualization)
-/// Overridable via BIOMEOS_UI_SOCKET env var
+/// Overridable via `BIOMEOS_UI_SOCKET` env var
+#[must_use]
 pub fn biomeos_ui_socket_name() -> String {
     std::env::var("BIOMEOS_UI_SOCKET").unwrap_or_else(|_| "biomeos-ui".to_string())
 }
 
 /// Discovery service socket name (capability: discovery/registry)
-/// Overridable via DISCOVERY_SERVICE_SOCKET env var
+/// Overridable via `DISCOVERY_SERVICE_SOCKET` env var
+#[must_use]
 pub fn discovery_service_socket_name() -> String {
     std::env::var("DISCOVERY_SERVICE_SOCKET").unwrap_or_else(|_| "discovery-service".to_string())
 }
 
 /// Legacy /tmp biomeOS socket name (fallback)
-/// Overridable via BIOMEOS_LEGACY_SOCKET env var
+/// Overridable via `BIOMEOS_LEGACY_SOCKET` env var
+#[must_use]
 pub fn biomeos_legacy_socket_name() -> String {
     std::env::var("BIOMEOS_LEGACY_SOCKET").unwrap_or_else(|_| "biomeos".to_string())
 }
@@ -109,7 +114,7 @@ pub fn default_bind_addr() -> &'static str {
 }
 
 /// Legacy /tmp socket fallback path prefix.
-/// Used when XDG_RUNTIME_DIR is unavailable; configurable via explicit socket env vars.
+/// Used when `XDG_RUNTIME_DIR` is unavailable; configurable via explicit socket env vars.
 pub const LEGACY_TMP_PREFIX: &str = "/tmp";
 
 /// Build a default web bind address
@@ -139,7 +144,7 @@ pub fn default_headless_bind() -> String {
 }
 
 /// Build a legacy biomeOS socket path (/tmp/biomeos-neural-api.sock)
-/// Uses BIOMEOS_SOCKET_NAME env var if set
+/// Uses `BIOMEOS_SOCKET_NAME` env var if set
 #[must_use]
 pub fn biomeos_legacy_socket() -> std::path::PathBuf {
     std::path::PathBuf::from(LEGACY_TMP_PREFIX).join(format!("{}.sock", biomeos_socket_name()))
@@ -211,7 +216,7 @@ pub fn default_biomeos_connection_target() -> String {
     format!("localhost:{DEFAULT_WEB_PORT}")
 }
 
-/// Default web server URL (e.g. "http://localhost:3000").
+/// Default web server URL (e.g. "<http://localhost:3000>").
 /// Uses `PETALTONGUE_WEB_URL` or `BIOMEOS_URL`; fallback: `http://{default_biomeos_connection_target}`.
 #[must_use]
 pub fn default_web_url() -> String {
@@ -220,7 +225,7 @@ pub fn default_web_url() -> String {
         .unwrap_or_else(|_| format!("http://{}", default_biomeos_connection_target()))
 }
 
-/// Default entropy stream endpoint (e.g. "http://localhost:3000/api/v1/entropy/stream").
+/// Default entropy stream endpoint (e.g. "<http://localhost:3000/api/v1/entropy/stream>").
 /// Uses `PETALTONGUE_ENTROPY_ENDPOINT`; fallback: host from env + default port.
 #[must_use]
 pub fn default_entropy_stream_endpoint() -> String {
@@ -232,7 +237,7 @@ pub fn default_entropy_stream_endpoint() -> String {
     })
 }
 
-/// Default headless API URL for display (e.g. "http://localhost:8080").
+/// Default headless API URL for display (e.g. "<http://localhost:8080>").
 /// Uses `PETALTONGUE_WEB_URL` or `PETALTONGUE_HEADLESS_URL`; fallback from port.
 #[must_use]
 pub fn default_headless_url() -> String {
@@ -249,7 +254,7 @@ pub fn default_headless_url() -> String {
         })
 }
 
-/// Default sandbox security URL (e.g. "http://localhost:9000").
+/// Default sandbox security URL (e.g. "<http://localhost:9000>").
 /// Uses `PETALTONGUE_SANDBOX_SECURITY_ENDPOINT` or `PETALTONGUE_HEADLESS_ENDPOINT`; fallback from port.
 #[must_use]
 pub fn default_sandbox_security_url() -> String {
@@ -322,28 +327,28 @@ pub mod tufte_tolerances {
     pub const NOISE_COHERENCE_TOL: f64 = 0.01;
 }
 
-/// Default client RPC timeout (overridable via PETALTONGUE_RPC_TIMEOUT_SECS)
+/// Default client RPC timeout (overridable via `PETALTONGUE_RPC_TIMEOUT_SECS`)
 pub const DEFAULT_RPC_TIMEOUT_SECS: u64 = 5;
 
-/// Default heartbeat interval (overridable via PETALTONGUE_HEARTBEAT_INTERVAL_SECS)
+/// Default heartbeat interval (overridable via `PETALTONGUE_HEARTBEAT_INTERVAL_SECS`)
 pub const DEFAULT_HEARTBEAT_INTERVAL_SECS: u64 = 30;
 
-/// Default biomeOS refresh interval (overridable via PETALTONGUE_REFRESH_INTERVAL_SECS)
+/// Default biomeOS refresh interval (overridable via `PETALTONGUE_REFRESH_INTERVAL_SECS`)
 pub const DEFAULT_REFRESH_INTERVAL_SECS: u64 = 2;
 
-/// Default telemetry buffer size (overridable via PETALTONGUE_TELEMETRY_BUFFER)
+/// Default telemetry buffer size (overridable via `PETALTONGUE_TELEMETRY_BUFFER`)
 pub const DEFAULT_TELEMETRY_BUFFER: usize = 10_000;
 
-/// Default discovery timeout (overridable via PETALTONGUE_DISCOVERY_TIMEOUT_SECS)
+/// Default discovery timeout (overridable via `PETALTONGUE_DISCOVERY_TIMEOUT_SECS`)
 pub const DEFAULT_DISCOVERY_TIMEOUT_SECS: u64 = 5;
 
-/// Default retry initial delay in ms (overridable via PETALTONGUE_RETRY_INITIAL_MS)
+/// Default retry initial delay in ms (overridable via `PETALTONGUE_RETRY_INITIAL_MS`)
 pub const DEFAULT_RETRY_INITIAL_MS: u64 = 100;
 
-/// Default retry max delay in secs (overridable via PETALTONGUE_RETRY_MAX_SECS)
+/// Default retry max delay in secs (overridable via `PETALTONGUE_RETRY_MAX_SECS`)
 pub const DEFAULT_RETRY_MAX_SECS: u64 = 10;
 
-/// Default TUI tick rate in ms (overridable via PETALTONGUE_TUI_TICK_MS)
+/// Default TUI tick rate in ms (overridable via `PETALTONGUE_TUI_TICK_MS`)
 pub const DEFAULT_TUI_TICK_MS: u64 = 100;
 
 /// Default RPC timeout. Env: `PETALTONGUE_RPC_TIMEOUT_SECS`.

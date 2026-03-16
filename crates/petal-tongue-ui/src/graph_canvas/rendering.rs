@@ -11,7 +11,7 @@ use super::{EdgeDrawState, GraphCanvas};
 // --- Pure logic (testable, no egui) ---
 
 /// Node fill and stroke colors based on state.
-/// Returns (fill_rgb, stroke_rgb).
+/// Returns (`fill_rgb`, `stroke_rgb`).
 #[must_use]
 pub const fn node_colors(selected: bool, hovered: bool, has_error: bool) -> ([u8; 3], [u8; 3]) {
     if selected {
@@ -75,7 +75,7 @@ pub fn arrow_geometry(from: [f32; 2], to: [f32; 2], zoom: f32) -> ArrowPoints {
     }
 }
 
-/// Grid parameters for drawing: (grid_size, offset_x, offset_y).
+/// Grid parameters for drawing: (`grid_size`, `offset_x`, `offset_y`).
 #[must_use]
 pub fn grid_params(
     base_grid_size: f32,
@@ -89,7 +89,7 @@ pub fn grid_params(
     (grid_size, offset_x, offset_y)
 }
 
-/// Node text layout: (text_size, icon_y, name_y) from zoom and node rect bounds.
+/// Node text layout: (`text_size`, `icon_y`, `name_y`) from zoom and node rect bounds.
 #[must_use]
 pub fn node_text_layout(zoom: f32, node_rect_min_y: f32, node_rect_max_y: f32) -> (f32, f32, f32) {
     let text_size = 14.0 * zoom;

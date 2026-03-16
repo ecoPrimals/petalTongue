@@ -28,6 +28,7 @@ pub mod adaptive_rendering; // Adaptive rendering for multi-device support
 pub mod biomeos_discovery; // biomeOS discovery backend
 pub mod capabilities;
 pub mod capability_discovery; // NEW: Capability-based discovery (TRUE PRIMAL)
+pub mod capability_names;
 pub mod channel; // SAME DAVE channel model (afferent/efferent pathways)
 pub mod common_config;
 pub mod config;
@@ -149,7 +150,7 @@ pub use scenarios::{
     GroundSpringSpectralReconstructionScenario,
 };
 
-/// JSONL telemetry adapter (hotSpring ingestion → DataBinding::TimeSeries)
+/// JSONL telemetry adapter (hotSpring ingestion → `DataBinding::TimeSeries`)
 pub use telemetry_adapter::TelemetryAdapter;
 
 /// Dynamic schema system (Live evolution, no recompilation)
@@ -169,7 +170,7 @@ pub use shader_lineage::{
     ShaderValidationStatus,
 };
 
-/// Universal spring data adapter (multi-format → DataBinding normalization)
+/// Universal spring data adapter (multi-format → `DataBinding` normalization)
 pub use spring_adapter::{
     GameChannelType, SpringAdapterError, SpringDataAdapter, SpringPayloadFormat,
 };

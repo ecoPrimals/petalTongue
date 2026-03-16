@@ -44,7 +44,7 @@ pub fn event_screen_rect<S: ::std::hash::BuildHasher>(
 }
 
 /// Map a timestamp to an x-coordinate within the time area.
-/// Returns x in [0, rect_width] for the given time range.
+/// Returns x in [0, `rect_width`] for the given time range.
 #[must_use]
 pub fn time_to_x(time: f64, start_time: f64, end_time: f64, rect_width: f32) -> f32 {
     let range = end_time - start_time;

@@ -119,6 +119,7 @@ impl VisualInversePipeline {
     /// 3. Panel pixel → `AxisMeta::inverse()` → data value per axis
     ///
     /// Returns `None` if the position falls outside all panels.
+    #[must_use]
     pub fn resolve_to_data_coords(
         &self,
         screen_x: f32,

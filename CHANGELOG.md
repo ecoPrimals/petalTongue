@@ -2,6 +2,38 @@
 
 All notable changes to petalTongue will be documented in this file.
 
+## [1.6.4] - 2026-03-15
+
+### Added - Spring Absorption: Game Scenes, Soundscapes, JSONL Telemetry
+
+- **GameScene + Soundscape DataBinding variants**: New `game_scene` and `soundscape`
+  channel types in DataBinding. Springs (ludoSpring, wetSpring) can push 2D game state
+  and layered audio definitions through the standard visualization pipeline.
+- **Sprite/Tilemap/GameEntity primitives** (`petal-tongue-scene/src/sprite.rs`):
+  Serde-compatible 2D game primitives with tilemap grids, sprite UV rects, game
+  entities with health/velocity, and camera control.
+- **Soundscape synthesis** (`petal-tongue-scene/src/soundscape.rs`): Deterministic
+  layered audio: sine, square, sawtooth, triangle, white noise waveforms with stereo
+  panning, fade in/out, and per-layer mixing. Full provenance chain.
+- **JSONL telemetry provider** (`petal-tongue-discovery/src/jsonl_provider.rs`):
+  File-based discovery for hotSpring telemetry. Reads `{t, section, ...fields}`
+  JSONL from `$PETALTONGUE_TELEMETRY_DIR` or XDG data directory.
+- **Capability names module** (`petal-tongue-core/src/capability_names.rs`):
+  30 self-capability constants, 9 discovery capabilities, 16 IPC method names,
+  5 socket role identifiers. All follow `domain.operation` semantic naming.
+- **SpringDataAdapter**: GameScene and Soundscape format detection/adaptation.
+  UiConfig and thresholds now parsed from spring-native push payloads.
+- **Workspace lint evolution**: `missing_errors_doc`, `missing_panics_doc`,
+  `must_use_candidate` allowed at workspace level. Clippy pedantic/nursery
+  fully managed via `[workspace.lints.clippy]` — no more CLI `-W` flags needed.
+
+### Changed
+
+- **Tests**: 5,076 → 5,113 passing (37 new tests for sprites, soundscapes,
+  telemetry, capability names, game/soundscape adapters).
+- **DataBinding**: 9 → 11 variants (added `GameScene`, `Soundscape`).
+- All exhaustive matches on DataBinding updated across crates.
+
 ## [1.6.3] - 2026-03-16
 
 ### Added - Deep Audit & Evolution: Typed Errors, Pedantic Lints, Smart Refactoring

@@ -271,7 +271,7 @@ async fn connect_https(endpoint: &str) -> TarpcResult<PrimalConnection> {
 
 /// Parse Unix socket path from endpoint URL
 ///
-/// Supports: unix:///path/to/sock, ipc:///path/to/sock
+/// Supports: <unix:///path/to/sock>, <ipc:///path/to/sock>
 fn parse_unix_socket_path(endpoint: &str) -> TarpcResult<std::path::PathBuf> {
     let path_str = endpoint
         .strip_prefix("unix://")

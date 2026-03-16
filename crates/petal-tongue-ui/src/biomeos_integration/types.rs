@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Core data types for biomeOS integration.
 //!
-//! Device, Primal, and NicheTemplate types used for device management UI.
+//! Device, Primal, and `NicheTemplate` types used for device management UI.
 
 use serde::{Deserialize, Serialize};
 

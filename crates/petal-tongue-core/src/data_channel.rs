@@ -98,7 +98,7 @@ pub enum DataBinding {
         /// Unit of measurement for cell values.
         unit: String,
     },
-    /// 3D scatter plot (e.g., PCoA ordination, phase space, latent embeddings).
+    /// 3D scatter plot (e.g., `PCoA` ordination, phase space, latent embeddings).
     #[serde(rename = "scatter3d")]
     Scatter3D {
         /// Unique identifier for this channel within the visualization.
@@ -126,7 +126,7 @@ pub enum DataBinding {
         /// Unit of measurement for the axes.
         unit: String,
     },
-    /// 2D scatter plot (e.g., PCoA ordination, UMAP embedding, KMD plots).
+    /// 2D scatter plot (e.g., `PCoA` ordination, UMAP embedding, KMD plots).
     #[serde(rename = "scatter")]
     Scatter {
         /// Unique identifier for this channel within the visualization.
@@ -165,6 +165,32 @@ pub enum DataBinding {
         /// Unit of measurement for the field values.
         unit: String,
     },
+    /// 2D game scene with tilemap, sprites, and entities.
+    ///
+    /// Used by ludoSpring and other game-producing primals to push
+    /// game state for visualization rendering.
+    #[serde(rename = "game_scene")]
+    GameScene {
+        /// Unique identifier for this channel within the visualization.
+        id: String,
+        /// Human-readable display name.
+        label: String,
+        /// The game scene data (tilemap, sprites, entities, camera).
+        scene: serde_json::Value,
+    },
+    /// Soundscape definition: layered audio for ambient/game audio.
+    ///
+    /// Used by ludoSpring (game audio), wetSpring (ecology ambience),
+    /// and other primals that push audio scene data.
+    #[serde(rename = "soundscape")]
+    Soundscape {
+        /// Unique identifier for this channel within the visualization.
+        id: String,
+        /// Human-readable display name.
+        label: String,
+        /// The soundscape definition (layers, durations, waveforms).
+        definition: serde_json::Value,
+    },
     /// Frequency-domain spectrum (e.g., FFT, HRV power spectrum, noise analysis).
     #[serde(rename = "spectrum")]
     Spectrum {
@@ -198,7 +224,7 @@ pub struct ThresholdRange {
 mod tests {
     use super::{DataBinding, ThresholdRange};
 
-    /// Representative healthSpring JSON snippet (timeseries, distribution, bar, gauge, ThresholdRange).
+    /// Representative healthSpring JSON snippet (timeseries, distribution, bar, gauge, `ThresholdRange`).
     /// Confirms healthSpring schema compatibility with our types.
     const HEALTHSPRING_DATA_CHANNELS_SNIPPET: &str = r#"[
         {

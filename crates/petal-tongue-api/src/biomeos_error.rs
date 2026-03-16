@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Typed errors for BiomeOS API client operations.
+//! Typed errors for `BiomeOS` API client operations.
 
 use thiserror::Error;
 
-/// Errors from BiomeOS API client operations.
+/// Errors from `BiomeOS` API client operations.
 #[derive(Debug, Error)]
 pub enum BiomeOsClientError {
     /// Mock mode requested but test-fixtures feature is not enabled

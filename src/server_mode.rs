@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 /// Run IPC server (Unix socket JSON-RPC) without GUI.
 ///
-/// Uses the shared DataService graph. Runs until interrupted (e.g. Ctrl+C).
+/// Uses the shared `DataService` graph. Runs until interrupted (e.g. Ctrl+C).
 pub async fn run(data_service: Arc<DataService>) -> Result<(), AppError> {
     let graph = data_service.graph();
 

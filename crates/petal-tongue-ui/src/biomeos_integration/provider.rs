@@ -432,7 +432,7 @@ impl BiomeOSProvider {
         Ok(())
     }
 
-    /// Health check returning status string (for VisualizationDataProvider)
+    /// Health check returning status string (for `VisualizationDataProvider`)
     pub(super) async fn health_check_jsonrpc(&self) -> Result<String> {
         // Try health.check first (semantic method)
         let params = serde_json::json!({});
@@ -454,7 +454,7 @@ impl BiomeOSProvider {
         Ok("healthy".to_string())
     }
 
-    /// Expose endpoint for VisualizationDataProvider trait impl
+    /// Expose endpoint for `VisualizationDataProvider` trait impl
     pub(super) fn endpoint(&self) -> &str {
         &self.endpoint
     }
@@ -471,7 +471,8 @@ impl BiomeOSProvider {
         }
     }
 
-    /// Expose derive_websocket_endpoint for testing
+    /// Expose `derive_websocket_endpoint` for testing
+    #[must_use]
     pub fn derive_websocket_endpoint_for_test(&self) -> String {
         self.derive_websocket_endpoint()
     }

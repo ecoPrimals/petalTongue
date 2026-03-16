@@ -62,7 +62,7 @@ pub enum InteractionTarget {
 
     /// A range on a named variable (e.g., time between 14:20 and 14:25).
     DataRange {
-        /// Variable name (e.g. "timestamp", "cpu_pct").
+        /// Variable name (e.g. "timestamp", "`cpu_pct`").
         variable: String,
         /// Range minimum.
         min: serde_json::Value,

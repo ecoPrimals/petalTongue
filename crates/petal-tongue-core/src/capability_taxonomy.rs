@@ -76,7 +76,7 @@ pub enum CapabilityTaxonomy {
     UIFramebuffer,
 
     // ===== Visualization Capabilities (biomeOS capability domain) =====
-    /// Universal visualization rendering (accepts DataBinding, produces SceneGraph)
+    /// Universal visualization rendering (accepts `DataBinding`, produces `SceneGraph`)
     #[serde(rename = "visualization.render")]
     VisualizationRender,
 

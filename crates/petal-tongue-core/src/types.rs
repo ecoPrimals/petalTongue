@@ -9,12 +9,12 @@ use std::sync::Arc;
 /// Zero-copy primal identifier.
 ///
 /// Wraps `Arc<str>` for cheap cloning when IDs are passed around.
-/// Implements `Borrow<str>` for HashMap lookups and `PartialEq<str>` for comparisons.
+/// Implements `Borrow<str>` for `HashMap` lookups and `PartialEq<str>` for comparisons.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PrimalId(Arc<str>);
 
 impl PrimalId {
-    /// Create a new PrimalId from any string-like type.
+    /// Create a new `PrimalId` from any string-like type.
     #[must_use]
     pub fn new(id: impl Into<Arc<str>>) -> Self {
         Self(id.into())

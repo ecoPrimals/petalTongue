@@ -170,7 +170,7 @@ fn test_with_capabilities_rich() {
     assert_eq!(manager.ui_complexity(), SensoryUIComplexity::Rich);
 }
 
-/// Headless egui test: render_primal_list does not panic
+/// Headless egui test: `render_primal_list` does not panic
 #[test]
 fn test_render_primal_list_headless() {
     use petal_tongue_core::{PrimalHealthStatus, PrimalId};
@@ -201,7 +201,7 @@ fn test_render_primal_list_headless() {
     });
 }
 
-/// Headless egui test: render_topology does not panic
+/// Headless egui test: `render_topology` does not panic
 #[test]
 fn test_render_topology_headless() {
     use petal_tongue_core::{GraphEngine, PrimalHealthStatus, PrimalId};
@@ -246,7 +246,7 @@ fn test_render_topology_headless() {
     });
 }
 
-/// Headless egui test: render_metrics does not panic (with and without metrics)
+/// Headless egui test: `render_metrics` does not panic (with and without metrics)
 #[test]
 fn test_render_metrics_headless() {
     use petal_tongue_core::metrics::{NeuralApiMetrics, SystemResourceMetrics};
@@ -292,7 +292,7 @@ fn test_render_metrics_headless() {
     });
 }
 
-/// Headless egui test: render_proprioception does not panic (with and without data)
+/// Headless egui test: `render_proprioception` does not panic (with and without data)
 #[test]
 fn test_render_proprioception_headless() {
     use petal_tongue_core::proprioception::{HealthData, HealthStatus};

@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 
 use super::*;
 
-/// In-memory StatePersistence for deterministic tests
+/// In-memory `StatePersistence` for deterministic tests
 struct InMemoryPersistence {
     storage: Arc<Mutex<HashMap<String, Arc<DeviceState>>>>,
 }

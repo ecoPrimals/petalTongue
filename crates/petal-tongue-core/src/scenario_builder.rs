@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! ScenarioBuilder trait for springs and primals to produce visualization data.
+//! `ScenarioBuilder` trait for springs and primals to produce visualization data.
 //!
 //! Any data source (spring, primal, or external tool) can implement this trait
 //! to provide structured data for petalTongue visualization.
@@ -32,6 +32,7 @@ pub struct VisualizationScene {
 
 impl VisualizationScene {
     /// Create a new empty scene with metadata.
+    #[must_use]
     pub const fn new(metadata: ScenarioMetadata) -> Self {
         Self {
             metadata,

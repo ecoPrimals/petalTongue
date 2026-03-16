@@ -131,7 +131,7 @@ impl FontSize {
         }
     }
 
-    /// Increase font size (clamped at ExtraLarge).
+    /// Increase font size (clamped at `ExtraLarge`).
     #[must_use]
     pub const fn increase(self) -> Self {
         match self {
@@ -313,7 +313,7 @@ impl LiveIndicator {
         }
     }
 
-    /// Create indicator with fixed last-update time (for testing age_string branches)
+    /// Create indicator with fixed last-update time (for testing `age_string` branches)
     #[cfg(test)]
     #[must_use]
     pub const fn new_with_last_update(

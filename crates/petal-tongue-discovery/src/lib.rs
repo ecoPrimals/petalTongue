@@ -42,6 +42,7 @@ mod dns_parser;
 mod dynamic_scenario_provider;
 #[cfg(feature = "legacy-http")]
 mod http_provider;
+pub mod jsonl_provider;
 mod jsonrpc_provider;
 mod mdns_provider;
 mod neural_api_provider;

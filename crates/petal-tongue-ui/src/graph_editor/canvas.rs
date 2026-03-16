@@ -77,7 +77,7 @@ pub fn format_node_label(icon: &str, name: &str) -> String {
 }
 
 /// Editor node fill and stroke colors from base color and state.
-/// Returns (fill_rgb, stroke_rgb). Uses multiply factors: selected=0.8, else 0.6.
+/// Returns (`fill_rgb`, `stroke_rgb`). Uses multiply factors: selected=0.8, else 0.6.
 #[must_use]
 pub(crate) fn editor_node_colors(
     base_rgb: [u8; 3],

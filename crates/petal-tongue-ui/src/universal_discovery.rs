@@ -292,7 +292,7 @@ impl UniversalDiscovery {
     ///
     /// Probes ports WITHOUT assumptions:
     /// - Reads `PETALTONGUE_DISCOVERY_PORTS` or `DISCOVERY_PORTS` env var if provided
-    /// - Falls back to common service port range (documented in ENV_VARS.md)
+    /// - Falls back to common service port range (documented in `ENV_VARS.md`)
     /// - Checks /capabilities, /health, /api/v1/capabilities endpoints
     async fn discover_via_http(&self, capability: &str) -> Result<Vec<DiscoveredService>> {
         debug!("Probing HTTP endpoints for capability: {}", capability);

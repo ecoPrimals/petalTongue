@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! VisualizationDataProvider trait implementation for BiomeOSProvider.
+//! `VisualizationDataProvider` trait implementation for `BiomeOSProvider`.
 //!
 //! Provides backward compatibility with the discovery crate's provider interface.
 

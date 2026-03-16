@@ -130,6 +130,7 @@ pub struct InteractionEvent {
 
 impl InteractionEvent {
     /// Create from an `InteractionResult` for IPC transmission.
+    #[must_use]
     pub fn from_result(result: &InteractionResult, grammar_id: GrammarId) -> Self {
         let event_type = match &result.intent {
             InteractionIntent::Select { .. } => "select",

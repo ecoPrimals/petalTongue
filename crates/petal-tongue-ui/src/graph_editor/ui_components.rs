@@ -12,7 +12,7 @@ use super::streaming::{AIReasoning, Alternative, ErrorInfo, NodeStatus, Pattern,
 
 // --- Pure logic (testable, no egui) ---
 
-/// Node status display data: (icon, color_rgb, text).
+/// Node status display data: (icon, `color_rgb`, text).
 #[must_use]
 pub fn node_status_display(status: &NodeStatus) -> (&'static str, [u8; 3], String) {
     match status {
@@ -30,7 +30,7 @@ pub fn progress_percent_text(progress: f32) -> String {
     format!("{:.0}%", progress * 100.0)
 }
 
-/// Resource usage display strings: (cpu, memory, disk_io, network).
+/// Resource usage display strings: (cpu, memory, `disk_io`, network).
 #[must_use]
 pub fn resource_usage_display(resources: &ResourceUsage) -> (String, String, String, String) {
     (
@@ -41,7 +41,7 @@ pub fn resource_usage_display(resources: &ResourceUsage) -> (String, String, Str
     )
 }
 
-/// Alternative display data: (description, confidence_str, reason_str).
+/// Alternative display data: (description, `confidence_str`, `reason_str`).
 #[must_use]
 pub fn alternative_display(alt: &Alternative) -> (&str, String, String) {
     (
@@ -51,7 +51,7 @@ pub fn alternative_display(alt: &Alternative) -> (&str, String, String) {
     )
 }
 
-/// Pattern display data: (description, relevance_str).
+/// Pattern display data: (description, `relevance_str`).
 #[must_use]
 pub fn pattern_display(pattern: &Pattern) -> (&str, String) {
     (

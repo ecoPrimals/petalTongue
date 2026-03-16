@@ -38,7 +38,7 @@ enum SoftwareBackend {
 }
 
 impl SoftwareDisplay {
-    /// Create new software display with default dimensions (env: PETALTONGUE_WINDOW_WIDTH, PETALTONGUE_WINDOW_HEIGHT)
+    /// Create new software display with default dimensions (env: `PETALTONGUE_WINDOW_WIDTH`, `PETALTONGUE_WINDOW_HEIGHT`)
     #[must_use]
     pub fn new() -> Self {
         let (w, h) = constants::default_window_size();
@@ -65,7 +65,7 @@ impl SoftwareDisplay {
         self.buffer.resize(buffer_size, 0);
     }
 
-    /// Default VNC port (RFB protocol). Overridable via VNC_PORT env var.
+    /// Default VNC port (RFB protocol). Overridable via `VNC_PORT` env var.
     const DEFAULT_VNC_PORT: u16 = 5900;
 
     /// Check if VNC backend is available
