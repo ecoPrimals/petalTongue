@@ -31,6 +31,7 @@
 //! BIOMEOS_URL=unix:///run/user/$UID/biomeos-device-management.sock
 //! ```
 
+use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 use async_trait::async_trait;
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
@@ -85,7 +86,7 @@ impl HttpVisualizationProvider {
     ///
     /// This is for external integrations only (web APIs, remote access).
     #[expect(deprecated)]
-    pub fn new(endpoint: impl Into<String>) -> anyhow::Result<Self> {
+    pub fn new(endpoint: impl Into<String>) -> DiscoveryResult<Self> {
         let endpoint_str = endpoint.into();
 
         // Log deprecation warning
@@ -103,7 +104,8 @@ impl HttpVisualizationProvider {
             .tcp_keepalive(Duration::from_secs(60)) // TCP keep-alive
             .http2_keep_alive_interval(Some(Duration::from_secs(30))) // HTTP/2 keep-alive
             .http2_keep_alive_timeout(Duration::from_secs(10))
-            .build()?;
+            .build()
+            .map_err(DiscoveryError::HttpError)?;
 
         Ok(Self {
             endpoint: endpoint_str,
@@ -115,19 +117,31 @@ impl HttpVisualizationProvider {
 #[async_trait]
 #[expect(deprecated)]
 impl VisualizationDataProvider for HttpVisualizationProvider {
-    async fn get_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
+    async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         let url = format!("{}/api/v1/primals", self.endpoint);
 
-        let response = self.client.get(&url).send().await?;
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(DiscoveryError::HttpError)?;
 
         if !response.status().is_success() {
-            return Err(anyhow::anyhow!(
-                "Provider returned error status: {}",
-                response.status()
-            ));
+            return Err(DiscoveryError::ProviderHttpError {
+                status: response.status().as_u16(),
+                endpoint: Some(self.endpoint.clone()),
+            });
         }
 
-        let discovery: DiscoveryResponse = response.json().await?;
+        let discovery: DiscoveryResponse =
+            response
+                .json()
+                .await
+                .map_err(|e| DiscoveryError::ParseError {
+                    data_type: "primals".to_string(),
+                    message: e.to_string(),
+                })?;
 
         Ok(discovery
             .primals
@@ -136,7 +150,7 @@ impl VisualizationDataProvider for HttpVisualizationProvider {
             .collect())
     }
 
-    async fn get_topology(&self) -> anyhow::Result<Vec<TopologyEdge>> {
+    async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
         let url = format!("{}/api/v1/topology", self.endpoint);
 
         match self.client.get(&url).send().await {
@@ -166,7 +180,7 @@ impl VisualizationDataProvider for HttpVisualizationProvider {
         }
     }
 
-    async fn health_check(&self) -> anyhow::Result<String> {
+    async fn health_check(&self) -> DiscoveryResult<String> {
         let url = format!("{}/api/v1/health", self.endpoint);
 
         match self.client.get(&url).send().await {
@@ -174,13 +188,17 @@ impl VisualizationDataProvider for HttpVisualizationProvider {
                 if response.status().is_success() {
                     Ok(format!("HTTP provider at {} is healthy", self.endpoint))
                 } else {
-                    Err(anyhow::anyhow!(
-                        "Health check failed: {}",
-                        response.status()
-                    ))
+                    Err(DiscoveryError::ProviderHttpError {
+                        status: response.status().as_u16(),
+                        endpoint: Some(self.endpoint.clone()),
+                    })
                 }
             }
-            Err(e) => Err(anyhow::anyhow!("Health check failed: {e}")),
+            Err(e) => Err(DiscoveryError::HealthCheckFailed {
+                name: "HTTP Provider".to_string(),
+                endpoint: self.endpoint.clone(),
+                source: Box::new(e),
+            }),
         }
     }
 

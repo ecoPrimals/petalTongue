@@ -12,7 +12,7 @@
 //! - Highest performance (when available)
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
-use anyhow::{Result, anyhow};
+use crate::error::{DisplayError, Result};
 use async_trait::async_trait;
 use std::env;
 use tracing::info;
@@ -110,7 +110,7 @@ impl DisplayBackend for ExternalDisplay {
             info!("   Dimensions: {}x{}", self.width, self.height);
             Ok(())
         } else {
-            Err(anyhow!("No external display server detected"))
+            Err(DisplayError::NoExternalDisplayServer.into())
         }
     }
 
@@ -122,11 +122,11 @@ impl DisplayBackend for ExternalDisplay {
         // Verify buffer size
         let expected_size = (self.width * self.height * 4) as usize;
         if buffer.len() != expected_size {
-            return Err(anyhow!(
-                "Invalid buffer size: expected {}, got {}",
-                expected_size,
-                buffer.len()
-            ));
+            return Err(DisplayError::InvalidBufferSize {
+                expected: expected_size,
+                actual: buffer.len(),
+            }
+            .into());
         }
 
         // In a real implementation, this would present via eframe/OpenGL

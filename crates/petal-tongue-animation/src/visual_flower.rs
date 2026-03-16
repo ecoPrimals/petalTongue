@@ -655,7 +655,7 @@ mod tests {
         let state = renderer.current_state();
         assert!(matches!(state, FlowerState::Opening(_)));
         let p = renderer.opening_percent();
-        assert!(p >= 0.0 && p <= 1.0);
+        assert!((0.0..=1.0).contains(&p));
     }
 
     #[test]

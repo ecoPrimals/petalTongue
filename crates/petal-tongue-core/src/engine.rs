@@ -3,12 +3,12 @@
 //!
 //! Core engine that manages topology state and coordinates modalities.
 
-use anyhow::Result;
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::compute::ComputeRegistry;
+use crate::error::{PetalTongueError, Result};
 use crate::event::{EngineEvent, EventBus};
 use crate::modality::ModalityRegistry;
 
@@ -156,7 +156,7 @@ impl UniversalRenderingEngine {
         self.events
             .broadcast(EngineEvent::SelectionChanged { selected })
             .await
-            .map_err(|e| anyhow::anyhow!(e))?;
+            .map_err(PetalTongueError::EventBus)?;
 
         Ok(())
     }
@@ -181,7 +181,7 @@ impl UniversalRenderingEngine {
                 zoom,
             })
             .await
-            .map_err(|e| anyhow::anyhow!(e))?;
+            .map_err(PetalTongueError::EventBus)?;
 
         Ok(())
     }
@@ -218,7 +218,7 @@ impl UniversalRenderingEngine {
             let registry = self.modalities.read().await;
             registry
                 .auto_select()
-                .ok_or_else(|| anyhow::anyhow!("No modalities available"))?
+                .ok_or(PetalTongueError::NoModalities)?
                 .to_string()
         };
 
@@ -235,7 +235,7 @@ impl UniversalRenderingEngine {
 
         let modality = registry
             .get_mut(modality_name)
-            .ok_or_else(|| anyhow::anyhow!("Modality not found: {modality_name}"))?;
+            .ok_or_else(|| PetalTongueError::ModalityNotFound(modality_name.to_string()))?;
 
         // Initialize
         modality.initialize(self.clone()).await?;
@@ -246,7 +246,7 @@ impl UniversalRenderingEngine {
                 name: modality_name.to_string(),
             })
             .await
-            .map_err(|e| anyhow::anyhow!(e))?;
+            .map_err(PetalTongueError::EventBus)?;
 
         // Start rendering
         let result = modality.render().await;
@@ -308,19 +308,16 @@ mod tests {
         fn tier(&self) -> ModalityTier {
             self.tier
         }
-        async fn initialize(
-            &mut self,
-            _engine: Arc<UniversalRenderingEngine>,
-        ) -> anyhow::Result<()> {
+        async fn initialize(&mut self, _engine: Arc<UniversalRenderingEngine>) -> Result<()> {
             Ok(())
         }
-        async fn render(&mut self) -> anyhow::Result<()> {
+        async fn render(&mut self) -> Result<()> {
             Ok(())
         }
-        async fn handle_event(&mut self, _event: EngineEvent) -> anyhow::Result<()> {
+        async fn handle_event(&mut self, _event: EngineEvent) -> Result<()> {
             Ok(())
         }
-        async fn shutdown(&mut self) -> anyhow::Result<()> {
+        async fn shutdown(&mut self) -> Result<()> {
             Ok(())
         }
         fn capabilities(&self) -> ModalityCapabilities {
@@ -389,7 +386,7 @@ mod tests {
         let engine = Arc::new(engine);
         let result = engine.clone().render_auto().await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("No modalities"));
+        assert!(result.unwrap_err().to_string().contains("no modalities"));
     }
 
     #[tokio::test]
@@ -402,7 +399,7 @@ mod tests {
             result
                 .unwrap_err()
                 .to_string()
-                .contains("Modality not found")
+                .contains("modality not found")
         );
     }
 
@@ -492,19 +489,18 @@ mod tests {
             fn tier(&self) -> ModalityTier {
                 ModalityTier::AlwaysAvailable
             }
-            async fn initialize(
-                &mut self,
-                _engine: Arc<UniversalRenderingEngine>,
-            ) -> anyhow::Result<()> {
-                anyhow::bail!("init failed")
+            async fn initialize(&mut self, _engine: Arc<UniversalRenderingEngine>) -> Result<()> {
+                Err(crate::error::PetalTongueError::Internal(
+                    "init failed".into(),
+                ))
             }
-            async fn render(&mut self) -> anyhow::Result<()> {
+            async fn render(&mut self) -> Result<()> {
                 Ok(())
             }
-            async fn handle_event(&mut self, _event: EngineEvent) -> anyhow::Result<()> {
+            async fn handle_event(&mut self, _event: EngineEvent) -> Result<()> {
                 Ok(())
             }
-            async fn shutdown(&mut self) -> anyhow::Result<()> {
+            async fn shutdown(&mut self) -> Result<()> {
                 Ok(())
             }
             fn capabilities(&self) -> ModalityCapabilities {
@@ -538,19 +534,18 @@ mod tests {
             fn tier(&self) -> ModalityTier {
                 ModalityTier::AlwaysAvailable
             }
-            async fn initialize(
-                &mut self,
-                _engine: Arc<UniversalRenderingEngine>,
-            ) -> anyhow::Result<()> {
+            async fn initialize(&mut self, _engine: Arc<UniversalRenderingEngine>) -> Result<()> {
                 Ok(())
             }
-            async fn render(&mut self) -> anyhow::Result<()> {
-                anyhow::bail!("render failed")
+            async fn render(&mut self) -> Result<()> {
+                Err(crate::error::PetalTongueError::Internal(
+                    "render failed".into(),
+                ))
             }
-            async fn handle_event(&mut self, _event: EngineEvent) -> anyhow::Result<()> {
+            async fn handle_event(&mut self, _event: EngineEvent) -> Result<()> {
                 Ok(())
             }
-            async fn shutdown(&mut self) -> anyhow::Result<()> {
+            async fn shutdown(&mut self) -> Result<()> {
                 Ok(())
             }
             fn capabilities(&self) -> ModalityCapabilities {
@@ -664,8 +659,8 @@ mod tests {
         assert_eq!(state.selection.len(), 1);
         assert!(state.selection.contains("node1"));
         drop(state);
-        if result.is_err() {
-            assert!(result.unwrap_err().to_string().contains("broadcast"));
+        if let Err(e) = result {
+            assert!(e.to_string().contains("broadcast"));
         }
     }
 
@@ -678,8 +673,8 @@ mod tests {
         assert!((state.viewport.center_y - 75.0).abs() < f32::EPSILON);
         assert!((state.viewport.zoom - 2.0).abs() < f32::EPSILON);
         drop(state);
-        if result.is_err() {
-            assert!(result.unwrap_err().to_string().contains("broadcast"));
+        if let Err(e) = result {
+            assert!(e.to_string().contains("broadcast"));
         }
     }
 
@@ -715,19 +710,16 @@ mod tests {
             fn tier(&self) -> ModalityTier {
                 ModalityTier::AlwaysAvailable
             }
-            async fn initialize(
-                &mut self,
-                _engine: Arc<UniversalRenderingEngine>,
-            ) -> anyhow::Result<()> {
+            async fn initialize(&mut self, _engine: Arc<UniversalRenderingEngine>) -> Result<()> {
                 Ok(())
             }
-            async fn render(&mut self) -> anyhow::Result<()> {
+            async fn render(&mut self) -> Result<()> {
                 Ok(())
             }
-            async fn handle_event(&mut self, _event: EngineEvent) -> anyhow::Result<()> {
+            async fn handle_event(&mut self, _event: EngineEvent) -> Result<()> {
                 Ok(())
             }
-            async fn shutdown(&mut self) -> anyhow::Result<()> {
+            async fn shutdown(&mut self) -> Result<()> {
                 Ok(())
             }
             fn capabilities(&self) -> ModalityCapabilities {
@@ -761,6 +753,6 @@ mod tests {
         let result = engine.clone().render_multi(vec!["nonexistent"]).await;
         assert!(result.is_err());
         let err_str = result.unwrap_err().to_string();
-        assert!(err_str.contains("Modality not found"));
+        assert!(err_str.contains("modality not found"));
     }
 }

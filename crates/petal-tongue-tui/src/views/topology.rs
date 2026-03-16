@@ -719,7 +719,7 @@ mod tests {
         ];
         let positions = force_directed_layout(&primals, &topology, 100.0, 50.0, 30);
         assert_eq!(positions.len(), 3);
-        for (_, (x, y)) in &positions {
+        for (x, y) in positions.values() {
             assert!(*x >= 0.0 && *x <= 100.0);
             assert!(*y >= 0.0 && *y <= 50.0);
         }

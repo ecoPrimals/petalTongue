@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Motor command integration tests.
 //!
-//! Tests all MotorCommand variants and layout algorithms via the headless harness.
+//! Tests all `MotorCommand` variants and layout algorithms via the headless harness.
 
 use petal_tongue_core::PanelKind;
 use petal_tongue_ui::headless_harness::HeadlessHarness;

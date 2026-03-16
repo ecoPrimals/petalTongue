@@ -18,7 +18,7 @@
 //! petalTongue uses Web Audio for audio.
 //! Same pattern, same success!
 
-use anyhow::{Context, Result};
+use crate::error::Result;
 use std::io::Cursor;
 use tracing::{debug, info, warn};
 use web_audio_api::context::{AudioContext, BaseAudioContext};

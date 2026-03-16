@@ -18,7 +18,7 @@ impl AudioSynthesizer {
         Self { sample_rate }
     }
 
-    /// Generate PCM samples for a single AudioParam.
+    /// Generate PCM samples for a single `AudioParam`.
     /// Duration determines sample count; frequency → sine wave; pan stored but mono output.
     #[must_use]
     pub fn synthesize(&self, param: &AudioParam) -> Vec<f32> {
@@ -26,10 +26,10 @@ impl AudioSynthesizer {
             clippy::cast_sign_loss,
             reason = "duration * sample_rate is non-negative"
         )]
-        let n = (param.duration_secs * self.sample_rate as f64) as usize;
+        let n = (param.duration_secs * f64::from(self.sample_rate)) as usize;
         (0..n)
             .map(|i| {
-                let t = i as f64 / self.sample_rate as f64;
+                let t = i as f64 / f64::from(self.sample_rate);
                 ((2.0 * PI * param.frequency * t).sin() * param.amplitude) as f32
             })
             .collect()

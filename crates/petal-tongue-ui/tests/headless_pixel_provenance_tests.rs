@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Headless pixel verification tests using ProvenanceBuffer.
+//! Headless pixel verification tests using `ProvenanceBuffer`.
 //!
 //! Verifies that rendered scene primitives produce provenance data
 //! at expected pixel locations.

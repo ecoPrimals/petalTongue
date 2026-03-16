@@ -30,6 +30,7 @@ mod sensory;
 use crate::accessibility_panel::AccessibilityPanel;
 use crate::audio::AudioSystemV2;
 use crate::awakening_overlay::AwakeningOverlay;
+use crate::error::Result;
 use crate::graph_canvas::GraphCanvas;
 use crate::interaction_bridge::EguiInteractionBridge;
 use crate::keyboard_shortcuts::{KeyboardShortcuts, ShortcutAction};
@@ -40,7 +41,6 @@ use crate::proprioception_panel::ProprioceptionPanel;
 use crate::system_dashboard::SystemDashboard;
 use crate::tool_integration::ToolManager;
 use crate::trust_dashboard::TrustDashboard;
-use anyhow::Result as AnyhowResult;
 use petal_tongue_adapters::AdapterRegistry;
 use petal_tongue_animation::AnimationEngine;
 use petal_tongue_core::{
@@ -204,7 +204,7 @@ impl PetalTongueApp {
         scenario_path: Option<std::path::PathBuf>,
         rendering_caps: petal_tongue_core::RenderingCapabilities,
         shared_graph: Arc<RwLock<GraphEngine>>,
-    ) -> AnyhowResult<Self> {
+    ) -> Result<Self> {
         init::create_app(scenario_path, rendering_caps, shared_graph)
     }
 
@@ -213,7 +213,7 @@ impl PetalTongueApp {
         cc: &eframe::CreationContext<'_>,
         scenario_path: Option<std::path::PathBuf>,
         rendering_caps: petal_tongue_core::RenderingCapabilities,
-    ) -> AnyhowResult<Self> {
+    ) -> Result<Self> {
         tracing::info!("⚠️  Creating standalone graph (not shared with DataService)");
         let shared_graph = Arc::new(RwLock::new(GraphEngine::new()));
         Self::new_with_shared_graph(cc, scenario_path, rendering_caps, shared_graph)
@@ -258,7 +258,7 @@ impl PetalTongueApp {
     /// Create an application in headless mode (no display, no eframe context).
     ///
     /// Suitable for testing, introspection harnesses, and CI pipelines.
-    pub fn new_headless() -> AnyhowResult<Self> {
+    pub fn new_headless() -> Result<Self> {
         let shared_graph = Arc::new(RwLock::new(GraphEngine::new()));
         let caps = petal_tongue_core::RenderingCapabilities::detect();
         init::create_app(None, caps, shared_graph)

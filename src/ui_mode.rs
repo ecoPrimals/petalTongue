@@ -4,12 +4,15 @@
 //! Platform dependencies: wayland-sys, x11-sys (acceptable for ecoBud)
 //! This is the 1 mode (out of 5) that has platform dependencies
 
-use anyhow::{Context, Result};
 use petal_tongue_core::constants::PRIMAL_NAME;
+
+use crate::error::AppError;
+
+type Result<T> = std::result::Result<T, AppError>;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-/// Convert scenario string to PathBuf (pure, testable without GUI).
+/// Convert scenario string to `PathBuf` (pure, testable without GUI).
 #[must_use]
 pub fn scenario_to_path(scenario: Option<String>) -> Option<PathBuf> {
     scenario.map(PathBuf::from)
@@ -36,7 +39,7 @@ pub async fn run(
     // Run in blocking context (egui is not async)
     tokio::task::spawn_blocking(move || run_ui_blocking(scenario, no_audio, &data_service))
         .await
-        .context("UI task panicked")?
+        .map_err(|e| AppError::TaskPanic(e.to_string()))?
 }
 
 #[cfg(feature = "ui")]
@@ -91,7 +94,7 @@ fn run_ui_blocking(
             Ok(Box::new(app))
         }),
     )
-    .map_err(|e| anyhow::anyhow!("eframe error: {e}"))
+    .map_err(|e| AppError::Eframe(e.to_string()))
 }
 
 #[cfg(not(feature = "ui"))]
@@ -100,12 +103,7 @@ pub async fn run(
     _no_audio: bool,
     _data_service: std::sync::Arc<crate::data_service::DataService>,
 ) -> Result<()> {
-    anyhow::bail!(
-        "UI mode not available in this build\n\
-        Tip: Rebuild with --features ui or use:\n\
-        - petaltongue tui (terminal UI)\n\
-        - petaltongue web (web UI)"
-    )
+    Err(AppError::UiNotAvailable)
 }
 
 #[cfg(test)]

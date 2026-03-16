@@ -3,7 +3,7 @@
 //!
 //! Discovers audio capabilities for both output and input.
 
-use anyhow::Result;
+use crate::error::{AudioError, Result};
 use async_trait::async_trait;
 use petal_tongue_core::{Sensor, SensorCapabilities, SensorEvent, SensorType};
 use std::time::Instant;
@@ -54,7 +54,7 @@ impl AudioSensor {
         let result =
             tokio::task::spawn_blocking(move || Self::beep_audio_canvas(frequency, duration_ms))
                 .await
-                .map_err(|e| anyhow::anyhow!("beep task panicked: {e}"))?;
+                .map_err(|e| AudioError::BeepTaskPanicked(e.to_string()))?;
 
         match result {
             Ok(()) => {
@@ -97,7 +97,7 @@ impl Sensor for AudioSensor {
         self.has_output || self.has_input
     }
 
-    async fn poll_events(&mut self) -> Result<Vec<SensorEvent>> {
+    async fn poll_events(&mut self) -> anyhow::Result<Vec<SensorEvent>> {
         let events = Vec::new();
 
         // Audio input polling would go here

@@ -37,7 +37,7 @@
 //! See `specs/PETALTONGUE_TOADSTOOL_INTEGRATION_ARCHITECTURE.md`
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
-use anyhow::{Result, anyhow};
+use crate::error::{DisplayError, Result};
 use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -161,17 +161,9 @@ impl ToadstoolDisplay {
         // Connect to biomeOS
         let mut stream = UnixStream::connect(&self.biomeos_socket)
             .await
-            .map_err(|e| {
-                anyhow!(
-                    "Failed to connect to biomeOS at {}: {}\n\
-                \n\
-                Troubleshooting:\n\
-                - Ensure biomeOS nucleus is running\n\
-                - Check BIOMEOS_SOCKET environment variable\n\
-                - Verify socket permissions",
-                    self.biomeos_socket.display(),
-                    e
-                )
+            .map_err(|e| DisplayError::BiomeOsConnect {
+                path: self.biomeos_socket.display().to_string(),
+                detail: e.to_string(),
             })?;
 
         // Prepare JSON-RPC 2.0 request
@@ -197,22 +189,23 @@ impl ToadstoolDisplay {
         reader
             .read_line(&mut response_line)
             .await
-            .map_err(|e| anyhow!("Failed to read response from biomeOS: {e}"))?;
+            .map_err(|e| DisplayError::BiomeOsReadResponse(e.to_string()))?;
 
         // Parse response
         let response: Value = serde_json::from_str(&response_line)
-            .map_err(|e| anyhow!("Failed to parse JSON-RPC response: {e}"))?;
+            .map_err(|e| DisplayError::BiomeOsParseJsonRpc(e.to_string()))?;
 
         // Check for error
         if let Some(error) = response.get("error") {
-            anyhow::bail!("biomeOS returned error: {error}");
+            return Err(DisplayError::BiomeOsError(error.to_string()).into());
         }
 
         // Extract result
         response
             .get("result")
             .cloned()
-            .ok_or_else(|| anyhow!("No result field in JSON-RPC response"))
+            .ok_or(DisplayError::BiomeOsNoResult)
+            .map_err(Into::into)
     }
 
     /// Get next request ID
@@ -230,7 +223,7 @@ impl ToadstoolDisplay {
             .await?;
 
         let caps: DisplayCapabilitiesResponse = serde_json::from_value(result)
-            .map_err(|e| anyhow!("Failed to parse display capabilities: {e}"))?;
+            .map_err(|e| DisplayError::ParseDisplayCapabilities(e.to_string()))?;
 
         info!(
             "✅ Found {} displays, {} input devices",
@@ -254,7 +247,7 @@ impl ToadstoolDisplay {
         let result = self.send_request("display.create_window", params).await?;
 
         let window: WindowResponse = serde_json::from_value(result)
-            .map_err(|e| anyhow!("Failed to parse window response: {e}"))?;
+            .map_err(|e| DisplayError::ParseWindowResponse(e.to_string()))?;
 
         info!("✅ Window created: {}", window.window_id);
 
@@ -268,7 +261,7 @@ impl ToadstoolDisplay {
         let window_id = self
             .window_id
             .as_ref()
-            .ok_or_else(|| anyhow!("No window created yet"))?;
+            .ok_or(DisplayError::NoWindowCreated)?;
 
         // Encode buffer as base64 for JSON transport
         let encoded = general_purpose::STANDARD.encode(buffer);
@@ -309,7 +302,7 @@ impl DisplayBackend for ToadstoolDisplay {
         let display_info = caps
             .displays
             .first()
-            .ok_or_else(|| anyhow!("No displays available from toadStool"))?;
+            .ok_or(DisplayError::NoDisplaysFromToadstool)?;
 
         info!(
             "   Display: {} ({})",
@@ -352,13 +345,13 @@ impl DisplayBackend for ToadstoolDisplay {
     async fn present(&mut self, buffer: &[u8]) -> Result<()> {
         let expected_size = expected_rgba8_buffer_size(self.width, self.height);
         if buffer.len() != expected_size {
-            return Err(anyhow!(
-                "Invalid buffer size: expected {} bytes ({}x{}x4), got {}",
-                expected_size,
-                self.width,
-                self.height,
-                buffer.len()
-            ));
+            return Err(DisplayError::InvalidBufferSizeDetailed {
+                expected: expected_size,
+                width: self.width,
+                height: self.height,
+                actual: buffer.len(),
+            }
+            .into());
         }
 
         self.commit_frame(buffer).await

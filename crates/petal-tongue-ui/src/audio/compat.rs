@@ -6,7 +6,7 @@
 
 use super::manager::AudioManager;
 use crate::audio_pure_rust::{SAMPLE_RATE, Waveform, generate_tone};
-use anyhow::Result;
+use crate::error::{AudioError, Result};
 use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -35,14 +35,14 @@ impl AudioSystemV2 {
             (handle, None)
         } else {
             let rt = tokio::runtime::Runtime::new()
-                .map_err(|e| anyhow::anyhow!("tokio runtime creation failed: {}", e))?;
+                .map_err(|e| AudioError::TokioRuntimeCreation(e.to_string()))?;
             let handle = rt.handle().clone();
             (handle, Some(rt))
         };
 
         let manager = runtime
             .block_on(AudioManager::init())
-            .map_err(|e| anyhow::anyhow!("AudioManager init failed: {}", e))?;
+            .map_err(|e| AudioError::AudioManagerInitFailed(e.to_string()))?;
 
         info!("✅ AudioSystemV2 initialized");
 
@@ -100,9 +100,7 @@ impl AudioSystemV2 {
         )?;
 
         let mut format = probed.format;
-        let track = format
-            .default_track()
-            .ok_or_else(|| anyhow::anyhow!("no audio track found"))?;
+        let track = format.default_track().ok_or(AudioError::NoAudioTrack)?;
         let mut decoder = symphonia::default::get_codecs()
             .make(&track.codec_params, &DecoderOptions::default())?;
         let sample_rate = track.codec_params.sample_rate.unwrap_or(44100);

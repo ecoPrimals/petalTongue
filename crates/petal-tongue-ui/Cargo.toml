@@ -39,7 +39,7 @@ serde_json = { workspace = true }
 reqwest = { workspace = true }
 base64 = { workspace = true }
 bytes = { workspace = true }
-anyhow = { workspace = true }  # For rendering_discovery error handling
+anyhow = { workspace = true }  # Trait compatibility (Sensor::poll_events from petal-tongue-core)
 futures-util = "0.3"  # For SSE stream consumption (StreamExt)
 thiserror = { workspace = true }
 tracing = { workspace = true }

@@ -4,7 +4,7 @@
 //! Pure Rust! ✅
 //! Fully concurrent, no blocking operations
 
-use anyhow::{Context, Result};
+use crate::error::AppError;
 use serde::Serialize;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -80,7 +80,7 @@ pub async fn status(
     verbose: bool,
     format: &str,
     data_service: Arc<crate::data_service::DataService>,
-) -> Result<()> {
+) -> Result<(), AppError> {
     // Gather system info concurrently (no blocking!)
     let status = gather_status(verbose, &data_service).await?;
 
@@ -89,7 +89,7 @@ pub async fn status(
         "json" => {
             // JSON output for programmatic use
             let json = serde_json::to_string_pretty(&status)
-                .context("Failed to serialize status to JSON")?;
+                .map_err(|e| AppError::Other(format!("Failed to serialize status to JSON: {e}")))?;
             println!("{json}");
         }
         _ => {
@@ -105,7 +105,7 @@ pub async fn status(
 async fn gather_status(
     verbose: bool,
     data_service: &Arc<crate::data_service::DataService>,
-) -> Result<SystemStatus> {
+) -> Result<SystemStatus, AppError> {
     // Use Arc<RwLock<>> for concurrent access
     let status = Arc::new(RwLock::new(SystemStatus {
         version: env!("CARGO_PKG_VERSION").to_string(),
@@ -189,12 +189,12 @@ async fn gather_status(
 
         // Wait for both tasks
         tokio::try_join!(system_info_task, detailed_task)
-            .context("Failed to gather system info")?;
+            .map_err(|e| AppError::Other(format!("Failed to gather system info: {e}")))?;
     } else {
         // Just wait for system info
         system_info_task
             .await
-            .context("Failed to gather system info")?;
+            .map_err(|e| AppError::Other(format!("Failed to gather system info: {e}")))?;
     }
 
     // Extract final status
@@ -453,6 +453,21 @@ mod tests {
     async fn test_status_json_format() {
         let data_service = Arc::new(crate::data_service::DataService::new());
         let result = status(false, "json", data_service).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_status_unknown_format_defaults_to_text() {
+        // Any format other than "json" uses human-readable text output
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let result = status(false, "yaml", data_service).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_status_empty_format_defaults_to_text() {
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let result = status(false, "", data_service).await;
         assert!(result.is_ok());
     }
 

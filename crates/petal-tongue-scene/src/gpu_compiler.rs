@@ -240,8 +240,8 @@ impl GpuCompiler {
     /// Compile scene to GPU commands with provenance for primitive ID buffer.
     ///
     /// Returns both the command buffer (each draw command wrapped with provenance)
-    /// and a map from command indices to scene-graph source. SetViewport and Clear
-    /// have no provenance; only draw commands (Circle, Polyline, FillRect, Mesh)
+    /// and a map from command indices to scene-graph source. `SetViewport` and Clear
+    /// have no provenance; only draw commands (Circle, Polyline, `FillRect`, Mesh)
     /// are registered in the map.
     #[must_use]
     pub fn compile_with_provenance(

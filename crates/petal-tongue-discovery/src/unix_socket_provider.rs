@@ -10,7 +10,7 @@
 //! - Non-blocking directory traversal
 //! - Aggressive timeouts to prevent hanging on unresponsive sockets
 
-use anyhow::Result;
+use crate::errors::{DiscoveryError, DiscoveryResult};
 use futures::future::join_all;
 use petal_tongue_core::types::{PrimalHealthStatus, PrimalInfo};
 use serde::{Deserialize, Serialize};
@@ -80,7 +80,7 @@ impl UnixSocketProvider {
     }
 
     /// Discover all primals via Unix sockets
-    pub async fn discover(&self) -> Result<Vec<PrimalInfo>> {
+    pub async fn discover(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         let mut primals = Vec::new();
 
         for search_path in &self.search_paths {
@@ -140,7 +140,7 @@ impl UnixSocketProvider {
     /// Probe a Unix socket for primal information
     ///
     /// Uses aggressive timeout to prevent hanging on unresponsive sockets.
-    async fn probe_socket(&self, path: &Path) -> Result<PrimalInfo> {
+    async fn probe_socket(&self, path: &Path) -> DiscoveryResult<PrimalInfo> {
         // CRITICAL: Wrap socket connect in timeout to prevent hanging
         // Unresponsive sockets are the #1 cause of test hangs
         let connect_timeout = Duration::from_millis(100);
@@ -149,11 +149,13 @@ impl UnixSocketProvider {
             Ok(Ok(stream)) => stream,
             Ok(Err(e)) => {
                 debug!("Socket connection failed for {}: {}", path.display(), e);
-                return Err(e.into());
+                return Err(DiscoveryError::Io(e));
             }
             Err(_) => {
                 debug!("Socket connection timeout for {}", path.display());
-                return Err(anyhow::anyhow!("Connection timeout"));
+                return Err(DiscoveryError::ConnectionTimeout {
+                    endpoint: path.display().to_string(),
+                });
             }
         };
 
@@ -175,8 +177,10 @@ impl UnixSocketProvider {
                 if err_str.contains("-32601") || err_str.contains("Method not found") {
                     let stream = tokio::time::timeout(connect_timeout, UnixStream::connect(path))
                         .await
-                        .map_err(|_| anyhow::anyhow!("Connection timeout"))?
-                        .map_err(|e| anyhow::anyhow!("Connection failed: {e}"))?;
+                        .map_err(|_| DiscoveryError::ConnectionTimeout {
+                            endpoint: path.display().to_string(),
+                        })?
+                        .map_err(DiscoveryError::Io)?;
                     let legacy_request = json!({
                         "jsonrpc": "2.0",
                         "method": "get_capabilities",
@@ -185,8 +189,13 @@ impl UnixSocketProvider {
                     });
                     tokio::time::timeout(rpc_timeout, self.send_request(stream, legacy_request))
                         .await
-                        .map_err(|_| anyhow::anyhow!("RPC timeout"))?
-                        .map_err(|e| anyhow::anyhow!("Legacy get_capabilities failed: {e}"))?
+                        .map_err(|_| DiscoveryError::RpcTimeout {
+                            context: path.display().to_string(),
+                        })?
+                        .map_err(|e| DiscoveryError::InvalidData {
+                            name: "Unix socket".to_string(),
+                            reason: format!("Legacy get_capabilities failed: {e}"),
+                        })?
                 } else {
                     debug!("RPC request failed for {}: {}", path.display(), e);
                     return Err(e);
@@ -194,7 +203,9 @@ impl UnixSocketProvider {
             }
             Err(_) => {
                 debug!("RPC request timeout for {}", path.display());
-                return Err(anyhow::anyhow!("RPC timeout"));
+                return Err(DiscoveryError::RpcTimeout {
+                    context: path.display().to_string(),
+                });
             }
         };
 
@@ -202,30 +213,42 @@ impl UnixSocketProvider {
     }
 
     /// Send a JSON-RPC request and receive response
-    async fn send_request(&self, stream: UnixStream, request: Value) -> Result<Value> {
+    async fn send_request(&self, stream: UnixStream, request: Value) -> DiscoveryResult<Value> {
         let (reader, mut writer) = stream.into_split();
         let mut reader = BufReader::new(reader);
 
         // Send request
-        let request_json = serde_json::to_string(&request)?;
-        writer.write_all(request_json.as_bytes()).await?;
-        writer.write_all(b"\n").await?;
-        writer.flush().await?;
+        let request_json = serde_json::to_string(&request).map_err(DiscoveryError::Json)?;
+        writer
+            .write_all(request_json.as_bytes())
+            .await
+            .map_err(DiscoveryError::Io)?;
+        writer.write_all(b"\n").await.map_err(DiscoveryError::Io)?;
+        writer.flush().await.map_err(DiscoveryError::Io)?;
 
         // Read response
         let mut line = String::new();
-        reader.read_line(&mut line).await?;
+        reader
+            .read_line(&mut line)
+            .await
+            .map_err(DiscoveryError::Io)?;
 
         // Parse response
-        let response: JsonRpcResponse = serde_json::from_str(&line)?;
+        let response: JsonRpcResponse =
+            serde_json::from_str(&line).map_err(DiscoveryError::Json)?;
 
         if let Some(error) = response.error {
-            anyhow::bail!("JSON-RPC error: {} (code: {})", error.message, error.code);
+            return Err(DiscoveryError::JsonRpcError {
+                code: Some(error.code),
+                message: error.message,
+            });
         }
 
         response
             .result
-            .ok_or_else(|| anyhow::anyhow!("No result in response"))
+            .ok_or_else(|| DiscoveryError::NoResultInResponse {
+                context: String::new(),
+            })
     }
 
     /// Parse capabilities response into `PrimalInfo`
@@ -234,7 +257,11 @@ impl UnixSocketProvider {
         clippy::unnecessary_wraps,
         reason = "Value consumed by indexing; Ok wrapper for Result chain"
     )]
-    fn parse_capabilities_response(&self, path: &Path, result: Value) -> Result<PrimalInfo> {
+    fn parse_capabilities_response(
+        &self,
+        path: &Path,
+        result: Value,
+    ) -> DiscoveryResult<PrimalInfo> {
         let capabilities: Vec<String> = result["capabilities"]
             .as_array()
             .unwrap_or(&vec![])

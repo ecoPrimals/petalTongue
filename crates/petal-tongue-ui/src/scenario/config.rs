@@ -4,7 +4,8 @@
 //! Defines UI-related configuration structures including panels,
 //! animations, performance settings, and custom panel configurations.
 
-use anyhow::{Context, Result};
+use crate::error::Result;
+use crate::scenario_error::ScenarioError;
 use serde::{Deserialize, Serialize};
 
 /// UI configuration settings for a scenario
@@ -48,9 +49,11 @@ impl UiConfig {
     pub fn validate(&self) -> Result<()> {
         // Validate custom panels
         for (idx, panel) in self.custom_panels.iter().enumerate() {
-            panel
-                .validate()
-                .with_context(|| format!("Custom panel {idx} validation failed"))?;
+            panel.validate().map_err(|e| ScenarioError::PanelConfig {
+                message: e.to_string(),
+                panel_index: Some(idx),
+                panel_type: Some(panel.panel_type.clone()),
+            })?;
         }
 
         // Validate performance config
@@ -168,18 +171,33 @@ impl CustomPanelConfig {
     pub fn validate(&self) -> Result<()> {
         // Check panel type
         if self.panel_type.trim().is_empty() {
-            anyhow::bail!("Panel type cannot be empty (e.g., 'doom_game', 'web_view')");
+            return Err(ScenarioError::PanelConfig {
+                message: "Panel type cannot be empty (e.g., 'doom_game', 'web_view')".to_string(),
+                panel_index: None,
+                panel_type: None,
+            }
+            .into());
         }
 
         // Check title
         if self.title.trim().is_empty() {
-            anyhow::bail!("Panel '{}' has empty title", self.panel_type);
+            return Err(ScenarioError::PanelConfig {
+                message: format!("Panel '{}' has empty title", self.panel_type),
+                panel_index: None,
+                panel_type: Some(self.panel_type.clone()),
+            }
+            .into());
         }
 
         // Validate dimensions
         if let Some(width) = self.width {
             if width == 0 {
-                anyhow::bail!("Panel '{}' has zero width", self.title);
+                return Err(ScenarioError::PanelConfig {
+                    message: format!("Panel '{}' has zero width", self.title),
+                    panel_index: None,
+                    panel_type: Some(self.panel_type.clone()),
+                }
+                .into());
             }
             if width > 7680 {
                 // Reasonable max: 8K resolution
@@ -193,7 +211,12 @@ impl CustomPanelConfig {
 
         if let Some(height) = self.height {
             if height == 0 {
-                anyhow::bail!("Panel '{}' has zero height", self.title);
+                return Err(ScenarioError::PanelConfig {
+                    message: format!("Panel '{}' has zero height", self.title),
+                    panel_index: None,
+                    panel_type: Some(self.panel_type.clone()),
+                }
+                .into());
             }
             if height > 4320 {
                 // Reasonable max: 8K resolution

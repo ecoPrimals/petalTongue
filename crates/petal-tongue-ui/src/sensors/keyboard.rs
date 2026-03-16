@@ -3,7 +3,7 @@
 //!
 //! Discovers keyboard capabilities and provides key press events.
 
-use anyhow::Result;
+use crate::error::SensorError;
 use async_trait::async_trait;
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use petal_tongue_core::{Key, Modifiers, Sensor, SensorCapabilities, SensorEvent, SensorType};
@@ -51,14 +51,16 @@ impl Sensor for KeyboardSensor {
         std::io::stdin().is_terminal()
     }
 
-    async fn poll_events(&mut self) -> Result<Vec<SensorEvent>> {
+    async fn poll_events(&mut self) -> anyhow::Result<Vec<SensorEvent>> {
         let mut events = Vec::new();
 
         // Non-blocking poll with very short timeout
         match self.input_type {
             InputType::Terminal => {
-                if event::poll(Duration::from_millis(1))?
-                    && let Event::Key(key_event) = event::read()?
+                if event::poll(Duration::from_millis(1))
+                    .map_err(|e| SensorError::Crossterm(e.to_string()))?
+                    && let Event::Key(key_event) =
+                        event::read().map_err(|e| SensorError::Crossterm(e.to_string()))?
                 {
                     let timestamp = Instant::now();
                     self.last_key_press = Some(timestamp);

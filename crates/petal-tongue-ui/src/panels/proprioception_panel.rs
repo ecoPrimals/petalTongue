@@ -42,7 +42,7 @@ impl PanelInstance for ProprioceptionPanel {
         "System Health"
     }
 
-    fn on_open(&mut self) -> anyhow::Result<()> {
+    fn on_open(&mut self) -> crate::error::Result<()> {
         tracing::info!("Proprioception Panel opened - discovering Neural API");
 
         // Discover Neural API in blocking context
@@ -62,7 +62,7 @@ impl PanelInstance for ProprioceptionPanel {
         Ok(())
     }
 
-    fn on_close(&mut self) -> anyhow::Result<()> {
+    fn on_close(&mut self) -> crate::error::Result<()> {
         tracing::info!("Proprioception Panel closed");
         Ok(())
     }

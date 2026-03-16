@@ -127,7 +127,7 @@ impl RetryPolicy {
         &self,
         timeout: Duration,
         f: F,
-    ) -> Result<T, anyhow::Error>
+    ) -> Result<T, crate::errors::DiscoveryError>
     where
         F: Fn() -> Fut + Send,
         Fut: Future<Output = Result<T, E>> + Send,
@@ -136,8 +136,12 @@ impl RetryPolicy {
         self.execute(|| async {
             tokio::time::timeout(timeout, f())
                 .await
-                .map_err(|_| anyhow::anyhow!("Operation timed out after {timeout:?}"))?
-                .map_err(|e| anyhow::anyhow!(e))
+                .map_err(|_| crate::errors::DiscoveryError::OperationTimedOut {
+                    duration: timeout,
+                })?
+                .map_err(|e| crate::errors::DiscoveryError::OperationFailed {
+                    source: Box::new(e),
+                })
         })
         .await
     }

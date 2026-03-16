@@ -81,10 +81,8 @@ pub use unix_socket_provider::UnixSocketProvider;
 // Re-export modern patterns
 pub use concurrent::{ConcurrentDiscoveryResult, HealthStatus, ProviderHealth};
 pub use errors::{DiscoveryError, DiscoveryFailure, DiscoveryResult};
-pub use retry::RetryPolicy;
-
-use anyhow::Result;
 use petal_tongue_core::constants;
+pub use retry::RetryPolicy;
 
 /// Discover all available visualization data providers
 ///
@@ -111,7 +109,8 @@ use petal_tongue_core::constants;
     clippy::too_many_lines,
     reason = "discovery fallback chain; refactor would obscure priority order"
 )]
-pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn VisualizationDataProvider>>> {
+pub async fn discover_visualization_providers()
+-> DiscoveryResult<Vec<Box<dyn VisualizationDataProvider>>> {
     let mut providers: Vec<Box<dyn VisualizationDataProvider>> = Vec::new();
 
     // Priority 1: Try Neural API (PREFERRED METHOD - Central Coordinator)
@@ -315,7 +314,9 @@ pub async fn discover_visualization_providers() -> Result<Vec<Box<dyn Visualizat
 }
 
 /// Try to connect to a JSON-RPC provider at the given Unix socket path
-async fn try_connect_jsonrpc(socket_path: &str) -> Result<Box<dyn VisualizationDataProvider>> {
+async fn try_connect_jsonrpc(
+    socket_path: &str,
+) -> DiscoveryResult<Box<dyn VisualizationDataProvider>> {
     let provider = JsonRpcProvider::new(socket_path);
 
     // Test connection with health check
@@ -329,7 +330,7 @@ async fn try_connect_jsonrpc(socket_path: &str) -> Result<Box<dyn VisualizationD
 /// Prefer JSON-RPC over Unix sockets for TRUE PRIMAL architecture!
 #[cfg(feature = "legacy-http")]
 #[expect(deprecated)]
-async fn try_connect_http(url: &str) -> Result<Box<dyn VisualizationDataProvider>> {
+async fn try_connect_http(url: &str) -> DiscoveryResult<Box<dyn VisualizationDataProvider>> {
     let provider = HttpVisualizationProvider::new(url)?;
 
     // Test connection with health check

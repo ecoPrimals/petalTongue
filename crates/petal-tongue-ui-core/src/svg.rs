@@ -4,10 +4,10 @@
 //! Generates SVG visualizations of primal topologies without any native dependencies.
 //! SVG files can be viewed in any browser and embedded in web pages.
 
+use crate::error::Result;
 use crate::trait_def::{ExportFormat, UICapability, UniversalUI};
 /// Utility functions for health visualization
 use crate::utils::health_to_color;
-use anyhow::Result;
 use petal_tongue_core::GraphEngine;
 use std::sync::{Arc, RwLock};
 
@@ -97,10 +97,7 @@ impl SvgUI {
         svg.push('\n');
 
         // Get graph data
-        let graph = match self.graph.read() {
-            Ok(guard) => guard,
-            Err(e) => return Err(anyhow::anyhow!("graph lock poisoned: {e}")),
-        };
+        let graph = self.graph.read()?;
         let nodes = graph.nodes();
         let edges = graph.edges();
 

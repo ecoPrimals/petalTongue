@@ -12,8 +12,8 @@
 //! Instead of hardcoding `PrimalDefinition` with specific fields,
 //! we use `DynamicData` to capture ALL fields (known and unknown).
 
+use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
-use anyhow::{Context, Result};
 use async_trait::async_trait;
 use petal_tongue_core::{
     DynamicData, DynamicValue, PrimalHealthStatus, PrimalInfo, Properties, PropertyValue,
@@ -35,15 +35,21 @@ pub struct DynamicScenarioProvider {
 
 impl DynamicScenarioProvider {
     /// Create from file (auto-detects and migrates schema)
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> DiscoveryResult<Self> {
         let path = path.as_ref();
 
         // Load JSON content
-        let content = std::fs::read_to_string(path)
-            .with_context(|| format!("Failed to read scenario file: {}", path.display()))?;
+        let content = std::fs::read_to_string(path).map_err(|e| DiscoveryError::FileReadError {
+            path: path.display().to_string(),
+            source: e,
+        })?;
 
         // Parse as DynamicData (flexible schema)
-        let scenario = DynamicData::from_json_str(&content)?;
+        let scenario = DynamicData::from_json_str(&content).map_err(|e| {
+            DiscoveryError::ScenarioParseError {
+                message: e.to_string(),
+            }
+        })?;
 
         // Extract schema version string (if present)
         let version = scenario.get_str("version").map(String::from);
@@ -65,16 +71,20 @@ impl DynamicScenarioProvider {
     }
 
     /// Extract primals from dynamic scenario data
-    fn extract_primals(scenario: &DynamicData) -> Result<Vec<PrimalInfo>> {
+    fn extract_primals(scenario: &DynamicData) -> DiscoveryResult<Vec<PrimalInfo>> {
         let ecosystem = scenario
             .get("ecosystem")
             .and_then(|v| v.as_object())
-            .context("Missing 'ecosystem' field in scenario")?;
+            .ok_or_else(|| DiscoveryError::ScenarioParseError {
+                message: "Missing 'ecosystem' field in scenario".to_string(),
+            })?;
 
         let primals_array = ecosystem
             .get("primals")
             .and_then(|v| v.as_array())
-            .context("Missing 'primals' array in ecosystem")?;
+            .ok_or_else(|| DiscoveryError::ScenarioParseError {
+                message: "Missing 'primals' array in ecosystem".to_string(),
+            })?;
 
         #[expect(
             clippy::cast_sign_loss,
@@ -84,9 +94,12 @@ impl DynamicScenarioProvider {
         let mut primals = Vec::new();
 
         for (idx, primal_value) in primals_array.iter().enumerate() {
-            let primal_obj = primal_value
-                .as_object()
-                .with_context(|| format!("Primal {idx} is not an object"))?;
+            let primal_obj =
+                primal_value
+                    .as_object()
+                    .ok_or_else(|| DiscoveryError::ScenarioParseError {
+                        message: format!("Primal {idx} is not an object"),
+                    })?;
 
             // Required fields (graceful fallback if missing)
             let id = Self::get_string(primal_obj, "id").unwrap_or_else(|| format!("primal-{idx}"));
@@ -199,11 +212,11 @@ impl DynamicScenarioProvider {
 
 #[async_trait]
 impl VisualizationDataProvider for DynamicScenarioProvider {
-    async fn get_primals(&self) -> Result<Vec<PrimalInfo>> {
+    async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         Ok(self.primals.clone())
     }
 
-    async fn get_topology(&self) -> Result<Vec<TopologyEdge>> {
+    async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
         // Auto-generate topology (NUCLEUS-centric or ring mesh)
         let mut edges = Vec::new();
 
@@ -240,7 +253,7 @@ impl VisualizationDataProvider for DynamicScenarioProvider {
         Ok(edges)
     }
 
-    async fn health_check(&self) -> Result<String> {
+    async fn health_check(&self) -> DiscoveryResult<String> {
         let name = self.name().unwrap_or("Dynamic Scenario");
         Ok(format!(
             "Dynamic scenario '{}' with {} primals",

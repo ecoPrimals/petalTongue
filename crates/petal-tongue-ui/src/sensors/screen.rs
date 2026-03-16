@@ -16,7 +16,7 @@
 //! The actual FFI is performed by trusted crates (winit, egui, etc.) which
 //! provide safe interfaces to the underlying platform APIs.
 
-use anyhow::Result;
+use crate::error::{Result, SensorError};
 use async_trait::async_trait;
 use petal_tongue_core::constants;
 use petal_tongue_core::{Sensor, SensorCapabilities, SensorEvent, SensorType};
@@ -89,7 +89,7 @@ impl Sensor for ScreenSensor {
         true
     }
 
-    async fn poll_events(&mut self) -> Result<Vec<SensorEvent>> {
+    async fn poll_events(&mut self) -> anyhow::Result<Vec<SensorEvent>> {
         let mut events = Vec::new();
 
         // Generate heartbeat event if we have one
@@ -189,15 +189,21 @@ pub async fn discover() -> Option<ScreenSensor> {
 pub fn parse_virtual_size_content(content: &str) -> Result<(usize, usize)> {
     let parts: Vec<&str> = content.trim().split(',').collect();
     if parts.len() >= 2 {
-        let width: usize = parts[0]
-            .parse()
-            .map_err(|e| anyhow::anyhow!("Invalid framebuffer width '{}': {e}", parts[0]))?;
-        let height: usize = parts[1]
-            .parse()
-            .map_err(|e| anyhow::anyhow!("Invalid framebuffer height '{}': {e}", parts[1]))?;
+        let width: usize = parts[0].parse().map_err(|e: std::num::ParseIntError| {
+            SensorError::InvalidFramebufferWidth {
+                value: parts[0].to_string(),
+                detail: e.to_string(),
+            }
+        })?;
+        let height: usize = parts[1].parse().map_err(|e: std::num::ParseIntError| {
+            SensorError::InvalidFramebufferHeight {
+                value: parts[1].to_string(),
+                detail: e.to_string(),
+            }
+        })?;
         Ok((width, height))
     } else {
-        anyhow::bail!("Unexpected sysfs format: '{}'", content.trim())
+        Err(SensorError::UnexpectedSysfsFormat(content.trim().to_string()).into())
     }
 }
 
@@ -209,10 +215,19 @@ fn query_framebuffer_dimensions(fb_path: &str) -> Result<(usize, usize)> {
 
     let sysfs_path = format!("/sys/class/graphics/{fb_name}/virtual_size");
 
-    let content = std::fs::read_to_string(&sysfs_path)
-        .map_err(|e| anyhow::anyhow!("Cannot read framebuffer sysfs at {sysfs_path}: {e}"))?;
+    let content =
+        std::fs::read_to_string(&sysfs_path).map_err(|e| SensorError::FramebufferSysfsRead {
+            path: sysfs_path.clone(),
+            source: e,
+        })?;
 
-    parse_virtual_size_content(&content).map_err(|e| anyhow::anyhow!("{e} in {sysfs_path}"))
+    parse_virtual_size_content(&content).map_err(|e| {
+        SensorError::FramebufferParse {
+            message: e.to_string(),
+            path: sysfs_path.clone(),
+        }
+        .into()
+    })
 }
 
 /// Query display dimensions from X11/Wayland/native APIs

@@ -24,7 +24,7 @@
 //! ```rust,no_run
 //! use petal_tongue_entropy::prelude::*;
 //!
-//! # async fn example() -> anyhow::Result<()> {
+//! # async fn example() -> Result<(), petal_tongue_entropy::EntropyError> {
 //! // Create narrative capture (always available, no audio dependencies)
 //! let mut capture = NarrativeEntropyCapture::new();
 //!
@@ -49,10 +49,12 @@
 //! ```
 
 #![warn(missing_docs)]
-#![warn(clippy::all)]
 #![forbid(unsafe_code)]
 
+pub mod error;
 pub mod quality;
+
+pub use error::EntropyError;
 pub mod stream;
 pub mod types;
 
@@ -64,6 +66,7 @@ pub mod visual;
 
 /// Prelude for common imports
 pub mod prelude {
+    pub use crate::error::EntropyError;
     pub use crate::quality::*;
     pub use crate::stream::*;
     pub use crate::types::*;

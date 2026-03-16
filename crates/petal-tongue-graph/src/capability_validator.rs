@@ -145,7 +145,7 @@ mod tests {
             id: id.to_string().into(),
             name: name.to_string(),
             primal_type: "test".to_string(),
-            endpoint: format!("test://{}", id),
+            endpoint: format!("test://{id}"),
             capabilities: capabilities
                 .iter()
                 .map(std::string::ToString::to_string)

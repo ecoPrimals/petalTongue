@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use anyhow::Result;
+use crate::error::{PetalTongueError, Result};
 
 use super::types::{DynamicData, SchemaVersion};
 
@@ -51,6 +51,9 @@ impl MigrationRegistry {
             }
         }
 
-        anyhow::bail!("No migration found for {from} → {to}")
+        Err(PetalTongueError::NoMigration(
+            from.to_string(),
+            to.to_string(),
+        ))
     }
 }

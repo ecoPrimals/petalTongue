@@ -193,8 +193,16 @@ async fn test_jsonrpc_connection_timeout() {
     let result = provider.health_check().await;
 
     assert!(result.is_err());
-    let error_str = result.unwrap_err().to_string();
-    assert!(error_str.contains("No such file") || error_str.contains("timeout"));
+    let error_str = format!("{:?}", result.unwrap_err());
+    assert!(
+        error_str.contains("No such file")
+            || error_str.contains("timeout")
+            || error_str.contains("Timeout")
+            || error_str.contains("ConnectionTimeout")
+            || error_str.contains("Connection")
+            || error_str.contains("Io"),
+        "unexpected error: {error_str}"
+    );
 }
 
 #[tokio::test]

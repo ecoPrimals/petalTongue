@@ -16,7 +16,7 @@
 //! - Methods: Semantic naming (`neural_api`.*)
 //! - Discovery: Capability-based, no hardcoding
 
-use anyhow::{Context, Result};
+use crate::biomeos_error::BiomeOsClientError;
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -40,7 +40,7 @@ impl BiomeOSJsonRpcClient {
     /// 1. Environment variable: `BIOMEOS_SOCKET`
     /// 2. XDG runtime: `/run/user/<uid>/biomeos-neural-api.sock`
     /// 3. Fallback: `/tmp/biomeos-neural-api.sock`
-    pub fn new() -> Result<Self> {
+    pub fn new() -> Result<Self, BiomeOsClientError> {
         let socket_path = Self::discover_socket_path()?;
 
         Ok(Self {
@@ -66,7 +66,7 @@ impl BiomeOSJsonRpcClient {
     /// 4. `/tmp/biomeos-neural-api.sock` - legacy fallback
     ///
     /// Returns error if no socket found (graceful degradation over silent failure)
-    fn discover_socket_path() -> Result<PathBuf> {
+    fn discover_socket_path() -> Result<PathBuf, BiomeOsClientError> {
         // 1. Check environment variables (explicit override - highest priority)
         for env_var in ["BIOMEOS_SOCKET", "BIOMEOS_NEURAL_API_SOCKET"] {
             if let Ok(path) = std::env::var(env_var) {
@@ -105,11 +105,12 @@ impl BiomeOSJsonRpcClient {
         }
 
         // No socket found - return helpful error instead of silent default
-        anyhow::bail!(
+        Err(BiomeOsClientError::SocketNotFound(
             "biomeOS socket not found. Set BIOMEOS_SOCKET env var or ensure biomeOS is running. \
             Checked: $BIOMEOS_SOCKET, $XDG_RUNTIME_DIR/biomeos-neural-api.sock, \
             /run/user/$UID/biomeos-neural-api.sock, /tmp/biomeos-neural-api.sock"
-        )
+                .to_string(),
+        ))
     }
 
     /// Check if `BiomeOS` is available
@@ -125,7 +126,7 @@ impl BiomeOSJsonRpcClient {
     }
 
     /// Health check (semantic: `neural_api.health`)
-    pub async fn health_check(&self) -> Result<bool> {
+    pub async fn health_check(&self) -> Result<bool, BiomeOsClientError> {
         let request = json!({
             "jsonrpc": "2.0",
             "method": "neural_api.health",
@@ -140,7 +141,7 @@ impl BiomeOSJsonRpcClient {
     }
 
     /// Discover primals (semantic: `primal.list`)
-    pub async fn discover_primals(&self) -> Result<Vec<PrimalInfo>> {
+    pub async fn discover_primals(&self) -> Result<Vec<PrimalInfo>, BiomeOsClientError> {
         let request = json!({
             "jsonrpc": "2.0",
             "method": "primal.list",
@@ -148,13 +149,10 @@ impl BiomeOSJsonRpcClient {
             "id": self.next_request_id(),
         });
 
-        let result = self
-            .send_request(&request)
-            .await
-            .context("Failed to discover primals from BiomeOS")?;
+        let result = self.send_request(&request).await?;
 
         let primals: Vec<PrimalInfo> = serde_json::from_value(result)
-            .context("Failed to parse primals from BiomeOS response")?;
+            .map_err(|e| BiomeOsClientError::Parse(format!("Failed to parse primals: {e}")))?;
 
         info!("✅ Discovered {} primals via JSON-RPC", primals.len());
 
@@ -162,7 +160,7 @@ impl BiomeOSJsonRpcClient {
     }
 
     /// Get topology (semantic: `neural_api.get_topology`)
-    pub async fn get_topology(&self) -> Result<Vec<TopologyEdge>> {
+    pub async fn get_topology(&self) -> Result<Vec<TopologyEdge>, BiomeOsClientError> {
         let request = json!({
             "jsonrpc": "2.0",
             "method": "neural_api.get_topology",
@@ -170,13 +168,10 @@ impl BiomeOSJsonRpcClient {
             "id": self.next_request_id(),
         });
 
-        let result = self
-            .send_request(&request)
-            .await
-            .context("Failed to get topology from BiomeOS")?;
+        let result = self.send_request(&request).await?;
 
         let edges: Vec<TopologyEdge> = serde_json::from_value(result)
-            .context("Failed to parse topology from BiomeOS response")?;
+            .map_err(|e| BiomeOsClientError::Parse(format!("Failed to parse topology: {e}")))?;
 
         debug!("✅ Retrieved {} topology edges via JSON-RPC", edges.len());
 
@@ -184,29 +179,32 @@ impl BiomeOSJsonRpcClient {
     }
 
     /// Send a JSON-RPC request
-    async fn send_request(&self, request: &Value) -> Result<Value> {
+    async fn send_request(&self, request: &Value) -> Result<Value, BiomeOsClientError> {
         // Connect to BiomeOS
-        let mut stream = UnixStream::connect(&self.socket_path)
-            .await
-            .with_context(|| {
-                format!(
-                    "Failed to connect to BiomeOS at {}\n\
+        let mut stream = UnixStream::connect(&self.socket_path).await.map_err(|e| {
+            BiomeOsClientError::Connect(format!(
+                "Failed to connect to BiomeOS at {}\n\
                     \n\
                     Troubleshooting:\n\
                     - Ensure BiomeOS nucleus is running\n\
                     - Check BIOMEOS_SOCKET environment variable\n\
                     - Verify socket permissions\n\
-                    - Check XDG_RUNTIME_DIR is set correctly",
-                    self.socket_path.display()
-                )
-            })?;
+                    - Check XDG_RUNTIME_DIR is set correctly: {e}",
+                self.socket_path.display()
+            ))
+        })?;
 
         // Send request (line-delimited JSON-RPC)
-        let request_str = serde_json::to_string(request)?;
+        let request_str =
+            serde_json::to_string(request).map_err(|e| BiomeOsClientError::Parse(e.to_string()))?;
         stream
             .write_all(format!("{request_str}\n").as_bytes())
-            .await?;
-        stream.flush().await?;
+            .await
+            .map_err(|e| BiomeOsClientError::Io(e.to_string()))?;
+        stream
+            .flush()
+            .await
+            .map_err(|e| BiomeOsClientError::Io(e.to_string()))?;
 
         // Read response
         let (reader, _) = stream.into_split();
@@ -216,26 +214,27 @@ impl BiomeOSJsonRpcClient {
         reader
             .read_line(&mut response_line)
             .await
-            .context("Failed to read response from BiomeOS")?;
+            .map_err(|e| BiomeOsClientError::Io(format!("Failed to read response: {e}")))?;
 
         // Parse response
-        let response: Value =
-            serde_json::from_str(&response_line).context("Failed to parse JSON-RPC response")?;
+        let response: Value = serde_json::from_str(&response_line).map_err(|e| {
+            BiomeOsClientError::Parse(format!("Failed to parse JSON-RPC response: {e}"))
+        })?;
 
         // Check for JSON-RPC error
         if let Some(error) = response.get("error") {
-            anyhow::bail!(
+            return Err(BiomeOsClientError::JsonRpcError(format!(
                 "BiomeOS returned JSON-RPC error: {error}\n\
                 \n\
                 This indicates BiomeOS received the request but encountered an error."
-            );
+            )));
         }
 
         // Extract result
         response
             .get("result")
             .cloned()
-            .ok_or_else(|| anyhow::anyhow!("No result field in JSON-RPC response"))
+            .ok_or(BiomeOsClientError::NoResult)
     }
 
     /// Get next request ID

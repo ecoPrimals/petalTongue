@@ -21,17 +21,20 @@
 //! - No sleeps (use proper sync primitives)
 //! - Test failures = production issues
 
-use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use petal_tongue_core::config_system::Config;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod cli_mode;
 mod data_service;
+mod error;
 mod headless_mode;
+mod server_mode;
 mod tui_mode;
 mod ui_mode;
 mod web_mode;
+
+use crate::error::AppError;
 
 #[derive(Parser)]
 #[command(name = "petaltongue")]
@@ -106,6 +109,9 @@ enum Commands {
         workers: usize,
     },
 
+    /// Run IPC server (Unix socket JSON-RPC) without GUI
+    Server,
+
     /// Show status and system info (Pure Rust! ✅)
     Status {
         /// Show detailed information
@@ -119,7 +125,7 @@ enum Commands {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<(), AppError> {
     let cli = Cli::parse();
 
     // Initialize structured logging (no println!, proper tracing)
@@ -134,7 +140,7 @@ async fn main() -> Result<()> {
 
     // Load configuration (environment-driven, XDG-compliant)
     tracing::info!("⚙️ Loading configuration from environment...");
-    let config = Config::from_env().context("Failed to load configuration")?;
+    let config = Config::from_env().map_err(|e| AppError::Other(e.to_string()))?;
     tracing::info!(
         web_port = config.network.web_port,
         headless_port = config.network.headless_port,
@@ -144,10 +150,7 @@ async fn main() -> Result<()> {
     // Initialize DataService ONCE (single source of truth for all modes)
     tracing::info!("📊 Initializing unified DataService...");
     let mut data_service = data_service::DataService::new();
-    data_service
-        .init()
-        .await
-        .context("Failed to initialize DataService")?;
+    data_service.init().await?;
     let data_service = std::sync::Arc::new(data_service);
     tracing::info!("✅ DataService initialized - all modes will use same data source");
 
@@ -201,6 +204,10 @@ async fn main() -> Result<()> {
             );
             headless_mode::run(&bind_addr, workers, data_service).await
         }
+        Commands::Server => {
+            tracing::info!(mode = "server", "Launching IPC server (no GUI)");
+            server_mode::run(data_service).await
+        }
         Commands::Status { verbose, format } => {
             tracing::info!(
                 mode = "status",
@@ -226,31 +233,30 @@ async fn main() -> Result<()> {
 }
 
 /// Initialize structured logging with proper filtering
-fn init_tracing(level: &str, format: &str) -> Result<()> {
+fn init_tracing(level: &str, format: &str) -> Result<(), AppError> {
     // Parse log level
-    let env_filter =
-        tracing_subscriber::EnvFilter::try_new(level).context("Failed to parse log level")?;
+    let env_filter = tracing_subscriber::EnvFilter::try_new(level)
+        .map_err(|e| AppError::Other(format!("Failed to parse log level: {e}")))?;
 
     // Build subscriber based on format
     match format {
         "json" => {
-            // JSON logging for production (requires json feature)
             tracing_subscriber::registry()
                 .with(env_filter)
                 .with(tracing_subscriber::fmt::layer().with_target(true))
                 .try_init()
-                .context("Failed to initialize JSON logging")?;
+                .map_err(|e| AppError::Other(format!("Failed to initialize JSON logging: {e}")))?;
         }
         "compact" => {
-            // Compact logging
             tracing_subscriber::registry()
                 .with(env_filter)
                 .with(tracing_subscriber::fmt::layer().compact())
                 .try_init()
-                .context("Failed to initialize compact logging")?;
+                .map_err(|e| {
+                    AppError::Other(format!("Failed to initialize compact logging: {e}"))
+                })?;
         }
         _ => {
-            // Pretty logging (default)
             tracing_subscriber::registry()
                 .with(env_filter)
                 .with(
@@ -261,7 +267,9 @@ fn init_tracing(level: &str, format: &str) -> Result<()> {
                         .with_line_number(true),
                 )
                 .try_init()
-                .context("Failed to initialize pretty logging")?;
+                .map_err(|e| {
+                    AppError::Other(format!("Failed to initialize pretty logging: {e}"))
+                })?;
         }
     }
 
@@ -331,6 +339,12 @@ mod tests {
     fn test_cli_parse_headless() {
         let cli = Cli::parse_from(["petaltongue", "headless"]);
         assert!(matches!(cli.command, Commands::Headless { .. }));
+    }
+
+    #[test]
+    fn test_cli_parse_server() {
+        let cli = Cli::parse_from(["petaltongue", "server"]);
+        assert!(matches!(cli.command, Commands::Server));
     }
 
     #[test]
@@ -602,5 +616,45 @@ mod tests {
         let config = Config::from_env().expect("Config::from_env should load");
         assert!(config.network.web_port > 0);
         assert!(config.network.headless_port > 0);
+    }
+
+    #[test]
+    fn test_web_bind_addr_fallback_format() {
+        let port = 3000u16;
+        let addr = format!("0.0.0.0:{port}");
+        assert_eq!(addr, "0.0.0.0:3000");
+    }
+
+    #[test]
+    fn test_web_bind_addr_explicit_override() {
+        let bind = Some("127.0.0.1:9090".to_string());
+        let addr = bind.as_deref().unwrap_or("0.0.0.0:3000");
+        assert_eq!(addr, "127.0.0.1:9090");
+    }
+
+    #[test]
+    fn test_headless_bind_addr_fallback_format() {
+        let port = 8080u16;
+        let addr = format!("0.0.0.0:{port}");
+        assert_eq!(addr, "0.0.0.0:8080");
+    }
+
+    #[test]
+    fn test_subcommand_routing_web_bind_resolution() {
+        // When --bind is omitted, main uses config.network.web_port
+        let cli = Cli::parse_from(["petaltongue", "web"]);
+        let Commands::Web { bind, .. } = cli.command else {
+            unreachable!("parsed web")
+        };
+        assert!(bind.is_none(), "default web has no explicit bind");
+    }
+
+    #[test]
+    fn test_subcommand_routing_headless_bind_resolution() {
+        let cli = Cli::parse_from(["petaltongue", "headless"]);
+        let Commands::Headless { bind, .. } = cli.command else {
+            unreachable!("parsed headless")
+        };
+        assert!(bind.is_none(), "default headless has no explicit bind");
     }
 }

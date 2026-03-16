@@ -4,9 +4,9 @@
 //! Interactive terminal interface using crossterm (pure Rust, cross-platform).
 //! Works over SSH, serial connections, and any terminal emulator.
 
+use crate::error::Result;
 use crate::trait_def::{ExportFormat, UICapability, UniversalUI};
 use crate::utils::{health_to_emoji, health_to_percentage};
-use anyhow::Result;
 use petal_tongue_core::GraphEngine;
 use std::sync::{Arc, RwLock};
 

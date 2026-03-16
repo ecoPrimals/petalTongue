@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 use crate::json_rpc::JsonRpcRequest;
+use crate::server::IpcServerError;
 use crate::socket_path;
 use crate::unix_socket_connection;
 use crate::unix_socket_rpc_handlers::RpcHandlers;
 use crate::visualization_handler::VisualizationState;
-use anyhow::Result;
 use petal_tongue_core::graph_engine::GraphEngine;
 use serde_json::Value;
 use std::path::PathBuf;
@@ -24,7 +24,7 @@ pub struct UnixSocketServer {
 #[cfg_attr(not(test), allow(dead_code))]
 impl UnixSocketServer {
     /// Create a new Unix socket server with graph and visualization state
-    pub fn new(graph: Arc<std::sync::RwLock<GraphEngine>>) -> Result<Self> {
+    pub fn new(graph: Arc<std::sync::RwLock<GraphEngine>>) -> Result<Self, IpcServerError> {
         let family_id = socket_path::get_family_id();
         let socket_path = socket_path::get_petaltongue_socket_path()?;
         let viz_state = Arc::new(std::sync::RwLock::new(VisualizationState::new()));
@@ -92,13 +92,15 @@ impl UnixSocketServer {
     }
 
     /// Start the server: bind socket and accept connections
-    pub async fn start(self: Arc<Self>) -> Result<()> {
+    pub async fn start(self: Arc<Self>) -> Result<(), IpcServerError> {
         if self.socket_path.exists() {
-            std::fs::remove_file(&self.socket_path)?;
+            std::fs::remove_file(&self.socket_path)
+                .map_err(|e| IpcServerError::IoError(format!("{e}")))?;
             debug!("Removed old socket: {}", self.socket_path.display());
         }
 
-        let listener = UnixListener::bind(&self.socket_path)?;
+        let listener = UnixListener::bind(&self.socket_path)
+            .map_err(|e| IpcServerError::SocketError(format!("{e}")))?;
         info!(
             "🔌 Unix socket server listening: {}",
             self.socket_path.display()

@@ -9,7 +9,7 @@
 //! NO hardcoding - just discovers whatever socket-based audio exists!
 
 use crate::audio::traits::{AudioBackend, AudioCapabilities, BackendMetadata, BackendType};
-use anyhow::{Context, Result};
+use crate::error::{AudioError, Result};
 use async_trait::async_trait;
 use std::path::{Path, PathBuf};
 use tracing::{debug, info, warn};
@@ -152,18 +152,18 @@ impl AudioBackend for SocketBackend {
         #[cfg(unix)]
         {
             let path = self.socket.path.clone();
-            let path_display = path.display().to_string();
+            let _path_display = path.display().to_string();
             let stream =
                 tokio::task::spawn_blocking(move || std::os::unix::net::UnixStream::connect(&path))
                     .await
-                    .context("spawn_blocking for socket connect")?
-                    .with_context(|| format!("Failed to connect to socket at {}", path_display))?;
+                    .map_err(|e| AudioError::SocketTaskFailed(e.to_string()))?
+                    .map_err(|e| AudioError::SocketConnectionFailed(e.to_string()))?;
             self.connection = Some(stream);
         }
         #[cfg(not(unix))]
         {
             let _ = self;
-            anyhow::bail!("Socket audio backend is not available on this platform");
+            return Err(AudioError::SocketBackendUnavailable.into());
         }
         Ok(())
     }
@@ -172,7 +172,7 @@ impl AudioBackend for SocketBackend {
         #[cfg(unix)]
         {
             if self.connection.is_none() {
-                anyhow::bail!("Socket audio backend not initialized: no connection");
+                return Err(AudioError::SocketBackendNotInitialized.into());
             }
             debug!(
                 "🔌 Socket playback: {} samples at {} Hz via {} (protocol not implemented)",
@@ -184,14 +184,16 @@ impl AudioBackend for SocketBackend {
                 "PipeWire/PulseAudio protocol negotiation not yet implemented for {}",
                 self.socket.detected_name
             );
-            anyhow::bail!(
+            return Err(AudioError::SocketConnectionFailed(
                 "Socket audio protocol not yet implemented - backend reports not available"
-            );
+                    .to_string(),
+            )
+            .into());
         }
         #[cfg(not(unix))]
         {
             let _ = (samples, sample_rate);
-            anyhow::bail!("Socket audio backend is not available on this platform");
+            Err(AudioError::SocketBackendUnavailable.into())
         }
     }
 

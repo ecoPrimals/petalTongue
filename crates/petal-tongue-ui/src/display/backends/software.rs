@@ -12,7 +12,7 @@
 //! - Pure Rust, no native dependencies
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
-use anyhow::{Result, anyhow};
+use crate::error::{DisplayError, Result};
 use async_trait::async_trait;
 use petal_tongue_core::constants;
 use tracing::info;
@@ -249,11 +249,11 @@ impl DisplayBackend for SoftwareDisplay {
         // Verify buffer size
         let expected_size = (self.width * self.height * 4) as usize;
         if buffer.len() != expected_size {
-            return Err(anyhow!(
-                "Invalid buffer size: expected {}, got {}",
-                expected_size,
-                buffer.len()
-            ));
+            return Err(DisplayError::InvalidBufferSize {
+                expected: expected_size,
+                actual: buffer.len(),
+            }
+            .into());
         }
 
         // Copy to internal buffer

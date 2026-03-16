@@ -205,13 +205,11 @@ async fn test_session_list() {
         .collect();
     assert!(
         titles.contains(&"First Session"),
-        "expected First Session in list: {:?}",
-        titles
+        "expected First Session in list: {titles:?}"
     );
     assert!(
         titles.contains(&"Second Session"),
-        "expected Second Session in list: {:?}",
-        titles
+        "expected Second Session in list: {titles:?}"
     );
 }
 

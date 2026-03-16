@@ -2,7 +2,7 @@
 
 mod types;
 
-use anyhow::{Context, Result};
+use crate::error::{GraphEditorError, Result};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -88,12 +88,14 @@ impl GraphEditorService {
         );
 
         let mut graphs = self.graphs.write().await;
-        let graph = graphs.get_mut(&req.graph_id).context("Graph not found")?;
+        let graph = graphs
+            .get_mut(&req.graph_id)
+            .ok_or(GraphEditorError::GraphNotFound)?;
 
         let mut node = graph
             .get_node(&req.node_id)
             .cloned()
-            .context("Node not found")?;
+            .ok_or(GraphEditorError::RpcNodeNotFound)?;
 
         if let serde_json::Value::Object(changes) = req.changes
             && let serde_json::Value::Object(ref mut props) = node.properties
@@ -129,14 +131,16 @@ impl GraphEditorService {
         );
 
         let mut graphs = self.graphs.write().await;
-        let graph = graphs.get_mut(&req.graph_id).context("Graph not found")?;
+        let graph = graphs
+            .get_mut(&req.graph_id)
+            .ok_or(GraphEditorError::GraphNotFound)?;
 
         match graph.remove_node(&req.node_id) {
             Ok(affected_edges) => Ok(RemoveNodeResponse {
                 success: true,
                 affected_edges,
             }),
-            Err(e) => anyhow::bail!("Failed to remove node: {e}"),
+            Err(e) => Err(GraphEditorError::RemoveNodeFailed(e.to_string()).into()),
         }
     }
 
@@ -147,7 +151,9 @@ impl GraphEditorService {
         );
 
         let mut graphs = self.graphs.write().await;
-        let graph = graphs.get_mut(&req.graph_id).context("Graph not found")?;
+        let graph = graphs
+            .get_mut(&req.graph_id)
+            .ok_or(GraphEditorError::GraphNotFound)?;
 
         let edge_id = format!("edge-{}", uuid::Uuid::new_v4());
         let edge = GraphEdge::new(edge_id.clone(), req.from, req.to, req.edge_type);
@@ -178,7 +184,7 @@ impl GraphEditorService {
         let graph = graphs
             .get(&req.graph_id)
             .cloned()
-            .context("Graph not found")?;
+            .ok_or(GraphEditorError::GraphNotFound)?;
 
         let template_id = format!("template-{}", uuid::Uuid::new_v4());
         let saved_at = chrono::Utc::now();
@@ -212,7 +218,7 @@ impl GraphEditorService {
         let templates = self.templates.read().await;
         let template = templates
             .get(&req.template_id)
-            .context("Template not found")?;
+            .ok_or(GraphEditorError::TemplateNotFound)?;
 
         let graph = template.graph.clone();
 
@@ -230,7 +236,7 @@ impl GraphEditorService {
     pub async fn get_preview(&self, req: GetPreviewRequest) -> Result<GetPreviewResponse> {
         debug!("Getting execution preview for graph '{}'", req.graph.id);
 
-        req.graph.validate().context("Graph validation failed")?;
+        req.graph.validate()?;
 
         let execution_order = req.graph.topological_sort()?;
 

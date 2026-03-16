@@ -9,7 +9,7 @@
 //! - Non-blocking operations throughout
 //! - Proper error propagation
 
-use anyhow::{Context, Result};
+use crate::errors::{DiscoveryError, DiscoveryResult};
 use petal_tongue_core::types::{PrimalHealthStatus, PrimalInfo};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -51,7 +51,7 @@ impl SongbirdClient {
     ///
     /// Uses `DISCOVERY_SERVICE_SOCKET` env for socket name (default: discovery-service).
     /// Set to `songbird` for Songbird deployments.
-    pub fn discover(family_id: Option<&str>) -> Result<Self> {
+    pub fn discover(family_id: Option<&str>) -> DiscoveryResult<Self> {
         let family = family_id
             .map(String::from)
             .or_else(|| std::env::var("FAMILY_ID").ok())
@@ -79,9 +79,7 @@ impl SongbirdClient {
             warn!("     - {}", path.display());
         }
 
-        Err(anyhow::anyhow!(
-            "Discovery service not found. Is it running? (looking for {socket_name})"
-        ))
+        Err(DiscoveryError::DiscoveryServiceNotFound { socket_name })
     }
 
     /// Get standard search paths for Unix sockets
@@ -130,7 +128,10 @@ impl SongbirdClient {
     /// - "storage" - primals that provide persistent storage (`NestGate`)
     /// - "compute" - primals that provide execution (`ToadStool`)
     /// - "ai" - primals that provide AI inference (Squirrel)
-    pub async fn discover_by_capability(&self, capability: &str) -> Result<Vec<PrimalInfo>> {
+    pub async fn discover_by_capability(
+        &self,
+        capability: &str,
+    ) -> DiscoveryResult<Vec<PrimalInfo>> {
         debug!("🔍 Querying Songbird for capability: {}", capability);
 
         let request = json!({
@@ -147,7 +148,9 @@ impl SongbirdClient {
         // Parse primals from response
         let primals = result
             .as_array()
-            .ok_or_else(|| anyhow::anyhow!("Expected array of primals"))?;
+            .ok_or_else(|| DiscoveryError::ExpectedArray {
+                context: " of primals".to_string(),
+            })?;
 
         let mut primal_infos = Vec::new();
         for primal in primals {
@@ -174,7 +177,7 @@ impl SongbirdClient {
     ///
     /// Returns the complete list of primals known to Songbird.
     /// Uses discovery.query("*") to get all registered primals.
-    pub async fn get_all_primals(&self) -> Result<Vec<PrimalInfo>> {
+    pub async fn get_all_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         debug!("🔍 Querying Songbird for all registered primals");
 
         // Songbird's API uses discovery.query with "*" to get all primals
@@ -192,7 +195,9 @@ impl SongbirdClient {
         // Parse primals from response
         let primals = result
             .as_array()
-            .ok_or_else(|| anyhow::anyhow!("Expected array of primals"))?;
+            .ok_or_else(|| DiscoveryError::ExpectedArray {
+                context: " of primals".to_string(),
+            })?;
 
         let mut primal_infos = Vec::new();
         for primal in primals {
@@ -215,7 +220,7 @@ impl SongbirdClient {
     }
 
     /// Health check - verify Songbird is responding (semantic: health.check)
-    pub async fn health_check(&self) -> Result<String> {
+    pub async fn health_check(&self) -> DiscoveryResult<String> {
         let request = json!({
             "jsonrpc": "2.0",
             "method": "health.check",  // Semantic naming
@@ -231,7 +236,7 @@ impl SongbirdClient {
     /// Send JSON-RPC request to Songbird
     ///
     /// Uses aggressive timeouts to prevent hanging on unresponsive Songbird.
-    async fn send_request(&self, request: Value) -> Result<Value> {
+    async fn send_request(&self, request: Value) -> DiscoveryResult<Value> {
         // CRITICAL: Wrap socket connect in timeout
         let connect_timeout = Duration::from_millis(200);
 
@@ -241,16 +246,12 @@ impl SongbirdClient {
             {
                 Ok(Ok(stream)) => stream,
                 Ok(Err(e)) => {
-                    return Err(e).context(format!(
-                        "Failed to connect to Songbird at {}",
-                        self.socket_path.display()
-                    ));
+                    return Err(DiscoveryError::Io(e));
                 }
                 Err(_) => {
-                    return Err(anyhow::anyhow!(
-                        "Connection timeout to Songbird at {}",
-                        self.socket_path.display()
-                    ));
+                    return Err(DiscoveryError::ConnectionTimeout {
+                        endpoint: self.socket_path.display().to_string(),
+                    });
                 }
             };
 
@@ -260,7 +261,7 @@ impl SongbirdClient {
         // CRITICAL: Wrap write operations in timeout
         let write_timeout = Duration::from_millis(100);
 
-        let request_json = serde_json::to_string(&request)?;
+        let request_json = serde_json::to_string(&request).map_err(DiscoveryError::Json)?;
 
         match tokio::time::timeout(write_timeout, async {
             writer.write_all(request_json.as_bytes()).await?;
@@ -271,8 +272,12 @@ impl SongbirdClient {
         .await
         {
             Ok(Ok(())) => {}
-            Ok(Err(e)) => return Err(e.into()),
-            Err(_) => return Err(anyhow::anyhow!("Write timeout to Songbird")),
+            Ok(Err(e)) => return Err(DiscoveryError::Io(e)),
+            Err(_) => {
+                return Err(DiscoveryError::WriteTimeout {
+                    endpoint: "Songbird".to_string(),
+                });
+            }
         }
 
         // CRITICAL: Wrap read operation in timeout
@@ -281,24 +286,30 @@ impl SongbirdClient {
         let mut line = String::new();
         match tokio::time::timeout(read_timeout, reader.read_line(&mut line)).await {
             Ok(Ok(_)) => {}
-            Ok(Err(e)) => return Err(e.into()),
-            Err(_) => return Err(anyhow::anyhow!("Read timeout from Songbird")),
+            Ok(Err(e)) => return Err(DiscoveryError::Io(e)),
+            Err(_) => {
+                return Err(DiscoveryError::ReadTimeout {
+                    endpoint: "Songbird".to_string(),
+                });
+            }
         }
 
         // Parse response
-        let response: JsonRpcResponse = serde_json::from_str(&line)?;
+        let response: JsonRpcResponse =
+            serde_json::from_str(&line).map_err(DiscoveryError::Json)?;
 
         if let Some(error) = response.error {
-            anyhow::bail!(
-                "Songbird returned error: {} (code: {})",
-                error.message,
-                error.code
-            );
+            return Err(DiscoveryError::JsonRpcError {
+                code: Some(error.code),
+                message: error.message,
+            });
         }
 
         response
             .result
-            .ok_or_else(|| anyhow::anyhow!("No result in Songbird response"))
+            .ok_or_else(|| DiscoveryError::NoResultInResponse {
+                context: " (Songbird)".to_string(),
+            })
     }
 
     /// Parse a primal from Songbird's JSON response
@@ -306,15 +317,21 @@ impl SongbirdClient {
         clippy::unused_self,
         reason = "method for consistency with other parsers"
     )]
-    fn parse_primal(&self, value: &Value) -> Result<PrimalInfo> {
+    fn parse_primal(&self, value: &Value) -> DiscoveryResult<PrimalInfo> {
         let id = value["id"]
             .as_str()
-            .ok_or_else(|| anyhow::anyhow!("Missing 'id' field"))?
+            .ok_or_else(|| DiscoveryError::MissingField {
+                field: "id".to_string(),
+                context: String::new(),
+            })?
             .to_string();
 
         let name = value["name"]
             .as_str()
-            .ok_or_else(|| anyhow::anyhow!("Missing 'name' field"))?
+            .ok_or_else(|| DiscoveryError::MissingField {
+                field: "name".to_string(),
+                context: String::new(),
+            })?
             .to_string();
 
         let primal_type = value["primal_type"]
@@ -325,7 +342,10 @@ impl SongbirdClient {
 
         let endpoint = value["endpoint"]
             .as_str()
-            .ok_or_else(|| anyhow::anyhow!("Missing 'endpoint' field"))?
+            .ok_or_else(|| DiscoveryError::MissingField {
+                field: "endpoint".to_string(),
+                context: String::new(),
+            })?
             .to_string();
 
         let capabilities: Vec<String> = value["capabilities"]
@@ -691,7 +711,11 @@ mod tests {
         let family = "nat0";
         let base = petal_tongue_core::constants::discovery_service_socket_name();
         let socket_name = format!("{base}-{family}.sock");
-        assert!(socket_name.ends_with(".sock"));
+        assert!(
+            std::path::Path::new(&socket_name)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("sock"))
+        );
         assert!(socket_name.contains("nat0"));
     }
 }

@@ -1,6 +1,6 @@
 # Quick Start -- petalTongue
 
-**Last Updated**: March 15, 2026
+**Last Updated**: March 16, 2026
 **Version**: 1.6.3
 
 ---
@@ -14,14 +14,15 @@ petaltongue ui          # Desktop GUI (egui)
 petaltongue tui         # Terminal UI (ratatui)
 petaltongue web         # Web server (axum)
 petaltongue headless    # Headless rendering (SVG/PNG/JSON)
+petaltongue server      # IPC server (no GUI)
 petaltongue status      # System status
 ```
 
 ## Development
 
 ```bash
-cargo test --workspace                          # 5,188 tests
-cargo clippy --workspace -- -D warnings         # Lint (pedantic, clean)
+cargo test --workspace                          # 5,076 tests
+cargo clippy --workspace --all-targets -- -D warnings -W clippy::pedantic -W clippy::nursery
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
 ```

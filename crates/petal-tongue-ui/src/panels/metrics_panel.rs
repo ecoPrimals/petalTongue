@@ -82,7 +82,7 @@ impl PanelInstance for MetricsPanel {
         "System Metrics"
     }
 
-    fn on_open(&mut self) -> anyhow::Result<()> {
+    fn on_open(&mut self) -> crate::error::Result<()> {
         tracing::info!("Metrics Panel opened - discovering Neural API");
 
         // Discover Neural API in blocking context
@@ -102,7 +102,7 @@ impl PanelInstance for MetricsPanel {
         Ok(())
     }
 
-    fn on_close(&mut self) -> anyhow::Result<()> {
+    fn on_close(&mut self) -> crate::error::Result<()> {
         tracing::info!("Metrics Panel closed");
         Ok(())
     }

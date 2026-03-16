@@ -218,8 +218,8 @@ impl BrailleCompiler {
                             grid,
                             cols,
                             rows,
-                            tx + f64::from(dx) * 2.0,
-                            ty + f64::from(dy) * 2.0,
+                            f64::from(dx).mul_add(2.0, tx),
+                            f64::from(dy).mul_add(2.0, ty),
                             vw,
                             vh,
                         );
@@ -257,7 +257,7 @@ impl BrailleCompiler {
                     cy + radius * start_angle.sin(),
                 );
                 for i in 1..=segments {
-                    let t = *start_angle + angle_span * (i as f64 / segments as f64);
+                    let t = angle_span.mul_add(f64::from(i) / f64::from(segments), *start_angle);
                     let curr = transform.apply(cx + radius * t.cos(), cy + radius * t.sin());
                     Self::bresenham(grid, cols, rows, prev.0, prev.1, curr.0, curr.1, vw, vh);
                     prev = curr;
@@ -274,19 +274,17 @@ impl BrailleCompiler {
                     let steps = 16;
                     let p0 = cur;
                     for i in 1..=steps {
-                        let t = i as f64 / steps as f64;
+                        let t = f64::from(i) / f64::from(steps);
                         let mt = 1.0 - t;
                         let mt2 = mt * mt;
                         let mt3 = mt2 * mt;
                         let t2 = t * t;
                         let t3 = t2 * t;
-                        let px = mt3 * p0[0]
-                            + 3.0 * mt2 * t * seg.cp1[0]
-                            + 3.0 * mt * t2 * seg.cp2[0]
+                        let px = (3.0 * mt * t2)
+                            .mul_add(seg.cp2[0], mt3 * p0[0] + 3.0 * mt2 * t * seg.cp1[0])
                             + t3 * seg.end[0];
-                        let py = mt3 * p0[1]
-                            + 3.0 * mt2 * t * seg.cp1[1]
-                            + 3.0 * mt * t2 * seg.cp2[1]
+                        let py = (3.0 * mt * t2)
+                            .mul_add(seg.cp2[1], mt3 * p0[1] + 3.0 * mt2 * t * seg.cp1[1])
                             + t3 * seg.end[1];
                         pts.push(transform.apply(px, py));
                     }

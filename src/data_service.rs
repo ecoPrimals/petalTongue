@@ -9,8 +9,11 @@
 //! - Zero duplication
 //! - Capability-based discovery
 
-use anyhow::{Context, Result};
 use petal_tongue_core::{GraphEngine, PrimalInfo, TopologyEdge};
+
+use crate::error::AppError;
+
+type Result<T> = std::result::Result<T, AppError>;
 use petal_tongue_discovery::NeuralApiProvider;
 use std::sync::{Arc, RwLock};
 use tokio::sync::broadcast;
@@ -94,25 +97,21 @@ impl DataService {
             use petal_tongue_discovery::VisualizationDataProvider;
 
             // Fetch primals
-            let primals = api
-                .as_ref()
-                .get_primals()
-                .await
-                .context("Failed to get primals from Neural API")?;
+            let primals = api.as_ref().get_primals().await.map_err(|e| {
+                AppError::NeuralApi(format!("Failed to get primals from Neural API: {e}"))
+            })?;
 
             // Fetch topology
-            let topology = api
-                .as_ref()
-                .get_topology()
-                .await
-                .context("Failed to get topology from Neural API")?;
+            let topology = api.as_ref().get_topology().await.map_err(|e| {
+                AppError::NeuralApi(format!("Failed to get topology from Neural API: {e}"))
+            })?;
 
             // Update graph
             {
                 let mut graph = self
                     .graph
                     .write()
-                    .map_err(|e| anyhow::anyhow!("Graph lock poisoned: {e}"))?;
+                    .map_err(|e| AppError::GraphLockPoisoned(e.to_string()))?;
 
                 // Clear and rebuild
                 *graph = GraphEngine::new();
@@ -131,7 +130,7 @@ impl DataService {
                 let mut last_refresh = self
                     .last_refresh
                     .write()
-                    .map_err(|e| anyhow::anyhow!("Refresh time lock poisoned: {e}"))?;
+                    .map_err(|e| AppError::RefreshLockPoisoned(e.to_string()))?;
                 *last_refresh = std::time::Instant::now();
             }
 
@@ -152,7 +151,7 @@ impl DataService {
             let graph = self
                 .graph
                 .read()
-                .map_err(|e| anyhow::anyhow!("Graph lock poisoned: {e}"))?;
+                .map_err(|e| AppError::GraphLockPoisoned(e.to_string()))?;
 
             // Extract PrimalInfo from Node wrappers
             let primals = graph.nodes().iter().map(|node| node.info.clone()).collect();
@@ -192,7 +191,7 @@ impl DataService {
         self.neural_api.is_some()
     }
 
-    /// Send a test update (for subscription tests when neural_api is None).
+    /// Send a test update (for subscription tests when `neural_api` is None).
     #[cfg(test)]
     pub(crate) fn send_test_update(&self) {
         let _ = self.update_tx.send(DataUpdate::TopologyUpdated);
@@ -343,5 +342,24 @@ mod tests {
         service.refresh().await.unwrap();
         let snapshot = service.snapshot().await.unwrap();
         assert!(snapshot.primals.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_data_snapshot_debug() {
+        let service = DataService::new();
+        let snapshot = service.snapshot().await.unwrap();
+        let debug_str = format!("{snapshot:?}");
+        assert!(debug_str.contains("primals"));
+        assert!(debug_str.contains("edges"));
+    }
+
+    #[tokio::test]
+    async fn test_data_snapshot_clone() {
+        let service = DataService::new();
+        let snapshot = service.snapshot().await.unwrap();
+        let cloned = snapshot.clone();
+        assert_eq!(cloned.primals.len(), snapshot.primals.len());
+        assert_eq!(cloned.edges.len(), snapshot.edges.len());
+        assert_eq!(cloned.timestamp, snapshot.timestamp);
     }
 }

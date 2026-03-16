@@ -4,7 +4,8 @@
 //! Allows scenarios to define required and optional capabilities,
 //! enabling cross-device support and graceful degradation.
 
-use anyhow::Result;
+use crate::error::Result;
+use crate::scenario_error::ScenarioError;
 use serde::{Deserialize, Serialize};
 
 /// Sensory capability configuration
@@ -34,11 +35,12 @@ impl SensoryConfig {
         // Validate complexity hint
         let valid_hints = ["auto", "minimal", "simple", "standard", "rich", "immersive"];
         if !valid_hints.contains(&self.complexity_hint.as_str()) {
-            anyhow::bail!(
-                "Invalid complexity_hint '{}'. Must be one of: {}",
-                self.complexity_hint,
-                valid_hints.join(", ")
-            );
+            return Err(ScenarioError::InvalidValue {
+                field: "complexity_hint".to_string(),
+                value: self.complexity_hint.clone(),
+                expected: valid_hints.join(", "),
+            }
+            .into());
         }
 
         // Validate capability requirements
@@ -144,12 +146,13 @@ impl CapabilityRequirements {
         let valid_outputs = ["visual", "audio", "haptic"];
         for output in &self.outputs {
             if !valid_outputs.contains(&output.as_str()) {
-                anyhow::bail!(
-                    "Invalid {} output capability '{}'. Must be one of: {}",
-                    context,
-                    output,
-                    valid_outputs.join(", ")
-                );
+                return Err(ScenarioError::CapabilityError {
+                    message: format!("Invalid {} output capability", context),
+                    capability_type: "output".to_string(),
+                    invalid_value: output.clone(),
+                    valid_options: valid_outputs.iter().map(|s| (*s).to_string()).collect(),
+                }
+                .into());
             }
         }
 
@@ -157,12 +160,13 @@ impl CapabilityRequirements {
         let valid_inputs = ["pointer", "keyboard", "touch", "gesture", "audio"];
         for input in &self.inputs {
             if !valid_inputs.contains(&input.as_str()) {
-                anyhow::bail!(
-                    "Invalid {} input capability '{}'. Must be one of: {}",
-                    context,
-                    input,
-                    valid_inputs.join(", ")
-                );
+                return Err(ScenarioError::CapabilityError {
+                    message: format!("Invalid {} input capability", context),
+                    capability_type: "input".to_string(),
+                    invalid_value: input.clone(),
+                    valid_options: valid_inputs.iter().map(|s| (*s).to_string()).collect(),
+                }
+                .into());
             }
         }
 

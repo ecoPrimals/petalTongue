@@ -8,6 +8,7 @@ use super::PetalTongueApp;
 use crate::accessibility_panel::AccessibilityPanel;
 use crate::audio::AudioSystemV2;
 use crate::awakening_overlay::AwakeningOverlay;
+use crate::error::Result;
 use crate::graph_canvas::GraphCanvas;
 use crate::graph_metrics_plotter::GraphMetricsPlotter;
 use crate::interaction_bridge::EguiInteractionBridge;
@@ -24,7 +25,6 @@ use crate::system_dashboard::SystemDashboard;
 use crate::system_monitor_integration::SystemMonitorTool;
 use crate::tool_integration::ToolManager;
 use crate::trust_dashboard::TrustDashboard;
-use anyhow::Result as AnyhowResult;
 use petal_tongue_adapters::{
     AdapterRegistry, EcoPrimalCapabilityAdapter, EcoPrimalFamilyAdapter, EcoPrimalTrustAdapter,
 };
@@ -51,7 +51,7 @@ pub(super) fn create_app(
     scenario_path: Option<std::path::PathBuf>,
     rendering_caps: petal_tongue_core::RenderingCapabilities,
     shared_graph: Arc<RwLock<GraphEngine>>,
-) -> AnyhowResult<PetalTongueApp> {
+) -> Result<PetalTongueApp> {
     tracing::info!("✅ Using shared graph from DataService - zero data duplication!");
 
     // Load scenario if provided

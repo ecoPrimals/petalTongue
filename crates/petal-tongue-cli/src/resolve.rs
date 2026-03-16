@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Instance ID resolution (UUID and prefix matching).
 
-use anyhow::{Context, Result};
 use petal_tongue_core::{InstanceId, InstanceRegistry};
 
+use crate::error::CliError;
+
 /// Resolve instance ID from string (supports prefixes)
-pub fn resolve_instance_id(id_str: &str) -> Result<InstanceId> {
+pub fn resolve_instance_id(id_str: &str) -> Result<InstanceId, CliError> {
     // Try to parse as UUID string and create InstanceId
     if let Ok(uuid) = uuid::Uuid::parse_str(id_str) {
         let id_string = uuid.to_string();
         return InstanceId::parse(&id_string)
-            .map_err(|e| anyhow::anyhow!("Invalid instance ID: {e}"));
+            .map_err(|e| CliError::InvalidInstanceId(e.to_string()));
     }
 
     // Try prefix match
-    let registry = InstanceRegistry::load().context("Failed to load registry")?;
+    let registry = InstanceRegistry::load()?;
     let instances = registry.list();
 
     let matches: Vec<_> = instances
@@ -23,13 +24,12 @@ pub fn resolve_instance_id(id_str: &str) -> Result<InstanceId> {
         .collect();
 
     match matches.len() {
-        0 => anyhow::bail!("No instance found matching '{id_str}'"),
+        0 => Err(CliError::NoInstanceFound(id_str.to_string())),
         1 => Ok(matches[0].id.clone()),
-        _ => anyhow::bail!(
-            "Ambiguous instance ID '{}' matches {} instances",
-            id_str,
-            matches.len()
-        ),
+        _ => Err(CliError::AmbiguousInstanceId(
+            id_str.to_string(),
+            matches.len(),
+        )),
     }
 }
 

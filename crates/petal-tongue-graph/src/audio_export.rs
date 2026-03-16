@@ -4,8 +4,8 @@
 //! Generates WAV files from audio attributes without requiring system audio libraries.
 //! This is 100% pure Rust using the `hound` crate.
 
+use crate::audio_export_error::AudioExportError;
 use crate::audio_sonification::{AudioAttributes, Instrument};
-use anyhow::Result;
 use hound::{WavSpec, WavWriter};
 use std::path::Path;
 
@@ -76,7 +76,7 @@ impl AudioFileGenerator {
         path: P,
         attrs: &AudioAttributes,
         duration_secs: f32,
-    ) -> Result<()> {
+    ) -> Result<(), AudioExportError> {
         let spec = WavSpec {
             channels: self.quality.channels,
             sample_rate: self.quality.sample_rate,
@@ -84,13 +84,12 @@ impl AudioFileGenerator {
             sample_format: hound::SampleFormat::Int,
         };
 
-        let mut writer = WavWriter::create(path.as_ref(), spec).map_err(|e| {
-            anyhow::anyhow!(
-                "Failed to create WAV file: {} - {}",
-                path.as_ref().display(),
-                e
-            )
-        })?;
+        let path_buf = path.as_ref().to_path_buf();
+        let mut writer =
+            WavWriter::create(path.as_ref(), spec).map_err(|e| AudioExportError::CreateFile {
+                path: path_buf,
+                source: e,
+            })?;
 
         #[expect(
             clippy::cast_possible_truncation,
@@ -160,7 +159,7 @@ impl AudioFileGenerator {
         path: P,
         soundscape: &[(String, AudioAttributes)],
         duration_secs: f32,
-    ) -> Result<()> {
+    ) -> Result<(), AudioExportError> {
         let spec = WavSpec {
             channels: self.quality.channels,
             sample_rate: self.quality.sample_rate,
@@ -168,13 +167,12 @@ impl AudioFileGenerator {
             sample_format: hound::SampleFormat::Int,
         };
 
-        let mut writer = WavWriter::create(path.as_ref(), spec).map_err(|e| {
-            anyhow::anyhow!(
-                "Failed to create WAV file: {} - {}",
-                path.as_ref().display(),
-                e
-            )
-        })?;
+        let path_buf = path.as_ref().to_path_buf();
+        let mut writer =
+            WavWriter::create(path.as_ref(), spec).map_err(|e| AudioExportError::CreateFile {
+                path: path_buf,
+                source: e,
+            })?;
 
         #[expect(
             clippy::cast_possible_truncation,

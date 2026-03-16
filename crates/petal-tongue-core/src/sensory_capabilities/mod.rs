@@ -576,7 +576,7 @@ mod tests {
     fn test_neural_output_capability_serde() {
         let neural = NeuralOutputCapability {
             signal_types: vec!["visual_cortex".to_string()],
-            bandwidth: 1000000,
+            bandwidth: 1_000_000,
         };
         let json = serde_json::to_string(&neural).unwrap();
         let restored: NeuralOutputCapability = serde_json::from_str(&json).unwrap();
@@ -650,7 +650,7 @@ mod tests {
         let neural = NeuralInputCapability {
             signal_types: vec!["EEG".to_string(), "EMG".to_string()],
             channels: 32,
-            bandwidth: 500000,
+            bandwidth: 500_000,
         };
         let json = serde_json::to_string(&neural).unwrap();
         let restored: NeuralInputCapability = serde_json::from_str(&json).unwrap();

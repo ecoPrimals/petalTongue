@@ -3,7 +3,7 @@
 //!
 //! Full-screen awakening experience with visual flower animation.
 
-use anyhow::Result;
+use crate::error::Result;
 use petal_tongue_animation::VisualFlowerRenderer;
 use petal_tongue_core::awakening::AwakeningStage;
 use std::time::Instant;

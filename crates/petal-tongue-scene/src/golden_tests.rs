@@ -12,7 +12,7 @@ pub struct GoldenTest {
     pub height: u32,
 }
 
-/// Result of verifying a region against expected data_id.
+/// Result of verifying a region against expected `data_id`.
 pub struct GoldenTestResult {
     pub passed: bool,
     pub mismatched_pixels: usize,
@@ -50,8 +50,8 @@ impl GoldenTest {
         ProvenanceRenderer.render(&self.scene, self.width, self.height)
     }
 
-    /// Verifies a single pixel: if expected_data_id is None, pixel must have no provenance;
-    /// otherwise pixel must have that data_id.
+    /// Verifies a single pixel: if `expected_data_id` is None, pixel must have no provenance;
+    /// otherwise pixel must have that `data_id`.
     #[must_use]
     pub fn verify_pixel(
         &self,
@@ -64,7 +64,7 @@ impl GoldenTest {
         expected_data_id.map_or_else(|| actual.is_none(), |expected| actual == Some(expected))
     }
 
-    /// Verifies all pixels in rect (x, y, width, height) have the expected data_id.
+    /// Verifies all pixels in rect (x, y, width, height) have the expected `data_id`.
     #[must_use]
     pub fn verify_region(
         &self,
@@ -138,7 +138,7 @@ impl GoldenTest {
         }
     }
 
-    /// Returns coordinates where two buffers differ (comparing data_id of each pixel).
+    /// Returns coordinates where two buffers differ (comparing `data_id` of each pixel).
     #[must_use]
     pub fn pixel_diff(a: &ProvenanceBuffer, b: &ProvenanceBuffer) -> Vec<(u32, u32)> {
         let w = a.width().min(b.width());

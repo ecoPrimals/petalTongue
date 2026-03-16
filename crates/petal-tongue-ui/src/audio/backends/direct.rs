@@ -10,7 +10,7 @@
 //! NO hardcoding - just discovers whatever direct devices exist!
 
 use crate::audio::traits::{AudioBackend, AudioCapabilities, BackendMetadata, BackendType};
-use anyhow::Result;
+use crate::error::{AudioError, Result};
 use async_trait::async_trait;
 use std::fs::File;
 use std::io::Write;
@@ -171,10 +171,12 @@ impl AudioBackend for DirectBackend {
     }
 
     async fn initialize(&mut self) -> Result<()> {
-        anyhow::bail!(
+        Err(AudioError::DirectDeviceUnavailable(
             "Direct PCM device access requires ALSA ioctl setup (sample rate, format, buffers) \
              which is not yet implemented. Use socket-based audio servers instead."
-        );
+                .to_string(),
+        )
+        .into())
     }
 
     async fn play_samples(&mut self, samples: &[f32], sample_rate: u32) -> Result<()> {

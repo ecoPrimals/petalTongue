@@ -13,7 +13,6 @@ bytes = { workspace = true }
 petal-tongue-scene = { path = "../petal-tongue-scene" }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-anyhow = { workspace = true }
 
 [lints]
 workspace = true

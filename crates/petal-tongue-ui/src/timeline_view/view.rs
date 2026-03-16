@@ -255,7 +255,7 @@ impl TimelineView {
         let primal_lanes = build_primal_lanes(&self.events);
 
         for (idx, primal) in primals.iter().enumerate() {
-            let y = rect.min.y + lane_height * (idx as f32 + 1.0);
+            let y = lane_height.mul_add(idx as f32 + 1.0, rect.min.y);
 
             painter.line_segment(
                 [Pos2::new(rect.min.x + 100.0, y), Pos2::new(rect.max.x, y)],
@@ -289,8 +289,8 @@ impl TimelineView {
                 let time_ms = event.timestamp.timestamp_millis() as f64;
                 let x = rect.min.x + 100.0 + time_to_x(time_ms, start_ms, end_ms, time_width);
 
-                let from_y = rect.min.y + lane_height * (*from_lane as f32 + 1.0);
-                let to_y = rect.min.y + lane_height * (*to_lane as f32 + 1.0);
+                let from_y = lane_height.mul_add(*from_lane as f32 + 1.0, rect.min.y);
+                let to_y = lane_height.mul_add(*to_lane as f32 + 1.0, rect.min.y);
 
                 let from_pos = Pos2::new(x, from_y);
                 let to_pos = Pos2::new(x, to_y);

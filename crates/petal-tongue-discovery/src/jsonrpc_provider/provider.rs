@@ -16,6 +16,7 @@ use petal_tongue_core::constants::{
     discovery_service_socket_name,
 };
 
+use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 
 use super::types::{JsonRpcProvider, JsonRpcRequest, JsonRpcResponse};
@@ -31,7 +32,7 @@ impl JsonRpcProvider {
     }
 
     /// Auto-discover JSON-RPC providers on standard Unix socket paths
-    pub async fn discover() -> anyhow::Result<Self> {
+    pub async fn discover() -> DiscoveryResult<Self> {
         info!("🔍 Auto-discovering JSON-RPC providers on Unix sockets...");
 
         if let Ok(url) = std::env::var("BIOMEOS_URL")
@@ -60,26 +61,22 @@ impl JsonRpcProvider {
             }
         }
 
-        anyhow::bail!(
-            "No JSON-RPC providers found!\n\
-            \n\
-            Tried standard paths:\n\
-            - /run/user/{{uid}}/{}.sock\n\
-            - /run/user/{{uid}}/{}.sock\n\
-            - /run/user/{{uid}}/{}.sock\n\
-            - /tmp/{}.sock\n\
-            \n\
-            💡 Set BIOMEOS_URL=unix:///path/to/socket for custom path",
-            biomeos_device_management_socket_name(),
-            biomeos_ui_socket_name(),
-            discovery_service_socket_name(),
-            biomeos_legacy_socket_name()
-        )
+        Err(DiscoveryError::NoJsonRpcProvidersFound {
+            message: format!(
+                "Tried standard paths: /run/user/{{uid}}/{}.sock, /run/user/{{uid}}/{}.sock, \
+                 /run/user/{{uid}}/{}.sock, /tmp/{}.sock. \
+                 Set BIOMEOS_URL=unix:///path/to/socket for custom path",
+                biomeos_device_management_socket_name(),
+                biomeos_ui_socket_name(),
+                discovery_service_socket_name(),
+                biomeos_legacy_socket_name()
+            ),
+        })
     }
 
     /// Get standard Unix socket paths to scan
     #[doc(hidden)]
-    pub fn get_standard_socket_paths() -> anyhow::Result<Vec<PathBuf>> {
+    pub fn get_standard_socket_paths() -> DiscoveryResult<Vec<PathBuf>> {
         let uid = petal_tongue_core::system_info::get_current_uid();
 
         Ok(vec![
@@ -96,9 +93,12 @@ impl JsonRpcProvider {
         ])
     }
 
-    async fn test_connection(path: &Path) -> anyhow::Result<()> {
-        let stream =
-            tokio::time::timeout(Duration::from_secs(2), UnixStream::connect(path)).await??;
+    async fn test_connection(path: &Path) -> DiscoveryResult<()> {
+        let stream = tokio::time::timeout(Duration::from_secs(2), UnixStream::connect(path))
+            .await
+            .map_err(|_| DiscoveryError::ConnectionTimeout {
+                endpoint: path.display().to_string(),
+            })??;
 
         drop(stream);
         Ok(())
@@ -108,7 +108,7 @@ impl JsonRpcProvider {
         &self,
         method: &str,
         params: Option<serde_json::Value>,
-    ) -> anyhow::Result<serde_json::Value> {
+    ) -> DiscoveryResult<serde_json::Value> {
         let id = self.request_id.fetch_add(1, Ordering::SeqCst);
 
         let request = JsonRpcRequest {
@@ -122,41 +122,56 @@ impl JsonRpcProvider {
 
         let stream = tokio::time::timeout(self.timeout, UnixStream::connect(&self.socket_path))
             .await
-            .map_err(|_| anyhow::anyhow!("Connection timeout: {}", self.socket_path.display()))??;
+            .map_err(|_| DiscoveryError::ConnectionTimeout {
+                endpoint: self.socket_path.display().to_string(),
+            })??;
 
         let (reader, mut writer) = stream.into_split();
         let mut reader = BufReader::new(reader);
 
-        let request_json = serde_json::to_string(&request)? + "\n";
-        writer.write_all(request_json.as_bytes()).await?;
-        writer.flush().await?;
+        let request_json = serde_json::to_string(&request).map_err(DiscoveryError::Json)? + "\n";
+        writer
+            .write_all(request_json.as_bytes())
+            .await
+            .map_err(DiscoveryError::Io)?;
+        writer.flush().await.map_err(DiscoveryError::Io)?;
 
         debug!("✓ Request sent");
 
         let mut line = String::new();
         tokio::time::timeout(self.timeout, reader.read_line(&mut line))
             .await
-            .map_err(|_| anyhow::anyhow!("Response timeout: {method}"))??;
+            .map_err(|_| DiscoveryError::RpcTimeout {
+                context: method.to_string(),
+            })??;
 
         debug!("← JSON-RPC response ({} bytes)", line.len());
 
-        let response: JsonRpcResponse = serde_json::from_str(&line)
-            .map_err(|e| anyhow::anyhow!("Invalid JSON-RPC response: {e}"))?;
+        let response: JsonRpcResponse =
+            serde_json::from_str(&line).map_err(|e| DiscoveryError::ParseError {
+                data_type: "JSON-RPC response".to_string(),
+                message: e.to_string(),
+            })?;
 
         if response.id != id {
-            anyhow::bail!("Request ID mismatch: expected {}, got {}", id, response.id);
+            return Err(DiscoveryError::RequestIdMismatch {
+                expected: id,
+                actual: serde_json::to_value(response.id).unwrap_or(serde_json::Value::Null),
+            });
         }
 
         if let Some(error) = response.error {
-            anyhow::bail!(
-                "JSON-RPC error {}: {}{}",
-                error.code,
-                error.message,
-                error
-                    .data
-                    .map(|d| format!(" (data: {d})"))
-                    .unwrap_or_default()
-            );
+            return Err(DiscoveryError::JsonRpcError {
+                code: Some(error.code),
+                message: format!(
+                    "{}{}",
+                    error.message,
+                    error
+                        .data
+                        .map(|d| format!(" (data: {d})"))
+                        .unwrap_or_default()
+                ),
+            });
         }
 
         Ok(response.result.unwrap_or(serde_json::Value::Null))
@@ -167,7 +182,7 @@ impl JsonRpcProvider {
         method: &str,
         params: Option<serde_json::Value>,
         max_retries: u32,
-    ) -> anyhow::Result<serde_json::Value> {
+    ) -> DiscoveryResult<serde_json::Value> {
         let mut last_error = None;
 
         for attempt in 1..=max_retries {
@@ -192,25 +207,28 @@ impl JsonRpcProvider {
             }
         }
 
-        Err(last_error.unwrap_or_else(|| anyhow::anyhow!("All retry attempts failed")))
+        Err(last_error.unwrap_or(DiscoveryError::RetryExhausted))
     }
 }
 
 #[async_trait]
 impl VisualizationDataProvider for JsonRpcProvider {
-    async fn get_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
+    async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         debug!("Calling primal.list via JSON-RPC");
 
         let result = self.call_with_retry("primal.list", None, 3).await?;
 
-        let primals: Vec<PrimalInfo> = serde_json::from_value(result)
-            .map_err(|e| anyhow::anyhow!("Failed to parse primals: {e}"))?;
+        let primals: Vec<PrimalInfo> =
+            serde_json::from_value(result).map_err(|e| DiscoveryError::ParseError {
+                data_type: "primals".to_string(),
+                message: e.to_string(),
+            })?;
 
         debug!("✓ Received {} primals", primals.len());
         Ok(primals)
     }
 
-    async fn get_topology(&self) -> anyhow::Result<Vec<TopologyEdge>> {
+    async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
         debug!("Calling topology.get via JSON-RPC");
 
         let result = self.call("topology.get", None).await;
@@ -226,8 +244,11 @@ impl VisualizationDataProvider for JsonRpcProvider {
         };
         match result {
             Ok(result) => {
-                let topology: Vec<TopologyEdge> = serde_json::from_value(result)
-                    .map_err(|e| anyhow::anyhow!("Failed to parse topology: {e}"))?;
+                let topology: Vec<TopologyEdge> =
+                    serde_json::from_value(result).map_err(|e| DiscoveryError::ParseError {
+                        data_type: "topology".to_string(),
+                        message: e.to_string(),
+                    })?;
                 debug!("✓ Received {} edges", topology.len());
                 Ok(topology)
             }
@@ -242,7 +263,7 @@ impl VisualizationDataProvider for JsonRpcProvider {
         }
     }
 
-    async fn health_check(&self) -> anyhow::Result<String> {
+    async fn health_check(&self) -> DiscoveryResult<String> {
         debug!("Performing JSON-RPC health check");
 
         self.call("primal.list", None).await?;

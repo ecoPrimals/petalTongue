@@ -3,7 +3,7 @@
 //!
 //! Defines WHAT we need from audio, not HOW to do it!
 
-use anyhow::Result;
+use crate::error::Result;
 use async_trait::async_trait;
 
 /// Universal audio backend trait

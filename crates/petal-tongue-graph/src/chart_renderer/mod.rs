@@ -297,15 +297,15 @@ mod tests {
 
     fn binding_label(binding: &DataBinding) -> &str {
         match binding {
-            DataBinding::TimeSeries { label, .. } => label,
-            DataBinding::Distribution { label, .. } => label,
-            DataBinding::Bar { label, .. } => label,
-            DataBinding::Gauge { label, .. } => label,
-            DataBinding::Heatmap { label, .. } => label,
-            DataBinding::Scatter { label, .. } => label,
-            DataBinding::Scatter3D { label, .. } => label,
-            DataBinding::FieldMap { label, .. } => label,
-            DataBinding::Spectrum { label, .. } => label,
+            DataBinding::TimeSeries { label, .. }
+            | DataBinding::Distribution { label, .. }
+            | DataBinding::Bar { label, .. }
+            | DataBinding::Gauge { label, .. }
+            | DataBinding::Heatmap { label, .. }
+            | DataBinding::Scatter { label, .. }
+            | DataBinding::Scatter3D { label, .. }
+            | DataBinding::FieldMap { label, .. }
+            | DataBinding::Spectrum { label, .. } => label,
         }
     }
 
@@ -443,17 +443,20 @@ mod tests {
         run_draw_channel(&b, None);
     }
 
-    #[test]
-    fn test_binding_label_all_variants() {
-        let variants = [
+    #[expect(
+        clippy::too_many_lines,
+        reason = "data-driven test fixture: 9 enum variants with field initialization"
+    )]
+    fn all_binding_variants() -> Vec<(&'static str, DataBinding)> {
+        vec![
             (
                 "TS",
                 DataBinding::TimeSeries {
-                    id: "".to_string(),
+                    id: String::new(),
                     label: "TS".to_string(),
-                    x_label: "".to_string(),
-                    y_label: "".to_string(),
-                    unit: "".to_string(),
+                    x_label: String::new(),
+                    y_label: String::new(),
+                    unit: String::new(),
                     x_values: vec![],
                     y_values: vec![],
                 },
@@ -461,9 +464,9 @@ mod tests {
             (
                 "Dist",
                 DataBinding::Distribution {
-                    id: "".to_string(),
+                    id: String::new(),
                     label: "Dist".to_string(),
-                    unit: "".to_string(),
+                    unit: String::new(),
                     values: vec![],
                     mean: 0.0,
                     std: 0.0,
@@ -473,22 +476,22 @@ mod tests {
             (
                 "Bar",
                 DataBinding::Bar {
-                    id: "".to_string(),
+                    id: String::new(),
                     label: "Bar".to_string(),
                     categories: vec![],
                     values: vec![],
-                    unit: "".to_string(),
+                    unit: String::new(),
                 },
             ),
             (
                 "G",
                 DataBinding::Gauge {
-                    id: "".to_string(),
+                    id: String::new(),
                     label: "G".to_string(),
                     value: 0.0,
                     min: 0.0,
                     max: 100.0,
-                    unit: "".to_string(),
+                    unit: String::new(),
                     normal_range: [0.0, 100.0],
                     warning_range: [0.0, 100.0],
                 },
@@ -496,65 +499,69 @@ mod tests {
             (
                 "H",
                 DataBinding::Heatmap {
-                    id: "".to_string(),
+                    id: String::new(),
                     label: "H".to_string(),
                     x_labels: vec![],
                     y_labels: vec![],
                     values: vec![],
-                    unit: "".to_string(),
+                    unit: String::new(),
                 },
             ),
             (
                 "S",
                 DataBinding::Scatter {
-                    id: "".to_string(),
+                    id: String::new(),
                     label: "S".to_string(),
                     x: vec![],
                     y: vec![],
                     point_labels: vec![],
-                    x_label: "".to_string(),
-                    y_label: "".to_string(),
-                    unit: "".to_string(),
+                    x_label: String::new(),
+                    y_label: String::new(),
+                    unit: String::new(),
                 },
             ),
             (
                 "S3",
                 DataBinding::Scatter3D {
-                    id: "".to_string(),
+                    id: String::new(),
                     label: "S3".to_string(),
                     x: vec![],
                     y: vec![],
                     z: vec![],
                     point_labels: vec![],
-                    x_label: "".to_string(),
-                    y_label: "".to_string(),
-                    z_label: "".to_string(),
-                    unit: "".to_string(),
+                    x_label: String::new(),
+                    y_label: String::new(),
+                    z_label: String::new(),
+                    unit: String::new(),
                 },
             ),
             (
                 "F",
                 DataBinding::FieldMap {
-                    id: "".to_string(),
+                    id: String::new(),
                     label: "F".to_string(),
                     grid_x: vec![],
                     grid_y: vec![],
                     values: vec![],
-                    unit: "".to_string(),
+                    unit: String::new(),
                 },
             ),
             (
                 "Sp",
                 DataBinding::Spectrum {
-                    id: "".to_string(),
+                    id: String::new(),
                     label: "Sp".to_string(),
                     frequencies: vec![],
                     amplitudes: vec![],
-                    unit: "".to_string(),
+                    unit: String::new(),
                 },
             ),
-        ];
-        for (expected, binding) in variants {
+        ]
+    }
+
+    #[test]
+    fn test_binding_label_all_variants() {
+        for (expected, binding) in all_binding_variants() {
             assert_eq!(binding_label(&binding), expected);
         }
     }

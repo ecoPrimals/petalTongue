@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: March 15, 2026
+**Updated**: March 16, 2026
 
 ---
 
@@ -13,6 +13,7 @@ petaltongue ui                     # Desktop GUI
 petaltongue tui                    # Terminal UI
 petaltongue web                    # Web server
 petaltongue headless --mode svg -o out.svg   # Export to SVG
+petaltongue server                 # IPC server (no GUI)
 petaltongue status                 # System info
 ```
 
@@ -53,11 +54,11 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace                          # 5,188 tests
-cargo clippy --workspace -- -D warnings         # Lint (clean)
+cargo test --workspace                          # 5,076 tests
+cargo clippy --workspace --all-targets -- -D warnings -W clippy::pedantic -W clippy::nursery
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
-cargo llvm-cov --workspace --summary-only       # Coverage (~85% line / ~86% branch)
+cargo llvm-cov --workspace --summary-only       # Coverage (~87% line / ~88% branch)
 ```
 
 ### Scenarios
@@ -73,7 +74,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
    Other primals discovered at runtime via capability-based discovery.
 2. **Constants centralized** -- All self-knowledge in `petal_tongue_core::constants`.
 3. **IPC priority** -- JSON-RPC over Unix sockets (primary), tarpc (secondary), HTTP (fallback).
-4. **No `unwrap()` in production** -- Use `?`, `if let`, or `tracing::error!`.
+4. **Typed error handling** -- `thiserror` everywhere, no `anyhow` in production, no `unwrap()`.
 5. **`#![forbid(unsafe_code)]`** unless hardware FFI is unavoidable. Document with `// SAFETY:`.
 6. **Concurrent testing** -- No `thread::sleep`. Use `tokio::time::timeout`.
 7. **Files under 1,000 lines** -- Split into cohesive modules at ~800 lines.

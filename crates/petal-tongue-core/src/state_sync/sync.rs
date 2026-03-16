@@ -3,7 +3,7 @@
 
 use crate::adaptive_rendering::DeviceType;
 use crate::dynamic_schema::DynamicValue;
-use anyhow::Result;
+use crate::error::Result;
 use chrono::Utc;
 use std::sync::Arc;
 

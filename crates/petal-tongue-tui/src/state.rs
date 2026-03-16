@@ -135,22 +135,22 @@ impl Default for SystemStatus {
 ///
 /// All state is managed here, with proper async locking.
 /// No global state, no unsafe code.
-/// Uses Arc-wrapped collections for zero-copy reads (Arc::clone is O(1)).
+/// Uses Arc-wrapped collections for zero-copy reads (`Arc::clone` is O(1)).
 #[derive(Clone)]
 pub struct TUIState {
     /// Current view
     view: Arc<RwLock<View>>,
 
-    /// Discovered primals (capability-based) — Arc for zero-copy get_primals
+    /// Discovered primals (capability-based) — Arc for zero-copy `get_primals`
     primals: Arc<RwLock<Arc<Vec<PrimalInfo>>>>,
 
-    /// Topology edges (if Songbird available) — Arc for zero-copy get_topology
+    /// Topology edges (if Songbird available) — Arc for zero-copy `get_topology`
     topology: Arc<RwLock<Arc<Vec<TopologyEdge>>>>,
 
-    /// Log messages (ring buffer) — Vec; add_log is write-heavy, clone on read acceptable
+    /// Log messages (ring buffer) — Vec; `add_log` is write-heavy, clone on read acceptable
     logs: Arc<RwLock<Vec<LogMessage>>>,
 
-    /// System status — Arc for zero-copy get_status
+    /// System status — Arc for zero-copy `get_status`
     status: Arc<RwLock<Arc<SystemStatus>>>,
 
     /// Selected item in current view (generic selection)
@@ -191,7 +191,7 @@ impl TUIState {
         *self.selected_index.write().await = 0;
     }
 
-    /// Get primals (zero-copy: returns Arc, Arc::clone is O(1))
+    /// Get primals (zero-copy: returns Arc, `Arc::clone` is O(1))
     pub async fn get_primals(&self) -> Arc<Vec<PrimalInfo>> {
         Arc::clone(&*self.primals.read().await)
     }
@@ -207,7 +207,7 @@ impl TUIState {
         self.update_status().await;
     }
 
-    /// Get topology (zero-copy: returns Arc, Arc::clone is O(1))
+    /// Get topology (zero-copy: returns Arc, `Arc::clone` is O(1))
     pub async fn get_topology(&self) -> Arc<Vec<TopologyEdge>> {
         Arc::clone(&*self.topology.read().await)
     }
@@ -234,7 +234,7 @@ impl TUIState {
         }
     }
 
-    /// Get logs (clone required; add_log is write-heavy so Arc would hurt append path)
+    /// Get logs (clone required; `add_log` is write-heavy so Arc would hurt append path)
     pub async fn get_logs(&self) -> Vec<LogMessage> {
         self.logs.read().await.clone()
     }
@@ -244,7 +244,7 @@ impl TUIState {
         self.logs.read().await.len()
     }
 
-    /// Get system status (zero-copy: returns Arc, Arc::clone is O(1))
+    /// Get system status (zero-copy: returns Arc, `Arc::clone` is O(1))
     pub async fn get_status(&self) -> Arc<SystemStatus> {
         Arc::clone(&*self.status.read().await)
     }

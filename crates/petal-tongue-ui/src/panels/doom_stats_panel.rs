@@ -41,13 +41,13 @@ impl PanelInstance for DoomStatsPanel {
         "Game Stats"
     }
 
-    fn on_open(&mut self) -> anyhow::Result<()> {
+    fn on_open(&mut self) -> crate::error::Result<()> {
         tracing::info!("Doom Stats Panel opened");
         self.update_stats();
         Ok(())
     }
 
-    fn on_close(&mut self) -> anyhow::Result<()> {
+    fn on_close(&mut self) -> crate::error::Result<()> {
         tracing::info!("Doom Stats Panel closed");
         Ok(())
     }

@@ -1,7 +1,7 @@
 # petalTongue — Evolution Tracker
 
 **Living document**: Updated as evolution progresses.
-**Last updated**: March 15, 2026
+**Last updated**: March 16, 2026
 
 ---
 
@@ -9,17 +9,19 @@
 
 | Metric | Value |
 |--------|-------|
-| Tests | 5,188 passing |
-| Coverage (line) | ~85% |
-| Coverage (branch) | ~86% |
-| Clippy | Zero warnings (pedantic + nursery, `--all-targets --all-features`) |
+| Tests | 5,076 passing |
+| Coverage (line) | ~87% |
+| Coverage (branch) | ~88% |
+| Clippy | Zero warnings (pedantic + nursery enforced in CI) |
 | `cargo fmt` | Clean |
 | `cargo deny` | Clean (advisories, bans, licenses, sources) |
-| `cargo doc` | Clean (`--all-features --no-deps`) |
+| `cargo doc` | Clean (`--no-deps`) |
 | Unsafe code | `#![forbid(unsafe_code)]` on all 16 crates |
-| Largest file | ~960 lines (scene_bridge.rs); all files under 1,000 |
+| Largest file | 876 lines (`json_rpc_client.rs`); all files under 1,000 |
 | External C deps | Zero |
 | SPDX headers | All source files |
+| Error handling | Typed `thiserror` throughout — zero `anyhow` in production code |
+| Workspace lints | Centralized `[workspace.lints.clippy]` — zero crate-level redundant attrs |
 
 ---
 
@@ -141,7 +143,23 @@ No active gaps. Next evolution targets:
 - `visualization.interact.sync` (perspective sync mode)
 - `visualization.render.stream` grammar subscription mode
 - Capability-based data resolution (`"source": "capability:X"`)
-- Coverage target: 90% (currently ~85%)
+- Coverage target: 90% (currently ~87%)
+
+### Comprehensive Audit & Deep Debt Elimination (March 16, 2026)
+
+Full codebase audit against wateringHole standards, followed by systematic execution:
+
+| Change | Impact |
+|--------|--------|
+| **anyhow → thiserror** | 30+ files migrated; typed errors in all production code; `DiscoveryError`, `UiError`, `TuiError`, `CliError`, `AppError`, `EntropyError`, `AudioExportError`, `BiomeOsClientError`, `ConnectionError`, `HeadlessError`, `PrimalRegistrationError`, `UiCoreError` created |
+| **Workspace lints centralized** | Removed redundant `#![warn(clippy::all/pedantic)]` and `#![allow(...)]` from 6 crates; all lint config now in `[workspace.lints.clippy]` |
+| **CI aligned** | Clippy now runs `-W clippy::pedantic -W clippy::nursery`; coverage threshold raised to 85% fail / 90% warn |
+| **Smart refactoring** | 5 largest files decomposed: trust_dashboard (977→320), scene_bridge (960→67), awakening_coordinator (934→250), visualization (922→465), domain_charts (914→308) |
+| **Redundant clones eliminated** | `clone()-then-borrow`, `clone()-to-count`, `clone()-to-iterate` patterns fixed |
+| **GPU endpoint discoverable** | `PETALTONGUE_GPU_COMPUTE_ENDPOINT` env var; `toadstool_port()` env-var resolution |
+| **Server subcommand** | `petaltongue server` — runs IPC server without GUI (UniBin compliant) |
+| **src/ coverage** | Added unit tests for all entry point files (was 0% coverage) |
+| **Clippy zero warnings** | Fixed 22 genuine warnings + cleaned up 500+ redundant crate-level suppressions |
 
 ### Coverage Expansion (March 12, 2026)
 
@@ -238,4 +256,5 @@ the collaborative intelligence.
 | March 14 audit & refactor | 3,776+ | ~82% / ~82% | March 14 |
 | March 14 deep debt phase 2 | 3,940+ | ~83% / ~83% | March 14 |
 | March 15 verified | 5,188 | ~85% / ~86% | March 15 |
+| March 16 deep audit & evolution | 5,076 | ~87% / ~88% | March 16 |
 | Target | TBD | 90% / 90% | — |

@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use anyhow::{Context, Result};
 use serde::{Deserialize, Deserializer, Serialize};
+
+use crate::error::{PetalTongueError, Result};
 use std::collections::HashMap;
 use std::fmt;
 
 /// Deserialize `SchemaVersion` from either a string ("2.0.0") or struct { major, minor, patch }
-pub fn deserialize_version<'de, D>(deserializer: D) -> Result<Option<SchemaVersion>, D::Error>
+pub fn deserialize_version<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<SchemaVersion>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -22,7 +25,7 @@ where
         None => Ok(None),
         Some(VersionInput::String(s)) => SchemaVersion::parse(&s)
             .map(Some)
-            .map_err(serde::de::Error::custom),
+            .map_err(|e| serde::de::Error::custom(e.to_string())),
         Some(VersionInput::Struct {
             major,
             minor,
@@ -61,13 +64,19 @@ impl SchemaVersion {
     pub fn parse(s: &str) -> Result<Self> {
         let parts: Vec<&str> = s.split('.').collect();
         if parts.len() != 3 {
-            anyhow::bail!("Invalid version format: {s}");
+            return Err(PetalTongueError::InvalidVersionFormat(s.to_string()));
         }
 
         Ok(Self {
-            major: parts[0].parse().context("Invalid major version")?,
-            minor: parts[1].parse().context("Invalid minor version")?,
-            patch: parts[2].parse().context("Invalid patch version")?,
+            major: parts[0].parse().map_err(|e| {
+                PetalTongueError::InvalidVersionFormat(format!("Invalid major version: {e}"))
+            })?,
+            minor: parts[1].parse().map_err(|e| {
+                PetalTongueError::InvalidVersionFormat(format!("Invalid minor version: {e}"))
+            })?,
+            patch: parts[2].parse().map_err(|e| {
+                PetalTongueError::InvalidVersionFormat(format!("Invalid patch version: {e}"))
+            })?,
         })
     }
 
@@ -290,19 +299,23 @@ impl DynamicData {
 
     /// Parse from JSON string
     pub fn from_json_str(json: &str) -> Result<Self> {
-        serde_json::from_str(json).context("Failed to parse dynamic data from JSON")
+        serde_json::from_str(json).map_err(|e| {
+            PetalTongueError::Json(format!("Failed to parse dynamic data from JSON: {e}"))
+        })
     }
 
     /// Parse from JSON file
     pub fn from_json_file(path: &std::path::Path) -> Result<Self> {
-        let contents = std::fs::read_to_string(path)
-            .with_context(|| format!("Failed to read file: {}", path.display()))?;
+        let contents = std::fs::read_to_string(path).map_err(|e| {
+            PetalTongueError::Json(format!("Failed to read file {}: {e}", path.display()))
+        })?;
         Self::from_json_str(&contents)
     }
 
     /// Convert to JSON string
     pub fn to_json_string(&self) -> Result<String> {
-        serde_json::to_string_pretty(self).context("Failed to serialize to JSON")
+        serde_json::to_string_pretty(self)
+            .map_err(|e| PetalTongueError::Json(format!("Failed to serialize to JSON: {e}")))
     }
 }
 

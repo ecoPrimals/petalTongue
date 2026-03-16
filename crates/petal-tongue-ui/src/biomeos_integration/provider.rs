@@ -3,7 +3,7 @@
 //!
 //! Discovers device management by capability, not by name (TRUE PRIMAL).
 
-use anyhow::Result;
+use crate::error::{BiomeOsIntegrationError, Result};
 use petal_tongue_core::constants;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -213,7 +213,7 @@ impl BiomeOSProvider {
 
         // Parse device list
         let devices: Vec<Device> = serde_json::from_value(response)
-            .map_err(|e| anyhow::anyhow!("Failed to parse devices response: {e}"))?;
+            .map_err(|e| BiomeOsIntegrationError::ParseDevicesResponse(e.to_string()))?;
 
         // Update cache for offline fallback
         let mut cache = self.cache.write().await;
@@ -235,7 +235,7 @@ impl BiomeOSProvider {
 
         // Parse primal list
         let primals: Vec<Primal> = serde_json::from_value(response)
-            .map_err(|e| anyhow::anyhow!("Failed to parse primals response: {e}"))?;
+            .map_err(|e| BiomeOsIntegrationError::ParsePrimalsResponse(e.to_string()))?;
 
         // Update cache for offline fallback
         let mut cache = self.cache.write().await;
@@ -257,7 +257,7 @@ impl BiomeOSProvider {
 
         // Parse template list
         let templates: Vec<NicheTemplate> = serde_json::from_value(response)
-            .map_err(|e| anyhow::anyhow!("Failed to parse niche templates: {e}"))?;
+            .map_err(|e| BiomeOsIntegrationError::ParseNicheTemplates(e.to_string()))?;
 
         // Update cache for offline fallback
         let mut cache = self.cache.write().await;
@@ -293,9 +293,9 @@ impl BiomeOSProvider {
         let niche_id: String = serde_json::from_value(
             extract_niche_id_from_response(&response)
                 .cloned()
-                .ok_or_else(|| anyhow::anyhow!("No niche_id in response"))?,
+                .ok_or(BiomeOsIntegrationError::NoNicheId)?,
         )
-        .map_err(|e| anyhow::anyhow!("Failed to parse niche_id: {e}"))?;
+        .map_err(|e| BiomeOsIntegrationError::ParseNicheId(e.to_string()))?;
 
         info!("✅ Deployed niche: {}", niche_id);
         Ok(niche_id)
@@ -386,7 +386,7 @@ impl BiomeOSProvider {
         // Connect to provider endpoint
         let mut stream = UnixStream::connect(&self.endpoint)
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to connect to device management provider: {e}"))?;
+            .map_err(|e| BiomeOsIntegrationError::ConnectToProvider(e.to_string()))?;
 
         let request = build_jsonrpc_request(method, params, 1);
 
@@ -405,18 +405,19 @@ impl BiomeOSProvider {
         reader
             .read_line(&mut response_line)
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to read response: {e}"))?;
+            .map_err(|e| BiomeOsIntegrationError::ReadResponse(e.to_string()))?;
 
         // Parse JSON-RPC response
         let response: serde_json::Value = serde_json::from_str(&response_line)
-            .map_err(|e| anyhow::anyhow!("Failed to parse JSON-RPC response: {e}"))?;
+            .map_err(|e| BiomeOsIntegrationError::ParseJsonRpcResponse(e.to_string()))?;
 
         if let Some(error) = parse_jsonrpc_error(&response) {
-            return Err(anyhow::anyhow!("JSON-RPC error: {error}"));
+            return Err(BiomeOsIntegrationError::JsonRpcError(error.to_string()).into());
         }
 
         parse_jsonrpc_result(&response)
-            .ok_or_else(|| anyhow::anyhow!("No result in JSON-RPC response"))
+            .ok_or(BiomeOsIntegrationError::NoJsonRpcResult)
+            .map_err(Into::into)
     }
 
     /// Health check for provider connection

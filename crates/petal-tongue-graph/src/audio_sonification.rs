@@ -181,8 +181,7 @@ impl AudioSonificationRenderer {
             description.push_str("All primals are playing in harmony. ");
         } else {
             description.push_str(&format!(
-                "{} healthy, {} warnings, {} critical. ",
-                healthy_count, warning_count, critical_count
+                "{healthy_count} healthy, {warning_count} warnings, {critical_count} critical. "
             ));
 
             if warning_count > 0 {
@@ -215,7 +214,7 @@ impl AudioSonificationRenderer {
                     Instrument::Synth => "synth",
                     Instrument::Default => "default",
                 };
-                format!("{} {}", count, name)
+                format!("{count} {name}")
             })
             .collect();
         inst_desc.sort();

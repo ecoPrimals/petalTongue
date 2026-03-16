@@ -12,7 +12,7 @@
 //! without pixel inspection.
 
 use crate::app::PetalTongueApp;
-use anyhow::Result;
+use crate::error::Result;
 use bytes::Bytes;
 use petal_tongue_core::{FrameIntrospection, MotorCommand, PanelKind};
 

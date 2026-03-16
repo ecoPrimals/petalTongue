@@ -2,14 +2,29 @@
 
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse, error_codes};
 use crate::unix_socket_rpc_handlers::RpcHandlers;
-use anyhow::Result;
 use serde_json::json;
+use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
 use tracing::{debug, error};
 
+/// Errors from handling a Unix socket connection.
+#[derive(Debug, Error)]
+pub enum ConnectionError {
+    /// I/O error.
+    #[error("Connection I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
+    /// Serialization error.
+    #[error("Failed to serialize response: {0}")]
+    Serialize(#[from] serde_json::Error),
+}
+
 /// Handle a single Unix socket connection: read JSON-RPC requests, dispatch to handlers, write responses
-pub async fn handle_connection(handler: &RpcHandlers, stream: UnixStream) -> Result<()> {
+pub async fn handle_connection(
+    handler: &RpcHandlers,
+    stream: UnixStream,
+) -> Result<(), ConnectionError> {
     let (reader, mut writer) = stream.into_split();
     let mut reader = BufReader::with_capacity(65_536, reader);
     let mut line = String::new();

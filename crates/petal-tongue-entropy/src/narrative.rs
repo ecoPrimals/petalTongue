@@ -216,7 +216,7 @@ impl NarrativeEntropyCapture {
     }
 
     /// Finalize and create entropy data
-    pub fn finalize(self) -> anyhow::Result<NarrativeEntropyData> {
+    pub fn finalize(self) -> Result<NarrativeEntropyData, crate::error::EntropyError> {
         let quality_metrics = self.assess_quality();
 
         // Extract pause durations (long gaps in keystroke timings)

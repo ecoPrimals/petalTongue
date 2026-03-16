@@ -3,8 +3,9 @@
 //!
 //! Defines the trait and types for GUI modalities.
 
-use anyhow::Result;
 use async_trait::async_trait;
+
+use crate::error::Result;
 use std::sync::Arc;
 
 use crate::engine::UniversalRenderingEngine;

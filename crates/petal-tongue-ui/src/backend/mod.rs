@@ -55,7 +55,7 @@ pub mod eframe;
 #[cfg(feature = "legacy-toadstool")]
 pub mod toadstool;
 
-use anyhow::{Context, Result};
+use crate::error::{BackendError, Result};
 use async_trait::async_trait;
 use petal_tongue_core::{GraphEngine, RenderingCapabilities};
 use std::path::PathBuf;
@@ -248,13 +248,13 @@ async fn create_eframe_backend() -> Result<Box<dyn UIBackend>> {
         backend
             .init()
             .await
-            .context("Failed to initialize eframe backend")?;
+            .map_err(|e| crate::error::BackendError::EframeRunFailed(e.to_string()))?;
         Ok(Box::new(backend))
     }
 
     #[cfg(not(feature = "ui-eframe"))]
     {
-        anyhow::bail!("eframe backend not available (compile with --features ui-eframe)")
+        return Err(BackendError::EframeNotAvailable.into());
     }
 }
 
@@ -272,17 +272,17 @@ async fn create_toadstool_backend() -> Result<Box<dyn UIBackend>> {
         use crate::backend::toadstool::ToadstoolBackend;
         let mut backend = ToadstoolBackend::new()
             .await
-            .context("Failed to create Toadstool backend")?;
+            .map_err(|e| BackendError::ToadstoolRequiresBiomeOs(e.to_string()))?;
         backend
             .init()
             .await
-            .context("Failed to initialize Toadstool backend")?;
+            .map_err(|e| BackendError::ToadstoolRequiresBiomeOs(e.to_string()))?;
         Ok(Box::new(backend))
     }
 
     #[cfg(not(feature = "legacy-toadstool"))]
     {
-        anyhow::bail!("Toadstool backend not available (compile with --features legacy-toadstool)")
+        Err(BackendError::ToadstoolNotAvailable.into())
     }
 }
 

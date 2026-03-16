@@ -22,10 +22,10 @@ use crate::biomeos_integration::{BiomeOSProvider, Device, NicheTemplate, Primal}
 #[cfg(feature = "mock")]
 use crate::demo_device_provider::DemoDeviceProvider;
 use crate::device_panel::DevicePanel;
+use crate::error::Result;
 use crate::niche_designer::NicheDesigner;
 use crate::primal_panel::PrimalPanel;
 use crate::ui_events::UIEventHandler;
-use anyhow::Result;
 use egui::Ui;
 use petal_tongue_core::constants;
 use std::sync::Arc;

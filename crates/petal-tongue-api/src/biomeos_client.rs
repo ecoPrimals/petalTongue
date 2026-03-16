@@ -3,6 +3,7 @@
 //!
 //! Connects to BiomeOS/Songbird for live primal discovery and health monitoring.
 
+use crate::biomeos_error::BiomeOsClientError;
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, Properties, TopologyEdge};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -117,31 +118,30 @@ impl BiomeOSClient {
     }
 
     /// Check if `BiomeOS` API is available
-    pub async fn health_check(&self) -> anyhow::Result<bool> {
+    pub async fn health_check(&self) -> Result<bool, BiomeOsClientError> {
         #[cfg(any(test, feature = "test-fixtures"))]
         if self.mock_mode {
             return Ok(true); // Mock mode is always "healthy" (test/dev only)
         }
         #[cfg(not(any(test, feature = "test-fixtures")))]
         if self.mock_mode {
-            anyhow::bail!(
-                "Mock mode requires test-fixtures feature. Use real biomeOS connection or build with --features test-fixtures."
-            );
+            return Err(BiomeOsClientError::MockModeUnavailable);
         }
 
         let url = format!("{}/api/v1/health", self.base_url);
-        self.client
+        Ok(self
+            .client
             .get(&url)
             .send()
             .await
-            .map_or_else(|_| Ok(false), |response| Ok(response.status().is_success()))
+            .is_ok_and(|response| response.status().is_success()))
     }
 
     /// Discover primals from `BiomeOS`/Songbird
     ///
     /// **PRODUCTION MODE**: Returns error if API fails (no mock fallback)
     /// **TEST MODE**: Set `mock_mode` to use test data
-    pub async fn discover_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
+    pub async fn discover_primals(&self) -> Result<Vec<PrimalInfo>, BiomeOsClientError> {
         #[cfg(any(test, feature = "test-fixtures"))]
         if self.mock_mode {
             tracing::warn!("Mock mode enabled - using test data (TESTING ONLY)");
@@ -149,48 +149,39 @@ impl BiomeOSClient {
         }
         #[cfg(not(any(test, feature = "test-fixtures")))]
         if self.mock_mode {
-            anyhow::bail!(
-                "Mock mode requires test-fixtures feature. Use real biomeOS connection or build with --features test-fixtures."
-            );
+            return Err(BiomeOsClientError::MockModeUnavailable);
         }
 
         // Query BiomeOS discovery endpoint
         let url = format!("{}/api/v1/primals", self.base_url);
 
-        let response = self.client.get(&url).send().await.map_err(|e| {
-            anyhow::anyhow!(
-                "Failed to connect to biomeOS at {url}: {e}\n\
-                \n\
-                Troubleshooting:\n\
-                - Ensure biomeOS API server is running\n\
-                - Check BIOMEOS_URL environment variable\n\
-                - Verify network connectivity\n\
-                - Check firewall settings"
-            )
-        })?;
+        let response =
+            self.client
+                .get(&url)
+                .send()
+                .await
+                .map_err(|e| BiomeOsClientError::Network {
+                    url: url.clone(),
+                    source: e,
+                })?;
 
         if !response.status().is_success() {
-            anyhow::bail!(
-                "biomeOS API returned error status: {}\n\
-                URL: {}\n\
-                \n\
-                This indicates the biomeOS API server is reachable but returned an error.",
-                response.status(),
-                url
-            );
+            return Err(BiomeOsClientError::ServerError {
+                status: response.status().as_u16(),
+                url,
+            });
         }
 
         let discovery = response.json::<DiscoveryResponse>().await.map_err(|e| {
-            anyhow::anyhow!(
-                "Failed to parse biomeOS response: {e}\n\
-                \n\
+            BiomeOsClientError::Parse(format!(
+                "{e}\n\n\
                 This may indicate:\n\
                 - API format mismatch\n\
                 - biomeOS API is not fully implemented\n\
                 - Response is not valid JSON\n\
                 \n\
                 Expected format: {{\"primals\": [...]}}"
-            )
+            ))
         })?;
 
         tracing::info!(
@@ -207,7 +198,7 @@ impl BiomeOSClient {
     /// **TEST MODE**: Set `mock_mode` to use test data
     ///
     /// **Updated**: Now supports biomeOS's new topology format with nodes + edges
-    pub async fn get_topology(&self) -> anyhow::Result<Vec<TopologyEdge>> {
+    pub async fn get_topology(&self) -> Result<Vec<TopologyEdge>, BiomeOsClientError> {
         #[cfg(any(test, feature = "test-fixtures"))]
         if self.mock_mode {
             tracing::warn!("Mock mode enabled - using test topology (TESTING ONLY)");
@@ -215,33 +206,34 @@ impl BiomeOSClient {
         }
         #[cfg(not(any(test, feature = "test-fixtures")))]
         if self.mock_mode {
-            anyhow::bail!(
-                "Mock mode requires test-fixtures feature. Use real biomeOS connection or build with --features test-fixtures."
-            );
+            return Err(BiomeOsClientError::MockModeUnavailable);
         }
 
         let url = format!("{}/api/v1/topology", self.base_url);
 
-        let response = self.client.get(&url).send().await.map_err(|e| {
-            anyhow::anyhow!("Failed to connect to biomeOS topology endpoint at {url}: {e}")
-        })?;
+        let response =
+            self.client
+                .get(&url)
+                .send()
+                .await
+                .map_err(|e| BiomeOsClientError::Network {
+                    url: url.clone(),
+                    source: e,
+                })?;
 
         if !response.status().is_success() {
-            anyhow::bail!(
-                "Topology endpoint returned error status: {}\n\
-                URL: {}",
-                response.status(),
-                url
-            );
+            return Err(BiomeOsClientError::ServerError {
+                status: response.status().as_u16(),
+                url,
+            });
         }
 
         // Try new format first (nodes + edges + mode)
         let topology = response.json::<TopologyResponse>().await.map_err(|e| {
-            anyhow::anyhow!(
-                "Failed to parse topology response: {e}\n\
-                \n\
+            BiomeOsClientError::Parse(format!(
+                "{e}\n\n\
                 Expected format: {{\"nodes\": [...], \"edges\": [...], \"mode\": \"...\"}}"
-            )
+            ))
         })?;
 
         tracing::debug!(

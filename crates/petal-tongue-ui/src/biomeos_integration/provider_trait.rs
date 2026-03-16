@@ -5,7 +5,9 @@
 
 use async_trait::async_trait;
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
-use petal_tongue_discovery::{ProviderMetadata, VisualizationDataProvider};
+use petal_tongue_discovery::{
+    DiscoveryError, DiscoveryResult, ProviderMetadata, VisualizationDataProvider,
+};
 use tokio::time::timeout;
 use tracing::debug;
 
@@ -16,9 +18,11 @@ const HEALTH_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs
 
 #[async_trait]
 impl VisualizationDataProvider for BiomeOSProvider {
-    async fn get_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
-        // Convert our extended Primal to core PrimalInfo
-        let primals = self.get_primals_extended().await?;
+    async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
+        let primals = self
+            .get_primals_extended()
+            .await
+            .map_err(|e| DiscoveryError::OperationFailed { source: e.into() })?;
 
         Ok(primals
             .into_iter()
@@ -52,23 +56,26 @@ impl VisualizationDataProvider for BiomeOSProvider {
             .collect())
     }
 
-    async fn get_topology(&self) -> anyhow::Result<Vec<TopologyEdge>> {
+    async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
         // Default: empty topology (override in concrete providers)
         Ok(Vec::new())
     }
 
-    async fn health_check(&self) -> anyhow::Result<String> {
+    async fn health_check(&self) -> DiscoveryResult<String> {
         debug!("Health check for device management provider");
 
         let result = timeout(HEALTH_CHECK_TIMEOUT, self.health_check_jsonrpc()).await;
 
         match result {
             Ok(Ok(status)) => Ok(status),
-            Ok(Err(e)) => Err(e),
-            Err(_) => Err(anyhow::anyhow!(
-                "Health check timed out after {} seconds",
-                HEALTH_CHECK_TIMEOUT.as_secs()
-            )),
+            Ok(Err(e)) => Err(DiscoveryError::HealthCheckFailed {
+                name: "biomeOS-device-provider".to_string(),
+                endpoint: self.endpoint().to_string(),
+                source: e.into(),
+            }),
+            Err(_) => Err(DiscoveryError::ConnectionTimeout {
+                endpoint: self.endpoint().to_string(),
+            }),
         }
     }
 

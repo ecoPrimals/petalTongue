@@ -251,10 +251,10 @@ impl DivergingScale {
 
 fn lerp_color(a: &Color, b: &Color, t: f32) -> Color {
     Color::rgba(
-        a.r + (b.r - a.r) * t,
-        a.g + (b.g - a.g) * t,
-        a.b + (b.b - a.b) * t,
-        a.a + (b.a - a.a) * t,
+        (b.r - a.r).mul_add(t, a.r),
+        (b.g - a.g).mul_add(t, a.g),
+        (b.b - a.b).mul_add(t, a.b),
+        (b.a - a.a).mul_add(t, a.a),
     )
 }
 

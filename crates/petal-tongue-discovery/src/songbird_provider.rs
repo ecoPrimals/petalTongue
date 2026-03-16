@@ -4,9 +4,9 @@
 //! Wraps `SongbirdClient` to implement the `VisualizationDataProvider` trait.
 //! This allows Songbird to be used as a first-class provider in the discovery system.
 
+use crate::errors::DiscoveryResult;
 use crate::songbird_client::SongbirdClient;
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
-use anyhow::Result;
 use async_trait::async_trait;
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
 use std::sync::Arc;
@@ -28,7 +28,7 @@ impl SongbirdVisualizationProvider {
     /// Create a new Songbird visualization provider
     ///
     /// Discovers Songbird's Unix socket and wraps it in a provider.
-    pub async fn discover(family_id: Option<&str>) -> Result<Self> {
+    pub async fn discover(family_id: Option<&str>) -> DiscoveryResult<Self> {
         let client = SongbirdClient::discover(family_id)?;
 
         // Test connectivity
@@ -74,13 +74,13 @@ impl SongbirdVisualizationProvider {
 
 #[async_trait]
 impl VisualizationDataProvider for SongbirdVisualizationProvider {
-    async fn get_primals(&self) -> Result<Vec<PrimalInfo>> {
+    async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         debug!("Querying Songbird for all registered primals");
         let client = self.client.read().await;
         client.get_all_primals().await
     }
 
-    async fn get_topology(&self) -> Result<Vec<TopologyEdge>> {
+    async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
         // Songbird provides primal list, but topology edges need to be inferred
         // from capabilities and connections. For now, return empty and let
         // petalTongue infer topology from capabilities.
@@ -88,7 +88,7 @@ impl VisualizationDataProvider for SongbirdVisualizationProvider {
         Ok(Vec::new())
     }
 
-    async fn health_check(&self) -> Result<String> {
+    async fn health_check(&self) -> DiscoveryResult<String> {
         let client = self.client.read().await;
         client.health_check().await
     }

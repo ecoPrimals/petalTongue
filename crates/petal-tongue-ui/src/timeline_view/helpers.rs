@@ -36,8 +36,8 @@ pub fn event_screen_rect<S: ::std::hash::BuildHasher>(
     let time_ms = event.timestamp.timestamp_millis() as f64;
     let x_offset = time_to_x(time_ms, start_ms, end_ms, time_width);
     let x_center = rect_min.0 + 100.0 + x_offset;
-    let from_y = rect_min.1 + lane_height * (from_lane as f32 + 1.0);
-    let to_y = rect_min.1 + lane_height * (to_lane as f32 + 1.0);
+    let from_y = lane_height.mul_add(from_lane as f32 + 1.0, rect_min.1);
+    let to_y = lane_height.mul_add(to_lane as f32 + 1.0, rect_min.1);
     let y_min = from_y.min(to_y) - 4.0;
     let height = (from_y - to_y).abs() + 8.0;
     Some((x_center - 4.0, y_min, 8.0, height))

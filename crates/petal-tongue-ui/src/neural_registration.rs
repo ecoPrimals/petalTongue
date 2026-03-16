@@ -30,7 +30,7 @@ pub fn petaltongue_capabilities() -> Vec<&'static str> {
 /// and capabilities, then returns the provider for heartbeat use.
 pub async fn register_with_neural_api(
     our_socket: &Path,
-) -> Result<Arc<NeuralApiProvider>, anyhow::Error> {
+) -> crate::error::Result<Arc<NeuralApiProvider>> {
     let provider = NeuralApiProvider::discover(None).await?;
 
     let caps = petaltongue_capabilities();

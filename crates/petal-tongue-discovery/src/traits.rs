@@ -4,6 +4,7 @@
 //! Any primal can implement `VisualizationDataProvider` to provide data
 //! to petalTongue. No hardcoded knowledge of specific primals required!
 
+use crate::errors::DiscoveryResult;
 use async_trait::async_trait;
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
 
@@ -37,19 +38,19 @@ pub trait VisualizationDataProvider: Send + Sync {
     ///
     /// This is the core capability - providing the list of primals
     /// in the ecosystem.
-    async fn get_primals(&self) -> anyhow::Result<Vec<PrimalInfo>>;
+    async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>>;
 
     /// Get topology edges (connections between primals)
     ///
     /// Optional - if not implemented, petalTongue will infer topology
     /// from primal capabilities.
-    async fn get_topology(&self) -> anyhow::Result<Vec<TopologyEdge>> {
+    async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
         // Default: empty topology (will be inferred)
         Ok(Vec::new())
     }
 
     /// Health check - verify provider is available
-    async fn health_check(&self) -> anyhow::Result<String>;
+    async fn health_check(&self) -> DiscoveryResult<String>;
 
     /// Get provider metadata
     ///
@@ -97,15 +98,15 @@ mod tests {
 
     #[async_trait::async_trait]
     impl VisualizationDataProvider for MockProvider {
-        async fn get_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
+        async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
             Ok(vec![])
         }
 
-        async fn get_topology(&self) -> anyhow::Result<Vec<TopologyEdge>> {
+        async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
             Ok(vec![])
         }
 
-        async fn health_check(&self) -> anyhow::Result<String> {
+        async fn health_check(&self) -> DiscoveryResult<String> {
             Ok("ok".to_string())
         }
 

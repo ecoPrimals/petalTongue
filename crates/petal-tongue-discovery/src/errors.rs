@@ -9,27 +9,70 @@ use thiserror::Error;
 /// Discovery-specific errors with rich context
 #[derive(Error, Debug)]
 pub enum DiscoveryError {
+    // --- Discovery / Provider not found ---
     /// No providers could be discovered
     #[error("No providers found after trying {attempted} source(s): {sources}")]
     NoProvidersFound { attempted: usize, sources: String },
 
+    /// Discovery service (Songbird) not found
+    #[error("Discovery service not found. Is it running? (looking for {socket_name})")]
+    DiscoveryServiceNotFound { socket_name: String },
+
+    /// Neural API not found
+    #[error("Neural API not found. Is biomeOS nucleus serve running? (looking for {socket_name})")]
+    NeuralApiNotFound { socket_name: String },
+
+    /// No JSON-RPC providers found
+    #[error("No JSON-RPC providers found: {message}")]
+    NoJsonRpcProvidersFound { message: String },
+
+    /// All providers failed
+    #[error("All {count} provider(s) failed")]
+    AllProvidersFailed { count: usize },
+
+    // --- Health / Provider errors ---
     /// Provider failed health check
     #[error("Provider '{name}' at {endpoint} failed health check")]
     HealthCheckFailed {
         name: String,
         endpoint: String,
         #[source]
-        source: anyhow::Error,
+        source: Box<dyn std::error::Error + Send + Sync>,
     },
 
+    /// Provider returned HTTP error status
+    #[error("Provider returned error status: {status}")]
+    ProviderHttpError {
+        status: u16,
+        endpoint: Option<String>,
+    },
+
+    // --- Timeouts ---
     /// Discovery operation timed out
     #[error("Discovery timeout after {duration:?}")]
     Timeout { duration: Duration },
 
-    /// All providers failed
-    #[error("All {count} provider(s) failed")]
-    AllProvidersFailed { count: usize },
+    /// Connection timeout
+    #[error("Connection timeout to {endpoint}")]
+    ConnectionTimeout { endpoint: String },
 
+    /// Write timeout
+    #[error("Write timeout to {endpoint}")]
+    WriteTimeout { endpoint: String },
+
+    /// Read timeout
+    #[error("Read timeout from {endpoint}")]
+    ReadTimeout { endpoint: String },
+
+    /// RPC/timeout for JSON-RPC call
+    #[error("RPC timeout: {context}")]
+    RpcTimeout { context: String },
+
+    /// Operation timed out (generic)
+    #[error("Operation timed out after {duration:?}")]
+    OperationTimedOut { duration: Duration },
+
+    // --- Network / HTTP ---
     /// HTTP request error
     #[error("HTTP request failed")]
     HttpError(#[from] reqwest::Error),
@@ -38,6 +81,69 @@ pub enum DiscoveryError {
     #[error("mDNS discovery failed: {0}")]
     MdnsError(String),
 
+    /// Not a DNS response packet
+    #[error("Not a DNS response packet")]
+    NotDnsResponse,
+
+    /// No port advertised in mDNS service
+    #[error("No port advertised in mDNS service - refusing to assume default")]
+    NoPortAdvertisedInMdns,
+
+    // --- I/O ---
+    /// I/O error
+    #[error("I/O error")]
+    Io(#[from] std::io::Error),
+
+    /// Failed to read file
+    #[error("Failed to read file: {path}")]
+    FileReadError {
+        path: String,
+        #[source]
+        source: std::io::Error,
+    },
+
+    // --- JSON / Parsing ---
+    /// JSON parse/serialize error
+    #[error("JSON error")]
+    Json(#[from] serde_json::Error),
+
+    /// JSON-RPC protocol error
+    #[error("JSON-RPC error: {message}")]
+    JsonRpcError { code: Option<i32>, message: String },
+
+    /// Request ID mismatch in JSON-RPC response
+    #[error("Request ID mismatch: expected {expected}, got {actual}")]
+    RequestIdMismatch {
+        expected: u64,
+        actual: serde_json::Value,
+    },
+
+    /// No result in JSON-RPC response
+    #[error("No result in response{context}")]
+    NoResultInResponse { context: String },
+
+    /// Expected array in response
+    #[error("Expected array{context}")]
+    ExpectedArray { context: String },
+
+    /// Missing required field
+    #[error("Missing '{field}' field{context}")]
+    MissingField { field: String, context: String },
+
+    /// Scenario/ecosystem parse error
+    #[error("Scenario parse error: {message}")]
+    ScenarioParseError { message: String },
+
+    /// Failed to parse proprioception or similar structured data
+    #[error("Failed to parse {data_type}: {message}")]
+    ParseError { data_type: String, message: String },
+
+    // --- DNS parsing ---
+    /// DNS parse error
+    #[error("DNS parse error: {message}")]
+    DnsParseError { message: String },
+
+    // --- Configuration ---
     /// Configuration error
     #[error("Configuration error: {0}")]
     ConfigError(String),
@@ -53,6 +159,17 @@ pub enum DiscoveryError {
     /// Connection pool exhausted
     #[error("Connection pool exhausted for {endpoint}")]
     PoolExhausted { endpoint: String },
+
+    /// Retry attempts exhausted
+    #[error("All retry attempts failed")]
+    RetryExhausted,
+
+    /// Operation failed (wraps external error)
+    #[error("Operation failed")]
+    OperationFailed {
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
 }
 
 /// Result type for discovery operations
@@ -100,7 +217,10 @@ mod tests {
         let err = DiscoveryError::HealthCheckFailed {
             name: "biomeOS".to_string(),
             endpoint: "http://localhost:3000".to_string(),
-            source: anyhow::anyhow!("Connection refused"),
+            source: Box::new(std::io::Error::new(
+                std::io::ErrorKind::ConnectionRefused,
+                "Connection refused",
+            )),
         };
         let msg = err.to_string();
         assert!(msg.contains("biomeOS"));
@@ -244,11 +364,11 @@ mod tests {
 
     #[test]
     fn test_error_source_chain() {
-        let inner = anyhow::anyhow!("inner error");
+        let inner = std::io::Error::other("inner error");
         let err = DiscoveryError::HealthCheckFailed {
             name: "test".to_string(),
             endpoint: "http://localhost".to_string(),
-            source: inner,
+            source: Box::new(inner),
         };
         let display = err.to_string();
         assert!(display.contains("test"));

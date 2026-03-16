@@ -65,7 +65,8 @@ impl NicheDesigner {
         self.render_template_selector(ui);
         ui.add_space(8.0);
 
-        if let Some(template) = &self.selected_template.clone() {
+        let selected = self.selected_template.clone();
+        if let Some(template) = &selected {
             // Canvas (visual representation)
             self.render_canvas(ui, template);
             ui.add_space(8.0);
@@ -94,7 +95,8 @@ impl NicheDesigner {
             egui::ComboBox::from_id_salt("template_selector")
                 .selected_text(selected_name)
                 .show_ui(ui, |ui| {
-                    for template in &self.templates.clone() {
+                    let templates = self.templates.clone();
+                    for template in &templates {
                         let is_selected = self
                             .selected_template
                             .as_ref()

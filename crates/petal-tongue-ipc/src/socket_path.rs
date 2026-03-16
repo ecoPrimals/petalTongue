@@ -6,7 +6,7 @@
 //!
 //! This enables zero-configuration discovery and inter-primal communication.
 
-use anyhow::Result;
+use crate::socket_path_error::SocketPathError;
 use petal_tongue_core::constants::APP_DIR_NAME;
 use std::env;
 use std::path::{Path, PathBuf};
@@ -64,7 +64,7 @@ use std::path::{Path, PathBuf};
 /// let path = socket_path::get_petaltongue_socket_path().unwrap();
 /// // Returns: /tmp/custom.sock
 /// ```
-pub fn get_petaltongue_socket_path() -> Result<PathBuf> {
+pub fn get_petaltongue_socket_path() -> Result<PathBuf, SocketPathError> {
     // Priority 1: Explicit override (biomeOS standard)
     if let Ok(socket_path) = env::var("PETALTONGUE_SOCKET") {
         let path = PathBuf::from(socket_path);
@@ -146,7 +146,7 @@ pub fn get_node_id() -> String {
 ///
 /// Uses standard Unix conventions (XDG Base Directory Specification)
 /// rather than hardcoded paths.
-pub fn get_runtime_dir() -> Result<PathBuf> {
+pub fn get_runtime_dir() -> Result<PathBuf, SocketPathError> {
     // Try XDG_RUNTIME_DIR first (standard)
     if let Ok(dir) = env::var("XDG_RUNTIME_DIR") {
         let path = PathBuf::from(dir);
@@ -164,11 +164,7 @@ pub fn get_runtime_dir() -> Result<PathBuf> {
     if runtime_dir.exists() || runtime_dir.parent().is_some_and(std::path::Path::exists) {
         Ok(runtime_dir)
     } else {
-        anyhow::bail!(
-            "Runtime directory does not exist: {}. \
-            Will fall back to /tmp/",
-            runtime_dir.display()
-        )
+        Err(SocketPathError::RuntimeDirNotFound { path: runtime_dir })
     }
 }
 
@@ -209,7 +205,7 @@ pub fn discover_primal_socket(
     primal_name: &str,
     family_id: Option<&str>,
     node_id: Option<&str>,
-) -> Result<PathBuf> {
+) -> Result<PathBuf, SocketPathError> {
     // Priority 1: Check for explicit override env var
     let env_var = format!("{}_SOCKET", primal_name.to_uppercase());
     if let Ok(socket_path) = env::var(&env_var) {
@@ -245,25 +241,27 @@ pub fn socket_exists(socket_path: &Path) -> bool {
 /// Get current user ID in a portable way
 ///
 /// Uses the standard Unix `id` command rather than unsafe libc calls.
-fn get_current_uid() -> Result<u32> {
+fn get_current_uid() -> Result<u32, SocketPathError> {
     use std::process::Command;
 
     let output = Command::new("id")
         .arg("-u")
         .output()
-        .map_err(|e| anyhow::anyhow!("Failed to run 'id -u': {e}"))?;
+        .map_err(|e| SocketPathError::GetUid(format!("Failed to run 'id -u': {e}")))?;
 
     if !output.status.success() {
-        anyhow::bail!("'id -u' command failed");
+        return Err(SocketPathError::GetUid(
+            "'id -u' command failed".to_string(),
+        ));
     }
 
     let uid_str = String::from_utf8(output.stdout)
-        .map_err(|e| anyhow::anyhow!("Invalid UTF-8 from 'id -u': {e}"))?;
+        .map_err(|e| SocketPathError::GetUid(format!("Invalid UTF-8 from 'id -u': {e}")))?;
 
     uid_str
         .trim()
         .parse::<u32>()
-        .map_err(|e| anyhow::anyhow!("Failed to parse UID: {e}"))
+        .map_err(|e| SocketPathError::GetUid(format!("Failed to parse UID: {e}")))
 }
 
 #[cfg(test)]

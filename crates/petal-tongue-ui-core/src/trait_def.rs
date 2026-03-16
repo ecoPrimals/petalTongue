@@ -3,8 +3,9 @@
 //!
 //! Defines the platform-agnostic interface that all UI implementations must satisfy.
 
-use anyhow::Result;
 use bytes::Bytes;
+
+use crate::error::{Result, UiCoreError};
 use std::path::Path;
 
 /// Export format for visualizations
@@ -130,7 +131,9 @@ pub trait UniversalUI: Send + Sync {
     /// Runs an interactive UI session.
     /// Returns an error if interactive mode is not supported.
     fn run_interactive(&mut self) -> Result<()> {
-        anyhow::bail!("Interactive mode not supported for {}", self.mode_name())
+        Err(UiCoreError::InteractiveNotSupported(
+            self.mode_name().to_string(),
+        ))
     }
 
     /// Get recommended export format for this UI

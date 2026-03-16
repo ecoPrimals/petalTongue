@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Display backend traits and types
 
-use anyhow::Result;
+use crate::error::Result;
 use async_trait::async_trait;
 
 /// Display backend trait - implemented by all display systems

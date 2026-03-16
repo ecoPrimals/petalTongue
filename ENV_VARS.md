@@ -198,6 +198,28 @@ Socket name for physics compute capability discovery (used when `BARRACUDA_SOCKE
 
 ---
 
+### **PETALTONGUE_GPU_COMPUTE_ENDPOINT**
+**Type**: String (URL)
+**Default**: `http://localhost:8090`
+**Required**: No
+**Example**: `PETALTONGUE_GPU_COMPUTE_ENDPOINT=http://barracuda.local:8090`
+
+Endpoint for GPU compute offload (barraCuda). Used by the compute bridge for
+statistics, tessellation, projection, and physics operations.
+
+---
+
+### **TOADSTOOL_PORT**
+**Type**: Integer (port number)
+**Default**: `8091`
+**Required**: No
+**Example**: `TOADSTOOL_PORT=9091`
+
+Port for ToadStool display backend communication. Used when discovering
+ToadStool via HTTP rather than Unix socket.
+
+---
+
 ### **PETALTONGUE_HEADLESS_ENDPOINT**
 **Type**: String (URL)  
 **Default**: `http://localhost:9000`  
@@ -587,7 +609,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: March 14, 2026  
+**Last Updated**: March 16, 2026  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-only
 
