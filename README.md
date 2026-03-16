@@ -17,6 +17,7 @@ petaltongue ui          # Desktop GUI (egui)
 petaltongue tui         # Terminal UI (ratatui)
 petaltongue web         # Web server (axum)
 petaltongue headless    # Headless rendering (SVG/PNG/JSON)
+petaltongue server      # IPC server (no GUI)
 petaltongue status      # System status
 ```
 
@@ -40,6 +41,7 @@ petaltongue
 ├── tui       Terminal UI (ratatui)
 ├── web       Web server (axum)
 ├── headless  Batch rendering (SVG/PNG/JSON)
+├── server    IPC server (no GUI)
 └── status    System info
 ```
 
@@ -89,17 +91,18 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,188 passing, 0 failures |
+| Tests | 5,076 passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings (pedantic + nursery, `--all-targets --all-features`) |
-| Docs | `RUSTDOCFLAGS="-D warnings" cargo doc` clean |
-| Coverage | ~85% line / ~86% branch (llvm-cov) |
+| Clippy | Zero warnings (pedantic + nursery enforced in CI) |
+| Docs | `cargo doc --workspace --no-deps` clean |
+| Coverage | ~87% line / ~88% branch (llvm-cov) |
 | Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
 | License | AGPL-3.0-only, SPDX headers on all source files |
-| Files | 528+ under 1,000 lines; largest ~960 lines (scene_bridge.rs) |
+| Files | 560 files under 1,000 lines; largest 876 lines (`json_rpc_client.rs`) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None -- pure Rust (`rustix` for syscalls) |
+| Error handling | Typed `thiserror` errors throughout -- zero `anyhow` in production |
 
 ---
 
@@ -109,7 +112,7 @@ petaltongue
 # Prerequisites: Rust nightly (edition 2024)
 cargo build --workspace
 cargo test --workspace
-cargo clippy --workspace -- -D warnings
+cargo clippy --workspace --all-targets -- -D warnings -W clippy::pedantic -W clippy::nursery
 cargo fmt --check
 cargo doc --workspace --no-deps
 cargo llvm-cov --workspace --summary-only   # Coverage
@@ -158,7 +161,7 @@ See `ecoPrimals/wateringHole/petaltongue/` for inter-primal standards:
 
 - Discover capabilities at runtime, never hardcode primal names
 - Pure Rust, edition 2024, `async`/`await`, `Arc`/`RwLock`
-- Proper error handling (`Result<T>`, no `unwrap()` in production)
+- Typed error handling (`thiserror`, no `anyhow` in production, no `unwrap()`)
 - `#![forbid(unsafe_code)]` unless hardware FFI is unavoidable
 - Semantic method naming (`domain.operation`)
 - JSON-RPC + tarpc first, HTTP fallback only

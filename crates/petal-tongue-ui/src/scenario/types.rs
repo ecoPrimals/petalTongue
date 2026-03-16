@@ -54,20 +54,30 @@ impl Scenario {
     }
 
     /// Validate scenario configuration
-    pub fn validate(&self) -> anyhow::Result<()> {
+    pub fn validate(&self) -> crate::error::Result<()> {
         // Check required fields
         if self.name.trim().is_empty() {
-            anyhow::bail!("Scenario name cannot be empty");
+            return Err(crate::scenario_error::ScenarioError::MissingField {
+                field: "name".to_string(),
+                suggestion: Some("Add a non-empty 'name' field".to_string()),
+            }
+            .into());
         }
 
         if self.mode.trim().is_empty() {
-            anyhow::bail!(
-                "Scenario mode cannot be empty (e.g., 'doom-showcase', 'live-ecosystem')"
-            );
+            return Err(crate::scenario_error::ScenarioError::MissingField {
+                field: "mode".to_string(),
+                suggestion: Some("e.g., 'doom-showcase', 'live-ecosystem'".to_string()),
+            }
+            .into());
         }
 
         if self.version.trim().is_empty() {
-            anyhow::bail!("Scenario version cannot be empty");
+            return Err(crate::scenario_error::ScenarioError::MissingField {
+                field: "version".to_string(),
+                suggestion: Some("e.g., '2.0.0'".to_string()),
+            }
+            .into());
         }
 
         // Validate version format (should be semver-like)

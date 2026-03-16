@@ -13,7 +13,7 @@ pub use keyboard::KeyboardSensor;
 pub use mouse::MouseSensor;
 pub use screen::ScreenSensor;
 
-use anyhow::Result;
+use crate::error::Result;
 use petal_tongue_core::SensorRegistry;
 
 /// Discover all available sensors at runtime

@@ -37,7 +37,7 @@ pub use prompt::prompt_for_display_server;
 pub use renderer::EguiPixelRenderer;
 pub use traits::{DisplayBackend, DisplayCapabilities};
 
-use anyhow::Result;
+use crate::error::Result;
 
 /// Initialize display system and return best available backend
 pub async fn init_display() -> Result<DisplayManager> {

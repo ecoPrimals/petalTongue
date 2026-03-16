@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Entropy streaming to biomeOS/BearDog
 
+use crate::error::EntropyError;
 use crate::types::EntropyCapture;
 use aes_gcm::{
     Aes256Gcm,
     aead::{Aead, KeyInit, OsRng, generic_array::GenericArray},
 };
-use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 /// Stream confirmation from server
@@ -67,7 +67,10 @@ impl Drop for EncryptedEntropy {
 /// - `BearDog`'s public key (for key exchange)
 /// - Or a pre-shared key established during primal handshake
 /// - Or ephemeral keys via ECDH
-pub async fn stream_entropy(entropy: EntropyCapture, endpoint: &str) -> Result<StreamConfirmation> {
+pub async fn stream_entropy(
+    entropy: EntropyCapture,
+    endpoint: &str,
+) -> Result<StreamConfirmation, EntropyError> {
     tracing::info!(
         "Streaming {} entropy (quality: {:.1}%)",
         entropy.modality(),
@@ -97,8 +100,7 @@ pub async fn stream_entropy(entropy: EntropyCapture, endpoint: &str) -> Result<S
         .header("X-Entropy-Quality", format!("{:.2}", entropy.quality()))
         .json(&encrypted)
         .send()
-        .await
-        .context("Failed to send entropy to server")?;
+        .await?;
 
     // 4. Zeroize encrypted data after sending
     drop(encrypted); // Explicitly drop to trigger zeroization
@@ -107,13 +109,13 @@ pub async fn stream_entropy(entropy: EntropyCapture, endpoint: &str) -> Result<S
     let status = response.status();
     if !status.is_success() {
         let error_body = response.text().await.unwrap_or_default();
-        anyhow::bail!("Server rejected entropy: {status} - {error_body}");
+        return Err(EntropyError::ServerRejected {
+            status: status.as_u16(),
+            body: error_body,
+        });
     }
 
-    let confirmation: StreamConfirmation = response
-        .json()
-        .await
-        .context("Failed to parse server confirmation")?;
+    let confirmation: StreamConfirmation = response.json().await?;
 
     tracing::info!("✅ Entropy accepted: receipt {}", confirmation.receipt_id);
 
@@ -159,7 +161,7 @@ pub async fn stream_entropy(entropy: EntropyCapture, endpoint: &str) -> Result<S
 ///
 /// When `BearDog` provides key exchange API, this can be evolved without
 /// breaking existing entropy capture flows.
-fn encrypt_entropy(plaintext: &[u8]) -> Result<EncryptedEntropy> {
+fn encrypt_entropy(plaintext: &[u8]) -> Result<EncryptedEntropy, EntropyError> {
     // Generate random encryption key (32 bytes for AES-256)
     // This is secure for ephemeral entropy data with TLS transport
     // EVOLUTION PATH: When BearDog key exchange is available:
@@ -176,7 +178,7 @@ fn encrypt_entropy(plaintext: &[u8]) -> Result<EncryptedEntropy> {
     // Encrypt with authenticated encryption
     let ciphertext = cipher
         .encrypt(nonce, plaintext)
-        .map_err(|e| anyhow::anyhow!("Encryption failed: {e}"))?;
+        .map_err(|_| EntropyError::Encrypt)?;
 
     tracing::debug!(
         "Encrypted {} bytes → {} bytes (includes 16-byte auth tag)",
@@ -195,13 +197,13 @@ fn encrypt_entropy(plaintext: &[u8]) -> Result<EncryptedEntropy> {
 /// In production, only biomeOS/BearDog would decrypt (using their private key).
 #[cfg(test)]
 #[expect(dead_code)] // Used in future streaming implementation
-fn decrypt_entropy(encrypted: &EncryptedEntropy, key: &[u8; 32]) -> Result<Vec<u8>> {
+fn decrypt_entropy(encrypted: &EncryptedEntropy, key: &[u8; 32]) -> Result<Vec<u8>, EntropyError> {
     let cipher = Aes256Gcm::new(key.into());
     let nonce = GenericArray::from_slice(&encrypted.nonce);
 
     let plaintext = cipher
         .decrypt(nonce, encrypted.ciphertext.as_ref())
-        .map_err(|e| anyhow::anyhow!("Decryption failed: {e}"))?;
+        .map_err(|_| EntropyError::Decrypt)?;
 
     Ok(plaintext)
 }

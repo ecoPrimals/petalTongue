@@ -13,7 +13,7 @@ use crate::display::traits::{BackendPriority, DisplayBackend};
 use crate::display::{
     ExternalDisplay, FramebufferDisplay, SoftwareDisplay, ToadstoolDisplay, ToadstoolDisplayV2,
 };
-use anyhow::{Result, anyhow};
+use crate::error::{DisplayError, Result};
 use tracing::{info, warn};
 
 /// Display manager - coordinates multiple backends
@@ -129,7 +129,7 @@ impl DisplayManager {
         }
 
         if backends.is_empty() {
-            return Err(anyhow!("No display backends available"));
+            return Err(DisplayError::NoBackendsAvailable.into());
         }
 
         // Sort by priority (lower number = higher priority)
@@ -184,7 +184,7 @@ impl DisplayManager {
             }
         }
 
-        Err(anyhow!("Failed to initialize any display backend"))
+        Err(DisplayError::InitFailed.into())
     }
 
     /// Get dimensions of active backend
@@ -199,7 +199,7 @@ impl DisplayManager {
     pub async fn present(&mut self, buffer: &[u8]) -> Result<()> {
         let idx = self
             .active_backend_idx
-            .ok_or_else(|| anyhow!("No active display backend"))?;
+            .ok_or(DisplayError::NoActiveBackend)?;
 
         match self.backends[idx].backend.present(buffer).await {
             Ok(()) => Ok(()),
@@ -220,7 +220,7 @@ impl DisplayManager {
         warn!("🔄 Attempting fallback to next display backend...");
 
         let Some(current_idx) = self.active_backend_idx else {
-            return Err(anyhow::anyhow!("No active backend to fallback from"));
+            return Err(DisplayError::NoActiveBackendToFallback.into());
         };
 
         // Try remaining backends
@@ -249,7 +249,7 @@ impl DisplayManager {
             }
         }
 
-        Err(anyhow!("No fallback backend available"))
+        Err(DisplayError::NoFallbackBackend.into())
     }
 
     /// Get name of active backend

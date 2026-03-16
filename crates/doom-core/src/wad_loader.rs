@@ -8,7 +8,7 @@
 //! - Directory: array of lump entries (name, offset, size)
 //! - Data: raw lump data
 
-use anyhow::{Context, Result, bail};
+use crate::DoomError;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
@@ -131,12 +131,13 @@ impl WadData {
     /// # Errors
     ///
     /// Returns an error if the file cannot be read or contains no valid maps.
-    pub fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
+    pub fn load<P: AsRef<Path>>(path: P) -> Result<Self, DoomError> {
         let path = path.as_ref();
         info!("Loading WAD file: {}", path.display());
 
-        let mut file = File::open(path)
-            .with_context(|| format!("Failed to open WAD file: {}", path.display()))?;
+        let mut file = File::open(path).map_err(|e| {
+            DoomError::WadNotFound(format!("Failed to open WAD file: {}: {e}", path.display()))
+        })?;
 
         let header = Self::read_header(&mut file)?;
         info!(
@@ -171,7 +172,9 @@ impl WadData {
         }
 
         if maps.is_empty() {
-            bail!("No valid maps found in WAD file");
+            return Err(DoomError::InvalidWad(
+                "No valid maps found in WAD file".to_string(),
+            ));
         }
 
         info!("Loaded {} maps from WAD", maps.len());
@@ -179,17 +182,22 @@ impl WadData {
         Ok(Self { lumps, maps })
     }
 
-    fn read_header(file: &mut File) -> Result<WadHeader> {
+    fn read_header(file: &mut File) -> Result<WadHeader, DoomError> {
         let mut header_bytes = [0u8; 12];
         file.read_exact(&mut header_bytes)
-            .context("Failed to read WAD header")?;
+            .map_err(|e| DoomError::InvalidWad(format!("Failed to read WAD header: {e}")))?;
 
-        let type_str = std::str::from_utf8(&header_bytes[0..4]).context("Invalid WAD type")?;
+        let type_str = std::str::from_utf8(&header_bytes[0..4])
+            .map_err(|e| DoomError::InvalidWad(format!("Invalid WAD type: {e}")))?;
 
         let wad_type = match type_str {
             "IWAD" => WadType::Iwad,
             "PWAD" => WadType::Pwad,
-            _ => bail!("Unknown WAD type: {type_str}"),
+            _ => {
+                return Err(DoomError::InvalidWad(format!(
+                    "Unknown WAD type: {type_str}"
+                )));
+            }
         };
 
         let num_lumps = i32::from_le_bytes([
@@ -217,16 +225,17 @@ impl WadData {
         clippy::cast_sign_loss,
         reason = "WAD format uses i32 for offsets/sizes that are always non-negative"
     )]
-    fn read_directory(file: &mut File, header: &WadHeader) -> Result<Vec<Lump>> {
+    fn read_directory(file: &mut File, header: &WadHeader) -> Result<Vec<Lump>, DoomError> {
         file.seek(SeekFrom::Start(header.dir_offset as u64))
-            .context("Failed to seek to directory")?;
+            .map_err(|e| DoomError::InvalidWad(format!("Failed to seek to directory: {e}")))?;
 
         let mut lumps = Vec::new();
 
         for _ in 0..header.num_lumps {
             let mut entry_bytes = [0u8; 16];
-            file.read_exact(&mut entry_bytes)
-                .context("Failed to read directory entry")?;
+            file.read_exact(&mut entry_bytes).map_err(|e| {
+                DoomError::InvalidWad(format!("Failed to read directory entry: {e}"))
+            })?;
 
             let offset = i32::from_le_bytes([
                 entry_bytes[0],
@@ -256,11 +265,13 @@ impl WadData {
         for lump in &mut lumps {
             if lump.size > 0 {
                 file.seek(SeekFrom::Start(lump.offset as u64))
-                    .context("Failed to seek to lump data")?;
+                    .map_err(|e| {
+                        DoomError::InvalidWad(format!("Failed to seek to lump data: {e}"))
+                    })?;
 
                 lump.data.resize(lump.size as usize, 0);
                 file.read_exact(&mut lump.data)
-                    .context("Failed to read lump data")?;
+                    .map_err(|e| DoomError::InvalidWad(format!("Failed to read lump data: {e}")))?;
             }
         }
 
@@ -290,7 +301,7 @@ fn is_map_marker(name: &str) -> bool {
     false
 }
 
-fn parse_map(lumps: &[Lump], map_index: usize, map_name: &str) -> Result<MapData> {
+fn parse_map(lumps: &[Lump], map_index: usize, map_name: &str) -> Result<MapData, DoomError> {
     let vertices = parse_vertices(lumps, map_index)?;
     let linedefs = parse_linedefs(lumps, map_index)?;
     let sectors = parse_sectors(lumps, map_index)?;
@@ -305,7 +316,7 @@ fn parse_map(lumps: &[Lump], map_index: usize, map_name: &str) -> Result<MapData
     })
 }
 
-fn parse_vertices(lumps: &[Lump], map_index: usize) -> Result<Vec<Vertex>> {
+fn parse_vertices(lumps: &[Lump], map_index: usize) -> Result<Vec<Vertex>, DoomError> {
     let lump = find_map_lump(lumps, map_index, "VERTEXES")?;
     let data = &lump.data;
 
@@ -320,7 +331,7 @@ fn parse_vertices(lumps: &[Lump], map_index: usize) -> Result<Vec<Vertex>> {
     Ok(vertices)
 }
 
-fn parse_linedefs(lumps: &[Lump], map_index: usize) -> Result<Vec<LineDef>> {
+fn parse_linedefs(lumps: &[Lump], map_index: usize) -> Result<Vec<LineDef>, DoomError> {
     let lump = find_map_lump(lumps, map_index, "LINEDEFS")?;
     let data = &lump.data;
 
@@ -345,7 +356,7 @@ fn parse_linedefs(lumps: &[Lump], map_index: usize) -> Result<Vec<LineDef>> {
     Ok(linedefs)
 }
 
-fn parse_sectors(lumps: &[Lump], map_index: usize) -> Result<Vec<Sector>> {
+fn parse_sectors(lumps: &[Lump], map_index: usize) -> Result<Vec<Sector>, DoomError> {
     let lump = find_map_lump(lumps, map_index, "SECTORS")?;
     let data = &lump.data;
 
@@ -370,7 +381,7 @@ fn parse_sectors(lumps: &[Lump], map_index: usize) -> Result<Vec<Sector>> {
     Ok(sectors)
 }
 
-fn parse_things(lumps: &[Lump], map_index: usize) -> Result<Vec<Thing>> {
+fn parse_things(lumps: &[Lump], map_index: usize) -> Result<Vec<Thing>, DoomError> {
     let lump = find_map_lump(lumps, map_index, "THINGS")?;
     let data = &lump.data;
 
@@ -395,7 +406,11 @@ fn parse_things(lumps: &[Lump], map_index: usize) -> Result<Vec<Thing>> {
     Ok(things)
 }
 
-fn find_map_lump<'a>(lumps: &'a [Lump], map_index: usize, lump_name: &str) -> Result<&'a Lump> {
+fn find_map_lump<'a>(
+    lumps: &'a [Lump],
+    map_index: usize,
+    lump_name: &str,
+) -> Result<&'a Lump, DoomError> {
     for offset in 1..12 {
         let idx = map_index + offset;
         if idx < lumps.len() && lumps[idx].name == lump_name {
@@ -403,7 +418,9 @@ fn find_map_lump<'a>(lumps: &'a [Lump], map_index: usize, lump_name: &str) -> Re
         }
     }
 
-    bail!("Lump {lump_name} not found after map marker")
+    Err(DoomError::InvalidWad(format!(
+        "Lump {lump_name} not found after map marker"
+    )))
 }
 
 fn parse_texture_name(bytes: &[u8]) -> String {

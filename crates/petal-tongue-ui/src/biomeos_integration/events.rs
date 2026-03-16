@@ -3,7 +3,7 @@
 //!
 //! WebSocket-based event stream for device, primal, and niche events.
 
-use anyhow::Result;
+use crate::error::Result;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 

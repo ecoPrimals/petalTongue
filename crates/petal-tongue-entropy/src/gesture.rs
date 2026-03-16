@@ -261,7 +261,7 @@ impl GestureEntropyCapture {
     }
 
     /// Finalize and create entropy data
-    pub fn finalize(self) -> anyhow::Result<GestureEntropyData> {
+    pub fn finalize(self) -> Result<GestureEntropyData, crate::error::EntropyError> {
         let quality_metrics = self.assess_quality();
 
         Ok(GestureEntropyData {

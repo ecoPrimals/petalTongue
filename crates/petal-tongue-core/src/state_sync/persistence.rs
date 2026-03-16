@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! State persistence backends (local file, in-memory for tests).
 
-use anyhow::{Context, Result};
 use std::path::PathBuf;
+
+use crate::error::{PetalTongueError, Result};
 
 use super::types::DeviceState;
 
@@ -28,8 +29,12 @@ impl LocalStatePersistence {
     /// Create a new local state persistence
     pub fn new() -> Result<Self> {
         let base_dir = Self::default_state_dir()?;
-        std::fs::create_dir_all(&base_dir)
-            .with_context(|| format!("Failed to create state directory: {}", base_dir.display()))?;
+        std::fs::create_dir_all(&base_dir).map_err(|e| {
+            PetalTongueError::Io(std::io::Error::other(format!(
+                "Failed to create state directory: {}: {e}",
+                base_dir.display()
+            )))
+        })?;
 
         Ok(Self { base_dir })
     }
@@ -44,7 +49,7 @@ impl LocalStatePersistence {
     fn default_state_dir() -> Result<PathBuf> {
         crate::platform_dirs::config_dir()
             .map(|dir| dir.join("petalTongue").join("state"))
-            .map_err(|e| anyhow::anyhow!("Could not determine config directory: {e}"))
+            .map_err(|e| PetalTongueError::ConfigDir(e.to_string()))
     }
 
     /// Get state file path for device
@@ -56,10 +61,10 @@ impl LocalStatePersistence {
 impl StatePersistence for LocalStatePersistence {
     fn save(&self, state: &DeviceState) -> Result<()> {
         let path = self.state_file(&state.device_id);
-        let json = serde_json::to_string_pretty(state).context("Failed to serialize state")?;
+        let json = serde_json::to_string_pretty(state)
+            .map_err(|e| PetalTongueError::Json(format!("Failed to serialize state: {e}")))?;
 
-        std::fs::write(&path, json)
-            .with_context(|| format!("Failed to write state file: {}", path.display()))?;
+        std::fs::write(&path, json)?;
 
         Ok(())
     }
@@ -71,11 +76,10 @@ impl StatePersistence for LocalStatePersistence {
             return Ok(None);
         }
 
-        let contents = std::fs::read_to_string(&path)
-            .with_context(|| format!("Failed to read state file: {}", path.display()))?;
+        let contents = std::fs::read_to_string(&path)?;
 
-        let state: DeviceState =
-            serde_json::from_str(&contents).context("Failed to deserialize state")?;
+        let state: DeviceState = serde_json::from_str(&contents)
+            .map_err(|e| PetalTongueError::Json(format!("Failed to deserialize state: {e}")))?;
 
         Ok(Some(state))
     }
@@ -84,8 +88,7 @@ impl StatePersistence for LocalStatePersistence {
         let path = self.state_file(device_id);
 
         if path.exists() {
-            std::fs::remove_file(&path)
-                .with_context(|| format!("Failed to delete state file: {}", path.display()))?;
+            std::fs::remove_file(&path)?;
         }
 
         Ok(())

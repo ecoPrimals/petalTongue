@@ -3,7 +3,7 @@
 //!
 //! The default touchpoint: flower opening to sunrise, leading to tutorial.
 
-use anyhow::Result;
+use crate::error::Result;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;

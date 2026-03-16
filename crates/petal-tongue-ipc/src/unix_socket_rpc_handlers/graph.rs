@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Handlers for `visualization.render.graph` and graph rendering.
 //!
-//! Builds a SceneGraph from the `GraphEngine` topology and compiles it
+//! Builds a `SceneGraph` from the `GraphEngine` topology and compiles it
 //! through the real `SvgCompiler` / `TerminalCompiler`.
 
 use super::RpcHandlers;
@@ -13,7 +13,7 @@ use petal_tongue_scene::primitive::{Color, LineCap, LineJoin, Primitive, StrokeS
 use petal_tongue_scene::scene_graph::{SceneGraph, SceneNode};
 use serde_json::{Value, json};
 
-/// Build a SceneGraph from graph engine nodes and edges.
+/// Build a `SceneGraph` from graph engine nodes and edges.
 fn graph_to_scene(handlers: &RpcHandlers) -> (SceneGraph, usize, usize) {
     let graph = handlers
         .graph
@@ -90,14 +90,17 @@ fn graph_to_scene(handlers: &RpcHandlers) -> (SceneGraph, usize, usize) {
     clippy::unused_async,
     reason = "async trait requirement for RPC handler"
 )]
-pub async fn render_graph_data(_handlers: &RpcHandlers, data: Value) -> anyhow::Result<()> {
+pub async fn render_graph_data(
+    _handlers: &RpcHandlers,
+    data: Value,
+) -> Result<(), std::convert::Infallible> {
     tracing::debug!("Rendering graph data: {:?}", data);
     Ok(())
 }
 
 /// Handle `visualization.render.graph`: render graph to specified format.
 ///
-/// Builds a real SceneGraph from the graph engine and compiles through
+/// Builds a real `SceneGraph` from the graph engine and compiles through
 /// `SvgCompiler` or `TerminalCompiler`.
 #[expect(
     clippy::unused_async,

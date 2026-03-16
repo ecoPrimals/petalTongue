@@ -209,7 +209,7 @@ mod tests {
             endpoint: "http://localhost".to_string(),
             timestamp: SystemTime::UNIX_EPOCH,
         };
-        let s = format!("{:?}", e);
+        let s = format!("{e:?}");
         assert!(s.contains("PrimalDiscovered"));
         assert!(s.contains("p1"));
     }

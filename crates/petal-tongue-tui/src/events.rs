@@ -4,7 +4,7 @@
 //! Handles keyboard, mouse, and async events for the TUI.
 //! Pure Rust, zero unsafe code.
 
-use anyhow::Result;
+use crate::error::TuiError;
 use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent, KeyModifiers};
 use std::time::Duration;
 use tokio::sync::mpsc;
@@ -131,7 +131,7 @@ impl EventHandler {
         clippy::unused_async,
         reason = "async for future non-blocking crossterm API"
     )]
-    async fn read_terminal_event() -> Result<Option<TUIEvent>> {
+    async fn read_terminal_event() -> Result<Option<TUIEvent>, TuiError> {
         // Poll for event with timeout
         if crossterm::event::poll(Duration::from_millis(100))? {
             match crossterm::event::read()? {
@@ -152,7 +152,7 @@ impl EventHandler {
     }
 
     /// Send external event
-    pub fn send_external(&self, event: ExternalEvent) -> Result<()> {
+    pub fn send_external(&self, event: ExternalEvent) -> Result<(), TuiError> {
         self.tx.send(TUIEvent::External(event))?;
         Ok(())
     }

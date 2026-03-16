@@ -4,7 +4,7 @@
 //! Continuously polls sensors and feeds events to `RenderingAwareness`.
 //! Completes the bidirectional feedback loop.
 
-use anyhow::Result;
+use crate::error::Result;
 use petal_tongue_core::{RenderingAwareness, SensorRegistry};
 use std::sync::{Arc, RwLock};
 

@@ -3,7 +3,7 @@
 //
 // Simplified DNS parser focused on service discovery (RFC 1035, RFC 6762, RFC 6763)
 
-use anyhow::Result;
+use crate::errors::{DiscoveryError, DiscoveryResult};
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 /// DNS record type
@@ -54,9 +54,11 @@ pub struct DnsHeader {
 }
 
 impl DnsHeader {
-    pub fn parse(data: &[u8]) -> Result<Self> {
+    pub fn parse(data: &[u8]) -> DiscoveryResult<Self> {
         if data.len() < 12 {
-            anyhow::bail!("DNS header too short");
+            return Err(DiscoveryError::DnsParseError {
+                message: "DNS header too short".to_string(),
+            });
         }
 
         Ok(Self {
@@ -87,7 +89,7 @@ impl<'a> NameParser<'a> {
     /// Parse a DNS name starting at offset
     ///
     /// Returns (name, `bytes_consumed`)
-    pub fn parse_name(&self, mut offset: usize) -> Result<(String, usize)> {
+    pub fn parse_name(&self, mut offset: usize) -> DiscoveryResult<(String, usize)> {
         let start_offset = offset;
         let mut name = String::new();
         let mut jumped = false;
@@ -95,7 +97,9 @@ impl<'a> NameParser<'a> {
 
         loop {
             if offset >= self.data.len() {
-                anyhow::bail!("Name parsing exceeded packet bounds");
+                return Err(DiscoveryError::DnsParseError {
+                    message: "Name parsing exceeded packet bounds".to_string(),
+                });
             }
 
             let len = self.data[offset];
@@ -103,7 +107,9 @@ impl<'a> NameParser<'a> {
             // Check for compression pointer (top 2 bits set)
             if (len & 0xC0) == 0xC0 {
                 if offset + 1 >= self.data.len() {
-                    anyhow::bail!("Compression pointer incomplete");
+                    return Err(DiscoveryError::DnsParseError {
+                        message: "Compression pointer incomplete".to_string(),
+                    });
                 }
 
                 // Extract pointer offset (14 bits)
@@ -126,7 +132,9 @@ impl<'a> NameParser<'a> {
 
             // Label
             if offset + 1 + len as usize > self.data.len() {
-                anyhow::bail!("Label length exceeds packet bounds");
+                return Err(DiscoveryError::DnsParseError {
+                    message: "Label length exceeds packet bounds".to_string(),
+                });
             }
 
             if !name.is_empty() {
@@ -163,9 +171,11 @@ pub struct SrvRecord {
 }
 
 impl SrvRecord {
-    pub fn parse(data: &[u8], offset: usize, rdata: &[u8]) -> Result<Self> {
+    pub fn parse(data: &[u8], offset: usize, rdata: &[u8]) -> DiscoveryResult<Self> {
         if rdata.len() < 6 {
-            anyhow::bail!("SRV rdata too short");
+            return Err(DiscoveryError::DnsParseError {
+                message: "SRV rdata too short".to_string(),
+            });
         }
 
         let priority = u16::from_be_bytes([rdata[0], rdata[1]]);
@@ -192,7 +202,7 @@ pub struct TxtRecord {
 
 impl TxtRecord {
     #[expect(clippy::unnecessary_wraps, reason = "Ok wrapper for struct literal")]
-    pub fn parse(rdata: &[u8]) -> Result<Self> {
+    pub fn parse(rdata: &[u8]) -> DiscoveryResult<Self> {
         let mut attributes = Vec::new();
         let mut offset = 0;
 
@@ -232,9 +242,11 @@ pub struct ARecord {
 }
 
 impl ARecord {
-    pub fn parse(rdata: &[u8]) -> Result<Self> {
+    pub fn parse(rdata: &[u8]) -> DiscoveryResult<Self> {
         if rdata.len() != 4 {
-            anyhow::bail!("A record must be 4 bytes");
+            return Err(DiscoveryError::DnsParseError {
+                message: "A record must be 4 bytes".to_string(),
+            });
         }
 
         Ok(Self {
@@ -251,9 +263,11 @@ pub struct AaaaRecord {
 }
 
 impl AaaaRecord {
-    pub fn parse(rdata: &[u8]) -> Result<Self> {
+    pub fn parse(rdata: &[u8]) -> DiscoveryResult<Self> {
         if rdata.len() != 16 {
-            anyhow::bail!("AAAA record must be 16 bytes");
+            return Err(DiscoveryError::DnsParseError {
+                message: "AAAA record must be 16 bytes".to_string(),
+            });
         }
 
         let mut segments = [0u16; 8];
@@ -282,14 +296,16 @@ impl ResourceRecord {
     /// Parse a resource record starting at offset
     ///
     /// Returns (record, `bytes_consumed`)
-    pub fn parse(data: &[u8], offset: usize) -> Result<(Self, usize)> {
+    pub fn parse(data: &[u8], offset: usize) -> DiscoveryResult<(Self, usize)> {
         let parser = NameParser::new(data);
         let (name, name_len) = parser.parse_name(offset)?;
 
         let mut pos = offset + name_len;
 
         if pos + 10 > data.len() {
-            anyhow::bail!("Resource record truncated");
+            return Err(DiscoveryError::DnsParseError {
+                message: "Resource record truncated".to_string(),
+            });
         }
 
         let rtype = u16::from_be_bytes([data[pos], data[pos + 1]]);
@@ -300,7 +316,9 @@ impl ResourceRecord {
         pos += 10;
 
         if pos + rdlength > data.len() {
-            anyhow::bail!("Resource record data truncated");
+            return Err(DiscoveryError::DnsParseError {
+                message: "Resource record data truncated".to_string(),
+            });
         }
 
         let rdata = data[pos..pos + rdlength].to_vec();
@@ -319,23 +337,23 @@ impl ResourceRecord {
     }
 
     /// Parse as SRV record
-    pub fn as_srv(&self, full_data: &[u8], offset: usize) -> Result<SrvRecord> {
+    pub fn as_srv(&self, full_data: &[u8], offset: usize) -> DiscoveryResult<SrvRecord> {
         SrvRecord::parse(full_data, offset, &self.rdata)
     }
 
     /// Parse as TXT record
-    pub fn as_txt(&self) -> Result<TxtRecord> {
+    pub fn as_txt(&self) -> DiscoveryResult<TxtRecord> {
         TxtRecord::parse(&self.rdata)
     }
 
     /// Parse as A record
-    pub fn as_a(&self) -> Result<ARecord> {
+    pub fn as_a(&self) -> DiscoveryResult<ARecord> {
         ARecord::parse(&self.rdata)
     }
 
     /// Parse as AAAA record
     #[cfg_attr(not(test), allow(dead_code))]
-    pub fn as_aaaa(&self) -> Result<AaaaRecord> {
+    pub fn as_aaaa(&self) -> DiscoveryResult<AaaaRecord> {
         AaaaRecord::parse(&self.rdata)
     }
 

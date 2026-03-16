@@ -13,10 +13,6 @@
 //! - Flower opening (awakening experience)
 
 #![warn(missing_docs)]
-#![warn(clippy::all)]
-#![warn(clippy::pedantic)]
-#![allow(clippy::must_use_candidate)]
-#![allow(clippy::missing_errors_doc)]
 
 pub mod flower;
 pub mod visual_flower;
@@ -376,14 +372,14 @@ mod tests {
     fn test_node_pulse_radius_multiplier() {
         let pulse = NodePulse::new("n1".to_string(), 1.0);
         let r = pulse.radius_multiplier();
-        assert!(r >= 0.5 && r <= 1.5);
+        assert!((0.5..=1.5).contains(&r));
     }
 
     #[test]
     fn test_node_pulse_alpha() {
         let pulse = NodePulse::new("n1".to_string(), 1.0);
         let a = pulse.alpha();
-        assert!(a >= 0.0 && a <= 1.0);
+        assert!((0.0..=1.0).contains(&a));
     }
 
     #[test]

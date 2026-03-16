@@ -6,7 +6,7 @@
 
 use super::backends::{DirectBackend, SilentBackend, SocketBackend, SoftwareBackend};
 use super::traits::AudioBackend;
-use anyhow::{Result, anyhow};
+use crate::error::{AudioError, Result};
 use tracing::{info, warn};
 
 /// Audio manager - coordinates multiple backends
@@ -53,9 +53,7 @@ impl AudioManager {
         backends.push(Box::new(SilentBackend::new()));
 
         if backends.is_empty() {
-            return Err(anyhow!(
-                "No audio backends available (this should never happen - silent backend should always exist)"
-            ));
+            return Err(AudioError::NoBackendsAvailable.into());
         }
 
         // Sort by priority (lower number = higher priority)
@@ -107,7 +105,7 @@ impl AudioManager {
             info!("⏭️  Backend {} not available", meta.name);
         }
 
-        Err(anyhow!("No audio backend could be initialized"))
+        Err(AudioError::NoBackendInitialized.into())
     }
 
     /// Play audio samples using the best available backend
@@ -120,9 +118,7 @@ impl AudioManager {
             self.select_backend().await?;
         }
 
-        let idx = self
-            .active_backend_idx
-            .ok_or_else(|| anyhow!("No active backend"))?;
+        let idx = self.active_backend_idx.ok_or(AudioError::NoActiveBackend)?;
 
         // Try active backend
         match self.backends[idx].play_samples(samples, sample_rate).await {
@@ -138,7 +134,7 @@ impl AudioManager {
                 // Retry with new backend
                 let new_idx = self
                     .active_backend_idx
-                    .ok_or_else(|| anyhow!("No fallback backend"))?;
+                    .ok_or(AudioError::NoFallbackBackend)?;
                 self.backends[new_idx]
                     .play_samples(samples, sample_rate)
                     .await

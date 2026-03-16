@@ -402,7 +402,7 @@ mod tests {
                 label: "Series".into(),
                 x_label: "t".into(),
                 y_label: "v".into(),
-                unit: "".into(),
+                unit: String::new(),
                 x_values: vec![1.0, 2.0],
                 y_values: vec![10.0, 20.0],
             }],

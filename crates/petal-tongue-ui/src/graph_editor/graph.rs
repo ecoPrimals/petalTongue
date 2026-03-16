@@ -10,7 +10,7 @@
 //! - **Immutability**: Operations return new graphs (functional style)
 //! - **Serializable**: Can save/load as templates
 
-use anyhow::Result;
+use crate::error::{GraphEditorError, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use tracing::debug;
@@ -89,7 +89,7 @@ impl Graph {
     pub fn add_node(&mut self, node: GraphNode) -> Result<()> {
         // Validate node doesn't already exist
         if self.nodes.contains_key(&node.id) {
-            anyhow::bail!("Node with id '{}' already exists", node.id);
+            return Err(GraphEditorError::NodeAlreadyExists(node.id.clone()).into());
         }
 
         // Validate node
@@ -108,7 +108,7 @@ impl Graph {
     pub fn remove_node(&mut self, node_id: &str) -> Result<Vec<String>> {
         // Check node exists
         if !self.nodes.contains_key(node_id) {
-            anyhow::bail!("Node with id '{node_id}' not found");
+            return Err(GraphEditorError::NodeNotFound(node_id.to_string()).into());
         }
 
         // Remove node
@@ -139,7 +139,7 @@ impl Graph {
     pub fn modify_node(&mut self, node_id: &str, updated_node: GraphNode) -> Result<()> {
         // Check node exists
         if !self.nodes.contains_key(node_id) {
-            anyhow::bail!("Node with id '{node_id}' not found");
+            return Err(GraphEditorError::NodeNotFound(node_id.to_string()).into());
         }
 
         // Validate updated node
@@ -147,11 +147,11 @@ impl Graph {
 
         // Ensure ID hasn't changed
         if updated_node.id != node_id {
-            anyhow::bail!(
-                "Cannot change node ID (from '{}' to '{}')",
-                node_id,
-                updated_node.id
-            );
+            return Err(GraphEditorError::NodeIdChange {
+                from: node_id.to_string(),
+                to: updated_node.id.clone(),
+            }
+            .into());
         }
 
         debug!("Modifying node '{}'", node_id);
@@ -165,19 +165,19 @@ impl Graph {
     pub fn add_edge(&mut self, edge: GraphEdge) -> Result<()> {
         // Validate nodes exist
         if !self.nodes.contains_key(&edge.from) {
-            anyhow::bail!("Source node '{}' not found", edge.from);
+            return Err(GraphEditorError::SourceNodeNotFound(edge.from.clone()).into());
         }
         if !self.nodes.contains_key(&edge.to) {
-            anyhow::bail!("Target node '{}' not found", edge.to);
+            return Err(GraphEditorError::TargetNodeNotFound(edge.to.clone()).into());
         }
 
         // Validate edge doesn't create cycle
         if self.would_create_cycle(&edge)? {
-            anyhow::bail!(
-                "Edge from '{}' to '{}' would create a cycle",
-                edge.from,
-                edge.to
-            );
+            return Err(GraphEditorError::EdgeWouldCreateCycle {
+                from: edge.from.clone(),
+                to: edge.to.clone(),
+            }
+            .into());
         }
 
         // Validate edge doesn't already exist
@@ -186,7 +186,11 @@ impl Graph {
             .iter()
             .any(|e| e.from == edge.from && e.to == edge.to)
         {
-            anyhow::bail!("Edge from '{}' to '{}' already exists", edge.from, edge.to);
+            return Err(GraphEditorError::EdgeAlreadyExists {
+                from: edge.from.clone(),
+                to: edge.to.clone(),
+            }
+            .into());
         }
 
         debug!("Adding edge from '{}' to '{}'", edge.from, edge.to);
@@ -202,7 +206,7 @@ impl Graph {
         self.edges.retain(|edge| edge.id != edge_id);
 
         if self.edges.len() == initial_len {
-            anyhow::bail!("Edge with id '{edge_id}' not found");
+            return Err(GraphEditorError::EdgeNotFound(edge_id.to_string()).into());
         }
 
         debug!("Removed edge '{}'", edge_id);
@@ -357,7 +361,7 @@ impl Graph {
 
         // Check if all nodes were processed (no cycles)
         if result.len() != self.nodes.len() {
-            anyhow::bail!("Graph contains cycles, cannot compute topological sort");
+            return Err(GraphEditorError::GraphContainsCycles.into());
         }
 
         Ok(result)

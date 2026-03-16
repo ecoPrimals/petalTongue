@@ -152,7 +152,7 @@ impl DevicePanel {
             .show(ui, |ui| {
                 // Clone devices to avoid borrow checker issues with mutable UI rendering
                 let filtered_devices: Vec<Device> =
-                    self.filtered_devices().iter().map(|&d| d.clone()).collect();
+                    self.filtered_devices().into_iter().cloned().collect();
 
                 if filtered_devices.is_empty() {
                     ui.colored_label(Color32::GRAY, "No devices found");

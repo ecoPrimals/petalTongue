@@ -35,7 +35,7 @@ enum Commands {
     },
 }
 
-fn main() -> anyhow::Result<()> {
+fn main() -> petal_tongue_ui::error::Result<()> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
 
@@ -155,7 +155,8 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
-    result.map_err(|e| anyhow::anyhow!("eframe error: {e:?}"))
+    result
+        .map_err(|e| petal_tongue_ui::error::BackendError::EframeRunFailed(format!("{e:?}")).into())
 }
 
 /// Run with traditional eframe

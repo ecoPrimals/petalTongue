@@ -1,6 +1,6 @@
 # petalTongue -- Project Status
 
-**Updated**: March 15, 2026  
+**Updated**: March 16, 2026  
 **Version**: 1.6.3  
 **Edition**: 2024 (all crates)
 
@@ -11,22 +11,25 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 5,188 passing, 0 failures, ~17 ignored |
+| Tests | 5,076 passing, 0 failures, ~4 ignored |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings (pedantic + nursery, `--all-targets --all-features`) |
+| Clippy | Zero warnings (pedantic + nursery enforced in CI with `-W clippy::pedantic -W clippy::nursery`) |
 | Rustdoc | Clean (`cargo doc --workspace --no-deps`) |
 | cargo deny | Clean (advisories, bans, licenses, sources) |
 | Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
-| Files | All 528 files under 1,000 lines (CI enforced); largest file 957 lines (`scene_bridge.rs`) |
+| Files | All 560 files under 1,000 lines (CI enforced); largest file 876 lines (`json_rpc_client.rs`) |
 | License | AGPL-3.0-only, SPDX on all source files |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None (`ring` eliminated, `libc`/`nix`/`atty` removed, using `rustix`) |
 | ecoBin | Compliant (no ring, aws-lc-sys, openssl-sys, native-tls, zstd-sys) |
-| Coverage | ~85% line / ~86% branch (llvm-cov, `--all-features --workspace`) -- target 90% |
+| Coverage | ~87% line / ~88% branch (llvm-cov, `--workspace`) -- target 90% |
+| Error handling | **Typed thiserror errors throughout** — anyhow eliminated from all production code |
 | JSON-RPC | Semantic method naming (`domain.operation[.variant]`), 40 methods compliant |
 | Mocks | All gated behind `#[cfg(test)]` or `#[cfg(feature = "test-fixtures")]`; production mock code eliminated |
 | Primal names | Capability-based constants, zero hardcoded external primal names |
-| Hardcoding | All timeouts, ports, intervals, endpoints configurable via env vars; centralized in `constants.rs`; default bind 127.0.0.1 (was 0.0.0.0) |
+| Hardcoding | All timeouts, ports, intervals, endpoints configurable via env vars; GPU endpoint via `PETALTONGUE_GPU_COMPUTE_ENDPOINT`; default bind 127.0.0.1 |
+| UniBin modes | 6 subcommands: ui, tui, web, headless, status, **server** (new) |
+| Workspace lints | Centralized `[workspace.lints.clippy]` — crate-level redundant lint attrs removed |
 | Zero-copy | `bytes::Bytes` in rendering pipeline, IPC, and audio; `Arc<DeviceState>` in state_sync, `Arc<Vec<...>>` in TUI |
 | Domain theming | 7 domain palettes (health, physics, ecology, agriculture, measurement, neural, game) + diverging color scales |
 | GUI logic extraction | All UI business logic in pure functions, 102 headless integration tests |
@@ -85,6 +88,7 @@
 ### Stubs and TODOs (0 items in active production code)
 
 No TODO, FIXME, HACK, `todo!()`, or `unimplemented!()` markers in production code.
+No `anyhow` in production code — all errors are typed via `thiserror`.
 
 Delegated/roadmap items (not TODOs, documented as roadmap markers):
 - mDNS full DNS packet building (delegate to songbird)
@@ -104,7 +108,7 @@ Delegated/roadmap items (not TODOs, documented as roadmap markers):
 
 ### Test Coverage Gap
 
-Current: ~85% line / ~86% branch coverage (5,188 tests, llvm-cov `--all-features --workspace`).
+Current: ~87% line / ~88% branch coverage (5,076 tests, llvm-cov `--workspace`).
 Target: 90%.
 
 Per-crate coverage:

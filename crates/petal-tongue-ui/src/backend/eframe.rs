@@ -21,7 +21,7 @@
 //!
 //! These dependencies will be eliminated in ecoBlossom via Toadstool backend.
 
-use anyhow::Result;
+use crate::error::{BackendError, Result};
 use async_trait::async_trait;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
@@ -149,7 +149,7 @@ impl UIBackend for EguiBackend {
                 Ok(Box::new(app))
             }),
         )
-        .map_err(|e| anyhow::anyhow!("eframe::run_native failed: {e}"))?;
+        .map_err(|e| BackendError::EframeRunFailed(e.to_string()))?;
 
         tracing::info!("✅ eframe backend finished");
         Ok(())

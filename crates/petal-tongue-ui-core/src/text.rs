@@ -3,9 +3,9 @@
 //!
 //! Exports primal topologies in text-based formats for APIs, automation, and tools.
 
+use crate::error::Result;
 use crate::trait_def::{ExportFormat, UICapability, UniversalUI};
 use crate::utils::{get_family_lineage, get_trust_level, health_to_color, health_to_percentage};
-use anyhow::Result;
 use petal_tongue_core::GraphEngine;
 use std::sync::{Arc, RwLock};
 
@@ -64,10 +64,7 @@ impl TextUI {
         output.push_str("petalTongue Topology Report\n");
         output.push_str("===========================\n\n");
 
-        let graph = match self.graph.read() {
-            Ok(guard) => guard,
-            Err(e) => return Err(anyhow::anyhow!("graph lock poisoned: {e}")),
-        };
+        let graph = self.graph.read()?;
         let nodes = graph.nodes();
         let edges = graph.edges();
 
@@ -119,10 +116,7 @@ impl TextUI {
 
     /// Render as JSON
     fn render_json(&self) -> Result<String> {
-        let graph = match self.graph.read() {
-            Ok(guard) => guard,
-            Err(e) => return Err(anyhow::anyhow!("graph lock poisoned: {e}")),
-        };
+        let graph = self.graph.read()?;
 
         // Create a simplified structure for JSON export
         let data = serde_json::json!({
@@ -159,7 +153,8 @@ impl TextUI {
             }
         });
 
-        Ok(serde_json::to_string_pretty(&data)?)
+        serde_json::to_string_pretty(&data)
+            .map_err(|e| crate::error::UiCoreError::Json(e.to_string()))
     }
 
     /// Render as DOT (Graphviz)
@@ -173,10 +168,7 @@ impl TextUI {
         dot.push_str("  node [style=filled, fontcolor=white, fontname=\"sans-serif\"];\n");
         dot.push_str("  edge [color=\"#6b7280\"];\n\n");
 
-        let graph = match self.graph.read() {
-            Ok(guard) => guard,
-            Err(e) => return Err(anyhow::anyhow!("graph lock poisoned: {e}")),
-        };
+        let graph = self.graph.read()?;
         let nodes = graph.nodes();
         let edges = graph.edges();
 

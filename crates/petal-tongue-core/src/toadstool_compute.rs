@@ -3,8 +3,9 @@
 //!
 //! GPU compute acceleration via Toadstool primal (discovered at runtime).
 
-use anyhow::Result;
 use async_trait::async_trait;
+
+use crate::error::{PetalTongueError, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -151,7 +152,7 @@ impl ToadstoolCompute {
             }
         }
 
-        anyhow::bail!("No GPU compute provider discovered")
+        Err(PetalTongueError::NoGpuCompute)
     }
 
     /// Parse capability strings into `ComputeCapability` enum.
@@ -221,7 +222,7 @@ impl ComputeProvider for ToadstoolCompute {
                 self.capabilities = Self::parse_capabilities(&svc.capabilities);
                 tracing::info!("✅ GPU compute provider initialized: {}", svc.endpoint);
             } else {
-                anyhow::bail!("No GPU compute provider available");
+                return Err(PetalTongueError::NoGpuCompute);
             }
         }
 

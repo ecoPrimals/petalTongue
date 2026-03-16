@@ -572,7 +572,7 @@ mod tests {
                 assert_eq!(primals.len(), 3);
                 assert_eq!(edges.len(), 2);
             }
-            _ => panic!("expected TopologyUpdate"),
+            BiomeOSDiscoveryEvent::PrimalStatus { .. } => panic!("expected TopologyUpdate"),
         }
     }
 

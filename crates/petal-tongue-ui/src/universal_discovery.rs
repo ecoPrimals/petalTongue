@@ -21,7 +21,7 @@
 //! Just as an infant learns by exploring, our code discovers the environment
 //! at runtime without assumptions.
 
-use anyhow::Result;
+use crate::error::Result;
 use petal_tongue_core::constants;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

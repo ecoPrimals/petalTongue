@@ -5,13 +5,14 @@
 //! or when running tests. Production builds (default) do NOT include this code.
 //!
 //! Used for:
-//! - `cargo test` (tests instantiate DemoVisualizationProvider directly)
+//! - `cargo test` (tests instantiate `DemoVisualizationProvider` directly)
 //! - `--features mock` in petal-tongue-ui (graceful fallback when no providers found)
 //!
 //! Never used in production discovery path—`discover_visualization_providers()` returns
-//! empty vec when no real providers found; DemoVisualizationProvider is only injected
+//! empty vec when no real providers found; `DemoVisualizationProvider` is only injected
 //! by init code when mock feature is enabled.
 
+use crate::errors::DiscoveryResult;
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 use async_trait::async_trait;
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, Properties, PropertyValue, TopologyEdge};
@@ -38,7 +39,7 @@ impl Default for DemoVisualizationProvider {
 
 #[async_trait]
 impl VisualizationDataProvider for DemoVisualizationProvider {
-    async fn get_primals(&self) -> anyhow::Result<Vec<PrimalInfo>> {
+    async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         #[expect(
             clippy::cast_sign_loss,
             reason = "Unix timestamp for current time is always non-negative"
@@ -124,7 +125,7 @@ impl VisualizationDataProvider for DemoVisualizationProvider {
         ])
     }
 
-    async fn get_topology(&self) -> anyhow::Result<Vec<TopologyEdge>> {
+    async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
         Ok(vec![
             TopologyEdge {
                 from: "demo-beardog-1".into(),
@@ -154,7 +155,7 @@ impl VisualizationDataProvider for DemoVisualizationProvider {
         }
     }
 
-    async fn health_check(&self) -> anyhow::Result<String> {
+    async fn health_check(&self) -> DiscoveryResult<String> {
         Ok("Demo provider is always healthy".to_string())
     }
 }
@@ -199,7 +200,7 @@ mod tests {
     #[test]
     fn demo_provider_default_equals_new() {
         let a = DemoVisualizationProvider::new();
-        let b = DemoVisualizationProvider::default();
+        let b = DemoVisualizationProvider;
         assert_eq!(std::mem::size_of_val(&a), std::mem::size_of_val(&b));
     }
 
@@ -236,6 +237,6 @@ mod tests {
         let provider = DemoVisualizationProvider::new();
         let primals = provider.get_primals().await.unwrap();
         assert_eq!(primals[2].id, "demo-toadstool-1");
-        assert!(primals[2].properties.get("family_id").is_none());
+        assert!(!primals[2].properties.contains_key("family_id"));
     }
 }

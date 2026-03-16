@@ -75,10 +75,10 @@ mod tests {
     fn ts(id: &str, x: Vec<f64>, y: Vec<f64>) -> DataBinding {
         DataBinding::TimeSeries {
             id: id.into(),
-            label: "".into(),
-            x_label: "".into(),
-            y_label: "".into(),
-            unit: "".into(),
+            label: String::new(),
+            x_label: String::new(),
+            y_label: String::new(),
+            unit: String::new(),
             x_values: x,
             y_values: y,
         }
@@ -87,11 +87,11 @@ mod tests {
     fn gauge(id: &str, value: f64) -> DataBinding {
         DataBinding::Gauge {
             id: id.into(),
-            label: "".into(),
+            label: String::new(),
             value,
             min: 0.0,
             max: 100.0,
-            unit: "".into(),
+            unit: String::new(),
             normal_range: [0.0, 100.0],
             warning_range: [0.0, 100.0],
         }
@@ -100,10 +100,10 @@ mod tests {
     fn spectrum(id: &str, f: Vec<f64>, a: Vec<f64>) -> DataBinding {
         DataBinding::Spectrum {
             id: id.into(),
-            label: "".into(),
+            label: String::new(),
             frequencies: f,
             amplitudes: a,
-            unit: "".into(),
+            unit: String::new(),
         }
     }
 
@@ -159,12 +159,7 @@ mod tests {
     fn apply_operation_replace() {
         let mut b = gauge("g1", 0.0);
         let new_b = ts("ts2", vec![1.0], vec![2.0]);
-        apply_operation(
-            &mut b,
-            &StreamOperation::Replace {
-                binding: new_b.clone(),
-            },
-        );
+        apply_operation(&mut b, &StreamOperation::Replace { binding: new_b });
         assert!(matches!(&b, DataBinding::TimeSeries { id, .. } if id == "ts2"));
     }
 

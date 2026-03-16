@@ -116,13 +116,13 @@ pub trait PanelInstance: Send {
 
     /// Called when panel is first opened/created
     /// Use this to initialize resources (load assets, create connections, etc.)
-    fn on_open(&mut self) -> anyhow::Result<()> {
+    fn on_open(&mut self) -> crate::error::Result<()> {
         Ok(())
     }
 
     /// Called when panel is about to close
     /// Use this to clean up resources (close files, disconnect, etc.)
-    fn on_close(&mut self) -> anyhow::Result<()> {
+    fn on_close(&mut self) -> crate::error::Result<()> {
         Ok(())
     }
 
@@ -140,7 +140,7 @@ pub trait PanelInstance: Send {
 
     /// Called when panel encounters an error
     /// Return `PanelAction` to indicate what should happen next
-    fn on_error(&mut self, error: &anyhow::Error) -> PanelAction {
+    fn on_error(&mut self, error: &dyn std::error::Error) -> PanelAction {
         tracing::error!("Panel '{}' error: {}", self.title(), error);
         PanelAction::Continue // Default: log and continue
     }
@@ -159,13 +159,13 @@ pub trait PanelInstance: Send {
 
     /// Save panel state to JSON
     /// Only called if `can_save_state()` returns true
-    fn save_state(&self) -> anyhow::Result<serde_json::Value> {
+    fn save_state(&self) -> crate::error::Result<serde_json::Value> {
         Ok(serde_json::Value::Null)
     }
 
     /// Restore panel state from JSON
     /// Only called if `can_restore_state()` returns true
-    fn restore_state(&mut self, _state: serde_json::Value) -> anyhow::Result<()> {
+    fn restore_state(&mut self, _state: serde_json::Value) -> crate::error::Result<()> {
         Ok(())
     }
 

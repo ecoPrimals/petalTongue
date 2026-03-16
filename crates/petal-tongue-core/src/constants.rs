@@ -57,14 +57,26 @@ pub const DEFAULT_SANDBOX_SECURITY_PORT: u16 = 9000;
 /// Overridable via `PETALTONGUE_SANDBOX_DISCOVERY_ENDPOINT` (full URL) env var.
 pub const DEFAULT_SANDBOX_DISCOVERY_PORT: u16 = 8080;
 
-/// Default GPU compute / Toadstool port (overridable via `GPU_RENDERING_ENDPOINT`, `COMPUTE_PROVIDER_ENDPOINT`, or `GPU_COMPUTE_ENDPOINT` env vars).
+/// Default GPU compute / Toadstool port (overridable via `TOADSTOOL_PORT` env var).
 pub const DEFAULT_TOADSTOOL_PORT: u16 = 9001;
+
+/// Toadstool port (env-driven with fallback).
+/// Reads `TOADSTOOL_PORT`; falls back to `DEFAULT_TOADSTOOL_PORT`.
+#[must_use]
+pub fn toadstool_port() -> u16 {
+    std::env::var("TOADSTOOL_PORT")
+        .ok()
+        .and_then(|s| s.parse::<u16>().ok())
+        .unwrap_or(DEFAULT_TOADSTOOL_PORT)
+}
 
 /// Loopback host for local-only connections (used when env/discovery not available).
 pub const DEFAULT_LOOPBACK_HOST: &str = "127.0.0.1";
 
 /// Default GPU compute endpoint URL (fallback when discovery fails).
-/// Production uses capability discovery; override via `GPU_RENDERING_ENDPOINT`, `COMPUTE_PROVIDER_ENDPOINT`, or `GPU_COMPUTE_ENDPOINT`.
+///
+/// Production uses capability discovery; override via `PETALTONGUE_GPU_COMPUTE_ENDPOINT`,
+/// `GPU_RENDERING_ENDPOINT`, `COMPUTE_PROVIDER_ENDPOINT`, or `GPU_COMPUTE_ENDPOINT`.
 pub const DEFAULT_GPU_COMPUTE_ENDPOINT: &str = "tarpc://localhost:9001";
 
 /// Default ports for HTTP discovery when `PETALTONGUE_DISCOVERY_PORTS` / `DISCOVERY_PORTS` not set.
@@ -134,13 +146,22 @@ pub fn biomeos_legacy_socket() -> std::path::PathBuf {
 }
 
 /// Default GPU compute endpoint (env-driven with fallback).
-/// Priority: `GPU_RENDERING_ENDPOINT` > `COMPUTE_PROVIDER_ENDPOINT` > `GPU_COMPUTE_ENDPOINT` > constant.
+/// Priority: `PETALTONGUE_GPU_COMPUTE_ENDPOINT` > `GPU_RENDERING_ENDPOINT` >
+/// `COMPUTE_PROVIDER_ENDPOINT` > `GPU_COMPUTE_ENDPOINT` > constant.
 #[must_use]
 pub fn default_gpu_compute_endpoint() -> String {
-    std::env::var("GPU_RENDERING_ENDPOINT")
+    std::env::var("PETALTONGUE_GPU_COMPUTE_ENDPOINT")
+        .or_else(|_| std::env::var("GPU_RENDERING_ENDPOINT"))
         .or_else(|_| std::env::var("COMPUTE_PROVIDER_ENDPOINT"))
         .or_else(|_| std::env::var("GPU_COMPUTE_ENDPOINT"))
         .unwrap_or_else(|_| DEFAULT_GPU_COMPUTE_ENDPOINT.to_string())
+}
+
+/// GPU compute endpoint (env-driven with fallback).
+/// Alias for `default_gpu_compute_endpoint()`; uses `PETALTONGUE_GPU_COMPUTE_ENDPOINT` or constant.
+#[must_use]
+pub fn gpu_compute_endpoint() -> String {
+    default_gpu_compute_endpoint()
 }
 
 /// Discovery ports for HTTP probing (env-driven with fallback).

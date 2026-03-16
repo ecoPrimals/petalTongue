@@ -4,7 +4,7 @@
 //! Discovers available input/output peripherals at startup.
 //! No hardcoded assumptions - tests what actually exists.
 
-use anyhow::Result;
+use crate::error::Result;
 use petal_tongue_core::{Sensor, SensorRegistry};
 use std::sync::{Arc, RwLock};
 

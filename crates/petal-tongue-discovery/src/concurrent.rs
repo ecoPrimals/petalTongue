@@ -51,7 +51,7 @@ pub async fn discover_concurrent<F, Fut>(
 ) -> ConcurrentDiscoveryResult
 where
     F: FnOnce() -> Fut + Send + 'static,
-    Fut: Future<Output = Result<Vec<Box<dyn VisualizationDataProvider>>, anyhow::Error>> + Send,
+    Fut: Future<Output = Result<Vec<Box<dyn VisualizationDataProvider>>, DiscoveryError>> + Send,
 {
     let mut all_providers = Vec::new();
     let mut failures = Vec::new();
@@ -65,7 +65,12 @@ where
                 match timeout(timeout_duration, fut).await {
                     Ok(Ok(providers)) => Ok((name, providers)),
                     Ok(Err(e)) => Err((name, e)),
-                    Err(_) => Err((name, anyhow::anyhow!("Timeout after {timeout_duration:?}"))),
+                    Err(_) => Err((
+                        name,
+                        DiscoveryError::OperationTimedOut {
+                            duration: timeout_duration,
+                        },
+                    )),
                 }
             }
         })
@@ -135,8 +140,10 @@ pub async fn discover_first_available(
             Box::pin(async move {
                 timeout(timeout_duration, provider.health_check())
                     .await
-                    .map_err(|_| anyhow::anyhow!("Timeout"))??;
-                Ok::<_, anyhow::Error>(provider)
+                    .map_err(|_| DiscoveryError::OperationTimedOut {
+                        duration: timeout_duration,
+                    })??;
+                Ok::<_, DiscoveryError>(provider)
             })
         })
         .collect();
@@ -375,7 +382,9 @@ mod tests {
     async fn test_discover_concurrent_single_fail() {
         let result = discover_concurrent(
             vec![("fail", || async {
-                Err(anyhow::anyhow!("Intentional failure"))
+                Err(DiscoveryError::ConfigError(
+                    "Intentional failure".to_string(),
+                ))
             })],
             Duration::from_secs(2),
         )

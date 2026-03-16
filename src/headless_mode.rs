@@ -5,7 +5,7 @@
 //! No GUI dependencies
 
 use crate::data_service::DataService;
-use anyhow::Result;
+use crate::error::AppError;
 use std::io::Write;
 use std::sync::Arc;
 
@@ -15,7 +15,7 @@ pub async fn run_with_output<W: Write + Send>(
     _workers: usize,
     data_service: Arc<DataService>,
     out: &mut W,
-) -> Result<()> {
+) -> Result<(), AppError> {
     tracing::info!("Starting headless rendering mode (Pure Rust!)");
     tracing::info!("✅ Using shared DataService (zero duplication!)");
 
@@ -40,7 +40,11 @@ pub async fn run_with_output<W: Write + Send>(
 }
 
 /// Run headless mode (writes to stdout).
-pub async fn run(bind: &str, workers: usize, data_service: Arc<DataService>) -> Result<()> {
+pub async fn run(
+    bind: &str,
+    workers: usize,
+    data_service: Arc<DataService>,
+) -> Result<(), AppError> {
     run_with_output(bind, workers, data_service, &mut std::io::stdout()).await
 }
 

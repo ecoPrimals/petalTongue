@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! CLI command handlers and executors.
 
-use anyhow::{Context, Result};
 use colored::Colorize;
+
+use crate::error::CliError;
 use petal_tongue_core::InstanceRegistry;
 use petal_tongue_ipc::{IpcClient, IpcCommand, IpcResponse};
 
@@ -15,7 +16,7 @@ use crate::resolve::resolve_instance_id;
 ///
 /// Returns an error if the command fails (registry unavailable,
 /// instance not found, IPC failure, etc.).
-pub async fn run(command: Commands) -> Result<()> {
+pub async fn run(command: Commands) -> Result<(), CliError> {
     match command {
         Commands::List => list_instances().await,
         Commands::Show { instance_id } => show_instance(&instance_id).await,
@@ -30,8 +31,8 @@ pub async fn run(command: Commands) -> Result<()> {
     clippy::unused_async,
     reason = "CLI entry point; async for future IPC integration"
 )]
-async fn list_instances() -> Result<()> {
-    let registry = InstanceRegistry::load().context("Failed to load instance registry")?;
+async fn list_instances() -> Result<(), CliError> {
+    let registry = InstanceRegistry::load()?;
 
     println!("📋 Active petalTongue instances:\n");
     let instances = registry.list();
@@ -85,15 +86,14 @@ async fn list_instances() -> Result<()> {
     Ok(())
 }
 
-async fn show_instance(instance_id_str: &str) -> Result<()> {
+async fn show_instance(instance_id_str: &str) -> Result<(), CliError> {
     let instance_id = resolve_instance_id(instance_id_str)?;
-    let client =
-        IpcClient::new(&instance_id).context("Failed to connect to instance (is it running?)")?;
+    let client = IpcClient::new(&instance_id)?;
 
     let response = client
         .send(IpcCommand::GetStatus)
         .await
-        .context("Failed to get instance status")?;
+        .map_err(CliError::IpcStatus)?;
 
     match response {
         IpcResponse::Status(status) => {
@@ -140,15 +140,14 @@ async fn show_instance(instance_id_str: &str) -> Result<()> {
     Ok(())
 }
 
-async fn raise_instance(instance_id_str: &str) -> Result<()> {
+async fn raise_instance(instance_id_str: &str) -> Result<(), CliError> {
     let instance_id = resolve_instance_id(instance_id_str)?;
-    let client =
-        IpcClient::new(&instance_id).context("Failed to connect to instance (is it running?)")?;
+    let client = IpcClient::new(&instance_id)?;
 
     let response = client
         .send(IpcCommand::Show)
         .await
-        .context("Failed to raise instance")?;
+        .map_err(CliError::IpcRaise)?;
 
     match response {
         IpcResponse::Success => {
@@ -169,10 +168,9 @@ async fn raise_instance(instance_id_str: &str) -> Result<()> {
     Ok(())
 }
 
-async fn ping_instance(instance_id_str: &str) -> Result<()> {
+async fn ping_instance(instance_id_str: &str) -> Result<(), CliError> {
     let instance_id = resolve_instance_id(instance_id_str)?;
-    let client =
-        IpcClient::new(&instance_id).context("Failed to connect to instance (is it running?)")?;
+    let client = IpcClient::new(&instance_id)?;
 
     match client.ping().await {
         Ok(()) => {
@@ -201,8 +199,8 @@ async fn ping_instance(instance_id_str: &str) -> Result<()> {
     clippy::unused_async,
     reason = "CLI entry point; async for future IPC integration"
 )]
-async fn gc_instances(force: bool) -> Result<()> {
-    let mut registry = InstanceRegistry::load().context("Failed to load instance registry")?;
+async fn gc_instances(force: bool) -> Result<(), CliError> {
+    let mut registry = InstanceRegistry::load()?;
 
     let all_instances = registry.list();
     let dead_instances: Vec<_> = all_instances
@@ -224,9 +222,7 @@ async fn gc_instances(force: bool) -> Result<()> {
 
     if force {
         let removed = registry.gc()?;
-        registry
-            .save()
-            .context("Failed to save registry after cleanup")?;
+        registry.save()?;
 
         println!("{} Removed {} dead instances", "✓".green(), removed);
     } else {
@@ -236,8 +232,8 @@ async fn gc_instances(force: bool) -> Result<()> {
     Ok(())
 }
 
-async fn status_instances() -> Result<()> {
-    let registry = InstanceRegistry::load().context("Failed to load instance registry")?;
+async fn status_instances() -> Result<(), CliError> {
+    let registry = InstanceRegistry::load()?;
 
     let instances = registry.list();
 
@@ -368,7 +364,7 @@ mod tests {
             &[("XDG_DATA_HOME", Some(temp.path().to_str().unwrap()))],
             || {
                 let id = InstanceId::parse("550e8400-e29b-41d4-a716-446655440000").unwrap();
-                let mut inst = Instance::new(id.clone(), Some("dead-test".to_string())).unwrap();
+                let mut inst = Instance::new(id, Some("dead-test".to_string())).unwrap();
                 inst.pid = 99_999_999;
                 let mut registry = InstanceRegistry::new();
                 registry.register(inst).unwrap();
@@ -509,7 +505,7 @@ mod tests {
             || {
                 let result = tokio::task::block_in_place(|| {
                     tokio::runtime::Handle::current().block_on(run(Commands::Show {
-                        instance_id: "".to_string(),
+                        instance_id: String::new(),
                     }))
                 });
                 assert!(result.is_err());
@@ -519,17 +515,17 @@ mod tests {
 
     #[test]
     fn test_commands_match_variants() {
-        let _list = Commands::List;
-        let _show = Commands::Show {
+        drop(Commands::List);
+        drop(Commands::Show {
             instance_id: "test".to_string(),
-        };
-        let _raise = Commands::Raise {
+        });
+        drop(Commands::Raise {
             instance_id: "test".to_string(),
-        };
-        let _ping = Commands::Ping {
+        });
+        drop(Commands::Ping {
             instance_id: "test".to_string(),
-        };
-        let _gc = Commands::Gc { force: false };
-        let _status = Commands::Status;
+        });
+        drop(Commands::Gc { force: false });
+        drop(Commands::Status);
     }
 }

@@ -7,8 +7,8 @@
 // Based on Songbird's proven UDP multicast implementation.
 
 use crate::dns_parser::{DnsHeader, RecordType, ResourceRecord};
+use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
-use anyhow::{Context, Result};
 use async_trait::async_trait;
 use petal_tongue_core::{PrimalInfo, TopologyEdge, constants};
 use socket2::{Domain, Protocol, Socket, Type};
@@ -87,15 +87,18 @@ impl MdnsVisualizationProvider {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn discover() -> Result<Vec<Box<dyn VisualizationDataProvider>>> {
+    pub async fn discover() -> DiscoveryResult<Vec<Box<dyn VisualizationDataProvider>>> {
         tracing::info!("Starting mDNS discovery for visualization providers...");
 
         // Create UDP socket with multicast support
-        let socket =
-            Self::create_multicast_socket().context("Failed to create multicast socket")?;
+        let socket = Self::create_multicast_socket().map_err(|e| {
+            DiscoveryError::MdnsError(format!("Failed to create multicast socket: {e}"))
+        })?;
 
         // Convert to tokio socket
-        let socket = UdpSocket::from_std(socket).context("Failed to convert to tokio socket")?;
+        let socket = UdpSocket::from_std(socket).map_err(|e| {
+            DiscoveryError::MdnsError(format!("Failed to convert to tokio socket: {e}"))
+        })?;
 
         // Query for services
         let discovery_timeout = constants::default_discovery_timeout();
@@ -118,50 +121,35 @@ impl MdnsVisualizationProvider {
     }
 
     /// Create a UDP socket configured for multicast
-    fn create_multicast_socket() -> Result<std::net::UdpSocket> {
+    fn create_multicast_socket() -> Result<std::net::UdpSocket, std::io::Error> {
         // Create UDP socket using socket2 for low-level control
-        let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))
-            .context("Failed to create socket")?;
+        let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
 
         // Enable address reuse (multiple processes can bind)
-        socket
-            .set_reuse_address(true)
-            .context("Failed to set SO_REUSEADDR")?;
+        socket.set_reuse_address(true)?;
 
         // Enable port reuse (BSD systems)
         // NOTE: set_reuse_port() not available in socket2 v0.5, only in v0.6+
         // This is optional optimization for BSD systems, not required
         // #[cfg(all(unix, not(target_os = "windows")))]
-        // socket
-        //     .set_reuse_port(true)
-        //     .context("Failed to set SO_REUSEPORT")?;
+        // socket.set_reuse_port(true)?;
 
         // Bind to 0.0.0.0:5353 to receive multicast
         let bind_addr = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, MDNS_PORT);
-        socket
-            .bind(&bind_addr.into())
-            .context("Failed to bind socket")?;
+        socket.bind(&bind_addr.into())?;
 
         // Join multicast group (CRITICAL for receiving multicast!)
         let interface = Ipv4Addr::UNSPECIFIED; // Use default network interface
-        socket
-            .join_multicast_v4(&MDNS_MULTICAST_ADDR, &interface)
-            .context("Failed to join multicast group")?;
+        socket.join_multicast_v4(&MDNS_MULTICAST_ADDR, &interface)?;
 
         // Set multicast TTL
-        socket
-            .set_multicast_ttl_v4(255)
-            .context("Failed to set multicast TTL")?;
+        socket.set_multicast_ttl_v4(255)?;
 
         // Enable broadcast as fallback
-        socket
-            .set_broadcast(true)
-            .context("Failed to enable broadcast")?;
+        socket.set_broadcast(true)?;
 
         // Set non-blocking
-        socket
-            .set_nonblocking(true)
-            .context("Failed to set non-blocking")?;
+        socket.set_nonblocking(true)?;
 
         tracing::debug!(
             "Created multicast socket: joined group {}, bound to port {}",
@@ -173,7 +161,9 @@ impl MdnsVisualizationProvider {
     }
 
     /// Query for visualization provider services
-    async fn query_services(socket: UdpSocket) -> Result<Vec<Box<dyn VisualizationDataProvider>>> {
+    async fn query_services(
+        socket: UdpSocket,
+    ) -> DiscoveryResult<Vec<Box<dyn VisualizationDataProvider>>> {
         // Build mDNS query packet
         let query = Self::build_mdns_query(SERVICE_NAME);
 
@@ -182,7 +172,7 @@ impl MdnsVisualizationProvider {
         socket
             .send_to(&query, multicast_target)
             .await
-            .context("Failed to send mDNS query")?;
+            .map_err(|e| DiscoveryError::MdnsError(format!("Failed to send mDNS query: {e}")))?;
 
         tracing::debug!("Sent mDNS query for service: {}", SERVICE_NAME);
 
@@ -273,12 +263,12 @@ impl MdnsVisualizationProvider {
     fn parse_mdns_response(
         data: &[u8],
         addr: SocketAddr,
-    ) -> Result<Box<dyn VisualizationDataProvider>> {
+    ) -> DiscoveryResult<Box<dyn VisualizationDataProvider>> {
         // Parse DNS header
         let header = DnsHeader::parse(data)?;
 
         if !header.is_response() {
-            anyhow::bail!("Not a DNS response packet");
+            return Err(DiscoveryError::NotDnsResponse);
         }
 
         tracing::trace!("DNS response: {} answers from {}", header.answers, addr);
@@ -350,7 +340,7 @@ impl MdnsVisualizationProvider {
                 "mDNS service at {} has no SRV port record - skipping (no port assumptions)",
                 ip
             );
-            anyhow::bail!("No port advertised in mDNS service - refusing to assume default");
+            return Err(DiscoveryError::NoPortAdvertisedInMdns);
         };
         let endpoint = format!("http://{ip}:{port}");
 
@@ -393,7 +383,7 @@ impl MdnsVisualizationProvider {
 
 #[async_trait]
 impl VisualizationDataProvider for MdnsVisualizationProvider {
-    async fn get_primals(&self) -> Result<Vec<PrimalInfo>> {
+    async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         #[derive(serde::Deserialize)]
         struct PrimalsResponse {
             primals: Vec<PrimalInfo>,
@@ -407,21 +397,28 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
             .timeout(Duration::from_secs(10))
             .send()
             .await
-            .context("Failed to query primals from mDNS-discovered provider")?;
+            .map_err(|e| DiscoveryError::MdnsError(format!("Failed to query primals: {e}")))?;
 
         if !response.status().is_success() {
-            anyhow::bail!("Provider returned error status: {}", response.status());
+            return Err(DiscoveryError::ProviderHttpError {
+                status: response.status().as_u16(),
+                endpoint: Some(self.endpoint.clone()),
+            });
         }
 
-        let data: PrimalsResponse = response
-            .json()
-            .await
-            .context("Failed to parse primals response")?;
+        let data: PrimalsResponse =
+            response
+                .json()
+                .await
+                .map_err(|e| DiscoveryError::ParseError {
+                    data_type: "primals response".to_string(),
+                    message: e.to_string(),
+                })?;
 
         Ok(data.primals)
     }
 
-    async fn get_topology(&self) -> Result<Vec<TopologyEdge>> {
+    async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
         #[derive(serde::Deserialize)]
         struct TopologyResponse {
             edges: Vec<TopologyEdge>,
@@ -435,21 +432,28 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
             .timeout(Duration::from_secs(10))
             .send()
             .await
-            .context("Failed to query topology from mDNS-discovered provider")?;
+            .map_err(|e| DiscoveryError::MdnsError(format!("Failed to query topology: {e}")))?;
 
         if !response.status().is_success() {
-            anyhow::bail!("Provider returned error status: {}", response.status());
+            return Err(DiscoveryError::ProviderHttpError {
+                status: response.status().as_u16(),
+                endpoint: Some(self.endpoint.clone()),
+            });
         }
 
-        let data: TopologyResponse = response
-            .json()
-            .await
-            .context("Failed to parse topology response")?;
+        let data: TopologyResponse =
+            response
+                .json()
+                .await
+                .map_err(|e| DiscoveryError::ParseError {
+                    data_type: "topology response".to_string(),
+                    message: e.to_string(),
+                })?;
 
         Ok(data.edges)
     }
 
-    async fn health_check(&self) -> Result<String> {
+    async fn health_check(&self) -> DiscoveryResult<String> {
         let url = format!("{}/api/v1/health", self.endpoint);
 
         let response = self
@@ -458,12 +462,15 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
             .timeout(Duration::from_secs(5))
             .send()
             .await
-            .context("Failed to health check mDNS-discovered provider")?;
+            .map_err(|e| DiscoveryError::MdnsError(format!("Failed to health check: {e}")))?;
 
         if response.status().is_success() {
             Ok(format!("mDNS provider {} is healthy", self.metadata.name))
         } else {
-            anyhow::bail!("Health check failed: {}", response.status())
+            Err(DiscoveryError::ProviderHttpError {
+                status: response.status().as_u16(),
+                endpoint: Some(self.endpoint.clone()),
+            })
         }
     }
 

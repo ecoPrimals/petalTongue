@@ -2,7 +2,7 @@
 
 use super::migrations::{MigrationRegistry, SchemaMigration};
 use super::types::{DynamicData, DynamicValue, SchemaVersion};
-use anyhow::Result;
+use crate::error::Result;
 use std::collections::HashMap;
 
 #[test]

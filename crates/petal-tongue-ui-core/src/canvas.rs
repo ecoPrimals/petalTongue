@@ -4,9 +4,9 @@
 //! Pixel-perfect rendering using tiny-skia (no native dependencies).
 //! Exports to PNG for reports, embedding, and automation.
 
+use crate::error::{Result, UiCoreError};
 use crate::trait_def::{ExportFormat, UICapability, UniversalUI};
 use crate::utils::health_to_color;
-use anyhow::Result;
 use bytes::Bytes;
 use petal_tongue_core::GraphEngine;
 use std::sync::{Arc, RwLock};
@@ -55,17 +55,13 @@ impl CanvasUI {
     /// Uses tiny-skia to render the graph topology: nodes as filled circles,
     /// edges as lines. Transforms graph coordinates to fit the canvas with padding.
     fn render_png(&self) -> Result<Bytes> {
-        let graph = match self.graph.read() {
-            Ok(guard) => guard,
-            Err(e) => return Err(anyhow::anyhow!("graph lock poisoned: {e}")),
-        };
+        let graph = self.graph.read()?;
 
         let nodes = graph.nodes();
         let edges = graph.edges();
 
-        let mut pixmap = Pixmap::new(self.width, self.height).ok_or_else(|| {
-            anyhow::anyhow!("Failed to create pixmap {}x{}", self.width, self.height)
-        })?;
+        let mut pixmap = Pixmap::new(self.width, self.height)
+            .ok_or(UiCoreError::PixmapCreationFailed(self.width, self.height))?;
 
         // Dark background (match SVG style)
         let bg = Color::from_rgba8(20, 24, 34, 255);
@@ -75,7 +71,7 @@ impl CanvasUI {
             return pixmap
                 .encode_png()
                 .map(Bytes::from)
-                .map_err(|e| anyhow::anyhow!("PNG encode failed: {e}"));
+                .map_err(|e| UiCoreError::PngEncodeFailed(e.to_string()));
         }
 
         // Compute bounds and scale to fit canvas with padding
@@ -154,7 +150,7 @@ impl CanvasUI {
         pixmap
             .encode_png()
             .map(Bytes::from)
-            .map_err(|e| anyhow::anyhow!("PNG encode failed: {e}"))
+            .map_err(|e| UiCoreError::PngEncodeFailed(e.to_string()))
     }
 }
 
@@ -183,7 +179,7 @@ impl UniversalUI for CanvasUI {
     }
 
     fn render_to_string(&self) -> Result<String> {
-        anyhow::bail!("Canvas UI only supports binary export (PNG)")
+        Err(UiCoreError::CanvasExportOnlyPng)
     }
 
     fn render_to_bytes(&self) -> Result<Bytes> {

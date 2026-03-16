@@ -2,7 +2,49 @@
 
 All notable changes to petalTongue will be documented in this file.
 
-## [1.6.3] - 2026-03-14
+## [1.6.3] - 2026-03-16
+
+### Added - Deep Audit & Evolution: Typed Errors, Pedantic Lints, Smart Refactoring
+
+- **anyhow → thiserror**: All production code migrated to typed errors. anyhow
+  retained only in dev-dependencies for test convenience. 14 new error types
+  across 12 crates.
+- **Clippy pedantic + nursery**: Zero warnings. CI now enforces
+  `-W clippy::pedantic -W clippy::nursery`. Workspace lint centralization
+  removed redundant crate-level lint attributes.
+- **Smart refactoring**: trust_dashboard (977→320), scene_bridge (960→67),
+  awakening_coordinator (934→250), visualization handlers (922→465),
+  domain_charts (914→308) decomposed into cohesive modules with re-exported
+  public APIs.
+- **Server subcommand**: `petaltongue server` runs IPC Unix socket server
+  without GUI (headless daemon mode).
+- **GPU endpoint configurable**: `PETALTONGUE_GPU_COMPUTE_ENDPOINT` and
+  `TOADSTOOL_PORT` env vars replace hardcoded endpoints.
+- **Redundant .clone() elimination**: `displayed_caps.clone().count()`,
+  `iter().map(|&d| d.clone())`, unnecessary template clones.
+- **CI alignment**: Coverage threshold enforced at 85% (warn at 90%).
+
+### Changed
+
+- Tests: 5,076 passing (net reduction from 5,188 due to test consolidation
+  during module decomposition).
+- Coverage: ~87% line / ~88% branch (up from ~85%/~86%).
+- Largest file: 876 lines (`json_rpc_client.rs`), down from 977.
+- Files: 560 (up from 528, due to module decomposition).
+
+### Quality
+
+- **5,076 tests**, 0 failures
+- **0 clippy warnings** (pedantic + nursery enforced in CI)
+- **0 unsafe blocks** workspace-wide
+- **~87% line / ~88% branch coverage**
+- **`cargo fmt --check`** clean
+- **`cargo doc --workspace --no-deps`** clean
+- **Zero `anyhow` in production** — all errors typed via `thiserror`
+
+---
+
+## [1.6.3-pre] - 2026-03-14
 
 ### Added - Deep Debt Phase 2: Modern Idiomatic Rust Evolution
 

@@ -199,7 +199,7 @@ impl VisualEntropyCapture {
     }
 
     /// Finalize and create entropy data
-    pub fn finalize(self) -> anyhow::Result<VisualEntropyData> {
+    pub fn finalize(self) -> Result<VisualEntropyData, crate::error::EntropyError> {
         let quality_metrics = self.assess_quality();
         let total_coverage = self.calculate_total_coverage();
 

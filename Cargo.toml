@@ -137,6 +137,9 @@ significant_drop_tightening = "allow"
 future_not_send = "allow"
 # Visualization math uses f32/f64 comparisons with epsilon checks.
 float_cmp = "allow"
+# Methods take &self for API consistency/future evolution even when not used yet.
+unused_self = "allow"
+trivially_copy_pass_by_ref = "allow"
 # Suboptimal flops (mul_add) - allow but evolve via local #[expect].
 suboptimal_flops = "allow"
 # needless_collect false positives on iterator patterns used for clarity.

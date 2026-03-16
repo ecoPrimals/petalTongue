@@ -397,8 +397,7 @@ echo '{"jsonrpc":"2.0","method":"health_check","params":{},"id":1}' | \
 ### **Documentation**:
 - Main: `README.md`
 - Status: `PROJECT_STATUS.md`
-- Audit: `COMPREHENSIVE_AUDIT_REPORT_JAN_10_2026.md`
-- Tracking: `BIOMEOS_INTEGRATION_TRACKING.md`
+- Evolution: `EVOLUTION_TRACKER.md`
 
 ### **Code References**:
 - Socket path: `crates/petal-tongue-ipc/src/socket_path.rs`
@@ -433,7 +432,7 @@ echo '{"jsonrpc":"2.0","method":"health_check","params":{},"id":1}' | \
 
 ---
 
-**Last Updated**: 2026-03-10  
-**petalTongue Version**: v1.6.0+  
+**Last Updated**: 2026-03-16  
+**petalTongue Version**: v1.6.3  
 **biomeOS Compatibility**: Phase 4 Ready
 

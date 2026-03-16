@@ -3,7 +3,8 @@
 //!
 //! Handles loading scenario JSON files and validating their contents.
 
-use anyhow::{Context, Result};
+use crate::error::Result;
+use crate::scenario_error::ScenarioError;
 use std::path::Path;
 
 use crate::scenario::types::Scenario;
@@ -12,16 +13,12 @@ impl Scenario {
     /// Load scenario from JSON file with validation
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
         let path = path.as_ref();
-        let contents = std::fs::read_to_string(path)
-            .with_context(|| format!("Failed to read scenario file: {}", path.display()))?;
+        let contents = std::fs::read_to_string(path).map_err(ScenarioError::from)?;
 
-        let scenario: Self = serde_json::from_str(&contents)
-            .with_context(|| format!("Failed to parse scenario JSON: {}", path.display()))?;
+        let scenario: Self = serde_json::from_str(&contents).map_err(ScenarioError::from)?;
 
         // ✅ Explicit validation
-        scenario
-            .validate()
-            .with_context(|| format!("Scenario validation failed: {}", path.display()))?;
+        scenario.validate()?;
 
         tracing::info!(
             "📋 Loaded scenario: {} ({})",
@@ -76,7 +73,11 @@ mod tests {
         std::fs::write(temp.path(), "{ invalid json }").unwrap();
         let result = Scenario::load(temp.path());
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("parse"));
+        let err_str = format!("{:?}", result.unwrap_err());
+        assert!(
+            err_str.contains("parse") || err_str.contains("Json") || err_str.contains("expected"),
+            "unexpected error: {err_str}"
+        );
     }
 
     #[test]
@@ -105,6 +106,13 @@ mod tests {
         .unwrap();
         let result = Scenario::load(temp.path());
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("validation"));
+        let err_str = format!("{:?}", result.unwrap_err());
+        assert!(
+            err_str.contains("validation")
+                || err_str.contains("Missing")
+                || err_str.contains("empty")
+                || err_str.contains("Scenario"),
+            "unexpected error: {err_str}"
+        );
     }
 }

@@ -3,7 +3,7 @@
 mod execution_state;
 mod protocol;
 
-use anyhow::{Context, Result};
+use crate::error::{GraphEditorError, Result};
 use std::sync::Arc;
 use tokio::sync::{RwLock, broadcast};
 use tracing::{debug, info};
@@ -42,7 +42,7 @@ impl StreamHandler {
 
         self.tx
             .send(message)
-            .context("Failed to broadcast message")?;
+            .map_err(|_| GraphEditorError::StreamBroadcastFailed)?;
 
         Ok(())
     }

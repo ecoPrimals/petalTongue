@@ -43,6 +43,7 @@
 use std::io::IsTerminal;
 
 pub mod canvas;
+pub mod error;
 pub mod svg;
 pub mod terminal;
 pub mod text;
@@ -51,6 +52,7 @@ pub mod utils;
 
 // Re-exports
 pub use canvas::CanvasUI;
+pub use error::UiCoreError;
 pub use svg::SvgUI;
 pub use terminal::TerminalUI;
 pub use text::TextUI;

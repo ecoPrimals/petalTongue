@@ -4,7 +4,7 @@
 //! Pure Rust! ✅
 //! Dependencies: axum, tower-http (100% Pure Rust)
 
-use anyhow::{Context, Result};
+use crate::error::AppError;
 use axum::{
     Json, Router,
     extract::State,
@@ -22,7 +22,7 @@ pub async fn run(
     scenario: Option<String>,
     workers: usize,
     data_service: Arc<DataService>,
-) -> Result<()> {
+) -> Result<(), AppError> {
     tracing::info!(
         bind,
         scenario = ?scenario,
@@ -30,7 +30,9 @@ pub async fn run(
         "Starting web UI server (Pure Rust!)"
     );
 
-    let addr: SocketAddr = bind.parse().context("Failed to parse bind address")?;
+    let addr: SocketAddr = bind
+        .parse()
+        .map_err(|e| AppError::Other(format!("Failed to parse bind address: {e}")))?;
 
     tracing::info!("✅ Using shared DataService (zero duplication!)");
 
@@ -49,11 +51,11 @@ pub async fn run(
     // Start server (fully concurrent!)
     let listener = tokio::net::TcpListener::bind(&addr)
         .await
-        .context("Failed to bind to address")?;
+        .map_err(|e| AppError::Other(format!("Failed to bind to address: {e}")))?;
 
     axum::serve(listener, app)
         .await
-        .context("Web server error")?;
+        .map_err(|e| AppError::Other(format!("Web server error: {e}")))?;
 
     Ok(())
 }
@@ -146,6 +148,21 @@ mod tests {
     fn test_invalid_bind_address() {
         let result: Result<SocketAddr, _> = "not-an-address".parse();
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_bind_address_default_format() {
+        // Format used by main when config fallback: "0.0.0.0:{port}"
+        let addr: SocketAddr = "0.0.0.0:3000".parse().expect("valid default bind");
+        assert_eq!(addr.port(), 3000);
+        assert!(addr.ip().is_unspecified());
+    }
+
+    #[test]
+    fn test_bind_address_loopback_with_port() {
+        let addr: SocketAddr = "127.0.0.1:8080".parse().expect("valid loopback");
+        assert_eq!(addr.port(), 8080);
+        assert!(addr.ip().is_loopback());
     }
 
     #[tokio::test]

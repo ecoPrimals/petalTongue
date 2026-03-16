@@ -4,8 +4,8 @@
 //! This provider loads data from JSON scenario files for rich, pre-defined
 //! demonstrations of petalTongue capabilities.
 
+use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::traits::VisualizationDataProvider;
-use anyhow::{Context, Result};
 use async_trait::async_trait;
 use petal_tongue_core::PrimalHealthStatus;
 use petal_tongue_core::{PrimalInfo, Properties, PropertyValue, TopologyEdge};
@@ -50,13 +50,18 @@ struct Ecosystem {
 
 impl ScenarioVisualizationProvider {
     /// Create a new scenario provider from a JSON file
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> DiscoveryResult<Self> {
         let path = path.as_ref();
-        let contents = std::fs::read_to_string(path)
-            .with_context(|| format!("Failed to read scenario file: {}", path.display()))?;
+        let contents =
+            std::fs::read_to_string(path).map_err(|e| DiscoveryError::FileReadError {
+                path: path.display().to_string(),
+                source: e,
+            })?;
 
-        let scenario: ScenarioFile = serde_json::from_str(&contents)
-            .with_context(|| format!("Failed to parse scenario JSON: {}", path.display()))?;
+        let scenario: ScenarioFile =
+            serde_json::from_str(&contents).map_err(|e| DiscoveryError::ScenarioParseError {
+                message: format!("Failed to parse scenario JSON: {} - {e}", path.display()),
+            })?;
 
         #[expect(
             clippy::cast_sign_loss,
@@ -119,11 +124,11 @@ impl ScenarioVisualizationProvider {
 
 #[async_trait]
 impl VisualizationDataProvider for ScenarioVisualizationProvider {
-    async fn get_primals(&self) -> Result<Vec<PrimalInfo>> {
+    async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         Ok(self.primals.clone())
     }
 
-    async fn get_topology(&self) -> Result<Vec<TopologyEdge>> {
+    async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
         // Generate automatic topology based on primal types
         let mut edges = Vec::new();
 
@@ -161,7 +166,7 @@ impl VisualizationDataProvider for ScenarioVisualizationProvider {
         Ok(edges)
     }
 
-    async fn health_check(&self) -> Result<String> {
+    async fn health_check(&self) -> DiscoveryResult<String> {
         Ok(format!(
             "Scenario provider with {} primals",
             self.primals.len()

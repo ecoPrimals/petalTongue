@@ -3,7 +3,7 @@
 //!
 //! Discovers mouse capabilities and provides click/movement events.
 
-use anyhow::Result;
+use crate::error::SensorError;
 use async_trait::async_trait;
 use crossterm::event::{self, Event, MouseButton as CrosstermButton, MouseEventKind};
 use petal_tongue_core::{MouseButton, Sensor, SensorCapabilities, SensorEvent, SensorType};
@@ -53,14 +53,16 @@ impl Sensor for MouseSensor {
         true
     }
 
-    async fn poll_events(&mut self) -> Result<Vec<SensorEvent>> {
+    async fn poll_events(&mut self) -> anyhow::Result<Vec<SensorEvent>> {
         let mut events = Vec::new();
 
         // Non-blocking poll with very short timeout
         match self.pointer_type {
             PointerType::TerminalMouse => {
-                if event::poll(Duration::from_millis(1))?
-                    && let Event::Mouse(mouse_event) = event::read()?
+                if event::poll(Duration::from_millis(1))
+                    .map_err(|e| SensorError::Crossterm(e.to_string()))?
+                    && let Event::Mouse(mouse_event) =
+                        event::read().map_err(|e| SensorError::Crossterm(e.to_string()))?
                 {
                     let timestamp = Instant::now();
                     let x = f32::from(mouse_event.column);

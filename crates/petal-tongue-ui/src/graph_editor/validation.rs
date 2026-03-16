@@ -3,7 +3,7 @@
 //!
 //! Validates graphs, nodes, and edges to ensure correctness.
 
-use anyhow::{Context, Result};
+use crate::error::{GraphEditorError, Result};
 
 use super::graph::Graph;
 use super::node::GraphNode;
@@ -16,17 +16,17 @@ impl GraphValidator {
     pub fn validate_node(node: &GraphNode) -> Result<()> {
         // Validate ID
         if node.id.is_empty() {
-            anyhow::bail!("Node ID cannot be empty");
+            return Err(GraphEditorError::EmptyNodeId.into());
         }
 
         // Validate node type
         if node.node_type.is_empty() {
-            anyhow::bail!("Node type cannot be empty");
+            return Err(GraphEditorError::EmptyNodeType.into());
         }
 
         // Validate position (no NaN or infinite values)
         if !node.position.0.is_finite() || !node.position.1.is_finite() {
-            anyhow::bail!("Node position must be finite");
+            return Err(GraphEditorError::NonFiniteNodePosition.into());
         }
 
         Ok(())
@@ -36,31 +36,31 @@ impl GraphValidator {
     pub fn validate_graph(graph: &Graph) -> Result<()> {
         // Validate all nodes
         for node in graph.nodes.values() {
-            Self::validate_node(node).with_context(|| format!("Invalid node '{}'", node.id))?;
+            Self::validate_node(node)?;
         }
 
         // Validate all edges reference existing nodes
         for edge in &graph.edges {
             if !graph.nodes.contains_key(&edge.from) {
-                anyhow::bail!(
-                    "Edge '{}' references non-existent source node '{}'",
-                    edge.id,
-                    edge.from
-                );
+                return Err(GraphEditorError::EdgeReferencesMissingSource {
+                    edge: edge.id.clone(),
+                    node: edge.from.clone(),
+                }
+                .into());
             }
             if !graph.nodes.contains_key(&edge.to) {
-                anyhow::bail!(
-                    "Edge '{}' references non-existent target node '{}'",
-                    edge.id,
-                    edge.to
-                );
+                return Err(GraphEditorError::EdgeReferencesMissingTarget {
+                    edge: edge.id.clone(),
+                    node: edge.to.clone(),
+                }
+                .into());
             }
         }
 
         // Validate no cycles (already done by topological_sort, but double-check)
         graph
             .topological_sort()
-            .context("Graph validation failed: contains cycles")?;
+            .map_err(|_| GraphEditorError::ValidationCycles)?;
 
         Ok(())
     }

@@ -14,7 +14,8 @@ use crate::traits::VisualizationDataProvider;
 /// Delegates to [`MdnsVisualizationProvider::discover`] which performs real
 /// UDP multicast service discovery on the local network.
 #[cfg_attr(not(test), allow(dead_code))]
-pub async fn discover_via_mdns() -> anyhow::Result<Vec<Box<dyn VisualizationDataProvider>>> {
+pub async fn discover_via_mdns()
+-> crate::errors::DiscoveryResult<Vec<Box<dyn VisualizationDataProvider>>> {
     tracing::debug!("mDNS discovery: delegating to MdnsVisualizationProvider");
     MdnsVisualizationProvider::discover().await
 }
@@ -26,7 +27,9 @@ pub async fn discover_via_mdns() -> anyhow::Result<Vec<Box<dyn VisualizationData
     dead_code,
     reason = "API reserved for direct capability queries; callers currently use discover_via_mdns"
 )]
-pub async fn query_capability(capability: VisualizationCapability) -> anyhow::Result<Vec<String>> {
+pub async fn query_capability(
+    capability: VisualizationCapability,
+) -> crate::errors::DiscoveryResult<Vec<String>> {
     let providers = MdnsVisualizationProvider::discover().await?;
     let cap_str = capability.as_str();
     Ok(providers

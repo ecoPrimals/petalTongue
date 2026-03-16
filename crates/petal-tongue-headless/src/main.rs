@@ -13,7 +13,9 @@
 //! External systems (egui) are enhancements, not dependencies.
 //! This binary proves petalTongue can run anywhere Rust runs.
 
-use anyhow::Result;
+mod error;
+
+use crate::error::HeadlessError;
 use petal_tongue_core::GraphEngine;
 use petal_tongue_core::constants;
 use petal_tongue_ui_core::{
@@ -159,7 +161,7 @@ PHILOSOPHY:
     );
 }
 
-fn main() -> Result<()> {
+fn main() -> Result<(), HeadlessError> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
 
@@ -201,15 +203,13 @@ fn main() -> Result<()> {
 }
 
 /// Load graph data (tutorial mode or discovery)
-fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
+fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessError> {
     use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
 
     // For now, create a simple example topology
     tracing::info!("📚 Loading demonstration topology");
 
-    let mut g = graph
-        .write()
-        .map_err(|e| anyhow::anyhow!("graph lock poisoned: {e}"))?;
+    let mut g = graph.write()?;
 
     // Create some example primals
     let primals = vec![
@@ -293,7 +293,7 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
 }
 
 /// Render terminal UI
-fn render_terminal(graph: Arc<RwLock<GraphEngine>>) -> Result<()> {
+fn render_terminal(graph: Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessError> {
     let ui = TerminalUI::new(graph);
     let output = ui.render_to_string()?;
     println!("{output}");
@@ -301,7 +301,7 @@ fn render_terminal(graph: Arc<RwLock<GraphEngine>>) -> Result<()> {
 }
 
 /// Render SVG
-fn render_svg(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
+fn render_svg(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), HeadlessError> {
     let ui = SvgUI::new(graph, args.width, args.height);
 
     if let Some(ref output) = args.output {
@@ -316,7 +316,7 @@ fn render_svg(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
 }
 
 /// Render JSON
-fn render_json(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
+fn render_json(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), HeadlessError> {
     let ui = TextUI::new(graph).with_format(ExportFormat::Json);
 
     if let Some(ref output) = args.output {
@@ -331,7 +331,7 @@ fn render_json(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
 }
 
 /// Render DOT
-fn render_dot(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
+fn render_dot(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), HeadlessError> {
     let ui = TextUI::new(graph).with_format(ExportFormat::Dot);
 
     if let Some(ref output) = args.output {
@@ -346,7 +346,7 @@ fn render_dot(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
 }
 
 /// Render PNG
-fn render_png(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
+fn render_png(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), HeadlessError> {
     let ui = CanvasUI::new(graph, args.width, args.height);
 
     if let Some(ref output) = args.output {

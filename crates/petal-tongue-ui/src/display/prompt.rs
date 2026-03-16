@@ -4,7 +4,7 @@
 //! Prompts user to start display server if not available.
 //! Used for Tier 4 (External Display) fallback.
 
-use anyhow::Result;
+use crate::error::Result;
 use std::env;
 use std::io::{self, IsTerminal, Write};
 use std::time::Duration;

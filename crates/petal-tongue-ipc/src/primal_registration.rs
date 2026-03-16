@@ -8,7 +8,7 @@
 //! - Periodic heartbeat to maintain registration
 //! - Graceful handling when Songbird is unavailable
 
-use anyhow::{Context, Result};
+use crate::primal_registration_error::PrimalRegistrationError;
 use petal_tongue_core::constants;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -171,7 +171,10 @@ impl SongbirdClient {
     /// # Errors
     ///
     /// Returns error if registration fails
-    pub async fn register(&self, registration: &PrimalRegistration) -> Result<()> {
+    pub async fn register(
+        &self,
+        registration: &PrimalRegistration,
+    ) -> Result<(), PrimalRegistrationError> {
         let request_id = self
             .request_id
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -189,9 +192,7 @@ impl SongbirdClient {
             "id": request_id,
         });
 
-        self.send_request(&request)
-            .await
-            .context("Failed to register with Songbird")
+        self.send_request(&request).await
     }
 
     /// Send a heartbeat to Songbird
@@ -201,7 +202,7 @@ impl SongbirdClient {
     /// # Errors
     ///
     /// Returns error if heartbeat fails
-    pub async fn heartbeat(&self, primal_name: &str) -> Result<()> {
+    pub async fn heartbeat(&self, primal_name: &str) -> Result<(), PrimalRegistrationError> {
         let request_id = self
             .request_id
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -215,17 +216,13 @@ impl SongbirdClient {
             "id": request_id,
         });
 
-        self.send_request(&request)
-            .await
-            .context("Failed to send heartbeat to Songbird")
+        self.send_request(&request).await
     }
 
     /// Send a JSON-RPC request to Songbird
-    async fn send_request(&self, request: &Value) -> Result<()> {
+    async fn send_request(&self, request: &Value) -> Result<(), PrimalRegistrationError> {
         // Connect to Songbird
-        let mut stream = UnixStream::connect(&self.socket_path)
-            .await
-            .context("Failed to connect to Songbird")?;
+        let mut stream = UnixStream::connect(&self.socket_path).await?;
 
         // Send request (line-delimited JSON-RPC)
         let request_str = serde_json::to_string(request)?;
@@ -239,18 +236,14 @@ impl SongbirdClient {
         let mut reader = BufReader::new(reader);
         let mut response_line = String::new();
 
-        reader
-            .read_line(&mut response_line)
-            .await
-            .context("Failed to read response from Songbird")?;
+        reader.read_line(&mut response_line).await?;
 
         // Parse response
-        let response: Value = serde_json::from_str(&response_line)
-            .context("Failed to parse response from Songbird")?;
+        let response: Value = serde_json::from_str(&response_line)?;
 
         // Check for JSON-RPC error
         if let Some(error) = response.get("error") {
-            anyhow::bail!("Songbird returned error: {error}");
+            return Err(PrimalRegistrationError::SongbirdError(error.clone()));
         }
 
         Ok(())

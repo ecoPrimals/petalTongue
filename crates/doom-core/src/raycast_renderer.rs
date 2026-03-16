@@ -224,6 +224,7 @@ impl RaycastRenderer {
         clippy::cast_precision_loss,
         reason = "screen dimensions and indices fit losslessly in f64/f32"
     )]
+    #[must_use]
     pub fn render_to_scene(&self, map: &MapData) -> SceneGraph {
         let mut scene = SceneGraph::new();
         let scene_width = self.width as f64;

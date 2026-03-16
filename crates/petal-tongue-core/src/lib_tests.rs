@@ -32,7 +32,7 @@ mod tests {
         let pt = PetalTongue::new(config);
         let status = pt.health_status();
         assert!(!status.is_healthy());
-        let status_debug = format!("{:?}", status);
+        let status_debug = format!("{status:?}");
         assert!(status_debug.contains("state"));
     }
 

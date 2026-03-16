@@ -47,7 +47,7 @@ fn build_daily_et0() -> VisualizationScene {
     let days: Vec<f64> = (0..30).map(f64::from).collect();
     let et0_values: Vec<f64> = days
         .iter()
-        .map(|d| 3.0 + 1.5 * (d * std::f64::consts::TAU / 30.0).sin())
+        .map(|d| 1.5f64.mul_add((d * std::f64::consts::TAU / 30.0).sin(), 3.0))
         .collect();
     VisualizationScene::new(meta).with_binding(DataBinding::TimeSeries {
         id: "daily_et0".to_string(),
@@ -135,7 +135,10 @@ fn build_richards_field() -> VisualizationScene {
             (0..nx).map(move |col| {
                 let depth = f64::from(row) / f64::from(ny);
                 let lateral = f64::from(col) / f64::from(nx);
-                0.35 - 0.15 * depth + 0.05 * (lateral * std::f64::consts::PI).sin()
+                0.05f64.mul_add(
+                    (lateral * std::f64::consts::PI).sin(),
+                    0.15f64.mul_add(-depth, 0.35),
+                )
             })
         })
         .collect();
@@ -256,7 +259,7 @@ fn build_spi_timeseries() -> VisualizationScene {
     let months: Vec<f64> = (0..24).map(f64::from).collect();
     let spi: Vec<f64> = months
         .iter()
-        .map(|m| 0.5 * (m * std::f64::consts::TAU / 12.0).sin() - 0.3)
+        .map(|m| 0.5f64.mul_add((m * std::f64::consts::TAU / 12.0).sin(), -0.3))
         .collect();
     VisualizationScene::new(meta).with_binding(DataBinding::TimeSeries {
         id: "spi_12".to_string(),
@@ -369,7 +372,7 @@ mod tests {
                 x_values, y_values, ..
             } => {
                 let d = x_values[0];
-                let expected = 3.0 + 1.5 * (d * std::f64::consts::TAU / 30.0).sin();
+                let expected = 1.5f64.mul_add((d * std::f64::consts::TAU / 30.0).sin(), 3.0);
                 assert!((y_values[0] - expected).abs() < 1e-10);
             }
             _ => panic!("expected TimeSeries"),
@@ -377,6 +380,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "small test indices well within f64 precision"
+    )]
     fn richards_field_formula() {
         let builder = AirSpringRichardsPDEScenario;
         let scene = builder.build_scene("moisture_field").unwrap();
@@ -391,7 +398,10 @@ mod tests {
                 let col = 0_usize;
                 let depth = row as f64 / grid_y.len() as f64;
                 let lateral = col as f64 / grid_x.len() as f64;
-                let expected = 0.35 - 0.15 * depth + 0.05 * (lateral * std::f64::consts::PI).sin();
+                let expected = 0.05f64.mul_add(
+                    (lateral * std::f64::consts::PI).sin(),
+                    0.15f64.mul_add(-depth, 0.35),
+                );
                 let idx = row * grid_x.len() + col;
                 assert!((values[idx] - expected).abs() < 1e-10);
             }
@@ -408,7 +418,7 @@ mod tests {
                 x_values, y_values, ..
             } => {
                 let m = x_values[0];
-                let expected = 0.5 * (m * std::f64::consts::TAU / 12.0).sin() - 0.3;
+                let expected = 0.5f64.mul_add((m * std::f64::consts::TAU / 12.0).sin(), -0.3);
                 assert!((y_values[0] - expected).abs() < 1e-10);
             }
             _ => panic!("expected TimeSeries"),

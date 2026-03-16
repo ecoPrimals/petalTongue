@@ -36,7 +36,7 @@ pub fn sparkline_points(history: &[f64], width: f32, height: f32) -> Vec<(f32, f
         .map(|(i, &value)| {
             let x = (i as f32 / (history.len() - 1) as f32) * width;
             let normalized = (value - min_val) / range;
-            let y = height - (normalized as f32 * height);
+            let y = (normalized as f32).mul_add(-height, height);
             (x, y)
         })
         .collect()

@@ -79,29 +79,28 @@ pub fn draw_node(
     }
 
     // Draw trust level badge (if available and zoomed in)
-    if zoom > 0.7 {
-        if let Some(petal_tongue_core::PropertyValue::Number(trust_val)) =
+    if zoom > 0.7
+        && let Some(petal_tongue_core::PropertyValue::Number(trust_val)) =
             node.info.properties.get("trust_level")
-        {
-            if *trust_val >= 0.0 && *trust_val <= 255.0 {
-                #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-                let trust_level = *trust_val as u8;
-                let badge_text = match trust_level {
-                    0 => "⚫",
-                    1 => "🟡",
-                    2 => "🟠",
-                    3 => "🟢",
-                    _ => "❓",
-                };
-                painter.text(
-                    Pos2::new(screen_pos.x + radius, screen_pos.y - radius),
-                    egui::Align2::LEFT_BOTTOM,
-                    badge_text,
-                    egui::FontId::proportional(14.0),
-                    Color32::WHITE,
-                );
-            }
-        }
+        && *trust_val >= 0.0
+        && *trust_val <= 255.0
+    {
+        #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let trust_level = *trust_val as u8;
+        let badge_text = match trust_level {
+            0 => "⚫",
+            1 => "🟡",
+            2 => "🟠",
+            3 => "🟢",
+            _ => "❓",
+        };
+        painter.text(
+            Pos2::new(screen_pos.x + radius, screen_pos.y - radius),
+            egui::Align2::LEFT_BOTTOM,
+            badge_text,
+            egui::FontId::proportional(14.0),
+            Color32::WHITE,
+        );
     }
 
     // Draw capability badges (if zoomed in enough)
@@ -121,10 +120,10 @@ fn draw_capability_badges(
     let badge_radius = 8.0 * zoom;
     let orbit_radius = radius + 15.0;
 
-    let displayed_caps = capabilities.iter().take(6);
-    let num_caps = displayed_caps.clone().count();
+    let displayed_caps: Vec<_> = capabilities.iter().take(6).collect();
+    let num_caps = displayed_caps.len();
 
-    for (i, capability) in displayed_caps.enumerate() {
+    for (i, capability) in displayed_caps.iter().enumerate() {
         #[expect(clippy::cast_precision_loss)]
         let angle = (i as f32) * std::f32::consts::TAU / (num_caps as f32);
         let badge_pos = Pos2::new(
@@ -168,7 +167,7 @@ fn draw_capability_badges(
         painter.text(
             badge_pos,
             egui::Align2::CENTER_CENTER,
-            format!("+{}", more_count),
+            format!("+{more_count}"),
             egui::FontId::proportional(8.0),
             Color32::WHITE,
         );

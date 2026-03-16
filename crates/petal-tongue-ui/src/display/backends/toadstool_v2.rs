@@ -37,7 +37,7 @@
 //! - toadStool's internal implementation
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
-use anyhow::{Result, anyhow};
+use crate::error::{DisplayError, Result};
 use async_trait::async_trait;
 use petal_tongue_core::{
     biomeos_discovery::BiomeOsBackend,
@@ -110,7 +110,7 @@ impl ToadstoolDisplay {
     pub fn new() -> Result<Self> {
         // Create discovery system with biomeOS backend
         let backend = BiomeOsBackend::from_env()
-            .map_err(|e| anyhow!("Failed to create biomeOS discovery backend: {e}"))?;
+            .map_err(|e| DisplayError::BiomeOsDiscoveryBackend(e.to_string()))?;
 
         let discovery = CapabilityDiscovery::new(Box::new(backend));
 
@@ -142,22 +142,13 @@ impl ToadstoolDisplay {
         let discovery = self
             .discovery
             .as_ref()
-            .ok_or_else(|| anyhow!("No discovery system available"))?;
+            .ok_or(DisplayError::NoDiscoverySystem)?;
 
         // Query for display capability (TRUE PRIMAL: no hardcoded "toadstool")
         let endpoint = discovery
             .discover_one(&CapabilityQuery::new("display"))
             .await
-            .map_err(|e| {
-                anyhow!(
-                    "Failed to discover display capability: {e}\n\
-                \n\
-                Troubleshooting:\n\
-                - Ensure biomeOS nucleus is running\n\
-                - Ensure toadStool is registered with display capability\n\
-                - Check biomeOS discovery logs"
-                )
-            })?;
+            .map_err(|e| DisplayError::DisplayDiscoveryFailed(e.to_string()))?;
 
         info!("✅ Found display provider: {}", endpoint.id);
         info!("   Capabilities: {:?}", endpoint.capabilities);
@@ -166,14 +157,14 @@ impl ToadstoolDisplay {
         let tarpc_endpoint = endpoint
             .endpoints
             .tarpc
-            .ok_or_else(|| anyhow!("Display provider doesn't expose tarpc endpoint"))?;
+            .ok_or(DisplayError::NoTarpcEndpoint)?;
 
         info!("🔌 Connecting via tarpc: {}", tarpc_endpoint);
 
         // Connect via tarpc for high-performance communication
         // Note: TarpcClient::new() creates client with lazy connection
         let client = TarpcClient::new(&tarpc_endpoint)
-            .map_err(|e| anyhow!("Failed to create tarpc client: {e}"))?;
+            .map_err(|e| DisplayError::TarpcClientCreation(e.to_string()))?;
 
         self.tarpc_client = Some(client);
 
@@ -186,7 +177,8 @@ impl ToadstoolDisplay {
     fn client(&self) -> Result<&TarpcClient> {
         self.tarpc_client
             .as_ref()
-            .ok_or_else(|| anyhow!("Not connected to display provider"))
+            .ok_or(DisplayError::NotConnectedToDisplay)
+            .map_err(Into::into)
     }
 
     /// Query display capabilities via tarpc
@@ -197,10 +189,10 @@ impl ToadstoolDisplay {
             .client()?
             .call_method("display.query_capabilities", Some(serde_json::json!({})))
             .await
-            .map_err(|e| anyhow!("Failed to query capabilities: {e}"))?;
+            .map_err(|e| DisplayError::QueryCapabilitiesFailed(e.to_string()))?;
 
         let caps: DisplayCapabilitiesResponse = serde_json::from_value(result)
-            .map_err(|e| anyhow!("Failed to parse display capabilities: {e}"))?;
+            .map_err(|e| DisplayError::ParseDisplayCapabilities(e.to_string()))?;
 
         info!(
             "✅ Found {} displays, {} input devices",
@@ -225,10 +217,10 @@ impl ToadstoolDisplay {
             .client()?
             .call_method("display.create_window", Some(params))
             .await
-            .map_err(|e| anyhow!("Failed to create window: {e}"))?;
+            .map_err(|e| DisplayError::CreateWindowFailed(e.to_string()))?;
 
         let window: WindowResponse = serde_json::from_value(result)
-            .map_err(|e| anyhow!("Failed to parse window response: {e}"))?;
+            .map_err(|e| DisplayError::ParseWindowResponse(e.to_string()))?;
 
         info!("✅ Window created: {}", window.window_id);
 
@@ -240,7 +232,7 @@ impl ToadstoolDisplay {
         let window_id = self
             .window_id
             .as_ref()
-            .ok_or_else(|| anyhow!("No window created yet"))?;
+            .ok_or(DisplayError::NoWindowCreated)?;
 
         // tarpc can handle binary data efficiently
         // For now, we use base64 encoding for compatibility
@@ -260,7 +252,7 @@ impl ToadstoolDisplay {
         self.client()?
             .call_method("display.commit_frame", Some(params))
             .await
-            .map_err(|e| anyhow!("Failed to commit frame: {e}"))?;
+            .map_err(|e| DisplayError::CommitFrameFailed(e.to_string()))?;
 
         debug!("✅ Frame committed");
 
@@ -283,7 +275,7 @@ impl DisplayBackend for ToadstoolDisplay {
         let display_info = caps
             .displays
             .first()
-            .ok_or_else(|| anyhow!("No displays available"))?;
+            .ok_or(DisplayError::NoDisplaysAvailable)?;
 
         info!(
             "   Display: {} ({})",
@@ -321,11 +313,11 @@ impl DisplayBackend for ToadstoolDisplay {
     async fn present(&mut self, buffer: &[u8]) -> Result<()> {
         let expected_size = expected_rgba8_buffer_size(self.width, self.height);
         if buffer.len() != expected_size {
-            return Err(anyhow!(
-                "Invalid buffer size: expected {} bytes, got {}",
-                expected_size,
-                buffer.len()
-            ));
+            return Err(DisplayError::InvalidBufferSize {
+                expected: expected_size,
+                actual: buffer.len(),
+            }
+            .into());
         }
 
         self.commit_frame(buffer).await

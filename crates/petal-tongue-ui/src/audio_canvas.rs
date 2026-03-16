@@ -10,7 +10,7 @@
 //!
 //! NO ALSA library, NO C dependencies - just raw device access!
 
-use anyhow::{Context, Result};
+use crate::error::{AudioError, Result};
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -37,8 +37,10 @@ impl AudioCanvas {
             return Ok(devices);
         }
 
-        for entry in std::fs::read_dir(snd_dir).context("Failed to read /dev/snd directory")? {
-            let path = entry?.path();
+        for entry in std::fs::read_dir(snd_dir).map_err(|e| {
+            crate::error::UiError::Generic(format!("Failed to read /dev/snd directory: {e}"))
+        })? {
+            let path = entry.map_err(crate::error::UiError::Io)?.path();
             let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
             // Find PCM playback devices (format: pcmC0D0p)
@@ -62,10 +64,12 @@ impl AudioCanvas {
         let device = OpenOptions::new()
             .write(true)
             .open(device_path)
-            .context(format!(
-                "Failed to open audio device: {}",
-                device_path.display()
-            ))?;
+            .map_err(|e| {
+                crate::error::UiError::Generic(format!(
+                    "Failed to open audio device: {}: {e}",
+                    device_path.display()
+                ))
+            })?;
 
         info!("✅ Audio canvas opened - direct hardware access!");
 
@@ -82,7 +86,7 @@ impl AudioCanvas {
         let devices = Self::discover()?;
 
         if devices.is_empty() {
-            anyhow::bail!("No audio devices found in /dev/snd/");
+            return Err(AudioError::NoAudioDevices.into());
         }
 
         // Use first device
@@ -118,11 +122,9 @@ impl AudioCanvas {
         // Write directly to device!
         self.device
             .write_all(&bytes)
-            .context("Failed to write samples to audio device")?;
+            .map_err(crate::error::UiError::from)?;
 
-        self.device
-            .flush()
-            .context("Failed to flush audio device")?;
+        self.device.flush().map_err(crate::error::UiError::from)?;
 
         debug!("✅ Samples written to audio canvas");
 

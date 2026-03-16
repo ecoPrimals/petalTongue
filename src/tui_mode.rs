@@ -7,7 +7,7 @@
 //! Integrates with petal-tongue-tui for full interactive terminal UI.
 
 use crate::data_service::DataService;
-use anyhow::Result;
+use crate::error::AppError;
 use petal_tongue_tui::{TUIConfig, launch_with_config};
 use std::sync::Arc;
 use std::time::Duration;
@@ -16,7 +16,7 @@ pub async fn run(
     scenario: Option<String>,
     refresh_rate: u32,
     data_service: Arc<DataService>,
-) -> Result<()> {
+) -> Result<(), AppError> {
     tracing::info!(
         scenario = ?scenario,
         refresh_rate,
@@ -46,7 +46,9 @@ pub async fn run(
         standalone: false,
     };
 
-    launch_with_config(config).await
+    launch_with_config(config)
+        .await
+        .map_err(|e| AppError::Tui(e.to_string()))
 }
 
 #[cfg(test)]

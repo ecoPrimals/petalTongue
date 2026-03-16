@@ -33,6 +33,8 @@
 
 /// Application core
 pub mod app;
+/// Error types
+pub mod error;
 /// Event system
 pub mod events;
 /// Layout utilities
@@ -46,8 +48,6 @@ pub mod views;
 /// Reusable widgets
 pub mod widgets;
 
-use anyhow::Result;
-
 // Re-exports for convenience
 pub use app::{RichTUI, TUIConfig};
 pub use state::{TUIState, View};
@@ -60,11 +60,12 @@ pub use state::{TUIState, View};
 /// use petal_tongue_tui::launch;
 ///
 /// #[tokio::main]
-/// async fn main() -> anyhow::Result<()> {
-///     launch().await
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     launch().await?;
+///     Ok(())
 /// }
 /// ```
-pub async fn launch() -> Result<()> {
+pub async fn launch() -> Result<(), error::TuiError> {
     let mut tui = RichTUI::new().await?;
     tui.run().await
 }
@@ -78,16 +79,17 @@ pub async fn launch() -> Result<()> {
 /// use std::time::Duration;
 ///
 /// #[tokio::main]
-/// async fn main() -> anyhow::Result<()> {
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let config = TUIConfig {
 ///         tick_rate: Duration::from_millis(50),
 ///         mouse_support: true,
 ///         standalone: false,
 ///     };
-///     launch_with_config(config).await
+///     launch_with_config(config).await?;
+///     Ok(())
 /// }
 /// ```
-pub async fn launch_with_config(config: TUIConfig) -> Result<()> {
+pub async fn launch_with_config(config: TUIConfig) -> Result<(), error::TuiError> {
     let mut tui = RichTUI::with_config(config).await?;
     tui.run().await
 }

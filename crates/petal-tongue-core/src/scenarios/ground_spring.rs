@@ -80,7 +80,7 @@ fn build_arrival_times() -> VisualizationScene {
     let sensors: Vec<f64> = (0..16).map(f64::from).collect();
     let times: Vec<f64> = sensors
         .iter()
-        .map(|s| 0.5 + 0.1 * s + 0.02 * (s * 0.5).sin())
+        .map(|s| 0.02f64.mul_add((s * 0.5).sin(), 0.5 + 0.1 * s))
         .collect();
     VisualizationScene::new(meta).with_binding(DataBinding::TimeSeries {
         id: "arrival_times".to_string(),
@@ -131,7 +131,7 @@ fn build_sensor_drift() -> VisualizationScene {
     let days: Vec<f64> = (0..90).map(f64::from).collect();
     let drift: Vec<f64> = days
         .iter()
-        .map(|d| 0.001 * d + 0.0005 * (d * 0.1).sin())
+        .map(|d| 0.0005f64.mul_add((d * 0.1).sin(), 0.001 * d))
         .collect();
     VisualizationScene::new(meta)
         .with_binding(DataBinding::TimeSeries {
@@ -389,6 +389,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "small test indices well within f64 precision"
+    )]
     fn seismic_wave_field_formula() {
         let builder = GroundSpringSeismicScenario;
         let scene = builder.build_scene("wave_field").unwrap();
@@ -421,7 +425,7 @@ mod tests {
                 x_values, y_values, ..
             } => {
                 let s = x_values[0];
-                let expected = 0.5 + 0.1 * s + 0.02 * (s * 0.5).sin();
+                let expected = 0.02f64.mul_add((s * 0.5).sin(), 0.1f64.mul_add(s, 0.5));
                 assert!((y_values[0] - expected).abs() < 1e-10);
             }
             _ => panic!("expected TimeSeries"),
@@ -437,7 +441,7 @@ mod tests {
                 x_values, y_values, ..
             } => {
                 let d = x_values[0];
-                let expected = 0.001 * d + 0.0005 * (d * 0.1).sin();
+                let expected = 0.001f64.mul_add(d, 0.0005 * (d * 0.1).sin());
                 assert!((y_values[0] - expected).abs() < 1e-10);
             }
             _ => panic!("expected TimeSeries"),

@@ -23,7 +23,7 @@
 //! env vars - production code attempts real discovery and reports "not available"
 //! when display provider cannot be found.
 
-use anyhow::Result;
+use crate::error::{BackendError, Result};
 use async_trait::async_trait;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
@@ -114,11 +114,13 @@ impl UIBackend for ToadstoolBackend {
 
         // Legacy UIBackend: Full tarpc integration lives in display::backends::toadstool_v2.
         // This module reports unavailability with graceful degradation—no stub env vars.
-        anyhow::bail!(
+        return Err(BackendError::ToadstoolRequiresBiomeOs(
             "Toadstool display service not available. \
              Use DisplayManager with display::backends::toadstool_v2 for GPU rendering. \
              See TOADSTOOL_DISPLAY_BACKEND_REQUEST.md"
-        );
+                .to_string(),
+        )
+        .into());
     }
 
     async fn run(
@@ -146,10 +148,12 @@ impl UIBackend for ToadstoolBackend {
         // Legacy UIBackend: Display capability discovered but full tarpc integration
         // lives in display::backends::toadstool_v2. This stub reports "not yet implemented"
         // for actual window/event-loop - use DisplayManager + ToadstoolDisplayV2 instead.
-        anyhow::bail!(
+        return Err(BackendError::ToadstoolRequiresBiomeOs(
             "Toadstool UIBackend run() not yet implemented. \
              Use DisplayManager with display::backends::toadstool_v2 instead."
+                .to_string(),
         )
+        .into());
     }
 
     async fn shutdown(&mut self) -> Result<()> {

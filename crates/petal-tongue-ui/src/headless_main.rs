@@ -12,7 +12,7 @@
 //! External systems (egui) are enhancements, not dependencies.
 //! This binary proves petalTongue can run anywhere Rust runs.
 
-use anyhow::Result;
+use crate::error::Result;
 use petal_tongue_core::GraphEngine;
 use petal_tongue_ui_core::{
     detect_best_ui_mode, ExportFormat, SvgUI, TerminalUI, TextUI, UIMode, UniversalUI,
@@ -225,7 +225,9 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<()> {
     }
 
     let (node_count, edge_count) = {
-        let g = graph.read().map_err(|e| anyhow::anyhow!("graph lock poisoned: {e}"))?;
+        let g = graph
+            .read()
+            .map_err(|e| crate::error::BackendError::GraphLockPoisoned(e.to_string()))?;
         (g.nodes().len(), g.edges().len())
     };
     tracing::info!("📊 Loaded: {} primals, {} connections", node_count, edge_count);

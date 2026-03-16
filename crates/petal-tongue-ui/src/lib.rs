@@ -5,30 +5,19 @@
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
-#![warn(clippy::all)]
-#![warn(clippy::pedantic)]
-#![allow(clippy::must_use_candidate)]
-#![allow(clippy::missing_errors_doc)]
-#![allow(clippy::doc_markdown)]
 // UI rendering: precision loss in casts is acceptable (f32 for coordinates, u8 for colors)
-#![allow(clippy::cast_precision_loss)]
-#![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_sign_loss)]
 // Large structs and long functions common in UI code
 #![allow(clippy::struct_excessive_bools)]
 #![allow(clippy::too_many_lines)]
 #![allow(clippy::too_many_arguments)]
-#![allow(clippy::items_after_statements)]
 #![allow(clippy::match_same_arms)]
-#![allow(clippy::missing_panics_doc)]
 #![allow(clippy::ref_option)]
 #![allow(clippy::needless_pass_by_value)]
 #![allow(clippy::unnecessary_get_then_check)]
 #![allow(clippy::should_implement_trait)]
 #![allow(clippy::await_holding_lock)]
-#![allow(clippy::default_trait_access)]
 #![allow(clippy::format_push_string)]
-#![allow(clippy::float_cmp)]
 #![allow(clippy::unchecked_time_subtraction)]
 #![allow(clippy::useless_vec)]
 #![allow(unused_comparisons)]
@@ -39,7 +28,6 @@
 #![allow(clippy::field_reassign_with_default)]
 #![allow(clippy::useless_conversion)]
 #![allow(clippy::single_char_pattern)]
-#![allow(clippy::cast_lossless)]
 #![allow(clippy::items_after_test_module)]
 #![allow(clippy::uninlined_format_args)]
 #![allow(clippy::needless_borrow)]
@@ -81,6 +69,7 @@ pub mod audio_providers;
 pub mod audio_pure_rust;
 pub mod awakening_overlay;
 pub mod backend; // NEW: UI backend abstraction (ecoBlossom!)
+pub mod error;
 pub mod event_loop;
 pub mod focus_manager;
 pub mod interaction_adapters;

@@ -14,7 +14,7 @@ pub struct PixelProvenance {
     pub node_id: String,
     /// Index in the flattened output.
     pub primitive_index: usize,
-    /// The data_id from the primitive.
+    /// The `data_id` from the primitive.
     pub data_id: Option<String>,
     /// World coordinates of the primitive origin.
     pub world_x: f64,
@@ -125,7 +125,7 @@ impl ProvenanceRenderer {
                 Self::fill_circle(buf, wx, wy, *radius, &prov);
             }
             Primitive::Line { points, stroke, .. } => {
-                let w = stroke.width as f64 / 2.0;
+                let w = f64::from(stroke.width) / 2.0;
                 for i in 0..points.len().saturating_sub(1) {
                     let (ax, ay) = transform.apply(points[i][0], points[i][1]);
                     let (bx, by) = transform.apply(points[i + 1][0], points[i + 1][1]);

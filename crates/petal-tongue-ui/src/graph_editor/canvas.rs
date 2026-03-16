@@ -66,8 +66,8 @@ pub fn editor_arrow_vertices(
     let perp_y = dir_x;
     let half = arrow_size * arrow_angle.sin();
     let tip = (to_x, to_y);
-    let left = (to_x - perp_x * half, to_y - perp_y * half);
-    let right = (to_x + perp_x * half, to_y + perp_y * half);
+    let left = (perp_x.mul_add(-half, to_x), perp_y.mul_add(-half, to_y));
+    let right = (perp_x.mul_add(half, to_x), perp_y.mul_add(half, to_y));
     (tip, left, right)
 }
 

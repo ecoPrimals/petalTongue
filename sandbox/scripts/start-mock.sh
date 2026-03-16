@@ -18,9 +18,9 @@ echo ""
 
 # Check if mock server exists
 if [ ! -d "$MOCK_DIR" ]; then
-    echo -e "${YELLOW}⚠️  Mock server not found. Building...${NC}"
-    cd "$SANDBOX_DIR"
-    
+    echo -e "${YELLOW}⚠️  Mock server directory not found at $MOCK_DIR${NC}"
+    echo "Expected: $MOCK_DIR"
+    exit 1
 fi
 
 # Check if mock server is built

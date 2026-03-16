@@ -8,21 +8,12 @@
 //! graph engine and represent it visually.
 
 #![warn(missing_docs)]
-#![warn(clippy::all)]
-#![warn(clippy::pedantic)]
-// Allow some pedantic warnings for now - will be addressed in future refactoring
-#![allow(clippy::trivially_copy_pass_by_ref)]
-#![allow(clippy::cast_precision_loss)]
-#![allow(clippy::unused_self)]
-#![allow(clippy::module_name_repetitions)]
-#![allow(clippy::must_use_candidate)]
-#![allow(clippy::collapsible_if)]
-#![allow(clippy::uninlined_format_args)]
 #![allow(clippy::format_push_string)]
 #![allow(clippy::missing_errors_doc)] // Allow for now, will add later
 #![allow(clippy::missing_panics_doc)] // Allow for now, will add later
 
 pub mod audio_export;
+pub mod audio_export_error;
 pub mod audio_sonification;
 pub mod capability_validator;
 pub mod color_utils;
@@ -47,6 +38,7 @@ pub mod visual_2d;
 // ALSA is an external system, discovered at runtime (not a compile-time dependency)
 
 pub use audio_export::{AudioFileGenerator, AudioFormat, AudioQuality};
+pub use audio_export_error::AudioExportError;
 pub use audio_sonification::{AudioAttributes, AudioSonificationRenderer, Instrument};
 #[cfg(feature = "egui-render")]
 pub use chart_renderer::{NodeDetail, draw_channel, draw_node_detail};

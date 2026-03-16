@@ -16,7 +16,7 @@
 //! RGBA8 pixel buffer
 //! ```
 
-use anyhow::{Result, anyhow};
+use crate::error::{DisplayError, Result};
 use bytes::Bytes;
 use egui::{ClippedPrimitive, TexturesDelta};
 use epaint::{Mesh, Primitive, TessellationOptions, Tessellator};
@@ -105,7 +105,7 @@ impl EguiPixelRenderer {
             let size = image.size();
 
             let mut pixmap = Pixmap::new(size[0] as u32, size[1] as u32)
-                .ok_or_else(|| anyhow!("Failed to create pixmap for texture"))?;
+                .ok_or(DisplayError::PixmapTextureCreation)?;
 
             // Convert egui image to pixmap
             let width = pixmap.width();
@@ -156,8 +156,8 @@ impl EguiPixelRenderer {
     /// Returns RGBA8 pixel buffer (width * height * 4 bytes)
     pub fn render(&mut self, primitives: &[ClippedPrimitive]) -> Result<Bytes> {
         // Create pixmap for rendering
-        let mut pixmap = Pixmap::new(self.width, self.height)
-            .ok_or_else(|| anyhow!("Failed to create pixmap"))?;
+        let mut pixmap =
+            Pixmap::new(self.width, self.height).ok_or(DisplayError::PixmapCreation)?;
 
         // Clear to transparent black
         pixmap.fill(Color::TRANSPARENT);

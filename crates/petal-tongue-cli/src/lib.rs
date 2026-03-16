@@ -15,12 +15,14 @@
 //! - `gc` - Clean up dead instances from registry
 
 mod commands;
+mod error;
 mod handlers;
 mod output;
 mod resolve;
 
 // Re-export public API for crate consumers
 pub use commands::{Cli, Commands};
+pub use error::CliError;
 pub use handlers::run;
 
 #[cfg(test)]

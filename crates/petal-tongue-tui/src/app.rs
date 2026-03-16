@@ -4,7 +4,7 @@
 //! Core application logic for the Rich TUI.
 //! Zero unsafe code, pure async, capability-based.
 
-use anyhow::{Context, Result};
+use crate::error::TuiError;
 use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
@@ -69,18 +69,20 @@ pub struct RichTUI {
 
 impl RichTUI {
     /// Create new TUI with default config
-    pub async fn new() -> Result<Self> {
+    pub async fn new() -> Result<Self, TuiError> {
         Self::with_config(TUIConfig::default()).await
     }
 
     /// Create new TUI with custom config
-    pub async fn with_config(config: TUIConfig) -> Result<Self> {
+    pub async fn with_config(config: TUIConfig) -> Result<Self, TuiError> {
         // Setup terminal
-        enable_raw_mode().context("Failed to enable raw mode")?;
+        enable_raw_mode().map_err(|e| TuiError::terminal("Failed to enable raw mode", e))?;
         let mut stdout = io::stdout();
-        execute!(stdout, EnterAlternateScreen).context("Failed to enter alternate screen")?;
+        execute!(stdout, EnterAlternateScreen)
+            .map_err(|e| TuiError::terminal("Failed to enter alternate screen", e))?;
         let backend = CrosstermBackend::new(stdout);
-        let terminal = Terminal::new(backend).context("Failed to create terminal")?;
+        let terminal = Terminal::new(backend)
+            .map_err(|e| TuiError::terminal("Failed to create terminal", e))?;
 
         // Create state
         let state = TUIState::new();
@@ -101,7 +103,7 @@ impl RichTUI {
     }
 
     /// Run the TUI
-    pub async fn run(&mut self) -> Result<()> {
+    pub async fn run(&mut self) -> Result<(), TuiError> {
         self.running = true;
 
         // Start event loop
@@ -130,13 +132,12 @@ impl RichTUI {
     }
 
     /// Render current view
-    async fn render(&mut self) -> Result<()> {
+    async fn render(&mut self) -> Result<(), TuiError> {
         let state = self.state.clone();
         let view = state.get_view().await;
 
-        self.terminal.draw(|f| {
-            // Render based on current view
-            match view {
+        self.terminal
+            .draw(|f| match view {
                 View::Dashboard => render_dashboard(f, &state),
                 View::Topology => render_topology(f, &state),
                 View::Devices => render_devices(f, &state),
@@ -145,14 +146,14 @@ impl RichTUI {
                 View::NeuralAPI => render_neural_api(f, &state),
                 View::Nucleus => render_nucleus(f, &state),
                 View::LiveSpore => render_livespore(f, &state),
-            }
-        })?;
+            })
+            .map_err(|e| TuiError::terminal("Failed to draw", e))?;
 
         Ok(())
     }
 
     /// Handle event
-    async fn handle_event(&mut self, event: TUIEvent) -> Result<()> {
+    async fn handle_event(&mut self, event: TUIEvent) -> Result<(), TuiError> {
         match event {
             TUIEvent::Key(key) => {
                 self.handle_key_event(key).await?;
@@ -176,7 +177,7 @@ impl RichTUI {
     }
 
     /// Handle key event
-    async fn handle_key_event(&mut self, key: crossterm::event::KeyEvent) -> Result<()> {
+    async fn handle_key_event(&mut self, key: crossterm::event::KeyEvent) -> Result<(), TuiError> {
         let action = parse_key_event(key);
 
         match action {
@@ -207,7 +208,7 @@ impl RichTUI {
     }
 
     /// Handle external event
-    async fn handle_external_event(&mut self, event: ExternalEvent) -> Result<()> {
+    async fn handle_external_event(&mut self, event: ExternalEvent) -> Result<(), TuiError> {
         match event {
             ExternalEvent::PrimalDiscovered { name } => {
                 self.add_log(format!("Discovered primal: {name}")).await;
@@ -242,7 +243,7 @@ impl RichTUI {
     }
 
     /// Discover primals (capability-based, runtime)
-    async fn discover_primals(&mut self) -> Result<()> {
+    async fn discover_primals(&mut self) -> Result<(), TuiError> {
         // Try to discover via petal-tongue-discovery
         match petal_tongue_discovery::discover_visualization_providers().await {
             Ok(providers) => {
@@ -288,7 +289,7 @@ impl RichTUI {
     }
 
     /// Refresh topology data
-    async fn refresh_topology(&mut self) -> Result<()> {
+    async fn refresh_topology(&mut self) -> Result<(), TuiError> {
         // Try to get topology from discovered providers
         if let Ok(providers) = petal_tongue_discovery::discover_visualization_providers().await {
             for provider in providers {
@@ -305,7 +306,7 @@ impl RichTUI {
     }
 
     /// Refresh data (periodic)
-    async fn refresh_data(&mut self) -> Result<()> {
+    async fn refresh_data(&mut self) -> Result<(), TuiError> {
         // Only refresh if not in standalone mode
         if !self.state.is_standalone().await {
             // Lightweight refresh - don't rediscover, just update status
@@ -328,13 +329,13 @@ impl RichTUI {
     }
 
     /// Cleanup terminal
-    fn cleanup(&mut self) -> Result<()> {
-        disable_raw_mode().context("Failed to disable raw mode")?;
+    fn cleanup(&mut self) -> Result<(), TuiError> {
+        disable_raw_mode().map_err(|e| TuiError::terminal("Failed to disable raw mode", e))?;
         execute!(self.terminal.backend_mut(), LeaveAlternateScreen)
-            .context("Failed to leave alternate screen")?;
+            .map_err(|e| TuiError::terminal("Failed to leave alternate screen", e))?;
         self.terminal
             .show_cursor()
-            .context("Failed to show cursor")?;
+            .map_err(|e| TuiError::terminal("Failed to show cursor", e))?;
 
         Ok(())
     }
@@ -791,7 +792,7 @@ mod tests {
     #[test]
     fn view_all_contains_expected_views() {
         let views = crate::state::View::all();
-        let names: Vec<&str> = views.iter().map(|v| v.name()).collect();
+        let names: Vec<&str> = views.iter().map(super::super::state::View::name).collect();
         assert!(names.contains(&"Dashboard"));
         assert!(names.contains(&"Topology"));
         assert!(names.contains(&"Primals"));

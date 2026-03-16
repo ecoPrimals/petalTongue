@@ -39,30 +39,32 @@ pub fn handle_input(
     }
 
     // Interactive mode: Handle double-click to create node
-    if renderer.interactive_mode && response.double_clicked() {
-        if let Some(mouse_pos) = response.interact_pointer_pos() {
-            let world_pos = renderer.screen_to_world(mouse_pos, screen_center);
-            create_node_at(renderer, world_pos);
-        }
+    if renderer.interactive_mode
+        && response.double_clicked()
+        && let Some(mouse_pos) = response.interact_pointer_pos()
+    {
+        let world_pos = renderer.screen_to_world(mouse_pos, screen_center);
+        create_node_at(renderer, world_pos);
     }
 
     // Interactive mode: Handle drag to move node or create edge
-    if renderer.interactive_mode && response.drag_started() {
-        if let Some(mouse_pos) = response.interact_pointer_pos() {
-            let world_pos = renderer.screen_to_world(mouse_pos, screen_center);
+    if renderer.interactive_mode
+        && response.drag_started()
+        && let Some(mouse_pos) = response.interact_pointer_pos()
+    {
+        let world_pos = renderer.screen_to_world(mouse_pos, screen_center);
 
-            let Ok(graph) = renderer.graph.read() else {
-                tracing::error!("graph lock poisoned");
-                return;
-            };
-            let node_under_cursor = graph.nodes().iter().find(|node| {
-                let distance = node.position.distance_to(world_pos);
-                distance < 20.0
-            });
+        let Ok(graph) = renderer.graph.read() else {
+            tracing::error!("graph lock poisoned");
+            return;
+        };
+        let node_under_cursor = graph.nodes().iter().find(|node| {
+            let distance = node.position.distance_to(world_pos);
+            distance < 20.0
+        });
 
-            if let Some(node) = node_under_cursor {
-                renderer.dragging_node = Some(node.info.id.clone());
-            }
+        if let Some(node) = node_under_cursor {
+            renderer.dragging_node = Some(node.info.id.clone());
         }
     }
 
@@ -93,35 +95,37 @@ pub fn handle_input(
     }
 
     // Handle node selection (click)
-    if response.clicked() && !renderer.is_dragging && renderer.drawing_edge.is_none() {
-        if let Some(mouse_pos) = response.interact_pointer_pos() {
-            let world_pos = renderer.screen_to_world(mouse_pos, screen_center);
+    if response.clicked()
+        && !renderer.is_dragging
+        && renderer.drawing_edge.is_none()
+        && let Some(mouse_pos) = response.interact_pointer_pos()
+    {
+        let world_pos = renderer.screen_to_world(mouse_pos, screen_center);
 
-            let Ok(graph) = renderer.graph.read() else {
-                tracing::error!("graph lock poisoned");
-                return;
-            };
-            let clicked_node = graph.nodes().iter().find(|node| {
-                let distance = node.position.distance_to(world_pos);
-                distance < 20.0
-            });
+        let Ok(graph) = renderer.graph.read() else {
+            tracing::error!("graph lock poisoned");
+            return;
+        };
+        let clicked_node = graph.nodes().iter().find(|node| {
+            let distance = node.position.distance_to(world_pos);
+            distance < 20.0
+        });
 
-            if let Some(node) = clicked_node {
-                renderer.selected_node = Some(node.info.id.clone());
-            } else {
-                renderer.selected_node = None;
-            }
+        if let Some(node) = clicked_node {
+            renderer.selected_node = Some(node.info.id.clone());
+        } else {
+            renderer.selected_node = None;
         }
     }
 
     // Interactive mode: Handle delete key
     if renderer.interactive_mode {
         response.ctx.input(|i| {
-            if i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace) {
-                if let Some(selected_id) = renderer.selected_node.clone() {
-                    delete_node(renderer, selected_id.as_str());
-                    renderer.selected_node = None;
-                }
+            if (i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace))
+                && let Some(selected_id) = renderer.selected_node.clone()
+            {
+                delete_node(renderer, selected_id.as_str());
+                renderer.selected_node = None;
             }
         });
     }
@@ -133,28 +137,28 @@ fn try_complete_edge_on_drag_release(
     response: &egui::Response,
     screen_center: Pos2,
 ) {
-    if let Some(edge_draft) = renderer.drawing_edge.take() {
-        if let Some(mouse_pos) = response.interact_pointer_pos() {
-            let world_pos = renderer.screen_to_world(mouse_pos, screen_center);
+    if let Some(edge_draft) = renderer.drawing_edge.take()
+        && let Some(mouse_pos) = response.interact_pointer_pos()
+    {
+        let world_pos = renderer.screen_to_world(mouse_pos, screen_center);
 
-            let target_id = {
-                let Ok(graph) = renderer.graph.read() else {
-                    tracing::error!("graph lock poisoned");
-                    return;
-                };
-                graph
-                    .nodes()
-                    .iter()
-                    .find(|node| {
-                        let distance = node.position.distance_to(world_pos);
-                        distance < 20.0 && node.info.id.as_str() != edge_draft.from.as_str()
-                    })
-                    .map(|node| node.info.id.clone())
+        let target_id = {
+            let Ok(graph) = renderer.graph.read() else {
+                tracing::error!("graph lock poisoned");
+                return;
             };
+            graph
+                .nodes()
+                .iter()
+                .find(|node| {
+                    let distance = node.position.distance_to(world_pos);
+                    distance < 20.0 && node.info.id.as_str() != edge_draft.from.as_str()
+                })
+                .map(|node| node.info.id.clone())
+        };
 
-            if let Some(target) = target_id {
-                create_edge(renderer, edge_draft.from, target);
-            }
+        if let Some(target) = target_id {
+            create_edge(renderer, edge_draft.from, target);
         }
     }
     renderer.dragging_node = None;
@@ -184,7 +188,7 @@ fn create_node_at(renderer: &mut Visual2DRenderer, world_pos: Position) {
         id: PrimalId::from(new_id.clone()),
         name: interactive_node_name(node_count),
         primal_type: "custom".to_string(),
-        endpoint: format!("interactive://{}", new_id),
+        endpoint: format!("interactive://{new_id}"),
         capabilities: vec!["interactive".to_string()],
         health: PrimalHealthStatus::Healthy,
         last_seen: std::time::SystemTime::now()

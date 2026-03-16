@@ -646,9 +646,8 @@ fn scene_bridge_load_complex_scenario() {
     if !path.exists() {
         return;
     }
-    let scenario = match petal_tongue_ui::scenario::Scenario::load(&path) {
-        Ok(s) => s,
-        Err(_) => return,
+    let Ok(scenario) = petal_tongue_ui::scenario::Scenario::load(&path) else {
+        return;
     };
     let mut harness = HeadlessHarness::new().unwrap();
     let graph = harness.app_mut().graph_handle();
@@ -678,10 +677,10 @@ fn graph_editor_many_nodes() {
         let mut g = graph.write().unwrap();
         g.clear();
         for i in 0..15 {
-            let id = format!("node-{}", i);
+            let id = format!("node-{i}");
             g.add_node(petal_tongue_core::PrimalInfo::new(
                 PrimalId::from(id.clone()),
-                format!("Node {}", i),
+                format!("Node {i}"),
                 "Test",
                 format!("http://localhost:{}", 8000 + i),
                 vec![],
@@ -691,7 +690,7 @@ fn graph_editor_many_nodes() {
         }
         for i in 0..14 {
             g.add_edge(petal_tongue_core::TopologyEdge {
-                from: petal_tongue_core::PrimalId::from(format!("node-{}", i)),
+                from: petal_tongue_core::PrimalId::from(format!("node-{i}")),
                 to: petal_tongue_core::PrimalId::from(format!("node-{}", i + 1)),
                 edge_type: "conn".to_string(),
                 label: None,
@@ -714,7 +713,7 @@ fn graph_tutorial_then_ecosystem_layouts() {
 
     let mut harness = HeadlessHarness::new().unwrap();
     let graph = harness.app_mut().graph_handle();
-    TutorialMode::create_fallback_scenario(graph.clone(), LayoutAlgorithm::ForceDirected);
+    TutorialMode::create_fallback_scenario(graph, LayoutAlgorithm::ForceDirected);
     harness.run_frames(5);
 
     harness
@@ -792,7 +791,7 @@ fn load_scenario_trust_demo() {
                 .unwrap_or("http://localhost");
             let trust = p
                 .get("trust_level")
-                .and_then(|v| v.as_u64())
+                .and_then(serde_json::Value::as_u64)
                 .map(|n| n as u8);
             let family = p.get("family_id").and_then(|v| v.as_str());
             let mut info = petal_tongue_core::PrimalInfo::new(
@@ -807,7 +806,7 @@ fn load_scenario_trust_demo() {
             if let Some(t) = trust {
                 info.properties.insert(
                     "trust_level".to_string(),
-                    petal_tongue_core::PropertyValue::Number(t as f64),
+                    petal_tongue_core::PropertyValue::Number(f64::from(t)),
                 );
             }
             if let Some(f) = family {

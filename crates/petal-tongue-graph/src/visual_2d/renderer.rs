@@ -197,12 +197,11 @@ impl Visual2DRenderer {
         }
 
         // Render animation (flow particles and pulses) if enabled
-        if self.animation_enabled {
-            if let Some(animation_engine) = &self.animation_engine {
-                if let Ok(engine) = animation_engine.read() {
-                    animation::render_animation(self, &painter, &engine, &graph, screen_center);
-                }
-            }
+        if self.animation_enabled
+            && let Some(animation_engine) = &self.animation_engine
+            && let Ok(engine) = animation_engine.read()
+        {
+            animation::render_animation(self, &painter, &engine, &graph, screen_center);
         }
 
         // Draw edge being drafted (if in interactive mode)

@@ -5,7 +5,7 @@
 //! Used when no other audio backend is available.
 
 use crate::audio::traits::{AudioBackend, AudioCapabilities, BackendMetadata, BackendType};
-use anyhow::Result;
+use crate::error::Result;
 use async_trait::async_trait;
 use tracing::debug;
 

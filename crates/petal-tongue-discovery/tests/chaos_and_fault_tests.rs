@@ -29,7 +29,11 @@ async fn test_songbird_missing_socket() {
 
     // Error message should be informative
     let err = format!("{result:?}");
-    assert!(err.contains("Songbird not found") || err.contains("not found"));
+    assert!(
+        err.contains("not found")
+            || err.contains("NotFound")
+            || err.contains("DiscoveryServiceNotFound")
+    );
 }
 
 /// Test handling of invalid paths

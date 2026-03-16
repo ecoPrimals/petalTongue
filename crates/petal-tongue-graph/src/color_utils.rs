@@ -185,21 +185,15 @@ mod tests {
             let (r2, g2, b2) = hsv_to_rgb(h, s, v);
             assert!(
                 (i16::from(r) - i16::from(r2)).abs() <= 1,
-                "Red mismatch: {} vs {}",
-                r,
-                r2
+                "Red mismatch: {r} vs {r2}"
             );
             assert!(
                 (i16::from(g) - i16::from(g2)).abs() <= 1,
-                "Green mismatch: {} vs {}",
-                g,
-                g2
+                "Green mismatch: {g} vs {g2}"
             );
             assert!(
                 (i16::from(b) - i16::from(b2)).abs() <= 1,
-                "Blue mismatch: {} vs {}",
-                b,
-                b2
+                "Blue mismatch: {b} vs {b2}"
             );
         }
     }

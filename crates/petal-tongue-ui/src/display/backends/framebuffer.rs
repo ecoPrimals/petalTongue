@@ -33,7 +33,7 @@
 //! - Falls back to software rendering on permission errors
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
-use anyhow::{Result, anyhow};
+use crate::error::{DisplayError, Result};
 use async_trait::async_trait;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
@@ -96,7 +96,7 @@ impl FramebufferDisplay {
             .write(true)
             .read(true)
             .open("/dev/fb0")
-            .map_err(|e| anyhow!("Failed to open /dev/fb0: {e}"))?;
+            .map_err(DisplayError::FramebufferOpen)?;
 
         self.fb_device = Some(fb_device);
         Ok(())
@@ -143,7 +143,7 @@ impl DisplayBackend for FramebufferDisplay {
 
         // Check if framebuffer is available
         if !Self::check_framebuffer() {
-            return Err(anyhow!("Framebuffer /dev/fb0 not available"));
+            return Err(DisplayError::FramebufferNotAvailable.into());
         }
 
         // Open framebuffer device
@@ -181,11 +181,11 @@ impl DisplayBackend for FramebufferDisplay {
         // Verify buffer size
         let expected_size = (self.width * self.height * 4) as usize;
         if buffer.len() != expected_size {
-            return Err(anyhow!(
-                "Invalid buffer size: expected {}, got {}",
-                expected_size,
-                buffer.len()
-            ));
+            return Err(DisplayError::InvalidBufferSize {
+                expected: expected_size,
+                actual: buffer.len(),
+            }
+            .into());
         }
 
         // Write to framebuffer device
@@ -193,16 +193,16 @@ impl DisplayBackend for FramebufferDisplay {
             // Seek to beginning for each frame
             fb_device
                 .seek(SeekFrom::Start(0))
-                .map_err(|e| anyhow!("Failed to seek framebuffer: {e}"))?;
+                .map_err(DisplayError::FramebufferSeek)?;
 
             fb_device
                 .write_all(buffer)
-                .map_err(|e| anyhow!("Failed to write to framebuffer: {e}"))?;
+                .map_err(DisplayError::FramebufferWrite)?;
             fb_device.flush()?;
 
             tracing::trace!("Presented {} bytes to framebuffer", buffer.len());
         } else {
-            return Err(anyhow!("Framebuffer device not initialized"));
+            return Err(DisplayError::FramebufferNotInitialized.into());
         }
 
         Ok(())

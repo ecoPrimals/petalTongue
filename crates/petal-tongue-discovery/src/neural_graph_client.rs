@@ -4,8 +4,8 @@
 //! Client for saving, loading, and executing graphs via Neural API.
 //! TRUE PRIMAL: Zero hardcoding, capability-based graph operations.
 
+use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::neural_api_provider::NeuralApiProvider;
-use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -97,7 +97,7 @@ impl<'a> NeuralGraphClient<'a> {
     ///
     /// # Returns
     /// The graph ID assigned by Neural API
-    pub async fn save_graph(&self, graph_json: serde_json::Value) -> Result<String> {
+    pub async fn save_graph(&self, graph_json: serde_json::Value) -> DiscoveryResult<String> {
         let params = json!({
             "graph": graph_json
         });
@@ -106,12 +106,18 @@ impl<'a> NeuralGraphClient<'a> {
             .provider
             .call_method("neural_api.save_graph", Some(params))
             .await
-            .context("Failed to save graph")?;
+            .map_err(|e| DiscoveryError::InvalidData {
+                name: "Neural API".to_string(),
+                reason: format!("Failed to save graph: {e}"),
+            })?;
 
         let graph_id = result
             .get("graph_id")
             .and_then(|v| v.as_str())
-            .context("Neural API did not return graph_id")?
+            .ok_or_else(|| DiscoveryError::MissingField {
+                field: "graph_id".to_string(),
+                context: " (Neural API)".to_string(),
+            })?
             .to_string();
 
         tracing::info!("💾 Saved graph to Neural API: {}", graph_id);
@@ -125,7 +131,7 @@ impl<'a> NeuralGraphClient<'a> {
     ///
     /// # Returns
     /// The graph as JSON (to be deserialized into `VisualGraph`)
-    pub async fn load_graph(&self, graph_id: &str) -> Result<serde_json::Value> {
+    pub async fn load_graph(&self, graph_id: &str) -> DiscoveryResult<serde_json::Value> {
         let params = json!({
             "graph_id": graph_id
         });
@@ -134,11 +140,17 @@ impl<'a> NeuralGraphClient<'a> {
             .provider
             .call_method("neural_api.load_graph", Some(params))
             .await
-            .context("Failed to load graph")?;
+            .map_err(|e| DiscoveryError::InvalidData {
+                name: "Neural API".to_string(),
+                reason: format!("Failed to load graph: {e}"),
+            })?;
 
         let graph = result
             .get("graph")
-            .context("Neural API did not return graph data")?
+            .ok_or_else(|| DiscoveryError::MissingField {
+                field: "graph".to_string(),
+                context: " (Neural API)".to_string(),
+            })?
             .clone();
 
         tracing::info!("📂 Loaded graph from Neural API: {}", graph_id);
@@ -146,17 +158,22 @@ impl<'a> NeuralGraphClient<'a> {
     }
 
     /// List all available graphs
-    pub async fn list_graphs(&self) -> Result<Vec<GraphMetadata>> {
+    pub async fn list_graphs(&self) -> DiscoveryResult<Vec<GraphMetadata>> {
         let result = self
             .provider
             .call_method("neural_api.list_graphs", None)
             .await
-            .context("Failed to list graphs")?;
+            .map_err(|e| DiscoveryError::InvalidData {
+                name: "Neural API".to_string(),
+                reason: format!("Failed to list graphs: {e}"),
+            })?;
 
         let graphs = result
             .get("graphs")
             .and_then(|v| v.as_array())
-            .context("Neural API did not return graphs array")?;
+            .ok_or_else(|| DiscoveryError::ExpectedArray {
+                context: " (Neural API graphs)".to_string(),
+            })?;
 
         let metadata: Vec<GraphMetadata> = graphs
             .iter()
@@ -179,7 +196,7 @@ impl<'a> NeuralGraphClient<'a> {
         &self,
         graph_id: &str,
         parameters: Option<serde_json::Value>,
-    ) -> Result<String> {
+    ) -> DiscoveryResult<String> {
         let params = json!({
             "graph_id": graph_id,
             "parameters": parameters.unwrap_or_else(|| json!({}))
@@ -189,12 +206,18 @@ impl<'a> NeuralGraphClient<'a> {
             .provider
             .call_method("neural_api.execute_graph", Some(params))
             .await
-            .context("Failed to execute graph")?;
+            .map_err(|e| DiscoveryError::InvalidData {
+                name: "Neural API".to_string(),
+                reason: format!("Failed to execute graph: {e}"),
+            })?;
 
         let execution_id = result
             .get("execution_id")
             .and_then(|v| v.as_str())
-            .context("Neural API did not return execution_id")?
+            .ok_or_else(|| DiscoveryError::MissingField {
+                field: "execution_id".to_string(),
+                context: " (Neural API)".to_string(),
+            })?
             .to_string();
 
         tracing::info!("🚀 Started graph execution: {}", execution_id);
@@ -205,7 +228,10 @@ impl<'a> NeuralGraphClient<'a> {
     ///
     /// # Arguments
     /// * `execution_id` - The execution ID to check
-    pub async fn get_execution_status(&self, execution_id: &str) -> Result<ExecutionResult> {
+    pub async fn get_execution_status(
+        &self,
+        execution_id: &str,
+    ) -> DiscoveryResult<ExecutionResult> {
         let params = json!({
             "execution_id": execution_id
         });
@@ -214,10 +240,16 @@ impl<'a> NeuralGraphClient<'a> {
             .provider
             .call_method("neural_api.get_execution_status", Some(params))
             .await
-            .context("Failed to get execution status")?;
+            .map_err(|e| DiscoveryError::InvalidData {
+                name: "Neural API".to_string(),
+                reason: format!("Failed to get execution status: {e}"),
+            })?;
 
         let execution: ExecutionResult =
-            serde_json::from_value(result).context("Failed to parse execution status")?;
+            serde_json::from_value(result).map_err(|e| DiscoveryError::ParseError {
+                data_type: "execution status".to_string(),
+                message: e.to_string(),
+            })?;
 
         Ok(execution)
     }
@@ -226,7 +258,7 @@ impl<'a> NeuralGraphClient<'a> {
     ///
     /// # Arguments
     /// * `execution_id` - The execution ID to cancel
-    pub async fn cancel_execution(&self, execution_id: &str) -> Result<()> {
+    pub async fn cancel_execution(&self, execution_id: &str) -> DiscoveryResult<()> {
         let params = json!({
             "execution_id": execution_id
         });
@@ -234,7 +266,10 @@ impl<'a> NeuralGraphClient<'a> {
         self.provider
             .call_method("neural_api.cancel_execution", Some(params))
             .await
-            .context("Failed to cancel execution")?;
+            .map_err(|e| DiscoveryError::InvalidData {
+                name: "Neural API".to_string(),
+                reason: format!("Failed to cancel execution: {e}"),
+            })?;
 
         tracing::info!("🛑 Cancelled execution: {}", execution_id);
         Ok(())
@@ -244,7 +279,7 @@ impl<'a> NeuralGraphClient<'a> {
     ///
     /// # Arguments
     /// * `graph_id` - The graph ID to delete
-    pub async fn delete_graph(&self, graph_id: &str) -> Result<()> {
+    pub async fn delete_graph(&self, graph_id: &str) -> DiscoveryResult<()> {
         let params = json!({
             "graph_id": graph_id
         });
@@ -252,7 +287,10 @@ impl<'a> NeuralGraphClient<'a> {
         self.provider
             .call_method("neural_api.delete_graph", Some(params))
             .await
-            .context("Failed to delete graph")?;
+            .map_err(|e| DiscoveryError::InvalidData {
+                name: "Neural API".to_string(),
+                reason: format!("Failed to delete graph: {e}"),
+            })?;
 
         tracing::info!("🗑️ Deleted graph: {}", graph_id);
         Ok(())
@@ -269,7 +307,7 @@ impl<'a> NeuralGraphClient<'a> {
         graph_id: &str,
         name: Option<String>,
         description: Option<String>,
-    ) -> Result<()> {
+    ) -> DiscoveryResult<()> {
         let mut params = json!({
             "graph_id": graph_id
         });
@@ -284,7 +322,10 @@ impl<'a> NeuralGraphClient<'a> {
         self.provider
             .call_method("neural_api.update_graph_metadata", Some(params))
             .await
-            .context("Failed to update graph metadata")?;
+            .map_err(|e| DiscoveryError::InvalidData {
+                name: "Neural API".to_string(),
+                reason: format!("Failed to update graph metadata: {e}"),
+            })?;
 
         tracing::info!("✏️ Updated graph metadata: {}", graph_id);
         Ok(())

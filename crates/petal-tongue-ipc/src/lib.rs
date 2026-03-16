@@ -78,11 +78,13 @@ pub mod json_rpc_client;
 /// Compute bridge: async IPC for barraCuda math/physics/stat/tessellate/project operations
 pub mod physics_bridge;
 pub mod primal_registration;
+pub mod primal_registration_error;
 pub mod protocol;
 /// Provenance trio: rhizoCrypt + sweetGrass + loamSpine session lineage
 pub mod provenance_trio;
 pub mod server;
 pub mod socket_path;
+pub mod socket_path_error;
 pub mod tarpc_client;
 pub mod tarpc_types;
 /// Unix socket connection handling (JSON-RPC over newline-delimited JSON)

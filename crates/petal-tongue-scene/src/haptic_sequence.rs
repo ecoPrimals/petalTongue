@@ -30,7 +30,7 @@ impl HapticSequence {
         }
     }
 
-    /// Convert HapticCommands to a time-ordered sequence.
+    /// Convert `HapticCommands` to a time-ordered sequence.
     /// Commands are placed sequentially: first at 0, next at end of previous, etc.
     #[must_use]
     pub fn from_commands(commands: &[HapticCommand], data_ids: &[Option<String>]) -> Self {

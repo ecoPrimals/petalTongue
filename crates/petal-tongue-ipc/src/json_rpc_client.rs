@@ -833,7 +833,7 @@ mod tests {
             "nodes": [{"id": "n1", "x": 0.0}, {"id": "n2", "x": 1.0}],
             "edges": [{"from": "n1", "to": "n2"}]
         });
-        let data: TopologyData = serde_json::from_value(json.clone()).expect("deserialize");
+        let data: TopologyData = serde_json::from_value(json).expect("deserialize");
         let serialized = serde_json::to_value(&data).expect("serialize");
         assert_eq!(serialized["nodes"].as_array().unwrap().len(), 2);
         assert_eq!(serialized["edges"].as_array().unwrap().len(), 1);
@@ -861,7 +861,7 @@ mod tests {
             "endpoint": "/primal/petaltongue",
             "capabilities": ["ui.render", "graph.topology"],
             "health": "Healthy",
-            "last_seen": 1234567890
+            "last_seen": 1_234_567_890
         }]);
         let primals: Vec<petal_tongue_core::PrimalInfo> =
             serde_json::from_value(json).expect("deserialize");

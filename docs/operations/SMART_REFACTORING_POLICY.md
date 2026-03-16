@@ -1,8 +1,13 @@
 # Smart Refactoring Policy - Quality Over Arbitrary Rules
 
-**Date**: January 12, 2026  
+**Date**: January 12, 2026 (examples updated March 16, 2026)  
 **Principle**: "Smart refactor rather than just split"  
 **Status**: Active Policy
+
+> **Note**: The examples below reference file sizes from January 2026. Many of
+> these files have since been smart-refactored into module directories (e.g.
+> `visual_2d.rs` → `visual_2d/`, `trust_dashboard.rs` → `trust_dashboard/`).
+> The policy principles remain unchanged.
 
 ---
 

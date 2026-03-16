@@ -436,6 +436,10 @@ const fn is_platform_constrained() -> bool {
 /// Errors that can occur in the IPC server
 #[derive(Debug, Error)]
 pub enum IpcServerError {
+    /// Socket path resolution error
+    #[error("Socket path: {0}")]
+    SocketPath(#[from] crate::socket_path_error::SocketPathError),
+
     /// Socket error
     #[error("Socket error: {0}")]
     SocketError(String),
