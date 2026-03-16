@@ -1,7 +1,7 @@
 # Quick Start -- petalTongue
 
 **Last Updated**: March 15, 2026
-**Version**: 1.6.4
+**Version**: 1.6.5
 
 ---
 
