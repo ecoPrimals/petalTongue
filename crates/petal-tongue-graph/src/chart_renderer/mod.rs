@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Rendering functions for data bindings using egui.
 //!
 //! Each function takes an `egui::Ui` and a `DataBinding` and draws the

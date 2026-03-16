@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Physics bridge types for barraCuda integration.
 //!
 //! These types serialize to/from IPC requests for the `math.physics.nbody` RPC.

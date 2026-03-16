@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! `BiomeOS` API Client
 //!
 //! Connects to BiomeOS/Songbird for live primal discovery and health monitoring.
@@ -118,6 +118,9 @@ impl BiomeOSClient {
     }
 
     /// Check if `BiomeOS` API is available
+    ///
+    /// # Errors
+    /// Returns `BiomeOsClientError` on network failure or when mock mode is enabled in production.
     pub async fn health_check(&self) -> Result<bool, BiomeOsClientError> {
         #[cfg(any(test, feature = "test-fixtures"))]
         if self.mock_mode {
@@ -141,6 +144,9 @@ impl BiomeOSClient {
     ///
     /// **PRODUCTION MODE**: Returns error if API fails (no mock fallback)
     /// **TEST MODE**: Set `mock_mode` to use test data
+    ///
+    /// # Errors
+    /// Returns `BiomeOsClientError` on network failure, non-success status, or JSON parse error.
     pub async fn discover_primals(&self) -> Result<Vec<PrimalInfo>, BiomeOsClientError> {
         #[cfg(any(test, feature = "test-fixtures"))]
         if self.mock_mode {
@@ -198,6 +204,9 @@ impl BiomeOSClient {
     /// **TEST MODE**: Set `mock_mode` to use test data
     ///
     /// **Updated**: Now supports biomeOS's new topology format with nodes + edges
+    ///
+    /// # Errors
+    /// Returns `BiomeOsClientError` on network failure, non-success status, or JSON parse error.
     pub async fn get_topology(&self) -> Result<Vec<TopologyEdge>, BiomeOsClientError> {
         #[cfg(any(test, feature = "test-fixtures"))]
         if self.mock_mode {
@@ -430,6 +439,8 @@ impl From<DiscoveredPrimal> for PrimalInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
     async fn test_mock_mode() {
@@ -539,5 +550,157 @@ mod tests {
             let info: PrimalInfo = discovered.into();
             assert_eq!(info.health, expected);
         }
+    }
+
+    #[tokio::test]
+    async fn test_discover_primals_success_via_wiremock() {
+        let mock_server = MockServer::start().await;
+
+        let discovery_json = serde_json::json!({
+            "primals": [
+                {
+                    "id": "p1",
+                    "name": "Primal 1",
+                    "primal_type": "Compute",
+                    "endpoint": "http://localhost:8000",
+                    "capabilities": ["compute"],
+                    "health": "healthy",
+                    "last_seen": 12345
+                }
+            ]
+        });
+
+        Mock::given(method("GET"))
+            .and(path("/api/v1/primals"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(discovery_json))
+            .mount(&mock_server)
+            .await;
+
+        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let primals = client.discover_primals().await.expect("discover_primals");
+        assert_eq!(primals.len(), 1);
+        assert_eq!(primals[0].id, "p1");
+        assert_eq!(primals[0].name, "Primal 1");
+    }
+
+    #[tokio::test]
+    async fn test_discover_primals_server_error() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/v1/primals"))
+            .respond_with(ResponseTemplate::new(500))
+            .mount(&mock_server)
+            .await;
+
+        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let err = client.discover_primals().await.expect_err("should fail");
+        assert!(matches!(
+            err,
+            BiomeOsClientError::ServerError { status: 500, .. }
+        ));
+    }
+
+    #[tokio::test]
+    async fn test_discover_primals_parse_error() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/v1/primals"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("not valid json"))
+            .mount(&mock_server)
+            .await;
+
+        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let err = client.discover_primals().await.expect_err("should fail");
+        assert!(matches!(err, BiomeOsClientError::Parse(_)));
+    }
+
+    #[tokio::test]
+    async fn test_get_topology_success_via_wiremock() {
+        let mock_server = MockServer::start().await;
+
+        let topology_json = serde_json::json!({
+            "nodes": [{"id": "n1", "name": "Node 1"}],
+            "edges": [
+                {"from": "n1", "to": "n2", "edge_type": "conn"}
+            ],
+            "mode": "live"
+        });
+
+        Mock::given(method("GET"))
+            .and(path("/api/v1/topology"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(topology_json))
+            .mount(&mock_server)
+            .await;
+
+        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let edges = client.get_topology().await.expect("get_topology");
+        assert_eq!(edges.len(), 1);
+        assert_eq!(edges[0].from.as_str(), "n1");
+        assert_eq!(edges[0].to.as_str(), "n2");
+    }
+
+    #[tokio::test]
+    async fn test_get_topology_server_error() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/v1/topology"))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&mock_server)
+            .await;
+
+        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let err = client.get_topology().await.expect_err("should fail");
+        assert!(matches!(
+            err,
+            BiomeOsClientError::ServerError { status: 404, .. }
+        ));
+    }
+
+    #[tokio::test]
+    async fn test_get_topology_parse_error() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/v1/topology"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("{invalid"))
+            .mount(&mock_server)
+            .await;
+
+        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let err = client.get_topology().await.expect_err("should fail");
+        assert!(matches!(err, BiomeOsClientError::Parse(_)));
+    }
+
+    #[tokio::test]
+    async fn test_health_check_success_via_wiremock() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/v1/health"))
+            .respond_with(ResponseTemplate::new(200))
+            .mount(&mock_server)
+            .await;
+
+        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let healthy = client.health_check().await.expect("health_check");
+        assert!(healthy);
+    }
+
+    #[tokio::test]
+    async fn test_health_check_non_success_status() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/v1/health"))
+            .respond_with(ResponseTemplate::new(503))
+            .mount(&mock_server)
+            .await;
+
+        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let healthy = client.health_check().await.expect("health_check");
+        assert!(!healthy);
     }
 }

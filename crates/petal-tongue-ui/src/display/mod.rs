@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pure Rust Display System
 //!
-//! Provides multiple display backends for rendering the GUI without requiring
+//! Provides multiple display backends for rendering the interface without requiring
 //! traditional display servers (X11/Wayland).
 //!
 //! # Four-Tier Strategy
@@ -40,6 +40,10 @@ pub use traits::{DisplayBackend, DisplayCapabilities};
 use crate::error::Result;
 
 /// Initialize display system and return best available backend
+///
+/// # Errors
+///
+/// Returns an error if no display backends are available or initialization fails.
 pub async fn init_display() -> Result<DisplayManager> {
     tracing::info!("🌸 Initializing Pure Rust display system...");
     DisplayManager::init().await

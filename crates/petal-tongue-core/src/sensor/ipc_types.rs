@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! IPC-serializable sensor event types.
 //!
 //! These mirror the internal `SensorEvent` enum but use millisecond timestamps

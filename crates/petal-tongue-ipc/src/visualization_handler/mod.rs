@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Handlers for visualization.render and visualization.render.stream IPC methods.
 //!
 //! These methods allow springs and other primals to push data for rendering

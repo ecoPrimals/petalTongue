@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! # Awakening Audio Layers
 //!
 //! Multi-layered audio for the awakening experience.
@@ -49,7 +49,8 @@ impl AwakeningAudio {
         #[expect(
             clippy::cast_possible_truncation,
             clippy::cast_sign_loss,
-            reason = "sample count is positive and bounded by duration*rate"
+            clippy::cast_precision_loss,
+            reason = "sample count is positive and bounded by duration*rate; f32 sufficient for audio"
         )]
         let num_samples = (duration_secs * self.sample_rate as f32) as usize;
         let mut samples = Vec::with_capacity(num_samples);
@@ -59,6 +60,10 @@ impl AwakeningAudio {
         let e4 = 329.63;
         let g4 = 392.00;
 
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "audio time index; f32 sufficient for sample-level precision"
+        )]
         for i in 0..num_samples {
             let t = i as f32 / self.sample_rate as f32;
 
@@ -74,11 +79,13 @@ impl AwakeningAudio {
 
             let envelope = fade_in * fade_out;
 
-            // Mix three sine waves
-            let sample = ((2.0 * PI * c4 * t).sin() * 0.33
-                + (2.0 * PI * e4 * t).sin() * 0.33
-                + (2.0 * PI * g4 * t).sin() * 0.33)
-                * envelope
+            // Mix three sine waves (mul_add for FMA)
+            let sample = (2.0 * PI * c4 * t).sin().mul_add(
+                0.33,
+                (2.0 * PI * e4 * t)
+                    .sin()
+                    .mul_add(0.33, (2.0 * PI * g4 * t).sin() * 0.33),
+            ) * envelope
                 * 0.3; // Overall volume
 
             samples.push(sample);
@@ -93,7 +100,8 @@ impl AwakeningAudio {
         #[expect(
             clippy::cast_possible_truncation,
             clippy::cast_sign_loss,
-            reason = "sample count is positive and bounded by duration*rate"
+            clippy::cast_precision_loss,
+            reason = "sample count is positive and bounded by duration*rate; f32 sufficient for audio"
         )]
         let num_samples = (duration_secs * self.sample_rate as f32) as usize;
         let mut samples = Vec::with_capacity(num_samples);
@@ -106,22 +114,28 @@ impl AwakeningAudio {
         let harmonic2 = 160.0;
         let harmonic3 = 240.0;
 
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "audio time index; f32 sufficient for sample-level precision"
+        )]
         for i in 0..num_samples {
             let t = i as f32 / self.sample_rate as f32;
 
             // Heartbeat envelope (two pulses per beat)
             let beat_phase = (t * heartbeat_freq * 2.0 * PI).sin();
             let pulse = if beat_phase > 0.0 {
-                beat_phase.powf(4.0) // Sharp attack
+                beat_phase.powi(4) // Sharp attack
             } else {
                 0.0
             };
 
-            // Mix harmonics
-            let sample = ((2.0 * PI * fundamental * t).sin() * 0.5
-                + (2.0 * PI * harmonic2 * t).sin() * 0.3
-                + (2.0 * PI * harmonic3 * t).sin() * 0.2)
-                * pulse
+            // Mix harmonics (mul_add for FMA)
+            let sample = (2.0 * PI * fundamental * t).sin().mul_add(
+                0.5,
+                (2.0 * PI * harmonic2 * t)
+                    .sin()
+                    .mul_add(0.3, (2.0 * PI * harmonic3 * t).sin() * 0.2),
+            ) * pulse
                 * 0.2;
 
             samples.push(sample);
@@ -137,7 +151,8 @@ impl AwakeningAudio {
         #[expect(
             clippy::cast_possible_truncation,
             clippy::cast_sign_loss,
-            reason = "sample count is positive and bounded by duration*rate"
+            clippy::cast_precision_loss,
+            reason = "sample count is positive and bounded by duration*rate; f32 sufficient for audio"
         )]
         let num_samples = (duration_secs * self.sample_rate as f32) as usize;
         let mut samples = Vec::with_capacity(num_samples);
@@ -147,17 +162,23 @@ impl AwakeningAudio {
         let frequencies = [261.63, 293.66, 329.63, 392.00, 440.00];
         let freq = frequencies[(primal_index as usize) % frequencies.len()];
 
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "audio time index; f32 sufficient for sample-level precision"
+        )]
         for i in 0..num_samples {
             let t = i as f32 / self.sample_rate as f32;
 
             // Bell-like envelope (fast attack, slow decay)
             let envelope = (-t * 5.0).exp();
 
-            // Add harmonics for bell-like timbre
-            let sample = ((2.0 * PI * freq * t).sin() * 0.5
-                + (2.0 * PI * freq * 2.0 * t).sin() * 0.3
-                + (2.0 * PI * freq * 3.0 * t).sin() * 0.2)
-                * envelope
+            // Add harmonics for bell-like timbre (mul_add for FMA)
+            let sample = (2.0 * PI * freq * t).sin().mul_add(
+                0.5,
+                (2.0 * PI * freq * 2.0 * t)
+                    .sin()
+                    .mul_add(0.3, (2.0 * PI * freq * 3.0 * t).sin() * 0.2),
+            ) * envelope
                 * 0.4;
 
             samples.push(sample);
@@ -172,21 +193,26 @@ impl AwakeningAudio {
         #[expect(
             clippy::cast_possible_truncation,
             clippy::cast_sign_loss,
-            reason = "sample count is positive and bounded by duration*rate"
+            clippy::cast_precision_loss,
+            reason = "sample count is positive and bounded by duration*rate; f32 sufficient for audio"
         )]
         let num_samples = (duration_secs * self.sample_rate as f32) as usize;
         let mut samples = Vec::with_capacity(num_samples);
 
         // Bird chirp: frequency sweep from 2000 Hz to 3000 Hz
-        let start_freq = 2000.0;
-        let end_freq = 3000.0;
+        let start_freq = 2000.0_f32;
+        let end_freq = 3000.0_f32;
 
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "audio time index; f32 sufficient for sample-level precision"
+        )]
         for i in 0..num_samples {
             let t = i as f32 / self.sample_rate as f32;
             let progress = t / duration_secs;
 
-            // Frequency sweep
-            let freq = start_freq + (end_freq - start_freq) * progress;
+            // Frequency sweep (mul_add for FMA)
+            let freq = (end_freq - start_freq).mul_add(progress, start_freq);
 
             // Envelope (quick attack and decay)
             let envelope = (progress * PI).sin();
@@ -204,7 +230,8 @@ impl AwakeningAudio {
         #[expect(
             clippy::cast_possible_truncation,
             clippy::cast_sign_loss,
-            reason = "sample count is positive and bounded by duration*rate"
+            clippy::cast_precision_loss,
+            reason = "sample count is positive and bounded by duration*rate; f32 sufficient for audio"
         )]
         let num_samples = (duration_secs * self.sample_rate as f32) as usize;
         let mut samples = Vec::with_capacity(num_samples);
@@ -213,10 +240,14 @@ impl AwakeningAudio {
         let mut prev_sample = 0.0;
         let alpha = 0.05; // Low-pass filter coefficient
 
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "pseudo-random noise seed; f32 sufficient for audio"
+        )]
         for i in 0..num_samples {
             // Generate white noise
             let noise = (i as f32 * 12.9898).sin() * 43_758.547;
-            let noise = (noise - noise.floor()) * 2.0 - 1.0;
+            let noise = (noise - noise.floor()).mul_add(2.0, -1.0);
 
             // Low-pass filter
             prev_sample = alpha * noise + (1.0 - alpha) * prev_sample;
@@ -247,7 +278,8 @@ impl AwakeningAudio {
             #[expect(
                 clippy::cast_possible_truncation,
                 clippy::cast_sign_loss,
-                reason = "offset is positive, i in 0..3"
+                clippy::cast_precision_loss,
+                reason = "offset is positive, i in 0..3; f32 sufficient for sample offset"
             )]
             let offset = (i as f32 * 1.0 * self.sample_rate as f32) as usize;
 

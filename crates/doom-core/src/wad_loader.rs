@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! WAD file loading and parsing - Pure Rust implementation
 //!
 //! Phase 1.1: Load and parse Doom WAD files to extract map geometry.

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Game-engine-style tick loop with fixed timestep.
 //!
 //! Implements the 8-step interaction-rendering cycle:

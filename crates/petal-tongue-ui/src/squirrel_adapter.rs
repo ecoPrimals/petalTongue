@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! SQUIRREL interaction adapter: AI-driven interaction adaptation.
 //!
 //! SQUIRREL (or any AI agent) subscribes to interaction events via

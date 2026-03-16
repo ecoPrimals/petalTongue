@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Main TUI Application
 //!
 //! Core application logic for the Rich TUI.
@@ -69,11 +69,17 @@ pub struct RichTUI {
 
 impl RichTUI {
     /// Create new TUI with default config
+    ///
+    /// # Errors
+    /// Returns `TuiError` on terminal setup failure.
     pub async fn new() -> Result<Self, TuiError> {
         Self::with_config(TUIConfig::default()).await
     }
 
     /// Create new TUI with custom config
+    ///
+    /// # Errors
+    /// Returns `TuiError` on terminal setup failure.
     pub async fn with_config(config: TUIConfig) -> Result<Self, TuiError> {
         // Setup terminal
         enable_raw_mode().map_err(|e| TuiError::terminal("Failed to enable raw mode", e))?;
@@ -103,6 +109,9 @@ impl RichTUI {
     }
 
     /// Run the TUI
+    ///
+    /// # Errors
+    /// Returns `TuiError` on render or event handling failure.
     pub async fn run(&mut self) -> Result<(), TuiError> {
         self.running = true;
 
@@ -243,6 +252,10 @@ impl RichTUI {
     }
 
     /// Discover primals (capability-based, runtime)
+    #[expect(
+        clippy::needless_pass_by_ref_mut,
+        reason = "async trait method, may need mut for future state"
+    )]
     async fn discover_primals(&mut self) -> Result<(), TuiError> {
         // Try to discover via petal-tongue-discovery
         match petal_tongue_discovery::discover_visualization_providers().await {
@@ -289,6 +302,10 @@ impl RichTUI {
     }
 
     /// Refresh topology data
+    #[expect(
+        clippy::needless_pass_by_ref_mut,
+        reason = "async trait method, may need mut for future state"
+    )]
     async fn refresh_topology(&mut self) -> Result<(), TuiError> {
         // Try to get topology from discovered providers
         if let Ok(providers) = petal_tongue_discovery::discover_visualization_providers().await {
@@ -306,6 +323,10 @@ impl RichTUI {
     }
 
     /// Refresh data (periodic)
+    #[expect(
+        clippy::needless_pass_by_ref_mut,
+        reason = "async trait method, may need mut for future state"
+    )]
     async fn refresh_data(&mut self) -> Result<(), TuiError> {
         // Only refresh if not in standalone mode
         if !self.state.is_standalone().await {

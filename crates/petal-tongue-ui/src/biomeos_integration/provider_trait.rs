@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! `VisualizationDataProvider` trait implementation for `BiomeOSProvider`.
 //!
 //! Provides backward compatibility with the discovery crate's provider interface.
 
 use async_trait::async_trait;
-use petal_tongue_core::{PrimalInfo, TopologyEdge};
+use petal_tongue_core::{PrimalInfo, Properties, TopologyEdge};
 use petal_tongue_discovery::{
     DiscoveryError, DiscoveryResult, ProviderMetadata, VisualizationDataProvider,
 };
@@ -47,7 +47,7 @@ impl VisualizationDataProvider for BiomeOSProvider {
                     .unwrap_or(0),
                 endpoints: None,
                 metadata: None,
-                properties: Default::default(),
+                properties: Properties::default(),
                 #[expect(deprecated)]
                 trust_level: None,
                 #[expect(deprecated)]

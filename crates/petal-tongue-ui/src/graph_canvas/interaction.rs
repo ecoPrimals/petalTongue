@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Graph canvas interaction handling - mouse, keyboard, drag, selection.
 
 use egui::{Rect, Response, Ui};
@@ -111,7 +111,7 @@ pub fn compute_dragged_node_position(
 
 impl GraphCanvas {
     /// Handle input (zoom, keyboard, hover, mouse)
-    pub(super) fn handle_input(&mut self, ui: &mut Ui, response: &Response) {
+    pub(super) fn handle_input(&mut self, ui: &Ui, response: &Response) {
         let canvas_rect = response.rect;
 
         // Zoom with scroll wheel
@@ -165,13 +165,13 @@ impl GraphCanvas {
                     // Ctrl+Click: Toggle selection
                     self.toggle_node_selection(hovered);
                 } else if !self.selected_nodes.contains(&hovered) {
-                    // Click: Select this node only
+                    // Activate: Select this node only
                     self.clear_selection();
                     self.select_node(hovered);
                 }
-                // Click on already selected: Start potential drag
+                // Activate on already selected: Start potential drag
             } else {
-                // Click on empty space: Clear selection
+                // Activate on empty space: Clear selection
                 if !ctrl_held {
                     self.clear_selection();
                 }

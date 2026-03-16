@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Multimodal data stream rendering
 // Converts any data stream into multiple output modalities
 // Vision: ONE UI with pluggable I/O for true universal accessibility
@@ -33,7 +33,7 @@ pub trait MultiModalRenderer {
     /// Generate audio representation (frequency, volume, waveform)
     fn render_audio(&self, stream: &dyn DataStream) -> Option<AudioRepresentation>;
 
-    /// Generate text description (for screen readers)
+    /// Generate text description (for assistive technologies)
     fn render_text(&self, stream: &dyn DataStream) -> String;
 
     /// Generate haptic feedback (future: vibration patterns)

@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-//! Screen sensor - Display output with verification
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//! Display sensor - Output surface with verification
 //!
-//! Discovers display capabilities and provides verification of visibility.
+//! Discovers display capabilities and provides verification of perceivability.
 //!
 //! ## Safety
 //!
@@ -66,6 +66,10 @@ impl ScreenSensor {
     }
 
     /// Send heartbeat to check if display is responsive
+    ///
+    /// # Errors
+    ///
+    /// Currently always returns `Ok(())`.
     #[expect(clippy::unused_async, reason = "async for trait compatibility")]
     pub async fn send_heartbeat(&mut self) -> Result<()> {
         if self.display_type == DisplayType::Terminal {
@@ -101,7 +105,7 @@ impl Sensor for ScreenSensor {
             });
         }
 
-        // Generate visibility confirmation (screen exists = visible)
+        // Generate perceivability confirmation (display exists = perceivable)
         events.push(SensorEvent::DisplayVisible {
             visible: true,
             timestamp: Instant::now(),
@@ -186,6 +190,11 @@ pub async fn discover() -> Option<ScreenSensor> {
     None
 }
 
+/// Parse virtual size from sysfs content (e.g., "1920,1080").
+///
+/// # Errors
+///
+/// Returns an error if the format is invalid or width/height cannot be parsed.
 pub fn parse_virtual_size_content(content: &str) -> Result<(usize, usize)> {
     let parts: Vec<&str> = content.trim().split(',').collect();
     if parts.len() >= 2 {

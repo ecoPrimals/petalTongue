@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Scenario builders for airSpring capabilities.
 //!
 //! airSpring exposes 35 `science.*` capabilities (ET0, soil, crop, drought,

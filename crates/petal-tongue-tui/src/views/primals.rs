@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Primals View
 //!
 //! Detailed primal status and health monitoring.
@@ -87,7 +87,7 @@ fn render_standalone_message(frame: &mut Frame, area: Rect) {
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
         )]),
-        Line::from("Start other primals to see them here!"),
+        Line::from("Start other primals to perceive them here!"),
         Line::from(""),
         Line::from("Press 'r' to refresh discovery."),
         Line::from("Press '1' to return to Dashboard."),

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Trust dashboard display state types (headless-testable, no egui dependency for logic).
 
 use std::collections::HashMap;

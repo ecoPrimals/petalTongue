@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pure Rust Display System Demo
 //!
 //! Demonstrates the four-tier display architecture.

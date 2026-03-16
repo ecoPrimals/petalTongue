@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Software Synthesis Backend - Pure Rust Audio Generation
 //!
 //! 100% Pure Rust, works everywhere!

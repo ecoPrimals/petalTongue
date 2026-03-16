@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! mDNS-based discovery of visualization data providers
 //!
 //! Discovers primals via multicast DNS that advertise visualization capabilities.

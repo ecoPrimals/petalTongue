@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! `ScenarioBuilder` trait for springs and primals to produce visualization data.
 //!
 //! Any data source (spring, primal, or external tool) can implement this trait
@@ -56,6 +56,10 @@ impl VisualizationScene {
     }
 
     /// Serialize to JSON (for file-based fallback).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the scene cannot be serialized to JSON.
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
         serde_json::to_string_pretty(&serde_json::json!({
             "title": self.metadata.title,

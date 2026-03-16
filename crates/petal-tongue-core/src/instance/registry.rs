@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Instance registry - file-backed tracking of running instances.
 
 use serde::{Deserialize, Serialize};
@@ -36,11 +36,20 @@ impl InstanceRegistry {
     }
 
     /// Load registry from the default platform path
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the data directory cannot be determined, if the
+    /// registry file cannot be read, or if its contents are invalid RON.
     pub fn load() -> Result<Self, InstanceError> {
         Self::load_from(&get_registry_path()?)
     }
 
     /// Load registry from an explicit path
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be read or its contents are invalid RON.
     pub fn load_from(path: &Path) -> Result<Self, InstanceError> {
         if !path.exists() {
             return Ok(Self::new());
@@ -54,11 +63,22 @@ impl InstanceRegistry {
     }
 
     /// Save registry to the default platform path
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the data directory cannot be determined, if the
+    /// registry directory cannot be created, if serialization fails, or if the
+    /// file cannot be written.
     pub fn save(&self) -> Result<(), InstanceError> {
         self.save_to(&get_registry_path()?)
     }
 
     /// Save registry to an explicit path
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the parent directory cannot be created, if
+    /// serialization fails, or if the file cannot be written.
     pub fn save_to(&self, path: &Path) -> Result<(), InstanceError> {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).map_err(|e| {
@@ -76,6 +96,10 @@ impl InstanceRegistry {
     }
 
     /// Register a new instance
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if saving the registry to disk fails.
     pub fn register(&mut self, instance: Instance) -> Result<(), InstanceError> {
         tracing::info!(
             "Registering instance: {} (PID: {})",
@@ -88,6 +112,10 @@ impl InstanceRegistry {
     }
 
     /// Unregister an instance
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if saving the registry to disk fails.
     pub fn unregister(&mut self, instance_id: &InstanceId) -> Result<(), InstanceError> {
         tracing::info!("Unregistering instance: {}", instance_id);
         self.instances.remove(instance_id);
@@ -96,6 +124,11 @@ impl InstanceRegistry {
     }
 
     /// Update an existing instance
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the instance is not in the registry, or if saving
+    /// the registry to disk fails.
     pub fn update(&mut self, instance: Instance) -> Result<(), InstanceError> {
         if !self.instances.contains_key(&instance.id) {
             return Err(InstanceError::NotFound(instance.id.to_string()));
@@ -152,6 +185,11 @@ impl InstanceRegistry {
     }
 
     /// Garbage collect dead instances
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any dead instances were removed and saving the
+    /// registry to disk fails.
     pub fn gc(&mut self) -> Result<usize, InstanceError> {
         let before = self.instances.len();
 

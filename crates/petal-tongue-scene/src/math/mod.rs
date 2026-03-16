@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Mathematical objects that compile to rendering primitives.
 //!
 //! These are the Manim-equivalent layer: axes, function plots, parametric curves,

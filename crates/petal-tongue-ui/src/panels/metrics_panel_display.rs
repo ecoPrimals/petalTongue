@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pure display logic for Metrics Panel
 //!
 //! Extracted formatting and display state preparation for testability.

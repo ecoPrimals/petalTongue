@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! First-person raycasting renderer - Phase 1.2
 //!
 //! Renders Doom maps from a first-person perspective using raycasting.

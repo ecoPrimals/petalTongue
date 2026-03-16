@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Multi-stage pipeline DAG support for spring visualization workflows.
 //!
 //! Springs like neuralSpring define composition pipelines as DAGs where each
@@ -188,6 +188,10 @@ impl PipelineRegistry {
             .and_then(|p| p.domain.as_deref())
     }
 
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "progress fraction 0..1, precision sufficient"
+    )]
     fn compute_progress(stages: &[PipelineStage]) -> f64 {
         if stages.is_empty() {
             return 1.0;

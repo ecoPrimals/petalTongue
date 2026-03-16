@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! UI configuration types for scenarios
 //!
 //! Defines UI-related configuration structures including panels,
@@ -46,6 +46,10 @@ const fn default_true() -> bool {
 
 impl UiConfig {
     /// Validate UI configuration
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any custom panel configuration is invalid.
     pub fn validate(&self) -> Result<()> {
         // Validate custom panels
         for (idx, panel) in self.custom_panels.iter().enumerate() {
@@ -75,7 +79,7 @@ impl UiConfig {
     }
 }
 
-/// Panel visibility settings - controls which UI panels are shown
+/// Panel visibility settings - controls which UI panels are presented
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct PanelVisibility {
@@ -168,6 +172,10 @@ pub struct CustomPanelConfig {
 
 impl CustomPanelConfig {
     /// Validate panel configuration
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if panel type or title is empty, or dimensions are invalid (zero width/height).
     pub fn validate(&self) -> Result<()> {
         // Check panel type
         if self.panel_type.trim().is_empty() {

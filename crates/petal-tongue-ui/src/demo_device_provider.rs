@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Demo Device Provider - Graceful Fallback
 //!
 //! Provides demo device/primal/niche data for:
@@ -312,8 +312,7 @@ impl Default for DemoDeviceProvider {
 /// Implement `VisualizationDataProvider` for backward compatibility
 #[async_trait]
 impl VisualizationDataProvider for DemoDeviceProvider {
-    async fn get_primals(&self) -> Result<Vec<PrimalInfo>> {
-        // Convert our Primal to core PrimalInfo
+    async fn get_primals(&self) -> petal_tongue_discovery::DiscoveryResult<Vec<PrimalInfo>> {
         Ok(self
             .primals
             .iter()
@@ -343,8 +342,7 @@ impl VisualizationDataProvider for DemoDeviceProvider {
             .collect())
     }
 
-    async fn get_topology(&self) -> Result<Vec<TopologyEdge>> {
-        // Demo topology showing connections
+    async fn get_topology(&self) -> petal_tongue_discovery::DiscoveryResult<Vec<TopologyEdge>> {
         Ok(vec![
             TopologyEdge {
                 from: "primal-discovery".to_string().into(),
@@ -373,7 +371,7 @@ impl VisualizationDataProvider for DemoDeviceProvider {
         ])
     }
 
-    async fn health_check(&self) -> Result<String> {
+    async fn health_check(&self) -> petal_tongue_discovery::DiscoveryResult<String> {
         Ok("healthy (demo fallback)".to_string())
     }
 

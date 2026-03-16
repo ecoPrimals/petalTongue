@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! JSON-RPC 2.0 client for petalTongue IPC
 //!
 //! Per wateringHole `UNIVERSAL_IPC_STANDARD_V3.md`, JSON-RPC 2.0 is the PRIMARY protocol

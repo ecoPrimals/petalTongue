@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 //! # petalTongue Rich TUI
 //!
@@ -31,6 +31,7 @@
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
+#![allow(clippy::missing_errors_doc)]
 
 /// Application core
 pub mod app;
@@ -55,6 +56,9 @@ pub use state::{TUIState, View};
 
 /// Launch the TUI with default configuration
 ///
+/// # Errors
+/// Returns `TuiError` on initialization or runtime failure.
+///
 /// # Example
 ///
 /// ```no_run
@@ -72,6 +76,9 @@ pub async fn launch() -> Result<(), error::TuiError> {
 }
 
 /// Launch the TUI with custom configuration
+///
+/// # Errors
+/// Returns `TuiError` on initialization or runtime failure.
 ///
 /// # Example
 ///

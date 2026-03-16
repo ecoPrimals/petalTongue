@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 //! # petal-tongue-ui
 //!
@@ -7,9 +7,26 @@
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 #![expect(clippy::cast_sign_loss, reason = "UI rendering: f32 coords, u8 colors")]
-#![expect(clippy::struct_excessive_bools, reason = "UI state structs need many flags")]
-#![expect(clippy::too_many_lines, reason = "UI rendering functions are inherently long")]
-#![expect(clippy::too_many_arguments, reason = "egui render callbacks receive many params")]
+#![expect(
+    clippy::cast_precision_loss,
+    reason = "UI rendering coordinate; f32/f64 precision is sufficient"
+)]
+#![expect(
+    clippy::cast_possible_truncation,
+    reason = "value is bounded by UI dimensions"
+)]
+#![expect(
+    clippy::struct_excessive_bools,
+    reason = "UI state structs need many flags"
+)]
+#![expect(
+    clippy::too_many_lines,
+    reason = "UI rendering functions are inherently long"
+)]
+#![expect(
+    clippy::too_many_arguments,
+    reason = "egui render callbacks receive many params"
+)]
 #![allow(clippy::match_same_arms)]
 #![allow(clippy::ref_option)]
 #![allow(clippy::needless_pass_by_value)]

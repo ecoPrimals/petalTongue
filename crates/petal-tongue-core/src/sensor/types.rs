@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Sensor types: trait, capabilities, events, input types.
 
 use std::time::Instant;
@@ -91,7 +91,7 @@ pub enum SensorCapability {
 /// Types of sensors (discovered at runtime)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SensorType {
-    /// Display output (terminal, framebuffer, window)
+    /// Display output (terminal, framebuffer, surface)
     Screen,
 
     /// Discrete input device (keys, buttons)
@@ -224,9 +224,9 @@ pub enum SensorEvent {
         timestamp: Instant,
     },
 
-    /// Display visibility changed (app focused/unfocused)
+    /// Display perceivability changed (app focused/unfocused)
     DisplayVisible {
-        /// Whether the display is visible to the user
+        /// Whether the display is perceivable to the user
         visible: bool,
         /// When the event occurred
         timestamp: Instant,

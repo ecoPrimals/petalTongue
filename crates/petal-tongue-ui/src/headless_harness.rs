@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Headless egui harness for UI introspection and testing.
 //!
 //! Runs `PetalTongueApp` without a display by feeding simulated
 //! [`egui::RawInput`] into [`egui::Context::run`], exercising the exact
-//! same code path as the real GUI.
+//! same code path as the real interface.
 //!
 //! # Proprioception
 //!
@@ -16,7 +16,7 @@ use crate::error::Result;
 use bytes::Bytes;
 use petal_tongue_core::{FrameIntrospection, MotorCommand, PanelKind};
 
-/// Default virtual screen size for the headless harness (1280x720).
+/// Default virtual display size for the headless harness (1280x720).
 const DEFAULT_WIDTH: f32 = 1280.0;
 const DEFAULT_HEIGHT: f32 = 720.0;
 
@@ -43,6 +43,10 @@ impl HeadlessHarness {
     /// Create a new headless harness with default settings.
     ///
     /// The awakening overlay is automatically skipped.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `PetalTongueApp::new_headless` fails.
     pub fn new() -> Result<Self> {
         let app = PetalTongueApp::new_headless()?;
 
@@ -63,7 +67,11 @@ impl HeadlessHarness {
         })
     }
 
-    /// Create a harness with a specific screen size.
+    /// Create a harness with a specific display size.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `HeadlessHarness::new` fails.
     pub fn with_screen_size(width: f32, height: f32) -> Result<Self> {
         let mut harness = Self::new()?;
         harness.screen_width = width;
@@ -72,6 +80,10 @@ impl HeadlessHarness {
     }
 
     /// Run a single frame and capture introspection.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the frame history is unexpectedly empty (internal bug; should not occur).
     pub fn run_frame(&mut self) -> &FrameIntrospection {
         self.time += 1.0 / 60.0;
 
@@ -94,7 +106,10 @@ impl HeadlessHarness {
 
         let introspection = self.app.introspect();
         self.frame_history.push(introspection);
-        #[expect(clippy::expect_used, reason = "element was just pushed, last() is always Some")]
+        #[expect(
+            clippy::expect_used,
+            reason = "element was just pushed, last() is always Some"
+        )]
         self.frame_history.last().expect("just pushed")
     }
 
@@ -109,7 +124,7 @@ impl HeadlessHarness {
 
     // === Input simulation ===
 
-    /// Simulate a left-click at the given position (queued for next frame).
+    /// Simulate a left-button activate/select at the given position (queued for next frame).
     pub fn click(&mut self, pos: egui::Pos2) {
         self.pending_events.push(egui::Event::PointerButton {
             pos,
@@ -161,14 +176,14 @@ impl HeadlessHarness {
 
     // === Introspection queries ===
 
-    /// Whether a panel of the given kind is currently visible.
+    /// Whether a panel of the given kind is currently perceivable.
     #[must_use]
     pub fn is_panel_visible(&self, kind: PanelKind) -> bool {
         self.last_introspection()
             .is_some_and(|f| f.is_panel_visible(kind))
     }
 
-    /// All currently visible panel kinds.
+    /// All currently perceivable panel kinds.
     #[must_use]
     pub fn visible_panels(&self) -> Vec<PanelKind> {
         self.last_introspection()
@@ -176,7 +191,7 @@ impl HeadlessHarness {
             .unwrap_or_default()
     }
 
-    /// Whether a specific data object is currently shown.
+    /// Whether a specific data object is currently presented.
     #[must_use]
     pub fn is_showing_data(&self, data_id: &str) -> bool {
         self.last_introspection()
@@ -228,7 +243,11 @@ impl HeadlessHarness {
 
     /// Tessellate the last frame and render to an RGBA8 pixel buffer.
     ///
-    /// Returns the pixel buffer and the screen dimensions used.
+    /// Returns the pixel buffer and the display dimensions used.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if pixmap creation or mesh rendering fails.
     pub fn render_pixels(&self) -> Result<(Bytes, u32, u32)> {
         let primitives = self.tessellate();
         let width = self.screen_width as u32;

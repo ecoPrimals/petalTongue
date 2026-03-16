@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Songbird discovery client
 //!
 //! Queries Songbird primal for capability-based discovery of other primals.
@@ -51,6 +51,9 @@ impl SongbirdClient {
     ///
     /// Uses `DISCOVERY_SERVICE_SOCKET` env for socket name (default: discovery-service).
     /// Set to `songbird` for Songbird deployments.
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError::DiscoveryServiceNotFound` if no socket found in search paths.
     pub fn discover(family_id: Option<&str>) -> DiscoveryResult<Self> {
         let family = family_id
             .map(String::from)
@@ -128,6 +131,9 @@ impl SongbirdClient {
     /// - "storage" - primals that provide persistent storage (`NestGate`)
     /// - "compute" - primals that provide execution (`ToadStool`)
     /// - "ai" - primals that provide AI inference (Squirrel)
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError` on network/JSON-RPC errors or invalid response.
     pub async fn discover_by_capability(
         &self,
         capability: &str,
@@ -177,6 +183,9 @@ impl SongbirdClient {
     ///
     /// Returns the complete list of primals known to Songbird.
     /// Uses discovery.query("*") to get all registered primals.
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError` on network/JSON-RPC errors or invalid response.
     pub async fn get_all_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         debug!("🔍 Querying Songbird for all registered primals");
 
@@ -220,6 +229,9 @@ impl SongbirdClient {
     }
 
     /// Health check - verify Songbird is responding (semantic: health.check)
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError` on connection or JSON-RPC errors.
     pub async fn health_check(&self) -> DiscoveryResult<String> {
         let request = json!({
             "jsonrpc": "2.0",

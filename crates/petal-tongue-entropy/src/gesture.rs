@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Gesture entropy capture (motion, touch)
 //!
 //! Captures sensor data (accelerometer, gyroscope) and touch patterns.
@@ -41,7 +41,7 @@ pub fn analyze_gesture_entropy(points: &[Point2D]) -> f64 {
         let normalized = if angle >= 0.0 {
             angle
         } else {
-            angle + 2.0 * PI
+            2.0f64.mul_add(PI, angle)
         };
         angles.push(normalized);
     }
@@ -95,7 +95,7 @@ pub fn gesture_complexity(points: &[Point2D], timestamps: &[Duration]) -> f64 {
             if let Some(prev) = prev_angle {
                 let mut delta = (angle - prev).abs();
                 if delta > PI {
-                    delta = 2.0 * PI - delta;
+                    delta = 2.0f64.mul_add(PI, -delta);
                 }
                 if delta > ANGLE_THRESHOLD {
                     direction_changes += 1;
@@ -114,6 +114,10 @@ pub fn gesture_complexity(points: &[Point2D], timestamps: &[Duration]) -> f64 {
 
     // 3. Direction change component: more changes = more complex
     let max_reasonable_changes = (points.len() - 1).max(1);
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "gesture complexity; f64 sufficient for ratio"
+    )]
     let direction_component = (direction_changes as f64 / max_reasonable_changes as f64).min(1.0);
 
     // 4. Speed variance (if timestamps available)
@@ -140,8 +144,10 @@ pub fn gesture_complexity(points: &[Point2D], timestamps: &[Duration]) -> f64 {
         0.5
     };
 
-    // Weighted combination
-    (path_component * 0.3 + direction_component * 0.4 + speed_component * 0.3).clamp(0.0, 1.0)
+    // Weighted combination (mul_add for FMA)
+    path_component
+        .mul_add(0.3, direction_component.mul_add(0.4, speed_component * 0.3))
+        .clamp(0.0, 1.0)
 }
 
 /// Gesture entropy capturer
@@ -218,7 +224,10 @@ impl GestureEntropyCapture {
         let magnitudes: Vec<f64> = self
             .accelerometer
             .iter()
-            .map(|v| f64::from(v.x * v.x + v.y * v.y + v.z * v.z).sqrt())
+            .map(|v| {
+                let sum_sq = v.x.mul_add(v.x, v.y.mul_add(v.y, v.z * v.z));
+                f64::from(sum_sq).sqrt()
+            })
             .collect();
 
         variance(&magnitudes)
@@ -261,6 +270,11 @@ impl GestureEntropyCapture {
     }
 
     /// Finalize and create entropy data
+    ///
+    /// # Errors
+    ///
+    /// This function does not currently return errors but returns `Result` for API consistency
+    /// with other entropy capturers.
     pub fn finalize(self) -> Result<GestureEntropyData, crate::error::EntropyError> {
         let quality_metrics = self.assess_quality();
 

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Display Visibility Verification
 //!
 //! Active verification that the display substrate is actually reaching the user.

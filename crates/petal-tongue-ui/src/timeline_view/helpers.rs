@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Timeline View - Pure helper functions (fully testable, no &self, no egui context)
 
 use std::collections::HashMap;

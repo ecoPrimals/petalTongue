@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Platform-Agnostic Configuration System
 //!
 //! TRUE PRIMAL principle: Zero hardcoding, XDG-compliant, environment-driven
@@ -61,6 +61,12 @@ impl Config {
     /// 2. Config file (if specified via `PETALTONGUE_CONFIG`)
     /// 3. XDG config dir (~/.config/petaltongue/config.toml)
     /// 4. Defaults (lowest)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a config file exists but cannot be read or parsed, if
+    /// environment overrides (e.g. `PETALTONGUE_WEB_PORT`) are invalid, or if
+    /// validation fails (e.g. `web_port` is 0 or `health_threshold` > 100).
     pub fn from_env() -> Result<Self, ConfigError> {
         let mut config = Self::default();
 
@@ -83,6 +89,10 @@ impl Config {
     }
 
     /// Load configuration from TOML file
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be read, or if the TOML content is invalid.
     pub fn from_file(path: impl AsRef<std::path::Path>) -> Result<Self, ConfigError> {
         let contents = std::fs::read_to_string(path)?;
         toml::from_str(&contents).map_err(|e| ConfigError::LoadError(e.to_string()))
@@ -231,6 +241,11 @@ impl PathsConfig {
     }
 
     /// Get runtime directory (with fallback)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no explicit path is set and the XDG runtime directory
+    /// cannot be determined (e.g. `XDG_RUNTIME_DIR` is unset on Linux).
     pub fn runtime_dir(&self) -> Result<PathBuf, ConfigError> {
         use crate::platform_dirs;
 
@@ -242,6 +257,11 @@ impl PathsConfig {
     }
 
     /// Get data directory (with fallback)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no explicit path is set and the XDG data directory
+    /// cannot be determined (e.g. `XDG_DATA_HOME` is unset and home dir is unknown).
     pub fn data_dir(&self) -> Result<PathBuf, ConfigError> {
         use crate::platform_dirs;
 

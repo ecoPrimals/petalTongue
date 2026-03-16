@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pure Rust SVG generation
 //!
 //! Generates SVG visualizations of primal topologies without any native dependencies.
@@ -69,6 +69,10 @@ impl SvgUI {
     }
 
     /// Render SVG content
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "nodes/edges borrow from graph"
+    )]
     fn render_svg(&self) -> Result<String> {
         let mut svg = String::new();
 
@@ -228,5 +232,21 @@ mod tests {
         assert!(ui.supports(UICapability::RenderToString));
         assert!(ui.supports(UICapability::Export));
         assert!(!ui.supports(UICapability::Interactive));
+    }
+
+    #[test]
+    fn test_svg_with_background_and_node_radius() {
+        use petal_tongue_core::test_fixtures::primals;
+
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        graph.write().unwrap().add_node(primals::test_primal("n1"));
+        let ui = SvgUI::new(graph, 400, 300)
+            .with_background("#1a1a2e")
+            .with_node_radius(30.0);
+        let result = ui.render_to_string();
+        assert!(result.is_ok());
+        let svg = result.unwrap();
+        assert!(svg.contains("#1a1a2e"));
+        assert!(svg.contains("r=\"30\""));
     }
 }

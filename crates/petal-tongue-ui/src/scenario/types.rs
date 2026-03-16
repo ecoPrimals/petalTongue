@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Core scenario types for benchTop demonstrations
 //!
 //! This module defines the main Scenario structure and related types
@@ -54,6 +54,10 @@ impl Scenario {
     }
 
     /// Validate scenario configuration
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if required fields (name, mode, version) are empty, or nested config validation fails.
     pub fn validate(&self) -> crate::error::Result<()> {
         // Check required fields
         if self.name.trim().is_empty() {
@@ -81,8 +85,7 @@ impl Scenario {
         }
 
         // Validate version format (should be semver-like)
-        let version_parts: Vec<&str> = self.version.split('.').collect();
-        if version_parts.len() < 2 {
+        if self.version.split('.').count() < 2 {
             tracing::warn!(
                 "⚠️  Scenario version '{}' doesn't follow semver (e.g., '2.0.0')",
                 self.version

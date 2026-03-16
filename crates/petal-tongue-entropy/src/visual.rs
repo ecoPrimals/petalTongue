@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Visual entropy capture (drawing, painting)
 //!
 //! Captures stroke patterns, spatial coverage, and timing for visual creativity.
@@ -41,7 +41,10 @@ pub fn compute_color_entropy(colors: &[Color]) -> f64 {
 
 /// Compute luminance (perceived brightness) for a color.
 fn luminance(c: Color) -> f64 {
-    0.299 * f64::from(c.r) + 0.587 * f64::from(c.g) + 0.114 * f64::from(c.b)
+    0.299f64.mul_add(
+        f64::from(c.r),
+        0.587f64.mul_add(f64::from(c.g), 0.114 * f64::from(c.b)),
+    )
 }
 
 /// Quantify visual complexity from color diversity, brightness variance,
@@ -75,10 +78,19 @@ pub fn visual_complexity(strokes: &[Stroke], canvas_size: (u32, u32)) -> f64 {
 
     // 3. Spatial frequency estimate: points per unit area (density)
     let total_points: usize = strokes.iter().map(|s| s.points.len()).sum();
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "visual complexity; f64 sufficient for density ratio"
+    )]
     let point_density = total_points as f64 / canvas_area;
     let spatial_component = (point_density / 0.01).min(1.0);
 
-    (color_component * 0.4 + brightness_component * 0.3 + spatial_component * 0.3).clamp(0.0, 1.0)
+    color_component
+        .mul_add(
+            0.4,
+            brightness_component.mul_add(0.3, spatial_component * 0.3),
+        )
+        .clamp(0.0, 1.0)
 }
 
 /// Visual entropy capturer
@@ -173,6 +185,10 @@ impl VisualEntropyCapture {
     }
 
     fn calculate_total_coverage(&self) -> f64 {
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "canvas dimensions; f32 sufficient for coverage ratio"
+        )]
         let (cw, ch) = (self.canvas_size.0 as f32, self.canvas_size.1 as f32);
         if cw < 1.0 || ch < 1.0 {
             return 0.0;
@@ -199,6 +215,11 @@ impl VisualEntropyCapture {
     }
 
     /// Finalize and create entropy data
+    ///
+    /// # Errors
+    ///
+    /// This function does not currently return errors but returns `Result` for API consistency
+    /// with other entropy capturers.
     pub fn finalize(self) -> Result<VisualEntropyData, crate::error::EntropyError> {
         let quality_metrics = self.assess_quality();
         let total_coverage = self.calculate_total_coverage();

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Centralized constants for the petalTongue primal.
 //!
 //! Self-knowledge only -- no hardcoded knowledge of other primals.
@@ -77,6 +77,10 @@ pub fn toadstool_port() -> u16 {
 
 /// Loopback host for local-only connections (used when env/discovery not available).
 pub const DEFAULT_LOOPBACK_HOST: &str = "127.0.0.1";
+
+/// Default bind host for servers (listen on all interfaces).
+/// Use when binding web/headless servers for external access.
+pub const DEFAULT_BIND_HOST: &str = "0.0.0.0";
 
 /// Default GPU compute endpoint URL (fallback when discovery fails).
 ///

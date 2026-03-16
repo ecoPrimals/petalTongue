@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Scenario-based visualization provider for benchTop demonstrations
 //!
 //! This provider loads data from JSON scenario files for rich, pre-defined
@@ -50,6 +50,10 @@ struct Ecosystem {
 
 impl ScenarioVisualizationProvider {
     /// Create a new scenario provider from a JSON file
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError::FileReadError` if the file cannot be read,
+    /// or `DiscoveryError::ScenarioParseError` if the JSON is invalid.
     pub fn from_file<P: AsRef<Path>>(path: P) -> DiscoveryResult<Self> {
         let path = path.as_ref();
         let contents =
@@ -289,5 +293,20 @@ mod tests {
         assert_eq!(meta.name, "Scenario Provider");
         assert!(meta.endpoint.contains("scenario"));
         std::fs::remove_file(&temp_file).ok();
+    }
+
+    #[test]
+    fn test_scenario_from_file_nonexistent() {
+        let result = ScenarioVisualizationProvider::from_file("/nonexistent/scenario-12345.json");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_scenario_from_file_invalid_json() {
+        let temp_file = std::env::temp_dir().join("test_scenario_invalid.json");
+        std::fs::write(&temp_file, "invalid json {").unwrap();
+        let result = ScenarioVisualizationProvider::from_file(&temp_file);
+        std::fs::remove_file(&temp_file).ok();
+        assert!(result.is_err());
     }
 }

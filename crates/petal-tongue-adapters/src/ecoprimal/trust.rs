@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! ecoPrimals-specific trust adapter
 //!
 //! This adapter knows how to render trust levels from the ecoPrimals ecosystem.
@@ -12,11 +12,16 @@ use serde::{Deserialize, Serialize};
 /// Configuration for trust level rendering (from ecosystem)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TrustConfig {
+    /// Minimum trust level (inclusive)
     pub min_level: u8,
+    /// Maximum trust level (inclusive)
     pub max_level: u8,
+    /// Human-readable names for each trust level
     pub level_names: Vec<String>,
+    /// Emoji indicators for each trust level
     pub level_emojis: Vec<String>,
-    pub level_colors: Vec<String>, // Hex colors like "#808080"
+    /// Hex color strings (e.g. `"#808080"`) for each trust level
+    pub level_colors: Vec<String>,
 }
 
 impl Default for TrustConfig {

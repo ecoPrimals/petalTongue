@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Runtime Sensory Capability Discovery
 //!
 //! This module implements platform-specific detection of available

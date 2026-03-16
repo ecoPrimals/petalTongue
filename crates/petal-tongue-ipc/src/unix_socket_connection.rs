@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse, error_codes};
 use crate::unix_socket_rpc_handlers::RpcHandlers;
@@ -126,5 +126,15 @@ mod tests {
         let line = r#"{"jsonrpc":"2.0","method":"health.get","id":1}"#;
         let request: JsonRpcRequest = serde_json::from_str(line).expect("parse");
         assert_eq!(request.method, "health.get");
+    }
+
+    #[test]
+    fn connection_error_display() {
+        let err = ConnectionError::Io(std::io::Error::new(
+            std::io::ErrorKind::ConnectionRefused,
+            "refused",
+        ));
+        assert!(err.to_string().contains("Connection"));
+        assert!(err.to_string().contains("refused"));
     }
 }

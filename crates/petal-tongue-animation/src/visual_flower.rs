@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! # Visual Flower Rendering
 //!
 //! High-quality visual flower animation for egui-based awakening experience.
@@ -19,6 +19,7 @@ pub struct VisualFlowerRenderer {
     current_time: f32,
 
     /// Base color (hue in HSV) — used by egui renderer for petal coloring
+    #[cfg_attr(not(feature = "egui"), allow(dead_code))]
     base_hue: f32,
 }
 
@@ -65,6 +66,7 @@ impl VisualFlowerRenderer {
     }
 
     /// Get opening percentage (0.0 to 1.0) — used by egui renderer
+    #[cfg_attr(not(feature = "egui"), allow(dead_code))]
     fn opening_percent(&self) -> f32 {
         match self.current_state() {
             FlowerState::Closed => 0.0,
@@ -676,5 +678,46 @@ mod tests {
             assert!(pct >= prev_pct - 0.01);
             prev_pct = pct;
         }
+    }
+
+    #[cfg(feature = "egui")]
+    #[test]
+    fn test_egui_render_headless_closed() {
+        use egui::Pos2;
+        let renderer = VisualFlowerRenderer::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                renderer.render(ui, Pos2::new(100.0, 100.0), 50.0);
+            });
+        });
+    }
+
+    #[cfg(feature = "egui")]
+    #[test]
+    fn test_egui_render_headless_opening() {
+        use egui::Pos2;
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(1.5);
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                renderer.render(ui, Pos2::new(100.0, 100.0), 50.0);
+            });
+        });
+    }
+
+    #[cfg(feature = "egui")]
+    #[test]
+    fn test_egui_render_headless_open_with_glow() {
+        use egui::Pos2;
+        let mut renderer = VisualFlowerRenderer::new();
+        renderer.update(3.5);
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                renderer.render(ui, Pos2::new(100.0, 100.0), 50.0);
+            });
+        });
     }
 }

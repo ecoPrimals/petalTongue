@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Types and enums for rendering awareness.
 
 /// Identifier for a UI panel (used by efferent motor commands).
@@ -46,7 +46,7 @@ pub enum MotorCommand {
     SetPanelVisibility {
         /// Which panel to control
         panel: PanelId,
-        /// Whether it should be visible
+        /// Whether it should be perceivable
         visible: bool,
     },
 
@@ -187,16 +187,16 @@ impl SelfAssessment {
     }
 }
 
-/// User visibility state - confidence that user can see output
+/// User perceivability state - confidence that user can perceive output
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VisibilityState {
-    /// High confidence user can see output (>90% confirmation)
+    /// High confidence user can perceive output (>90% confirmation)
     Confirmed,
-    /// Likely user can see output (>50% confirmation)
+    /// Likely user can perceive output (>50% confirmation)
     Probable,
-    /// Uncertain if user can see output (>0% confirmation)
+    /// Uncertain if user can perceive output (>0% confirmation)
     Uncertain,
-    /// No confirmation of visibility
+    /// No confirmation of perceivability
     Unknown,
 }
 
@@ -229,7 +229,7 @@ pub struct ValidationHealth {
 pub struct RenderingMetrics {
     /// Total rendering commands sent to output
     pub commands_sent: u64,
-    /// Number of frames confirmed as visible
+    /// Number of frames confirmed as presented
     pub frames_confirmed: u64,
     /// Number of user interactions detected
     pub user_interactions: u64,

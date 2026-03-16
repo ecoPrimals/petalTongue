@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Handlers for motor.* JSON-RPC methods.
 //!
 //! Bridges IPC afferent commands to the UI efferent channel (`motor_tx`).

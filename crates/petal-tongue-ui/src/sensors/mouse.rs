@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Mouse sensor - Spatial input device
 //!
-//! Discovers mouse capabilities and provides click/movement events.
+//! Discovers mouse capabilities and provides activate/movement events.
 
 use crate::error::SensorError;
 use async_trait::async_trait;

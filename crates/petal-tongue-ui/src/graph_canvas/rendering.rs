@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Graph canvas rendering - grid, nodes, edges, selection box.
 
 use crate::accessibility::ColorPalette;
@@ -111,13 +111,11 @@ pub fn edge_stroke_width(zoom: f32) -> f32 {
 /// Grid line positions along one axis.
 #[must_use]
 pub fn grid_line_positions(rect_min: f32, rect_max: f32, grid_size: f32, offset: f32) -> Vec<f32> {
-    let mut positions = Vec::new();
-    let mut x = rect_min - offset;
-    while x < rect_max {
-        positions.push(x);
-        x += grid_size;
-    }
-    positions
+    let start = rect_min - offset;
+    let count = ((rect_max - start) / grid_size).ceil().max(0.0) as usize;
+    (0..count)
+        .map(|i| (i as f32).mul_add(grid_size, start))
+        .collect()
 }
 
 // --- Rendering (uses egui) ---

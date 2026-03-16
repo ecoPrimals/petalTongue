@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Terminal UI (TUI) implementation
 //!
 //! Interactive terminal interface using crossterm (pure Rust, cross-platform).
@@ -57,6 +57,10 @@ impl TerminalUI {
     }
 
     /// Render terminal output
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "nodes/edges borrow from graph"
+    )]
     fn render_terminal(&self) -> Result<String> {
         let mut output = String::new();
 
@@ -191,6 +195,16 @@ mod tests {
         let ui = TerminalUI::new(graph);
         assert!(ui.width > 0);
         assert!(ui.width <= 120);
+    }
+
+    #[test]
+    fn test_terminal_with_width() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let ui = TerminalUI::new(graph).with_width(60);
+        let result = ui.render_to_string();
+        assert!(result.is_ok());
+        let out = result.unwrap();
+        assert!(out.contains("petalTongue"));
     }
 
     #[test]

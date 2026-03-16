@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Handlers for health, capability, and topology JSON-RPC methods.
 
 use super::RpcHandlers;
@@ -49,7 +49,9 @@ pub fn handle_announce_capabilities(
 /// returns version, protocol, transport, methods, and dependency info.
 #[must_use]
 pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
-    use petal_tongue_core::capability_names::{self_capabilities, methods, primal_names, discovery_capabilities};
+    use petal_tongue_core::capability_names::{
+        discovery_capabilities, methods, primal_names, self_capabilities,
+    };
 
     JsonRpcResponse::success(
         id,
@@ -91,13 +93,13 @@ pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
 
 /// Handle health.get: return health status and graph stats
 pub fn get_health(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
-    let graph = handlers
-        .graph
-        .read()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-
-    let node_count = graph.nodes().len();
-    let edge_count = graph.edges().len();
+    let (node_count, edge_count) = {
+        let graph = handlers
+            .graph
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        (graph.nodes().len(), graph.edges().len())
+    };
 
     JsonRpcResponse::success(
         id,
@@ -114,6 +116,10 @@ pub fn get_health(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
 }
 
 /// Handle topology.get: return graph nodes and edges
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "graph used in json! macro for nodes/edges"
+)]
 pub fn get_topology(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
     let graph = handlers
         .graph

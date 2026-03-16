@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Entropy streaming to biomeOS/BearDog
 
 use crate::error::EntropyError;
@@ -50,6 +50,11 @@ impl Drop for EncryptedEntropy {
 /// # Returns
 ///
 /// Stream confirmation with receipt ID
+///
+/// # Errors
+///
+/// Returns `EntropyError` on serialization failure, encryption failure, network error,
+/// or if the server rejects the submission (non-2xx status).
 ///
 /// # Security
 ///

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Demo visualization data provider - Test/sandbox only
 //!
 //! **ISOLATED**: This module is only compiled when `test-fixtures` feature is enabled
@@ -202,6 +202,15 @@ mod tests {
         let a = DemoVisualizationProvider::new();
         let b = DemoVisualizationProvider;
         assert_eq!(std::mem::size_of_val(&a), std::mem::size_of_val(&b));
+    }
+
+    #[test]
+    fn demo_provider_default_impl() {
+        let provider = DemoVisualizationProvider::default();
+        assert_eq!(
+            std::mem::size_of_val(&provider),
+            std::mem::size_of_val(&DemoVisualizationProvider::new())
+        );
     }
 
     #[tokio::test]

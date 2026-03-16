@@ -1,5 +1,9 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #![forbid(unsafe_code)]
+#![expect(
+    missing_docs,
+    reason = "doom integration documentation tracked for incremental completion"
+)]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 //! Doom Core - Doom integration for petalTongue
 //!
@@ -772,6 +776,72 @@ mod tests {
         std::fs::remove_file(&path).ok();
         assert!(doom.load_map("E1M1").is_ok());
         assert_eq!(doom.current_map(), Some("E1M1"));
+    }
+
+    #[test]
+    fn test_tick_when_playing() {
+        let wad_bytes = create_minimal_wad_bytes();
+        let path = std::env::temp_dir().join("petaltongue_doom_tick_test.wad");
+        std::fs::write(&path, &wad_bytes).unwrap();
+        let mut doom = DoomInstance::new(64, 64).unwrap();
+        doom.init_with_wad(Some(&path)).unwrap();
+        std::fs::remove_file(&path).ok();
+        doom.new_game().unwrap();
+        assert!(doom.tick().is_ok());
+        assert!(doom.tick().is_ok());
+    }
+
+    #[test]
+    fn test_tick_when_menu() {
+        let wad_bytes = create_minimal_wad_bytes();
+        let path = std::env::temp_dir().join("petaltongue_doom_tick_menu_test.wad");
+        std::fs::write(&path, &wad_bytes).unwrap();
+        let mut doom = DoomInstance::new(64, 64).unwrap();
+        doom.init_with_wad(Some(&path)).unwrap();
+        std::fs::remove_file(&path).ok();
+        assert_eq!(doom.state(), DoomState::Menu);
+        assert!(doom.tick().is_ok());
+    }
+
+    #[test]
+    fn test_render_scene_with_wad() {
+        let wad_bytes = create_minimal_wad_bytes();
+        let path = std::env::temp_dir().join("petaltongue_doom_render_test.wad");
+        std::fs::write(&path, &wad_bytes).unwrap();
+        let mut doom = DoomInstance::new(64, 64).unwrap();
+        doom.init_with_wad(Some(&path)).unwrap();
+        std::fs::remove_file(&path).ok();
+        doom.new_game().unwrap();
+        let scene = doom.render_scene();
+        assert!(scene.node_count() > 1);
+    }
+
+    #[test]
+    fn test_framebuffer_map_view() {
+        let wad_bytes = create_minimal_wad_bytes();
+        let path = std::env::temp_dir().join("petaltongue_doom_fb_test.wad");
+        std::fs::write(&path, &wad_bytes).unwrap();
+        let mut doom = DoomInstance::new(64, 64).unwrap();
+        doom.init_with_wad(Some(&path)).unwrap();
+        std::fs::remove_file(&path).ok();
+        doom.toggle_view_mode();
+        assert!(!doom.is_first_person());
+        let fb = doom.framebuffer();
+        assert_eq!(fb.len(), 64 * 64 * 4);
+    }
+
+    #[test]
+    fn test_stats_with_raycast() {
+        let wad_bytes = create_minimal_wad_bytes();
+        let path = std::env::temp_dir().join("petaltongue_doom_stats_test.wad");
+        std::fs::write(&path, &wad_bytes).unwrap();
+        let mut doom = DoomInstance::new(64, 64).unwrap();
+        doom.init_with_wad(Some(&path)).unwrap();
+        std::fs::remove_file(&path).ok();
+        let stats = doom.stats();
+        assert!(stats.player_x.is_some());
+        assert!(stats.player_y.is_some());
+        assert!(stats.player_angle.is_some());
     }
 
     #[test]

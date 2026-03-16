@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Traffic View - Flow Analysis and Sankey Diagram
 //!
 //! Visualizes data flow and traffic patterns between primals.

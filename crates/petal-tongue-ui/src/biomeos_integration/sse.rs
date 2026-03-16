@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! SSE (Server-Sent Events) client for biomeOS `/api/v1/events/stream`.
 //!
 //! biomeOS exposes ecosystem-level events via an SSE endpoint. This module
@@ -155,6 +155,8 @@ impl SseEventConsumer {
         events: Arc<RwLock<Vec<EcosystemEvent>>>,
         callback: Arc<RwLock<Option<EventCallback>>>,
     ) {
+        use futures_util::StreamExt;
+
         *state.write().await = SseConnectionState::Connecting;
         info!("SSE: connecting to {}", endpoint);
 
@@ -192,7 +194,6 @@ impl SseEventConsumer {
         *state.write().await = SseConnectionState::Connected;
         info!("SSE: connected to {}", endpoint);
 
-        use futures_util::StreamExt;
         let mut stream = response.bytes_stream();
         let mut buffer = String::new();
 
@@ -216,6 +217,7 @@ impl SseEventConsumer {
                                     if let Some(ref f) = *cb {
                                         f(event.clone());
                                     }
+                                    drop(cb);
                                     events.write().await.push(event);
                                 }
                             }

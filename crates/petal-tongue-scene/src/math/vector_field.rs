@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Vector field: arrows at grid points.
 
 use serde::{Deserialize, Serialize};
@@ -41,7 +41,9 @@ impl VectorField {
         let mut arrows = Vec::new();
         for i in 0..density {
             for j in 0..density {
+                #[expect(clippy::cast_precision_loss, reason = "grid sampling: f64 sufficient")]
                 let t_x = (i as f64 + 0.5) / density as f64;
+                #[expect(clippy::cast_precision_loss, reason = "grid sampling: f64 sufficient")]
                 let t_y = (j as f64 + 0.5) / density as f64;
                 let x = x_min + t_x * (x_max - x_min);
                 let y = y_min + t_y * (y_max - y_min);

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::migrations::{MigrationRegistry, SchemaMigration};
 use super::types::{DynamicData, DynamicValue, SchemaVersion};

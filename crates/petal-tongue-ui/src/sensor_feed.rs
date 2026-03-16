@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Sensor event feed: converts egui input events to IPC-serializable sensor events.
 //!
 //! Pure function: reads `egui::InputState`, returns `Vec<SensorEventIpc>`.

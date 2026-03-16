@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Timeline View - Core view struct and rendering logic
 //!
 //! Displays temporal sequences of primal interactions with time scrubbing capabilities.
@@ -380,7 +380,7 @@ impl TimelineView {
                 }
             }
         } else {
-            ui.label("Click on an event to see details");
+            ui.label("Select an event to perceive details");
         }
 
         intents

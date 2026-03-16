@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Doom Panel Factory - Registers Doom as an available panel type
 
 use super::doom_panel::DoomPanel;

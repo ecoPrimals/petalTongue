@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Edge validation rules: connectivity and structural checks.
 
 use crate::graph_builder::VisualGraph;

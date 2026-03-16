@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Sensory capability type definitions - I/O channel descriptors.
 
 use serde::{Deserialize, Serialize};
@@ -60,7 +60,7 @@ impl VisualOutputCapability {
         }
     }
 
-    /// Determine if this is a small screen (< 6 inches diagonal)
+    /// Determine if this is a small display (< 6 inches diagonal)
     #[must_use]
     pub fn is_small_screen(&self) -> bool {
         self.diagonal_mm().is_some_and(|d| d < 150.0)

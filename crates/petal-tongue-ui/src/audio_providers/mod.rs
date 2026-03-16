@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! DEPRECATED: Legacy Audio Provider System
 //!
 //! **STATUS**: This module is DEPRECATED as of January 13, 2026

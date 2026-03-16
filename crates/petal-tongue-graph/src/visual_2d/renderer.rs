@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! 2D Visual Renderer for graph topology.
 
 use egui::{Color32, Pos2, Stroke, Vec2};

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Dashboard View
 //!
 //! System overview showing primals, topology, and status.
@@ -64,7 +64,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &TUIState) {
 
 /// Render status summary at top
 fn render_status_summary(frame: &mut Frame, area: Rect, state: &TUIState) {
-    let stats = tokio::runtime::Handle::current().block_on(state.stats());
+    let graph_stats = tokio::runtime::Handle::current().block_on(state.stats());
     let status = tokio::runtime::Handle::current().block_on(state.get_status());
 
     let lines = vec![
@@ -90,12 +90,12 @@ fn render_status_summary(frame: &mut Frame, area: Rect, state: &TUIState) {
             ),
             Span::raw("  |  Topology Edges: "),
             Span::styled(
-                format!("{}", stats.topology_edge_count),
+                format!("{}", graph_stats.topology_edge_count),
                 Style::default().fg(Color::Cyan),
             ),
             Span::raw("  |  Logs: "),
             Span::styled(
-                format!("{}", stats.log_count),
+                format!("{}", graph_stats.log_count),
                 Style::default().fg(Color::Gray),
             ),
         ]),
@@ -174,7 +174,7 @@ fn render_topology_summary(frame: &mut Frame, area: Rect, state: &TUIState) {
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
             )]),
-            Line::from("Start other primals to see them here!"),
+            Line::from("Start other primals to perceive them here!"),
             Line::from("Press 'r' to refresh discovery."),
         ]
     } else if topology.is_empty() && primals.is_empty() {

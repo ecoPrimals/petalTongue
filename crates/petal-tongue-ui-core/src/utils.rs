@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Utility functions for UI rendering
 
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo};

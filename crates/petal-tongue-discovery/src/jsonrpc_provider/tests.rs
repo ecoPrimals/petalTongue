@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! JSON-RPC provider tests
 
 use std::sync::atomic::Ordering;
@@ -229,4 +229,255 @@ async fn test_jsonrpc_provider_construction() {
     let metadata = provider.get_metadata();
     assert_eq!(metadata.name, "JSON-RPC Provider");
     assert!(metadata.endpoint.contains("nonexistent"));
+}
+
+/// Mock server that returns malformed JSON
+async fn create_malformed_server(socket_path: &str) -> anyhow::Result<tokio::task::JoinHandle<()>> {
+    let _ = std::fs::remove_file(socket_path);
+    let listener = UnixListener::bind(socket_path)?;
+    let handle = tokio::spawn(async move {
+        if let Ok((stream, _)) = listener.accept().await {
+            let (reader, mut writer) = stream.into_split();
+            let mut reader = tokio::io::BufReader::new(reader);
+            let mut line = String::new();
+            // Wait for client request before responding
+            let _ = reader.read_line(&mut line).await;
+            let _ = writer.write_all(b"{ invalid json }\n").await;
+            let _ = writer.flush().await;
+        }
+    });
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    Ok(handle)
+}
+
+/// Mock server that returns JSON-RPC error for primal.list
+async fn create_jsonrpc_error_server(
+    socket_path: &str,
+) -> anyhow::Result<tokio::task::JoinHandle<()>> {
+    let _ = std::fs::remove_file(socket_path);
+    let listener = UnixListener::bind(socket_path)?;
+    let handle = tokio::spawn(async move {
+        while let Ok((stream, _)) = listener.accept().await {
+            tokio::spawn(async move {
+                let (reader, mut writer) = stream.into_split();
+                let mut reader = tokio::io::BufReader::new(reader);
+                let mut line = String::new();
+                if reader.read_line(&mut line).await.is_ok() {
+                    if let Ok(request) = serde_json::from_str::<JsonRpcRequest>(&line) {
+                        let response = JsonRpcResponse {
+                            jsonrpc: "2.0".to_string(),
+                            result: None,
+                            error: Some(JsonRpcError {
+                                code: -32600,
+                                message: "Invalid request".to_string(),
+                                data: Some(serde_json::json!("extra")),
+                            }),
+                            id: request.id,
+                        };
+                        let response_json = serde_json::to_string(&response).unwrap() + "\n";
+                        let _ = writer.write_all(response_json.as_bytes()).await;
+                        let _ = writer.flush().await;
+                    }
+                }
+            });
+        }
+    });
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    Ok(handle)
+}
+
+/// Mock server that returns wrong request ID
+async fn create_wrong_id_server(socket_path: &str) -> anyhow::Result<tokio::task::JoinHandle<()>> {
+    let _ = std::fs::remove_file(socket_path);
+    let listener = UnixListener::bind(socket_path)?;
+    let handle = tokio::spawn(async move {
+        while let Ok((stream, _)) = listener.accept().await {
+            tokio::spawn(async move {
+                let (reader, mut writer) = stream.into_split();
+                let mut reader = tokio::io::BufReader::new(reader);
+                let mut line = String::new();
+                if reader.read_line(&mut line).await.is_ok() {
+                    let response = JsonRpcResponse {
+                        jsonrpc: "2.0".to_string(),
+                        result: Some(serde_json::json!([])),
+                        error: None,
+                        id: 9999, // Wrong ID
+                    };
+                    let response_json = serde_json::to_string(&response).unwrap() + "\n";
+                    let _ = writer.write_all(response_json.as_bytes()).await;
+                    let _ = writer.flush().await;
+                }
+            });
+        }
+    });
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    Ok(handle)
+}
+
+/// Mock server: topology.get returns -32601, get_topology returns empty array
+async fn create_topology_fallback_server(
+    socket_path: &str,
+) -> anyhow::Result<tokio::task::JoinHandle<()>> {
+    let _ = std::fs::remove_file(socket_path);
+    let listener = UnixListener::bind(socket_path)?;
+    let handle = tokio::spawn(async move {
+        while let Ok((stream, _)) = listener.accept().await {
+            tokio::spawn(handle_topology_fallback_connection(stream));
+        }
+    });
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    Ok(handle)
+}
+
+async fn handle_topology_fallback_connection(stream: UnixStream) {
+    let (reader, mut writer) = stream.into_split();
+    let mut reader = tokio::io::BufReader::new(reader);
+    let mut line = String::new();
+
+    while reader.read_line(&mut line).await.is_ok() && !line.is_empty() {
+        if let Ok(request) = serde_json::from_str::<JsonRpcRequest>(&line) {
+            let response = match request.method.as_str() {
+                "primal.list" => JsonRpcResponse {
+                    jsonrpc: "2.0".to_string(),
+                    result: Some(serde_json::json!([])),
+                    error: None,
+                    id: request.id,
+                },
+                "topology.get" => JsonRpcResponse {
+                    jsonrpc: "2.0".to_string(),
+                    result: None,
+                    error: Some(JsonRpcError {
+                        code: -32601,
+                        message: "Method not found".to_string(),
+                        data: None,
+                    }),
+                    id: request.id,
+                },
+                "get_topology" => JsonRpcResponse {
+                    jsonrpc: "2.0".to_string(),
+                    result: Some(serde_json::json!([
+                        {"from": "a", "to": "b", "edge_type": "test"}
+                    ])),
+                    error: None,
+                    id: request.id,
+                },
+                _ => JsonRpcResponse {
+                    jsonrpc: "2.0".to_string(),
+                    result: None,
+                    error: Some(JsonRpcError {
+                        code: -32601,
+                        message: "Method not found".to_string(),
+                        data: None,
+                    }),
+                    id: request.id,
+                },
+            };
+            let response_json = serde_json::to_string(&response).unwrap() + "\n";
+            let _ = writer.write_all(response_json.as_bytes()).await;
+            let _ = writer.flush().await;
+        }
+        line.clear();
+    }
+}
+
+#[tokio::test]
+async fn test_jsonrpc_get_primals_malformed_response() {
+    let dir = tempfile::tempdir().unwrap();
+    let sock_path = dir.path().join("malformed.sock");
+    let path_str = sock_path.to_str().unwrap();
+    let _server = create_malformed_server(path_str).await.unwrap();
+
+    let provider = JsonRpcProvider::new(sock_path);
+    let result = provider.get_primals().await;
+
+    assert!(result.is_err());
+    let err_str = result.unwrap_err().to_string();
+    // Server sends malformed JSON; client may get ParseError or I/O (if connection closes early)
+    assert!(
+        err_str.contains("parse")
+            || err_str.contains("Parse")
+            || err_str.contains("JSON")
+            || err_str.contains("I/O"),
+        "expected parse or I/O error, got: {err_str}"
+    );
+}
+
+#[tokio::test]
+async fn test_jsonrpc_get_primals_jsonrpc_error_response() {
+    let dir = tempfile::tempdir().unwrap();
+    let sock_path = dir.path().join("error.sock");
+    let path_str = sock_path.to_str().unwrap();
+    let _server = create_jsonrpc_error_server(path_str).await.unwrap();
+
+    let provider = JsonRpcProvider::new(sock_path);
+    let result = provider.get_primals().await;
+
+    assert!(result.is_err());
+    let err_str = result.unwrap_err().to_string();
+    assert!(
+        err_str.contains("JSON-RPC") || err_str.contains("Invalid request"),
+        "expected JSON-RPC error, got: {err_str}"
+    );
+}
+
+#[tokio::test]
+async fn test_jsonrpc_get_primals_request_id_mismatch() {
+    let dir = tempfile::tempdir().unwrap();
+    let sock_path = dir.path().join("wrongid.sock");
+    let path_str = sock_path.to_str().unwrap();
+    let _server = create_wrong_id_server(path_str).await.unwrap();
+
+    let provider = JsonRpcProvider::new(sock_path);
+    let result = provider.get_primals().await;
+
+    assert!(result.is_err());
+    let err_str = result.unwrap_err().to_string();
+    assert!(
+        err_str.contains("mismatch") || err_str.contains("Request ID"),
+        "expected ID mismatch, got: {err_str}"
+    );
+}
+
+#[tokio::test]
+async fn test_jsonrpc_get_topology_fallback_to_get_topology() {
+    let dir = tempfile::tempdir().unwrap();
+    let sock_path = dir.path().join("topology-fallback.sock");
+    let path_str = sock_path.to_str().unwrap();
+    let _server = create_topology_fallback_server(path_str).await.unwrap();
+
+    let provider = JsonRpcProvider::new(sock_path);
+    let topology = provider.get_topology().await.unwrap();
+
+    assert_eq!(topology.len(), 1);
+    assert_eq!(topology[0].from.as_str(), "a");
+    assert_eq!(topology[0].to.as_str(), "b");
+}
+
+#[tokio::test]
+#[cfg(feature = "test-fixtures")]
+async fn test_jsonrpc_discover_socket_not_found() {
+    let result = petal_tongue_core::test_fixtures::env_test_helpers::with_env_var_async(
+        "BIOMEOS_URL",
+        "unix:///nonexistent/path/that/does/not/exist.sock",
+        || async { JsonRpcProvider::discover().await },
+    )
+    .await;
+
+    let err_str = match &result {
+        Ok(_) => panic!("expected discover to fail"),
+        Err(e) => e.to_string(),
+    };
+    assert!(
+        err_str.contains("No JSON-RPC")
+            || err_str.contains("not found")
+            || err_str.contains("Socket"),
+        "expected socket not found error, got: {err_str}"
+    );
+}
+
+#[tokio::test]
+async fn test_jsonrpc_connection_refused_nonexistent_socket() {
+    let provider = JsonRpcProvider::new("/tmp/nonexistent-jsonrpc-xyz-98765.sock");
+    let result = provider.health_check().await;
+    assert!(result.is_err());
 }

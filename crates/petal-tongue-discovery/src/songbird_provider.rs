@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Songbird-based visualization data provider
 //!
 //! Wraps `SongbirdClient` to implement the `VisualizationDataProvider` trait.
@@ -28,6 +28,9 @@ impl SongbirdVisualizationProvider {
     /// Create a new Songbird visualization provider
     ///
     /// Discovers Songbird's Unix socket and wraps it in a provider.
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError` if the discovery service is not found or health check fails.
     pub async fn discover(family_id: Option<&str>) -> DiscoveryResult<Self> {
         let client = SongbirdClient::discover(family_id)?;
 

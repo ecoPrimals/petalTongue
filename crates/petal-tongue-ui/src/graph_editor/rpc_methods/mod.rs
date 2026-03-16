@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 mod types;
 
@@ -30,18 +30,25 @@ impl GraphEditorService {
         }
     }
 
+    /// # Errors
+    ///
+    /// Currently always returns `Ok`; no error paths.
     pub async fn editor_open(&self, req: EditorOpenRequest) -> Result<EditorOpenResponse> {
         info!("Opening graph editor for graph '{}'", req.graph_id);
 
-        let graphs = self.graphs.read().await;
-        let graph = graphs
-            .get(&req.graph_id)
-            .cloned()
-            .unwrap_or_else(|| Graph::new(req.graph_id.clone(), "New Graph".to_string()));
+        let graph = {
+            let graphs = self.graphs.read().await;
+            graphs
+                .get(&req.graph_id)
+                .cloned()
+                .unwrap_or_else(|| Graph::new(req.graph_id.clone(), "New Graph".to_string()))
+        };
 
         let template_info = if let Some(template_id) = &graph.metadata.template_id {
             let templates = self.templates.read().await;
-            templates.get(template_id).cloned()
+            let info = templates.get(template_id).cloned();
+            drop(templates);
+            info
         } else {
             None
         };
@@ -52,27 +59,34 @@ impl GraphEditorService {
         })
     }
 
+    /// # Errors
+    ///
+    /// Currently always returns `Ok`; validation errors are embedded in the response.
     pub async fn add_node(&self, req: AddNodeRequest) -> Result<AddNodeResponse> {
         debug!("Adding node to graph '{}'", req.graph_id);
 
-        let mut graphs = self.graphs.write().await;
-        let graph = graphs
-            .entry(req.graph_id.clone())
-            .or_insert_with(|| Graph::new(req.graph_id.clone(), "New Graph".to_string()));
+        let (node_id, validation) = {
+            let mut graphs = self.graphs.write().await;
+            let graph = graphs
+                .entry(req.graph_id.clone())
+                .or_insert_with(|| Graph::new(req.graph_id.clone(), "New Graph".to_string()));
 
-        let node_id = req.node.id.clone();
+            let node_id = req.node.id.clone();
 
-        let validation = match graph.add_node(req.node) {
-            Ok(()) => ValidationResult {
-                valid: true,
-                errors: Vec::new(),
-                warnings: Vec::new(),
-            },
-            Err(e) => ValidationResult {
-                valid: false,
-                errors: vec![e.to_string()],
-                warnings: Vec::new(),
-            },
+            let validation = match graph.add_node(req.node) {
+                Ok(()) => ValidationResult {
+                    valid: true,
+                    errors: Vec::new(),
+                    warnings: Vec::new(),
+                },
+                Err(e) => ValidationResult {
+                    valid: false,
+                    errors: vec![e.to_string()],
+                    warnings: Vec::new(),
+                },
+            };
+            drop(graphs);
+            (node_id, validation)
         };
 
         Ok(AddNodeResponse {
@@ -81,41 +95,48 @@ impl GraphEditorService {
         })
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if the graph or node is not found.
     pub async fn modify_node(&self, req: ModifyNodeRequest) -> Result<ModifyNodeResponse> {
         debug!(
             "Modifying node '{}' in graph '{}'",
             req.node_id, req.graph_id
         );
 
-        let mut graphs = self.graphs.write().await;
-        let graph = graphs
-            .get_mut(&req.graph_id)
-            .ok_or(GraphEditorError::GraphNotFound)?;
+        let validation = {
+            let mut graphs = self.graphs.write().await;
+            let graph = graphs
+                .get_mut(&req.graph_id)
+                .ok_or(GraphEditorError::GraphNotFound)?;
 
-        let mut node = graph
-            .get_node(&req.node_id)
-            .cloned()
-            .ok_or(GraphEditorError::RpcNodeNotFound)?;
+            let mut node = graph
+                .get_node(&req.node_id)
+                .cloned()
+                .ok_or(GraphEditorError::RpcNodeNotFound)?;
 
-        if let serde_json::Value::Object(changes) = req.changes
-            && let serde_json::Value::Object(ref mut props) = node.properties
-        {
-            for (key, value) in changes {
-                props.insert(key, value);
+            if let serde_json::Value::Object(changes) = req.changes
+                && let serde_json::Value::Object(ref mut props) = node.properties
+            {
+                for (key, value) in changes {
+                    props.insert(key, value);
+                }
             }
-        }
 
-        let validation = match graph.modify_node(&req.node_id, node) {
-            Ok(()) => ValidationResult {
-                valid: true,
-                errors: Vec::new(),
-                warnings: Vec::new(),
-            },
-            Err(e) => ValidationResult {
-                valid: false,
-                errors: vec![e.to_string()],
-                warnings: Vec::new(),
-            },
+            let v = match graph.modify_node(&req.node_id, node) {
+                Ok(()) => ValidationResult {
+                    valid: true,
+                    errors: Vec::new(),
+                    warnings: Vec::new(),
+                },
+                Err(e) => ValidationResult {
+                    valid: false,
+                    errors: vec![e.to_string()],
+                    warnings: Vec::new(),
+                },
+            };
+            drop(graphs);
+            v
         };
 
         Ok(ModifyNodeResponse {
@@ -124,6 +145,9 @@ impl GraphEditorService {
         })
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if the graph is not found or node removal fails.
     pub async fn remove_node(&self, req: RemoveNodeRequest) -> Result<RemoveNodeResponse> {
         debug!(
             "Removing node '{}' from graph '{}'",
@@ -136,39 +160,52 @@ impl GraphEditorService {
             .ok_or(GraphEditorError::GraphNotFound)?;
 
         match graph.remove_node(&req.node_id) {
-            Ok(affected_edges) => Ok(RemoveNodeResponse {
-                success: true,
-                affected_edges,
-            }),
-            Err(e) => Err(GraphEditorError::RemoveNodeFailed(e.to_string()).into()),
+            Ok(affected_edges) => {
+                drop(graphs);
+                Ok(RemoveNodeResponse {
+                    success: true,
+                    affected_edges,
+                })
+            }
+            Err(e) => {
+                drop(graphs);
+                Err(GraphEditorError::RemoveNodeFailed(e.to_string()).into())
+            }
         }
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if the graph is not found; validation errors are embedded in the response.
     pub async fn add_edge(&self, req: AddEdgeRequest) -> Result<AddEdgeResponse> {
         debug!(
             "Adding edge from '{}' to '{}' in graph '{}'",
             req.from, req.to, req.graph_id
         );
 
-        let mut graphs = self.graphs.write().await;
-        let graph = graphs
-            .get_mut(&req.graph_id)
-            .ok_or(GraphEditorError::GraphNotFound)?;
+        let (edge_id, validation) = {
+            let mut graphs = self.graphs.write().await;
+            let graph = graphs
+                .get_mut(&req.graph_id)
+                .ok_or(GraphEditorError::GraphNotFound)?;
 
-        let edge_id = format!("edge-{}", uuid::Uuid::new_v4());
-        let edge = GraphEdge::new(edge_id.clone(), req.from, req.to, req.edge_type);
+            let edge_id = format!("edge-{}", uuid::Uuid::new_v4());
+            let edge = GraphEdge::new(edge_id.clone(), req.from, req.to, req.edge_type);
 
-        let validation = match graph.add_edge(edge) {
-            Ok(()) => ValidationResult {
-                valid: true,
-                errors: Vec::new(),
-                warnings: Vec::new(),
-            },
-            Err(e) => ValidationResult {
-                valid: false,
-                errors: vec![e.to_string()],
-                warnings: Vec::new(),
-            },
+            let validation = match graph.add_edge(edge) {
+                Ok(()) => ValidationResult {
+                    valid: true,
+                    errors: Vec::new(),
+                    warnings: Vec::new(),
+                },
+                Err(e) => ValidationResult {
+                    valid: false,
+                    errors: vec![e.to_string()],
+                    warnings: Vec::new(),
+                },
+            };
+            drop(graphs);
+            (edge_id, validation)
         };
 
         Ok(AddEdgeResponse {
@@ -177,14 +214,19 @@ impl GraphEditorService {
         })
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if the graph is not found.
     pub async fn save_template(&self, req: SaveTemplateRequest) -> Result<SaveTemplateResponse> {
         info!("Saving graph '{}' as template '{}'", req.graph_id, req.name);
 
-        let graphs = self.graphs.read().await;
-        let graph = graphs
-            .get(&req.graph_id)
-            .cloned()
-            .ok_or(GraphEditorError::GraphNotFound)?;
+        let graph = {
+            let graphs = self.graphs.read().await;
+            graphs
+                .get(&req.graph_id)
+                .cloned()
+                .ok_or(GraphEditorError::GraphNotFound)?
+        };
 
         let template_id = format!("template-{}", uuid::Uuid::new_v4());
         let saved_at = chrono::Utc::now();
@@ -200,8 +242,10 @@ impl GraphEditorService {
             usage_count: 0,
         };
 
-        let mut templates = self.templates.write().await;
-        templates.insert(template_id.clone(), template);
+        {
+            let mut templates = self.templates.write().await;
+            templates.insert(template_id.clone(), template);
+        }
 
         Ok(SaveTemplateResponse {
             template_id,
@@ -209,18 +253,23 @@ impl GraphEditorService {
         })
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if the template is not found.
     pub async fn apply_template(&self, req: ApplyTemplateRequest) -> Result<ApplyTemplateResponse> {
         info!(
             "Applying template '{}' (merge: {})",
             req.template_id, req.merge
         );
 
-        let templates = self.templates.read().await;
-        let template = templates
-            .get(&req.template_id)
-            .ok_or(GraphEditorError::TemplateNotFound)?;
-
-        let graph = template.graph.clone();
+        let graph = {
+            let templates = self.templates.read().await;
+            templates
+                .get(&req.template_id)
+                .ok_or(GraphEditorError::TemplateNotFound)?
+                .graph
+                .clone()
+        };
 
         let nodes_added = graph.nodes.len();
         let edges_added = graph.edges.len();
@@ -232,6 +281,9 @@ impl GraphEditorService {
         })
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if graph validation fails or topological sort fails (e.g., cycles).
     #[expect(clippy::unused_async, reason = "async for trait compatibility")]
     pub async fn get_preview(&self, req: GetPreviewRequest) -> Result<GetPreviewResponse> {
         debug!("Getting execution preview for graph '{}'", req.graph.id);

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Rich error types for scenario loading and validation
 //!
 //! This module provides context-rich error types that help users understand

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Dynamic scenario provider using schema-agnostic data structures
 //!
 //! This provider replaces the static, brittle `scenario_provider.rs` with
@@ -35,6 +35,10 @@ pub struct DynamicScenarioProvider {
 
 impl DynamicScenarioProvider {
     /// Create from file (auto-detects and migrates schema)
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError::FileReadError` if the file cannot be read,
+    /// or `DiscoveryError::ScenarioParseError` if the JSON is invalid.
     pub fn from_file<P: AsRef<Path>>(path: P) -> DiscoveryResult<Self> {
         let path = path.as_ref();
 
@@ -437,6 +441,87 @@ mod tests {
         assert!(matches!(primals[0].health, PrimalHealthStatus::Warning));
         assert!(matches!(primals[1].health, PrimalHealthStatus::Critical));
         assert!(matches!(primals[2].health, PrimalHealthStatus::Unknown));
+        std::fs::remove_file(&temp_file).ok();
+    }
+
+    #[test]
+    fn test_dynamic_from_file_nonexistent() {
+        let result = DynamicScenarioProvider::from_file("/nonexistent/path/12345.json");
+        assert!(result.is_err());
+        if let Err(e) = result {
+            let msg = e.to_string();
+            assert!(
+                msg.contains("Failed to read file")
+                    || msg.contains("No such file")
+                    || msg.contains("path"),
+                "got: {msg}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_dynamic_from_file_invalid_json() {
+        let temp_file = std::env::temp_dir().join("test_dynamic_invalid.json");
+        std::fs::write(&temp_file, "not valid json {{{").unwrap();
+        let result = DynamicScenarioProvider::from_file(&temp_file);
+        std::fs::remove_file(&temp_file).ok();
+        assert!(result.is_err());
+        if let Err(e) = result {
+            assert!(
+                e.to_string().contains("ScenarioParseError") || e.to_string().contains("parse")
+            );
+        }
+    }
+
+    #[test]
+    fn test_dynamic_from_file_missing_ecosystem() {
+        let temp_file = std::env::temp_dir().join("test_dynamic_no_eco.json");
+        std::fs::write(&temp_file, r#"{"name": "x"}"#).unwrap();
+        let result = DynamicScenarioProvider::from_file(&temp_file);
+        std::fs::remove_file(&temp_file).ok();
+        assert!(result.is_err());
+        if let Err(e) = result {
+            assert!(
+                e.to_string().contains("ecosystem") || e.to_string().contains("ScenarioParseError")
+            );
+        }
+    }
+
+    #[test]
+    fn test_dynamic_from_file_missing_primals() {
+        let temp_file = std::env::temp_dir().join("test_dynamic_no_primals.json");
+        std::fs::write(&temp_file, r#"{"ecosystem": {}}"#).unwrap();
+        let result = DynamicScenarioProvider::from_file(&temp_file);
+        std::fs::remove_file(&temp_file).ok();
+        assert!(result.is_err());
+        if let Err(e) = result {
+            assert!(
+                e.to_string().contains("primals") || e.to_string().contains("ScenarioParseError")
+            );
+        }
+    }
+
+    #[test]
+    fn test_dynamic_from_file_primal_not_object() {
+        let temp_file = std::env::temp_dir().join("test_dynamic_primal_not_obj.json");
+        std::fs::write(
+            &temp_file,
+            r#"{"ecosystem": {"primals": ["not an object"]}}"#,
+        )
+        .unwrap();
+        let result = DynamicScenarioProvider::from_file(&temp_file);
+        std::fs::remove_file(&temp_file).ok();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_dynamic_get_field() {
+        let json = r#"{"name": "F", "ecosystem": {"primals": []}}"#;
+        let temp_file = std::env::temp_dir().join("test_dynamic_get_field.json");
+        std::fs::write(&temp_file, json).unwrap();
+        let provider = DynamicScenarioProvider::from_file(&temp_file).unwrap();
+        assert!(provider.get_field("name").is_some());
+        assert!(provider.get_field("nonexistent").is_none());
         std::fs::remove_file(&temp_file).ok();
     }
 }

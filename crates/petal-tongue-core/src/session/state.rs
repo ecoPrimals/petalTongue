@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 use crate::instance::InstanceId;
 use crate::{LayoutAlgorithm, PrimalInfo, TopologyEdge};
@@ -29,7 +29,7 @@ pub struct SessionState {
     pub layout: LayoutAlgorithm,
     /// Node ID to (x, y) position for manual layout.
     pub node_positions: HashMap<String, (f32, f32)>,
-    /// Window position (x, y) on screen.
+    /// Window position (x, y) on display.
     pub window_position: Option<(i32, i32)>,
     /// Window size (width, height).
     pub window_size: Option<(u32, u32)>,
@@ -132,21 +132,41 @@ impl SessionState {
     }
 
     /// Saves this state to the given path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the parent directory cannot be created, if
+    /// serialization fails, or if the file cannot be written.
     pub fn save(&self, path: &Path) -> Result<(), SessionError> {
         persistence::save_session(self, path)
     }
 
     /// Loads session state from the given path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file does not exist, cannot be read, or cannot
+    /// be parsed as valid session state.
     pub fn load(path: &Path) -> Result<Self, SessionError> {
         persistence::load_session(path)
     }
 
     /// Exports this state to the given path (alias for `save`).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the parent directory cannot be created, if
+    /// serialization fails, or if the file cannot be written.
     pub fn export(&self, path: &Path) -> Result<(), SessionError> {
         self.save(path)
     }
 
     /// Imports session state from the given path (alias for `load`).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file does not exist, cannot be read, or cannot
+    /// be parsed as valid session state.
     pub fn import(path: &Path) -> Result<Self, SessionError> {
         Self::load(path)
     }

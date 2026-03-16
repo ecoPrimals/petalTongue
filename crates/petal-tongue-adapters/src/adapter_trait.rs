@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Property adapter trait for ecosystem-specific rendering
 //!
 //! This trait allows ecosystem-specific adapters to interpret and render
@@ -28,7 +28,7 @@ pub struct NodeDecoration {
 /// petalTongue core is universal and knows nothing about specific ecosystems.
 /// Adapters bridge this gap by:
 /// 1. Declaring which property keys they handle
-/// 2. Rendering those properties with ecosystem-specific UI
+/// 2. Rendering those properties with ecosystem-specific interface
 /// 3. Providing visual decorations (badges, colors) for nodes
 /// 4. Getting configuration FROM the ecosystem, not hardcoded
 ///
@@ -63,9 +63,9 @@ pub trait PropertyAdapter: Send + Sync {
     /// Returns true if this adapter knows how to render this property.
     fn handles(&self, property_key: &str) -> bool;
 
-    /// Render a property in the UI
+    /// Render a property in the interface
     ///
-    /// Called when displaying node details. The adapter can use any
+    /// Called when presenting node details. The adapter can use any
     /// egui widgets to render the property value.
     fn render(&self, property_key: &str, value: &PropertyValue, ui: &mut Ui);
 

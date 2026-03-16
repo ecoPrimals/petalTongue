@@ -1,7 +1,7 @@
 # petalTongue -- Project Status
 
-**Updated**: March 15, 2026  
-**Version**: 1.6.5  
+**Updated**: March 16, 2026  
+**Version**: 1.6.6  
 **Edition**: 2024 (all crates)
 
 ---
@@ -11,18 +11,18 @@
 | Area | Status |
 |------|--------|
 | Build | Clean (`cargo check --workspace`) |
-| Tests | 5,113 passing, 0 failures, ~4 ignored |
+| Tests | 5,225 passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery via `[workspace.lints.clippy]`) |
 | Rustdoc | Clean (`cargo doc --workspace --no-deps`) |
 | cargo deny | Clean (advisories, bans, licenses, sources) |
 | Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
-| Files | All 560 files under 1,000 lines (CI enforced); largest file 876 lines (`json_rpc_client.rs`) |
-| License | AGPL-3.0-only, SPDX on all source files |
+| Files | All under 1,000 lines (CI enforced); largest file 876 lines (`json_rpc_client.rs`) |
+| License | AGPL-3.0-or-later, SPDX on all source files |
 | Edition | 2024 (all 16 crates) |
 | External C deps | None (`ring` eliminated, `libc`/`nix`/`atty` removed, using `rustix`) |
 | ecoBin | Compliant (no ring, aws-lc-sys, openssl-sys, native-tls, zstd-sys) |
-| Coverage | ~87% line / ~88% branch (llvm-cov, `--workspace`) -- target 90% |
+| Coverage | ~86% line / ~87% branch (llvm-cov, `--workspace`) -- target 90% |
 | Error handling | **Typed thiserror errors throughout** — anyhow eliminated from all production code |
 | JSON-RPC | Semantic method naming (`domain.operation[.variant]`), 40 methods compliant |
 | Mocks | All gated behind `#[cfg(test)]` or `#[cfg(feature = "test-fixtures")]`; production mock code eliminated |
@@ -32,7 +32,8 @@
 | Workspace lints | Centralized `[workspace.lints.clippy]` — crate-level redundant lint attrs removed |
 | Zero-copy | `bytes::Bytes` in rendering pipeline, IPC, and audio; `Arc<DeviceState>` in state_sync, `Arc<Vec<...>>` in TUI |
 | Domain theming | 7 domain palettes (health, physics, ecology, agriculture, measurement, neural, game) + diverging color scales |
-| GUI logic extraction | All UI business logic in pure functions, 102 headless integration tests |
+| UUI glossary | Canonical terminology in `petal_tongue_core::uui_glossary` — modalities, user types, SAME DAVE |
+| Display logic extraction | All interface business logic in pure functions, 102 headless integration tests |
 | Game loop | Wired: TickClock in app, begin_frame_with_dt, continuous mode motor commands |
 | IPC-to-UI bridge | Complete: shared VisualizationState, LiveSessionsPanel, session polling |
 | Sensor streaming | Complete: SensorEventBatch/IPC types, SensorStreamRegistry, subscribe/unsubscribe/poll handlers |
@@ -108,16 +109,16 @@ Delegated/roadmap items (not TODOs, documented as roadmap markers):
 
 ### Test Coverage Gap
 
-Current: ~87% line / ~88% branch coverage (5,113 tests, llvm-cov `--workspace`).
+Current: ~86% line / ~87% branch coverage (5,225 tests, llvm-cov `--workspace`).
 Target: 90%.
 
-Per-crate coverage:
-- petal-tongue-core: 93.1%, petal-tongue-scene: 93.8%, petal-tongue-adapters: 94.9%
-- petal-tongue-telemetry: 96.5%, petal-tongue-entropy: 92.7%, petal-tongue-graph: 92.5%
-- petal-tongue-tui: 90.6%, petal-tongue-ipc: 90.2%
-- petal-tongue-discovery: 88.2%, petal-tongue-cli: 87.2%, doom-core: 87.1%
-- petal-tongue-animation: 86.9%, petal-tongue-ui-core: 86.3%, petal-tongue-api: 83.5%
-- petal-tongue-ui: 75.7% (8 of 13 crates above 90%)
+Per-crate coverage (post-UUI evolution session):
+- petal-tongue-api: 96.5%, petal-tongue-adapters: 94.9%, petal-tongue-core: 93.1%
+- petal-tongue-scene: 93.8%, petal-tongue-ui-core: 93.5%, petal-tongue-entropy: 92.7%
+- petal-tongue-graph: 92.5%, petal-tongue-discovery: 91.2%, petal-tongue-tui: 90.6%
+- petal-tongue-cli: 90.1%, doom-core: 90.6%, petal-tongue-ipc: 88.8%
+- petal-tongue-animation: 99.3% (with egui feature)
+- petal-tongue-ui: 75.7% (13 of 15 non-UI crates at or above 90%)
 
 Architecture patterns applied:
 - `EventStatus::color_rgba()` returns `[u8; 4]` RGBA, `color()` wraps for egui compat

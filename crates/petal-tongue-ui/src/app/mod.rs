@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Main application logic for petalTongue UI
 //!
-//! This is the **`EguiGUI` Modality** implementation - the native desktop GUI.
+//! This is the **`EguiGUI` Modality** implementation - the native desktop display.
 //!
 //! ## Architecture (`SMART_REFACTORING_POLICY`)
 //!
@@ -197,8 +197,12 @@ pub struct PetalTongueApp {
 impl PetalTongueApp {
     /// Create a new application with a shared graph from `DataService`
     ///
-    /// This ensures the GUI uses the SAME data as all other UI modes (TUI, Web, etc.)
+    /// This ensures the display uses the SAME data as all other UI modes (TUI, Web, etc.)
     /// TRUE PRIMAL: Zero data duplication!
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if initialization fails (scenario loading, provider discovery, or renderer setup).
     pub fn new_with_shared_graph(
         _cc: &eframe::CreationContext<'_>,
         scenario_path: Option<std::path::PathBuf>,
@@ -209,6 +213,10 @@ impl PetalTongueApp {
     }
 
     /// Create a new application (compatibility wrapper for standalone binary)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if initialization fails (scenario loading, provider discovery, or renderer setup).
     pub fn new(
         cc: &eframe::CreationContext<'_>,
         scenario_path: Option<std::path::PathBuf>,
@@ -258,15 +266,19 @@ impl PetalTongueApp {
     /// Create an application in headless mode (no display, no eframe context).
     ///
     /// Suitable for testing, introspection harnesses, and CI pipelines.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if initialization fails (scenario loading, provider discovery, or renderer setup).
     pub fn new_headless() -> Result<Self> {
         let shared_graph = Arc::new(RwLock::new(GraphEngine::new()));
         let caps = petal_tongue_core::RenderingCapabilities::detect();
         init::create_app(None, caps, shared_graph)
     }
 
-    /// Snapshot of what this frame contains: visible panels, bound data, possible interactions.
+    /// Snapshot of what this frame contains: perceivable panels, bound data, possible interactions.
     ///
-    /// This closes the proprioceptive loop: the primal knows *what* it's showing.
+    /// This closes the proprioceptive loop: the primal knows *what* it's presenting.
     #[must_use]
     pub fn introspect(&self) -> FrameIntrospection {
         let mut panels = Vec::new();
@@ -442,7 +454,7 @@ impl PetalTongueApp {
     /// Run one update cycle without requiring `eframe::Frame`.
     ///
     /// This contains the full panel logic extracted from `eframe::App::update`
-    /// so that the same code path can be exercised by both the real GUI and
+    /// so that the same code path can be exercised by both the real interface and
     /// the headless harness.
     pub fn update_headless(&mut self, ctx: &egui::Context) {
         self.interaction_bridge
@@ -669,7 +681,7 @@ impl PetalTongueApp {
     }
 
     /// Record the current frame's content into the rendering awareness system.
-    fn feed_introspection(&mut self) {
+    fn feed_introspection(&self) {
         let introspection = self.introspect();
         if let Ok(mut awareness) = self.rendering_awareness.write() {
             awareness.record_frame_content(introspection);
@@ -688,7 +700,7 @@ impl PetalTongueApp {
         self.frame_count
     }
 
-    /// Whether the keyboard shortcuts help overlay is visible.
+    /// Whether the keyboard shortcuts help overlay is perceivable.
     #[must_use]
     pub const fn is_help_visible(&self) -> bool {
         self.keyboard_shortcuts.show_help

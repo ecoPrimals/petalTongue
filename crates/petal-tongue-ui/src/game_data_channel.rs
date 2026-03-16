@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! ludoSpring `GameDataChannel` → petalTongue `DataBinding` mapping.
 //!
 //! When ludoSpring (or any game-domain primal) calls `visualization.render` with

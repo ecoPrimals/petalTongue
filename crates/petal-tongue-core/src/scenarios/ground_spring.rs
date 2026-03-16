@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Scenario builders for groundSpring capabilities.
 //!
 //! groundSpring has 395 validation checks and 102 barraCuda delegations for

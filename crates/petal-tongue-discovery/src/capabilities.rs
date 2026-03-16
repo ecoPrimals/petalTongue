@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Visualization capability definitions
 //!
 //! These capabilities define what data a primal must provide to support
@@ -86,5 +86,17 @@ mod tests {
     fn test_display() {
         let cap = VisualizationCapability::PrimalProvider;
         assert_eq!(format!("{cap}"), "visualization.primal-provider");
+    }
+
+    #[test]
+    fn test_telemetry_and_health_capability_strings() {
+        assert_eq!(
+            VisualizationCapability::TelemetryProvider.as_str(),
+            "visualization.telemetry-provider"
+        );
+        assert_eq!(
+            VisualizationCapability::HealthProvider.as_str(),
+            "visualization.health-provider"
+        );
     }
 }

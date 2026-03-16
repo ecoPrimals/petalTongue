@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Neural API-based visualization data provider
 //!
 //! Connects to biomeOS Neural API for unified primal discovery and proprioception.
@@ -42,6 +42,9 @@ impl NeuralApiProvider {
     /// Discover Neural API socket
     ///
     /// Searches for biomeos-neural-api-{family_id}.sock in standard locations.
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError::NeuralApiNotFound` if no socket found, or health check fails.
     pub async fn discover(family_id: Option<&str>) -> DiscoveryResult<Self> {
         let family = family_id
             .map(String::from)
@@ -97,6 +100,9 @@ impl NeuralApiProvider {
 
     /// Send JSON-RPC request to Neural API
     /// Call a Neural API method (public for graph client)
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError` on connection, I/O, or JSON-RPC errors.
     pub async fn call_method(&self, method: &str, params: Option<Value>) -> DiscoveryResult<Value> {
         let id = self
             .request_id
@@ -150,6 +156,10 @@ impl NeuralApiProvider {
                 .get("message")
                 .and_then(|m| m.as_str())
                 .unwrap_or("Unknown error");
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "JSON-RPC error codes are in -32k range; i64 fits in i32"
+            )]
             return Err(DiscoveryError::JsonRpcError {
                 code: error
                     .get("code")
@@ -213,6 +223,9 @@ impl NeuralApiProvider {
     }
 
     /// Get proprioception data from Neural API
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError` if the API call fails or response is invalid.
     pub async fn get_proprioception(
         &self,
     ) -> DiscoveryResult<petal_tongue_core::ProprioceptionData> {
@@ -226,6 +239,9 @@ impl NeuralApiProvider {
     }
 
     /// Get system metrics from Neural API
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError` if the API call fails.
     pub async fn get_metrics(&self) -> DiscoveryResult<Value> {
         self.call_method("neural_api.get_metrics", None).await
     }
@@ -313,6 +329,86 @@ impl VisualizationDataProvider for NeuralApiProvider {
                 "coordination".to_string(),
             ],
         }
+    }
+}
+
+/// Create a mock Neural API Unix socket server for testing
+#[cfg(test)]
+async fn create_mock_neural_api_server(
+    socket_path: &std::path::Path,
+) -> anyhow::Result<tokio::task::JoinHandle<()>> {
+    let _ = std::fs::remove_file(socket_path);
+    let listener = tokio::net::UnixListener::bind(socket_path)?;
+    let handle = tokio::spawn(async move {
+        while let Ok((stream, _)) = listener.accept().await {
+            tokio::spawn(handle_neural_api_connection(stream));
+        }
+    });
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    Ok(handle)
+}
+
+#[cfg(test)]
+async fn handle_neural_api_connection(mut stream: tokio::net::UnixStream) {
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+    let (reader, mut writer) = stream.split();
+    let mut reader = BufReader::new(reader);
+    let mut line = String::new();
+    while reader.read_line(&mut line).await.is_ok() && !line.is_empty() {
+        if let Ok(request) = serde_json::from_str::<serde_json::Value>(&line) {
+            let method = request["method"].as_str().unwrap_or("");
+            let id = request["id"].clone();
+            let result = match method {
+                "primal.list" => serde_json::json!({
+                    "primals": [{"id": "p1", "primal_type": "test", "socket_path": "/tmp/p1.sock",
+                        "capabilities": ["viz"], "health": "healthy"}]
+                }),
+                "neural_api.get_proprioception" => {
+                    let now = chrono::Utc::now();
+                    serde_json::json!({
+                        "timestamp": now.to_rfc3339(),
+                        "family_id": "test",
+                        "health": {"percentage": 100.0, "status": "healthy"},
+                        "confidence": 90.0,
+                        "sensory": {"active_sockets": 2, "last_scan": now.to_rfc3339()},
+                        "self_awareness": {"knows_about": 1, "can_coordinate": true,
+                            "has_security": false, "has_discovery": true, "has_compute": false},
+                        "motor": {"can_deploy": false, "can_execute_graphs": true,
+                            "can_coordinate_primals": true},
+                        "afferent_channels": [],
+                        "efferent_channels": []
+                    })
+                }
+                "neural_api.get_metrics" => {
+                    serde_json::json!({"cpu_percent": 10, "memory_mb": 128})
+                }
+                "neural_api.get_topology" => serde_json::json!({
+                    "connections": [{"from": "p1", "to": "p2", "connection_type": "trust"}]
+                }),
+                "neural_api.save_graph" => serde_json::json!({"graph_id": "g-saved-123"}),
+                "neural_api.load_graph" => serde_json::json!({"graph": {"nodes": [], "edges": []}}),
+                "neural_api.list_graphs" => serde_json::json!({
+                    "graphs": [{"id": "g1", "name": "Graph 1", "description": null,
+                        "created_at": "2026-01-01", "modified_at": "2026-01-02",
+                        "node_count": 2, "edge_count": 1}]
+                }),
+                "neural_api.execute_graph" => serde_json::json!({"execution_id": "exec-456"}),
+                "neural_api.get_execution_status" => serde_json::json!({
+                    "execution_id": "exec-456", "graph_id": "g1", "status": "completed",
+                    "started_at": "2026-01-01T00:00:00Z", "completed_at": "2026-01-01T00:01:00Z",
+                    "error": null, "output": {"result": "ok"}
+                }),
+                "neural_api.cancel_execution"
+                | "neural_api.delete_graph"
+                | "neural_api.update_graph_metadata" => serde_json::json!({}),
+                _ => serde_json::json!({"error": "Method not found"}),
+            };
+            let response = serde_json::json!({"jsonrpc": "2.0", "result": result, "id": id});
+            let response_str = serde_json::to_string(&response).unwrap() + "\n";
+            let _ = writer.write_all(response_str.as_bytes()).await;
+            let _ = writer.flush().await;
+        }
+        line.clear();
     }
 }
 
@@ -549,5 +645,160 @@ mod tests {
         let arr = result.as_array();
         assert!(arr.is_some());
         assert_eq!(arr.unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_neural_api_call_method_get_primals() {
+        let dir = tempfile::tempdir().unwrap();
+        let sock_path = dir.path().join("neural.sock");
+        let _server = create_mock_neural_api_server(&sock_path).await.unwrap();
+
+        let provider = NeuralApiProvider::with_socket_path(sock_path.clone());
+        let primals = provider.get_primals().await.unwrap();
+        assert_eq!(primals.len(), 1);
+        assert_eq!(primals[0].id.as_str(), "p1");
+    }
+
+    #[tokio::test]
+    async fn test_neural_api_call_method_get_topology() {
+        let dir = tempfile::tempdir().unwrap();
+        let sock_path = dir.path().join("neural-topology.sock");
+        let _server = create_mock_neural_api_server(&sock_path).await.unwrap();
+
+        let provider = NeuralApiProvider::with_socket_path(sock_path);
+        let topology = provider.get_topology().await.unwrap();
+        assert_eq!(topology.len(), 1);
+        assert_eq!(topology[0].from.as_str(), "p1");
+        assert_eq!(topology[0].to.as_str(), "p2");
+    }
+
+    #[tokio::test]
+    async fn test_neural_api_health_check() {
+        let dir = tempfile::tempdir().unwrap();
+        let sock_path = dir.path().join("neural-health.sock");
+        let _server = create_mock_neural_api_server(&sock_path).await.unwrap();
+
+        let provider = NeuralApiProvider::with_socket_path(sock_path);
+        let health = provider.health_check().await.unwrap();
+        assert!(health.contains("healthy"));
+    }
+
+    #[tokio::test]
+    async fn test_neural_api_get_proprioception() {
+        let dir = tempfile::tempdir().unwrap();
+        let sock_path = dir.path().join("neural-proprio.sock");
+        let _server = create_mock_neural_api_server(&sock_path).await.unwrap();
+
+        let provider = NeuralApiProvider::with_socket_path(sock_path);
+        let proprio = provider.get_proprioception().await.unwrap();
+        assert_eq!(proprio.family_id, "test");
+        assert_eq!(
+            proprio.health.status,
+            petal_tongue_core::ProprioceptionHealthStatus::Healthy
+        );
+    }
+
+    #[tokio::test]
+    async fn test_neural_api_get_metrics() {
+        let dir = tempfile::tempdir().unwrap();
+        let sock_path = dir.path().join("neural-metrics.sock");
+        let _server = create_mock_neural_api_server(&sock_path).await.unwrap();
+
+        let provider = NeuralApiProvider::with_socket_path(sock_path);
+        let metrics = provider.get_metrics().await.unwrap();
+        assert_eq!(metrics["cpu_percent"], 10);
+        assert_eq!(metrics["memory_mb"], 128);
+    }
+
+    #[tokio::test]
+    async fn test_neural_api_connection_failure() {
+        let provider = NeuralApiProvider::with_socket_path(PathBuf::from(
+            "/tmp/nonexistent-neural-api-xyz-99999.sock",
+        ));
+        let result = provider.call_method("primal.list", None).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_neural_graph_client_save_load_list_execute() {
+        use crate::NeuralGraphClient;
+
+        let dir = tempfile::tempdir().unwrap();
+        let sock_path = dir.path().join("neural-graph.sock");
+        let _server = create_mock_neural_api_server(&sock_path).await.unwrap();
+
+        let provider = NeuralApiProvider::with_socket_path(sock_path.clone());
+        let client = NeuralGraphClient::new(&provider);
+
+        let graph_id = client
+            .save_graph(serde_json::json!({"nodes": [], "edges": []}))
+            .await
+            .unwrap();
+        assert_eq!(graph_id, "g-saved-123");
+
+        let graph = client.load_graph("g1").await.unwrap();
+        assert!(graph.get("nodes").is_some());
+
+        let graphs = client.list_graphs().await.unwrap();
+        assert_eq!(graphs.len(), 1);
+        assert_eq!(graphs[0].id, "g1");
+
+        let exec_id = client
+            .execute_graph("g1", Some(serde_json::json!({"param": 1})))
+            .await
+            .unwrap();
+        assert_eq!(exec_id, "exec-456");
+
+        let status = client.get_execution_status("exec-456").await.unwrap();
+        assert_eq!(status.status, crate::ExecutionStatus::Completed);
+
+        client.cancel_execution("exec-456").await.unwrap();
+        client.delete_graph("g1").await.unwrap();
+        client
+            .update_graph_metadata("g1", Some("New".to_string()), Some("Desc".to_string()))
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "test-fixtures")]
+    async fn test_neural_api_discover_with_mock_socket() {
+        let dir = tempfile::tempdir().unwrap();
+        let sock_path = dir.path().join("biomeos-neural-api-testfam.sock");
+        let _server = create_mock_neural_api_server(&sock_path).await.unwrap();
+
+        let provider = petal_tongue_core::test_fixtures::env_test_helpers::with_env_var_async(
+            "XDG_RUNTIME_DIR",
+            dir.path().to_str().unwrap(),
+            || async { NeuralApiProvider::discover(Some("testfam")).await },
+        )
+        .await
+        .unwrap();
+
+        assert!(
+            provider
+                .get_metadata()
+                .endpoint
+                .contains("biomeos-neural-api-testfam")
+        );
+    }
+
+    #[tokio::test]
+    async fn test_neural_graph_client_connection_failure() {
+        use crate::NeuralGraphClient;
+
+        let provider = NeuralApiProvider::with_socket_path(PathBuf::from(
+            "/tmp/nonexistent-neural-xyz-88888.sock",
+        ));
+        let client = NeuralGraphClient::new(&provider);
+
+        let result = client.save_graph(serde_json::json!({})).await;
+        assert!(result.is_err());
+
+        let result = client.load_graph("g1").await;
+        assert!(result.is_err());
+
+        let result = client.list_graphs().await;
+        assert!(result.is_err());
     }
 }

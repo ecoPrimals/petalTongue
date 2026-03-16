@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! tarpc client implementation
 
 use std::net::SocketAddr;
@@ -191,6 +191,10 @@ impl TarpcClient {
         }
     }
 
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "must hold write lock to set connection"
+    )]
     async fn get_connection(&self) -> TarpcResult<PetalTongueRpcClient> {
         {
             let conn = self.connection.read().await;

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! SAME DAVE Proprioception System - main tracking logic
 
 use crate::input_verification::{InputModality, InputVerificationSystem};
@@ -217,11 +217,11 @@ impl ProprioceptionSystem {
     pub fn input_received(&mut self, modality: &InputModality) {
         self.input_system.record_input(modality);
 
-        // KEY INSIGHT: Input from user also confirms they can SEE/HEAR output!
+        // KEY INSIGHT: Input from user also confirms they can PERCEIVE output!
         // This is the bidirectional feedback loop!
         match modality {
             InputModality::Keyboard | InputModality::Pointer => {
-                // User interacting via keyboard/mouse confirms they can see visual output
+                // User interacting via keyboard/mouse confirms they can perceive visual output
                 self.output_system
                     .confirm_via_interaction(&OutputModality::Visual);
             }

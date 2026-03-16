@@ -1,8 +1,8 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pointer (mouse/touch/stylus) input adapter.
 //!
 //! Translates mouse/pointer [`SensorEvent`] values into semantic
-//! [`InteractionIntent`] values. Handles click-to-select, scroll-to-zoom,
+//! [`InteractionIntent`] values. Handles activate-to-select, scroll-to-zoom,
 //! hover-to-focus, and drag-to-pan/select-box.
 
 use petal_tongue_core::interaction::{

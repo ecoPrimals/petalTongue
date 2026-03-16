@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Dynamic schema system for live-evolving data structures
 //!
 //! This module provides schema-agnostic data handling that enables petalTongue

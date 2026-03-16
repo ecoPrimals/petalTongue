@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Protocol selection logic for inter-primal communication
 //!
 //! Implements ecosystem-standard protocol priority:
@@ -105,6 +105,11 @@ pub fn parse_health_from_json(value: &serde_json::Value) -> petal_tongue_ipc::He
     }
 }
 
+/// Parse capabilities array from JSON response.
+///
+/// # Errors
+///
+/// Returns an error if the response is missing the 'capabilities' array.
 pub fn parse_capabilities_from_json(
     value: &serde_json::Value,
 ) -> Result<Vec<String>, TarpcClientError> {
@@ -188,6 +193,10 @@ pub fn detect_protocol(endpoint: &str) -> Protocol {
 ///
 /// # Returns
 /// Client connection or error
+///
+/// # Errors
+///
+/// Returns an error if connection fails for the detected protocol (tarpc health check, JSON-RPC health, or HTTPS health).
 pub async fn connect_with_priority(endpoint: &str) -> TarpcResult<PrimalConnection> {
     let protocol = detect_protocol(endpoint);
 
@@ -297,6 +306,10 @@ pub enum PrimalConnection {
 
 impl PrimalConnection {
     /// Get capabilities from remote primal
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the RPC call fails or the response cannot be parsed.
     pub async fn get_capabilities(&self) -> TarpcResult<Vec<String>> {
         match self {
             Self::Tarpc(client) => client.get_capabilities().await,
@@ -312,6 +325,10 @@ impl PrimalConnection {
     }
 
     /// Check health of remote primal
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the health check RPC call fails.
     pub async fn health(&self) -> TarpcResult<petal_tongue_ipc::HealthStatus> {
         match self {
             Self::Tarpc(client) => client.health().await,

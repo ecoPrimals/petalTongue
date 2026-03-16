@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Timeline View - Event Sequence Visualization
 //!
 //! Displays temporal sequences of primal interactions with time scrubbing capabilities.

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // mDNS-based visualization provider discovery
 //
 // This module implements network-based discovery of visualization data providers
@@ -87,6 +87,9 @@ impl MdnsVisualizationProvider {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    /// Returns `DiscoveryError::MdnsError` on socket creation or timeout.
     pub async fn discover() -> DiscoveryResult<Vec<Box<dyn VisualizationDataProvider>>> {
         tracing::info!("Starting mDNS discovery for visualization providers...");
 
@@ -482,6 +485,7 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::traits::ProviderMetadata;
     use std::net::SocketAddr;
 
     #[test]
@@ -666,5 +670,112 @@ mod tests {
         let query = MdnsVisualizationProvider::build_mdns_query("");
         assert!(query.len() >= 12);
         assert_eq!(&query[4..6], &[0x00, 0x01]);
+    }
+
+    #[tokio::test]
+    async fn test_mdns_provider_get_primals_via_http() {
+        let mock_server = wiremock::MockServer::start().await;
+        let primals_json = serde_json::json!({
+            "primals": [{
+                "id": "mdns-primal",
+                "name": "mDNS Primal",
+                "primal_type": "test",
+                "endpoint": "http://test:8080",
+                "capabilities": ["viz"],
+                "health": "Healthy",
+                "last_seen": 12345
+            }]
+        });
+        wiremock::Mock::given(wiremock::matchers::method("GET"))
+            .and(wiremock::matchers::path("/api/v1/primals/discovered"))
+            .respond_with(wiremock::ResponseTemplate::new(200).set_body_json(&primals_json))
+            .mount(&mock_server)
+            .await;
+
+        let metadata = ProviderMetadata {
+            name: "mDNS Test".to_string(),
+            endpoint: mock_server.uri().to_string(),
+            protocol: "http".to_string(),
+            capabilities: vec![],
+        };
+        let provider = MdnsVisualizationProvider::new(mock_server.uri().to_string(), metadata);
+        let primals = provider.get_primals().await.unwrap();
+        assert_eq!(primals.len(), 1);
+        assert_eq!(primals[0].id, "mdns-primal");
+    }
+
+    #[tokio::test]
+    async fn test_mdns_provider_get_topology_via_http() {
+        let mock_server = wiremock::MockServer::start().await;
+        let topology_json = serde_json::json!({
+            "edges": [{
+                "from": "a",
+                "to": "b",
+                "edge_type": "peer",
+                "label": null,
+                "capability": null,
+                "metrics": null
+            }]
+        });
+        wiremock::Mock::given(wiremock::matchers::method("GET"))
+            .and(wiremock::matchers::path("/api/v1/topology"))
+            .respond_with(wiremock::ResponseTemplate::new(200).set_body_json(&topology_json))
+            .mount(&mock_server)
+            .await;
+
+        let metadata = ProviderMetadata {
+            name: "mDNS Topology".to_string(),
+            endpoint: mock_server.uri().to_string(),
+            protocol: "http".to_string(),
+            capabilities: vec![],
+        };
+        let provider = MdnsVisualizationProvider::new(mock_server.uri().to_string(), metadata);
+        let edges = provider.get_topology().await.unwrap();
+        assert_eq!(edges.len(), 1);
+        assert_eq!(edges[0].from, "a");
+        assert_eq!(edges[0].to, "b");
+    }
+
+    #[tokio::test]
+    async fn test_mdns_provider_health_check_success() {
+        let mock_server = wiremock::MockServer::start().await;
+        wiremock::Mock::given(wiremock::matchers::method("GET"))
+            .and(wiremock::matchers::path("/api/v1/health"))
+            .respond_with(wiremock::ResponseTemplate::new(200))
+            .mount(&mock_server)
+            .await;
+
+        let metadata = ProviderMetadata {
+            name: "mDNS Health".to_string(),
+            endpoint: mock_server.uri().to_string(),
+            protocol: "http".to_string(),
+            capabilities: vec![],
+        };
+        let provider = MdnsVisualizationProvider::new(mock_server.uri().to_string(), metadata);
+        let health = provider.health_check().await.unwrap();
+        assert!(health.contains("healthy"));
+    }
+
+    #[tokio::test]
+    async fn test_mdns_provider_http_error_status() {
+        let mock_server = wiremock::MockServer::start().await;
+        wiremock::Mock::given(wiremock::matchers::method("GET"))
+            .and(wiremock::matchers::path("/api/v1/primals/discovered"))
+            .respond_with(wiremock::ResponseTemplate::new(500))
+            .mount(&mock_server)
+            .await;
+
+        let metadata = ProviderMetadata {
+            name: "mDNS Error".to_string(),
+            endpoint: mock_server.uri().to_string(),
+            protocol: "http".to_string(),
+            capabilities: vec![],
+        };
+        let provider = MdnsVisualizationProvider::new(mock_server.uri().to_string(), metadata);
+        let result = provider.get_primals().await;
+        assert!(result.is_err());
+        if let Err(e) = result {
+            assert!(e.to_string().contains("500") || e.to_string().contains("status"));
+        }
     }
 }

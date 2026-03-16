@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Scenario loading and management for benchTop demonstrations
 //!
 //! This module provides the core scenario system that allows petalTongue

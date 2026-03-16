@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Modality compilation: scene graph → output format.
 //!
 //! Supports SVG, audio, description, haptic, GPU command, braille, and terminal.

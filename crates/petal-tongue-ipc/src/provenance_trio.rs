@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Provenance trio client for visualization session lineage.
 //!
 //! Connects petalTongue visualization sessions to the provenance trio:
@@ -59,7 +59,10 @@ impl ProvenanceTrioClient {
 
     /// Create with explicit socket paths (for testing).
     #[must_use]
-    #[expect(clippy::missing_const_for_fn, reason = "Option<String> cannot be const")]
+    #[expect(
+        clippy::missing_const_for_fn,
+        reason = "Option<String> cannot be const"
+    )]
     pub fn with_sockets(
         ephemeral: Option<String>,
         attribution: Option<String>,

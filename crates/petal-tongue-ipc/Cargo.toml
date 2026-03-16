@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: AGPL-3.0-or-later
 [lints]
 workspace = true
 
@@ -38,7 +38,7 @@ integration-tests = []
 
 [dev-dependencies]
 proptest = { workspace = true }
-tokio = { workspace = true, features = ["test-util", "macros"] }
+tokio = { workspace = true, features = ["test-util", "macros", "net", "io-util"] }
 tempfile = "3.10"
 petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
 

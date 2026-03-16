@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! State persistence backends (local file, in-memory for tests).
 
 use std::path::PathBuf;
@@ -10,12 +10,25 @@ use super::types::DeviceState;
 /// Trait for state persistence
 pub trait StatePersistence {
     /// Save state to persistent storage
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if serialization fails or the file cannot be written.
     fn save(&self, state: &DeviceState) -> Result<()>;
 
     /// Load state from persistent storage
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be read or its contents cannot be
+    /// deserialized.
     fn load(&self, device_id: &str) -> Result<Option<DeviceState>>;
 
     /// Delete state
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the state file exists and cannot be removed.
     fn delete(&self, device_id: &str) -> Result<()>;
 }
 
@@ -27,6 +40,11 @@ pub struct LocalStatePersistence {
 
 impl LocalStatePersistence {
     /// Create a new local state persistence
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the config directory cannot be determined or the
+    /// state directory cannot be created.
     pub fn new() -> Result<Self> {
         let base_dir = Self::default_state_dir()?;
         std::fs::create_dir_all(&base_dir).map_err(|e| {

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Graph Manager Panel
 //!
 //! UI for saving, loading, and executing graphs via Neural API.

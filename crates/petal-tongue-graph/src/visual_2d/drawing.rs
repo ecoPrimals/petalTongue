@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Edge and arrow drawing for 2D graph visualization.
 
 use egui::{Color32, Pos2, Stroke, Vec2};

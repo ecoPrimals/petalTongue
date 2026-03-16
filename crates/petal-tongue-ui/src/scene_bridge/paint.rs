@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Primitive painting and conversion helpers for scene bridge.
 
 use super::types::{FrameHitMap, PixelProvenance};

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Traffic View - Pure geometry and color functions (fully testable, no egui context)
 
 use super::types::{ColorScheme, TrafficFlow, TrafficMetrics};

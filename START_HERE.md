@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: March 15, 2026
+**Updated**: March 16, 2026
 
 ---
 
@@ -9,11 +9,11 @@
 ```bash
 cargo build --release
 
-petaltongue ui                     # Desktop GUI
-petaltongue tui                    # Terminal UI
-petaltongue web                    # Web server
+petaltongue ui                     # Desktop display (egui)
+petaltongue tui                    # Terminal display (ratatui)
+petaltongue web                    # Web interface (axum)
 petaltongue headless --mode svg -o out.svg   # Export to SVG
-petaltongue server                 # IPC server (no GUI)
+petaltongue server                 # IPC server (no display)
 petaltongue status                 # System info
 ```
 
@@ -54,11 +54,11 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace                          # 5,113 tests
+cargo test --workspace                          # 5,225 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
-cargo llvm-cov --workspace --summary-only       # Coverage (~87% line / ~88% branch)
+cargo llvm-cov --workspace --summary-only       # Coverage (~86% line / ~87% branch)
 ```
 
 ### Scenarios
@@ -78,7 +78,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 5. **`#![forbid(unsafe_code)]`** unless hardware FFI is unavoidable. Document with `// SAFETY:`.
 6. **Concurrent testing** -- No `thread::sleep`. Use `tokio::time::timeout`.
 7. **Files under 1,000 lines** -- Split into cohesive modules at ~800 lines.
-8. **SPDX headers** -- `// SPDX-License-Identifier: AGPL-3.0-only` on all `.rs` files.
+8. **SPDX headers** -- `// SPDX-License-Identifier: AGPL-3.0-or-later` on all `.rs` files.
 9. **Semantic naming** -- JSON-RPC methods follow `{domain}.{operation}` pattern.
 
 ---
@@ -131,4 +131,4 @@ See `ecoPrimals/wateringHole/petaltongue/` for inter-primal standards.
 
 ## License
 
-AGPL-3.0-only -- See [LICENSE](./LICENSE).
+AGPL-3.0-or-later -- See [LICENSE](./LICENSE).

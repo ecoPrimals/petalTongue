@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! JSONL telemetry file provider for springs that emit line-delimited JSON.
 //!
 //! Reads telemetry files written by hotSpring, groundSpring, or any primal
@@ -82,6 +82,9 @@ pub fn telemetry_dir() -> Option<PathBuf> {
 }
 
 /// Read all JSONL files from a directory and parse into `TelemetryData`.
+///
+/// # Errors
+/// Returns `DiscoveryError::Io` on filesystem errors or JSON parse failures.
 pub fn read_telemetry_dir(dir: &Path) -> DiscoveryResult<TelemetryData> {
     let entries = std::fs::read_dir(dir).map_err(DiscoveryError::Io)?;
 
@@ -260,5 +263,36 @@ mod tests {
     #[test]
     fn telemetry_dir_returns_none_without_env() {
         assert!(telemetry_dir().is_none() || telemetry_dir().is_some());
+    }
+
+    #[test]
+    #[cfg(feature = "test-fixtures")]
+    fn telemetry_dir_with_xdg_data_home() {
+        use petal_tongue_core::test_fixtures::env_test_helpers;
+
+        let dir = tempfile::tempdir().unwrap();
+        let telemetry_dir_path = dir.path().join("petaltongue/telemetry");
+        std::fs::create_dir_all(&telemetry_dir_path).unwrap();
+
+        let result =
+            env_test_helpers::with_env_var("XDG_DATA_HOME", dir.path().to_str().unwrap(), || {
+                telemetry_dir()
+            });
+        assert_eq!(result, Some(telemetry_dir_path));
+    }
+
+    #[test]
+    #[cfg(feature = "test-fixtures")]
+    fn telemetry_dir_with_petaltongue_telemetry_dir_env() {
+        use petal_tongue_core::test_fixtures::env_test_helpers;
+
+        let dir = tempfile::tempdir().unwrap();
+
+        let result = env_test_helpers::with_env_var(
+            "PETALTONGUE_TELEMETRY_DIR",
+            dir.path().to_str().unwrap(),
+            || telemetry_dir(),
+        );
+        assert_eq!(result, Some(dir.path().to_path_buf()));
     }
 }

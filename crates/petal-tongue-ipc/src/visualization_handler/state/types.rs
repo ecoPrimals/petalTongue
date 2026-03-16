@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Core state types for visualization sessions.
 //!
 //! `VisualizationState` holds sessions and grammar scenes. `RenderSession`

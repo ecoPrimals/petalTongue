@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Data-space interaction targets.
 //!
 //! All interaction resolution converges to [`DataObjectId`] values that are
@@ -18,7 +18,7 @@ pub type GrammarId = String;
 
 /// Perspective-invariant reference to a data row.
 ///
-/// Two users looking at the same data from different modalities (GUI, TUI,
+/// Two users looking at the same data from different modalities (display, TUI,
 /// audio) will resolve the same `DataObjectId` when they interact with
 /// the same underlying data point.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -49,7 +49,7 @@ impl std::fmt::Display for DataObjectId {
 ///
 /// The inverse pipeline resolves an `InteractionTarget` to zero or more
 /// [`DataObjectId`] values. Resolution is modality-specific (pixel coords
-/// for GUI, cursor position for TUI, time offset for audio, entity name
+/// for display, cursor position for TUI, time offset for audio, entity name
 /// for voice commands).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
@@ -88,7 +88,7 @@ pub enum InteractionTarget {
         primitive_id: PrimitiveId,
     },
 
-    /// No target (click on empty space, dismiss).
+    /// No target (activate on empty space, dismiss).
     Nothing,
 }
 

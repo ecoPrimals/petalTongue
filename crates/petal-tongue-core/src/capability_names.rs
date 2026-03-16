@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Centralized capability string constants for IPC discovery.
 //!
 //! These are **capability identifiers**, not primal names. They describe

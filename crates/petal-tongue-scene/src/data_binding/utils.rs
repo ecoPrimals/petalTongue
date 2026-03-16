@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Data binding compiler utilities: histogram binning, threshold resolution.
 
 use petal_tongue_core::ThresholdRange;
@@ -34,12 +34,21 @@ pub fn histogram_bins(values: &[f64], n_bins: usize) -> (Vec<f64>, Vec<f64>) {
     let min = values.iter().copied().fold(f64::INFINITY, f64::min);
     let max = values.iter().copied().fold(f64::NEG_INFINITY, f64::max);
     if (max - min).abs() < f64::EPSILON {
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "single bin count: f64 sufficient"
+        )]
         return (vec![min], vec![values.len() as f64]);
     }
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "histogram bin width: f64 sufficient"
+    )]
     let bin_width = (max - min) / n_bins as f64;
     let mut counts = vec![0.0_f64; n_bins];
     let mut centers = Vec::with_capacity(n_bins);
     for i in 0..n_bins {
+        #[expect(clippy::cast_precision_loss, reason = "bin center: f64 sufficient")]
         centers.push((i as f64 + 0.5).mul_add(bin_width, min));
     }
     for v in values {

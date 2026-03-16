@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Curve types: `FunctionPlot` (y=f(x)) and `ParametricCurve` ((x(t), y(t))).
 
 use serde::{Deserialize, Serialize};
@@ -33,6 +33,10 @@ impl FunctionPlot {
         let (y_min, y_max, _) = axes.y_range;
         let mut points = Vec::with_capacity(num_samples);
         for i in 0..num_samples {
+            #[expect(
+                clippy::cast_precision_loss,
+                reason = "sampling parameter: f64 sufficient"
+            )]
             let t = i as f64 / (num_samples - 1) as f64;
             let x = x_min + t * (x_max - x_min);
             let y = f(x);
@@ -85,7 +89,7 @@ impl MathObject for FunctionPlot {
             .iter()
             .map(|&[x, y]| {
                 let (sx, sy) = self.data_to_screen(x, y);
-                [sx, sy]
+                <[f64; 2]>::from((sx, sy))
             })
             .collect();
         vec![Primitive::Line {
@@ -120,6 +124,10 @@ impl ParametricCurve {
         let (t0, t1) = t_range;
         let mut points = Vec::with_capacity(num_samples);
         for i in 0..num_samples {
+            #[expect(
+                clippy::cast_precision_loss,
+                reason = "sampling parameter: f64 sufficient"
+            )]
             let t = (t1 - t0).mul_add(i as f64 / (num_samples - 1) as f64, t0);
             points.push([x_fn(t), y_fn(t)]);
         }

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! GPU command compiler: scene graph to GPU command buffer.
 //!
 //! Compiles scene primitives into a serialized GPU command format

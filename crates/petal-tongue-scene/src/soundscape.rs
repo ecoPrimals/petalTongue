@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Layered soundscape synthesis for ambient and game audio.
 //!
 //! Extends the basic sine synthesis in `audio_synthesis.rs` with richer
@@ -50,7 +50,12 @@ impl Waveform {
                 let hash = noise_seed
                     .wrapping_mul(6_364_136_223_846_793_005)
                     .wrapping_add(1_442_695_040_888_963_407);
-                (hash as f64 / u64::MAX as f64).mul_add(2.0, -1.0)
+                #[expect(
+                    clippy::cast_precision_loss,
+                    reason = "noise seed: f64 sufficient for [-1,1] range"
+                )]
+                let norm = hash as f64 / u64::MAX as f64;
+                norm.mul_add(2.0, -1.0)
             }
         }
     }
@@ -141,7 +146,12 @@ impl StereoSamples {
     /// Duration in seconds.
     #[must_use]
     pub fn duration_secs(&self) -> f64 {
-        self.left.len() as f64 / f64::from(self.sample_rate)
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "duration: f64 sufficient for audio"
+        )]
+        let len_f64 = self.left.len() as f64;
+        len_f64 / f64::from(self.sample_rate)
     }
 }
 
@@ -151,8 +161,9 @@ impl StereoSamples {
 #[must_use]
 pub fn synthesize_soundscape(scape: &Soundscape) -> StereoSamples {
     #[expect(
+        clippy::cast_possible_truncation,
         clippy::cast_sign_loss,
-        reason = "duration * sample_rate is non-negative"
+        reason = "duration * sample_rate is non-negative; truncation acceptable for sample count"
     )]
     let total_samples = (scape.duration_secs * f64::from(scape.sample_rate)) as usize;
     let mut left = vec![0.0f64; total_samples];
@@ -163,10 +174,18 @@ pub fn synthesize_soundscape(scape: &Soundscape) -> StereoSamples {
     }
 
     let master = scape.master_amplitude;
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "PCM output clamped to [-1,1]"
+    )]
     let left_f32: Vec<f32> = left
         .iter()
         .map(|s| (s * master).clamp(-1.0, 1.0) as f32)
         .collect();
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "PCM output clamped to [-1,1]"
+    )]
     let right_f32: Vec<f32> = right
         .iter()
         .map(|s| (s * master).clamp(-1.0, 1.0) as f32)
@@ -179,20 +198,40 @@ pub fn synthesize_soundscape(scape: &Soundscape) -> StereoSamples {
     }
 }
 
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "sample index for envelope: f64 sufficient"
+)]
 fn render_layer(layer: &SoundLayer, sample_rate: u32, left: &mut [f64], right: &mut [f64]) {
     let sr = f64::from(sample_rate);
 
-    #[expect(clippy::cast_sign_loss, reason = "offsets are non-negative")]
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "offsets are non-negative; truncation acceptable for sample index"
+    )]
     let start_sample = (layer.offset_secs * sr) as usize;
 
-    #[expect(clippy::cast_sign_loss, reason = "duration is non-negative")]
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "duration is non-negative; truncation acceptable for sample count"
+    )]
     let layer_samples = (layer.duration_secs * sr) as usize;
 
     let end_sample = (start_sample + layer_samples).min(left.len());
 
-    #[expect(clippy::cast_sign_loss, reason = "fade durations are non-negative")]
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "fade durations are non-negative; truncation acceptable"
+    )]
     let fade_in_samples = (layer.fade_in_secs * sr) as usize;
-    #[expect(clippy::cast_sign_loss, reason = "fade durations are non-negative")]
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "fade durations are non-negative; truncation acceptable"
+    )]
     let fade_out_samples = (layer.fade_out_secs * sr) as usize;
 
     let left_gain = ((1.0 - layer.pan) * 0.5).clamp(0.0, 1.0);

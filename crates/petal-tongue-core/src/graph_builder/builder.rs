@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Graph Builder Logic
 //!
 //! Visual graph manipulation for Neural API graph construction.
@@ -51,6 +51,11 @@ impl VisualGraph {
     }
 
     /// Add an edge to the graph
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the source or target node does not exist, or if an
+    /// edge from the source to the target already exists.
     pub fn add_edge(&mut self, edge: GraphEdge) -> Result<(), String> {
         // Validate that both nodes exist
         if !self.nodes.iter().any(|n| n.id == edge.from) {

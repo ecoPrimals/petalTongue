@@ -1,7 +1,7 @@
 # petalTongue — Evolution Tracker
 
 **Living document**: Updated as evolution progresses.
-**Last updated**: March 15, 2026
+**Last updated**: March 16, 2026
 
 ---
 
@@ -9,9 +9,9 @@
 
 | Metric | Value |
 |--------|-------|
-| Tests | 5,113 passing |
-| Coverage (line) | ~87% |
-| Coverage (branch) | ~88% |
+| Tests | 5,225 passing |
+| Coverage (line) | ~86% |
+| Coverage (branch) | ~87% |
 | Clippy | Zero warnings (pedantic + nursery via workspace lints) |
 | `cargo fmt` | Clean |
 | `cargo deny` | Clean (advisories, bans, licenses, sources) |
@@ -22,10 +22,37 @@
 | SPDX headers | All source files |
 | Error handling | Typed `thiserror` throughout — zero `anyhow` in production code |
 | Workspace lints | Centralized `[workspace.lints.clippy]` — zero crate-level redundant attrs |
+| License | AGPL-3.0-or-later on all crates and source files |
+| UUI glossary | Canonical terminology module in `petal_tongue_core::uui_glossary` |
 
 ---
 
 ## Completed Work
+
+### UUI Evolution & Coverage Compliance (March 16, 2026)
+
+- **Universal User Interface language evolution**: 200+ doc comments and user-facing
+  strings updated from GUI-centric to UUI vernacular across all 16 crates + UniBin.
+  "GUI" → "display", "click" → "activate", "visible" → "perceivable",
+  "screen" → "display", "see" → "perceive".
+- **UUI glossary module**: `petal_tongue_core::uui_glossary` defines canonical
+  terminology — PRIMAL_ROLE, INTERFACE_PHILOSOPHY, DESIGN_PRINCIPLE, modality names,
+  user types, SAME DAVE model constants. Module docs cover Two-Dimensional Universality,
+  Modality Tiers, and Terminology Evolution.
+- **License correction**: AGPL-3.0-only → AGPL-3.0-or-later across all Cargo.toml
+  files and SPDX headers, per `SCYBORG_PROVENANCE_TRIO_GUIDANCE.md`.
+- **Coverage improvements**: discovery 83→91%, animation 85→99% (egui), ui-core 86→93.5%,
+  api 76→96%, cli 87→90%, doom-core 87→90%, error.rs 0→100%. 112 new tests added.
+- **Clippy deep clean**: 500+ pedantic/nursery warnings resolved across all crates.
+  `cast_precision_loss`, `suboptimal_flops`, `significant_drop_tightening`,
+  `future_not_send`, `similar_names`, `float_cmp`, `needless_collect` all fixed.
+- **`# Errors` documentation**: 68 `Result`-returning functions in petal-tongue-core
+  fully documented. `missing_docs` tracked via `#![expect]` on evolving crates.
+- **Hardcoded address extraction**: Web/headless bind addresses moved from `main.rs`
+  to `config.network.web_addr()` / `config.network.headless_addr()`.
+- **Flaky test fix**: `test_discover_graceful_degradation_returns_ok` isolated via
+  explicit mDNS disable (`PETALTONGUE_ENABLE_MDNS=false`).
+- **Empty directory cleanup**: Removed orphaned `graph_manager/` and `server/` stubs.
 
 ### Ecosystem Evolution (March 15, 2026)
 

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Text/JSON/DOT export
 //!
 //! Exports primal topologies in text-based formats for APIs, automation, and tools.
@@ -58,6 +58,10 @@ impl TextUI {
     }
 
     /// Render as plain text
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "nodes/edges borrow from graph"
+    )]
     fn render_text(&self) -> Result<String> {
         let mut output = String::new();
 
@@ -115,6 +119,10 @@ impl TextUI {
     }
 
     /// Render as JSON
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "graph used in json! macro"
+    )]
     fn render_json(&self) -> Result<String> {
         let graph = self.graph.read()?;
 
@@ -158,6 +166,10 @@ impl TextUI {
     }
 
     /// Render as DOT (Graphviz)
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "nodes/edges borrow from graph"
+    )]
     fn render_dot(&self) -> Result<String> {
         let mut dot = String::new();
 
@@ -284,5 +296,60 @@ mod tests {
         let dot = result.unwrap();
         assert!(dot.contains("digraph"));
         assert!(dot.contains("PetalTongue"));
+    }
+
+    #[test]
+    fn test_text_render_with_edges_and_unknown_nodes() {
+        use petal_tongue_core::test_fixtures::primals;
+        use petal_tongue_core::{LayoutAlgorithm, TopologyEdge};
+
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        {
+            let mut g = graph.write().expect("lock");
+            g.add_node(primals::test_primal("a"));
+            g.add_node(primals::test_primal("b"));
+            g.add_edge(TopologyEdge {
+                from: "a".into(),
+                to: "b".into(),
+                edge_type: "connects".to_string(),
+                label: None,
+                capability: None,
+                metrics: None,
+            });
+            g.add_edge(TopologyEdge {
+                from: "orphan".into(),
+                to: "b".into(),
+                edge_type: "ghost".to_string(),
+                label: None,
+                capability: None,
+                metrics: None,
+            });
+            g.set_layout(LayoutAlgorithm::Circular);
+            g.layout(1);
+        }
+        let ui = TextUI::new(graph);
+        let result = ui.render_to_string();
+        assert!(result.is_ok());
+        let text = result.unwrap();
+        assert!(text.contains("unknown"));
+        assert!(text.contains("CONNECTIONS"));
+    }
+
+    #[test]
+    fn test_text_render_single_node() {
+        use petal_tongue_core::test_fixtures::primals;
+
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        graph
+            .write()
+            .unwrap()
+            .add_node(primals::test_primal("solo"));
+        let ui = TextUI::new(graph);
+        let result = ui.render_to_string();
+        assert!(result.is_ok());
+        let text = result.unwrap();
+        assert!(text.contains("solo"));
+        assert!(text.contains("Total primals: 1"));
+        assert!(text.contains("Total connections: 0"));
     }
 }

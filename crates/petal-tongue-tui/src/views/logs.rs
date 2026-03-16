@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Logs View
 //!
 //! Real-time log streaming from all primals.
@@ -138,7 +138,7 @@ fn render_help(frame: &mut Frame, area: Rect) {
         ]),
         Line::from(vec![
             Span::raw("  "),
-            Span::raw("Logs are shown newest first. Scroll to see older entries."),
+            Span::raw("Logs are presented newest first. Scroll to perceive older entries."),
         ]),
     ];
 

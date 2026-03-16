@@ -1,5 +1,9 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 #![forbid(unsafe_code)]
+#![expect(
+    missing_docs,
+    reason = "discovery internals documentation tracked for incremental completion"
+)]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 //! Capability-Based Discovery for Visualization Data Providers
 //!
@@ -98,6 +102,11 @@ pub use retry::RetryPolicy;
 /// Note: Caching is now built into `HttpVisualizationProvider` (see cache.rs).
 /// Each provider has its own cache with configurable TTLs. This provides
 /// better performance without wrapper complexity.
+///
+/// # Errors
+///
+/// Returns `DiscoveryError` if configuration is invalid or discovery fails critically.
+/// Note: Returns `Ok(vec![])` when no providers found (graceful degradation).
 ///
 /// # Returns
 ///
@@ -301,10 +310,10 @@ pub async fn discover_visualization_providers()
             4. HTTP fallback: BIOMEOS_URL=http://localhost:{}\n\
             5. Development: Build with --features test-fixtures for test fixtures (mocks only in tests)\n\
             \n\
-            💡 GUI will start with tutorial mode as graceful fallback",
+            💡 Display will start with tutorial mode as graceful fallback",
             constants::DEFAULT_WEB_PORT
         );
-        // Return empty vec - GUI will handle this with tutorial mode
+        // Return empty vec - display will handle this with tutorial mode
         return Ok(vec![]);
     }
 
@@ -381,7 +390,7 @@ mod tests {
                 ("PETALTONGUE_DISCOVERY_HINTS", None),
                 ("FAMILY_ID", None),
                 ("PETALTONGUE_MOCK_MODE", None),
-                ("PETALTONGUE_ENABLE_MDNS", None),
+                ("PETALTONGUE_ENABLE_MDNS", Some("false")),
             ],
             || async {
                 let result = discover_visualization_providers().await;
@@ -392,7 +401,7 @@ mod tests {
                 let providers = result.unwrap();
                 assert!(
                     providers.is_empty(),
-                    "Without config, expect empty (or mock in test-fixtures)"
+                    "Without config and mDNS disabled, expect empty"
                 );
             },
         )

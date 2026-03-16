@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! tarpc client tests
 
 use std::net::SocketAddr;
@@ -250,6 +250,52 @@ async fn test_call_method_discover_capability_with_param() {
     );
 }
 
+#[tokio::test]
+async fn test_call_method_protocols_connection_failure() {
+    let client = TarpcClient::new("tarpc://127.0.0.1:1")
+        .expect("create")
+        .with_timeout(Duration::from_millis(50));
+    let result = client.call_method("protocols.list", None).await;
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn test_call_method_version_connection_failure() {
+    let client = TarpcClient::new("tarpc://127.0.0.1:1")
+        .expect("create")
+        .with_timeout(Duration::from_millis(50));
+    let result = client.call_method("version.get", None).await;
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn test_call_method_get_metrics_connection_failure() {
+    let client = TarpcClient::new("tarpc://127.0.0.1:1")
+        .expect("create")
+        .with_timeout(Duration::from_millis(50));
+    let result = client.call_method("metrics.get", None).await;
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn test_call_method_render_graph_invalid_params() {
+    let client = TarpcClient::new("tarpc://127.0.0.1:1").expect("create");
+    let result = client
+        .call_method(
+            "visualization.render.graph",
+            Some(serde_json::json!({"invalid": "params"})),
+        )
+        .await;
+    assert!(result.is_err());
+    let err_str = result.unwrap_err().to_string();
+    assert!(
+        err_str.contains("Invalid")
+            || err_str.contains("Connection")
+            || err_str.contains("Timeout"),
+        "expected invalid/connection error: {err_str}"
+    );
+}
+
 #[test]
 fn test_call_method_get_capabilities_alias() {
     let client = TarpcClient::new("tarpc://127.0.0.1:9999").expect("create");
@@ -260,4 +306,15 @@ fn test_call_method_get_capabilities_alias() {
 fn test_parse_endpoint_host_with_multiple_colons() {
     let result = TarpcClient::parse_endpoint("tarpc://[::1]:8080");
     assert!(result.is_ok() || result.is_err());
+}
+
+#[test]
+fn test_parse_endpoint_invalid_hostname() {
+    let result = TarpcClient::parse_endpoint("tarpc://not-a-valid-hostname-xyz:9999");
+    assert!(result.is_err());
+    let err_str = result.unwrap_err().to_string();
+    assert!(
+        err_str.contains("Invalid hostname") || err_str.contains("invalid"),
+        "expected hostname error: {err_str}"
+    );
 }

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! System Monitor Integration
 //!
 //! Real-time system resource monitoring via /proc parsing (ecoBin v3.0 compliant).

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Socket path resolution for ecoPrimals ecosystem
 //!
 //! Provides capability-based socket path resolution following the biomeOS convention:

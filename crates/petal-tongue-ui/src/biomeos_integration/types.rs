@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Core data types for biomeOS integration.
 //!
 //! Device, Primal, and `NicheTemplate` types used for device management UI.

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Graph structure validation: cycles, reachability, and topological sort.
 
 use crate::graph_builder::VisualGraph;
@@ -121,7 +121,7 @@ pub(super) fn check_unreachable_nodes(graph: &VisualGraph, result: &mut Validati
         if !reachable.contains(node.id.as_str()) {
             result.add_issue(
                 ValidationIssue::node_warning(
-                    node.id.clone(),
+                    node.id.as_str(),
                     format!("Node '{}' is unreachable", node.id),
                 )
                 .with_suggestion("Connect this node to the graph or remove it".to_string()),

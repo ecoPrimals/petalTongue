@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Retry logic with exponential backoff and jitter
 //!
 //! Modern async retry patterns for transient failures.
@@ -46,6 +46,14 @@ impl RetryPolicy {
     }
 
     /// Execute a function with retry logic
+    ///
+    /// # Errors
+    ///
+    /// Returns the last error from the closure if all attempts fail.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the loop completes without setting `last_error` (should never happen).
     ///
     /// # Example
     ///
@@ -100,11 +108,19 @@ impl RetryPolicy {
             }
         }
 
-        #[expect(clippy::expect_used, reason = "loop runs at least once, last_error is always Some")]
+        #[expect(
+            clippy::expect_used,
+            reason = "loop runs at least once, last_error is always Some"
+        )]
         Err(last_error.expect("at least one attempt always executes"))
     }
 
     /// Execute with timeout per attempt
+    ///
+    /// # Errors
+    ///
+    /// Returns `DiscoveryError::OperationTimedOut` if the operation times out,
+    /// or `DiscoveryError::OperationFailed` if the closure returns an error.
     ///
     /// # Example
     ///
@@ -123,6 +139,10 @@ impl RetryPolicy {
     /// # Ok(())
     /// # }
     /// ```
+    #[expect(
+        clippy::future_not_send,
+        reason = "inner execute() captures F which may not be Sync; retry is typically single-threaded"
+    )]
     pub async fn execute_with_timeout<F, Fut, T, E>(
         &self,
         timeout: Duration,
@@ -254,6 +274,51 @@ mod tests {
             .execute(|| async { Ok::<_, &str>("immediate") })
             .await;
         assert_eq!(result.unwrap(), "immediate");
+    }
+
+    #[tokio::test]
+    async fn test_retry_with_jitter() {
+        let policy = RetryPolicy {
+            max_attempts: 2,
+            initial_delay: Duration::from_millis(10),
+            max_delay: Duration::from_millis(100),
+            backoff_factor: 2.0,
+            jitter: true,
+        };
+        let counter = Arc::new(AtomicUsize::new(0));
+        let c = counter.clone();
+        let result = policy
+            .execute(|| {
+                let counter = c.clone();
+                async move {
+                    if counter.fetch_add(1, Ordering::SeqCst) < 1 {
+                        Err::<(), _>("fail")
+                    } else {
+                        Ok(())
+                    }
+                }
+            })
+            .await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_execute_with_timeout_operation_fails() {
+        let policy = RetryPolicy::default();
+        let result = policy
+            .execute_with_timeout(Duration::from_secs(2), || async {
+                Err::<(), std::io::Error>(std::io::Error::new(
+                    std::io::ErrorKind::ConnectionRefused,
+                    "connection refused",
+                ))
+            })
+            .await;
+        assert!(result.is_err());
+        let err_str = result.unwrap_err().to_string();
+        assert!(
+            err_str.contains("connection refused") || err_str.contains("failed"),
+            "got: {err_str}"
+        );
     }
 
     #[tokio::test]

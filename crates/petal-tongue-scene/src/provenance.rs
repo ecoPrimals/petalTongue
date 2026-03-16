@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pixel-exact provenance tracking for scene graph primitives.
 
 #![expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
@@ -216,14 +216,9 @@ impl ProvenanceRenderer {
             }
             _ => (0.0, 0.0, 0.0, 0.0),
         };
-        let (tx_min, ty_min) = transform.apply(min_x, min_y);
-        let (tx_max, ty_max) = transform.apply(max_x, max_y);
-        (
-            tx_min.min(tx_max),
-            ty_min.min(ty_max),
-            tx_min.max(tx_max),
-            ty_min.max(ty_max),
-        )
+        let (a_x, a_y) = transform.apply(min_x, min_y);
+        let (b_x, b_y) = transform.apply(max_x, max_y);
+        (a_x.min(b_x), a_y.min(b_y), a_x.max(b_x), a_y.max(b_y))
     }
 }
 

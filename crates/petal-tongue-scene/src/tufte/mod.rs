@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Machine-checkable Tufte constraints for visualization quality.
 //!
 //! These constraints evaluate primitives against Edward Tufte's principles:

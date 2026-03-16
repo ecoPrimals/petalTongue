@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Output formatting helpers (for testing; plain text without ANSI colors).
 
 #[cfg(test)]

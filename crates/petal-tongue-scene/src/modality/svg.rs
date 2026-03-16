@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fmt::Write;
 
@@ -232,10 +232,10 @@ impl SvgCompiler {
                 let (sx, sy) = transform.apply(start[0], start[1]);
                 let mut d = format!("M {sx} {sy}");
                 for seg in segments {
-                    let (cp1x, cp1y) = transform.apply(seg.cp1[0], seg.cp1[1]);
-                    let (cp2x, cp2y) = transform.apply(seg.cp2[0], seg.cp2[1]);
+                    let (c1x, c1y) = transform.apply(seg.cp1[0], seg.cp1[1]);
+                    let (c2x, c2y) = transform.apply(seg.cp2[0], seg.cp2[1]);
                     let (ex, ey) = transform.apply(seg.end[0], seg.end[1]);
-                    let _ = write!(d, " C {cp1x} {cp1y}, {cp2x} {cp2y}, {ex} {ey}");
+                    let _ = write!(d, " C {c1x} {c1y}, {c2x} {c2y}, {ex} {ey}");
                 }
                 let fill_attr = fill
                     .map(Self::color_attr)

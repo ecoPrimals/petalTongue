@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Visual inverse pipeline for egui-based rendering.
 //!
 //! Maps pixel coordinates back to data-space targets by inverting the
@@ -13,7 +13,7 @@ use petal_tongue_core::interaction::{
 use petal_tongue_core::sensor::SensorEvent;
 use petal_tongue_scene::render_plan::RenderPlan;
 
-/// Inverse pipeline for egui/GUI visual rendering.
+/// Inverse pipeline for egui-based visual rendering.
 ///
 /// Resolves pixel-space sensor events to data-space targets by applying
 /// the inverse of the camera transform (center, zoom) used during rendering.

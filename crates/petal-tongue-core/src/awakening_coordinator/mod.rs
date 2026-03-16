@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! # Awakening Coordinator
 //!
 //! Coordinates visual, audio, and text across the 4-stage awakening timeline.
@@ -68,6 +68,10 @@ impl AwakeningCoordinator {
     /// Run the complete awakening sequence
     ///
     /// Returns `true` if tutorial mode should be activated after awakening.
+    ///
+    /// # Errors
+    ///
+    /// Never returns an error; event broadcast failures are logged but not propagated.
     pub async fn run(&self) -> Result<bool> {
         if !self.config.enabled {
             tracing::info!("Awakening experience disabled, skipping");

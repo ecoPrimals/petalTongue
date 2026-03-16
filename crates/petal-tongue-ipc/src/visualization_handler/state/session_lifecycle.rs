@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Session lifecycle: create and dismiss visualization sessions.
 //!
 //! Handles `visualization.render` (create/replace) and `visualization.dismiss` (remove).

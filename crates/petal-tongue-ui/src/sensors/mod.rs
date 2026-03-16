@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Concrete sensor implementations
 //!
 //! Platform-specific implementations of the Sensor trait.
@@ -17,6 +17,10 @@ use crate::error::Result;
 use petal_tongue_core::SensorRegistry;
 
 /// Discover all available sensors at runtime
+///
+/// # Errors
+///
+/// Currently always returns `Ok`; discovery failures are logged but do not propagate.
 pub async fn discover_all_sensors() -> Result<SensorRegistry> {
     let mut registry = SensorRegistry::new();
 

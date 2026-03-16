@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Rendering primitives -- the atomic visual elements of a scene.
 //!
 //! Every visualization compiles to a collection of `Primitive` values.

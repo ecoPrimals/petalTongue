@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Compatibility Layer - `AudioSystemV2`
 //!
 //! Provides backward-compatible synchronous API over the new substrate-agnostic
@@ -28,6 +28,10 @@ impl AudioSystemV2 {
     ///
     /// This is synchronous for backward compatibility, but internally
     /// uses async `AudioManager`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the tokio runtime cannot be created or the audio manager fails to initialize.
     pub fn new() -> Result<Self> {
         info!("🎵 Initializing AudioSystemV2 (substrate-agnostic)...");
 
@@ -74,18 +78,22 @@ impl AudioSystemV2 {
     /// Play audio file (synchronous API)
     ///
     /// Decodes MP3/WAV via symphonia and plays through `AudioManager`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be opened, the format is unsupported, decoding fails, or no audio track is found.
     pub fn play_file(&self, path: &Path) -> Result<()> {
-        info!("🎵 Playing file: {}", path.display());
-
         use symphonia::core::audio::{AudioBufferRef, Signal};
         use symphonia::core::codecs::DecoderOptions;
         use symphonia::core::formats::FormatOptions;
-        use symphonia::core::io::MediaSourceStream;
+        use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
         use symphonia::core::meta::MetadataOptions;
         use symphonia::core::probe::Hint;
 
+        info!("🎵 Playing file: {}", path.display());
+
         let file = std::fs::File::open(path)?;
-        let mss = MediaSourceStream::new(Box::new(file), Default::default());
+        let mss = MediaSourceStream::new(Box::new(file), MediaSourceStreamOptions::default());
 
         let mut hint = Hint::new();
         if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
@@ -196,6 +204,10 @@ impl AudioSystemV2 {
     ///
     /// Simplified version for backward compatibility.
     /// Each tuple: (frequency, volume, waveform)
+    ///
+    /// # Errors
+    ///
+    /// This method does not return errors; it always succeeds (plays first tone or no-op).
     pub fn play_polyphonic(&self, tones: &[(f64, f32, Waveform)], duration: f64) -> Result<()> {
         // For compatibility, just play the first tone
         if let Some((freq, _vol, wave)) = tones.first() {
@@ -206,7 +218,10 @@ impl AudioSystemV2 {
 }
 
 impl Default for AudioSystemV2 {
-    #[expect(clippy::expect_used, reason = "Default requires working audio; callers use new() for fallible init")]
+    #[expect(
+        clippy::expect_used,
+        reason = "Default requires working audio; callers use new() for fallible init"
+    )]
     fn default() -> Self {
         Self::new().expect("AudioSystemV2::default() requires working audio init")
     }

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Statistics overlay for 2D graph visualization.
 
 use petal_tongue_core::graph_engine::GraphStats;
@@ -22,7 +22,7 @@ pub fn format_stats_lines(stats: &GraphStats, zoom: f32, selected_id: Option<&st
 }
 
 /// Draws the graph statistics overlay window.
-pub fn draw_stats(renderer: &Visual2DRenderer, ui: &mut egui::Ui, graph: &GraphEngine) {
+pub fn draw_stats(renderer: &Visual2DRenderer, ui: &egui::Ui, graph: &GraphEngine) {
     let stats = graph.stats();
     let lines = format_stats_lines(
         &stats,

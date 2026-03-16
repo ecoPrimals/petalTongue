@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Map rendering - Phase 1.1: Top-down 2D view
 //!
 //! This module renders Doom maps in a simple top-down view.

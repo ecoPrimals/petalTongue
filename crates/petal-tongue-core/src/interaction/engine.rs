@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Interaction engine -- the game-engine-style bidirectional loop.
 //!
 //! Consumes [`SensorEvent`] values from input

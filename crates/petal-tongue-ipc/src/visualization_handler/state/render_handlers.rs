@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Render handlers: grammar, dashboard, validate, export.
 //!
 //! Compiles scene graphs, runs Tufte validation, and exports to modalities.

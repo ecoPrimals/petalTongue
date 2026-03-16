@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Universal UI trait definition
 //!
 //! Defines the platform-agnostic interface that all UI implementations must satisfy.
@@ -72,7 +72,7 @@ pub enum UICapability {
 ///
 /// # Philosophy
 ///
-/// External GUI frameworks (like egui) are enhancements, not dependencies.
+/// External display frameworks (like egui) are enhancements, not dependencies.
 /// This trait ensures petalTongue can always render, regardless of platform.
 ///
 /// # Examples
@@ -145,6 +145,23 @@ pub trait UniversalUI: Send + Sync {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::SvgUI;
+    use petal_tongue_core::GraphEngine;
+    use std::sync::{Arc, RwLock};
+
+    #[test]
+    fn test_run_interactive_not_supported() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let mut ui = SvgUI::new(graph, 800, 600);
+        let result = ui.run_interactive();
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Interactive mode not supported")
+        );
+    }
 
     #[test]
     fn test_export_format_extension() {

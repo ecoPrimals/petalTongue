@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Interaction handling for 2D graph visualization (pan, zoom, create, edit).
 
 use crate::capability_validator::{ValidationResult, validate_connection};
@@ -215,7 +215,7 @@ fn create_node_at(renderer: &mut Visual2DRenderer, world_pos: Position) {
 }
 
 /// Create an edge between two nodes (interactive mode)
-fn create_edge(renderer: &mut Visual2DRenderer, from: PrimalId, to: PrimalId) {
+fn create_edge(renderer: &Visual2DRenderer, from: PrimalId, to: PrimalId) {
     use petal_tongue_core::TopologyEdge;
 
     let Ok(graph) = renderer.graph.read() else {
@@ -269,7 +269,7 @@ fn create_edge(renderer: &mut Visual2DRenderer, from: PrimalId, to: PrimalId) {
 }
 
 /// Delete a node (interactive mode)
-fn delete_node(renderer: &mut Visual2DRenderer, node_id: &str) {
+fn delete_node(renderer: &Visual2DRenderer, node_id: &str) {
     let Ok(mut graph) = renderer.graph.write() else {
         tracing::error!("graph lock poisoned");
         return;

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Grammar compiler: transforms `GrammarExpr` + data into a `SceneGraph`.
 //!
 //! The compiler reads variable bindings from the grammar expression to map
@@ -48,6 +48,7 @@ impl GrammarCompiler {
         let mut points: Vec<[f64; 2]> = Vec::new();
         for (i, obj) in data.iter().enumerate() {
             let obj = obj.as_object();
+            #[expect(clippy::cast_precision_loss, reason = "fallback index: f64 sufficient")]
             let x = obj
                 .and_then(|o| x_field.and_then(|f| utils::get_number(o, f)))
                 .unwrap_or(i as f64);
@@ -176,6 +177,7 @@ impl GrammarCompiler {
         let mut min = f64::INFINITY;
         let mut max = f64::NEG_INFINITY;
         for (i, obj) in data.iter().enumerate() {
+            #[expect(clippy::cast_precision_loss, reason = "fallback index: f64 sufficient")]
             let v = obj
                 .as_object()
                 .and_then(|o| field.and_then(|f| utils::get_number(o, f)))
@@ -226,7 +228,9 @@ impl GrammarCompiler {
         for (idx, (key, group_data)) in groups.iter().enumerate() {
             let col = idx % columns;
             let row = idx / columns;
+            #[expect(clippy::cast_precision_loss, reason = "panel offset: f64 sufficient")]
             let offset_x = col as f64 * panel_w;
+            #[expect(clippy::cast_precision_loss, reason = "panel offset: f64 sufficient")]
             let offset_y = row as f64 * panel_h;
 
             let key_str = key.as_ref();

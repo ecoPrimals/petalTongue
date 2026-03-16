@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Traffic View - main view logic and rendering
 //!
 //! Architecture: headless-first. Pure geometry/color functions live in `helpers`.
@@ -452,7 +452,7 @@ impl TrafficView {
                 }
             }
         } else {
-            ui.label("Click on a flow to see metrics");
+            ui.label("Select a flow to perceive metrics");
         }
 
         intents

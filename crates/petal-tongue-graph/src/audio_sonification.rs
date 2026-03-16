@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Audio Sonification Renderer
 //!
 //! Renders graph topology as audio soundscape.
@@ -80,13 +80,14 @@ impl AudioSonificationRenderer {
     fn node_to_audio(&self, node: &Node) -> AudioAttributes {
         AudioAttributes {
             instrument: self.map_primal_to_instrument(&node.info.primal_type),
-            pitch: self.health_to_pitch(&node.info.health),
+            pitch: self.health_to_pitch(node.info.health),
             volume: self.activity_to_volume(node) * self.master_volume,
             pan: self.position_to_pan(node.position),
         }
     }
 
     /// Map primal type to instrument
+    #[expect(clippy::unused_self, reason = "trait-style method for consistency")]
     fn map_primal_to_instrument(&self, primal_type: &str) -> Instrument {
         match primal_type.to_lowercase().as_str() {
             "security" => Instrument::Bass,
@@ -100,7 +101,8 @@ impl AudioSonificationRenderer {
 
     /// Map health status to pitch
     /// Healthy = harmonic (0.7-0.8), Warning = off-key (0.5-0.6), Critical = dissonant (0.2-0.3)
-    const fn health_to_pitch(&self, health: &PrimalHealthStatus) -> f32 {
+    #[expect(clippy::unused_self, reason = "trait-style method for consistency")]
+    const fn health_to_pitch(&self, health: PrimalHealthStatus) -> f32 {
         match health {
             PrimalHealthStatus::Healthy => 0.75,  // Harmonic, pleasant
             PrimalHealthStatus::Warning => 0.55,  // Slightly off-key
@@ -111,9 +113,14 @@ impl AudioSonificationRenderer {
 
     /// Map activity to volume
     /// For now, we'll use a simple heuristic based on capabilities
+    #[expect(clippy::unused_self, reason = "trait-style method for consistency")]
     fn activity_to_volume(&self, node: &Node) -> f32 {
         // More capabilities = more active = louder
         let capability_count = node.info.capabilities.len();
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "normalization for audio volume, precision loss acceptable"
+        )]
         let normalized = (capability_count as f32 / 10.0).min(1.0);
 
         // Base volume + activity
@@ -122,6 +129,7 @@ impl AudioSonificationRenderer {
 
     /// Map 2D position to stereo pan
     /// Left side = -1.0, Center = 0.0, Right side = 1.0
+    #[expect(clippy::unused_self, reason = "trait-style method for consistency")]
     fn position_to_pan(&self, position: Position) -> f32 {
         // Normalize x position to [-1, 1] range
         // Assuming positions are roughly in [-500, 500] range
@@ -231,10 +239,23 @@ impl AudioSonificationRenderer {
     /// Get detailed information about a specific node's audio
     #[must_use]
     pub fn describe_node_audio(&self, node_id: &str) -> Option<String> {
-        let graph = self.graph.read().ok()?;
-        let node = graph.get_node(node_id)?;
+        let node = self.graph.read().ok()?.get_node(node_id)?.clone();
+        let attrs = self.node_to_audio(&node);
+        let name = node.info.name.clone();
+        let health_desc = match node.info.health {
+            PrimalHealthStatus::Healthy => "harmonic, in-key",
+            PrimalHealthStatus::Warning => "slightly off-key",
+            PrimalHealthStatus::Critical => "dissonant, harsh",
+            PrimalHealthStatus::Unknown => "neutral tone",
+        };
+        let position_desc = if attrs.pan < -0.3 {
+            "positioned to the left"
+        } else if attrs.pan > 0.3 {
+            "positioned to the right"
+        } else {
+            "centered"
+        };
 
-        let attrs = self.node_to_audio(node);
         let inst_name = match attrs.instrument {
             Instrument::Bass => "deep bass",
             Instrument::Drums => "rhythmic drums",
@@ -244,28 +265,13 @@ impl AudioSonificationRenderer {
             Instrument::Default => "default tone",
         };
 
-        let health_desc = match node.info.health {
-            PrimalHealthStatus::Healthy => "harmonic, in-key",
-            PrimalHealthStatus::Warning => "slightly off-key",
-            PrimalHealthStatus::Critical => "dissonant, harsh",
-            PrimalHealthStatus::Unknown => "neutral tone",
-        };
-
-        let position_desc = if attrs.pan < -0.3 {
-            "positioned to the left"
-        } else if attrs.pan > 0.3 {
-            "positioned to the right"
-        } else {
-            "centered"
-        };
-
         Some(format!(
             "{}: Playing {}. Status: {}. Volume: {:.0}%. {}.",
-            node.info.name,
+            name,
             inst_name,
             health_desc,
             attrs.volume * 100.0,
-            position_desc
+            position_desc,
         ))
     }
 }
@@ -361,17 +367,15 @@ mod tests {
         let renderer = AudioSonificationRenderer::new(graph);
 
         assert!(
-            (renderer.health_to_pitch(&PrimalHealthStatus::Healthy) - 0.75).abs() < f32::EPSILON
+            (renderer.health_to_pitch(PrimalHealthStatus::Healthy) - 0.75).abs() < f32::EPSILON
         );
         assert!(
-            (renderer.health_to_pitch(&PrimalHealthStatus::Warning) - 0.55).abs() < f32::EPSILON
+            (renderer.health_to_pitch(PrimalHealthStatus::Warning) - 0.55).abs() < f32::EPSILON
         );
         assert!(
-            (renderer.health_to_pitch(&PrimalHealthStatus::Critical) - 0.25).abs() < f32::EPSILON
+            (renderer.health_to_pitch(PrimalHealthStatus::Critical) - 0.25).abs() < f32::EPSILON
         );
-        assert!(
-            (renderer.health_to_pitch(&PrimalHealthStatus::Unknown) - 0.5).abs() < f32::EPSILON
-        );
+        assert!((renderer.health_to_pitch(PrimalHealthStatus::Unknown) - 0.5).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -758,10 +762,10 @@ mod tests {
     fn test_health_to_pitch_all_variants() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
         let renderer = AudioSonificationRenderer::new(graph);
-        let h = renderer.health_to_pitch(&PrimalHealthStatus::Healthy);
-        let w = renderer.health_to_pitch(&PrimalHealthStatus::Warning);
-        let c = renderer.health_to_pitch(&PrimalHealthStatus::Critical);
-        let u = renderer.health_to_pitch(&PrimalHealthStatus::Unknown);
+        let h = renderer.health_to_pitch(PrimalHealthStatus::Healthy);
+        let w = renderer.health_to_pitch(PrimalHealthStatus::Warning);
+        let c = renderer.health_to_pitch(PrimalHealthStatus::Critical);
+        let u = renderer.health_to_pitch(PrimalHealthStatus::Unknown);
         assert!(c < u && u < w && w < h);
     }
 

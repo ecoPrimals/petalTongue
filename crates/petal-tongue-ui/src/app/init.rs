@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Application initialization logic
 //!
 //! Extracted from app.rs - handles scenario loading, provider discovery,

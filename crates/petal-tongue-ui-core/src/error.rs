@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! UI core error types.
 
 use thiserror::Error;
@@ -43,3 +43,53 @@ impl<T> From<std::sync::PoisonError<T>> for UiCoreError {
 
 /// Result type alias for UI core operations.
 pub type Result<T> = std::result::Result<T, UiCoreError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ui_core_error_display_variants() {
+        assert!(
+            UiCoreError::LockPoisoned("test".into())
+                .to_string()
+                .contains("poisoned")
+        );
+        assert!(
+            UiCoreError::InteractiveNotSupported("Canvas".into())
+                .to_string()
+                .contains("Interactive")
+        );
+        assert!(
+            UiCoreError::PixmapCreationFailed(0, 0)
+                .to_string()
+                .contains("pixmap")
+        );
+        assert!(
+            UiCoreError::PngEncodeFailed("err".into())
+                .to_string()
+                .contains("PNG")
+        );
+        assert!(
+            UiCoreError::CanvasExportOnlyPng
+                .to_string()
+                .contains("binary")
+        );
+        assert!(UiCoreError::Json("err".into()).to_string().contains("JSON"));
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
+        assert!(UiCoreError::Io(io_err).to_string().contains("IO"));
+    }
+
+    #[test]
+    fn from_poison_error() {
+        let mutex = std::sync::Mutex::new(0);
+        let _ = std::panic::catch_unwind(|| {
+            let _g = mutex.lock().unwrap();
+            panic!("poison");
+        });
+        let result = mutex.lock();
+        assert!(result.is_err());
+        let err: UiCoreError = result.unwrap_err().into();
+        assert!(err.to_string().contains("poisoned"));
+    }
+}

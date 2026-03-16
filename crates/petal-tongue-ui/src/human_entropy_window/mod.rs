@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Human Entropy Capture UI
 //!
 //! Provides a user-friendly interface for multi-modal entropy capture.

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Bridge between egui events and the `InteractionEngine`.
 //!
 //! Converts egui's `Response` events into `SensorEvent` values and

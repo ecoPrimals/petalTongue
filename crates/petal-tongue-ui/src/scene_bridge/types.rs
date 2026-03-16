@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Provenance and hit-map types for scene bridge rendering.
 
 use egui::{Pos2, Rect};

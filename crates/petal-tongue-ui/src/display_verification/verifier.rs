@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Display verification logic
 
 use std::process::Command;
@@ -64,7 +64,7 @@ pub fn format_active_interaction_status(topology: &DisplayTopology) -> String {
 #[must_use]
 pub fn format_recent_interaction_status(topology: &DisplayTopology, secs: f32) -> String {
     format!(
-        "{} - recent interaction ({secs:.0}s ago) suggests viewer can still see output",
+        "{} - recent interaction ({secs:.0}s ago) suggests viewer can still perceive output",
         topology_description(topology)
     )
 }
@@ -74,7 +74,7 @@ pub fn format_recent_interaction_status(topology: &DisplayTopology, secs: f32) -
 pub fn suggested_action_for_prolonged_idle(secs: f32) -> Option<String> {
     if secs > 300.0 {
         Some(
-            "No interaction for 5+ minutes. If viewing remotely, verify connection and window visibility.".to_string()
+            "No interaction for 5+ minutes. If viewing remotely, verify connection and window perceivability.".to_string()
         )
     } else {
         None
@@ -84,6 +84,8 @@ pub fn suggested_action_for_prolonged_idle(secs: f32) -> Option<String> {
 /// Detect display topology (agnostic - no vendor names)
 #[must_use]
 pub fn detect_display_topology() -> (DisplayTopology, Vec<String>) {
+    use crate::display_pure_rust;
+
     let mut evidence = Vec::new();
 
     let ssh_connection = std::env::var("SSH_CONNECTION").is_ok()
@@ -105,8 +107,6 @@ pub fn detect_display_topology() -> (DisplayTopology, Vec<String>) {
             evidence.push("Display :1+ - may be virtual/nested/headless".to_string());
         }
     }
-
-    use crate::display_pure_rust;
 
     if display_pure_rust::is_virtual_display() {
         evidence.push("Virtual display detected (pure Rust detection)".to_string());
@@ -187,7 +187,8 @@ pub fn verify_display_substrate(window_title: &str) -> DisplayVerification {
                 verif.display_topology
             );
             verif.suggested_action = Some(
-                "If you can see this window, interact with it to confirm visibility".to_string(),
+                "If you can perceive this window, interact with it to confirm perceivability"
+                    .to_string(),
             );
             verif
         }
@@ -329,7 +330,7 @@ pub fn continuous_verification(
                 verification.visibility = VisibilityState::Uncertain;
                 verification.output_reaches_viewer = false;
                 verification.status_message = format!(
-                    "Display topology: {:?} - No recent interaction ({:.0}s). Cannot confirm viewer sees output.",
+                    "Display topology: {:?} - No recent interaction ({:.0}s). Cannot confirm viewer perceives output.",
                     verification.display_topology, last_interaction_secs
                 );
                 verification.suggested_action =

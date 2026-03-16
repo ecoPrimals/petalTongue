@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Modality Capability Detection System
 //!
 //! petalTongue must be self-aware about what it can actually do.

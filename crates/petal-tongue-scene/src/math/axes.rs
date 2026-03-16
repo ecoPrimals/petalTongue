@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Axis types: `NumberLine` (1D) and Axes (2D Cartesian).
 
 use serde::{Deserialize, Serialize};
@@ -74,8 +74,18 @@ impl MathObject for NumberLine {
         });
 
         // Tick marks
-        let mut v = self.start;
-        while v <= self.end {
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "tick count bounded by axis range"
+        )]
+        let n_ticks = ((self.end - self.start) / self.step).max(0.0).floor() as usize + 1;
+        for i in 0..n_ticks {
+            #[expect(clippy::cast_precision_loss, reason = "tick position: f64 sufficient")]
+            let v = (i as f64).mul_add(self.step, self.start);
+            if v > self.end + f64::EPSILON {
+                break;
+            }
             let sx = self.data_to_screen_x(v);
             let tick_len = 5.0;
             prims.push(Primitive::Line {
@@ -84,13 +94,16 @@ impl MathObject for NumberLine {
                 closed: false,
                 data_id: None,
             });
-            v += self.step;
         }
 
         // Labels
         if self.show_labels {
-            let mut v = self.start;
-            while v <= self.end {
+            for i in 0..n_ticks {
+                #[expect(clippy::cast_precision_loss, reason = "tick position: f64 sufficient")]
+                let v = (i as f64).mul_add(self.step, self.start);
+                if v > self.end + f64::EPSILON {
+                    break;
+                }
                 let sx = self.data_to_screen_x(v);
                 #[expect(
                     clippy::cast_possible_truncation,
@@ -112,7 +125,6 @@ impl MathObject for NumberLine {
                     italic: false,
                     data_id: None,
                 });
-                v += self.step;
             }
         }
 
@@ -208,8 +220,18 @@ impl MathObject for Axes {
             data_id: None,
         });
         // X ticks
-        let mut v = x_min;
-        while v <= x_max {
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "tick count bounded by axis range"
+        )]
+        let x_n_ticks = ((x_max - x_min) / x_step).max(0.0).floor() as usize + 1;
+        for i in 0..x_n_ticks {
+            #[expect(clippy::cast_precision_loss, reason = "tick position: f64 sufficient")]
+            let v = (i as f64).mul_add(x_step, x_min);
+            if v > x_max + f64::EPSILON {
+                break;
+            }
             let (sx, _) = self.data_to_screen(v, 0.0);
             prims.push(Primitive::Line {
                 points: vec![[sx, oy], [sx, oy + 5.0]],
@@ -234,7 +256,6 @@ impl MathObject for Axes {
                     data_id: None,
                 });
             }
-            v += x_step;
         }
         // X arrow head
         let arrow_size = 8.0;
@@ -260,8 +281,18 @@ impl MathObject for Axes {
             data_id: None,
         });
         // Y ticks
-        let mut v = y_min;
-        while v <= y_max {
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "tick count bounded by axis range"
+        )]
+        let y_n_ticks = ((y_max - y_min) / y_step).max(0.0).floor() as usize + 1;
+        for i in 0..y_n_ticks {
+            #[expect(clippy::cast_precision_loss, reason = "tick position: f64 sufficient")]
+            let v = (i as f64).mul_add(y_step, y_min);
+            if v > y_max + f64::EPSILON {
+                break;
+            }
             let (_, sy) = self.data_to_screen(0.0, v);
             prims.push(Primitive::Line {
                 points: vec![[ox, sy], [ox - 5.0, sy]],
@@ -286,18 +317,23 @@ impl MathObject for Axes {
                     data_id: None,
                 });
             }
-            v += y_step;
         }
         // Y arrow head
-        let (_, sy_end) = self.data_to_screen(0.0, y_max);
+        let (_, sy_end_pos) = self.data_to_screen(0.0, y_max);
         prims.push(Primitive::Line {
-            points: vec![[ox, sy_end], [ox - arrow_size * 0.5, sy_end + arrow_size]],
+            points: vec![
+                [ox, sy_end_pos],
+                [ox - arrow_size * 0.5, sy_end_pos + arrow_size],
+            ],
             stroke,
             closed: false,
             data_id: None,
         });
         prims.push(Primitive::Line {
-            points: vec![[ox, sy_end], [ox + arrow_size * 0.5, sy_end + arrow_size]],
+            points: vec![
+                [ox, sy_end_pos],
+                [ox + arrow_size * 0.5, sy_end_pos + arrow_size],
+            ],
             stroke,
             closed: false,
             data_id: None,

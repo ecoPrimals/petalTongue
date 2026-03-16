@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Individual Tufte constraint implementations.
 
 use crate::grammar::GrammarExpr;
@@ -31,6 +31,10 @@ impl TufteConstraint for DataInkRatio {
             };
         }
         let data_count = primitives.iter().filter(|p| p.carries_data()).count();
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "ratio: f64 sufficient for scoring"
+        )]
         let ratio = data_count as f64 / total as f64;
         let passed = ratio >= 0.5;
         ConstraintResult {
@@ -158,7 +162,12 @@ impl TufteConstraint for ChartjunkDetection {
         let score = if total == 0 {
             1.0
         } else {
-            (1.0 - (chartjunk_count as f64 / total as f64)).max(0.0)
+            #[expect(
+                clippy::cast_precision_loss,
+                reason = "ratio: f64 sufficient for scoring"
+            )]
+            let junk_ratio = chartjunk_count as f64 / total as f64;
+            (1.0 - junk_ratio).max(0.0)
         };
         let passed = chartjunk_count == 0;
         ConstraintResult {
@@ -378,6 +387,10 @@ impl TufteConstraint for SmallestEffectiveDifference {
         }
 
         let total_pairs = positions.len() * (positions.len() - 1) / 2;
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "ratio: f64 sufficient for scoring"
+        )]
         let overlap_ratio = if total_pairs > 0 {
             overlapping_pairs as f64 / total_pairs as f64
         } else {
@@ -439,6 +452,7 @@ impl TufteConstraint for SmallMultiplesPreference {
             };
         }
 
+        #[expect(clippy::cast_precision_loss, reason = "score: f64 sufficient")]
         let score = (4.0 / color_count.max(1) as f64).clamp(0.0, 1.0);
         ConstraintResult {
             passed: false,

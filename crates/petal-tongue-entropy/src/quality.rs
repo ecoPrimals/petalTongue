@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Quality assessment algorithms
 
 use std::collections::HashMap;
@@ -26,13 +26,25 @@ pub fn shannon_entropy<T: std::hash::Hash + Eq + Clone>(values: &[T]) -> f64 {
         *counts.entry(value.clone()).or_insert(0) += 1;
     }
 
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "entropy calculation; f64 sufficient for probability"
+    )]
     let total = values.len() as f64;
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "entropy calculation; f64 sufficient for probability"
+    )]
     let num_unique = counts.len() as f64;
 
     // Calculate entropy
     let entropy: f64 = counts
         .values()
         .map(|&count| {
+            #[expect(
+                clippy::cast_precision_loss,
+                reason = "entropy calculation; f64 sufficient for probability"
+            )]
             let p = count as f64 / total;
             -p * p.log2()
         })
@@ -64,9 +76,17 @@ pub fn variance(values: &[f64]) -> f64 {
     }
 
     // Calculate mean
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "variance calculation; f64 sufficient for statistics"
+    )]
     let mean: f64 = values.iter().sum::<f64>() / values.len() as f64;
 
     // Calculate variance
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "variance calculation; f64 sufficient for statistics"
+    )]
     let var: f64 = values.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / values.len() as f64;
 
     // Normalize using sigmoid(σ/4) to get [0.0-1.0]
@@ -112,7 +132,8 @@ pub fn create_histogram_buckets(values: &[f64], num_buckets: usize) -> Vec<usize
             #[expect(
                 clippy::cast_possible_truncation,
                 clippy::cast_sign_loss,
-                reason = "bucket index is in [0, num_buckets-1], normalized in [0,1]"
+                clippy::cast_precision_loss,
+                reason = "bucket index is in [0, num_buckets-1], normalized in [0,1]; f64 sufficient"
             )]
             let bucket = (normalized * num_buckets as f64).floor() as usize;
             bucket.min(num_buckets - 1)
@@ -145,6 +166,10 @@ pub fn timing_entropy(durations: &[Duration]) -> f64 {
     let ms_values: Vec<u64> = durations.iter().map(|d| d.as_millis() as u64).collect();
 
     // Create histogram buckets (10 buckets for timing)
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "timing histogram; ms values fit f64 for practical durations"
+    )]
     let ms_f64: Vec<f64> = ms_values.iter().map(|&x| x as f64).collect();
     let buckets = create_histogram_buckets(&ms_f64, 10);
 

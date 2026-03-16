@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Audio Manager - Substrate-Agnostic Audio Coordination
 //!
 //! Discovers ALL available audio backends at runtime and manages playback.
@@ -22,6 +22,10 @@ impl AudioManager {
     /// - Runtime discovery (no hardcoding)
     /// - Graceful degradation (always works)
     /// - Capability-based selection
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no audio backends are available (including silent fallback).
     pub async fn init() -> Result<Self> {
         info!("🎵 Discovering audio backends (TRUE PRIMAL)...");
 
@@ -112,6 +116,10 @@ impl AudioManager {
     ///
     /// Automatically selects backend on first call.
     /// Falls back to next backend if current one fails.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no backend can be selected or initialized, or if playback fails on all backends.
     pub async fn play_samples(&mut self, samples: &[f32], sample_rate: u32) -> Result<()> {
         // Select backend if not already selected
         if self.active_backend_idx.is_none() {

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Event streaming for real-time biomeOS updates.
 //!
 //! WebSocket-based event stream for device, primal, and niche events.

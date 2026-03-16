@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! JSON-RPC request handlers for petalTongue IPC.
 //!
 //! Dispatches to domain-specific submodules:
@@ -197,11 +197,11 @@ impl RpcHandlers {
     }
 
     fn handle_sensor_stream_subscribe(&self, req: JsonRpcRequest) -> JsonRpcResponse {
-        let mut reg = self
+        let subscription_id = self
             .sensor_stream_subscribers
             .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let subscription_id = reg.subscribe();
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .subscribe();
         JsonRpcResponse::success(
             req.id,
             serde_json::json!({
@@ -222,11 +222,11 @@ impl RpcHandlers {
                 "subscription_id is required",
             );
         }
-        let mut reg = self
+        let was_subscribed = self
             .sensor_stream_subscribers
             .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let was_subscribed = reg.unsubscribe(&subscription_id);
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .unsubscribe(&subscription_id);
         JsonRpcResponse::success(
             req.id,
             serde_json::json!({
@@ -248,11 +248,11 @@ impl RpcHandlers {
                 "subscription_id is required",
             );
         }
-        let mut reg = self
+        let batch = self
             .sensor_stream_subscribers
             .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let batch = reg.poll(&subscription_id);
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .poll(&subscription_id);
         let value = match serde_json::to_value(&batch) {
             Ok(v) => v,
             Err(e) => {

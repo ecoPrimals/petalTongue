@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Scene engine demonstration -- exercises grammar, scene graph, Tufte,
 //! math objects, modality compilers, animation, and physics bridge.
 //!

@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! # Interaction Engine
 //!
 //! Bidirectional, modality-agnostic interaction system for petalTongue.
 //!
-//! The interaction engine translates device events (mouse clicks, key presses,
+//! The interaction engine translates device events (pointer activation, key presses,
 //! voice commands, Braille routing keys) into semantic intents (Select, Inspect,
 //! Navigate) that are independent of input modality. The generalized inverse
 //! pipeline resolves these intents to data-space targets that are
@@ -11,7 +11,7 @@
 //!
 //! ## The "6 vs 9" Solution
 //!
-//! Two users with different perspectives (sighted + GUI, blind + audio) both
+//! Two users with different perspectives (sighted + display, blind + audio) both
 //! resolve to the same [`DataObjectId`] when interacting with the same data.
 //! Selection and focus operate on data identity, not on rendered primitives.
 //!

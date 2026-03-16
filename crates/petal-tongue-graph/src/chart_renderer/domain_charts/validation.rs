@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Validation and normalization helpers for domain charts (testable without egui).
 
 #[must_use]

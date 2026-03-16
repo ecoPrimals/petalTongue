@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! State synchronization coordinator.
 
 use crate::adaptive_rendering::DeviceType;
@@ -21,6 +21,11 @@ pub struct StateSync {
 
 impl StateSync {
     /// Create a new state sync with local persistence
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the config directory cannot be determined or the
+    /// state directory cannot be created.
     pub fn new() -> Result<Self> {
         Ok(Self {
             persistence: Box::new(super::persistence::LocalStatePersistence::new()?),
@@ -39,6 +44,10 @@ impl StateSync {
     }
 
     /// Initialize state for this device
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if loading existing state from persistence fails.
     pub fn init(
         &mut self,
         device_id: impl Into<String>,
@@ -67,6 +76,10 @@ impl StateSync {
     }
 
     /// Update current state
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if saving to persistence fails.
     pub fn update(&mut self, state: DeviceState) -> Result<()> {
         self.persistence.save(&state)?;
         self.current_state = Some(Arc::new(state));
@@ -74,6 +87,10 @@ impl StateSync {
     }
 
     /// Set UI state value
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if there is current state and saving to persistence fails.
     pub fn set_ui_state(&mut self, key: impl Into<String>, value: DynamicValue) -> Result<()> {
         if let Some(arc) = &self.current_state {
             let mut state = (**arc).clone();

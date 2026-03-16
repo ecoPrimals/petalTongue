@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-//! Server mode - IPC server without GUI
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//! Server mode - IPC server without display
 //!
 //! Runs the Unix socket JSON-RPC server for petalTongue IPC.
 //! Clients can connect to query topology, health, capabilities, etc.
@@ -9,7 +9,7 @@ use crate::error::AppError;
 use petal_tongue_ipc::UnixSocketServer;
 use std::sync::Arc;
 
-/// Run IPC server (Unix socket JSON-RPC) without GUI.
+/// Run IPC server (Unix socket JSON-RPC) without display.
 ///
 /// Uses the shared `DataService` graph. Runs until interrupted (e.g. Ctrl+C).
 pub async fn run(data_service: Arc<DataService>) -> Result<(), AppError> {
@@ -20,7 +20,7 @@ pub async fn run(data_service: Arc<DataService>) -> Result<(), AppError> {
 
     let server = Arc::new(server);
 
-    tracing::info!("🔌 IPC server starting (Unix socket, no GUI)");
+    tracing::info!("🔌 IPC server starting (Unix socket, no display)");
     tracing::info!("   Connect via JSON-RPC to the socket path");
 
     server

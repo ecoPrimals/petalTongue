@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Awakening Experience via Pure Rust Rendering
 //!
 //! Demonstrates the complete awakening experience rendered through

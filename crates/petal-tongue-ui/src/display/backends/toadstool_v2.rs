@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Toadstool Display Backend - Complete tarpc Implementation 🌸🦈
 //!
 //! TRUE PRIMAL Evolution: Discovery via capability system, Performance via tarpc
@@ -107,6 +107,10 @@ pub const fn expected_rgba8_buffer_size(width: u32, height: u32) -> usize {
 
 impl ToadstoolDisplay {
     /// Create new Toadstool display with capability discovery
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the biomeOS discovery backend cannot be created from environment.
     pub fn new() -> Result<Self> {
         // Create discovery system with biomeOS backend
         let backend = BiomeOsBackend::from_env()
@@ -229,6 +233,8 @@ impl ToadstoolDisplay {
 
     /// Commit frame via tarpc (high-performance binary RPC)
     async fn commit_frame(&self, buffer: &[u8]) -> Result<()> {
+        use base64::{Engine as _, engine::general_purpose};
+
         let window_id = self
             .window_id
             .as_ref()
@@ -236,7 +242,6 @@ impl ToadstoolDisplay {
 
         // tarpc can handle binary data efficiently
         // For now, we use base64 encoding for compatibility
-        use base64::{Engine as _, engine::general_purpose};
         let encoded = general_purpose::STANDARD.encode(buffer);
 
         let params = serde_json::json!({

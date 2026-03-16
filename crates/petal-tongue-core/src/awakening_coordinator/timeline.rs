@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Awakening timeline definition and event generation.
 
 use super::types::{TimelineEvent, TimelineEventType};

@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Unified Data Service
 //!
-//! Single source of truth for all UI modes (GUI, TUI, Web, Headless)
+//! Single source of truth for all modalities (display, TUI, Web, Headless)
 //!
 //! TRUE PRIMAL:
 //! - Data fetching happens ONCE
@@ -179,7 +179,7 @@ impl DataService {
         Arc::clone(&self.graph)
     }
 
-    /// Subscribe to data updates (streaming consumers, GUI/TUI wiring pending).
+    /// Subscribe to data updates (streaming consumers, display/TUI wiring pending).
     #[cfg_attr(not(test), allow(dead_code))]
     pub fn subscribe(&self) -> broadcast::Receiver<DataUpdate> {
         self.update_tx.subscribe()

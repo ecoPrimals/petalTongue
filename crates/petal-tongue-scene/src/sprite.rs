@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! 2D sprite and tilemap primitives for game visualization.
 //!
 //! Provides the scene-graph primitives needed for ludoSpring and other

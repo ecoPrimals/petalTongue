@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Adapter registry for runtime composition of ecosystem-specific UI
 //!
 //! The registry holds adapters and routes property rendering to the
@@ -108,6 +108,7 @@ impl AdapterRegistry {
             }
         }
 
+        drop(adapters);
         decoration
     }
 
@@ -157,9 +158,10 @@ impl AdapterRegistry {
     /// Get names of all registered adapters (for debugging)
     #[must_use]
     pub fn adapter_names(&self) -> Vec<String> {
-        self.adapters
-            .read()
-            .map_or_else(|_| Vec::new(), |a| a.iter().map(|a| a.name().to_string()).collect())
+        self.adapters.read().map_or_else(
+            |_| Vec::new(),
+            |a| a.iter().map(|a| a.name().to_string()).collect(),
+        )
     }
 }
 

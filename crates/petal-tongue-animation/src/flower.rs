@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! # Flower Animation
 //!
 //! ASCII and high-quality flower opening animation for awakening experience.
@@ -186,6 +186,12 @@ impl FlowerAnimation {
         "
         .to_string()
     }
+
+    /// Expose generate_ascii for testing all state branches (Glowing, Reaching).
+    #[cfg(test)]
+    pub fn generate_ascii_for_state(state: FlowerState) -> String {
+        Self::generate_ascii(state)
+    }
 }
 
 /// Generate full awakening sequence
@@ -326,6 +332,26 @@ mod tests {
         assert!(early.contains('•'));
         assert!(mid.contains('🌸') || mid.contains('_'));
         assert!(late.contains('🌸') || late.contains('•'));
+    }
+
+    #[test]
+    fn test_ascii_opening_boundaries_33_66() {
+        let low = FlowerAnimation::ascii_opening(32);
+        let mid_low = FlowerAnimation::ascii_opening(33);
+        let mid_high = FlowerAnimation::ascii_opening(65);
+        let high = FlowerAnimation::ascii_opening(66);
+        assert!(!low.is_empty());
+        assert!(!mid_low.is_empty());
+        assert!(!mid_high.is_empty());
+        assert!(!high.is_empty());
+    }
+
+    #[test]
+    fn test_generate_ascii_glowing_and_reaching() {
+        let glowing = FlowerAnimation::generate_ascii_for_state(FlowerState::Glowing);
+        let reaching = FlowerAnimation::generate_ascii_for_state(FlowerState::Reaching);
+        assert!(glowing.contains("✨"));
+        assert!(reaching.contains('~'));
     }
 
     #[test]

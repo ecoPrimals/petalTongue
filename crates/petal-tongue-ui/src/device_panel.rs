@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Device Panel - Device Management UI
 //!
 //! Displays all discovered devices in a tree view with filtering, status indicators,

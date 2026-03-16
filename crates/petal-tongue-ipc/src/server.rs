@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Isomorphic IPC server implementation - Unix sockets with TCP fallback
 //!
 //! TRUE PRIMAL Evolution: Try → Detect → Adapt → Succeed

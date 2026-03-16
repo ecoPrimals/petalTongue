@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Instance management for petalTongue
 //!
 //! This module provides the foundation for managing multiple petalTongue instances,
@@ -34,6 +34,10 @@ impl InstanceId {
     }
 
     /// Parse an `InstanceId` from a string representation
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the string is not a valid UUID.
     pub fn parse(s: &str) -> Result<Self, InstanceError> {
         Ok(Self(Uuid::parse_str(s).map_err(|e| {
             InstanceError::InvalidInstanceId(format!("Invalid UUID: {e}"))
@@ -86,6 +90,11 @@ pub struct Instance {
 
 impl Instance {
     /// Create a new instance with the given ID
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the data directory cannot be determined, or if the
+    /// state or socket directories cannot be created.
     pub fn new(id: InstanceId, name: Option<String>) -> Result<Self, InstanceError> {
         let pid = std::process::id();
         let now = lifecycle::current_timestamp();

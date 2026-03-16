@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Sensor registry: discovery and management of sensors.
 
 use std::time::Instant;
@@ -51,6 +51,10 @@ impl SensorRegistry {
     }
 
     /// Poll all sensors for events
+    ///
+    /// # Errors
+    ///
+    /// Does not return errors; individual sensor poll failures are logged and skipped.
     pub async fn poll_all(&mut self) -> anyhow::Result<Vec<SensorEvent>> {
         let mut all_events = Vec::new();
 

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Generic tool integration system for petalTongue
 //!
 //! This module provides a capability-based system for integrating external tools
@@ -55,9 +55,9 @@ pub trait ToolPanel: Send + Sync {
     /// Get tool metadata
     fn metadata(&self) -> &ToolMetadata;
 
-    /// Check if tool should be shown in the UI
+    /// Check if tool should be presented in the interface
     ///
-    /// Tools can decide based on their own state whether they want to be visible
+    /// Tools can decide based on their own state whether they want to be perceivable
     fn is_visible(&self) -> bool {
         true
     }
@@ -195,7 +195,7 @@ impl ToolManager {
         }
     }
 
-    /// Get the currently visible tool (if only one should be shown at a time)
+    /// Get the currently perceivable tool (if only one should be presented at a time)
     pub fn visible_tool(&mut self) -> Option<&mut Box<dyn ToolPanel>> {
         self.tools.iter_mut().find(|t| t.is_visible())
     }
