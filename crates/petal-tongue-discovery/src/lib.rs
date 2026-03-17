@@ -41,7 +41,7 @@
 
 mod cache;
 mod capabilities;
-mod capability_parse;
+pub mod capability_parse;
 #[cfg(any(test, feature = "test-fixtures"))]
 mod demo_provider;
 mod dns_parser;

@@ -187,7 +187,7 @@ fn test_invalid_mode() {
         .arg("invalid")
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Unknown mode"));
+        .stdout(predicate::str::contains("Unknown mode"));
 }
 
 #[test]
@@ -196,7 +196,7 @@ fn test_unknown_argument() {
         .arg("--unknown")
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Unknown argument"));
+        .stdout(predicate::str::contains("Unknown argument"));
 }
 
 #[test]
@@ -206,7 +206,7 @@ fn test_png_without_output() {
         .arg("png")
         .assert()
         .failure()
-        .stderr(predicate::str::contains(
+        .stdout(predicate::str::contains(
             "PNG mode requires --output option",
         ));
 }
