@@ -4,6 +4,7 @@
 //! Connects to biomeOS Neural API for unified primal discovery and proprioception.
 //! This is the PREFERRED provider as Neural API is the central coordinator.
 
+use crate::capability_parse;
 use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 use async_trait::async_trait;
@@ -201,11 +202,7 @@ impl NeuralApiProvider {
             endpoint: primal["socket_path"].as_str().unwrap_or("").to_string(),
             capabilities: primal["capabilities"]
                 .as_array()
-                .map(|arr| {
-                    arr.iter()
-                        .filter_map(|v| v.as_str().map(String::from))
-                        .collect()
-                })
+                .map(|v| capability_parse::parse_capabilities(v))
                 .unwrap_or_default(),
             health: match primal["health"].as_str() {
                 Some("healthy") => PrimalHealthStatus::Healthy,

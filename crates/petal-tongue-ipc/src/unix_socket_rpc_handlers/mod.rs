@@ -79,6 +79,8 @@ impl RpcHandlers {
         let method = req.method.as_str();
         match method {
             "health.check" => system::handle_health_check(self, req),
+            "health.liveness" => system::handle_health_liveness(self, req),
+            "health.readiness" => system::handle_health_readiness(self, req),
             "capability.announce" => system::handle_announce_capabilities(self, req),
             "ui.render" => ui::handle_ui_render(self, req).await,
             "ui.display_status" => ui::handle_ui_display_status(self, req),
@@ -432,6 +434,24 @@ mod tests {
         let resp = h.handle_request(req).await;
         assert!(resp.error.is_none());
         assert_eq!(resp.result.unwrap()["status"], "healthy");
+    }
+
+    #[tokio::test]
+    async fn dispatch_health_liveness() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("health.liveness", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["alive"], true);
+    }
+
+    #[tokio::test]
+    async fn dispatch_health_readiness() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("health.readiness", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["ready"], true);
     }
 
     #[tokio::test]

@@ -75,6 +75,8 @@
 /// Runtime capability detection for display modalities
 pub mod capability_detection;
 pub mod client;
+pub mod discovery_helpers;
+pub mod ipc_errors;
 pub mod json_rpc;
 pub mod json_rpc_client;
 /// Compute bridge: async IPC for barraCuda math/physics/stat/tessellate/project operations
@@ -84,6 +86,7 @@ pub mod primal_registration_error;
 pub mod protocol;
 /// Provenance trio: rhizoCrypt + sweetGrass + loamSpine session lineage
 pub mod provenance_trio;
+pub mod resilience;
 pub mod server;
 pub mod socket_path;
 pub mod socket_path_error;
@@ -99,9 +102,12 @@ pub mod visualization_handler;
 
 // JSON-RPC (SECONDARY - local IPC)
 pub use client::{IpcClient, IpcClientError};
+pub use discovery_helpers::{address_env_var, resolve_primal_socket, socket_env_var};
+pub use ipc_errors::{IpcErrorPhase, StreamItem, extract_rpc_error};
 pub use json_rpc::{JsonRpcError, JsonRpcRequest, JsonRpcResponse};
 pub use json_rpc_client::{JsonRpcClient, JsonRpcClientError, JsonRpcResult, TopologyData};
 pub use protocol::{InstanceStatus, IpcCommand, IpcResponse};
+pub use resilience::{CircuitBreaker, CircuitState, RetryPolicy};
 pub use server::{IpcServer, IpcServerError};
 pub use unix_socket_server::UnixSocketServer;
 pub use visualization_handler::{

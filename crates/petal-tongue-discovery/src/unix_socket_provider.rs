@@ -10,6 +10,7 @@
 //! - Non-blocking directory traversal
 //! - Aggressive timeouts to prevent hanging on unresponsive sockets
 
+use crate::capability_parse;
 use crate::errors::{DiscoveryError, DiscoveryResult};
 use futures::future::join_all;
 use petal_tongue_core::types::{PrimalHealthStatus, PrimalInfo};
@@ -265,13 +266,9 @@ impl UnixSocketProvider {
         path: &Path,
         result: Value,
     ) -> DiscoveryResult<PrimalInfo> {
-        let capabilities: Vec<String> = result["capabilities"]
-            .as_array()
-            .unwrap_or(&vec![])
-            .iter()
-            .filter_map(|v| v.as_str())
-            .map(String::from)
-            .collect();
+        let capabilities: Vec<String> = capability_parse::parse_capabilities(
+            result["capabilities"].as_array().unwrap_or(&vec![]),
+        );
 
         let node_id = result["node_id"].as_str().unwrap_or("unknown").to_string();
 

@@ -6,6 +6,37 @@ use crate::capability_detection;
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse};
 use serde_json::{Value, json};
 
+/// Handle health.liveness: lightweight probe for Kubernetes/biomeOS — is the process alive?
+#[must_use]
+pub fn handle_health_liveness(_handlers: &RpcHandlers, request: JsonRpcRequest) -> JsonRpcResponse {
+    JsonRpcResponse::success(
+        request.id,
+        json!({
+            "alive": true,
+        }),
+    )
+}
+
+/// Handle health.readiness: is the primal ready to serve requests?
+/// Checks that the graph engine is accessible and not poisoned.
+#[must_use]
+pub fn handle_health_readiness(handlers: &RpcHandlers, request: JsonRpcRequest) -> JsonRpcResponse {
+    let graph_ok = handlers.graph.read().is_ok();
+    let viz_ok = handlers.viz_state.read().is_ok();
+    let ready = graph_ok && viz_ok;
+
+    JsonRpcResponse::success(
+        request.id,
+        json!({
+            "ready": ready,
+            "checks": {
+                "graph_engine": graph_ok,
+                "visualization_state": viz_ok,
+            },
+        }),
+    )
+}
+
 /// Handle health.check: return status, version, uptime, and modalities
 #[must_use]
 pub fn handle_health_check(handlers: &RpcHandlers, request: JsonRpcRequest) -> JsonRpcResponse {
@@ -63,6 +94,11 @@ pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
             "transport": ["unix-socket", "tarpc"],
             "capabilities": self_capabilities::ALL,
             "methods": [
+                "health.check",
+                "health.liveness",
+                "health.readiness",
+                "health.get",
+                "topology.get",
                 methods::VISUALIZATION_RENDER,
                 methods::VISUALIZATION_RENDER_STREAM,
                 methods::VISUALIZATION_RENDER_GRAMMAR,
@@ -87,6 +123,20 @@ pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
             ],
             "data_bindings": 11,
             "geometry_types": 10,
+            "operation_dependencies": {
+                "visualization.render.dashboard": ["visualization.render"],
+                "visualization.render.grammar": ["visualization.render"],
+                "visualization.render.scene": ["visualization.render"],
+                "visualization.export": ["visualization.render"],
+                "visualization.interact.apply": ["interaction.subscribe"],
+            },
+            "cost_estimates": {
+                "visualization.render": { "cpu_ms": 1.0, "gpu_eligible": true },
+                "visualization.validate": { "cpu_ms": 0.5, "gpu_eligible": false },
+                "visualization.export": { "cpu_ms": 5.0, "gpu_eligible": true },
+                "health.check": { "cpu_ms": 0.01, "gpu_eligible": false },
+                "capability.list": { "cpu_ms": 0.01, "gpu_eligible": false },
+            },
         }),
     )
 }
@@ -339,5 +389,33 @@ mod tests {
         assert_eq!(r["provider_name"], "unknown");
         assert_eq!(r["version"], "0.0.0");
         assert!(r["methods"].as_array().unwrap().is_empty());
+    }
+
+    #[test]
+    fn handle_health_liveness_returns_alive() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "health.liveness",
+            serde_json::json!({}),
+            serde_json::json!(1),
+        );
+        let resp = handle_health_liveness(&h, req);
+        let r = resp.result.expect("success");
+        assert_eq!(r["alive"], true);
+    }
+
+    #[test]
+    fn handle_health_readiness_returns_ready() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new(
+            "health.readiness",
+            serde_json::json!({}),
+            serde_json::json!(1),
+        );
+        let resp = handle_health_readiness(&h, req);
+        let r = resp.result.expect("success");
+        assert_eq!(r["ready"], true);
+        assert_eq!(r["checks"]["graph_engine"], true);
+        assert_eq!(r["checks"]["visualization_state"], true);
     }
 }

@@ -50,6 +50,7 @@ pub mod instance; // Instance management
 mod lib_tests;
 pub mod lifecycle;
 pub mod metrics; // System metrics (CPU, memory, Neural API stats)
+pub mod or_exit; // OrExit trait for zero-panic validation binaries
 pub mod platform_dirs; // Pure Rust directory resolution (zero deps!)
 pub mod primal_types;
 pub mod property; // Generic property system
@@ -99,6 +100,9 @@ pub use config::PetalTongueConfig;
 
 /// petalTongue errors.
 pub use error::PetalTongueError;
+
+/// OrExit trait for zero-panic validation binaries
+pub use or_exit::OrExit;
 
 /// Visualization types
 pub use types::*;
