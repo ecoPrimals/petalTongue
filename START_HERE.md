@@ -92,17 +92,24 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 - `data_channel.rs` -- DataChannel enum (11 variants: TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter, Scatter3D, FieldMap, GameScene, Soundscape)
 - `capability_names.rs` -- Centralized capability/method/socket/primal constants (60+ capabilities, 15 primal identities)
 - `telemetry_adapter.rs` -- JSONL telemetry ingestion (hotSpring)
+- `or_exit.rs` -- `OrExit<T>` trait for zero-panic validation binaries
 
 ### IPC (`petal-tongue-ipc`)
 - `unix_socket_server.rs` -- JSON-RPC 2.0 server over Unix sockets
 - `tarpc_client.rs` -- tarpc binary RPC client
 - `tarpc_types/` -- tarpc types split into submodules
 - `socket_path.rs` -- XDG-compliant socket path discovery
+- `ipc_errors.rs` -- `IpcErrorPhase`, `StreamItem` (NDJSON), `extract_rpc_error()`
+- `resilience.rs` -- `CircuitBreaker`, `RetryPolicy` for IPC fault tolerance
+- `discovery_helpers.rs` -- Primal socket resolution, env var helpers
 
 ### Discovery (`petal-tongue-discovery`)
 - `lib.rs` -- Provider discovery orchestrator
-- `jsonrpc_provider.rs` -- JSON-RPC client (primary)
-- `http_provider.rs` -- HTTP fallback (deprecated as primary)
+- `unix_socket_provider.rs` -- Unix socket JSON-RPC discovery (primary)
+- `neural_api_provider.rs` -- biomeOS Neural API discovery
+- `songbird_client.rs` -- Songbird capability discovery
+- `capability_parse.rs` -- Dual-format capability parsing (flat + enriched)
+- `http_provider.rs` -- HTTP fallback (feature-gated `legacy-http`)
 
 ### Specs
 
