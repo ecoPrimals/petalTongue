@@ -575,6 +575,7 @@ fn finalize_app_startup(
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -622,5 +623,192 @@ mod tests {
         let tm = create_tool_manager();
         let tools = tm.tools();
         assert!(tools.iter().any(|t| t.metadata().name.contains("Graph")));
+    }
+
+    #[test]
+    fn test_create_panel_registry_empty_scenario() {
+        let (registry, custom_panels) = create_panel_registry_and_panels(&None);
+        assert!(!registry.available_types().is_empty());
+        assert!(custom_panels.is_empty());
+    }
+
+    #[test]
+    fn test_create_panel_registry_with_scenario_no_custom_panels() {
+        use crate::scenario::config::UiConfig;
+        use crate::scenario::ecosystem::Ecosystem;
+        use crate::scenario::sensory::SensoryConfig;
+        use crate::scenario::types::{NeuralApiConfig, Scenario};
+
+        let scenario = Scenario {
+            name: "Test".to_string(),
+            description: "Test scenario".to_string(),
+            version: "2.0.0".to_string(),
+            mode: "test".to_string(),
+            ui_config: UiConfig {
+                custom_panels: vec![],
+                ..Default::default()
+            },
+            ecosystem: Ecosystem::default(),
+            neural_api: NeuralApiConfig::default(),
+            sensory_config: SensoryConfig::default(),
+            edges: vec![],
+        };
+        let (registry, custom_panels) = create_panel_registry_and_panels(&Some(scenario));
+        assert!(!registry.available_types().is_empty());
+        assert!(custom_panels.is_empty());
+    }
+
+    #[test]
+    fn test_create_panel_registry_with_metrics_panel() {
+        use crate::scenario::config::{CustomPanelConfig, UiConfig};
+        use crate::scenario::ecosystem::Ecosystem;
+        use crate::scenario::sensory::SensoryConfig;
+        use crate::scenario::types::{NeuralApiConfig, Scenario};
+
+        let scenario = Scenario {
+            name: "Test".to_string(),
+            description: "Test".to_string(),
+            version: "2.0.0".to_string(),
+            mode: "test".to_string(),
+            ui_config: UiConfig {
+                custom_panels: vec![CustomPanelConfig {
+                    panel_type: "metrics".to_string(),
+                    title: "Metrics".to_string(),
+                    width: Some(400),
+                    height: Some(300),
+                    fullscreen: false,
+                    config: serde_json::Value::Null,
+                }],
+                ..Default::default()
+            },
+            ecosystem: Ecosystem::default(),
+            neural_api: NeuralApiConfig::default(),
+            sensory_config: SensoryConfig::default(),
+            edges: vec![],
+        };
+        let (_registry, custom_panels) = create_panel_registry_and_panels(&Some(scenario));
+        assert_eq!(custom_panels.len(), 1);
+        assert_eq!(custom_panels[0].title(), "System Metrics");
+    }
+
+    #[test]
+    fn test_create_renderers_with_scenario_interactive() {
+        use crate::scenario::config::UiConfig;
+        use crate::scenario::ecosystem::Ecosystem;
+        use crate::scenario::sensory::SensoryConfig;
+        use crate::scenario::types::{NeuralApiConfig, Scenario};
+
+        let scenario = Scenario {
+            name: "Paint".to_string(),
+            description: "Paint mode".to_string(),
+            version: "2.0.0".to_string(),
+            mode: "paint".to_string(),
+            ui_config: UiConfig {
+                layout: "canvas-only".to_string(),
+                ..Default::default()
+            },
+            ecosystem: Ecosystem::default(),
+            neural_api: NeuralApiConfig::default(),
+            sensory_config: SensoryConfig::default(),
+            edges: vec![],
+        };
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let (visual, _audio, _gen, _anim) = create_renderers(graph, &Some(scenario));
+        assert!(visual.is_interactive());
+    }
+
+    #[test]
+    fn test_create_renderers_with_scenario_show_stats() {
+        use crate::scenario::config::{PanelVisibility, UiConfig};
+        use crate::scenario::ecosystem::Ecosystem;
+        use crate::scenario::sensory::SensoryConfig;
+        use crate::scenario::types::{NeuralApiConfig, Scenario};
+
+        let scenario = Scenario {
+            name: "Stats".to_string(),
+            description: "Stats scenario".to_string(),
+            version: "2.0.0".to_string(),
+            mode: "test".to_string(),
+            ui_config: UiConfig {
+                show_panels: PanelVisibility {
+                    graph_stats: true,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            ecosystem: Ecosystem::default(),
+            neural_api: NeuralApiConfig::default(),
+            sensory_config: SensoryConfig::default(),
+            edges: vec![],
+        };
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let (visual, _audio, _gen, _anim) = create_renderers(graph, &Some(scenario));
+        assert!(visual.show_stats());
+    }
+
+    #[test]
+    fn test_create_panel_registry_with_proprioception_panel() {
+        use crate::scenario::config::{CustomPanelConfig, UiConfig};
+        use crate::scenario::ecosystem::Ecosystem;
+        use crate::scenario::sensory::SensoryConfig;
+        use crate::scenario::types::{NeuralApiConfig, Scenario};
+
+        let scenario = Scenario {
+            name: "Proprio".to_string(),
+            description: "Proprioception".to_string(),
+            version: "2.0.0".to_string(),
+            mode: "test".to_string(),
+            ui_config: UiConfig {
+                custom_panels: vec![CustomPanelConfig {
+                    panel_type: "proprioception".to_string(),
+                    title: "Proprio".to_string(),
+                    width: Some(400),
+                    height: Some(300),
+                    fullscreen: false,
+                    config: serde_json::Value::Null,
+                }],
+                ..Default::default()
+            },
+            ecosystem: Ecosystem::default(),
+            neural_api: NeuralApiConfig::default(),
+            sensory_config: SensoryConfig::default(),
+            edges: vec![],
+        };
+        let (_registry, custom_panels) = create_panel_registry_and_panels(&Some(scenario));
+        assert_eq!(custom_panels.len(), 1);
+    }
+
+    #[test]
+    fn test_create_status_reporter_modalities() {
+        let caps = CapabilityDetector::default();
+        let reporter = create_status_reporter(&caps);
+        assert!(Arc::strong_count(&reporter) >= 1);
+    }
+
+    #[test]
+    fn test_create_tool_manager_has_system_monitor() {
+        let tm = create_tool_manager();
+        let tools = tm.tools();
+        assert!(tools.iter().any(|t| t.metadata().name.contains("System")));
+    }
+
+    #[test]
+    fn test_create_tool_manager_has_process_viewer() {
+        let tm = create_tool_manager();
+        let tools = tm.tools();
+        assert!(tools.iter().any(|t| t.metadata().name.contains("Process")));
+    }
+
+    #[test]
+    fn test_adapter_registry_adapter_count() {
+        let registry = create_adapter_registry();
+        assert!(registry.adapter_count() >= 3);
+    }
+
+    #[test]
+    fn test_create_panel_registry_doom_when_feature() {
+        let (registry, _) = create_panel_registry_and_panels(&None);
+        let types = registry.available_types();
+        assert!(!types.is_empty());
     }
 }

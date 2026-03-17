@@ -13,6 +13,8 @@ mod view;
 mod tests;
 #[cfg(test)]
 mod tests_extended;
+#[cfg(test)]
+mod tests_rendering;
 
 pub use helpers::{
     build_primal_lanes, compute_lane_height, escape_csv, event_screen_rect, format_events_csv,

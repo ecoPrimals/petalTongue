@@ -13,7 +13,6 @@
 //! (or when running tests). Production builds without the feature use empty panels.
 
 use super::biomeos_integration::{Device, DeviceStatus, DeviceType, Health, NicheTemplate, Primal};
-use crate::error::Result;
 use async_trait::async_trait;
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
 use petal_tongue_discovery::{ProviderMetadata, VisualizationDataProvider};

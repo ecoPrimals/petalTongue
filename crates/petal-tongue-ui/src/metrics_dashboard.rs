@@ -321,6 +321,7 @@ impl Default for MetricsDashboard {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use petal_tongue_core::{NeuralApiMetrics, SystemResourceMetrics};
@@ -529,5 +530,83 @@ mod tests {
         assert_eq!(format_uptime_display(30), "0m");
         assert_eq!(format_uptime_display(3661), "1h 1m");
         assert_eq!(format_uptime_display(90061), "1d 1h 1m");
+    }
+
+    #[test]
+    fn test_render_no_data() {
+        let dashboard = MetricsDashboard::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                dashboard.render(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_with_data() {
+        let mut dashboard = MetricsDashboard::new();
+        let metrics = SystemMetrics {
+            timestamp: chrono::Utc::now(),
+            system: SystemResourceMetrics {
+                cpu_percent: 45.5,
+                memory_used_mb: 4_096,
+                memory_total_mb: 8_192,
+                memory_percent: 50.0,
+                uptime_seconds: 3_600,
+            },
+            neural_api: NeuralApiMetrics {
+                family_id: "nat0".to_string(),
+                active_primals: 3,
+                graphs_available: 5,
+                active_executions: 1,
+            },
+        };
+        dashboard.data = Some(metrics);
+        dashboard.cpu_history.push(45.5);
+        dashboard.cpu_history.push(50.0);
+        dashboard.cpu_history.push(55.0);
+        dashboard.memory_history.push(50.0);
+        dashboard.memory_history.push(52.0);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                dashboard.render(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_with_high_usage() {
+        let mut dashboard = MetricsDashboard::new();
+        let metrics = SystemMetrics {
+            timestamp: chrono::Utc::now(),
+            system: SystemResourceMetrics {
+                cpu_percent: 95.0,
+                memory_used_mb: 8_000,
+                memory_total_mb: 8_192,
+                memory_percent: 97.0,
+                uptime_seconds: 86_400,
+            },
+            neural_api: NeuralApiMetrics {
+                family_id: "test".to_string(),
+                active_primals: 0,
+                graphs_available: 0,
+                active_executions: 0,
+            },
+        };
+        dashboard.data = Some(metrics);
+        dashboard.cpu_history.push(90.0);
+        dashboard.cpu_history.push(95.0);
+        dashboard.memory_history.push(95.0);
+        dashboard.memory_history.push(97.0);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                dashboard.render(ui);
+            });
+        });
     }
 }

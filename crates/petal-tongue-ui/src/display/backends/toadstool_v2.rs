@@ -432,4 +432,80 @@ mod tests {
         assert_eq!(display.dimensions(), (1920, 1080));
         assert_eq!(display.name(), "toadStool Display (tarpc)");
     }
+
+    #[test]
+    fn test_name() {
+        let display = ToadstoolDisplay {
+            discovery: None,
+            tarpc_client: None,
+            window_id: None,
+            width: 1920,
+            height: 1080,
+        };
+        assert!(display.name().contains("tarpc"));
+    }
+
+    #[test]
+    fn test_capabilities_latency() {
+        let display = ToadstoolDisplay {
+            discovery: None,
+            tarpc_client: None,
+            window_id: None,
+            width: 1920,
+            height: 1080,
+        };
+        let caps = display.capabilities();
+        assert_eq!(caps.latency_ms, 8);
+    }
+
+    #[tokio::test]
+    async fn test_present_invalid_buffer_size() {
+        use petal_tongue_ipc::tarpc_client::TarpcClient;
+        let client = TarpcClient::new("tarpc://localhost:9999").unwrap();
+        let mut display = ToadstoolDisplay::with_client(client);
+        let wrong_buffer = vec![0u8; 100];
+        let result = display.present(&wrong_buffer).await;
+        assert!(result.is_err());
+        if let Err(e) = result {
+            let msg = format!("{e:?}");
+            assert!(
+                msg.contains("InvalidBufferSize")
+                    || msg.contains("expected")
+                    || msg.contains("buffer"),
+                "expected buffer error: {msg}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_present_buffer_too_small() {
+        use petal_tongue_ipc::tarpc_client::TarpcClient;
+        let client = TarpcClient::new("tarpc://localhost:9999").unwrap();
+        let mut display = ToadstoolDisplay::with_client(client);
+        let expected = expected_rgba8_buffer_size(1920, 1080);
+        let too_small = vec![0u8; expected - 1];
+        let result = display.present(&too_small).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_shutdown_no_window() {
+        use petal_tongue_ipc::tarpc_client::TarpcClient;
+        let client = TarpcClient::new("tarpc://localhost:9999").unwrap();
+        let mut display = ToadstoolDisplay::with_client(client);
+        let result = display.shutdown().await;
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_is_available() {
+        let _ = ToadstoolDisplay::is_available();
+    }
+
+    #[test]
+    fn test_expected_rgba8_edge_cases() {
+        assert_eq!(expected_rgba8_buffer_size(0, 0), 0);
+        assert_eq!(expected_rgba8_buffer_size(1, 1), 4);
+        assert_eq!(expected_rgba8_buffer_size(100, 100), 40_000);
+    }
 }

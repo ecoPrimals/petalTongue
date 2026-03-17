@@ -477,9 +477,13 @@ pub fn render_capability_panel(
 pub use super::primal_details::render_primal_details_panel;
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use petal_tongue_core::ModalityStatus;
+    use crate::accessibility::{ColorPalette, ColorScheme};
+    use petal_tongue_core::{CapabilityDetector, GraphEngine, ModalityStatus};
+    use petal_tongue_graph::Visual2DRenderer;
+    use std::sync::{Arc, RwLock};
 
     #[test]
     fn modality_status_icon_available() {
@@ -568,5 +572,82 @@ mod tests {
             audio_tier_label(false, false),
             "Active tier: Pure Rust Tones"
         );
+    }
+
+    #[test]
+    fn render_capability_panel_headless() {
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+        let capabilities = CapabilityDetector::default();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            render_capability_panel(ctx, &palette, &capabilities);
+        });
+    }
+
+    #[test]
+    fn render_top_menu_bar_headless() {
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+        let mut accessibility_panel = crate::accessibility_panel::AccessibilityPanel::default();
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let mut visual_renderer = Visual2DRenderer::new(graph.clone());
+        let mut tools = ToolManager::new();
+        let mut current_layout = petal_tongue_core::LayoutAlgorithm::ForceDirected;
+        let mut show_dashboard = false;
+        let mut show_controls = false;
+        let mut show_audio_panel = false;
+        let mut show_capability_panel = false;
+        let mut show_neural_proprioception = false;
+        let mut show_neural_metrics = false;
+        let mut show_graph_builder = false;
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
+                let _ = render_top_menu_bar(
+                    ui,
+                    &palette,
+                    &mut accessibility_panel,
+                    &mut visual_renderer,
+                    &mut tools,
+                    &mut current_layout,
+                    &graph,
+                    &mut show_dashboard,
+                    &mut show_controls,
+                    &mut show_audio_panel,
+                    &mut show_capability_panel,
+                    &mut show_neural_proprioception,
+                    &mut show_neural_metrics,
+                    &mut show_graph_builder,
+                );
+            });
+        });
+    }
+
+    #[test]
+    fn render_controls_panel_headless() {
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+        let accessibility_panel = crate::accessibility_panel::AccessibilityPanel::default();
+        let mut auto_refresh = false;
+        let mut refresh_interval = 5.0;
+        let last_refresh_elapsed = 2.5;
+        let mut show_animation = true;
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let mut visual_renderer = Visual2DRenderer::new(graph);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::SidePanel::left("controls").show(ctx, |ui| {
+                let _ = render_controls_panel(
+                    ui,
+                    &palette,
+                    &accessibility_panel,
+                    &mut auto_refresh,
+                    &mut refresh_interval,
+                    last_refresh_elapsed,
+                    &mut show_animation,
+                    &mut visual_renderer,
+                );
+            });
+        });
     }
 }

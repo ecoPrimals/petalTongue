@@ -254,7 +254,9 @@ impl Default for DoomPanel {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
+    use super::super::doom_helpers::prepare_doom_display;
     use super::*;
 
     #[test]
@@ -283,5 +285,72 @@ mod tests {
         assert!(!panel.show_debug);
         panel.toggle_debug();
         assert!(panel.show_debug);
+    }
+
+    #[test]
+    fn test_doom_panel_debug_overlay_display_state() {
+        let panel = DoomPanel::new();
+        let display_state = prepare_doom_display(panel.doom.as_ref(), panel.fps, panel.show_debug);
+        assert!(!display_state.initialized);
+        assert!(display_state.show_debug);
+        assert_eq!(display_state.fps, 0.0);
+        assert!(display_state.state_text.is_empty());
+    }
+
+    #[test]
+    fn test_doom_panel_debug_overlay_toggled_off() {
+        let mut panel = DoomPanel::new();
+        panel.toggle_debug();
+        let display_state = prepare_doom_display(panel.doom.as_ref(), 60.0, panel.show_debug);
+        assert!(!display_state.show_debug);
+    }
+
+    #[test]
+    fn test_doom_panel_initial_fps_update_state() {
+        let panel = DoomPanel::new();
+        assert_eq!(panel.frames_since_fps_update, 0);
+    }
+
+    #[test]
+    fn test_doom_panel_toggle_debug_twice_restores() {
+        let mut panel = DoomPanel::new();
+        let initial = panel.show_debug;
+        panel.toggle_debug();
+        panel.toggle_debug();
+        assert_eq!(panel.show_debug, initial);
+    }
+
+    #[test]
+    fn test_doom_panel_display_state_fps_passthrough() {
+        let panel = DoomPanel::new();
+        let display_state = prepare_doom_display(panel.doom.as_ref(), 42.5, true);
+        assert!((display_state.fps - 42.5).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_doom_panel_display_state_initialized_with_doom() {
+        let doom = doom_core::DoomInstance::new(320, 240).unwrap();
+        let display_state = prepare_doom_display(Some(&doom), 0.0, false);
+        assert!(display_state.initialized);
+        assert!(!display_state.state_text.is_empty());
+    }
+
+    #[test]
+    fn test_doom_panel_render_initialization_error_path() {
+        let mut panel = DoomPanel::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                panel.render(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_doom_panel_default_equals_new() {
+        let default_panel = DoomPanel::default();
+        let new_panel = DoomPanel::new();
+        assert_eq!(default_panel.show_debug, new_panel.show_debug);
+        assert_eq!(default_panel.frame_count, new_panel.frame_count);
     }
 }

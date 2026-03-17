@@ -782,4 +782,123 @@ mod tests {
             assert!(e.to_string().contains("500") || e.to_string().contains("status"));
         }
     }
+
+    #[test]
+    fn test_build_mdns_query_single_label() {
+        let query = MdnsVisualizationProvider::build_mdns_query("local");
+        assert!(query.len() > 12);
+        assert_eq!(query[12], 5);
+        assert_eq!(&query[13..18], b"local");
+    }
+
+    #[test]
+    fn test_build_mdns_query_dns_header_structure() {
+        let query = MdnsVisualizationProvider::build_mdns_query(SERVICE_NAME);
+        assert_eq!(query.len() % 1, 0);
+        assert!(query.len() >= 12 + 5);
+        assert_eq!(&query[2..4], &[0x00, 0x00]);
+        assert_eq!(&query[6..8], &[0x00, 0x00]);
+        assert_eq!(&query[8..10], &[0x00, 0x00]);
+        assert_eq!(&query[10..12], &[0x00, 0x00]);
+    }
+
+    #[test]
+    fn test_parse_mdns_response_ipv6_fallback() {
+        use std::net::SocketAddr;
+        let addr = SocketAddr::from(([0, 0, 0, 0, 0, 0, 0, 1], 5353));
+        let data = [0u8; 12];
+        let result = MdnsVisualizationProvider::parse_mdns_response(&data, addr);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mdns_provider_default_capabilities() {
+        let metadata = ProviderMetadata {
+            name: "Test".to_string(),
+            endpoint: "http://127.0.0.1:8080".to_string(),
+            protocol: "http".to_string(),
+            capabilities: vec!["custom.cap".to_string()],
+        };
+        let provider =
+            MdnsVisualizationProvider::new("http://127.0.0.1:8080".to_string(), metadata);
+        let meta = provider.get_metadata();
+        assert!(meta.capabilities.contains(&"custom.cap".to_string()));
+    }
+
+    #[test]
+    fn test_build_mdns_query_question_section_min_length() {
+        let query = MdnsVisualizationProvider::build_mdns_query("x");
+        assert!(query.len() >= 12 + 1 + 1 + 4);
+    }
+
+    #[test]
+    fn test_parse_mdns_response_header_parse() {
+        use std::net::SocketAddr;
+        let addr = SocketAddr::from(([127, 0, 0, 1], 5353));
+        let mut data = vec![0u8; 12];
+        data[2] = 0x80;
+        data[3] = 0x00;
+        data[4] = 0x00;
+        data[5] = 0x01;
+        data[6] = 0x00;
+        data[7] = 0x00;
+        let result = MdnsVisualizationProvider::parse_mdns_response(&data, addr);
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_mdns_provider_health_check_failure() {
+        let mock_server = wiremock::MockServer::start().await;
+        wiremock::Mock::given(wiremock::matchers::method("GET"))
+            .and(wiremock::matchers::path("/api/v1/health"))
+            .respond_with(wiremock::ResponseTemplate::new(503))
+            .mount(&mock_server)
+            .await;
+
+        let uri = mock_server.uri();
+        let metadata = ProviderMetadata {
+            name: "mDNS Unhealthy".to_string(),
+            endpoint: uri.clone(),
+            protocol: "http".to_string(),
+            capabilities: vec![],
+        };
+        let provider = MdnsVisualizationProvider::new(uri, metadata);
+        let result = provider.health_check().await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_mdns_provider_get_topology_empty() {
+        let mock_server = wiremock::MockServer::start().await;
+        let topology_json = serde_json::json!({ "edges": [] });
+        wiremock::Mock::given(wiremock::matchers::method("GET"))
+            .and(wiremock::matchers::path("/api/v1/topology"))
+            .respond_with(wiremock::ResponseTemplate::new(200).set_body_json(&topology_json))
+            .mount(&mock_server)
+            .await;
+
+        let uri = mock_server.uri();
+        let metadata = ProviderMetadata {
+            name: "mDNS Empty".to_string(),
+            endpoint: uri.clone(),
+            protocol: "http".to_string(),
+            capabilities: vec![],
+        };
+        let provider = MdnsVisualizationProvider::new(uri, metadata);
+        let edges = provider.get_topology().await.unwrap();
+        assert!(edges.is_empty());
+    }
+
+    #[test]
+    fn test_build_mdns_query_ptr_type() {
+        let query = MdnsVisualizationProvider::build_mdns_query("_test._tcp.local");
+        let q_start = 12;
+        let name_len: usize = "_test._tcp.local"
+            .split('.')
+            .map(|l| 1 + l.len())
+            .sum::<usize>()
+            + 1;
+        let type_offset = q_start + name_len;
+        assert_eq!(&query[type_offset..type_offset + 2], &[0x00, 0x0C]);
+    }
 }

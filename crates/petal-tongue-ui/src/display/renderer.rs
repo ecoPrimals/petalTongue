@@ -386,4 +386,66 @@ mod tests {
         assert_eq!(max_x, 220);
         assert_eq!(max_y, 140);
     }
+
+    #[test]
+    fn test_clip_rect_to_pixel_coords_zero_ppp() {
+        let (min_x, min_y, max_x, max_y) = clip_rect_to_pixel_coords(5.0, 10.0, 15.0, 20.0, 0.5);
+        assert_eq!(min_x, 2);
+        assert_eq!(min_y, 5);
+        assert_eq!(max_x, 7);
+        assert_eq!(max_y, 10);
+    }
+
+    #[test]
+    fn test_unpremultiply_rgba_green() {
+        let data = [0u8, 255, 0, 255];
+        let result = unpremultiply_rgba(&data);
+        assert_eq!(result, [0, 255, 0, 255]);
+    }
+
+    #[test]
+    fn test_unpremultiply_rgba_blue() {
+        let data = [0u8, 0, 255, 255];
+        let result = unpremultiply_rgba(&data);
+        assert_eq!(result, [0, 0, 255, 255]);
+    }
+
+    #[test]
+    fn test_unpremultiply_rgba_mixed_alpha() {
+        let data = [64, 64, 64, 64];
+        let result = unpremultiply_rgba(&data);
+        assert_eq!(result[0], 255);
+        assert_eq!(result[1], 255);
+        assert_eq!(result[2], 255);
+        assert_eq!(result[3], 64);
+    }
+
+    #[test]
+    fn test_render_dimensions_preserved() {
+        let mut renderer = EguiPixelRenderer::new(64, 48);
+        let buffer = renderer.render(&[]).unwrap();
+        assert_eq!(buffer.len(), 64 * 48 * 4);
+    }
+
+    #[test]
+    fn test_set_dimensions_mutates() {
+        let mut renderer = EguiPixelRenderer::new(100, 100);
+        renderer.set_dimensions(50, 75);
+        assert_eq!(renderer.dimensions(), (50, 75));
+    }
+
+    #[test]
+    fn test_clip_rect_negative_coords() {
+        let (_min_x, _min_y, max_x, max_y) = clip_rect_to_pixel_coords(-10.0, -5.0, 10.0, 5.0, 1.0);
+        assert_eq!(max_x, 10);
+        assert_eq!(max_y, 5);
+    }
+
+    #[test]
+    fn test_unpremultiply_rgba_incomplete_chunk_ignored() {
+        let data = [255u8, 0, 0, 255, 0];
+        let result = unpremultiply_rgba(&data);
+        assert_eq!(result.len(), 4);
+        assert_eq!(result[0..4], [255, 0, 0, 255]);
+    }
 }

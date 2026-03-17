@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Unit tests for sensory UI.
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use super::*;
 use petal_tongue_core::PrimalInfo;
 use petal_tongue_core::SensoryCapabilities;
@@ -288,6 +290,112 @@ fn test_render_metrics_headless() {
     let _ = ctx.run(egui::RawInput::default(), |ctx| {
         egui::CentralPanel::default().show(ctx, |ui| {
             manager.render_metrics(ui, Some(&metrics));
+        });
+    });
+}
+
+/// Manager: all render methods in sequence (state transitions)
+#[test]
+fn test_manager_all_render_methods_sequence() {
+    use petal_tongue_core::metrics::{NeuralApiMetrics, SystemResourceMetrics};
+    use petal_tongue_core::proprioception::{HealthData, HealthStatus};
+    use petal_tongue_core::{GraphEngine, PrimalHealthStatus, PrimalId};
+
+    let caps = SensoryCapabilities {
+        visual_outputs: vec![VisualOutputCapability::TwoD {
+            resolution: (1280, 720),
+            refresh_rate: 60,
+            color_depth: 8,
+            size_mm: None,
+        }],
+        pointer_inputs: vec![PointerInputCapability::TwoD {
+            precision: 1.0,
+            has_wheel: true,
+            has_pressure: false,
+            button_count: 3,
+        }],
+        keyboard_inputs: vec![KeyboardInputCapability::Physical {
+            layout: "QWERTY".to_string(),
+            has_numpad: false,
+            modifier_keys: 3,
+        }],
+        ..Default::default()
+    };
+    let mut manager = SensoryUIManager::with_capabilities(caps);
+    let primals = vec![PrimalInfo::new(
+        PrimalId::from("p1"),
+        "Test",
+        "Compute",
+        "http://localhost",
+        vec![],
+        PrimalHealthStatus::Healthy,
+        0,
+    )];
+    let mut graph = GraphEngine::new();
+    graph.add_node(PrimalInfo::new(
+        PrimalId::from("n1"),
+        "Node",
+        "Compute",
+        "http://localhost",
+        vec![],
+        PrimalHealthStatus::Healthy,
+        0,
+    ));
+    let metrics = petal_tongue_core::SystemMetrics {
+        timestamp: chrono::Utc::now(),
+        system: SystemResourceMetrics {
+            cpu_percent: 50.0,
+            memory_used_mb: 1024,
+            memory_total_mb: 2048,
+            memory_percent: 50.0,
+            uptime_seconds: 3600,
+        },
+        neural_api: NeuralApiMetrics {
+            family_id: "t".to_string(),
+            active_primals: 1,
+            graphs_available: 1,
+            active_executions: 0,
+        },
+    };
+    let mut proprio = petal_tongue_core::ProprioceptionData::empty("t");
+    proprio.health = HealthData {
+        percentage: 90.0,
+        status: HealthStatus::Healthy,
+    };
+    proprio.confidence = 95.0;
+
+    let ctx = egui::Context::default();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            manager.render_primal_list(ui, &primals);
+            manager.render_topology(ui, &graph);
+            manager.render_metrics(ui, Some(&metrics));
+            manager.render_proprioception(ui, Some(&proprio));
+        });
+    });
+}
+
+/// Manager: render with all None (metrics, proprioception)
+#[test]
+fn test_manager_render_all_none() {
+    let caps = SensoryCapabilities {
+        audio_outputs: vec![AudioOutputCapability::Stereo {
+            sample_rate: 48000,
+            bit_depth: 16,
+        }],
+        ..Default::default()
+    };
+    let mut manager = SensoryUIManager::with_capabilities(caps);
+    let primals: Vec<PrimalInfo> = vec![];
+    let graph = petal_tongue_core::GraphEngine::new();
+
+    let ctx = egui::Context::default();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            manager.render_primal_list(ui, &primals);
+            manager.render_topology(ui, &graph);
+            manager.render_metrics(ui, None);
+            manager.render_proprioception(ui, None);
         });
     });
 }

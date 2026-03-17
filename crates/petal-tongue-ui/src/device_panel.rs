@@ -355,6 +355,7 @@ const fn device_icon(device_type: DeviceType) -> &'static str {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::biomeos_integration::{Device, DeviceStatus, DeviceType};
@@ -752,5 +753,96 @@ mod tests {
         assert_eq!(DevicePanel::usage_bar_color(0.9), Color32::YELLOW);
         assert_eq!(DevicePanel::usage_bar_color(0.91), Color32::RED);
         assert_eq!(DevicePanel::usage_bar_color(1.0), Color32::RED);
+    }
+
+    #[tokio::test]
+    async fn test_device_panel_ui_headless_empty() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut panel = DevicePanel::new(event_handler);
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                panel.ui(ui);
+            });
+        });
+    }
+
+    #[tokio::test]
+    async fn test_device_panel_ui_headless_with_devices() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut panel = DevicePanel::new(event_handler);
+        panel
+            .refresh(vec![
+                Device {
+                    id: "gpu-0".to_string(),
+                    name: "GPU".to_string(),
+                    device_type: DeviceType::GPU,
+                    status: DeviceStatus::Online,
+                    resource_usage: 0.5,
+                    assigned_to: None,
+                    metadata: serde_json::json!({}),
+                },
+                Device {
+                    id: "cpu-0".to_string(),
+                    name: "CPU".to_string(),
+                    device_type: DeviceType::CPU,
+                    status: DeviceStatus::Busy,
+                    resource_usage: 0.9,
+                    assigned_to: Some("primal-1".to_string()),
+                    metadata: serde_json::json!({}),
+                },
+            ])
+            .await;
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                panel.ui(ui);
+            });
+        });
+    }
+
+    #[tokio::test]
+    async fn test_device_panel_ui_headless_all_statuses() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut panel = DevicePanel::new(event_handler);
+        panel
+            .refresh(vec![
+                Device {
+                    id: "d1".to_string(),
+                    name: "Online".to_string(),
+                    device_type: DeviceType::GPU,
+                    status: DeviceStatus::Online,
+                    resource_usage: 0.3,
+                    assigned_to: None,
+                    metadata: serde_json::json!({}),
+                },
+                Device {
+                    id: "d2".to_string(),
+                    name: "Offline".to_string(),
+                    device_type: DeviceType::CPU,
+                    status: DeviceStatus::Offline,
+                    resource_usage: 0.0,
+                    assigned_to: None,
+                    metadata: serde_json::json!({}),
+                },
+                Device {
+                    id: "d3".to_string(),
+                    name: "Error".to_string(),
+                    device_type: DeviceType::Storage,
+                    status: DeviceStatus::Error,
+                    resource_usage: 1.0,
+                    assigned_to: None,
+                    metadata: serde_json::json!({}),
+                },
+            ])
+            .await;
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                panel.ui(ui);
+            });
+        });
     }
 }

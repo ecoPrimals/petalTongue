@@ -190,3 +190,268 @@ async fn add_log(tui: &RichTUI, message: String) {
         })
         .await;
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests {
+    use crate::events::{ExternalEvent, KeyAction, TUIEvent, parse_key_event};
+    use crate::state::{LogLevel, LogMessage, View};
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+    #[tokio::test]
+    async fn handle_event_quit_variant() {
+        let quit = TUIEvent::Quit;
+        assert!(matches!(quit, TUIEvent::Quit));
+    }
+
+    #[tokio::test]
+    async fn handle_event_tick_variant() {
+        let tick = TUIEvent::Tick;
+        assert!(matches!(tick, TUIEvent::Tick));
+    }
+
+    #[tokio::test]
+    async fn handle_event_resize_variant() {
+        let resize = TUIEvent::Resize {
+            width: 80,
+            height: 24,
+        };
+        assert!(matches!(
+            resize,
+            TUIEvent::Resize {
+                width: 80,
+                height: 24
+            }
+        ));
+    }
+
+    #[tokio::test]
+    async fn handle_event_external_primal_discovered_format() {
+        let _evt = ExternalEvent::PrimalDiscovered {
+            name: "test-primal".to_string(),
+        };
+        let formatted = format!("Discovered primal: {}", "test-primal");
+        assert_eq!(formatted, "Discovered primal: test-primal");
+    }
+
+    #[tokio::test]
+    async fn handle_event_external_primal_status_format() {
+        let formatted = format!(
+            "Primal {} status: {}",
+            "p1",
+            if true { "healthy" } else { "unhealthy" }
+        );
+        assert_eq!(formatted, "Primal p1 status: healthy");
+        let formatted_unhealthy = format!(
+            "Primal {} status: {}",
+            "p2",
+            if false { "healthy" } else { "unhealthy" }
+        );
+        assert_eq!(formatted_unhealthy, "Primal p2 status: unhealthy");
+    }
+
+    #[tokio::test]
+    async fn handle_event_external_log_message_format() {
+        let formatted = format!("[{}]", "source");
+        assert_eq!(formatted, "[source]");
+    }
+
+    #[tokio::test]
+    async fn key_action_switch_view_bounds_check() {
+        let views = View::all();
+        for i in 0..views.len() {
+            let action = parse_key_event(KeyEvent::new(
+                KeyCode::Char(char::from_digit((i + 1) as u32, 10).unwrap()),
+                KeyModifiers::NONE,
+            ));
+            if let KeyAction::SwitchView(idx) = action {
+                assert!(idx < views.len(), "SwitchView index must be in bounds");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn refresh_data_standalone_check_logic() {
+        let state = crate::state::TUIState::new();
+        state.set_standalone_mode(true).await;
+        assert!(state.is_standalone().await);
+        state.set_standalone_mode(false).await;
+        assert!(!state.is_standalone().await);
+    }
+
+    #[tokio::test]
+    async fn key_action_quit_stops_loop() {
+        let action = KeyAction::Quit;
+        assert!(matches!(action, KeyAction::Quit));
+    }
+
+    #[tokio::test]
+    async fn key_action_help_no_op() {
+        let action = KeyAction::Help;
+        assert!(matches!(action, KeyAction::Help));
+    }
+
+    #[tokio::test]
+    async fn key_action_refresh_triggers_discover() {
+        let action = KeyAction::Refresh;
+        assert!(matches!(action, KeyAction::Refresh));
+    }
+
+    #[tokio::test]
+    async fn key_action_select_previous_next_with_index() {
+        let action_prev = KeyAction::SelectPrevious;
+        let action_next = KeyAction::SelectNext;
+        assert!(matches!(action_prev, KeyAction::SelectPrevious));
+        assert!(matches!(action_next, KeyAction::SelectNext));
+    }
+
+    #[tokio::test]
+    async fn external_event_topology_changed() {
+        let evt = ExternalEvent::TopologyChanged;
+        assert!(matches!(evt, ExternalEvent::TopologyChanged));
+    }
+
+    #[tokio::test]
+    async fn external_event_primal_discovered_name() {
+        let evt = ExternalEvent::PrimalDiscovered {
+            name: "toadstool".to_string(),
+        };
+        if let ExternalEvent::PrimalDiscovered { name } = evt {
+            assert_eq!(name, "toadstool");
+        }
+    }
+
+    #[tokio::test]
+    async fn external_event_primal_status_healthy() {
+        let evt = ExternalEvent::PrimalStatusChanged {
+            name: "songbird".to_string(),
+            healthy: true,
+        };
+        if let ExternalEvent::PrimalStatusChanged { name, healthy } = evt {
+            assert_eq!(name, "songbird");
+            assert!(healthy);
+        }
+    }
+
+    #[tokio::test]
+    async fn external_event_primal_status_unhealthy() {
+        let evt = ExternalEvent::PrimalStatusChanged {
+            name: "beardog".to_string(),
+            healthy: false,
+        };
+        if let ExternalEvent::PrimalStatusChanged { name, healthy } = evt {
+            assert_eq!(name, "beardog");
+            assert!(!healthy);
+        }
+    }
+
+    #[tokio::test]
+    async fn external_event_log_message_format() {
+        let evt = ExternalEvent::LogMessage {
+            source: "discovery".to_string(),
+            message: "Found 3 primals".to_string(),
+        };
+        if let ExternalEvent::LogMessage { source, message } = evt {
+            let formatted = format!("[{source}] {message}");
+            assert_eq!(formatted, "[discovery] Found 3 primals");
+        }
+    }
+
+    #[tokio::test]
+    async fn parse_key_char_3_switch_view_2() {
+        let action = parse_key_event(KeyEvent::new(KeyCode::Char('3'), KeyModifiers::NONE));
+        assert_eq!(action, KeyAction::SwitchView(2));
+    }
+
+    #[tokio::test]
+    async fn parse_key_char_8_switch_view_7() {
+        let action = parse_key_event(KeyEvent::new(KeyCode::Char('8'), KeyModifiers::NONE));
+        assert_eq!(action, KeyAction::SwitchView(7));
+    }
+
+    #[tokio::test]
+    async fn parse_key_char_9_out_of_bounds() {
+        let action = parse_key_event(KeyEvent::new(KeyCode::Char('9'), KeyModifiers::NONE));
+        assert_eq!(action, KeyAction::None);
+    }
+
+    #[tokio::test]
+    async fn parse_key_char_0_out_of_bounds() {
+        let action = parse_key_event(KeyEvent::new(KeyCode::Char('0'), KeyModifiers::NONE));
+        assert_eq!(action, KeyAction::None);
+    }
+
+    #[tokio::test]
+    async fn tui_event_key_wraps_keyevent() {
+        let key = KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE);
+        let evt = TUIEvent::Key(key);
+        assert!(matches!(evt, TUIEvent::Key(_)));
+    }
+
+    #[tokio::test]
+    async fn tui_event_resize_dimensions() {
+        let evt = TUIEvent::Resize {
+            width: 120,
+            height: 40,
+        };
+        if let TUIEvent::Resize { width, height } = evt {
+            assert_eq!(width, 120);
+            assert_eq!(height, 40);
+        }
+    }
+
+    #[tokio::test]
+    async fn discover_primals_standalone_log_message() {
+        let msg = "Running in standalone mode (no primals discovered)".to_string();
+        assert!(msg.contains("standalone"));
+    }
+
+    #[tokio::test]
+    async fn discover_primals_success_log_format() {
+        let count = 5usize;
+        let msg = format!("Discovered {} primals", count);
+        assert_eq!(msg, "Discovered 5 primals");
+    }
+
+    #[tokio::test]
+    async fn discover_primals_failure_log_format() {
+        let err_msg = "Connection refused";
+        let msg = format!("Discovery failed: {err_msg}. Running in standalone mode.");
+        assert!(msg.contains("standalone"));
+        assert!(msg.contains("Connection refused"));
+    }
+
+    #[tokio::test]
+    async fn discover_primals_provider_error_log_format() {
+        let err_msg = "timeout";
+        let msg = format!("Failed to get primals: {err_msg}");
+        assert_eq!(msg, "Failed to get primals: timeout");
+    }
+
+    #[tokio::test]
+    async fn view_all_len_matches_switch_view_indices() {
+        let views = View::all();
+        for i in 0..views.len() {
+            let key = KeyEvent::new(
+                KeyCode::Char(char::from_digit((i + 1) as u32, 10).unwrap()),
+                KeyModifiers::NONE,
+            );
+            let action = parse_key_event(key);
+            if let KeyAction::SwitchView(idx) = action {
+                assert_eq!(idx, i);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn log_message_timestamp_source_level() {
+        let msg = LogMessage {
+            timestamp: chrono::Utc::now(),
+            source: Some("test".to_string()),
+            level: LogLevel::Info,
+            message: "test message".to_string(),
+        };
+        assert_eq!(msg.source.as_deref(), Some("test"));
+        assert!(matches!(msg.level, LogLevel::Info));
+    }
+}

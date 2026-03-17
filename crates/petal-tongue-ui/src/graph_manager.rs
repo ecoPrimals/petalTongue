@@ -339,8 +339,11 @@ pub enum GraphManagerAction {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::accessibility::ColorPalette;
+    use crate::accessibility::ColorScheme;
 
     #[test]
     fn test_panel_creation() {
@@ -627,5 +630,108 @@ mod tests {
         panel.selected_graph_id = Some("g2".to_string());
         panel.remove_graph("g1");
         assert_eq!(panel.selected_graph_id.as_deref(), Some("g2"));
+    }
+
+    #[test]
+    fn test_render_no_provider() {
+        let mut panel = GraphManagerPanel::new();
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+        let runtime = tokio::runtime::Runtime::new().expect("create runtime");
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let action = panel.render(ui, &palette, None, None, &runtime);
+                assert!(action.is_none());
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_with_error_message() {
+        let mut panel = GraphManagerPanel::new();
+        panel.set_error(Some("Test error message".to_string()));
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+        let runtime = tokio::runtime::Runtime::new().expect("create runtime");
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let _ = panel.render(ui, &palette, None, None, &runtime);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_with_execution_status() {
+        let mut panel = GraphManagerPanel::new();
+        panel.set_execution_status(Some("Running...".to_string()));
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+        let runtime = tokio::runtime::Runtime::new().expect("create runtime");
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let _ = panel.render(ui, &palette, None, None, &runtime);
+            });
+        });
+    }
+
+    #[test]
+    fn test_format_graph_stats_zero() {
+        let (n, e) = format_graph_stats(0, 0);
+        assert_eq!(n, "📊 0 nodes");
+        assert_eq!(e, "🔗 0 edges");
+    }
+
+    #[test]
+    fn test_format_error_display_empty() {
+        let s = format_error_display("");
+        assert!(s.contains("Error:"));
+    }
+
+    #[test]
+    fn test_is_graph_selected_empty_string() {
+        assert!(!is_graph_selected(&Some(String::new()), "a"));
+        assert!(is_graph_selected(&Some(String::new()), ""));
+    }
+
+    #[test]
+    fn test_format_graph_stats_large_numbers() {
+        let (n, e) = format_graph_stats(999, 500);
+        assert_eq!(n, "📊 999 nodes");
+        assert_eq!(e, "🔗 500 edges");
+    }
+
+    #[test]
+    fn test_format_execution_status_empty() {
+        let s = format_execution_status("");
+        assert!(s.contains("Execution:"));
+    }
+
+    #[test]
+    fn test_format_modified_at_empty() {
+        assert_eq!(format_modified_at(""), "Modified: ");
+    }
+
+    #[test]
+    fn test_save_description_opt_whitespace_only() {
+        assert_eq!(save_description_opt("   "), Some("   ".to_string()));
+    }
+
+    #[test]
+    fn test_graph_metadata_with_all_fields() {
+        let meta = GraphMetadata {
+            id: "full-id".to_string(),
+            name: "Full Name".to_string(),
+            description: Some("Full description".to_string()),
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+            modified_at: "2026-01-16T12:00:00Z".to_string(),
+            node_count: 100,
+            edge_count: 99,
+        };
+        let (n, e) = format_graph_stats(meta.node_count, meta.edge_count);
+        assert_eq!(n, "📊 100 nodes");
+        assert_eq!(e, "🔗 99 edges");
     }
 }

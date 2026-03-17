@@ -199,11 +199,14 @@ impl HumanEntropyWindow {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::super::rendering_helpers::{
-        capture_state_display, format_recording_duration, quality_color_rgb,
+        capture_state_display, format_recording_duration, modality_selector_enabled,
+        quality_color_rgb, quality_to_percent_display, stopped_state_message,
     };
-    use super::super::types::CaptureWindowState;
+    use super::super::state::HumanEntropyWindow;
+    use super::super::types::{CaptureWindowState, EntropyModality};
 
     #[test]
     fn format_recording_duration_values() {
@@ -257,5 +260,98 @@ mod tests {
         assert_eq!(d.state_label, "Processing");
         assert!(!d.can_start);
         assert!(!d.can_discard);
+    }
+
+    #[test]
+    fn modality_selector_enabled_both_true() {
+        assert!(modality_selector_enabled(true, true));
+    }
+
+    #[test]
+    fn modality_selector_enabled_unavailable() {
+        assert!(!modality_selector_enabled(false, true));
+    }
+
+    #[test]
+    fn modality_selector_enabled_cannot_start() {
+        assert!(!modality_selector_enabled(true, false));
+    }
+
+    #[test]
+    fn test_quality_to_percent_display_values() {
+        assert_eq!(quality_to_percent_display(0.0), "0.0%");
+        assert_eq!(quality_to_percent_display(0.5), "50.0%");
+        assert_eq!(quality_to_percent_display(1.0), "100.0%");
+    }
+
+    #[test]
+    fn stopped_state_message_with_quality() {
+        let msg = stopped_state_message(Some(0.85));
+        assert!(msg.contains("85.0"));
+    }
+
+    #[test]
+    fn stopped_state_message_without_quality() {
+        assert_eq!(stopped_state_message(None), "Capture complete!");
+    }
+
+    #[test]
+    fn test_render_ui_idle() {
+        let mut window = HumanEntropyWindow::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                window.render_ui(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_ui_recording() {
+        let mut window = HumanEntropyWindow::new();
+        window.modality = EntropyModality::Narrative;
+        window.start_capture();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                window.render_ui(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_ui_stopped() {
+        let mut window = HumanEntropyWindow::new();
+        window.modality = EntropyModality::Narrative;
+        window.start_capture();
+        window.stop_capture();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                window.render_ui(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_ui_processing() {
+        let mut window = HumanEntropyWindow::new();
+        window.state = CaptureWindowState::Processing;
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                window.render_ui(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_show_window() {
+        let mut window = HumanEntropyWindow::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            let open = window.show(ctx);
+            assert!(open);
+        });
     }
 }

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Display verification tests
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use petal_tongue_core::rendering_awareness::{InteractivityState, VisibilityState};
 
 use super::types::{DisplayTopology, DisplayVerification, ViewerLocation};
@@ -277,4 +279,78 @@ fn test_display_verification_failed_suggested_action() {
     let v = DisplayVerification::failed("reason");
     assert!(v.suggested_action.is_some());
     assert!(v.suggested_action.unwrap().contains("DISPLAY"));
+}
+
+#[test]
+fn test_continuous_verification_idle_direct_local() {
+    let v = continuous_verification("test-window", 100.0);
+    assert_eq!(v.interactivity, InteractivityState::Idle);
+}
+
+#[test]
+fn test_continuous_verification_unconfirmed_sets_uncertain() {
+    let v = continuous_verification("test-window", 400.0);
+    assert_eq!(v.interactivity, InteractivityState::Unconfirmed);
+}
+
+#[test]
+fn test_suggested_action_content() {
+    let action = suggested_action_for_prolonged_idle(350.0).expect("should have action");
+    assert!(action.contains("5+ minutes"));
+    assert!(action.contains("verify"));
+}
+
+#[test]
+fn test_interactivity_state_exact_boundaries() {
+    assert_eq!(
+        interactivity_state_from_seconds(4.99),
+        InteractivityState::Active
+    );
+    assert_eq!(
+        interactivity_state_from_seconds(29.99),
+        InteractivityState::Recent
+    );
+    assert_eq!(
+        interactivity_state_from_seconds(299.99),
+        InteractivityState::Idle
+    );
+}
+
+#[test]
+fn test_format_active_interaction_status_direct_local() {
+    let s = format_active_interaction_status(&DisplayTopology::DirectLocal);
+    assert!(s.contains("Direct local"));
+    assert!(s.contains("actively interacting"));
+}
+
+#[test]
+fn test_format_recent_interaction_status_secs_formatting() {
+    let s = format_recent_interaction_status(&DisplayTopology::Unknown, 7.3);
+    assert!(s.contains("7"));
+    assert!(s.contains("recent interaction"));
+}
+
+#[test]
+fn test_detect_display_topology_returns_valid_topology() {
+    let (topology, evidence) = detect_display_topology();
+    match topology {
+        DisplayTopology::DirectLocal
+        | DisplayTopology::Forwarded
+        | DisplayTopology::Nested
+        | DisplayTopology::Virtual
+        | DisplayTopology::Unknown => {}
+    }
+    let _ = evidence;
+}
+
+#[test]
+fn test_continuous_verification_virtual_display_message() {
+    let v = continuous_verification("test", 50.0);
+    assert!(
+        v.status_message.contains("Virtual")
+            || v.status_message.contains("Direct")
+            || v.status_message.contains("Forwarded")
+            || v.status_message.contains("Unknown")
+            || v.status_message.contains("Nested")
+    );
 }

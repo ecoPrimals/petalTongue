@@ -278,6 +278,7 @@ fn delete_node(renderer: &Visual2DRenderer, node_id: &str) {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -575,5 +576,42 @@ mod tests {
         use petal_tongue_core::graph_engine::Position;
         let dist = Position::new_2d(0.0, 0.0).distance_to(Position::new_2d(20.0, 0.0));
         assert!((dist - 20.0).abs() < f32::EPSILON);
+    }
+
+    #[cfg(feature = "egui-render")]
+    #[test]
+    fn handle_input_with_headless_egui() {
+        use crate::visual_2d::Visual2DRenderer;
+        use petal_tongue_core::graph_engine::GraphEngine;
+        use std::sync::{Arc, RwLock};
+
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let mut renderer = Visual2DRenderer::new(graph.clone());
+        renderer.interactive_mode = true;
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let response = ui.allocate_rect(
+                    egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::new(400.0, 300.0)),
+                    egui::Sense::click_and_drag(),
+                );
+                let screen_center = response.rect.center();
+                handle_input(&mut renderer, &response, screen_center);
+            });
+        });
+    }
+
+    #[cfg(feature = "egui-render")]
+    #[test]
+    fn handle_input_zoom_clamp_bounds() {
+        use crate::visual_2d::Visual2DRenderer;
+        use petal_tongue_core::graph_engine::GraphEngine;
+        use std::sync::{Arc, RwLock};
+
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let mut renderer = Visual2DRenderer::new(graph);
+        renderer.zoom = 1.0;
+        assert!(renderer.zoom >= 0.1 && renderer.zoom <= 10.0);
     }
 }

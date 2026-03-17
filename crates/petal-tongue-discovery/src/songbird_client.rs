@@ -726,4 +726,108 @@ mod tests {
         );
         assert!(socket_name.contains("nat0"));
     }
+
+    #[test]
+    fn test_parse_primal_ok_variant() {
+        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let json = json!({
+            "id": "ok-primal",
+            "name": "OK",
+            "endpoint": "unix:///tmp/ok.sock",
+            "health": "ok"
+        });
+        let primal = client.parse_primal(&json).unwrap();
+        assert!(matches!(primal.health, PrimalHealthStatus::Healthy));
+    }
+
+    #[test]
+    fn test_parse_primal_capabilities_empty_array() {
+        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let json = json!({
+            "id": "test",
+            "name": "test",
+            "endpoint": "unix:///tmp/test.sock",
+            "capabilities": []
+        });
+        let primal = client.parse_primal(&json).unwrap();
+        assert!(primal.capabilities.is_empty());
+    }
+
+    #[test]
+    fn test_parse_primal_capabilities_null() {
+        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let json = json!({
+            "id": "test",
+            "name": "test",
+            "endpoint": "unix:///tmp/test.sock"
+        });
+        let primal = client.parse_primal(&json).unwrap();
+        assert!(primal.capabilities.is_empty());
+    }
+
+    #[test]
+    fn test_discover_family_id_from_env() {
+        petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
+            "FAMILY_ID",
+            "custom-family",
+            || {
+                let result = SongbirdClient::discover(None);
+                let _ = result;
+            },
+        );
+    }
+
+    #[test]
+    fn test_discover_with_explicit_family() {
+        let result = SongbirdClient::discover(Some("test-family"));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_jsonrpc_request_structure_discovery_query() {
+        let req = json!({
+            "jsonrpc": "2.0",
+            "method": "discovery.query",
+            "params": {"capability": "storage"},
+            "id": 1
+        });
+        assert_eq!(req["method"], "discovery.query");
+        assert_eq!(req["params"]["capability"], "storage");
+    }
+
+    #[test]
+    fn test_parse_primal_last_seen_explicit() {
+        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let json = json!({
+            "id": "test",
+            "name": "test",
+            "endpoint": "unix:///tmp/test.sock",
+            "last_seen": 999_999_999
+        });
+        let primal = client.parse_primal(&json).unwrap();
+        assert_eq!(primal.last_seen, 999_999_999);
+    }
+
+    #[test]
+    fn test_socket_path_getter() {
+        let path = PathBuf::from("/run/user/1000/songbird.sock");
+        let client = SongbirdClient::with_socket_path(path.clone());
+        assert_eq!(client.socket_path(), &path);
+    }
+
+    #[tokio::test]
+    async fn test_get_all_primals_fails_nonexistent_socket() {
+        let client =
+            SongbirdClient::with_socket_path(PathBuf::from("/tmp/nonexistent-xyz-12345.sock"));
+        let result = client.get_all_primals().await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_health_check_fails_nonexistent_socket() {
+        let client =
+            SongbirdClient::with_socket_path(PathBuf::from("/tmp/nonexistent-health.sock"));
+        let result = client.health_check().await;
+        assert!(result.is_err());
+    }
 }

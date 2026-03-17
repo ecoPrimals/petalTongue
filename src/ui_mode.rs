@@ -107,9 +107,12 @@ pub async fn run(
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     #[cfg(not(feature = "ui"))]
     use std::sync::Arc;
+
+    use petal_tongue_core::constants::PRIMAL_NAME;
 
     use super::*;
 
@@ -339,7 +342,68 @@ mod tests {
         let data_service = Arc::new(crate::data_service::DataService::new());
         let result = run(None, false, data_service).await;
         let err = result.unwrap_err();
-        // Verify it's a proper anyhow chain (has at least one error in chain)
+        // Verify it's a proper error chain (has at least one error in chain)
         assert!(err.chain().next().is_some());
+    }
+
+    #[test]
+    fn test_window_title_uses_primal_const() {
+        let title = window_title();
+        assert_eq!(
+            title,
+            format!("🌸 {PRIMAL_NAME} - Universal Representation System")
+        );
+    }
+
+    #[tokio::test]
+    #[cfg(not(feature = "ui"))]
+    async fn test_run_not_ui_returns_ui_not_available_variant() {
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let result = run(None, false, data_service).await;
+        assert!(matches!(result, Err(AppError::UiNotAvailable)));
+    }
+
+    #[test]
+    fn test_app_error_ui_not_available_display() {
+        let err = AppError::UiNotAvailable;
+        let msg = err.to_string();
+        assert!(msg.contains("not available"));
+        assert!(msg.contains("tui"));
+        assert!(msg.contains("web"));
+    }
+
+    #[test]
+    fn test_scenario_to_path_with_null_bytes() {
+        let path = scenario_to_path(Some("path\x00null.json".to_string()));
+        assert!(path.is_some());
+        assert!(
+            path.as_ref()
+                .unwrap()
+                .as_os_str()
+                .to_string_lossy()
+                .contains("path")
+        );
+    }
+
+    #[test]
+    fn test_scenario_to_path_very_long_path() {
+        let long = "a".repeat(4096);
+        let path = scenario_to_path(Some(long.clone()));
+        assert!(path.is_some());
+        assert_eq!(path.as_ref().unwrap().as_os_str(), long.as_str());
+    }
+
+    #[test]
+    fn test_eframe_error_debug_display() {
+        let err = AppError::Eframe("test".to_string());
+        let debug_str = format!("{err:?}");
+        assert!(debug_str.contains("Eframe"));
+    }
+
+    #[test]
+    fn test_task_panic_error_display() {
+        let err = AppError::TaskPanic("worker died".to_string());
+        assert!(err.to_string().contains("Task panicked"));
+        assert!(err.to_string().contains("worker died"));
     }
 }

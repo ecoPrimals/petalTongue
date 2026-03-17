@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Timeline View - Extended / property / edge-case tests
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use super::{
     EventStatus, TimelineEvent, TimelineIntent, TimelineView, build_primal_lanes,
     compute_lane_height, escape_csv, event_screen_rect, format_events_csv, prepare_event_detail,
@@ -655,200 +657,70 @@ fn event_screen_rect_unknown_primal_none() {
 }
 
 #[test]
-fn filtered_events_no_filters() {
-    let mut view = TimelineView::new();
-    let base = chrono::Utc::now();
-    view.add_event(TimelineEvent {
-        id: "1".to_string(),
-        from: "a".to_string(),
-        to: "b".to_string(),
-        event_type: "discover".to_string(),
-        timestamp: base,
-        duration_ms: None,
-        status: EventStatus::Success,
-        payload_summary: None,
-    });
-    view.add_event(TimelineEvent {
-        id: "2".to_string(),
-        from: "b".to_string(),
-        to: "c".to_string(),
-        event_type: "invoke".to_string(),
-        timestamp: base + chrono::Duration::seconds(1),
-        duration_ms: None,
-        status: EventStatus::Success,
-        payload_summary: None,
-    });
-    let filtered = view.filtered_events_for_test();
-    assert_eq!(filtered.len(), 2);
-}
-
-#[test]
-fn filtered_events_type_and_primal_combined() {
-    let mut view = TimelineView::new();
-    let base = chrono::Utc::now();
-    view.add_event(TimelineEvent {
-        id: "1".to_string(),
-        from: "alice".to_string(),
-        to: "bob".to_string(),
-        event_type: "discover".to_string(),
-        timestamp: base,
-        duration_ms: None,
-        status: EventStatus::Success,
-        payload_summary: None,
-    });
-    view.add_event(TimelineEvent {
-        id: "2".to_string(),
-        from: "bob".to_string(),
-        to: "charlie".to_string(),
-        event_type: "invoke".to_string(),
-        timestamp: base + chrono::Duration::seconds(1),
-        duration_ms: None,
-        status: EventStatus::Success,
-        payload_summary: None,
-    });
-    view.set_event_type_filter(Some("discover".to_string()));
-    view.set_primal_filter(Some("alice".to_string()));
-    let filtered = view.filtered_events_for_test();
-    assert_eq!(filtered.len(), 1);
-    assert_eq!(filtered[0].id, "1");
-}
-
-#[test]
-fn filtered_events_time_range_excludes_outside() {
-    let mut view = TimelineView::new();
+fn event_screen_rect_same_lane() {
     let base = chrono::DateTime::parse_from_rfc3339("2025-01-15T12:00:00Z")
         .expect("valid")
         .with_timezone(&chrono::Utc);
-    view.add_event(TimelineEvent {
-        id: "before".to_string(),
+    let event = TimelineEvent {
+        id: "e1".to_string(),
         from: "a".to_string(),
-        to: "b".to_string(),
-        event_type: "x".to_string(),
-        timestamp: base - chrono::Duration::seconds(60),
-        duration_ms: None,
-        status: EventStatus::Success,
-        payload_summary: None,
-    });
-    view.add_event(TimelineEvent {
-        id: "in".to_string(),
-        from: "a".to_string(),
-        to: "b".to_string(),
+        to: "a".to_string(),
         event_type: "x".to_string(),
         timestamp: base,
         duration_ms: None,
         status: EventStatus::Success,
         payload_summary: None,
-    });
-    view.set_time_range(
-        Some(base - chrono::Duration::seconds(10)),
-        Some(base + chrono::Duration::seconds(10)),
+    };
+    let mut primal_lanes = std::collections::HashMap::new();
+    primal_lanes.insert("a".to_string(), 0);
+    let start_ms = base.timestamp_millis() as f64;
+    let end_ms = (base + chrono::Duration::seconds(1)).timestamp_millis() as f64;
+    let rect = event_screen_rect(
+        &event,
+        start_ms,
+        end_ms,
+        (0.0, 0.0),
+        100.0,
+        20.0,
+        &primal_lanes,
     );
-    let filtered = view.filtered_events_for_test();
-    assert_eq!(filtered.len(), 1);
-    assert_eq!(filtered[0].id, "in");
+    let (x, y, w, h) = rect.expect("rect");
+    assert_eq!(w, 8.0);
+    assert_eq!(h, 8.0);
+    assert!((x - 96.0).abs() < 1.0);
+    assert!(y >= 0.0 && y < 30.0);
 }
 
 #[test]
-fn apply_intents_zoom_in() {
-    let mut view = TimelineView::new();
-    let z0 = view.zoom();
-    view.apply_intents(&[TimelineIntent::ZoomIn]);
-    assert!(view.zoom() > z0);
-}
-
-#[test]
-fn apply_intents_zoom_out() {
-    let mut view = TimelineView::new();
-    let z0 = view.zoom();
-    view.apply_intents(&[TimelineIntent::ZoomOut]);
-    assert!(view.zoom() < z0);
-}
-
-#[test]
-fn apply_intents_toggle_details() {
-    let mut view = TimelineView::new();
-    let d0 = view.show_details();
-    view.apply_intents(&[TimelineIntent::ToggleDetails]);
-    assert_ne!(view.show_details(), d0);
-}
-
-#[test]
-fn apply_intents_select_event() {
-    let mut view = TimelineView::new();
-    view.apply_intents(&[TimelineIntent::SelectEvent("evt-1".to_string())]);
-    assert_eq!(view.selected_event(), Some("evt-1"));
-}
-
-#[test]
-fn apply_intents_deselect_event() {
-    let mut view = TimelineView::new();
-    view.apply_intents(&[TimelineIntent::SelectEvent("x".to_string())]);
-    view.apply_intents(&[TimelineIntent::DeselectEvent]);
-    assert!(view.selected_event().is_none());
-}
-
-#[test]
-fn apply_intents_clear_via_intent() {
-    let mut view = TimelineView::new();
-    view.add_event(TimelineEvent {
-        id: "e".to_string(),
-        from: "a".to_string(),
-        to: "b".to_string(),
-        event_type: "x".to_string(),
-        timestamp: chrono::Utc::now(),
-        duration_ms: None,
-        status: EventStatus::Success,
-        payload_summary: None,
-    });
-    view.apply_intents(&[TimelineIntent::Clear]);
-    assert_eq!(view.filtered_event_count(), 0);
-}
-
-#[test]
-fn export_csv_path_returns_path() {
-    let view = TimelineView::new();
-    let path = view.export_csv_path_for_test();
-    assert!(path.to_string_lossy().contains("timeline"));
-    assert!(path.to_string_lossy().contains("csv"));
-}
-
-#[test]
-fn write_events_csv_mock_data() {
-    let view = TimelineView::new();
+fn event_screen_rect_reversed_lanes() {
     let base = chrono::DateTime::parse_from_rfc3339("2025-01-15T12:00:00Z")
         .expect("valid")
         .with_timezone(&chrono::Utc);
-    let events = vec![
-        TimelineEvent {
-            id: "ev1".to_string(),
-            from: "alice".to_string(),
-            to: "bob".to_string(),
-            event_type: "discover".to_string(),
-            timestamp: base,
-            duration_ms: Some(42.5),
-            status: EventStatus::Success,
-            payload_summary: Some("summary".to_string()),
-        },
-        TimelineEvent {
-            id: "ev2".to_string(),
-            from: "bob".to_string(),
-            to: "charlie".to_string(),
-            event_type: "invoke".to_string(),
-            timestamp: base + chrono::Duration::seconds(1),
-            duration_ms: None,
-            status: EventStatus::Failure,
-            payload_summary: None,
-        },
-    ];
-    let refs: Vec<&TimelineEvent> = events.iter().collect();
-    let dir = tempfile::tempdir().expect("tempdir");
-    let path = dir.path().join("test_events.csv");
-    view.write_events_csv_for_test(&path, refs).expect("write");
-    let content = std::fs::read_to_string(&path).expect("read");
-    assert!(content.contains("ev1"));
-    assert!(content.contains("ev2"));
-    assert!(content.contains("alice"));
-    assert!(content.contains("discover"));
-    assert!(content.contains("Success"));
-    assert!(content.contains("Failure"));
+    let event = TimelineEvent {
+        id: "e1".to_string(),
+        from: "b".to_string(),
+        to: "a".to_string(),
+        event_type: "x".to_string(),
+        timestamp: base,
+        duration_ms: None,
+        status: EventStatus::Success,
+        payload_summary: None,
+    };
+    let mut primal_lanes = std::collections::HashMap::new();
+    primal_lanes.insert("a".to_string(), 0);
+    primal_lanes.insert("b".to_string(), 1);
+    let start_ms = base.timestamp_millis() as f64;
+    let end_ms = (base + chrono::Duration::seconds(1)).timestamp_millis() as f64;
+    let rect = event_screen_rect(
+        &event,
+        start_ms,
+        end_ms,
+        (0.0, 0.0),
+        100.0,
+        20.0,
+        &primal_lanes,
+    );
+    let (_x, _y, w, h) = rect.expect("rect");
+    assert_eq!(w, 8.0);
+    assert_eq!(h, 28.0);
 }

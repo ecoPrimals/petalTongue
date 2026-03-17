@@ -380,7 +380,7 @@ pub enum BackendError {
     #[error("eframe backend not available (compile with --features ui-eframe)")]
     EframeNotAvailable,
 
-    #[error("Toadstool backend not available (compile with --features legacy-toadstool)")]
+    #[error("Toadstool display not available (use display::backends::toadstool_v2 with biomeOS)")]
     ToadstoolNotAvailable,
 
     #[error("Toadstool display requires biomeOS: {0}")]

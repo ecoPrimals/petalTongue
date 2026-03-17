@@ -335,3 +335,116 @@ fn register_with_neural_api_background() {
         })
         .ok();
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cli_parse_default() {
+        let cli = Cli::parse_from(["petal-tongue"]);
+        assert!(cli.command.is_none());
+        assert!(cli.scenario.is_none());
+    }
+
+    #[test]
+    fn cli_parse_ui_subcommand() {
+        let cli = Cli::parse_from(["petal-tongue", "ui"]);
+        assert!(matches!(cli.command, Some(Commands::Ui { .. })));
+        if let Some(Commands::Ui { scenario }) = &cli.command {
+            assert!(scenario.is_none());
+        }
+    }
+
+    #[test]
+    fn cli_parse_ui_with_scenario() {
+        let cli = Cli::parse_from(["petal-tongue", "ui", "--scenario", "/tmp/test.json"]);
+        assert!(matches!(cli.command, Some(Commands::Ui { .. })));
+        if let Some(Commands::Ui { scenario }) = &cli.command {
+            assert_eq!(
+                scenario.as_ref().map(|p| p.to_string_lossy().into_owned()),
+                Some("/tmp/test.json".to_string())
+            );
+        }
+    }
+
+    #[test]
+    fn cli_parse_global_scenario() {
+        let cli = Cli::parse_from(["petal-tongue", "--scenario", "/path/to/scenario.json"]);
+        assert!(cli.scenario.is_some());
+        assert_eq!(
+            cli.scenario.as_ref().unwrap().to_string_lossy(),
+            "/path/to/scenario.json"
+        );
+    }
+
+    #[test]
+    fn scenario_path_from_ui_overrides_global() {
+        let cli = Cli::parse_from([
+            "petal-tongue",
+            "--scenario",
+            "/global.json",
+            "ui",
+            "--scenario",
+            "/ui.json",
+        ]);
+        let scenario_path = match &cli.command {
+            Some(Commands::Ui { scenario }) => scenario.clone().or_else(|| cli.scenario.clone()),
+            None => cli.scenario.clone(),
+        };
+        assert_eq!(
+            scenario_path.as_ref().unwrap().to_string_lossy(),
+            "/ui.json"
+        );
+    }
+
+    #[test]
+    fn scenario_path_from_ui_falls_back_to_global() {
+        let cli = Cli::parse_from(["petal-tongue", "--scenario", "/global.json", "ui"]);
+        let scenario_path = match &cli.command {
+            Some(Commands::Ui { scenario }) => scenario.clone().or_else(|| cli.scenario.clone()),
+            None => cli.scenario.clone(),
+        };
+        assert_eq!(
+            scenario_path.as_ref().unwrap().to_string_lossy(),
+            "/global.json"
+        );
+    }
+
+    #[test]
+    fn scenario_path_none_when_no_command_no_global() {
+        let cli = Cli::parse_from(["petal-tongue"]);
+        let scenario_path = match &cli.command {
+            Some(Commands::Ui { scenario }) => scenario.clone().or_else(|| cli.scenario.clone()),
+            None => cli.scenario.clone(),
+        };
+        assert!(scenario_path.is_none());
+    }
+
+    #[test]
+    fn ipc_handles_struct_fields() {
+        let _handles = IpcHandles {
+            sensor_stream: Arc::new(RwLock::new(petal_tongue_ipc::SensorStreamRegistry::new())),
+            interaction_subscribers: Arc::new(RwLock::new(
+                petal_tongue_ipc::InteractionSubscriberRegistry::new(),
+            )),
+        };
+    }
+
+    #[test]
+    fn has_display_env_detection() {
+        let has_display = std::env::var("DISPLAY").is_ok()
+            || std::env::var("WAYLAND_DISPLAY").is_ok()
+            || cfg!(target_os = "windows")
+            || cfg!(target_os = "macos");
+        let _ = has_display;
+    }
+
+    #[test]
+    fn expected_rgba8_buffer_size_from_toadstool() {
+        use petal_tongue_ui::display::backends::toadstool::expected_rgba8_buffer_size;
+        assert_eq!(expected_rgba8_buffer_size(1920, 1080), 1920 * 1080 * 4);
+        assert_eq!(expected_rgba8_buffer_size(1, 1), 4);
+    }
+}

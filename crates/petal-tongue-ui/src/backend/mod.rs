@@ -12,11 +12,11 @@
 //!       ↓
 //!   UIBackend trait (this module)
 //!       ↓
-//!   ┌───────────────┬──────────────────┐
-//!   ↓               ↓                  ↓
-//! EguiBackend  ToadstoolBackend   (Future backends)
+//!   ┌───────────────┬──────────────────────────────┐
+//!   ↓               ↓                              ↓
+//! EguiBackend   display::backends              (Future backends)
 //!   ↓               ↓
-//! eframe        Toadstool Display
+//! eframe        toadstool / toadstool_v2
 //!   ↓               ↓
 //! Wayland/X11   DRM/KMS (Pure Rust!)
 //! (C deps)
@@ -25,7 +25,7 @@
 //! # Backends
 //!
 //! - **`EguiBackend`**: Current backend using eframe/winit (has C dependencies)
-//! - **`ToadstoolBackend`**: Future Pure Rust backend via Toadstool display service
+//! - **Toadstool display**: Pure Rust backends in `display::backends::toadstool` and `display::backends::toadstool_v2`
 //!
 //! # Feature Flags
 //!
@@ -51,9 +51,6 @@
 // Backend implementations
 #[cfg(feature = "ui-eframe")]
 pub mod eframe;
-
-#[cfg(feature = "legacy-toadstool")]
-pub mod toadstool;
 
 use crate::error::{BackendError, Result};
 use async_trait::async_trait;
@@ -215,30 +212,19 @@ pub async fn create_backend(choice: Option<BackendChoice>) -> Result<Box<dyn UIB
     match choice {
         BackendChoice::Auto => create_auto_backend().await,
         BackendChoice::Eframe => create_eframe_backend().await,
-        BackendChoice::Toadstool => create_toadstool_backend().await,
+        BackendChoice::Toadstool => create_toadstool_backend(),
     }
 }
 
 /// Auto-detect best available backend
 ///
 /// Priority order:
-/// 1. Toadstool (if available and feature enabled)
-/// 2. eframe (always available as fallback)
+/// 1. eframe (current default)
+/// 2. Toadstool display backends are in `display::backends` (toadstool, toadstool_v2)
 async fn create_auto_backend() -> Result<Box<dyn UIBackend>> {
     tracing::info!("🔍 Auto-detecting best UI backend...");
 
-    // Try Toadstool first (Pure Rust!)
-    #[cfg(feature = "legacy-toadstool")]
-    {
-        use crate::backend::toadstool::ToadstoolBackend;
-        if ToadstoolBackend::is_available().await {
-            tracing::info!("✅ Toadstool backend available - using Pure Rust UI!");
-            return create_toadstool_backend().await;
-        }
-        tracing::info!("⚠️  Toadstool backend not available, falling back to eframe");
-    }
-
-    // Fallback to eframe
+    // Use eframe (Toadstool display backends are in display::backends)
     tracing::info!("📦 Using eframe backend (has C dependencies)");
     create_eframe_backend().await
 }
@@ -263,31 +249,11 @@ async fn create_eframe_backend() -> Result<Box<dyn UIBackend>> {
 }
 
 /// Create Toadstool backend
-#[cfg_attr(
-    not(feature = "legacy-toadstool"),
-    expect(
-        clippy::unused_async,
-        reason = "async when legacy-toadstool feature enabled"
-    )
-)]
-async fn create_toadstool_backend() -> Result<Box<dyn UIBackend>> {
-    #[cfg(feature = "legacy-toadstool")]
-    {
-        use crate::backend::toadstool::ToadstoolBackend;
-        let mut backend = ToadstoolBackend::new()
-            .await
-            .map_err(|e| BackendError::ToadstoolRequiresBiomeOs(e.to_string()))?;
-        backend
-            .init()
-            .await
-            .map_err(|e| BackendError::ToadstoolRequiresBiomeOs(e.to_string()))?;
-        Ok(Box::new(backend))
-    }
-
-    #[cfg(not(feature = "legacy-toadstool"))]
-    {
-        Err(BackendError::ToadstoolNotAvailable.into())
-    }
+///
+/// The legacy UIBackend-style Toadstool has been removed. Use
+/// `display::backends::toadstool` or `display::backends::toadstool_v2` with biomeOS instead.
+fn create_toadstool_backend() -> Result<Box<dyn UIBackend>> {
+    Err(BackendError::ToadstoolNotAvailable.into())
 }
 
 /// Parse backend choice from environment variable
