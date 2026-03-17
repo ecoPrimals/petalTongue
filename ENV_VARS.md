@@ -618,11 +618,10 @@ Before deploying to production:
 
 - [README.md](README.md) - Project overview
 - [START_HERE.md](START_HERE.md) - Getting started guide
-- [docs/operations/QUICK_START.md](docs/operations/QUICK_START.md) - Quick start instructions
 
 ---
 
-**Last Updated**: March 15, 2026  
+**Last Updated**: March 16, 2026  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 
