@@ -196,6 +196,50 @@ mod tests {
         assert!(title.contains("Representation"));
     }
 
+    #[test]
+    fn test_window_title_exact_format() {
+        let title = window_title();
+        assert_eq!(
+            title, "🌸 petalTongue - Universal Representation System",
+            "Window title must match exact format"
+        );
+    }
+
+    #[test]
+    fn test_window_title_structure() {
+        let title = window_title();
+        let parts: Vec<&str> = title.split(" - ").collect();
+        assert_eq!(parts.len(), 2, "Title should have format 'prefix - suffix'");
+        assert!(parts[0].starts_with("🌸"));
+        assert!(parts[0].contains("petalTongue"));
+        assert_eq!(parts[1], "Universal Representation System");
+    }
+
+    /// Exercises the Eframe error path used in run_ui_blocking when eframe::run_native fails.
+    /// Same map_err pattern as run_ui_blocking line 97.
+    #[test]
+    fn test_eframe_error_creation() {
+        let err = AppError::Eframe("display failed".to_string());
+        assert!(matches!(err, AppError::Eframe(_)));
+        let msg = err.to_string();
+        assert!(msg.contains("eframe error"));
+        assert!(msg.contains("display failed"));
+    }
+
+    #[test]
+    fn test_scenario_to_path_unicode() {
+        let path = scenario_to_path(Some("scenario_日本語.json".to_string()));
+        assert!(path.is_some());
+        assert!(path.as_ref().unwrap().to_string_lossy().contains("日本語"));
+    }
+
+    #[test]
+    fn test_scenario_to_path_special_chars() {
+        let path = scenario_to_path(Some("path with spaces.json".to_string()));
+        assert!(path.is_some());
+        assert_eq!(path.as_ref().unwrap().as_os_str(), "path with spaces.json");
+    }
+
     #[tokio::test]
     #[cfg(feature = "ui")]
     async fn test_ui_mode_signature() {

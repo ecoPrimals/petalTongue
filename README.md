@@ -102,18 +102,21 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,244 passing, 0 failures |
+| Tests | 5,404 passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery via workspace lints) |
 | Docs | `cargo doc --workspace --no-deps` clean |
-| Coverage | ~86% line / ~87% branch (llvm-cov) |
+| Coverage | ~90% line (llvm-cov) |
 | Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
-| Files | All under 1,000 lines; largest 902 lines (`json_rpc_client.rs`) |
+| Files | All under 1,000 lines; largest 854 lines (`tests_extended.rs`) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
-| Edition | 2024 (all 16 crates) |
+| Edition | 2024 (all 16 crates + sandbox) |
 | External C deps | None -- pure Rust (`rustix` for syscalls) |
 | Error handling | Typed `thiserror` errors throughout -- zero `anyhow` in production |
+| Zero-copy IDs | `DataSourceId`, `GrammarId` are `Arc<str>` -- O(1) clone |
+| Property tests | `proptest` for JSON-RPC parser + core data types |
+| Cross-primal e2e | Real Unix socket server ↔ JSON-RPC client integration tests |
 
 ---
 
@@ -122,11 +125,11 @@ petaltongue
 ```bash
 # Prerequisites: Rust nightly (edition 2024)
 cargo build --workspace
-cargo test --workspace                       # 5,244 tests
+cargo test --workspace --all-features        # 5,404 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
-cargo llvm-cov --workspace --summary-only    # Coverage (~86% line)
+cargo llvm-cov --workspace --summary-only    # Coverage (~90% line)
 ```
 
 ### Configuration

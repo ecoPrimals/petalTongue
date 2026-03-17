@@ -262,15 +262,22 @@ impl WadData {
 
         for lump in &mut lumps {
             if lump.size > 0 {
-                let lump_pos = u64::try_from(lump.offset)
-                    .map_err(|_| DoomError::InvalidWad(format!("lump offset for {} must be non-negative", lump.name)))?;
-                file.seek(SeekFrom::Start(lump_pos))
-                    .map_err(|e| {
-                        DoomError::InvalidWad(format!("Failed to seek to lump data: {e}"))
-                    })?;
+                let lump_pos = u64::try_from(lump.offset).map_err(|_| {
+                    DoomError::InvalidWad(format!(
+                        "lump offset for {} must be non-negative",
+                        lump.name
+                    ))
+                })?;
+                file.seek(SeekFrom::Start(lump_pos)).map_err(|e| {
+                    DoomError::InvalidWad(format!("Failed to seek to lump data: {e}"))
+                })?;
 
-                let lump_len = usize::try_from(lump.size)
-                    .map_err(|_| DoomError::InvalidWad(format!("lump size for {} must be non-negative", lump.name)))?;
+                let lump_len = usize::try_from(lump.size).map_err(|_| {
+                    DoomError::InvalidWad(format!(
+                        "lump size for {} must be non-negative",
+                        lump.name
+                    ))
+                })?;
                 lump.data.resize(lump_len, 0);
                 file.read_exact(&mut lump.data)
                     .map_err(|e| DoomError::InvalidWad(format!("Failed to read lump data: {e}")))?;

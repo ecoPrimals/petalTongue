@@ -138,4 +138,29 @@ mod tests {
             "data section should be omitted when snapshot fails"
         );
     }
+
+    #[tokio::test]
+    async fn test_headless_output_with_populated_snapshot() {
+        let data_service = Arc::new(DataService::new());
+        let graph = data_service.graph();
+        {
+            let mut guard = graph.write().unwrap();
+            guard.add_node(petal_tongue_core::PrimalInfo::new(
+                "p1",
+                "Test",
+                "test",
+                "http://test:8080",
+                vec![],
+                petal_tongue_core::PrimalHealthStatus::Healthy,
+                0,
+            ));
+        }
+        let mut output = Vec::new();
+        run_with_output("0.0.0.0:8080", 4, data_service, &mut output)
+            .await
+            .unwrap();
+        let stdout = String::from_utf8_lossy(&output);
+        assert!(stdout.contains("Primals: 1"));
+        assert!(stdout.contains("Edges: 0"));
+    }
 }

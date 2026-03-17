@@ -398,9 +398,14 @@ impl TimelineView {
 
     fn export_csv_path(&self) -> PathBuf {
         petal_tongue_core::platform_dirs::data_dir().map_or_else(
-            |_| std::env::temp_dir().join("petalTongue_timeline_events.csv"),
+            |_| {
+                std::env::temp_dir().join(format!(
+                    "{}_timeline_events.csv",
+                    petal_tongue_core::constants::PRIMAL_NAME
+                ))
+            },
             |d| {
-                d.join("petalTongue")
+                d.join(petal_tongue_core::constants::PRIMAL_NAME)
                     .join("exports")
                     .join("timeline_events.csv")
             },

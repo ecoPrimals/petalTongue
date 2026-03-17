@@ -23,8 +23,10 @@ pub enum AppError {
     Eframe(String),
 
     /// UI mode not available (when built without `ui` feature).
-    #[allow(dead_code)]
-    #[error("UI mode not available in this build")]
+    #[cfg_attr(feature = "ui", allow(dead_code))]
+    #[error(
+        "UI mode not available in this build. Try tui or web mode, or rebuild with --features ui"
+    )]
     UiNotAvailable,
 
     /// TUI launch error.
@@ -93,7 +95,11 @@ mod tests {
     fn test_ui_not_available_constructor() {
         let err = AppError::UiNotAvailable;
         assert!(matches!(err, AppError::UiNotAvailable));
-        assert_eq!(err.to_string(), "UI mode not available in this build");
+        let msg = err.to_string();
+        assert!(msg.contains("UI mode not available"));
+        assert!(msg.contains("tui"));
+        assert!(msg.contains("web"));
+        assert!(msg.contains("--features ui"));
     }
 
     #[test]
