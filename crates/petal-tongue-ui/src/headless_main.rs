@@ -65,7 +65,7 @@ impl Args {
                             "dot" => OutputMode::Dot,
                             "png" => OutputMode::Png,
                             _ => {
-                                eprintln!("Unknown mode: {}", m);
+                                tracing::error!("Unknown mode: {m}");
                                 std::process::exit(1);
                             }
                         }
@@ -89,7 +89,7 @@ impl Args {
                     std::process::exit(0);
                 }
                 _ => {
-                    eprintln!("Unknown argument: {}", arg);
+                    tracing::error!("Unknown argument: {arg}");
                     print_help();
                     std::process::exit(1);
                 }
@@ -298,7 +298,7 @@ fn render_png(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
         ui.export(Path::new(output), ExportFormat::Png)?;
         tracing::info!("✅ Exported to {}", output);
     } else {
-        eprintln!("Error: PNG mode requires --output option");
+        tracing::error!("PNG mode requires --output option");
         std::process::exit(1);
     }
     

@@ -102,7 +102,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,447 passing, 0 failures |
+| Tests | 5,459 passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery via workspace lints) |
 | Docs | `cargo doc --workspace --no-deps` clean |
@@ -121,7 +121,10 @@ petaltongue
 | Health triad | `health.check` + `health.liveness` + `health.readiness` (K8s/biomeOS) |
 | NDJSON streaming | `StreamItem` (Data/Progress/End/Error) for pipeline consumption |
 | Zero-panic | `OrExit<T>` trait for validation binaries |
-| Dual-format discovery | Parses both flat string and enriched object capability arrays |
+| Dual-format discovery | Parses 4 capability formats (flat, enriched, nested, result-wrapped) |
+| Dispatch classification | `DispatchOutcome<T>` separates protocol vs application errors |
+| Typed exit codes | `exit_code` module (SUCCESS, CONFIG_ERROR, NETWORK_ERROR, USAGE_ERROR) |
+| Supply-chain hygiene | `deny.toml` with `yanked=deny`, `wildcards=warn`, banned C deps |
 
 ---
 
@@ -130,7 +133,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust nightly (edition 2024)
 cargo build --workspace
-cargo test --workspace --all-features        # 5,447 tests
+cargo test --workspace --all-features        # 5,459 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps

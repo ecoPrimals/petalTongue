@@ -152,6 +152,70 @@ impl fmt::Display for StreamItem {
     }
 }
 
+/// Outcome classification for JSON-RPC dispatch (ecosystem pattern from groundSpring/loamSpine).
+///
+/// Separates protocol-level errors (malformed requests, method not found) from
+/// application-level errors (valid request, but operation failed in the handler).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DispatchOutcome<T> {
+    /// Successful result.
+    Ok(T),
+    /// Protocol-level error: request was malformed or method not found.
+    /// These should NOT be retried without fixing the caller.
+    ProtocolError {
+        /// JSON-RPC error code (e.g. -32601 method not found).
+        code: i64,
+        /// Human-readable error message.
+        message: String,
+    },
+    /// Application-level error: request was valid but handler failed.
+    /// These MAY be retriable depending on the error.
+    ApplicationError {
+        /// Application-defined error code.
+        code: i64,
+        /// Human-readable error message.
+        message: String,
+    },
+}
+
+impl<T> DispatchOutcome<T> {
+    /// True if this is a successful outcome.
+    pub const fn is_ok(&self) -> bool {
+        matches!(self, Self::Ok(_))
+    }
+
+    /// True if this is a protocol-level error (caller bug, not retriable).
+    pub const fn is_protocol_error(&self) -> bool {
+        matches!(self, Self::ProtocolError { .. })
+    }
+
+    /// True if this is an application-level error (may be retriable).
+    pub const fn is_application_error(&self) -> bool {
+        matches!(self, Self::ApplicationError { .. })
+    }
+
+    /// True if this is a method-not-found protocol error.
+    pub const fn is_method_not_found(&self) -> bool {
+        matches!(self, Self::ProtocolError { code, .. } if *code == JSON_RPC_METHOD_NOT_FOUND)
+    }
+}
+
+/// Typed process exit codes (ecosystem pattern from sweetGrass V0719).
+///
+/// Avoid bare `process::exit(1)` — use named codes for debuggability.
+pub mod exit_code {
+    /// Successful exit.
+    pub const SUCCESS: i32 = 0;
+    /// General/unspecified error.
+    pub const GENERAL_ERROR: i32 = 1;
+    /// Configuration error (bad env var, missing config file, etc.).
+    pub const CONFIG_ERROR: i32 = 2;
+    /// Network/IPC error (socket connection, timeout, etc.).
+    pub const NETWORK_ERROR: i32 = 3;
+    /// Invalid arguments to the binary.
+    pub const USAGE_ERROR: i32 = 64;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -308,5 +372,57 @@ mod tests {
             )
             .contains("50%")
         );
+    }
+
+    #[test]
+    fn dispatch_outcome_ok() {
+        let outcome: DispatchOutcome<i32> = DispatchOutcome::Ok(42);
+        assert!(outcome.is_ok());
+        assert!(!outcome.is_protocol_error());
+        assert!(!outcome.is_application_error());
+        assert!(!outcome.is_method_not_found());
+    }
+
+    #[test]
+    fn dispatch_outcome_protocol_error() {
+        let outcome: DispatchOutcome<i32> = DispatchOutcome::ProtocolError {
+            code: -32601,
+            message: "method not found".into(),
+        };
+        assert!(!outcome.is_ok());
+        assert!(outcome.is_protocol_error());
+        assert!(!outcome.is_application_error());
+        assert!(outcome.is_method_not_found());
+    }
+
+    #[test]
+    fn dispatch_outcome_application_error() {
+        let outcome: DispatchOutcome<i32> = DispatchOutcome::ApplicationError {
+            code: 1001,
+            message: "validation failed".into(),
+        };
+        assert!(!outcome.is_ok());
+        assert!(!outcome.is_protocol_error());
+        assert!(outcome.is_application_error());
+        assert!(!outcome.is_method_not_found());
+    }
+
+    #[test]
+    fn exit_codes_are_distinct() {
+        use super::exit_code;
+        let codes = [
+            exit_code::SUCCESS,
+            exit_code::GENERAL_ERROR,
+            exit_code::CONFIG_ERROR,
+            exit_code::NETWORK_ERROR,
+            exit_code::USAGE_ERROR,
+        ];
+        for (i, a) in codes.iter().enumerate() {
+            for (j, b) in codes.iter().enumerate() {
+                if i != j {
+                    assert_ne!(a, b, "exit codes must be distinct");
+                }
+            }
+        }
     }
 }
