@@ -122,8 +122,14 @@ async fn test_demo_realistic_data() {
         // Names should be present
         assert!(!primal.name.is_empty());
 
-        // Endpoints should be URLs
-        assert!(primal.endpoint.starts_with("http://") || primal.endpoint.starts_with("https://"));
+        // Endpoints should be valid URIs (capability:// for demo, http(s):// for live)
+        assert!(
+            primal.endpoint.starts_with("capability://")
+                || primal.endpoint.starts_with("http://")
+                || primal.endpoint.starts_with("https://"),
+            "Endpoint '{}' should be a valid URI scheme",
+            primal.endpoint
+        );
     }
 }
 

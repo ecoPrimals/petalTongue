@@ -313,6 +313,7 @@ pub fn request_live_updates(ctx: &Context) {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -513,5 +514,152 @@ mod tests {
         let badge = LiveBadge::new("test_source".to_string(), 2.0);
         assert_eq!(badge.indicator.source, "test_source");
         assert!((badge.indicator.update_interval - 2.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_live_badge_render() {
+        let mut badge = LiveBadge::new("test".to_string(), 1.0);
+        badge.mark_updated();
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                badge.render(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_live_badge_render_with_timestamp() {
+        let mut badge = LiveBadge::new("test".to_string(), 1.0);
+        badge.mark_updated();
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                badge.render_with_timestamp(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_live_badge_render_full() {
+        let mut badge = LiveBadge::new("test".to_string(), 1.0);
+        badge.mark_updated();
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                badge.render_full(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_live_graph_header_render() {
+        let mut header = LiveGraphHeader::new("Test Graph".to_string(), "source".to_string(), 1.0);
+        header.mark_updated();
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                header.render(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_live_graph_header_render_compact() {
+        let mut header = LiveGraphHeader::new("Test".to_string(), "src".to_string(), 2.0);
+        header.mark_updated();
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                header.render_compact(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_live_metric_render() {
+        let mut metric = LiveMetric::new("CPU".to_string(), "proc".to_string(), 1.0);
+        metric.update("45.2".to_string(), Some("%".to_string()));
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                metric.render(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_live_metric_render_large() {
+        let mut metric = LiveMetric::new("Memory".to_string(), "proc".to_string(), 1.0);
+        metric.update("2.5".to_string(), Some("GB".to_string()));
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                metric.render_large(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_connection_status_render() {
+        let mut status = ConnectionStatus::new("localhost:3000".to_string());
+        status.mark_connected();
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                status.render(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_connection_status_render_compact() {
+        let status = ConnectionStatus::new("target:9000".to_string());
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                status.render_compact(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_timestamp() {
+        let instant = std::time::Instant::now();
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                render_timestamp(ui, instant);
+            });
+        });
+    }
+
+    #[test]
+    fn test_request_live_updates() {
+        let ctx = egui::Context::default();
+        request_live_updates(&ctx);
+    }
+
+    #[test]
+    fn test_live_metric_render_without_unit() {
+        let mut metric = LiveMetric::new("Count".to_string(), "src".to_string(), 1.0);
+        metric.update("42".to_string(), None);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                metric.render(ui);
+            });
+        });
     }
 }

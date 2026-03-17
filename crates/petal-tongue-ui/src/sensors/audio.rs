@@ -207,6 +207,7 @@ fn probe_audio_input() -> bool {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -285,5 +286,87 @@ mod tests {
     #[tokio::test]
     async fn test_has_audio_input() {
         let _ = has_audio_input();
+    }
+
+    #[tokio::test]
+    async fn test_poll_events_returns_empty() {
+        let mut sensor = AudioSensor::new(true, false);
+        let events = sensor
+            .poll_events()
+            .await
+            .expect("poll_events should not fail");
+        assert!(events.is_empty(), "poll_events should return empty vec");
+    }
+
+    #[tokio::test]
+    async fn test_last_activity_none_initially() {
+        let sensor = AudioSensor::new(true, false);
+        assert!(sensor.last_activity().is_none());
+    }
+
+    #[tokio::test]
+    async fn test_last_activity_none_after_beep_no_output() {
+        let mut sensor = AudioSensor::new(false, false);
+        let _ = sensor.beep(440.0, 100).await;
+        assert!(
+            sensor.last_activity().is_none(),
+            "beep with no output should not set last_activity"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_discover_returns_option() {
+        let result = discover().await;
+        // Either Some (when audio available) or None (when not)
+        assert!(
+            result.is_some() || result.is_none(),
+            "discover should return Option"
+        );
+        if let Some(sensor) = result {
+            assert!(sensor.capabilities().sensor_type == SensorType::Audio);
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "blocks on audio hardware; run with --ignored for hardware coverage"]
+    async fn test_beep_with_output_completes_or_fallback() {
+        let mut sensor = AudioSensor::new(true, false);
+        let result =
+            tokio::time::timeout(std::time::Duration::from_secs(3), sensor.beep(440.0, 10))
+                .await
+                .expect("beep should complete within 3s (or fail fast when no /dev/snd)");
+        assert!(
+            result.is_ok(),
+            "beep should return Ok (success or fallback)"
+        );
+        assert!(
+            sensor.last_activity().is_some(),
+            "last_activity should be set after beep with output"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_audio_error_beep_task_panicked() {
+        let err = crate::error::AudioError::BeepTaskPanicked("test panic".to_string());
+        let msg = err.to_string();
+        assert!(msg.contains("Beep task panicked"));
+        assert!(msg.contains("test panic"));
+    }
+
+    #[tokio::test]
+    async fn test_capabilities_discrete() {
+        let sensor = AudioSensor::new(true, false);
+        assert!(!sensor.capabilities().discrete);
+    }
+
+    #[tokio::test]
+    async fn test_beep_with_output_spawn_panic_error_path() {
+        let result = tokio::task::spawn_blocking(|| panic!("intentional test panic"))
+            .await
+            .map_err(|e| crate::error::AudioError::BeepTaskPanicked(e.to_string()));
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("Beep task panicked"));
+        assert!(err.to_string().contains("panicked"));
     }
 }

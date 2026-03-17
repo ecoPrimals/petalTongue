@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Trust dashboard unit tests.
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use super::TrustDashboard;
 use super::compute::{
     average_trust_display, prepare_trust_display, trust_level_number_to_label, trust_level_style,
     trust_level_to_display_row,
 };
 use super::types::TrustSummary;
+use crate::accessibility::{ColorPalette, ColorScheme};
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, Properties, PropertyValue};
 use std::collections::HashMap;
 
@@ -533,4 +536,181 @@ fn trust_display_state_construction_and_field_access() {
     assert_eq!(avg.value, 3.0);
     assert_eq!(avg.label, "Full");
     assert_eq!(avg.color, [76, 175, 80, 255]);
+}
+
+#[test]
+fn test_update_from_primals_trust_unknown_property_type() {
+    let mut dashboard = TrustDashboard::new();
+    let mut props = Properties::new();
+    props.insert("trust_level".to_string(), PropertyValue::Boolean(true));
+    let primals = vec![PrimalInfo {
+        id: "p1".to_string().into(),
+        name: "Test".to_string(),
+        primal_type: "Test".to_string(),
+        endpoint: "http://test".to_string(),
+        capabilities: vec![],
+        health: PrimalHealthStatus::Healthy,
+        last_seen: 0,
+        endpoints: None,
+        metadata: None,
+        properties: props,
+        #[expect(deprecated)]
+        trust_level: None,
+        #[expect(deprecated)]
+        family_id: None,
+    }];
+    dashboard.update_from_primals(&primals);
+    assert_eq!(dashboard.trust_summary().total_primals, 1);
+    assert_eq!(
+        dashboard.trust_summary().trust_distribution.get("Unknown"),
+        Some(&1)
+    );
+}
+
+#[test]
+fn test_update_from_primals_deprecated_trust_level_only() {
+    let mut dashboard = TrustDashboard::new();
+    let primals = vec![PrimalInfo {
+        id: "p1".to_string().into(),
+        name: "Test".to_string(),
+        primal_type: "Test".to_string(),
+        endpoint: "http://test".to_string(),
+        capabilities: vec![],
+        health: PrimalHealthStatus::Healthy,
+        last_seen: 0,
+        endpoints: None,
+        metadata: None,
+        properties: Properties::new(),
+        #[expect(deprecated)]
+        trust_level: Some(2),
+        #[expect(deprecated)]
+        family_id: None,
+    }];
+    dashboard.update_from_primals(&primals);
+    assert_eq!(dashboard.trust_summary().total_primals, 1);
+    assert_eq!(
+        dashboard
+            .trust_summary()
+            .trust_distribution
+            .get("Elevated (2)"),
+        Some(&1)
+    );
+    assert!((dashboard.trust_summary().average_trust.unwrap() - 2.0).abs() < 0.01);
+}
+
+#[test]
+fn test_update_from_primals_deprecated_family_id_only() {
+    let mut dashboard = TrustDashboard::new();
+    let primals = vec![PrimalInfo {
+        id: "p1".to_string().into(),
+        name: "Test".to_string(),
+        primal_type: "Test".to_string(),
+        endpoint: "http://test".to_string(),
+        capabilities: vec![],
+        health: PrimalHealthStatus::Healthy,
+        last_seen: 0,
+        endpoints: None,
+        metadata: None,
+        properties: Properties::new(),
+        #[expect(deprecated)]
+        trust_level: None,
+        #[expect(deprecated)]
+        family_id: Some("legacy_fam".to_string()),
+    }];
+    dashboard.update_from_primals(&primals);
+    assert_eq!(dashboard.trust_summary().total_primals, 1);
+    assert_eq!(dashboard.trust_summary().family_count, 1);
+    assert_eq!(dashboard.trust_summary().unique_families, 1);
+}
+
+#[test]
+fn test_render_empty_primals_early_return() {
+    let mut dashboard = TrustDashboard::new();
+    dashboard.update_from_primals(&[]);
+    let palette = ColorPalette::from_scheme(ColorScheme::Default);
+    let ctx = egui::Context::default();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            let intents = dashboard.render(ui, &palette, 1.0, None);
+            assert!(intents.is_empty());
+        });
+    });
+}
+
+#[test]
+fn test_render_with_primals() {
+    let mut dashboard = TrustDashboard::new();
+    let primals = vec![
+        create_test_primal("p1", Some(3), Some("fam-a")),
+        create_test_primal("p2", Some(2), Some("fam-a")),
+    ];
+    dashboard.update_from_primals(&primals);
+    let palette = ColorPalette::from_scheme(ColorScheme::Default);
+    let ctx = egui::Context::default();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            let intents = dashboard.render(ui, &palette, 1.0, None);
+            assert!(intents.is_empty());
+        });
+    });
+}
+
+#[test]
+fn test_render_with_average_produces_intent_on_button_click() {
+    let mut dashboard = TrustDashboard::new();
+    let primals = vec![create_test_primal("p1", Some(3), None)];
+    dashboard.update_from_primals(&primals);
+    let palette = ColorPalette::from_scheme(ColorScheme::Default);
+    let ctx = egui::Context::default();
+    let mut intents = Vec::new();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            intents = dashboard.render(ui, &palette, 1.0, None);
+        });
+    });
+    assert!(intents.is_empty());
+}
+
+#[test]
+fn test_render_compact_with_average() {
+    let mut dashboard = TrustDashboard::new();
+    let primals = vec![create_test_primal("p1", Some(2), Some("fam"))];
+    dashboard.update_from_primals(&primals);
+    let palette = ColorPalette::from_scheme(ColorScheme::Default);
+    let ctx = egui::Context::default();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            dashboard.render_compact(ui, &palette, 1.0);
+        });
+    });
+}
+
+#[test]
+fn test_render_compact_without_average() {
+    let mut dashboard = TrustDashboard::new();
+    dashboard.update_from_primals(&[]);
+    let palette = ColorPalette::from_scheme(ColorScheme::Default);
+    let ctx = egui::Context::default();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            dashboard.render_compact(ui, &palette, 1.0);
+        });
+    });
+}
+
+#[test]
+fn test_render_compact_with_family_count() {
+    let mut dashboard = TrustDashboard::new();
+    let primals = vec![
+        create_test_primal("p1", Some(3), Some("fam-a")),
+        create_test_primal("p2", Some(2), Some("fam-b")),
+    ];
+    dashboard.update_from_primals(&primals);
+    let palette = ColorPalette::from_scheme(ColorScheme::Default);
+    let ctx = egui::Context::default();
+    let _ = ctx.run(egui::RawInput::default(), |ctx| {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            dashboard.render_compact(ui, &palette, 1.2);
+        });
+    });
 }

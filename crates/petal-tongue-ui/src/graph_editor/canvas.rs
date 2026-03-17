@@ -365,11 +365,15 @@ impl GraphCanvas {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
+    use super::{Graph, GraphEdge, GraphNode};
     use super::{
-        editor_arrow_vertices, editor_edge_stroke_width, editor_grid_params, editor_node_colors,
-        editor_selected_stroke_width, format_node_label, screen_to_world, world_to_screen,
+        GraphCanvas, editor_arrow_vertices, editor_edge_stroke_width, editor_grid_params,
+        editor_node_colors, editor_selected_stroke_width, format_node_label, screen_to_world,
+        world_to_screen,
     };
+    use crate::graph_editor::edge::DependencyType;
     use egui::{Pos2, Rect, Vec2};
 
     #[test]
@@ -466,5 +470,90 @@ mod tests {
     #[test]
     fn test_format_node_label() {
         assert_eq!(format_node_label("●", "node1"), "● node1");
+    }
+
+    #[test]
+    fn test_editor_arrow_vertices_zero_length() {
+        let (tip, left, right) = editor_arrow_vertices(50.0, 50.0, 50.0, 50.0, 1.0);
+        assert!((tip.0 - 50.0).abs() < 0.01);
+        assert!((tip.1 - 50.0).abs() < 0.01);
+        assert_eq!(left, right);
+    }
+
+    #[test]
+    fn test_graph_canvas_new() {
+        let graph = Graph::new("g1".to_string(), "Test Graph".to_string());
+        let canvas = GraphCanvas::new(graph);
+        assert_eq!(canvas.graph().id, "g1");
+        assert!(canvas.selected_nodes().is_empty());
+    }
+
+    #[test]
+    fn test_graph_canvas_show() {
+        let graph = Graph::new("g1".to_string(), "Test".to_string());
+        let mut canvas = GraphCanvas::new(graph);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let _ = canvas.show(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_graph_canvas_show_with_nodes() {
+        let mut graph = Graph::new("g1".to_string(), "Test".to_string());
+        let node1 =
+            GraphNode::new("n1".to_string(), "start".to_string()).with_position(100.0, 100.0);
+        let node2 =
+            GraphNode::new("n2".to_string(), "task".to_string()).with_position(200.0, 200.0);
+        graph.add_node(node1).expect("add node1");
+        graph.add_node(node2).expect("add node2");
+        let edge = GraphEdge::new(
+            "e1".to_string(),
+            "n1".to_string(),
+            "n2".to_string(),
+            DependencyType::Sequential,
+        );
+        graph.edges.push(edge);
+
+        let mut canvas = GraphCanvas::new(graph);
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let _ = canvas.show(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_graph_canvas_add_node_at_screen_pos() {
+        let graph = Graph::new("g1".to_string(), "Test".to_string());
+        let mut canvas = GraphCanvas::new(graph);
+        let rect = Rect::from_min_size(Pos2::ZERO, Vec2::new(800.0, 600.0));
+
+        canvas.add_node_at_screen_pos(Pos2::new(400.0, 300.0), rect, "start".to_string());
+        assert_eq!(canvas.graph().nodes.len(), 1);
+    }
+
+    #[test]
+    fn test_graph_canvas_clear_selection() {
+        let graph = Graph::new("g1".to_string(), "Test".to_string());
+        let mut canvas = GraphCanvas::new(graph);
+        canvas.clear_selection();
+        assert!(canvas.selected_nodes().is_empty());
+    }
+
+    #[test]
+    fn test_graph_canvas_reset_view() {
+        let graph = Graph::new("g1".to_string(), "Test".to_string());
+        let mut canvas = GraphCanvas::new(graph);
+        canvas.pan = Vec2::new(100.0, 50.0);
+        canvas.zoom = 2.0;
+        canvas.reset_view();
+        assert!((canvas.pan.x - 0.0).abs() < f32::EPSILON);
+        assert!((canvas.pan.y - 0.0).abs() < f32::EPSILON);
+        assert!((canvas.zoom - 1.0).abs() < f32::EPSILON);
     }
 }

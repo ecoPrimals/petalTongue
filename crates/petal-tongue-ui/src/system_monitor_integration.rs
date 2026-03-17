@@ -766,4 +766,87 @@ mod tests {
         let tool = SystemMonitorTool::default();
         assert_eq!(tool.refresh_interval, Duration::from_secs(1));
     }
+
+    #[test]
+    fn test_status_message_zero_memory() {
+        let tool = SystemMonitorTool::default();
+        let msg = tool.status_message();
+        assert!(msg.is_some());
+        let msg = msg.unwrap();
+        assert!(msg.contains("CPU:"));
+        assert!(msg.contains("MEM:"));
+    }
+
+    #[test]
+    fn test_prepare_memory_display_amber_threshold() {
+        let total = 16 * 1_073_741_824_u64;
+        let used = 12 * 1_073_741_824_u64;
+        let state = prepare_memory_display(used, total, 5);
+        assert_eq!(state.bar_color, Color32::from_rgb(200, 150, 50));
+    }
+
+    #[test]
+    fn test_prepare_cpu_display_amber_threshold() {
+        let state = prepare_cpu_display(75.0, 8, 20);
+        assert_eq!(state.bar_color, Color32::from_rgb(200, 150, 50));
+    }
+
+    #[test]
+    fn test_threshold_color_exactly_mid() {
+        let c = threshold_color(70.0, 90.0, 70.0, Color32::GREEN);
+        assert_eq!(c, Color32::GREEN);
+    }
+
+    #[test]
+    fn test_threshold_color_exactly_high() {
+        let c = threshold_color(91.0, 90.0, 70.0, Color32::BLUE);
+        assert_eq!(c, Color32::from_rgb(200, 50, 50));
+    }
+
+    #[test]
+    fn test_sparkline_points_four_data() {
+        let mut data = VecDeque::new();
+        data.push_back(0.0);
+        data.push_back(25.0);
+        data.push_back(50.0);
+        data.push_back(100.0);
+        let pts = compute_sparkline_points(&data, 300.0, 100.0, 100.0);
+        assert_eq!(pts.len(), 4);
+        assert!((pts[0][0]).abs() < f32::EPSILON);
+        assert!((pts[3][0] - 300.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_format_gb_small() {
+        assert_eq!(format_gb(107_374_182), "0.1");
+    }
+
+    #[test]
+    fn test_memory_display_state_amber() {
+        let total = 16 * 1_073_741_824_u64;
+        let used = 12 * 1_073_741_824_u64;
+        let state = prepare_memory_display(used, total, 10);
+        assert!((state.percent - 75.0).abs() < 0.01);
+        assert_eq!(state.bar_color, Color32::from_rgb(200, 150, 50));
+    }
+
+    #[test]
+    fn test_cpu_display_state_no_history() {
+        let state = prepare_cpu_display(50.0, 4, 0);
+        assert!(state.history_label.is_none());
+    }
+
+    #[test]
+    fn test_metadata_icon() {
+        let tool = SystemMonitorTool::default();
+        let meta = tool.metadata();
+        assert!(!meta.icon.is_empty());
+    }
+
+    #[test]
+    fn test_metadata_name() {
+        let tool = SystemMonitorTool::default();
+        let meta = tool.metadata();
+        assert_eq!(meta.name, "System Monitor");
+    }
 }

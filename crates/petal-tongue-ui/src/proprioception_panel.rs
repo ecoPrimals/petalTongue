@@ -615,9 +615,13 @@ pub fn render_shared_same_dave(ui: &mut Ui, data: &ProprioceptionData) {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use petal_tongue_core::ProprioceptionData;
+    use petal_tongue_core::{
+        ProprioceptionData,
+        proprioception::{HealthData, HealthStatus},
+    };
 
     #[test]
     fn test_new_panel() {
@@ -791,5 +795,113 @@ mod tests {
             evaluative_status_text(false, false),
             "System requires attention"
         );
+    }
+
+    #[test]
+    fn render_shared_health_headless() {
+        let health = HealthData {
+            percentage: 85.0,
+            status: HealthStatus::Healthy,
+        };
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                render_shared_health(ui, &health);
+            });
+        });
+    }
+
+    #[test]
+    fn render_shared_health_degraded() {
+        let health = HealthData {
+            percentage: 50.0,
+            status: HealthStatus::Degraded,
+        };
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                render_shared_health(ui, &health);
+            });
+        });
+    }
+
+    #[test]
+    fn render_shared_same_dave_headless() {
+        let mut data = ProprioceptionData::empty("test");
+        data.confidence = 90.0;
+        data.sensory.active_sockets = 5;
+        data.self_awareness.knows_about = 3;
+        data.self_awareness.has_security = true;
+        data.self_awareness.has_discovery = true;
+        data.self_awareness.has_compute = false;
+        data.self_awareness.can_coordinate = true;
+        data.motor.can_deploy = true;
+        data.motor.can_execute_graphs = true;
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                render_shared_same_dave(ui, &data);
+            });
+        });
+    }
+
+    #[test]
+    fn render_shared_same_dave_all_capabilities_false() {
+        let data = ProprioceptionData::empty("test");
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                render_shared_same_dave(ui, &data);
+            });
+        });
+    }
+
+    #[test]
+    fn proprioception_panel_render_no_data() {
+        let panel = ProprioceptionPanel::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                panel.render(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn proprioception_panel_render_with_data() {
+        let mut panel = ProprioceptionPanel::new();
+        let mut data = ProprioceptionData::empty("test");
+        data.health.percentage = 95.0;
+        data.health.status = HealthStatus::Healthy;
+        data.confidence = 88.0;
+        data.sensory.active_sockets = 3;
+        data.self_awareness.knows_about = 2;
+        data.motor.can_deploy = true;
+        panel.data = Some(data);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                panel.render(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn proprioception_panel_render_with_motor_history() {
+        let mut panel = ProprioceptionPanel::new();
+        panel.data = Some(ProprioceptionData::empty("test"));
+        panel.record_motor_command("Deploy");
+        panel.record_motor_command("FitToView");
+        panel.set_current_mode("clinical");
+        panel.set_session_domain(Some("health".to_string()));
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                panel.render(ui);
+            });
+        });
     }
 }

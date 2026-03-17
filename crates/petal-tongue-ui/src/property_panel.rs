@@ -326,8 +326,11 @@ impl Default for PropertyPanel {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::accessibility::ColorPalette;
+    use crate::accessibility::ColorScheme;
     use petal_tongue_core::NodeType;
     use petal_tongue_core::graph_builder::Vec2;
 
@@ -571,5 +574,149 @@ mod tests {
             PropertyPanel::get_parameter_help("unknown_param"),
             "Enter value for this parameter"
         );
+    }
+
+    #[test]
+    fn test_render_no_node_selected() {
+        let mut panel = PropertyPanel::new();
+        let mut graph = VisualGraph::new("test".to_string());
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                panel.render(ui, &mut graph, &palette);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_with_node_selected() {
+        let mut panel = PropertyPanel::new();
+        let mut graph = VisualGraph::new("test".to_string());
+        let mut node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        node.set_parameter("primal_name".to_string(), "test_primal".to_string());
+        node.set_parameter("family_id".to_string(), "nat0".to_string());
+        let node_id = node.id.clone();
+        graph.add_node(node);
+
+        panel.set_editing_node(Some(node_id), &graph);
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                panel.render(ui, &mut graph, &palette);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_with_validation_errors() {
+        let mut panel = PropertyPanel::new();
+        let mut graph = VisualGraph::new("test".to_string());
+        let node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        let node_id = node.id.clone();
+        graph.add_node(node);
+
+        panel.set_editing_node(Some(node_id.clone()), &graph);
+        panel.apply_changes(&mut graph);
+
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                panel.render(ui, &mut graph, &palette);
+            });
+        });
+    }
+
+    #[test]
+    fn test_conditional_node_params() {
+        let mut panel = PropertyPanel::new();
+        let mut graph = VisualGraph::new("test".to_string());
+        let mut node = GraphNode::new(NodeType::Conditional, Vec2::zero());
+        node.set_parameter("condition".to_string(), "health > 0".to_string());
+        let node_id = node.id.clone();
+        graph.add_node(node);
+
+        panel.set_editing_node(Some(node_id.clone()), &graph);
+        panel.apply_changes(&mut graph);
+
+        let node = graph.get_node(&node_id).unwrap();
+        assert!(!node.visual_state.has_error);
+        assert_eq!(
+            node.get_parameter("condition"),
+            Some(&"health > 0".to_string())
+        );
+    }
+
+    #[test]
+    fn test_wait_for_node_params() {
+        let mut panel = PropertyPanel::new();
+        let mut graph = VisualGraph::new("test".to_string());
+        let mut node = GraphNode::new(NodeType::WaitFor, Vec2::zero());
+        node.set_parameter("primal_name".to_string(), "p1".to_string());
+        node.set_parameter("timeout".to_string(), "60".to_string());
+        node.set_parameter("condition".to_string(), "ready".to_string());
+        let node_id = node.id.clone();
+        graph.add_node(node);
+
+        panel.set_editing_node(Some(node_id.clone()), &graph);
+        panel.apply_changes(&mut graph);
+
+        let node = graph.get_node(&node_id).unwrap();
+        assert!(!node.visual_state.has_error);
+    }
+
+    #[test]
+    fn test_apply_missing_required_param() {
+        let mut panel = PropertyPanel::new();
+        let mut graph = VisualGraph::new("test".to_string());
+        let node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        let node_id = node.id.clone();
+        graph.add_node(node);
+
+        panel.set_editing_node(Some(node_id.clone()), &graph);
+        panel
+            .temp_params
+            .insert("primal_name".to_string(), "p1".to_string());
+        // Missing family_id
+
+        panel.apply_changes(&mut graph);
+
+        assert!(panel.errors.contains_key("family_id"));
+    }
+
+    #[test]
+    fn test_has_unsaved_changes_extra_param() {
+        let mut panel = PropertyPanel::new();
+        let mut graph = VisualGraph::new("test".to_string());
+        let mut node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        node.set_parameter("primal_name".to_string(), "p1".to_string());
+        node.set_parameter("family_id".to_string(), "nat0".to_string());
+        let node_id = node.id.clone();
+        graph.add_node(node);
+
+        panel.set_editing_node(Some(node_id), &graph);
+        assert!(!panel.has_unsaved_changes(&graph));
+
+        panel
+            .temp_params
+            .insert("extra".to_string(), "value".to_string());
+        assert!(panel.has_unsaved_changes(&graph));
+    }
+
+    #[test]
+    fn test_set_editing_node_nonexistent_clears() {
+        let mut panel = PropertyPanel::new();
+        let mut graph = VisualGraph::new("test".to_string());
+        let node = GraphNode::new(NodeType::PrimalStart, Vec2::zero());
+        graph.add_node(node);
+
+        panel.set_editing_node(Some("nonexistent-id".to_string()), &graph);
+        assert_eq!(panel.editing_node.as_deref(), Some("nonexistent-id"));
+        assert!(panel.temp_params.is_empty());
     }
 }

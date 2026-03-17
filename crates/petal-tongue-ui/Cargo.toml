@@ -97,7 +97,7 @@ default = ["ui-auto"]
 # Backend selection features (ecoBlossom evolution!)
 ui-auto = ["ui-eframe"]  # Auto-detect (currently just eframe, will add Toadstool)
 ui-eframe = []           # eframe backend (current, has C deps)
-ui-toadstool = ["legacy-toadstool"]  # Alias for legacy-toadstool (use display/backends/toadstool_v2 for modern)
+ui-toadstool = []  # Toadstool display selection (use display::backends::toadstool_v2 with biomeOS)
 
 # Test helpers (env var manipulation, etc.) - only for cargo test --features test-fixtures
 test-fixtures = ["petal-tongue-core/test-fixtures"]
@@ -115,7 +115,6 @@ mock = ["petal-tongue-discovery/test-fixtures", "petal-tongue-api/test-fixtures"
 # Legacy features (maintained for compatibility)
 external-display = ["ui-eframe"]  # Alias for ui-eframe
 legacy-audio = []       # Legacy audio_providers backend (use crate::audio::AudioSystemV2)
-legacy-toadstool = []   # Legacy direct toadstool UIBackend (use display/backends/toadstool_v2)
 software-rendering = ["softbuffer", "pixels"]
 framebuffer-direct = []  # Marker: framebuffer backend (no extra deps; uses sysfs)
 toadstool-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys"]

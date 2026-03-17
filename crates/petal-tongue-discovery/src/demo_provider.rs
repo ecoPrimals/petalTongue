@@ -46,30 +46,30 @@ impl VisualizationDataProvider for DemoVisualizationProvider {
         )]
         let now = chrono::Utc::now().timestamp() as u64;
 
-        // Create primals using modern properties approach
-        let mut beardog_props = Properties::new();
-        beardog_props.insert("trust_level".to_string(), PropertyValue::Number(3.0));
-        beardog_props.insert(
+        // Create primals using modern properties approach (capability-domain identifiers)
+        let mut security_props = Properties::new();
+        security_props.insert("trust_level".to_string(), PropertyValue::Number(3.0));
+        security_props.insert(
             "family_id".to_string(),
             PropertyValue::String("demo-family".to_string()),
         );
 
-        let mut songbird_props = Properties::new();
-        songbird_props.insert("trust_level".to_string(), PropertyValue::Number(2.0));
-        songbird_props.insert(
+        let mut discovery_props = Properties::new();
+        discovery_props.insert("trust_level".to_string(), PropertyValue::Number(2.0));
+        discovery_props.insert(
             "family_id".to_string(),
             PropertyValue::String("demo-family".to_string()),
         );
 
-        let mut toadstool_props = Properties::new();
-        toadstool_props.insert("trust_level".to_string(), PropertyValue::Number(1.0));
+        let mut compute_props = Properties::new();
+        compute_props.insert("trust_level".to_string(), PropertyValue::Number(1.0));
 
         Ok(vec![
             PrimalInfo {
-                id: "demo-beardog-1".into(),
-                name: "BearDog Security (Demo)".to_string(),
+                id: "demo-security-1".into(),
+                name: "Security Provider (Demo)".to_string(),
                 primal_type: "Security".to_string(),
-                endpoint: "http://demo-beardog:9000".to_string(),
+                endpoint: "capability://security.trust:demo".to_string(),
                 capabilities: vec![
                     "security.trust".to_string(),
                     "security.identity".to_string(),
@@ -78,17 +78,17 @@ impl VisualizationDataProvider for DemoVisualizationProvider {
                 last_seen: now,
                 endpoints: None,
                 metadata: None,
-                properties: beardog_props,
+                properties: security_props,
                 #[expect(deprecated)]
                 trust_level: Some(3), // Keep for backward compatibility
                 #[expect(deprecated)]
                 family_id: Some("demo-family".to_string()),
             },
             PrimalInfo {
-                id: "demo-songbird-1".into(),
-                name: "Songbird Discovery (Demo)".to_string(),
+                id: "demo-discovery-1".into(),
+                name: "Discovery Provider (Demo)".to_string(),
                 primal_type: "Discovery".to_string(),
-                endpoint: "http://demo-songbird:8080".to_string(),
+                endpoint: "capability://discovery.primals:demo".to_string(),
                 capabilities: vec![
                     "discovery.primals".to_string(),
                     "orchestration.federation".to_string(),
@@ -97,17 +97,17 @@ impl VisualizationDataProvider for DemoVisualizationProvider {
                 last_seen: now,
                 endpoints: None,
                 metadata: None,
-                properties: songbird_props,
+                properties: discovery_props,
                 #[expect(deprecated)]
                 trust_level: Some(2),
                 #[expect(deprecated)]
                 family_id: Some("demo-family".to_string()),
             },
             PrimalInfo {
-                id: "demo-toadstool-1".into(),
-                name: "ToadStool Compute (Demo)".to_string(),
+                id: "demo-compute-1".into(),
+                name: "Compute Provider (Demo)".to_string(),
                 primal_type: "Compute".to_string(),
-                endpoint: "http://demo-toadstool:8002".to_string(),
+                endpoint: "capability://compute.container:demo".to_string(),
                 capabilities: vec![
                     "compute.container".to_string(),
                     "compute.workload".to_string(),
@@ -116,7 +116,7 @@ impl VisualizationDataProvider for DemoVisualizationProvider {
                 last_seen: now,
                 endpoints: None,
                 metadata: None,
-                properties: toadstool_props,
+                properties: compute_props,
                 #[expect(deprecated)]
                 trust_level: Some(1),
                 #[expect(deprecated)]
@@ -128,16 +128,16 @@ impl VisualizationDataProvider for DemoVisualizationProvider {
     async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
         Ok(vec![
             TopologyEdge {
-                from: "demo-beardog-1".into(),
-                to: "demo-songbird-1".into(),
+                from: "demo-security-1".into(),
+                to: "demo-discovery-1".into(),
                 edge_type: "trust".to_string(),
                 capability: None,
                 metrics: None,
                 label: Some("Trusted".to_string()),
             },
             TopologyEdge {
-                from: "demo-songbird-1".into(),
-                to: "demo-toadstool-1".into(),
+                from: "demo-discovery-1".into(),
+                to: "demo-compute-1".into(),
                 edge_type: "orchestrates".to_string(),
                 label: None,
                 capability: None,
@@ -171,7 +171,7 @@ mod tests {
         // Test primal discovery
         let primals = provider.get_primals().await.unwrap();
         assert_eq!(primals.len(), 3);
-        assert_eq!(primals[0].id, "demo-beardog-1");
+        assert_eq!(primals[0].id, "demo-security-1");
         // Use properties field instead of deprecated trust_level
         assert_eq!(
             primals[0]
@@ -234,8 +234,8 @@ mod tests {
     async fn demo_provider_topology_structure() {
         let provider = DemoVisualizationProvider::new();
         let topology = provider.get_topology().await.unwrap();
-        assert_eq!(topology[0].from, "demo-beardog-1");
-        assert_eq!(topology[0].to, "demo-songbird-1");
+        assert_eq!(topology[0].from, "demo-security-1");
+        assert_eq!(topology[0].to, "demo-discovery-1");
         assert_eq!(topology[0].edge_type, "trust");
         assert_eq!(topology[0].label, Some("Trusted".to_string()));
         assert_eq!(topology[1].label, None);
@@ -245,7 +245,7 @@ mod tests {
     async fn demo_provider_primals_third_has_no_family_id() {
         let provider = DemoVisualizationProvider::new();
         let primals = provider.get_primals().await.unwrap();
-        assert_eq!(primals[2].id, "demo-toadstool-1");
+        assert_eq!(primals[2].id, "demo-compute-1");
         assert!(!primals[2].properties.contains_key("family_id"));
     }
 }

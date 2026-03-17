@@ -208,6 +208,7 @@ impl ToolPanel for GraphMetricsPlotter {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -376,5 +377,46 @@ mod tests {
             .collect();
         assert!(cap_names.iter().any(|s| s == "Plotting"));
         assert!(cap_names.iter().any(|s| s == "Metrics"));
+    }
+
+    #[test]
+    fn add_snapshot_zero_counts() {
+        let mut p = GraphMetricsPlotter::default();
+        p.add_snapshot(0, 0);
+        assert_eq!(p.status_message(), Some("N:0 E:0".to_string()));
+    }
+
+    #[test]
+    fn add_snapshot_single_sample() {
+        let mut p = GraphMetricsPlotter::default();
+        p.add_snapshot(1, 0);
+        assert_eq!(p.status_message(), Some("N:1 E:0".to_string()));
+    }
+
+    #[test]
+    fn compute_chart_bounds_all_zeros() {
+        let data = [0.0, 0.0, 0.0];
+        let (min, max, range) = compute_chart_bounds(&data);
+        assert!((min - 0.0).abs() < f32::EPSILON);
+        assert!((max - 1.0).abs() < f32::EPSILON);
+        assert!((range - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn metadata_source_is_none() {
+        let p = GraphMetricsPlotter::default();
+        let meta = p.metadata();
+        assert!(meta.source.is_none());
+    }
+
+    #[test]
+    fn metadata_has_visual_capability() {
+        let p = GraphMetricsPlotter::default();
+        let meta = p.metadata();
+        assert!(
+            meta.capabilities
+                .iter()
+                .any(|c| matches!(c, ToolCapability::Visual))
+        );
     }
 }

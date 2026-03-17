@@ -344,9 +344,10 @@ fn draw_arrow(
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use petal_tongue_core::graph_builder::EdgeType;
+    use petal_tongue_core::graph_builder::{EdgeType, GraphEdge, NodeType};
 
     #[test]
     fn test_node_colors_selected() {
@@ -511,5 +512,109 @@ mod tests {
     fn test_edge_stroke_width() {
         assert!((edge_stroke_width(1.0) - 2.0).abs() < f32::EPSILON);
         assert!((edge_stroke_width(2.0) - 4.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_node_text_layout_small_zoom() {
+        let (text_size, _, _) = node_text_layout(0.5, 0.0, 50.0);
+        assert!((text_size - 7.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_arrow_points_struct() {
+        let from = [0.0, 0.0];
+        let to = [100.0, 0.0];
+        let points = arrow_geometry(from, to, 1.0);
+        assert_eq!(points.tip, to);
+        assert_ne!(points.left, points.right);
+    }
+
+    #[test]
+    fn test_render_canvas_with_nodes_and_edges() {
+        use super::GraphCanvas;
+        use crate::accessibility::ColorScheme;
+        use egui::Pos2;
+
+        let mut canvas = GraphCanvas::new("test-graph");
+        let canvas_rect = egui::Rect::from_min_size(Pos2::ZERO, egui::Vec2::new(800.0, 600.0));
+        canvas.add_node_at_screen(NodeType::PrimalStart, Pos2::new(100.0, 100.0), canvas_rect);
+        canvas.add_node_at_screen(NodeType::Verification, Pos2::new(200.0, 200.0), canvas_rect);
+        let id1 = canvas.graph().nodes[0].id.clone();
+        let id2 = canvas.graph().nodes[1].id.clone();
+        let _ = canvas.graph_mut().add_edge(GraphEdge::dependency(id1, id2));
+
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                canvas.render(ui, &palette);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_canvas_empty() {
+        use super::GraphCanvas;
+        use crate::accessibility::ColorScheme;
+
+        let mut canvas = GraphCanvas::new("empty-graph");
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                canvas.render(ui, &palette);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_canvas_with_drawing_edge() {
+        use super::super::EdgeDrawState;
+        use super::GraphCanvas;
+        use crate::accessibility::ColorScheme;
+        use egui::Pos2;
+
+        let mut canvas = GraphCanvas::new("test-graph");
+        let canvas_rect = egui::Rect::from_min_size(Pos2::ZERO, egui::Vec2::new(800.0, 600.0));
+        canvas.add_node_at_screen(NodeType::PrimalStart, Pos2::new(100.0, 100.0), canvas_rect);
+        let from_id = canvas.graph().nodes[0].id.clone();
+        canvas.drawing_edge = Some(EdgeDrawState {
+            from_node: from_id,
+            current_pos: Pos2::new(150.0, 150.0),
+        });
+
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                canvas.render(ui, &palette);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_canvas_with_selection_box() {
+        use super::super::DragState;
+        use super::GraphCanvas;
+        use crate::accessibility::ColorScheme;
+        use egui::Pos2;
+
+        let mut canvas = GraphCanvas::new("test-graph");
+        canvas.drag_state = Some(DragState::SelectBox {
+            start: Pos2::new(50.0, 50.0),
+            current: Pos2::new(200.0, 200.0),
+        });
+
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                canvas.render(ui, &palette);
+            });
+        });
     }
 }

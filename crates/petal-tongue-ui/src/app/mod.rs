@@ -795,4 +795,111 @@ mod tests {
         let cmds = crate::mode_presets::commands_for_mode("nonexistent_mode_xyz");
         assert!(cmds.is_empty());
     }
+
+    #[test]
+    fn introspect_panel_snapshots() {
+        let app = PetalTongueApp::new_headless().expect("headless app");
+        let introspection = app.introspect();
+        let panel_ids: Vec<_> = introspection
+            .visible_panels
+            .iter()
+            .map(|p| format!("{:?}", p.id))
+            .collect();
+        assert!(
+            panel_ids.iter().any(|s| s.contains("TopMenu")),
+            "should have TopMenu in panels"
+        );
+        assert!(
+            panel_ids.iter().any(|s| s.contains("graph_canvas")),
+            "should have graph_canvas"
+        );
+    }
+
+    #[test]
+    fn introspect_bound_data_empty_graph() {
+        let app = PetalTongueApp::new_headless().expect("headless app");
+        let introspection = app.introspect();
+        assert!(introspection.bound_data.is_empty());
+    }
+
+    #[test]
+    fn introspect_possible_interactions() {
+        let app = PetalTongueApp::new_headless().expect("headless app");
+        let introspection = app.introspect();
+        assert!(
+            !introspection.possible_interactions.is_empty(),
+            "should have at least Navigate"
+        );
+        assert!(
+            introspection
+                .possible_interactions
+                .iter()
+                .any(|i| matches!(i.intent, petal_tongue_core::InteractionKind::Navigate)),
+            "should have Navigate"
+        );
+    }
+
+    #[test]
+    fn set_visualization_state_and_active_session_count() {
+        let mut app = PetalTongueApp::new_headless().expect("headless app");
+        assert_eq!(app.active_session_count(), 0);
+        let state = Arc::new(RwLock::new(petal_tongue_ipc::VisualizationState::new()));
+        app.set_visualization_state(state);
+        assert_eq!(app.active_session_count(), 0);
+    }
+
+    #[test]
+    fn set_sensor_stream_and_interaction_subscribers() {
+        let mut app = PetalTongueApp::new_headless().expect("headless app");
+        let sensor_reg = Arc::new(RwLock::new(petal_tongue_ipc::SensorStreamRegistry::new()));
+        let interaction_reg = Arc::new(RwLock::new(
+            petal_tongue_ipc::InteractionSubscriberRegistry::new(),
+        ));
+        app.set_sensor_stream(sensor_reg);
+        app.set_interaction_subscribers(interaction_reg);
+    }
+
+    #[test]
+    fn update_headless_single_frame() {
+        let mut app = PetalTongueApp::new_headless().expect("headless app");
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            app.update_headless(ctx);
+        });
+    }
+
+    #[test]
+    fn tick_clock_access() {
+        let app = PetalTongueApp::new_headless().expect("headless app");
+        let clock = app.tick_clock();
+        let _ = clock;
+    }
+
+    #[test]
+    #[allow(unused_mut)]
+    fn headless_app_refresh_graph_data() {
+        let mut app = PetalTongueApp::new_headless().expect("headless app");
+        app.refresh_graph_data();
+        let _introspection = app.introspect();
+    }
+
+    #[test]
+    fn mode_presets_developer() {
+        let cmds = crate::mode_presets::commands_for_mode("developer");
+        assert!(!cmds.is_empty());
+    }
+
+    #[test]
+    fn mode_presets_presentation() {
+        let cmds = crate::mode_presets::commands_for_mode("presentation");
+        assert!(!cmds.is_empty());
+    }
+
+    #[test]
+    fn headless_app_introspect_with_visibility() {
+        let app = PetalTongueApp::new_headless().expect("headless app");
+        let i1 = app.introspect();
+        let visible_count = i1.visible_panels.iter().filter(|p| p.visible).count();
+        assert!(visible_count >= 1);
+    }
 }

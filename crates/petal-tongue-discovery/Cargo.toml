@@ -6,7 +6,7 @@ workspace = true
 name = "petal-tongue-discovery"
 version = "0.1.0"
 edition.workspace = true
-license = "AGPL-3.0-or-later"
+license.workspace = true
 
 [dependencies]
 # Core dependencies
@@ -17,7 +17,7 @@ anyhow = "1"
 thiserror = "1"
 
 # HTTP client
-reqwest = { workspace = true }  # Use workspace version (0.12 with rustls-tls)
+reqwest = { workspace = true }  # Workspace: HTTP-only (no TLS) for local IPC
 
 # Serialization
 serde = { version = "1", features = ["derive"] }

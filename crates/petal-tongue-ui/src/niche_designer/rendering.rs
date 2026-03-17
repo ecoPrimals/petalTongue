@@ -250,8 +250,14 @@ impl NicheDesigner {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
+    use super::super::state::NicheDesigner;
     use super::*;
+    use crate::biomeos_integration::{Health, NicheTemplate, Primal};
+    use crate::ui_events::UIEventHandler;
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
 
     #[test]
     fn validation_display_info_valid() {
@@ -353,5 +359,76 @@ mod tests {
         assert_eq!(icon, "✖");
         assert_eq!(text, "Conflicts detected:");
         assert_eq!(rgb, [255, 0, 0]);
+    }
+
+    #[test]
+    fn deploy_hint_message_content() {
+        assert!(deploy_hint_message().contains("required"));
+        assert!(deploy_hint_message().contains("deploy"));
+    }
+
+    #[test]
+    fn niche_designer_ui_headless_no_template() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut designer = NicheDesigner::new(event_handler);
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                designer.ui(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn niche_designer_ui_headless_with_template() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut designer = NicheDesigner::new(event_handler);
+        designer.templates = vec![NicheTemplate {
+            id: "t1".to_string(),
+            name: "Test Niche".to_string(),
+            description: "A test".to_string(),
+            required_primals: vec!["compute".to_string()],
+            optional_primals: vec!["storage".to_string()],
+            metadata: serde_json::json!({}),
+        }];
+        designer.available_primals = vec![Primal {
+            id: "p1".to_string(),
+            name: "Primal 1".to_string(),
+            health: Health::Healthy,
+            capabilities: vec!["compute".to_string(), "storage".to_string()],
+            load: 0.0,
+            assigned_devices: vec![],
+            metadata: serde_json::json!({}),
+        }];
+        let template = designer.templates[0].clone();
+        designer.select_template(template);
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                designer.ui(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn niche_designer_ui_headless_with_optional_primals() {
+        let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
+        let mut designer = NicheDesigner::new(event_handler);
+        designer.templates = vec![NicheTemplate {
+            id: "t1".to_string(),
+            name: "Test".to_string(),
+            description: "Desc".to_string(),
+            required_primals: vec!["compute".to_string()],
+            optional_primals: vec!["storage".to_string(), "auth".to_string()],
+            metadata: serde_json::json!({}),
+        }];
+        let template = designer.templates[0].clone();
+        designer.select_template(template);
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                designer.ui(ui);
+            });
+        });
     }
 }

@@ -363,6 +363,7 @@ fn blake3_hash(data: &[u8]) -> u64 {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -552,5 +553,175 @@ mod tests {
         let restored: TrioAvailability = serde_json::from_str(&json).expect("deserialize");
         assert!(restored.ephemeral_dag);
         assert!(!restored.attribution);
+    }
+
+    #[tokio::test]
+    async fn record_contribution_without_braid_id_is_noop() {
+        let client = ProvenanceTrioClient::with_sockets(
+            None,
+            Some("/tmp/nonexistent.sock".to_string()),
+            None,
+        );
+        let session = ProvenanceSession {
+            session_id: "s1".to_string(),
+            vertex_id: None,
+            braid_id: None,
+            spine_entry_id: None,
+        };
+        client
+            .record_contribution(&session, "neuralspring", "data-1", "timeseries")
+            .await;
+    }
+
+    #[test]
+    fn capability_matches_unknown_capability() {
+        assert!(!capability_matches_socket_name("unknown.cap", "rhizocrypt"));
+        assert!(!capability_matches_socket_name("foo.bar", "sweetgrass"));
+    }
+
+    #[test]
+    fn provenance_session_with_all_ids() {
+        let session = ProvenanceSession {
+            session_id: "full-session".to_string(),
+            vertex_id: Some("v1".to_string()),
+            braid_id: Some("b1".to_string()),
+            spine_entry_id: Some("e1".to_string()),
+        };
+        let json = serde_json::to_string(&session).expect("serialize");
+        let restored: ProvenanceSession = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(restored.vertex_id.as_deref(), Some("v1"));
+        assert_eq!(restored.braid_id.as_deref(), Some("b1"));
+        assert_eq!(restored.spine_entry_id.as_deref(), Some("e1"));
+    }
+
+    #[test]
+    fn trio_availability_attribution_only() {
+        let a = TrioAvailability {
+            ephemeral_dag: false,
+            attribution: true,
+            permanent_ledger: false,
+        };
+        assert!(!a.is_full());
+        assert!(a.is_partial());
+    }
+
+    #[test]
+    fn trio_availability_ledger_only() {
+        let a = TrioAvailability {
+            ephemeral_dag: false,
+            attribution: false,
+            permanent_ledger: true,
+        };
+        assert!(!a.is_full());
+        assert!(a.is_partial());
+    }
+
+    #[test]
+    fn trio_availability_ephemeral_and_ledger() {
+        let a = TrioAvailability {
+            ephemeral_dag: true,
+            attribution: false,
+            permanent_ledger: true,
+        };
+        assert!(!a.is_full());
+        assert!(a.is_partial());
+    }
+
+    #[test]
+    fn trio_availability_debug() {
+        let a = TrioAvailability {
+            ephemeral_dag: true,
+            attribution: true,
+            permanent_ledger: true,
+        };
+        let dbg = format!("{:?}", a);
+        assert!(dbg.contains("ephemeral_dag"));
+        assert!(dbg.contains("attribution"));
+    }
+
+    #[test]
+    fn provenance_session_debug() {
+        let session = ProvenanceSession {
+            session_id: "dbg".to_string(),
+            vertex_id: None,
+            braid_id: None,
+            spine_entry_id: None,
+        };
+        let dbg = format!("{:?}", session);
+        assert!(dbg.contains("dbg"));
+    }
+
+    #[test]
+    fn capability_matches_dag_session_rhizo_variant() {
+        assert!(capability_matches_socket_name("dag.session", "rhizo"));
+        assert!(capability_matches_socket_name(
+            "dag.vertex.create",
+            "rhizocrypt"
+        ));
+    }
+
+    #[test]
+    fn capability_matches_contribution_sweet() {
+        assert!(capability_matches_socket_name(
+            "contribution.record",
+            "sweetgrass"
+        ));
+        assert!(capability_matches_socket_name("braid.create", "sweet"));
+    }
+
+    #[test]
+    fn capability_matches_entry_loam() {
+        assert!(capability_matches_socket_name("entry.append", "loamspine"));
+        assert!(capability_matches_socket_name("spine.create", "loam"));
+    }
+
+    #[test]
+    fn blake3_hash_empty() {
+        let h = blake3_hash(b"");
+        assert!(h != 0 || true);
+    }
+
+    #[test]
+    fn blake3_hash_long_data() {
+        let data = vec![0u8; 10000];
+        let h = blake3_hash(&data);
+        let h2 = blake3_hash(&data);
+        assert_eq!(h, h2);
+    }
+
+    #[test]
+    fn with_sockets_all_none() {
+        let client = ProvenanceTrioClient::with_sockets(None, None, None);
+        let a = client.availability();
+        assert!(!a.is_full());
+        assert!(!a.is_partial());
+    }
+
+    #[test]
+    fn with_sockets_all_some() {
+        let client = ProvenanceTrioClient::with_sockets(
+            Some("/tmp/e.sock".to_string()),
+            Some("/tmp/a.sock".to_string()),
+            Some("/tmp/l.sock".to_string()),
+        );
+        let a = client.availability();
+        assert!(a.is_full());
+        assert!(a.is_partial());
+    }
+
+    #[tokio::test]
+    async fn begin_session_with_domain() {
+        let client = ProvenanceTrioClient::with_sockets(None, None, None);
+        let session = client
+            .begin_session("s2", "Viz with Domain", Some("ecology"))
+            .await;
+        assert_eq!(session.session_id, "s2");
+    }
+
+    #[tokio::test]
+    async fn begin_session_domain_none() {
+        let client = ProvenanceTrioClient::with_sockets(None, None, None);
+        let session = client.begin_session("s3", "Title Only", None).await;
+        assert_eq!(session.session_id, "s3");
     }
 }

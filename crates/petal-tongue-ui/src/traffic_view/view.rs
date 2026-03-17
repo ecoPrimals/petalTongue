@@ -464,3 +464,167 @@ impl TrafficView {
         }
     }
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod view_tests {
+    use super::*;
+    use petal_tongue_core::{PrimalHealthStatus, PrimalId, PrimalInfo};
+
+    #[test]
+    fn test_render_with_metrics_and_selected_flow() {
+        let mut view = TrafficView::new();
+        view.add_flow(TrafficFlow {
+            from: "a".to_string(),
+            to: "b".to_string(),
+            metrics: TrafficMetrics {
+                bytes_per_second: 5000,
+                requests_per_second: 10.0,
+                avg_latency_ms: 5.0,
+                error_rate: 0.01,
+            },
+            color: [0, 255, 0, 255],
+        });
+        view.apply_intents(&[TrafficIntent::SelectFlow {
+            from: "a".to_string(),
+            to: "b".to_string(),
+        }]);
+        assert!(view.show_metrics());
+        assert!(view.selected_flow().is_some());
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let intents = view.render(ui);
+                view.apply_intents(&intents);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_with_flows_no_primals_derives_ids() {
+        let mut view = TrafficView::new();
+        view.add_flow(TrafficFlow {
+            from: "primal_x".to_string(),
+            to: "primal_y".to_string(),
+            metrics: TrafficMetrics::default(),
+            color: [0, 255, 0, 255],
+        });
+        assert_eq!(view.primal_count(), 0);
+        assert_eq!(view.flow_count(), 1);
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let intents = view.render(ui);
+                view.apply_intents(&intents);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_empty_flows_shows_message() {
+        let mut view = TrafficView::new();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let intents = view.render(ui);
+                assert!(intents.is_empty());
+            });
+        });
+    }
+
+    #[test]
+    fn test_apply_intent_close_details() {
+        let mut view = TrafficView::new();
+        view.add_flow(TrafficFlow {
+            from: "a".to_string(),
+            to: "b".to_string(),
+            metrics: TrafficMetrics::default(),
+            color: [0, 255, 0, 255],
+        });
+        view.apply_intents(&[TrafficIntent::SelectFlow {
+            from: "a".to_string(),
+            to: "b".to_string(),
+        }]);
+        view.apply_intents(&[TrafficIntent::CloseDetails]);
+        assert!(view.selected_flow().is_none());
+    }
+
+    #[test]
+    fn test_render_toggle_metrics_intent() {
+        let mut view = TrafficView::new();
+        view.add_flow(TrafficFlow {
+            from: "a".to_string(),
+            to: "b".to_string(),
+            metrics: TrafficMetrics::default(),
+            color: [0, 255, 0, 255],
+        });
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let mut intents = view.render(ui);
+                intents.push(TrafficIntent::ToggleMetrics);
+                view.apply_intents(&intents);
+            });
+        });
+        assert!(!view.show_metrics());
+    }
+
+    #[test]
+    fn test_render_with_primals_and_flows() {
+        let mut view = TrafficView::new();
+        view.set_primals(vec![
+            PrimalInfo::new(
+                PrimalId::from("alpha"),
+                "Alpha",
+                "Compute",
+                "http://localhost",
+                vec![],
+                PrimalHealthStatus::Healthy,
+                0,
+            ),
+            PrimalInfo::new(
+                PrimalId::from("beta"),
+                "Beta",
+                "Storage",
+                "http://localhost",
+                vec![],
+                PrimalHealthStatus::Healthy,
+                0,
+            ),
+        ]);
+        view.add_flow(TrafficFlow {
+            from: "alpha".to_string(),
+            to: "beta".to_string(),
+            metrics: TrafficMetrics {
+                bytes_per_second: 10000,
+                ..Default::default()
+            },
+            color: [0, 255, 0, 255],
+        });
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let intents = view.render(ui);
+                view.apply_intents(&intents);
+            });
+        });
+    }
+
+    #[test]
+    fn test_max_volume_single_flow() {
+        let mut view = TrafficView::new();
+        view.add_flow(TrafficFlow {
+            from: "a".to_string(),
+            to: "b".to_string(),
+            metrics: TrafficMetrics {
+                bytes_per_second: 42,
+                ..Default::default()
+            },
+            color: [0, 255, 0, 255],
+        });
+        assert_eq!(view.max_volume(), 42);
+    }
+}
