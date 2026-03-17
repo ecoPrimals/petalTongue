@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: March 16, 2026
+**Updated**: March 17, 2026
 
 ---
 
@@ -99,7 +99,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 - `tarpc_client.rs` -- tarpc binary RPC client
 - `tarpc_types/` -- tarpc types split into submodules
 - `socket_path.rs` -- XDG-compliant socket path discovery
-- `ipc_errors.rs` -- `IpcErrorPhase`, `StreamItem` (NDJSON), `extract_rpc_error()`
+- `ipc_errors.rs` -- `IpcErrorPhase`, `StreamItem` (NDJSON), `DispatchOutcome<T>`, `exit_code`, `extract_rpc_error()`
 - `resilience.rs` -- `CircuitBreaker`, `RetryPolicy` for IPC fault tolerance
 - `discovery_helpers.rs` -- Primal socket resolution, env var helpers
 
@@ -108,7 +108,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 - `unix_socket_provider.rs` -- Unix socket JSON-RPC discovery (primary)
 - `neural_api_provider.rs` -- biomeOS Neural API discovery
 - `songbird_client.rs` -- Songbird capability discovery
-- `capability_parse.rs` -- Dual-format capability parsing (flat + enriched)
+- `capability_parse.rs` -- 4-format capability parsing (flat, enriched, nested, result-wrapped)
 - `http_provider.rs` -- HTTP fallback (feature-gated `legacy-http`)
 
 ### Specs
