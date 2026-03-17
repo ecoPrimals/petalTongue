@@ -175,6 +175,11 @@ See `ecoPrimals/wateringHole/petaltongue/` for inter-primal standards:
 - `BIOMEOS_API_SPECIFICATION.md` -- biomeOS API contract
 - `QUICK_START_FOR_BIOMEOS.md` -- 5-minute integration guide
 
+See `ecoPrimals/wateringHole/PETALTONGUE_LEVERAGE_GUIDE.md` for:
+- Novel self-referential patterns (introspection loop, multi-modal bridge)
+- Duo/trio/quartet combinations with other primals
+- Spring integration recipes
+
 ---
 
 ## Contributing
