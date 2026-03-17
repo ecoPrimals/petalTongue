@@ -102,7 +102,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,404 passing, 0 failures |
+| Tests | 5,447 passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery via workspace lints) |
 | Docs | `cargo doc --workspace --no-deps` clean |
@@ -117,6 +117,11 @@ petaltongue
 | Zero-copy IDs | `DataSourceId`, `GrammarId` are `Arc<str>` -- O(1) clone |
 | Property tests | `proptest` for JSON-RPC parser + core data types |
 | Cross-primal e2e | Real Unix socket server ↔ JSON-RPC client integration tests |
+| IPC resilience | `IpcErrorPhase` structured errors, `CircuitBreaker`, `RetryPolicy` |
+| Health triad | `health.check` + `health.liveness` + `health.readiness` (K8s/biomeOS) |
+| NDJSON streaming | `StreamItem` (Data/Progress/End/Error) for pipeline consumption |
+| Zero-panic | `OrExit<T>` trait for validation binaries |
+| Dual-format discovery | Parses both flat string and enriched object capability arrays |
 
 ---
 
@@ -125,7 +130,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust nightly (edition 2024)
 cargo build --workspace
-cargo test --workspace --all-features        # 5,404 tests
+cargo test --workspace --all-features        # 5,447 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps

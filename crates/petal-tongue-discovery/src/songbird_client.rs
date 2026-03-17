@@ -9,6 +9,7 @@
 //! - Non-blocking operations throughout
 //! - Proper error propagation
 
+use crate::capability_parse;
 use crate::errors::{DiscoveryError, DiscoveryResult};
 use petal_tongue_core::types::{PrimalHealthStatus, PrimalInfo};
 use serde::{Deserialize, Serialize};
@@ -362,12 +363,7 @@ impl SongbirdClient {
 
         let capabilities: Vec<String> = value["capabilities"]
             .as_array()
-            .map(|arr| {
-                arr.iter()
-                    .filter_map(|v| v.as_str())
-                    .map(String::from)
-                    .collect()
-            })
+            .map(|v| capability_parse::parse_capabilities(v))
             .unwrap_or_default();
 
         let health = value["health"]
