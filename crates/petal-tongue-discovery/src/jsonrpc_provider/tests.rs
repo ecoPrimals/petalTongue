@@ -200,12 +200,7 @@ async fn test_jsonrpc_discover_with_biomeos_url() {
 
     assert!(result.is_ok());
     let provider = result.unwrap();
-    assert!(
-        provider
-            .get_metadata()
-            .endpoint
-            .contains("discover")
-    );
+    assert!(provider.get_metadata().endpoint.contains("discover"));
 }
 
 #[tokio::test]

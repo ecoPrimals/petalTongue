@@ -19,3 +19,4 @@ freedoom.zip
 
 # Build artifacts
 petal-tongue.sha256
+*.proptest-regressions

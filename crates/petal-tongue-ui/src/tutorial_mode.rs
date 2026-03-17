@@ -232,7 +232,7 @@ impl TutorialMode {
 
         graph.add_node(PrimalInfo {
             id: "petaltongue-tutorial".into(),
-            name: "petalTongue".to_string(),
+            name: petal_tongue_core::constants::PRIMAL_NAME.to_string(),
             primal_type: "Visualization".to_string(),
             endpoint: format!("unix://{socket_dir}/petaltongue/petaltongue-nat0-default.sock"),
             capabilities: vec![

@@ -67,7 +67,7 @@ impl LocalStatePersistence {
     /// Get default state directory
     fn default_state_dir() -> Result<PathBuf> {
         crate::platform_dirs::config_dir()
-            .map(|dir| dir.join("petalTongue").join("state"))
+            .map(|dir| dir.join(crate::constants::PRIMAL_NAME).join("state"))
             .map_err(|e| PetalTongueError::ConfigDir(e.to_string()))
     }
 

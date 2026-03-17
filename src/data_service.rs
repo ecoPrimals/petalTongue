@@ -205,9 +205,23 @@ impl Default for DataService {
 }
 
 #[cfg(test)]
+#[cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 mod tests {
     use super::*;
+    use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
     use std::time::Duration;
+
+    fn create_test_primal(id: &str, name: &str) -> PrimalInfo {
+        PrimalInfo::new(
+            id,
+            name,
+            "test",
+            format!("http://test-{id}:8080"),
+            vec![],
+            PrimalHealthStatus::Healthy,
+            0,
+        )
+    }
 
     #[tokio::test]
     async fn test_data_service_creation() {
@@ -361,5 +375,128 @@ mod tests {
         assert_eq!(cloned.primals.len(), snapshot.primals.len());
         assert_eq!(cloned.edges.len(), snapshot.edges.len());
         assert_eq!(cloned.timestamp, snapshot.timestamp);
+    }
+
+    #[tokio::test]
+    async fn test_snapshot_with_populated_graph() {
+        let service = DataService::new();
+        let graph = service.graph();
+        {
+            let mut guard = graph.write().unwrap();
+            let p1 = create_test_primal("p1", "Primal 1");
+            let p2 = create_test_primal("p2", "Primal 2");
+            guard.add_node(p1);
+            guard.add_node(p2);
+            guard.add_edge(TopologyEdge {
+                from: "p1".into(),
+                to: "p2".into(),
+                edge_type: "connection".to_string(),
+                label: None,
+                capability: None,
+                metrics: None,
+            });
+        }
+        let snapshot = service.snapshot().await.unwrap();
+        assert_eq!(snapshot.primals.len(), 2);
+        assert_eq!(snapshot.edges.len(), 1);
+        assert_eq!(snapshot.primals[0].id.as_str(), "p1");
+        assert_eq!(snapshot.primals[1].id.as_str(), "p2");
+    }
+
+    #[tokio::test]
+    async fn test_snapshot_serialization_with_data() {
+        let service = DataService::new();
+        let graph = service.graph();
+        {
+            let mut guard = graph.write().unwrap();
+            guard.add_node(create_test_primal("test-1", "Test Primal"));
+        }
+        let snapshot = service.snapshot().await.unwrap();
+        let json = serde_json::to_string(&snapshot).unwrap();
+        let deser: DataSnapshot = serde_json::from_str(&json).unwrap();
+        assert_eq!(deser.primals.len(), 1);
+        assert_eq!(deser.primals[0].id.as_str(), "test-1");
+        assert_eq!(deser.primals[0].name, "Test Primal");
+    }
+
+    #[tokio::test]
+    async fn test_broadcast_multiple_receivers() {
+        let service = DataService::new();
+        let mut rx1 = service.subscribe();
+        let mut rx2 = service.subscribe();
+        service.send_test_update();
+        let update1 = tokio::time::timeout(Duration::from_secs(1), rx1.recv())
+            .await
+            .expect("rx1 timed out")
+            .expect("rx1 recv failed");
+        let update2 = tokio::time::timeout(Duration::from_secs(1), rx2.recv())
+            .await
+            .expect("rx2 timed out")
+            .expect("rx2 recv failed");
+        assert!(matches!(update1, DataUpdate::TopologyUpdated));
+        assert!(matches!(update2, DataUpdate::TopologyUpdated));
+    }
+
+    #[tokio::test]
+    async fn test_broadcast_multiple_updates() {
+        let service = DataService::new();
+        let mut rx = service.subscribe();
+        service.send_test_update();
+        service.send_test_update();
+        let u1 = tokio::time::timeout(Duration::from_secs(1), rx.recv())
+            .await
+            .expect("timeout")
+            .expect("recv");
+        let u2 = tokio::time::timeout(Duration::from_secs(1), rx.recv())
+            .await
+            .expect("timeout")
+            .expect("recv");
+        assert!(matches!(u1, DataUpdate::TopologyUpdated));
+        assert!(matches!(u2, DataUpdate::TopologyUpdated));
+    }
+
+    #[tokio::test]
+    async fn test_graph_lock_poisoned_error_path() {
+        let service = DataService::new();
+        let graph = service.graph();
+        let graph_clone = Arc::clone(&graph);
+        let handle = std::thread::spawn(move || {
+            let _guard = graph_clone.write().unwrap();
+            panic!("intentional poison for test");
+        });
+        let _ = handle.join();
+        let result = service.snapshot().await;
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            matches!(err, AppError::GraphLockPoisoned(_)),
+            "Expected GraphLockPoisoned, got: {err}"
+        );
+        assert!(err.to_string().contains("Graph lock poisoned"));
+    }
+
+    #[tokio::test]
+    async fn test_data_snapshot_serialization_roundtrip_with_edges() {
+        let snapshot = DataSnapshot {
+            primals: vec![
+                create_test_primal("a", "Alpha"),
+                create_test_primal("b", "Beta"),
+            ],
+            edges: vec![TopologyEdge {
+                from: "a".into(),
+                to: "b".into(),
+                edge_type: "api_call".to_string(),
+                label: Some("invoke".to_string()),
+                capability: None,
+                metrics: None,
+            }],
+            timestamp: 12345,
+        };
+        let json = serde_json::to_string(&snapshot).unwrap();
+        let deser: DataSnapshot = serde_json::from_str(&json).unwrap();
+        assert_eq!(deser.primals.len(), 2);
+        assert_eq!(deser.edges.len(), 1);
+        assert_eq!(deser.edges[0].edge_type, "api_call");
+        assert_eq!(deser.timestamp, 12345);
     }
 }

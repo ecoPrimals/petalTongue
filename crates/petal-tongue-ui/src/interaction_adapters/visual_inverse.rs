@@ -213,7 +213,7 @@ impl InversePipeline for VisualInversePipeline {
                 let mut row = DataRow::new();
                 row.insert(
                     "source".into(),
-                    serde_json::Value::String(data_id.source.clone()),
+                    serde_json::Value::String(data_id.source.to_string()),
                 );
                 row.insert("row_key".into(), data_id.row_key.clone());
                 Some(row)
@@ -286,7 +286,7 @@ mod tests {
         assert!(target.is_some());
 
         if let Some(InteractionTarget::DataRow { data_id }) = target {
-            assert_eq!(data_id.source, "health");
+            assert_eq!(&*data_id.source, "health");
         }
     }
 
@@ -325,7 +325,7 @@ mod tests {
         let data_id = pipeline.resolve_to_data_id(&target);
 
         assert!(data_id.is_some());
-        assert_eq!(data_id.unwrap().source, "health");
+        assert_eq!(&*data_id.unwrap().source, "health");
     }
 
     #[test]

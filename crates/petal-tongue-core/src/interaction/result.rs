@@ -203,7 +203,7 @@ mod tests {
         let event = InteractionEvent::from_result(&result, "my_grammar".into());
         assert_eq!(event.event_type, "select");
         assert_eq!(event.targets.len(), 1);
-        assert_eq!(event.grammar_id, "my_grammar");
+        assert_eq!(event.grammar_id, "my_grammar".into());
     }
 
     #[test]
