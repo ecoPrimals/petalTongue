@@ -4,7 +4,7 @@
 //! Continuously polls sensors and feeds events to `RenderingAwareness`.
 //! Completes the bidirectional feedback loop.
 
-use crate::error::Result;
+use crate::error::{Result, UiError};
 use petal_tongue_core::{RenderingAwareness, SensorRegistry};
 use std::sync::{Arc, RwLock};
 
@@ -62,23 +62,29 @@ pub fn start_event_loop(
 /// # Errors
 ///
 /// Returns an error if the sensor registry fails to poll (e.g., network or I/O failure).
-#[expect(clippy::future_not_send, reason = "event loop runs on the main thread")]
 pub async fn poll_sensors_once(
     sensor_registry: &Arc<RwLock<SensorRegistry>>,
     rendering_awareness: &Arc<RwLock<RenderingAwareness>>,
 ) -> Result<usize> {
-    let mut event_count = 0;
+    let reg = Arc::clone(sensor_registry);
+    let events = tokio::task::spawn_blocking(move || {
+        let rt = tokio::runtime::Handle::current();
+        let mut registry = reg
+            .write()
+            .map_err(|_| anyhow::anyhow!("sensor registry lock poisoned"))?;
+        rt.block_on(registry.poll_all())
+    })
+    .await
+    .map_err(|e| UiError::Generic(e.to_string()))?
+    .map_err(|e| UiError::Generic(e.to_string()))?;
 
-    if let Ok(mut registry) = sensor_registry.write() {
-        let events = registry.poll_all().await?;
-        event_count = events.len();
+    let event_count = events.len();
 
-        if !events.is_empty()
-            && let Ok(mut awareness) = rendering_awareness.write()
-        {
-            for event in events {
-                awareness.sensory_feedback(&event);
-            }
+    if !events.is_empty()
+        && let Ok(mut awareness) = rendering_awareness.write()
+    {
+        for event in events {
+            awareness.sensory_feedback(&event);
         }
     }
 
@@ -138,5 +144,23 @@ mod tests {
 
         // Simulate sensory feedback (Phase 3 will do this automatically)
         // For now, we just verify the infrastructure is ready
+    }
+
+    #[tokio::test]
+    async fn test_poll_sensors_once_empty_events() {
+        let registry = Arc::new(RwLock::new(SensorRegistry::new()));
+        let awareness = Arc::new(RwLock::new(RenderingAwareness::new()));
+        let result = poll_sensors_once(&registry, &awareness).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_start_event_loop_abort_clean() {
+        let registry = Arc::new(RwLock::new(SensorRegistry::new()));
+        let awareness = Arc::new(RwLock::new(RenderingAwareness::new()));
+        let handle = start_event_loop(Arc::clone(&registry), Arc::clone(&awareness));
+        handle.abort();
+        let _ = handle.await;
     }
 }

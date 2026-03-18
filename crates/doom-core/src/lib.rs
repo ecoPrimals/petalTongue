@@ -27,6 +27,11 @@
 //!
 //! We start by loading a real Doom WAD file and displaying the map geometry.
 //! This validates our asset loading and rendering capabilities.
+//!
+//! ## License
+//!
+//! Code: AGPL-3.0-or-later (see SPDX header)
+//! Game mechanics: ORC (Open RPG Creative License)
 
 pub mod error;
 pub mod instance;

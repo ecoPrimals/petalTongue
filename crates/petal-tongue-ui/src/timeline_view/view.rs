@@ -88,10 +88,10 @@ impl TimelineView {
     fn filtered_events(&self) -> Vec<&TimelineEvent> {
         filtered_events(
             &self.events,
-            &self.event_type_filter,
-            &self.primal_filter,
-            &self.time_range_start,
-            &self.time_range_end,
+            self.event_type_filter.as_ref(),
+            self.primal_filter.as_ref(),
+            self.time_range_start.as_ref(),
+            self.time_range_end.as_ref(),
         )
     }
 

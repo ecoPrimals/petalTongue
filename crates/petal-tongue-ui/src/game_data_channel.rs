@@ -32,19 +32,19 @@ pub enum GameChannel {
     UiAnalysis,
 }
 
-impl GameChannel {
-    /// Parse a channel name string into a known variant.
-    #[must_use]
-    pub fn from_str(s: &str) -> Option<Self> {
+impl std::str::FromStr for GameChannel {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "EngagementCurve" | "engagement_curve" => Some(Self::EngagementCurve),
-            "DifficultyProfile" | "difficulty_profile" => Some(Self::DifficultyProfile),
-            "FlowTimeline" | "flow_timeline" => Some(Self::FlowTimeline),
-            "InteractionCostMap" | "interaction_cost_map" => Some(Self::InteractionCostMap),
-            "GenerationPreview" | "generation_preview" => Some(Self::GenerationPreview),
-            "AccessibilityReport" | "accessibility_report" => Some(Self::AccessibilityReport),
-            "UiAnalysis" | "ui_analysis" => Some(Self::UiAnalysis),
-            _ => None,
+            "EngagementCurve" | "engagement_curve" => Ok(Self::EngagementCurve),
+            "DifficultyProfile" | "difficulty_profile" => Ok(Self::DifficultyProfile),
+            "FlowTimeline" | "flow_timeline" => Ok(Self::FlowTimeline),
+            "InteractionCostMap" | "interaction_cost_map" => Ok(Self::InteractionCostMap),
+            "GenerationPreview" | "generation_preview" => Ok(Self::GenerationPreview),
+            "AccessibilityReport" | "accessibility_report" => Ok(Self::AccessibilityReport),
+            "UiAnalysis" | "ui_analysis" => Ok(Self::UiAnalysis),
+            _ => Err(()),
         }
     }
 }
@@ -57,7 +57,7 @@ impl GameChannel {
 #[must_use]
 pub fn map_game_channel(payload: &Value) -> Option<DataBinding> {
     let channel_name = payload.get("channel")?.as_str()?;
-    let channel = GameChannel::from_str(channel_name)?;
+    let channel: GameChannel = channel_name.parse().ok()?;
 
     match channel {
         GameChannel::EngagementCurve => map_engagement_curve(payload),
@@ -221,14 +221,14 @@ mod tests {
     #[test]
     fn parse_known_channels() {
         assert_eq!(
-            GameChannel::from_str("EngagementCurve"),
-            Some(GameChannel::EngagementCurve)
+            "EngagementCurve".parse::<GameChannel>(),
+            Ok(GameChannel::EngagementCurve)
         );
         assert_eq!(
-            GameChannel::from_str("flow_timeline"),
-            Some(GameChannel::FlowTimeline)
+            "flow_timeline".parse::<GameChannel>(),
+            Ok(GameChannel::FlowTimeline)
         );
-        assert_eq!(GameChannel::from_str("unknown"), None);
+        assert!("unknown".parse::<GameChannel>().is_err());
     }
 
     #[test]
@@ -386,13 +386,13 @@ mod tests {
 
     #[test]
     fn all_channel_variants_parse() {
-        assert!(GameChannel::from_str("EngagementCurve").is_some());
-        assert!(GameChannel::from_str("DifficultyProfile").is_some());
-        assert!(GameChannel::from_str("FlowTimeline").is_some());
-        assert!(GameChannel::from_str("InteractionCostMap").is_some());
-        assert!(GameChannel::from_str("GenerationPreview").is_some());
-        assert!(GameChannel::from_str("AccessibilityReport").is_some());
-        assert!(GameChannel::from_str("UiAnalysis").is_some());
+        assert!("EngagementCurve".parse::<GameChannel>().is_ok());
+        assert!("DifficultyProfile".parse::<GameChannel>().is_ok());
+        assert!("FlowTimeline".parse::<GameChannel>().is_ok());
+        assert!("InteractionCostMap".parse::<GameChannel>().is_ok());
+        assert!("GenerationPreview".parse::<GameChannel>().is_ok());
+        assert!("AccessibilityReport".parse::<GameChannel>().is_ok());
+        assert!("UiAnalysis".parse::<GameChannel>().is_ok());
     }
 
     #[test]

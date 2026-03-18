@@ -37,10 +37,10 @@ impl PropertyPanel {
         self.temp_params.clear();
         self.errors.clear();
 
-        if let Some(ref id) = node_id {
-            if let Some(node) = graph.get_node(id) {
-                self.temp_params = node.parameters.clone();
-            }
+        if let Some(ref id) = node_id
+            && let Some(node) = graph.get_node(id)
+        {
+            self.temp_params = node.parameters.clone();
         }
         self.editing_node = node_id;
     }
@@ -485,7 +485,7 @@ mod tests {
         let node_id = node.id.clone();
         graph.add_node(node);
 
-        panel.set_editing_node(Some(node_id), &graph);
+        panel.set_editing_node(Some(node_id.clone()), &graph);
 
         assert_eq!(
             panel.temp_params.get("primal_name"),
@@ -526,7 +526,7 @@ mod tests {
         let node_id = node.id.clone();
         graph.add_node(node);
 
-        panel.set_editing_node(Some(node_id.clone()), &graph);
+        panel.set_editing_node(Some(node_id), &graph);
         panel
             .temp_params
             .insert("primal_name".to_string(), "  ".to_string());
@@ -619,7 +619,7 @@ mod tests {
         let node_id = node.id.clone();
         graph.add_node(node);
 
-        panel.set_editing_node(Some(node_id.clone()), &graph);
+        panel.set_editing_node(Some(node_id), &graph);
         panel.apply_changes(&mut graph);
 
         let palette = ColorPalette::from_scheme(ColorScheme::Default);
@@ -678,7 +678,7 @@ mod tests {
         let node_id = node.id.clone();
         graph.add_node(node);
 
-        panel.set_editing_node(Some(node_id.clone()), &graph);
+        panel.set_editing_node(Some(node_id), &graph);
         panel
             .temp_params
             .insert("primal_name".to_string(), "p1".to_string());

@@ -340,7 +340,8 @@ pub use types::{
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graph_editor::edge::DependencyType;
+    use crate::graph_editor::edge::{DependencyType, GraphEdge};
+    use crate::graph_editor::graph::Graph;
     use crate::graph_editor::node::GraphNode;
 
     #[tokio::test]
@@ -499,5 +500,172 @@ mod tests {
         let service = GraphEditorService::new();
         let templates = service.list_templates().await;
         assert!(templates.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_editor_open_existing_graph() {
+        let service = GraphEditorService::new();
+        let node = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        service
+            .add_node(AddNodeRequest {
+                graph_id: "g1".to_string(),
+                node,
+            })
+            .await
+            .unwrap();
+
+        let resp = service
+            .editor_open(EditorOpenRequest {
+                graph_id: "g1".to_string(),
+            })
+            .await
+            .unwrap();
+        assert_eq!(resp.graph.nodes.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_remove_node_not_found() {
+        let service = GraphEditorService::new();
+        let resp = service
+            .remove_node(RemoveNodeRequest {
+                graph_id: "g1".to_string(),
+                node_id: "nonexistent".to_string(),
+            })
+            .await;
+        assert!(resp.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_add_node_duplicate_validation() {
+        let service = GraphEditorService::new();
+        let node = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        service
+            .add_node(AddNodeRequest {
+                graph_id: "g1".to_string(),
+                node: node.clone(),
+            })
+            .await
+            .unwrap();
+        let resp = service
+            .add_node(AddNodeRequest {
+                graph_id: "g1".to_string(),
+                node,
+            })
+            .await
+            .unwrap();
+        assert!(!resp.validation.valid);
+    }
+
+    #[tokio::test]
+    async fn test_modify_node_not_found() {
+        let service = GraphEditorService::new();
+        let resp = service
+            .modify_node(ModifyNodeRequest {
+                graph_id: "g1".to_string(),
+                node_id: "nonexistent".to_string(),
+                changes: serde_json::json!({}),
+            })
+            .await;
+        assert!(resp.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_add_edge_graph_not_found() {
+        let service = GraphEditorService::new();
+        let resp = service
+            .add_edge(AddEdgeRequest {
+                graph_id: "nonexistent".to_string(),
+                from: "a".to_string(),
+                to: "b".to_string(),
+                edge_type: DependencyType::Sequential,
+            })
+            .await;
+        assert!(resp.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_save_template_graph_not_found() {
+        let service = GraphEditorService::new();
+        let resp = service
+            .save_template(SaveTemplateRequest {
+                graph_id: "nonexistent".to_string(),
+                name: "T".to_string(),
+                description: "D".to_string(),
+                tags: vec![],
+            })
+            .await;
+        assert!(resp.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_apply_template_not_found() {
+        let service = GraphEditorService::new();
+        let resp = service
+            .apply_template(ApplyTemplateRequest {
+                template_id: "nonexistent".to_string(),
+                merge: false,
+            })
+            .await;
+        assert!(resp.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_get_preview_large_graph_warning() {
+        let service = GraphEditorService::new();
+        let mut graph = Graph::new("g".to_string(), "Large".to_string());
+        for i in 0..105 {
+            let node = GraphNode::new(format!("node-{}", i), "t".to_string());
+            graph.add_node(node).unwrap();
+        }
+        for i in 0..104 {
+            graph
+                .add_edge(GraphEdge::new(
+                    format!("e-{}", i),
+                    format!("node-{}", i),
+                    format!("node-{}", i + 1),
+                    DependencyType::Sequential,
+                ))
+                .unwrap();
+        }
+        let req = GetPreviewRequest { graph };
+        let resp = service.get_preview(req).await.unwrap();
+        assert!(!resp.validation_warnings.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_get_graph() {
+        let service = GraphEditorService::new();
+        assert!(service.get_graph("nonexistent").await.is_none());
+        service
+            .add_node(AddNodeRequest {
+                graph_id: "g1".to_string(),
+                node: GraphNode::new("n1".to_string(), "t".to_string()),
+            })
+            .await
+            .unwrap();
+        let g = service.get_graph("g1").await;
+        assert!(g.is_some());
+        assert_eq!(g.unwrap().nodes.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_modify_node_non_object_changes() {
+        let service = GraphEditorService::new();
+        service
+            .add_node(AddNodeRequest {
+                graph_id: "g1".to_string(),
+                node: GraphNode::new("n1".to_string(), "t".to_string()),
+            })
+            .await
+            .unwrap();
+        let resp = service
+            .modify_node(ModifyNodeRequest {
+                graph_id: "g1".to_string(),
+                node_id: "n1".to_string(),
+                changes: serde_json::json!("not an object"),
+            })
+            .await
+            .unwrap();
+        assert!(resp.success);
     }
 }

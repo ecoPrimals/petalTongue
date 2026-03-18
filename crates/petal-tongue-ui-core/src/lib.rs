@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #![forbid(unsafe_code)]
-#![allow(missing_docs, clippy::missing_errors_doc, clippy::cast_precision_loss)]
+#![warn(missing_docs)]
+#![expect(
+    clippy::missing_errors_doc,
+    reason = "error documentation tracked for incremental completion"
+)]
+#![expect(
+    clippy::cast_precision_loss,
+    reason = "UI rendering: f64→f32 precision is sufficient for pixel coords"
+)]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![expect(
     clippy::format_push_string,

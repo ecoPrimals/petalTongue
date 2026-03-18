@@ -211,15 +211,14 @@ impl SseEventConsumer {
                             if let Some(data) = line
                                 .strip_prefix("data: ")
                                 .or_else(|| line.strip_prefix("data:"))
+                                && let Some(event) = Self::parse_sse_data(data.trim())
                             {
-                                if let Some(event) = Self::parse_sse_data(data.trim()) {
-                                    let cb = callback.read().await;
-                                    if let Some(ref f) = *cb {
-                                        f(event.clone());
-                                    }
-                                    drop(cb);
-                                    events.write().await.push(event);
+                                let cb = callback.read().await;
+                                if let Some(ref f) = *cb {
+                                    f(event.clone());
                                 }
+                                drop(cb);
+                                events.write().await.push(event);
                             }
                         }
                     }

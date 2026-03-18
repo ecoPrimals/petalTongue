@@ -401,3 +401,77 @@ impl From<symphonia::core::errors::Error> for UiError {
         Self::Symphonia(e.to_string())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ui_error_display_generic() {
+        let e = UiError::Generic("test message".to_string());
+        let s = format!("{e}");
+        assert!(s.contains("test message"));
+    }
+
+    #[test]
+    fn ui_error_display_symphonia() {
+        let e = UiError::Symphonia("decode failed".to_string());
+        let s = format!("{e}");
+        assert!(s.contains("decode"));
+        assert!(s.contains("decode failed"));
+    }
+
+    #[test]
+    fn display_error_display() {
+        let e = DisplayError::PixmapTextureCreation;
+        let s = format!("{e}");
+        assert!(s.contains("pixmap"));
+    }
+
+    #[test]
+    fn display_error_invalid_buffer_size() {
+        let e = DisplayError::InvalidBufferSize {
+            expected: 100,
+            actual: 50,
+        };
+        let s = format!("{e}");
+        assert!(s.contains("100"));
+        assert!(s.contains("50"));
+    }
+
+    #[test]
+    fn audio_error_display() {
+        let e = AudioError::NoBackendsAvailable;
+        let s = format!("{e}");
+        assert!(s.contains("audio") || s.contains("backend"));
+    }
+
+    #[test]
+    fn graph_editor_error_display() {
+        let e = GraphEditorError::NodeNotFound("n1".to_string());
+        let s = format!("{e}");
+        assert!(s.contains("n1"));
+    }
+
+    #[test]
+    fn backend_error_display() {
+        let e = BackendError::EframeNotAvailable;
+        let s = format!("{e}");
+        assert!(s.contains("eframe"));
+    }
+
+    #[test]
+    fn ui_error_from_io() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
+        let e: UiError = io_err.into();
+        let s = format!("{e}");
+        assert!(!s.is_empty());
+    }
+
+    #[test]
+    fn ui_error_debug() {
+        let e = UiError::Generic("debug".to_string());
+        let s = format!("{:?}", e);
+        assert!(s.contains("Generic"));
+    }
+}

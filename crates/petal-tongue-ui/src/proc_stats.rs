@@ -259,18 +259,15 @@ fn collect_processes(
 
     for entry in entries.flatten() {
         let name = entry.file_name();
-        let name_str = match name.to_str() {
-            Some(s) => s,
-            None => continue,
+        let Some(name_str) = name.to_str() else {
+            continue;
         };
-        let pid: u32 = match name_str.parse() {
-            Ok(p) => p,
-            Err(_) => continue,
+        let Ok(pid) = name_str.parse::<u32>() else {
+            continue;
         };
 
-        let (comm, utime, stime, rss) = match read_proc_stat(pid) {
-            Some(x) => x,
-            None => continue,
+        let Some((comm, utime, stime, rss)) = read_proc_stat(pid) else {
+            continue;
         };
 
         let cpu_pct = if total_delta > 0 {
@@ -364,7 +361,7 @@ mod tests {
     fn proc_stats_total_memory_non_negative() {
         let s = ProcStats::new();
         let total = s.total_memory();
-        assert!(total == 0 || total > 0);
+        assert!(total >= 0);
     }
 
     #[test]

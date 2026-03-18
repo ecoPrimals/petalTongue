@@ -212,7 +212,7 @@ fn calculate_flow_width_max_volume_zero_no_panic() {
     };
     let w = calculate_flow_width(&m, 0, 2.0, 40.0);
     assert!(
-        w >= 2.0 && w <= 40.0,
+        (2.0..=40.0).contains(&w),
         "result should be in valid range: {w}"
     );
     assert!(

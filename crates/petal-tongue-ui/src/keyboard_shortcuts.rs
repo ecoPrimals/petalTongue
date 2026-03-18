@@ -117,13 +117,13 @@ impl KeyboardShortcuts {
         ];
 
         for key in keys_to_check {
-            if ctx.input(|i| i.key_pressed(key)) {
-                if let Some(action) = map_key_to_action(key, &modifiers, self.show_help) {
-                    if action == ShortcutAction::ToggleHelp {
-                        self.show_help = !self.show_help;
-                    }
-                    return action;
+            if ctx.input(|i| i.key_pressed(key))
+                && let Some(action) = map_key_to_action(key, &modifiers, self.show_help)
+            {
+                if action == ShortcutAction::ToggleHelp {
+                    self.show_help = !self.show_help;
                 }
+                return action;
             }
         }
 

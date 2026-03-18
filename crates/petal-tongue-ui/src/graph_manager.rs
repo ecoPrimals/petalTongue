@@ -6,8 +6,8 @@
 use crate::accessibility::ColorPalette;
 
 #[must_use]
-fn is_graph_selected(selected_id: &Option<String>, graph_id: &str) -> bool {
-    selected_id.as_deref() == Some(graph_id)
+fn is_graph_selected(selected_id: Option<&String>, graph_id: &str) -> bool {
+    selected_id.is_some_and(|s| s.as_str() == graph_id)
 }
 
 #[must_use]
@@ -125,7 +125,7 @@ impl GraphManagerPanel {
 
                     if ui.button("💾 Save to Neural API").clicked() {
                         self.show_save_dialog = true;
-                        self.save_name = graph.name.clone();
+                        self.save_name.clone_from(&graph.name);
                         self.save_description = graph.description.clone().unwrap_or_default();
                     }
 
@@ -184,8 +184,10 @@ impl GraphManagerPanel {
                     .show(ui, |ui| {
                         for graph_meta in &self.available_graphs {
                             ui.group(|ui| {
-                                let is_selected =
-                                    is_graph_selected(&self.selected_graph_id, &graph_meta.id);
+                                let is_selected = is_graph_selected(
+                                    self.selected_graph_id.as_ref(),
+                                    graph_meta.id.as_str(),
+                                );
 
                                 let _bg_color = if is_selected {
                                     palette.accent.linear_multiply(0.2)
@@ -545,11 +547,11 @@ mod tests {
         }
 
         let load = GraphManagerAction::Load("id".to_string());
-        let _ = load.clone();
+        let _ = load;
 
-        let _ = GraphManagerAction::Execute.clone();
+        let _ = GraphManagerAction::Execute;
         let del = GraphManagerAction::Delete("d".to_string());
-        let _ = del.clone();
+        let _ = del;
     }
 
     #[test]
@@ -559,7 +561,7 @@ mod tests {
 
         let s = format!("{:?}", GraphManagerAction::Load("x".to_string()));
         assert!(s.contains("Load"));
-        assert!(s.contains("x"));
+        assert!(s.contains('x'));
     }
 
     #[test]
@@ -573,9 +575,9 @@ mod tests {
 
     #[test]
     fn test_is_graph_selected() {
-        assert!(is_graph_selected(&Some("a".to_string()), "a"));
-        assert!(!is_graph_selected(&Some("a".to_string()), "b"));
-        assert!(!is_graph_selected(&None, "a"));
+        assert!(is_graph_selected(Some("a".to_string()).as_ref(), "a"));
+        assert!(!is_graph_selected(Some("a".to_string()).as_ref(), "b"));
+        assert!(!is_graph_selected(None, "a"));
     }
 
     #[test]
@@ -692,8 +694,8 @@ mod tests {
 
     #[test]
     fn test_is_graph_selected_empty_string() {
-        assert!(!is_graph_selected(&Some(String::new()), "a"));
-        assert!(is_graph_selected(&Some(String::new()), ""));
+        assert!(!is_graph_selected(Some(String::new()).as_ref(), "a"));
+        assert!(is_graph_selected(Some(String::new()).as_ref(), ""));
     }
 
     #[test]
@@ -733,5 +735,73 @@ mod tests {
         let (n, e) = format_graph_stats(meta.node_count, meta.edge_count);
         assert_eq!(n, "📊 100 nodes");
         assert_eq!(e, "🔗 99 edges");
+    }
+
+    #[test]
+    #[cfg(feature = "mock")]
+    fn test_render_with_provider_and_graphs() {
+        use petal_tongue_core::graph_builder::VisualGraph;
+        use petal_tongue_discovery::NeuralApiProvider;
+        use std::path::PathBuf;
+
+        let mut panel = GraphManagerPanel::new();
+        panel.add_graph(GraphMetadata {
+            id: "g1".to_string(),
+            name: "Graph One".to_string(),
+            description: Some("First graph".to_string()),
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+            modified_at: "2026-01-01T01:00:00Z".to_string(),
+            node_count: 3,
+            edge_count: 2,
+        });
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+        let runtime = tokio::runtime::Runtime::new().expect("create runtime");
+        let provider = Arc::new(NeuralApiProvider::with_socket_path(PathBuf::from(
+            "/nonexistent/socket",
+        )));
+        let current_graph = VisualGraph::new("Current");
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let _ = panel.render(
+                    ui,
+                    &palette,
+                    Some(&provider),
+                    Some(&current_graph),
+                    &runtime,
+                );
+            });
+        });
+    }
+
+    #[test]
+    #[cfg(feature = "mock")]
+    fn test_render_with_provider_no_graph() {
+        use petal_tongue_discovery::NeuralApiProvider;
+        use std::path::PathBuf;
+
+        let mut panel = GraphManagerPanel::new();
+        panel.add_graph(GraphMetadata {
+            id: "g1".to_string(),
+            name: "Graph One".to_string(),
+            description: None,
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+            modified_at: "2026-01-01T01:00:00Z".to_string(),
+            node_count: 1,
+            edge_count: 0,
+        });
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+        let runtime = tokio::runtime::Runtime::new().expect("create runtime");
+        let provider = Arc::new(NeuralApiProvider::with_socket_path(PathBuf::from(
+            "/nonexistent/socket",
+        )));
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                let _ = panel.render(ui, &palette, Some(&provider), None, &runtime);
+            });
+        });
     }
 }

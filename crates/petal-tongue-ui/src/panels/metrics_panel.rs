@@ -381,7 +381,7 @@ mod tests {
             },
         };
 
-        let last_update = Instant::now() - Duration::from_secs(5);
+        let last_update = Instant::now().checked_sub(Duration::from_secs(5)).unwrap();
         let display = prepare_metrics_panel_display(&Some(metrics), last_update, &None);
         assert!(display.metrics_summary.is_some());
         let s = display.metrics_summary.unwrap();

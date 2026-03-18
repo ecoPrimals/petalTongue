@@ -635,7 +635,7 @@ mod tests {
         let msg = msg.unwrap();
         assert!(msg.contains("CPU:"));
         assert!(msg.contains("MEM:"));
-        assert!(msg.contains("%"));
+        assert!(msg.contains('%'));
     }
 
     #[test]
@@ -684,7 +684,7 @@ mod tests {
     #[test]
     fn test_refresh_populates_cpu_history() {
         let mut tool = SystemMonitorTool {
-            last_refresh: Instant::now() - Duration::from_secs(2),
+            last_refresh: Instant::now().checked_sub(Duration::from_secs(2)).unwrap(),
             ..Default::default()
         };
         assert!(tool.cpu_history.is_empty());
@@ -695,7 +695,7 @@ mod tests {
     #[test]
     fn test_refresh_populates_mem_history() {
         let mut tool = SystemMonitorTool {
-            last_refresh: Instant::now() - Duration::from_secs(2),
+            last_refresh: Instant::now().checked_sub(Duration::from_secs(2)).unwrap(),
             ..Default::default()
         };
         assert!(tool.mem_history.is_empty());
@@ -717,12 +717,12 @@ mod tests {
     fn test_refresh_caps_history_length() {
         let mut tool = SystemMonitorTool {
             max_history: 3,
-            last_refresh: Instant::now() - Duration::from_secs(2),
+            last_refresh: Instant::now().checked_sub(Duration::from_secs(2)).unwrap(),
             ..Default::default()
         };
 
         for _ in 0..5 {
-            tool.last_refresh = Instant::now() - Duration::from_secs(2);
+            tool.last_refresh = Instant::now().checked_sub(Duration::from_secs(2)).unwrap();
             tool.refresh();
         }
 
@@ -733,7 +733,7 @@ mod tests {
     #[test]
     fn test_refresh_rebuilds_display_states() {
         let mut tool = SystemMonitorTool {
-            last_refresh: Instant::now() - Duration::from_secs(2),
+            last_refresh: Instant::now().checked_sub(Duration::from_secs(2)).unwrap(),
             ..Default::default()
         };
         tool.refresh();

@@ -174,7 +174,7 @@ mod tests {
             fn last_activity(&self) -> Option<std::time::Instant> {
                 None
             }
-            fn name(&self) -> &str {
+            fn name(&self) -> &'static str {
                 "mock-output"
             }
         }
@@ -227,7 +227,7 @@ mod tests {
             fn last_activity(&self) -> Option<std::time::Instant> {
                 None
             }
-            fn name(&self) -> &str {
+            fn name(&self) -> &'static str {
                 "mock-input-only"
             }
         }

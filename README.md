@@ -102,14 +102,14 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,833 passing, 0 failures |
+| Tests | 5,973 passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings (pedantic + nursery via workspace lints) |
+| Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero blanket `#[allow]`) |
 | Docs | `cargo doc --workspace --no-deps` clean |
 | Coverage | ~90% line (llvm-cov) |
 | Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
-| Files | All under 1,000 lines; largest 854 lines (`tests_extended.rs`) |
+| Files | All under 1,000 lines; largest 901 lines (`graph_editor/ui_components.rs`) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 16 crates + sandbox) |
 | External C deps | None -- pure Rust (`rustix` for syscalls) |
@@ -131,9 +131,9 @@ petaltongue
 ## Development
 
 ```bash
-# Prerequisites: Rust nightly (edition 2024)
+# Prerequisites: Rust stable 1.85+ (edition 2024)
 cargo build --workspace
-cargo test --workspace --all-features        # 5,833 tests
+cargo test --workspace --all-features        # 5,973 tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
@@ -201,4 +201,12 @@ See `ecoPrimals/wateringHole/PETALTONGUE_LEVERAGE_GUIDE.md` for:
 
 ## License
 
-AGPL-3.0-or-later -- See [LICENSE](./LICENSE).
+**scyBorg Provenance Trio**
+
+| Content | License |
+|---------|---------|
+| Source code | AGPL-3.0-or-later ([LICENSE](./LICENSE)) |
+| Game mechanics (doom-core) | ORC (Open RPG Creative License) |
+| Specifications & documentation | CC-BY-SA 4.0 |
+
+SPDX headers on all source files. See `ecoPrimals/wateringHole/SCYBORG_PROVENANCE_TRIO_GUIDANCE.md`.

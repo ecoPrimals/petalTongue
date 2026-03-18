@@ -316,8 +316,10 @@ mod tests {
 
     #[test]
     fn test_close() {
-        let mut panel = AccessibilityPanel::default();
-        panel.show = true;
+        let mut panel = AccessibilityPanel {
+            show: true,
+            ..Default::default()
+        };
         panel.close();
         assert!(!panel.show);
     }

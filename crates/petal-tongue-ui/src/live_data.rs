@@ -662,4 +662,56 @@ mod tests {
             });
         });
     }
+
+    #[test]
+    fn test_connection_status_render_recently_connected() {
+        let mut status = ConnectionStatus::new("localhost:3000".to_string());
+        status.mark_connected();
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                status.render(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_live_graph_header_render_with_frequency() {
+        let mut header = LiveGraphHeader::new("Test".to_string(), "src".to_string(), 2.5);
+        header.mark_updated();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                header.render(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_live_metric_render_large_with_unit() {
+        let mut metric = LiveMetric::new("Temp".to_string(), "sensor".to_string(), 1.0);
+        metric.update("98.6".to_string(), Some("°F".to_string()));
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                metric.render_large(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_badge_display_state_stale() {
+        use crate::live_data_helpers::badge_display_state;
+        let s = badge_display_state(100.0, true, true);
+        assert_eq!(s.label, "STALE");
+    }
+
+    #[test]
+    fn test_badge_display_state_live_just_now() {
+        use crate::live_data_helpers::badge_display_state;
+        let s = badge_display_state(0.5, false, true);
+        assert_eq!(s.label, "● LIVE");
+    }
 }

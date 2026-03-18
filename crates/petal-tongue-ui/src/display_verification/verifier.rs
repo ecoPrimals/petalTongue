@@ -118,11 +118,10 @@ pub fn detect_display_topology() -> (DisplayTopology, Vec<String>) {
         return (DisplayTopology::Nested, evidence);
     }
 
-    let topology = if ssh_connection {
-        DisplayTopology::Forwarded
-    } else if evidence
-        .iter()
-        .any(|e| e.contains("forwarding") || e.contains("localhost"))
+    let topology = if ssh_connection
+        || evidence
+            .iter()
+            .any(|e| e.contains("forwarding") || e.contains("localhost"))
     {
         DisplayTopology::Forwarded
     } else if evidence

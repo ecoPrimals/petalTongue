@@ -343,4 +343,67 @@ mod tests {
         manager.set_focus(None);
         assert_eq!(manager.focused_panel(), None);
     }
+
+    #[test]
+    fn test_mouse_interested_panels() {
+        let mut manager = FocusManager::new();
+
+        manager.register_panel(
+            "graph".to_string(),
+            PanelInputPreferences {
+                wants_mouse: true,
+                wants_keyboard: false,
+                ..Default::default()
+            },
+        );
+        manager.register_panel(
+            "sidebar".to_string(),
+            PanelInputPreferences {
+                wants_mouse: false,
+                ..Default::default()
+            },
+        );
+
+        let panels = manager.mouse_interested_panels();
+        assert_eq!(panels.len(), 1);
+        assert_eq!(panels[0], "graph");
+    }
+
+    #[test]
+    fn test_update_preferences_nonexistent_id() {
+        let mut manager = FocusManager::new();
+        manager.register_panel("a".to_string(), PanelInputPreferences::default());
+
+        manager.update_preferences(
+            "nonexistent",
+            PanelInputPreferences {
+                wants_keyboard: true,
+                ..Default::default()
+            },
+        );
+
+        assert_eq!(manager.keyboard_interested_panels().len(), 0);
+    }
+
+    #[test]
+    fn test_default_focus_manager() {
+        let manager = FocusManager::default();
+        assert_eq!(manager.focused_panel(), None);
+    }
+
+    #[test]
+    fn test_input_action_variants() {
+        assert_eq!(InputAction::Consumed, InputAction::Consumed);
+        assert_eq!(InputAction::Ignored, InputAction::Ignored);
+        assert_eq!(InputAction::Global, InputAction::Global);
+    }
+
+    #[test]
+    fn test_panel_preferences_default() {
+        let prefs = PanelInputPreferences::default();
+        assert!(!prefs.wants_keyboard);
+        assert!(!prefs.wants_mouse);
+        assert!(!prefs.wants_exclusive);
+        assert_eq!(prefs.priority, 5);
+    }
 }

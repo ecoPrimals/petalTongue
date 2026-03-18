@@ -14,7 +14,7 @@ Build first:
 cargo build --release   # or cargo build (debug is fine)
 ```
 
-Run the 5-minute automated tour:
+Run the automated tour (~15 minutes, or set `PAUSE_DURATION=0` for CI):
 
 ```bash
 ./QUICK_START.sh

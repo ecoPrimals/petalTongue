@@ -467,4 +467,20 @@ mod tests {
         assert!(!s.high_contrast);
         assert!(!s.reduced_motion);
     }
+
+    #[test]
+    fn test_font_size_increase() {
+        assert_eq!(FontSize::Small.increase(), FontSize::Medium);
+        assert_eq!(FontSize::Medium.increase(), FontSize::Large);
+        assert_eq!(FontSize::Large.increase(), FontSize::ExtraLarge);
+        assert_eq!(FontSize::ExtraLarge.increase(), FontSize::ExtraLarge);
+    }
+
+    #[test]
+    fn test_font_size_decrease() {
+        assert_eq!(FontSize::Small.decrease(), FontSize::Small);
+        assert_eq!(FontSize::Medium.decrease(), FontSize::Small);
+        assert_eq!(FontSize::Large.decrease(), FontSize::Medium);
+        assert_eq!(FontSize::ExtraLarge.decrease(), FontSize::Large);
+    }
 }

@@ -172,10 +172,10 @@ fn probe_audio_input() -> bool {
     #[cfg(target_os = "linux")]
     {
         // Check /proc/asound/pcm for capture devices (format: "00-00: ... : capture")
-        if let Ok(content) = std::fs::read_to_string("/proc/asound/pcm") {
-            if content.to_lowercase().contains("capture") {
-                return true;
-            }
+        if let Ok(content) = std::fs::read_to_string("/proc/asound/pcm")
+            && content.to_lowercase().contains("capture")
+        {
+            return true;
         }
         // Check /sys/class/sound/card*/ for pcm*D*c (capture) subdirs
         if let Ok(entries) = std::fs::read_dir("/sys/class/sound") {

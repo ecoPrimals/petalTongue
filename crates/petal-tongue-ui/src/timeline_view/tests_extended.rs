@@ -688,7 +688,7 @@ fn event_screen_rect_same_lane() {
     assert_eq!(w, 8.0);
     assert_eq!(h, 8.0);
     assert!((x - 96.0).abs() < 1.0);
-    assert!(y >= 0.0 && y < 30.0);
+    assert!((0.0..30.0).contains(&y));
 }
 
 #[test]

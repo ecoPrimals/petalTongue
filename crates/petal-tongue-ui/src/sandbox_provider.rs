@@ -122,9 +122,8 @@ fn find_sandbox_dir() -> Result<PathBuf, String> {
 /// List available sandbox scenarios
 #[must_use]
 pub fn list_sandbox_scenarios() -> Vec<String> {
-    let sandbox_dir = match find_sandbox_dir() {
-        Ok(dir) => dir,
-        Err(_) => return Vec::new(),
+    let Ok(sandbox_dir) = find_sandbox_dir() else {
+        return Vec::new();
     };
 
     let scenarios_dir = sandbox_dir.join("scenarios");

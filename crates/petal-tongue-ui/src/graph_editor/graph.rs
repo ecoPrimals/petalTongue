@@ -93,7 +93,7 @@ impl Graph {
     pub fn add_node(&mut self, node: GraphNode) -> Result<()> {
         // Validate node doesn't already exist
         if self.nodes.contains_key(&node.id) {
-            return Err(GraphEditorError::NodeAlreadyExists(node.id.clone()).into());
+            return Err(GraphEditorError::NodeAlreadyExists(node.id).into());
         }
 
         // Validate node
@@ -162,7 +162,7 @@ impl Graph {
         if updated_node.id != node_id {
             return Err(GraphEditorError::NodeIdChange {
                 from: node_id.to_string(),
-                to: updated_node.id.clone(),
+                to: updated_node.id,
             }
             .into());
         }
@@ -182,17 +182,17 @@ impl Graph {
     pub fn add_edge(&mut self, edge: GraphEdge) -> Result<()> {
         // Validate nodes exist
         if !self.nodes.contains_key(&edge.from) {
-            return Err(GraphEditorError::SourceNodeNotFound(edge.from.clone()).into());
+            return Err(GraphEditorError::SourceNodeNotFound(edge.from).into());
         }
         if !self.nodes.contains_key(&edge.to) {
-            return Err(GraphEditorError::TargetNodeNotFound(edge.to.clone()).into());
+            return Err(GraphEditorError::TargetNodeNotFound(edge.to).into());
         }
 
         // Validate edge doesn't create cycle
         if self.would_create_cycle(&edge)? {
             return Err(GraphEditorError::EdgeWouldCreateCycle {
-                from: edge.from.clone(),
-                to: edge.to.clone(),
+                from: edge.from,
+                to: edge.to,
             }
             .into());
         }
@@ -204,8 +204,8 @@ impl Graph {
             .any(|e| e.from == edge.from && e.to == edge.to)
         {
             return Err(GraphEditorError::EdgeAlreadyExists {
-                from: edge.from.clone(),
-                to: edge.to.clone(),
+                from: edge.from,
+                to: edge.to,
             }
             .into());
         }
@@ -412,14 +412,13 @@ impl Graph {
 
         self.nodes
             .keys()
-            .map(|node| self.calculate_depth(node.as_str(), &adj, &mut HashSet::new()))
+            .map(|node| Self::calculate_depth(node.as_str(), &adj, &mut HashSet::new()))
             .max()
             .unwrap_or(0)
     }
 
     /// Calculate depth for a node (DFS)
     fn calculate_depth<'a>(
-        &self,
         node: &'a str,
         adj: &HashMap<&'a str, Vec<&'a str>>,
         visited: &mut HashSet<&'a str>,
@@ -433,7 +432,7 @@ impl Graph {
         let depth = adj.get(node).map_or(1, |neighbors| {
             neighbors
                 .iter()
-                .map(|&neighbor| self.calculate_depth(neighbor, adj, visited))
+                .map(|&neighbor| Self::calculate_depth(neighbor, adj, visited))
                 .max()
                 .unwrap_or(0)
                 + 1
@@ -636,5 +635,193 @@ mod tests {
         assert_eq!(stats.node_count, 2);
         assert_eq!(stats.edge_count, 1);
         assert!(!stats.has_cycles);
+    }
+
+    #[test]
+    fn test_remove_node_with_edges() {
+        let mut graph = Graph::new("test-1".to_string(), "Test Graph".to_string());
+        let node1 = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        let node2 = GraphNode::new("node-2".to_string(), "test-type".to_string());
+        graph.add_node(node1).unwrap();
+        graph.add_node(node2).unwrap();
+        graph
+            .add_edge(GraphEdge::new(
+                "edge-1".to_string(),
+                "node-1".to_string(),
+                "node-2".to_string(),
+                DependencyType::Sequential,
+            ))
+            .unwrap();
+
+        let affected = graph.remove_node("node-1").unwrap();
+        assert_eq!(graph.nodes.len(), 1);
+        assert_eq!(affected.len(), 1);
+        assert_eq!(affected[0], "edge-1");
+    }
+
+    #[test]
+    fn test_remove_node_not_found() {
+        let mut graph = Graph::new("test-1".to_string(), "Test Graph".to_string());
+        assert!(graph.remove_node("nonexistent").is_err());
+    }
+
+    #[test]
+    fn test_modify_node_not_found() {
+        let mut graph = Graph::new("test-1".to_string(), "Test Graph".to_string());
+        let node = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        let updated = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        assert!(graph.modify_node("nonexistent", updated).is_err());
+        graph.add_node(node).unwrap();
+        let updated2 = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        assert!(graph.modify_node("nonexistent", updated2).is_err());
+    }
+
+    #[test]
+    fn test_modify_node_id_change() {
+        let mut graph = Graph::new("test-1".to_string(), "Test Graph".to_string());
+        let node = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        graph.add_node(node).unwrap();
+        let updated = GraphNode::new("node-2".to_string(), "test-type".to_string());
+        assert!(graph.modify_node("node-1", updated).is_err());
+    }
+
+    #[test]
+    fn test_add_edge_source_not_found() {
+        let mut graph = Graph::new("test-1".to_string(), "Test Graph".to_string());
+        let node = GraphNode::new("node-2".to_string(), "test-type".to_string());
+        graph.add_node(node).unwrap();
+        let edge = GraphEdge::new(
+            "edge-1".to_string(),
+            "node-1".to_string(),
+            "node-2".to_string(),
+            DependencyType::Sequential,
+        );
+        assert!(graph.add_edge(edge).is_err());
+    }
+
+    #[test]
+    fn test_add_edge_target_not_found() {
+        let mut graph = Graph::new("test-1".to_string(), "Test Graph".to_string());
+        let node = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        graph.add_node(node).unwrap();
+        let edge = GraphEdge::new(
+            "edge-1".to_string(),
+            "node-1".to_string(),
+            "node-2".to_string(),
+            DependencyType::Sequential,
+        );
+        assert!(graph.add_edge(edge).is_err());
+    }
+
+    #[test]
+    fn test_add_edge_duplicate() {
+        let mut graph = Graph::new("test-1".to_string(), "Test Graph".to_string());
+        let node1 = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        let node2 = GraphNode::new("node-2".to_string(), "test-type".to_string());
+        graph.add_node(node1).unwrap();
+        graph.add_node(node2).unwrap();
+        let edge = GraphEdge::new(
+            "edge-1".to_string(),
+            "node-1".to_string(),
+            "node-2".to_string(),
+            DependencyType::Sequential,
+        );
+        graph.add_edge(edge).unwrap();
+        let edge2 = GraphEdge::new(
+            "edge-2".to_string(),
+            "node-1".to_string(),
+            "node-2".to_string(),
+            DependencyType::Sequential,
+        );
+        assert!(graph.add_edge(edge2).is_err());
+    }
+
+    #[test]
+    fn test_remove_edge_not_found() {
+        let mut graph = Graph::new("test-1".to_string(), "Test Graph".to_string());
+        assert!(graph.remove_edge("nonexistent").is_err());
+    }
+
+    #[test]
+    fn test_get_incoming_outgoing_edges() {
+        let mut graph = Graph::new("test-1".to_string(), "Test Graph".to_string());
+        let node1 = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        let node2 = GraphNode::new("node-2".to_string(), "test-type".to_string());
+        let node3 = GraphNode::new("node-3".to_string(), "test-type".to_string());
+        graph.add_node(node1).unwrap();
+        graph.add_node(node2).unwrap();
+        graph.add_node(node3).unwrap();
+        graph
+            .add_edge(GraphEdge::new(
+                "e1".to_string(),
+                "node-1".to_string(),
+                "node-2".to_string(),
+                DependencyType::Sequential,
+            ))
+            .unwrap();
+        graph
+            .add_edge(GraphEdge::new(
+                "e2".to_string(),
+                "node-3".to_string(),
+                "node-2".to_string(),
+                DependencyType::Sequential,
+            ))
+            .unwrap();
+
+        let incoming = graph.get_incoming_edges("node-2");
+        assert_eq!(incoming.len(), 2);
+        let outgoing = graph.get_outgoing_edges("node-1");
+        assert_eq!(outgoing.len(), 1);
+    }
+
+    #[test]
+    fn test_topological_sort_cycle_error() {
+        let mut graph = Graph::new("test-1".to_string(), "Test Graph".to_string());
+        let node1 = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        let node2 = GraphNode::new("node-2".to_string(), "test-type".to_string());
+        graph.add_node(node1).unwrap();
+        graph.add_node(node2).unwrap();
+        graph
+            .add_edge(GraphEdge::new(
+                "e1".to_string(),
+                "node-1".to_string(),
+                "node-2".to_string(),
+                DependencyType::Sequential,
+            ))
+            .unwrap();
+        graph.edges.push(GraphEdge::new(
+            "e2".to_string(),
+            "node-2".to_string(),
+            "node-1".to_string(),
+            DependencyType::Sequential,
+        ));
+
+        assert!(graph.topological_sort().is_err());
+    }
+
+    #[test]
+    fn test_graph_stats_with_cycles() {
+        let mut graph = Graph::new("test-1".to_string(), "Test Graph".to_string());
+        let node1 = GraphNode::new("node-1".to_string(), "test-type".to_string());
+        let node2 = GraphNode::new("node-2".to_string(), "test-type".to_string());
+        graph.add_node(node1).unwrap();
+        graph.add_node(node2).unwrap();
+        graph
+            .add_edge(GraphEdge::new(
+                "e1".to_string(),
+                "node-1".to_string(),
+                "node-2".to_string(),
+                DependencyType::Sequential,
+            ))
+            .unwrap();
+        graph.edges.push(GraphEdge::new(
+            "e2".to_string(),
+            "node-2".to_string(),
+            "node-1".to_string(),
+            DependencyType::Sequential,
+        ));
+
+        let stats = graph.stats();
+        assert!(stats.has_cycles);
     }
 }

@@ -183,7 +183,6 @@ impl DisplayManager {
                 }
                 Err(e) => {
                     warn!("   Failed: {}", e);
-                    continue;
                 }
             }
         }
@@ -252,7 +251,6 @@ impl DisplayManager {
                 }
                 Err(e) => {
                     warn!("   Failed: {}", e);
-                    continue;
                 }
             }
         }

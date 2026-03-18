@@ -310,7 +310,7 @@ mod tests {
     #[test]
     fn custom_panel_validate_empty_type_fails() {
         let p = CustomPanelConfig {
-            panel_type: "".to_string(),
+            panel_type: String::new(),
             title: "T".to_string(),
             width: None,
             height: None,
@@ -324,7 +324,7 @@ mod tests {
     fn custom_panel_validate_empty_title_fails() {
         let p = CustomPanelConfig {
             panel_type: "doom".to_string(),
-            title: "".to_string(),
+            title: String::new(),
             width: None,
             height: None,
             fullscreen: false,

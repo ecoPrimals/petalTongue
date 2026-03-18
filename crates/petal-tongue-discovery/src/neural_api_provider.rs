@@ -31,7 +31,7 @@ pub struct NeuralApiProvider {
 
 impl NeuralApiProvider {
     /// Create provider with explicit socket path (for testing)
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-fixtures"))]
     #[must_use]
     pub const fn with_socket_path(socket_path: PathBuf) -> Self {
         Self {

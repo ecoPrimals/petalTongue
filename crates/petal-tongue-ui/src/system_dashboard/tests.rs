@@ -13,10 +13,11 @@ fn test_dashboard_creation() {
 
 #[test]
 fn test_refresh_updates_metrics() {
-    let mut dashboard = SystemDashboard::default();
-    // Force refresh interval to zero so no sleep is needed
-    dashboard.refresh_interval = Duration::ZERO;
-    dashboard.last_refresh = Instant::now() - Duration::from_secs(10);
+    let mut dashboard = SystemDashboard {
+        refresh_interval: Duration::ZERO,
+        last_refresh: Instant::now().checked_sub(Duration::from_secs(10)).unwrap(),
+        ..Default::default()
+    };
     let initial_count = dashboard.cpu_history.len();
 
     dashboard.refresh(None);
@@ -64,9 +65,11 @@ fn test_dashboard_default() {
 
 #[test]
 fn test_refresh_with_empty_cpus() {
-    let mut dashboard = SystemDashboard::default();
-    dashboard.refresh_interval = Duration::ZERO;
-    dashboard.last_refresh = Instant::now() - Duration::from_secs(10);
+    let mut dashboard = SystemDashboard {
+        refresh_interval: Duration::ZERO,
+        last_refresh: Instant::now().checked_sub(Duration::from_secs(10)).unwrap(),
+        ..Default::default()
+    };
     // Refresh with no audio - exercises the refresh path
     dashboard.refresh(None);
     // Should not panic; cpu_history may or may not have data

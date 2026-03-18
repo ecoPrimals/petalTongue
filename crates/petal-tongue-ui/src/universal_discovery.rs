@@ -303,8 +303,12 @@ impl UniversalDiscovery {
 
         let ports: Vec<u16> = constants::default_discovery_ports();
 
-        let base = std::env::var("PETALTONGUE_DISCOVERY_BASE")
-            .unwrap_or_else(|_| "http://localhost".to_string());
+        let base = std::env::var("PETALTONGUE_DISCOVERY_BASE").unwrap_or_else(|_| {
+            format!(
+                "http://{}",
+                petal_tongue_core::constants::DEFAULT_LOOPBACK_HOST
+            )
+        });
 
         let mut services = Vec::new();
 

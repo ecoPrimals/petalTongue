@@ -631,7 +631,7 @@ mod tests {
 
     #[test]
     fn test_conflict_resolution_variants() {
-        let variants = vec![
+        let variants = [
             ConflictResolutionChoice::KeepUser,
             ConflictResolutionChoice::KeepAI,
             ConflictResolutionChoice::MergeBoth,
@@ -885,8 +885,17 @@ mod tests {
 
     #[test]
     fn test_conflict_type_variants() {
-        let _uva = ConflictType::UserVsAI;
-        let _uvu = ConflictType::UserVsUser;
-        let _evm = ConflictType::ExecutionVsModification;
+        match ConflictType::UserVsAI {
+            ConflictType::UserVsAI => {}
+            _ => panic!("expected UserVsAI"),
+        }
+        match ConflictType::UserVsUser {
+            ConflictType::UserVsUser => {}
+            _ => panic!("expected UserVsUser"),
+        }
+        match ConflictType::ExecutionVsModification {
+            ConflictType::ExecutionVsModification => {}
+            _ => panic!("expected ExecutionVsModification"),
+        }
     }
 }
