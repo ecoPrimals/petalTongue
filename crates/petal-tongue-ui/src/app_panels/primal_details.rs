@@ -607,4 +607,140 @@ mod tests {
             panic!("expected capabilities array");
         }
     }
+
+    #[test]
+    fn render_primal_details_panel_headless() {
+        use crate::accessibility::{ColorPalette, ColorScheme};
+        use petal_tongue_adapters::AdapterRegistry;
+        use petal_tongue_graph::Visual2DRenderer;
+
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        {
+            let mut g = graph.write().unwrap();
+            g.add_node(test_primal_info());
+        }
+        let mut visual_renderer = Visual2DRenderer::new(graph.clone());
+        visual_renderer.set_selected_node(Some("test-1".to_string()));
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+        let adapter_registry = AdapterRegistry::default();
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::SidePanel::right("details").show(ctx, |ui| {
+                render_primal_details_panel(
+                    ui,
+                    "test-1",
+                    &palette,
+                    &graph,
+                    &adapter_registry,
+                    &mut visual_renderer,
+                );
+            });
+        });
+    }
+
+    #[test]
+    fn render_primal_details_panel_node_not_found() {
+        use crate::accessibility::{ColorPalette, ColorScheme};
+        use petal_tongue_adapters::AdapterRegistry;
+        use petal_tongue_graph::Visual2DRenderer;
+
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let mut visual_renderer = Visual2DRenderer::new(graph.clone());
+        let palette = ColorPalette::from_scheme(ColorScheme::Default);
+        let adapter_registry = AdapterRegistry::default();
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::SidePanel::right("details").show(ctx, |ui| {
+                render_primal_details_panel(
+                    ui,
+                    "nonexistent",
+                    &palette,
+                    &graph,
+                    &adapter_registry,
+                    &mut visual_renderer,
+                );
+            });
+        });
+    }
+
+    #[test]
+    fn extract_node_detail_data_channels_json() {
+        let mut props = Properties::new();
+        props.insert(
+            "data_channels_json".to_string(),
+            PropertyValue::String(
+                r#"[{"channel_type":"gauge","id":"ch1","label":"ch1","value":0,"min":0,"max":100,"unit":"","normal_range":[0,100],"warning_range":[10,90]}]"#
+                    .to_string(),
+            ),
+        );
+        props.insert("health".to_string(), PropertyValue::Number(90.0));
+        let info = PrimalInfo::new(
+            PrimalId::from("ch-test"),
+            "Ch Test",
+            "sensor",
+            petal_tongue_core::constants::default_headless_url(),
+            vec![],
+            PrimalHealthStatus::Healthy,
+            0,
+        );
+        let detail = extract_node_detail_for_bindings(&info, &props);
+        assert!(detail.is_some());
+    }
+
+    #[test]
+    fn extract_node_detail_data_bindings_fallback() {
+        let mut props = Properties::new();
+        props.insert(
+            "data_bindings".to_string(),
+            PropertyValue::Array(vec![PropertyValue::String("x".to_string())]),
+        );
+        let info = PrimalInfo::new(
+            PrimalId::from("fallback"),
+            "Fallback",
+            "compute",
+            petal_tongue_core::constants::default_headless_url(),
+            vec![],
+            PrimalHealthStatus::Healthy,
+            0,
+        );
+        let detail = extract_node_detail_for_bindings(&info, &props);
+        assert!(detail.is_none());
+    }
+
+    #[test]
+    fn primal_details_summary_capabilities_empty_display() {
+        let mut info = test_primal_info();
+        info.capabilities = vec![];
+        let summary = PrimalDetailsSummary::from_primal_info(&info, 2_000_000);
+        assert!(summary.capabilities.is_empty());
+    }
+
+    #[test]
+    fn primal_details_summary_with_node_detail() {
+        let mut props = Properties::new();
+        props.insert(
+            "data_bindings_json".to_string(),
+            PropertyValue::String(
+                r#"[{"channel_type":"gauge","id":"ch1","label":"ch1","value":50,"min":0,"max":100,"unit":"","normal_range":[0,100],"warning_range":[10,90]}]"#
+                    .to_string(),
+            ),
+        );
+        props.insert("health".to_string(), PropertyValue::Number(75.0));
+        let mut info = PrimalInfo::new(
+            PrimalId::from("detail-test"),
+            "Detail Test",
+            "sensor",
+            petal_tongue_core::constants::default_headless_url(),
+            vec!["sensor".to_string()],
+            PrimalHealthStatus::Healthy,
+            0,
+        );
+        info.properties = props;
+        let summary = PrimalDetailsSummary::from_primal_info(&info, 2_000_000);
+        assert!(summary.node_detail.is_some());
+        let d = summary.node_detail.unwrap();
+        assert_eq!(d.health, 75);
+    }
 }

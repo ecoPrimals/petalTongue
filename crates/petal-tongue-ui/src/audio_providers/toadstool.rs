@@ -106,84 +106,6 @@ impl Default for ToadstoolAudioProvider {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_toadstool_provider_default() {
-        let provider = ToadstoolAudioProvider::default();
-        assert_eq!(provider.name(), "Toadstool Synthesis");
-    }
-
-    #[test]
-    fn test_toadstool_play_when_unavailable() {
-        let provider = ToadstoolAudioProvider::new();
-        if !provider.is_available() {
-            let result = provider.play("music");
-            assert!(result.is_err());
-            assert!(result.unwrap_err().contains("not available"));
-        }
-    }
-
-    #[test]
-    fn test_toadstool_stop_when_unavailable_no_panic() {
-        let provider = ToadstoolAudioProvider::new();
-        provider.stop();
-    }
-
-    #[test]
-    fn test_toadstool_description() {
-        let provider = ToadstoolAudioProvider::new();
-        assert!(provider.description().contains("Toadstool"));
-    }
-
-    #[test]
-    fn test_toadstool_available_sounds_when_unavailable() {
-        let provider = ToadstoolAudioProvider::new();
-        if !provider.is_available() {
-            assert!(provider.available_sounds().is_empty());
-        }
-    }
-
-    #[test]
-    fn test_toadstool_name_constant() {
-        let provider = ToadstoolAudioProvider::default();
-        assert_eq!(provider.name(), "Toadstool Synthesis");
-    }
-
-    #[test]
-    fn test_toadstool_description_contains_primal() {
-        let provider = ToadstoolAudioProvider::new();
-        assert!(provider.description().contains("primal"));
-        assert!(provider.description().contains("Toadstool"));
-    }
-
-    #[test]
-    fn test_build_toadstool_play_url() {
-        assert_eq!(
-            build_toadstool_play_url("http://localhost:8080"),
-            "http://localhost:8080/api/v1/audio/play"
-        );
-    }
-
-    #[test]
-    fn test_build_toadstool_stop_url() {
-        assert_eq!(
-            build_toadstool_stop_url("http://localhost:8080"),
-            "http://localhost:8080/api/v1/audio/stop"
-        );
-    }
-
-    #[test]
-    fn test_build_toadstool_synthesize_url() {
-        assert_eq!(
-            build_toadstool_synthesize_url("http://localhost:8080"),
-            "http://localhost:8080/api/v1/audio/synthesize"
-        );
-    }
-}
-
 impl AudioProvider for ToadstoolAudioProvider {
     fn name(&self) -> &'static str {
         "Toadstool Synthesis"
@@ -295,5 +217,83 @@ impl AudioProvider for ToadstoolAudioProvider {
 
     fn description(&self) -> &'static str {
         "Advanced audio synthesis via Toadstool primal. Supports music, voice, and complex soundscapes."
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_toadstool_provider_default() {
+        let provider = ToadstoolAudioProvider::default();
+        assert_eq!(provider.name(), "Toadstool Synthesis");
+    }
+
+    #[test]
+    fn test_toadstool_play_when_unavailable() {
+        let provider = ToadstoolAudioProvider::new();
+        if !provider.is_available() {
+            let result = provider.play("music");
+            assert!(result.is_err());
+            assert!(result.unwrap_err().contains("not available"));
+        }
+    }
+
+    #[test]
+    fn test_toadstool_stop_when_unavailable_no_panic() {
+        let provider = ToadstoolAudioProvider::new();
+        provider.stop();
+    }
+
+    #[test]
+    fn test_toadstool_description() {
+        let provider = ToadstoolAudioProvider::new();
+        assert!(provider.description().contains("Toadstool"));
+    }
+
+    #[test]
+    fn test_toadstool_available_sounds_when_unavailable() {
+        let provider = ToadstoolAudioProvider::new();
+        if !provider.is_available() {
+            assert!(provider.available_sounds().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_toadstool_name_constant() {
+        let provider = ToadstoolAudioProvider::default();
+        assert_eq!(provider.name(), "Toadstool Synthesis");
+    }
+
+    #[test]
+    fn test_toadstool_description_contains_primal() {
+        let provider = ToadstoolAudioProvider::new();
+        assert!(provider.description().contains("primal"));
+        assert!(provider.description().contains("Toadstool"));
+    }
+
+    #[test]
+    fn test_build_toadstool_play_url() {
+        assert_eq!(
+            build_toadstool_play_url("http://localhost:8080"),
+            "http://localhost:8080/api/v1/audio/play"
+        );
+    }
+
+    #[test]
+    fn test_build_toadstool_stop_url() {
+        assert_eq!(
+            build_toadstool_stop_url("http://localhost:8080"),
+            "http://localhost:8080/api/v1/audio/stop"
+        );
+    }
+
+    #[test]
+    fn test_build_toadstool_synthesize_url() {
+        assert_eq!(
+            build_toadstool_synthesize_url("http://localhost:8080"),
+            "http://localhost:8080/api/v1/audio/synthesize"
+        );
     }
 }

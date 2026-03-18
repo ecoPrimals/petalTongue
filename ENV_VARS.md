@@ -583,8 +583,6 @@ RUST_LOG=error
 
 ---
 
-### Deployment Checklist
-
 ### `PETALTONGUE_TELEMETRY_DIR`
 
 **Type**: String (directory path)  
@@ -597,6 +595,8 @@ Directory containing JSONL telemetry files for the file-based provider
 all `.jsonl` files in this directory.
 
 ---
+
+## Deployment Checklist
 
 Before deploying to production:
 
@@ -621,7 +621,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: March 17, 2026  
+**Last Updated**: March 18, 2026  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 

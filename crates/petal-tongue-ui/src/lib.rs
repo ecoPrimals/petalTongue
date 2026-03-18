@@ -27,45 +27,38 @@
     clippy::too_many_arguments,
     reason = "egui render callbacks receive many params"
 )]
-#![allow(clippy::match_same_arms)]
-#![allow(clippy::ref_option)]
-#![allow(clippy::needless_pass_by_value)]
-#![allow(clippy::unnecessary_get_then_check)]
-#![allow(clippy::should_implement_trait)]
-#![allow(clippy::await_holding_lock)]
-#![allow(clippy::format_push_string)]
-#![allow(clippy::unchecked_time_subtraction)]
-#![allow(clippy::useless_vec)]
-#![allow(unused_comparisons)]
-#![allow(clippy::single_match)]
-#![allow(clippy::redundant_else)]
-#![allow(clippy::manual_range_contains)]
-#![allow(clippy::len_zero)]
-#![allow(clippy::field_reassign_with_default)]
-#![allow(clippy::useless_conversion)]
-#![allow(clippy::single_char_pattern)]
-#![allow(clippy::items_after_test_module)]
-#![allow(clippy::uninlined_format_args)]
-#![allow(clippy::needless_borrow)]
-#![allow(clippy::redundant_clone)]
-#![allow(clippy::bool_assert_comparison)]
-#![allow(clippy::manual_string_new)]
-#![allow(clippy::double_comparisons)]
-#![allow(clippy::unnecessary_literal_bound)]
-#![allow(clippy::semicolon_if_nothing_returned)]
-#![allow(clippy::collapsible_if)]
-#![allow(clippy::while_let_loop)]
-#![allow(clippy::manual_let_else)]
-#![allow(clippy::assigning_clones)]
-#![allow(clippy::unused_self)]
-#![allow(clippy::unnecessary_wraps)]
-#![allow(clippy::needless_continue)]
-#![allow(clippy::if_same_then_else)]
-#![allow(clippy::self_only_used_in_recursion)]
-#![allow(clippy::trivially_copy_pass_by_ref)]
-#![allow(clippy::unnecessary_debug_formatting)]
-#![allow(clippy::case_sensitive_file_extension_comparisons)]
-#![allow(missing_docs)]
+#![expect(
+    clippy::match_same_arms,
+    reason = "UI match arms kept explicit for readability per variant"
+)]
+#![expect(
+    clippy::needless_pass_by_value,
+    reason = "egui callbacks take owned types by convention"
+)]
+#![expect(
+    clippy::format_push_string,
+    reason = "format! into String is clearer for HTML/SVG builders"
+)]
+#![expect(
+    clippy::unused_self,
+    reason = "trait impls require &self even when unused"
+)]
+#![expect(
+    clippy::unnecessary_wraps,
+    reason = "Result return for API consistency across trait impls"
+)]
+#![expect(
+    clippy::uninlined_format_args,
+    reason = "explicit format args preferred for clarity in UI strings"
+)]
+#![expect(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "ref params for API consistency across trait impls"
+)]
+#![expect(
+    missing_docs,
+    reason = "UI module documentation tracked for incremental completion"
+)]
 
 // Re-export egui and eframe for use by parent crate
 pub use eframe;

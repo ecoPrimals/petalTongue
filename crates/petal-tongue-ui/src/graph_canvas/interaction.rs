@@ -638,7 +638,7 @@ mod tests {
         let canvas_min = [0.0, 0.0];
         let canvas_size = [800.0, 600.0];
         let result = nodes_in_rect(box_min, box_max, &nodes, &cam, 1.0, canvas_min, canvas_size);
-        assert!(result.len() >= 1);
+        assert!(!result.is_empty());
     }
 
     #[test]

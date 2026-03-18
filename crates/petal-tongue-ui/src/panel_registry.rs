@@ -275,7 +275,7 @@ mod tests {
     struct MockPanelFactory;
 
     impl PanelFactory for MockPanelFactory {
-        fn panel_type(&self) -> &str {
+        fn panel_type(&self) -> &'static str {
             "mock_panel"
         }
 
@@ -291,7 +291,7 @@ mod tests {
             ui.label("Mock Panel");
         }
 
-        fn title(&self) -> &str {
+        fn title(&self) -> &'static str {
             "Mock"
         }
     }
@@ -355,5 +355,92 @@ mod tests {
         let types = registry.available_types();
         assert_eq!(types.len(), 1);
         assert_eq!(types[0], "mock_panel");
+    }
+
+    #[test]
+    fn test_panel_registry_default() {
+        let registry = PanelRegistry::default();
+        assert!(registry.available_types().is_empty());
+        assert!(!registry.has_type("mock_panel"));
+    }
+
+    #[test]
+    fn test_register_overwrites_same_type() {
+        let mut registry = PanelRegistry::new();
+        registry.register(Arc::new(MockPanelFactory));
+        registry.register(Arc::new(MockPanelFactory));
+        let types = registry.available_types();
+        assert_eq!(
+            types.len(),
+            1,
+            "registering same type twice should overwrite"
+        );
+    }
+
+    #[test]
+    fn test_panel_action_variants() {
+        assert_eq!(PanelAction::Continue, PanelAction::Continue);
+        assert_eq!(PanelAction::Close, PanelAction::Close);
+        assert_eq!(PanelAction::Restart, PanelAction::Restart);
+        assert_ne!(PanelAction::Continue, PanelAction::Close);
+    }
+
+    #[test]
+    fn test_panel_error_creation_failed() {
+        let err = PanelError::CreationFailed("missing asset".to_string());
+        assert!(matches!(err, PanelError::CreationFailed(_)));
+        assert!(err.to_string().contains("creation failed"));
+        assert!(err.to_string().contains("missing asset"));
+    }
+
+    #[test]
+    fn test_panel_error_invalid_config() {
+        let err = PanelError::InvalidConfig("missing title".to_string());
+        assert!(matches!(err, PanelError::InvalidConfig(_)));
+        assert!(err.to_string().contains("Invalid configuration"));
+        assert!(err.to_string().contains("missing title"));
+    }
+
+    #[test]
+    fn test_panel_factory_description_default() {
+        assert_eq!(MockPanelFactory.description(), "Custom panel");
+    }
+
+    struct FailingPanelFactory;
+
+    impl PanelFactory for FailingPanelFactory {
+        fn panel_type(&self) -> &'static str {
+            "failing_panel"
+        }
+
+        fn create(&self, _config: &CustomPanelConfig) -> Result<Box<dyn PanelInstance>> {
+            Err(PanelError::CreationFailed("init failed".to_string()))
+        }
+
+        fn description(&self) -> &'static str {
+            "Failing panel for tests"
+        }
+    }
+
+    #[test]
+    fn test_panel_creation_failed() {
+        let mut registry = PanelRegistry::new();
+        registry.register(Arc::new(FailingPanelFactory));
+
+        let config = CustomPanelConfig {
+            panel_type: "failing_panel".to_string(),
+            title: "Fail".to_string(),
+            width: None,
+            height: None,
+            fullscreen: false,
+            config: serde_json::Value::Null,
+        };
+
+        let result = registry.create(&config);
+        match result {
+            Err(PanelError::CreationFailed(msg)) => assert!(msg.contains("init failed")),
+            Err(e) => panic!("expected CreationFailed, got {e:?}"),
+            Ok(_) => panic!("expected Err(CreationFailed), got Ok"),
+        }
     }
 }

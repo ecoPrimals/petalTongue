@@ -131,7 +131,7 @@ mod tests {
             },
         };
 
-        let last_update = Instant::now() - Duration::from_secs(2);
+        let last_update = Instant::now().checked_sub(Duration::from_secs(2)).unwrap();
         let display = prepare_metrics_panel_display(&Some(metrics), last_update, &None);
 
         assert!(display.metrics_summary.is_some());
@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn test_prepare_metrics_panel_display_stale() {
-        let last_update = Instant::now() - Duration::from_secs(45);
+        let last_update = Instant::now().checked_sub(Duration::from_secs(45)).unwrap();
         let display = prepare_metrics_panel_display(
             &None,
             last_update,
@@ -184,7 +184,7 @@ mod tests {
             },
         };
 
-        let last_update = Instant::now() - Duration::from_secs(35);
+        let last_update = Instant::now().checked_sub(Duration::from_secs(35)).unwrap();
         let display = prepare_metrics_panel_display(&Some(metrics), last_update, &None);
 
         assert!(display.metrics_summary.is_some());

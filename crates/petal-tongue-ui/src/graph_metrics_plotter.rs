@@ -419,4 +419,55 @@ mod tests {
                 .any(|c| matches!(c, ToolCapability::Visual))
         );
     }
+
+    #[test]
+    fn render_panel_headless_empty() {
+        let mut p = GraphMetricsPlotter::default();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                p.render_panel(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn render_panel_headless_with_data() {
+        let mut p = GraphMetricsPlotter::default();
+        p.add_snapshot(5, 3);
+        p.add_snapshot(10, 7);
+        p.toggle_visibility();
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                p.render_panel(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn render_panel_headless_single_sample() {
+        let mut p = GraphMetricsPlotter::default();
+        p.add_snapshot(1, 0);
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                p.render_panel(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn render_panel_headless_many_samples() {
+        let mut p = GraphMetricsPlotter::default();
+        for i in 0..20 {
+            p.add_snapshot(i, i * 2);
+        }
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                p.render_panel(ui);
+            });
+        });
+    }
 }

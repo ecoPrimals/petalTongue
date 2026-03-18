@@ -18,33 +18,33 @@ pub fn collect_sensor_events(ctx: &egui::Context) -> Vec<SensorEventIpc> {
 
     ctx.input(|input| {
         // Pointer movement (only when position changed and pointer is over the area)
-        if let Some(pos) = input.pointer.latest_pos() {
-            if input.pointer.is_moving() {
-                events.push(SensorEventIpc::PointerMove {
-                    x: pos.x,
-                    y: pos.y,
-                    timestamp_ms: now_ms,
-                });
-            }
+        if let Some(pos) = input.pointer.latest_pos()
+            && input.pointer.is_moving()
+        {
+            events.push(SensorEventIpc::PointerMove {
+                x: pos.x,
+                y: pos.y,
+                timestamp_ms: now_ms,
+            });
         }
 
         // Pointer clicks
-        if input.pointer.any_pressed() {
-            if let Some(pos) = input.pointer.interact_pos() {
-                let button = if input.pointer.button_pressed(egui::PointerButton::Primary) {
-                    "left"
-                } else if input.pointer.button_pressed(egui::PointerButton::Secondary) {
-                    "right"
-                } else {
-                    "middle"
-                };
-                events.push(SensorEventIpc::Click {
-                    x: pos.x,
-                    y: pos.y,
-                    button: button.to_string(),
-                    timestamp_ms: now_ms,
-                });
-            }
+        if input.pointer.any_pressed()
+            && let Some(pos) = input.pointer.interact_pos()
+        {
+            let button = if input.pointer.button_pressed(egui::PointerButton::Primary) {
+                "left"
+            } else if input.pointer.button_pressed(egui::PointerButton::Secondary) {
+                "right"
+            } else {
+                "middle"
+            };
+            events.push(SensorEventIpc::Click {
+                x: pos.x,
+                y: pos.y,
+                button: button.to_string(),
+                timestamp_ms: now_ms,
+            });
         }
 
         // Scroll

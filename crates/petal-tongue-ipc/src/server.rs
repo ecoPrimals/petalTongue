@@ -153,8 +153,10 @@ impl IpcServer {
     async fn start_tcp(instance: &Instance) -> Result<Self, IpcServerError> {
         let instance_id = instance.id.clone();
 
-        // Bind to any available port on localhost
-        let listener = TcpListener::bind("127.0.0.1:0")
+        // Bind to any available port (host from PETALTONGUE_TCP_BIND_HOST or 127.0.0.1)
+        let bind_host = std::env::var("PETALTONGUE_TCP_BIND_HOST")
+            .unwrap_or_else(|_| petal_tongue_core::constants::DEFAULT_LOOPBACK_HOST.to_string());
+        let listener = TcpListener::bind(format!("{bind_host}:0"))
             .await
             .map_err(|e| IpcServerError::SocketError(format!("Failed to bind TCP socket: {e}")))?;
 

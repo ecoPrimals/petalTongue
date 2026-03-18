@@ -308,7 +308,7 @@ pub async fn discover_visualization_providers()
             3. Auto-discovery: PETALTONGUE_ENABLE_MDNS=true (default)\n\
             \n\
             Fallback options (external only):\n\
-            4. HTTP fallback: BIOMEOS_URL=http://localhost:{}\n\
+            4. HTTP fallback: BIOMEOS_URL=http://<host>:{}\n\
             5. Development: Build with --features test-fixtures for test fixtures (mocks only in tests)\n\
             \n\
             💡 Display will start with tutorial mode as graceful fallback",

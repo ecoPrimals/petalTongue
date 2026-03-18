@@ -231,6 +231,6 @@ mod tests {
         let graph = graph
             .read()
             .expect("SAFETY: Lock poisoned - indicates panic in concurrent thread");
-        assert!(graph.nodes().len() > 0);
+        assert!(!graph.nodes().is_empty());
     }
 }

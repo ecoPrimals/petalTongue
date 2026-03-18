@@ -177,8 +177,10 @@ mod tests {
     use crate::scenario::sensory::SensoryConfig;
 
     fn minimal_scenario() -> Scenario {
-        let mut sensory = SensoryConfig::default();
-        sensory.complexity_hint = "auto".to_string();
+        let sensory = SensoryConfig {
+            complexity_hint: "auto".to_string(),
+            ..Default::default()
+        };
         Scenario {
             name: "Test".to_string(),
             description: "Desc".to_string(),
@@ -232,21 +234,21 @@ mod tests {
     #[test]
     fn scenario_validate_empty_name_fails() {
         let mut s = minimal_scenario();
-        s.name = "".to_string();
+        s.name = String::new();
         assert!(s.validate().is_err());
     }
 
     #[test]
     fn scenario_validate_empty_mode_fails() {
         let mut s = minimal_scenario();
-        s.mode = "".to_string();
+        s.mode = String::new();
         assert!(s.validate().is_err());
     }
 
     #[test]
     fn scenario_validate_empty_version_fails() {
         let mut s = minimal_scenario();
-        s.version = "".to_string();
+        s.version = String::new();
         assert!(s.validate().is_err());
     }
 

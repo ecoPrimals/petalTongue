@@ -12,10 +12,10 @@ use super::types::TimelineEvent;
 #[must_use]
 pub fn filtered_events<'a>(
     events: &'a [TimelineEvent],
-    event_type_filter: &Option<String>,
-    primal_filter: &Option<String>,
-    time_range_start: &Option<DateTime<Utc>>,
-    time_range_end: &Option<DateTime<Utc>>,
+    event_type_filter: Option<&String>,
+    primal_filter: Option<&String>,
+    time_range_start: Option<&DateTime<Utc>>,
+    time_range_end: Option<&DateTime<Utc>>,
 ) -> Vec<&'a TimelineEvent> {
     events
         .iter()
@@ -96,7 +96,7 @@ mod tests {
             mock_event("1", "a", "b", "discover", now),
             mock_event("2", "b", "c", "invoke", now),
         ];
-        let result = filtered_events(&events, &None, &None, &None, &None);
+        let result = filtered_events(&events, None, None, None, None);
         assert_eq!(result.len(), 2);
     }
 
@@ -107,7 +107,7 @@ mod tests {
             mock_event("1", "a", "b", "discover", now),
             mock_event("2", "b", "c", "invoke", now),
         ];
-        let result = filtered_events(&events, &Some("discover".to_string()), &None, &None, &None);
+        let result = filtered_events(&events, Some(&"discover".to_string()), None, None, None);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].event_type, "discover");
     }
@@ -119,7 +119,7 @@ mod tests {
             mock_event("1", "alice", "bob", "test", now),
             mock_event("2", "bob", "charlie", "test", now),
         ];
-        let result = filtered_events(&events, &None, &Some("alice".to_string()), &None, &None);
+        let result = filtered_events(&events, None, Some(&"alice".to_string()), None, None);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].from, "alice");
     }
@@ -134,7 +134,7 @@ mod tests {
         ];
         let start = base - chrono::Duration::seconds(10);
         let end = base + chrono::Duration::seconds(10);
-        let result = filtered_events(&events, &None, &None, &Some(start), &Some(end));
+        let result = filtered_events(&events, None, None, Some(&start), Some(&end));
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].id, "2");
     }

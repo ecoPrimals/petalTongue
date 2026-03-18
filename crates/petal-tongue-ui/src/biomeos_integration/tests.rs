@@ -39,23 +39,21 @@ async fn test_biomeos_provider_empty_cache() {
     let provider = BiomeOSProvider::new_for_test("unix:///tmp/nonexistent-petaltongue-test.sock");
 
     // With no live socket, these should either return empty or a graceful error
-    match provider.get_devices().await {
-        Ok(devices) => assert!(
+    if let Ok(devices) = provider.get_devices().await {
+        assert!(
             devices.is_empty(),
             "Empty cache should return empty devices"
-        ),
-        Err(_) => {} // Connection failure is expected without a live socket
+        );
     }
+    // Connection failure is expected without a live socket
 
-    match provider.get_primals_extended().await {
-        Ok(primals) => {
-            assert!(
-                primals.is_empty(),
-                "Empty cache should return empty primals"
-            );
-        }
-        Err(_) => {} // Connection failure is expected without a live socket
+    if let Ok(primals) = provider.get_primals_extended().await {
+        assert!(
+            primals.is_empty(),
+            "Empty cache should return empty primals"
+        );
     }
+    // Connection failure is expected without a live socket
 }
 
 #[test]

@@ -199,12 +199,16 @@ mod tests {
         assert_eq!(overlay.current_stage, AwakeningStage::Awakening);
 
         // Simulate time passing
-        overlay.start_time = Instant::now() - std::time::Duration::from_secs(4);
+        overlay.start_time = Instant::now()
+            .checked_sub(std::time::Duration::from_secs(4))
+            .unwrap();
         overlay.update(0.016).unwrap();
         assert_eq!(overlay.current_stage, AwakeningStage::SelfKnowledge);
 
         // Stage 3
-        overlay.start_time = Instant::now() - std::time::Duration::from_secs(7);
+        overlay.start_time = Instant::now()
+            .checked_sub(std::time::Duration::from_secs(7))
+            .unwrap();
         overlay.update(0.016).unwrap();
         assert_eq!(overlay.current_stage, AwakeningStage::Discovery);
     }
@@ -215,7 +219,9 @@ mod tests {
         overlay.start();
 
         // Simulate completion
-        overlay.start_time = Instant::now() - std::time::Duration::from_secs(13);
+        overlay.start_time = Instant::now()
+            .checked_sub(std::time::Duration::from_secs(13))
+            .unwrap();
         overlay.update(0.016).unwrap();
 
         assert!(!overlay.is_active());

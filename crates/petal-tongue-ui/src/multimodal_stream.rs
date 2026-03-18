@@ -546,7 +546,7 @@ mod tests {
             fn range(&self) -> (f64, f64) {
                 (0.0, 1.0)
             }
-            fn label(&self) -> &str {
+            fn label(&self) -> &'static str {
                 "Unknown"
             }
         }

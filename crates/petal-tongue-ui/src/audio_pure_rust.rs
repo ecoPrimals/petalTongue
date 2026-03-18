@@ -259,7 +259,7 @@ mod tests {
     fn test_generate_tone() {
         let samples = generate_tone(440.0, 0.1, Waveform::Sine, 1.0);
         assert_eq!(samples.len(), 4410); // 0.1s at 44.1kHz
-        assert!(samples.iter().all(|&s| s >= -1.0 && s <= 1.0));
+        assert!(samples.iter().all(|&s| (-1.0..=1.0).contains(&s)));
     }
 
     #[test]

@@ -411,11 +411,11 @@ mod tests {
         let id2 = canvas.graph().nodes[1].id.clone();
 
         // Select first node
-        canvas.select_node(id1.clone());
+        canvas.select_node(id1);
         assert_eq!(canvas.selected_nodes.len(), 1);
 
         // Add second node to selection
-        canvas.select_node(id2.clone());
+        canvas.select_node(id2);
         assert_eq!(canvas.selected_nodes.len(), 2);
 
         // Clear selection

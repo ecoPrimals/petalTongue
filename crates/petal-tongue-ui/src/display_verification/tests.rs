@@ -326,7 +326,7 @@ fn test_format_active_interaction_status_direct_local() {
 #[test]
 fn test_format_recent_interaction_status_secs_formatting() {
     let s = format_recent_interaction_status(&DisplayTopology::Unknown, 7.3);
-    assert!(s.contains("7"));
+    assert!(s.contains('7'));
     assert!(s.contains("recent interaction"));
 }
 

@@ -417,4 +417,70 @@ mod tests {
         w.stop_capture();
         assert_eq!(w.state, CaptureWindowState::Stopped);
     }
+
+    #[test]
+    fn finalize_and_stream_no_entropy_data() {
+        let mut w = HumanEntropyWindow::new();
+        w.modality = EntropyModality::Audio;
+        w.finalize_and_stream();
+        assert_eq!(w.state, CaptureWindowState::Idle);
+        assert!(w.status_message.contains("No entropy data"));
+    }
+
+    #[test]
+    fn finalize_and_stream_narrative_no_capturer() {
+        let mut w = HumanEntropyWindow::new();
+        w.modality = EntropyModality::Narrative;
+        w.state = CaptureWindowState::Stopped;
+        w.finalize_and_stream();
+        assert_eq!(w.state, CaptureWindowState::Idle);
+    }
+
+    #[test]
+    fn start_capture_visual_unimplemented() {
+        let mut w = HumanEntropyWindow::new();
+        w.modality = EntropyModality::Visual;
+        w.start_capture();
+        assert_eq!(w.status_message, "Modality not yet implemented");
+    }
+
+    #[test]
+    fn start_capture_gesture_unimplemented() {
+        let mut w = HumanEntropyWindow::new();
+        w.modality = EntropyModality::Gesture;
+        w.start_capture();
+        assert_eq!(w.status_message, "Modality not yet implemented");
+    }
+
+    #[test]
+    fn start_capture_video_unimplemented() {
+        let mut w = HumanEntropyWindow::new();
+        w.modality = EntropyModality::Video;
+        w.start_capture();
+        assert_eq!(w.status_message, "Modality not yet implemented");
+    }
+
+    #[test]
+    fn stop_capture_audio_modality() {
+        let mut w = HumanEntropyWindow::new();
+        w.modality = EntropyModality::Audio;
+        w.state = CaptureWindowState::Recording;
+        w.stop_capture();
+        assert_eq!(w.state, CaptureWindowState::Stopped);
+    }
+
+    #[test]
+    fn entropy_modality_visual_name() {
+        assert!(EntropyModality::Visual.name().contains("Visual"));
+    }
+
+    #[test]
+    fn entropy_modality_gesture_name() {
+        assert!(EntropyModality::Gesture.name().contains("Gesture"));
+    }
+
+    #[test]
+    fn entropy_modality_video_name() {
+        assert!(EntropyModality::Video.name().contains("Video"));
+    }
 }

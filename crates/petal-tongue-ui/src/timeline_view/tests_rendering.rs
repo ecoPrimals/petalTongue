@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Timeline View - Rendering and extended behavior tests
 
-#![cfg(test)]
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use super::{EventStatus, TimelineEvent, TimelineIntent, TimelineView};
@@ -170,7 +169,7 @@ fn write_events_csv_mock_data() {
     let base = chrono::DateTime::parse_from_rfc3339("2025-01-15T12:00:00Z")
         .expect("valid")
         .with_timezone(&chrono::Utc);
-    let events = vec![
+    let events = [
         TimelineEvent {
             id: "ev1".to_string(),
             from: "alice".to_string(),
@@ -372,7 +371,7 @@ fn timeline_view_zoom_accessor() {
 fn write_events_csv_creates_parent_dir() {
     let view = TimelineView::new();
     let base = chrono::Utc::now();
-    let events = vec![TimelineEvent {
+    let events = [TimelineEvent {
         id: "e1".to_string(),
         from: "a".to_string(),
         to: "b".to_string(),

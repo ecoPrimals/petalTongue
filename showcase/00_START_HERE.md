@@ -23,7 +23,7 @@ cd showcase/01-local-primal/00-hello-petaltongue/
 
 This runs `petaltongue status`, verifies output, and checks JSON serialization.
 
-## Automated tour (8 minutes)
+## Automated tour (~15 minutes, or set PAUSE_DURATION=0 for CI)
 
 ```bash
 cd showcase/

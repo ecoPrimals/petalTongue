@@ -406,4 +406,10 @@ mod tests {
         assert!(err.to_string().contains("Task panicked"));
         assert!(err.to_string().contains("worker died"));
     }
+
+    #[test]
+    fn test_app_error_other_display() {
+        let err = AppError::Other("config load failed".to_string());
+        assert_eq!(err.to_string(), "config load failed");
+    }
 }

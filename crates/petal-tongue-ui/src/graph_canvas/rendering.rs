@@ -489,7 +489,7 @@ mod tests {
 
         let (gs, ox, _) = grid_params(20.0, 10.0, 0.0, 2.0);
         assert!((gs - 40.0).abs() < f32::EPSILON);
-        assert!(ox >= 0.0 && ox < 40.0);
+        assert!((0.0..40.0).contains(&ox));
     }
 
     #[test]

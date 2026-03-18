@@ -137,7 +137,7 @@ mod tests {
     #[test]
     fn test_sensor_types() {
         // Verify all sensor types are unique
-        let types = vec![
+        let types = [
             SensorType::Audio,
             SensorType::Keyboard,
             SensorType::Mouse,

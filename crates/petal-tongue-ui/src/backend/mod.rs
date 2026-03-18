@@ -157,15 +157,15 @@ pub enum BackendChoice {
     Toadstool,
 }
 
-impl BackendChoice {
-    /// Parse from string (e.g., from env var or CLI)
-    #[must_use]
-    pub fn from_str(s: &str) -> Option<Self> {
+impl std::str::FromStr for BackendChoice {
+    type Err = ();
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "auto" => Some(Self::Auto),
-            "eframe" | "egui" => Some(Self::Eframe),
-            "compute.provider" | "pure-rust" => Some(Self::Toadstool),
-            _ => None,
+            "auto" => Ok(Self::Auto),
+            "eframe" | "egui" => Ok(Self::Eframe),
+            "compute.provider" | "pure-rust" => Ok(Self::Toadstool),
+            _ => Err(()),
         }
     }
 }
@@ -265,7 +265,7 @@ fn create_toadstool_backend() -> Result<Box<dyn UIBackend>> {
 pub fn backend_from_env() -> Option<BackendChoice> {
     std::env::var("PETALTONGUE_UI_BACKEND")
         .ok()
-        .and_then(|s| BackendChoice::from_str(&s))
+        .and_then(|s| s.parse().ok())
 }
 
 #[cfg(test)]
@@ -274,21 +274,18 @@ mod tests {
 
     #[test]
     fn test_backend_choice_parsing() {
-        assert_eq!(BackendChoice::from_str("auto"), Some(BackendChoice::Auto));
+        assert_eq!("auto".parse::<BackendChoice>(), Ok(BackendChoice::Auto));
+        assert_eq!("eframe".parse::<BackendChoice>(), Ok(BackendChoice::Eframe));
+        assert_eq!("egui".parse::<BackendChoice>(), Ok(BackendChoice::Eframe));
         assert_eq!(
-            BackendChoice::from_str("eframe"),
-            Some(BackendChoice::Eframe)
-        );
-        assert_eq!(BackendChoice::from_str("egui"), Some(BackendChoice::Eframe));
-        assert_eq!(
-            BackendChoice::from_str("compute.provider"),
-            Some(BackendChoice::Toadstool)
+            "compute.provider".parse::<BackendChoice>(),
+            Ok(BackendChoice::Toadstool)
         );
         assert_eq!(
-            BackendChoice::from_str("pure-rust"),
-            Some(BackendChoice::Toadstool)
+            "pure-rust".parse::<BackendChoice>(),
+            Ok(BackendChoice::Toadstool)
         );
-        assert_eq!(BackendChoice::from_str("invalid"), None);
+        assert!("invalid".parse::<BackendChoice>().is_err());
     }
 
     #[test]

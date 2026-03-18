@@ -128,6 +128,12 @@ impl AppState {
     }
 }
 
+impl Default for AppState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -277,11 +283,5 @@ mod tests {
         // Refresh interval should be reasonable (1-60 seconds)
         assert!(state.refresh_interval >= 1.0);
         assert!(state.refresh_interval <= 60.0);
-    }
-}
-
-impl Default for AppState {
-    fn default() -> Self {
-        Self::new()
     }
 }

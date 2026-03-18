@@ -465,7 +465,7 @@ mod tests {
         sys.record_input(&InputModality::Keyboard);
 
         let summary = sys.get_status_summary();
-        assert!(summary.contains("1"));
+        assert!(summary.contains('1'));
         assert!(summary.contains("active"));
     }
 

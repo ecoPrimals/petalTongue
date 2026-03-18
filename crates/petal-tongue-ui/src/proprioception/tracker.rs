@@ -153,9 +153,8 @@ impl ProprioceptionSystem {
             return 0.0;
         }
 
-        let (first, last) = match (self.frame_times.first(), self.frame_times.last()) {
-            (Some(f), Some(l)) => (f, l),
-            _ => return 0.0,
+        let (Some(first), Some(last)) = (self.frame_times.first(), self.frame_times.last()) else {
+            return 0.0;
         };
         let duration = last.duration_since(*first);
 

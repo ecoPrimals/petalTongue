@@ -64,36 +64,36 @@ impl EguiInteractionBridge {
         let mut events = Vec::new();
         let now = Instant::now();
 
-        if response.clicked() {
-            if let Some(pos) = response.interact_pointer_pos() {
-                events.push(SensorEvent::Click {
-                    x: pos.x,
-                    y: pos.y,
-                    button: MouseButton::Left,
-                    timestamp: now,
-                });
-            }
+        if response.clicked()
+            && let Some(pos) = response.interact_pointer_pos()
+        {
+            events.push(SensorEvent::Click {
+                x: pos.x,
+                y: pos.y,
+                button: MouseButton::Left,
+                timestamp: now,
+            });
         }
 
-        if response.secondary_clicked() {
-            if let Some(pos) = response.interact_pointer_pos() {
-                events.push(SensorEvent::Click {
-                    x: pos.x,
-                    y: pos.y,
-                    button: MouseButton::Right,
-                    timestamp: now,
-                });
-            }
+        if response.secondary_clicked()
+            && let Some(pos) = response.interact_pointer_pos()
+        {
+            events.push(SensorEvent::Click {
+                x: pos.x,
+                y: pos.y,
+                button: MouseButton::Right,
+                timestamp: now,
+            });
         }
 
-        if response.hovered() {
-            if let Some(pos) = response.hover_pos() {
-                events.push(SensorEvent::Position {
-                    x: pos.x,
-                    y: pos.y,
-                    timestamp: now,
-                });
-            }
+        if response.hovered()
+            && let Some(pos) = response.hover_pos()
+        {
+            events.push(SensorEvent::Position {
+                x: pos.x,
+                y: pos.y,
+                timestamp: now,
+            });
         }
 
         let scroll = response.ctx.input(|i| i.smooth_scroll_delta);

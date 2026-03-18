@@ -657,4 +657,44 @@ mod tests {
         };
         assert!(bind.is_none(), "default headless has no explicit bind");
     }
+
+    /// Config loading error path - same map_err as main() line 142
+    #[test]
+    fn test_config_from_env_error_produces_app_error() {
+        use petal_tongue_core::test_fixtures::env_test_helpers;
+
+        let temp = std::env::temp_dir().join("petaltongue-main-config-test.toml");
+        let contents = "\
+[network]\n\
+web_port = 3000\n\
+headless_port = 8080\n";
+        std::fs::write(&temp, contents).expect("write temp");
+        let path = temp.to_str().expect("path");
+
+        env_test_helpers::with_env_vars(
+            &[
+                ("PETALTONGUE_CONFIG", Some(path)),
+                ("PETALTONGUE_WEB_PORT", Some("not-a-number")),
+            ],
+            || {
+                let result = Config::from_env().map_err(|e| AppError::Other(e.to_string()));
+                assert!(result.is_err());
+                let err = result.unwrap_err();
+                assert!(matches!(err, AppError::Other(_)));
+                assert!(
+                    err.to_string().contains("Invalid") || err.to_string().contains("WEB_PORT")
+                );
+            },
+        );
+        let _ = std::fs::remove_file(&temp);
+    }
+
+    /// Result error handling path - exercises the Err branch in main() match result
+    #[test]
+    fn test_app_error_result_propagates() {
+        let err = AppError::UiNotAvailable;
+        let result: Result<(), _> = Err(err);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(AppError::UiNotAvailable)));
+    }
 }

@@ -103,15 +103,9 @@ pub fn decode_audio_symphonia(audio_data: Bytes) -> Result<DecodedAudio, String>
 
     let mut samples = Vec::new();
 
-    loop {
-        let packet = match format.next_packet() {
-            Ok(p) => p,
-            Err(_) => break,
-        };
-
-        let decoded_buf = match decoder.decode(&packet) {
-            Ok(d) => d,
-            Err(_) => continue,
+    while let Ok(packet) = format.next_packet() {
+        let Ok(decoded_buf) = decoder.decode(&packet) else {
+            continue;
         };
 
         // Convert to f32 samples

@@ -220,7 +220,7 @@ fn color_to_rgba(c: Color) -> [u8; 4] {
 mod tests {
     use super::*;
     use petal_tongue_scene::grammar::{GeometryType, GrammarExpr};
-    use petal_tongue_scene::primitive::StrokeStyle;
+    use petal_tongue_scene::primitive::{FillRule, StrokeStyle};
     use petal_tongue_scene::scene_graph::{SceneGraph, SceneNode};
 
     #[test]
@@ -293,5 +293,182 @@ mod tests {
         assert_eq!(rgba[1], 0);
         assert_eq!(rgba[2], 127); // 0.5 * 255 ≈ 127
         assert_eq!(rgba[3], 204); // 0.8 * 255 ≈ 204
+    }
+
+    #[test]
+    fn egui_compiler_compiles_rect() {
+        let mut scene = SceneGraph::new();
+        scene.add_to_root(SceneNode::new("r").with_primitive(Primitive::Rect {
+            x: 10.0,
+            y: 20.0,
+            width: 100.0,
+            height: 50.0,
+            fill: Some(Color::rgb(0.0, 0.0, 1.0)),
+            stroke: Some(StrokeStyle::default()),
+            corner_radius: 4.0,
+            data_id: None,
+        }));
+        let shapes = EguiCompiler::compile_primitives(&scene);
+        assert_eq!(shapes.len(), 1);
+        assert!(matches!(shapes[0], EguiShapeDesc::Rect { .. }));
+    }
+
+    #[test]
+    fn egui_compiler_compiles_polygon() {
+        let mut scene = SceneGraph::new();
+        scene.add_to_root(SceneNode::new("p").with_primitive(Primitive::Polygon {
+            points: vec![[0.0, 0.0], [10.0, 0.0], [5.0, 10.0]],
+            fill: Color::rgb(0.0, 1.0, 0.0),
+            stroke: Some(StrokeStyle::default()),
+            fill_rule: FillRule::NonZero,
+            data_id: None,
+        }));
+        let shapes = EguiCompiler::compile_primitives(&scene);
+        assert_eq!(shapes.len(), 1);
+        assert!(matches!(shapes[0], EguiShapeDesc::Polygon { .. }));
+    }
+
+    #[test]
+    fn egui_compiler_skips_arc_bezier_mesh() {
+        let mut scene = SceneGraph::new();
+        scene.add_to_root(SceneNode::new("a").with_primitive(Primitive::Arc {
+            cx: 0.0,
+            cy: 0.0,
+            radius: 10.0,
+            start_angle: 0.0,
+            end_angle: std::f64::consts::PI,
+            fill: Some(Color::BLACK),
+            stroke: None,
+            data_id: None,
+        }));
+        scene.add_to_root(SceneNode::new("b").with_primitive(Primitive::BezierPath {
+            start: [0.0, 0.0],
+            segments: vec![],
+            stroke: StrokeStyle::default(),
+            fill: None,
+            fill_rule: FillRule::NonZero,
+            data_id: None,
+        }));
+        scene.add_to_root(SceneNode::new("m").with_primitive(Primitive::Mesh {
+            vertices: vec![],
+            indices: vec![],
+            data_id: None,
+        }));
+        let shapes = EguiCompiler::compile_primitives(&scene);
+        assert_eq!(shapes.len(), 0, "Arc, BezierPath, Mesh should be skipped");
+    }
+
+    #[test]
+    fn egui_compiler_compile_empty_scene() {
+        let scene = SceneGraph::new();
+        let output = EguiCompiler::new().compile(&scene);
+        assert!(matches!(output, ModalityOutput::Description(_)));
+    }
+
+    #[test]
+    fn egui_compiler_point_with_stroke() {
+        let mut scene = SceneGraph::new();
+        let mut stroke = StrokeStyle::default();
+        stroke.width = 2.0;
+        stroke.color = Color::rgb(1.0, 0.0, 0.0);
+        scene.add_to_root(SceneNode::new("pt").with_primitive(Primitive::Point {
+            x: 5.0,
+            y: 5.0,
+            radius: 3.0,
+            fill: Some(Color::WHITE),
+            stroke: Some(stroke),
+            data_id: None,
+        }));
+        let shapes = EguiCompiler::compile_primitives(&scene);
+        assert_eq!(shapes.len(), 1);
+        if let EguiShapeDesc::Circle { stroke_width, .. } = &shapes[0] {
+            assert!((*stroke_width - 2.0).abs() < 0.001);
+        }
+    }
+
+    #[test]
+    fn egui_compiler_point_without_fill() {
+        let mut scene = SceneGraph::new();
+        scene.add_to_root(SceneNode::new("pt").with_primitive(Primitive::Point {
+            x: 0.0,
+            y: 0.0,
+            radius: 1.0,
+            fill: None,
+            stroke: None,
+            data_id: None,
+        }));
+        let shapes = EguiCompiler::compile_primitives(&scene);
+        assert_eq!(shapes.len(), 1);
+        assert!(matches!(shapes[0], EguiShapeDesc::Circle { .. }));
+    }
+
+    #[test]
+    fn egui_compiler_rect_without_fill() {
+        let mut scene = SceneGraph::new();
+        scene.add_to_root(SceneNode::new("r").with_primitive(Primitive::Rect {
+            x: 0.0,
+            y: 0.0,
+            width: 10.0,
+            height: 10.0,
+            fill: None,
+            stroke: None,
+            corner_radius: 0.0,
+            data_id: None,
+        }));
+        let shapes = EguiCompiler::compile_primitives(&scene);
+        assert_eq!(shapes.len(), 1);
+        assert!(matches!(shapes[0], EguiShapeDesc::Rect { .. }));
+    }
+
+    #[test]
+    fn egui_compiler_line_closed() {
+        let mut scene = SceneGraph::new();
+        scene.add_to_root(SceneNode::new("ln").with_primitive(Primitive::Line {
+            points: vec![[0.0, 0.0], [10.0, 0.0], [10.0, 10.0], [0.0, 10.0]],
+            stroke: StrokeStyle::default(),
+            closed: true,
+            data_id: None,
+        }));
+        let shapes = EguiCompiler::compile_primitives(&scene);
+        assert_eq!(shapes.len(), 1);
+        if let EguiShapeDesc::Line { closed, .. } = &shapes[0] {
+            assert!(*closed);
+        }
+    }
+
+    #[test]
+    fn egui_compiler_polygon_without_stroke() {
+        let mut scene = SceneGraph::new();
+        scene.add_to_root(SceneNode::new("p").with_primitive(Primitive::Polygon {
+            points: vec![[0.0, 0.0], [10.0, 0.0], [5.0, 10.0]],
+            fill: Color::rgb(1.0, 0.0, 0.0),
+            stroke: None,
+            fill_rule: FillRule::NonZero,
+            data_id: None,
+        }));
+        let shapes = EguiCompiler::compile_primitives(&scene);
+        assert_eq!(shapes.len(), 1);
+        assert!(matches!(shapes[0], EguiShapeDesc::Polygon { .. }));
+    }
+
+    #[test]
+    fn egui_compiler_text_bold() {
+        let mut scene = SceneGraph::new();
+        scene.add_to_root(SceneNode::new("txt").with_primitive(Primitive::Text {
+            x: 0.0,
+            y: 0.0,
+            content: "Bold".to_string(),
+            font_size: 16.0,
+            color: Color::WHITE,
+            anchor: petal_tongue_scene::primitive::AnchorPoint::TopLeft,
+            bold: true,
+            italic: false,
+            data_id: None,
+        }));
+        let shapes = EguiCompiler::compile_primitives(&scene);
+        assert_eq!(shapes.len(), 1);
+        if let EguiShapeDesc::Text { bold, .. } = &shapes[0] {
+            assert!(*bold);
+        }
     }
 }

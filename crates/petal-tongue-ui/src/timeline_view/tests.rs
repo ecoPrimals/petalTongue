@@ -402,7 +402,7 @@ fn test_format_events_csv_multiple_events() {
     let now = chrono::DateTime::parse_from_rfc3339("2025-01-15T12:00:00Z")
         .expect("valid")
         .with_timezone(&Utc);
-    let events = vec![
+    let events = [
         TimelineEvent {
             id: "ev1".to_string(),
             from: "a".to_string(),
@@ -500,7 +500,7 @@ fn test_zoom_in_caps_at_10() {
 #[test]
 fn test_zoom_out_floors_at_0_1() {
     let z = zoom_out(0.12);
-    assert!(z >= 0.09 && z <= 0.11);
+    assert!((0.09..=0.11).contains(&z));
 }
 
 #[test]

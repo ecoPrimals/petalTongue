@@ -284,7 +284,7 @@ impl MetricsDashboard {
 
                 // Draw filled area under the line
                 if points.len() >= 2 {
-                    let mut area_points = points.clone();
+                    let mut area_points = points;
                     area_points.push(egui::pos2(rect.right(), rect.bottom()));
                     area_points.push(egui::pos2(rect.left(), rect.bottom()));
 
@@ -431,14 +431,14 @@ mod tests {
                 uptime_seconds: 3661, // 1h 1m 1s
             },
             neural_api: NeuralApiMetrics {
-                family_id: "".to_string(),
+                family_id: String::new(),
                 active_primals: 0,
                 graphs_available: 0,
                 active_executions: 0,
             },
         };
         let formatted = metrics.uptime_formatted();
-        assert!(formatted.contains('h') || formatted.contains("1") || formatted.len() > 0);
+        assert!(formatted.contains('h') || formatted.contains('1') || !formatted.is_empty());
     }
 
     #[test]
@@ -480,7 +480,7 @@ mod tests {
                 uptime_seconds: 60,
             },
             neural_api: NeuralApiMetrics {
-                family_id: "".to_string(),
+                family_id: String::new(),
                 active_primals: 0,
                 graphs_available: 0,
                 active_executions: 0,

@@ -66,7 +66,7 @@ async fn test_template_selection() {
         metadata: serde_json::json!({}),
     };
 
-    designer.select_template(template.clone());
+    designer.select_template(template);
 
     assert!(designer.selected_template.is_some());
     assert_eq!(designer.selected_template.unwrap().id, "template-1");

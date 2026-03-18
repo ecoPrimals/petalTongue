@@ -511,4 +511,50 @@ mod tests {
         let _ = manager.primal_panel();
         let _ = manager.niche_designer();
     }
+
+    #[tokio::test]
+    async fn test_ui_render_headless() {
+        let mut manager = BiomeOSUIManager::new().await;
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                manager.ui(ui);
+            });
+        });
+    }
+
+    #[tokio::test]
+    async fn test_ui_render_all_tabs_via_rpc() {
+        let manager = Arc::new(RwLock::new(BiomeOSUIManager::new().await));
+        let rpc = BiomeOSUIRPC::new(manager.clone());
+        rpc.show_primal_panel().await.unwrap();
+        let mut mgr = manager.write().await;
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                mgr.ui(ui);
+            });
+        });
+        drop(mgr);
+        rpc.show_niche_designer().await.unwrap();
+        let mut mgr = manager.write().await;
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                mgr.ui(ui);
+            });
+        });
+    }
+
+    #[tokio::test]
+    async fn test_uitab_debug() {
+        assert!(format!("{:?}", UITab::Devices).contains("Devices"));
+        assert!(format!("{:?}", UITab::Primals).contains("Primals"));
+        assert!(format!("{:?}", UITab::NicheDesigner).contains("NicheDesigner"));
+    }
+
+    #[tokio::test]
+    async fn test_uitab_equality() {
+        assert_eq!(UITab::Devices, UITab::Devices);
+        assert_ne!(UITab::Devices, UITab::Primals);
+    }
 }

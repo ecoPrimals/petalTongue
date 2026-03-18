@@ -87,8 +87,8 @@ pub(super) fn create_app(
     let runtime = tokio::runtime::Runtime::new()?;
 
     let data_providers = discover_data_providers(
-        &scenario,
-        &scenario_path_for_provider,
+        scenario.as_ref(),
+        scenario_path_for_provider.as_ref(),
         &tutorial_mode,
         &runtime,
     );
@@ -102,13 +102,13 @@ pub(super) fn create_app(
 
     let status_reporter = create_status_reporter(&capabilities);
     let (visual_renderer, audio_renderer, audio_generator, animation_engine) =
-        create_renderers(Arc::clone(&graph), &scenario);
+        create_renderers(Arc::clone(&graph), scenario.as_ref());
 
     let adapter_registry = create_adapter_registry();
     let tools = create_tool_manager();
     let audio_system = AudioSystemV2::new()?;
 
-    let (_panel_registry, custom_panels) = create_panel_registry_and_panels(&scenario);
+    let (_panel_registry, custom_panels) = create_panel_registry_and_panels(scenario.as_ref());
 
     if let Some(backend) = audio_system.active_backend() {
         tracing::info!("🎵 Active audio backend: {}", backend);
@@ -191,14 +191,14 @@ pub(super) fn create_app(
         squirrel_adapter: crate::squirrel_adapter::SquirrelAdapter::new_deferred(),
     };
 
-    finalize_app_startup(&mut app, &scenario, &tutorial_mode, needs_fallback);
+    finalize_app_startup(&mut app, scenario.as_ref(), &tutorial_mode, needs_fallback);
 
     Ok(app)
 }
 
 fn discover_data_providers(
-    scenario: &Option<crate::scenario::Scenario>,
-    scenario_path_for_provider: &Option<std::path::PathBuf>,
+    scenario: Option<&crate::scenario::Scenario>,
+    scenario_path_for_provider: Option<&std::path::PathBuf>,
     tutorial_mode: &crate::tutorial_mode::TutorialMode,
     runtime: &tokio::runtime::Runtime,
 ) -> Vec<Box<dyn VisualizationDataProvider>> {
@@ -357,7 +357,7 @@ fn create_status_reporter(capabilities: &CapabilityDetector) -> Arc<StatusReport
 
 fn create_renderers(
     graph: Arc<RwLock<GraphEngine>>,
-    scenario: &Option<crate::scenario::Scenario>,
+    scenario: Option<&crate::scenario::Scenario>,
 ) -> (
     Visual2DRenderer,
     AudioSonificationRenderer,
@@ -410,7 +410,7 @@ fn create_tool_manager() -> ToolManager {
 }
 
 fn create_panel_registry_and_panels(
-    scenario: &Option<crate::scenario::Scenario>,
+    scenario: Option<&crate::scenario::Scenario>,
 ) -> (PanelRegistry, Vec<Box<dyn PanelInstance>>) {
     let mut panel_registry = PanelRegistry::new();
     #[cfg(feature = "doom")]
@@ -478,7 +478,7 @@ fn initialize_central_nervous_system(
 
 fn finalize_app_startup(
     app: &mut PetalTongueApp,
-    scenario: &Option<crate::scenario::Scenario>,
+    scenario: Option<&crate::scenario::Scenario>,
     tutorial_mode: &crate::tutorial_mode::TutorialMode,
     needs_fallback: bool,
 ) {
@@ -488,7 +488,7 @@ fn finalize_app_startup(
     let env_awakening = std::env::var("AWAKENING_ENABLED")
         .ok()
         .and_then(|v| v.parse::<bool>().ok());
-    let scenario_awakening = scenario.as_ref().map(|s| s.ui_config.awakening_enabled);
+    let scenario_awakening = scenario.map(|s| s.ui_config.awakening_enabled);
     let awakening_enabled = env_awakening.unwrap_or_else(|| scenario_awakening.unwrap_or(true));
 
     if awakening_enabled {
@@ -598,7 +598,7 @@ mod tests {
     #[test]
     fn test_create_renderers_empty_scenario() {
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        let (visual, audio, _gen, anim) = create_renderers(graph, &None);
+        let (visual, audio, _gen, anim) = create_renderers(graph, None);
         let _ = visual;
         let _ = audio;
         let _guard = anim.read().unwrap();
@@ -627,7 +627,7 @@ mod tests {
 
     #[test]
     fn test_create_panel_registry_empty_scenario() {
-        let (registry, custom_panels) = create_panel_registry_and_panels(&None);
+        let (registry, custom_panels) = create_panel_registry_and_panels(None);
         assert!(!registry.available_types().is_empty());
         assert!(custom_panels.is_empty());
     }
@@ -653,7 +653,7 @@ mod tests {
             sensory_config: SensoryConfig::default(),
             edges: vec![],
         };
-        let (registry, custom_panels) = create_panel_registry_and_panels(&Some(scenario));
+        let (registry, custom_panels) = create_panel_registry_and_panels(Some(&scenario));
         assert!(!registry.available_types().is_empty());
         assert!(custom_panels.is_empty());
     }
@@ -686,7 +686,7 @@ mod tests {
             sensory_config: SensoryConfig::default(),
             edges: vec![],
         };
-        let (_registry, custom_panels) = create_panel_registry_and_panels(&Some(scenario));
+        let (_registry, custom_panels) = create_panel_registry_and_panels(Some(&scenario));
         assert_eq!(custom_panels.len(), 1);
         assert_eq!(custom_panels[0].title(), "System Metrics");
     }
@@ -713,7 +713,7 @@ mod tests {
             edges: vec![],
         };
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        let (visual, _audio, _gen, _anim) = create_renderers(graph, &Some(scenario));
+        let (visual, _audio, _gen, _anim) = create_renderers(graph, Some(&scenario));
         assert!(visual.is_interactive());
     }
 
@@ -742,7 +742,7 @@ mod tests {
             edges: vec![],
         };
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        let (visual, _audio, _gen, _anim) = create_renderers(graph, &Some(scenario));
+        let (visual, _audio, _gen, _anim) = create_renderers(graph, Some(&scenario));
         assert!(visual.show_stats());
     }
 
@@ -774,7 +774,7 @@ mod tests {
             sensory_config: SensoryConfig::default(),
             edges: vec![],
         };
-        let (_registry, custom_panels) = create_panel_registry_and_panels(&Some(scenario));
+        let (_registry, custom_panels) = create_panel_registry_and_panels(Some(&scenario));
         assert_eq!(custom_panels.len(), 1);
     }
 
@@ -807,7 +807,7 @@ mod tests {
 
     #[test]
     fn test_create_panel_registry_doom_when_feature() {
-        let (registry, _) = create_panel_registry_and_panels(&None);
+        let (registry, _) = create_panel_registry_and_panels(None);
         let types = registry.available_types();
         assert!(!types.is_empty());
     }

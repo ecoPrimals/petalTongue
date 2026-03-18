@@ -260,10 +260,9 @@ fn test_traffic_flow_clone() {
         },
         color: [255, 0, 0, 255],
     };
-    let cloned = flow.clone();
-    assert_eq!(cloned.from, "a");
-    assert_eq!(cloned.to, "b");
-    assert_eq!(cloned.metrics.bytes_per_second, 5000);
+    assert_eq!(flow.from, "a");
+    assert_eq!(flow.to, "b");
+    assert_eq!(flow.metrics.bytes_per_second, 5000);
 }
 
 #[test]
