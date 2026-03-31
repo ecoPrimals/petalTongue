@@ -234,7 +234,7 @@ impl TutorialMode {
             id: "petaltongue-tutorial".into(),
             name: petal_tongue_core::constants::PRIMAL_NAME.to_string(),
             primal_type: "Visualization".to_string(),
-            endpoint: format!("unix://{socket_dir}/petaltongue/petaltongue-nat0-default.sock"),
+            endpoint: format!("unix://{socket_dir}/biomeos/petaltongue.sock"),
             capabilities: vec![
                 "ui.render".to_string(),
                 "ui.visualization".to_string(),

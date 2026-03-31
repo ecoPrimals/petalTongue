@@ -37,7 +37,7 @@ pub enum DiscoveryError {
         name: String,
         endpoint: String,
         #[source]
-        source: Box<dyn std::error::Error + Send + Sync>,
+        source: HealthCheckSource,
     },
 
     /// Provider returned HTTP error status
@@ -172,6 +172,20 @@ pub enum DiscoveryError {
     },
 }
 
+/// Concrete source types for health-check failures (replaces `Box<dyn Error>`).
+#[derive(Error, Debug)]
+pub enum HealthCheckSource {
+    /// I/O error (e.g. Unix socket connect failure)
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    /// HTTP request error
+    #[error(transparent)]
+    Http(#[from] reqwest::Error),
+    /// Upstream error from another subsystem (UI, integration, etc.)
+    #[error("{0}")]
+    Other(Box<dyn std::error::Error + Send + Sync>),
+}
+
 /// Result type for discovery operations
 pub type DiscoveryResult<T> = Result<T, DiscoveryError>;
 
@@ -217,10 +231,11 @@ mod tests {
         let err = DiscoveryError::HealthCheckFailed {
             name: "biomeOS".to_string(),
             endpoint: "http://localhost:3000".to_string(),
-            source: Box::new(std::io::Error::new(
+            source: std::io::Error::new(
                 std::io::ErrorKind::ConnectionRefused,
                 "Connection refused",
-            )),
+            )
+            .into(),
         };
         let msg = err.to_string();
         assert!(msg.contains("biomeOS"));
@@ -368,7 +383,7 @@ mod tests {
         let err = DiscoveryError::HealthCheckFailed {
             name: "test".to_string(),
             endpoint: "http://localhost".to_string(),
-            source: Box::new(inner),
+            source: inner.into(),
         };
         let display = err.to_string();
         assert!(display.contains("test"));

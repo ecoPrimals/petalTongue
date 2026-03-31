@@ -202,7 +202,7 @@ impl VisualizationDataProvider for HttpVisualizationProvider {
             Err(e) => Err(DiscoveryError::HealthCheckFailed {
                 name: "HTTP Provider".to_string(),
                 endpoint: self.endpoint.clone(),
-                source: Box::new(e),
+                source: e.into(),
             }),
         }
     }

@@ -40,6 +40,8 @@ pub mod self_capabilities {
     pub const MOTOR_SET_PANEL: &str = "motor.set_panel";
     pub const MOTOR_SET_ZOOM: &str = "motor.set_zoom";
     pub const MOTOR_SET_MODE: &str = "motor.set_mode";
+    pub const MOTOR_FIT_TO_VIEW: &str = "motor.fit_to_view";
+    pub const MOTOR_NAVIGATE: &str = "motor.navigate";
 
     pub const MODALITY_VISUAL: &str = "modality.visual";
     pub const MODALITY_AUDIO: &str = "modality.audio";
@@ -48,8 +50,12 @@ pub mod self_capabilities {
     pub const MODALITY_BRAILLE: &str = "modality.braille";
     pub const MODALITY_DESCRIPTION: &str = "modality.description";
 
+    pub const IDENTITY_GET: &str = "identity.get";
+    pub const LIFECYCLE_STATUS: &str = "lifecycle.status";
     pub const HEALTH_CHECK: &str = "health.check";
-    pub const CAPABILITY_LIST: &str = "capability.list";
+    pub const HEALTH_LIVENESS: &str = "health.liveness";
+    pub const HEALTH_READINESS: &str = "health.readiness";
+    pub const CAPABILITIES_LIST: &str = "capabilities.list";
 
     /// All capabilities as a slice for bulk registration.
     pub const ALL: &[&str] = &[
@@ -75,14 +81,20 @@ pub mod self_capabilities {
         MOTOR_SET_PANEL,
         MOTOR_SET_ZOOM,
         MOTOR_SET_MODE,
+        MOTOR_FIT_TO_VIEW,
+        MOTOR_NAVIGATE,
         MODALITY_VISUAL,
         MODALITY_AUDIO,
         MODALITY_TERMINAL,
         MODALITY_HAPTIC,
         MODALITY_BRAILLE,
         MODALITY_DESCRIPTION,
+        IDENTITY_GET,
+        LIFECYCLE_STATUS,
         HEALTH_CHECK,
-        CAPABILITY_LIST,
+        HEALTH_LIVENESS,
+        HEALTH_READINESS,
+        CAPABILITIES_LIST,
     ];
 }
 
@@ -167,7 +179,7 @@ mod tests {
 
     #[test]
     fn self_capabilities_all_count() {
-        assert_eq!(self_capabilities::ALL.len(), 30);
+        assert_eq!(self_capabilities::ALL.len(), 36);
     }
 
     #[test]
