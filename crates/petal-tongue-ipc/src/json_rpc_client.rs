@@ -21,7 +21,7 @@
 //! use petal_tongue_ipc::JsonRpcClient;
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let client = JsonRpcClient::new("/tmp/petaltongue-nat0-default.sock")?;
+//! let client = JsonRpcClient::new("/tmp/biomeos/petaltongue.sock")?;
 //! let health = client.call("health.check", serde_json::json!({})).await?;
 //! println!("Health: {:?}", health);
 //! # Ok(())
@@ -108,7 +108,7 @@ impl JsonRpcClient {
     /// Create a new JSON-RPC client
     ///
     /// # Arguments
-    /// * `socket_path` - Path to the Unix domain socket (e.g., `/tmp/petaltongue-nat0-default.sock`)
+    /// * `socket_path` - Path to the Unix domain socket (e.g., `/tmp/biomeos/petaltongue.sock`)
     ///
     /// # Errors
     /// Returns error if socket path is invalid

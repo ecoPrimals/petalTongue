@@ -123,7 +123,7 @@ impl NeuralApiProvider {
             DiscoveryError::HealthCheckFailed {
                 name: "Neural API".to_string(),
                 endpoint: self.socket_path.display().to_string(),
-                source: Box::new(e),
+                source: e.into(),
             }
         })?;
 

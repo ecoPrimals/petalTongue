@@ -419,14 +419,20 @@ mod tests {
             "motor.set_panel",
             "motor.set_zoom",
             "motor.set_mode",
+            "motor.fit_to_view",
+            "motor.navigate",
             "modality.visual",
             "modality.audio",
             "modality.terminal",
             "modality.haptic",
             "modality.braille",
             "modality.description",
+            "identity.get",
+            "lifecycle.status",
             "health.check",
-            "capability.list",
+            "health.liveness",
+            "health.readiness",
+            "capabilities.list",
         ];
         for cap in expected {
             assert!(

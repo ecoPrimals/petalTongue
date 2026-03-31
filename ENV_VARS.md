@@ -12,7 +12,7 @@ This document describes all environment variables used by petalTongue.
 
 **HIGHEST PRIORITY** socket path override. When set, petalTongue will use this exact socket path.
 
-**biomeOS Socket Standard** (per `IPC_COMPLIANCE_MATRIX.md` v1.2):
+**biomeOS Socket Standard** (per `IPC_COMPLIANCE_MATRIX.md` v1.3):
 - Priority 1: `PETALTONGUE_SOCKET` (explicit override)
 - Priority 2: `$XDG_RUNTIME_DIR/biomeos/petaltongue.sock` (standard)
 - Priority 3: `/tmp/biomeos/petaltongue.sock` (fallback)
@@ -611,7 +611,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: March 18, 2026  
+**Last Updated**: March 31, 2026  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 

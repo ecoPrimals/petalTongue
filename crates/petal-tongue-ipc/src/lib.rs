@@ -61,7 +61,7 @@
 //! │              LOCAL IPC (JSON-RPC)                           │
 //! │  petalTongue instance → petalTongue instance               │
 //! │  petalTongue → CLI tools                                   │
-//! │  Unix sockets: /tmp/petaltongue/{uuid}.sock                │
+//! │  Unix sockets: $XDG_RUNTIME_DIR/biomeos/petaltongue.sock   │
 //! └─────────────────────────────────────────────────────────────┘
 //!                            ↓
 //! ┌─────────────────────────────────────────────────────────────┐

@@ -313,7 +313,7 @@ pub fn compile_geometry(
             vec![Primitive::Text {
                 x: axes.origin.0 + axes.width / 2.0,
                 y: axes.origin.1 - axes.height / 2.0,
-                content: format!("Geometry {:?} (placeholder)", expr.geometry),
+                content: format!("Unsupported geometry: {:?}", expr.geometry),
                 font_size: 12.0,
                 color: Color::BLACK,
                 anchor: AnchorPoint::Center,

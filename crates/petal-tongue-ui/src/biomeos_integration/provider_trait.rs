@@ -71,7 +71,7 @@ impl VisualizationDataProvider for BiomeOSProvider {
             Ok(Err(e)) => Err(DiscoveryError::HealthCheckFailed {
                 name: "biomeOS-device-provider".to_string(),
                 endpoint: self.endpoint().to_string(),
-                source: e.into(),
+                source: petal_tongue_discovery::errors::HealthCheckSource::Other(Box::new(e)),
             }),
             Err(_) => Err(DiscoveryError::ConnectionTimeout {
                 endpoint: self.endpoint().to_string(),

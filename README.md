@@ -104,7 +104,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,834+ passing, 0 failures |
+| Tests | 5,839+ passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero blanket `#[allow]`) |
 | Docs | `cargo doc --workspace --no-deps` clean |
@@ -136,7 +136,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable 1.85+ (edition 2024)
 cargo build --workspace
-cargo test --workspace --all-features        # 5,834+ tests
+cargo test --workspace --all-features        # 5,839+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps

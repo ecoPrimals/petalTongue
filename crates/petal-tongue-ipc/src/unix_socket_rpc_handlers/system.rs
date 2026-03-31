@@ -108,11 +108,18 @@ pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
             "transport": transport,
             "capabilities": self_capabilities::ALL,
             "methods": [
+                // System
                 "health.check",
                 "health.liveness",
                 "health.readiness",
                 "health.get",
+                "identity.get",
+                "lifecycle.status",
+                "capabilities.list",
+                "capability.announce",
                 "topology.get",
+                "provider.register_capability",
+                // Visualization
                 methods::VISUALIZATION_RENDER,
                 methods::VISUALIZATION_RENDER_STREAM,
                 methods::VISUALIZATION_RENDER_GRAMMAR,
@@ -129,6 +136,23 @@ pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
                 methods::VISUALIZATION_SHOWING,
                 methods::VISUALIZATION_SESSION_LIST,
                 methods::VISUALIZATION_SESSION_STATUS,
+                "visualization.render.graph",
+                // Interaction
+                "interaction.subscribe",
+                "interaction.poll",
+                "interaction.unsubscribe",
+                "interaction.sensor_stream.subscribe",
+                "interaction.sensor_stream.unsubscribe",
+                "interaction.sensor_stream.poll",
+                // UI
+                "ui.render",
+                "ui.display_status",
+                // Motor
+                "motor.set_panel",
+                "motor.set_zoom",
+                "motor.fit_to_view",
+                "motor.set_mode",
+                "motor.navigate",
             ],
             "depends_on": [
                 { "capability": discovery_capabilities::DISPLAY_BACKEND, "required": false },
@@ -149,7 +173,7 @@ pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
                 "visualization.validate": { "cpu_ms": 0.5, "gpu_eligible": false },
                 "visualization.export": { "cpu_ms": 5.0, "gpu_eligible": true },
                 "health.check": { "cpu_ms": 0.01, "gpu_eligible": false },
-                "capability.list": { "cpu_ms": 0.01, "gpu_eligible": false },
+                "capabilities.list": { "cpu_ms": 0.01, "gpu_eligible": false },
             },
         }),
     )
