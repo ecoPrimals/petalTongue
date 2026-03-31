@@ -298,7 +298,6 @@ fn test_build_mdns_query_single_label() {
 #[test]
 fn test_build_mdns_query_dns_header_structure() {
     let query = build_mdns_query(SERVICE_NAME);
-    assert_eq!(query.len() % 1, 0);
     assert!(query.len() >= 12 + 5);
     assert_eq!(&query[2..4], &[0x00, 0x00]);
     assert_eq!(&query[6..8], &[0x00, 0x00]);

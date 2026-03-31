@@ -1,18 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Web mode - HTTP/WebSocket server
+//! Web mode - HTTP server with SSE push
 //!
-//! Pure Rust! ✅
-//! Dependencies: axum, tower-http (100% Pure Rust)
+//! Pure Rust! Dependencies: axum, tower-http (100% Pure Rust)
 
 use crate::error::AppError;
 use axum::{
     Json, Router,
     extract::State,
-    response::{Html, IntoResponse},
+    response::{
+        Html, IntoResponse,
+        sse::{Event, Sse},
+    },
     routing::get,
 };
 use std::net::SocketAddr;
 use std::sync::Arc;
+use tokio_stream::StreamExt as _;
+use tokio_stream::wrappers::BroadcastStream;
 use tower_http::services::ServeDir;
 
 use crate::data_service::DataService;
@@ -43,6 +47,7 @@ pub async fn run(
         .route("/api/status", get(status_handler))
         .route("/api/primals", get(primals_handler))
         .route("/api/snapshot", get(snapshot_handler))
+        .route("/api/events", get(events_sse_handler))
         .nest_service("/static", ServeDir::new("web/static"))
         .with_state(data_service);
 
@@ -102,21 +107,54 @@ async fn primals_handler(State(service): State<Arc<DataService>>) -> impl IntoRe
 }
 
 async fn snapshot_handler(State(service): State<Arc<DataService>>) -> impl IntoResponse {
-    // Full snapshot with all data
     match service.snapshot().await {
         Ok(snapshot) => Json(serde_json::json!(snapshot)),
         Err(e) => {
-            // GraphLockPoisoned often indicates test-induced state; use debug to avoid noisy test output
             if e.to_string().contains("Graph lock poisoned") {
-                tracing::debug!("Failed to get snapshot: {}", e);
+                tracing::debug!("Failed to get snapshot: {e}");
             } else {
-                tracing::error!("Failed to get snapshot: {}", e);
+                tracing::error!("Failed to get snapshot: {e}");
             }
             Json(serde_json::json!({
                 "error": e.to_string()
             }))
         }
     }
+}
+
+/// SSE endpoint that pushes `DataUpdate` events from `DataService::subscribe()`.
+///
+/// Per PT-02 / `IPC_COMPLIANCE_MATRIX.md` v1.2: the browser receives live
+/// topology changes without polling.  Each SSE frame carries a full
+/// `DataSnapshot` serialised as JSON so the client can replace its local state.
+async fn events_sse_handler(
+    State(service): State<Arc<DataService>>,
+) -> Sse<impl tokio_stream::Stream<Item = Result<Event, std::convert::Infallible>>> {
+    let rx = service.subscribe();
+    let service = Arc::clone(&service);
+
+    let stream = BroadcastStream::new(rx).filter_map(move |msg| {
+        let service = Arc::clone(&service);
+        match msg {
+            Ok(_update) => {
+                let snapshot = service.snapshot_sync();
+                match serde_json::to_string(&snapshot) {
+                    Ok(json) => Some(Ok(Event::default().data(json))),
+                    Err(e) => {
+                        tracing::warn!("SSE serialization error: {e}");
+                        None
+                    }
+                }
+            }
+            Err(_lagged) => None,
+        }
+    });
+
+    Sse::new(stream).keep_alive(
+        axum::response::sse::KeepAlive::new()
+            .interval(std::time::Duration::from_secs(15))
+            .text("keepalive"),
+    )
 }
 
 #[cfg(test)]
@@ -266,6 +304,32 @@ mod tests {
             .unwrap();
         let response = tower::ServiceExt::oneshot(app, req).await.unwrap();
         assert_eq!(response.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn test_events_sse_returns_event_stream() {
+        use axum::body::Body;
+
+        let data_service = Arc::new(DataService::new());
+        let app = Router::new()
+            .route("/api/events", get(events_sse_handler))
+            .with_state(data_service);
+
+        let req = axum::http::Request::builder()
+            .uri("/api/events")
+            .body(Body::empty())
+            .unwrap();
+        let response = tower::ServiceExt::oneshot(app, req).await.unwrap();
+        assert_eq!(response.status(), 200);
+        let ct = response
+            .headers()
+            .get("content-type")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+        assert!(
+            ct.contains("text/event-stream"),
+            "Expected text/event-stream, got: {ct}"
+        );
     }
 
     #[tokio::test]

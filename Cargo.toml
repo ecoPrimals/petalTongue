@@ -179,6 +179,7 @@ tower = { version = "0.4", features = ["util"] }
 
 # Async runtime
 tokio = { workspace = true }
+tokio-stream = { version = "0.1", features = ["sync"] }
 
 # CLI
 clap = { workspace = true }

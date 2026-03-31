@@ -98,7 +98,7 @@ impl SongbirdClient {
             .map_or_else(
                 |_| {
                     std::env::var("SONGBIRD_SOCKET_FALLBACK")
-                        .unwrap_or_else(|_| format!("/tmp/{socket_base}-nat0-default.sock"))
+                        .unwrap_or_else(|_| format!("/tmp/biomeos/{socket_base}.sock"))
                 },
                 |p| p.to_string_lossy().to_string(),
             );

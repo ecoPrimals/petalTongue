@@ -5,7 +5,6 @@ use crate::unix_socket_rpc_handlers::RpcHandlers;
 use serde_json::json;
 use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::UnixStream;
 use tracing::{debug, error};
 
 /// Errors from handling a Unix socket connection.
@@ -20,12 +19,16 @@ pub enum ConnectionError {
     Serialize(#[from] serde_json::Error),
 }
 
-/// Handle a single Unix socket connection: read JSON-RPC requests, dispatch to handlers, write responses
-pub async fn handle_connection(
-    handler: &RpcHandlers,
-    stream: UnixStream,
-) -> Result<(), ConnectionError> {
-    let (reader, mut writer) = stream.into_split();
+/// Handle a single connection: read newline-delimited JSON-RPC requests,
+/// dispatch to handlers, write newline-delimited responses.
+///
+/// Transport-generic: works with `UnixStream`, `TcpStream`, or any
+/// `AsyncRead + AsyncWrite` implementor.
+pub async fn handle_connection<S>(handler: &RpcHandlers, stream: S) -> Result<(), ConnectionError>
+where
+    S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
+{
+    let (reader, mut writer) = tokio::io::split(stream);
     let mut reader = BufReader::with_capacity(65_536, reader);
     let mut line = String::new();
 

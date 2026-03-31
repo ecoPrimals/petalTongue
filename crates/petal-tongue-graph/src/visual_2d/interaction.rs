@@ -586,7 +586,7 @@ mod tests {
         use std::sync::{Arc, RwLock};
 
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
-        let mut renderer = Visual2DRenderer::new(graph.clone());
+        let mut renderer = Visual2DRenderer::new(graph);
         renderer.interactive_mode = true;
 
         let ctx = egui::Context::default();

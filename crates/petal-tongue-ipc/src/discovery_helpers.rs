@@ -19,8 +19,8 @@ fn path_exists_as_file(p: &std::path::Path) -> bool {
     p.exists() && p.is_file()
 }
 
-/// Resolves primal socket: env override → $XDG_RUNTIME_DIR/biomeos/{primal}-{family}.sock
-/// → /tmp/{primal}-{family}-default.sock. Returns first path that exists as a file.
+/// Resolves primal socket: env override → `$XDG_RUNTIME_DIR/biomeos/{primal}.sock`
+/// → `/tmp/biomeos/{primal}.sock`. Returns first path that exists as a file.
 #[must_use]
 pub fn resolve_primal_socket(primal: &str) -> Option<PathBuf> {
     resolve_primal_socket_with_env(primal, |k| std::env::var(k).ok())
@@ -40,11 +40,10 @@ pub fn resolve_primal_socket_with_env(
         }
     }
 
-    let family_id = env_reader("FAMILY_ID").unwrap_or_else(|| "nat0".to_string());
     let xdg_path = env_reader("XDG_RUNTIME_DIR").map(|d| {
         PathBuf::from(d)
             .join("biomeos")
-            .join(format!("{primal}-{family_id}.sock"))
+            .join(format!("{primal}.sock"))
     });
     if let Some(ref p) = xdg_path
         && path_exists_as_file(p)
@@ -52,7 +51,9 @@ pub fn resolve_primal_socket_with_env(
         return Some(p.clone());
     }
 
-    let tmp_path = PathBuf::from(format!("/tmp/{primal}-{family_id}-default.sock"));
+    let tmp_path = PathBuf::from("/tmp")
+        .join("biomeos")
+        .join(format!("{primal}.sock"));
     if path_exists_as_file(&tmp_path) {
         return Some(tmp_path);
     }
@@ -91,14 +92,11 @@ mod tests {
         assert!(resolve_primal_socket_with_env("barracuda", env).is_none());
     }
 
-    fn xdg_env(dir: &std::path::Path, family: &str) -> impl Fn(&str) -> Option<String> {
+    fn xdg_env(dir: &std::path::Path) -> impl Fn(&str) -> Option<String> {
         let xdg = dir.to_string_lossy().into_owned();
-        let fam = family.to_string();
         move |k: &str| {
             if k == "XDG_RUNTIME_DIR" {
                 Some(xdg.clone())
-            } else if k == "FAMILY_ID" {
-                Some(fam.clone())
             } else {
                 None
             }
@@ -106,27 +104,14 @@ mod tests {
     }
 
     #[test]
-    fn resolve_uses_xdg_with_default_family() {
+    fn resolve_uses_xdg_biomeos_layout() {
         let dir = tempfile::tempdir().unwrap();
         let biomeos_dir = dir.path().join("biomeos");
         std::fs::create_dir_all(&biomeos_dir).unwrap();
-        let sock = biomeos_dir.join("barracuda-nat0.sock");
+        let sock = biomeos_dir.join("barracuda.sock");
         std::fs::File::create(&sock).unwrap();
         assert_eq!(
-            resolve_primal_socket_with_env("barracuda", xdg_env(dir.path(), "nat0")),
-            Some(sock)
-        );
-    }
-
-    #[test]
-    fn resolve_uses_xdg_with_custom_family() {
-        let dir = tempfile::tempdir().unwrap();
-        let biomeos_dir = dir.path().join("biomeos");
-        std::fs::create_dir_all(&biomeos_dir).unwrap();
-        let sock = biomeos_dir.join("barracuda-staging.sock");
-        std::fs::File::create(&sock).unwrap();
-        assert_eq!(
-            resolve_primal_socket_with_env("barracuda", xdg_env(dir.path(), "staging")),
+            resolve_primal_socket_with_env("barracuda", xdg_env(dir.path())),
             Some(sock)
         );
     }

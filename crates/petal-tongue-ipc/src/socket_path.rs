@@ -2,101 +2,57 @@
 //! Socket path resolution for ecoPrimals ecosystem
 //!
 //! Provides capability-based socket path resolution following the biomeOS convention:
-//! `/run/user/<uid>/<primal>-<family>.sock`
+//! `$XDG_RUNTIME_DIR/biomeos/<primal>.sock`
 //!
-//! This enables zero-configuration discovery and inter-primal communication.
+//! Per `CAPABILITY_BASED_DISCOVERY_STANDARD.md` v1.1 and `IPC_COMPLIANCE_MATRIX.md` v1.2,
+//! all primal sockets live under the shared `biomeos/` directory so that biomeOS socket
+//! scanning can discover them via `readdir()`.
 
 use crate::socket_path_error::SocketPathError;
 use petal_tongue_core::constants::APP_DIR_NAME;
 use std::env;
 use std::path::{Path, PathBuf};
 
-/// Get the socket path for this petalTongue instance
+/// Shared biomeOS socket directory name.
+const BIOMEOS_SOCK_DIR: &str = "biomeos";
+
+/// Get the socket path for this petalTongue instance.
 ///
-/// Path format: `/run/user/<uid>/petaltongue/petaltongue-<family>-<node>.sock`
-/// (Uses `petaltongue/` subdirectory so healthSpring discovery finds it.)
+/// Default path: `$XDG_RUNTIME_DIR/biomeos/petaltongue.sock`
 ///
 /// # Environment Variables (Priority Order)
 ///
 /// 1. **`PETALTONGUE_SOCKET`**: Explicit socket path override (highest priority)
-/// 2. **`FAMILY_ID`**: Family identifier (default: "nat0")
-/// 3. **`PETALTONGUE_NODE_ID`**: Node identifier for multi-instance (default: "default")
-/// 4. **`XDG_RUNTIME_DIR`**: Runtime directory (standard, falls back to `/run/user/<uid>`)
+/// 2. **`XDG_RUNTIME_DIR`**: Runtime directory (standard, falls back to `/run/user/<uid>`)
 ///
 /// # biomeOS Socket Standard Compliance
 ///
-/// This function implements the biomeOS socket standardization:
+/// Per `IPC_COMPLIANCE_MATRIX.md` v1.2 item PT-01, the canonical socket path is
+/// `$XDG_RUNTIME_DIR/biomeos/petaltongue.sock`. This places petalTongue in the
+/// shared `biomeos/` directory where biomeOS socket scanning can discover it.
+///
 /// - **Explicit Override**: `PETALTONGUE_SOCKET` for custom paths
-/// - **XDG Compliant**: Uses `/run/user/<uid>/` for secure sockets
-/// - **Multi-Instance**: Supports `NODE_ID` for multiple instances per family
-/// - **Graceful Fallback**: Falls back to `/tmp/` if XDG runtime unavailable
+/// - **XDG Compliant**: Uses `/run/user/<uid>/biomeos/` for secure sockets
+/// - **Graceful Fallback**: Falls back to `/tmp/biomeos/` if XDG runtime unavailable
 /// - **Parent Directory Creation**: Ensures socket parent directory exists
-///
-/// # TRUE PRIMAL Principles
-///
-/// - **Zero Hardcoding**: Path is runtime-determined from environment
-/// - **Capability-Based**: Uses standard Unix runtime directory
-/// - **Self-Knowledge Only**: Only knows own primal name ("petaltongue")
-/// - **Agnostic**: No assumptions about other primals
-///
-/// # Examples
-///
-/// ```
-/// use petal_tongue_ipc::socket_path;
-///
-/// // Default (nat0 family, default node)
-/// let path = socket_path::get_petaltongue_socket_path().unwrap();
-/// // Returns: /run/user/1000/petaltongue-nat0-default.sock
-///
-/// // Custom family and node
-/// // SAFETY: Doctest-only env var manipulation
-/// unsafe {
-///     std::env::set_var("FAMILY_ID", "staging");
-///     std::env::set_var("PETALTONGUE_NODE_ID", "node1");
-/// }
-/// let path = socket_path::get_petaltongue_socket_path().unwrap();
-/// // Returns: /run/user/1000/petaltongue-staging-node1.sock
-///
-/// // Explicit override
-/// unsafe {
-///     std::env::set_var("PETALTONGUE_SOCKET", "/tmp/custom.sock");
-/// }
-/// let path = socket_path::get_petaltongue_socket_path().unwrap();
-/// // Returns: /tmp/custom.sock
-/// ```
 pub fn get_petaltongue_socket_path() -> Result<PathBuf, SocketPathError> {
-    // Priority 1: Explicit override (biomeOS standard)
     if let Ok(socket_path) = env::var("PETALTONGUE_SOCKET") {
         let path = PathBuf::from(socket_path);
-
-        // Ensure parent directory exists
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
-
         return Ok(path);
     }
 
-    // Priority 2: XDG runtime directory (standard)
-    let family_id = get_family_id();
-    let node_id = get_node_id();
-
     if let Ok(runtime_dir) = get_runtime_dir() {
-        // healthSpring discovers at XDG_RUNTIME_DIR/petaltongue/*.sock (subdirectory)
-        let sock_dir = runtime_dir.join(APP_DIR_NAME);
-        let path = sock_dir.join(format!("{APP_DIR_NAME}-{family_id}-{node_id}.sock"));
-
-        // Ensure petaltongue subdirectory exists
+        let sock_dir = runtime_dir.join(BIOMEOS_SOCK_DIR);
+        let path = sock_dir.join(format!("{APP_DIR_NAME}.sock"));
         std::fs::create_dir_all(&sock_dir)?;
-
         Ok(path)
     } else {
-        // Priority 3: Fallback to /tmp (last resort)
-        let path = PathBuf::from(format!("/tmp/{APP_DIR_NAME}-{family_id}-{node_id}.sock"));
-
-        // Ensure /tmp exists (it should, but be defensive)
-        std::fs::create_dir_all("/tmp")?;
-
+        let sock_dir = PathBuf::from("/tmp").join(BIOMEOS_SOCK_DIR);
+        let path = sock_dir.join(format!("{APP_DIR_NAME}.sock"));
+        std::fs::create_dir_all(&sock_dir)?;
         Ok(path)
     }
 }
@@ -114,18 +70,10 @@ pub fn get_family_id() -> String {
     env::var("FAMILY_ID").unwrap_or_else(|_| "nat0".to_string())
 }
 
-/// Get the node ID for this instance
+/// Get the node ID for this instance.
 ///
 /// Returns value from `PETALTONGUE_NODE_ID` environment variable, or "default" as default.
-///
-/// # biomeOS Multi-Instance Support
-///
-/// Node IDs enable running multiple petalTongue instances in the same family:
-/// - `petaltongue-nat0-node1.sock`
-/// - `petaltongue-nat0-node2.sock`
-///
-/// This is critical for atomic deployments where multiple instances
-/// may need to run on the same machine.
+/// Used for registration and identity purposes (not embedded in the default socket filename).
 #[must_use]
 pub fn get_node_id() -> String {
     env::var("PETALTONGUE_NODE_ID").unwrap_or_else(|_| "default".to_string())
@@ -168,62 +116,36 @@ pub fn get_runtime_dir() -> Result<PathBuf, SocketPathError> {
     }
 }
 
-/// Discover another primal's socket path (capability-based)
+/// Discover another primal's socket path (capability-based).
 ///
-/// # TRUE PRIMAL: Runtime Discovery
+/// Follows the biomeOS convention: `$XDG_RUNTIME_DIR/biomeos/<primal>.sock`.
 ///
-/// This function discovers OTHER primals at runtime, without hardcoding.
-/// It follows the biomeOS convention but remains agnostic to specific primals.
+/// # Discovery Chain
 ///
-/// # biomeOS Socket Standard
+/// 1. `<PRIMAL>_SOCKET` env var (explicit override)
+/// 2. `$XDG_RUNTIME_DIR/biomeos/<primal>.sock` (standard)
+/// 3. `/tmp/biomeos/<primal>.sock` (fallback)
 ///
-/// Tries in order:
-/// 1. `<PRIMAL>_SOCKET` env var (if set)
-/// 2. `/run/user/<uid>/<primal>-<family>-<node>.sock` (XDG)
-/// 3. `/tmp/<primal>-<family>-<node>.sock` (fallback)
-///
-/// # Arguments
-///
-/// * `primal_name` - Name of the primal to discover (e.g., "beardog", "songbird")
-/// * `family_id` - Optional family ID (defaults to current `FAMILY_ID`)
-/// * `node_id` - Optional node ID (defaults to "default")
-///
-/// # Examples
-///
-/// ```
-/// use petal_tongue_ipc::socket_path;
-///
-/// // Discover beardog in same family
-/// let beardog = socket_path::discover_primal_socket("beardog", None, None).unwrap();
-/// // Returns: /run/user/1000/beardog-nat0-default.sock
-///
-/// // Discover in specific family and node
-/// let songbird = socket_path::discover_primal_socket("songbird", Some("staging"), Some("node1")).unwrap();
-/// // Returns: /run/user/1000/songbird-staging-node1.sock
-/// ```
+/// The `family_id` and `node_id` parameters are accepted for API compatibility
+/// but are not embedded in the default socket filename (per ecosystem standard).
 pub fn discover_primal_socket(
     primal_name: &str,
-    family_id: Option<&str>,
-    node_id: Option<&str>,
+    _family_id: Option<&str>,
+    _node_id: Option<&str>,
 ) -> Result<PathBuf, SocketPathError> {
-    // Priority 1: Check for explicit override env var
     let env_var = format!("{}_SOCKET", primal_name.to_uppercase());
     if let Ok(socket_path) = env::var(&env_var) {
         return Ok(PathBuf::from(socket_path));
     }
 
-    let family = family_id.map_or_else(get_family_id, ToString::to_string);
-
-    let node = node_id.map_or_else(|| "default".to_string(), ToString::to_string);
-
-    // Priority 2: XDG runtime directory
     if let Ok(runtime_dir) = get_runtime_dir() {
-        return Ok(runtime_dir.join(format!("{primal_name}-{family}-{node}.sock")));
+        return Ok(runtime_dir
+            .join(BIOMEOS_SOCK_DIR)
+            .join(format!("{primal_name}.sock")));
     }
 
-    // Priority 3: Fallback to /tmp
     Ok(PathBuf::from(format!(
-        "/tmp/{primal_name}-{family}-{node}.sock"
+        "/tmp/{BIOMEOS_SOCK_DIR}/{primal_name}.sock"
     )))
 }
 
@@ -294,8 +216,8 @@ mod tests {
                 if let Ok(path) = get_petaltongue_socket_path() {
                     let path_str = path.to_string_lossy();
                     assert!(
-                        path_str.contains("petaltongue-nat0-default.sock"),
-                        "Expected path to contain 'petaltongue-nat0-default.sock', got: {path_str}"
+                        path_str.ends_with("biomeos/petaltongue.sock"),
+                        "Expected path ending with 'biomeos/petaltongue.sock', got: {path_str}"
                     );
                 }
             },
@@ -313,18 +235,23 @@ mod tests {
             || {
                 if let Ok(path) = discover_primal_socket("beardog", None, None) {
                     let path_str = path.to_string_lossy();
-                    assert!(path_str.contains("beardog-nat0-default.sock"));
+                    assert!(
+                        path_str.ends_with("biomeos/beardog.sock"),
+                        "Expected biomeos/beardog.sock, got: {path_str}"
+                    );
                 }
             },
         );
     }
 
     #[test]
-    fn test_discover_primal_socket_custom_family() {
-        // This test uses explicit parameters, no env vars needed
+    fn test_discover_primal_socket_ignores_family_node() {
         if let Ok(path) = discover_primal_socket("songbird", Some("staging"), Some("node1")) {
             let path_str = path.to_string_lossy();
-            assert!(path_str.contains("songbird-staging-node1.sock"));
+            assert!(
+                path_str.ends_with("biomeos/songbird.sock"),
+                "Standard path should not embed family/node: {path_str}"
+            );
         }
     }
 

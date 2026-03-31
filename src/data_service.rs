@@ -179,8 +179,28 @@ impl DataService {
         Arc::clone(&self.graph)
     }
 
-    /// Subscribe to data updates (streaming consumers, display/TUI wiring pending).
-    #[cfg_attr(not(test), allow(dead_code))]
+    /// Synchronous snapshot for non-async contexts (SSE streams, etc.).
+    ///
+    /// Returns `None` if the graph lock is poisoned.
+    pub fn snapshot_sync(&self) -> Option<DataSnapshot> {
+        let graph = self.graph.read().ok()?;
+        let primals = graph.nodes().iter().map(|node| node.info.clone()).collect();
+        let edges = graph.edges().to_vec();
+        drop(graph);
+
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+
+        Some(DataSnapshot {
+            primals,
+            edges,
+            timestamp,
+        })
+    }
+
+    /// Subscribe to data updates.
     pub fn subscribe(&self) -> broadcast::Receiver<DataUpdate> {
         self.update_tx.subscribe()
     }

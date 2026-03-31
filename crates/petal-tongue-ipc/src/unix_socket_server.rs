@@ -13,12 +13,16 @@ use std::sync::Arc;
 use tokio::net::UnixListener;
 use tracing::{debug, error, info};
 
-/// Unix socket server for petalTongue JSON-RPC IPC
+/// JSON-RPC IPC server for petalTongue.
+///
+/// Listens on a Unix domain socket (always) and optionally on a TCP port
+/// for newline-delimited JSON-RPC per `IPC_COMPLIANCE_MATRIX.md` v1.2.
 pub struct UnixSocketServer {
     socket_path: PathBuf,
     family_id: String,
     handlers: RpcHandlers,
     motor_tx: Option<std::sync::mpsc::Sender<petal_tongue_core::MotorCommand>>,
+    tcp_port: Option<u16>,
 }
 
 #[cfg_attr(not(test), allow(dead_code))]
@@ -34,6 +38,7 @@ impl UnixSocketServer {
             family_id: family_id.clone(),
             handlers: RpcHandlers::new(graph, family_id, viz_state),
             motor_tx: None,
+            tcp_port: None,
         })
     }
 
@@ -91,7 +96,18 @@ impl UnixSocketServer {
         self
     }
 
-    /// Start the server: bind socket and accept connections
+    /// Enable a TCP JSON-RPC listener alongside the Unix socket.
+    ///
+    /// Per `IPC_COMPLIANCE_MATRIX.md` v1.2, `server --port <PORT>` binds
+    /// newline-delimited TCP JSON-RPC for mobile and cross-gate access.
+    #[must_use]
+    pub const fn with_tcp_port(mut self, port: u16) -> Self {
+        self.tcp_port = Some(port);
+        self.handlers.tcp_enabled = true;
+        self
+    }
+
+    /// Start the server: bind UDS (always) and optionally TCP, then accept connections.
     pub async fn start(self: Arc<Self>) -> Result<(), IpcServerError> {
         if self.socket_path.exists() {
             let remove_result = if self.socket_path.is_file() {
@@ -105,7 +121,7 @@ impl UnixSocketServer {
             debug!("Removed old socket: {}", self.socket_path.display());
         }
 
-        let listener = UnixListener::bind(&self.socket_path)
+        let uds_listener = UnixListener::bind(&self.socket_path)
             .map_err(|e| IpcServerError::SocketError(format!("{e}")))?;
         info!(
             "🔌 Unix socket server listening: {}",
@@ -113,21 +129,54 @@ impl UnixSocketServer {
         );
         info!("   Family ID: {}", self.family_id);
 
+        let tcp_listener = if let Some(port) = self.tcp_port {
+            let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
+            let listener = tokio::net::TcpListener::bind(addr)
+                .await
+                .map_err(|e| IpcServerError::SocketError(format!("TCP bind {addr}: {e}")))?;
+            info!("🔌 TCP JSON-RPC server listening: {addr}");
+            Some(listener)
+        } else {
+            None
+        };
+
         loop {
-            match listener.accept().await {
-                Ok((stream, _addr)) => {
-                    let server = Arc::clone(&self);
-                    tokio::spawn(async move {
-                        if let Err(e) =
-                            unix_socket_connection::handle_connection(&server.handlers, stream)
-                                .await
-                        {
-                            error!("Connection error: {}", e);
+            tokio::select! {
+                result = uds_listener.accept() => {
+                    match result {
+                        Ok((stream, _addr)) => {
+                            let server = Arc::clone(&self);
+                            tokio::spawn(async move {
+                                if let Err(e) =
+                                    unix_socket_connection::handle_connection(&server.handlers, stream).await
+                                {
+                                    error!("UDS connection error: {e}");
+                                }
+                            });
                         }
-                    });
+                        Err(e) => error!("Failed to accept UDS connection: {e}"),
+                    }
                 }
-                Err(e) => {
-                    error!("Failed to accept connection: {}", e);
+                result = async {
+                    match &tcp_listener {
+                        Some(l) => l.accept().await,
+                        None => std::future::pending().await,
+                    }
+                } => {
+                    match result {
+                        Ok((stream, addr)) => {
+                            let server = Arc::clone(&self);
+                            tokio::spawn(async move {
+                                debug!("TCP connection from {addr}");
+                                if let Err(e) =
+                                    unix_socket_connection::handle_connection(&server.handlers, stream).await
+                                {
+                                    error!("TCP connection error: {e}");
+                                }
+                            });
+                        }
+                        Err(e) => error!("Failed to accept TCP connection: {e}"),
+                    }
                 }
             }
         }
@@ -212,8 +261,8 @@ mod tests {
                 assert_eq!(server.family_id, "test-family");
                 let socket_str = server.socket_path.to_str().unwrap();
                 assert!(
-                    socket_str.ends_with("petaltongue-test-family-default.sock"),
-                    "Socket path should end with family and node ID, got: {socket_str}"
+                    socket_str.ends_with("biomeos/petaltongue.sock"),
+                    "Socket path should end with biomeos/petaltongue.sock, got: {socket_str}"
                 );
                 assert!(
                     socket_str.contains("/tmp") || socket_str.contains("/run/user"),

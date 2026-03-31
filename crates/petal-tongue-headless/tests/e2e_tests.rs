@@ -2,8 +2,6 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 //! End-to-end tests for petal-tongue-headless binary
 
-#![expect(deprecated)]
-
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;

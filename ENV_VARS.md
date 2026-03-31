@@ -8,14 +8,14 @@ This document describes all environment variables used by petalTongue.
 **Type**: String (absolute path)  
 **Default**: None (uses XDG runtime or /tmp fallback)  
 **Required**: No  
-**Example**: `PETALTONGUE_SOCKET=/run/user/1000/petaltongue-nat0-node1.sock`
+**Example**: `PETALTONGUE_SOCKET=/run/user/1000/biomeos/petaltongue.sock`
 
 **HIGHEST PRIORITY** socket path override. When set, petalTongue will use this exact socket path.
 
-**biomeOS Socket Standard**:
+**biomeOS Socket Standard** (per `IPC_COMPLIANCE_MATRIX.md` v1.2):
 - Priority 1: `PETALTONGUE_SOCKET` (explicit override)
-- Priority 2: `/run/user/<uid>/petaltongue/petaltongue-<family>-<node>.sock` (XDG)
-- Priority 3: `/tmp/petaltongue-<family>-<node>.sock` (fallback)
+- Priority 2: `$XDG_RUNTIME_DIR/biomeos/petaltongue.sock` (standard)
+- Priority 3: `/tmp/biomeos/petaltongue.sock` (fallback)
 
 **Use Cases**:
 - Atomic deployments with custom socket locations
@@ -30,14 +30,11 @@ This document describes all environment variables used by petalTongue.
 **Required**: No  
 **Example**: `FAMILY_ID=staging`
 
-Family identifier for this petalTongue instance. Used in socket path construction.
+Family identifier for this petalTongue instance. Used for registration and identity purposes
+(not embedded in the default socket filename per biomeOS standard).
 
-**Socket Path Impact**:
-- `FAMILY_ID=nat0` → `/run/user/1000/petaltongue/petaltongue-nat0-default.sock`
-- `FAMILY_ID=staging` → `/run/user/1000/petaltongue/petaltongue-staging-default.sock`
-
-**Atomic Architecture**:
-Multiple families can run on the same machine without conflict.
+**Note**: The default socket path is always `$XDG_RUNTIME_DIR/biomeos/petaltongue.sock`
+regardless of `FAMILY_ID`. The family ID is reported via `identity.get` and `capabilities.list`.
 
 ---
 
@@ -47,17 +44,10 @@ Multiple families can run on the same machine without conflict.
 **Required**: No  
 **Example**: `PETALTONGUE_NODE_ID=node1`
 
-Node identifier for multi-instance deployments. Enables multiple petalTongue instances in the same family.
+Node identifier for multi-instance deployments. Used for registration and identity.
 
-**Socket Path Impact**:
-- `NODE_ID=default` → `/run/user/1000/petaltongue/petaltongue-nat0-default.sock`
-- `NODE_ID=node1` → `/run/user/1000/petaltongue/petaltongue-nat0-node1.sock`
-- `NODE_ID=node2` → `/run/user/1000/petaltongue/petaltongue-nat0-node2.sock`
-
-**Use Cases**:
-- Running multiple visualization instances
-- Load balancing across instances
-- A/B testing different configurations
+**Note**: Like `FAMILY_ID`, the node ID is not embedded in the default socket filename.
+Use `PETALTONGUE_SOCKET` for explicit multi-instance socket placement.
 
 ---
 

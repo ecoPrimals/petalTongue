@@ -74,10 +74,15 @@ fn introspect_panel_snapshots() {
 }
 
 #[test]
-fn introspect_bound_data_empty_graph() {
+fn introspect_bound_data_from_default_graph() {
     let app = PetalTongueApp::new_headless().expect("headless app");
     let introspection = app.introspect();
-    assert!(introspection.bound_data.is_empty());
+    for bd in &introspection.bound_data {
+        assert!(
+            !bd.data_object_id.is_empty(),
+            "bound data objects must have an id"
+        );
+    }
 }
 
 #[test]
@@ -331,9 +336,11 @@ fn run_update_with_ctrl_a_toggles_accessibility() {
         .visible_panels
         .iter()
         .any(|p| format!("{:?}", p.id).contains("accessibility") && p.visible);
-    let mut raw = egui::RawInput::default();
-    raw.modifiers = egui::Modifiers {
-        ctrl: true,
+    let mut raw = egui::RawInput {
+        modifiers: egui::Modifiers {
+            ctrl: true,
+            ..Default::default()
+        },
         ..Default::default()
     };
     raw.events.push(egui::Event::Key {
@@ -372,9 +379,11 @@ fn run_update_with_ctrl_d_toggles_dashboard() {
         .visible_panels
         .iter()
         .any(|p| format!("{:?}", p.id).contains("SystemDashboard") && p.visible);
-    let mut raw = egui::RawInput::default();
-    raw.modifiers = egui::Modifiers {
-        ctrl: true,
+    let mut raw = egui::RawInput {
+        modifiers: egui::Modifiers {
+            ctrl: true,
+            ..Default::default()
+        },
         ..Default::default()
     };
     raw.events.push(egui::Event::Key {
@@ -472,9 +481,11 @@ fn run_update_with_ctrl_plus_increases_font_size() {
         super::update::run_update(&mut app, ctx);
     });
     let before = app.accessibility_panel.settings.font_size;
-    let mut raw = egui::RawInput::default();
-    raw.modifiers = egui::Modifiers {
-        ctrl: true,
+    let mut raw = egui::RawInput {
+        modifiers: egui::Modifiers {
+            ctrl: true,
+            ..Default::default()
+        },
         ..Default::default()
     };
     raw.events.push(egui::Event::Key {
@@ -505,9 +516,11 @@ fn run_update_with_ctrl_minus_decreases_font_size() {
         super::update::run_update(&mut app, ctx);
     });
     let before = app.accessibility_panel.settings.font_size;
-    let mut raw = egui::RawInput::default();
-    raw.modifiers = egui::Modifiers {
-        ctrl: true,
+    let mut raw = egui::RawInput {
+        modifiers: egui::Modifiers {
+            ctrl: true,
+            ..Default::default()
+        },
         ..Default::default()
     };
     raw.events.push(egui::Event::Key {
@@ -612,9 +625,11 @@ fn run_update_with_ctrl_2_selects_color_scheme() {
         super::update::run_update(&mut app, ctx);
     });
     let before = app.accessibility_panel.settings.color_scheme;
-    let mut raw = egui::RawInput::default();
-    raw.modifiers = egui::Modifiers {
-        ctrl: true,
+    let mut raw = egui::RawInput {
+        modifiers: egui::Modifiers {
+            ctrl: true,
+            ..Default::default()
+        },
         ..Default::default()
     };
     raw.events.push(egui::Event::Key {

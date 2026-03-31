@@ -368,9 +368,11 @@ mod tests {
     #[test]
     fn egui_compiler_point_with_stroke() {
         let mut scene = SceneGraph::new();
-        let mut stroke = StrokeStyle::default();
-        stroke.width = 2.0;
-        stroke.color = Color::rgb(1.0, 0.0, 0.0);
+        let stroke = StrokeStyle {
+            width: 2.0,
+            color: Color::rgb(1.0, 0.0, 0.0),
+            ..Default::default()
+        };
         scene.add_to_root(SceneNode::new("pt").with_primitive(Primitive::Point {
             x: 5.0,
             y: 5.0,

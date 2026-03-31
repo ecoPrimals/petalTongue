@@ -59,10 +59,6 @@ pub trait VisualizationDataProvider: Send + Sync {
     fn get_metadata(&self) -> ProviderMetadata;
 }
 
-// Keep DiscoveredProvider as an alias for backward compatibility
-#[expect(dead_code)] // Kept for backward compatibility but not actively used
-pub type DiscoveredProvider = ProviderMetadata;
-
 #[cfg(test)]
 mod tests {
     use super::*;

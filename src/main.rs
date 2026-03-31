@@ -111,7 +111,11 @@ enum Commands {
     },
 
     /// Run IPC server (Unix socket JSON-RPC) without display
-    Server,
+    Server {
+        /// TCP port for newline-delimited JSON-RPC (optional, UDS always active)
+        #[arg(long)]
+        port: Option<u16>,
+    },
 
     /// Show status and system info (Pure Rust! ✅)
     Status {
@@ -204,9 +208,9 @@ async fn main() -> Result<(), AppError> {
             );
             headless_mode::run(&bind_addr, workers, data_service).await
         }
-        Commands::Server => {
-            tracing::info!(mode = "server", "Launching IPC server (no display)");
-            server_mode::run(data_service).await
+        Commands::Server { port } => {
+            tracing::info!(mode = "server", tcp_port = ?port, "Launching IPC server (no display)");
+            server_mode::run(data_service, port).await
         }
         Commands::Status { verbose, format } => {
             tracing::info!(
@@ -344,7 +348,7 @@ mod tests {
     #[test]
     fn test_cli_parse_server() {
         let cli = Cli::parse_from(["petaltongue", "server"]);
-        assert!(matches!(cli.command, Commands::Server));
+        assert!(matches!(cli.command, Commands::Server { .. }));
     }
 
     #[test]
