@@ -29,15 +29,14 @@ methods = [
     "sensor.stream.unsubscribe",
     "sensor.stream.poll",
     "health.check",
-    "capability.list",
-    "lifecycle.register",
+    "capabilities.list",
 ]
 
 [organism.ipc]
 primary = "json-rpc"
 secondary = "tarpc"
 fallback = "http"
-socket_pattern = "${XDG_RUNTIME_DIR}/biomeos/petaltongue-${FAMILY_ID}.sock"
+socket_pattern = "${XDG_RUNTIME_DIR}/biomeos/petaltongue.sock"
 
 [organism.modes]
 server = { description = "IPC server (germination mode)", subcommand = "server" }

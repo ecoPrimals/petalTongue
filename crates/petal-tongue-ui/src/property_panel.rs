@@ -417,7 +417,7 @@ mod tests {
         let node_id = node.id.clone();
         graph.add_node(node);
 
-        panel.set_editing_node(Some(node_id.clone()), &graph);
+        panel.set_editing_node(Some(node_id), &graph);
         panel
             .temp_params
             .insert("primal_name".to_string(), "modified".to_string());
@@ -464,7 +464,7 @@ mod tests {
         let node_id = node.id.clone();
         graph.add_node(node);
 
-        panel.set_editing_node(Some(node_id.clone()), &graph);
+        panel.set_editing_node(Some(node_id), &graph);
         panel
             .temp_params
             .insert("extra".to_string(), "value".to_string());
@@ -485,7 +485,7 @@ mod tests {
         let node_id = node.id.clone();
         graph.add_node(node);
 
-        panel.set_editing_node(Some(node_id.clone()), &graph);
+        panel.set_editing_node(Some(node_id), &graph);
 
         assert_eq!(
             panel.temp_params.get("primal_name"),

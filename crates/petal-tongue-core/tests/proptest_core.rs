@@ -64,8 +64,8 @@ proptest! {
     fn prop_bounding_box_contains(x1 in -1e6f64..1e6f64, y1 in -1e6f64..1e6f64, x2 in -1e6f64..1e6f64, y2 in -1e6f64..1e6f64) {
         let bbox = BoundingBox::from_corners(x1, y1, x2, y2);
         // Midpoint is always inside the normalized box
-        let x = (bbox.x_min + bbox.x_max) / 2.0;
-        let y = (bbox.y_min + bbox.y_max) / 2.0;
+        let x = f64::midpoint(bbox.x_min, bbox.x_max);
+        let y = f64::midpoint(bbox.y_min, bbox.y_max);
         prop_assert!(bbox.contains(x, y));
     }
 

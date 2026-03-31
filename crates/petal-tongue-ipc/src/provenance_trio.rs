@@ -11,6 +11,7 @@
 //! trio is unavailable, petalTongue continues operating without provenance
 //! (primal sovereignty).
 
+use petal_tongue_core::capability_names::primal_names;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::hash::{Hash, Hasher};
@@ -113,7 +114,7 @@ impl ProvenanceTrioClient {
                         "session_id": session_id,
                         "label": title,
                         "domain": domain,
-                        "primal": "petaltongue",
+                        "primal": primal_names::PETALTONGUE,
                         "vertex_type": "visualization_session",
                     }),
                 )
@@ -342,13 +343,13 @@ fn discover_capability_socket(capability: &str) -> Option<String> {
 fn capability_matches_socket_name(capability: &str, socket_name: &str) -> bool {
     match capability {
         "dag.session" | "dag.vertex.create" => {
-            socket_name.contains("rhizocrypt") || socket_name.contains("rhizo")
+            socket_name.contains(primal_names::RHIZOCRYPT) || socket_name.contains("rhizo")
         }
         "braid.create" | "contribution.record" => {
-            socket_name.contains("sweetgrass") || socket_name.contains("sweet")
+            socket_name.contains(primal_names::SWEETGRASS) || socket_name.contains("sweet")
         }
         "spine.create" | "entry.append" => {
-            socket_name.contains("loamspine") || socket_name.contains("loam")
+            socket_name.contains(primal_names::LOAMSPINE) || socket_name.contains("loam")
         }
         _ => false,
     }
@@ -634,7 +635,7 @@ mod tests {
             attribution: true,
             permanent_ledger: true,
         };
-        let dbg = format!("{:?}", a);
+        let dbg = format!("{a:?}");
         assert!(dbg.contains("ephemeral_dag"));
         assert!(dbg.contains("attribution"));
     }
@@ -647,7 +648,7 @@ mod tests {
             braid_id: None,
             spine_entry_id: None,
         };
-        let dbg = format!("{:?}", session);
+        let dbg = format!("{session:?}");
         assert!(dbg.contains("dbg"));
     }
 
@@ -678,7 +679,7 @@ mod tests {
     #[test]
     fn blake3_hash_empty() {
         let h = blake3_hash(b"");
-        assert!(h != 0 || true);
+        let _ = h;
     }
 
     #[test]

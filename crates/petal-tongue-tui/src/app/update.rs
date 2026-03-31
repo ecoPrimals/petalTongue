@@ -409,7 +409,7 @@ mod tests {
     #[tokio::test]
     async fn discover_primals_success_log_format() {
         let count = 5usize;
-        let msg = format!("Discovered {} primals", count);
+        let msg = format!("Discovered {count} primals");
         assert_eq!(msg, "Discovered 5 primals");
     }
 

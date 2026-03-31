@@ -2,10 +2,10 @@
 //! JSON-RPC request handlers for petalTongue IPC.
 //!
 //! Dispatches to domain-specific submodules:
+//! - `system` — health.*, identity.get, lifecycle.status, capabilities.list, topology.get
 //! - `visualization` — visualization.render, stream, grammar, validate, export, dismiss, interact
 //! - `interaction` — interaction.subscribe, poll, unsubscribe
 //! - `motor` — motor.* (UI efferent bridge)
-//! - `system` — health.check, capability.*, topology.get
 //! - `ui` — ui.render, ui.display_status
 //! - `graph` — visualization.render.graph
 
@@ -45,6 +45,8 @@ pub struct RpcHandlers {
     pub sensor_stream_subscribers: Arc<RwLock<crate::visualization_handler::SensorStreamRegistry>>,
     /// Rendering awareness (content-level introspection for IPC queries)
     pub rendering_awareness: Option<Arc<RwLock<RenderingAwareness>>>,
+    /// Whether TCP JSON-RPC is active (for dynamic `capabilities.list` transport)
+    pub tcp_enabled: bool,
 }
 
 impl RpcHandlers {
@@ -67,6 +69,7 @@ impl RpcHandlers {
                 crate::visualization_handler::SensorStreamRegistry::new(),
             )),
             rendering_awareness: None,
+            tcp_enabled: false,
         }
     }
 
@@ -78,15 +81,28 @@ impl RpcHandlers {
     pub async fn handle_request(&self, req: JsonRpcRequest) -> JsonRpcResponse {
         let method = req.method.as_str();
         match method {
-            "health.check" => system::handle_health_check(self, req),
-            "health.liveness" => system::handle_health_liveness(self, req),
+            // Health (with SEMANTIC_METHOD_NAMING_STANDARD aliases)
+            "health.check" | "status" | "check" => system::handle_health_check(self, req),
+            "health.liveness" | "ping" | "health" => system::handle_health_liveness(self, req),
             "health.readiness" => system::handle_health_readiness(self, req),
+            "health.get" => system::get_health(self, req.id),
+
+            // Identity + lifecycle (CAPABILITY_BASED_DISCOVERY / PRIMALSPRING)
+            "identity.get" => system::handle_identity_get(self, req.id),
+            "lifecycle.status" => system::handle_lifecycle_status(self, req.id),
+
+            // Capabilities (canonical + aliases per SEMANTIC_METHOD_NAMING_STANDARD)
+            "capabilities.list" | "capability.list" | "primal.capabilities" => {
+                system::get_capabilities(self, req.id)
+            }
             "capability.announce" => system::handle_announce_capabilities(self, req),
+
+            // UI
             "ui.render" => ui::handle_ui_render(self, req).await,
             "ui.display_status" => ui::handle_ui_display_status(self, req),
-            "capability.list" => system::get_capabilities(self, req.id),
+
+            // Graph + topology
             "visualization.render.graph" => graph::render_graph(self, req.params, req.id).await,
-            "health.get" => system::get_health(self, req.id),
             "topology.get" => system::get_topology(self, req.id),
             "visualization.render" => visualization::handle_render(self, req),
             "visualization.render.scene" => visualization::handle_render_scene(self, req),
@@ -442,7 +458,9 @@ mod tests {
         let req = JsonRpcRequest::new("health.liveness", json!({}), json!(1));
         let resp = h.handle_request(req).await;
         assert!(resp.error.is_none());
-        assert_eq!(resp.result.unwrap()["alive"], true);
+        let r = resp.result.unwrap();
+        assert_eq!(r["status"], "alive");
+        assert_eq!(r["alive"], true);
     }
 
     #[tokio::test]
@@ -451,7 +469,56 @@ mod tests {
         let req = JsonRpcRequest::new("health.readiness", json!({}), json!(1));
         let resp = h.handle_request(req).await;
         assert!(resp.error.is_none());
-        assert_eq!(resp.result.unwrap()["ready"], true);
+        let r = resp.result.unwrap();
+        assert_eq!(r["status"], "ready");
+        assert_eq!(r["ready"], true);
+    }
+
+    #[tokio::test]
+    async fn dispatch_ping_alias_routes_to_liveness() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("ping", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["status"], "alive");
+    }
+
+    #[tokio::test]
+    async fn dispatch_status_alias_routes_to_health_check() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("status", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["status"], "healthy");
+    }
+
+    #[tokio::test]
+    async fn dispatch_identity_get() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("identity.get", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap()["primal"], "petaltongue");
+    }
+
+    #[tokio::test]
+    async fn dispatch_lifecycle_status() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("lifecycle.status", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        let r = resp.result.unwrap();
+        assert_eq!(r["state"], "running");
+        assert_eq!(r["healthy"], true);
+    }
+
+    #[tokio::test]
+    async fn dispatch_primal_capabilities_alias() {
+        let h = test_handlers();
+        let req = JsonRpcRequest::new("primal.capabilities", json!({}), json!(1));
+        let resp = h.handle_request(req).await;
+        assert!(resp.error.is_none());
+        assert!(resp.result.unwrap()["capabilities"].as_array().is_some());
     }
 
     #[tokio::test]

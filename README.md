@@ -18,7 +18,8 @@ petaltongue ui          # Desktop display (egui)
 petaltongue tui         # Terminal display (ratatui)
 petaltongue web         # Web interface (axum)
 petaltongue headless    # Headless rendering (SVG/PNG/JSON)
-petaltongue server      # IPC server (no display)
+petaltongue server      # IPC server (UDS, no display)
+petaltongue server --port 9100  # IPC server (UDS + TCP)
 petaltongue status      # System status
 ```
 
@@ -57,8 +58,9 @@ petaltongue
 - **Universal User Interface** -- any computational universe → any modality → any user type
 - **SAME DAVE model** -- Sensory Afferent / Motor Efferent bidirectional feedback loops
 - **UUI glossary** -- canonical terminology in `petal_tongue_core::uui_glossary`
-- **tarpc** binary RPC with `bytes::Bytes` zero-copy (primary primal-to-primal)
-- **JSON-RPC 2.0** over Unix sockets (secondary, local IPC and debugging)
+- **JSON-RPC 2.0** newline-delimited over UDS + optional TCP (primary listen surface)
+- **tarpc** binary RPC with `bytes::Bytes` zero-copy (outbound client to other primals)
+- **SSE push** via `/api/events` in web mode (live topology updates)
 - **HTTP** for browser/external clients only (fallback)
 - **Capability-based discovery** -- zero hardcoded primal names, runtime-only
 - **Self-knowledge only** -- other primals discovered at runtime
@@ -83,7 +85,7 @@ petaltongue
 | `petal-tongue-graph` | Domain-aware chart renderers, 2D rendering, audio sonification |
 | `petal-tongue-ui` | Desktop display (egui/eframe), panels, scenarios, biomeOS |
 | `petal-tongue-tui` | Terminal display (ratatui) |
-| `petal-tongue-ipc` | Unix socket IPC, JSON-RPC server, tarpc client, visualization handler |
+| `petal-tongue-ipc` | UDS + TCP JSON-RPC server, tarpc client, visualization handler |
 | `petal-tongue-discovery` | Provider discovery (JSON-RPC, mDNS, Unix socket, scenarios) |
 | `petal-tongue-scene` | Scene graph, animation, grammar compiler, DataBinding compiler, dashboard layout, Tufte constraints, modality compilers, physics bridge |
 | `petal-tongue-entropy` | Human entropy capture (gesture, narrative, visual, audio) |
@@ -102,14 +104,14 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,973 passing, 0 failures |
+| Tests | 5,834+ passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero blanket `#[allow]`) |
 | Docs | `cargo doc --workspace --no-deps` clean |
 | Coverage | ~90% line (llvm-cov) |
 | Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
-| Files | All under 1,000 lines; largest 901 lines (`graph_editor/ui_components.rs`) |
+| Files | All under 1,000 lines (largest refactored from 901 → directory module) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 16 crates + sandbox) |
 | External C deps | None -- pure Rust (`rustix` for syscalls) |
@@ -118,7 +120,8 @@ petaltongue
 | Property tests | `proptest` for JSON-RPC parser + core data types |
 | Cross-primal e2e | Real Unix socket server ↔ JSON-RPC client integration tests |
 | IPC resilience | `IpcErrorPhase` structured errors, `CircuitBreaker`, `RetryPolicy` |
-| Health triad | `health.check` + `health.liveness` + `health.readiness` (K8s/biomeOS) |
+| Health triad | `health.check` + `health.liveness` + `health.readiness` + aliases (`ping`, `status`, `check`) |
+| Discovery | `identity.get` + `lifecycle.status` + `capabilities.list` (primalSpring gate compliant) |
 | NDJSON streaming | `StreamItem` (Data/Progress/End/Error) for pipeline consumption |
 | Zero-panic | `OrExit<T>` trait for validation binaries |
 | Dual-format discovery | Parses 4 capability formats (flat, enriched, nested, result-wrapped) |
@@ -133,7 +136,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable 1.85+ (edition 2024)
 cargo build --workspace
-cargo test --workspace --all-features        # 5,973 tests
+cargo test --workspace --all-features        # 5,834+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps

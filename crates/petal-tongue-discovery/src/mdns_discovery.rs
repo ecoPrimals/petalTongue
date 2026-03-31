@@ -23,10 +23,7 @@ pub async fn discover_via_mdns()
 /// Query mDNS for a specific capability.
 ///
 /// Performs real mDNS discovery and filters providers by the requested capability.
-#[expect(
-    dead_code,
-    reason = "API reserved for direct capability queries; callers currently use discover_via_mdns"
-)]
+#[cfg_attr(not(test), allow(dead_code))]
 pub async fn query_capability(
     capability: VisualizationCapability,
 ) -> crate::errors::DiscoveryResult<Vec<String>> {
@@ -35,7 +32,7 @@ pub async fn query_capability(
     Ok(providers
         .iter()
         .filter(|p| p.get_metadata().capabilities.iter().any(|c| c == cap_str))
-        .map(|p| p.get_metadata().endpoint.clone())
+        .map(|p| p.get_metadata().endpoint)
         .collect())
 }
 

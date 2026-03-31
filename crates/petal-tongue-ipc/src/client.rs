@@ -143,27 +143,10 @@ pub enum IpcClientError {
 }
 
 /// Get socket path for an instance
-#[expect(
-    clippy::unnecessary_wraps,
-    reason = "Ok wrapper for early-return path consistency"
-)]
 fn get_socket_path(instance_id: &InstanceId) -> Result<PathBuf, IpcClientError> {
-    use petal_tongue_core::constants::APP_DIR_NAME;
-
-    // Try /run/user/{uid}/{app_dir} first
-    if let Ok(uid) = std::env::var("UID") {
-        let run_dir = PathBuf::from(format!("/run/user/{uid}/{APP_DIR_NAME}"));
-        if run_dir.exists() {
-            return Ok(run_dir.join(format!("{}.sock", instance_id.as_str())));
-        }
-    }
-
-    // Fall back to /tmp/{app_dir}
-    Ok(PathBuf::from(format!(
-        "/tmp/{}/{}.sock",
-        APP_DIR_NAME,
-        instance_id.as_str()
-    )))
+    let id = instance_id.as_str();
+    crate::socket_path::discover_primal_socket(&id, None, None)
+        .map_err(|e| IpcClientError::DirectoryError(format!("Socket path resolution: {e}")))
 }
 
 #[cfg(test)]
@@ -254,43 +237,21 @@ mod tests {
         let path_str = path.to_string_lossy();
         assert!(path_str.contains(&instance_id.as_str()));
         assert!(path_str.ends_with(".sock"));
-        assert!(path_str.contains("petaltongue"));
+        assert!(path_str.contains("biomeos"));
     }
 
     #[test]
-    fn test_get_socket_path_with_uid_env() {
-        let instance_id = InstanceId::new();
-        let result = petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
-            "UID",
-            "12345",
-            || get_socket_path(&instance_id),
-        );
-        if let Ok(path) = result {
-            let path_str = path.to_string_lossy();
-            if path_str.contains("/run/user/") {
-                assert!(path_str.contains("12345"));
-            }
-        }
-    }
-
-    #[test]
-    fn test_get_socket_path_uid_run_dir_exists() {
+    fn test_get_socket_path_uses_xdg_runtime_biomeos() {
         let dir = tempfile::tempdir().expect("tempdir");
-        let run_user = dir.path().join("run").join("user").join("99999");
-        let app_dir = run_user.join("petaltongue");
-        std::fs::create_dir_all(&app_dir).expect("create dirs");
-
         let instance_id = InstanceId::new();
         let result = petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
-            "UID",
-            "99999",
+            "XDG_RUNTIME_DIR",
+            dir.path().to_str().expect("utf8 path"),
             || get_socket_path(&instance_id),
         );
-        // get_socket_path uses /run/user/{uid} which is fixed - not our temp dir
-        // So this tests the fallback path when /run/user/99999 doesn't exist
-        assert!(result.is_ok());
-        let path = result.unwrap();
+        let path = result.expect("path");
         let path_str = path.to_string_lossy();
+        assert!(path_str.contains("biomeos"));
         assert!(path_str.contains(&instance_id.as_str()));
         assert!(path_str.ends_with(".sock"));
     }

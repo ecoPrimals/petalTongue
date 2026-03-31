@@ -577,8 +577,8 @@ mod tests {
         sys.confirm_via_interaction(&OutputModality::Visual);
         let summary = sys.get_status_summary();
         assert!(summary.contains("Outputs:"));
-        assert!(summary.contains("1"));
-        assert!(summary.contains("2"));
+        assert!(summary.contains('1'));
+        assert!(summary.contains('2'));
     }
 
     #[test]

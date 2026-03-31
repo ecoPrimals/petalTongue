@@ -1,27 +1,44 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Server mode - IPC server without display
 //!
-//! Runs the Unix socket JSON-RPC server for petalTongue IPC.
-//! Clients can connect to query topology, health, capabilities, etc.
+//! Runs the JSON-RPC server for petalTongue IPC on a Unix domain socket
+//! (always) and optionally on a TCP port via `--port`.
 
 use crate::data_service::DataService;
 use crate::error::AppError;
 use petal_tongue_ipc::UnixSocketServer;
 use std::sync::Arc;
 
-/// Run IPC server (Unix socket JSON-RPC) without display.
+/// Run IPC server without display.
 ///
-/// Uses the shared `DataService` graph. Runs until interrupted (e.g. Ctrl+C).
-pub async fn run(data_service: Arc<DataService>) -> Result<(), AppError> {
+/// Binds the UDS at `$XDG_RUNTIME_DIR/biomeos/petaltongue.sock` (always).
+/// When `tcp_port` is provided, also binds a newline-delimited TCP JSON-RPC
+/// listener on `0.0.0.0:<port>`.
+///
+/// A motor command channel is created and drained so that `motor.*` IPC
+/// methods succeed even without an attached display.
+pub async fn run(data_service: Arc<DataService>, tcp_port: Option<u16>) -> Result<(), AppError> {
     let graph = data_service.graph();
 
-    let server = UnixSocketServer::new(graph)
-        .map_err(|e| AppError::Other(format!("Failed to create IPC server: {e}")))?;
+    let (motor_tx, motor_rx) = std::sync::mpsc::channel();
+
+    let mut server = UnixSocketServer::new(graph)
+        .map_err(|e| AppError::Other(format!("Failed to create IPC server: {e}")))?
+        .with_motor_sender(motor_tx);
+
+    if let Some(port) = tcp_port {
+        server = server.with_tcp_port(port);
+    }
 
     let server = Arc::new(server);
 
-    tracing::info!("🔌 IPC server starting (Unix socket, no display)");
-    tracing::info!("   Connect via JSON-RPC to the socket path");
+    tokio::task::spawn_blocking(move || {
+        while let Ok(cmd) = motor_rx.recv() {
+            tracing::debug!(?cmd, "motor command received (no display attached)");
+        }
+    });
+
+    tracing::info!("🔌 IPC server starting (UDS + optional TCP, no display)");
 
     server
         .start()
@@ -47,7 +64,11 @@ mod tests {
             env_test_helpers::with_env_var_async("PETALTONGUE_SOCKET", &socket_str, || async {
                 let data_service = Arc::new(DataService::new());
                 // run() blocks on server.start() - use timeout; either completes or times out
-                tokio::time::timeout(std::time::Duration::from_millis(500), run(data_service)).await
+                tokio::time::timeout(
+                    std::time::Duration::from_millis(500),
+                    run(data_service, None),
+                )
+                .await
             })
             .await;
 
@@ -66,7 +87,7 @@ mod tests {
         // Invalid socket path: "/" cannot be bound as a Unix socket
         let result = env_test_helpers::with_env_var_async("PETALTONGUE_SOCKET", "/", || async {
             let data_service = Arc::new(DataService::new());
-            run(data_service).await
+            run(data_service, None).await
         })
         .await;
 

@@ -17,7 +17,9 @@
 //! - Discovery: Capability-based, no hardcoding
 
 use crate::biomeos_error::BiomeOsClientError;
+use petal_tongue_core::constants::biomeos_socket_name;
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
+use petal_tongue_ipc::socket_path::discover_primal_socket;
 use serde_json::{Value, json};
 use std::path::PathBuf;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -26,7 +28,7 @@ use tracing::{debug, info};
 
 /// `BiomeOS` JSON-RPC client (TRUE PRIMAL architecture)
 pub struct BiomeOSJsonRpcClient {
-    /// Socket path (e.g., /run/user/1000/biomeos-neural-api.sock)
+    /// Socket path (e.g., `/run/user/1000/biomeos/biomeos-neural-api.sock`)
     socket_path: PathBuf,
     /// Request ID counter
     request_id: std::sync::atomic::AtomicU64,
@@ -37,9 +39,9 @@ impl BiomeOSJsonRpcClient {
     ///
     /// # Socket Path Discovery
     ///
-    /// 1. Environment variable: `BIOMEOS_SOCKET`
-    /// 2. XDG runtime: `/run/user/<uid>/biomeos-neural-api.sock`
-    /// 3. Fallback: `/tmp/biomeos-neural-api.sock`
+    /// 1. Environment variable: `BIOMEOS_SOCKET` / `BIOMEOS_NEURAL_API_SOCKET`
+    /// 2. Canonical: `$XDG_RUNTIME_DIR/biomeos/<name>.sock` (see `discover_primal_socket`)
+    /// 3. Fallback: `/tmp/biomeos/<name>.sock`
     ///
     /// # Errors
     /// Returns `BiomeOsClientError::SocketNotFound` if no socket found.
@@ -64,9 +66,8 @@ impl BiomeOSJsonRpcClient {
     ///
     /// # Socket Discovery Priority (TRUE PRIMAL compliant)
     /// 1. `BIOMEOS_SOCKET` or `BIOMEOS_NEURAL_API_SOCKET` - explicit override
-    /// 2. `$XDG_RUNTIME_DIR/biomeos-neural-api.sock` - XDG standard
-    /// 3. `/run/user/<uid>/biomeos-neural-api.sock` - user runtime directory
-    /// 4. `/tmp/biomeos-neural-api.sock` - legacy fallback
+    /// 2. `discover_primal_socket(biomeos_socket_name())` — `$XDG_RUNTIME_DIR/biomeos/<name>.sock`
+    ///    or `/tmp/biomeos/<name>.sock` when runtime dir is unavailable
     ///
     /// Returns error if no socket found (graceful degradation over silent failure)
     fn discover_socket_path() -> Result<PathBuf, BiomeOsClientError> {
@@ -85,35 +86,28 @@ impl BiomeOSJsonRpcClient {
             }
         }
 
-        // 2. Check XDG runtime directory
-        if let Ok(runtime_dir) = std::env::var("XDG_RUNTIME_DIR") {
-            let path = PathBuf::from(runtime_dir).join("biomeos-neural-api.sock");
-            if path.exists() {
-                return Ok(path);
-            }
+        // 2. Canonical biomeOS layout (`$XDG_RUNTIME_DIR` or `/tmp` + `biomeos/<name>.sock`)
+        let name = biomeos_socket_name();
+        let primary = discover_primal_socket(&name, None, None).map_err(|e| {
+            BiomeOsClientError::SocketNotFound(format!("biomeOS socket path resolution: {e}"))
+        })?;
+        if primary.exists() {
+            return Ok(primary);
         }
 
-        // 3. Try user runtime directory
-        if let Ok(uid) = std::env::var("UID") {
-            let path = PathBuf::from(format!("/run/user/{uid}/biomeos-neural-api.sock"));
-            if path.exists() {
-                return Ok(path);
-            }
-        }
-
-        // 4. Fallback to /tmp (legacy support)
-        let fallback = PathBuf::from("/tmp/biomeos-neural-api.sock");
-        if fallback.exists() {
-            return Ok(fallback);
+        let tmp_fallback = PathBuf::from("/tmp")
+            .join("biomeos")
+            .join(format!("{name}.sock"));
+        if tmp_fallback.exists() && tmp_fallback != primary {
+            return Ok(tmp_fallback);
         }
 
         // No socket found - return helpful error instead of silent default
-        Err(BiomeOsClientError::SocketNotFound(
+        Err(BiomeOsClientError::SocketNotFound(format!(
             "biomeOS socket not found. Set BIOMEOS_SOCKET env var or ensure biomeOS is running. \
-            Checked: $BIOMEOS_SOCKET, $XDG_RUNTIME_DIR/biomeos-neural-api.sock, \
-            /run/user/$UID/biomeos-neural-api.sock, /tmp/biomeos-neural-api.sock"
-                .to_string(),
-        ))
+            Checked: $BIOMEOS_SOCKET, $BIOMEOS_NEURAL_API_SOCKET, \
+            $XDG_RUNTIME_DIR/biomeos/{name}.sock, /tmp/biomeos/{name}.sock"
+        )))
     }
 
     /// Check if `BiomeOS` is available

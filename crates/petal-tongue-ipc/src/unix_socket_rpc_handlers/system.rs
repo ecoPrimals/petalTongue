@@ -7,27 +7,36 @@ use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse};
 use serde_json::{Value, json};
 
 /// Handle health.liveness: lightweight probe for Kubernetes/biomeOS — is the process alive?
+///
+/// Per `SEMANTIC_METHOD_NAMING_STANDARD.md` v2.2, the canonical response is
+/// `{"status": "alive"}`. The `alive` boolean is kept for backward compat.
 #[must_use]
 pub fn handle_health_liveness(_handlers: &RpcHandlers, request: JsonRpcRequest) -> JsonRpcResponse {
     JsonRpcResponse::success(
         request.id,
         json!({
+            "status": "alive",
             "alive": true,
         }),
     )
 }
 
 /// Handle health.readiness: is the primal ready to serve requests?
-/// Checks that the graph engine is accessible and not poisoned.
+///
+/// Per `SEMANTIC_METHOD_NAMING_STANDARD.md` v2.2, the canonical response is
+/// `{"status": "ready", ...}`. Checks graph engine and viz state accessibility.
 #[must_use]
 pub fn handle_health_readiness(handlers: &RpcHandlers, request: JsonRpcRequest) -> JsonRpcResponse {
     let graph_ok = handlers.graph.read().is_ok();
     let viz_ok = handlers.viz_state.read().is_ok();
     let ready = graph_ok && viz_ok;
 
+    let status = if ready { "ready" } else { "not_ready" };
+
     JsonRpcResponse::success(
         request.id,
         json!({
+            "status": status,
             "ready": ready,
             "checks": {
                 "graph_engine": graph_ok,
@@ -84,6 +93,11 @@ pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
         discovery_capabilities, methods, primal_names, self_capabilities,
     };
 
+    let mut transport = vec!["unix-socket"];
+    if handlers.tcp_enabled {
+        transport.push("tcp");
+    }
+
     JsonRpcResponse::success(
         id,
         json!({
@@ -91,7 +105,7 @@ pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
             "version": env!("CARGO_PKG_VERSION"),
             "family_id": &handlers.family_id,
             "protocol": "json-rpc-2.0",
-            "transport": ["unix-socket", "tarpc"],
+            "transport": transport,
             "capabilities": self_capabilities::ALL,
             "methods": [
                 "health.check",
@@ -201,6 +215,44 @@ pub fn get_topology(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
     });
 
     JsonRpcResponse::success(id, topology)
+}
+
+/// Handle `identity.get`: return primal identity for capability-based discovery.
+///
+/// Per `CAPABILITY_BASED_DISCOVERY_STANDARD.md` v1.1, every primal MUST implement
+/// `identity.get` so sourDough and other discovery agents can identify it.
+#[must_use]
+pub fn handle_identity_get(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
+    use petal_tongue_core::capability_names::primal_names;
+
+    JsonRpcResponse::success(
+        id,
+        json!({
+            "primal": primal_names::PETALTONGUE,
+            "version": env!("CARGO_PKG_VERSION"),
+            "family_id": &handlers.family_id,
+            "protocol": "json-rpc-2.0",
+            "uptime_seconds": handlers.uptime_seconds(),
+        }),
+    )
+}
+
+/// Handle `lifecycle.status`: return current lifecycle state.
+///
+/// Per `PRIMALSPRING_COMPOSITION_GUIDANCE.md`, primals must expose lifecycle
+/// status so primalSpring can validate composition health during gate probes.
+#[must_use]
+pub fn handle_lifecycle_status(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
+    let graph_ok = handlers.graph.read().is_ok();
+
+    JsonRpcResponse::success(
+        id,
+        json!({
+            "state": "running",
+            "uptime_seconds": handlers.uptime_seconds(),
+            "healthy": graph_ok,
+        }),
+    )
 }
 
 /// Handle `provider.register_capability`: accept toadStool `ProviderRegistry` registrations.
@@ -401,6 +453,7 @@ mod tests {
         );
         let resp = handle_health_liveness(&h, req);
         let r = resp.result.expect("success");
+        assert_eq!(r["status"], "alive");
         assert_eq!(r["alive"], true);
     }
 
@@ -414,8 +467,30 @@ mod tests {
         );
         let resp = handle_health_readiness(&h, req);
         let r = resp.result.expect("success");
+        assert_eq!(r["status"], "ready");
         assert_eq!(r["ready"], true);
         assert_eq!(r["checks"]["graph_engine"], true);
         assert_eq!(r["checks"]["visualization_state"], true);
+    }
+
+    #[test]
+    fn handle_identity_get_returns_primal_info() {
+        let h = test_handlers();
+        let resp = handle_identity_get(&h, serde_json::json!(1));
+        let r = resp.result.expect("success");
+        assert_eq!(r["primal"], "petaltongue");
+        assert!(r["version"].as_str().is_some());
+        assert_eq!(r["family_id"], "test-family");
+        assert_eq!(r["protocol"], "json-rpc-2.0");
+    }
+
+    #[test]
+    fn handle_lifecycle_status_returns_running() {
+        let h = test_handlers();
+        let resp = handle_lifecycle_status(&h, serde_json::json!(1));
+        let r = resp.result.expect("success");
+        assert_eq!(r["state"], "running");
+        assert_eq!(r["healthy"], true);
+        assert!(r["uptime_seconds"].as_u64().is_some());
     }
 }

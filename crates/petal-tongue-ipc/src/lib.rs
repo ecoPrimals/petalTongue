@@ -8,18 +8,17 @@
 //! This crate enables communication between petalTongue instances and other primals.
 //! It provides multiple protocols following ecosystem standards:
 //!
-//! # Protocol Priority (Ecosystem Standard)
+//! # Protocol Priority (`PRIMAL_IPC_PROTOCOL.md` / `manifest.toml`)
 //!
-//! 1. **tarpc** (PRIMARY) - High-performance primal-to-primal
-//!    - ~10-20 μs latency
-//!    - ~100K requests/sec
-//!    - Binary protocol (bincode)
+//! 1. **JSON-RPC 2.0** (PRIMARY listen surface)
+//!    - Newline-delimited over UDS (`$XDG_RUNTIME_DIR/biomeos/petaltongue.sock`)
+//!    - Optional TCP via `server --port <PORT>`
+//!    - Human-readable, universal compatibility
+//!
+//! 2. **tarpc** (outbound client only)
+//!    - Used when petalTongue connects *to* other primals on hot paths
+//!    - High-performance binary protocol (bincode)
 //!    - Type-safe at compile time
-//!
-//! 2. **JSON-RPC** (SECONDARY) - Local IPC and debugging
-//!    - Port-free Unix sockets
-//!    - Human-readable
-//!    - Universal compatibility
 //!
 //! 3. **HTTPS** (OPTIONAL) - External/browser access
 //!    - Network accessible

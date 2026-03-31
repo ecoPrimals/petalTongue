@@ -291,7 +291,7 @@ mod tests {
         let result = env_test_helpers::with_env_var(
             "PETALTONGUE_TELEMETRY_DIR",
             dir.path().to_str().unwrap(),
-            || telemetry_dir(),
+            telemetry_dir,
         );
         assert_eq!(result, Some(dir.path().to_path_buf()));
     }

@@ -360,8 +360,7 @@ mod tests {
     #[test]
     fn proc_stats_total_memory_non_negative() {
         let s = ProcStats::new();
-        let total = s.total_memory();
-        assert!(total >= 0);
+        let _total = s.total_memory();
     }
 
     #[test]
