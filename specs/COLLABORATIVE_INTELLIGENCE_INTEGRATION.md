@@ -117,7 +117,7 @@ Node States:
 
 #### 2.1 Method Specifications
 
-**Protocol**: JSON-RPC 2.0 over tarpc (primary) or HTTP (fallback)
+**Protocol**: tarpc PRIMARY for inter-primal RPC; JSON-RPC 2.0 universal fallback (line-delimited over UDS); HTTP for external/browser fallback
 
 ##### `ui.graph.editor_open`
 

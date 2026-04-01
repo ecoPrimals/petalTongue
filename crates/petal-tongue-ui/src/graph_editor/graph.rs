@@ -281,17 +281,20 @@ impl Graph {
         GraphValidator::validate_graph(self)
     }
 
-    /// Check if adding an edge would create a cycle
-    fn would_create_cycle<'a>(&'a self, new_edge: &'a GraphEdge) -> Result<bool> {
-        // Build adjacency list borrowing from graph and new_edge (zero allocations)
+    /// Build a borrowed adjacency list from the graph's edges.
+    fn adjacency_list(&self) -> HashMap<&str, Vec<&str>> {
         let mut adj: HashMap<&str, Vec<&str>> = HashMap::new();
-
         for edge in &self.edges {
             adj.entry(edge.from.as_str())
                 .or_default()
                 .push(edge.to.as_str());
         }
+        adj
+    }
 
+    /// Check if adding an edge would create a cycle
+    fn would_create_cycle<'a>(&'a self, new_edge: &'a GraphEdge) -> Result<bool> {
+        let mut adj = self.adjacency_list();
         adj.entry(new_edge.from.as_str())
             .or_default()
             .push(new_edge.to.as_str());
@@ -346,17 +349,12 @@ impl Graph {
     /// Returns an error if the graph contains cycles.
     pub fn topological_sort(&self) -> Result<Vec<String>> {
         let mut in_degree: HashMap<&str, usize> = HashMap::new();
-        let mut adj: HashMap<&str, Vec<&str>> = HashMap::new();
+        let adj = self.adjacency_list();
 
         for node_id in self.nodes.keys().map(String::as_str) {
             in_degree.insert(node_id, 0);
-            adj.insert(node_id, Vec::new());
         }
-
         for edge in &self.edges {
-            adj.entry(edge.from.as_str())
-                .or_default()
-                .push(edge.to.as_str());
             *in_degree.entry(edge.to.as_str()).or_default() += 1;
         }
 
@@ -403,13 +401,7 @@ impl Graph {
 
     /// Calculate maximum depth of the graph
     fn max_depth(&self) -> usize {
-        let mut adj: HashMap<&str, Vec<&str>> = HashMap::new();
-        for edge in &self.edges {
-            adj.entry(edge.from.as_str())
-                .or_default()
-                .push(edge.to.as_str());
-        }
-
+        let adj = self.adjacency_list();
         self.nodes
             .keys()
             .map(|node| Self::calculate_depth(node.as_str(), &adj, &mut HashSet::new()))

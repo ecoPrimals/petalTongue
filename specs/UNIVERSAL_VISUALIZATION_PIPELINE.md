@@ -96,6 +96,7 @@ pipeline that any data domain flows through.
 
 petalTongue accepts data from any source that can produce rows and columns.
 The ingest layer normalizes all sources to a common `DataFrame` abstraction.
+For inter-primal RPC, **tarpc is PRIMARY**; **JSON-RPC** is the universal fallback (subscriptions, tooling, or peers without tarpc).
 
 | Source | Transport | Notes |
 |--------|-----------|-------|

@@ -8,6 +8,7 @@ use crate::capability_parse;
 use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 use async_trait::async_trait;
+use petal_tongue_core::capability_names::socket_roles;
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -52,7 +53,7 @@ impl NeuralApiProvider {
             .or_else(|| std::env::var("FAMILY_ID").ok())
             .unwrap_or_else(|| "nat0".to_string());
 
-        let socket_name = format!("biomeos-neural-api-{family}.sock");
+        let socket_name = format!("{}-{}.sock", socket_roles::NEURAL_API, family);
 
         // Search in standard locations
         let search_paths = Self::get_search_paths();

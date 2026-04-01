@@ -6,6 +6,8 @@
 
 use std::time::Duration;
 
+use crate::capability_names::primal_names;
+
 /// Display name for this primal
 pub const PRIMAL_NAME: &str = "petalTongue";
 
@@ -51,7 +53,7 @@ pub fn discovery_service_socket_name() -> String {
 /// Overridable via `BIOMEOS_LEGACY_SOCKET` env var
 #[must_use]
 pub fn biomeos_legacy_socket_name() -> String {
-    std::env::var("BIOMEOS_LEGACY_SOCKET").unwrap_or_else(|_| "biomeos".to_string())
+    std::env::var("BIOMEOS_LEGACY_SOCKET").unwrap_or_else(|_| primal_names::BIOMEOS.to_string())
 }
 
 /// Default sandbox security endpoint port.
@@ -329,6 +331,38 @@ pub mod tufte_tolerances {
 
     /// Minimum coherence threshold for noise-based procedural generation.
     pub const NOISE_COHERENCE_TOL: f64 = 0.01;
+}
+
+/// Discovery HTTP client timeouts
+pub mod discovery_timeouts {
+    use std::time::Duration;
+
+    /// HTTP total request timeout
+    pub const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
+    /// HTTP connect timeout
+    pub const HTTP_CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+    /// HTTP connection pool idle timeout
+    pub const HTTP_POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(90);
+    /// TCP keepalive interval
+    pub const HTTP_TCP_KEEPALIVE: Duration = Duration::from_secs(60);
+    /// HTTP/2 keepalive ping interval
+    pub const HTTP2_KEEPALIVE_INTERVAL: Duration = Duration::from_secs(30);
+    /// HTTP/2 keepalive ping timeout
+    pub const HTTP2_KEEPALIVE_TIMEOUT: Duration = Duration::from_secs(10);
+
+    /// Discovery cache: primals TTL
+    pub const CACHE_PRIMALS_TTL: Duration = Duration::from_secs(30);
+    /// Discovery cache: topology TTL
+    pub const CACHE_TOPOLOGY_TTL: Duration = Duration::from_secs(60);
+    /// Discovery cache: health TTL
+    pub const CACHE_HEALTH_TTL: Duration = Duration::from_secs(10);
+
+    /// Songbird UDS connect timeout (aggressive for non-blocking discovery)
+    pub const SONGBIRD_CONNECT_TIMEOUT: Duration = Duration::from_millis(200);
+    /// Songbird UDS write timeout
+    pub const SONGBIRD_WRITE_TIMEOUT: Duration = Duration::from_millis(100);
+    /// Songbird UDS read timeout
+    pub const SONGBIRD_READ_TIMEOUT: Duration = Duration::from_millis(500);
 }
 
 /// Default client RPC timeout (overridable via `PETALTONGUE_RPC_TIMEOUT_SECS`)

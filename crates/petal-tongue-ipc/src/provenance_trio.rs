@@ -14,7 +14,6 @@
 use petal_tongue_core::capability_names::primal_names;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::hash::{Hash, Hasher};
 use tracing::{debug, warn};
 
 /// Provenance session tracking a visualization's lineage.
@@ -253,11 +252,11 @@ impl ProvenanceTrioClient {
             "id": self.next_id(),
         });
 
-        let mut payload = serde_json::to_string(&request).map_err(|e| format!("serialize: {e}"))?;
-        payload.push('\n');
+        let mut buf = serde_json::to_vec(&request).map_err(|e| format!("serialize: {e}"))?;
+        buf.push(b'\n');
 
         writer
-            .write_all(payload.as_bytes())
+            .write_all(&buf)
             .await
             .map_err(|e| format!("write: {e}"))?;
 
@@ -357,10 +356,11 @@ fn capability_matches_socket_name(capability: &str, socket_name: &str) -> bool {
 
 /// Compute a BLAKE3 hash of data (returns first 8 bytes as u64 for display).
 fn blake3_hash(data: &[u8]) -> u64 {
-    // Simple hash without pulling in blake3 crate -- use std hash as placeholder
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    data.hash(&mut hasher);
-    hasher.finish()
+    let hash = blake3::hash(data);
+    let bytes = hash.as_bytes();
+    u64::from_le_bytes([
+        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+    ])
 }
 
 #[cfg(test)]

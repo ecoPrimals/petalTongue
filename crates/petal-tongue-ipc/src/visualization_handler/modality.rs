@@ -12,19 +12,45 @@ use petal_tongue_scene::modality::{
 use petal_tongue_scene::scene_graph::SceneGraph;
 use tracing::warn;
 
+/// Compile a scene graph to SVG and return the raw SVG string.
+fn compile_svg(scene: &SceneGraph) -> (serde_json::Value, String) {
+    let compiler = SvgCompiler;
+    match compiler.compile(scene) {
+        ModalityOutput::Svg(b) => (
+            serde_json::Value::String(String::from_utf8_lossy(b.as_ref()).into_owned()),
+            "svg".into(),
+        ),
+        _ => (serde_json::Value::Null, "error".into()),
+    }
+}
+
+/// Compile a scene graph to an HTML document wrapping SVG (PT-04).
+fn compile_html(scene: &SceneGraph) -> (serde_json::Value, String) {
+    let compiler = SvgCompiler;
+    match compiler.compile(scene) {
+        ModalityOutput::Svg(b) => {
+            let svg = String::from_utf8_lossy(b.as_ref());
+            let html = format!(
+                "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\
+                 <meta charset=\"utf-8\">\
+                 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\
+                 <title>petalTongue Export</title>\
+                 <style>body{{margin:0;display:flex;justify-content:center;\
+                 align-items:center;min-height:100vh;background:#1a1a2e}}\
+                 svg{{max-width:100%;height:auto}}</style>\
+                 </head>\n<body>\n{svg}\n</body>\n</html>"
+            );
+            (serde_json::Value::String(html), "html".into())
+        }
+        _ => (serde_json::Value::Null, "error".into()),
+    }
+}
+
 /// Compile a scene graph to the requested output modality.
 pub(super) fn compile_modality(scene: &SceneGraph, modality: &str) -> (serde_json::Value, String) {
     match modality {
-        "svg" => {
-            let compiler = SvgCompiler;
-            match compiler.compile(scene) {
-                ModalityOutput::Svg(b) => (
-                    serde_json::Value::String(String::from_utf8_lossy(b.as_ref()).into_owned()),
-                    "svg".into(),
-                ),
-                _ => (serde_json::Value::Null, "error".into()),
-            }
-        }
+        "svg" => compile_svg(scene),
+        "html" => compile_html(scene),
         "audio" => {
             let compiler = AudioCompiler;
             match compiler.compile(scene) {
@@ -90,14 +116,7 @@ pub(super) fn compile_modality(scene: &SceneGraph, modality: &str) -> (serde_jso
         }
         other => {
             warn!("Unknown modality '{other}', falling back to SVG");
-            let compiler = SvgCompiler;
-            match compiler.compile(scene) {
-                ModalityOutput::Svg(b) => (
-                    serde_json::Value::String(String::from_utf8_lossy(b.as_ref()).into_owned()),
-                    "svg".into(),
-                ),
-                _ => (serde_json::Value::Null, "error".into()),
-            }
+            compile_svg(scene)
         }
     }
 }
@@ -192,5 +211,20 @@ mod tests {
         let (output, format) = compile_modality(&scene, "");
         assert_eq!(format, "svg");
         assert!(output.is_string());
+    }
+
+    #[test]
+    fn compile_modality_html_wraps_svg() {
+        let scene = minimal_scene();
+        let (output, format) = compile_modality(&scene, "html");
+        assert_eq!(format, "html");
+        assert!(output.is_string());
+        let s = output.as_str().unwrap();
+        assert!(
+            s.contains("<!DOCTYPE html>"),
+            "should be full HTML document"
+        );
+        assert!(s.contains("<svg"), "should contain embedded SVG");
+        assert!(s.contains("</html>"), "should close HTML");
     }
 }

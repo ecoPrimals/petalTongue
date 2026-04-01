@@ -79,9 +79,9 @@ impl<T> ProviderCache<T> {
             cache: Arc::new(RwLock::new(LruCache::new(
                 NonZeroUsize::new(capacity.max(1)).unwrap_or(NonZeroUsize::MIN),
             ))),
-            primals_ttl: Duration::from_secs(30),
-            topology_ttl: Duration::from_secs(60),
-            health_ttl: Duration::from_secs(10),
+            primals_ttl: petal_tongue_core::constants::discovery_timeouts::CACHE_PRIMALS_TTL,
+            topology_ttl: petal_tongue_core::constants::discovery_timeouts::CACHE_TOPOLOGY_TTL,
+            health_ttl: petal_tongue_core::constants::discovery_timeouts::CACHE_HEALTH_TTL,
             hits: Arc::new(RwLock::new(0)),
             misses: Arc::new(RwLock::new(0)),
         }

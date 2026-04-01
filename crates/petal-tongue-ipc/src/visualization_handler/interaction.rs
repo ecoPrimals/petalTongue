@@ -11,6 +11,20 @@ use std::collections::HashMap;
 
 use super::types::{InteractionApplyRequest, InteractionApplyResponse, Perspective};
 
+/// A pending callback dispatch for a subscriber with `callback_method` set.
+///
+/// The IPC server sends these as JSON-RPC notifications to the subscriber's
+/// socket, completing the healthSpring V12 callback pattern (push instead of poll).
+#[derive(Debug, Clone)]
+pub struct CallbackDispatch {
+    /// Subscriber that requested callback delivery.
+    pub subscriber_id: String,
+    /// JSON-RPC method to invoke on the subscriber's socket.
+    pub method: String,
+    /// Events to deliver in this callback batch.
+    pub events: Vec<InteractionEventNotification>,
+}
+
 /// Poll-based registry for interaction event subscribers.
 ///
 /// Springs call `interaction.subscribe` to register, then `interaction.poll`
@@ -105,14 +119,28 @@ impl InteractionSubscriberRegistry {
     }
 
     /// Push an event to all active subscribers, respecting event type filters.
-    pub fn broadcast(&mut self, event: &InteractionEventNotification) {
-        for sub in self.subscribers.values_mut() {
+    ///
+    /// Returns a list of `(subscriber_id, callback_method, events)` for
+    /// subscribers that have a `callback_method` set, so the caller can
+    /// dispatch JSON-RPC notifications proactively instead of waiting for poll.
+    pub fn broadcast(&mut self, event: &InteractionEventNotification) -> Vec<CallbackDispatch> {
+        let mut callbacks = Vec::new();
+        for (id, sub) in &mut self.subscribers {
             let passes_event_filter =
                 sub.event_filter.is_empty() || sub.event_filter.contains(&event.event_type);
             if passes_event_filter {
                 sub.queue.push(event.clone());
+
+                if let Some(method) = &sub.callback_method {
+                    callbacks.push(CallbackDispatch {
+                        subscriber_id: id.clone(),
+                        method: method.clone(),
+                        events: vec![event.clone()],
+                    });
+                }
             }
         }
+        callbacks
     }
 
     /// Drain queued events for a subscriber, returning them.
@@ -686,5 +714,56 @@ mod tests {
             Some("grammar-1".to_string()),
         ));
         assert_eq!(reg.callback_method("sub1"), Some("cb"));
+    }
+
+    #[test]
+    fn test_broadcast_returns_callback_dispatches() {
+        let mut reg = InteractionSubscriberRegistry::new();
+        reg.subscribe_with_filter("poll-sub", vec![], None, None);
+        reg.subscribe_with_filter(
+            "cb-sub",
+            vec![],
+            Some("spring.on_interaction".to_string()),
+            None,
+        );
+
+        let event = InteractionEventNotification {
+            event_type: "select".to_string(),
+            targets: vec!["node-1".to_string()],
+            timestamp: "2026-04-01T00:00:00Z".to_string(),
+            perspective_id: None,
+        };
+
+        let callbacks = reg.broadcast(&event);
+
+        assert_eq!(
+            callbacks.len(),
+            1,
+            "only the callback subscriber should produce a dispatch"
+        );
+        assert_eq!(callbacks[0].subscriber_id, "cb-sub");
+        assert_eq!(callbacks[0].method, "spring.on_interaction");
+        assert_eq!(callbacks[0].events.len(), 1);
+        assert_eq!(callbacks[0].events[0].event_type, "select");
+
+        // poll-sub should still have the event queued for poll
+        let polled = reg.poll("poll-sub");
+        assert_eq!(polled.len(), 1);
+    }
+
+    #[test]
+    fn test_broadcast_no_callbacks_when_none_registered() {
+        let mut reg = InteractionSubscriberRegistry::new();
+        reg.subscribe("poll-only");
+
+        let event = InteractionEventNotification {
+            event_type: "hover".to_string(),
+            targets: vec![],
+            timestamp: String::new(),
+            perspective_id: None,
+        };
+
+        let callbacks = reg.broadcast(&event);
+        assert!(callbacks.is_empty());
     }
 }

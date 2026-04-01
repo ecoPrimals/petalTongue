@@ -8,6 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
+use crate::constants::APP_DIR_NAME;
 use crate::instance::InstanceId;
 
 use super::SessionError;
@@ -37,7 +38,7 @@ pub(super) fn get_session_path(instance_id: &InstanceId) -> Result<PathBuf, Sess
 /// Get the base directory for petalTongue data
 fn get_base_dir() -> Result<PathBuf, SessionError> {
     crate::platform_dirs::data_dir()
-        .map(|dir| dir.join("petaltongue"))
+        .map(|dir| dir.join(APP_DIR_NAME))
         .map_err(|e| {
             SessionError::DirectoryError(format!("Could not determine data directory: {e}"))
         })

@@ -8,8 +8,8 @@
 //! # TRUE PRIMAL Architecture
 //!
 //! Per `PRIMAL_IPC_PROTOCOL.md`, inter-primal communication should use:
-//! 1. **JSON-RPC 2.0** over Unix sockets (PRIMARY) - Use `BiomeOSJsonRpcClient`
-//! 2. **tarpc** for high-performance needs (SECONDARY)
+//! 1. **tarpc** (PRIMARY for inter-primal RPC)
+//! 2. **JSON-RPC 2.0** over Unix sockets (universal fallback) - Use `BiomeOSJsonRpcClient`
 //! 3. **HTTP/REST** only for external/browser access (FALLBACK) - Use `BiomeOSClient`
 
 #![warn(missing_docs)]
@@ -20,7 +20,7 @@
 
 pub mod biomeos_client; // HTTP client (fallback for external use)
 pub mod biomeos_error;
-pub mod biomeos_jsonrpc_client; // JSON-RPC client (TRUE PRIMAL)
+pub mod biomeos_jsonrpc_client; // JSON-RPC client (universal fallback)
 
 pub use biomeos_client::{BiomeOSClient, DiscoveredPrimal, DiscoveryResponse};
 pub use biomeos_error::BiomeOsClientError;

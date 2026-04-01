@@ -189,11 +189,9 @@ impl SongbirdClient {
         // Connect to Songbird
         let mut stream = UnixStream::connect(&self.socket_path).await?;
 
-        // Send request (line-delimited JSON-RPC)
-        let request_str = serde_json::to_string(request)?;
-        stream
-            .write_all(format!("{request_str}\n").as_bytes())
-            .await?;
+        let mut buf = serde_json::to_vec(request)?;
+        buf.push(b'\n');
+        stream.write_all(&buf).await?;
         stream.flush().await?;
 
         // Read response

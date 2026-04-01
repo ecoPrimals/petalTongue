@@ -345,20 +345,15 @@ where
         .await
         .ok_or(IpcServerError::ChannelClosed)?;
 
-    // Send response (JSON line)
-    let response_json = serde_json::to_string(&response).map_err(|e| {
+    let mut buf = serde_json::to_vec(&response).map_err(|e| {
         IpcServerError::SerializeError(format!("Failed to serialize response: {e}"))
     })?;
+    buf.push(b'\n');
 
     writer
-        .write_all(response_json.as_bytes())
+        .write_all(&buf)
         .await
         .map_err(|e| IpcServerError::IoError(format!("Failed to write response: {e}")))?;
-
-    writer
-        .write_all(b"\n")
-        .await
-        .map_err(|e| IpcServerError::IoError(format!("Failed to write newline: {e}")))?;
 
     writer
         .flush()

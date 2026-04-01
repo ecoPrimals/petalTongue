@@ -9,12 +9,13 @@
 //! scanning can discover them via `readdir()`.
 
 use crate::socket_path_error::SocketPathError;
+use petal_tongue_core::capability_names::primal_names;
 use petal_tongue_core::constants::APP_DIR_NAME;
 use std::env;
 use std::path::{Path, PathBuf};
 
 /// Shared biomeOS socket directory name.
-const BIOMEOS_SOCK_DIR: &str = "biomeos";
+const BIOMEOS_SOCK_DIR: &str = primal_names::BIOMEOS;
 
 /// Get the socket path for this petalTongue instance.
 ///

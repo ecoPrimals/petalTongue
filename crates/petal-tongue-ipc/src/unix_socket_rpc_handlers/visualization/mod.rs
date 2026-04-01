@@ -413,7 +413,7 @@ pub fn handle_capabilities(_handlers: &RpcHandlers, id: Value) -> JsonRpcRespons
         "Point", "Line", "Bar", "Area", "Ribbon", "Tile", "Arc", "ErrorBar", "Mesh3D", "Sphere",
         "Cylinder", "Text",
     ];
-    let output_modalities = ["svg", "audio", "description"];
+    let output_modalities = ["svg", "html", "audio", "description"];
     let tufte_constraints = ["DataInkRatio", "ChartjunkDetection"];
     JsonRpcResponse::success(
         id,

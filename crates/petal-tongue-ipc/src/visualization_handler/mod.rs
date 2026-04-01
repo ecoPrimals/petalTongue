@@ -21,7 +21,8 @@ mod stream;
 mod types;
 
 pub use interaction::{
-    InteractionEventNotification, InteractionSubscriberRegistry, SensorStreamRegistry,
+    CallbackDispatch, InteractionEventNotification, InteractionSubscriberRegistry,
+    SensorStreamRegistry,
 };
 pub use pipeline::PipelineRegistry;
 pub use state::{RenderSession, VisualizationState};
