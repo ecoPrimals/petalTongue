@@ -72,6 +72,21 @@ pub fn to_egui_stroke(s: &petal_tongue_scene::primitive::StrokeStyle) -> Stroke 
     Stroke::new(s.width, to_color32(s.color))
 }
 
+/// Transform a world-space (f64, f64) point through `Transform2D` and apply screen offset.
+#[expect(clippy::cast_possible_truncation, reason = "scene f64 to screen f32")]
+fn world_to_screen(transform: &Transform2D, offset: Vec2, x: f64, y: f64) -> Pos2 {
+    let (tx, ty) = transform.apply(x, y);
+    Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y)
+}
+
+/// Transform a slice of world-space [f64; 2] points to screen-space `Pos2`.
+fn world_points_to_screen(transform: &Transform2D, offset: Vec2, points: &[[f64; 2]]) -> Vec<Pos2> {
+    points
+        .iter()
+        .map(|[x, y]| world_to_screen(transform, offset, *x, *y))
+        .collect()
+}
+
 /// Render a single primitive with its world transform and accumulated opacity.
 ///
 /// Returns the bounding `Rect` on screen for the rendered shape, or `None`
@@ -93,8 +108,7 @@ pub fn paint_primitive(
             stroke,
             ..
         } => {
-            let (tx, ty) = transform.apply(*x, *y);
-            let center = Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y);
+            let center = world_to_screen(transform, offset, *x, *y);
             let r = *radius as f32;
             let fill_c = apply_opacity(
                 fill.map(to_color32).unwrap_or(Color32::TRANSPARENT),
@@ -112,13 +126,7 @@ pub fn paint_primitive(
             ..
         } => {
             let egui_stroke = to_egui_stroke(s);
-            let pts: Vec<Pos2> = points
-                .iter()
-                .map(|[x, y]| {
-                    let (tx, ty) = transform.apply(*x, *y);
-                    Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y)
-                })
-                .collect();
+            let pts = world_points_to_screen(transform, offset, points);
             if pts.len() >= 2 {
                 let rect = bounding_rect(&pts);
                 if *closed && pts.len() >= 3 {
@@ -142,12 +150,9 @@ pub fn paint_primitive(
             corner_radius,
             ..
         } => {
-            let (tx, ty) = transform.apply(*x, *y);
-            let (tx2, ty2) = transform.apply(x + width, y + height);
-            let rect = Rect::from_min_max(
-                Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y),
-                Pos2::new(tx2 as f32 + offset.x, ty2 as f32 + offset.y),
-            );
+            let min = world_to_screen(transform, offset, *x, *y);
+            let max = world_to_screen(transform, offset, x + width, y + height);
+            let rect = Rect::from_min_max(min, max);
             let fill_c = apply_opacity(
                 fill.map(to_color32).unwrap_or(Color32::TRANSPARENT),
                 opacity,
@@ -168,8 +173,7 @@ pub fn paint_primitive(
             bold: _bold,
             ..
         } => {
-            let (tx, ty) = transform.apply(*x, *y);
-            let pos = Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y);
+            let pos = world_to_screen(transform, offset, *x, *y);
             let font = egui::FontId::proportional(*font_size as f32);
             let align = anchor_to_align2(anchor);
             let text_color = apply_opacity(to_color32(*color), opacity);
@@ -183,13 +187,7 @@ pub fn paint_primitive(
             stroke,
             ..
         } => {
-            let pts: Vec<Pos2> = points
-                .iter()
-                .map(|[x, y]| {
-                    let (tx, ty) = transform.apply(*x, *y);
-                    Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y)
-                })
-                .collect();
+            let pts = world_points_to_screen(transform, offset, points);
             let fill_c = apply_opacity(to_color32(*fill), opacity);
             let stroke_s = stroke.as_ref().map_or(Stroke::NONE, to_egui_stroke);
             if pts.len() >= 3 {
@@ -218,15 +216,11 @@ pub fn paint_primitive(
                     let t = angle_span.mul_add(f64::from(i) / f64::from(segments), *start_angle);
                     let px = cx + radius * t.cos();
                     let py = cy + radius * t.sin();
-                    let (tx, ty) = transform.apply(px, py);
-                    Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y)
+                    world_to_screen(transform, offset, px, py)
                 })
                 .collect();
             if let Some(fill_color) = fill {
-                let mut fan = vec![{
-                    let (tx, ty) = transform.apply(*cx, *cy);
-                    Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y)
-                }];
+                let mut fan = vec![world_to_screen(transform, offset, *cx, *cy)];
                 fan.extend_from_slice(&pts);
                 let fill_c = apply_opacity(to_color32(*fill_color), opacity);
                 painter.add(egui::Shape::convex_polygon(fan, fill_c, Stroke::NONE));
@@ -245,9 +239,7 @@ pub fn paint_primitive(
             fill,
             ..
         } => {
-            let mut pts = Vec::new();
-            let (sx, sy) = transform.apply(start[0], start[1]);
-            pts.push(Pos2::new(sx as f32 + offset.x, sy as f32 + offset.y));
+            let mut pts = vec![world_to_screen(transform, offset, start[0], start[1])];
 
             let mut cur = *start;
             for seg in segments {
@@ -266,8 +258,7 @@ pub fn paint_primitive(
                     let py = (3.0 * mt * t2)
                         .mul_add(seg.cp2[1], mt3 * p0[1] + 3.0 * mt2 * t * seg.cp1[1])
                         + t3 * seg.end[1];
-                    let (tx, ty) = transform.apply(px, py);
-                    pts.push(Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y));
+                    pts.push(world_to_screen(transform, offset, px, py));
                 }
                 cur = seg.end;
             }
@@ -297,7 +288,7 @@ pub fn paint_primitive(
             }
             let mut mesh = egui::Mesh::default();
             for v in vertices {
-                let (tx, ty) = transform.apply(v.position[0], v.position[1]);
+                let pos = world_to_screen(transform, offset, v.position[0], v.position[1]);
                 let color = Color32::from_rgba_unmultiplied(
                     (v.color.r * 255.0) as u8,
                     (v.color.g * 255.0) as u8,
@@ -305,7 +296,7 @@ pub fn paint_primitive(
                     ((v.color.a * opacity) * 255.0) as u8,
                 );
                 mesh.vertices.push(egui::epaint::Vertex {
-                    pos: Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y),
+                    pos,
                     uv: Pos2::ZERO,
                     color,
                 });

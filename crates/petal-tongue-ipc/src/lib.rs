@@ -10,15 +10,15 @@
 //!
 //! # Protocol Priority (`PRIMAL_IPC_PROTOCOL.md` / `manifest.toml`)
 //!
-//! 1. **JSON-RPC 2.0** (PRIMARY listen surface)
-//!    - Newline-delimited over UDS (`$XDG_RUNTIME_DIR/biomeos/petaltongue.sock`)
-//!    - Optional TCP via `server --port <PORT>`
-//!    - Human-readable, universal compatibility
-//!
-//! 2. **tarpc** (outbound client only)
+//! 1. **tarpc** (PRIMARY for inter-primal RPC)
 //!    - Used when petalTongue connects *to* other primals on hot paths
 //!    - High-performance binary protocol (bincode)
 //!    - Type-safe at compile time
+//!
+//! 2. **JSON-RPC 2.0** (universal fallback — listen surface)
+//!    - Newline-delimited over UDS (`$XDG_RUNTIME_DIR/biomeos/petaltongue.sock`)
+//!    - Optional TCP via `server --port <PORT>`
+//!    - Human-readable; maximum compatibility when tarpc is unavailable
 //!
 //! 3. **HTTPS** (OPTIONAL) - External/browser access
 //!    - Network accessible
@@ -58,7 +58,7 @@
 //! └─────────────────────────────────────────────────────────────┘
 //!                            ↓
 //! ┌─────────────────────────────────────────────────────────────┐
-//! │              LOCAL IPC (JSON-RPC)                           │
+//! │              JSON-RPC listen surface (universal fallback)   │
 //! │  petalTongue instance → petalTongue instance               │
 //! │  petalTongue → CLI tools                                   │
 //! │  Unix sockets: $XDG_RUNTIME_DIR/biomeos/petaltongue.sock   │
@@ -99,7 +99,7 @@ pub mod unix_socket_rpc_handlers;
 pub mod unix_socket_server;
 pub mod visualization_handler;
 
-// JSON-RPC (SECONDARY - local IPC)
+// JSON-RPC (universal fallback — listen surface)
 pub use client::{IpcClient, IpcClientError};
 pub use discovery_helpers::{address_env_var, resolve_primal_socket, socket_env_var};
 pub use ipc_errors::{DispatchOutcome, IpcErrorPhase, StreamItem, exit_code, extract_rpc_error};
@@ -110,13 +110,13 @@ pub use resilience::{CircuitBreaker, CircuitState, RetryPolicy};
 pub use server::{IpcServer, IpcServerError};
 pub use unix_socket_server::UnixSocketServer;
 pub use visualization_handler::{
-    BackpressureConfig, ConstraintResult, DismissRequest, DismissResponse, ExportRequest,
-    ExportResponse, GrammarRenderRequest, GrammarRenderResponse, InteractionApplyRequest,
-    InteractionApplyResponse, InteractionEventNotification, InteractionSubscriberRegistry,
-    Perspective, PipelineRegistry, SensorStreamRegistry, SessionStatusRequest,
-    SessionStatusResponse, StreamOperation, StreamUpdateRequest, StreamUpdateResponse,
-    ValidateRequest, ValidateResponse, VisualizationRenderRequest, VisualizationRenderResponse,
-    VisualizationState,
+    BackpressureConfig, CallbackDispatch, ConstraintResult, DismissRequest, DismissResponse,
+    ExportRequest, ExportResponse, GrammarRenderRequest, GrammarRenderResponse,
+    InteractionApplyRequest, InteractionApplyResponse, InteractionEventNotification,
+    InteractionSubscriberRegistry, Perspective, PipelineRegistry, SensorStreamRegistry,
+    SessionStatusRequest, SessionStatusResponse, StreamOperation, StreamUpdateRequest,
+    StreamUpdateResponse, ValidateRequest, ValidateResponse, VisualizationRenderRequest,
+    VisualizationRenderResponse, VisualizationState,
 };
 
 // tarpc (PRIMARY - primal-to-primal)

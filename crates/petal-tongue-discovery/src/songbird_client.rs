@@ -15,7 +15,6 @@ use petal_tongue_core::types::{PrimalHealthStatus, PrimalInfo};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::path::PathBuf;
-use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
 use tracing::{debug, info, warn};
@@ -151,25 +150,7 @@ impl SongbirdClient {
         });
 
         let result = self.send_request(request).await?;
-
-        // Parse primals from response
-        let primals = result
-            .as_array()
-            .ok_or_else(|| DiscoveryError::ExpectedArray {
-                context: " of primals".to_string(),
-            })?;
-
-        let mut primal_infos = Vec::new();
-        for primal in primals {
-            if let Ok(info) = self.parse_primal(primal) {
-                primal_infos.push(info);
-            } else {
-                warn!(
-                    "Failed to parse primal from Songbird response: {:?}",
-                    primal
-                );
-            }
-        }
+        let primal_infos = self.parse_primal_array(&result)?;
 
         info!(
             "🎵 Songbird found {} primals with capability '{}'",
@@ -190,10 +171,9 @@ impl SongbirdClient {
     pub async fn get_all_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         debug!("🔍 Querying Songbird for all registered primals");
 
-        // Songbird's API uses discovery.query with "*" to get all primals
         let request = json!({
             "jsonrpc": "2.0",
-            "method": "discovery.query",  // Semantic naming
+            "method": "discovery.query",
             "params": {
                 "capability": "*"
             },
@@ -201,25 +181,7 @@ impl SongbirdClient {
         });
 
         let result = self.send_request(request).await?;
-
-        // Parse primals from response
-        let primals = result
-            .as_array()
-            .ok_or_else(|| DiscoveryError::ExpectedArray {
-                context: " of primals".to_string(),
-            })?;
-
-        let mut primal_infos = Vec::new();
-        for primal in primals {
-            if let Ok(info) = self.parse_primal(primal) {
-                primal_infos.push(info);
-            } else {
-                warn!(
-                    "Failed to parse primal from Songbird response: {:?}",
-                    primal
-                );
-            }
-        }
+        let primal_infos = self.parse_primal_array(&result)?;
 
         info!(
             "🎵 Songbird reports {} total registered primals",
@@ -227,6 +189,26 @@ impl SongbirdClient {
         );
 
         Ok(primal_infos)
+    }
+
+    /// Parse a JSON-RPC result array into a list of `PrimalInfo`, logging parse failures.
+    fn parse_primal_array(&self, result: &Value) -> DiscoveryResult<Vec<PrimalInfo>> {
+        let primals = result
+            .as_array()
+            .ok_or_else(|| DiscoveryError::ExpectedArray {
+                context: " of primals".to_string(),
+            })?;
+
+        Ok(primals
+            .iter()
+            .filter_map(|v| match self.parse_primal(v) {
+                Ok(info) => Some(info),
+                Err(e) => {
+                    warn!("Failed to parse primal from Songbird response: {e}");
+                    None
+                }
+            })
+            .collect())
     }
 
     /// Health check - verify Songbird is responding (semantic: health.check)
@@ -250,8 +232,8 @@ impl SongbirdClient {
     ///
     /// Uses aggressive timeouts to prevent hanging on unresponsive Songbird.
     async fn send_request(&self, request: Value) -> DiscoveryResult<Value> {
-        // CRITICAL: Wrap socket connect in timeout
-        let connect_timeout = Duration::from_millis(200);
+        use petal_tongue_core::constants::discovery_timeouts;
+        let connect_timeout = discovery_timeouts::SONGBIRD_CONNECT_TIMEOUT;
 
         let stream =
             match tokio::time::timeout(connect_timeout, UnixStream::connect(&self.socket_path))
@@ -271,14 +253,13 @@ impl SongbirdClient {
         let (reader, mut writer) = stream.into_split();
         let mut reader = BufReader::new(reader);
 
-        // CRITICAL: Wrap write operations in timeout
-        let write_timeout = Duration::from_millis(100);
+        let write_timeout = discovery_timeouts::SONGBIRD_WRITE_TIMEOUT;
 
-        let request_json = serde_json::to_string(&request).map_err(DiscoveryError::Json)?;
+        let mut request_bytes = serde_json::to_vec(&request).map_err(DiscoveryError::Json)?;
+        request_bytes.push(b'\n');
 
         match tokio::time::timeout(write_timeout, async {
-            writer.write_all(request_json.as_bytes()).await?;
-            writer.write_all(b"\n").await?;
+            writer.write_all(&request_bytes).await?;
             writer.flush().await?;
             Ok::<(), std::io::Error>(())
         })
@@ -293,8 +274,7 @@ impl SongbirdClient {
             }
         }
 
-        // CRITICAL: Wrap read operation in timeout
-        let read_timeout = Duration::from_millis(500);
+        let read_timeout = discovery_timeouts::SONGBIRD_READ_TIMEOUT;
 
         let mut line = String::new();
         match tokio::time::timeout(read_timeout, reader.read_line(&mut line)).await {

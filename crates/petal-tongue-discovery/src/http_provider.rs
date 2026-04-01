@@ -41,7 +41,6 @@ use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 use async_trait::async_trait;
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 
 /// HTTP-based visualization data provider
 ///
@@ -101,14 +100,15 @@ impl HttpVisualizationProvider {
         );
         tracing::info!("Using HTTP provider at: {}", endpoint_str);
 
+        use petal_tongue_core::constants::discovery_timeouts;
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30)) // Increased timeout
-            .connect_timeout(Duration::from_secs(10)) // Separate connect timeout
-            .pool_idle_timeout(Duration::from_secs(90)) // Keep connections alive longer
-            .pool_max_idle_per_host(10) // More idle connections
-            .tcp_keepalive(Duration::from_secs(60)) // TCP keep-alive
-            .http2_keep_alive_interval(Some(Duration::from_secs(30))) // HTTP/2 keep-alive
-            .http2_keep_alive_timeout(Duration::from_secs(10))
+            .timeout(discovery_timeouts::HTTP_TIMEOUT)
+            .connect_timeout(discovery_timeouts::HTTP_CONNECT_TIMEOUT)
+            .pool_idle_timeout(discovery_timeouts::HTTP_POOL_IDLE_TIMEOUT)
+            .pool_max_idle_per_host(10)
+            .tcp_keepalive(discovery_timeouts::HTTP_TCP_KEEPALIVE)
+            .http2_keep_alive_interval(Some(discovery_timeouts::HTTP2_KEEPALIVE_INTERVAL))
+            .http2_keep_alive_timeout(discovery_timeouts::HTTP2_KEEPALIVE_TIMEOUT)
             .build()
             .map_err(DiscoveryError::HttpError)?;
 

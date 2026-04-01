@@ -359,7 +359,7 @@ pub async fn render_via_toadstool(
     // 1. Serialize egui rendering commands
     let commands = serde_json::to_vec(egui_commands)?;
     
-    // 2. Send to Toadstool via JSON-RPC or TARPC
+    // 2. Send to Toadstool via tarpc (primary) or JSON-RPC (fallback)
     let response: RenderResponse = jsonrpc_request(
         endpoint,
         "render_egui_wasm",
@@ -501,7 +501,7 @@ async fn benchmark_backend(backend: &mut dyn DisplayBackend) -> Result<BackendBe
 ## Implementation Roadmap
 
 ### Phase 1: Toadstool WASM Integration (Week 1)
-- [ ] Define rendering protocol (JSON-RPC)
+- [ ] Define rendering protocol (tarpc primary, JSON-RPC fallback)
 - [ ] Implement ToadstoolDisplay backend
 - [ ] Test with Toadstool WASM module
 - [ ] Benchmark performance

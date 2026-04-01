@@ -287,13 +287,12 @@ impl JsonRpcClient {
         let (reader, mut writer) = stream.into_split();
         let mut reader = BufReader::new(reader);
 
-        let request_json = serde_json::to_string(request)
+        let mut request_bytes = serde_json::to_vec(request)
             .map_err(|e| JsonRpcClientError::Serialization(format!("Serialize request: {e}")))?;
-
-        let mut request_bytes = request_json.into_bytes();
         request_bytes.push(b'\n');
-        let request_bytes: Bytes = Bytes::from(request_bytes);
-        timeout(self.timeout, writer.write_all(&request_bytes))
+
+        let wire_bytes: Bytes = Bytes::from(request_bytes);
+        timeout(self.timeout, writer.write_all(&wire_bytes))
             .await
             .map_err(|_| JsonRpcClientError::Timeout("Write timeout".to_string()))??;
         timeout(self.timeout, writer.flush())
@@ -345,12 +344,12 @@ impl JsonRpcClient {
             })?;
 
         let (_reader, mut writer) = stream.into_split();
-        let request_json = serde_json::to_string(request)
+        let mut request_bytes = serde_json::to_vec(request)
             .map_err(|e| JsonRpcClientError::Serialization(format!("Serialize request: {e}")))?;
-        let mut request_bytes = request_json.into_bytes();
         request_bytes.push(b'\n');
-        let request_bytes: Bytes = Bytes::from(request_bytes);
-        timeout(self.timeout, writer.write_all(&request_bytes))
+
+        let wire_bytes: Bytes = Bytes::from(request_bytes);
+        timeout(self.timeout, writer.write_all(&wire_bytes))
             .await
             .map_err(|_| JsonRpcClientError::Timeout("Write timeout".to_string()))??;
         timeout(self.timeout, writer.flush())

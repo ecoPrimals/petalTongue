@@ -58,8 +58,8 @@ petaltongue
 - **Universal User Interface** -- any computational universe → any modality → any user type
 - **SAME DAVE model** -- Sensory Afferent / Motor Efferent bidirectional feedback loops
 - **UUI glossary** -- canonical terminology in `petal_tongue_core::uui_glossary`
-- **JSON-RPC 2.0** newline-delimited over UDS + optional TCP (primary listen surface)
-- **tarpc** binary RPC with `bytes::Bytes` zero-copy (outbound client to other primals)
+- **tarpc** binary RPC with `bytes::Bytes` zero-copy (PRIMARY for inter-primal RPC)
+- **JSON-RPC 2.0** newline-delimited over UDS + optional TCP (universal fallback listen surface)
 - **SSE push** via `/api/events` in web mode (live topology updates)
 - **HTTP** for browser/external clients only (fallback)
 - **Capability-based discovery** -- zero hardcoded primal names, runtime-only
@@ -104,7 +104,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,839+ passing, 0 failures |
+| Tests | 5,845+ passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero blanket `#[allow]`) |
 | Docs | `cargo doc --workspace --no-deps` clean |
@@ -114,7 +114,7 @@ petaltongue
 | Files | All under 1,000 lines (largest refactored from 901 → directory module) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 16 crates + sandbox) |
-| External C deps | None -- pure Rust (`rustix` for syscalls) |
+| External C deps | None -- pure Rust (`rustix` for syscalls, `blake3` pure-Rust hash) |
 | Error handling | Typed `thiserror` errors throughout -- zero `anyhow` in production |
 | Zero-copy IDs | `DataSourceId`, `GrammarId` are `Arc<str>` -- O(1) clone |
 | Property tests | `proptest` for JSON-RPC parser + core data types |
@@ -134,9 +134,9 @@ petaltongue
 ## Development
 
 ```bash
-# Prerequisites: Rust stable 1.85+ (edition 2024)
+# Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 5,839+ tests
+cargo test --workspace --all-features        # 5,845+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
@@ -196,7 +196,7 @@ See `ecoPrimals/wateringHole/PETALTONGUE_LEVERAGE_GUIDE.md` for:
 - Typed error handling (`thiserror`, no `anyhow` in production); `deny(unwrap_used, expect_used)` with `#[expect]` for justified suppressions
 - `#![forbid(unsafe_code)]` unless hardware FFI is unavoidable
 - Semantic method naming (`domain.operation`)
-- JSON-RPC + tarpc first, HTTP fallback only
+- tarpc primary for inter-primal RPC, JSON-RPC universal fallback, HTTP for external access only
 - All files under 1,000 lines
 - SPDX headers on all source files
 

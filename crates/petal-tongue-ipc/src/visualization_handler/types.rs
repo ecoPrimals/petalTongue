@@ -254,7 +254,7 @@ pub struct ConstraintResult {
 pub struct ExportRequest {
     /// Session ID to export.
     pub session_id: String,
-    /// Output format: "svg", "json", "description".
+    /// Output format: "svg", "html", "audio", "description", "braille", "terminal", "gpu".
     pub format: String,
 }
 

@@ -24,7 +24,7 @@ petal-tongue-ipc = { path = "../petal-tongue-ipc" }  # IPC with tarpc PRIMARY
 petal-tongue-scene = { path = "../petal-tongue-scene" }  # Declarative scene graph + modality
 doom-core = { path = "../doom-core", optional = true }  # Doom integration for platform testing
 
-# Songbird is discovered at runtime via IPC (Unix sockets, JSON-RPC)
+# Songbird is discovered at runtime via IPC (Unix sockets; tarpc primary, JSON-RPC fallback)
 # through petal-tongue-discovery::SongbirdClient.
 # NO compile-time dependency - TRUE PRIMAL sovereignty!
 

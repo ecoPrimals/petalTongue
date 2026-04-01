@@ -33,10 +33,15 @@ impl UnixSocketServer {
         let socket_path = socket_path::get_petaltongue_socket_path()?;
         let viz_state = Arc::new(std::sync::RwLock::new(VisualizationState::new()));
 
+        let mut handlers = RpcHandlers::new(graph, family_id.clone(), viz_state);
+        handlers.rendering_awareness = Some(Arc::new(std::sync::RwLock::new(
+            petal_tongue_core::RenderingAwareness::new(),
+        )));
+
         Ok(Self {
             socket_path,
-            family_id: family_id.clone(),
-            handlers: RpcHandlers::new(graph, family_id, viz_state),
+            family_id,
+            handlers,
             motor_tx: None,
             tcp_port: None,
         })
@@ -188,6 +193,11 @@ impl UnixSocketServer {
 
     fn get_health(&self, id: Value) -> crate::json_rpc::JsonRpcResponse {
         self.handlers.get_health(id)
+    }
+
+    #[cfg(test)]
+    async fn handle_request(&self, request: JsonRpcRequest) -> crate::json_rpc::JsonRpcResponse {
+        self.handlers.handle_request(request).await
     }
 
     fn get_topology(&self, id: Value) -> crate::json_rpc::JsonRpcResponse {
@@ -603,5 +613,39 @@ mod tests {
             let caps = result["capabilities"].as_array().unwrap();
             assert!(!caps.is_empty());
         });
+    }
+
+    #[tokio::test]
+    async fn test_default_rendering_awareness_initialized() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let server = env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            UnixSocketServer::new(graph).unwrap()
+        });
+        let request = JsonRpcRequest::new(
+            "visualization.showing",
+            json!({"data_id": "test-data"}),
+            json!(1),
+        );
+        let response = server.handle_request(request).await;
+        assert!(
+            response.error.is_none(),
+            "should not error when awareness is default-initialized"
+        );
+        let result = response.result.unwrap();
+        assert_eq!(result["data_id"], "test-data");
+    }
+
+    #[tokio::test]
+    async fn test_introspect_works_with_default_awareness() {
+        let graph = Arc::new(RwLock::new(GraphEngine::new()));
+        let server = env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
+            UnixSocketServer::new(graph).unwrap()
+        });
+        let request = JsonRpcRequest::new("visualization.introspect", json!({}), json!(1));
+        let response = server.handle_request(request).await;
+        assert!(
+            response.error.is_none(),
+            "introspect should succeed with default awareness (PT-05)"
+        );
     }
 }

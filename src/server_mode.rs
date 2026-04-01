@@ -15,6 +15,9 @@ use std::sync::Arc;
 /// When `tcp_port` is provided, also binds a newline-delimited TCP JSON-RPC
 /// listener on `0.0.0.0:<port>`.
 ///
+/// Spawns a periodic discovery refresh so the graph engine has live topology
+/// data even without a display attached (PT-07: external event source).
+///
 /// A motor command channel is created and drained so that `motor.*` IPC
 /// methods succeed even without an attached display.
 pub async fn run(data_service: Arc<DataService>, tcp_port: Option<u16>) -> Result<(), AppError> {
@@ -35,6 +38,19 @@ pub async fn run(data_service: Arc<DataService>, tcp_port: Option<u16>) -> Resul
     tokio::task::spawn_blocking(move || {
         while let Ok(cmd) = motor_rx.recv() {
             tracing::debug!(?cmd, "motor command received (no display attached)");
+        }
+    });
+
+    // PT-07: periodic capability discovery refresh so server mode has live data
+    let refresh_service = Arc::clone(&data_service);
+    tokio::spawn(async move {
+        let mut interval =
+            tokio::time::interval(petal_tongue_core::constants::default_heartbeat_interval());
+        loop {
+            interval.tick().await;
+            if let Err(e) = refresh_service.refresh().await {
+                tracing::warn!("periodic discovery refresh failed: {e}");
+            }
         }
     });
 

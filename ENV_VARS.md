@@ -63,6 +63,38 @@ Standard XDG runtime directory for socket placement. This is the standard Unix l
 
 ---
 
+## Server Ports
+
+### **PETALTONGUE_WEB_PORT**
+**Type**: Integer (port number)  
+**Default**: `3000`  
+**Required**: No  
+**Example**: `PETALTONGUE_WEB_PORT=8080`
+
+Port for the web server (`petaltongue web`). Used by `constants::default_web_bind()`.
+
+---
+
+### **PETALTONGUE_HEADLESS_PORT**
+**Type**: Integer (port number)  
+**Default**: `8080`  
+**Required**: No  
+**Example**: `PETALTONGUE_HEADLESS_PORT=9000`
+
+Port for the headless API server (`petaltongue headless`). Used by `constants::default_headless_bind()`.
+
+---
+
+### **PETALTONGUE_BIND_ADDR**
+**Type**: String (IP address)  
+**Default**: `127.0.0.1` (loopback only)  
+**Required**: No  
+**Example**: `PETALTONGUE_BIND_ADDR=0.0.0.0`
+
+Bind address for web and headless servers. Set to `0.0.0.0` for external access.
+
+---
+
 ## Discovery & Integration
 
 ### **BIOMEOS_URL**
@@ -82,7 +114,7 @@ URL of the BiomeOS API endpoint. Supports both Unix sockets (primary) and HTTP (
 - If not set: Discovers BiomeOS via socket scanning at runtime
 - Graceful degradation: Falls back to mock mode if no BiomeOS found
 
-**Production**: Set to Unix socket for fast, secure JSON-RPC.  
+**Production**: Set to Unix socket for fast IPC (tarpc preferred for inter-primal hot paths; JSON-RPC universal fallback where applicable).  
 **Development**: Can omit to test runtime discovery.
 
 ---
@@ -384,7 +416,7 @@ Maximum frame rate for rendering.
 **Required**: No  
 **Example**: `PETALTONGUE_RPC_TIMEOUT_SECS=10`
 
-Timeout for JSON-RPC and tarpc client requests.
+Timeout for RPC clients (tarpc primary inter-primal; JSON-RPC fallback paths).
 
 ---
 
@@ -504,8 +536,6 @@ Show debug overlay with internal state (FPS, memory, etc.).
 
 ---
 
----
-
 ### **DISCOVERY_PORTS**
 **Type**: String (comma-separated port numbers)  
 **Default**: `8080,8081,3000,9000` (or see `PETALTONGUE_DISCOVERY_PORTS`)  
@@ -555,6 +585,20 @@ RUST_LOG=error
 
 ---
 
+## Telemetry & Data
+
+### **PETALTONGUE_TELEMETRY_DIR**
+**Type**: String (directory path)  
+**Default**: Falls back to `$XDG_DATA_HOME/petaltongue/telemetry/` then `/tmp/petaltongue-telemetry/`  
+**Required**: No  
+**Example**: `PETALTONGUE_TELEMETRY_DIR=/var/lib/petaltongue/telemetry`
+
+Directory containing JSONL telemetry files for the file-based provider
+(hotSpring, groundSpring). Reads `{t, section, ...fields}` JSONL from
+all `.jsonl` files in this directory.
+
+---
+
 ## Capability-Based Design
 
 **Key Principle**: petalTongue never hardcodes assumptions about primals or external services.
@@ -564,25 +608,6 @@ RUST_LOG=error
 - **Runtime discovery**: Primals discovered dynamically, not hardcoded
 - **Honest capabilities**: System knows what it can actually do
 - **Graceful degradation**: Missing services don't crash the application
-
-**Examples**:
-- ✅ Good: Discovering primals via BiomeOS API
-- ❌ Bad: Hardcoding primal names/endpoints in code
-- ✅ Good: Testing audio capabilities at runtime
-- ❌ Bad: Assuming audio always works
-
----
-
-### `PETALTONGUE_TELEMETRY_DIR`
-
-**Type**: String (directory path)  
-**Default**: Falls back to `$XDG_DATA_HOME/petaltongue/telemetry/` then `/tmp/petaltongue-telemetry/`  
-**Required**: No  
-**Example**: `PETALTONGUE_TELEMETRY_DIR=/var/lib/petaltongue/telemetry`
-
-Directory containing JSONL telemetry files for the file-based provider
-(hotSpring, groundSpring). Reads `{t, section, ...fields}` JSONL from
-all `.jsonl` files in this directory.
 
 ---
 
@@ -611,7 +636,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: March 31, 2026  
+**Last Updated**: April 1, 2026  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 

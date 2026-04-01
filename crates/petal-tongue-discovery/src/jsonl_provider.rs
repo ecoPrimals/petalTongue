@@ -27,6 +27,7 @@ use std::io::BufRead;
 use std::path::{Path, PathBuf};
 
 use petal_tongue_core::DataBinding;
+use petal_tongue_core::capability_names::primal_names;
 use serde::Deserialize;
 
 use crate::errors::{DiscoveryError, DiscoveryResult};
@@ -67,7 +68,9 @@ pub fn telemetry_dir() -> Option<PathBuf> {
     }
 
     if let Ok(data_home) = std::env::var("XDG_DATA_HOME") {
-        let p = PathBuf::from(data_home).join("petaltongue/telemetry");
+        let p = PathBuf::from(data_home)
+            .join(primal_names::PETALTONGUE)
+            .join("telemetry");
         if p.is_dir() {
             return Some(p);
         }

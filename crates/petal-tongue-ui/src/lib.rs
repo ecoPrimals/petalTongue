@@ -126,7 +126,7 @@ pub mod process_viewer_integration;
 pub mod property_panel; // Property panel - node parameter editor
 pub mod proprioception; // SAME DAVE - Complete sensory-motor self-awareness
 pub mod proprioception_panel; // SAME DAVE self-awareness visualization (Neural API)
-pub mod protocol_selection; // Protocol priority: tarpc PRIMARY, JSON-RPC SECONDARY, HTTPS FALLBACK
+pub mod protocol_selection; // Protocol priority: tarpc PRIMARY, JSON-RPC universal fallback, HTTPS optional
 pub mod sensors;
 pub mod ui_events; // Event-driven architecture for real-time updates // Sensor implementations (bidirectional UUI)
 // Universal infant discovery (zero hardcoded knowledge)

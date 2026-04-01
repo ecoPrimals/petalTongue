@@ -8,7 +8,7 @@
 
 ## 🎯 **Overview**
 
-This specification defines petalTongue's implementation of **JSON-RPC 2.0** over Unix sockets as the **PRIMARY protocol** for inter-primal communication, aligning with the ecoPrimals ecosystem architecture.
+This specification defines petalTongue's implementation of **JSON-RPC 2.0** over Unix sockets as the **universal fallback** protocol for inter-primal and tooling IPC: **tarpc is PRIMARY** for inter-primal RPC ecosystem-wide; JSON-RPC provides maximum compatibility when a peer does not expose tarpc or for line-based tooling, aligning with the ecoPrimals ecosystem architecture.
 
 ---
 
@@ -35,7 +35,7 @@ This specification defines petalTongue's implementation of **JSON-RPC 2.0** over
 ### Discovery Priority Order
 
 1. **Songbird Discovery** (JSON-RPC + NUCLEUS) - Highest priority
-2. **JsonRpcProvider** (Unix sockets) - Primary protocol
+2. **JsonRpcProvider** (Unix sockets) - Universal fallback (text JSON-RPC path)
 3. **Environment Variables** (`BIOMEOS_URL=unix://...`)
 4. **Auto-detect Standard Paths** (`/run/user/{uid}/*.sock`)
 5. **HttpProvider** (fallback only, with warning) - Lowest priority
@@ -193,7 +193,7 @@ impl VisualizationDataProvider for JsonRpcProvider {
             id: "jsonrpc".to_string(),
             name: "JSON-RPC Provider".to_string(),
             version: "1.0.0".to_string(),
-            description: "JSON-RPC 2.0 over Unix sockets (PRIMARY protocol)".to_string(),
+            description: "JSON-RPC 2.0 over Unix sockets (universal fallback)".to_string(),
             capabilities: vec!["primals".to_string(), "devices".to_string()],
         }
     }
@@ -396,4 +396,4 @@ srwxrwx--- 1 user user 0 Jan 11 12:00 biomeos-device-management.sock
 **Blocking**: Full biomeOS integration  
 **Priority**: High
 
-🌸 TRUE PRIMAL: JSON-RPC + tarpc first!
+🌸 TRUE PRIMAL: tarpc PRIMARY for inter-primal RPC, JSON-RPC universal fallback!

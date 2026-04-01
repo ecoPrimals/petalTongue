@@ -2,8 +2,9 @@
 //! Devices View
 //!
 //! Device management and assignment.
-//! Leverages discovery provider for device discovery.
+//! Renders discovered primals from the discovery provider — no placeholder data.
 
+use petal_tongue_core::{PrimalHealthStatus, PrimalInfo};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -11,46 +12,53 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
 };
+use std::sync::Arc;
 
 use crate::state::TUIState;
-
-#[must_use]
-pub fn format_device_entry(index: usize, status: &str) -> (String, String) {
-    (format!("Device {index}"), status.to_string())
-}
 
 #[must_use]
 pub fn format_device_count_display(count: usize) -> String {
     format!("Discovered {count} devices:")
 }
 
+const fn health_color(health: &PrimalHealthStatus) -> Color {
+    match health {
+        PrimalHealthStatus::Healthy => Color::Green,
+        PrimalHealthStatus::Warning => Color::Yellow,
+        PrimalHealthStatus::Critical => Color::Red,
+        PrimalHealthStatus::Unknown => Color::DarkGray,
+    }
+}
+
+const fn health_label(health: &PrimalHealthStatus) -> &'static str {
+    match health {
+        PrimalHealthStatus::Healthy => "Healthy",
+        PrimalHealthStatus::Warning => "Warning",
+        PrimalHealthStatus::Critical => "Critical",
+        PrimalHealthStatus::Unknown => "Unknown",
+    }
+}
+
 /// Render devices view
 pub fn render(frame: &mut Frame, area: Rect, state: &TUIState) {
     let standalone = tokio::runtime::Handle::current().block_on(state.is_standalone());
-    let status = tokio::runtime::Handle::current().block_on(state.get_status());
 
     if standalone {
         render_standalone_message(frame, area);
         return;
     }
 
-    // Split into device list and details
+    let primals = tokio::runtime::Handle::current().block_on(state.get_primals());
+
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(60), // Device list
-            Constraint::Percentage(40), // Device details
-        ])
+        .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
         .split(area);
 
-    // Render device list
-    render_device_list(frame, chunks[0], &status);
-
-    // Render device details
-    render_device_details(frame, chunks[1], &status);
+    render_device_list(frame, chunks[0], &primals);
+    render_device_details(frame, chunks[1], &primals);
 }
 
-/// Render standalone message
 fn render_standalone_message(frame: &mut Frame, area: Rect) {
     let lines = vec![
         Line::from(""),
@@ -86,11 +94,8 @@ fn render_standalone_message(frame: &mut Frame, area: Rect) {
     frame.render_widget(paragraph, area);
 }
 
-/// Render device list
-fn render_device_list(frame: &mut Frame, area: Rect, status: &crate::state::SystemStatus) {
-    let device_count = status.discovered_devices;
-
-    let items: Vec<ListItem> = if device_count == 0 {
+fn render_device_list(frame: &mut Frame, area: Rect, primals: &Arc<Vec<PrimalInfo>>) {
+    let items: Vec<ListItem> = if primals.is_empty() {
         vec![
             ListItem::new(Line::from("")),
             ListItem::new(Line::from(vec![Span::styled(
@@ -104,10 +109,9 @@ fn render_device_list(frame: &mut Frame, area: Rect, status: &crate::state::Syst
             ListItem::new(Line::from("Press 'r' to refresh.")),
         ]
     } else {
-        // Show discovered devices
         let mut items = vec![
             ListItem::new(Line::from(vec![Span::styled(
-                format_device_count_display(device_count),
+                format_device_count_display(primals.len()),
                 Style::default()
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
@@ -115,22 +119,27 @@ fn render_device_list(frame: &mut Frame, area: Rect, status: &crate::state::Syst
             ListItem::new(Line::from("")),
         ];
 
-        // Placeholder device entries
-        for i in 1..=device_count.min(10) {
-            let (name, status) = format_device_entry(i, "Available");
+        let max_display = 10;
+        for primal in primals.iter().take(max_display) {
+            let color = health_color(&primal.health);
+            let status = health_label(&primal.health);
             items.push(ListItem::new(Line::from(vec![
                 Span::styled("📱 ", Style::default().fg(Color::Cyan)),
-                Span::raw(name),
+                Span::raw(&primal.name),
+                Span::styled(
+                    format!(" [{type}]", type = primal.primal_type),
+                    Style::default().fg(Color::DarkGray),
+                ),
                 Span::raw(" ("),
-                Span::styled(status, Style::default().fg(Color::Green)),
+                Span::styled(status, Style::default().fg(color)),
                 Span::raw(")"),
             ])));
         }
 
-        if device_count > 10 {
+        if primals.len() > max_display {
             items.push(ListItem::new(Line::from("")));
             items.push(ListItem::new(Line::from(vec![Span::styled(
-                format!("... and {} more", device_count - 10),
+                format!("... and {} more", primals.len() - max_display),
                 Style::default().fg(Color::DarkGray),
             )])));
         }
@@ -148,8 +157,9 @@ fn render_device_list(frame: &mut Frame, area: Rect, status: &crate::state::Syst
     frame.render_widget(list, area);
 }
 
-/// Render device details
-fn render_device_details(frame: &mut Frame, area: Rect, status: &crate::state::SystemStatus) {
+fn render_device_details(frame: &mut Frame, area: Rect, primals: &Arc<Vec<PrimalInfo>>) {
+    let cap_count: usize = primals.iter().map(|p| p.capabilities.len()).sum();
+
     let lines = vec![
         Line::from(""),
         Line::from(vec![Span::styled(
@@ -162,9 +172,13 @@ fn render_device_details(frame: &mut Frame, area: Rect, status: &crate::state::S
         Line::from(vec![
             Span::raw("Total Devices: "),
             Span::styled(
-                format!("{}", status.discovered_devices),
+                format!("{}", primals.len()),
                 Style::default().fg(Color::Green),
             ),
+        ]),
+        Line::from(vec![
+            Span::raw("Total Capabilities: "),
+            Span::styled(format!("{cap_count}"), Style::default().fg(Color::Green)),
         ]),
         Line::from(""),
         Line::from(vec![Span::styled(
@@ -175,13 +189,6 @@ fn render_device_details(frame: &mut Frame, area: Rect, status: &crate::state::S
         Line::from("  [Enter] Assign device"),
         Line::from("  [d] Device details"),
         Line::from("  [r] Refresh discovery"),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "💡 Note:",
-            Style::default().fg(Color::Yellow),
-        )]),
-        Line::from("Device assignment requires"),
-        Line::from("integration with the discovery provider."),
     ];
 
     let paragraph = Paragraph::new(lines).block(
@@ -197,20 +204,7 @@ fn render_device_details(frame: &mut Frame, area: Rect, status: &crate::state::S
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn format_device_entry_first() {
-        let (name, status) = format_device_entry(1, "Available");
-        assert_eq!(name, "Device 1");
-        assert_eq!(status, "Available");
-    }
-
-    #[test]
-    fn format_device_entry_tenth() {
-        let (name, status) = format_device_entry(10, "Offline");
-        assert_eq!(name, "Device 10");
-        assert_eq!(status, "Offline");
-    }
+    use petal_tongue_core::PrimalHealthStatus;
 
     #[test]
     fn format_device_count_zero() {
@@ -220,5 +214,23 @@ mod tests {
     #[test]
     fn format_device_count_many() {
         assert_eq!(format_device_count_display(42), "Discovered 42 devices:");
+    }
+
+    #[test]
+    fn health_color_healthy_is_green() {
+        assert_eq!(health_color(&PrimalHealthStatus::Healthy), Color::Green);
+    }
+
+    #[test]
+    fn health_color_critical_is_red() {
+        assert_eq!(health_color(&PrimalHealthStatus::Critical), Color::Red);
+    }
+
+    #[test]
+    fn health_label_covers_all_variants() {
+        assert_eq!(health_label(&PrimalHealthStatus::Healthy), "Healthy");
+        assert_eq!(health_label(&PrimalHealthStatus::Warning), "Warning");
+        assert_eq!(health_label(&PrimalHealthStatus::Critical), "Critical");
+        assert_eq!(health_label(&PrimalHealthStatus::Unknown), "Unknown");
     }
 }

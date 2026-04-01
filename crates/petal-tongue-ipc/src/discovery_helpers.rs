@@ -3,6 +3,8 @@
 
 use std::path::PathBuf;
 
+use petal_tongue_core::capability_names::primal_names;
+
 /// Env var name for primal socket, e.g. `socket_env_var("barracuda")` → `"BARRACUDA_SOCKET"`.
 #[must_use]
 pub fn socket_env_var(primal: &str) -> String {
@@ -42,7 +44,7 @@ pub fn resolve_primal_socket_with_env(
 
     let xdg_path = env_reader("XDG_RUNTIME_DIR").map(|d| {
         PathBuf::from(d)
-            .join("biomeos")
+            .join(primal_names::BIOMEOS)
             .join(format!("{primal}.sock"))
     });
     if let Some(ref p) = xdg_path
@@ -52,7 +54,7 @@ pub fn resolve_primal_socket_with_env(
     }
 
     let tmp_path = PathBuf::from("/tmp")
-        .join("biomeos")
+        .join(primal_names::BIOMEOS)
         .join(format!("{primal}.sock"));
     if path_exists_as_file(&tmp_path) {
         return Some(tmp_path);

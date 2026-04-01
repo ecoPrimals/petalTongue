@@ -52,19 +52,14 @@ impl IpcClient {
         let (reader, mut writer) = stream.into_split();
         let mut reader = BufReader::new(reader);
 
-        // Serialize and send command
-        let command_json = serde_json::to_string(&command)
+        let mut buf = serde_json::to_vec(&command)
             .map_err(|e| IpcClientError::SerializeError(format!("Failed to serialize: {e}")))?;
+        buf.push(b'\n');
 
         writer
-            .write_all(command_json.as_bytes())
+            .write_all(&buf)
             .await
             .map_err(|e| IpcClientError::IoError(format!("Failed to write: {e}")))?;
-
-        writer
-            .write_all(b"\n")
-            .await
-            .map_err(|e| IpcClientError::IoError(format!("Failed to write newline: {e}")))?;
 
         writer
             .flush()

@@ -14,7 +14,8 @@ use tracing::debug;
 use super::provider::BiomeOSProvider;
 use super::types::Health;
 
-const HEALTH_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+const HEALTH_CHECK_TIMEOUT: std::time::Duration =
+    std::time::Duration::from_secs(petal_tongue_core::constants::DEFAULT_RPC_TIMEOUT_SECS);
 
 #[async_trait]
 impl VisualizationDataProvider for BiomeOSProvider {

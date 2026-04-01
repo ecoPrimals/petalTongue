@@ -45,7 +45,7 @@ rand = "0.8"     # For jitter in retry logic
 [features]
 default = []
 mdns = ["mdns-sd"]
-legacy-http = []  # Legacy HTTP provider (prefer JSON-RPC/Unix sockets)
+legacy-http = []  # Legacy HTTP provider (prefer tarpc; JSON-RPC/Unix sockets as universal fallback)
 # Mock provider - Run tests with: cargo test --features test-fixtures
 test-fixtures = ["petal-tongue-core/test-fixtures"]
 

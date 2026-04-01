@@ -58,9 +58,9 @@ where
             }
         };
 
-        let response_json = serde_json::to_string(&response)?;
-        writer.write_all(response_json.as_bytes()).await?;
-        writer.write_all(b"\n").await?;
+        let mut buf = serde_json::to_vec(&response)?;
+        buf.push(b'\n');
+        writer.write_all(&buf).await?;
         writer.flush().await?;
     }
 

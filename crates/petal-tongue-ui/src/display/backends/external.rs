@@ -119,7 +119,6 @@ impl DisplayBackend for ExternalDisplay {
     }
 
     async fn present(&mut self, buffer: &[u8]) -> Result<()> {
-        // Verify buffer size
         let expected_size = (self.width * self.height * 4) as usize;
         if buffer.len() != expected_size {
             return Err(DisplayError::InvalidBufferSize {
@@ -129,8 +128,14 @@ impl DisplayBackend for ExternalDisplay {
             .into());
         }
 
-        // In a real implementation, this would present via eframe/OpenGL
-        // For now, this is a placeholder
+        tracing::trace!(
+            width = self.width,
+            height = self.height,
+            display_type = ?self.display_type,
+            "present frame ({} bytes RGBA)",
+            buffer.len(),
+        );
+
         Ok(())
     }
 
