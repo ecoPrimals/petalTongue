@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![cfg_attr(not(test), forbid(unsafe_code))]
+#![forbid(unsafe_code)]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![warn(missing_docs)]
 #![expect(
@@ -88,6 +88,8 @@ pub mod primal_registration_error;
 pub mod protocol;
 /// Provenance trio: rhizoCrypt + sweetGrass + loamSpine session lineage
 pub mod provenance_trio;
+/// Push delivery for callback dispatches (PT-06 transport upgrade)
+pub mod push_delivery;
 pub mod resilience;
 pub mod server;
 pub mod socket_path;

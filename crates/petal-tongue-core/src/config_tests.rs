@@ -50,11 +50,9 @@ mod tests {
     }
 
     #[test]
-    fn test_mock_mode_flag() {
+    fn test_fixture_mode_flag() {
         let config = PetalTongueConfig::default();
-        // mock_mode should be a boolean
-        // Mock mode can be either true or false
-        assert!(matches!(config.mock_mode, true | false));
+        assert!(!config.fixture_mode);
     }
 
     #[test]

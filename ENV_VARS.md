@@ -112,29 +112,37 @@ URL of the BiomeOS API endpoint. Supports both Unix sockets (primary) and HTTP (
 **TRUE PRIMAL Behavior**:
 - If set: Uses this URL directly
 - If not set: Discovers BiomeOS via socket scanning at runtime
-- Graceful degradation: Falls back to mock mode if no BiomeOS found
+- Graceful degradation: Falls back to fixture data if no BiomeOS found
 
 **Production**: Set to Unix socket for fast IPC (tarpc preferred for inter-primal hot paths; JSON-RPC universal fallback where applicable).  
 **Development**: Can omit to test runtime discovery.
 
 ---
 
-### **PETALTONGUE_MOCK_MODE**
+### **PETALTONGUE_FIXTURE_MODE**
 **Type**: Boolean (`true` | `false`)  
 **Default**: `false`  
 **Required**: No  
-**Example**: `PETALTONGUE_MOCK_MODE=true`
+**Example**: `PETALTONGUE_FIXTURE_MODE=true`
 
-**⚠️ DEVELOPMENT ONLY** - Enable mock mode to bypass BiomeOS connection.
+**⚠️ DEVELOPMENT ONLY** — Enable fixture mode to use deterministic data when
+biomeOS is unavailable. Requires the `test-fixtures` feature; production builds
+reject this at runtime.
 
-**When `true`**:
-- Uses built-in mock data instead of connecting to BiomeOS
-- Useful for development without running full BiomeOS stack
+> **Migration note**: The config field was renamed from `mock_mode` to
+> `fixture_mode` in v1.6.7. The TOML alias `mock_mode` is still accepted for
+> backwards compatibility but will be removed in a future release.
+
+**When `true`** (with `test-fixtures` feature):
+- Uses built-in deterministic fixture data instead of connecting to biomeOS
+- Useful for development without running the full biomeOS stack
 - Provides realistic test data for UI development
 
+**When `true`** (without `test-fixtures` feature):
+- Returns `FixtureModeUnavailable` error at runtime
+
 **When `false`** (production):
-- Connects to real BiomeOS at `BIOMEOS_URL`
-- Falls back to mock data only if connection fails
+- Connects to real biomeOS at `BIOMEOS_URL`
 - Recommended for all non-development environments
 
 **Security Note**: Never set to `true` in production deployments.
@@ -557,9 +565,9 @@ BIOMEOS_URL=http://your-biomeos-instance:3000
 
 ### Development Configuration
 ```bash
-# Development with mock mode
+# Development with fixture mode (deterministic offline data)
 BIOMEOS_URL=http://localhost:3000
-PETALTONGUE_MOCK_MODE=true
+PETALTONGUE_FIXTURE_MODE=true
 RUST_LOG=debug
 PETALTONGUE_DEBUG_OVERLAY=true
 PETALTONGUE_STATUS_FILE=/tmp/petaltongue_dev_status.json
@@ -616,7 +624,7 @@ all `.jsonl` files in this directory.
 Before deploying to production:
 
 - [ ] Set `BIOMEOS_URL` to production endpoint
-- [ ] Ensure `PETALTONGUE_MOCK_MODE` is `false` (or unset)
+- [ ] Ensure `PETALTONGUE_FIXTURE_MODE` is `false` (or unset)
 - [ ] Set `RUST_LOG` to `info` or `warn`
 - [ ] Unset `PETALTONGUE_DEBUG_OVERLAY` (or set to `false`)
 - [ ] Configure `PETALTONGUE_STATUS_FILE` for monitoring
@@ -636,7 +644,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: April 1, 2026  
+**Last Updated**: April 2, 2026  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 

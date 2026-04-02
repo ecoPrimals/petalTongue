@@ -2,7 +2,7 @@
 #![forbid(unsafe_code)]
 #![expect(
     missing_docs,
-    reason = "doom integration documentation tracked for incremental completion"
+    reason = "doom-core WAD/game types evolving — docs tracked for incremental completion"
 )]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 //! Doom Core - Doom integration for petalTongue

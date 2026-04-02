@@ -109,9 +109,9 @@ async fn test_e2e_provider_fallback() {
 
     // Mock mode only when mock feature enabled and biomeOS unavailable
     #[cfg(feature = "mock")]
-    assert!(manager.is_mock_mode());
+    assert!(manager.is_fixture_mode());
     #[cfg(not(feature = "mock"))]
-    assert!(!manager.is_mock_mode());
+    assert!(!manager.is_fixture_mode());
 
     let manager = Arc::new(RwLock::new(manager));
     let rpc = BiomeOSUIRPC::new(manager.clone());
@@ -243,9 +243,9 @@ async fn test_e2e_rapid_tab_switching() {
 
     // Should still be in valid state
     #[cfg(feature = "mock")]
-    assert!(manager.read().await.is_mock_mode());
+    assert!(manager.read().await.is_fixture_mode());
     #[cfg(not(feature = "mock"))]
-    assert!(!manager.read().await.is_mock_mode());
+    assert!(!manager.read().await.is_fixture_mode());
 }
 
 /// E2E Test: Data consistency across refreshes

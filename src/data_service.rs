@@ -496,6 +496,42 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_snapshot_sync_returns_some() {
+        let service = DataService::new();
+        let snap = service.snapshot_sync();
+        assert!(snap.is_some());
+        let snap = snap.unwrap();
+        assert!(snap.primals.is_empty());
+        assert!(snap.edges.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_snapshot_sync_with_populated_graph() {
+        let service = DataService::new();
+        let graph = service.graph();
+        {
+            let mut g = graph.write().unwrap();
+            g.add_node(create_test_primal("sync-1", "SyncPrimal"));
+        }
+        let snap = service.snapshot_sync().unwrap();
+        assert_eq!(snap.primals.len(), 1);
+        assert_eq!(snap.primals[0].id.as_str(), "sync-1");
+    }
+
+    #[tokio::test]
+    async fn test_snapshot_sync_poisoned_graph_returns_none() {
+        let service = DataService::new();
+        let graph = service.graph();
+        let g2 = Arc::clone(&graph);
+        let h = std::thread::spawn(move || {
+            let _guard = g2.write().unwrap();
+            panic!("intentional poison for snapshot_sync test");
+        });
+        let _ = h.join();
+        assert!(service.snapshot_sync().is_none());
+    }
+
+    #[tokio::test]
     async fn test_data_snapshot_serialization_roundtrip_with_edges() {
         let snapshot = DataSnapshot {
             primals: vec![

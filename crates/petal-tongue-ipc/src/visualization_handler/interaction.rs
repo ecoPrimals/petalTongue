@@ -1,25 +1,32 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Interaction event subsystem: poll-based subscriptions with callback dispatch (PT-06).
+//! Interaction event subsystem: dual-mode subscriptions with push delivery (PT-06).
 //!
-//! Springs call `interaction.subscribe` to register, then `interaction.poll`
-//! to drain queued interaction events. Supports callback-based delivery
-//! (healthSpring V12 pattern) when `callback_method` is set.
+//! Springs call `interaction.subscribe` to register, then either:
+//! - **Poll**: call `interaction.poll` to drain queued events (always available), or
+//! - **Push**: receive JSON-RPC notifications at `callback_socket` (when set with
+//!   `callback_method`), completing the healthSpring V12 callback pattern.
 //!
 //! ## Delivery model
 //!
-//! The primary delivery path is **poll-based**: subscribers call `interaction.poll`
-//! to drain their event queue. When `callback_method` is set on a subscription,
-//! `broadcast()` additionally returns [`CallbackDispatch`] entries that the IPC
-//! server layer can use to send JSON-RPC notifications to subscriber sockets.
+//! Events are always queued for poll. When `callback_method` and `callback_socket`
+//! are both set on a subscription, `broadcast()` additionally returns
+//! [`CallbackDispatch`] entries. The RPC handler sends these through the push
+//! delivery channel (`push_delivery` module), which writes JSON-RPC notifications
+//! to subscriber sockets as a background task.
 //!
-//! `apply_interaction` captures these dispatches and returns a
-//! `pending_callbacks` count in the response so the RPC handler knows whether
-//! push delivery is needed. The actual socket write is performed by the server
-//! layer (see `handle_interact_apply` in `unix_socket_rpc_handlers`).
+//! `apply_interaction` captures dispatches and returns a `pending_callbacks` count
+//! in the response. Subscribers whose socket is unreachable can still poll.
+//!
+//! ## Zero-copy
+//!
+//! Events are wrapped in `Arc` in subscriber queues so that a single broadcast
+//! shares one allocation across N subscribers instead of cloning N times.
+//! `poll()` uses `Arc::unwrap_or_clone` to return owned events without copying
+//! when the subscriber holds the last reference.
 
-use petal_tongue_core::{SensorEventBatch, SensorEventIpc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use super::types::{InteractionApplyRequest, InteractionApplyResponse, Perspective};
 
@@ -35,6 +42,9 @@ pub struct CallbackDispatch {
     pub method: String,
     /// Events to deliver in this callback batch.
     pub events: Vec<InteractionEventNotification>,
+    /// Socket path for push delivery (UDS or `host:port` for TCP).
+    /// When `None`, the subscriber is poll-only even with `callback_method`.
+    pub callback_socket: Option<String>,
 }
 
 /// Poll-based registry for interaction event subscribers.
@@ -47,9 +57,10 @@ pub struct InteractionSubscriberRegistry {
 }
 
 struct InteractionSubscriber {
-    queue: Vec<InteractionEventNotification>,
+    queue: Vec<Arc<InteractionEventNotification>>,
     event_filter: Vec<String>,
     callback_method: Option<String>,
+    callback_socket: Option<String>,
 }
 
 /// A queued interaction event ready for IPC delivery.
@@ -75,19 +86,21 @@ impl InteractionSubscriberRegistry {
 
     /// Register a subscriber. Returns `true` if newly registered.
     pub fn subscribe(&mut self, subscriber_id: &str) -> bool {
-        self.subscribe_with_filter(subscriber_id, Vec::new(), None, None)
+        self.subscribe_with_filter(subscriber_id, Vec::new(), None, None, None)
     }
 
     /// Register a subscriber with event type filter, callback method, and grammar filter.
     ///
-    /// The callback model (healthSpring V12 pattern): when `callback_method` is set,
-    /// events are queued for callback delivery rather than poll-only.
+    /// The callback model (healthSpring V12 pattern): when `callback_method` is set
+    /// together with `callback_socket`, events are pushed as JSON-RPC notifications
+    /// to the subscriber's socket. Without `callback_socket`, subscribers use poll.
     pub fn subscribe_with_filter(
         &mut self,
         subscriber_id: &str,
         event_filter: Vec<String>,
         callback_method: Option<String>,
         _grammar_id: Option<String>,
+        callback_socket: Option<String>,
     ) -> bool {
         use std::collections::hash_map::Entry;
         match self.subscribers.entry(subscriber_id.to_string()) {
@@ -97,6 +110,7 @@ impl InteractionSubscriberRegistry {
                     queue: Vec::new(),
                     event_filter,
                     callback_method,
+                    callback_socket,
                 });
                 true
             }
@@ -113,14 +127,18 @@ impl InteractionSubscriberRegistry {
 
     /// Get all subscribers that have callback methods and pending events.
     #[must_use]
-    pub fn pending_callbacks(&self) -> Vec<(&str, &str, &[InteractionEventNotification])> {
+    pub fn pending_callbacks(&self) -> Vec<(&str, &str, Vec<&InteractionEventNotification>)> {
         self.subscribers
             .iter()
             .filter_map(|(id, sub)| {
                 sub.callback_method
                     .as_deref()
                     .filter(|_| !sub.queue.is_empty())
-                    .map(|method| (id.as_str(), method, sub.queue.as_slice()))
+                    .map(|method| {
+                        let events: Vec<&InteractionEventNotification> =
+                            sub.queue.iter().map(AsRef::as_ref).collect();
+                        (id.as_str(), method, events)
+                    })
             })
             .collect()
     }
@@ -136,18 +154,20 @@ impl InteractionSubscriberRegistry {
     /// subscribers that have a `callback_method` set, so the caller can
     /// dispatch JSON-RPC notifications proactively instead of waiting for poll.
     pub fn broadcast(&mut self, event: &InteractionEventNotification) -> Vec<CallbackDispatch> {
+        let shared = Arc::new(event.clone());
         let mut callbacks = Vec::new();
         for (id, sub) in &mut self.subscribers {
             let passes_event_filter =
                 sub.event_filter.is_empty() || sub.event_filter.contains(&event.event_type);
             if passes_event_filter {
-                sub.queue.push(event.clone());
+                sub.queue.push(Arc::clone(&shared));
 
                 if let Some(method) = &sub.callback_method {
                     callbacks.push(CallbackDispatch {
                         subscriber_id: id.clone(),
                         method: method.clone(),
                         events: vec![event.clone()],
+                        callback_socket: sub.callback_socket.clone(),
                     });
                 }
             }
@@ -155,11 +175,19 @@ impl InteractionSubscriberRegistry {
         callbacks
     }
 
-    /// Drain queued events for a subscriber, returning them.
+    /// Drain queued events for a subscriber, returning owned copies.
+    ///
+    /// Events are stored as `Arc` internally for zero-copy broadcast sharing;
+    /// `poll` unwraps or clones as needed.
     pub fn poll(&mut self, subscriber_id: &str) -> Vec<InteractionEventNotification> {
         self.subscribers
             .get_mut(subscriber_id)
-            .map(|sub| std::mem::take(&mut sub.queue))
+            .map(|sub| {
+                std::mem::take(&mut sub.queue)
+                    .into_iter()
+                    .map(Arc::unwrap_or_clone)
+                    .collect()
+            })
             .unwrap_or_default()
     }
 
@@ -210,71 +238,6 @@ impl InteractionSubscriberRegistry {
     }
 }
 
-/// Registry for sensor event stream subscribers.
-///
-/// External primals subscribe to raw sensor events (pointer, keys, scroll)
-/// for engagement analysis (ludoSpring) and AI adaptation (Squirrel).
-#[derive(Default)]
-pub struct SensorStreamRegistry {
-    subscribers: HashMap<String, SensorStreamSubscriber>,
-    next_id: u64,
-}
-
-struct SensorStreamSubscriber {
-    queue: Vec<SensorEventIpc>,
-}
-
-impl SensorStreamRegistry {
-    /// Create a new empty registry.
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Register a new subscriber. Returns the assigned subscription ID.
-    pub fn subscribe(&mut self) -> String {
-        self.next_id += 1;
-        let id = format!("sensor-sub-{}", self.next_id);
-        self.subscribers
-            .insert(id.clone(), SensorStreamSubscriber { queue: Vec::new() });
-        id
-    }
-
-    /// Remove a subscriber. Returns `true` if the subscriber existed.
-    pub fn unsubscribe(&mut self, subscription_id: &str) -> bool {
-        self.subscribers.remove(subscription_id).is_some()
-    }
-
-    /// Push sensor events to all active subscribers.
-    pub fn broadcast(&mut self, events: &[SensorEventIpc]) {
-        if events.is_empty() {
-            return;
-        }
-        for sub in self.subscribers.values_mut() {
-            sub.queue.extend_from_slice(events);
-        }
-    }
-
-    /// Drain queued events for a subscriber as a batch.
-    pub fn poll(&mut self, subscription_id: &str) -> SensorEventBatch {
-        let events = self
-            .subscribers
-            .get_mut(subscription_id)
-            .map(|sub| std::mem::take(&mut sub.queue))
-            .unwrap_or_default();
-        SensorEventBatch {
-            subscription_id: subscription_id.to_string(),
-            events,
-        }
-    }
-
-    /// Number of active subscribers.
-    #[must_use]
-    pub fn subscriber_count(&self) -> usize {
-        self.subscribers.len()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -311,6 +274,7 @@ mod tests {
             vec!["select".to_string(), "inspect".to_string()],
             Some("callback".to_string()),
             None,
+            None,
         ));
         assert_eq!(reg.callback_method("sub1"), Some("callback"));
     }
@@ -318,8 +282,8 @@ mod tests {
     #[test]
     fn test_subscribe_with_filter_duplicate_returns_false() {
         let mut reg = InteractionSubscriberRegistry::new();
-        reg.subscribe_with_filter("sub1", vec!["select".to_string()], None, None);
-        assert!(!reg.subscribe_with_filter("sub1", vec![], None, None));
+        reg.subscribe_with_filter("sub1", vec!["select".to_string()], None, None, None);
+        assert!(!reg.subscribe_with_filter("sub1", vec![], None, None, None));
     }
 
     #[test]
@@ -338,14 +302,14 @@ mod tests {
     #[test]
     fn test_pending_callbacks_empty_when_no_events() {
         let mut reg = InteractionSubscriberRegistry::new();
-        reg.subscribe_with_filter("sub1", vec![], Some("cb".to_string()), None);
+        reg.subscribe_with_filter("sub1", vec![], Some("cb".to_string()), None, None);
         assert!(reg.pending_callbacks().is_empty());
     }
 
     #[test]
     fn test_pending_callbacks_includes_subscriber_with_events() {
         let mut reg = InteractionSubscriberRegistry::new();
-        reg.subscribe_with_filter("sub1", vec![], Some("cb".to_string()), None);
+        reg.subscribe_with_filter("sub1", vec![], Some("cb".to_string()), None, None);
         let event = InteractionEventNotification {
             event_type: "select".to_string(),
             targets: vec!["t1".to_string()],
@@ -363,7 +327,7 @@ mod tests {
     #[test]
     fn test_broadcast_respects_event_filter() {
         let mut reg = InteractionSubscriberRegistry::new();
-        reg.subscribe_with_filter("sub1", vec!["select".to_string()], None, None);
+        reg.subscribe_with_filter("sub1", vec!["select".to_string()], None, None, None);
 
         let select_event = InteractionEventNotification {
             event_type: "select".to_string(),
@@ -492,7 +456,7 @@ mod tests {
     fn test_pending_callbacks_excludes_subscriber_without_callback() {
         let mut reg = InteractionSubscriberRegistry::new();
         reg.subscribe("no_cb");
-        reg.subscribe_with_filter("with_cb", vec![], Some("cb".to_string()), None);
+        reg.subscribe_with_filter("with_cb", vec![], Some("cb".to_string()), None, None);
         let event = InteractionEventNotification {
             event_type: "select".to_string(),
             targets: vec![],
@@ -572,114 +536,6 @@ mod tests {
         assert!(debug_str.contains("select"));
     }
 
-    // === SensorStreamRegistry tests ===
-
-    #[test]
-    fn test_sensor_stream_registry_new() {
-        let reg = SensorStreamRegistry::new();
-        assert_eq!(reg.subscriber_count(), 0);
-    }
-
-    #[test]
-    fn test_sensor_stream_subscribe() {
-        let mut reg = SensorStreamRegistry::new();
-        let id = reg.subscribe();
-        assert!(id.starts_with("sensor-sub-"));
-        assert_eq!(reg.subscriber_count(), 1);
-    }
-
-    #[test]
-    fn test_sensor_stream_subscribe_unique_ids() {
-        let mut reg = SensorStreamRegistry::new();
-        let id1 = reg.subscribe();
-        let id2 = reg.subscribe();
-        assert_ne!(id1, id2);
-        assert_eq!(reg.subscriber_count(), 2);
-    }
-
-    #[test]
-    fn test_sensor_stream_unsubscribe() {
-        let mut reg = SensorStreamRegistry::new();
-        let id = reg.subscribe();
-        assert!(reg.unsubscribe(&id));
-        assert_eq!(reg.subscriber_count(), 0);
-    }
-
-    #[test]
-    fn test_sensor_stream_unsubscribe_nonexistent() {
-        let mut reg = SensorStreamRegistry::new();
-        assert!(!reg.unsubscribe("nonexistent"));
-    }
-
-    #[test]
-    fn test_sensor_stream_broadcast_and_poll() {
-        let mut reg = SensorStreamRegistry::new();
-        let id = reg.subscribe();
-        let events = vec![
-            SensorEventIpc::PointerMove {
-                x: 10.0,
-                y: 20.0,
-                timestamp_ms: 100,
-            },
-            SensorEventIpc::Click {
-                x: 10.0,
-                y: 20.0,
-                button: "left".to_string(),
-                timestamp_ms: 150,
-            },
-        ];
-        reg.broadcast(&events);
-        let batch = reg.poll(&id);
-        assert_eq!(batch.subscription_id, id);
-        assert_eq!(batch.events.len(), 2);
-    }
-
-    #[test]
-    fn test_sensor_stream_poll_clears_queue() {
-        let mut reg = SensorStreamRegistry::new();
-        let id = reg.subscribe();
-        reg.broadcast(&[SensorEventIpc::Scroll {
-            delta_x: 0.0,
-            delta_y: 1.0,
-            timestamp_ms: 200,
-        }]);
-        let first = reg.poll(&id);
-        assert_eq!(first.events.len(), 1);
-        let second = reg.poll(&id);
-        assert!(second.events.is_empty());
-    }
-
-    #[test]
-    fn test_sensor_stream_broadcast_empty_is_noop() {
-        let mut reg = SensorStreamRegistry::new();
-        let id = reg.subscribe();
-        reg.broadcast(&[]);
-        let batch = reg.poll(&id);
-        assert!(batch.events.is_empty());
-    }
-
-    #[test]
-    fn test_sensor_stream_broadcast_to_multiple() {
-        let mut reg = SensorStreamRegistry::new();
-        let id1 = reg.subscribe();
-        let id2 = reg.subscribe();
-        reg.broadcast(&[SensorEventIpc::KeyPress {
-            key: "A".to_string(),
-            modifiers: petal_tongue_core::KeyModifiersIpc::default(),
-            timestamp_ms: 300,
-        }]);
-        assert_eq!(reg.poll(&id1).events.len(), 1);
-        assert_eq!(reg.poll(&id2).events.len(), 1);
-    }
-
-    #[test]
-    fn test_sensor_stream_poll_unknown_subscriber() {
-        let mut reg = SensorStreamRegistry::new();
-        let batch = reg.poll("unknown");
-        assert!(batch.events.is_empty());
-        assert_eq!(batch.subscription_id, "unknown");
-    }
-
     #[test]
     fn test_interaction_event_notification_serialization_perspective_none() {
         let event = InteractionEventNotification {
@@ -719,6 +575,7 @@ mod tests {
             vec![],
             Some("spring.on_interaction".to_string()),
             None,
+            Some("/tmp/push-sub.sock".to_string()),
         );
 
         let req = InteractionApplyRequest {
@@ -733,12 +590,22 @@ mod tests {
         assert_eq!(callbacks.len(), 1);
         assert_eq!(callbacks[0].subscriber_id, "push-sub");
         assert_eq!(callbacks[0].method, "spring.on_interaction");
+        assert_eq!(
+            callbacks[0].callback_socket.as_deref(),
+            Some("/tmp/push-sub.sock")
+        );
     }
 
     #[test]
     fn test_pending_callbacks_multiple_mixed() {
         let mut reg = InteractionSubscriberRegistry::new();
-        reg.subscribe_with_filter("with_cb_events", vec![], Some("cb2".to_string()), None);
+        reg.subscribe_with_filter(
+            "with_cb_events",
+            vec![],
+            Some("cb2".to_string()),
+            None,
+            None,
+        );
         let event = InteractionEventNotification {
             event_type: "select".to_string(),
             targets: vec![],
@@ -746,7 +613,7 @@ mod tests {
             perspective_id: None,
         };
         reg.broadcast(&event);
-        reg.subscribe_with_filter("with_cb_empty", vec![], Some("cb1".to_string()), None);
+        reg.subscribe_with_filter("with_cb_empty", vec![], Some("cb1".to_string()), None, None);
         let pending = reg.pending_callbacks();
         assert_eq!(pending.len(), 1);
         assert_eq!(pending[0].0, "with_cb_events");
@@ -761,6 +628,7 @@ mod tests {
             vec!["select".to_string()],
             Some("cb".to_string()),
             Some("grammar-1".to_string()),
+            None,
         ));
         assert_eq!(reg.callback_method("sub1"), Some("cb"));
     }
@@ -768,11 +636,12 @@ mod tests {
     #[test]
     fn test_broadcast_returns_callback_dispatches() {
         let mut reg = InteractionSubscriberRegistry::new();
-        reg.subscribe_with_filter("poll-sub", vec![], None, None);
+        reg.subscribe_with_filter("poll-sub", vec![], None, None, None);
         reg.subscribe_with_filter(
             "cb-sub",
             vec![],
             Some("spring.on_interaction".to_string()),
+            None,
             None,
         );
 

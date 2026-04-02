@@ -81,10 +81,8 @@ impl AppState {
         // Get BiomeOS URL from config (environment-driven)
         let biomeos_url = config.biomeos_url();
 
-        // Mock mode from config (NOT hardcoded)
-        let mock_mode_requested = config.mock_mode;
-
-        let biomeos_client = BiomeOSClient::new(&biomeos_url).with_mock_mode(mock_mode_requested);
+        let biomeos_client =
+            BiomeOSClient::new(&biomeos_url).with_fixture_mode(config.fixture_mode);
 
         // Create graph engine (shared across renderers)
         let graph = GraphEngine::new();

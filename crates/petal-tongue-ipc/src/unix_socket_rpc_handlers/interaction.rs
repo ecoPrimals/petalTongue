@@ -28,6 +28,7 @@ pub fn handle_subscribe(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcR
 
     let callback_method = req.params["callback_method"].as_str().map(String::from);
     let grammar_id = req.params["grammar_id"].as_str().map(String::from);
+    let callback_socket = req.params["callback_socket"].as_str().map(String::from);
 
     let is_new = handlers
         .interaction_subscribers
@@ -38,6 +39,7 @@ pub fn handle_subscribe(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcR
             event_filter,
             callback_method.clone(),
             grammar_id,
+            callback_socket.clone(),
         );
 
     JsonRpcResponse::success(
@@ -47,6 +49,7 @@ pub fn handle_subscribe(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcR
             "subscriber_id": subscriber_id,
             "is_new": is_new,
             "callback_method": callback_method,
+            "push_delivery": callback_socket.is_some() && callback_method.is_some(),
         }),
     )
 }

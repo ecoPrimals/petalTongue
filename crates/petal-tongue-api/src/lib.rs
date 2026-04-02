@@ -14,14 +14,6 @@
 
 #![warn(missing_docs)]
 #![expect(
-    clippy::unused_self,
-    reason = "API client methods may gain &self state"
-)]
-#![expect(
-    clippy::cast_sign_loss,
-    reason = "HTTP status codes and sizes are safe u16/usize"
-)]
-#![expect(
     clippy::redundant_closure_for_method_calls,
     reason = "explicit closures preferred for readability in async chains"
 )]

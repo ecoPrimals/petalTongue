@@ -88,6 +88,7 @@ impl SquirrelAdapter {
                 ],
                 None,
                 None,
+                None,
             );
         }
         Self {
@@ -125,6 +126,7 @@ impl SquirrelAdapter {
                     "ai.highlight".to_string(),
                     "ai.navigate".to_string(),
                 ],
+                None,
                 None,
                 None,
             );
@@ -304,6 +306,7 @@ mod tests {
         reg.subscribe_with_filter(
             "squirrel-ui-adapter",
             vec!["ai.focus".to_string()],
+            None,
             None,
             None,
         );

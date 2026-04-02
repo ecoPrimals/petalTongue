@@ -109,7 +109,7 @@ petaltongue
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
 | Coverage | ~90% line (llvm-cov) |
-| Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
+| Unsafe | `#![forbid(unsafe_code)]` unconditional on all 16 crates + UniBin, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
 | Files | All under 1,000 lines (largest refactored from 901 → directory module) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
