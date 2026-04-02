@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Compute bridge: async IPC client for barraCuda GPU compute operations.
+//! Compute bridge: async IPC client for GPU compute operations (capability-discovered).
 //!
 //! Discovers compute primals at runtime (capability `gpu.dispatch`) and dispatches
 //! operations via JSON-RPC. Falls back to empty results when no compute primal
@@ -69,28 +69,28 @@ pub async fn step_physics(world: &mut PhysicsWorld) -> PhysicsStepResult {
     }
 }
 
-/// Dispatch a statistical operation to barraCuda.
+/// Dispatch a statistical operation to compute primal.
 ///
 /// Supported ops: `math.stat.kde`, `math.stat.smooth`, `math.stat.bin`, `math.stat.summary`
 pub async fn dispatch_stat(op: &str, params: serde_json::Value) -> ComputeDispatchResult {
-    dispatch_compute("barracuda.compute.dispatch", op, params).await
+    dispatch_compute("compute.dispatch", op, params).await
 }
 
-/// Dispatch a tessellation operation to barraCuda.
+/// Dispatch a tessellation operation to compute primal.
 ///
 /// Supported ops: `math.tessellate.sphere`, `math.tessellate.cylinder`, `math.tessellate.isosurface`
 pub async fn dispatch_tessellate(op: &str, params: serde_json::Value) -> ComputeDispatchResult {
-    dispatch_compute("barracuda.compute.dispatch", op, params).await
+    dispatch_compute("compute.dispatch", op, params).await
 }
 
-/// Dispatch a projection operation to barraCuda.
+/// Dispatch a projection operation to compute primal.
 ///
 /// Supported ops: `math.project.perspective`, `math.project.lighting`
 pub async fn dispatch_project(op: &str, params: serde_json::Value) -> ComputeDispatchResult {
-    dispatch_compute("barracuda.compute.dispatch", op, params).await
+    dispatch_compute("compute.dispatch", op, params).await
 }
 
-/// Generic compute dispatch to barraCuda via JSON-RPC.
+/// Generic compute dispatch to compute primal via JSON-RPC.
 ///
 /// Falls back to an empty result when compute primal is unavailable.
 async fn dispatch_compute(
@@ -155,14 +155,14 @@ async fn try_dispatch(
 
 /// Try to send physics state to a compute primal via JSON-RPC.
 ///
-/// Uses barraCuda's IPC contract: `barracuda.compute.dispatch` with `op` field.
-/// When barraCuda adds physics ops, this will dispatch `math.physics.nbody`.
+/// Uses compute primal's IPC contract: `compute.dispatch` with `op` field.
+/// When compute primal adds physics ops, this will dispatch `math.physics.nbody`.
 async fn try_gpu_physics_step(world: &mut PhysicsWorld) -> Result<usize, String> {
     let socket_path = discover_compute_socket()?;
 
     let request = json!({
         "jsonrpc": "2.0",
-        "method": "barracuda.compute.dispatch",
+        "method": "compute.dispatch",
         "params": {
             "op": "math.physics.nbody",
             "bodies": world.to_ipc_request(),
@@ -195,11 +195,14 @@ async fn try_gpu_physics_step(world: &mut PhysicsWorld) -> Result<usize, String>
 /// Follows toadStool S139 dual-write pattern for ecosystem discovery.
 ///
 /// Priority:
-/// 1. `BARRACUDA_SOCKET` env (explicit override)
+/// 1. `COMPUTE_SOCKET` env (or `BARRACUDA_SOCKET` legacy alias) (explicit override)
 /// 2. `$XDG_RUNTIME_DIR/ecoPrimals/` (ecosystem discovery directory, toadStool S139)
 /// 3. `$XDG_RUNTIME_DIR/{socket_name}/` (primal-specific)
 /// 4. `/tmp/` fallback
 fn discover_compute_socket() -> Result<String, String> {
+    if let Ok(path) = std::env::var("COMPUTE_SOCKET") {
+        return Ok(path);
+    }
     if let Ok(path) = std::env::var("BARRACUDA_SOCKET") {
         return Ok(path);
     }

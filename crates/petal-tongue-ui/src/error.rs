@@ -168,8 +168,8 @@ pub enum DisplayError {
     #[error("No displays available")]
     NoDisplaysAvailable,
 
-    #[error("No displays available from toadStool")]
-    NoDisplaysFromToadstool,
+    #[error("No displays available from display backend")]
+    NoDisplaysFromBackend,
 
     #[error("Failed to create biomeOS discovery backend: {0}")]
     BiomeOsDiscoveryBackend(String),
@@ -374,17 +374,17 @@ pub enum GraphEditorError {
     StreamBroadcastFailed,
 }
 
-/// Backend errors (toadstool, eframe)
+/// Backend errors (display backends, eframe)
 #[derive(Debug, Error)]
 pub enum BackendError {
     #[error("eframe backend not available (compile with --features ui-eframe)")]
     EframeNotAvailable,
 
-    #[error("Toadstool display not available (use display::backends::toadstool_v2 with biomeOS)")]
-    ToadstoolNotAvailable,
+    #[error("Display backend not available (use capability-discovered backend with biomeOS)")]
+    DisplayBackendNotAvailable,
 
-    #[error("Toadstool display requires biomeOS: {0}")]
-    ToadstoolRequiresBiomeOs(String),
+    #[error("Display backend requires biomeOS: {0}")]
+    DisplayBackendRequiresBiomeOs(String),
 
     #[error("eframe::run_native failed: {0}")]
     EframeRunFailed(String),

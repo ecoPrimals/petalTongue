@@ -12,8 +12,8 @@
 //!
 //! # Philosophy
 //!
-//! **No primal is special.** biomeOS, Songbird, or any other primal can
-//! provide visualization data. We discover by capability, not by name.
+//! **No primal is special.** Any primal can provide visualization data.
+//! We discover by capability, not by name.
 //!
 //! # Discovery Methods
 //!
@@ -44,6 +44,8 @@ mod capabilities;
 pub mod capability_parse;
 #[cfg(any(test, feature = "test-fixtures"))]
 mod demo_provider;
+mod discovery_service_client;
+mod discovery_service_provider;
 mod dns_parser;
 mod dynamic_scenario_provider;
 #[cfg(feature = "legacy-http")]
@@ -54,8 +56,6 @@ mod mdns_provider;
 mod neural_api_provider;
 mod neural_graph_client;
 mod scenario_provider;
-mod songbird_client;
-mod songbird_provider;
 mod traits;
 mod unix_socket_provider;
 
@@ -71,6 +71,8 @@ pub use cache::CacheStats;
 pub use capabilities::VisualizationCapability;
 #[cfg(any(test, feature = "test-fixtures"))]
 pub use demo_provider::DemoVisualizationProvider;
+pub use discovery_service_client::DiscoveryServiceClient;
+pub use discovery_service_provider::DiscoveryServiceProvider;
 pub use dynamic_scenario_provider::DynamicScenarioProvider;
 #[cfg(feature = "legacy-http")]
 #[expect(deprecated)]
@@ -80,8 +82,6 @@ pub use mdns_provider::MdnsVisualizationProvider;
 pub use neural_api_provider::NeuralApiProvider;
 pub use neural_graph_client::{ExecutionResult, ExecutionStatus, GraphMetadata, NeuralGraphClient};
 pub use scenario_provider::ScenarioVisualizationProvider;
-pub use songbird_client::SongbirdClient;
-pub use songbird_provider::SongbirdVisualizationProvider;
 pub use traits::{ProviderMetadata, VisualizationDataProvider};
 pub use unix_socket_provider::UnixSocketProvider;
 
@@ -142,25 +142,24 @@ pub async fn discover_visualization_providers()
         }
     }
 
-    // Priority 2: Try Songbird for live primal discovery (FALLBACK)
-    // This queries Songbird which has the complete primal registry
-    tracing::info!("🎵 Attempting Songbird discovery (fallback)...");
-    match SongbirdVisualizationProvider::discover(None).await {
-        Ok(songbird_provider) => {
-            tracing::info!("✅ Songbird connected - using as fallback provider");
-            providers.push(Box::new(songbird_provider) as Box<dyn VisualizationDataProvider>);
+    // Priority 2: Try discovery service for live primal discovery (FALLBACK)
+    // Queries whichever service provides the `discovery-service` socket role
+    tracing::info!("🔍 Attempting discovery service (fallback)...");
+    match DiscoveryServiceProvider::discover(None).await {
+        Ok(discovery_provider) => {
+            tracing::info!("✅ Discovery service connected - using as fallback provider");
+            providers.push(Box::new(discovery_provider) as Box<dyn VisualizationDataProvider>);
 
-            // If Songbird is available, use it as fallback
             return Ok(providers);
         }
         Err(e) => {
-            tracing::debug!("Songbird not available: {}", e);
-            tracing::info!("💡 Tip: Start Songbird for primal discovery");
+            tracing::debug!("Discovery service not available: {}", e);
+            tracing::info!("💡 Tip: Start ecosystem discovery service for primal discovery");
         }
     }
 
-    // Priority 2: Try JSON-RPC over Unix sockets (PRIMARY PRIMAL PROTOCOL)
-    // This is the standard protocol for all ecoPrimals (Songbird, BearDog, ToadStool, etc.)
+    // Priority 3: Try JSON-RPC over Unix sockets (PRIMARY PRIMAL PROTOCOL)
+    // Standard protocol for all ecoPrimals — discovers by capability, not by name
     tracing::info!("🔌 Attempting JSON-RPC discovery (Unix sockets)...");
     match JsonRpcProvider::discover().await {
         Ok(jsonrpc_provider) => {
@@ -303,7 +302,7 @@ pub async fn discover_visualization_providers()
             "⚠️  No visualization data providers found!\n\
             \n\
             Recommended options (TRUE PRIMAL):\n\
-            1. Songbird discovery: Start Songbird for live primal topology\n\
+            1. Discovery service: Start ecosystem discovery for live primal topology\n\
             2. JSON-RPC (PRIMARY): BIOMEOS_URL=unix:///run/user/$UID/biomeos-device-management.sock\n\
             3. Auto-discovery: PETALTONGUE_ENABLE_MDNS=true (default)\n\
             \n\

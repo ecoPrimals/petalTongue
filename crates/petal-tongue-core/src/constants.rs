@@ -86,14 +86,19 @@ pub const DEFAULT_SANDBOX_SECURITY_PORT: u16 = 9000;
 /// Overridable via `PETALTONGUE_SANDBOX_DISCOVERY_ENDPOINT` (full URL) env var.
 pub const DEFAULT_SANDBOX_DISCOVERY_PORT: u16 = 8080;
 
-/// Default GPU compute / Toadstool port (overridable via `TOADSTOOL_PORT` env var).
-pub const DEFAULT_TOADSTOOL_PORT: u16 = 9001;
+/// Default display backend / GPU compute port (overridable via `DISPLAY_BACKEND_PORT` or `TOADSTOOL_PORT` env var).
+pub const DEFAULT_DISPLAY_BACKEND_PORT: u16 = 9001;
 
-/// Toadstool port (env-driven with fallback).
-/// Reads `TOADSTOOL_PORT`; falls back to `DEFAULT_TOADSTOOL_PORT`.
+/// Display backend port (env-driven with fallback).
+/// Reads `DISPLAY_BACKEND_PORT` then `TOADSTOOL_PORT` (legacy alias); falls back to `DEFAULT_DISPLAY_BACKEND_PORT`.
 #[must_use]
-pub fn toadstool_port() -> u16 {
-    env_or("TOADSTOOL_PORT", DEFAULT_TOADSTOOL_PORT)
+pub fn display_backend_port() -> u16 {
+    if let Ok(v) = std::env::var("DISPLAY_BACKEND_PORT")
+        && let Ok(p) = v.parse()
+    {
+        return p;
+    }
+    env_or("TOADSTOOL_PORT", DEFAULT_DISPLAY_BACKEND_PORT)
 }
 
 /// Loopback host for local-only connections (used when env/discovery not available).
@@ -360,12 +365,12 @@ pub mod discovery_timeouts {
     /// Discovery cache: health TTL
     pub const CACHE_HEALTH_TTL: Duration = Duration::from_secs(10);
 
-    /// Songbird UDS connect timeout (aggressive for non-blocking discovery)
-    pub const SONGBIRD_CONNECT_TIMEOUT: Duration = Duration::from_millis(200);
-    /// Songbird UDS write timeout
-    pub const SONGBIRD_WRITE_TIMEOUT: Duration = Duration::from_millis(100);
-    /// Songbird UDS read timeout
-    pub const SONGBIRD_READ_TIMEOUT: Duration = Duration::from_millis(500);
+    /// Discovery service UDS connect timeout (aggressive for non-blocking discovery)
+    pub const DISCOVERY_SERVICE_CONNECT_TIMEOUT: Duration = Duration::from_millis(200);
+    /// Discovery service UDS write timeout
+    pub const DISCOVERY_SERVICE_WRITE_TIMEOUT: Duration = Duration::from_millis(100);
+    /// Discovery service UDS read timeout
+    pub const DISCOVERY_SERVICE_READ_TIMEOUT: Duration = Duration::from_millis(500);
 }
 
 /// Default client RPC timeout (overridable via `PETALTONGUE_RPC_TIMEOUT_SECS`)

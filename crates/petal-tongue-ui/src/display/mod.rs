@@ -19,7 +19,7 @@
 //!   ├── init_best_backend()
 //!   └── present(pixel_buffer)
 //!       ↓
-//!   [ToadstoolDisplay, SoftwareDisplay, FramebufferDisplay, ExternalDisplay]
+//!   [DiscoveredDisplayBackend, DiscoveredDisplayBackendV2, SoftwareDisplay, FramebufferDisplay, ExternalDisplay]
 //! ```
 
 pub mod backends;
@@ -30,7 +30,7 @@ pub mod traits;
 
 pub use backends::{
     external::ExternalDisplay, framebuffer::FramebufferDisplay, software::SoftwareDisplay,
-    toadstool::ToadstoolDisplay, toadstool_v2::ToadstoolDisplay as ToadstoolDisplayV2,
+    toadstool::DiscoveredDisplayBackend, toadstool_v2::DiscoveredDisplayBackendV2,
 };
 pub use manager::DisplayManager;
 pub use prompt::prompt_for_display_server;

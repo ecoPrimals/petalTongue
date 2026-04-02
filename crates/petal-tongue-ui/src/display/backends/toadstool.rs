@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Toadstool Display Backend - Production Ready! 🌸🦈
+//! Discovered Display Backend (via biomeOS capability query)
 //!
 //! TRUE PRIMAL Architecture: Discovery via biomeOS, Performance via tarpc
 //!
@@ -45,16 +45,14 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
 use tracing::{debug, info};
 
-/// Toadstool display backend (via biomeOS neuralAPI)
-///
-/// TRUE PRIMAL: Uses JSON-RPC over Unix socket to biomeOS,
-/// which orchestrates toadStool display/input/GPU operations.
-pub struct ToadstoolDisplay {
+/// Display backend discovered via biomeOS: JSON-RPC on the biomeOS socket routes to
+/// whichever primal currently provides the `display` capability (no hardcoded provider name).
+pub struct DiscoveredDisplayBackend {
     /// biomeOS socket path
     biomeos_socket: std::path::PathBuf,
     /// Window ID (from `display.create_window`)
     window_id: Option<String>,
-    /// Buffer handle (from toadstool)
+    /// Buffer handle from the display capability provider
     buffer_handle: Option<String>,
     /// Display dimensions
     width: u32,
@@ -63,7 +61,7 @@ pub struct ToadstoolDisplay {
     request_id: std::sync::atomic::AtomicU64,
 }
 
-/// Display capabilities response from toadStool
+/// Display capabilities response from the provider (via biomeOS)
 #[derive(Debug, Clone, Deserialize)]
 struct DisplayCapabilitiesResponse {
     displays: Vec<DisplayInfo>,
@@ -107,8 +105,8 @@ pub const fn expected_rgba8_buffer_size(width: u32, height: u32) -> usize {
     (width as usize) * (height as usize) * 4
 }
 
-impl ToadstoolDisplay {
-    /// Create new Toadstool display (discovers biomeOS socket)
+impl DiscoveredDisplayBackend {
+    /// Create a new backend instance (discovers biomeOS socket from environment / defaults)
     ///
     /// # Errors
     ///
@@ -258,7 +256,7 @@ impl ToadstoolDisplay {
         Ok(window)
     }
 
-    /// Commit frame to toadStool via biomeOS
+    /// Commit frame to the display capability provider via biomeOS
     async fn commit_frame(&self, buffer: &[u8]) -> Result<()> {
         use base64::{Engine as _, engine::general_purpose};
 
@@ -294,9 +292,9 @@ impl ToadstoolDisplay {
 }
 
 #[async_trait]
-impl DisplayBackend for ToadstoolDisplay {
+impl DisplayBackend for DiscoveredDisplayBackend {
     async fn init(&mut self) -> Result<()> {
-        info!("🌸🦈 Initializing toadStool display backend via biomeOS...");
+        info!("🌸🦈 Initializing discovered display backend (biomeOS JSON-RPC)...");
         info!("   Socket: {}", self.biomeos_socket.display());
 
         // 1. Query display capabilities
@@ -306,7 +304,7 @@ impl DisplayBackend for ToadstoolDisplay {
         let display_info = caps
             .displays
             .first()
-            .ok_or(DisplayError::NoDisplaysFromToadstool)?;
+            .ok_or(DisplayError::NoDisplaysFromBackend)?;
 
         info!(
             "   Display: {} ({})",
@@ -330,7 +328,7 @@ impl DisplayBackend for ToadstoolDisplay {
         self.window_id = Some(window.window_id);
         self.buffer_handle = Some(window.buffer_handle);
 
-        info!("✅ toadStool display backend initialized");
+        info!("✅ Discovered display backend initialized");
         if let Some(window_id) = &self.window_id {
             info!("   Window: {}", window_id);
         }
@@ -361,6 +359,7 @@ impl DisplayBackend for ToadstoolDisplay {
         self.commit_frame(buffer).await
     }
 
+    /// Returns true when a biomeOS Unix socket path exists so capability queries can reach the orchestrator.
     fn is_available() -> bool {
         // Check if biomeOS socket exists (capability-based discovery)
         let socket_paths = [
@@ -377,13 +376,13 @@ impl DisplayBackend for ToadstoolDisplay {
     }
 
     fn name(&self) -> &'static str {
-        "toadStool Display (via biomeOS)"
+        "Discovered Display (via biomeOS)"
     }
 
     fn capabilities(&self) -> DisplayCapabilities {
         DisplayCapabilities {
             requires_network: false, // Unix socket is local
-            requires_gpu: false,     // toadStool handles GPU
+            requires_gpu: false,     // display provider may use GPU server-side
             requires_root: false,
             supports_resize: true,
             max_fps: 60,                    // VSync from DRM
@@ -394,7 +393,7 @@ impl DisplayBackend for ToadstoolDisplay {
     }
 
     async fn shutdown(&mut self) -> Result<()> {
-        info!("🌸 Shutting down toadStool display backend");
+        info!("🌸 Shutting down discovered display backend");
 
         // Future: Destroy window, unsubscribe from input
         if let Some(window_id) = &self.window_id {
@@ -415,17 +414,17 @@ mod tests {
 
     #[tokio::test]
     async fn test_toadstool_display_creation() {
-        let display = ToadstoolDisplay::with_socket(constants::biomeos_legacy_socket());
-        assert_eq!(display.name(), "toadStool Display (via biomeOS)");
+        let display = DiscoveredDisplayBackend::with_socket(constants::biomeos_legacy_socket());
+        assert_eq!(display.name(), "Discovered Display (via biomeOS)");
         assert_eq!(display.dimensions(), (1920, 1080));
     }
 
     #[test]
     fn test_toadstool_capabilities() {
-        let display = ToadstoolDisplay::with_socket(constants::biomeos_legacy_socket());
+        let display = DiscoveredDisplayBackend::with_socket(constants::biomeos_legacy_socket());
         let caps = display.capabilities();
         assert!(!caps.requires_network); // Unix socket is local
-        assert!(!caps.requires_gpu); // toadStool handles GPU
+        assert!(!caps.requires_gpu); // provider may use GPU server-side
         assert!(!caps.requires_root);
         assert!(!caps.requires_display_server); // Direct DRM
         assert!(caps.remote_capable);
@@ -434,7 +433,7 @@ mod tests {
 
     #[test]
     fn test_socket_discovery() {
-        let _display = ToadstoolDisplay::new();
+        let _display = DiscoveredDisplayBackend::new();
     }
 
     #[test]
@@ -447,26 +446,26 @@ mod tests {
 
     #[test]
     fn test_with_socket_custom_path() {
-        let display = ToadstoolDisplay::with_socket("/tmp/custom.sock");
+        let display = DiscoveredDisplayBackend::with_socket("/tmp/custom.sock");
         assert_eq!(display.dimensions(), (1920, 1080));
     }
 
     #[test]
     fn test_is_available() {
-        let available = ToadstoolDisplay::is_available();
+        let available = DiscoveredDisplayBackend::is_available();
         let _ = available;
     }
 
     #[test]
     fn test_name() {
-        let display = ToadstoolDisplay::with_socket("/tmp/test.sock");
-        assert!(display.name().contains("toadStool"));
+        let display = DiscoveredDisplayBackend::with_socket("/tmp/test.sock");
+        assert!(display.name().contains("Discovered"));
         assert!(display.name().contains("biomeOS"));
     }
 
     #[test]
     fn test_capabilities_values() {
-        let display = ToadstoolDisplay::with_socket(constants::biomeos_legacy_socket());
+        let display = DiscoveredDisplayBackend::with_socket(constants::biomeos_legacy_socket());
         let caps = display.capabilities();
         assert_eq!(caps.max_fps, 60);
         assert_eq!(caps.latency_ms, 10);
@@ -475,7 +474,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_present_invalid_buffer_size() {
-        let mut display = ToadstoolDisplay::with_socket("/tmp/nonexistent.sock");
+        let mut display = DiscoveredDisplayBackend::with_socket("/tmp/nonexistent.sock");
         let wrong_size_buffer = vec![0u8; 100];
         let result = display.present(&wrong_size_buffer).await;
         assert!(result.is_err());
@@ -492,7 +491,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_present_buffer_too_small() {
-        let mut display = ToadstoolDisplay::with_socket(constants::biomeos_legacy_socket());
+        let mut display = DiscoveredDisplayBackend::with_socket(constants::biomeos_legacy_socket());
         let expected = expected_rgba8_buffer_size(1920, 1080);
         let too_small = vec![0u8; expected - 1];
         let result = display.present(&too_small).await;
@@ -501,7 +500,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_present_buffer_too_large() {
-        let mut display = ToadstoolDisplay::with_socket(constants::biomeos_legacy_socket());
+        let mut display = DiscoveredDisplayBackend::with_socket(constants::biomeos_legacy_socket());
         let expected = expected_rgba8_buffer_size(1920, 1080);
         let too_large = vec![0u8; expected + 1000];
         let result = display.present(&too_large).await;
@@ -510,7 +509,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_shutdown_no_window() {
-        let mut display = ToadstoolDisplay::with_socket(constants::biomeos_legacy_socket());
+        let mut display = DiscoveredDisplayBackend::with_socket(constants::biomeos_legacy_socket());
         let result = display.shutdown().await;
         assert!(result.is_ok());
     }
@@ -521,7 +520,7 @@ mod tests {
             "BIOMEOS_SOCKET",
             "/tmp/biomeos-test.sock",
             || {
-                if let Ok(display) = ToadstoolDisplay::new() {
+                if let Ok(display) = DiscoveredDisplayBackend::new() {
                     assert_eq!(display.dimensions(), (1920, 1080));
                 }
             },

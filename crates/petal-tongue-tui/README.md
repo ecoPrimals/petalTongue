@@ -192,7 +192,7 @@ All primal clients are `Optional<T>`:
 
 ```rust
 // Tries to leverage Songbird
-if let Ok(songbird) = SongbirdClient::discover().await {
+if let Ok(discovery) = DiscoveryServiceClient::discover().await {
     let topology = songbird.get_topology().await?;
     ui.render_topology(topology)?;
 } else {

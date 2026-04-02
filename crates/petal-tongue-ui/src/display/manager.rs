@@ -11,7 +11,8 @@
 use crate::display::prompt::prompt_for_display_server;
 use crate::display::traits::{BackendPriority, DisplayBackend};
 use crate::display::{
-    ExternalDisplay, FramebufferDisplay, SoftwareDisplay, ToadstoolDisplay, ToadstoolDisplayV2,
+    DiscoveredDisplayBackend, DiscoveredDisplayBackendV2, ExternalDisplay, FramebufferDisplay,
+    SoftwareDisplay,
 };
 use crate::error::{DisplayError, Result};
 use tracing::{info, warn};
@@ -42,12 +43,12 @@ impl DisplayManager {
         // Tier 1: Try Toadstool V2 (tarpc) via capability discovery (highest priority)
         // Discovery happens at runtime - no hardcoded primal names!
         info!("🌸 Discovering 'display' capability provider (tarpc)...");
-        match ToadstoolDisplayV2::new() {
+        match DiscoveredDisplayBackendV2::new() {
             Ok(toadstool_v2) => {
                 info!("✅ Display capability provider discovered via tarpc (high-performance)");
                 backends.push(BackendEntry {
                     backend: Box::new(toadstool_v2),
-                    priority: BackendPriority::Toadstool,
+                    priority: BackendPriority::DiscoveredDisplay,
                     initialized: false,
                 });
             }
@@ -56,13 +57,13 @@ impl DisplayManager {
                 info!("    Trying JSON-RPC fallback...");
 
                 // Fallback to JSON-RPC version
-                if ToadstoolDisplay::is_available() {
-                    match ToadstoolDisplay::new() {
+                if DiscoveredDisplayBackend::is_available() {
+                    match DiscoveredDisplayBackend::new() {
                         Ok(toadstool) => {
                             info!("✅ Display capability provider discovered (JSON-RPC fallback)");
                             backends.push(BackendEntry {
                                 backend: Box::new(toadstool),
-                                priority: BackendPriority::Toadstool,
+                                priority: BackendPriority::DiscoveredDisplay,
                                 initialized: false,
                             });
                         }
@@ -291,11 +292,11 @@ mod tests {
 
     #[test]
     fn backend_priority_ordering() {
-        assert!(BackendPriority::Toadstool < BackendPriority::Software);
+        assert!(BackendPriority::DiscoveredDisplay < BackendPriority::Software);
         assert!(BackendPriority::Software < BackendPriority::Framebuffer);
         assert!(BackendPriority::Framebuffer < BackendPriority::External);
         assert_eq!(
-            BackendPriority::Toadstool.cmp(&BackendPriority::External),
+            BackendPriority::DiscoveredDisplay.cmp(&BackendPriority::External),
             std::cmp::Ordering::Less
         );
     }
@@ -323,11 +324,11 @@ mod tests {
     fn test_backend_priority_sort_order() {
         use std::cmp::Ordering;
         assert_eq!(
-            BackendPriority::Toadstool.cmp(&BackendPriority::Software),
+            BackendPriority::DiscoveredDisplay.cmp(&BackendPriority::Software),
             Ordering::Less
         );
         assert_eq!(
-            BackendPriority::External.cmp(&BackendPriority::Toadstool),
+            BackendPriority::External.cmp(&BackendPriority::DiscoveredDisplay),
             Ordering::Greater
         );
         assert_eq!(

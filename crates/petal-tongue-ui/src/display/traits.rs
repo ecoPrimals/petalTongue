@@ -129,8 +129,8 @@ impl DisplayCapabilities {
 /// Display backend priority (lower is better)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BackendPriority {
-    /// Tier 1: Highest priority (Toadstool network effect)
-    Toadstool = 1,
+    /// Tier 1: Highest priority (capability-discovered display)
+    DiscoveredDisplay = 1,
     /// Tier 2: High priority (Pure Rust software)
     Software = 2,
     /// Tier 3: Medium priority (Framebuffer direct)
@@ -183,7 +183,7 @@ mod tests {
 
     #[test]
     fn test_backend_priority_ordering() {
-        assert!(BackendPriority::Toadstool < BackendPriority::Software);
+        assert!(BackendPriority::DiscoveredDisplay < BackendPriority::Software);
         assert!(BackendPriority::Software < BackendPriority::Framebuffer);
         assert!(BackendPriority::Framebuffer < BackendPriority::External);
     }

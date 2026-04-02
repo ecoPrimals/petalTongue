@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Songbird discovery client
+//! Discovery service client
 //!
-//! Queries Songbird primal for capability-based discovery of other primals.
-//! This is the PRIMARY method for petalTongue to discover live ecosystem topology.
+//! Queries the ecosystem discovery service for capability-based discovery of primals.
+//! petalTongue never hardcodes which primal provides discovery — it connects to
+//! whichever service is listening on the `discovery-service` socket role.
 //!
-//! MODERN IDIOMATIC RUST:
 //! - Aggressive timeouts to prevent hanging
 //! - Non-blocking operations throughout
 //! - Proper error propagation
@@ -37,16 +37,17 @@ struct JsonRpcResponse {
     id: Value,
 }
 
-/// Songbird client for primal discovery
+/// Discovery service client for primal discovery
 ///
-/// Connects to Songbird via Unix socket and queries for registered primals.
+/// Connects to the ecosystem discovery service via Unix socket and queries
+/// for registered primals by capability.
 #[derive(Debug)]
-pub struct SongbirdClient {
-    /// Path to Songbird's Unix socket
+pub struct DiscoveryServiceClient {
+    /// Path to discovery service Unix socket
     socket_path: PathBuf,
 }
 
-impl SongbirdClient {
+impl DiscoveryServiceClient {
     /// Discover discovery service Unix socket (capability-based, no hardcoded primal names)
     ///
     /// Uses `DISCOVERY_SERVICE_SOCKET` env for socket name (default: discovery-service).
@@ -69,7 +70,7 @@ impl SongbirdClient {
         for base_path in search_paths {
             let socket_path = base_path.join(&socket_name);
             if socket_path.exists() {
-                info!("🎵 Found discovery service at: {}", socket_path.display());
+                info!("🔍 Found discovery service at: {}", socket_path.display());
                 return Ok(Self { socket_path });
             }
         }
@@ -138,7 +139,10 @@ impl SongbirdClient {
         &self,
         capability: &str,
     ) -> DiscoveryResult<Vec<PrimalInfo>> {
-        debug!("🔍 Querying Songbird for capability: {}", capability);
+        debug!(
+            "🔍 Querying discovery service for capability: {}",
+            capability
+        );
 
         let request = json!({
             "jsonrpc": "2.0",
@@ -153,7 +157,7 @@ impl SongbirdClient {
         let primal_infos = self.parse_primal_array(&result)?;
 
         info!(
-            "🎵 Songbird found {} primals with capability '{}'",
+            "🔍 Discovery service found {} primals with capability '{}'",
             primal_infos.len(),
             capability
         );
@@ -169,7 +173,7 @@ impl SongbirdClient {
     /// # Errors
     /// Returns `DiscoveryError` on network/JSON-RPC errors or invalid response.
     pub async fn get_all_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
-        debug!("🔍 Querying Songbird for all registered primals");
+        debug!("🔍 Querying discovery service for all registered primals");
 
         let request = json!({
             "jsonrpc": "2.0",
@@ -184,7 +188,7 @@ impl SongbirdClient {
         let primal_infos = self.parse_primal_array(&result)?;
 
         info!(
-            "🎵 Songbird reports {} total registered primals",
+            "🔍 Discovery service reports {} total registered primals",
             primal_infos.len()
         );
 
@@ -204,7 +208,7 @@ impl SongbirdClient {
             .filter_map(|v| match self.parse_primal(v) {
                 Ok(info) => Some(info),
                 Err(e) => {
-                    warn!("Failed to parse primal from Songbird response: {e}");
+                    warn!("Failed to parse primal from discovery response: {e}");
                     None
                 }
             })
@@ -233,7 +237,7 @@ impl SongbirdClient {
     /// Uses aggressive timeouts to prevent hanging on unresponsive Songbird.
     async fn send_request(&self, request: Value) -> DiscoveryResult<Value> {
         use petal_tongue_core::constants::discovery_timeouts;
-        let connect_timeout = discovery_timeouts::SONGBIRD_CONNECT_TIMEOUT;
+        let connect_timeout = discovery_timeouts::DISCOVERY_SERVICE_CONNECT_TIMEOUT;
 
         let stream =
             match tokio::time::timeout(connect_timeout, UnixStream::connect(&self.socket_path))
@@ -253,7 +257,7 @@ impl SongbirdClient {
         let (reader, mut writer) = stream.into_split();
         let mut reader = BufReader::new(reader);
 
-        let write_timeout = discovery_timeouts::SONGBIRD_WRITE_TIMEOUT;
+        let write_timeout = discovery_timeouts::DISCOVERY_SERVICE_WRITE_TIMEOUT;
 
         let mut request_bytes = serde_json::to_vec(&request).map_err(DiscoveryError::Json)?;
         request_bytes.push(b'\n');
@@ -269,12 +273,12 @@ impl SongbirdClient {
             Ok(Err(e)) => return Err(DiscoveryError::Io(e)),
             Err(_) => {
                 return Err(DiscoveryError::WriteTimeout {
-                    endpoint: "Songbird".to_string(),
+                    endpoint: "discovery service".to_string(),
                 });
             }
         }
 
-        let read_timeout = discovery_timeouts::SONGBIRD_READ_TIMEOUT;
+        let read_timeout = discovery_timeouts::DISCOVERY_SERVICE_READ_TIMEOUT;
 
         let mut line = String::new();
         match tokio::time::timeout(read_timeout, reader.read_line(&mut line)).await {
@@ -282,7 +286,7 @@ impl SongbirdClient {
             Ok(Err(e)) => return Err(DiscoveryError::Io(e)),
             Err(_) => {
                 return Err(DiscoveryError::ReadTimeout {
-                    endpoint: "Songbird".to_string(),
+                    endpoint: "discovery service".to_string(),
                 });
             }
         }
@@ -301,7 +305,7 @@ impl SongbirdClient {
         response
             .result
             .ok_or_else(|| DiscoveryError::NoResultInResponse {
-                context: " (Songbird)".to_string(),
+                context: " (discovery service)".to_string(),
             })
     }
 
@@ -381,7 +385,7 @@ mod tests {
 
     #[test]
     fn test_get_search_paths() {
-        let paths = SongbirdClient::get_search_paths();
+        let paths = DiscoveryServiceClient::get_search_paths();
         assert!(!paths.is_empty());
 
         // Should always have /tmp as fallback
@@ -391,13 +395,13 @@ mod tests {
     #[test]
     fn test_with_socket_path() {
         let path = PathBuf::from("/run/user/1000/discovery.sock");
-        let client = SongbirdClient::with_socket_path(path.clone());
+        let client = DiscoveryServiceClient::with_socket_path(path.clone());
         assert_eq!(client.socket_path(), &path);
     }
 
     #[test]
     fn test_parse_primal() {
-        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
 
         let json = json!({
             "id": "beardog-123",
@@ -418,7 +422,7 @@ mod tests {
 
     #[test]
     fn test_parse_primal_minimal() {
-        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
 
         let json = json!({
             "id": "minimal-primal",
@@ -434,7 +438,7 @@ mod tests {
 
     #[test]
     fn test_parse_primal_health_variants() {
-        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
 
         let json_healthy = json!({
             "id": "test",
@@ -472,7 +476,7 @@ mod tests {
 
     #[test]
     fn test_parse_primal_type_fallback() {
-        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
 
         let json = json!({
             "id": "test",
@@ -495,7 +499,7 @@ mod tests {
 
     #[test]
     fn test_parse_primal_missing_id() {
-        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
         let json = json!({
             "name": "test",
             "endpoint": "unix:///tmp/test.sock"
@@ -505,7 +509,7 @@ mod tests {
 
     #[test]
     fn test_parse_primal_missing_name() {
-        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
         let json = json!({
             "id": "test",
             "endpoint": "unix:///tmp/test.sock"
@@ -515,7 +519,7 @@ mod tests {
 
     #[test]
     fn test_parse_primal_missing_endpoint() {
-        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
         let json = json!({
             "id": "test",
             "name": "test"
@@ -525,22 +529,23 @@ mod tests {
 
     #[test]
     fn test_discover_fails_without_socket() {
-        let result = SongbirdClient::discover(Some("nonexistent-family-xyz"));
+        let result = DiscoveryServiceClient::discover(Some("nonexistent-family-xyz"));
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("not found"));
     }
 
     #[tokio::test]
     async fn test_send_request_fails_nonexistent_socket() {
-        let client =
-            SongbirdClient::with_socket_path(PathBuf::from("/tmp/nonexistent-socket-12345.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from(
+            "/tmp/nonexistent-socket-12345.sock",
+        ));
         let result = client.discover_by_capability("visualization").await;
         assert!(result.is_err());
     }
 
     #[test]
     fn test_parse_primal_last_seen_fallback() {
-        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
         let json = json!({
             "id": "test",
             "name": "test",
@@ -552,7 +557,7 @@ mod tests {
 
     #[test]
     fn test_parse_primal_health_warning_variants() {
-        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
         for (health_str, expected) in [
             ("warning", PrimalHealthStatus::Warning),
             ("error", PrimalHealthStatus::Critical),
@@ -574,7 +579,7 @@ mod tests {
 
     #[test]
     fn test_parse_primal_unknown_health_defaults_healthy() {
-        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
         let json = json!({
             "id": "test",
             "name": "test",
@@ -668,7 +673,7 @@ mod tests {
             "XDG_RUNTIME_DIR",
             "/custom/xdg",
             || {
-                let paths = SongbirdClient::get_search_paths();
+                let paths = DiscoveryServiceClient::get_search_paths();
                 assert_eq!(paths.first().and_then(|p| p.to_str()), Some("/custom/xdg"));
             },
         );
@@ -676,7 +681,7 @@ mod tests {
 
     #[test]
     fn test_parse_primal_capabilities_mixed_types() {
-        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
         let json = json!({
             "id": "test",
             "name": "test",
@@ -709,7 +714,7 @@ mod tests {
 
     #[test]
     fn test_parse_primal_ok_variant() {
-        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
         let json = json!({
             "id": "ok-primal",
             "name": "OK",
@@ -722,7 +727,7 @@ mod tests {
 
     #[test]
     fn test_parse_primal_capabilities_empty_array() {
-        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
         let json = json!({
             "id": "test",
             "name": "test",
@@ -735,7 +740,7 @@ mod tests {
 
     #[test]
     fn test_parse_primal_capabilities_null() {
-        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
         let json = json!({
             "id": "test",
             "name": "test",
@@ -751,7 +756,7 @@ mod tests {
             "FAMILY_ID",
             "custom-family",
             || {
-                let result = SongbirdClient::discover(None);
+                let result = DiscoveryServiceClient::discover(None);
                 let _ = result;
             },
         );
@@ -759,7 +764,7 @@ mod tests {
 
     #[test]
     fn test_discover_with_explicit_family() {
-        let result = SongbirdClient::discover(Some("test-family"));
+        let result = DiscoveryServiceClient::discover(Some("test-family"));
         assert!(result.is_err());
     }
 
@@ -777,7 +782,7 @@ mod tests {
 
     #[test]
     fn test_parse_primal_last_seen_explicit() {
-        let client = SongbirdClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/test.sock"));
         let json = json!({
             "id": "test",
             "name": "test",
@@ -791,14 +796,15 @@ mod tests {
     #[test]
     fn test_socket_path_getter() {
         let path = PathBuf::from("/run/user/1000/songbird.sock");
-        let client = SongbirdClient::with_socket_path(path.clone());
+        let client = DiscoveryServiceClient::with_socket_path(path.clone());
         assert_eq!(client.socket_path(), &path);
     }
 
     #[tokio::test]
     async fn test_get_all_primals_fails_nonexistent_socket() {
-        let client =
-            SongbirdClient::with_socket_path(PathBuf::from("/tmp/nonexistent-xyz-12345.sock"));
+        let client = DiscoveryServiceClient::with_socket_path(PathBuf::from(
+            "/tmp/nonexistent-xyz-12345.sock",
+        ));
         let result = client.get_all_primals().await;
         assert!(result.is_err());
     }
@@ -806,7 +812,7 @@ mod tests {
     #[tokio::test]
     async fn test_health_check_fails_nonexistent_socket() {
         let client =
-            SongbirdClient::with_socket_path(PathBuf::from("/tmp/nonexistent-health.sock"));
+            DiscoveryServiceClient::with_socket_path(PathBuf::from("/tmp/nonexistent-health.sock"));
         let result = client.health_check().await;
         assert!(result.is_err());
     }
