@@ -5,14 +5,14 @@ This directory contains demonstration scenarios for `petalTongue` showcase mode.
 ## Usage
 
 ```bash
-# Use default scenario (simple.json)
-SHOWCASE_MODE=true ./petal-tongue
+# Use scenario via CLI
+petaltongue ui --scenario sandbox/scenarios/simple.json
 
-# Use specific scenario
-SHOWCASE_MODE=true SANDBOX_SCENARIO=complex ./petal-tongue
+# Use specific named scenario
+petaltongue ui --scenario sandbox/scenarios/complex.json
 
 # Use chaos testing scenario
-SHOWCASE_MODE=true SANDBOX_SCENARIO=chaos ./petal-tongue
+petaltongue ui --scenario sandbox/scenarios/chaos.json
 ```
 
 ## Available Scenarios
@@ -79,7 +79,7 @@ SHOWCASE_MODE=true SANDBOX_SCENARIO=chaos ./petal-tongue
    - Current: `date +%s`
    - 10 min ago: `date -d '10 minutes ago' +%s`
    - 1 hour ago: `date -d '1 hour ago' +%s`
-5. Test with: `SHOWCASE_MODE=true SANDBOX_SCENARIO=your-scenario ./petal-tongue`
+5. Test with: `petaltongue ui --scenario sandbox/scenarios/your-scenario.json`
 
 ## Integration with Testing
 

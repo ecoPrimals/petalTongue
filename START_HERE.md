@@ -54,7 +54,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 5,952+ tests
+cargo test --workspace --all-features           # 6,075+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
@@ -107,10 +107,14 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 ### Discovery (`petal-tongue-discovery`)
 - `lib.rs` -- Provider discovery orchestrator
 - `unix_socket_provider.rs` -- Unix socket JSON-RPC discovery (universal fallback path)
-- `neural_api_provider.rs` -- biomeOS Neural API discovery
-- `songbird_client.rs` -- Songbird capability discovery
+- `neural_api_provider/` -- biomeOS Neural API discovery (provider, parse, tests)
+- `discovery_service_client.rs` -- Discovery service capability queries
+- `discovery_service_provider.rs` -- Discovery service visualization provider (topology inference)
+- `jsonrpc_provider/` -- JSON-RPC visualization provider
+- `mdns_provider/` -- mDNS/DNS-SD zero-config discovery (optional `mdns` feature)
 - `capability_parse.rs` -- 4-format capability parsing (flat, enriched, nested, result-wrapped)
-- `http_provider.rs` -- HTTP fallback (feature-gated `legacy-http`)
+- `cache.rs` -- LRU discovery result cache
+- `dns_parser.rs` -- Pure-Rust DNS packet parser (SRV, TXT, PTR, A records)
 
 ### Specs
 
@@ -123,16 +127,21 @@ Architectural specifications in `specs/` -- read these before making major chang
 
 ## Cross-Primal Integration
 
+All cross-primal connections use **capability-first discovery** via biomeOS Neural API.
+petalTongue never hardcodes primal names in routing or socket resolution — names exist
+only in `primal_names` constants for logging context.
+
 - **biomeOS** -- Topology visualization (JSON-RPC), Neural API lifecycle
 - **healthSpring** -- Diagnostic data channels, clinical theme, streaming sessions
 - **hotSpring** -- JSONL telemetry ingestion to TimeSeries
 - **neuralSpring** -- Pipeline DAGs, diverging color scales
 - **wetSpring** -- Backpressure-aware streaming, Scatter 2D ordinations
 - **ludoSpring** -- 7 GameDataChannel types, 60 Hz sensor feed, GameScene/Soundscape rendering
-- **ToadStool** -- Display backend (tarpc, capability-discovered), sensor hardware (see TOADSTOOL_SENSOR_CONTRACT)
+- **Display backend** -- Discovered via `display` capability (tarpc, capability-discovered)
+- **Audio backend** -- Discovered via `audio.synthesize` capability
+- **GPU compute** -- Discovered via `compute.dispatch` / `physics-compute` capabilities
+- **Discovery service** -- Discovered via `discovery.query_capability`
 - **Squirrel** -- Agentic AI adapter (InputModality::Agent, AgentInputAdapter)
-- **barraCuda** -- GPU compute offload for heavy visualization
-- **Songbird** -- Discovery protocol
 
 See `ecoPrimals/wateringHole/petaltongue/` for inter-primal standards.
 

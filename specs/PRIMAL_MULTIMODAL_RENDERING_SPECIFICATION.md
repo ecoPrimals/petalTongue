@@ -669,12 +669,12 @@ pub trait ComputeProvider: Send + Sync {
 **Role:** Optional GPU compute provider
 
 ```rust
-pub struct ToadstoolCompute {
+pub struct GpuComputeProvider {
     endpoint: String,
     client: ToadstoolClient,
 }
 
-impl ComputeProvider for ToadstoolCompute {
+impl ComputeProvider for GpuComputeProvider {
     fn name(&self) -> &str { "toadstool" }
     
     fn capabilities(&self) -> Vec<ComputeCapability> {
@@ -883,7 +883,7 @@ tokio::spawn({
 **Tasks:**
 1. ✅ Define `ComputeProvider` trait
 2. ✅ Create `ComputeRegistry`
-3. ✅ Implement `ToadstoolCompute`
+3. ✅ Implement `GpuComputeProvider`
 4. ✅ Add discovery (use existing `universal_discovery`)
 5. ✅ Implement fallback logic
 6. ✅ Benchmark performance
@@ -892,7 +892,7 @@ tokio::spawn({
 
 **Deliverables:**
 - `ComputeProvider` abstraction
-- `ToadstoolCompute` implementation
+- `GpuComputeProvider` implementation
 - Performance benchmarks
 
 **Success Criteria:**
