@@ -31,7 +31,6 @@
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
-#![allow(clippy::missing_errors_doc)]
 
 /// Application core
 pub mod app;

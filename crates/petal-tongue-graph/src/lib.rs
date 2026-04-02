@@ -9,9 +9,10 @@
 //! graph engine and represent it visually.
 
 #![warn(missing_docs)]
-#![allow(clippy::format_push_string)]
-#![allow(clippy::missing_errors_doc)] // Allow for now, will add later
-#![allow(clippy::missing_panics_doc)] // Allow for now, will add later
+#![expect(
+    clippy::format_push_string,
+    reason = "DOT/SVG builders use incremental string construction"
+)]
 
 pub mod audio_export;
 pub mod audio_export_error;

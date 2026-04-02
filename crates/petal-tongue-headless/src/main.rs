@@ -48,6 +48,8 @@ enum OutputMode {
     Dot,
     /// PNG export
     Png,
+    /// HTML export (SVG wrapped in standalone HTML document) (PT-04)
+    Html,
 }
 
 impl Args {
@@ -69,6 +71,7 @@ impl Args {
                             "json" => OutputMode::Json,
                             "dot" => OutputMode::Dot,
                             "png" => OutputMode::Png,
+                            "html" => OutputMode::Html,
                             _ => {
                                 tracing::error!("Unknown mode: {m}");
                                 std::process::exit(1);
@@ -119,7 +122,7 @@ USAGE:
     petal-tongue-headless [OPTIONS]
 
 OPTIONS:
-    -m, --mode <MODE>       Output mode [auto, terminal, svg, json, dot, png]
+    -m, --mode <MODE>       Output mode [auto, terminal, svg, json, dot, png, html]
     -o, --output <FILE>     Output file (required for export modes)
     -w, --width <WIDTH>     Width in pixels (default: 1920)
     -h, --height <HEIGHT>   Height in pixels (default: 1080)
@@ -132,6 +135,7 @@ MODES:
     json        Export to JSON (API-friendly)
     dot         Export to DOT (graphviz-friendly)
     png         Export to PNG (report-friendly)
+    html        Export to HTML (browser-friendly, standalone)
 
 EXAMPLES:
     # Auto-detect mode (terminal if available)
@@ -198,6 +202,7 @@ fn main() -> Result<(), HeadlessError> {
         OutputMode::Json => render_json(graph, &args)?,
         OutputMode::Dot => render_dot(graph, &args)?,
         OutputMode::Png => render_png(graph, &args)?,
+        OutputMode::Html => render_html(graph, &args)?,
     }
 
     Ok(())
@@ -357,6 +362,23 @@ fn render_png(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), Headle
     } else {
         tracing::error!("PNG mode requires --output option");
         std::process::exit(1);
+    }
+
+    Ok(())
+}
+
+/// Render HTML (SVG wrapped in a standalone HTML document) (PT-04)
+fn render_html(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), HeadlessError> {
+    let ui = SvgUI::new(graph, args.width, args.height);
+
+    if let Some(ref output) = args.output {
+        ui.export(Path::new(output), ExportFormat::Html)?;
+        tracing::info!("✅ Exported to {}", output);
+    } else {
+        let svg = ui.render_to_string()?;
+        let html =
+            String::from_utf8(petal_tongue_ui_core::wrap_svg_in_html(&svg)).unwrap_or_default();
+        println!("{html}");
     }
 
     Ok(())

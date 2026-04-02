@@ -73,7 +73,7 @@ pub use error::UiCoreError;
 pub use svg::SvgUI;
 pub use terminal::TerminalUI;
 pub use text::TextUI;
-pub use trait_def::{ExportFormat, UICapability, UniversalUI};
+pub use trait_def::{ExportFormat, UICapability, UniversalUI, wrap_svg_in_html};
 pub use utils::*;
 
 /// Detect the best UI mode for the current environment

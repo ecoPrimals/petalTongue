@@ -58,8 +58,8 @@ petaltongue
 - **Universal User Interface** -- any computational universe → any modality → any user type
 - **SAME DAVE model** -- Sensory Afferent / Motor Efferent bidirectional feedback loops
 - **UUI glossary** -- canonical terminology in `petal_tongue_core::uui_glossary`
-- **tarpc** binary RPC with `bytes::Bytes` zero-copy (PRIMARY for inter-primal RPC)
-- **JSON-RPC 2.0** newline-delimited over UDS + optional TCP (universal fallback listen surface)
+- **JSON-RPC 2.0** newline-delimited over UDS + optional TCP (REQUIRED universal protocol)
+- **tarpc** binary RPC with `bytes::Bytes` zero-copy (MAY for Rust-to-Rust hot paths)
 - **SSE push** via `/api/events` in web mode (live topology updates)
 - **HTTP** for browser/external clients only (fallback)
 - **Capability-based discovery** -- zero hardcoded primal names, runtime-only
@@ -104,9 +104,9 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,845+ passing, 0 failures |
+| Tests | 5,987+ passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero blanket `#[allow]`) |
+| Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
 | Coverage | ~90% line (llvm-cov) |
 | Unsafe | `#![forbid(unsafe_code)]` on all 16 crates + UniBin, zero C deps |
@@ -136,7 +136,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 5,845+ tests
+cargo test --workspace --all-features        # 5,987+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
@@ -196,7 +196,7 @@ See `ecoPrimals/wateringHole/PETALTONGUE_LEVERAGE_GUIDE.md` for:
 - Typed error handling (`thiserror`, no `anyhow` in production); `deny(unwrap_used, expect_used)` with `#[expect]` for justified suppressions
 - `#![forbid(unsafe_code)]` unless hardware FFI is unavoidable
 - Semantic method naming (`domain.operation`)
-- tarpc primary for inter-primal RPC, JSON-RPC universal fallback, HTTP for external access only
+- JSON-RPC 2.0 REQUIRED for inter-primal IPC, tarpc MAY for Rust-to-Rust hot paths, HTTP for external access only
 - All files under 1,000 lines
 - SPDX headers on all source files
 

@@ -4,7 +4,10 @@
 //! Replaces sysinfo with zero C dependencies. Uses `std::fs` for /proc reads.
 //! Linux-only; returns zeros/empty on non-Linux.
 
-#![allow(clippy::cast_precision_loss)]
+#![expect(
+    clippy::cast_precision_loss,
+    reason = "/proc stats use u64→f64 for display; precision loss acceptable"
+)]
 
 use std::collections::HashMap;
 use std::fs;

@@ -10,10 +10,10 @@
 //! `prepare_memory_display`) that produce testable `DisplayState` structs.
 //! Render methods are thin egui widget calls with zero logic.
 
-#![allow(
+#![expect(
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation,
-    clippy::cast_sign_loss
+    reason = "system monitor metrics use numeric casts for display; precision loss acceptable"
 )]
 
 use crate::live_data::{LiveGraphHeader, LiveMetric};

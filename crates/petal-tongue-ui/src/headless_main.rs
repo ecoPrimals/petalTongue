@@ -43,6 +43,8 @@ enum OutputMode {
     Dot,
     /// PNG export
     Png,
+    /// HTML export (SVG wrapped in standalone HTML document) (PT-04)
+    Html,
 }
 
 impl Args {
@@ -64,6 +66,7 @@ impl Args {
                             "json" => OutputMode::Json,
                             "dot" => OutputMode::Dot,
                             "png" => OutputMode::Png,
+                            "html" => OutputMode::Html,
                             _ => {
                                 tracing::error!("Unknown mode: {m}");
                                 std::process::exit(1);
@@ -193,6 +196,7 @@ fn main() -> Result<()> {
         OutputMode::Json => render_json(graph, &args)?,
         OutputMode::Dot => render_dot(graph, &args)?,
         OutputMode::Png => render_png(graph, &args)?,
+        OutputMode::Html => render_html(graph, &args)?,
     }
 
     Ok(())
@@ -302,6 +306,23 @@ fn render_png(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
         std::process::exit(1);
     }
     
+    Ok(())
+}
+
+/// Render HTML (SVG wrapped in a standalone HTML document) (PT-04)
+fn render_html(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<()> {
+    let ui = SvgUI::new(graph, args.width, args.height);
+
+    if let Some(ref output) = args.output {
+        ui.export(Path::new(output), ExportFormat::Html)?;
+        tracing::info!("✅ Exported to {}", output);
+    } else {
+        let svg = ui.render_to_string()?;
+        let html = String::from_utf8(petal_tongue_ui_core::wrap_svg_in_html(&svg))
+            .unwrap_or_default();
+        println!("{html}");
+    }
+
     Ok(())
 }
 

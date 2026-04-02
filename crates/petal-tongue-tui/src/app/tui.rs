@@ -139,13 +139,13 @@ impl RichTUI {
     }
 
     /// Access state mutably for update module
-    #[allow(clippy::missing_const_for_fn)]
+    #[expect(clippy::missing_const_for_fn, reason = "&mut self prevents const fn")]
     pub(super) fn state_mut(&mut self) -> &mut TUIState {
         &mut self.state
     }
 
     /// Set running flag for update module
-    #[allow(clippy::missing_const_for_fn)]
+    #[expect(clippy::missing_const_for_fn, reason = "&mut self prevents const fn")]
     pub(super) fn set_running(&mut self, running: bool) {
         self.running = running;
     }

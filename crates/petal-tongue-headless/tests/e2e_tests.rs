@@ -162,6 +162,45 @@ fn test_dot_export_to_file() {
 }
 
 #[test]
+fn test_html_export_to_stdout() {
+    headless_binary()
+        .arg("--mode")
+        .arg("html")
+        .env("RUST_LOG", "error")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("<!DOCTYPE html>"))
+        .stdout(predicate::str::contains("<svg"))
+        .stdout(predicate::str::contains("</html>"));
+}
+
+#[test]
+fn test_html_export_to_file() {
+    let temp_dir = std::env::temp_dir();
+    let output_file = temp_dir.join("e2e_test_topology.html");
+
+    let _ = fs::remove_file(&output_file);
+
+    headless_binary()
+        .arg("--mode")
+        .arg("html")
+        .arg("--output")
+        .arg(output_file.to_str().unwrap())
+        .env("RUST_LOG", "error")
+        .assert()
+        .success();
+
+    assert!(output_file.exists());
+
+    let content = fs::read_to_string(&output_file).expect("Failed to read file");
+    assert!(content.contains("<!DOCTYPE html>"));
+    assert!(content.contains("<svg"));
+    assert!(content.contains("</html>"));
+
+    fs::remove_file(output_file).ok();
+}
+
+#[test]
 fn test_custom_dimensions() {
     headless_binary()
         .arg("--mode")

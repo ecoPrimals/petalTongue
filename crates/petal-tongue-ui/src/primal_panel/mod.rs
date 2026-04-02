@@ -52,7 +52,6 @@ pub struct PrimalPanel {
     /// Event handler for real-time updates
     pub(in crate::primal_panel) event_handler: Arc<RwLock<UIEventHandler>>,
     /// Last refresh time
-    #[allow(dead_code)]
     last_refresh: std::time::Instant,
 }
 

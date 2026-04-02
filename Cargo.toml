@@ -105,7 +105,7 @@ chrono = "0.4"
 proptest = "1.4"
 
 # RPC frameworks for inter-primal communication
-# Following ecosystem pattern: tarpc PRIMARY, JSON-RPC fallback, HTTPS optional
+# Per IPC Protocol v3.1: JSON-RPC 2.0 REQUIRED, tarpc MAY for Rust-to-Rust hot paths
 tarpc = { version = "0.34", features = ["full"] }
 
 # CLI argument parsing

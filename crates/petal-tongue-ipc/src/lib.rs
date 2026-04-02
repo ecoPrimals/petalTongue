@@ -2,7 +2,10 @@
 #![cfg_attr(not(test), forbid(unsafe_code))]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![warn(missing_docs)]
-#![allow(clippy::missing_errors_doc)]
+#![expect(
+    clippy::missing_errors_doc,
+    reason = "IPC handlers evolving — error docs tracked"
+)]
 //! Inter-process communication for petalTongue
 //!
 //! This crate enables communication between petalTongue instances and other primals.

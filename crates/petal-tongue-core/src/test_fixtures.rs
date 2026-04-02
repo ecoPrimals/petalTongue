@@ -48,7 +48,10 @@ pub mod env_test_helpers {
     }
 
     /// Async version: temporarily set an env var for testing, restoring after.
-    #[allow(clippy::future_not_send)]
+    #[expect(
+        clippy::future_not_send,
+        reason = "test-only helpers; Send not required"
+    )]
     pub async fn with_env_var_async<F, Fut, R>(key: &str, value: &str, f: F) -> R
     where
         F: FnOnce() -> Fut,
@@ -58,7 +61,10 @@ pub mod env_test_helpers {
     }
 
     /// Async version: temporarily remove an env var for testing, restoring after.
-    #[allow(clippy::future_not_send)]
+    #[expect(
+        clippy::future_not_send,
+        reason = "test-only helpers; Send not required"
+    )]
     pub async fn with_env_var_removed_async<F, Fut, R>(key: &str, f: F) -> R
     where
         F: FnOnce() -> Fut,
@@ -69,7 +75,10 @@ pub mod env_test_helpers {
 
     /// Async version: set multiple env vars at once.
     /// `None` values remove the variable.
-    #[allow(clippy::future_not_send)]
+    #[expect(
+        clippy::future_not_send,
+        reason = "test-only helpers; Send not required"
+    )]
     pub async fn with_env_vars_async<F, Fut, R>(vars: &[(&str, Option<&str>)], f: F) -> R
     where
         F: FnOnce() -> Fut,
@@ -83,7 +92,10 @@ pub mod env_test_helpers {
     }
 
     /// Async version: temporarily remove multiple env vars for testing.
-    #[allow(clippy::future_not_send)]
+    #[expect(
+        clippy::future_not_send,
+        reason = "test-only helpers; Send not required"
+    )]
     pub async fn with_env_vars_removed_async<F, Fut, R>(keys: &[&str], f: F) -> R
     where
         F: FnOnce() -> Fut,

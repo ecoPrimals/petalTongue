@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Human entropy window state and entropy collection
 
-#![allow(unexpected_cfgs)]
-
 use petal_tongue_entropy::prelude::*;
 use std::time::{Duration, Instant};
 use tracing::{info, warn};

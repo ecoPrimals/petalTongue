@@ -54,7 +54,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 5,845+ tests
+cargo test --workspace --all-features           # 5,987+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
@@ -73,7 +73,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 1. **Self-knowledge only** -- petalTongue knows its own name, ports, and capabilities.
    Other primals discovered at runtime via capability-based discovery.
 2. **Constants centralized** -- All self-knowledge in `petal_tongue_core::constants`.
-3. **IPC priority** -- tarpc PRIMARY for inter-primal RPC, JSON-RPC universal fallback (Unix sockets / TCP listen surface), HTTP for external/browser access only.
+3. **IPC priority** -- JSON-RPC 2.0 REQUIRED (Unix sockets / TCP listen surface), tarpc MAY for Rust-to-Rust hot paths, HTTP for external/browser access only.
 4. **Typed error handling** -- `thiserror` everywhere, no `anyhow` in production; `deny(unwrap_used, expect_used)` with `#[expect]` for justified cases.
 5. **`#![forbid(unsafe_code)]`** unless hardware FFI is unavoidable. Document with `// SAFETY:`.
 6. **Concurrent testing** -- No `thread::sleep`. Use `tokio::time::timeout`.

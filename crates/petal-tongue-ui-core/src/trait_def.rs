@@ -21,6 +21,8 @@ pub enum ExportFormat {
     Json,
     /// DOT (Graphviz)
     Dot,
+    /// HTML (SVG wrapped in a standalone HTML document) (PT-04)
+    Html,
 }
 
 impl ExportFormat {
@@ -33,6 +35,7 @@ impl ExportFormat {
             Self::Text => "txt",
             Self::Json => "json",
             Self::Dot => "dot",
+            Self::Html => "html",
         }
     }
 
@@ -45,6 +48,7 @@ impl ExportFormat {
             Self::Text => "text/plain",
             Self::Json => "application/json",
             Self::Dot => "text/vnd.graphviz",
+            Self::Html => "text/html",
         }
     }
 }
@@ -62,6 +66,25 @@ pub enum UICapability {
     Export,
     /// Supports real-time updates
     RealTime,
+}
+
+/// Wrap SVG content in a standalone HTML document (PT-04).
+///
+/// Produces a minimal, responsive HTML page suitable for browser viewing.
+/// Mirrors the IPC `compile_html` modality path so headless CLI achieves parity.
+#[must_use]
+pub fn wrap_svg_in_html(svg: &str) -> Vec<u8> {
+    format!(
+        "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\
+         <meta charset=\"utf-8\">\
+         <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\
+         <title>petalTongue Export</title>\
+         <style>body{{margin:0;display:flex;justify-content:center;\
+         align-items:center;min-height:100vh;background:#1a1a2e}}\
+         svg{{max-width:100%;height:auto}}</style>\
+         </head>\n<body>\n{svg}\n</body>\n</html>"
+    )
+    .into_bytes()
 }
 
 /// Universal UI interface (platform-agnostic)
@@ -118,6 +141,7 @@ pub trait UniversalUI: Send + Sync {
     fn export(&self, path: &Path, format: ExportFormat) -> Result<()> {
         let content = match format {
             ExportFormat::Png => self.render_to_bytes()?,
+            ExportFormat::Html => Bytes::from(wrap_svg_in_html(&self.render_to_string()?)),
             _ => Bytes::from(self.render_to_string()?.into_bytes()),
         };
 
@@ -184,12 +208,23 @@ mod tests {
         assert_eq!(ExportFormat::Text.extension(), "txt");
         assert_eq!(ExportFormat::Json.extension(), "json");
         assert_eq!(ExportFormat::Dot.extension(), "dot");
+        assert_eq!(ExportFormat::Html.extension(), "html");
     }
 
     #[test]
     fn test_export_format_all_mime_types() {
         assert_eq!(ExportFormat::Text.mime_type(), "text/plain");
         assert_eq!(ExportFormat::Dot.mime_type(), "text/vnd.graphviz");
+        assert_eq!(ExportFormat::Html.mime_type(), "text/html");
+    }
+
+    #[test]
+    fn test_wrap_svg_in_html() {
+        let svg = "<svg><circle r=\"10\"/></svg>";
+        let html = String::from_utf8(wrap_svg_in_html(svg)).unwrap();
+        assert!(html.starts_with("<!DOCTYPE html>"));
+        assert!(html.contains(svg));
+        assert!(html.contains("</html>"));
     }
 
     #[test]

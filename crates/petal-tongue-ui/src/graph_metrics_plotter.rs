@@ -4,7 +4,10 @@
 //! Visualizes graph metrics over time (node count, edge count, updates).
 //! Demonstrates using petalTongue's own data as input to a tool.
 
-#![allow(clippy::cast_precision_loss)]
+#![expect(
+    clippy::cast_precision_loss,
+    reason = "graph metric counts use u64→f64 for plotting; precision loss acceptable"
+)]
 
 use crate::scene_bridge::SceneWidget;
 use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};

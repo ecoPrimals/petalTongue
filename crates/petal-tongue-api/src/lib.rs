@@ -7,16 +7,24 @@
 //!
 //! # TRUE PRIMAL Architecture
 //!
-//! Per `PRIMAL_IPC_PROTOCOL.md`, inter-primal communication should use:
-//! 1. **tarpc** (PRIMARY for inter-primal RPC)
-//! 2. **JSON-RPC 2.0** over Unix sockets (universal fallback) - Use `BiomeOSJsonRpcClient`
+//! Per IPC Protocol v3.1, inter-primal communication should use:
+//! 1. **JSON-RPC 2.0** over Unix sockets (REQUIRED universal protocol) - Use `BiomeOSJsonRpcClient`
+//! 2. **tarpc** (MAY for Rust-to-Rust hot paths)
 //! 3. **HTTP/REST** only for external/browser access (FALLBACK) - Use `BiomeOSClient`
 
 #![warn(missing_docs)]
-#![allow(clippy::unused_self)]
-#![allow(clippy::cast_sign_loss)]
-#![allow(clippy::cast_possible_wrap)]
-#![allow(clippy::redundant_closure_for_method_calls)]
+#![expect(
+    clippy::unused_self,
+    reason = "API client methods may gain &self state"
+)]
+#![expect(
+    clippy::cast_sign_loss,
+    reason = "HTTP status codes and sizes are safe u16/usize"
+)]
+#![expect(
+    clippy::redundant_closure_for_method_calls,
+    reason = "explicit closures preferred for readability in async chains"
+)]
 
 pub mod biomeos_client; // HTTP client (fallback for external use)
 pub mod biomeos_error;

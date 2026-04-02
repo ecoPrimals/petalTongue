@@ -361,6 +361,38 @@ mod tests {
     use crate::biomeos_integration::{Device, DeviceStatus, DeviceType};
     use egui::Color32;
 
+    fn make_device(
+        id: &str,
+        name: &str,
+        device_type: DeviceType,
+        status: DeviceStatus,
+        usage: f64,
+    ) -> Device {
+        Device {
+            id: id.to_string(),
+            name: name.to_string(),
+            device_type,
+            status,
+            resource_usage: usage,
+            assigned_to: None,
+            metadata: serde_json::json!({}),
+        }
+    }
+
+    fn make_device_assigned(
+        id: &str,
+        name: &str,
+        device_type: DeviceType,
+        status: DeviceStatus,
+        usage: f64,
+        assigned: &str,
+    ) -> Device {
+        Device {
+            assigned_to: Some(assigned.to_string()),
+            ..make_device(id, name, device_type, status, usage)
+        }
+    }
+
     #[tokio::test]
     async fn test_device_panel_creation() {
         let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
@@ -377,24 +409,20 @@ mod tests {
         let mut panel = DevicePanel::new(event_handler);
 
         let devices = vec![
-            Device {
-                id: "gpu-0".to_string(),
-                name: "Test GPU".to_string(),
-                device_type: DeviceType::GPU,
-                status: DeviceStatus::Online,
-                resource_usage: 0.5,
-                assigned_to: None,
-                metadata: serde_json::json!({}),
-            },
-            Device {
-                id: "cpu-0".to_string(),
-                name: "Test CPU".to_string(),
-                device_type: DeviceType::CPU,
-                status: DeviceStatus::Online,
-                resource_usage: 0.3,
-                assigned_to: None,
-                metadata: serde_json::json!({}),
-            },
+            make_device(
+                "gpu-0",
+                "Test GPU",
+                DeviceType::GPU,
+                DeviceStatus::Online,
+                0.5,
+            ),
+            make_device(
+                "cpu-0",
+                "Test CPU",
+                DeviceType::CPU,
+                DeviceStatus::Online,
+                0.3,
+            ),
         ];
 
         panel.refresh(devices).await;
@@ -409,15 +437,13 @@ mod tests {
 
         // Add initial device
         panel
-            .refresh(vec![Device {
-                id: "gpu-0".to_string(),
-                name: "Test GPU".to_string(),
-                device_type: DeviceType::GPU,
-                status: DeviceStatus::Online,
-                resource_usage: 0.5,
-                assigned_to: None,
-                metadata: serde_json::json!({}),
-            }])
+            .refresh(vec![make_device(
+                "gpu-0",
+                "Test GPU",
+                DeviceType::GPU,
+                DeviceStatus::Online,
+                0.5,
+            )])
             .await;
 
         // Send status change event
@@ -443,24 +469,21 @@ mod tests {
         let mut panel = DevicePanel::new(event_handler);
 
         let devices = vec![
-            Device {
-                id: "gpu-0".to_string(),
-                name: "Test GPU".to_string(),
-                device_type: DeviceType::GPU,
-                status: DeviceStatus::Online,
-                resource_usage: 0.5,
-                assigned_to: Some("primal-1".to_string()),
-                metadata: serde_json::json!({}),
-            },
-            Device {
-                id: "cpu-0".to_string(),
-                name: "Test CPU".to_string(),
-                device_type: DeviceType::CPU,
-                status: DeviceStatus::Online,
-                resource_usage: 0.3,
-                assigned_to: None,
-                metadata: serde_json::json!({}),
-            },
+            make_device_assigned(
+                "gpu-0",
+                "Test GPU",
+                DeviceType::GPU,
+                DeviceStatus::Online,
+                0.5,
+                "primal-1",
+            ),
+            make_device(
+                "cpu-0",
+                "Test CPU",
+                DeviceType::CPU,
+                DeviceStatus::Online,
+                0.3,
+            ),
         ];
 
         panel.refresh(devices).await;
@@ -486,24 +509,20 @@ mod tests {
         let mut panel = DevicePanel::new(event_handler);
 
         let devices = vec![
-            Device {
-                id: "gpu-0".to_string(),
-                name: "NVIDIA GPU".to_string(),
-                device_type: DeviceType::GPU,
-                status: DeviceStatus::Online,
-                resource_usage: 0.5,
-                assigned_to: None,
-                metadata: serde_json::json!({}),
-            },
-            Device {
-                id: "cpu-0".to_string(),
-                name: "AMD CPU".to_string(),
-                device_type: DeviceType::CPU,
-                status: DeviceStatus::Online,
-                resource_usage: 0.3,
-                assigned_to: None,
-                metadata: serde_json::json!({}),
-            },
+            make_device(
+                "gpu-0",
+                "NVIDIA GPU",
+                DeviceType::GPU,
+                DeviceStatus::Online,
+                0.5,
+            ),
+            make_device(
+                "cpu-0",
+                "AMD CPU",
+                DeviceType::CPU,
+                DeviceStatus::Online,
+                0.3,
+            ),
         ];
 
         panel.refresh(devices).await;
@@ -538,15 +557,13 @@ mod tests {
         let event_handler = Arc::new(RwLock::new(UIEventHandler::new()));
         let mut panel = DevicePanel::new(event_handler);
 
-        let devices = vec![Device {
-            id: "dev-1".to_string(),
-            name: "Device 1".to_string(),
-            device_type: DeviceType::GPU,
-            status: DeviceStatus::Online,
-            resource_usage: 0.5,
-            assigned_to: None,
-            metadata: serde_json::json!({}),
-        }];
+        let devices = vec![make_device(
+            "dev-1",
+            "Device 1",
+            DeviceType::GPU,
+            DeviceStatus::Online,
+            0.5,
+        )];
         panel.refresh(devices).await;
         assert!(panel.selected_device().is_none());
 
@@ -568,15 +585,13 @@ mod tests {
         let mut panel = DevicePanel::new(event_handler.clone());
 
         panel
-            .refresh(vec![Device {
-                id: "gpu-0".to_string(),
-                name: "GPU".to_string(),
-                device_type: DeviceType::GPU,
-                status: DeviceStatus::Online,
-                resource_usage: 0.5,
-                assigned_to: None,
-                metadata: serde_json::json!({}),
-            }])
+            .refresh(vec![make_device(
+                "gpu-0",
+                "GPU",
+                DeviceType::GPU,
+                DeviceStatus::Online,
+                0.5,
+            )])
             .await;
         panel.selected = Some("gpu-0".to_string());
 
@@ -597,15 +612,13 @@ mod tests {
         let mut panel = DevicePanel::new(event_handler.clone());
 
         panel
-            .refresh(vec![Device {
-                id: "cpu-0".to_string(),
-                name: "CPU".to_string(),
-                device_type: DeviceType::CPU,
-                status: DeviceStatus::Online,
-                resource_usage: 0.0,
-                assigned_to: None,
-                metadata: serde_json::json!({}),
-            }])
+            .refresh(vec![make_device(
+                "cpu-0",
+                "CPU",
+                DeviceType::CPU,
+                DeviceStatus::Online,
+                0.0,
+            )])
             .await;
 
         event_handler
@@ -627,15 +640,14 @@ mod tests {
         let mut panel = DevicePanel::new(event_handler.clone());
 
         panel
-            .refresh(vec![Device {
-                id: "cpu-0".to_string(),
-                name: "CPU".to_string(),
-                device_type: DeviceType::CPU,
-                status: DeviceStatus::Online,
-                resource_usage: 0.0,
-                assigned_to: Some("primal-x".to_string()),
-                metadata: serde_json::json!({}),
-            }])
+            .refresh(vec![make_device_assigned(
+                "cpu-0",
+                "CPU",
+                DeviceType::CPU,
+                DeviceStatus::Online,
+                0.0,
+                "primal-x",
+            )])
             .await;
 
         event_handler
@@ -657,15 +669,13 @@ mod tests {
         let mut panel = DevicePanel::new(event_handler.clone());
 
         panel
-            .refresh(vec![Device {
-                id: "gpu-0".to_string(),
-                name: "GPU".to_string(),
-                device_type: DeviceType::GPU,
-                status: DeviceStatus::Online,
-                resource_usage: 0.3,
-                assigned_to: None,
-                metadata: serde_json::json!({}),
-            }])
+            .refresh(vec![make_device(
+                "gpu-0",
+                "GPU",
+                DeviceType::GPU,
+                DeviceStatus::Online,
+                0.3,
+            )])
             .await;
 
         event_handler
@@ -684,15 +694,13 @@ mod tests {
         let mut panel = DevicePanel::new(event_handler);
 
         panel
-            .refresh(vec![Device {
-                id: "gpu-nvidia-0".to_string(),
-                name: "Graphics".to_string(),
-                device_type: DeviceType::GPU,
-                status: DeviceStatus::Online,
-                resource_usage: 0.5,
-                assigned_to: None,
-                metadata: serde_json::json!({}),
-            }])
+            .refresh(vec![make_device(
+                "gpu-nvidia-0",
+                "Graphics",
+                DeviceType::GPU,
+                DeviceStatus::Online,
+                0.5,
+            )])
             .await;
 
         panel.search_query = "nvidia".to_string();
@@ -703,33 +711,9 @@ mod tests {
     #[test]
     fn test_compute_device_stats() {
         let devices = vec![
-            Device {
-                id: "d1".to_string(),
-                name: "D1".to_string(),
-                device_type: DeviceType::GPU,
-                status: DeviceStatus::Online,
-                resource_usage: 0.5,
-                assigned_to: Some("p1".to_string()),
-                metadata: serde_json::json!({}),
-            },
-            Device {
-                id: "d2".to_string(),
-                name: "D2".to_string(),
-                device_type: DeviceType::CPU,
-                status: DeviceStatus::Offline,
-                resource_usage: 0.0,
-                assigned_to: None,
-                metadata: serde_json::json!({}),
-            },
-            Device {
-                id: "d3".to_string(),
-                name: "D3".to_string(),
-                device_type: DeviceType::Storage,
-                status: DeviceStatus::Online,
-                resource_usage: 0.3,
-                assigned_to: None,
-                metadata: serde_json::json!({}),
-            },
+            make_device_assigned("d1", "D1", DeviceType::GPU, DeviceStatus::Online, 0.5, "p1"),
+            make_device("d2", "D2", DeviceType::CPU, DeviceStatus::Offline, 0.0),
+            make_device("d3", "D3", DeviceType::Storage, DeviceStatus::Online, 0.3),
         ];
         let (total, online, assigned) = DevicePanel::compute_device_stats(&devices);
         assert_eq!(total, 3);
@@ -773,24 +757,15 @@ mod tests {
         let mut panel = DevicePanel::new(event_handler);
         panel
             .refresh(vec![
-                Device {
-                    id: "gpu-0".to_string(),
-                    name: "GPU".to_string(),
-                    device_type: DeviceType::GPU,
-                    status: DeviceStatus::Online,
-                    resource_usage: 0.5,
-                    assigned_to: None,
-                    metadata: serde_json::json!({}),
-                },
-                Device {
-                    id: "cpu-0".to_string(),
-                    name: "CPU".to_string(),
-                    device_type: DeviceType::CPU,
-                    status: DeviceStatus::Busy,
-                    resource_usage: 0.9,
-                    assigned_to: Some("primal-1".to_string()),
-                    metadata: serde_json::json!({}),
-                },
+                make_device("gpu-0", "GPU", DeviceType::GPU, DeviceStatus::Online, 0.5),
+                make_device_assigned(
+                    "cpu-0",
+                    "CPU",
+                    DeviceType::CPU,
+                    DeviceStatus::Busy,
+                    0.9,
+                    "primal-1",
+                ),
             ])
             .await;
 
@@ -808,33 +783,9 @@ mod tests {
         let mut panel = DevicePanel::new(event_handler);
         panel
             .refresh(vec![
-                Device {
-                    id: "d1".to_string(),
-                    name: "Online".to_string(),
-                    device_type: DeviceType::GPU,
-                    status: DeviceStatus::Online,
-                    resource_usage: 0.3,
-                    assigned_to: None,
-                    metadata: serde_json::json!({}),
-                },
-                Device {
-                    id: "d2".to_string(),
-                    name: "Offline".to_string(),
-                    device_type: DeviceType::CPU,
-                    status: DeviceStatus::Offline,
-                    resource_usage: 0.0,
-                    assigned_to: None,
-                    metadata: serde_json::json!({}),
-                },
-                Device {
-                    id: "d3".to_string(),
-                    name: "Error".to_string(),
-                    device_type: DeviceType::Storage,
-                    status: DeviceStatus::Error,
-                    resource_usage: 1.0,
-                    assigned_to: None,
-                    metadata: serde_json::json!({}),
-                },
+                make_device("d1", "Online", DeviceType::GPU, DeviceStatus::Online, 0.3),
+                make_device("d2", "Offline", DeviceType::CPU, DeviceStatus::Offline, 0.0),
+                make_device("d3", "Error", DeviceType::Storage, DeviceStatus::Error, 1.0),
             ])
             .await;
 
