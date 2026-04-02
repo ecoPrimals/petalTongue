@@ -99,9 +99,9 @@ sandbox/
 │   ├── chaos.json        (failures & errors)
 │   └── README.md         (this file)
 ├── scripts/
-│   └── start-mock.sh     (mock server scripts)
-└── data/
-    └── (test data files)
+│   └── start-mock.sh     (sandbox biomeOS server launcher)
+└── mock-biomeos/
+    └── (standalone mock biomeOS server for offline development)
 ```
 
 ## Environment Variables
@@ -139,6 +139,6 @@ When adding new scenarios:
 ---
 
 **Status**: 3 scenarios available  
-**Last Updated**: January 3, 2026  
+**Last Updated**: April 2, 2026  
 **Maintainer**: petalTongue team
 

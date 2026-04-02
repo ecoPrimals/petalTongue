@@ -418,22 +418,26 @@ mod tests {
 
     #[test]
     fn discover_returns_none_without_sockets() {
-        // Isolate from host: point XDG_RUNTIME_DIR at a temp dir with no sockets
-        // so that even if the developer has biomeos sockets running, this test
-        // exercises the "nothing found" path deterministically.
+        use petal_tongue_core::test_fixtures::env_test_helpers::with_env_vars;
+
         let tmp = tempfile::tempdir().expect("tempdir");
-        // SAFETY: single-threaded test; env mutation is scoped.
-        unsafe {
-            std::env::set_var("XDG_RUNTIME_DIR", tmp.path());
-            std::env::remove_var("DAG_SESSION_SOCKET");
-            std::env::remove_var("DAG_VERTEX_CREATE_SOCKET");
-            std::env::remove_var("BRAID_CREATE_SOCKET");
-            std::env::remove_var("SPINE_CREATE_SOCKET");
-        }
-        let client = ProvenanceTrioClient::discover();
-        let availability = client.availability();
-        assert!(!availability.is_full());
-        assert!(!availability.is_partial());
+        let tmp_path = tmp.path().to_string_lossy().into_owned();
+
+        with_env_vars(
+            &[
+                ("XDG_RUNTIME_DIR", Some(&tmp_path)),
+                ("DAG_SESSION_SOCKET", None),
+                ("DAG_VERTEX_CREATE_SOCKET", None),
+                ("BRAID_CREATE_SOCKET", None),
+                ("SPINE_CREATE_SOCKET", None),
+            ],
+            || {
+                let client = ProvenanceTrioClient::discover();
+                let availability = client.availability();
+                assert!(!availability.is_full());
+                assert!(!availability.is_partial());
+            },
+        );
     }
 
     #[test]

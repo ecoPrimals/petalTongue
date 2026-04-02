@@ -251,4 +251,9 @@ impl AwakeningCoordinator {
 
         Ok(())
     }
+
+    #[cfg(test)]
+    pub(crate) async fn process_test_event(&self, event: &TimelineEvent) -> Result<()> {
+        self.process_event(event).await
+    }
 }

@@ -38,6 +38,10 @@ pub const DEFAULT_WEB_PORT: u16 = 3000;
 /// Default headless API port (overridable via config or `PETALTONGUE_HEADLESS_PORT` env)
 pub const DEFAULT_HEADLESS_PORT: u16 = 8080;
 
+/// Default WebSocket streaming port for software renderer remote access.
+/// Overridable via `WEBSOCKET_PORT` env var.
+pub const DEFAULT_WEBSOCKET_PORT: u16 = 8765;
+
 /// biomeOS socket name template (discovered, not hardcoded to a port)
 /// Overridable via `BIOMEOS_SOCKET_NAME` env var for custom deployments
 #[must_use]

@@ -6,11 +6,11 @@ use thiserror::Error;
 /// Errors from `BiomeOS` API client operations.
 #[derive(Debug, Error)]
 pub enum BiomeOsClientError {
-    /// Mock mode requested but test-fixtures feature is not enabled
+    /// Fixture mode requested but `test-fixtures` feature is not enabled.
     #[error(
-        "Mock mode requires test-fixtures feature. Use real biomeOS connection or build with --features test-fixtures."
+        "Fixture mode requires test-fixtures feature. Use real biomeOS connection or build with --features test-fixtures."
     )]
-    MockModeUnavailable,
+    FixtureModeUnavailable,
 
     /// Network request failed (connection, timeout, etc.)
     #[error("Failed to connect to biomeOS at {url}: {source}")]
@@ -61,10 +61,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_error_display_mock_mode_unavailable() {
-        let err = BiomeOsClientError::MockModeUnavailable;
+    fn test_error_display_fixture_mode_unavailable() {
+        let err = BiomeOsClientError::FixtureModeUnavailable;
         let s = err.to_string();
-        assert!(s.contains("Mock mode"));
+        assert!(s.contains("Fixture mode"));
         assert!(s.contains("test-fixtures"));
     }
 

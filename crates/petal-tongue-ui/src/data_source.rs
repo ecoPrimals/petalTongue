@@ -116,7 +116,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_data_source_creation() {
-        let client = BiomeOSClient::new("http://test:3000").with_mock_mode(true);
+        let client = BiomeOSClient::new("http://test:3000").with_fixture_mode(true);
         let data_source = DataSource::new(client);
         assert!(std::mem::size_of_val(&data_source) > 0);
     }
@@ -125,7 +125,7 @@ mod tests {
     fn test_update_graph_manual_data() {
         use petal_tongue_core::{PrimalHealthStatus, PrimalId};
 
-        let client = BiomeOSClient::new("http://test:3000").with_mock_mode(true);
+        let client = BiomeOSClient::new("http://test:3000").with_fixture_mode(true);
         let data_source = DataSource::new(client);
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
 
@@ -160,7 +160,7 @@ mod tests {
     fn test_update_graph_clears_existing() {
         use petal_tongue_core::{PrimalHealthStatus, PrimalId};
 
-        let client = BiomeOSClient::new("http://test:3000").with_mock_mode(true);
+        let client = BiomeOSClient::new("http://test:3000").with_fixture_mode(true);
         let data_source = DataSource::new(client);
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
 
@@ -187,7 +187,7 @@ mod tests {
     #[cfg(feature = "mock")]
     #[tokio::test]
     async fn test_refresh_topology_mock() {
-        let client = BiomeOSClient::new("http://test:3000").with_mock_mode(true);
+        let client = BiomeOSClient::new("http://test:3000").with_fixture_mode(true);
         let data_source = DataSource::new(client);
 
         let result = data_source.refresh_topology().await;
@@ -201,7 +201,7 @@ mod tests {
     #[cfg(feature = "mock")]
     #[tokio::test]
     async fn test_update_graph() {
-        let client = BiomeOSClient::new("http://test:3000").with_mock_mode(true);
+        let client = BiomeOSClient::new("http://test:3000").with_fixture_mode(true);
         let data_source = DataSource::new(client);
 
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
@@ -221,7 +221,7 @@ mod tests {
     #[cfg(feature = "mock")]
     #[tokio::test]
     async fn test_refresh_and_update() {
-        let client = BiomeOSClient::new("http://test:3000").with_mock_mode(true);
+        let client = BiomeOSClient::new("http://test:3000").with_fixture_mode(true);
         let data_source = DataSource::new(client);
         let graph = Arc::new(RwLock::new(GraphEngine::new()));
 

@@ -464,6 +464,89 @@ fn test_timeline_first_event_at_zero() {
     assert!((first.time - 0.0).abs() < f32::EPSILON);
 }
 
+fn make_coordinator() -> AwakeningCoordinator {
+    let engine = Arc::new(UniversalRenderingEngine::new().unwrap());
+    AwakeningCoordinator::new(engine, AwakeningConfig::default())
+}
+
+#[tokio::test]
+async fn test_process_event_stage_transition() {
+    let coord = make_coordinator();
+    let event = TimelineEvent {
+        time: 0.0,
+        stage: AwakeningStage::SelfKnowledge,
+        event_type: TimelineEventType::StageTransition {
+            stage: AwakeningStage::SelfKnowledge,
+        },
+    };
+    coord.process_test_event(&event).await.unwrap();
+    assert_eq!(coord.current_stage().await, AwakeningStage::SelfKnowledge);
+}
+
+#[tokio::test]
+async fn test_process_event_visual_frame() {
+    let coord = make_coordinator();
+    let event = TimelineEvent {
+        time: 0.5,
+        stage: AwakeningStage::Awakening,
+        event_type: TimelineEventType::VisualFrame { frame: 7 },
+    };
+    coord.process_test_event(&event).await.unwrap();
+}
+
+#[tokio::test]
+async fn test_process_event_audio_start() {
+    let coord = make_coordinator();
+    let event = TimelineEvent {
+        time: 1.0,
+        stage: AwakeningStage::Awakening,
+        event_type: TimelineEventType::AudioStart {
+            layer: "heartbeat".to_string(),
+        },
+    };
+    coord.process_test_event(&event).await.unwrap();
+}
+
+#[tokio::test]
+async fn test_process_event_audio_stop() {
+    let coord = make_coordinator();
+    let event = TimelineEvent {
+        time: 3.0,
+        stage: AwakeningStage::SelfKnowledge,
+        event_type: TimelineEventType::AudioStop {
+            layer: "heartbeat".to_string(),
+        },
+    };
+    coord.process_test_event(&event).await.unwrap();
+}
+
+#[tokio::test]
+async fn test_process_event_text_message() {
+    let coord = make_coordinator();
+    let event = TimelineEvent {
+        time: 2.0,
+        stage: AwakeningStage::Awakening,
+        event_type: TimelineEventType::TextMessage {
+            message: "welcome".to_string(),
+        },
+    };
+    coord.process_test_event(&event).await.unwrap();
+}
+
+#[tokio::test]
+async fn test_process_event_discovery() {
+    let coord = make_coordinator();
+    let event = TimelineEvent {
+        time: 6.0,
+        stage: AwakeningStage::Discovery,
+        event_type: TimelineEventType::Discovery {
+            primal: "healthSpring".to_string(),
+            index: 0,
+        },
+    };
+    coord.process_test_event(&event).await.unwrap();
+}
+
 #[test]
 fn test_timeline_last_event_at_duration() {
     let config = AwakeningConfig::default();

@@ -47,6 +47,10 @@ pub struct RpcHandlers {
     pub rendering_awareness: Option<Arc<RwLock<RenderingAwareness>>>,
     /// Whether TCP JSON-RPC is active (for dynamic `capabilities.list` transport)
     pub tcp_enabled: bool,
+    /// Push delivery channel for callback dispatches (PT-06).
+    /// When set, `handle_interact_apply` sends dispatches here instead of dropping them.
+    pub callback_tx:
+        Option<tokio::sync::mpsc::UnboundedSender<crate::visualization_handler::CallbackDispatch>>,
 }
 
 impl RpcHandlers {
@@ -70,6 +74,7 @@ impl RpcHandlers {
             )),
             rendering_awareness: None,
             tcp_enabled: false,
+            callback_tx: None,
         }
     }
 

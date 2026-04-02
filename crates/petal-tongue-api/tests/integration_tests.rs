@@ -18,14 +18,14 @@ async fn test_client_creation() {
 
 #[cfg(feature = "test-fixtures")]
 #[tokio::test]
-async fn test_client_with_mock_mode() {
-    let _client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
+async fn test_client_with_fixture_mode() {
+    let _client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_fixture_mode(true);
 }
 
 #[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_discover_primals_mock() {
-    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
+    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_fixture_mode(true);
 
     let primals = client
         .discover_primals()
@@ -46,7 +46,7 @@ async fn test_discover_primals_mock() {
 #[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_get_topology_mock() {
-    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
+    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_fixture_mode(true);
 
     let edges = client.get_topology().await.expect("Failed to get topology");
 
@@ -64,7 +64,7 @@ async fn test_get_topology_mock() {
 #[tokio::test]
 async fn test_discover_primals_with_unreachable_endpoint() {
     // Use unreachable IP to test error handling (no automatic fallback in production)
-    let client = BiomeOSClient::new("http://test-unreachable:9999").with_mock_mode(false);
+    let client = BiomeOSClient::new("http://test-unreachable:9999").with_fixture_mode(false);
 
     // Should return error when endpoint is unreachable (production mode)
     let result = client.discover_primals().await;
@@ -79,7 +79,7 @@ async fn test_discover_primals_with_unreachable_endpoint() {
 #[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_get_topology_with_unreachable_endpoint() {
-    let client = BiomeOSClient::new("http://test-unreachable:9999").with_mock_mode(false);
+    let client = BiomeOSClient::new("http://test-unreachable:9999").with_fixture_mode(false);
 
     // Should return error when endpoint is unreachable (production mode)
     let result = client.get_topology().await;
@@ -94,7 +94,7 @@ async fn test_get_topology_with_unreachable_endpoint() {
 #[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_primal_types_in_mock_data() {
-    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
+    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_fixture_mode(true);
 
     let primals = client.discover_primals().await.unwrap();
 
@@ -109,7 +109,7 @@ async fn test_primal_types_in_mock_data() {
 #[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_primal_health_states() {
-    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
+    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_fixture_mode(true);
 
     let primals = client.discover_primals().await.unwrap();
 
@@ -123,7 +123,7 @@ async fn test_primal_health_states() {
 #[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_primal_capabilities() {
-    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
+    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_fixture_mode(true);
 
     let primals = client.discover_primals().await.unwrap();
 
@@ -135,7 +135,7 @@ async fn test_primal_capabilities() {
 #[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_topology_connectivity() {
-    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true);
+    let client = BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_fixture_mode(true);
 
     let primals = client.discover_primals().await.unwrap();
     let edges = client.get_topology().await.unwrap();
@@ -155,7 +155,7 @@ async fn test_topology_connectivity() {
 #[tokio::test]
 async fn test_concurrent_requests() {
     let client =
-        std::sync::Arc::new(BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_mock_mode(true));
+        std::sync::Arc::new(BiomeOSClient::new(endpoints::MOCK_BIOMEOS).with_fixture_mode(true));
 
     let mut handles = vec![];
 
@@ -173,7 +173,7 @@ async fn test_concurrent_requests() {
 #[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn test_client_timeout_handling() {
-    let client = BiomeOSClient::new("http://test-timeout:1").with_mock_mode(false);
+    let client = BiomeOSClient::new("http://test-timeout:1").with_fixture_mode(false);
 
     // Should timeout and return error (no automatic fallback in production)
     let result = client.discover_primals().await;

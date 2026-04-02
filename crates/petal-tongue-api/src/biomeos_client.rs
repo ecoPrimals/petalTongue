@@ -14,8 +14,8 @@ pub struct BiomeOSClient {
     base_url: String,
     /// HTTP client
     client: reqwest::Client,
-    /// Enable mock mode for development
-    mock_mode: bool,
+    /// Enable fixture mode for development (deterministic data when biomeOS unavailable).
+    fixture_mode: bool,
 }
 
 /// Response from `BiomeOS` discovery API
@@ -106,29 +106,31 @@ impl BiomeOSClient {
         Self {
             base_url: base_url.into(),
             client,
-            mock_mode: false,
+            fixture_mode: false,
         }
     }
 
-    /// Enable mock mode (for development/testing)
+    /// Enable fixture mode (deterministic data when biomeOS unavailable).
+    /// Requires `test-fixtures` feature; production builds return
+    /// [`BiomeOsClientError::FixtureModeUnavailable`] at runtime.
     #[must_use]
-    pub const fn with_mock_mode(mut self, enabled: bool) -> Self {
-        self.mock_mode = enabled;
+    pub const fn with_fixture_mode(mut self, enabled: bool) -> Self {
+        self.fixture_mode = enabled;
         self
     }
 
     /// Check if `BiomeOS` API is available
     ///
     /// # Errors
-    /// Returns `BiomeOsClientError` on network failure or when mock mode is enabled in production.
+    /// Returns `BiomeOsClientError` on network failure or when fixture mode is enabled without the feature.
     pub async fn health_check(&self) -> Result<bool, BiomeOsClientError> {
         #[cfg(any(test, feature = "test-fixtures"))]
-        if self.mock_mode {
-            return Ok(true); // Mock mode is always "healthy" (test/dev only)
+        if self.fixture_mode {
+            return Ok(true);
         }
         #[cfg(not(any(test, feature = "test-fixtures")))]
-        if self.mock_mode {
-            return Err(BiomeOsClientError::MockModeUnavailable);
+        if self.fixture_mode {
+            return Err(BiomeOsClientError::FixtureModeUnavailable);
         }
 
         let url = format!("{}/api/v1/health", self.base_url);
@@ -142,20 +144,20 @@ impl BiomeOSClient {
 
     /// Discover primals from `BiomeOS`/Songbird
     ///
-    /// **PRODUCTION MODE**: Returns error if API fails (no mock fallback)
-    /// **TEST MODE**: Set `mock_mode` to use test data
+    /// **PRODUCTION MODE**: Returns error if API fails (no fixture fallback)
+    /// **FIXTURE MODE**: Set `fixture_mode` for deterministic test data
     ///
     /// # Errors
     /// Returns `BiomeOsClientError` on network failure, non-success status, or JSON parse error.
     pub async fn discover_primals(&self) -> Result<Vec<PrimalInfo>, BiomeOsClientError> {
         #[cfg(any(test, feature = "test-fixtures"))]
-        if self.mock_mode {
-            tracing::warn!("Mock mode enabled - using test data (TESTING ONLY)");
+        if self.fixture_mode {
+            tracing::debug!("fixture mode — returning deterministic primals");
             return Ok(self.mock_discover_primals());
         }
         #[cfg(not(any(test, feature = "test-fixtures")))]
-        if self.mock_mode {
-            return Err(BiomeOsClientError::MockModeUnavailable);
+        if self.fixture_mode {
+            return Err(BiomeOsClientError::FixtureModeUnavailable);
         }
 
         // Query BiomeOS discovery endpoint
@@ -200,22 +202,22 @@ impl BiomeOSClient {
 
     /// Get topology edges (connections between primals)
     ///
-    /// **PRODUCTION MODE**: Returns error if API fails (no mock fallback)
-    /// **TEST MODE**: Set `mock_mode` to use test data
+    /// **PRODUCTION MODE**: Returns error if API fails (no fixture fallback)
+    /// **FIXTURE MODE**: Set `fixture_mode` for deterministic topology data
     ///
-    /// **Updated**: Now supports biomeOS's new topology format with nodes + edges
+    /// Supports biomeOS's topology format with nodes + edges.
     ///
     /// # Errors
     /// Returns `BiomeOsClientError` on network failure, non-success status, or JSON parse error.
     pub async fn get_topology(&self) -> Result<Vec<TopologyEdge>, BiomeOsClientError> {
         #[cfg(any(test, feature = "test-fixtures"))]
-        if self.mock_mode {
-            tracing::warn!("Mock mode enabled - using test topology (TESTING ONLY)");
+        if self.fixture_mode {
+            tracing::debug!("fixture mode — returning deterministic topology");
             return Ok(self.mock_topology());
         }
         #[cfg(not(any(test, feature = "test-fixtures")))]
-        if self.mock_mode {
-            return Err(BiomeOsClientError::MockModeUnavailable);
+        if self.fixture_mode {
+            return Err(BiomeOsClientError::FixtureModeUnavailable);
         }
 
         let url = format!("{}/api/v1/topology", self.base_url);
@@ -257,11 +259,11 @@ impl BiomeOSClient {
         Ok(topology.edges)
     }
 
-    /// Mock primal discovery (TEST/DEV ONLY - never in production)
-    /// Gated behind test-fixtures feature. Production builds return error when `mock_mode` is requested.
+    /// Fixture primal discovery (test/dev only).
+    /// Gated behind `test-fixtures` feature. Production builds return error when `fixture_mode` is set.
     #[cfg(any(test, feature = "test-fixtures"))]
     fn mock_discover_primals(&self) -> Vec<PrimalInfo> {
-        let now = chrono::Utc::now().timestamp() as u64;
+        let now = chrono::Utc::now().timestamp().cast_unsigned();
         vec![
             PrimalInfo {
                 id: "primal-alpha".into(),
@@ -443,8 +445,8 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
-    async fn test_mock_mode() {
-        let client = BiomeOSClient::new("http://test-mock:9000").with_mock_mode(true);
+    async fn test_fixture_mode() {
+        let client = BiomeOSClient::new("http://test-mock:9000").with_fixture_mode(true);
 
         let primals = client.discover_primals().await.unwrap();
         assert_eq!(primals.len(), 5);
@@ -576,7 +578,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
         let primals = client.discover_primals().await.expect("discover_primals");
         assert_eq!(primals.len(), 1);
         assert_eq!(primals[0].id, "p1");
@@ -593,7 +595,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
         let err = client.discover_primals().await.expect_err("should fail");
         assert!(matches!(
             err,
@@ -611,7 +613,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
         let err = client.discover_primals().await.expect_err("should fail");
         assert!(matches!(err, BiomeOsClientError::Parse(_)));
     }
@@ -634,7 +636,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
         let edges = client.get_topology().await.expect("get_topology");
         assert_eq!(edges.len(), 1);
         assert_eq!(edges[0].from.as_str(), "n1");
@@ -651,7 +653,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
         let err = client.get_topology().await.expect_err("should fail");
         assert!(matches!(
             err,
@@ -669,7 +671,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
         let err = client.get_topology().await.expect_err("should fail");
         assert!(matches!(err, BiomeOsClientError::Parse(_)));
     }
@@ -684,7 +686,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
         let healthy = client.health_check().await.expect("health_check");
         assert!(healthy);
     }
@@ -699,7 +701,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let client = BiomeOSClient::new(mock_server.uri()).with_mock_mode(false);
+        let client = BiomeOSClient::new(mock_server.uri()).with_fixture_mode(false);
         let healthy = client.health_check().await.expect("health_check");
         assert!(!healthy);
     }

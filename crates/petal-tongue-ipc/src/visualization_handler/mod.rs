@@ -9,22 +9,24 @@
 //!
 //! `types` — Request/response DTOs for the IPC contract
 //! - `state` — `VisualizationState`: session lifecycle, render, stream, grammar, validate, export, dismiss
-//! - `interaction` — `InteractionSubscriberRegistry`: poll-based event subscriptions for springs
+//! - `interaction` — `InteractionSubscriberRegistry`: semantic interaction subscriptions for springs
+//! - `sensor_stream` — `SensorStreamRegistry`: raw sensor event streams (pointer, keys, scroll)
 //! - `stream` — `binding_id`, `apply_operation`: incremental `DataBinding` updates
 //! - `modality` — `compile_modality`: scene graph → SVG/audio/description (internal)
 
 mod interaction;
 mod modality;
 pub mod pipeline;
+mod sensor_stream;
 mod state;
 mod stream;
 mod types;
 
 pub use interaction::{
     CallbackDispatch, InteractionEventNotification, InteractionSubscriberRegistry,
-    SensorStreamRegistry,
 };
 pub use pipeline::PipelineRegistry;
+pub use sensor_stream::SensorStreamRegistry;
 pub use state::{RenderSession, VisualizationState};
 pub use stream::{apply_operation, binding_id};
 pub use types::{

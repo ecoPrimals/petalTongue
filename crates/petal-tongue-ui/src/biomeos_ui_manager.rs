@@ -39,7 +39,7 @@ pub struct BiomeOSUIManager {
     /// Demo provider - only when `mock` feature enabled (graceful fallback when biomeOS unavailable)
     #[cfg(feature = "mock")]
     demo_provider: Option<DemoDeviceProvider>,
-    use_mock: bool,
+    use_fixtures: bool,
 
     /// Event handler (passed to child panels for event dispatch)
     #[expect(
@@ -84,9 +84,9 @@ impl BiomeOSUIManager {
         let biomeos_provider = BiomeOSProvider::discover().await.ok().flatten();
 
         // Demo fallback only when biomeOS unavailable AND mock feature enabled
-        let use_mock = biomeos_provider.is_none() && cfg!(feature = "mock");
+        let use_fixtures = biomeos_provider.is_none() && cfg!(feature = "mock");
 
-        if use_mock {
+        if use_fixtures {
             info!("📦 Using demo provider (biomeOS not available, mock feature enabled)");
         } else if biomeos_provider.is_none() {
             info!("⚠️ biomeOS not available - empty panels (use --features mock for demo data)");
@@ -96,7 +96,7 @@ impl BiomeOSUIManager {
 
         // Lazy initialization: only create demo provider when needed (mock feature + biomeOS unavailable)
         #[cfg(feature = "mock")]
-        let demo_provider = if use_mock {
+        let demo_provider = if use_fixtures {
             Some(DemoDeviceProvider::new())
         } else {
             None
@@ -106,7 +106,7 @@ impl BiomeOSUIManager {
             biomeos_provider,
             #[cfg(feature = "mock")]
             demo_provider,
-            use_mock,
+            use_fixtures,
             event_handler: event_handler.clone(),
             device_panel: DevicePanel::new(event_handler.clone()),
             primal_panel: PrimalPanel::new(event_handler.clone()),
@@ -127,7 +127,7 @@ impl BiomeOSUIManager {
             return Ok(());
         }
 
-        let (devices, primals, templates) = if self.use_mock {
+        let (devices, primals, templates) = if self.use_fixtures {
             #[cfg(feature = "mock")]
             {
                 // Use demo provider (methods are not async)
@@ -147,7 +147,7 @@ impl BiomeOSUIManager {
             }
             #[cfg(not(feature = "mock"))]
             {
-                unreachable!("use_mock is only true when mock feature is enabled");
+                unreachable!("use_fixtures requires mock feature");
             }
         } else if let Some(provider) = &self.biomeos_provider {
             // Use biomeOS provider (methods are async)
@@ -203,8 +203,8 @@ impl BiomeOSUIManager {
     /// Render provider status indicator
     fn render_provider_status(&self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            if self.use_mock {
-                ui.colored_label(egui::Color32::YELLOW, "⚠ Mock Mode");
+            if self.use_fixtures {
+                ui.colored_label(egui::Color32::YELLOW, "⚠ Fixture Mode (offline)");
                 ui.label("(biomeOS not connected)");
             } else {
                 ui.colored_label(egui::Color32::GREEN, "✓ Connected to biomeOS");
@@ -259,10 +259,10 @@ impl BiomeOSUIManager {
         &self.niche_designer
     }
 
-    /// Check if using mock mode
+    /// Check if using fixture mode (deterministic offline data).
     #[must_use]
-    pub const fn is_mock_mode(&self) -> bool {
-        self.use_mock
+    pub const fn is_fixture_mode(&self) -> bool {
+        self.use_fixtures
     }
 
     /// Get current tab
@@ -334,7 +334,7 @@ impl BiomeOSUIRPC {
     /// Returns an error if the biomeOS provider fails to fetch devices.
     pub async fn get_devices(&self) -> Result<Vec<Device>> {
         let manager = self.manager.read().await;
-        if manager.use_mock {
+        if manager.use_fixtures {
             #[cfg(feature = "mock")]
             {
                 Ok(manager
@@ -359,7 +359,7 @@ impl BiomeOSUIRPC {
     /// Returns an error if the biomeOS provider fails to fetch primals.
     pub async fn get_primals_extended(&self) -> Result<Vec<Primal>> {
         let manager = self.manager.read().await;
-        if manager.use_mock {
+        if manager.use_fixtures {
             #[cfg(feature = "mock")]
             {
                 Ok(manager
@@ -384,7 +384,7 @@ impl BiomeOSUIRPC {
     /// Returns an error if the biomeOS provider fails to fetch templates.
     pub async fn get_niche_templates(&self) -> Result<Vec<NicheTemplate>> {
         let manager = self.manager.read().await;
-        if manager.use_mock {
+        if manager.use_fixtures {
             #[cfg(feature = "mock")]
             {
                 Ok(manager
@@ -439,14 +439,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_mock_mode() {
+    async fn test_fixture_mode() {
         let manager = BiomeOSUIManager::new().await;
 
-        // Mock mode only when mock feature enabled and biomeOS unavailable
         #[cfg(feature = "mock")]
-        assert!(manager.is_mock_mode());
+        assert!(manager.is_fixture_mode());
         #[cfg(not(feature = "mock"))]
-        assert!(!manager.is_mock_mode());
+        assert!(!manager.is_fixture_mode());
     }
 
     #[tokio::test]

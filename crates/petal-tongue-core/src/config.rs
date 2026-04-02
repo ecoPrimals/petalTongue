@@ -34,9 +34,10 @@ pub struct PetalTongueConfig {
     #[serde(default = "default_true")]
     pub audio_enabled: bool,
 
-    /// Enable mock mode for testing (when `BiomeOS` unavailable)
-    #[serde(default)]
-    pub mock_mode: bool,
+    /// Enable fixture mode for development (deterministic data when biomeOS unavailable).
+    /// Requires `test-fixtures` feature; production builds reject this at runtime.
+    #[serde(default, alias = "mock_mode")]
+    pub fixture_mode: bool,
 }
 
 impl Default for PetalTongueConfig {
@@ -51,7 +52,7 @@ impl Default for PetalTongueConfig {
             audio_sample_rate: default_sample_rate(),
             max_fps: default_max_fps(),
             audio_enabled: true,
-            mock_mode: false,
+            fixture_mode: false,
         }
     }
 }
@@ -107,7 +108,7 @@ mod tests {
         assert_eq!(config.audio_sample_rate, 48000);
         assert_eq!(config.max_fps, 60);
         assert!(config.audio_enabled);
-        assert!(!config.mock_mode);
+        assert!(!config.fixture_mode);
     }
 
     #[test]
@@ -133,14 +134,14 @@ mod tests {
             audio_sample_rate = 44100
             max_fps = 30
             audio_enabled = false
-            mock_mode = true
+            fixture_mode = true
         "#;
         let config: PetalTongueConfig = toml::from_str(toml).unwrap();
         assert_eq!(config.refresh_interval_secs, 10);
         assert_eq!(config.audio_sample_rate, 44100);
         assert_eq!(config.max_fps, 30);
         assert!(!config.audio_enabled);
-        assert!(config.mock_mode);
+        assert!(config.fixture_mode);
     }
 
     #[test]

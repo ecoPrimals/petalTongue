@@ -110,7 +110,7 @@ impl E2ETestRunner {
             // Step 1: Create BiomeOS client
             let client =
                 BiomeOSClient::new(petal_tongue_core::test_fixtures::endpoints::MOCK_BIOMEOS)
-                    .with_mock_mode(self.config.use_mock);
+                    .with_fixture_mode(self.config.use_mock);
             steps_completed += 1;
 
             // Step 2: Discover primals

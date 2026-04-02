@@ -358,10 +358,9 @@ pub fn handle_export(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResp
 
 /// Handle visualization.interact.apply: apply interaction intent and broadcast (PT-06).
 ///
-/// Captures callback dispatches from `apply_interaction` and logs them.
-/// Subscribers with `callback_method` set receive events via poll; the
-/// `pending_callbacks` count in the response signals that push delivery
-/// entries were produced (future: wire to subscriber socket writes).
+/// Produces callback dispatches for subscribers with `callback_method` set.
+/// Dispatches with a `callback_socket` are sent to the push delivery background
+/// task as JSON-RPC notifications. Subscribers without a socket still use poll.
 pub fn handle_interact_apply(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
     let params = match serde_json::from_value::<InteractionApplyRequest>(req.params) {
         Ok(p) => p,
@@ -378,12 +377,23 @@ pub fn handle_interact_apply(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
         .write()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .apply_interaction(&params);
+
     if !callbacks.is_empty() {
-        tracing::debug!(
-            count = callbacks.len(),
-            "PT-06: callback dispatches produced (poll-first; push delivery pending)"
-        );
+        if let Some(tx) = &handlers.callback_tx {
+            for cb in callbacks {
+                if let Err(e) = tx.send(cb) {
+                    tracing::warn!("push delivery channel closed: {e}");
+                    break;
+                }
+            }
+        } else {
+            tracing::debug!(
+                count = callbacks.len(),
+                "callback dispatches produced (no push delivery channel — poll only)"
+            );
+        }
     }
+
     let value = match serde_json::to_value(&response) {
         Ok(v) => v,
         Err(e) => {

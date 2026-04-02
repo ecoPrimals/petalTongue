@@ -115,9 +115,9 @@ async fn test_chaos_manager_churn() {
         let manager = BiomeOSUIManager::new().await;
         // Mock mode only when mock feature enabled and biomeOS unavailable
         #[cfg(feature = "mock")]
-        assert!(manager.is_mock_mode());
+        assert!(manager.is_fixture_mode());
         #[cfg(not(feature = "mock"))]
-        assert!(!manager.is_mock_mode());
+        assert!(!manager.is_fixture_mode());
         drop(manager);
     }
 }

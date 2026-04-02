@@ -78,8 +78,9 @@ impl SoftwareDisplay {
                 .ok()
                 .and_then(|p| p.parse().ok())
                 .unwrap_or(Self::DEFAULT_VNC_PORT);
-            // Check if we can bind to VNC port
-            if let Ok(listener) = std::net::TcpListener::bind(format!("127.0.0.1:{port}")) {
+            if let Ok(listener) =
+                std::net::TcpListener::bind(format!("{}:{port}", constants::DEFAULT_LOOPBACK_HOST))
+            {
                 drop(listener);
                 tracing::info!("✅ VNC backend available (port {port} bindable)");
                 return true;
@@ -95,13 +96,14 @@ impl SoftwareDisplay {
     fn check_websocket() -> bool {
         // Check if WEBSOCKET_ENABLE environment variable is set
         if std::env::var("WEBSOCKET_ENABLE").is_ok() {
-            // Check if we can bind to WebSocket port
             let port: u16 = std::env::var("WEBSOCKET_PORT")
                 .ok()
                 .and_then(|p| p.parse().ok())
-                .unwrap_or(8765);
+                .unwrap_or(constants::DEFAULT_WEBSOCKET_PORT);
 
-            if let Ok(listener) = std::net::TcpListener::bind(format!("127.0.0.1:{port}")) {
+            if let Ok(listener) =
+                std::net::TcpListener::bind(format!("{}:{port}", constants::DEFAULT_LOOPBACK_HOST))
+            {
                 drop(listener);
                 tracing::info!("✅ WebSocket backend available (port {} bindable)", port);
                 return true;
