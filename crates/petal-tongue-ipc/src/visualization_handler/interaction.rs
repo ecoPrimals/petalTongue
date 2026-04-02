@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Interaction event subsystem: poll-based subscriptions for springs.
+//! Interaction event subsystem: poll-based subscriptions with callback dispatch (PT-06).
 //!
 //! Springs call `interaction.subscribe` to register, then `interaction.poll`
 //! to drain queued interaction events. Supports callback-based delivery
 //! (healthSpring V12 pattern) when `callback_method` is set.
+//!
+//! ## Delivery model
+//!
+//! The primary delivery path is **poll-based**: subscribers call `interaction.poll`
+//! to drain their event queue. When `callback_method` is set on a subscription,
+//! `broadcast()` additionally returns [`CallbackDispatch`] entries that the IPC
+//! server layer can use to send JSON-RPC notifications to subscriber sockets.
+//!
+//! `apply_interaction` captures these dispatches and returns a
+//! `pending_callbacks` count in the response so the RPC handler knows whether
+//! push delivery is needed. The actual socket write is performed by the server
+//! layer (see `handle_interact_apply` in `unix_socket_rpc_handlers`).
 
 use petal_tongue_core::{SensorEventBatch, SensorEventIpc};
 use serde::{Deserialize, Serialize};
@@ -157,8 +169,15 @@ impl InteractionSubscriberRegistry {
         self.subscribers.len()
     }
 
-    /// Apply an interaction intent and broadcast to subscribers.
-    pub fn apply_interaction(&mut self, req: &InteractionApplyRequest) -> InteractionApplyResponse {
+    /// Apply an interaction intent and broadcast to subscribers (PT-06).
+    ///
+    /// Returns the response AND any pending callback dispatches for push delivery.
+    /// The caller (RPC handler) is responsible for sending the callback dispatches
+    /// as JSON-RPC notifications to subscriber sockets.
+    pub fn apply_interaction(
+        &mut self,
+        req: &InteractionApplyRequest,
+    ) -> (InteractionApplyResponse, Vec<CallbackDispatch>) {
         let event = InteractionEventNotification {
             event_type: req.intent.clone(),
             targets: req.targets.clone(),
@@ -170,11 +189,13 @@ impl InteractionSubscriberRegistry {
             },
             perspective_id: None,
         };
-        self.broadcast(&event);
-        InteractionApplyResponse {
+        let callbacks = self.broadcast(&event);
+        let response = InteractionApplyResponse {
             accepted: true,
             targets_resolved: req.targets.len(),
-        }
+            pending_callbacks: callbacks.len(),
+        };
+        (response, callbacks)
     }
 
     /// Return available perspectives for this visualization.
@@ -429,9 +450,11 @@ mod tests {
             targets: vec!["t1".to_string(), "t2".to_string()],
             grammar_id: None,
         };
-        let resp = reg.apply_interaction(&req);
+        let (resp, callbacks) = reg.apply_interaction(&req);
         assert!(resp.accepted);
         assert_eq!(resp.targets_resolved, 2);
+        assert_eq!(resp.pending_callbacks, 0);
+        assert!(callbacks.is_empty());
 
         let events = reg.poll("sub1");
         assert_eq!(events.len(), 1);
@@ -515,7 +538,7 @@ mod tests {
             targets: vec![],
             grammar_id: Some("g1".to_string()),
         };
-        let resp = reg.apply_interaction(&req);
+        let (resp, _callbacks) = reg.apply_interaction(&req);
         assert!(resp.accepted);
         assert_eq!(resp.targets_resolved, 0);
         let events = reg.poll("sub1");
@@ -680,10 +703,36 @@ mod tests {
             targets: vec!["t1".to_string()],
             grammar_id: None,
         };
-        let resp = reg.apply_interaction(&req);
+        let (resp, callbacks) = reg.apply_interaction(&req);
         assert!(resp.accepted);
         assert_eq!(resp.targets_resolved, 1);
+        assert!(callbacks.is_empty());
         assert_eq!(reg.subscriber_count(), 0);
+    }
+
+    #[test]
+    fn test_apply_interaction_with_callback_subscriber() {
+        let mut reg = InteractionSubscriberRegistry::new();
+        reg.subscribe("poll-only");
+        reg.subscribe_with_filter(
+            "push-sub",
+            vec![],
+            Some("spring.on_interaction".to_string()),
+            None,
+        );
+
+        let req = InteractionApplyRequest {
+            intent: "select".to_string(),
+            targets: vec!["node-1".to_string()],
+            grammar_id: None,
+        };
+        let (resp, callbacks) = reg.apply_interaction(&req);
+        assert!(resp.accepted);
+        assert_eq!(resp.targets_resolved, 1);
+        assert_eq!(resp.pending_callbacks, 1);
+        assert_eq!(callbacks.len(), 1);
+        assert_eq!(callbacks[0].subscriber_id, "push-sub");
+        assert_eq!(callbacks[0].method, "spring.on_interaction");
     }
 
     #[test]

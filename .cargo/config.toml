@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Compiler and linker optimizations for petalTongue UniBin.
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+
+[profile.dev]
+# Faster incremental builds
+codegen-units = 256
+
+[profile.dev.package."*"]
+# Optimize dependencies even in dev for acceptable UI perf
+opt-level = 2

@@ -349,6 +349,9 @@ pub struct InteractionApplyResponse {
     pub accepted: bool,
     /// Number of targets resolved.
     pub targets_resolved: usize,
+    /// Number of callback dispatches queued for push delivery (PT-06).
+    #[serde(default)]
+    pub pending_callbacks: usize,
 }
 
 /// A visualization perspective (view configuration).
@@ -649,10 +652,12 @@ mod tests {
         let resp = InteractionApplyResponse {
             accepted: true,
             targets_resolved: 1,
+            pending_callbacks: 0,
         };
         let json = serde_json::to_string(&resp).expect("serialize");
         let restored: InteractionApplyResponse = serde_json::from_str(&json).expect("deserialize");
         assert_eq!(restored.targets_resolved, 1);
+        assert_eq!(restored.pending_callbacks, 0);
     }
 
     #[test]

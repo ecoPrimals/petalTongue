@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Human entropy window UI rendering
 
-#![allow(unexpected_cfgs)]
-
 use super::rendering_helpers::{
     capture_state_display, format_recording_duration, modality_selector_enabled, quality_color_rgb,
     quality_to_percent_display, stopped_state_message,

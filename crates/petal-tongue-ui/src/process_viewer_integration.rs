@@ -4,7 +4,10 @@
 //! Real-time process monitoring via /proc parsing (ecoBin v3.0 compliant).
 //! Displays running processes with CPU, memory usage, and filtering.
 
-#![allow(clippy::cast_precision_loss)]
+#![expect(
+    clippy::cast_precision_loss,
+    reason = "process metrics use u64→f64 for display; precision loss acceptable"
+)]
 
 use crate::proc_stats::{ProcStats, ProcessInfo as ProcProcessInfo};
 use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};

@@ -19,7 +19,7 @@ use tokio::time::timeout;
 use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 
-#[allow(unused_imports)] // Re-exported for tests
+#[cfg(test)]
 pub use packet::{build_mdns_query, parse_mdns_response};
 
 /// mDNS multicast address (224.0.0.251)

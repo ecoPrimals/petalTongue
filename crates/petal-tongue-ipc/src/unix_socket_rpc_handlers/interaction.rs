@@ -8,10 +8,7 @@ use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse, error_codes};
 
 /// Handle interaction.subscribe: register a subscriber for interaction events
 pub fn handle_subscribe(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
-    let subscriber_id = req.params["subscriber_id"]
-        .as_str()
-        .unwrap_or("")
-        .to_string();
+    let subscriber_id = req.params["subscriber_id"].as_str().unwrap_or("");
     if subscriber_id.is_empty() {
         return JsonRpcResponse::error(
             req.id,
@@ -30,7 +27,6 @@ pub fn handle_subscribe(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcR
         .unwrap_or_default();
 
     let callback_method = req.params["callback_method"].as_str().map(String::from);
-
     let grammar_id = req.params["grammar_id"].as_str().map(String::from);
 
     let is_new = handlers
@@ -38,7 +34,7 @@ pub fn handle_subscribe(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcR
         .write()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .subscribe_with_filter(
-            &subscriber_id,
+            subscriber_id,
             event_filter,
             callback_method.clone(),
             grammar_id,
@@ -57,10 +53,7 @@ pub fn handle_subscribe(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcR
 
 /// Handle interaction.poll: retrieve pending events for a subscriber
 pub fn handle_poll(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
-    let subscriber_id = req.params["subscriber_id"]
-        .as_str()
-        .unwrap_or("")
-        .to_string();
+    let subscriber_id = req.params["subscriber_id"].as_str().unwrap_or("");
     if subscriber_id.is_empty() {
         return JsonRpcResponse::error(
             req.id,
@@ -72,7 +65,7 @@ pub fn handle_poll(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcRespon
         .interaction_subscribers
         .write()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .poll(&subscriber_id);
+        .poll(subscriber_id);
     JsonRpcResponse::success(
         req.id,
         serde_json::json!({
@@ -84,10 +77,7 @@ pub fn handle_poll(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcRespon
 
 /// Handle interaction.unsubscribe: remove a subscriber
 pub fn handle_unsubscribe(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
-    let subscriber_id = req.params["subscriber_id"]
-        .as_str()
-        .unwrap_or("")
-        .to_string();
+    let subscriber_id = req.params["subscriber_id"].as_str().unwrap_or("");
     if subscriber_id.is_empty() {
         return JsonRpcResponse::error(
             req.id,
@@ -99,7 +89,7 @@ pub fn handle_unsubscribe(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRp
         .interaction_subscribers
         .write()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .unsubscribe(&subscriber_id);
+        .unsubscribe(subscriber_id);
     JsonRpcResponse::success(
         req.id,
         serde_json::json!({

@@ -356,7 +356,12 @@ pub fn handle_export(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResp
     JsonRpcResponse::success(req.id, value)
 }
 
-/// Handle visualization.interact.apply: apply interaction intent and broadcast
+/// Handle visualization.interact.apply: apply interaction intent and broadcast (PT-06).
+///
+/// Captures callback dispatches from `apply_interaction` and logs them.
+/// Subscribers with `callback_method` set receive events via poll; the
+/// `pending_callbacks` count in the response signals that push delivery
+/// entries were produced (future: wire to subscriber socket writes).
 pub fn handle_interact_apply(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
     let params = match serde_json::from_value::<InteractionApplyRequest>(req.params) {
         Ok(p) => p,
@@ -368,11 +373,17 @@ pub fn handle_interact_apply(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
             );
         }
     };
-    let response = handlers
+    let (response, callbacks) = handlers
         .interaction_subscribers
         .write()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .apply_interaction(&params);
+    if !callbacks.is_empty() {
+        tracing::debug!(
+            count = callbacks.len(),
+            "PT-06: callback dispatches produced (poll-first; push delivery pending)"
+        );
+    }
     let value = match serde_json::to_value(&response) {
         Ok(v) => v,
         Err(e) => {

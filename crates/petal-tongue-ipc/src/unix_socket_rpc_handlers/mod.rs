@@ -229,10 +229,7 @@ impl RpcHandlers {
     }
 
     fn handle_sensor_stream_unsubscribe(&self, req: JsonRpcRequest) -> JsonRpcResponse {
-        let subscription_id = req.params["subscription_id"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+        let subscription_id = req.params["subscription_id"].as_str().unwrap_or("");
         if subscription_id.is_empty() {
             return JsonRpcResponse::error(
                 req.id,
@@ -244,7 +241,7 @@ impl RpcHandlers {
             .sensor_stream_subscribers
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .unsubscribe(&subscription_id);
+            .unsubscribe(subscription_id);
         JsonRpcResponse::success(
             req.id,
             serde_json::json!({
@@ -255,10 +252,7 @@ impl RpcHandlers {
     }
 
     fn handle_sensor_stream_poll(&self, req: JsonRpcRequest) -> JsonRpcResponse {
-        let subscription_id = req.params["subscription_id"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+        let subscription_id = req.params["subscription_id"].as_str().unwrap_or("");
         if subscription_id.is_empty() {
             return JsonRpcResponse::error(
                 req.id,
@@ -270,7 +264,7 @@ impl RpcHandlers {
             .sensor_stream_subscribers
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .poll(&subscription_id);
+            .poll(subscription_id);
         let value = match serde_json::to_value(&batch) {
             Ok(v) => v,
             Err(e) => {
