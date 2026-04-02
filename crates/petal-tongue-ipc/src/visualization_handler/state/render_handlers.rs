@@ -125,8 +125,36 @@ impl VisualizationState {
     }
 
     /// Handle `visualization.export`: export a session to the requested format.
+    ///
+    /// For `GameScene`/`Soundscape` bindings with description, audio, or haptic
+    /// modalities, produces rich semantic output directly from the binding data
+    /// rather than the generic scene graph.
     #[must_use]
     pub fn handle_export(&self, req: ExportRequest) -> ExportResponse {
+        // Try binding-aware modality compilation first (richer for GameScene/Soundscape)
+        if let Some(binding) = self
+            .sessions
+            .get(&req.session_id)
+            .and_then(|s| s.bindings.first())
+        {
+            let scene_key = format!(
+                "{}:{}",
+                req.session_id,
+                super::super::stream::binding_id(binding)
+            );
+            if let Some(scene) = self.grammar_scenes.get(&scene_key) {
+                let (output, format) =
+                    modality::compile_binding_modality(binding, scene, &req.format);
+                return ExportResponse {
+                    session_id: req.session_id,
+                    format,
+                    content: match output {
+                        serde_json::Value::String(s) => s,
+                        other => other.to_string(),
+                    },
+                };
+            }
+        }
         if let Some(scene) = self.grammar_scenes.get(&req.session_id) {
             let (output, format) = modality::compile_modality(scene, &req.format);
             ExportResponse {

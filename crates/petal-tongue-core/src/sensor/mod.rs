@@ -11,8 +11,8 @@ mod types;
 pub use ipc_types::{KeyModifiersIpc, SensorEventBatch, SensorEventIpc};
 pub use registry::{SensorRegistry, SensorStats};
 pub use types::{
-    Key, Modifiers, MouseButton, Sensor, SensorCapabilities, SensorCapability, SensorEvent,
-    SensorType,
+    GestureDirection, GestureType, Key, Modifiers, MouseButton, Sensor, SensorCapabilities,
+    SensorCapability, SensorEvent, SensorType,
 };
 
 #[cfg(test)]

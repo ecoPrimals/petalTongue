@@ -121,6 +121,18 @@ pub enum SensorType {
     /// Network sensor (primal discovery, health)
     Network,
 
+    /// Touchscreen / pressure surface
+    Touch,
+
+    /// Eye/gaze tracking device
+    EyeTracker,
+
+    /// Binary switch device (sip-and-puff, head switch, BCI binary)
+    Switch,
+
+    /// Agentic AI / machine interactor (Squirrel, API client)
+    Agent,
+
     /// Unknown sensor type
     Unknown,
 }
@@ -232,6 +244,71 @@ pub enum SensorEvent {
         timestamp: Instant,
     },
 
+    /// Voice/speech command from microphone or speech recognizer.
+    ///
+    /// Toadstool (or the OS accessibility layer) provides the transcript;
+    /// petalTongue maps it to an `InteractionIntent`.
+    VoiceCommand {
+        /// Recognized speech transcript.
+        transcript: String,
+        /// Recognition confidence (0.0–1.0).
+        confidence: f64,
+        /// When the event occurred.
+        timestamp: Instant,
+    },
+
+    /// Gesture event (hand, body, or device motion).
+    Gesture {
+        /// What type of gesture was detected.
+        gesture_type: GestureType,
+        /// Magnitude or intensity (0.0–1.0 normalized).
+        magnitude: f64,
+        /// When the event occurred.
+        timestamp: Instant,
+    },
+
+    /// Touch event from a touchscreen or pressure surface.
+    Touch {
+        /// X coordinate (display-space pixels).
+        x: f32,
+        /// Y coordinate (display-space pixels).
+        y: f32,
+        /// Pressure level (0.0–1.0, 0.0 = hover if supported).
+        pressure: f32,
+        /// When the event occurred.
+        timestamp: Instant,
+    },
+
+    /// Eye/gaze tracking position.
+    GazePosition {
+        /// X coordinate on display (pixels).
+        x: f32,
+        /// Y coordinate on display (pixels).
+        y: f32,
+        /// How long the gaze has been fixated at this position (ms).
+        fixation_ms: u64,
+        /// When the event occurred.
+        timestamp: Instant,
+    },
+
+    /// Single-switch or binary input activation (sip-and-puff, head switch, blink).
+    SwitchActivation {
+        /// Which switch was activated (0-indexed).
+        switch_id: u8,
+        /// When the event occurred.
+        timestamp: Instant,
+    },
+
+    /// Command from an agentic AI (Squirrel or other machine interactor).
+    AgentCommand {
+        /// Semantic intent expressed as a verb (e.g. "select", "navigate").
+        intent: String,
+        /// Structured parameters for the command.
+        parameters: serde_json::Value,
+        /// When the event occurred.
+        timestamp: Instant,
+    },
+
     /// Generic event for extensibility
     Generic {
         /// Event payload
@@ -239,6 +316,42 @@ pub enum SensorEvent {
         /// When the event occurred
         timestamp: Instant,
     },
+}
+
+/// Classification of gesture events.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GestureType {
+    /// Swipe in a direction.
+    Swipe(GestureDirection),
+    /// Pinch (zoom in).
+    PinchIn,
+    /// Spread (zoom out).
+    PinchOut,
+    /// Rotation gesture.
+    Rotate,
+    /// Wave / attention-getting gesture.
+    Wave,
+    /// Point at target.
+    Point,
+    /// Grab / grip.
+    Grab,
+    /// Release / open hand.
+    Release,
+    /// Custom gesture with a name.
+    Custom(String),
+}
+
+/// Direction for swipe/directional gestures.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GestureDirection {
+    /// Swipe up.
+    Up,
+    /// Swipe down.
+    Down,
+    /// Swipe left.
+    Left,
+    /// Swipe right.
+    Right,
 }
 
 impl SensorEvent {
@@ -257,6 +370,12 @@ impl SensorEvent {
             | Self::Heartbeat { timestamp, .. }
             | Self::FrameAcknowledged { timestamp, .. }
             | Self::DisplayVisible { timestamp, .. }
+            | Self::VoiceCommand { timestamp, .. }
+            | Self::Gesture { timestamp, .. }
+            | Self::Touch { timestamp, .. }
+            | Self::GazePosition { timestamp, .. }
+            | Self::SwitchActivation { timestamp, .. }
+            | Self::AgentCommand { timestamp, .. }
             | Self::Generic { timestamp, .. } => *timestamp,
         }
     }
@@ -270,6 +389,12 @@ impl SensorEvent {
                 | Self::KeyPress { .. }
                 | Self::ButtonPress { .. }
                 | Self::Scroll { .. }
+                | Self::VoiceCommand { .. }
+                | Self::Gesture { .. }
+                | Self::Touch { .. }
+                | Self::GazePosition { .. }
+                | Self::SwitchActivation { .. }
+                | Self::AgentCommand { .. }
         )
     }
 

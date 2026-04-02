@@ -16,6 +16,7 @@ anyhow = { workspace = true }
 base64 = { workspace = true }
 blake3 = { workspace = true }
 bytes = { workspace = true }
+hound = { workspace = true }
 petal-tongue-core = { path = "../petal-tongue-core" }
 petal-tongue-scene = { path = "../petal-tongue-scene" }
 tokio = { workspace = true, features = ["net", "io-util", "sync", "macros", "rt"] }

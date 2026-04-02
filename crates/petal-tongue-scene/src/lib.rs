@@ -63,6 +63,9 @@ pub use dashboard::{
     Dashboard, DashboardConfig, DashboardLayout, build_dashboard, compose_dashboard,
 };
 pub use data_binding::DataBindingCompiler;
+pub use data_binding::describe::{
+    describe_binding, hapticize_game_scene, hapticize_soundscape, sonify_game_scene,
+};
 pub use domain_palette::{DivergingScale, DomainPalette, palette_for_domain};
 pub use equation::EquationCompiler;
 pub use golden_tests::{GoldenTest, GoldenTestResult, TufteVerificationResult};

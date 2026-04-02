@@ -117,6 +117,8 @@ pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
                 "lifecycle.status",
                 "capabilities.list",
                 "capability.announce",
+                "capabilities.sensory",
+                "capabilities.sensory.negotiate",
                 "topology.get",
                 "provider.register_capability",
                 // Visualization
@@ -144,6 +146,8 @@ pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
                 "interaction.sensor_stream.subscribe",
                 "interaction.sensor_stream.unsubscribe",
                 "interaction.sensor_stream.poll",
+                // Audio
+                "audio.synthesize",
                 // UI
                 "ui.render",
                 "ui.display_status",
@@ -277,6 +281,72 @@ pub fn handle_lifecycle_status(handlers: &RpcHandlers, id: Value) -> JsonRpcResp
             "healthy": graph_ok,
         }),
     )
+}
+
+/// Handle `capabilities.sensory`: return the full sensory capability matrix.
+///
+/// Consumer primals (ludoSpring, primalSpring, Squirrel) call this to discover
+/// what input/output paths are available for the current user/session.
+///
+/// Optional `"agent": true` param returns an agent-only matrix.
+#[must_use]
+pub fn handle_capabilities_sensory(
+    _handlers: &RpcHandlers,
+    request: JsonRpcRequest,
+) -> JsonRpcResponse {
+    let is_agent = request
+        .params
+        .get("agent")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+
+    let matrix = if is_agent {
+        petal_tongue_core::SensoryCapabilityMatrix::for_agent()
+    } else {
+        let caps = petal_tongue_core::SensoryCapabilities::discover().unwrap_or_default();
+        petal_tongue_core::SensoryCapabilityMatrix::from_sensory_capabilities(&caps)
+    };
+
+    let value = serde_json::to_value(&matrix).unwrap_or(json!(null));
+    JsonRpcResponse::success(request.id, value)
+}
+
+/// Handle `capabilities.sensory.negotiate`: accept input/output overrides and
+/// return a tailored matrix. Primals call this when they already know the
+/// user's capabilities (e.g. from NestGate preferences).
+#[must_use]
+pub fn handle_capabilities_sensory_negotiate(
+    _handlers: &RpcHandlers,
+    request: JsonRpcRequest,
+) -> JsonRpcResponse {
+    let input: petal_tongue_core::InputCapabilitySet = request
+        .params
+        .get("input")
+        .and_then(|v| serde_json::from_value(v.clone()).ok())
+        .unwrap_or_default();
+
+    let output: petal_tongue_core::OutputCapabilitySet = request
+        .params
+        .get("output")
+        .and_then(|v| serde_json::from_value(v.clone()).ok())
+        .unwrap_or_default();
+
+    let validated_paths =
+        petal_tongue_core::SensoryCapabilityMatrix::compute_validated_paths_public(&input, &output);
+    let recommended =
+        petal_tongue_core::SensoryCapabilityMatrix::recommend_modality_public(&input, &output);
+    let patterns = petal_tongue_core::SensoryCapabilityMatrix::compute_patterns_public(&input);
+
+    let matrix = petal_tongue_core::SensoryCapabilityMatrix {
+        input,
+        output,
+        validated_paths,
+        recommended_modality: recommended,
+        interaction_patterns: patterns,
+    };
+
+    let value = serde_json::to_value(&matrix).unwrap_or(json!(null));
+    JsonRpcResponse::success(request.id, value)
 }
 
 /// Handle `provider.register_capability`: accept toadStool `ProviderRegistry` registrations.
@@ -506,6 +576,54 @@ mod tests {
         assert!(r["version"].as_str().is_some());
         assert_eq!(r["family_id"], "test-family");
         assert_eq!(r["protocol"], "json-rpc-2.0");
+    }
+
+    #[test]
+    fn capabilities_list_includes_scene_and_interaction() {
+        let h = test_handlers();
+        let resp = get_capabilities(&h, serde_json::json!(1));
+        let r = resp.result.expect("success");
+        let methods: Vec<&str> = r["methods"]
+            .as_array()
+            .expect("methods array")
+            .iter()
+            .filter_map(|v| v.as_str())
+            .collect();
+        assert!(
+            methods.contains(&"visualization.render.scene"),
+            "visualization.render.scene must be advertised"
+        );
+        assert!(
+            methods.contains(&"interaction.poll"),
+            "interaction.poll must be advertised"
+        );
+        assert!(
+            methods.contains(&"interaction.subscribe"),
+            "interaction.subscribe must be advertised"
+        );
+        assert!(
+            methods.contains(&"interaction.unsubscribe"),
+            "interaction.unsubscribe must be advertised"
+        );
+
+        let capabilities: Vec<&str> = r["capabilities"]
+            .as_array()
+            .expect("capabilities array")
+            .iter()
+            .filter_map(|v| v.as_str())
+            .collect();
+        assert!(
+            capabilities.contains(&"visualization.render.scene"),
+            "visualization.render.scene must be in capabilities"
+        );
+        assert!(
+            capabilities.contains(&"interaction.subscribe"),
+            "interaction.subscribe must be in capabilities"
+        );
+        assert!(
+            capabilities.contains(&"interaction.poll"),
+            "interaction.poll must be in capabilities"
+        );
     }
 
     #[test]

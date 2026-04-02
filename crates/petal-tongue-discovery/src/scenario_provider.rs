@@ -136,9 +136,9 @@ impl VisualizationDataProvider for ScenarioVisualizationProvider {
         // Generate automatic topology based on primal types
         let mut edges = Vec::new();
 
-        // Find NUCLEUS if it exists
-        if let Some(nucleus) = self.primals.iter().find(|p| p.name == "NUCLEUS") {
-            // Connect NUCLEUS to all other primals
+        // Find nucleus-type primal if one exists (type-based, not name-based)
+        if let Some(nucleus) = self.primals.iter().find(|p| p.primal_type == "nucleus") {
+            // Connect nucleus to all other primals (star topology)
             for primal in &self.primals {
                 if primal.id != nucleus.id {
                     edges.push(TopologyEdge {
@@ -152,7 +152,7 @@ impl VisualizationDataProvider for ScenarioVisualizationProvider {
                 }
             }
         } else {
-            // Without NUCLEUS, create a mesh topology
+            // Without a nucleus primal, create a mesh topology
             // Connect each primal to the next one in a ring
             for i in 0..self.primals.len() {
                 let next = (i + 1) % self.primals.len();

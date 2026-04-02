@@ -26,6 +26,7 @@ pub mod self_capabilities {
     pub const VISUALIZATION_INTERACT: &str = "visualization.interact";
     pub const VISUALIZATION_INTERACT_SUBSCRIBE: &str = "visualization.interact.subscribe";
     pub const VISUALIZATION_PROVENANCE: &str = "visualization.provenance";
+    pub const VISUALIZATION_RENDER_SCENE: &str = "visualization.render.scene";
     pub const VISUALIZATION_EXPORT: &str = "visualization.export";
     pub const VISUALIZATION_VALIDATE: &str = "visualization.validate";
 
@@ -50,6 +51,11 @@ pub mod self_capabilities {
     pub const MODALITY_BRAILLE: &str = "modality.braille";
     pub const MODALITY_DESCRIPTION: &str = "modality.description";
 
+    pub const AUDIO_SYNTHESIZE: &str = "audio.synthesize";
+
+    pub const CAPABILITIES_SENSORY: &str = "capabilities.sensory";
+    pub const CAPABILITIES_SENSORY_NEGOTIATE: &str = "capabilities.sensory.negotiate";
+
     pub const IDENTITY_GET: &str = "identity.get";
     pub const LIFECYCLE_STATUS: &str = "lifecycle.status";
     pub const HEALTH_CHECK: &str = "health.check";
@@ -68,6 +74,7 @@ pub mod self_capabilities {
         VISUALIZATION_RENDER_STREAM,
         VISUALIZATION_RENDER_GRAMMAR,
         VISUALIZATION_RENDER_DASHBOARD,
+        VISUALIZATION_RENDER_SCENE,
         VISUALIZATION_INTERACT,
         VISUALIZATION_INTERACT_SUBSCRIBE,
         VISUALIZATION_PROVENANCE,
@@ -89,6 +96,9 @@ pub mod self_capabilities {
         MODALITY_HAPTIC,
         MODALITY_BRAILLE,
         MODALITY_DESCRIPTION,
+        AUDIO_SYNTHESIZE,
+        CAPABILITIES_SENSORY,
+        CAPABILITIES_SENSORY_NEGOTIATE,
         IDENTITY_GET,
         LIFECYCLE_STATUS,
         HEALTH_CHECK,
@@ -134,6 +144,8 @@ pub mod methods {
     pub const VISUALIZATION_SHOWING: &str = "visualization.showing";
     pub const VISUALIZATION_SESSION_LIST: &str = "visualization.session.list";
     pub const VISUALIZATION_SESSION_STATUS: &str = "visualization.session.status";
+    pub const CAPABILITIES_SENSORY: &str = "capabilities.sensory";
+    pub const CAPABILITIES_SENSORY_NEGOTIATE: &str = "capabilities.sensory.negotiate";
 }
 
 /// Well-known socket name prefixes for capability-based discovery.
@@ -179,7 +191,7 @@ mod tests {
 
     #[test]
     fn self_capabilities_all_count() {
-        assert_eq!(self_capabilities::ALL.len(), 36);
+        assert_eq!(self_capabilities::ALL.len(), 40);
     }
 
     #[test]
