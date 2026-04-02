@@ -81,7 +81,8 @@ pub mod modality; // Modality system (trait and registry)
 pub mod rendering_awareness; // Bidirectional UUI awareness (motor + sensory)
 pub mod sensor; // Sensor abstraction layer
 pub mod sensory_matrix; // Sensory Capability Matrix (input x output negotiation)
-pub mod toadstool_compute; // Toadstool GPU compute integration
+#[path = "gpu_compute_provider.rs"]
+pub mod toadstool_compute;
 pub mod uui_glossary; // Universal User Interface glossary (canonical terminology)
 
 // Test fixtures available for this and dependent crates
@@ -220,8 +221,8 @@ pub use awakening_coordinator::{
 /// Compute provider system
 pub use compute::{ComputeCapability, ComputeProvider, ComputeRegistry};
 
-/// Toadstool compute integration
-pub use toadstool_compute::{CPUFallbackCompute, ToadstoolCompute, ToadstoolServiceInfo};
+/// GPU compute provider (capability-discovered)
+pub use toadstool_compute::{CPUFallbackCompute, ComputeServiceInfo, GpuComputeProvider};
 
 /// Universal rendering engine
 pub use engine::{EngineState, TimeState, UniversalRenderingEngine, ViewMode, Viewport};

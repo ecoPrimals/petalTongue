@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Primal Registration with Songbird
+//! Primal Registration with Discovery Service
 //!
 //! Implements the `ipc.register` and `ipc.heartbeat` standards from `PRIMAL_IPC_PROTOCOL.md`.
 //!
 //! This module handles:
-//! - Initial registration with Songbird on startup
+//! - Initial registration with the ecosystem discovery service on startup
 //! - Periodic heartbeat to maintain registration
-//! - Graceful handling when Songbird is unavailable
+//! - Graceful handling when the discovery service is unavailable
 
 use crate::primal_registration_error::PrimalRegistrationError;
 use petal_tongue_core::capability_names::{primal_names, self_capabilities};
@@ -77,18 +77,18 @@ impl PrimalRegistration {
     }
 }
 
-/// JSON-RPC client for Songbird communication
-pub struct SongbirdClient {
+/// JSON-RPC client for discovery service registration
+pub struct RegistrationClient {
     socket_path: String,
     request_id: std::sync::atomic::AtomicU64,
 }
 
-impl SongbirdClient {
-    /// Create a new Songbird client
+impl RegistrationClient {
+    /// Create a new discovery service registration client
     ///
     /// Capability-based discovery: uses discovery service socket (no hardcoded primal names).
     /// Socket path resolution (priority order):
-    /// 1. `SONGBIRD_SOCKET` or `DISCOVERY_SERVICE_SOCKET` env (explicit override)
+    /// 1. `DISCOVERY_SERVICE_SOCKET` env (explicit override, or `SONGBIRD_SOCKET` legacy alias)
     /// 2. `discover_primal_socket` with capability-based socket name from constants
     /// 3. `SONGBIRD_SOCKET_FALLBACK` env or conventional path fallback
     #[must_use]
@@ -117,7 +117,7 @@ impl SongbirdClient {
         }
     }
 
-    /// Check if Songbird is available
+    /// Check if the discovery service is available
     pub async fn is_available(&self) -> bool {
         matches!(
             tokio::time::timeout(
@@ -129,9 +129,9 @@ impl SongbirdClient {
         )
     }
 
-    /// Register with Songbird
+    /// Register with discovery service
     ///
-    /// Sends `ipc.register` to Songbird per `PRIMAL_IPC_PROTOCOL.md`
+    /// Sends `ipc.register` per `PRIMAL_IPC_PROTOCOL.md`
     ///
     /// # Errors
     ///
@@ -160,7 +160,7 @@ impl SongbirdClient {
         self.send_request(&request).await
     }
 
-    /// Send a heartbeat to Songbird
+    /// Send a heartbeat to discovery service
     ///
     /// Sends `ipc.heartbeat` to maintain registration per `PRIMAL_IPC_PROTOCOL.md`
     ///
@@ -184,9 +184,9 @@ impl SongbirdClient {
         self.send_request(&request).await
     }
 
-    /// Send a JSON-RPC request to Songbird
+    /// Send a JSON-RPC request to the discovery service
     async fn send_request(&self, request: &Value) -> Result<(), PrimalRegistrationError> {
-        // Connect to Songbird
+        // Connect to discovery service
         let mut stream = UnixStream::connect(&self.socket_path).await?;
 
         let mut buf = serde_json::to_vec(request)?;
@@ -206,14 +206,14 @@ impl SongbirdClient {
 
         // Check for JSON-RPC error
         if let Some(error) = response.get("error") {
-            return Err(PrimalRegistrationError::SongbirdError(error.clone()));
+            return Err(PrimalRegistrationError::RegistrationRejected(error.clone()));
         }
 
         Ok(())
     }
 }
 
-impl Default for SongbirdClient {
+impl Default for RegistrationClient {
     fn default() -> Self {
         Self::new()
     }
@@ -224,9 +224,9 @@ impl Default for SongbirdClient {
 /// Handles registration lifecycle:
 /// - Initial registration on startup
 /// - Periodic heartbeats
-/// - Graceful handling when Songbird is unavailable
+/// - Graceful handling when the discovery service is unavailable
 pub struct RegistrationManager {
-    client: SongbirdClient,
+    client: RegistrationClient,
     registration: PrimalRegistration,
     heartbeat_interval: Duration,
 }
@@ -236,41 +236,41 @@ impl RegistrationManager {
     #[must_use]
     pub fn new(registration: PrimalRegistration) -> Self {
         Self {
-            client: SongbirdClient::new(),
+            client: RegistrationClient::new(),
             registration,
             heartbeat_interval: constants::default_heartbeat_interval(),
         }
     }
 
-    /// Register with Songbird (if available)
+    /// Register with discovery service (if available)
     ///
     /// This should be called during primal startup.
-    /// It will NOT fail if Songbird is unavailable - instead it will log a warning
-    /// and allow the primal to continue operating.
+    /// It will NOT fail if the discovery service is unavailable — instead it will log
+    /// a warning and allow the primal to continue operating.
     pub async fn register_on_startup(&self) {
-        debug!("Checking if Songbird is available...");
+        debug!("Checking if discovery service is available...");
 
         if !self.client.is_available().await {
             warn!(
-                "Songbird not available at {}, continuing without registration",
+                "Discovery service not available at {}, continuing without registration",
                 self.client.socket_path
             );
-            warn!("Primal will operate standalone until Songbird becomes available");
+            warn!("Primal will operate standalone until discovery service becomes available");
             return;
         }
 
-        info!("Songbird available, registering primal...");
+        info!("Discovery service available, registering primal...");
 
         match self.client.register(&self.registration).await {
             Ok(()) => {
                 info!(
-                    "✅ Successfully registered '{}' with Songbird",
+                    "✅ Successfully registered '{}' with discovery service",
                     self.registration.name
                 );
                 info!("Capabilities: {:?}", self.registration.capabilities);
             }
             Err(e) => {
-                error!("Failed to register with Songbird: {}", e);
+                error!("Failed to register with discovery service: {}", e);
                 warn!("Continuing without registration (standalone mode)");
             }
         }
@@ -278,7 +278,7 @@ impl RegistrationManager {
 
     /// Start periodic heartbeat task
     ///
-    /// Spawns a background task that sends heartbeats to Songbird
+    /// Spawns a background task that sends heartbeats to the discovery service
     /// at the configured interval.
     ///
     /// Returns a handle to the task that can be used to cancel it.
@@ -293,14 +293,17 @@ impl RegistrationManager {
             loop {
                 interval_timer.tick().await;
 
-                debug!("Sending heartbeat to Songbird...");
+                debug!("Sending heartbeat to discovery service...");
 
                 match client.heartbeat(&primal_name).await {
                     Ok(()) => {
                         debug!("✅ Heartbeat successful");
                     }
                     Err(e) => {
-                        warn!("Heartbeat failed: {} (Songbird may be unavailable)", e);
+                        warn!(
+                            "Heartbeat failed: {} (discovery service may be unavailable)",
+                            e
+                        );
                     }
                 }
             }
@@ -308,8 +311,8 @@ impl RegistrationManager {
     }
 }
 
-// Clone implementation for SongbirdClient (needed for spawning tasks)
-impl Clone for SongbirdClient {
+// Clone implementation for RegistrationClient (needed for spawning tasks)
+impl Clone for RegistrationClient {
     fn clone(&self) -> Self {
         Self {
             socket_path: self.socket_path.clone(),
@@ -342,7 +345,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_songbird_unavailable() {
-        let client = SongbirdClient::with_socket_path("/tmp/nonexistent-songbird.sock".to_string());
+        let client =
+            RegistrationClient::with_socket_path("/tmp/nonexistent-songbird.sock".to_string());
         let available = client.is_available().await;
         assert!(!available);
     }
@@ -367,7 +371,7 @@ mod tests {
 
     #[test]
     fn test_songbird_client_default() {
-        let client = SongbirdClient::default();
+        let client = RegistrationClient::default();
         drop(client);
     }
 
@@ -442,7 +446,7 @@ mod tests {
 
     #[test]
     fn test_songbird_client_with_socket_path() {
-        let client = SongbirdClient::with_socket_path(String::new());
+        let client = RegistrationClient::with_socket_path(String::new());
         drop(client);
     }
 
@@ -455,7 +459,7 @@ mod tests {
 
     #[test]
     fn test_songbird_client_clone() {
-        let client = SongbirdClient::with_socket_path("/tmp/test.sock".to_string());
+        let client = RegistrationClient::with_socket_path("/tmp/test.sock".to_string());
         let cloned = client.clone();
         drop(cloned);
         drop(client);

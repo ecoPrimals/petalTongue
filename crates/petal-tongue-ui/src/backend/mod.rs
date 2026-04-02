@@ -25,13 +25,13 @@
 //! # Backends
 //!
 //! - **`EguiBackend`**: Current backend using eframe/winit (has C dependencies)
-//! - **Toadstool display**: Pure Rust backends in `display::backends::toadstool` and `display::backends::toadstool_v2`
+//! - **Discovered display**: Pure Rust backends in `display::backends::toadstool` and `display::backends::toadstool_v2`
 //!
 //! # Feature Flags
 //!
 //! - `ui-auto`: Auto-detect best available backend (default)
 //! - `ui-eframe`: Force eframe backend
-//! - `ui-toadstool`: Force Toadstool backend (requires Toadstool running)
+//! - `ui-toadstool`: Force discovered display backend (requires biomeOS)
 //!
 //! # Examples
 //!
@@ -43,7 +43,7 @@
 //! let backend = create_backend(None).await?;
 //!
 //! // Force specific backend
-//! let backend = create_backend(Some(BackendChoice::Toadstool)).await?;
+//! let backend = create_backend(Some(BackendChoice::DiscoveredDisplay)).await?;
 //! # Ok(())
 //! # }
 //! ```
@@ -61,7 +61,7 @@ use std::sync::{Arc, RwLock};
 /// UI Backend trait - abstraction over different rendering strategies
 ///
 /// This trait defines the minimal interface that any UI backend must implement
-/// to work with petalTongue. Backends can be eframe (current), Toadstool (future),
+/// to work with petalTongue. Backends can be eframe (current), discovered display (future),
 /// or any other rendering strategy.
 ///
 /// # Design Principles
@@ -153,8 +153,8 @@ pub enum BackendChoice {
     /// Use eframe backend (current, has C deps)
     Eframe,
 
-    /// Use Toadstool backend (future, Pure Rust!)
-    Toadstool,
+    /// Use capability-discovered display backend (Pure Rust!)
+    DiscoveredDisplay,
 }
 
 impl std::str::FromStr for BackendChoice {
@@ -164,7 +164,7 @@ impl std::str::FromStr for BackendChoice {
         match s.to_lowercase().as_str() {
             "auto" => Ok(Self::Auto),
             "eframe" | "egui" => Ok(Self::Eframe),
-            "compute.provider" | "pure-rust" => Ok(Self::Toadstool),
+            "compute.provider" | "pure-rust" | "discovered" => Ok(Self::DiscoveredDisplay),
             _ => Err(()),
         }
     }
@@ -174,7 +174,7 @@ impl std::str::FromStr for BackendChoice {
 ///
 /// # Errors
 ///
-/// Returns an error if no backends are available, eframe init fails, or Toadstool requires biomeOS and it is unavailable.
+/// Returns an error if no backends are available, eframe init fails, or the display backend requires biomeOS and it is unavailable.
 ///
 /// This is the main entry point for creating backends. It handles:
 /// - Auto-detection of best available backend
@@ -199,8 +199,8 @@ impl std::str::FromStr for BackendChoice {
 /// // Auto-detect
 /// let backend = create_backend(None).await?;
 ///
-/// // Force Toadstool
-/// let backend = create_backend(Some(BackendChoice::Toadstool)).await?;
+/// // Force capability-discovered display
+/// let backend = create_backend(Some(BackendChoice::DiscoveredDisplay)).await?;
 /// # Ok(())
 /// # }
 /// ```
@@ -212,7 +212,7 @@ pub async fn create_backend(choice: Option<BackendChoice>) -> Result<Box<dyn UIB
     match choice {
         BackendChoice::Auto => create_auto_backend().await,
         BackendChoice::Eframe => create_eframe_backend().await,
-        BackendChoice::Toadstool => create_toadstool_backend(),
+        BackendChoice::DiscoveredDisplay => create_discovered_display_backend(),
     }
 }
 
@@ -220,11 +220,11 @@ pub async fn create_backend(choice: Option<BackendChoice>) -> Result<Box<dyn UIB
 ///
 /// Priority order:
 /// 1. eframe (current default)
-/// 2. Toadstool display backends are in `display::backends` (toadstool, toadstool_v2)
+/// 2. Discovered display backends are in `display::backends` (toadstool, toadstool_v2)
 async fn create_auto_backend() -> Result<Box<dyn UIBackend>> {
     tracing::info!("🔍 Auto-detecting best UI backend...");
 
-    // Use eframe (Toadstool display backends are in display::backends)
+    // Use eframe (capability-discovered display backends are in display::backends)
     tracing::info!("📦 Using eframe backend (has C dependencies)");
     create_eframe_backend().await
 }
@@ -248,12 +248,12 @@ async fn create_eframe_backend() -> Result<Box<dyn UIBackend>> {
     }
 }
 
-/// Create Toadstool backend
+/// Create capability-discovered display backend
 ///
-/// The legacy UIBackend-style Toadstool has been removed. Use
+/// The legacy UIBackend-style backend has been removed. Use
 /// `display::backends::toadstool` or `display::backends::toadstool_v2` with biomeOS instead.
-fn create_toadstool_backend() -> Result<Box<dyn UIBackend>> {
-    Err(BackendError::ToadstoolNotAvailable.into())
+fn create_discovered_display_backend() -> Result<Box<dyn UIBackend>> {
+    Err(BackendError::DisplayBackendNotAvailable.into())
 }
 
 /// Parse backend choice from environment variable
@@ -279,11 +279,11 @@ mod tests {
         assert_eq!("egui".parse::<BackendChoice>(), Ok(BackendChoice::Eframe));
         assert_eq!(
             "compute.provider".parse::<BackendChoice>(),
-            Ok(BackendChoice::Toadstool)
+            Ok(BackendChoice::DiscoveredDisplay)
         );
         assert_eq!(
             "pure-rust".parse::<BackendChoice>(),
-            Ok(BackendChoice::Toadstool)
+            Ok(BackendChoice::DiscoveredDisplay)
         );
         assert!("invalid".parse::<BackendChoice>().is_err());
     }

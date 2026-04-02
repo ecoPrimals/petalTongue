@@ -268,7 +268,9 @@ pub fn render_audio_panel(
                 ui.add_space(8.0);
 
                 let has_user_sounds = std::env::var("PETALTONGUE_SOUNDS_DIR").is_ok();
-                let has_toadstool = std::env::var("TOADSTOOL_URL").is_ok();
+                let has_toadstool = std::env::var("AUDIO_PROVIDER_URL")
+                    .or_else(|_| std::env::var("TOADSTOOL_URL"))
+                    .is_ok();
                 let tier_label = audio_tier_label(has_toadstool, has_user_sounds);
 
                 ui.label(

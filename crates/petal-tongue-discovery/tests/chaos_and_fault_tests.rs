@@ -15,7 +15,7 @@
 //! - Proper async/await patterns
 //! - No environment variable mutation (causes race conditions)
 
-use petal_tongue_discovery::{SongbirdClient, UnixSocketProvider};
+use petal_tongue_discovery::{DiscoveryServiceClient, UnixSocketProvider};
 use std::time::Duration;
 use tokio::time::timeout;
 
@@ -23,7 +23,7 @@ use tokio::time::timeout;
 #[tokio::test]
 async fn test_songbird_missing_socket() {
     // Try to discover Songbird when it doesn't exist
-    let result = SongbirdClient::discover(Some("nonexistent-family-12345"));
+    let result = DiscoveryServiceClient::discover(Some("nonexistent-family-12345"));
 
     // Should gracefully fail (not panic)
     assert!(result.is_err());
@@ -155,7 +155,9 @@ async fn test_concurrent_songbird_discovery() {
     // Multiple concurrent attempts to find Songbird
     let tasks: Vec<_> = (0..10)
         .map(|i| {
-            tokio::spawn(async move { SongbirdClient::discover(Some(&format!("test-family-{i}"))) })
+            tokio::spawn(async move {
+                DiscoveryServiceClient::discover(Some(&format!("test-family-{i}")))
+            })
         })
         .collect();
 

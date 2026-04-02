@@ -25,7 +25,7 @@ petal-tongue-scene = { path = "../petal-tongue-scene" }  # Declarative scene gra
 doom-core = { path = "../doom-core", optional = true }  # Doom integration for platform testing
 
 # Songbird is discovered at runtime via IPC (Unix sockets; tarpc primary, JSON-RPC fallback)
-# through petal-tongue-discovery::SongbirdClient.
+# through petal-tongue-discovery::DiscoveryServiceClient.
 # NO compile-time dependency - TRUE PRIMAL sovereignty!
 
 # BingoCube is a primalTool (ecoPrimals/primalTools/bingoCube)

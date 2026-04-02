@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Toadstool Display Backend - Complete tarpc Implementation 🌸🦈
+//! Discovered Display Backend (tarpc)
 //!
 //! TRUE PRIMAL Evolution: Discovery via capability system, Performance via tarpc
 //!
@@ -47,15 +47,15 @@ use petal_tongue_ipc::tarpc_client::TarpcClient;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, warn};
 
-/// Toadstool display backend using tarpc for high performance
-pub struct ToadstoolDisplay {
+/// Display backend using tarpc to the provider discovered for the `display` capability (biomeOS discovery).
+pub struct DiscoveredDisplayBackendV2 {
     /// Capability discovery system
     discovery: Option<CapabilityDiscovery>,
 
     /// tarpc client (high-performance binary RPC)
     tarpc_client: Option<TarpcClient>,
 
-    /// Window ID (from toadStool)
+    /// Window ID returned by the display capability provider
     window_id: Option<String>,
 
     /// Display dimensions
@@ -63,7 +63,7 @@ pub struct ToadstoolDisplay {
     height: u32,
 }
 
-/// Display capabilities from toadStool
+/// Display capabilities from the provider (queried over tarpc)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DisplayCapabilitiesResponse {
     displays: Vec<DisplayInfo>,
@@ -105,8 +105,8 @@ pub const fn expected_rgba8_buffer_size(width: u32, height: u32) -> usize {
     (width as usize) * (height as usize) * 4
 }
 
-impl ToadstoolDisplay {
-    /// Create new Toadstool display with capability discovery
+impl DiscoveredDisplayBackendV2 {
+    /// Create a new backend with biomeOS-backed capability discovery
     ///
     /// # Errors
     ///
@@ -266,9 +266,9 @@ impl ToadstoolDisplay {
 }
 
 #[async_trait]
-impl DisplayBackend for ToadstoolDisplay {
+impl DisplayBackend for DiscoveredDisplayBackendV2 {
     async fn init(&mut self) -> Result<()> {
-        info!("🌸🦈 Initializing toadStool display backend (tarpc)...");
+        info!("🌸🦈 Initializing discovered display backend (tarpc)...");
 
         // Phase 1: Discover display provider via capability system
         self.discover_and_connect().await?;
@@ -303,7 +303,7 @@ impl DisplayBackend for ToadstoolDisplay {
             .await?;
         self.window_id = Some(window.window_id.clone());
 
-        info!("✅ toadStool display backend initialized (tarpc)");
+        info!("✅ Discovered display backend initialized (tarpc)");
         info!("   Window: {}", window.window_id);
         info!("   Dimensions: {}x{}", self.width, self.height);
         info!("   Transport: tarpc (high-performance binary RPC)");
@@ -334,7 +334,7 @@ impl DisplayBackend for ToadstoolDisplay {
     }
 
     fn name(&self) -> &'static str {
-        "toadStool Display (tarpc)"
+        "Discovered Display (tarpc)"
     }
 
     fn capabilities(&self) -> DisplayCapabilities {
@@ -351,7 +351,7 @@ impl DisplayBackend for ToadstoolDisplay {
     }
 
     async fn shutdown(&mut self) -> Result<()> {
-        info!("🌸 Shutting down toadStool display backend");
+        info!("🌸 Shutting down discovered display backend (tarpc)");
 
         // Destroy window via tarpc if connected
         if let Some(window_id) = &self.window_id {
@@ -376,7 +376,7 @@ impl DisplayBackend for ToadstoolDisplay {
         self.window_id = None;
         self.tarpc_client = None;
 
-        info!("✅ toadStool display backend shutdown complete");
+        info!("✅ Discovered display backend (tarpc) shutdown complete");
 
         Ok(())
     }
@@ -388,7 +388,7 @@ mod tests {
 
     #[test]
     fn test_toadstool_capabilities() {
-        let display = ToadstoolDisplay {
+        let display = DiscoveredDisplayBackendV2 {
             discovery: None,
             tarpc_client: None,
             window_id: None,
@@ -406,7 +406,7 @@ mod tests {
 
     #[test]
     fn test_dimensions() {
-        let display = ToadstoolDisplay {
+        let display = DiscoveredDisplayBackendV2 {
             discovery: None,
             tarpc_client: None,
             window_id: None,
@@ -428,14 +428,14 @@ mod tests {
     fn test_with_client() {
         use petal_tongue_ipc::tarpc_client::TarpcClient;
         let client = TarpcClient::new("tarpc://localhost:9999").unwrap();
-        let display = ToadstoolDisplay::with_client(client);
+        let display = DiscoveredDisplayBackendV2::with_client(client);
         assert_eq!(display.dimensions(), (1920, 1080));
-        assert_eq!(display.name(), "toadStool Display (tarpc)");
+        assert_eq!(display.name(), "Discovered Display (tarpc)");
     }
 
     #[test]
     fn test_name() {
-        let display = ToadstoolDisplay {
+        let display = DiscoveredDisplayBackendV2 {
             discovery: None,
             tarpc_client: None,
             window_id: None,
@@ -447,7 +447,7 @@ mod tests {
 
     #[test]
     fn test_capabilities_latency() {
-        let display = ToadstoolDisplay {
+        let display = DiscoveredDisplayBackendV2 {
             discovery: None,
             tarpc_client: None,
             window_id: None,
@@ -462,7 +462,7 @@ mod tests {
     async fn test_present_invalid_buffer_size() {
         use petal_tongue_ipc::tarpc_client::TarpcClient;
         let client = TarpcClient::new("tarpc://localhost:9999").unwrap();
-        let mut display = ToadstoolDisplay::with_client(client);
+        let mut display = DiscoveredDisplayBackendV2::with_client(client);
         let wrong_buffer = vec![0u8; 100];
         let result = display.present(&wrong_buffer).await;
         assert!(result.is_err());
@@ -481,7 +481,7 @@ mod tests {
     async fn test_present_buffer_too_small() {
         use petal_tongue_ipc::tarpc_client::TarpcClient;
         let client = TarpcClient::new("tarpc://localhost:9999").unwrap();
-        let mut display = ToadstoolDisplay::with_client(client);
+        let mut display = DiscoveredDisplayBackendV2::with_client(client);
         let expected = expected_rgba8_buffer_size(1920, 1080);
         let too_small = vec![0u8; expected - 1];
         let result = display.present(&too_small).await;
@@ -492,14 +492,14 @@ mod tests {
     async fn test_shutdown_no_window() {
         use petal_tongue_ipc::tarpc_client::TarpcClient;
         let client = TarpcClient::new("tarpc://localhost:9999").unwrap();
-        let mut display = ToadstoolDisplay::with_client(client);
+        let mut display = DiscoveredDisplayBackendV2::with_client(client);
         let result = display.shutdown().await;
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_is_available() {
-        let _ = ToadstoolDisplay::is_available();
+        let _ = DiscoveredDisplayBackendV2::is_available();
     }
 
     #[test]

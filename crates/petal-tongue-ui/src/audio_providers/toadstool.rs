@@ -1,42 +1,44 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Toadstool audio provider — advanced synthesis via primal HTTP API.
+//! Discovered audio provider — advanced synthesis via capability-discovered primal
 
 use super::AudioProvider;
 
 #[must_use]
-pub fn build_toadstool_play_url(base: &str) -> String {
+pub fn build_audio_play_url(base: &str) -> String {
     format!("{base}/api/v1/audio/play")
 }
 
 #[must_use]
-pub fn build_toadstool_stop_url(base: &str) -> String {
+pub fn build_audio_stop_url(base: &str) -> String {
     format!("{base}/api/v1/audio/stop")
 }
 
 #[must_use]
-pub fn build_toadstool_synthesize_url(base: &str) -> String {
+pub fn build_audio_synthesize_url(base: &str) -> String {
     format!("{base}/api/v1/audio/synthesize")
 }
 use bytes::Bytes;
 use tracing::{info, warn};
 
-/// Toadstool audio provider (advanced synthesis via primal)
-pub struct ToadstoolAudioProvider {
+/// Discovered audio provider (advanced synthesis via primal)
+pub struct DiscoveredAudioProvider {
     endpoint: Option<String>,
     available: bool,
 }
 
-impl ToadstoolAudioProvider {
-    /// Create new Toadstool audio provider (discovers via environment)
+impl DiscoveredAudioProvider {
+    /// Create new discovered audio provider (discovers via environment)
     pub fn new() -> Self {
-        // Check for toadstool via environment or discovery
-        let endpoint = std::env::var("TOADSTOOL_URL").ok();
+        // Check for discovered audio endpoint via environment or discovery
+        let endpoint = std::env::var("AUDIO_PROVIDER_URL")
+            .or_else(|_| std::env::var("TOADSTOOL_URL"))
+            .ok();
         let available = endpoint.is_some();
 
         if available {
-            info!("🔊 Toadstool audio provider initialized: {:?}", endpoint);
+            info!("🔊 Audio provider initialized: {:?}", endpoint);
         } else {
-            info!("🔊 Toadstool audio provider not available (set TOADSTOOL_URL)");
+            info!("🔊 Audio provider not available (set AUDIO_PROVIDER_URL or TOADSTOOL_URL)");
         }
 
         Self {
@@ -50,7 +52,7 @@ impl ToadstoolAudioProvider {
     async fn request_synthesis(&self, params: &str) -> Result<Bytes, String> {
         let endpoint = self.endpoint.as_ref().ok_or("Toadstool not configured")?;
 
-        let url = build_toadstool_synthesize_url(endpoint);
+        let url = build_audio_synthesize_url(endpoint);
         info!("🔊 Requesting audio synthesis from Toadstool: {}", params);
 
         // Create HTTP client with timeout
@@ -100,13 +102,13 @@ impl ToadstoolAudioProvider {
     }
 }
 
-impl Default for ToadstoolAudioProvider {
+impl Default for DiscoveredAudioProvider {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl AudioProvider for ToadstoolAudioProvider {
+impl AudioProvider for DiscoveredAudioProvider {
     fn name(&self) -> &'static str {
         "Toadstool Synthesis"
     }
@@ -133,7 +135,7 @@ impl AudioProvider for ToadstoolAudioProvider {
                     .build();
 
                 if let Ok(client) = client {
-                    let url = build_toadstool_play_url(&ep);
+                    let url = build_audio_play_url(&ep);
 
                     #[derive(serde::Serialize)]
                     struct PlayRequest {
@@ -183,7 +185,7 @@ impl AudioProvider for ToadstoolAudioProvider {
                     .build();
 
                 if let Ok(client) = client {
-                    let url = build_toadstool_stop_url(&ep);
+                    let url = build_audio_stop_url(&ep);
 
                     match client.post(&url).send().await {
                         Ok(response) if response.status().is_success() => {
@@ -226,13 +228,13 @@ mod tests {
 
     #[test]
     fn test_toadstool_provider_default() {
-        let provider = ToadstoolAudioProvider::default();
+        let provider = DiscoveredAudioProvider::default();
         assert_eq!(provider.name(), "Toadstool Synthesis");
     }
 
     #[test]
     fn test_toadstool_play_when_unavailable() {
-        let provider = ToadstoolAudioProvider::new();
+        let provider = DiscoveredAudioProvider::new();
         if !provider.is_available() {
             let result = provider.play("music");
             assert!(result.is_err());
@@ -242,19 +244,19 @@ mod tests {
 
     #[test]
     fn test_toadstool_stop_when_unavailable_no_panic() {
-        let provider = ToadstoolAudioProvider::new();
+        let provider = DiscoveredAudioProvider::new();
         provider.stop();
     }
 
     #[test]
     fn test_toadstool_description() {
-        let provider = ToadstoolAudioProvider::new();
+        let provider = DiscoveredAudioProvider::new();
         assert!(provider.description().contains("Toadstool"));
     }
 
     #[test]
     fn test_toadstool_available_sounds_when_unavailable() {
-        let provider = ToadstoolAudioProvider::new();
+        let provider = DiscoveredAudioProvider::new();
         if !provider.is_available() {
             assert!(provider.available_sounds().is_empty());
         }
@@ -262,37 +264,37 @@ mod tests {
 
     #[test]
     fn test_toadstool_name_constant() {
-        let provider = ToadstoolAudioProvider::default();
+        let provider = DiscoveredAudioProvider::default();
         assert_eq!(provider.name(), "Toadstool Synthesis");
     }
 
     #[test]
     fn test_toadstool_description_contains_primal() {
-        let provider = ToadstoolAudioProvider::new();
+        let provider = DiscoveredAudioProvider::new();
         assert!(provider.description().contains("primal"));
         assert!(provider.description().contains("Toadstool"));
     }
 
     #[test]
-    fn test_build_toadstool_play_url() {
+    fn test_build_audio_play_url() {
         assert_eq!(
-            build_toadstool_play_url("http://localhost:8080"),
+            build_audio_play_url("http://localhost:8080"),
             "http://localhost:8080/api/v1/audio/play"
         );
     }
 
     #[test]
-    fn test_build_toadstool_stop_url() {
+    fn test_build_audio_stop_url() {
         assert_eq!(
-            build_toadstool_stop_url("http://localhost:8080"),
+            build_audio_stop_url("http://localhost:8080"),
             "http://localhost:8080/api/v1/audio/stop"
         );
     }
 
     #[test]
-    fn test_build_toadstool_synthesize_url() {
+    fn test_build_audio_synthesize_url() {
         assert_eq!(
-            build_toadstool_synthesize_url("http://localhost:8080"),
+            build_audio_synthesize_url("http://localhost:8080"),
             "http://localhost:8080/api/v1/audio/synthesize"
         );
     }

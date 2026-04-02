@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! # Toadstool Compute Provider
+//! # GPU Compute Provider
 //!
-//! GPU compute acceleration via Toadstool primal (discovered at runtime).
+//! GPU compute acceleration via capability-discovered primal (runtime discovery).
+//! petalTongue never hardcodes which primal provides compute — it discovers
+//! by capability (`gpu.dispatch`, `science.gpu.dispatch`).
 
 use async_trait::async_trait;
 
@@ -11,9 +13,9 @@ use std::collections::HashMap;
 
 use crate::compute::{ComputeCapability, ComputeProvider};
 
-/// Toadstool Service Info (discovered dynamically)
+/// Compute service info (discovered dynamically via capability query)
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ToadstoolServiceInfo {
+pub struct ComputeServiceInfo {
     /// Service ID
     pub id: String,
 
@@ -27,29 +29,29 @@ pub struct ToadstoolServiceInfo {
     pub metadata: HashMap<String, String>,
 }
 
-/// Toadstool Compute Provider
+/// GPU compute provider (capability-discovered)
 ///
-/// Provides GPU acceleration via Toadstool primal.
+/// Provides GPU acceleration via any primal announcing `gpu.dispatch`.
 /// Discovered at runtime using capability-based discovery.
-pub struct ToadstoolCompute {
+pub struct GpuComputeProvider {
     /// Service info (if discovered)
-    service: Option<ToadstoolServiceInfo>,
+    service: Option<ComputeServiceInfo>,
 
     /// Available capabilities
     capabilities: Vec<ComputeCapability>,
 }
 
-impl ToadstoolCompute {
-    /// Create new Toadstool compute provider
+impl GpuComputeProvider {
+    /// Create new GPU compute provider
     ///
-    /// Attempts to discover Toadstool at creation time.
+    /// Attempts to discover a compute provider at creation time.
     ///
     /// # Errors
     ///
     /// Does not return errors; discovery failures result in an empty provider.
     pub async fn new() -> Result<Self> {
         // Attempt discovery
-        let service = Self::discover_toadstool().await.ok();
+        let service = Self::discover_compute_provider().await.ok();
 
         // Determine capabilities based on discovery
         let capabilities = service
@@ -65,15 +67,14 @@ impl ToadstoolCompute {
     /// Discover GPU compute provider via universal discovery.
     ///
     /// Uses capability-based discovery (no hardcoded primal names).
-    /// Follows toadStool S139 ecosystem discovery pattern:
     /// 1. Env override (`GPU_RENDERING_ENDPOINT`, `COMPUTE_PROVIDER_ENDPOINT`)
     /// 2. Ecosystem directory (`$XDG_RUNTIME_DIR/ecoPrimals/discovery/`)
-    /// 3. Socket scan (`$XDG_RUNTIME_DIR/toadstool/`)
+    /// 3. `GPU_COMPUTE_ENDPOINT` fallback
     #[expect(clippy::unused_async, reason = "async for future async discovery APIs")]
-    async fn discover_toadstool() -> Result<ToadstoolServiceInfo> {
+    async fn discover_compute_provider() -> Result<ComputeServiceInfo> {
         if let Ok(endpoint) = std::env::var("GPU_RENDERING_ENDPOINT") {
             tracing::info!("Found GPU rendering service via environment: {endpoint}");
-            return Ok(ToadstoolServiceInfo {
+            return Ok(ComputeServiceInfo {
                 id: "discovered-gpu-renderer".to_string(),
                 endpoint,
                 capabilities: vec!["gpu.dispatch".to_string(), "display".to_string()],
@@ -83,7 +84,7 @@ impl ToadstoolCompute {
 
         if let Ok(endpoint) = std::env::var("COMPUTE_PROVIDER_ENDPOINT") {
             tracing::info!("Found compute provider via environment: {endpoint}");
-            return Ok(ToadstoolServiceInfo {
+            return Ok(ComputeServiceInfo {
                 id: "discovered-compute-provider".to_string(),
                 endpoint,
                 capabilities: vec![
@@ -127,7 +128,7 @@ impl ToadstoolCompute {
                             .unwrap_or("discovered-compute")
                             .to_string();
                         tracing::info!("Found GPU compute provider via ecosystem discovery: {id}");
-                        return Ok(ToadstoolServiceInfo {
+                        return Ok(ComputeServiceInfo {
                             id,
                             endpoint,
                             capabilities: caps,
@@ -143,7 +144,7 @@ impl ToadstoolCompute {
             let endpoint = crate::constants::default_gpu_compute_endpoint();
             if !endpoint.is_empty() {
                 tracing::info!("Using GPU compute endpoint from env: {endpoint}");
-                return Ok(ToadstoolServiceInfo {
+                return Ok(ComputeServiceInfo {
                     id: "env-gpu-compute".to_string(),
                     endpoint,
                     capabilities: vec![
@@ -197,13 +198,13 @@ impl ToadstoolCompute {
 
     /// Get service info
     #[must_use]
-    pub const fn service(&self) -> Option<&ToadstoolServiceInfo> {
+    pub const fn service(&self) -> Option<&ComputeServiceInfo> {
         self.service.as_ref()
     }
 }
 
 #[async_trait]
-impl ComputeProvider for ToadstoolCompute {
+impl ComputeProvider for GpuComputeProvider {
     fn name(&self) -> &'static str {
         // Return generic name (not "Toadstool")
         "GPU Compute Provider"
@@ -220,7 +221,7 @@ impl ComputeProvider for ToadstoolCompute {
     async fn initialize(&mut self) -> Result<()> {
         if self.service.is_none() {
             // Try discovery again
-            self.service = Self::discover_toadstool().await.ok();
+            self.service = Self::discover_compute_provider().await.ok();
 
             if let Some(ref svc) = self.service {
                 self.capabilities = Self::parse_capabilities(&svc.capabilities);
@@ -305,7 +306,7 @@ mod tests {
             "display".to_string(),
             "shader.compile".to_string(),
         ];
-        let parsed = ToadstoolCompute::parse_capabilities(&caps);
+        let parsed = GpuComputeProvider::parse_capabilities(&caps);
         // gpu.dispatch -> LayoutComputation, science.gpu.dispatch -> PhysicsSimulation
         // display and shader.compile are noted but not mapped to compute
         assert!(parsed.contains(&ComputeCapability::LayoutComputation));
@@ -331,7 +332,7 @@ mod tests {
         let provider = crate::test_fixtures::env_test_helpers::with_env_var_async(
             "XDG_RUNTIME_DIR",
             &runtime_dir,
-            || async { ToadstoolCompute::new().await.unwrap() },
+            || async { GpuComputeProvider::new().await.unwrap() },
         )
         .await;
 
@@ -364,7 +365,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_toadstool_creation() {
-        let provider = ToadstoolCompute::new().await.unwrap();
+        let provider = GpuComputeProvider::new().await.unwrap();
         assert_eq!(provider.name(), "GPU Compute Provider");
     }
 
@@ -379,7 +380,7 @@ mod tests {
                 "GPU_COMPUTE_ENDPOINT",
                 "XDG_RUNTIME_DIR",
             ],
-            || async { ToadstoolCompute::new().await.unwrap() },
+            || async { GpuComputeProvider::new().await.unwrap() },
         )
         .await;
         assert!(!provider.is_available().await);
@@ -393,7 +394,7 @@ mod tests {
             "unknown-capability".to_string(),
         ];
 
-        let parsed = ToadstoolCompute::parse_capabilities(&caps);
+        let parsed = GpuComputeProvider::parse_capabilities(&caps);
 
         assert_eq!(parsed.len(), 2); // unknown should be skipped
         assert!(parsed.contains(&ComputeCapability::LayoutComputation));
@@ -432,7 +433,7 @@ mod tests {
     #[test]
     fn test_parse_capabilities_raytracing() {
         let caps = vec!["ray-tracing".to_string(), "raytracing".to_string()];
-        let parsed = ToadstoolCompute::parse_capabilities(&caps);
+        let parsed = GpuComputeProvider::parse_capabilities(&caps);
         assert_eq!(parsed.len(), 2);
         assert!(parsed.iter().all(|c| *c == ComputeCapability::RayTracing));
     }
@@ -440,7 +441,7 @@ mod tests {
     #[test]
     fn test_parse_capabilities_particle_effects() {
         let caps = vec!["particle-effects".to_string(), "particles".to_string()];
-        let parsed = ToadstoolCompute::parse_capabilities(&caps);
+        let parsed = GpuComputeProvider::parse_capabilities(&caps);
         assert_eq!(parsed.len(), 2);
         assert!(
             parsed
@@ -452,7 +453,7 @@ mod tests {
     #[test]
     fn test_parse_capabilities_image_processing() {
         let caps = vec!["image-processing".to_string(), "image".to_string()];
-        let parsed = ToadstoolCompute::parse_capabilities(&caps);
+        let parsed = GpuComputeProvider::parse_capabilities(&caps);
         assert_eq!(parsed.len(), 2);
         assert!(
             parsed
@@ -469,7 +470,7 @@ mod tests {
             "physics".to_string(),
             "physics-simulation".to_string(),
         ];
-        let parsed = ToadstoolCompute::parse_capabilities(&caps);
+        let parsed = GpuComputeProvider::parse_capabilities(&caps);
         assert!(parsed.contains(&ComputeCapability::LayoutComputation));
         assert!(parsed.contains(&ComputeCapability::PhysicsSimulation));
     }
@@ -477,14 +478,14 @@ mod tests {
     #[test]
     fn test_parse_capabilities_display_skipped() {
         let caps = vec!["display".to_string(), "shader.compile".to_string()];
-        let parsed = ToadstoolCompute::parse_capabilities(&caps);
+        let parsed = GpuComputeProvider::parse_capabilities(&caps);
         assert!(parsed.is_empty());
     }
 
     #[test]
     fn test_parse_capabilities_empty() {
         let caps: Vec<String> = vec![];
-        let parsed = ToadstoolCompute::parse_capabilities(&caps);
+        let parsed = GpuComputeProvider::parse_capabilities(&caps);
         assert!(parsed.is_empty());
     }
 
@@ -493,7 +494,7 @@ mod tests {
         let mut metadata = HashMap::new();
         metadata.insert("version".to_string(), "1.0.0".to_string());
 
-        let info = ToadstoolServiceInfo {
+        let info = ComputeServiceInfo {
             id: "test-service".to_string(),
             endpoint: crate::constants::DEFAULT_GPU_COMPUTE_ENDPOINT.to_string(),
             capabilities: vec!["gpu-rendering".to_string()],

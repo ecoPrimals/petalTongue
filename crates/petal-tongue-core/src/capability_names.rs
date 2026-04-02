@@ -158,7 +158,7 @@ pub mod socket_roles {
     pub const DEVICE_MANAGEMENT: &str = "biomeos-device-management";
     pub const UI_SERVICE: &str = "biomeos-ui";
     pub const DISCOVERY_SERVICE: &str = "discovery-service";
-    pub const PHYSICS_COMPUTE: &str = "barracuda";
+    pub const PHYSICS_COMPUTE: &str = "physics-compute";
 }
 
 /// Well-known primal identifiers for discovery and logging.

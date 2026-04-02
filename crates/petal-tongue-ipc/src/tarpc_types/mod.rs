@@ -40,20 +40,22 @@ pub use render::{RenderRequest, RenderResponse};
 pub use service::{PetalTongueRpc, PetalTongueRpcClient};
 
 #[cfg(test)]
-use petal_tongue_core::constants::{DEFAULT_LOOPBACK_HOST, DEFAULT_TOADSTOOL_PORT, PRIMAL_NAME};
+use petal_tongue_core::constants::{
+    DEFAULT_DISPLAY_BACKEND_PORT, DEFAULT_LOOPBACK_HOST, PRIMAL_NAME,
+};
 
 #[cfg(test)]
 /// Default tarpc endpoint (loopback:port) for tests and fallbacks.
 #[must_use]
 fn default_tarpc_endpoint() -> String {
-    format!("tarpc://{DEFAULT_LOOPBACK_HOST}:{DEFAULT_TOADSTOOL_PORT}")
+    format!("tarpc://{DEFAULT_LOOPBACK_HOST}:{DEFAULT_DISPLAY_BACKEND_PORT}")
 }
 
 #[cfg(test)]
 /// Default tcp endpoint (loopback:port) for tests and fallbacks.
 #[must_use]
 fn default_tcp_endpoint() -> String {
-    format!("tcp://{DEFAULT_LOOPBACK_HOST}:{DEFAULT_TOADSTOOL_PORT}")
+    format!("tcp://{DEFAULT_LOOPBACK_HOST}:{DEFAULT_DISPLAY_BACKEND_PORT}")
 }
 
 #[cfg(test)]

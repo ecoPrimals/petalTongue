@@ -48,7 +48,7 @@ use tracing::{error, info, warn};
 use crate::status_reporter::{AudioProviderInfo, StatusReporter};
 
 pub use pure_rust::PureRustAudioProvider;
-pub use toadstool::ToadstoolAudioProvider;
+pub use toadstool::DiscoveredAudioProvider;
 pub use user_sound::UserSoundProvider;
 
 /// Audio provider interface
@@ -102,7 +102,7 @@ impl AudioSystem {
         }
 
         // Add toadstool provider if available
-        providers.push(Box::new(ToadstoolAudioProvider::new()));
+        providers.push(Box::new(DiscoveredAudioProvider::new()));
 
         info!(
             "🔊 Audio system initialized with {} providers",
@@ -402,8 +402,8 @@ mod tests {
 
     #[test]
     fn test_toadstool_provider_availability() {
-        // Toadstool is available only when TOADSTOOL_URL is set
-        let provider = ToadstoolAudioProvider::new();
+        // Discovered audio provider is available when AUDIO_PROVIDER_URL or TOADSTOOL_URL is set
+        let provider = DiscoveredAudioProvider::new();
         // When env is not set, provider reports not available
         if !provider.is_available() {
             assert!(provider.available_sounds().is_empty());
