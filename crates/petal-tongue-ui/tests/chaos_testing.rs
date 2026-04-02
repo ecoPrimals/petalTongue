@@ -116,10 +116,6 @@ impl ChaosTestRunner {
                         endpoints: None,
                         metadata: None,
                         properties: petal_tongue_core::Properties::new(),
-                        #[expect(deprecated)]
-                        trust_level: None,
-                        #[expect(deprecated)]
-                        family_id: None,
                         last_seen: 0,
                     });
                     operations += 1;
@@ -189,10 +185,6 @@ impl ChaosTestRunner {
                     endpoints: None,
                     metadata: None,
                     properties: petal_tongue_core::Properties::new(),
-                    #[expect(deprecated)]
-                    trust_level: None,
-                    #[expect(deprecated)]
-                    family_id: None,
                     last_seen: 0,
                 });
             }
@@ -258,10 +250,6 @@ impl ChaosTestRunner {
                     endpoints: None,
                     metadata: None,
                     properties: petal_tongue_core::Properties::new(),
-                    #[expect(deprecated)]
-                    trust_level: None,
-                    #[expect(deprecated)]
-                    family_id: None,
                     last_seen: 0,
                 });
             }
@@ -330,10 +318,6 @@ impl ChaosTestRunner {
                         endpoints: None,
                         metadata: None,
                         properties: petal_tongue_core::Properties::new(),
-                        #[expect(deprecated)]
-                        trust_level: None,
-                        #[expect(deprecated)]
-                        family_id: None,
                         last_seen: 0,
                     });
                 }

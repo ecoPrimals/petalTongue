@@ -60,9 +60,9 @@ pub fn load_sandbox_scenario(name: &str) -> Result<SandboxScenario, String> {
     let mut scenario: SandboxScenario = serde_json::from_str(&contents)
         .map_err(|e| format!("Failed to parse scenario JSON: {e}"))?;
 
-    // Migrate deprecated fields (trust_level, family_id) to properties for adapter-based rendering
+    // Migrate biomeOS metadata into properties for adapter-based rendering
     for primal in &mut scenario.primals {
-        primal.migrate_deprecated_fields();
+        primal.migrate_metadata_to_properties();
     }
 
     info!(

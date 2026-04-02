@@ -144,7 +144,7 @@ impl DynamicScenarioProvider {
             // Extract family (if present)
             let family_id = Self::get_string(primal_obj, "family");
 
-            primals.push(PrimalInfo {
+            let mut info = PrimalInfo {
                 id: id.into(),
                 name,
                 primal_type,
@@ -155,11 +155,11 @@ impl DynamicScenarioProvider {
                 endpoints: None,
                 metadata: None,
                 properties,
-                #[expect(deprecated)]
-                trust_level: None,
-                #[expect(deprecated)]
-                family_id,
-            });
+            };
+            if let Some(family) = family_id {
+                info.set_family_id(family);
+            }
+            primals.push(info);
         }
 
         Ok(primals)

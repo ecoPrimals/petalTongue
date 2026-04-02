@@ -176,10 +176,6 @@ impl E2ETestRunner {
                 capabilities: vec!["test".to_string()],
                 health: PrimalHealthStatus::Healthy,
                 properties: petal_tongue_core::Properties::new(),
-                #[expect(deprecated)]
-                trust_level: None,
-                #[expect(deprecated)]
-                family_id: None,
                 last_seen: 0,
                 endpoints: None,
                 metadata: None,
@@ -248,10 +244,6 @@ impl E2ETestRunner {
                     capabilities: vec![],
                     health: PrimalHealthStatus::Healthy,
                     properties: petal_tongue_core::Properties::new(),
-                    #[expect(deprecated)]
-                    trust_level: None,
-                    #[expect(deprecated)]
-                    family_id: None,
                     last_seen: 0,
                     endpoints: None,
                     metadata: None,
@@ -322,10 +314,6 @@ impl E2ETestRunner {
                 capabilities: vec![],
                 health: PrimalHealthStatus::Healthy,
                 properties: petal_tongue_core::Properties::new(),
-                #[expect(deprecated)]
-                trust_level: None,
-                #[expect(deprecated)]
-                family_id: None,
                 last_seen: 0,
                 endpoints: None,
                 metadata: None,
@@ -338,10 +326,6 @@ impl E2ETestRunner {
                 capabilities: vec![],
                 health: PrimalHealthStatus::Healthy,
                 properties: petal_tongue_core::Properties::new(),
-                #[expect(deprecated)]
-                trust_level: None,
-                #[expect(deprecated)]
-                family_id: None,
                 last_seen: 0,
                 endpoints: None,
                 metadata: None,

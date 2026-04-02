@@ -153,16 +153,6 @@ mod tests {
             endpoints: None,
             metadata: None,
             properties: Properties::new(),
-            #[expect(
-                deprecated,
-                reason = "Test fixture; struct literal requires deprecated fields"
-            )]
-            trust_level: None,
-            #[expect(
-                deprecated,
-                reason = "Test fixture; struct literal requires deprecated fields"
-            )]
-            family_id: None,
         }
     }
 

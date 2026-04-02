@@ -4,7 +4,7 @@
 //! Handles DNS query construction and DNS-SD response parsing for
 //! visualization provider discovery.
 
-use crate::dns_parser::{DnsHeader, RecordType, ResourceRecord};
+use crate::dns_parser::{DnsHeader, RecordType, ResourceRecord, SrvRecord};
 use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::traits::ProviderMetadata;
 use std::net::{Ipv4Addr, SocketAddr};
@@ -49,6 +49,69 @@ pub fn build_mdns_query(service_name: &str) -> Vec<u8> {
     packet
 }
 
+struct ParsedRecords {
+    srv: Vec<SrvRecord>,
+    txt: Vec<crate::dns_parser::TxtRecord>,
+    a: Vec<Ipv4Addr>,
+}
+
+fn collect_answer_records(data: &[u8], header: &DnsHeader) -> DiscoveryResult<ParsedRecords> {
+    let mut offset = 12; // After header
+
+    for _ in 0..header.questions {
+        let parser = crate::dns_parser::NameParser::new(data);
+        let (_, name_len) = parser.parse_name(offset)?;
+        offset += name_len + 4; // name + type (2) + class (2)
+    }
+
+    let mut records = ParsedRecords {
+        srv: Vec::new(),
+        txt: Vec::new(),
+        a: Vec::new(),
+    };
+
+    for _ in 0..header.answers {
+        let (record, consumed) = ResourceRecord::parse(data, offset)?;
+        let rdata_offset = offset;
+        offset += consumed;
+
+        match record.record_type() {
+            Some(RecordType::PTR) => {
+                tracing::debug!("Found PTR record: {}", record.name);
+            }
+            Some(RecordType::SRV) => {
+                if let Ok(srv) = record.as_srv(data, rdata_offset) {
+                    tracing::debug!(
+                        "Found SRV record: {}:{} (priority={}, weight={})",
+                        srv.target,
+                        srv.port,
+                        srv.priority,
+                        srv.weight
+                    );
+                    records.srv.push(srv);
+                }
+            }
+            Some(RecordType::TXT) => {
+                if let Ok(txt) = record.as_txt() {
+                    tracing::debug!("Found TXT record with {} attributes", txt.attributes.len());
+                    records.txt.push(txt);
+                }
+            }
+            Some(RecordType::A) => {
+                if let Ok(a) = record.as_a() {
+                    records.a.push(a.addr);
+                    tracing::debug!("Found A record: {}", a.addr);
+                }
+            }
+            _ => {
+                tracing::trace!("Skipping record type: {}", record.rtype);
+            }
+        }
+    }
+
+    Ok(records)
+}
+
 /// Parse an mDNS response packet into provider metadata.
 ///
 /// Extracts service information from DNS-SD response using proper DNS parsing.
@@ -62,68 +125,30 @@ pub fn parse_mdns_response(data: &[u8], addr: SocketAddr) -> DiscoveryResult<Pro
 
     tracing::trace!("DNS response: {} answers from {}", header.answers, addr);
 
-    let mut offset = 12; // After header
+    let records = collect_answer_records(data, &header)?;
 
-    // Skip questions
-    for _ in 0..header.questions {
-        let parser = crate::dns_parser::NameParser::new(data);
-        let (_, name_len) = parser.parse_name(offset)?;
-        offset += name_len + 4; // name + type (2) + class (2)
-    }
-
-    let mut service_port: Option<u16> = None;
-    let mut txt_records: Vec<crate::dns_parser::TxtRecord> = Vec::new();
-    let mut a_records: Vec<Ipv4Addr> = Vec::new();
-
-    for _ in 0..header.answers {
-        let (record, consumed) = ResourceRecord::parse(data, offset)?;
-        let rdata_offset = offset;
-        offset += consumed;
-
-        match record.record_type() {
-            Some(RecordType::PTR) => {
-                tracing::debug!("Found PTR record: {}", record.name);
-            }
-            Some(RecordType::SRV) => {
-                if let Ok(srv) = record.as_srv(data, rdata_offset) {
-                    service_port = Some(srv.port);
-                    tracing::debug!("Found SRV record: {}:{}", srv.target, srv.port);
-                }
-            }
-            Some(RecordType::TXT) => {
-                if let Ok(txt) = record.as_txt() {
-                    tracing::debug!("Found TXT record with {} attributes", txt.attributes.len());
-                    txt_records.push(txt);
-                }
-            }
-            Some(RecordType::A) => {
-                if let Ok(a) = record.as_a() {
-                    a_records.push(a.addr);
-                    tracing::debug!("Found A record: {}", a.addr);
-                }
-            }
-            _ => {
-                tracing::trace!("Skipping record type: {}", record.rtype);
-            }
-        }
-    }
-
-    let ip = if a_records.is_empty() {
+    let ip = if records.a.is_empty() {
         match addr {
             SocketAddr::V4(v4) => v4.ip().to_string(),
             SocketAddr::V6(v6) => format!("[{}]", v6.ip()),
         }
     } else {
-        a_records[0].to_string()
+        records.a[0].to_string()
     };
 
-    let Some(port) = service_port else {
+    let Some(srv) = SrvRecord::select_by_priority(&records.srv) else {
         tracing::warn!(
             "mDNS service at {} has no SRV port record - skipping (no port assumptions)",
             ip
         );
         return Err(DiscoveryError::NoPortAdvertisedInMdns);
     };
+    let port = srv.port;
+    tracing::debug!(
+        "Selected SRV instance {}:{} (RFC 2782 priority/weight)",
+        srv.target,
+        port
+    );
     let endpoint = format!("http://{ip}:{port}");
 
     let mut capabilities = vec![
@@ -131,7 +156,7 @@ pub fn parse_mdns_response(data: &[u8], addr: SocketAddr) -> DiscoveryResult<Pro
         "visualization.topology-provider".to_string(),
     ];
 
-    for txt in &txt_records {
+    for txt in &records.txt {
         if let Some(caps) = txt.get("capabilities") {
             for cap in caps.split(',') {
                 capabilities.push(cap.trim().to_string());
@@ -139,7 +164,8 @@ pub fn parse_mdns_response(data: &[u8], addr: SocketAddr) -> DiscoveryResult<Pro
         }
     }
 
-    let name = txt_records
+    let name = records
+        .txt
         .iter()
         .find_map(|txt| txt.get("name"))
         .unwrap_or("mDNS Provider")

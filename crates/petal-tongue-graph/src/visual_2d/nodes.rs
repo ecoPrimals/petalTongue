@@ -17,22 +17,7 @@ pub fn draw_node(
     let radius = 20.0 * zoom;
 
     // Use trust level for color if available, otherwise fall back to health
-    let trust_level = node
-        .info
-        .properties
-        .get("trust_level")
-        .and_then(|v| match v {
-            petal_tongue_core::PropertyValue::Number(n) => {
-                if *n >= 0.0 && *n <= 255.0 {
-                    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-                    let value = *n as u8;
-                    Some(value)
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        });
+    let trust_level = node.info.trust_level();
 
     let (fill_color, stroke_color) = if trust_level.is_some() {
         trust_level_to_colors(trust_level)
@@ -51,9 +36,7 @@ pub fn draw_node(
     }
 
     // Draw family ID indicator (colored ring if present)
-    if let Some(petal_tongue_core::PropertyValue::String(family_id)) =
-        node.info.properties.get("family_id")
-    {
+    if let Some(family_id) = node.info.family_id() {
         let family_color = family_id_to_color(family_id);
         painter.circle_stroke(screen_pos, radius + 3.0, Stroke::new(2.5, family_color));
     }
@@ -80,13 +63,8 @@ pub fn draw_node(
 
     // Draw trust level badge (if available and zoomed in)
     if zoom > 0.7
-        && let Some(petal_tongue_core::PropertyValue::Number(trust_val)) =
-            node.info.properties.get("trust_level")
-        && *trust_val >= 0.0
-        && *trust_val <= 255.0
+        && let Some(trust_level) = node.info.trust_level()
     {
-        #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        let trust_level = *trust_val as u8;
         let badge_text = match trust_level {
             0 => "⚫",
             1 => "🟡",

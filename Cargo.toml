@@ -85,9 +85,7 @@ egui = "0.29"
 egui_extras = "0.29"
 
 # Graph visualization
-egui_graphs = "0.22"
 egui_plot = "0.29"
-petgraph = "0.6"
 
 # HTTP client -- TLS-free for local IPC (biomeOS, discovery).
 # HTTPS is delegated to beardog/songbird via biomeOS tower atomic.

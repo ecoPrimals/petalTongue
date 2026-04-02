@@ -48,8 +48,6 @@ mod discovery_service_client;
 mod discovery_service_provider;
 mod dns_parser;
 mod dynamic_scenario_provider;
-#[cfg(feature = "legacy-http")]
-mod http_provider;
 pub mod jsonl_provider;
 mod jsonrpc_provider;
 mod mdns_provider;
@@ -74,9 +72,6 @@ pub use demo_provider::DemoVisualizationProvider;
 pub use discovery_service_client::DiscoveryServiceClient;
 pub use discovery_service_provider::DiscoveryServiceProvider;
 pub use dynamic_scenario_provider::DynamicScenarioProvider;
-#[cfg(feature = "legacy-http")]
-#[expect(deprecated)]
-pub use http_provider::HttpVisualizationProvider;
 pub use jsonrpc_provider::JsonRpcProvider;
 pub use mdns_provider::MdnsVisualizationProvider;
 pub use neural_api_provider::NeuralApiProvider;
@@ -88,21 +83,18 @@ pub use unix_socket_provider::UnixSocketProvider;
 // Re-export modern patterns
 pub use concurrent::{ConcurrentDiscoveryResult, HealthStatus, ProviderHealth};
 pub use errors::{DiscoveryError, DiscoveryFailure, DiscoveryResult};
-use petal_tongue_core::constants;
 pub use retry::RetryPolicy;
 
 /// Discover all available visualization data providers
 ///
 /// This function tries multiple discovery methods:
 /// 1. mDNS/multicast auto-discovery (zero-config, preferred)
-/// 2. Environment hints (`PETALTONGUE_DISCOVERY_HINTS`)
-/// 3. Legacy `BIOMEOS_URL` (for backward compatibility)
+/// 2. Environment hints (`PETALTONGUE_DISCOVERY_HINTS`) — Unix socket paths only
+/// 3. Legacy `BIOMEOS_URL` — Unix socket paths only (JSON-RPC)
 ///
 /// # Caching
 ///
-/// Note: Caching is now built into `HttpVisualizationProvider` (see cache.rs).
-/// Each provider has its own cache with configurable TTLs. This provides
-/// better performance without wrapper complexity.
+/// See `cache` for the shared caching utilities used when integrating providers.
 ///
 /// # Errors
 ///
@@ -198,7 +190,7 @@ pub async fn discover_visualization_providers()
         }
     }
 
-    // Try environment hints (JSON-RPC first, then HTTP as fallback)
+    // Try environment hints (JSON-RPC over Unix sockets only)
     if providers.is_empty()
         && let Ok(hints) = std::env::var("PETALTONGUE_DISCOVERY_HINTS")
     {
@@ -206,53 +198,32 @@ pub async fn discover_visualization_providers()
         for hint in hints.split(',') {
             let hint = hint.trim();
 
-            // Try JSON-RPC first if it looks like a Unix socket
             if hint.starts_with("unix://") || hint.starts_with('/') {
                 let socket_path = hint.strip_prefix("unix://").unwrap_or(hint);
                 match try_connect_jsonrpc(socket_path).await {
                     Ok(provider) => {
                         tracing::info!("✅ Connected to JSON-RPC provider at {}", socket_path);
                         providers.push(provider);
-                        continue;
                     }
                     Err(e) => {
                         tracing::debug!("JSON-RPC connection failed: {}", e);
                     }
                 }
-            }
-
-            // Fallback to HTTP (with warning) - requires legacy-http feature
-            #[cfg(feature = "legacy-http")]
-            {
-                match try_connect_http(hint).await {
-                    Ok(provider) => {
-                        tracing::warn!("⚠️  Using HTTP provider (external fallback) at {}", hint);
-                        tracing::warn!(
-                            "💡 Consider using JSON-RPC over Unix sockets for TRUE PRIMAL protocol"
-                        );
-                        providers.push(provider);
-                    }
-                    Err(e) => {
-                        tracing::error!("❌ Failed to connect to {}: {}", hint, e);
-                    }
-                }
-            }
-            #[cfg(not(feature = "legacy-http"))]
-            {
-                tracing::debug!(
-                    "HTTP fallback skipped (compile with --features legacy-http for HTTP provider)"
+            } else if !hint.is_empty() {
+                tracing::warn!(
+                    "Skipping discovery hint {:?}: use a Unix socket path or unix:// URL (HTTP discovery was removed)",
+                    hint
                 );
             }
         }
     }
 
-    // Try legacy BIOMEOS_URL (backward compatibility, but prefer JSON-RPC)
+    // Try legacy BIOMEOS_URL (JSON-RPC over Unix socket only)
     if providers.is_empty()
         && let Ok(biomeos_url) = std::env::var("BIOMEOS_URL")
     {
         tracing::info!("Trying legacy BIOMEOS_URL: {}", biomeos_url);
 
-        // Try JSON-RPC first if it's a Unix socket
         if biomeos_url.starts_with("unix://") || biomeos_url.starts_with('/') {
             let socket_path = biomeos_url.strip_prefix("unix://").unwrap_or(&biomeos_url);
             match try_connect_jsonrpc(socket_path).await {
@@ -265,31 +236,10 @@ pub async fn discover_visualization_providers()
                     tracing::debug!("JSON-RPC connection failed: {}", e);
                 }
             }
-        }
-
-        // Fallback to HTTP (with deprecation warning) - requires legacy-http feature
-        #[cfg(feature = "legacy-http")]
-        {
-            match try_connect_http(&biomeos_url).await {
-                Ok(provider) => {
-                    tracing::warn!(
-                        "⚠️  Using HTTP provider (external fallback) at {}",
-                        biomeos_url
-                    );
-                    tracing::warn!(
-                        "💡 Migrate to JSON-RPC: BIOMEOS_URL=unix:///run/user/$UID/biomeos-device-management.sock"
-                    );
-                    providers.push(provider);
-                }
-                Err(e) => {
-                    tracing::error!("❌ Failed to connect to biomeOS at {}: {}", biomeos_url, e);
-                }
-            }
-        }
-        #[cfg(not(feature = "legacy-http"))]
-        {
-            tracing::debug!(
-                "HTTP fallback skipped (compile with --features legacy-http for HTTP provider)"
+        } else {
+            tracing::warn!(
+                "BIOMEOS_URL {:?} is not a Unix socket path; HTTP discovery was removed — use e.g. unix:///run/user/$UID/biomeos-device-management.sock",
+                biomeos_url
             );
         }
     }
@@ -306,12 +256,9 @@ pub async fn discover_visualization_providers()
             2. JSON-RPC (PRIMARY): BIOMEOS_URL=unix:///run/user/$UID/biomeos-device-management.sock\n\
             3. Auto-discovery: PETALTONGUE_ENABLE_MDNS=true (default)\n\
             \n\
-            Fallback options (external only):\n\
-            4. HTTP fallback: BIOMEOS_URL=http://<host>:{}\n\
-            5. Development: Build with --features test-fixtures for test fixtures (mocks only in tests)\n\
+            Development: Build with --features test-fixtures for test fixtures (mocks only in tests)\n\
             \n\
             💡 Display will start with tutorial mode as graceful fallback",
-            constants::DEFAULT_WEB_PORT
         );
         // Return empty vec - display will handle this with tutorial mode
         return Ok(vec![]);
@@ -329,20 +276,6 @@ async fn try_connect_jsonrpc(
     socket_path: &str,
 ) -> DiscoveryResult<Box<dyn VisualizationDataProvider>> {
     let provider = JsonRpcProvider::new(socket_path);
-
-    // Test connection with health check
-    provider.health_check().await?;
-    Ok(Box::new(provider))
-}
-
-/// Try to connect to an HTTP provider at the given URL
-///
-/// ⚠️  HTTP is the FALLBACK protocol for external integrations only.
-/// Prefer JSON-RPC over Unix sockets for TRUE PRIMAL architecture!
-#[cfg(feature = "legacy-http")]
-#[expect(deprecated)]
-async fn try_connect_http(url: &str) -> DiscoveryResult<Box<dyn VisualizationDataProvider>> {
-    let provider = HttpVisualizationProvider::new(url)?;
 
     // Test connection with health check
     provider.health_check().await?;
@@ -445,13 +378,6 @@ mod tests {
         let provider = DemoVisualizationProvider::new();
         let health = provider.health_check().await.unwrap();
         assert!(!health.is_empty());
-    }
-
-    #[tokio::test]
-    #[cfg(feature = "legacy-http")]
-    async fn test_try_connect_http_invalid() {
-        let result = try_connect_http("http://nonexistent-host-12345:99999").await;
-        assert!(result.is_err());
     }
 
     #[tokio::test]

@@ -97,26 +97,11 @@ impl TrustDashboard {
                     _ => "Unknown".to_string(),
                 };
                 *summary.trust_distribution.entry(trust_label).or_insert(0) += 1;
-            } else {
-                #[expect(deprecated)]
-                if let Some(trust_level) = primal.trust_level {
-                    trust_values.push(f64::from(trust_level));
-                    let trust_label = trust_level_number_to_label(i32::from(trust_level));
-                    *summary.trust_distribution.entry(trust_label).or_insert(0) += 1;
-                }
             }
 
-            if let Some(family_value) = primal.properties.get("family_id") {
-                if let PropertyValue::String(family_id) = family_value {
-                    families.insert(family_id.clone());
-                    summary.family_count += 1;
-                }
-            } else {
-                #[expect(deprecated)]
-                if let Some(family_id) = &primal.family_id {
-                    families.insert(family_id.clone());
-                    summary.family_count += 1;
-                }
+            if let Some(PropertyValue::String(family_id)) = primal.properties.get("family_id") {
+                families.insert(family_id.clone());
+                summary.family_count += 1;
             }
         }
 

@@ -13,20 +13,20 @@ license.workspace = true
 [dependencies]
 # Core
 petal-tongue-core = { path = "../petal-tongue-core" }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-thiserror = "1"
-tracing = "0.1"
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
 
 # Async
-tokio = { version = "1", features = ["full"] }
+tokio = { workspace = true }
 async-trait = "0.1"
 
 # Streaming & Encryption
 # Use workspace reqwest (rustls-tls, NO native-tls/OpenSSL!)
 reqwest = { workspace = true }
 aes-gcm = "0.10"  # AES-256-GCM authenticated encryption
-rand = "0.8"  # For nonce generation
+rand = { workspace = true }  # For nonce generation
 zeroize = { version = "1", features = ["derive"] }  # Secure memory clearing
 
 # Statistics (minimal)

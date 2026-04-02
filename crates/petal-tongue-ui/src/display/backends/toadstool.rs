@@ -69,7 +69,6 @@ struct DisplayCapabilitiesResponse {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-#[expect(dead_code)]
 struct DisplayInfo {
     id: String,
     connector: String,
@@ -85,7 +84,6 @@ struct Resolution {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-#[expect(dead_code)]
 struct InputDeviceInfo {
     id: String,
     name: String,
@@ -300,15 +298,17 @@ impl DisplayBackend for DiscoveredDisplayBackend {
         // 1. Query display capabilities
         let caps = self.query_capabilities().await?;
 
-        // 2. Select primary display
+        // 2. Select primary display (prefer connected outputs)
         let display_info = caps
             .displays
-            .first()
+            .iter()
+            .find(|d| d.connected)
+            .or_else(|| caps.displays.first())
             .ok_or(DisplayError::NoDisplaysFromBackend)?;
 
         info!(
-            "   Display: {} ({})",
-            display_info.connector, display_info.id
+            "   Display: {} ({}) connected={}",
+            display_info.connector, display_info.id, display_info.connected
         );
         info!(
             "   Resolution: {}x{} @ {}Hz",
@@ -316,6 +316,13 @@ impl DisplayBackend for DiscoveredDisplayBackend {
             display_info.resolution.height,
             display_info.refresh_rate
         );
+
+        for dev in &caps.input_devices {
+            debug!(
+                "   Input device: {} id={} type={}",
+                dev.name, dev.id, dev.device_type
+            );
+        }
 
         // Update dimensions from actual display
         self.width = display_info.resolution.width;

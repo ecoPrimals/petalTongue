@@ -12,18 +12,16 @@ use std::sync::{Arc, RwLock};
 #[must_use]
 fn build_properties_from_info(info: &PrimalInfo) -> Properties {
     let mut props = Properties::new();
-    #[expect(deprecated)]
-    if let Some(trust_level) = info.trust_level {
+    if let Some(trust_level) = info.trust_level() {
         props.insert(
             "trust_level".to_string(),
             PropertyValue::Number(f64::from(trust_level)),
         );
     }
-    #[expect(deprecated)]
-    if let Some(family_id) = &info.family_id {
+    if let Some(family_id) = info.family_id() {
         props.insert(
             "family_id".to_string(),
-            PropertyValue::String(family_id.clone()),
+            PropertyValue::String(family_id.to_string()),
         );
     }
     let cap_array: Vec<PropertyValue> = info
@@ -371,11 +369,8 @@ mod tests {
             PrimalHealthStatus::Healthy,
             1_000_000,
         );
-        #[expect(deprecated)]
-        {
-            info.trust_level = Some(2);
-            info.family_id = Some("family-x".to_string());
-        }
+        info.set_trust_level(2);
+        info.set_family_id("family-x");
         info
     }
 
@@ -500,7 +495,7 @@ mod tests {
     #[test]
     fn build_properties_from_info_without_trust_family() {
         let endpoint = petal_tongue_core::constants::default_headless_url();
-        let mut info = PrimalInfo::new(
+        let info = PrimalInfo::new(
             PrimalId::from("minimal-1"),
             "Minimal Node",
             "compute",
@@ -509,11 +504,6 @@ mod tests {
             PrimalHealthStatus::Unknown,
             0,
         );
-        #[expect(deprecated)]
-        {
-            info.trust_level = None;
-            info.family_id = None;
-        }
         let props = build_properties_from_info(&info);
         assert!(!props.contains_key("trust_level"));
         assert!(!props.contains_key("family_id"));

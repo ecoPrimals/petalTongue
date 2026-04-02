@@ -205,10 +205,6 @@ fn test_set_primals() {
             endpoints: None,
             metadata: None,
             properties: Default::default(),
-            #[expect(deprecated)]
-            trust_level: None,
-            #[expect(deprecated)]
-            family_id: None,
         },
         PrimalInfo {
             id: PrimalId::from("p2"),
@@ -221,10 +217,6 @@ fn test_set_primals() {
             endpoints: None,
             metadata: None,
             properties: Default::default(),
-            #[expect(deprecated)]
-            trust_level: None,
-            #[expect(deprecated)]
-            family_id: None,
         },
     ];
     view.set_primals(primals);
@@ -471,10 +463,6 @@ fn test_set_primals_clears_old() {
         endpoints: None,
         metadata: None,
         properties: Default::default(),
-        #[expect(deprecated)]
-        trust_level: None,
-        #[expect(deprecated)]
-        family_id: None,
     }]);
     assert_eq!(view.primal_count(), 1);
 
@@ -489,10 +477,6 @@ fn test_set_primals_clears_old() {
         endpoints: None,
         metadata: None,
         properties: Default::default(),
-        #[expect(deprecated)]
-        trust_level: None,
-        #[expect(deprecated)]
-        family_id: None,
     }]);
     assert_eq!(view.primal_count(), 1);
 }

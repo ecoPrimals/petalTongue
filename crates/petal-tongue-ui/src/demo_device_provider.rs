@@ -333,10 +333,6 @@ impl VisualizationDataProvider for DemoDeviceProvider {
                 endpoints: None,
                 metadata: None,
                 properties: Default::default(),
-                #[expect(deprecated)]
-                trust_level: None,
-                #[expect(deprecated)]
-                family_id: None,
             })
             .collect())
     }

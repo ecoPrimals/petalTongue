@@ -79,10 +79,6 @@ impl VisualizationDataProvider for DemoVisualizationProvider {
                 endpoints: None,
                 metadata: None,
                 properties: security_props,
-                #[expect(deprecated)]
-                trust_level: Some(3), // Keep for backward compatibility
-                #[expect(deprecated)]
-                family_id: Some("demo-family".to_string()),
             },
             PrimalInfo {
                 id: "demo-discovery-1".into(),
@@ -98,10 +94,6 @@ impl VisualizationDataProvider for DemoVisualizationProvider {
                 endpoints: None,
                 metadata: None,
                 properties: discovery_props,
-                #[expect(deprecated)]
-                trust_level: Some(2),
-                #[expect(deprecated)]
-                family_id: Some("demo-family".to_string()),
             },
             PrimalInfo {
                 id: "demo-compute-1".into(),
@@ -117,10 +109,6 @@ impl VisualizationDataProvider for DemoVisualizationProvider {
                 endpoints: None,
                 metadata: None,
                 properties: compute_props,
-                #[expect(deprecated)]
-                trust_level: Some(1),
-                #[expect(deprecated)]
-                family_id: None,
             },
         ])
     }
@@ -172,21 +160,8 @@ mod tests {
         let primals = provider.get_primals().await.unwrap();
         assert_eq!(primals.len(), 3);
         assert_eq!(primals[0].id, "demo-security-1");
-        // Use properties field instead of deprecated trust_level
-        assert_eq!(
-            primals[0]
-                .properties
-                .get("trust_level")
-                .and_then(petal_tongue_core::PropertyValue::as_u8),
-            Some(3)
-        );
-        assert_eq!(
-            primals[1]
-                .properties
-                .get("trust_level")
-                .and_then(petal_tongue_core::PropertyValue::as_u8),
-            Some(2)
-        );
+        assert_eq!(primals[0].trust_level(), Some(3));
+        assert_eq!(primals[1].trust_level(), Some(2));
 
         // Test topology
         let topology = provider.get_topology().await.unwrap();
@@ -246,6 +221,6 @@ mod tests {
         let provider = DemoVisualizationProvider::new();
         let primals = provider.get_primals().await.unwrap();
         assert_eq!(primals[2].id, "demo-compute-1");
-        assert!(!primals[2].properties.contains_key("family_id"));
+        assert_eq!(primals[2].family_id(), None);
     }
 }

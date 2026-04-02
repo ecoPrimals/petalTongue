@@ -85,10 +85,7 @@ impl ScenarioVisualizationProvider {
                 };
 
                 let mut properties = Properties::new();
-                properties.insert(
-                    "family_id".to_string(),
-                    PropertyValue::String(p.family.clone()),
-                );
+                properties.insert("family_id".to_string(), PropertyValue::String(p.family));
 
                 if let Some(pos) = p.position {
                     properties.insert(
@@ -101,21 +98,18 @@ impl ScenarioVisualizationProvider {
                     );
                 }
 
+                let endpoint = format!("scenario://{}", p.id);
                 PrimalInfo {
-                    id: p.id.clone().into(),
-                    name: p.name.clone(),
-                    primal_type: p.primal_type.clone(),
-                    endpoint: format!("scenario://{}", p.id),
-                    capabilities: p.capabilities.clone(),
+                    id: p.id.into(),
+                    name: p.name,
+                    primal_type: p.primal_type,
+                    endpoint,
+                    capabilities: p.capabilities,
                     health,
                     last_seen: now,
                     endpoints: None,
                     metadata: None,
                     properties,
-                    #[expect(deprecated)]
-                    trust_level: None,
-                    #[expect(deprecated)]
-                    family_id: Some(p.family),
                 }
             })
             .collect();

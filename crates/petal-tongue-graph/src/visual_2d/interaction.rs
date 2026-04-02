@@ -179,11 +179,6 @@ fn create_node_at(renderer: &mut Visual2DRenderer, world_pos: Position) {
         "created_by".to_string(),
         PropertyValue::String("interactive-paint".to_string()),
     );
-    properties.insert(
-        "family_id".to_string(),
-        PropertyValue::String("interactive".to_string()),
-    );
-
     let new_primal = PrimalInfo {
         id: PrimalId::from(new_id.clone()),
         name: interactive_node_name(node_count),
@@ -198,11 +193,8 @@ fn create_node_at(renderer: &mut Visual2DRenderer, world_pos: Position) {
         endpoints: None,
         metadata: None,
         properties,
-        #[expect(deprecated)]
-        trust_level: None,
-        #[expect(deprecated)]
-        family_id: None,
-    };
+    }
+    .with_family_id("interactive");
 
     graph.add_node(new_primal);
 

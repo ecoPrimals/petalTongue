@@ -36,46 +36,21 @@ pub const fn health_to_emoji(health: &PrimalHealthStatus) -> &'static str {
     }
 }
 
-/// Get trust level from primal info (from properties or deprecated field)
-#[expect(deprecated)]
+/// Get trust level from primal info (via properties accessor).
 #[must_use]
 pub fn get_trust_level(info: &PrimalInfo) -> String {
-    // Try properties first
-    if let Some(trust) = info.properties.get("trust_level")
-        && let Some(num) = trust.as_number()
-    {
-        #[expect(
-            clippy::cast_possible_truncation,
-            clippy::cast_sign_loss,
-            reason = "trust_level is 0-5, clamped for display"
-        )]
-        return format!("{}", num.clamp(0.0, 255.0) as u8);
-    }
-
-    // Fall back to deprecated field
-    if let Some(trust) = info.trust_level {
+    if let Some(trust) = info.trust_level() {
         return format!("{trust}");
     }
-
     "unknown".to_string()
 }
 
-/// Get family lineage from primal info (from properties or deprecated field)
-#[expect(deprecated)]
+/// Get family lineage from primal info (via properties accessor).
 #[must_use]
 pub fn get_family_lineage(info: &PrimalInfo) -> String {
-    // Try properties first
-    if let Some(family) = info.properties.get("family_id")
-        && let Some(s) = family.as_string()
-    {
-        return s.to_string();
+    if let Some(family) = info.family_id() {
+        return family.to_string();
     }
-
-    // Fall back to deprecated field
-    if let Some(ref family) = info.family_id {
-        return family.clone();
-    }
-
     "unknown".to_string()
 }
 
