@@ -4,6 +4,8 @@
 **Date**: January 8, 2026  
 **Status**: 🚧 In Progress
 
+> **Note**: Code examples use current type names as of April 2026. The display backend is discovered by capability, not primal name.
+
 ## Overview
 
 Complete the Pure Rust GUI evolution by implementing display capabilities that work **without** traditional display servers (X11/Wayland). The awakening experience and full GUI functionality should work everywhere.
@@ -154,8 +156,8 @@ pub struct DisplayCapabilities {
 ### Backend Implementations
 
 ```rust
-/// Tier 1: Toadstool WASM rendering
-pub struct ToadstoolDisplay {
+/// Tier 1: Discovered WASM / remote rendering (capability-based)
+pub struct DiscoveredDisplayBackend {
     toadstool_endpoint: String,
     wasm_module: Option<Vec<u8>>,
     buffer: Vec<u8>,
@@ -209,7 +211,7 @@ impl DisplayManager {
         let mut backends: Vec<Box<dyn DisplayBackend>> = vec![];
         
         // Tier 1: Try Toadstool first (network effect!)
-        if let Ok(toadstool) = ToadstoolDisplay::discover().await {
+        if let Ok(toadstool) = DiscoveredDisplayBackend::discover().await {
             info!("🌸 Using Toadstool WASM rendering (primal collaboration)");
             backends.push(Box::new(toadstool));
         }
@@ -328,7 +330,7 @@ fn render_egui_to_buffer(ctx: &egui::Context, output: &egui::FullOutput) -> Resu
 
 ```rust
 /// Discover Toadstool rendering capability
-pub async fn discover_toadstool_rendering() -> Result<ToadstoolDisplay> {
+pub async fn discover_toadstool_rendering() -> Result<DiscoveredDisplayBackend> {
     use petal_tongue_ui::universal_discovery::discover_capability;
     
     // Discover via infant discovery pattern
@@ -342,7 +344,7 @@ pub async fn discover_toadstool_rendering() -> Result<ToadstoolDisplay> {
     let endpoint = &endpoints[0];
     info!("🌸 Found Toadstool WASM renderer at {}", endpoint);
     
-    Ok(ToadstoolDisplay::connect(endpoint).await?)
+    Ok(DiscoveredDisplayBackend::connect(endpoint).await?)
 }
 ```
 
@@ -443,7 +445,7 @@ pub async fn benchmark_display_backends() -> Result<BenchmarkReport> {
     let mut report = BenchmarkReport::default();
     
     // Test Toadstool WASM
-    if let Ok(mut display) = ToadstoolDisplay::discover().await {
+    if let Ok(mut display) = DiscoveredDisplayBackend::discover().await {
         report.toadstool = Some(benchmark_backend(&mut display).await?);
     }
     
@@ -502,7 +504,7 @@ async fn benchmark_backend(backend: &mut dyn DisplayBackend) -> Result<BackendBe
 
 ### Phase 1: Toadstool WASM Integration (Week 1)
 - [ ] Define rendering protocol (tarpc primary, JSON-RPC fallback)
-- [ ] Implement ToadstoolDisplay backend
+- [ ] Implement DiscoveredDisplayBackend
 - [ ] Test with Toadstool WASM module
 - [ ] Benchmark performance
 

@@ -15,6 +15,8 @@ This specification defines the integration between PetalTongue and BiomeOS Neura
 4. Implementation requirements
 5. Testing and validation
 
+> **Wire vs. typed model:** The JSON examples below show the on-the-wire Neural API shape (unchanged). Where a primal entry includes `trust_level` or `family_id`, PetalTongue’s Rust types now carry those values in the `properties` object and deserialize them automatically via `PrimalInfoWire`—not as duplicated top-level fields on the in-memory struct. Endpoint-specific payloads (e.g. proprioception or metrics) keep their own schemas.
+
 ---
 
 ## 🏗️ ARCHITECTURE OVERVIEW

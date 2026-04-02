@@ -4,11 +4,13 @@
 **Date**: January 11, 2026  
 **Status**: Design Phase
 
+> **Protocol priority (current):** **JSON-RPC 2.0 is REQUIRED** for interoperable IPC and tooling. **tarpc MAY** be used on Rust-to-Rust hot paths where both peers support it. This spec focuses on the JSON-RPC surface; tarpc is complementary, not a substitute for the JSON-RPC contract.
+
 ---
 
 ## 🎯 **Overview**
 
-This specification defines petalTongue's implementation of **JSON-RPC 2.0** over Unix sockets as the **universal fallback** protocol for inter-primal and tooling IPC: **tarpc is PRIMARY** for inter-primal RPC ecosystem-wide; JSON-RPC provides maximum compatibility when a peer does not expose tarpc or for line-based tooling, aligning with the ecoPrimals ecosystem architecture.
+This specification defines petalTongue's implementation of **JSON-RPC 2.0** over Unix sockets as the **portable, required** protocol for inter-primal and tooling IPC. **tarpc MAY** be used for Rust-to-Rust hot paths when both sides expose it; JSON-RPC remains the universal baseline for compatibility and line-based tooling, aligning with the ecoPrimals ecosystem architecture.
 
 ---
 
@@ -142,7 +144,6 @@ Ok(response.result.unwrap())
 crates/petal-tongue-discovery/src/
 ├── lib.rs                    # Discovery orchestration
 ├── jsonrpc_provider.rs       # ⭐ NEW! JSON-RPC client
-├── http_provider.rs          # Fallback (deprecated as primary)
 ├── songbird_provider.rs      # Songbird-specific (highest priority)
 └── traits.rs                 # VisualizationDataProvider trait
 ```
@@ -396,4 +397,4 @@ srwxrwx--- 1 user user 0 Jan 11 12:00 biomeos-device-management.sock
 **Blocking**: Full biomeOS integration  
 **Priority**: High
 
-🌸 TRUE PRIMAL: tarpc PRIMARY for inter-primal RPC, JSON-RPC universal fallback!
+🌸 TRUE PRIMAL: JSON-RPC 2.0 required; tarpc optional for Rust-to-Rust hot paths.

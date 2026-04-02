@@ -356,7 +356,7 @@ if let Ok(toadstool) = ToadStoolClient::discover().await {
 **How petalTongue Uses Songbird**:
 ```rust
 // Optional, graceful degradation if unavailable
-if let Ok(songbird) = SongbirdClient::discover().await {
+if let Ok(songbird) = DiscoveryServiceClient::discover().await {
     let topology = songbird.get_topology().await?;
     ui.render_topology(topology)?;
 } else {
@@ -662,7 +662,7 @@ Provide a pure Rust, terminal-based UI for biomeOS management:
 
 ```rust
 pub struct TUIClients {
-    songbird: Option<SongbirdClient>,
+    songbird: Option<DiscoveryServiceClient>,
     toadstool: Option<ToadStoolClient>,
     nestgate: Option<NestGateClient>,
     beardog: Option<BearDogClient>,
@@ -673,7 +673,7 @@ impl TUIClients {
     /// Discover all available primals
     pub async fn discover() -> Self {
         Self {
-            songbird: SongbirdClient::discover().await.ok(),
+            songbird: DiscoveryServiceClient::discover().await.ok(),
             toadstool: ToadStoolClient::discover().await.ok(),
             nestgate: NestGateClient::discover().await.ok(),
             beardog: BearDogClient::discover().await.ok(),
