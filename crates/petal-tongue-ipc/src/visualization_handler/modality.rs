@@ -4,6 +4,7 @@
 //! Supports SVG, audio, description, haptic, GPU command, braille, and terminal.
 //! Used by `VisualizationState` for grammar render and export.
 
+use petal_tongue_core::DataBinding;
 use petal_tongue_scene::GpuCompiler;
 use petal_tongue_scene::modality::{
     AudioCompiler, BrailleCompiler, DescriptionCompiler, HapticCompiler, ModalityCompiler,
@@ -121,12 +122,75 @@ pub(super) fn compile_modality(scene: &SceneGraph, modality: &str) -> (serde_jso
     }
 }
 
+/// Compile a `DataBinding` directly to the requested modality output.
+///
+/// For `GameScene` and `Soundscape` bindings, produces rich semantic output
+/// (descriptions, sonification, haptics) that the generic SceneGraph path
+/// cannot provide. For other binding types, delegates to `compile_modality`.
+pub(super) fn compile_binding_modality(
+    binding: &DataBinding,
+    scene: &SceneGraph,
+    modality: &str,
+) -> (serde_json::Value, String) {
+    match (binding, modality) {
+        (
+            DataBinding::GameScene { .. } | DataBinding::Soundscape { .. },
+            "description" | "accessibility",
+        ) => {
+            let desc = petal_tongue_scene::describe_binding(binding);
+            (serde_json::Value::String(desc), "description".into())
+        }
+        (DataBinding::GameScene { scene: json, .. }, "audio") => {
+            let params = petal_tongue_scene::sonify_game_scene(json);
+            let value = serde_json::to_value(&params).unwrap_or(serde_json::Value::Null);
+            (value, "audio".into())
+        }
+        (DataBinding::GameScene { scene: json, .. }, "haptic") => {
+            let cmds = petal_tongue_scene::hapticize_game_scene(json);
+            let value = serde_json::to_value(&cmds).unwrap_or(serde_json::Value::Null);
+            (value, "haptic".into())
+        }
+        (DataBinding::Soundscape { definition, .. }, "haptic") => {
+            let cmds = petal_tongue_scene::hapticize_soundscape(definition);
+            let value = serde_json::to_value(&cmds).unwrap_or(serde_json::Value::Null);
+            (value, "haptic".into())
+        }
+        _ => compile_modality(scene, modality),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     fn minimal_scene() -> SceneGraph {
         SceneGraph::new()
+    }
+
+    fn game_scene_binding() -> DataBinding {
+        DataBinding::GameScene {
+            id: "test".into(),
+            label: "Arena".into(),
+            scene: serde_json::json!({
+                "entities": [
+                    {"entity_type": "player", "position": [10.0, 10.0], "health": 0.9, "label": "Hero"},
+                    {"entity_type": "enemy", "position": [40.0, 10.0], "health": 0.3, "label": "Goblin"}
+                ],
+                "camera_center": [20.0, 10.0]
+            }),
+        }
+    }
+
+    fn soundscape_binding() -> DataBinding {
+        DataBinding::Soundscape {
+            id: "test".into(),
+            label: "Forest".into(),
+            definition: serde_json::json!({
+                "name": "Forest",
+                "duration_secs": 10.0,
+                "layers": [{"id": "wind", "waveform": "white_noise", "frequency": 200.0, "amplitude": 0.3, "pan": -0.5}]
+            }),
+        }
     }
 
     #[test]
@@ -226,5 +290,78 @@ mod tests {
         );
         assert!(s.contains("<svg"), "should contain embedded SVG");
         assert!(s.contains("</html>"), "should close HTML");
+    }
+
+    #[test]
+    fn binding_modality_game_scene_description() {
+        let binding = game_scene_binding();
+        let scene = minimal_scene();
+        let (output, format) = compile_binding_modality(&binding, &scene, "description");
+        assert_eq!(format, "description");
+        let desc = output.as_str().unwrap();
+        assert!(desc.contains("Hero"), "should mention entities");
+        assert!(desc.contains("Goblin"), "should mention enemies");
+        assert!(desc.contains("health"), "should report health");
+    }
+
+    #[test]
+    fn binding_modality_game_scene_audio() {
+        let binding = game_scene_binding();
+        let scene = minimal_scene();
+        let (output, format) = compile_binding_modality(&binding, &scene, "audio");
+        assert_eq!(format, "audio");
+        let params = output.as_array().unwrap();
+        assert_eq!(params.len(), 2, "one tone per entity");
+    }
+
+    #[test]
+    fn binding_modality_game_scene_haptic() {
+        let binding = game_scene_binding();
+        let scene = minimal_scene();
+        let (output, format) = compile_binding_modality(&binding, &scene, "haptic");
+        assert_eq!(format, "haptic");
+        let cmds = output.as_array().unwrap();
+        assert_eq!(cmds.len(), 2, "one pulse per entity");
+    }
+
+    #[test]
+    fn binding_modality_soundscape_description() {
+        let binding = soundscape_binding();
+        let scene = minimal_scene();
+        let (output, format) = compile_binding_modality(&binding, &scene, "description");
+        assert_eq!(format, "description");
+        let desc = output.as_str().unwrap();
+        assert!(desc.contains("Forest"));
+        assert!(desc.contains("wind"));
+    }
+
+    #[test]
+    fn binding_modality_soundscape_haptic() {
+        let binding = soundscape_binding();
+        let scene = minimal_scene();
+        let (output, format) = compile_binding_modality(&binding, &scene, "haptic");
+        assert_eq!(format, "haptic");
+        let cmds = output.as_array().unwrap();
+        assert_eq!(cmds.len(), 1, "one haptic per layer");
+    }
+
+    #[test]
+    fn binding_modality_timeseries_falls_through() {
+        let binding = DataBinding::TimeSeries {
+            id: "t".into(),
+            label: "T".into(),
+            x_label: String::new(),
+            y_label: String::new(),
+            unit: String::new(),
+            x_values: vec![0.0],
+            y_values: vec![1.0],
+        };
+        let scene = minimal_scene();
+        let (output, format) = compile_binding_modality(&binding, &scene, "svg");
+        assert_eq!(
+            format, "svg",
+            "non-GameScene/Soundscape should fall through"
+        );
+        assert!(output.as_str().unwrap().contains("<svg"));
     }
 }

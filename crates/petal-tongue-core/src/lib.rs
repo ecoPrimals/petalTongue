@@ -80,6 +80,7 @@ pub mod interaction; // Interaction engine (semantic intents, perspectives, inve
 pub mod modality; // Modality system (trait and registry)
 pub mod rendering_awareness; // Bidirectional UUI awareness (motor + sensory)
 pub mod sensor; // Sensor abstraction layer
+pub mod sensory_matrix; // Sensory Capability Matrix (input x output negotiation)
 pub mod toadstool_compute; // Toadstool GPU compute integration
 pub mod uui_glossary; // Universal User Interface glossary (canonical terminology)
 
@@ -192,6 +193,12 @@ pub use sensory_capabilities::{
     HapticOutputCapability, KeyboardInputCapability, NeuralInputCapability, NeuralOutputCapability,
     PointerInputCapability, SensoryCapabilities, SmellOutputCapability, TasteOutputCapability,
     TouchInputCapability, UIComplexity as SensoryUIComplexity, VisualOutputCapability,
+};
+
+/// Sensory Capability Matrix (input x output negotiation)
+pub use sensory_matrix::{
+    InputCapabilitySet, InteractionPattern, OutputCapabilitySet, SensoryCapabilityMatrix,
+    ValidatedPath,
 };
 
 /// Instance management (multi-instance support)

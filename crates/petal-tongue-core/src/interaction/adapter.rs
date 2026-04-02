@@ -70,6 +70,8 @@ pub enum InputModality {
     EyeGaze,
     /// Full-body motion capture (VR/AR).
     MotionCapture,
+    /// Agentic AI (Squirrel or any machine interactor).
+    Agent,
     /// Custom input modality.
     Custom(String),
 }
@@ -87,6 +89,7 @@ impl std::fmt::Display for InputModality {
             Self::SwitchAccess => write!(f, "switch"),
             Self::EyeGaze => write!(f, "eyegaze"),
             Self::MotionCapture => write!(f, "motion"),
+            Self::Agent => write!(f, "agent"),
             Self::Custom(name) => write!(f, "custom:{name}"),
         }
     }

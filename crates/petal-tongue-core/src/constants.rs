@@ -134,7 +134,7 @@ pub const DEFAULT_MAX_FPS: u32 = 60;
 pub fn default_bind_addr() -> &'static str {
     static BIND: std::sync::OnceLock<String> = std::sync::OnceLock::new();
     BIND.get_or_init(|| {
-        std::env::var("PETALTONGUE_BIND_ADDR").unwrap_or_else(|_| "127.0.0.1".to_string())
+        std::env::var("PETALTONGUE_BIND_ADDR").unwrap_or_else(|_| DEFAULT_LOOPBACK_HOST.to_string())
     })
 }
 

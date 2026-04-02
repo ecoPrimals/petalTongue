@@ -230,11 +230,17 @@ check_json_valid() {
 # --- Socket utilities ---
 
 find_petaltongue_socket() {
+    # Explicit override takes priority
+    if [[ -n "${PETALTONGUE_SOCKET:-}" && -S "${PETALTONGUE_SOCKET}" ]]; then
+        echo "${PETALTONGUE_SOCKET}"
+        return
+    fi
     local runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
     local socket=""
     for candidate in \
+        "${runtime_dir}/biomeos/petaltongue.sock" \
+        /tmp/biomeos/petaltongue.sock \
         "${runtime_dir}/petaltongue/"petaltongue*.sock \
-        "${runtime_dir}/petaltongue"*.sock \
         /tmp/petaltongue*.sock; do
         if [[ -S "$candidate" ]]; then
             socket="$candidate"

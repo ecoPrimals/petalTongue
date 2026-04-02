@@ -72,7 +72,7 @@ impl AppState {
     /// # Environment Variables
     ///
     /// - `BIOMEOS_URL`: `BiomeOS` endpoint (default: `http://localhost:3000`)
-    /// - `PETALTONGUE_MOCK_MODE`: Enable mock mode (`true`/`false`, default: `false`)
+    /// - `PETALTONGUE_FIXTURE_MODE`: Enable fixture mode (`true`/`false`, default: `false`)
     #[must_use]
     pub fn new() -> Self {
         // Use centralized configuration system - zero hardcoding

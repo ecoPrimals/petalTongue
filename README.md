@@ -71,6 +71,8 @@ petaltongue
 - **Dashboard layout engine** -- multi-panel grid with domain theming and SVG export
 - **Domain-aware rendering** -- automatic palette selection per domain
 - **Multi-modal output** -- visual, audio, haptic, terminal, braille, JSON API (tiered)
+- **Sensory Capability Matrix** -- formal input×output negotiation (`capabilities.sensory` IPC)
+- **Accessibility adapters** -- switch access, audio inverse pipeline, agent adapter for AI
 - **Server-side backpressure** -- rate limiting for 60 Hz streaming
 - **Pipeline DAG orchestration** -- multi-stage workflows with topological sort
 - **Scenario loader** -- load JSON scenario files from disk (`--scenario` CLI flag)
@@ -81,7 +83,7 @@ petaltongue
 
 | Crate | Purpose |
 |-------|---------|
-| `petal-tongue-core` | Graph engine, capabilities, config, interaction engine, data bindings, UUI glossary |
+| `petal-tongue-core` | Graph engine, capabilities, config, interaction engine, sensory matrix, data bindings, UUI glossary |
 | `petal-tongue-graph` | Domain-aware chart renderers, 2D rendering, audio sonification |
 | `petal-tongue-ui` | Desktop display (egui/eframe), panels, scenarios, biomeOS |
 | `petal-tongue-tui` | Terminal display (ratatui) |
@@ -104,7 +106,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,987+ passing, 0 failures |
+| Tests | 5,952+ passing, 0 failures (1 pre-existing CLI test excluded) |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
@@ -136,7 +138,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 5,987+ tests
+cargo test --workspace --all-features        # 5,952+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
@@ -170,6 +172,7 @@ Architectural specifications live in `specs/`:
 | `UNIVERSAL_VISUALIZATION_PIPELINE.md` | End-to-end data→render pipeline, barraCuda integration |
 | `TUFTE_CONSTRAINT_SYSTEM.md` | Machine-checked visualization quality |
 | `INTERACTION_ENGINE_ARCHITECTURE.md` | Bidirectional interaction, perspective system |
+| `SENSORY_INPUT_V1_PERIPHERALS.md` | Sensor discovery, hardware abstraction, SAME DAVE afferent |
 | `JSONRPC_PROTOCOL_SPECIFICATION.md` | JSON-RPC 2.0 IPC protocol |
 
 ---
@@ -178,8 +181,12 @@ Architectural specifications live in `specs/`:
 
 See `ecoPrimals/wateringHole/petaltongue/` for inter-primal standards:
 - `VISUALIZATION_INTEGRATION_GUIDE.md` -- How other primals send data to petalTongue
+- `SENSORY_CAPABILITY_MATRIX.md` -- Input×output capability negotiation protocol
+- `SCENE_FORMAT_REFERENCE.md` -- GameScene, Soundscape, narrative JSON schemas
 - `BIOMEOS_API_SPECIFICATION.md` -- biomeOS API contract
 - `QUICK_START_FOR_BIOMEOS.md` -- 5-minute integration guide
+
+See `ecoPrimals/wateringHole/TOADSTOOL_SENSOR_CONTRACT.md` for hardware sensor IPC protocol.
 
 See `ecoPrimals/wateringHole/PETALTONGUE_LEVERAGE_GUIDE.md` for:
 - Novel self-referential patterns (introspection loop, multi-modal bridge)

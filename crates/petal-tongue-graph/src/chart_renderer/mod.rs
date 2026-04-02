@@ -15,6 +15,8 @@
 
 mod basic_charts;
 mod domain_charts;
+mod game_scene_renderer;
+mod soundscape_renderer;
 
 use egui::Ui;
 use petal_tongue_core::DataBinding;
@@ -148,11 +150,13 @@ pub fn draw_channel(ui: &mut Ui, binding: &DataBinding, domain: Option<&str>) {
         } => {
             domain_charts::draw_spectrum(ui, label, frequencies, amplitudes, unit, domain);
         }
-        DataBinding::GameScene { label, .. } => {
-            ui.label(format!("🎮 {label} (game scene rendering)"));
+        DataBinding::GameScene { label, scene, .. } => {
+            game_scene_renderer::draw_game_scene(ui, label, scene);
         }
-        DataBinding::Soundscape { label, .. } => {
-            ui.label(format!("🔊 {label} (soundscape)"));
+        DataBinding::Soundscape {
+            label, definition, ..
+        } => {
+            soundscape_renderer::draw_soundscape(ui, label, definition);
         }
     }
 }

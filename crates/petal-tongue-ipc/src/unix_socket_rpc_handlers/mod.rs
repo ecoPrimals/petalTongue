@@ -9,6 +9,7 @@
 //! - `ui` — ui.render, ui.display_status
 //! - `graph` — visualization.render.graph
 
+mod audio;
 mod graph;
 mod interaction;
 mod motor;
@@ -101,6 +102,10 @@ impl RpcHandlers {
                 system::get_capabilities(self, req.id)
             }
             "capability.announce" => system::handle_announce_capabilities(self, req),
+            "capabilities.sensory" => system::handle_capabilities_sensory(self, req),
+            "capabilities.sensory.negotiate" => {
+                system::handle_capabilities_sensory_negotiate(self, req)
+            }
 
             // UI
             "ui.render" => ui::handle_ui_render(self, req).await,
@@ -142,6 +147,7 @@ impl RpcHandlers {
             "interaction.sensor_stream.unsubscribe" => self.handle_sensor_stream_unsubscribe(req),
             "interaction.sensor_stream.poll" => self.handle_sensor_stream_poll(req),
             "provider.register_capability" => system::handle_provider_register(self, req),
+            "audio.synthesize" => audio::handle_audio_synthesize(self, req),
             "motor.set_panel" | "motor.set_zoom" | "motor.fit_to_view" | "motor.set_mode"
             | "motor.navigate" => motor::handle_motor_command(self, req),
             _ => {

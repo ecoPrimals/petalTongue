@@ -36,11 +36,11 @@ impl Default for CommonConfig {
 }
 
 fn default_host() -> String {
-    "127.0.0.1".to_string()
+    crate::constants::DEFAULT_LOOPBACK_HOST.to_string()
 }
 
 const fn default_port() -> u16 {
-    8080
+    crate::constants::DEFAULT_HEADLESS_PORT
 }
 
 fn default_log_level() -> String {

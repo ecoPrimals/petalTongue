@@ -4,6 +4,7 @@
 //! Converts healthSpring's typed data payloads into the Grammar of Graphics
 //! pipeline for actual rendering.
 
+pub mod describe;
 mod utils;
 
 use petal_tongue_core::{DataBinding, ThresholdRange};
