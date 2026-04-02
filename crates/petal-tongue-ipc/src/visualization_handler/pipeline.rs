@@ -104,10 +104,8 @@ pub struct PipelineRegistry {
 
 #[derive(Debug)]
 struct PipelineSession {
-    #[expect(dead_code, reason = "stored for future dashboard title rendering")]
     title: String,
     stages: Vec<PipelineStage>,
-    #[expect(dead_code, reason = "stored for progressive rendering order queries")]
     execution_order: Vec<String>,
     domain: Option<String>,
 }
@@ -186,6 +184,20 @@ impl PipelineRegistry {
         self.pipelines
             .get(pipeline_id)
             .and_then(|p| p.domain.as_deref())
+    }
+
+    /// Human-readable pipeline title (for dashboard chrome).
+    #[must_use]
+    pub fn title(&self, pipeline_id: &str) -> Option<&str> {
+        self.pipelines.get(pipeline_id).map(|p| p.title.as_str())
+    }
+
+    /// Topological execution order of stage IDs (progressive rendering order).
+    #[must_use]
+    pub fn execution_order(&self, pipeline_id: &str) -> Option<&[String]> {
+        self.pipelines
+            .get(pipeline_id)
+            .map(|p| p.execution_order.as_slice())
     }
 
     #[expect(
@@ -327,6 +339,9 @@ mod tests {
         let bindings = reg.completed_bindings("p1");
         assert_eq!(bindings.len(), 1);
         assert_eq!(reg.domain("p1"), Some("neural"));
+        assert_eq!(reg.title("p1"), Some("Test"));
+        let order = reg.execution_order("p1").expect("execution order");
+        assert_eq!(order, ["a".to_string(), "b".to_string()].as_slice());
     }
 
     #[test]

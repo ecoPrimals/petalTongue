@@ -280,10 +280,6 @@ impl BiomeOSClient {
                 endpoints: None,
                 metadata: None,
                 properties: Properties::new(), // Generic properties
-                #[expect(deprecated)]
-                trust_level: None,
-                #[expect(deprecated)]
-                family_id: None,
             },
             PrimalInfo {
                 id: "primal-beta".into(),
@@ -299,10 +295,6 @@ impl BiomeOSClient {
                 endpoints: None,
                 metadata: None,
                 properties: Properties::new(),
-                #[expect(deprecated)]
-                trust_level: None,
-                #[expect(deprecated)]
-                family_id: None,
             },
             PrimalInfo {
                 id: "primal-gamma".into(),
@@ -318,10 +310,6 @@ impl BiomeOSClient {
                 endpoints: None,
                 metadata: None,
                 properties: Properties::new(),
-                #[expect(deprecated)]
-                trust_level: None,
-                #[expect(deprecated)]
-                family_id: None,
             },
             PrimalInfo {
                 id: "primal-delta".into(),
@@ -338,10 +326,6 @@ impl BiomeOSClient {
                 endpoints: None,
                 metadata: None,
                 properties: Properties::new(),
-                #[expect(deprecated)]
-                trust_level: None,
-                #[expect(deprecated)]
-                family_id: None,
             },
             PrimalInfo {
                 id: "primal-epsilon".into(),
@@ -354,10 +338,6 @@ impl BiomeOSClient {
                 endpoints: None,
                 metadata: None,
                 properties: Properties::new(),
-                #[expect(deprecated)]
-                trust_level: None,
-                #[expect(deprecated)]
-                family_id: None,
             },
         ]
     }
@@ -430,10 +410,6 @@ impl From<DiscoveredPrimal> for PrimalInfo {
             endpoints: None,
             metadata: None,
             properties: Properties::new(), // Start with empty properties
-            #[expect(deprecated)]
-            trust_level: None,
-            #[expect(deprecated)]
-            family_id: None,
         }
     }
 }

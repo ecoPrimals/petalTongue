@@ -10,8 +10,7 @@
 //! ┌─────────────────────────────────────────────────────────────┐
 //! │ BiomeOSUIManager                                            │
 //! │  ├─ Provider (BiomeOSProvider or DemoDeviceProvider when mock)  │
-//! │  ├─ EventHandler (centralized event dispatch)               │
-//! │  ├─ DevicePanel (device management)                         │
+//! │  ├─ DevicePanel (device management; shared UIEventHandler)   │
 //! │  ├─ PrimalPanel (primal status)                             │
 //! │  ├─ NicheDesigner (niche creation)                          │
 //! │  └─ JSON-RPC Methods (biomeOS API)                          │
@@ -40,13 +39,6 @@ pub struct BiomeOSUIManager {
     #[cfg(feature = "mock")]
     demo_provider: Option<DemoDeviceProvider>,
     use_fixtures: bool,
-
-    /// Event handler (passed to child panels for event dispatch)
-    #[expect(
-        dead_code,
-        reason = "Reserved for future event dispatch from manager to panels"
-    )]
-    event_handler: Arc<RwLock<UIEventHandler>>,
 
     /// UI Panels
     device_panel: DevicePanel,
@@ -107,10 +99,9 @@ impl BiomeOSUIManager {
             #[cfg(feature = "mock")]
             demo_provider,
             use_fixtures,
-            event_handler: event_handler.clone(),
             device_panel: DevicePanel::new(event_handler.clone()),
             primal_panel: PrimalPanel::new(event_handler.clone()),
-            niche_designer: NicheDesigner::new(event_handler.clone()),
+            niche_designer: NicheDesigner::new(event_handler),
             current_tab: UITab::Devices,
             last_refresh: std::time::Instant::now(),
             refresh_interval: constants::default_refresh_interval(),

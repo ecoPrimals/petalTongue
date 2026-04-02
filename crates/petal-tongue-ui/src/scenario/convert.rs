@@ -198,10 +198,6 @@ impl PrimalDefinition {
             endpoints: None,
             metadata: None,
             properties,
-            #[expect(deprecated)]
-            trust_level: None,
-            #[expect(deprecated)]
-            family_id: None,
         }
     }
 }

@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Direct Device Backend - Runtime Discovery of Audio Hardware
+//! Direct device backend (stub / future target)
 //!
-//! Discovers direct audio devices at runtime:
-//! - Linux: /dev/snd/pcmC*D*p
-//! - macOS: /dev/audio
-//! - FreeBSD: /dev/dsp*
-//! - Future systems we don't know about yet!
+//! **Status:** Discovery of device nodes is implemented, but **playback is not**. Opening a PCM
+//! node and writing raw samples requires ALSA `ioctl` setup (sample rate, format, buffers, etc.),
+//! which is not implemented. Devices managed by PipeWire or PulseAudio can also block if opened
+//! without going through those stacks.
 //!
-//! NO hardcoding - just discovers whatever direct devices exist!
+//! Callers should treat this module as a **placeholder** for a future direct-hardware path, not as
+//! an active audio backend. [`AudioBackend::is_available`](crate::audio::traits::AudioBackend::is_available)
+//! always returns `false` and [`capabilities`](crate::audio::traits::AudioBackend::capabilities)
+//! reports no playback support until that work lands.
+//!
+//! Discovery heuristics (for when playback exists):
+//! - Linux: `/dev/snd/pcmC*D*p`
+//! - macOS: `/dev/audio`
+//! - FreeBSD: `/dev/dsp*`
 
 use crate::audio::traits::{AudioBackend, AudioCapabilities, BackendMetadata, BackendType};
 use crate::error::{AudioError, Result};
@@ -201,12 +208,13 @@ impl AudioBackend for DirectBackend {
     }
 
     fn capabilities(&self) -> AudioCapabilities {
+        // Honest reporting: discovery exists but ALSA/ioctl playback path is not implemented.
         AudioCapabilities {
-            can_play: true,
+            can_play: false,
             can_record: false,
-            max_sample_rate: 48000,
-            max_channels: 2,
-            latency_estimate_ms: 10,
+            max_sample_rate: 0,
+            max_channels: 0,
+            latency_estimate_ms: 0,
         }
     }
 }
@@ -267,10 +275,13 @@ mod tests {
         };
         let backend = DirectBackend::new(device);
         let caps = backend.capabilities();
-        assert!(caps.can_play);
+        assert!(
+            !caps.can_play,
+            "direct playback not implemented (ALSA ioctl path missing)"
+        );
         assert!(!caps.can_record);
-        assert_eq!(caps.max_sample_rate, 48000);
-        assert_eq!(caps.max_channels, 2);
-        assert_eq!(caps.latency_estimate_ms, 10);
+        assert_eq!(caps.max_sample_rate, 0);
+        assert_eq!(caps.max_channels, 0);
+        assert_eq!(caps.latency_estimate_ms, 0);
     }
 }

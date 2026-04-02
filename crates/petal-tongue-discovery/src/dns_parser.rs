@@ -4,6 +4,7 @@
 // Simplified DNS parser focused on service discovery (RFC 1035, RFC 6762, RFC 6763)
 
 use crate::errors::{DiscoveryError, DiscoveryResult};
+use rand::Rng;
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 /// DNS record type
@@ -159,10 +160,6 @@ impl<'a> NameParser<'a> {
 
 /// SRV record data
 #[derive(Debug, Clone)]
-#[expect(
-    dead_code,
-    reason = "RFC 2782 completeness; priority/weight parsed for future SRV routing logic"
-)]
 pub struct SrvRecord {
     pub priority: u16,
     pub weight: u16,
@@ -171,6 +168,42 @@ pub struct SrvRecord {
 }
 
 impl SrvRecord {
+    /// Choose one record per [RFC 2782](https://www.rfc-editor.org/rfc/rfc2782): lowest `priority`
+    /// first; among ties, random selection weighted by `weight` (weights summing to 0 ⇒ uniform).
+    #[must_use]
+    pub fn select_by_priority(records: &[Self]) -> Option<&Self> {
+        if records.is_empty() {
+            return None;
+        }
+        let min_priority = records.iter().map(|r| r.priority).min()?;
+        let candidates: Vec<&Self> = records
+            .iter()
+            .filter(|r| r.priority == min_priority)
+            .collect();
+
+        let sum: u32 = candidates.iter().map(|r| u32::from(r.weight)).sum();
+        let mut rng = rand::thread_rng();
+
+        if sum == 0 {
+            let idx = rng.gen_range(0..candidates.len());
+            return Some(candidates[idx]);
+        }
+
+        let mut roll = rng.gen_range(0..sum);
+        for r in &candidates {
+            let w = u32::from(r.weight);
+            if w == 0 {
+                continue;
+            }
+            if roll < w {
+                return Some(*r);
+            }
+            roll -= w;
+        }
+
+        candidates.last().copied()
+    }
+
     pub fn parse(data: &[u8], offset: usize, rdata: &[u8]) -> DiscoveryResult<Self> {
         if rdata.len() < 6 {
             return Err(DiscoveryError::DnsParseError {
@@ -626,6 +659,70 @@ mod tests {
         let srv = result.unwrap();
         assert_eq!(srv.port, 8080);
         assert_eq!(srv.target, "test");
+    }
+
+    #[test]
+    fn test_srv_select_by_priority_prefers_lower_number() {
+        let high = SrvRecord {
+            priority: 10,
+            weight: 100,
+            port: 1,
+            target: "a".to_string(),
+        };
+        let low = SrvRecord {
+            priority: 0,
+            weight: 1,
+            port: 2,
+            target: "b".to_string(),
+        };
+        assert_eq!(
+            SrvRecord::select_by_priority(&[high, low])
+                .expect("selection")
+                .target,
+            "b"
+        );
+    }
+
+    #[test]
+    fn test_srv_select_by_priority_empty() {
+        assert!(SrvRecord::select_by_priority(&[]).is_none());
+    }
+
+    #[test]
+    fn test_srv_select_by_priority_zero_weights_uniform() {
+        let a = SrvRecord {
+            priority: 0,
+            weight: 0,
+            port: 80,
+            target: "only".to_string(),
+        };
+        assert_eq!(
+            SrvRecord::select_by_priority(std::slice::from_ref(&a))
+                .expect("selection")
+                .target,
+            "only"
+        );
+        let picks: std::collections::HashSet<_> = (0..32)
+            .filter_map(|_| {
+                SrvRecord::select_by_priority(&[
+                    SrvRecord {
+                        priority: 0,
+                        weight: 0,
+                        port: 1,
+                        target: "x".to_string(),
+                    },
+                    SrvRecord {
+                        priority: 0,
+                        weight: 0,
+                        port: 2,
+                        target: "y".to_string(),
+                    },
+                ])
+                .map(|r| r.target.clone())
+            })
+            .collect();
+        assert!(picks.contains("x") || picks.contains("y"));
+        assert_eq!(picks.len(), 2, "both targets should be reachable");
     }
 
     #[test]

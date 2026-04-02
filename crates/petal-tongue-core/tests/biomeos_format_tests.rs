@@ -155,13 +155,15 @@ fn test_migrate_biomeos_metadata_to_properties() {
 
     let mut primal: PrimalInfo = serde_json::from_str(json).unwrap();
 
-    // Before migration, properties should be empty
-    assert!(primal.properties.is_empty());
+    // `PrimalInfoWire` deserialization already copies metadata into properties
+    assert!(primal.properties.contains_key("version"));
+    assert!(primal.properties.contains_key("family_id"));
+    assert!(primal.properties.contains_key("node_id"));
 
-    // Migrate metadata to properties
-    primal.migrate_deprecated_fields();
+    // `migrate_metadata_to_properties` is idempotent for the serde path
+    primal.migrate_metadata_to_properties();
 
-    // After migration, properties should contain metadata
+    // Properties still contain metadata
     assert!(primal.properties.contains_key("version"));
     assert!(primal.properties.contains_key("family_id"));
     assert!(primal.properties.contains_key("node_id"));
@@ -193,13 +195,11 @@ fn test_endpoint_migration_from_unix_socket() {
 
     let mut primal: PrimalInfo = serde_json::from_str(json).unwrap();
 
-    // Before migration, endpoint should be empty
-    assert_eq!(primal.endpoint, "");
+    // `PrimalInfoWire` deserialization already fills endpoint from `unix_socket` when empty
+    assert_eq!(primal.endpoint, "unix:///tmp/beardog-node-alpha.sock");
 
-    // Migrate endpoints
-    primal.migrate_deprecated_fields();
+    primal.migrate_metadata_to_properties();
 
-    // After migration, endpoint should be set from unix_socket
     assert_eq!(primal.endpoint, "unix:///tmp/beardog-node-alpha.sock");
 }
 
@@ -220,9 +220,9 @@ fn test_endpoint_migration_prefers_unix_socket() {
     }"#;
 
     let mut primal: PrimalInfo = serde_json::from_str(json).unwrap();
-    primal.migrate_deprecated_fields();
+    primal.migrate_metadata_to_properties();
 
-    // Should prefer Unix socket over HTTP for local primals
+    // Should prefer Unix socket over HTTP for local primals (serde + migrate agree)
     assert_eq!(primal.endpoint, "unix:///tmp/beardog-node-alpha.sock");
 }
 

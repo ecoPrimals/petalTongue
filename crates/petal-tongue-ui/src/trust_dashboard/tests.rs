@@ -39,10 +39,6 @@ fn create_test_primal(id: &str, trust: Option<u8>, family: Option<&str>) -> Prim
         endpoints: None,
         metadata: None,
         properties: props,
-        #[expect(deprecated)]
-        trust_level: trust,
-        #[expect(deprecated)]
-        family_id: family.map(String::from),
     }
 }
 
@@ -384,10 +380,6 @@ fn test_trust_string_property() {
         endpoints: None,
         metadata: None,
         properties: props,
-        #[expect(deprecated)]
-        trust_level: None,
-        #[expect(deprecated)]
-        family_id: None,
     }];
     dashboard.update_from_primals(&primals);
     assert_eq!(dashboard.trust_summary().total_primals, 1);
@@ -413,10 +405,6 @@ fn test_trust_unknown_level() {
         endpoints: None,
         metadata: None,
         properties: props,
-        #[expect(deprecated)]
-        trust_level: None,
-        #[expect(deprecated)]
-        family_id: None,
     }];
     dashboard.update_from_primals(&primals);
     assert!(
@@ -472,10 +460,6 @@ fn test_update_from_primals_properties_over_deprecated() {
         endpoints: None,
         metadata: None,
         properties: props,
-        #[expect(deprecated)]
-        trust_level: None,
-        #[expect(deprecated)]
-        family_id: None,
     }];
     dashboard.update_from_primals(&primals);
     assert_eq!(dashboard.trust_summary().total_primals, 1);
@@ -554,10 +538,6 @@ fn test_update_from_primals_trust_unknown_property_type() {
         endpoints: None,
         metadata: None,
         properties: props,
-        #[expect(deprecated)]
-        trust_level: None,
-        #[expect(deprecated)]
-        family_id: None,
     }];
     dashboard.update_from_primals(&primals);
     assert_eq!(dashboard.trust_summary().total_primals, 1);
@@ -570,22 +550,18 @@ fn test_update_from_primals_trust_unknown_property_type() {
 #[test]
 fn test_update_from_primals_deprecated_trust_level_only() {
     let mut dashboard = TrustDashboard::new();
-    let primals = vec![PrimalInfo {
-        id: "p1".to_string().into(),
-        name: "Test".to_string(),
-        primal_type: "Test".to_string(),
-        endpoint: "http://test".to_string(),
-        capabilities: vec![],
-        health: PrimalHealthStatus::Healthy,
-        last_seen: 0,
-        endpoints: None,
-        metadata: None,
-        properties: Properties::new(),
-        #[expect(deprecated)]
-        trust_level: Some(2),
-        #[expect(deprecated)]
-        family_id: None,
-    }];
+    let primals = vec![
+        PrimalInfo::new(
+            "p1",
+            "Test",
+            "Test",
+            "http://test",
+            vec![],
+            PrimalHealthStatus::Healthy,
+            0,
+        )
+        .with_trust_level(2),
+    ];
     dashboard.update_from_primals(&primals);
     assert_eq!(dashboard.trust_summary().total_primals, 1);
     assert_eq!(
@@ -601,22 +577,18 @@ fn test_update_from_primals_deprecated_trust_level_only() {
 #[test]
 fn test_update_from_primals_deprecated_family_id_only() {
     let mut dashboard = TrustDashboard::new();
-    let primals = vec![PrimalInfo {
-        id: "p1".to_string().into(),
-        name: "Test".to_string(),
-        primal_type: "Test".to_string(),
-        endpoint: "http://test".to_string(),
-        capabilities: vec![],
-        health: PrimalHealthStatus::Healthy,
-        last_seen: 0,
-        endpoints: None,
-        metadata: None,
-        properties: Properties::new(),
-        #[expect(deprecated)]
-        trust_level: None,
-        #[expect(deprecated)]
-        family_id: Some("legacy_fam".to_string()),
-    }];
+    let primals = vec![
+        PrimalInfo::new(
+            "p1",
+            "Test",
+            "Test",
+            "http://test",
+            vec![],
+            PrimalHealthStatus::Healthy,
+            0,
+        )
+        .with_family_id("legacy_fam"),
+    ];
     dashboard.update_from_primals(&primals);
     assert_eq!(dashboard.trust_summary().total_primals, 1);
     assert_eq!(dashboard.trust_summary().family_count, 1);

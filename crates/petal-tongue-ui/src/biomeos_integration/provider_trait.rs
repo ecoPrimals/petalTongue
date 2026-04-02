@@ -49,10 +49,6 @@ impl VisualizationDataProvider for BiomeOSProvider {
                 endpoints: None,
                 metadata: None,
                 properties: Properties::default(),
-                #[expect(deprecated)]
-                trust_level: None,
-                #[expect(deprecated)]
-                family_id: None,
             })
             .collect())
     }

@@ -256,10 +256,6 @@ impl TutorialMode {
                 );
                 props
             },
-            #[expect(deprecated)]
-            trust_level: None,
-            #[expect(deprecated)]
-            family_id: None,
         });
 
         graph.add_node(PrimalInfo {
@@ -278,10 +274,6 @@ impl TutorialMode {
             endpoints: None,
             metadata: None,
             properties: Properties::new(),
-            #[expect(deprecated)]
-            trust_level: None,
-            #[expect(deprecated)]
-            family_id: None,
         });
 
         graph.add_node(PrimalInfo {
@@ -299,10 +291,6 @@ impl TutorialMode {
             endpoints: None,
             metadata: None,
             properties: Properties::new(),
-            #[expect(deprecated)]
-            trust_level: None,
-            #[expect(deprecated)]
-            family_id: None,
         });
 
         graph.add_edge(petal_tongue_core::TopologyEdge {

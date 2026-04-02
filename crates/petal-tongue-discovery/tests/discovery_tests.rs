@@ -144,7 +144,7 @@ async fn test_discovery_graceful_empty() {
                 "Discovery should succeed even when no providers found"
             );
             let providers = result.unwrap();
-            // May be empty (graceful) or have providers if HTTP hint connected
+            // HTTP hints are ignored; expect empty when nothing else is reachable
             let _ = providers;
         },
     )

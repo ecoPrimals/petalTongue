@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Socket Audio Backend - Runtime Discovery of Socket-Based Audio Servers
+//! Socket audio backend (stub / planned PipeWire and PulseAudio client)
 //!
-//! Discovers socket-based audio servers at runtime:
-//! - `PipeWire` (modern Linux)
-//! - `PulseAudio` (legacy Linux)
-//! - Future systems we don't know about yet!
+//! **Status:** Runtime discovery of well-known Unix sockets under `XDG_RUNTIME_DIR` (e.g.
+//! `pipewire-0`, `pulse/native`) is implemented, but **no wire protocol is implemented**. A future
+//! version will speak the native protocols used by **PipeWire** and **PulseAudio** over those
+//! sockets (session/stream setup, format negotiation, PCM transfer)—not a custom petalTongue
+//! protocol.
 //!
-//! NO hardcoding - just discovers whatever socket-based audio exists!
+//! Until then, [`is_available`](crate::audio::traits::AudioBackend::is_available) is always
+//! `false`, [`play_samples`](crate::audio::traits::AudioBackend::play_samples) returns an error,
+//! and [`capabilities`](crate::audio::traits::AudioBackend::capabilities) reports no usable audio
+//! features. Connecting in [`initialize`](crate::audio::traits::AudioBackend::initialize) on Unix
+//! only establishes a stream; it does not enable playback without the missing protocol layer.
 
 use crate::audio::traits::{AudioBackend, AudioCapabilities, BackendMetadata, BackendType};
 use crate::error::{AudioError, Result};
@@ -175,17 +180,17 @@ impl AudioBackend for SocketBackend {
                 return Err(AudioError::SocketBackendNotInitialized.into());
             }
             debug!(
-                "🔌 Socket playback: {} samples at {} Hz via {} (protocol not implemented)",
+                "🔌 Socket playback: {} samples at {} Hz via {} (PipeWire/PulseAudio protocol stub)",
                 samples.len(),
                 sample_rate,
                 self.socket.detected_name
             );
             warn!(
-                "PipeWire/PulseAudio protocol negotiation not yet implemented for {}",
+                "Planned PipeWire/PulseAudio socket protocol not implemented for {}",
                 self.socket.detected_name
             );
             return Err(AudioError::SocketConnectionFailed(
-                "Socket audio protocol not yet implemented - backend reports not available"
+                "PipeWire/PulseAudio socket protocol not implemented (planned; backend unavailable for playback)"
                     .to_string(),
             )
             .into());
@@ -198,12 +203,13 @@ impl AudioBackend for SocketBackend {
     }
 
     fn capabilities(&self) -> AudioCapabilities {
+        // No protocol layer yet—do not advertise rates/channels/latency as if playback worked.
         AudioCapabilities {
-            can_play: false, // Protocol negotiation not yet implemented
+            can_play: false,
             can_record: false,
-            max_sample_rate: 192_000,
-            max_channels: 8,
-            latency_estimate_ms: 20,
+            max_sample_rate: 0,
+            max_channels: 0,
+            latency_estimate_ms: 0,
         }
     }
 }
@@ -280,10 +286,12 @@ mod tests {
         let caps = backend.capabilities();
         assert!(
             !caps.can_play,
-            "Socket backend reports can_play false (protocol not implemented)"
+            "Socket backend reports can_play false (PipeWire/PulseAudio protocol not implemented)"
         );
         assert!(!caps.can_record);
-        assert_eq!(caps.max_sample_rate, 192_000);
+        assert_eq!(caps.max_sample_rate, 0);
+        assert_eq!(caps.max_channels, 0);
+        assert_eq!(caps.latency_estimate_ms, 0);
     }
 
     #[tokio::test]
