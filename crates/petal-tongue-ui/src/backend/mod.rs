@@ -16,7 +16,7 @@
 //!   ↓               ↓                              ↓
 //! EguiBackend   display::backends              (Future backends)
 //!   ↓               ↓
-//! eframe        toadstool / toadstool_v2
+//! eframe        discovered display modules
 //!   ↓               ↓
 //! Wayland/X11   DRM/KMS (Pure Rust!)
 //! (C deps)
@@ -25,13 +25,13 @@
 //! # Backends
 //!
 //! - **`EguiBackend`**: Current backend using eframe/winit (has C dependencies)
-//! - **Discovered display**: Pure Rust backends in `display::backends::toadstool` and `display::backends::toadstool_v2`
+//! - **Discovered display**: Pure Rust backends under `display::backends` (capability-discovered at runtime)
 //!
 //! # Feature Flags
 //!
 //! - `ui-auto`: Auto-detect best available backend (default)
 //! - `ui-eframe`: Force eframe backend
-//! - `ui-toadstool`: Force discovered display backend (requires biomeOS)
+//! - `ui-toadstool`: Force capability-discovered display backend (requires biomeOS)
 //!
 //! # Examples
 //!
@@ -220,7 +220,7 @@ pub async fn create_backend(choice: Option<BackendChoice>) -> Result<Box<dyn UIB
 ///
 /// Priority order:
 /// 1. eframe (current default)
-/// 2. Discovered display backends are in `display::backends` (toadstool, toadstool_v2)
+/// 2. Discovered display backends are in `display::backends`
 async fn create_auto_backend() -> Result<Box<dyn UIBackend>> {
     tracing::info!("🔍 Auto-detecting best UI backend...");
 
@@ -251,7 +251,7 @@ async fn create_eframe_backend() -> Result<Box<dyn UIBackend>> {
 /// Create capability-discovered display backend
 ///
 /// The legacy UIBackend-style backend has been removed. Use
-/// `display::backends::toadstool` or `display::backends::toadstool_v2` with biomeOS instead.
+/// `display::backends` with biomeOS instead.
 fn create_discovered_display_backend() -> Result<Box<dyn UIBackend>> {
     Err(BackendError::DisplayBackendNotAvailable.into())
 }
@@ -260,7 +260,7 @@ fn create_discovered_display_backend() -> Result<Box<dyn UIBackend>> {
 ///
 /// Checks `PETALTONGUE_UI_BACKEND` environment variable.
 ///
-/// Valid values: "auto", "eframe", "egui", "toadstool", "pure-rust"
+/// Valid values: "auto", "eframe", "egui", "compute.provider", "pure-rust", "discovered"
 #[must_use]
 pub fn backend_from_env() -> Option<BackendChoice> {
     std::env::var("PETALTONGUE_UI_BACKEND")

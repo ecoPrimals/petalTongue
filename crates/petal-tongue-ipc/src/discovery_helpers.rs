@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use petal_tongue_core::capability_names::primal_names;
 
-/// Env var name for primal socket, e.g. `socket_env_var("barracuda")` → `"BARRACUDA_SOCKET"`.
+/// Env var name for primal socket, e.g. `socket_env_var("example")` → `"EXAMPLE_SOCKET"`.
 #[must_use]
 pub fn socket_env_var(primal: &str) -> String {
     format!("{}_SOCKET", primal.to_uppercase())
@@ -69,14 +69,14 @@ mod tests {
 
     #[test]
     fn socket_env_var_format() {
-        assert_eq!(socket_env_var("barracuda"), "BARRACUDA_SOCKET");
+        assert_eq!(socket_env_var("example"), "EXAMPLE_SOCKET");
         assert_eq!(socket_env_var("biomeos"), "BIOMEOS_SOCKET");
     }
 
     #[test]
     fn address_env_var_format() {
         assert_eq!(address_env_var("biomeos"), "BIOMEOS_URL");
-        assert_eq!(address_env_var("songbird"), "SONGBIRD_URL");
+        assert_eq!(address_env_var("example"), "EXAMPLE_URL");
     }
 
     #[test]
@@ -84,14 +84,14 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let sock = dir.path().join("custom.sock");
         std::fs::File::create(&sock).unwrap();
-        let env = |k: &str| (k == "BARRACUDA_SOCKET").then(|| sock.to_string_lossy().into_owned());
-        assert_eq!(resolve_primal_socket_with_env("barracuda", env), Some(sock));
+        let env = |k: &str| (k == "MYPRIMAL_SOCKET").then(|| sock.to_string_lossy().into_owned());
+        assert_eq!(resolve_primal_socket_with_env("myprimal", env), Some(sock));
     }
 
     #[test]
     fn resolve_skips_env_var_when_path_missing() {
-        let env = |k: &str| (k == "BARRACUDA_SOCKET").then(|| "/nonexistent/path.sock".to_string());
-        assert!(resolve_primal_socket_with_env("barracuda", env).is_none());
+        let env = |k: &str| (k == "MYPRIMAL_SOCKET").then(|| "/nonexistent/path.sock".to_string());
+        assert!(resolve_primal_socket_with_env("myprimal", env).is_none());
     }
 
     fn xdg_env(dir: &std::path::Path) -> impl Fn(&str) -> Option<String> {
@@ -110,10 +110,10 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let biomeos_dir = dir.path().join("biomeos");
         std::fs::create_dir_all(&biomeos_dir).unwrap();
-        let sock = biomeos_dir.join("barracuda.sock");
+        let sock = biomeos_dir.join("myprimal.sock");
         std::fs::File::create(&sock).unwrap();
         assert_eq!(
-            resolve_primal_socket_with_env("barracuda", xdg_env(dir.path())),
+            resolve_primal_socket_with_env("myprimal", xdg_env(dir.path())),
             Some(sock)
         );
     }
@@ -121,6 +121,6 @@ mod tests {
     #[test]
     fn resolve_returns_none_when_nothing_exists() {
         let env = |_k: &str| None;
-        assert!(resolve_primal_socket_with_env("barracuda", env).is_none());
+        assert!(resolve_primal_socket_with_env("myprimal", env).is_none());
     }
 }

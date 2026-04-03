@@ -402,7 +402,7 @@ mod tests {
 
     #[test]
     fn test_toadstool_provider_availability() {
-        // Discovered audio provider is available when AUDIO_PROVIDER_URL or TOADSTOOL_URL is set
+        // Discovered audio provider is available when AUDIO_PROVIDER_URL is set
         let provider = DiscoveredAudioProvider::new();
         // When env is not set, provider reports not available
         if !provider.is_available() {

@@ -68,13 +68,35 @@ pub enum UICapability {
     RealTime,
 }
 
+/// Basic sanity check for standalone HTML export (PT-04).
+///
+/// Ensures non-empty output, a document preamble (`<!DOCTYPE` or `<html`), and a closing
+/// `</html>` (ASCII case-insensitive).
+#[must_use]
+pub fn validate_standalone_html_export(html: &str) -> bool {
+    let t = html.trim_start();
+    if t.is_empty() {
+        return false;
+    }
+    let preamble_ok = t
+        .get(..9)
+        .is_some_and(|s| s.eq_ignore_ascii_case("<!doctype"))
+        || t.get(..5).is_some_and(|s| s.eq_ignore_ascii_case("<html"));
+    if !preamble_ok {
+        return false;
+    }
+    t.as_bytes()
+        .windows(7)
+        .any(|w| w.eq_ignore_ascii_case(b"</html>"))
+}
+
 /// Wrap SVG content in a standalone HTML document (PT-04).
 ///
 /// Produces a minimal, responsive HTML page suitable for browser viewing.
 /// Mirrors the IPC `compile_html` modality path so headless CLI achieves parity.
 #[must_use]
 pub fn wrap_svg_in_html(svg: &str) -> Vec<u8> {
-    format!(
+    let html = format!(
         "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\
          <meta charset=\"utf-8\">\
          <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\
@@ -83,8 +105,11 @@ pub fn wrap_svg_in_html(svg: &str) -> Vec<u8> {
          align-items:center;min-height:100vh;background:#1a1a2e}}\
          svg{{max-width:100%;height:auto}}</style>\
          </head>\n<body>\n{svg}\n</body>\n</html>"
-    )
-    .into_bytes()
+    );
+    if !validate_standalone_html_export(&html) {
+        tracing::warn!("HTML export validation failed after wrap_svg_in_html");
+    }
+    html.into_bytes()
 }
 
 /// Universal UI interface (platform-agnostic)
@@ -222,9 +247,24 @@ mod tests {
     fn test_wrap_svg_in_html() {
         let svg = "<svg><circle r=\"10\"/></svg>";
         let html = String::from_utf8(wrap_svg_in_html(svg)).unwrap();
+        assert!(validate_standalone_html_export(&html));
         assert!(html.starts_with("<!DOCTYPE html>"));
         assert!(html.contains(svg));
         assert!(html.contains("</html>"));
+    }
+
+    #[test]
+    fn test_validate_standalone_html_export() {
+        assert!(!validate_standalone_html_export(""));
+        assert!(!validate_standalone_html_export("   "));
+        assert!(!validate_standalone_html_export("not html"));
+        assert!(!validate_standalone_html_export("<!DOCTYPE html><p>x</p>"));
+        assert!(validate_standalone_html_export(
+            "<!DOCTYPE html><html><body></body></html>"
+        ));
+        assert!(validate_standalone_html_export(
+            "<HTML><head></head><body></BODY></HTML>"
+        ));
     }
 
     #[test]

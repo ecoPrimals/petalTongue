@@ -7,10 +7,10 @@
 //!
 //! **Discovery Phase** (Once at startup):
 //! - petalTongue asks biomeOS: "Who provides 'display' capability?"
-//! - biomeOS responds with toadStool's tarpc endpoint
+//! - biomeOS responds with the chosen provider's tarpc endpoint
 //!
 //! **Performance Phase** (Continuous):
-//! - petalTongue ←─ tarpc ─→ toadStool (direct binary RPC)
+//! - petalTongue ←─ tarpc ─→ display capability provider (direct binary RPC)
 //! - Frame commits: 60 FPS (~5-8ms)
 //! - Input events: real-time (~2-5ms)
 //!
@@ -21,8 +21,8 @@
 //! - I speak: JSON-RPC (discovery), tarpc (performance)
 //!
 //! petalTongue NEVER KNOWS:
-//! - That "toadStool" exists by name (discovers by capability)
-//! - Where toadStool is located (biomeOS provides endpoint)
+//! - Which concrete primal implements `display` (only the endpoint from discovery)
+//! - Where that primal runs (biomeOS provides the endpoint)
 //!
 //! # Integration Status
 //!
@@ -30,7 +30,7 @@
 //! ✅ Performance: Via tarpc (direct, high-speed)
 //! ✅ Display Runtime - DRM-based, Pure Rust, ARM64 + `x86_64`
 //! ✅ Input System - Multi-touch (10+ fingers), Keyboard, Mouse
-//! ✅ GPU Compute - barraCUDA (183 operations, 73.2% CUDA parity)
+//! ✅ GPU Compute — capability-discovered compute stack (where advertised)
 //!
 //! # Reference
 //!

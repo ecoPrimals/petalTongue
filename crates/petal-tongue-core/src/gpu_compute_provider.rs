@@ -96,7 +96,7 @@ impl GpuComputeProvider {
             });
         }
 
-        // Ecosystem discovery: scan for manifest files (toadStool S139 dual-write)
+        // Ecosystem discovery: scan for manifest files (S139 dual-write layout)
         let runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_string());
         let discovery_dir = format!("{runtime_dir}/ecoPrimals/discovery");
         if let Ok(entries) = std::fs::read_dir(&discovery_dir) {
@@ -162,8 +162,8 @@ impl GpuComputeProvider {
 
     /// Parse capability strings into `ComputeCapability` enum.
     ///
-    /// Recognizes both legacy strings and ecosystem capability strings
-    /// (barraCuda v0.3.3+, toadStool S139+).
+    /// Recognizes legacy capability strings and ecosystem manifest vocabulary
+    /// (compute stack v0.3.3+, S139 discovery manifests).
     pub(crate) fn parse_capabilities(caps: &[String]) -> Vec<ComputeCapability> {
         let mut result = Vec::new();
 

@@ -9,12 +9,12 @@
 //! ```text
 //! petalTongue → CapabilityDiscovery → biomeOS
 //!   Query: "Who provides 'display' capability?"
-//!   Response: PrimalEndpoint { tarpc: "tarpc://unix:/run/toadstool.sock" }
+//!   Response: PrimalEndpoint { tarpc: "tarpc://unix:/run/display-provider.sock" }
 //! ```
 //!
 //! **Phase 2 - Performance** (Continuous, ~5-8ms):
 //! ```text
-//! petalTongue ←─ tarpc (binary RPC) ─→ toadStool
+//! petalTongue ←─ tarpc (binary RPC) ─→ display capability provider
 //!   • Frame commits: 60 FPS
 //!   • Input events: real-time
 //!   • GPU compute: as needed
@@ -32,9 +32,9 @@
 //! - I speak: tarpc (primary), JSON-RPC (fallback)
 //!
 //! petalTongue NEVER KNOWS:
-//! - That "toadStool" exists by name
-//! - Where toadStool is located
-//! - toadStool's internal implementation
+//! - Which concrete primal implements the capability (only the endpoint from discovery)
+//! - Where that primal is located (biomeOS provides the endpoint)
+//! - The provider's internal implementation
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
 use crate::error::{DisplayError, Result};

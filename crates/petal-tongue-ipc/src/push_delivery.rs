@@ -18,16 +18,39 @@ use tokio::sync::mpsc;
 
 /// Spawn the push delivery background loop.
 ///
-/// Returns a sender that RPC handlers use to enqueue dispatches, and a
-/// `JoinHandle` for the background task. The task runs until the sender
-/// is dropped.
+/// Returns a sender that RPC handlers use to enqueue dispatches, and an OS-thread
+/// join handle. The loop runs on a dedicated thread with its own Tokio runtime so
+/// this can be called from synchronous startup (e.g. `UnixSocketServer::new`) as
+/// well as from tests inside an existing runtime.
+///
+/// The worker runs until the sender is dropped.
 pub fn spawn_push_delivery() -> (
     mpsc::UnboundedSender<CallbackDispatch>,
-    tokio::task::JoinHandle<()>,
+    std::thread::JoinHandle<()>,
 ) {
     let (tx, rx) = mpsc::unbounded_channel();
-    let handle = tokio::spawn(run_push_delivery_loop(rx));
-    (tx, handle)
+    let join = std::thread::Builder::new()
+        .name("petaltongue-push-delivery".into())
+        .spawn(move || {
+            let rt = match tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+            {
+                Ok(rt) => rt,
+                Err(e) => {
+                    tracing::error!("push delivery: failed to build tokio runtime: {e}");
+                    return;
+                }
+            };
+            rt.block_on(run_push_delivery_loop(rx));
+        })
+        .unwrap_or_else(|e| {
+            // OS thread spawn failure is unrecoverable — log and provide no-op handle
+            tracing::error!("push delivery: failed to spawn thread: {e}");
+            // Spawn a trivial thread so callers always get a valid JoinHandle
+            std::thread::spawn(|| {})
+        });
+    (tx, join)
 }
 
 /// Background loop: drains the channel and delivers each callback.
@@ -127,7 +150,9 @@ mod tests {
         reader.read_line(&mut line).await.expect("read");
 
         drop(tx);
-        handle.await.expect("join");
+        tokio::task::spawn_blocking(move || handle.join().expect("join"))
+            .await
+            .expect("spawn_blocking");
 
         let parsed: serde_json::Value = serde_json::from_str(&line).expect("parse");
         assert_eq!(parsed["jsonrpc"], "2.0");
@@ -148,7 +173,9 @@ mod tests {
         let (tx, handle) = spawn_push_delivery();
         tx.send(dispatch).expect("send");
         drop(tx);
-        handle.await.expect("join");
+        tokio::task::spawn_blocking(move || handle.join().expect("join"))
+            .await
+            .expect("spawn_blocking");
     }
 
     #[tokio::test]
@@ -163,7 +190,9 @@ mod tests {
         let (tx, handle) = spawn_push_delivery();
         tx.send(dispatch).expect("send");
         drop(tx);
-        handle.await.expect("join");
+        tokio::task::spawn_blocking(move || handle.join().expect("join"))
+            .await
+            .expect("spawn_blocking");
     }
 
     #[tokio::test]
@@ -194,7 +223,9 @@ mod tests {
         reader.read_line(&mut line).await.expect("read");
 
         drop(tx);
-        handle.await.expect("join");
+        tokio::task::spawn_blocking(move || handle.join().expect("join"))
+            .await
+            .expect("spawn_blocking");
 
         let parsed: serde_json::Value = serde_json::from_str(&line).expect("parse");
         assert_eq!(parsed["method"], "spring.on_event");

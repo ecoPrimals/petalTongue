@@ -41,6 +41,10 @@ fn compile_html(scene: &SceneGraph) -> (serde_json::Value, String) {
                  svg{{max-width:100%;height:auto}}</style>\
                  </head>\n<body>\n{svg}\n</body>\n</html>"
             );
+            if !petal_tongue_ui_core::validate_standalone_html_export(&html) {
+                warn!("HTML modality output failed validation (PT-04)");
+                return (serde_json::Value::Null, "error".into());
+            }
             (serde_json::Value::String(html), "html".into())
         }
         _ => (serde_json::Value::Null, "error".into()),
@@ -290,6 +294,10 @@ mod tests {
         );
         assert!(s.contains("<svg"), "should contain embedded SVG");
         assert!(s.contains("</html>"), "should close HTML");
+        assert!(
+            petal_tongue_ui_core::validate_standalone_html_export(s),
+            "exported HTML should pass PT-04 validation"
+        );
     }
 
     #[test]

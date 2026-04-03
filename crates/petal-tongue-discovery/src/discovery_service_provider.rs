@@ -56,9 +56,9 @@ pub struct DiscoveryServiceProvider {
 }
 
 impl DiscoveryServiceProvider {
-    /// Create a new Songbird visualization provider
+    /// Create a new discovery-service visualization provider
     ///
-    /// Discovers Songbird's Unix socket and wraps it in a provider.
+    /// Locates the discovery registry Unix socket and wraps it in a provider.
     ///
     /// # Errors
     /// Returns `DiscoveryError` if the discovery service is not found or health check fails.

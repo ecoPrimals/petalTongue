@@ -189,42 +189,68 @@ Base URL for HTTP probing; ports from `PETALTONGUE_DISCOVERY_PORTS` are appended
 ---
 
 ### **DISCOVERY_SERVICE_SOCKET**
-**Type**: String (socket name or path)  
+**Type**: String (socket basename)  
 **Default**: `discovery-service`  
 **Required**: No  
-**Example**: `DISCOVERY_SERVICE_SOCKET=songbird` (for Songbird deployments)
+**Example**: `DISCOVERY_SERVICE_SOCKET=my-discovery-registry`
 
-Capability-based discovery service socket name. Set to `songbird` when using Songbird as discovery provider.
-
----
-
-### **SONGBIRD_SOCKET_FALLBACK**
-**Type**: String (absolute path)  
-**Default**: `/tmp/<discovery-service>-nat0-default.sock`  
-**Required**: No  
-**Example**: `SONGBIRD_SOCKET_FALLBACK=/run/user/1000/songbird-nat0.sock`
-
-Fallback socket path when discovery service is not found in standard locations.
+Basename used to resolve the Unix socket for the ecosystem discovery/registry service
+(`{basename}-{FAMILY_ID}.sock` under `XDG_RUNTIME_DIR`, `/run/user/<uid>`, and `/tmp`).
+Override when your deployment installs the registry under a non-default name.
 
 ---
 
-### **BARRACUDA_SOCKET**
-**Type**: String (absolute path)  
+### **COMPUTE_SOCKET**
+**Type**: String (absolute path to Unix socket)  
 **Default**: None (runtime scan)  
 **Required**: No  
-**Example**: `BARRACUDA_SOCKET=/run/user/1000/barracuda.sock`
+**Example**: `COMPUTE_SOCKET=/run/user/1000/ecoPrimals/physics-compute.sock`
 
-Explicit path to physics/GPU compute primal socket. Overrides runtime scanning.
+Explicit path to the compute-primal JSON-RPC socket used by the physics/compute bridge.
+When unset, the bridge scans standard ecosystem paths (see `PHYSICS_COMPUTE_SOCKET_NAME`).
 
 ---
 
 ### **PHYSICS_COMPUTE_SOCKET_NAME**
 **Type**: String  
-**Default**: `barracuda`  
+**Default**: `physics-compute`  
 **Required**: No  
 **Example**: `PHYSICS_COMPUTE_SOCKET_NAME=physics-gpu`
 
-Socket name for physics compute capability discovery (used when `BARRACUDA_SOCKET` not set).
+Socket basename used when searching for a compute primal (only when `COMPUTE_SOCKET` is unset).
+
+---
+
+### **AUDIO_PROVIDER_URL**
+**Type**: String (URL)  
+**Default**: None  
+**Required**: No  
+**Example**: `AUDIO_PROVIDER_URL=http://127.0.0.1:8090`
+
+HTTP endpoint for remote audio synthesis when using the capability-discovered audio provider.
+The UI prefers this variable for explicit configuration.
+
+---
+
+### **DISPLAY_BACKEND_PORT**
+**Type**: Integer (port number)  
+**Default**: `9001`  
+**Required**: No  
+**Example**: `DISPLAY_BACKEND_PORT=9100`
+
+Port used for local display-backend / tarpc defaults when discovery falls back to loopback
+(see `petal_tongue_core::constants::display_backend_port()`).
+
+---
+
+### **ENTROPY_SOURCE_ENDPOINT**
+**Type**: String (URL)  
+**Default**: None  
+**Required**: No  
+**Example**: `ENTROPY_SOURCE_ENDPOINT=http://127.0.0.1:8443`
+
+HTTP base URL for streaming human-entropy payloads to a primal that advertises entropy ingestion.
+Used by the human entropy UI when capability discovery does not yield an endpoint.
 
 ---
 
@@ -232,21 +258,10 @@ Socket name for physics compute capability discovery (used when `BARRACUDA_SOCKE
 **Type**: String (URL)
 **Default**: `http://localhost:8090`
 **Required**: No
-**Example**: `PETALTONGUE_GPU_COMPUTE_ENDPOINT=http://barracuda.local:8090`
+**Example**: `PETALTONGUE_GPU_COMPUTE_ENDPOINT=http://compute.local:8090`
 
-Endpoint for GPU compute offload (barraCuda). Used by the compute bridge for
+Endpoint for GPU compute offload. Used by the compute bridge for
 statistics, tessellation, projection, and physics operations.
-
----
-
-### **TOADSTOOL_PORT**
-**Type**: Integer (port number)
-**Default**: `8091`
-**Required**: No
-**Example**: `TOADSTOOL_PORT=9091`
-
-Port for ToadStool display backend communication. Used when discovering
-ToadStool via HTTP rather than Unix socket.
 
 ---
 
@@ -644,7 +659,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: April 2, 2026  
+**Last Updated**: April 3, 2026  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 

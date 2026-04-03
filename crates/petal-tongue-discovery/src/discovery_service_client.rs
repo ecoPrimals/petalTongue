@@ -50,8 +50,8 @@ pub struct DiscoveryServiceClient {
 impl DiscoveryServiceClient {
     /// Discover discovery service Unix socket (capability-based, no hardcoded primal names)
     ///
-    /// Uses `DISCOVERY_SERVICE_SOCKET` env for socket name (default: discovery-service).
-    /// Set to `songbird` for Songbird deployments.
+    /// Uses `DISCOVERY_SERVICE_SOCKET` env for socket basename (default: `discovery-service`).
+    /// Override when your deployment installs the discovery registry under a different socket name.
     ///
     /// # Errors
     /// Returns `DiscoveryError::DiscoveryServiceNotFound` if no socket found in search paths.
@@ -120,7 +120,7 @@ impl DiscoveryServiceClient {
 
     /// Discover primals by capability (semantic: discovery.query)
     ///
-    /// Queries Songbird for all registered primals with the given capability.
+    /// Queries the discovery service for all registered primals with the given capability.
     /// Returns list of primals that can provide this capability.
     ///
     /// # Semantic Method Name
@@ -167,7 +167,7 @@ impl DiscoveryServiceClient {
 
     /// Get all registered primals
     ///
-    /// Returns the complete list of primals known to Songbird.
+    /// Returns the complete list of primals registered with the discovery service.
     /// Uses discovery.query("*") to get all registered primals.
     ///
     /// # Errors
@@ -215,7 +215,7 @@ impl DiscoveryServiceClient {
             .collect())
     }
 
-    /// Health check - verify Songbird is responding (semantic: health.check)
+    /// Health check — verify the discovery service is responding (semantic: health.check)
     ///
     /// # Errors
     /// Returns `DiscoveryError` on connection or JSON-RPC errors.
@@ -232,9 +232,9 @@ impl DiscoveryServiceClient {
         Ok(result["status"].as_str().unwrap_or("unknown").to_string())
     }
 
-    /// Send JSON-RPC request to Songbird
+    /// Send JSON-RPC request to the discovery service
     ///
-    /// Uses aggressive timeouts to prevent hanging on unresponsive Songbird.
+    /// Uses aggressive timeouts to prevent hanging on an unresponsive peer.
     async fn send_request(&self, request: Value) -> DiscoveryResult<Value> {
         use petal_tongue_core::constants::discovery_timeouts;
         let connect_timeout = discovery_timeouts::DISCOVERY_SERVICE_CONNECT_TIMEOUT;
@@ -309,7 +309,7 @@ impl DiscoveryServiceClient {
             })
     }
 
-    /// Parse a primal from Songbird's JSON response
+    /// Parse a primal from the discovery service JSON response
     #[expect(
         clippy::unused_self,
         reason = "method for consistency with other parsers"

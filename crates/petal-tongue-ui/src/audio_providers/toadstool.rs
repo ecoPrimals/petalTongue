@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Discovered audio provider — advanced synthesis via capability-discovered primal
+//! Discovered audio provider — advanced synthesis via capability discovery
 
 use super::AudioProvider;
 
@@ -20,7 +20,7 @@ pub fn build_audio_synthesize_url(base: &str) -> String {
 use bytes::Bytes;
 use tracing::{info, warn};
 
-/// Discovered audio provider (advanced synthesis via primal)
+/// Discovered audio provider (advanced synthesis via runtime discovery)
 pub struct DiscoveredAudioProvider {
     endpoint: Option<String>,
     available: bool,
@@ -38,7 +38,7 @@ impl DiscoveredAudioProvider {
         if available {
             info!("🔊 Audio provider initialized: {:?}", endpoint);
         } else {
-            info!("🔊 Audio provider not available (set AUDIO_PROVIDER_URL or TOADSTOOL_URL)");
+            info!("🔊 Audio provider not available (set AUDIO_PROVIDER_URL)");
         }
 
         Self {
@@ -47,13 +47,16 @@ impl DiscoveredAudioProvider {
         }
     }
 
-    /// Request audio synthesis from Toadstool
+    /// Request audio synthesis from the discovered provider
     #[expect(dead_code, reason = "Reserved for future parametric synthesis API")]
     async fn request_synthesis(&self, params: &str) -> Result<Bytes, String> {
-        let endpoint = self.endpoint.as_ref().ok_or("Toadstool not configured")?;
+        let endpoint = self
+            .endpoint
+            .as_ref()
+            .ok_or("Audio provider not configured")?;
 
         let url = build_audio_synthesize_url(endpoint);
-        info!("🔊 Requesting audio synthesis from Toadstool: {}", params);
+        info!("🔊 Requesting audio synthesis: {}", params);
 
         // Create HTTP client with timeout
         let client = reqwest::Client::builder()
@@ -83,7 +86,7 @@ impl DiscoveredAudioProvider {
 
         if !response.status().is_success() {
             return Err(format!(
-                "Toadstool returned error: {} ({})",
+                "Audio provider returned error: {} ({})",
                 response.status(),
                 url
             ));
@@ -95,7 +98,7 @@ impl DiscoveredAudioProvider {
             .map_err(|e| format!("Failed to read audio data: {e}"))?;
 
         info!(
-            "✅ Received {} bytes of audio from Toadstool",
+            "✅ Received {} bytes of synthesized audio",
             audio_bytes.len()
         );
         Ok(audio_bytes)
@@ -110,7 +113,7 @@ impl Default for DiscoveredAudioProvider {
 
 impl AudioProvider for DiscoveredAudioProvider {
     fn name(&self) -> &'static str {
-        "Toadstool Synthesis"
+        "Discovered Audio Synthesis"
     }
 
     fn is_available(&self) -> bool {
@@ -119,13 +122,13 @@ impl AudioProvider for DiscoveredAudioProvider {
 
     fn play(&self, sound_name: &str) -> Result<(), String> {
         if !self.available {
-            return Err("Toadstool not available".to_string());
+            return Err("Audio provider not available".to_string());
         }
 
         let endpoint = self.endpoint.clone();
         let sound = sound_name.to_string();
 
-        info!("🔊 Requesting Toadstool synthesis: {}", sound_name);
+        info!("🔊 Requesting audio synthesis: {}", sound_name);
 
         // Spawn async task to request synthesis
         tokio::spawn(async move {
@@ -152,10 +155,10 @@ impl AudioProvider for DiscoveredAudioProvider {
                         .await
                     {
                         Ok(response) if response.status().is_success() => {
-                            info!("✅ Toadstool playing sound");
+                            info!("✅ Audio provider playing sound");
                         }
                         Ok(response) => {
-                            warn!("⚠️ Toadstool returned error: {}", response.status());
+                            warn!("⚠️ Audio provider returned error: {}", response.status());
                         }
                         Err(e) => {
                             warn!("❌ Failed to request playback: {}", e);
@@ -175,7 +178,7 @@ impl AudioProvider for DiscoveredAudioProvider {
 
         let endpoint = self.endpoint.clone();
 
-        info!("🛑 Sending stop command to Toadstool");
+        info!("🛑 Sending stop command to audio provider");
 
         // Spawn async task to send stop command
         tokio::spawn(async move {
@@ -189,10 +192,10 @@ impl AudioProvider for DiscoveredAudioProvider {
 
                     match client.post(&url).send().await {
                         Ok(response) if response.status().is_success() => {
-                            info!("✅ Toadstool stopped playback");
+                            info!("✅ Audio provider stopped playback");
                         }
                         Ok(response) => {
-                            warn!("⚠️ Toadstool stop returned: {}", response.status());
+                            warn!("⚠️ Audio provider stop returned: {}", response.status());
                         }
                         Err(e) => {
                             warn!("❌ Failed to send stop command: {}", e);
@@ -218,7 +221,7 @@ impl AudioProvider for DiscoveredAudioProvider {
     }
 
     fn description(&self) -> &'static str {
-        "Advanced audio synthesis via Toadstool primal. Supports music, voice, and complex soundscapes."
+        "Advanced audio synthesis from a discovered provider. Supports music, voice, and complex soundscapes."
     }
 }
 
@@ -227,13 +230,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_toadstool_provider_default() {
+    fn test_discovered_audio_provider_default() {
         let provider = DiscoveredAudioProvider::default();
-        assert_eq!(provider.name(), "Toadstool Synthesis");
+        assert_eq!(provider.name(), "Discovered Audio Synthesis");
     }
 
     #[test]
-    fn test_toadstool_play_when_unavailable() {
+    fn test_discovered_audio_play_when_unavailable() {
         let provider = DiscoveredAudioProvider::new();
         if !provider.is_available() {
             let result = provider.play("music");
@@ -243,19 +246,19 @@ mod tests {
     }
 
     #[test]
-    fn test_toadstool_stop_when_unavailable_no_panic() {
+    fn test_discovered_audio_stop_when_unavailable_no_panic() {
         let provider = DiscoveredAudioProvider::new();
         provider.stop();
     }
 
     #[test]
-    fn test_toadstool_description() {
+    fn test_discovered_audio_description() {
         let provider = DiscoveredAudioProvider::new();
-        assert!(provider.description().contains("Toadstool"));
+        assert!(provider.description().contains("discovered"));
     }
 
     #[test]
-    fn test_toadstool_available_sounds_when_unavailable() {
+    fn test_discovered_audio_available_sounds_when_unavailable() {
         let provider = DiscoveredAudioProvider::new();
         if !provider.is_available() {
             assert!(provider.available_sounds().is_empty());
@@ -263,16 +266,16 @@ mod tests {
     }
 
     #[test]
-    fn test_toadstool_name_constant() {
+    fn test_discovered_audio_name_constant() {
         let provider = DiscoveredAudioProvider::default();
-        assert_eq!(provider.name(), "Toadstool Synthesis");
+        assert_eq!(provider.name(), "Discovered Audio Synthesis");
     }
 
     #[test]
-    fn test_toadstool_description_contains_primal() {
+    fn test_discovered_audio_description_mentions_provider() {
         let provider = DiscoveredAudioProvider::new();
-        assert!(provider.description().contains("primal"));
-        assert!(provider.description().contains("Toadstool"));
+        assert!(provider.description().contains("provider"));
+        assert!(provider.description().contains("discovered"));
     }
 
     #[test]
