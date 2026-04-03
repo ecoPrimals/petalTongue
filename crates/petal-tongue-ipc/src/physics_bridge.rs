@@ -192,18 +192,15 @@ async fn try_gpu_physics_step(world: &mut PhysicsWorld) -> Result<usize, String>
 /// Discover GPU compute socket via runtime scanning.
 ///
 /// Capability-based: discovers primals providing `gpu.dispatch` (no hardcoded names).
-/// Follows toadStool S139 dual-write pattern for ecosystem discovery.
+/// Follows the ecosystem S139 dual-write pattern for discovery manifests.
 ///
 /// Priority:
-/// 1. `COMPUTE_SOCKET` env (or `BARRACUDA_SOCKET` legacy alias) (explicit override)
-/// 2. `$XDG_RUNTIME_DIR/ecoPrimals/` (ecosystem discovery directory, toadStool S139)
+/// 1. `COMPUTE_SOCKET` env (explicit override)
+/// 2. `$XDG_RUNTIME_DIR/ecoPrimals/` (ecosystem discovery directory, S139 layout)
 /// 3. `$XDG_RUNTIME_DIR/{socket_name}/` (primal-specific)
 /// 4. `/tmp/` fallback
 fn discover_compute_socket() -> Result<String, String> {
     if let Ok(path) = std::env::var("COMPUTE_SOCKET") {
-        return Ok(path);
-    }
-    if let Ok(path) = std::env::var("BARRACUDA_SOCKET") {
         return Ok(path);
     }
 
@@ -212,7 +209,7 @@ fn discover_compute_socket() -> Result<String, String> {
         .unwrap_or_else(|_| "physics-compute".to_string());
 
     let candidates = [
-        // Ecosystem discovery (toadStool S139 dual-write)
+        // Ecosystem discovery (S139 dual-write layout)
         format!("{runtime_dir}/ecoPrimals/{socket_name}.sock"),
         format!("{runtime_dir}/ecoPrimals/discovery/{socket_name}.sock"),
         // Primal-specific
@@ -270,7 +267,7 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn discover_barracuda_returns_err_when_absent() {
+    fn discover_compute_socket_returns_err_when_absent() {
         let result = discover_compute_socket();
         assert!(
             result.is_ok() || result.is_err(),
@@ -301,13 +298,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn step_physics_with_barracuda_env_uses_env_path() {
+    async fn step_physics_with_compute_socket_env_uses_env_path() {
         let temp = std::env::temp_dir().join("physics-bridge-test.sock");
         std::fs::write(&temp, "").expect("create temp file");
         let path_str = temp.to_str().expect("path").to_string();
 
         let result = petal_tongue_core::test_fixtures::env_test_helpers::with_env_var_async(
-            "BARRACUDA_SOCKET",
+            "COMPUTE_SOCKET",
             &path_str,
             || async {
                 let mut world = PhysicsWorld::new();

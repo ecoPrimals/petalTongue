@@ -341,15 +341,9 @@ fn discover_capability_socket(capability: &str) -> Option<String> {
 /// Heuristic: does a socket name suggest it provides a capability?
 fn capability_matches_socket_name(capability: &str, socket_name: &str) -> bool {
     match capability {
-        "dag.session" | "dag.vertex.create" => {
-            socket_name.contains(primal_names::RHIZOCRYPT) || socket_name.contains("rhizo")
-        }
-        "braid.create" | "contribution.record" => {
-            socket_name.contains(primal_names::SWEETGRASS) || socket_name.contains("sweet")
-        }
-        "spine.create" | "entry.append" => {
-            socket_name.contains(primal_names::LOAMSPINE) || socket_name.contains("loam")
-        }
+        "dag.session" | "dag.vertex.create" => socket_name.contains("dag"),
+        "braid.create" | "contribution.record" => socket_name.contains("braid"),
+        "spine.create" | "entry.append" => socket_name.contains("spine"),
         _ => false,
     }
 }
@@ -491,40 +485,40 @@ mod tests {
     }
 
     #[test]
-    fn capability_matches_rhizocrypt() {
+    fn capability_matches_dag_domain() {
         assert!(capability_matches_socket_name(
             "dag.session",
-            "rhizocrypt-nat0"
+            "dag-provider-nat0"
         ));
         assert!(capability_matches_socket_name(
             "dag.vertex.create",
-            "rhizo-family1"
+            "dag-family1"
         ));
         assert!(!capability_matches_socket_name("dag.session", "songbird"));
     }
 
     #[test]
-    fn capability_matches_sweetgrass() {
+    fn capability_matches_braid_domain() {
         assert!(capability_matches_socket_name(
             "braid.create",
-            "sweetgrass-nat0"
+            "braid-provider-nat0"
         ));
         assert!(capability_matches_socket_name(
             "contribution.record",
-            "sweet-family1"
+            "braid-family1"
         ));
         assert!(!capability_matches_socket_name("braid.create", "loamspine"));
     }
 
     #[test]
-    fn capability_matches_loamspine() {
+    fn capability_matches_spine_domain() {
         assert!(capability_matches_socket_name(
             "spine.create",
-            "loamspine-nat0"
+            "spine-provider-nat0"
         ));
         assert!(capability_matches_socket_name(
             "entry.append",
-            "loam-family1"
+            "spine-family1"
         ));
         assert!(!capability_matches_socket_name(
             "spine.create",
@@ -592,8 +586,8 @@ mod tests {
 
     #[test]
     fn capability_matches_unknown_capability() {
-        assert!(!capability_matches_socket_name("unknown.cap", "rhizocrypt"));
-        assert!(!capability_matches_socket_name("foo.bar", "sweetgrass"));
+        assert!(!capability_matches_socket_name("unknown.cap", "dag-sock"));
+        assert!(!capability_matches_socket_name("foo.bar", "braid-sock"));
     }
 
     #[test]
@@ -669,27 +663,30 @@ mod tests {
     }
 
     #[test]
-    fn capability_matches_dag_session_rhizo_variant() {
-        assert!(capability_matches_socket_name("dag.session", "rhizo"));
+    fn capability_matches_dag_socket_names() {
+        assert!(capability_matches_socket_name("dag.session", "dag"));
         assert!(capability_matches_socket_name(
             "dag.vertex.create",
-            "rhizocrypt"
+            "dag-alt"
         ));
     }
 
     #[test]
-    fn capability_matches_contribution_sweet() {
+    fn capability_matches_braid_socket_names() {
         assert!(capability_matches_socket_name(
             "contribution.record",
-            "sweetgrass"
+            "braid-record"
         ));
-        assert!(capability_matches_socket_name("braid.create", "sweet"));
+        assert!(capability_matches_socket_name("braid.create", "braid"));
     }
 
     #[test]
-    fn capability_matches_entry_loam() {
-        assert!(capability_matches_socket_name("entry.append", "loamspine"));
-        assert!(capability_matches_socket_name("spine.create", "loam"));
+    fn capability_matches_spine_socket_names() {
+        assert!(capability_matches_socket_name(
+            "entry.append",
+            "spine-append"
+        ));
+        assert!(capability_matches_socket_name("spine.create", "spine"));
     }
 
     #[test]

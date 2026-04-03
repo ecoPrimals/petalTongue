@@ -86,19 +86,14 @@ pub const DEFAULT_SANDBOX_SECURITY_PORT: u16 = 9000;
 /// Overridable via `PETALTONGUE_SANDBOX_DISCOVERY_ENDPOINT` (full URL) env var.
 pub const DEFAULT_SANDBOX_DISCOVERY_PORT: u16 = 8080;
 
-/// Default display backend / GPU compute port (overridable via `DISPLAY_BACKEND_PORT` or `TOADSTOOL_PORT` env var).
+/// Default display backend / GPU compute port (overridable via `DISPLAY_BACKEND_PORT` env var).
 pub const DEFAULT_DISPLAY_BACKEND_PORT: u16 = 9001;
 
 /// Display backend port (env-driven with fallback).
-/// Reads `DISPLAY_BACKEND_PORT` then `TOADSTOOL_PORT` (legacy alias); falls back to `DEFAULT_DISPLAY_BACKEND_PORT`.
+/// Reads `DISPLAY_BACKEND_PORT`; falls back to `DEFAULT_DISPLAY_BACKEND_PORT`.
 #[must_use]
 pub fn display_backend_port() -> u16 {
-    if let Ok(v) = std::env::var("DISPLAY_BACKEND_PORT")
-        && let Ok(p) = v.parse()
-    {
-        return p;
-    }
-    env_or("TOADSTOOL_PORT", DEFAULT_DISPLAY_BACKEND_PORT)
+    env_or("DISPLAY_BACKEND_PORT", DEFAULT_DISPLAY_BACKEND_PORT)
 }
 
 /// Loopback host for local-only connections (used when env/discovery not available).
@@ -609,6 +604,20 @@ mod tests {
     #[test]
     fn loopback_host_is_ipv4() {
         assert_eq!(DEFAULT_LOOPBACK_HOST, "127.0.0.1");
+    }
+
+    #[test]
+    fn test_display_backend_port_default() {
+        env_test_helpers::with_env_var_removed("DISPLAY_BACKEND_PORT", || {
+            assert_eq!(display_backend_port(), DEFAULT_DISPLAY_BACKEND_PORT);
+        });
+    }
+
+    #[test]
+    fn test_display_backend_port_env_override() {
+        env_test_helpers::with_env_var("DISPLAY_BACKEND_PORT", "9100", || {
+            assert_eq!(display_backend_port(), 9100);
+        });
     }
 
     #[test]

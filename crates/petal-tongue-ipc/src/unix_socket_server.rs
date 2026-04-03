@@ -23,6 +23,8 @@ pub struct UnixSocketServer {
     handlers: RpcHandlers,
     motor_tx: Option<std::sync::mpsc::Sender<petal_tongue_core::MotorCommand>>,
     tcp_port: Option<u16>,
+    /// Keeps the PT-06 push delivery thread alive for the server lifetime.
+    _push_delivery_thread: std::thread::JoinHandle<()>,
 }
 
 #[cfg_attr(not(test), allow(dead_code))]
@@ -37,6 +39,8 @@ impl UnixSocketServer {
         handlers.rendering_awareness = Some(Arc::new(std::sync::RwLock::new(
             petal_tongue_core::RenderingAwareness::new(),
         )));
+        let (callback_tx, push_thread) = crate::push_delivery::spawn_push_delivery();
+        handlers.callback_tx = Some(callback_tx);
 
         Ok(Self {
             socket_path,
@@ -44,6 +48,7 @@ impl UnixSocketServer {
             handlers,
             motor_tx: None,
             tcp_port: None,
+            _push_delivery_thread: push_thread,
         })
     }
 
@@ -227,6 +232,15 @@ impl UnixSocketServer {
     }
 }
 
+#[cfg(test)]
+impl UnixSocketServer {
+    /// Whether JSON-RPC handlers have a push delivery sender (PT-06).
+    #[must_use]
+    pub(crate) fn push_delivery_wired_for_tests(&self) -> bool {
+        self.handlers.callback_tx.is_some()
+    }
+}
+
 impl Drop for UnixSocketServer {
     fn drop(&mut self) {
         if self.socket_path.exists() {
@@ -268,6 +282,10 @@ mod tests {
             ],
             || {
                 let server = UnixSocketServer::new(graph).unwrap();
+                assert!(
+                    server.push_delivery_wired_for_tests(),
+                    "PT-06: push delivery should be wired for callback notifications"
+                );
                 assert_eq!(server.family_id, "test-family");
                 let socket_str = server.socket_path.to_str().unwrap();
                 assert!(

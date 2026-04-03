@@ -27,9 +27,9 @@ const fn modality_tested_text(tested: bool) -> &'static str {
 }
 
 #[must_use]
-pub const fn audio_tier_label(has_toadstool: bool, has_user_sounds: bool) -> &'static str {
-    if has_toadstool {
-        "Active tier: Toadstool Synthesis"
+pub const fn audio_tier_label(has_audio_provider: bool, has_user_sounds: bool) -> &'static str {
+    if has_audio_provider {
+        "Active tier: Discovered Synthesis"
     } else if has_user_sounds {
         "Active tier: User Sound Files"
     } else {
@@ -268,10 +268,8 @@ pub fn render_audio_panel(
                 ui.add_space(8.0);
 
                 let has_user_sounds = std::env::var("PETALTONGUE_SOUNDS_DIR").is_ok();
-                let has_toadstool = std::env::var("AUDIO_PROVIDER_URL")
-                    .or_else(|_| std::env::var("TOADSTOOL_URL"))
-                    .is_ok();
-                let tier_label = audio_tier_label(has_toadstool, has_user_sounds);
+                let has_audio_provider = std::env::var("AUDIO_PROVIDER_URL").is_ok();
+                let tier_label = audio_tier_label(has_audio_provider, has_user_sounds);
 
                 ui.label(
                     egui::RichText::new(tier_label)
@@ -281,9 +279,11 @@ pub fn render_audio_panel(
                 );
                 ui.add_space(2.0);
                 ui.label(
-                    egui::RichText::new("Tiers: Pure Rust (built-in) → User sounds → Toadstool")
-                        .size(10.0)
-                        .color(egui::Color32::GRAY),
+                    egui::RichText::new(
+                        "Tiers: Pure Rust (built-in) → User sounds → Discovered synthesis",
+                    )
+                    .size(10.0)
+                    .color(egui::Color32::GRAY),
                 );
             });
         ui.add_space(12.0);
@@ -549,14 +549,14 @@ mod tests {
     }
 
     #[test]
-    fn audio_tier_label_toadstool() {
+    fn audio_tier_label_discovered_synthesis() {
         assert_eq!(
             audio_tier_label(true, false),
-            "Active tier: Toadstool Synthesis"
+            "Active tier: Discovered Synthesis"
         );
         assert_eq!(
             audio_tier_label(true, true),
-            "Active tier: Toadstool Synthesis"
+            "Active tier: Discovered Synthesis"
         );
     }
 

@@ -286,9 +286,9 @@ mod tests {
 
     #[test]
     fn test_primal_socket_env_override() {
-        env_test_helpers::with_env_var("SONGBIRD_SOCKET", "/tmp/custom-songbird.sock", || {
-            let path = discover_primal_socket("songbird", None, None).unwrap();
-            assert_eq!(path, PathBuf::from("/tmp/custom-songbird.sock"));
+        env_test_helpers::with_env_var("MYSERVICE_SOCKET", "/tmp/custom-myservice.sock", || {
+            let path = discover_primal_socket("myservice", None, None).unwrap();
+            assert_eq!(path, PathBuf::from("/tmp/custom-myservice.sock"));
         });
     }
 

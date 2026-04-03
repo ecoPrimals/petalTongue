@@ -88,18 +88,16 @@ impl RegistrationClient {
     ///
     /// Capability-based discovery: uses discovery service socket (no hardcoded primal names).
     /// Socket path resolution (priority order):
-    /// 1. `DISCOVERY_SERVICE_SOCKET` env (explicit override, or `SONGBIRD_SOCKET` legacy alias)
-    /// 2. `discover_primal_socket` with capability-based socket name from constants
-    /// 3. `SONGBIRD_SOCKET_FALLBACK` env or conventional path fallback
+    /// 1. `discover_primal_socket` using the capability-based name from
+    ///    `petal_tongue_core::constants::discovery_service_socket_name` (includes
+    ///    `<SOCKET_BASENAME>_SOCKET` override and standard biomeOS paths)
+    /// 2. Conventional path `/tmp/biomeos/<socket_base>.sock` when `discover_primal_socket` fails
     #[must_use]
     pub fn new() -> Self {
         let socket_base = constants::discovery_service_socket_name();
         let socket_path = crate::socket_path::discover_primal_socket(&socket_base, None, None)
             .map_or_else(
-                |_| {
-                    std::env::var("SONGBIRD_SOCKET_FALLBACK")
-                        .unwrap_or_else(|_| format!("/tmp/biomeos/{socket_base}.sock"))
-                },
+                |_| format!("/tmp/biomeos/{socket_base}.sock"),
                 |p| p.to_string_lossy().to_string(),
             );
         Self {

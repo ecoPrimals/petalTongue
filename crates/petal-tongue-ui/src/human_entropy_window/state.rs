@@ -151,15 +151,6 @@ impl HumanEntropyWindow {
             return Some(endpoint);
         }
 
-        // Legacy: BEARDOG_ENTROPY_ENDPOINT (deprecated, use ENTROPY_SOURCE_ENDPOINT)
-        if let Ok(endpoint) = std::env::var("BEARDOG_ENTROPY_ENDPOINT") {
-            info!(
-                "Using ENTROPY_SOURCE_ENDPOINT (legacy BEARDOG_ENTROPY_ENDPOINT): {}",
-                endpoint
-            );
-            return Some(endpoint);
-        }
-
         // Try discovery hints (comma-separated list of URLs)
         if let Ok(hints) = std::env::var("PETALTONGUE_DISCOVERY_HINTS") {
             for hint in hints.split(',') {
