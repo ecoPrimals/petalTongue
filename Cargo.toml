@@ -9,13 +9,13 @@ members = [
     "crates/petal-tongue-api",
     "crates/petal-tongue-discovery",
     "crates/petal-tongue-entropy",
-    "crates/petal-tongue-adapters",  # NEW: Adapter system
-    "crates/petal-tongue-ipc",       # Phase 3: IPC
-    "crates/petal-tongue-cli",       # Phase 3: CLI tools
-    "crates/petal-tongue-ui-core",   # NEW: Pure Rust UI (Tier 1)
+    "crates/petal-tongue-adapters",  # Adapter system
+    "crates/petal-tongue-ipc",       # IPC
+    "crates/petal-tongue-cli",       # CLI tools
+    "crates/petal-tongue-ui-core",   # Pure Rust UI (Tier 1)
     "crates/petal-tongue-ui",        # Tier 2: Native GUI (egui)
-    "crates/petal-tongue-tui",       # NEW: Rich TUI (Terminal UI)
-    "crates/petal-tongue-headless",  # NEW: Headless binary (Tier 1 only)
+    "crates/petal-tongue-tui",       # Rich TUI (Terminal UI)
+    "crates/petal-tongue-headless",  # Headless binary (Tier 1 only)
     "crates/petal-tongue-scene",     # Declarative scene graph + modality compilers
     "crates/doom-core",              # Doom integration for platform testing
     # BingoCube is now a standalone tool at bingoCube/
@@ -66,7 +66,7 @@ anyhow = "1.0"
 # Install with: sudo apt-get install -y libasound2-dev pkg-config
 # NOTE: These are NOT workspace dependencies because they're optional
 # Each crate that needs them must declare them as optional local dependencies
-rand = "0.8"  # 0.9 (Jan 2025) has breaking changes; thread_rng/gen_range/random unchanged
+rand = "0.8"  # Stay on 0.8 until a deliberate workspace migration to 0.9+ (API churn vs. benefit)
 
 # Pure Rust audio file generation (no system dependencies)
 hound = "3.5"

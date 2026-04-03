@@ -292,9 +292,9 @@ impl EguiGUI {
 
 impl RichTUI {
     async fn render(&mut self) -> Result<()> {
-        // Discover topology via Songbird if available
-        if let Some(songbird) = self.songbird_client.as_ref() {
-            self.topology = songbird.get_topology().await?;
+        // Discover topology via discovery service if available
+        if let Some(discovery_client) = self.discovery_client.as_ref() {
+            self.topology = discovery_client.get_topology().await?;
         }
         
         // Render TUI (petalTongue's job)
@@ -356,8 +356,8 @@ if let Ok(toadstool) = ToadStoolClient::discover().await {
 **How petalTongue Uses Songbird**:
 ```rust
 // Optional, graceful degradation if unavailable
-if let Ok(songbird) = DiscoveryServiceClient::discover().await {
-    let topology = songbird.get_topology().await?;
+if let Ok(discovery_client) = DiscoveryServiceClient::discover().await {
+    let topology = discovery_client.get_topology().await?;
     ui.render_topology(topology)?;
 } else {
     ui.render_standalone_mode()?;

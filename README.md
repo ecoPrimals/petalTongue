@@ -106,7 +106,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,952+ passing, 0 failures (1 pre-existing CLI test excluded) |
+| Tests | 6,079+ passing, 0 failures (1 pre-existing CLI test excluded) |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
@@ -138,7 +138,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 5,952+ tests
+cargo test --workspace --all-features        # 6,079+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
@@ -161,7 +161,7 @@ See [ENV_VARS.md](./ENV_VARS.md) for the full reference.
 
 ## Specs
 
-Architectural specifications live in `specs/`:
+Architectural specifications live in `specs/`. See `specs/` for the complete specification set (20 specs).
 
 | Spec | Purpose |
 |------|---------|

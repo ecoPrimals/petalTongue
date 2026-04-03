@@ -54,7 +54,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 6,075+ tests
+cargo test --workspace --all-features           # 6,079+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
@@ -108,13 +108,19 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 - `lib.rs` -- Provider discovery orchestrator
 - `unix_socket_provider.rs` -- Unix socket JSON-RPC discovery (universal fallback path)
 - `neural_api_provider/` -- biomeOS Neural API discovery (provider, parse, tests)
-- `discovery_service_client.rs` -- Discovery service capability queries
+- `discovery_service_client/` -- Discovery service capability queries (mod, protocol, methods)
 - `discovery_service_provider.rs` -- Discovery service visualization provider (topology inference)
 - `jsonrpc_provider/` -- JSON-RPC visualization provider
 - `mdns_provider/` -- mDNS/DNS-SD zero-config discovery (optional `mdns` feature)
 - `capability_parse.rs` -- 4-format capability parsing (flat, enriched, nested, result-wrapped)
 - `cache.rs` -- LRU discovery result cache
 - `dns_parser.rs` -- Pure-Rust DNS packet parser (SRV, TXT, PTR, A records)
+
+### UI (`petal-tongue-ui`)
+- `scene_bridge/paint/` (color, geometry, primitives)
+- `device_panel/` (list_view, detail_view)
+- `graph_editor/graph/` (validation, serialization)
+- `app/init.rs` + `panel_init.rs`, `provider_init.rs`, `scenario_init.rs`
 
 ### Specs
 
