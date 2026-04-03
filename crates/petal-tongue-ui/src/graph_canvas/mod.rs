@@ -101,17 +101,6 @@ impl GraphCanvas {
         }
     }
 
-    /// Convert world coordinates to screen coordinates (used in coordinate conversion tests)
-    #[cfg_attr(not(test), allow(dead_code))]
-    fn world_to_screen(&self, world_pos: Vec2, canvas_rect: Rect) -> Pos2 {
-        layout::world_to_screen(
-            world_pos,
-            canvas_rect,
-            &self.camera.position,
-            self.camera.zoom,
-        )
-    }
-
     /// Convert screen coordinates to world coordinates
     fn screen_to_world(&self, screen_pos: Pos2, canvas_rect: Rect) -> Vec2 {
         layout::screen_to_world(
@@ -364,7 +353,12 @@ mod tests {
         let canvas_rect = Rect::from_min_size(Pos2::ZERO, EguiVec2::new(800.0, 600.0));
 
         let world_pos = Vec2::new(100.0, 100.0);
-        let screen_pos = canvas.world_to_screen(world_pos, canvas_rect);
+        let screen_pos = layout::world_to_screen(
+            world_pos,
+            canvas_rect,
+            &canvas.camera.position,
+            canvas.camera.zoom,
+        );
         let back_to_world = canvas.screen_to_world(screen_pos, canvas_rect);
 
         assert!((back_to_world.x - world_pos.x).abs() < 0.1);

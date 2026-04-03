@@ -25,7 +25,6 @@ use tokio::sync::RwLock;
 /// Cached entry with expiration
 /// Stores data in Arc for zero-copy cache hits (`Arc::clone` instead of deep clone)
 #[derive(Debug, Clone)]
-#[cfg_attr(not(test), allow(dead_code))]
 struct CachedEntry<T> {
     data: Arc<T>,
     expires_at: Instant,
@@ -47,7 +46,6 @@ impl<T> CachedEntry<T> {
 
 /// Cache key for different data types
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-#[cfg_attr(not(test), allow(dead_code))]
 pub enum CacheKey {
     Primals,
     Topology,
@@ -60,7 +58,6 @@ pub enum CacheKey {
 ///
 /// ASYNC-SAFE: Uses `tokio::sync::RwLock` to prevent deadlocks in async context.
 #[derive(Debug)]
-#[cfg_attr(not(test), allow(dead_code))]
 pub struct ProviderCache<T> {
     cache: Arc<RwLock<LruCache<CacheKey, CachedEntry<T>>>>,
     primals_ttl: Duration,
@@ -71,7 +68,6 @@ pub struct ProviderCache<T> {
     misses: Arc<RwLock<u64>>,
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
 impl<T> ProviderCache<T> {
     /// Create a new cache with specified capacity
     pub fn new(capacity: usize) -> Self {

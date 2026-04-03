@@ -20,11 +20,8 @@ pub fn threshold_color_rgb(value: f64, warning: f64, critical: f64) -> (u8, u8, 
 
 /// Generate sparkline point coordinates from history data.
 /// Returns points (x, y) in rect [0, width] x [0, height]; y=0 at top (min value).
+#[cfg(test)]
 #[must_use]
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "public API for headless testing")
-)]
 pub fn sparkline_points(history: &[f64], width: f32, height: f32) -> Vec<(f32, f32)> {
     if history.len() < 2 {
         return Vec::new();
@@ -90,12 +87,6 @@ pub struct MetricDisplayState {
     pub memory_history: Vec<f64>,
     /// Formatted uptime string
     pub uptime_text: String,
-    /// Whether Neural API is connected (data available)
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "display state API for headless testing")
-    )]
-    pub neural_api_connected: bool,
     /// Memory used in MB (for display)
     pub memory_used_mb: u64,
     /// Memory total in MB (for display)
@@ -132,7 +123,6 @@ pub fn prepare_metrics_display(
         cpu_history: cpu_history.to_vec(),
         memory_history: memory_history.to_vec(),
         uptime_text: format_uptime_display(data.system.uptime_seconds),
-        neural_api_connected: true,
         memory_used_mb: data.system.memory_used_mb,
         memory_total_mb: data.system.memory_total_mb,
         family_id: data.neural_api.family_id.clone(),
@@ -143,11 +133,8 @@ pub fn prepare_metrics_display(
 }
 
 /// Format byte count as human-readable string (e.g., "1.5 MB").
+#[cfg(test)]
 #[must_use]
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "public API for headless testing")
-)]
 pub fn format_bytes(bytes: u64) -> String {
     const KB: u64 = 1024;
     const MB: u64 = KB * 1024;
@@ -335,7 +322,6 @@ mod tests {
         assert_eq!(state.cpu_history, cpu);
         assert_eq!(state.memory_history, mem);
         assert!(state.uptime_text.contains('h'));
-        assert!(state.neural_api_connected);
         assert_eq!(state.memory_used_mb, 4_096);
         assert_eq!(state.memory_total_mb, 8_192);
         assert_eq!(state.family_id, "nat0");

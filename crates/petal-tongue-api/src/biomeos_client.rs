@@ -4,9 +4,9 @@
 //! Connects to BiomeOS/Songbird for live primal discovery and health monitoring.
 
 use crate::biomeos_error::BiomeOsClientError;
+use petal_tongue_core::constants::discovery_timeouts;
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, Properties, TopologyEdge};
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 
 /// `BiomeOS` API client for live primal discovery
 pub struct BiomeOSClient {
@@ -87,13 +87,13 @@ impl BiomeOSClient {
     pub fn new(base_url: impl Into<String>) -> Self {
         // Build HTTP client with robust configuration
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30)) // Increased timeout
-            .connect_timeout(Duration::from_secs(10)) // Separate connect timeout
-            .pool_idle_timeout(Duration::from_secs(90)) // Keep connections alive longer
+            .timeout(discovery_timeouts::HTTP_TIMEOUT)
+            .connect_timeout(discovery_timeouts::HTTP_CONNECT_TIMEOUT)
+            .pool_idle_timeout(discovery_timeouts::HTTP_POOL_IDLE_TIMEOUT)
             .pool_max_idle_per_host(10) // More idle connections
-            .tcp_keepalive(Duration::from_secs(60)) // TCP keep-alive
-            .http2_keep_alive_interval(Some(Duration::from_secs(30))) // HTTP/2 keep-alive
-            .http2_keep_alive_timeout(Duration::from_secs(10))
+            .tcp_keepalive(discovery_timeouts::HTTP_TCP_KEEPALIVE)
+            .http2_keep_alive_interval(Some(discovery_timeouts::HTTP2_KEEPALIVE_INTERVAL))
+            .http2_keep_alive_timeout(discovery_timeouts::HTTP2_KEEPALIVE_TIMEOUT)
             .build()
             .unwrap_or_else(|e| {
                 tracing::warn!(

@@ -10,8 +10,7 @@
 )]
 
 use std::collections::HashMap;
-use std::fs;
-use std::path::Path;
+use std::fs::{self, File};
 
 /// Linux page size (bytes), queried from the kernel at runtime.
 fn page_size() -> u64 {
@@ -315,11 +314,11 @@ fn read_proc_stat(pid: u32) -> Option<(String, u64, u64, u64)> {
     Some((comm, utime, stime, rss))
 }
 
-/// Check if /proc is available (for tests)
+/// Check if `/proc` is usable: `/proc/stat` must exist and be readable (standard Linux check).
 #[cfg(target_os = "linux")]
 #[must_use]
 pub fn proc_available() -> bool {
-    Path::new("/proc/stat").exists()
+    File::open("/proc/stat").is_ok()
 }
 
 #[cfg(not(target_os = "linux"))]
@@ -385,7 +384,7 @@ mod tests {
     fn proc_available_consistent() {
         let a = proc_available();
         #[cfg(target_os = "linux")]
-        assert_eq!(a, std::path::Path::new("/proc/stat").exists());
+        assert_eq!(a, File::open("/proc/stat").is_ok());
         #[cfg(not(target_os = "linux"))]
         assert!(!a);
     }

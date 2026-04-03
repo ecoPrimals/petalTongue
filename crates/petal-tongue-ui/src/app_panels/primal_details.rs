@@ -33,16 +33,6 @@ fn build_properties_from_info(info: &PrimalInfo) -> Properties {
     props
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
-#[must_use]
-const fn health_status_display(health: PrimalHealthStatus) -> (&'static str, egui::Color32) {
-    let rgb = health_status_rgb(health);
-    (
-        health_status_icon(health),
-        egui::Color32::from_rgb(rgb[0], rgb[1], rgb[2]),
-    )
-}
-
 /// Pure: health status icon (no egui)
 #[must_use]
 pub const fn health_status_icon(health: PrimalHealthStatus) -> &'static str {
@@ -357,6 +347,15 @@ fn render_primal_details_summary(
 mod tests {
     use super::*;
     use petal_tongue_core::{PrimalId, Properties, PropertyValue};
+
+    #[must_use]
+    const fn health_status_display(health: PrimalHealthStatus) -> (&'static str, egui::Color32) {
+        let rgb = health_status_rgb(health);
+        (
+            health_status_icon(health),
+            egui::Color32::from_rgb(rgb[0], rgb[1], rgb[2]),
+        )
+    }
 
     fn test_primal_info() -> PrimalInfo {
         let endpoint = petal_tongue_core::constants::default_headless_url();

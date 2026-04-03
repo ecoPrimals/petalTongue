@@ -5,6 +5,9 @@
 //! renderer setup, and construction of `PetalTongueApp`.
 
 use super::PetalTongueApp;
+use super::panel_init::create_panel_registry_and_panels;
+use super::provider_init::{discover_data_providers, discover_neural_api};
+use super::scenario_init::{finalize_app_startup, load_scenario_from_cli};
 use crate::accessibility_panel::AccessibilityPanel;
 use crate::audio::AudioSystemV2;
 use crate::awakening_overlay::AwakeningOverlay;
@@ -14,9 +17,6 @@ use crate::graph_metrics_plotter::GraphMetricsPlotter;
 use crate::interaction_bridge::EguiInteractionBridge;
 use crate::keyboard_shortcuts::KeyboardShortcuts;
 use crate::metrics_dashboard::MetricsDashboard;
-use crate::panel_registry::{PanelInstance, PanelRegistry};
-#[cfg(feature = "doom")]
-use crate::panels::create_doom_factory;
 use crate::process_viewer_integration::ProcessViewerTool;
 use crate::proprioception::initialize_standard_proprioception;
 use crate::proprioception_panel::ProprioceptionPanel;
@@ -33,9 +33,6 @@ use petal_tongue_core::{
     CapabilityDetector, GraphEngine, LayoutAlgorithm, Modality,
     channel::standard_channels,
     constants::{self, APP_DIR_NAME},
-};
-use petal_tongue_discovery::{
-    NeuralApiProvider, VisualizationDataProvider, discover_visualization_providers,
 };
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer, Visual2DRenderer};
 use petal_tongue_scene::game_loop::{TickClock, TickConfig};
@@ -54,21 +51,8 @@ pub(super) fn create_app(
 ) -> Result<PetalTongueApp> {
     tracing::info!("✅ Using shared graph from DataService - zero data duplication!");
 
-    // Load scenario if provided
-    let (scenario, scenario_path_for_provider) = scenario_path.map_or((None, None), |path| {
-        match crate::scenario::Scenario::load(&path) {
-            Ok(s) => {
-                tracing::info!("✅ Scenario loaded successfully: {}", s.name);
-                (Some(s), Some(path))
-            }
-            Err(e) => {
-                tracing::error!("❌ Failed to load scenario: {}", e);
-                (None, None)
-            }
-        }
-    });
+    let (scenario, scenario_path_for_provider) = load_scenario_from_cli(scenario_path);
 
-    // Initialize tutorial mode (checks SHOWCASE_MODE environment variable)
     let tutorial_mode = if scenario.is_some() {
         tracing::info!("📋 Scenario mode: Disabling tutorial/mock data");
         crate::tutorial_mode::TutorialMode::disabled()
@@ -196,128 +180,6 @@ pub(super) fn create_app(
     Ok(app)
 }
 
-fn discover_data_providers(
-    scenario: Option<&crate::scenario::Scenario>,
-    scenario_path_for_provider: Option<&std::path::PathBuf>,
-    tutorial_mode: &crate::tutorial_mode::TutorialMode,
-    runtime: &tokio::runtime::Runtime,
-) -> Vec<Box<dyn VisualizationDataProvider>> {
-    if let (Some(_scenario), Some(path)) = (scenario, scenario_path_for_provider) {
-        tracing::info!("📋 Scenario mode: Loading primals with dynamic schema");
-        match petal_tongue_discovery::DynamicScenarioProvider::from_file(path) {
-            Ok(provider) => {
-                if let Some(version) = provider.version() {
-                    tracing::info!("   Schema version: {}", version);
-                }
-                vec![Box::new(provider) as Box<dyn VisualizationDataProvider>]
-            }
-            Err(e) => {
-                tracing::error!("Failed to create dynamic scenario provider: {}", e);
-                tracing::info!("Falling back to static provider...");
-                match petal_tongue_discovery::ScenarioVisualizationProvider::from_file(path) {
-                    Ok(provider) => vec![Box::new(provider) as Box<dyn VisualizationDataProvider>],
-                    Err(e2) => {
-                        tracing::error!("Static provider also failed: {}", e2);
-                        vec![]
-                    }
-                }
-            }
-        }
-    } else if tutorial_mode.is_enabled() {
-        tracing::info!("📚 Tutorial mode: Using demonstration data");
-        #[cfg(feature = "mock")]
-        {
-            vec![
-                Box::new(petal_tongue_discovery::DemoVisualizationProvider::new())
-                    as Box<dyn VisualizationDataProvider>,
-            ]
-        }
-        #[cfg(not(feature = "mock"))]
-        {
-            tracing::info!("💡 Mock feature disabled - start with --features mock for demo data");
-            vec![]
-        }
-    } else {
-        runtime.block_on(async {
-            match discover_visualization_providers().await {
-                Ok(providers) => {
-                    if providers.is_empty() {
-                        tracing::warn!("No visualization providers discovered");
-                        if crate::tutorial_mode::should_fallback(0) {
-                            #[cfg(feature = "mock")]
-                            {
-                                tracing::info!("💡 Using tutorial data as graceful fallback");
-                                vec![Box::new(
-                                    petal_tongue_discovery::DemoVisualizationProvider::new(),
-                                )
-                                    as Box<dyn VisualizationDataProvider>]
-                            }
-                            #[cfg(not(feature = "mock"))]
-                            {
-                                tracing::info!("💡 Use --features mock for demo data fallback");
-                                vec![]
-                            }
-                        } else {
-                            vec![]
-                        }
-                    } else {
-                        tracing::info!(
-                            "✅ Discovered {} visualization data provider(s)",
-                            providers.len()
-                        );
-                        for provider in &providers {
-                            let metadata = provider.get_metadata();
-                            tracing::info!(
-                                "  - {} at {} (protocol: {})",
-                                metadata.name,
-                                metadata.endpoint,
-                                metadata.protocol
-                            );
-                        }
-                        providers
-                    }
-                }
-                Err(e) => {
-                    tracing::error!("Provider discovery failed: {}", e);
-                    if crate::tutorial_mode::should_fallback(0) {
-                        #[cfg(feature = "mock")]
-                        {
-                            tracing::info!("💡 Using tutorial data as graceful fallback");
-                            vec![
-                                Box::new(petal_tongue_discovery::DemoVisualizationProvider::new())
-                                    as Box<dyn VisualizationDataProvider>,
-                            ]
-                        }
-                        #[cfg(not(feature = "mock"))]
-                        {
-                            tracing::info!("💡 Use --features mock for demo data fallback");
-                            vec![]
-                        }
-                    } else {
-                        vec![]
-                    }
-                }
-            }
-        })
-    }
-}
-
-fn discover_neural_api(runtime: &tokio::runtime::Runtime) -> Option<Arc<NeuralApiProvider>> {
-    tracing::info!("🧠 Attempting Neural API discovery (central coordinator)...");
-    runtime.block_on(async {
-        match NeuralApiProvider::discover(None).await {
-            Ok(provider) => {
-                tracing::info!("✅ Neural API connected - using as primary provider");
-                Some(Arc::new(provider))
-            }
-            Err(e) => {
-                tracing::info!("Neural API not available: {} (graceful degradation)", e);
-                None
-            }
-        }
-    })
-}
-
 fn create_status_reporter(capabilities: &CapabilityDetector) -> Arc<StatusReporter> {
     let mut reporter = StatusReporter::new();
     if let Ok(status_file) = std::env::var("PETALTONGUE_STATUS_FILE") {
@@ -409,47 +271,6 @@ fn create_tool_manager() -> ToolManager {
     tm
 }
 
-fn create_panel_registry_and_panels(
-    scenario: Option<&crate::scenario::Scenario>,
-) -> (PanelRegistry, Vec<Box<dyn PanelInstance>>) {
-    let mut panel_registry = PanelRegistry::new();
-    #[cfg(feature = "doom")]
-    panel_registry.register(create_doom_factory());
-    panel_registry.register(Arc::new(crate::panels::MetricsPanelFactory::new()));
-    panel_registry.register(Arc::new(crate::panels::ProprioceptionPanelFactory::new()));
-
-    tracing::info!("✅ Panel registry initialized");
-    tracing::info!(
-        "   Available panel types: {:?}",
-        panel_registry.available_types()
-    );
-
-    let mut custom_panels: Vec<Box<dyn PanelInstance>> = Vec::new();
-    if let Some(s) = scenario {
-        for panel_config in &s.ui_config.custom_panels {
-            match panel_registry.create(panel_config) {
-                Ok(panel) => {
-                    tracing::info!(
-                        "✅ Created custom panel: {} (type: {})",
-                        panel_config.title,
-                        panel_config.panel_type
-                    );
-                    custom_panels.push(panel);
-                }
-                Err(e) => {
-                    tracing::error!("❌ Failed to create panel '{}': {}", panel_config.title, e);
-                }
-            }
-        }
-    }
-    tracing::info!(
-        "✅ Custom panels initialized: {} panels",
-        custom_panels.len()
-    );
-
-    (panel_registry, custom_panels)
-}
-
 fn initialize_central_nervous_system(
     runtime: &tokio::runtime::Runtime,
 ) -> (
@@ -474,104 +295,6 @@ fn initialize_central_nervous_system(
     tracing::info!("🔄 Sensory feedback via egui input events (bidirectional loop active)");
 
     (rendering_awareness, sensor_registry)
-}
-
-fn finalize_app_startup(
-    app: &mut PetalTongueApp,
-    scenario: Option<&crate::scenario::Scenario>,
-    tutorial_mode: &crate::tutorial_mode::TutorialMode,
-    needs_fallback: bool,
-) {
-    use petal_tongue_core::MotorCommand;
-
-    // Awakening: respect env var, then scenario config
-    let env_awakening = std::env::var("AWAKENING_ENABLED")
-        .ok()
-        .and_then(|v| v.parse::<bool>().ok());
-    let scenario_awakening = scenario.map(|s| s.ui_config.awakening_enabled);
-    let awakening_enabled = env_awakening.unwrap_or_else(|| scenario_awakening.unwrap_or(true));
-
-    if awakening_enabled {
-        tracing::info!("🌸 Awakening experience enabled");
-        app.awakening_overlay.start();
-    }
-
-    tracing::info!("🎵 Initializing startup audio...");
-    let startup_audio = crate::startup_audio::StartupAudio::new();
-    if startup_audio.has_startup_music() {
-        tracing::info!(
-            "🎵 Startup music found: {:?}",
-            startup_audio.startup_music_path()
-        );
-    }
-    startup_audio.play(&app.audio_system);
-
-    tracing::info!("📊 Writing initial status file for AI observability...");
-    app.status_reporter.update_health("healthy");
-    app.status_reporter.force_write();
-
-    if let Some(loaded_scenario) = scenario {
-        tracing::info!(
-            "📋 Loading {} primals and {} edges from scenario",
-            loaded_scenario.primal_count(),
-            loaded_scenario.edge_count()
-        );
-        let primals = loaded_scenario.to_primal_infos();
-        let Ok(mut graph) = app.graph.write() else {
-            tracing::error!("graph lock poisoned");
-            return;
-        };
-        graph.clear();
-        for primal in &primals {
-            graph.add_node(primal.clone());
-        }
-        for edge in &loaded_scenario.edges {
-            graph.add_edge(edge.clone());
-        }
-        tracing::info!(
-            "✅ Scenario loaded: {} nodes, {} edges",
-            primals.len(),
-            loaded_scenario.edge_count()
-        );
-        drop(graph);
-
-        // Wire remaining PanelVisibility fields via motor commands
-        let panels = &loaded_scenario.ui_config.show_panels;
-        app.show_top_menu = panels.top_menu;
-        app.show_neural_proprioception = panels.proprioception && app.show_neural_proprioception;
-
-        // Apply scenario mode through the motor channel (efferent)
-        let mode = &loaded_scenario.mode;
-        if !mode.is_empty() && mode != "live-ecosystem" && mode != "doom-showcase" {
-            let cmds = crate::mode_presets::commands_for_mode(mode);
-            if !cmds.is_empty() {
-                tracing::info!(
-                    "🎛️  Applying scenario mode '{mode}' ({} commands)",
-                    cmds.len()
-                );
-                for cmd in cmds {
-                    super::events::apply_motor_command(app, cmd);
-                }
-            }
-        }
-
-        // Apply initial zoom via motor command
-        let zoom_str = &loaded_scenario.ui_config.initial_zoom;
-        if zoom_str == "fit" {
-            super::events::apply_motor_command(app, MotorCommand::FitToView);
-        } else if let Ok(level) = zoom_str.parse::<f32>() {
-            super::events::apply_motor_command(app, MotorCommand::SetZoom { level });
-        }
-    } else if tutorial_mode.is_enabled() {
-        tutorial_mode.load_into_graph(Arc::clone(&app.graph), app.current_layout);
-    } else if needs_fallback {
-        crate::tutorial_mode::TutorialMode::create_fallback_scenario(
-            Arc::clone(&app.graph),
-            app.current_layout,
-        );
-    } else {
-        app.refresh_graph_data();
-    }
 }
 
 #[cfg(test)]

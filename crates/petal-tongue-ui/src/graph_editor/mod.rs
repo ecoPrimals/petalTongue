@@ -31,7 +31,7 @@ pub mod validation;
 
 pub use canvas::GraphCanvas;
 pub use edge::{DependencyType, GraphEdge};
-pub use graph::Graph;
+pub use graph::{Graph, GraphMetadata, GraphStats};
 pub use node::GraphNode;
 pub use rpc_methods::GraphEditorService;
 pub use streaming::{StreamHandler, StreamMessage};

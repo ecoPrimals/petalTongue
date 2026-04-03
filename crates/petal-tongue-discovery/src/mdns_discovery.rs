@@ -1,64 +1,32 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! mDNS-based discovery of visualization data providers
+//! mDNS discovery integration tests
 //!
-//! Discovers primals via multicast DNS that advertise visualization capabilities.
-//! Delegates to [`crate::mdns_provider::MdnsVisualizationProvider`] for the real
-//! network implementation.
-
-use crate::VisualizationCapability;
-use crate::mdns_provider::MdnsVisualizationProvider;
-use crate::traits::VisualizationDataProvider;
-
-/// Discover providers via mDNS/multicast.
-///
-/// Delegates to [`MdnsVisualizationProvider::discover`] which performs real
-/// UDP multicast service discovery on the local network.
-#[cfg_attr(not(test), allow(dead_code))]
-pub async fn discover_via_mdns()
--> crate::errors::DiscoveryResult<Vec<Box<dyn VisualizationDataProvider>>> {
-    tracing::debug!("mDNS discovery: delegating to MdnsVisualizationProvider");
-    MdnsVisualizationProvider::discover().await
-}
-
-/// Query mDNS for a specific capability.
-///
-/// Performs real mDNS discovery and filters providers by the requested capability.
-#[cfg_attr(not(test), allow(dead_code))]
-pub async fn query_capability(
-    capability: VisualizationCapability,
-) -> crate::errors::DiscoveryResult<Vec<String>> {
-    let providers = MdnsVisualizationProvider::discover().await?;
-    let cap_str = capability.as_str();
-    Ok(providers
-        .iter()
-        .filter(|p| p.get_metadata().capabilities.iter().any(|c| c == cap_str))
-        .map(|p| p.get_metadata().endpoint)
-        .collect())
-}
+//! Production discovery uses [`crate::mdns_provider::MdnsVisualizationProvider`] from
+//! [`crate::discover_visualization_providers`].
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::mdns_provider::MdnsVisualizationProvider;
 
     #[tokio::test]
     async fn discover_via_mdns_returns_result() {
-        let result = discover_via_mdns().await;
+        let result = MdnsVisualizationProvider::discover().await;
         assert!(result.is_ok());
     }
 
     #[cfg(feature = "mdns")]
     #[tokio::test]
     async fn query_capability_returns_result() {
-        let result = query_capability(VisualizationCapability::PrimalProvider).await;
-        assert!(result.is_ok());
+        assert!(MdnsVisualizationProvider::discover().await.is_ok());
     }
 
     #[cfg(feature = "mdns")]
     #[tokio::test]
     async fn query_capability_all_variants() {
-        for cap in VisualizationCapability::all() {
-            let result = query_capability(*cap).await;
-            assert!(result.is_ok());
+        use crate::VisualizationCapability;
+
+        for _cap in VisualizationCapability::all() {
+            assert!(MdnsVisualizationProvider::discover().await.is_ok());
         }
     }
 }

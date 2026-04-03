@@ -2,6 +2,7 @@
 //! Discovered audio provider — advanced synthesis via capability discovery
 
 use super::AudioProvider;
+use petal_tongue_core::constants::{self, discovery_timeouts};
 
 #[must_use]
 pub fn build_audio_play_url(base: &str) -> String {
@@ -134,7 +135,7 @@ impl AudioProvider for DiscoveredAudioProvider {
         tokio::spawn(async move {
             if let Some(ep) = endpoint {
                 let client = reqwest::Client::builder()
-                    .timeout(std::time::Duration::from_secs(30))
+                    .timeout(discovery_timeouts::HTTP_TIMEOUT)
                     .build();
 
                 if let Ok(client) = client {
@@ -184,7 +185,9 @@ impl AudioProvider for DiscoveredAudioProvider {
         tokio::spawn(async move {
             if let Some(ep) = endpoint {
                 let client = reqwest::Client::builder()
-                    .timeout(std::time::Duration::from_secs(5))
+                    .timeout(std::time::Duration::from_secs(
+                        constants::DEFAULT_RPC_TIMEOUT_SECS,
+                    ))
                     .build();
 
                 if let Ok(client) = client {

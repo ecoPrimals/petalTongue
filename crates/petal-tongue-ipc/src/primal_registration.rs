@@ -119,7 +119,7 @@ impl RegistrationClient {
     pub async fn is_available(&self) -> bool {
         matches!(
             tokio::time::timeout(
-                Duration::from_millis(100),
+                constants::discovery_timeouts::DISCOVERY_SERVICE_REGISTRATION_PROBE_TIMEOUT,
                 UnixStream::connect(&self.socket_path),
             )
             .await,

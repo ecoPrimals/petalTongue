@@ -7,7 +7,7 @@
 use crate::dns_parser::{DnsHeader, RecordType, ResourceRecord, SrvRecord};
 use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::traits::ProviderMetadata;
-use std::net::{Ipv4Addr, SocketAddr};
+use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 
 /// Build an mDNS query packet
 ///
@@ -53,6 +53,7 @@ struct ParsedRecords {
     srv: Vec<SrvRecord>,
     txt: Vec<crate::dns_parser::TxtRecord>,
     a: Vec<Ipv4Addr>,
+    aaaa: Vec<Ipv6Addr>,
 }
 
 fn collect_answer_records(data: &[u8], header: &DnsHeader) -> DiscoveryResult<ParsedRecords> {
@@ -68,12 +69,21 @@ fn collect_answer_records(data: &[u8], header: &DnsHeader) -> DiscoveryResult<Pa
         srv: Vec::new(),
         txt: Vec::new(),
         a: Vec::new(),
+        aaaa: Vec::new(),
     };
 
     for _ in 0..header.answers {
         let (record, consumed) = ResourceRecord::parse(data, offset)?;
         let rdata_offset = offset;
         offset += consumed;
+
+        tracing::trace!(
+            rr_name = %record.name,
+            rclass = record.rclass,
+            ttl = record.ttl,
+            rtype = record.rtype,
+            "DNS answer RR"
+        );
 
         match record.record_type() {
             Some(RecordType::PTR) => {
@@ -103,6 +113,12 @@ fn collect_answer_records(data: &[u8], header: &DnsHeader) -> DiscoveryResult<Pa
                     tracing::debug!("Found A record: {}", a.addr);
                 }
             }
+            Some(RecordType::AAAA) => {
+                if let Ok(aaaa) = record.as_aaaa() {
+                    tracing::debug!("Found AAAA record: {}", aaaa.addr);
+                    records.aaaa.push(aaaa.addr);
+                }
+            }
             _ => {
                 tracing::trace!("Skipping record type: {}", record.rtype);
             }
@@ -123,17 +139,26 @@ pub fn parse_mdns_response(data: &[u8], addr: SocketAddr) -> DiscoveryResult<Pro
         return Err(DiscoveryError::NotDnsResponse);
     }
 
-    tracing::trace!("DNS response: {} answers from {}", header.answers, addr);
+    tracing::trace!(
+        transaction_id = header.transaction_id,
+        answers = header.answers,
+        authority_rrs = header.authority,
+        additional_rrs = header.additional,
+        "DNS response from {}",
+        addr
+    );
 
     let records = collect_answer_records(data, &header)?;
 
-    let ip = if records.a.is_empty() {
+    let ip = if !records.a.is_empty() {
+        records.a[0].to_string()
+    } else if !records.aaaa.is_empty() {
+        format!("[{}]", records.aaaa[0])
+    } else {
         match addr {
             SocketAddr::V4(v4) => v4.ip().to_string(),
             SocketAddr::V6(v6) => format!("[{}]", v6.ip()),
         }
-    } else {
-        records.a[0].to_string()
     };
 
     let Some(srv) = SrvRecord::select_by_priority(&records.srv) else {

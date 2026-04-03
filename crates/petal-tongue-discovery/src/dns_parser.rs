@@ -35,15 +35,7 @@ impl RecordType {
     }
 }
 
-/// DNS class (RFC 1035 completeness; used in tests)
-#[cfg_attr(not(test), allow(dead_code))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RecordClass {
-    IN = 1, // Internet
-}
-
-/// Parsed DNS header (RFC 1035; authority/additional used in tests)
-#[cfg_attr(not(test), allow(dead_code))]
+/// Parsed DNS header (RFC 1035)
 #[derive(Debug)]
 pub struct DnsHeader {
     pub transaction_id: u16,
@@ -288,8 +280,7 @@ impl ARecord {
     }
 }
 
-/// AAAA record data (IPv6; reserved for future IPv6 mDNS)
-#[cfg_attr(not(test), allow(dead_code))]
+/// AAAA record data (IPv6)
 #[derive(Debug, Clone)]
 pub struct AaaaRecord {
     pub addr: Ipv6Addr,
@@ -314,8 +305,7 @@ impl AaaaRecord {
     }
 }
 
-/// Generic DNS resource record (rclass/ttl used in tests)
-#[cfg_attr(not(test), allow(dead_code))]
+/// Generic DNS resource record
 #[derive(Debug)]
 pub struct ResourceRecord {
     pub name: String,
@@ -385,7 +375,6 @@ impl ResourceRecord {
     }
 
     /// Parse as AAAA record
-    #[cfg_attr(not(test), allow(dead_code))]
     pub fn as_aaaa(&self) -> DiscoveryResult<AaaaRecord> {
         AaaaRecord::parse(&self.rdata)
     }
@@ -723,11 +712,6 @@ mod tests {
             .collect();
         assert!(picks.contains("x") || picks.contains("y"));
         assert_eq!(picks.len(), 2, "both targets should be reachable");
-    }
-
-    #[test]
-    fn test_record_class_in() {
-        let _ = RecordClass::IN;
     }
 
     #[test]
