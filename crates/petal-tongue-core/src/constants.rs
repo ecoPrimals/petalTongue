@@ -127,6 +127,9 @@ pub const DEFAULT_TERMINAL_ROWS: u16 = 24;
 /// Max FPS for rendering (overridable via config)
 pub const DEFAULT_MAX_FPS: u32 = 60;
 
+/// Frame sleep interval for loops targeting ~[`DEFAULT_MAX_FPS`] (e.g. awakening coordinator).
+pub const FRAME_PACING_60FPS: Duration = Duration::from_millis(16);
+
 /// Default bind address for servers (loopback-only for security).
 ///
 /// Overridable via `--bind` CLI, config, or `PETALTONGUE_BIND_ADDR` env var.
@@ -362,6 +365,8 @@ pub mod discovery_timeouts {
 
     /// Discovery service UDS connect timeout (aggressive for non-blocking discovery)
     pub const DISCOVERY_SERVICE_CONNECT_TIMEOUT: Duration = Duration::from_millis(200);
+    /// Registration / availability probe: max wait for `UnixStream::connect` to discovery socket
+    pub const DISCOVERY_SERVICE_REGISTRATION_PROBE_TIMEOUT: Duration = Duration::from_millis(100);
     /// Discovery service UDS write timeout
     pub const DISCOVERY_SERVICE_WRITE_TIMEOUT: Duration = Duration::from_millis(100);
     /// Discovery service UDS read timeout

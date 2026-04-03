@@ -7,11 +7,11 @@ mod timeline;
 mod types;
 
 use crate::awakening::{AwakeningConfig, AwakeningStage};
+use crate::constants::FRAME_PACING_60FPS;
 use crate::engine::UniversalRenderingEngine;
 use crate::error::Result;
 use crate::event::EngineEvent;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::RwLock;
 
 #[cfg(test)]
@@ -109,7 +109,7 @@ impl AwakeningCoordinator {
             }
 
             // Sleep for a short duration (60 FPS = ~16ms)
-            tokio::time::sleep(Duration::from_millis(16)).await;
+            tokio::time::sleep(FRAME_PACING_60FPS).await;
         }
 
         // Mark as complete

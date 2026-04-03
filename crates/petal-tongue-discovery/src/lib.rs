@@ -39,6 +39,7 @@
 //! # }
 //! ```
 
+#[cfg(test)]
 mod cache;
 mod capabilities;
 pub mod capability_parse;
@@ -65,7 +66,6 @@ pub mod retry;
 #[cfg(feature = "mdns")]
 mod mdns_discovery;
 
-pub use cache::CacheStats;
 pub use capabilities::VisualizationCapability;
 #[cfg(any(test, feature = "test-fixtures"))]
 pub use demo_provider::DemoVisualizationProvider;
@@ -94,7 +94,7 @@ pub use retry::RetryPolicy;
 ///
 /// # Caching
 ///
-/// See `cache` for the shared caching utilities used when integrating providers.
+/// Provider-side caching helpers are exercised in unit tests (`cache` module) until wired into the discovery path.
 ///
 /// # Errors
 ///

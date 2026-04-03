@@ -1,315 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Primitive painting and conversion helpers for scene bridge.
 
+mod color;
+mod geometry;
+mod primitives;
+
+#[allow(unused_imports)]
+pub use color::{apply_opacity, to_color32, to_egui_stroke};
+#[allow(unused_imports)]
+pub use geometry::{anchor_to_align2, bounding_rect, primitive_origin};
+pub use primitives::paint_primitive;
+
 use super::types::{FrameHitMap, PixelProvenance};
-use egui::{Color32, Painter, Pos2, Rect, Rounding, Stroke, Vec2};
-use petal_tongue_scene::primitive::{AnchorPoint, Color, Primitive};
+use egui::{Painter, Vec2};
 use petal_tongue_scene::render_plan::RenderPlan;
 use petal_tongue_scene::scene_graph::SceneGraph;
-use petal_tongue_scene::transform::Transform2D;
-
-/// Map `AnchorPoint` to `egui::Align2`.
-pub const fn anchor_to_align2(anchor: &AnchorPoint) -> egui::Align2 {
-    match anchor {
-        AnchorPoint::TopLeft => egui::Align2::LEFT_TOP,
-        AnchorPoint::TopCenter => egui::Align2::CENTER_TOP,
-        AnchorPoint::TopRight => egui::Align2::RIGHT_TOP,
-        AnchorPoint::CenterLeft => egui::Align2::LEFT_CENTER,
-        AnchorPoint::Center => egui::Align2::CENTER_CENTER,
-        AnchorPoint::CenterRight => egui::Align2::RIGHT_CENTER,
-        AnchorPoint::BottomLeft => egui::Align2::LEFT_BOTTOM,
-        AnchorPoint::BottomCenter => egui::Align2::CENTER_BOTTOM,
-        AnchorPoint::BottomRight => egui::Align2::RIGHT_BOTTOM,
-    }
-}
-
-/// Apply accumulated opacity to a `Color32`.
-pub fn apply_opacity(c: Color32, opacity: f32) -> Color32 {
-    if opacity >= 1.0 {
-        return c;
-    }
-    let a = (f32::from(c.a()) * opacity).round() as u8;
-    Color32::from_rgba_premultiplied(c.r(), c.g(), c.b(), a)
-}
-
-/// Extract the logical origin point of a primitive (used for provenance).
-pub fn primitive_origin(prim: &Primitive) -> (f64, f64) {
-    match prim {
-        Primitive::Point { x, y, .. } => (*x, *y),
-        Primitive::Rect { x, y, .. } => (*x, *y),
-        Primitive::Text { x, y, .. } => (*x, *y),
-        Primitive::Arc { cx, cy, .. } => (*cx, *cy),
-        Primitive::Line { points, .. } => points.first().map_or((0.0, 0.0), |p| (p[0], p[1])),
-        Primitive::Polygon { points, .. } => points.first().map_or((0.0, 0.0), |p| (p[0], p[1])),
-        Primitive::BezierPath { start, .. } => (start[0], start[1]),
-        Primitive::Mesh { .. } => (0.0, 0.0),
-    }
-}
-
-/// Compute the axis-aligned bounding box of a set of screen points.
-pub fn bounding_rect(pts: &[Pos2]) -> Rect {
-    let mut min = Pos2::new(f32::MAX, f32::MAX);
-    let mut max = Pos2::new(f32::MIN, f32::MIN);
-    for p in pts {
-        min.x = min.x.min(p.x);
-        min.y = min.y.min(p.y);
-        max.x = max.x.max(p.x);
-        max.y = max.y.max(p.y);
-    }
-    Rect::from_min_max(min, max)
-}
-
-pub fn to_color32(c: Color) -> Color32 {
-    Color32::from_rgba_unmultiplied(
-        (c.r * 255.0) as u8,
-        (c.g * 255.0) as u8,
-        (c.b * 255.0) as u8,
-        (c.a * 255.0) as u8,
-    )
-}
-
-pub fn to_egui_stroke(s: &petal_tongue_scene::primitive::StrokeStyle) -> Stroke {
-    Stroke::new(s.width, to_color32(s.color))
-}
-
-/// Transform a world-space (f64, f64) point through `Transform2D` and apply screen offset.
-#[expect(clippy::cast_possible_truncation, reason = "scene f64 to screen f32")]
-fn world_to_screen(transform: &Transform2D, offset: Vec2, x: f64, y: f64) -> Pos2 {
-    let (tx, ty) = transform.apply(x, y);
-    Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y)
-}
-
-/// Transform a slice of world-space [f64; 2] points to screen-space `Pos2`.
-fn world_points_to_screen(transform: &Transform2D, offset: Vec2, points: &[[f64; 2]]) -> Vec<Pos2> {
-    points
-        .iter()
-        .map(|[x, y]| world_to_screen(transform, offset, *x, *y))
-        .collect()
-}
-
-/// Render a single primitive with its world transform and accumulated opacity.
-///
-/// Returns the bounding `Rect` on screen for the rendered shape, or `None`
-/// if the primitive was not drawn (e.g. degenerate).
-#[expect(clippy::cast_possible_truncation, reason = "scene f64 to screen f32")]
-pub fn paint_primitive(
-    painter: &Painter,
-    prim: &Primitive,
-    transform: &Transform2D,
-    offset: Vec2,
-    opacity: f32,
-) -> Option<Rect> {
-    match prim {
-        Primitive::Point {
-            x,
-            y,
-            radius,
-            fill,
-            stroke,
-            ..
-        } => {
-            let center = world_to_screen(transform, offset, *x, *y);
-            let r = *radius as f32;
-            let fill_c = apply_opacity(
-                fill.map(to_color32).unwrap_or(Color32::TRANSPARENT),
-                opacity,
-            );
-            let stroke_s = stroke.as_ref().map_or(Stroke::NONE, to_egui_stroke);
-            painter.circle(center, r, fill_c, stroke_s);
-            Some(Rect::from_center_size(center, egui::vec2(r * 2.0, r * 2.0)))
-        }
-
-        Primitive::Line {
-            points,
-            stroke: s,
-            closed,
-            ..
-        } => {
-            let egui_stroke = to_egui_stroke(s);
-            let pts = world_points_to_screen(transform, offset, points);
-            if pts.len() >= 2 {
-                let rect = bounding_rect(&pts);
-                if *closed && pts.len() >= 3 {
-                    painter.add(egui::Shape::closed_line(pts, egui_stroke));
-                } else {
-                    painter.add(egui::Shape::line(pts, egui_stroke));
-                }
-                Some(rect)
-            } else {
-                None
-            }
-        }
-
-        Primitive::Rect {
-            x,
-            y,
-            width,
-            height,
-            fill,
-            stroke,
-            corner_radius,
-            ..
-        } => {
-            let min = world_to_screen(transform, offset, *x, *y);
-            let max = world_to_screen(transform, offset, x + width, y + height);
-            let rect = Rect::from_min_max(min, max);
-            let fill_c = apply_opacity(
-                fill.map(to_color32).unwrap_or(Color32::TRANSPARENT),
-                opacity,
-            );
-            let stroke_s = stroke.as_ref().map_or(Stroke::NONE, to_egui_stroke);
-            let rounding = Rounding::same(*corner_radius as f32);
-            painter.rect(rect, rounding, fill_c, stroke_s);
-            Some(rect)
-        }
-
-        Primitive::Text {
-            x,
-            y,
-            content,
-            font_size,
-            color,
-            anchor,
-            bold: _bold,
-            ..
-        } => {
-            let pos = world_to_screen(transform, offset, *x, *y);
-            let font = egui::FontId::proportional(*font_size as f32);
-            let align = anchor_to_align2(anchor);
-            let text_color = apply_opacity(to_color32(*color), opacity);
-            let galley = painter.text(pos, align, content, font, text_color);
-            Some(galley)
-        }
-
-        Primitive::Polygon {
-            points,
-            fill,
-            stroke,
-            ..
-        } => {
-            let pts = world_points_to_screen(transform, offset, points);
-            let fill_c = apply_opacity(to_color32(*fill), opacity);
-            let stroke_s = stroke.as_ref().map_or(Stroke::NONE, to_egui_stroke);
-            if pts.len() >= 3 {
-                let rect = bounding_rect(&pts);
-                painter.add(egui::Shape::convex_polygon(pts, fill_c, stroke_s));
-                Some(rect)
-            } else {
-                None
-            }
-        }
-
-        Primitive::Arc {
-            cx,
-            cy,
-            radius,
-            start_angle,
-            end_angle,
-            fill,
-            stroke,
-            ..
-        } => {
-            let segments = 32;
-            let angle_span = end_angle - start_angle;
-            let pts: Vec<Pos2> = (0..=segments)
-                .map(|i| {
-                    let t = angle_span.mul_add(f64::from(i) / f64::from(segments), *start_angle);
-                    let px = cx + radius * t.cos();
-                    let py = cy + radius * t.sin();
-                    world_to_screen(transform, offset, px, py)
-                })
-                .collect();
-            if let Some(fill_color) = fill {
-                let mut fan = vec![world_to_screen(transform, offset, *cx, *cy)];
-                fan.extend_from_slice(&pts);
-                let fill_c = apply_opacity(to_color32(*fill_color), opacity);
-                painter.add(egui::Shape::convex_polygon(fan, fill_c, Stroke::NONE));
-            }
-            let rect = bounding_rect(&pts);
-            if let Some(s) = stroke {
-                painter.add(egui::Shape::line(pts, to_egui_stroke(s)));
-            }
-            Some(rect)
-        }
-
-        Primitive::BezierPath {
-            start,
-            segments,
-            stroke: s,
-            fill,
-            ..
-        } => {
-            let mut pts = vec![world_to_screen(transform, offset, start[0], start[1])];
-
-            let mut cur = *start;
-            for seg in segments {
-                let steps = 16;
-                let p0 = cur;
-                for i in 1..=steps {
-                    let t = f64::from(i) / f64::from(steps);
-                    let mt = 1.0 - t;
-                    let mt2 = mt * mt;
-                    let mt3 = mt2 * mt;
-                    let t2 = t * t;
-                    let t3 = t2 * t;
-                    let px = (3.0 * mt * t2)
-                        .mul_add(seg.cp2[0], mt3 * p0[0] + 3.0 * mt2 * t * seg.cp1[0])
-                        + t3 * seg.end[0];
-                    let py = (3.0 * mt * t2)
-                        .mul_add(seg.cp2[1], mt3 * p0[1] + 3.0 * mt2 * t * seg.cp1[1])
-                        + t3 * seg.end[1];
-                    pts.push(world_to_screen(transform, offset, px, py));
-                }
-                cur = seg.end;
-            }
-
-            if pts.len() < 2 {
-                return None;
-            }
-
-            let rect = bounding_rect(&pts);
-            if let Some(fill_color) = fill {
-                let fill_c = apply_opacity(to_color32(*fill_color), opacity);
-                painter.add(egui::Shape::convex_polygon(
-                    pts.clone(),
-                    fill_c,
-                    Stroke::NONE,
-                ));
-            }
-            painter.add(egui::Shape::line(pts, to_egui_stroke(s)));
-            Some(rect)
-        }
-
-        Primitive::Mesh {
-            vertices, indices, ..
-        } => {
-            if vertices.is_empty() || indices.is_empty() {
-                return None;
-            }
-            let mut mesh = egui::Mesh::default();
-            for v in vertices {
-                let pos = world_to_screen(transform, offset, v.position[0], v.position[1]);
-                let color = Color32::from_rgba_unmultiplied(
-                    (v.color.r * 255.0) as u8,
-                    (v.color.g * 255.0) as u8,
-                    (v.color.b * 255.0) as u8,
-                    ((v.color.a * opacity) * 255.0) as u8,
-                );
-                mesh.vertices.push(egui::epaint::Vertex {
-                    pos,
-                    uv: Pos2::ZERO,
-                    color,
-                });
-            }
-            for idx in indices {
-                mesh.indices.push(*idx);
-            }
-            let rect = mesh.calc_bounds();
-            painter.add(egui::Shape::mesh(mesh));
-            Some(rect)
-        }
-    }
-}
 
 /// Render a scene graph into an egui `Painter`, building a `FrameHitMap`.
 ///
@@ -594,14 +299,14 @@ mod tests {
 
     #[test]
     fn bounding_rect_empty() {
-        let pts: Vec<Pos2> = vec![];
+        let pts: Vec<egui::Pos2> = vec![];
         let r = bounding_rect(&pts);
         assert!(r.width() <= 0.0 || r.height() <= 0.0);
     }
 
     #[test]
     fn bounding_rect_single_point() {
-        let pts = vec![Pos2::new(42.0, 84.0)];
+        let pts = vec![egui::Pos2::new(42.0, 84.0)];
         let r = bounding_rect(&pts);
         assert!((r.min.x - 42.0).abs() < f32::EPSILON);
         assert!((r.min.y - 84.0).abs() < f32::EPSILON);

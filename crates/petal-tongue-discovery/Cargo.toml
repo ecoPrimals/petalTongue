@@ -4,7 +4,7 @@ workspace = true
 
 [package]
 name = "petal-tongue-discovery"
-version = "0.1.0"
+version = "1.6.6"
 edition.workspace = true
 license.workspace = true
 

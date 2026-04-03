@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+#[cfg(test)]
 use crate::json_rpc::JsonRpcRequest;
 use crate::server::IpcServerError;
 use crate::socket_path;
@@ -7,6 +8,7 @@ use crate::unix_socket_connection;
 use crate::unix_socket_rpc_handlers::RpcHandlers;
 use crate::visualization_handler::VisualizationState;
 use petal_tongue_core::graph_engine::GraphEngine;
+#[cfg(test)]
 use serde_json::Value;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -27,7 +29,6 @@ pub struct UnixSocketServer {
     _push_delivery_thread: std::thread::JoinHandle<()>,
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
 impl UnixSocketServer {
     /// Create a new Unix socket server with graph and visualization state
     pub fn new(graph: Arc<std::sync::RwLock<GraphEngine>>) -> Result<Self, IpcServerError> {
@@ -191,6 +192,15 @@ impl UnixSocketServer {
             }
         }
     }
+}
+
+#[cfg(test)]
+impl UnixSocketServer {
+    /// Whether JSON-RPC handlers have a push delivery sender (PT-06).
+    #[must_use]
+    pub(crate) fn push_delivery_wired_for_tests(&self) -> bool {
+        self.handlers.callback_tx.is_some()
+    }
 
     fn get_capabilities(&self, id: Value) -> crate::json_rpc::JsonRpcResponse {
         self.handlers.get_capabilities(id)
@@ -200,7 +210,6 @@ impl UnixSocketServer {
         self.handlers.get_health(id)
     }
 
-    #[cfg(test)]
     async fn handle_request(&self, request: JsonRpcRequest) -> crate::json_rpc::JsonRpcResponse {
         self.handlers.handle_request(request).await
     }
@@ -232,15 +241,6 @@ impl UnixSocketServer {
     }
 }
 
-#[cfg(test)]
-impl UnixSocketServer {
-    /// Whether JSON-RPC handlers have a push delivery sender (PT-06).
-    #[must_use]
-    pub(crate) fn push_delivery_wired_for_tests(&self) -> bool {
-        self.handlers.callback_tx.is_some()
-    }
-}
-
 impl Drop for UnixSocketServer {
     fn drop(&mut self) {
         if self.socket_path.exists() {
@@ -264,7 +264,6 @@ impl Drop for UnixSocketServer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::json_rpc::JsonRpcRequest;
     use crate::json_rpc::error_codes;
     use petal_tongue_core::test_fixtures::env_test_helpers;
     use serde_json::json;

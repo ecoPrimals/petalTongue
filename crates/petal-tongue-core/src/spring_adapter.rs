@@ -65,7 +65,6 @@ struct BindingsEnvelope {
 /// `ecoPrimals/time-series/v1` envelope.
 #[derive(Debug, Clone, Deserialize)]
 struct EcoTimeSeriesEnvelope {
-    #[expect(dead_code, reason = "used for format detection only")]
     schema: String,
     series: Vec<EcoTimeSeriesEntry>,
 }
@@ -164,6 +163,9 @@ impl SpringDataAdapter {
     ) -> Result<Vec<DataBinding>, SpringAdapterError> {
         let envelope: EcoTimeSeriesEnvelope =
             serde_json::from_value(value.clone()).map_err(SpringAdapterError::DeserializeFailed)?;
+        if envelope.schema != "ecoPrimals/time-series/v1" {
+            return Err(SpringAdapterError::UnrecognizedFormat);
+        }
         let bindings = envelope
             .series
             .into_iter()
@@ -520,6 +522,15 @@ mod tests {
         let result = SpringDataAdapter::adapt(&json).unwrap();
         assert_eq!(result.len(), 1);
         assert!(matches!(&result[0], DataBinding::Scatter { .. }));
+    }
+
+    #[test]
+    fn adapt_eco_timeseries_rejects_wrong_schema() {
+        let json = serde_json::json!({
+            "schema": "other/schema",
+            "series": []
+        });
+        assert!(SpringDataAdapter::adapt(&json).is_err());
     }
 
     #[test]

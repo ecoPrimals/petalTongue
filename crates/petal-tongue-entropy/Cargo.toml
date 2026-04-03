@@ -4,7 +4,7 @@ workspace = true
 
 [package]
 name = "petal-tongue-entropy"
-version = "0.1.0"
+version = "1.6.6"
 edition.workspace = true
 authors = ["PetalTongue Team"]
 description = "Human entropy capture for petalTongue - multi-modal, accessible, sovereign"

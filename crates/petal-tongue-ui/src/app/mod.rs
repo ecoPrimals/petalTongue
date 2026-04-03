@@ -24,7 +24,10 @@
 mod events;
 mod init;
 mod layout;
+mod panel_init;
 mod panels;
+mod provider_init;
+mod scenario_init;
 mod sensory;
 mod update;
 

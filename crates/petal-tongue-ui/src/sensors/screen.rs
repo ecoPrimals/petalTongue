@@ -27,9 +27,7 @@ use std::time::Instant;
 pub struct ScreenSensor {
     capabilities: SensorCapabilities,
     display_type: DisplayType,
-    #[expect(dead_code)]
     width: usize,
-    #[expect(dead_code)]
     height: usize,
     last_heartbeat: Option<Instant>,
     frames_sent: u64,
@@ -58,6 +56,18 @@ impl ScreenSensor {
             last_heartbeat: None,
             frames_sent: 0,
         }
+    }
+
+    /// Logical width in pixels (or character columns for terminal), as discovered at construction.
+    #[must_use]
+    pub const fn width(&self) -> usize {
+        self.width
+    }
+
+    /// Logical height in pixels (or character rows for terminal), as discovered at construction.
+    #[must_use]
+    pub const fn height(&self) -> usize {
+        self.height
     }
 
     /// Record that a frame was sent
@@ -313,64 +323,6 @@ fn query_x11_dimensions() -> Option<(usize, usize)> {
     Some((w as usize, h as usize))
 }
 
-/// Query X11 display dimensions (DEPRECATED - kept for compatibility)
-#[expect(
-    dead_code,
-    reason = "deprecated fallback; query_x11_dimensions uses pure Rust (winit)"
-)]
-fn query_x11_dimensions_legacy() -> Option<(usize, usize)> {
-    // DEPRECATED: This function used external commands (xrandr, xdpyinfo)
-    // Now replaced with pure Rust (winit) via query_x11_dimensions()
-    // Kept for reference only
-
-    use std::process::Command;
-
-    if let Ok(output) = Command::new("xrandr").arg("--current").output()
-        && let Ok(stdout) = String::from_utf8(output.stdout)
-    {
-        // Parse xrandr output for current resolution
-        // Look for lines like: "1920x1080    60.00*+"
-        for line in stdout.lines() {
-            if line.contains('*') {
-                // Current mode has asterisk
-                if let Some(resolution) = line.split_whitespace().next()
-                    && let Some((w, h)) = resolution.split_once('x')
-                    && let (Ok(width), Ok(height)) = (w.parse::<usize>(), h.parse::<usize>())
-                {
-                    tracing::debug!("Discovered X11 dimensions via xrandr: {}x{}", width, height);
-                    return Some((width, height));
-                }
-            }
-        }
-    }
-
-    // Fallback: Try xdpyinfo
-    if let Ok(output) = Command::new("xdpyinfo").output()
-        && let Ok(stdout) = String::from_utf8(output.stdout)
-    {
-        // Look for "dimensions:    1920x1080 pixels"
-        for line in stdout.lines() {
-            if line.trim().starts_with("dimensions:") {
-                let parts: Vec<&str> = line.split_whitespace().collect();
-                if parts.len() >= 2
-                    && let Some((w, h)) = parts[1].split_once('x')
-                    && let (Ok(width), Ok(height)) = (w.parse::<usize>(), h.parse::<usize>())
-                {
-                    tracing::debug!(
-                        "Discovered X11 dimensions via xdpyinfo: {}x{}",
-                        width,
-                        height
-                    );
-                    return Some((width, height));
-                }
-            }
-        }
-    }
-
-    tracing::debug!("Could not discover X11 dimensions via xrandr or xdpyinfo");
-    None
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -378,6 +330,8 @@ mod tests {
     #[tokio::test]
     async fn test_screen_sensor_creation() {
         let sensor = ScreenSensor::new(DisplayType::Terminal, 80, 24);
+        assert_eq!(sensor.width(), 80);
+        assert_eq!(sensor.height(), 24);
         assert_eq!(sensor.capabilities().sensor_type, SensorType::Screen);
         assert!(sensor.capabilities().output);
         assert!(!sensor.capabilities().input);

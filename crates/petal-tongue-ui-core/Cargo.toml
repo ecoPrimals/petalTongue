@@ -13,7 +13,7 @@ authors.workspace = true
 
 [dependencies]
 # Core dependencies
-petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
+petal-tongue-core = { path = "../petal-tongue-core" }
 petal-tongue-graph = { path = "../petal-tongue-graph" }
 
 # Async runtime
@@ -50,7 +50,9 @@ chrono = { workspace = true }
 [dev-dependencies]
 anyhow = { workspace = true }
 tokio = { workspace = true, features = ["test-util", "macros"] }
+petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
 
 [features]
 default = []
+test-fixtures = ["petal-tongue-core/test-fixtures"]
 

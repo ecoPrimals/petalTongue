@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Human entropy window state and entropy collection
 
+use petal_tongue_core::constants::discovery_timeouts;
 use petal_tongue_entropy::prelude::*;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tracing::{info, warn};
 
 use super::types::{CaptureWindowState, EntropyModality};
@@ -194,7 +195,7 @@ impl HumanEntropyWindow {
         // Production: Should track status and retry
         tokio::spawn(async move {
             let client = match reqwest::Client::builder()
-                .timeout(Duration::from_secs(30))
+                .timeout(discovery_timeouts::HTTP_TIMEOUT)
                 .build()
             {
                 Ok(c) => c,
