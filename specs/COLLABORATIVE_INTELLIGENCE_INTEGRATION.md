@@ -117,7 +117,7 @@ Node States:
 
 #### 2.1 Method Specifications
 
-**Protocol**: tarpc PRIMARY for inter-primal RPC; JSON-RPC 2.0 universal fallback (line-delimited over UDS); HTTP for external/browser fallback
+**Protocol**: JSON-RPC 2.0 REQUIRED for all cross-primal IPC; tarpc MAY be used for Rust-to-Rust hot paths; HTTP for external/browser fallback where applicable
 
 ##### `ui.graph.editor_open`
 

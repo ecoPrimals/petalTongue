@@ -158,7 +158,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Changed
 - All JSON-RPC serialization hot paths evolved from `serde_json::to_string` to
   `serde_json::to_vec` (zero intermediate `String` allocation per frame).
-- Documentation reconciled to "tarpc PRIMARY, JSON-RPC universal fallback".
+- Documentation reconciled to "JSON-RPC 2.0 REQUIRED, tarpc MAY for Rust-to-Rust hot paths".
 - TUI devices panel renders real discovered `PrimalInfo` instead of placeholders.
 - Extracted `parse_primal_array()`, `world_to_screen()`, `adjacency_list()`
   to reduce duplication.

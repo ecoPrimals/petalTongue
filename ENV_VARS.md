@@ -95,6 +95,16 @@ Bind address for web and headless servers. Set to `0.0.0.0` for external access.
 
 ---
 
+### **PETALTONGUE_TCP_BIND_HOST**
+**Type**: String (IP address or hostname)  
+**Default**: `127.0.0.1` (loopback; see `constants::DEFAULT_LOOPBACK_HOST`)  
+**Required**: No  
+**Example**: `PETALTONGUE_TCP_BIND_HOST=0.0.0.0`
+
+Host address used when the IPC server binds an ephemeral TCP listener (Phase 3 TCP transport). Does not affect Unix socket paths.
+
+---
+
 ## Discovery & Integration
 
 ### **BIOMEOS_URL**
@@ -114,8 +124,18 @@ URL of the BiomeOS API endpoint. Supports both Unix sockets (primary) and HTTP (
 - If not set: Discovers BiomeOS via socket scanning at runtime
 - Graceful degradation: Falls back to fixture data if no BiomeOS found
 
-**Production**: Set to Unix socket for fast IPC (tarpc preferred for inter-primal hot paths; JSON-RPC universal fallback where applicable).  
+**Production**: Set to Unix socket for fast IPC (JSON-RPC 2.0 required for cross-primal IPC; tarpc may be used for Rust-to-Rust hot paths where supported).  
 **Development**: Can omit to test runtime discovery.
+
+---
+
+### **BIOMEOS_NEURAL_API_SOCKET**
+**Type**: String (absolute path to Unix socket)  
+**Default**: None (runtime discovery under XDG runtime dir or legacy `/tmp`)  
+**Required**: No  
+**Example**: `BIOMEOS_NEURAL_API_SOCKET=/run/user/1000/biomeos/neural-api.sock`
+
+Explicit path to the biomeOS Neural API Unix socket. Highest-priority override when resolving the neural API client; if unset or missing, petalTongue falls back to standard discovery paths.
 
 ---
 
@@ -130,7 +150,7 @@ biomeOS is unavailable. Requires the `test-fixtures` feature; production builds
 reject this at runtime.
 
 > **Migration note**: The config field was renamed from `mock_mode` to
-> `fixture_mode` in v1.6.7. The TOML alias `mock_mode` is still accepted for
+> `fixture_mode` in v1.6.6. The TOML alias `mock_mode` is still accepted for
 > backwards compatibility but will be removed in a future release.
 
 **When `true`** (with `test-fixtures` feature):
@@ -165,6 +185,16 @@ Comma-separated list of discovery hints for finding BiomeOS and other primals.
 1. Standard Unix socket paths (auto-discovered)
 2. Discovery hints (if set)
 3. Environment variables (`BIOMEOS_URL`)
+
+---
+
+### **PETALTONGUE_ENABLE_MDNS**
+**Type**: Boolean (`true` | `false`)  
+**Default**: `true`  
+**Required**: No  
+**Example**: `PETALTONGUE_ENABLE_MDNS=false`
+
+When `true`, HTTP/mDNS-based visualization provider discovery runs after JSON-RPC discovery. Set to `false` to skip mDNS (e.g., air-gapped or CI environments).
 
 ---
 
@@ -275,17 +305,6 @@ Demo/topology endpoint for headless mode (e.g., discovery service URL).
 
 ---
 
-### **PETALTONGUE_TUTORIAL_ENDPOINT_COMPUTE**
-### **PETALTONGUE_TUTORIAL_ENDPOINT_SECURITY**
-### **PETALTONGUE_TUTORIAL_ENDPOINT_DISCOVERY**
-**Type**: String (URL)  
-**Default**: `http://localhost:3030`, `http://localhost:8001`, `http://localhost:8003`  
-**Required**: No  
-
-Tutorial mode placeholder endpoints for compute, security, and discovery primals.
-
----
-
 ## Self-Awareness & AI Integration
 
 ### **PETALTONGUE_STATUS_FILE**
@@ -344,31 +363,17 @@ Controls Rust logging verbosity across all crates.
 
 ---
 
-### **RUST_LOG_FILTER**
-**Type**: String (filter expression)  
-**Default**: None  
+## UI Configuration
+
+### **PETALTONGUE_UI_BACKEND**
+**Type**: String  
+**Default**: None (backend selection uses defaults elsewhere)  
 **Required**: No  
-**Example**: `RUST_LOG_FILTER=petal_tongue_ui=trace,petal_tongue_core=debug`
+**Example**: `PETALTONGUE_UI_BACKEND=auto`
 
-Advanced logging filter for fine-grained control.
-
-**Syntax**: `crate1=level1,crate2=level2`
-
-**Examples**:
-```bash
-# Trace UI, debug core, info for everything else
-RUST_LOG_FILTER=petal_tongue_ui=trace,petal_tongue_core=debug
-
-# Debug all petalTongue crates
-RUST_LOG_FILTER=petal_tongue=debug
-
-# Trace specific module
-RUST_LOG_FILTER=petal_tongue_graph::visual_2d=trace
-```
+Selects the UI backend when set. Valid values include `auto`, `eframe`, `egui`, `compute.provider`, `pure-rust`, and `discovered` (see `petal_tongue_ui::backend::backend_from_env` / `BackendChoice`).
 
 ---
-
-## UI Configuration
 
 ### **PETALTONGUE_WINDOW_WIDTH**
 **Type**: Integer (pixels)  
@@ -390,47 +395,6 @@ Initial window height in pixels.
 
 ---
 
-### **PETALTONGUE_AUDIO_ENABLED**
-**Type**: Boolean (`true` | `false`)  
-**Default**: Auto-detected at runtime  
-**Required**: No  
-**Example**: `PETALTONGUE_AUDIO_ENABLED=true`
-
-Force audio rendering on/off. By default, petalTongue detects audio capabilities at runtime using its capability detection system.
-
----
-
-## Performance Tuning
-
-### **PETALTONGUE_REFRESH_INTERVAL**
-**Type**: Float (seconds)  
-**Default**: `5.0`  
-**Required**: No  
-**Example**: `PETALTONGUE_REFRESH_INTERVAL=2.0`
-
-Auto-refresh interval for topology updates (in seconds). Superseded by `PETALTONGUE_REFRESH_INTERVAL_SECS` for the biomeOS UI manager (the old one controlled topology auto-refresh as float seconds; the new one controls UI manager refresh as integer seconds).
-
-**Trade-offs**:
-- Lower values (1-2s): More responsive, higher network/CPU usage
-- Higher values (10-30s): Less responsive, lower resource usage
-
----
-
-### **PETALTONGUE_MAX_FPS**
-**Type**: Integer (frames per second)  
-**Default**: `60`  
-**Required**: No  
-**Example**: `PETALTONGUE_MAX_FPS=30`
-
-Maximum frame rate for rendering.
-
-**Recommendations**:
-- `60`: Smooth animations, high CPU usage
-- `30`: Balanced performance
-- `15-20`: Low-power mode
-
----
-
 ## Tuning & Timing
 
 ### **PETALTONGUE_RPC_TIMEOUT_SECS**
@@ -439,7 +403,7 @@ Maximum frame rate for rendering.
 **Required**: No  
 **Example**: `PETALTONGUE_RPC_TIMEOUT_SECS=10`
 
-Timeout for RPC clients (tarpc primary inter-primal; JSON-RPC fallback paths).
+Timeout for RPC clients (JSON-RPC 2.0 cross-primal paths; tarpc may apply on Rust-to-Rust hot paths where used).
 
 ---
 
@@ -513,28 +477,6 @@ Maximum delay cap for exponential backoff retry.
 
 ---
 
-## Tool Integration
-
-### **BINGOCUBE_PATH**
-**Type**: String (file path)  
-**Default**: Auto-discovered via PATH  
-**Required**: No  
-**Example**: `BINGOCUBE_PATH=/usr/local/bin/bingocube`
-
-Path to BingoCube adapter executable (if using external AI tools).
-
----
-
-### **SYSTEM_MONITOR_INTERVAL**
-**Type**: Float (seconds)  
-**Default**: `2.0`  
-**Required**: No  
-**Example**: `SYSTEM_MONITOR_INTERVAL=1.0`
-
-System monitor refresh interval (for resource tracking tool).
-
----
-
 ## Security & Privacy
 
 ### **PETALTONGUE_NO_TELEMETRY**
@@ -546,16 +488,6 @@ System monitor refresh interval (for resource tracking tool).
 Disable telemetry collection (if/when implemented).
 
 **Note**: Currently petalTongue does not collect any telemetry. This variable is reserved for future use.
-
----
-
-### **PETALTONGUE_DEBUG_OVERLAY**
-**Type**: Boolean (`true` | `false`)  
-**Default**: `false`  
-**Required**: No  
-**Example**: `PETALTONGUE_DEBUG_OVERLAY=true`
-
-Show debug overlay with internal state (FPS, memory, etc.).
 
 ---
 
@@ -584,7 +516,6 @@ BIOMEOS_URL=http://your-biomeos-instance:3000
 BIOMEOS_URL=http://localhost:3000
 PETALTONGUE_FIXTURE_MODE=true
 RUST_LOG=debug
-PETALTONGUE_DEBUG_OVERLAY=true
 PETALTONGUE_STATUS_FILE=/tmp/petaltongue_dev_status.json
 ```
 
@@ -592,8 +523,7 @@ PETALTONGUE_STATUS_FILE=/tmp/petaltongue_dev_status.json
 ```bash
 # Fast updates, smooth animations
 BIOMEOS_URL=http://biomeos.local:3000
-PETALTONGUE_REFRESH_INTERVAL=1.0
-PETALTONGUE_MAX_FPS=60
+PETALTONGUE_REFRESH_INTERVAL_SECS=1
 RUST_LOG=warn
 ```
 
@@ -601,8 +531,7 @@ RUST_LOG=warn
 ```bash
 # Slower updates, lower CPU usage
 BIOMEOS_URL=http://biomeos.local:3000
-PETALTONGUE_REFRESH_INTERVAL=10.0
-PETALTONGUE_MAX_FPS=20
+PETALTONGUE_REFRESH_INTERVAL_SECS=10
 RUST_LOG=error
 ```
 
@@ -641,7 +570,6 @@ Before deploying to production:
 - [ ] Set `BIOMEOS_URL` to production endpoint
 - [ ] Ensure `PETALTONGUE_FIXTURE_MODE` is `false` (or unset)
 - [ ] Set `RUST_LOG` to `info` or `warn`
-- [ ] Unset `PETALTONGUE_DEBUG_OVERLAY` (or set to `false`)
 - [ ] Configure `PETALTONGUE_STATUS_FILE` for monitoring
 - [ ] Set `PETALTONGUE_SOUNDS_DIR` if using custom sounds
 - [ ] Configure refresh interval based on load requirements

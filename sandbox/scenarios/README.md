@@ -97,7 +97,7 @@ sandbox/
 │   ├── simple.json                   (default, 5 primals)
 │   ├── complex.json                  (10 primals, advanced)
 │   ├── chaos.json                    (failures & errors)
-│   ├── doom-*.json                   (5 game/rendering scenarios)
+│   ├── doom-*.json                   (4 game/rendering scenarios)
 │   ├── healthspring-*.json           (6 clinical domain scenarios)
 │   ├── clinical-trt-*.json           (5 clinical trial scenarios)
 │   ├── full-dashboard.json           (multi-panel dashboard)
@@ -151,6 +151,6 @@ When adding new scenarios:
 ---
 
 **Status**: 27 scenarios available  
-**Last Updated**: April 2, 2026  
+**Last Updated**: April 3, 2026  
 **Maintainer**: petalTongue team
 

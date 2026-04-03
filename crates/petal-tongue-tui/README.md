@@ -27,7 +27,7 @@ The Rich TUI is a comprehensive, terminal-based interface for managing primals, 
 
 ```bash
 # From petalTongue root
-cargo run --example simple_demo
+cargo run -p petal-tongue-tui --example simple_demo
 
 # Or build and run
 cargo build --release -p petal-tongue-tui
@@ -266,7 +266,7 @@ cargo test -p petal-tongue-tui
 cargo build --release -p petal-tongue-tui
 
 # Run example
-cargo run --example simple_demo
+cargo run -p petal-tongue-tui --example simple_demo
 ```
 
 ### Testing
