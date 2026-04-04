@@ -31,7 +31,7 @@
 //!
 //! - `ui-auto`: Auto-detect best available backend (default)
 //! - `ui-eframe`: Force eframe backend
-//! - `ui-toadstool`: Force capability-discovered display backend (requires biomeOS)
+//! - `discovered-display`: Force capability-discovered display backend (requires biomeOS)
 //!
 //! # Examples
 //!

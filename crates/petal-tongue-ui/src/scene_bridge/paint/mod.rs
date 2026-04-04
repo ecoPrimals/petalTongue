@@ -5,9 +5,21 @@ mod color;
 mod geometry;
 mod primitives;
 
-#[allow(unused_imports)]
+#[cfg_attr(
+    not(test),
+    expect(
+        unused_imports,
+        reason = "re-exported from private `color` for scene_bridge callers; not all symbols referenced in this module"
+    )
+)]
 pub use color::{apply_opacity, to_color32, to_egui_stroke};
-#[allow(unused_imports)]
+#[cfg_attr(
+    not(test),
+    expect(
+        unused_imports,
+        reason = "re-exported from private `geometry` for tests and callers; not all symbols used in non-test lib builds"
+    )
+)]
 pub use geometry::{anchor_to_align2, bounding_rect, primitive_origin};
 pub use primitives::paint_primitive;
 

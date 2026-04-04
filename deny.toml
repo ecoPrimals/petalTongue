@@ -8,7 +8,6 @@ db-urls = ["https://github.com/rustsec/advisory-db"]
 yanked = "deny"
 ignore = [
     "RUSTSEC-2024-0387", # Transitive: opentelemetry_api merged (via tarpc)
-    "RUSTSEC-2024-0436", # Transitive: paste unmaintained (via ratatui); pastey migration pending
     "RUSTSEC-2025-0141", # Transitive: BytesMut reserve overflow (pending bytes update)
 ]
 

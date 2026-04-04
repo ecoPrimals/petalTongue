@@ -89,6 +89,19 @@ impl UnixSocketServer {
         Arc::clone(&self.handlers.sensor_stream_subscribers)
     }
 
+    /// Return a clone of the push-delivery callback sender (PT-06).
+    ///
+    /// The UI can use this sender to forward `CallbackDispatch` values from
+    /// `InteractionSubscriberRegistry::broadcast()` so that subscribers with
+    /// `callback_socket` receive push notifications for GUI-originated events.
+    #[must_use]
+    pub fn callback_sender(
+        &self,
+    ) -> Option<tokio::sync::mpsc::UnboundedSender<crate::visualization_handler::CallbackDispatch>>
+    {
+        self.handlers.callback_tx.clone()
+    }
+
     /// Return a handle to the interaction subscriber registry.
     #[must_use]
     pub fn interaction_subscribers_handle(

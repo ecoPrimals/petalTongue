@@ -60,7 +60,7 @@ pub mod stream;
 pub mod types;
 
 // Always-available modalities (no special dependencies)
-pub mod awakening_audio; // NEW: Awakening experience audio layers
+pub mod awakening_audio; // Awakening experience audio layers
 pub mod gesture;
 pub mod narrative;
 pub mod visual;

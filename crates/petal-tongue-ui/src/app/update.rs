@@ -66,7 +66,14 @@ pub fn run_update(app: &mut PetalTongueApp, ctx: &egui::Context) {
                 perspective_id: None,
             };
             if let Ok(mut r) = reg.write() {
-                r.broadcast(&event);
+                let callbacks = r.broadcast(&event);
+                if let Some(ref tx) = app.callback_tx {
+                    for cb in callbacks {
+                        if let Err(e) = tx.send(cb) {
+                            tracing::warn!("callback push failed (channel closed): {e}");
+                        }
+                    }
+                }
             }
             app.last_broadcast_selection = current;
         }
@@ -195,17 +202,14 @@ pub fn run_update(app: &mut PetalTongueApp, ctx: &egui::Context) {
         ctx.request_repaint();
     }
 
-    // SQUIRREL AI adapter: poll for AI-driven interaction commands.
+    // AI interaction adapter: poll for AI-driven interaction commands.
     if let Some(ref interaction_subs) = app.interaction_subscribers
         && let Ok(mut reg) = interaction_subs.try_write()
     {
-        app.squirrel_adapter.poll(&mut reg);
-        let commands = app.squirrel_adapter.drain_commands();
+        app.ai_adapter.poll(&mut reg);
+        let commands = app.ai_adapter.drain_commands();
         for cmd in &commands {
-            crate::squirrel_adapter::SquirrelAdapter::apply_command(
-                &mut app.interaction_bridge,
-                cmd,
-            );
+            crate::ai_adapter::AiAdapter::apply_command(&mut app.interaction_bridge, cmd);
         }
         if !commands.is_empty() {
             ctx.request_repaint();

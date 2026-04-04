@@ -73,11 +73,9 @@ pub mod app_panels;
 pub mod audio;
 pub mod audio_canvas;
 pub mod audio_discovery;
-#[cfg(feature = "legacy-audio")]
-pub mod audio_providers;
 pub mod audio_pure_rust;
 pub mod awakening_overlay;
-pub mod backend; // NEW: UI backend abstraction (ecoBlossom!)
+pub mod backend; // UI backend abstraction (ecoBlossom!)
 pub mod error;
 pub mod event_loop;
 pub mod focus_manager;
@@ -130,6 +128,7 @@ pub mod protocol_selection; // Protocol priority: tarpc PRIMARY, JSON-RPC univer
 pub mod sensors;
 pub mod ui_events; // Event-driven architecture for real-time updates // Sensor implementations (bidirectional UUI)
 // Universal infant discovery (zero hardcoded knowledge)
+pub mod ai_adapter;
 pub mod egui_compiler;
 pub mod game_data_channel;
 pub mod interaction_bridge;
@@ -138,7 +137,6 @@ pub mod neural_registration;
 pub mod sandbox_provider;
 pub mod scene_bridge;
 pub mod sensor_feed;
-pub mod squirrel_adapter;
 pub mod state;
 pub mod status_reporter;
 pub mod system_dashboard;
@@ -147,7 +145,7 @@ pub mod timeline_view;
 pub mod tool_integration;
 pub mod traffic_view;
 pub mod trust_dashboard;
-pub mod universal_discovery; // NEW: Capability-based GPU rendering discovery via Songbird // Scene engine -> egui paint command bridge
+pub mod universal_discovery; // Capability-based GPU rendering discovery via Songbird // Scene engine -> egui paint command bridge
 
 pub use app::PetalTongueApp;
 pub use human_entropy_window::HumanEntropyWindow;

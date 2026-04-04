@@ -13,10 +13,17 @@ use tokio::net::{UnixListener, UnixStream};
 
 /// JSON-RPC Request (for server parsing)
 #[derive(Debug, Deserialize)]
-#[allow(dead_code)]
 struct JsonRpcRequest {
+    #[expect(
+        dead_code,
+        reason = "parsed for JSON-RPC shape; mock only inspects method and id"
+    )]
     jsonrpc: String,
     method: String,
+    #[expect(
+        dead_code,
+        reason = "optional params not inspected by this mock server"
+    )]
     params: Option<serde_json::Value>,
     id: u64,
 }

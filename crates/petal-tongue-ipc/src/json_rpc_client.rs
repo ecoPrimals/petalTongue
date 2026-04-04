@@ -316,11 +316,11 @@ impl JsonRpcClient {
 
         trace!("JSON-RPC response: {:?}", response);
 
-        if let Some(ref err) = response.error {
+        if let Some(err) = response.error {
             return Err(JsonRpcClientError::RpcError {
                 code: err.code,
-                message: err.message.clone(),
-                data: err.data.clone(),
+                message: err.message,
+                data: err.data,
             });
         }
 

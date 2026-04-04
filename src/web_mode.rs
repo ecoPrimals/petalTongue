@@ -159,6 +159,8 @@ async fn events_sse_handler(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used)]
+
     use super::*;
 
     #[tokio::test]
@@ -278,7 +280,7 @@ mod tests {
             .route("/health", get(health_handler))
             .route("/api/status", get(status_handler))
             .route("/api/primals", get(primals_handler))
-            .route("/api/api/snapshot", get(snapshot_handler))
+            .route("/api/snapshot", get(snapshot_handler))
             .with_state(data_service);
 
         let req = axum::http::Request::builder()

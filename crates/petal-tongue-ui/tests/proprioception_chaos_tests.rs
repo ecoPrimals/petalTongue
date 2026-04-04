@@ -8,9 +8,6 @@
 //! - Topology changes
 //! - Network failures
 //! - Resource exhaustion scenarios
-//!
-//! EVOLUTION NOTE: Chaos tests focus on mechanism robustness, not time-based decay.
-//! Removed blocking sleeps - testing failure detection, not waiting for timeouts.
 
 use petal_tongue_ui::{input_verification::*, output_verification::*, proprioception::*};
 use std::time::Duration;
@@ -38,8 +35,6 @@ fn chaos_all_outputs_fail() {
         !degraded_state.motor_functional,
         "Motor should not be functional without output confirmation"
     );
-
-    // EVOLUTION: Removed sleep - testing failure detection mechanism, not time-based decay
 }
 
 /// Chaos Scenario: All inputs stop simultaneously  
@@ -73,8 +68,6 @@ fn chaos_all_inputs_stop() {
         !degraded_state.sensory_functional,
         "Sensory should not be functional without input"
     );
-
-    // EVOLUTION: Removed sleep - testing mechanism, not time-based decay
 }
 
 /// Chaos Scenario: Rapid modality registration/deregistration

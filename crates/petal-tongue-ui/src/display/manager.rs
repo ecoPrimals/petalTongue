@@ -40,14 +40,14 @@ impl DisplayManager {
 
         let mut backends = Vec::new();
 
-        // Tier 1: Try Toadstool V2 (tarpc) via capability discovery (highest priority)
+        // Tier 1: Try discovered display V2 (tarpc) via capability discovery (highest priority)
         // Discovery happens at runtime - no hardcoded primal names!
         info!("🌸 Discovering 'display' capability provider (tarpc)...");
         match DiscoveredDisplayBackendV2::new() {
-            Ok(toadstool_v2) => {
+            Ok(discovered_v2) => {
                 info!("✅ Display capability provider discovered via tarpc (high-performance)");
                 backends.push(BackendEntry {
-                    backend: Box::new(toadstool_v2),
+                    backend: Box::new(discovered_v2),
                     priority: BackendPriority::DiscoveredDisplay,
                     initialized: false,
                 });
@@ -59,10 +59,10 @@ impl DisplayManager {
                 // Fallback to JSON-RPC version
                 if DiscoveredDisplayBackend::is_available() {
                     match DiscoveredDisplayBackend::new() {
-                        Ok(toadstool) => {
+                        Ok(discovered_json_rpc) => {
                             info!("✅ Display capability provider discovered (JSON-RPC fallback)");
                             backends.push(BackendEntry {
-                                backend: Box::new(toadstool),
+                                backend: Box::new(discovered_json_rpc),
                                 priority: BackendPriority::DiscoveredDisplay,
                                 initialized: false,
                             });

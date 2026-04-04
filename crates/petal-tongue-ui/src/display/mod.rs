@@ -6,7 +6,7 @@
 //!
 //! # Four-Tier Strategy
 //!
-//! 1. **Toadstool WASM** - Network effect, primal collaboration, GPU acceleration
+//! 1. **Capability-discovered display** - tarpc primary path, JSON-RPC fallback; endpoint from biomeOS (no hardcoded provider)
 //! 2. **Software Rendering** - Pure Rust, works everywhere, no GPU needed
 //! 3. **Framebuffer Direct** - Linux console mode, embedded systems
 //! 4. **External Display** - Traditional display server (benchmark/fallback)
@@ -29,8 +29,9 @@ pub mod renderer;
 pub mod traits;
 
 pub use backends::{
-    external::ExternalDisplay, framebuffer::FramebufferDisplay, software::SoftwareDisplay,
-    toadstool::DiscoveredDisplayBackend, toadstool_v2::DiscoveredDisplayBackendV2,
+    discovered_display::DiscoveredDisplayBackend,
+    discovered_display_v2::DiscoveredDisplayBackendV2, external::ExternalDisplay,
+    framebuffer::FramebufferDisplay, software::SoftwareDisplay,
 };
 pub use manager::DisplayManager;
 pub use prompt::prompt_for_display_server;

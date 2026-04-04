@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 2, 2026
+**Updated**: April 3, 2026
 
 ---
 
@@ -86,11 +86,11 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 ## Key Modules
 
 ### Core (`petal-tongue-core`)
-- `constants.rs` -- Centralized self-knowledge (name, ports, socket names)
+- `constants/` -- Centralized self-knowledge (name, ports, socket names); submodules: `mod.rs`, `network.rs`, `display.rs`, `timeouts.rs`, `thresholds.rs`, `tufte_tolerances.rs`
 - `graph_engine.rs` -- Graph data model (nodes, edges, layout)
 - `config_system.rs` -- XDG-compliant configuration (env > file > defaults)
 - `data_channel.rs` -- DataChannel enum (11 variants: TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter, Scatter3D, FieldMap, GameScene, Soundscape)
-- `capability_names.rs` -- Centralized capability/method/socket/primal constants (62+ capabilities, 15 primal identities)
+- `capability_names.rs` -- Centralized capability/method/socket/primal constants (62+ capabilities, 2 self-knowledge identities)
 - `sensory_matrix.rs` -- Sensory Capability Matrix (input×output negotiation for consumer primals)
 - `telemetry_adapter.rs` -- JSONL telemetry ingestion (hotSpring)
 - `or_exit.rs` -- `OrExit<T>` trait for zero-panic validation binaries
@@ -114,7 +114,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 - `mdns_provider/` -- mDNS/DNS-SD zero-config discovery (optional `mdns` feature)
 - `capability_parse.rs` -- 4-format capability parsing (flat, enriched, nested, result-wrapped)
 - `cache.rs` -- LRU discovery result cache
-- `dns_parser.rs` -- Pure-Rust DNS packet parser (SRV, TXT, PTR, A records)
+- `dns_parser/` -- Pure-Rust DNS packet parser (SRV, TXT, PTR, A records); submodules: `header.rs`, `name.rs`, `record.rs`
 
 ### UI (`petal-tongue-ui`)
 - `scene_bridge/paint/` (color, geometry, primitives)
@@ -147,7 +147,7 @@ only in `primal_names` constants for logging context.
 - **Audio backend** -- Discovered via `audio.synthesize` capability
 - **GPU compute** -- Discovered via `compute.dispatch` / `physics-compute` capabilities
 - **Discovery service** -- Discovered via `discovery.query_capability`
-- **Squirrel** -- Agentic AI adapter (InputModality::Agent, AgentInputAdapter)
+- **AI agent adapter** -- `ai_adapter` (InputModality::Agent, AgentInputAdapter)
 
 See `ecoPrimals/wateringHole/petaltongue/` for inter-primal standards.
 

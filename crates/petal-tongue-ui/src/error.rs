@@ -67,6 +67,26 @@ impl From<petal_tongue_discovery::DiscoveryError> for UiError {
     }
 }
 
+impl From<UiError> for petal_tongue_discovery::DiscoveryError {
+    fn from(e: UiError) -> Self {
+        match e {
+            UiError::Io(io) => Self::Io(io),
+            UiError::Json(j) => Self::Json(j),
+            _ => Self::Integration(e.to_string()),
+        }
+    }
+}
+
+impl From<UiError> for petal_tongue_discovery::errors::HealthCheckSource {
+    fn from(e: UiError) -> Self {
+        match e {
+            UiError::Io(io) => Self::Io(io),
+            UiError::Json(j) => Self::Json(j),
+            _ => Self::Upstream(e.to_string()),
+        }
+    }
+}
+
 impl From<petal_tongue_core::InstanceError> for UiError {
     fn from(e: petal_tongue_core::InstanceError) -> Self {
         Self::Generic(e.to_string())
