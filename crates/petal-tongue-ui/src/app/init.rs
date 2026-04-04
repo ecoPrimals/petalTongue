@@ -166,13 +166,14 @@ pub(super) fn create_app(
         last_session_poll: Instant::now(),
         sensor_stream: None,
         interaction_subscribers: None,
+        callback_tx: None,
         last_broadcast_selection: None,
         custom_panels,
         motor_rx,
         motor_tx,
         show_top_menu: true,
         interaction_bridge: EguiInteractionBridge::new(),
-        squirrel_adapter: crate::squirrel_adapter::SquirrelAdapter::new_deferred(),
+        ai_adapter: crate::ai_adapter::AiAdapter::new_deferred(),
     };
 
     finalize_app_startup(&mut app, scenario.as_ref(), &tutorial_mode, needs_fallback);

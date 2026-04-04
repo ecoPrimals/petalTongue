@@ -138,10 +138,10 @@ impl BiomeOSUIManager {
             }
             #[cfg(not(feature = "mock"))]
             {
-                // SAFETY: `use_fixtures` is only `true` when `cfg!(feature = "mock")`
-                // evaluates to true (see constructor), so this branch is dead code
-                // when the feature is disabled.
-                unreachable!("use_fixtures is false when mock feature is disabled");
+                // `use_fixtures` is only set `true` when `cfg!(feature = "mock")`
+                // holds (see constructor), so this branch should never execute.
+                tracing::error!("use_fixtures set without mock feature — returning empty data");
+                return Ok(());
             }
         } else if let Some(provider) = &self.biomeos_provider {
             // Use biomeOS provider (methods are async)

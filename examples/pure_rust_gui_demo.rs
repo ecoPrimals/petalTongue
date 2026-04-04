@@ -11,7 +11,10 @@ use petal_tongue_ui::display::{DisplayManager, EguiPixelRenderer};
 use std::time::{Duration, Instant};
 
 #[tokio::main]
-#[allow(clippy::cast_precision_loss)]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "frame_count and target_frames are small; f32 progress and timing display are acceptable"
+)]
 async fn main() -> Result<()> {
     // Initialize tracing
     tracing_subscriber::fmt::init();

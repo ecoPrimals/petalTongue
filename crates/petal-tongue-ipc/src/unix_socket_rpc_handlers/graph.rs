@@ -2,7 +2,7 @@
 //! Handlers for `visualization.render.graph` and graph rendering.
 //!
 //! Builds a `SceneGraph` from the `GraphEngine` topology and compiles it
-//! through the real `SvgCompiler` / `TerminalCompiler`.
+//! through the real `SvgCompiler` / `TerminalCompiler` / HTML wrapper.
 
 use super::RpcHandlers;
 use crate::json_rpc::{JsonRpcResponse, error_codes};
@@ -133,6 +133,29 @@ pub async fn render_graph(handlers: &RpcHandlers, params: Value, id: Value) -> J
                 ),
             }
         }
+        "html" => {
+            let compiler = SvgCompiler;
+            match compiler.compile(&scene) {
+                ModalityOutput::Svg(bytes) => {
+                    let svg = String::from_utf8_lossy(bytes.as_ref());
+                    let html = petal_tongue_ui_core::wrap_svg_in_html(&svg);
+                    let html_str = String::from_utf8_lossy(&html).into_owned();
+                    JsonRpcResponse::success(
+                        id,
+                        json!({
+                            "format": "html",
+                            "data": html_str,
+                            "metadata": { "nodes": node_count, "edges": edge_count },
+                        }),
+                    )
+                }
+                _ => JsonRpcResponse::error(
+                    id,
+                    error_codes::INTERNAL_ERROR,
+                    "HTML compilation failed (SVG stage)",
+                ),
+            }
+        }
         "terminal" => {
             let compiler = TerminalCompiler::new(120, 40);
             match compiler.compile(&scene) {
@@ -157,7 +180,7 @@ pub async fn render_graph(handlers: &RpcHandlers, params: Value, id: Value) -> J
         _ => JsonRpcResponse::error(
             id,
             error_codes::INVALID_PARAMS,
-            format!("Unsupported format: {format}. Supported: svg, terminal"),
+            format!("Unsupported format: {format}. Supported: svg, html, terminal"),
         ),
     }
 }
@@ -190,6 +213,19 @@ mod tests {
         assert!(r["data"].as_str().unwrap().contains("svg"));
         assert_eq!(r["metadata"]["nodes"], 0);
         assert_eq!(r["metadata"]["edges"], 0);
+    }
+
+    #[tokio::test]
+    async fn render_graph_html_format() {
+        let h = test_handlers();
+        let resp = render_graph(&h, json!({"format": "html"}), json!(1)).await;
+        assert!(resp.error.is_none());
+        let r = resp.result.expect("result");
+        assert_eq!(r["format"], "html");
+        let data = r["data"].as_str().expect("html data");
+        assert!(data.starts_with("<!DOCTYPE html>"));
+        assert!(data.contains("<svg"));
+        assert_eq!(r["metadata"]["nodes"], 0);
     }
 
     #[tokio::test]

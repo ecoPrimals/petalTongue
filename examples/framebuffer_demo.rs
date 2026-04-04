@@ -12,7 +12,7 @@
 //! **USAGE**:
 //! ```bash
 //! # Build the example
-//! cargo build --release --example framebuffer_demo --features framebuffer-direct
+//! cargo build --release --example framebuffer_demo --features examples
 //!
 //! # Run with sudo (required for /dev/fb0 access)
 //! sudo target/release/examples/framebuffer_demo
@@ -124,7 +124,10 @@ async fn main() -> Result<()> {
                     println!("Button clicked at frame {i}");
                 }
 
-                #[allow(clippy::cast_precision_loss)]
+                #[expect(
+                    clippy::cast_precision_loss,
+                    reason = "frame index 0..60 is exactly representable in f32"
+                )]
                 let mut value = i as f32 / 60.0;
                 ui.add(egui::Slider::new(&mut value, 0.0..=1.0).text("Progress"));
             });

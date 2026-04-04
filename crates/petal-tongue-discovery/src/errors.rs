@@ -164,12 +164,9 @@ pub enum DiscoveryError {
     #[error("All retry attempts failed")]
     RetryExhausted,
 
-    /// Operation failed (wraps external error)
-    #[error("Operation failed")]
-    OperationFailed {
-        #[source]
-        source: Box<dyn std::error::Error + Send + Sync>,
-    },
+    /// Upstream integration error (e.g. device management JSON-RPC), when no more specific variant applies
+    #[error("Integration error: {0}")]
+    Integration(String),
 }
 
 /// Concrete source types for health-check failures (replaces `Box<dyn Error>`).
@@ -181,9 +178,12 @@ pub enum HealthCheckSource {
     /// HTTP request error
     #[error(transparent)]
     Http(#[from] reqwest::Error),
-    /// Upstream error from another subsystem (UI, integration, etc.)
+    /// JSON parse error on health-check response
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+    /// Upstream integration or other failure (message only)
     #[error("{0}")]
-    Other(Box<dyn std::error::Error + Send + Sync>),
+    Upstream(String),
 }
 
 /// Result type for discovery operations

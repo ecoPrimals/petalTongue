@@ -34,7 +34,7 @@
 //!
 //! # Reference
 //!
-//! See `specs/PETALTONGUE_TOADSTOOL_INTEGRATION_ARCHITECTURE.md`
+//! See `archive/specs-archive/PETALTONGUE_TOADSTOOL_INTEGRATION_ARCHITECTURE.md` for legacy integration notes (same capability-based discovery model).
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
 use crate::error::{DisplayError, Result};
@@ -420,14 +420,14 @@ mod tests {
     use petal_tongue_core::constants;
 
     #[tokio::test]
-    async fn test_toadstool_display_creation() {
+    async fn test_discovered_display_creation() {
         let display = DiscoveredDisplayBackend::with_socket(constants::biomeos_legacy_socket());
         assert_eq!(display.name(), "Discovered Display (via biomeOS)");
         assert_eq!(display.dimensions(), (1920, 1080));
     }
 
     #[test]
-    fn test_toadstool_capabilities() {
+    fn test_discovered_display_capabilities() {
         let display = DiscoveredDisplayBackend::with_socket(constants::biomeos_legacy_socket());
         let caps = display.capabilities();
         assert!(!caps.requires_network); // Unix socket is local

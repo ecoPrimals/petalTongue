@@ -8,9 +8,6 @@
 //! - Bidirectional feedback loops
 //! - Health assessment
 //! - Topology detection
-//!
-//! EVOLUTION NOTE: Tests evolved to remove blocking `thread::sleep` calls.
-//! Time-based behavior is tested via mechanism verification, not actual time passage.
 
 use petal_tongue_ui::{input_verification::*, output_verification::*, proprioception::*};
 use std::time::Duration;
@@ -120,9 +117,6 @@ fn test_confidence_mechanism() {
         state_more_input.confidence >= state_with_input.confidence,
         "Confidence should remain high with continued input"
     );
-
-    // EVOLUTION: Removed blocking sleep - testing mechanism, not time passage
-    // Staleness/decay is tested separately via is_stale() mechanism
 }
 
 #[test]
@@ -325,10 +319,6 @@ mod output_verification_tests {
 
         // Zero threshold should always be stale (tests the boundary condition)
         assert!(verification.is_stale(Duration::from_secs(0)));
-
-        // EVOLUTION: Removed flaky time-based test
-        // Staleness mechanism is verified above via boundary conditions
-        // Production code handles time-based staleness correctly via SystemTime
     }
 }
 

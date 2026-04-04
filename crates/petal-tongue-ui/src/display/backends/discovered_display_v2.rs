@@ -139,7 +139,7 @@ impl DiscoveredDisplayBackendV2 {
         }
     }
 
-    /// Discover and connect to display primal via tarpc
+    /// Discover and connect to the display capability provider via tarpc
     async fn discover_and_connect(&mut self) -> Result<()> {
         info!("🌸 Discovering display capability provider via biomeOS...");
 
@@ -148,7 +148,7 @@ impl DiscoveredDisplayBackendV2 {
             .as_ref()
             .ok_or(DisplayError::NoDiscoverySystem)?;
 
-        // Query for display capability (TRUE PRIMAL: no hardcoded "toadstool")
+        // Query for display capability (no hardcoded provider name)
         let endpoint = discovery
             .discover_one(&CapabilityQuery::new("display"))
             .await
@@ -387,7 +387,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_toadstool_capabilities() {
+    fn test_discovered_display_v2_capabilities() {
         let display = DiscoveredDisplayBackendV2 {
             discovery: None,
             tarpc_client: None,

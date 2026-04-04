@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! SQUIRREL interaction adapter: AI-driven interaction adaptation.
+//! AI interaction adapter: AI-driven interaction adaptation.
 //!
-//! SQUIRREL (or any AI agent) subscribes to interaction events via
+//! An AI agent (e.g. Squirrel) subscribes to interaction events via
 //! `interaction.subscribe` and can push interaction intents back via
 //! `visualization.interact.apply`. This module bridges those IPC events
 //! with the `EguiInteractionBridge` so the UI responds to AI-suggested
@@ -10,9 +10,9 @@
 //! ## Flow
 //!
 //! ```text
-//! SQUIRREL ─→ interaction.subscribe (IPC) ─→ InteractionSubscriberRegistry
+//! AI agent ─→ interaction.subscribe (IPC) ─→ InteractionSubscriberRegistry
 //!                                                       │
-//!             SquirrelAdapter.poll_and_apply() ←─────────┘
+//!             AiAdapter (poll → drain → apply) ←────────┘
 //!                       │
 //!                       ▼
 //!              EguiInteractionBridge (focus/select/navigate)
@@ -63,13 +63,13 @@ pub enum AiInteractionCommand {
 
 /// Adapter that polls AI-originated interaction events and converts them
 /// to `AiInteractionCommand`s for the `EguiInteractionBridge`.
-pub struct SquirrelAdapter {
+pub struct AiAdapter {
     subscriber_id: String,
     registry: Arc<RwLock<petal_tongue_ipc::InteractionSubscriberRegistry>>,
     pending_commands: Vec<AiInteractionCommand>,
 }
 
-impl SquirrelAdapter {
+impl AiAdapter {
     /// Create a new adapter and register as a subscriber.
     pub async fn new(
         registry: Arc<RwLock<petal_tongue_ipc::InteractionSubscriberRegistry>>,
@@ -139,7 +139,7 @@ impl SquirrelAdapter {
         let events = registry.poll(&self.subscriber_id);
         for event in events {
             if let Some(cmd) = Self::event_to_command(&event) {
-                debug!("SQUIRREL adapter: {:?}", cmd);
+                debug!("AI interaction adapter: {:?}", cmd);
                 self.pending_commands.push(cmd);
             }
         }
@@ -227,7 +227,7 @@ mod tests {
     #[test]
     fn event_to_command_focus() {
         let event = make_event("ai.focus", vec!["node-42"]);
-        let cmd = SquirrelAdapter::event_to_command(&event).unwrap();
+        let cmd = AiAdapter::event_to_command(&event).unwrap();
         match cmd {
             AiInteractionCommand::Focus { target } => assert_eq!(target, "node-42"),
             _ => panic!("expected Focus"),
@@ -237,7 +237,7 @@ mod tests {
     #[test]
     fn event_to_command_select() {
         let event = make_event("ai.select", vec!["a", "b"]);
-        let cmd = SquirrelAdapter::event_to_command(&event).unwrap();
+        let cmd = AiAdapter::event_to_command(&event).unwrap();
         match cmd {
             AiInteractionCommand::Select { targets } => {
                 assert_eq!(targets, vec!["a", "b"]);
@@ -249,14 +249,14 @@ mod tests {
     #[test]
     fn event_to_command_deselect() {
         let event = make_event("ai.deselect", vec![]);
-        let cmd = SquirrelAdapter::event_to_command(&event).unwrap();
+        let cmd = AiAdapter::event_to_command(&event).unwrap();
         assert!(matches!(cmd, AiInteractionCommand::Deselect));
     }
 
     #[test]
     fn event_to_command_highlight() {
         let event = make_event("ai.highlight", vec!["panel-1"]);
-        let cmd = SquirrelAdapter::event_to_command(&event).unwrap();
+        let cmd = AiAdapter::event_to_command(&event).unwrap();
         match cmd {
             AiInteractionCommand::Highlight { targets, .. } => {
                 assert_eq!(targets, vec!["panel-1"]);
@@ -268,7 +268,7 @@ mod tests {
     #[test]
     fn event_to_command_navigate() {
         let event = make_event("ai.navigate", vec!["dashboard"]);
-        let cmd = SquirrelAdapter::event_to_command(&event).unwrap();
+        let cmd = AiAdapter::event_to_command(&event).unwrap();
         match cmd {
             AiInteractionCommand::Navigate { destination } => {
                 assert_eq!(destination, "dashboard");
@@ -280,18 +280,18 @@ mod tests {
     #[test]
     fn event_to_command_unknown_returns_none() {
         let event = make_event("unknown.event", vec![]);
-        assert!(SquirrelAdapter::event_to_command(&event).is_none());
+        assert!(AiAdapter::event_to_command(&event).is_none());
     }
 
     #[test]
     fn event_to_command_focus_no_target_returns_none() {
         let event = make_event("ai.focus", vec![]);
-        assert!(SquirrelAdapter::event_to_command(&event).is_none());
+        assert!(AiAdapter::event_to_command(&event).is_none());
     }
 
     #[test]
     fn drain_commands_returns_and_clears() {
-        let mut adapter = SquirrelAdapter::new_deferred();
+        let mut adapter = AiAdapter::new_deferred();
         adapter
             .pending_commands
             .push(AiInteractionCommand::Deselect);
@@ -318,7 +318,7 @@ mod tests {
         };
         reg.broadcast(&event);
 
-        let mut adapter = SquirrelAdapter::new_deferred();
+        let mut adapter = AiAdapter::new_deferred();
         adapter.poll(&mut reg);
         let cmds = adapter.drain_commands();
         assert_eq!(cmds.len(), 1);
@@ -331,7 +331,7 @@ mod tests {
         let cmd = AiInteractionCommand::Focus {
             target: "test-node".to_string(),
         };
-        SquirrelAdapter::apply_command(&mut bridge, &cmd);
+        AiAdapter::apply_command(&mut bridge, &cmd);
         assert!(bridge.focused_data_id().is_some());
     }
 
@@ -341,14 +341,14 @@ mod tests {
         let cmd = AiInteractionCommand::Select {
             targets: vec!["a".to_string(), "b".to_string()],
         };
-        SquirrelAdapter::apply_command(&mut bridge, &cmd);
+        AiAdapter::apply_command(&mut bridge, &cmd);
         assert_eq!(bridge.selected_data_ids().len(), 2);
     }
 
     #[test]
     fn apply_command_deselect_clears() {
         let mut bridge = crate::interaction_bridge::EguiInteractionBridge::new();
-        SquirrelAdapter::apply_command(
+        AiAdapter::apply_command(
             &mut bridge,
             &AiInteractionCommand::Select {
                 targets: vec!["x".to_string()],
@@ -356,7 +356,7 @@ mod tests {
         );
         assert_eq!(bridge.selected_data_ids().len(), 1);
 
-        SquirrelAdapter::apply_command(&mut bridge, &AiInteractionCommand::Deselect);
+        AiAdapter::apply_command(&mut bridge, &AiInteractionCommand::Deselect);
         assert!(bridge.selected_data_ids().is_empty());
         assert!(bridge.focused_data_id().is_none());
     }

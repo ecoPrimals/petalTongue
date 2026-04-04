@@ -140,44 +140,43 @@ pub fn handle_render(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResp
     let params = match serde_json::from_value::<VisualizationRenderRequest>(req.params.clone()) {
         Ok(p) => p,
         Err(canonical_err) => {
-            // Try SpringDataAdapter for native spring formats before failing
-            match petal_tongue_core::spring_adapter::SpringDataAdapter::adapt(&req.params) {
-                Ok(bindings) if !bindings.is_empty() => {
-                    let session_id = req
-                        .params
-                        .get("session_id")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("spring-session")
-                        .to_string();
-                    let title = req
-                        .params
-                        .get("title")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("Spring Data")
-                        .to_string();
-                    let domain = req
-                        .params
-                        .get("domain")
-                        .and_then(|v| v.as_str())
-                        .map(String::from);
-                    let ui_config = req
-                        .params
-                        .get("ui_config")
-                        .and_then(|v| serde_json::from_value::<UiConfig>(v.clone()).ok());
-                    let thresholds = req
-                        .params
-                        .get("thresholds")
-                        .and_then(|v| serde_json::from_value(v.clone()).ok())
-                        .unwrap_or_default();
-                    VisualizationRenderRequest {
-                        session_id,
-                        title,
-                        bindings,
-                        thresholds,
-                        domain,
-                        ui_config,
-                    }
-                }
+            // Extract optional metadata fields before moving ownership to the adapter
+            let session_id = req
+                .params
+                .get("session_id")
+                .and_then(|v| v.as_str())
+                .unwrap_or("spring-session")
+                .to_string();
+            let title = req
+                .params
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Spring Data")
+                .to_string();
+            let domain = req
+                .params
+                .get("domain")
+                .and_then(|v| v.as_str())
+                .map(String::from);
+            let ui_config = req
+                .params
+                .get("ui_config")
+                .and_then(|v| serde_json::from_value::<UiConfig>(v.clone()).ok());
+            let thresholds = req
+                .params
+                .get("thresholds")
+                .and_then(|v| serde_json::from_value(v.clone()).ok())
+                .unwrap_or_default();
+
+            match petal_tongue_core::spring_adapter::SpringDataAdapter::adapt(req.params) {
+                Ok(bindings) if !bindings.is_empty() => VisualizationRenderRequest {
+                    session_id,
+                    title,
+                    bindings,
+                    thresholds,
+                    domain,
+                    ui_config,
+                },
                 _ => {
                     return JsonRpcResponse::error(
                         req.id,

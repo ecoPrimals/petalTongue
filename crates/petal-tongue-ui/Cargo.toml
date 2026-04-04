@@ -10,6 +10,9 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
 petal-tongue-core = { path = "../petal-tongue-core" }
@@ -71,7 +74,7 @@ winit = "0.30"
 rustix = { version = "0.38", features = ["param"] }  # Runtime page_size() for /proc RSS
 
 # Pure Rust display system (crossterm = 100% pure Rust)
-crossterm = "0.28"  # Terminal input/output for sensors (rustix backend, no libc)
+crossterm = "0.29"  # Terminal input/output for sensors (rustix backend, no libc)
 terminal_size = "0.4"  # Terminal dimensions for screen sensor
 async-trait = "0.1"  # For DisplayBackend trait
 tiny-skia = "0.11"  # For egui → pixel rendering
@@ -97,7 +100,7 @@ default = ["ui-auto"]
 # Backend selection features (ecoBlossom evolution!)
 ui-auto = ["ui-eframe"]  # Auto-detect (currently just eframe, will add Toadstool)
 ui-eframe = []           # eframe backend (current, has C deps)
-ui-toadstool = []  # Toadstool display selection (use display::backends::toadstool_v2 with biomeOS)
+discovered-display = []  # Capability-discovered display (display::backends::discovered_display_v2 via biomeOS)
 
 # Test helpers (env var manipulation, etc.) - only for cargo test --features test-fixtures
 test-fixtures = ["petal-tongue-core/test-fixtures"]
@@ -114,9 +117,7 @@ mock = ["petal-tongue-discovery/test-fixtures", "petal-tongue-api/test-fixtures"
 
 # Legacy features (maintained for compatibility)
 external-display = ["ui-eframe"]  # Alias for ui-eframe
-legacy-audio = []       # Legacy audio_providers backend (use crate::audio::AudioSystemV2)
 software-rendering = ["softbuffer", "pixels"]
-framebuffer-direct = []  # Marker: framebuffer backend (no extra deps; uses sysfs)
 toadstool-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys"]
 
 # ✅ EVOLUTION COMPLETE: Audio is now pure Rust via AudioCanvas

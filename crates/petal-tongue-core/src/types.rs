@@ -356,7 +356,7 @@ impl PrimalInfo {
     /// Migrate biomeOS metadata fields into properties.
     ///
     /// Call after deserializing from JSON when not using serde
-    /// (the serde path handles this via [`PrimalInfoWire`]).
+    /// (the serde path handles this via the internal `PrimalInfoWire` type).
     pub fn migrate_metadata_to_properties(&mut self) {
         use crate::property::PropertyValue;
 

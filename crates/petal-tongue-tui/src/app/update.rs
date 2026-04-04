@@ -168,14 +168,15 @@ async fn refresh_topology(tui: &mut RichTUI) -> Result<(), TuiError> {
     Ok(())
 }
 
-/// Refresh data (periodic)
+/// Refresh data (periodic).
+///
+/// Currently a no-op: full refresh is triggered by the `r` key or external
+/// events. This exists as a hook for future periodic status polling.
 async fn refresh_data(tui: &mut RichTUI) -> Result<(), TuiError> {
-    // Only refresh if not in standalone mode
     if !tui.state().is_standalone().await {
-        // Lightweight refresh - don't rediscover, just update status
-        // Full refresh happens on 'r' key or external events
+        // Placeholder for lightweight periodic status updates.
+        // Full rediscovery is intentionally avoided here.
     }
-
     Ok(())
 }
 

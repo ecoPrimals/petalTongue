@@ -216,6 +216,9 @@ fn run_with_eframe(
             if let Some(handles) = ipc_handles {
                 app.set_sensor_stream(handles.sensor_stream);
                 app.set_interaction_subscribers(handles.interaction_subscribers);
+                if let Some(tx) = handles.callback_tx {
+                    app.set_callback_tx(tx);
+                }
             }
 
             register_with_neural_api_background();
@@ -236,6 +239,7 @@ fn run_with_eframe(
 struct IpcHandles {
     sensor_stream: Arc<RwLock<petal_tongue_ipc::SensorStreamRegistry>>,
     interaction_subscribers: Arc<RwLock<petal_tongue_ipc::InteractionSubscriberRegistry>>,
+    callback_tx: Option<tokio::sync::mpsc::UnboundedSender<petal_tongue_ipc::CallbackDispatch>>,
 }
 
 /// Build the IPC server, extract shared handles, then start it in a background thread.
@@ -260,6 +264,7 @@ fn start_ipc_server(
 
     let sensor_stream = server.sensor_stream_handle();
     let interaction_subscribers = server.interaction_subscribers_handle();
+    let callback_tx = server.callback_sender();
     let server = Arc::new(server);
 
     std::thread::Builder::new()
@@ -289,6 +294,7 @@ fn start_ipc_server(
     Some(IpcHandles {
         sensor_stream,
         interaction_subscribers,
+        callback_tx,
     })
 }
 
@@ -429,6 +435,7 @@ mod tests {
             interaction_subscribers: Arc::new(RwLock::new(
                 petal_tongue_ipc::InteractionSubscriberRegistry::new(),
             )),
+            callback_tx: None,
         };
     }
 
@@ -442,8 +449,8 @@ mod tests {
     }
 
     #[test]
-    fn expected_rgba8_buffer_size_from_toadstool() {
-        use petal_tongue_ui::display::backends::toadstool::expected_rgba8_buffer_size;
+    fn expected_rgba8_buffer_size_from_discovered_display() {
+        use petal_tongue_ui::display::backends::discovered_display::expected_rgba8_buffer_size;
         assert_eq!(expected_rgba8_buffer_size(1920, 1080), 1920 * 1080 * 4);
         assert_eq!(expected_rgba8_buffer_size(1, 1), 4);
     }

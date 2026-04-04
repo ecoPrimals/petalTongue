@@ -353,7 +353,24 @@ fn print_status_text(status: &SystemStatus) {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used)]
+
     use super::*;
+
+    #[tokio::test]
+    async fn test_gather_status_snapshot_err_still_succeeds() {
+        let data_service = Arc::new(crate::data_service::DataService::new());
+        let graph = data_service.graph();
+        let g2 = Arc::clone(&graph);
+        let h = std::thread::spawn(move || {
+            let _guard = g2.write().unwrap();
+            panic!("intentional poison for snapshot branch coverage");
+        });
+        let _ = h.join();
+
+        let status = gather_status(false, &data_service).await.unwrap();
+        assert_eq!(status.version, env!("CARGO_PKG_VERSION"));
+    }
 
     #[tokio::test]
     async fn test_gather_status_concurrent() {

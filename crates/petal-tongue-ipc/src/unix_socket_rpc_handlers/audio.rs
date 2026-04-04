@@ -15,17 +15,33 @@ use serde_json::json;
 ///   `"wav_base64"` returns full WAV as base64.
 ///
 /// Returns sample_rate, channels, duration_secs, num_samples, and optionally wav_base64.
-pub fn handle_audio_synthesize(_handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
-    let definition = &req.params["definition"];
-    if definition.is_null() {
-        return JsonRpcResponse::error(
-            req.id,
-            error_codes::INVALID_PARAMS,
-            "Missing required 'definition' parameter".to_string(),
-        );
-    }
+pub fn handle_audio_synthesize(
+    _handlers: &RpcHandlers,
+    mut req: JsonRpcRequest,
+) -> JsonRpcResponse {
+    let format_str = req
+        .params
+        .get("format")
+        .and_then(|v| v.as_str())
+        .unwrap_or("metadata")
+        .to_string();
 
-    let soundscape: Soundscape = match serde_json::from_value(definition.clone()) {
+    let definition = match req
+        .params
+        .as_object_mut()
+        .and_then(|m| m.remove("definition"))
+    {
+        Some(v) if !v.is_null() => v,
+        _ => {
+            return JsonRpcResponse::error(
+                req.id,
+                error_codes::INVALID_PARAMS,
+                "Missing required 'definition' parameter".to_string(),
+            );
+        }
+    };
+
+    let soundscape: Soundscape = match serde_json::from_value(definition) {
         Ok(s) => s,
         Err(e) => {
             return JsonRpcResponse::error(
@@ -37,11 +53,7 @@ pub fn handle_audio_synthesize(_handlers: &RpcHandlers, req: JsonRpcRequest) -> 
     };
 
     let samples = synthesize_soundscape(&soundscape);
-    let format = req
-        .params
-        .get("format")
-        .and_then(|v| v.as_str())
-        .unwrap_or("metadata");
+    let format = format_str.as_str();
 
     let mut result = json!({
         "sample_rate": samples.sample_rate,

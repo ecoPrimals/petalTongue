@@ -22,7 +22,6 @@ members = [
     # (it has its own workspace with core, adapters, demos)
 ]
 
-# NEW: UniBin configuration
 [[bin]]
 name = "petaltongue"
 path = "src/main.rs"
@@ -32,11 +31,15 @@ workspace = true
 
 [package]
 name = "petaltongue-workspace"
+description = "Universal visualization primal for the ecoPrimals ecosystem"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [workspace.package]
 version = "1.6.6"
@@ -44,6 +47,9 @@ edition = "2024"
 license = "AGPL-3.0-or-later"
 repository = "https://github.com/ecoPrimals/petalTongue"
 authors = ["ecoPrimals Project"]
+readme = "README.md"
+keywords = ["visualization", "ecosystem", "ipc", "json-rpc", "pure-rust"]
+categories = ["visualization", "gui", "command-line-interface"]
 
 [workspace.dependencies]
 # Async runtime
@@ -154,9 +160,6 @@ needless_pass_by_ref_mut = "allow"
 while_float = "allow"
 # Tuple-to-array: these patterns are used for egui Pos2/Vec2 conversions.
 tuple_array_conversions = "allow"
-
-# Audio (placeholder - will use rodio or cpal in production)
-# For now, we'll design the API without actual audio output
 
 # UniBin dependencies (added for main.rs)
 [dependencies]

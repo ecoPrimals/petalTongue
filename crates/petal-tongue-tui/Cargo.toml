@@ -4,11 +4,15 @@ workspace = true
 
 [package]
 name = "petal-tongue-tui"
-version = "1.6.6"
-edition.workspace = true
 description = "Rich Terminal User Interface for petalTongue - Universal Interface for biomeOS"
-authors = ["ecoPrimals Team"]
+version.workspace = true
+edition.workspace = true
 license.workspace = true
+repository.workspace = true
+authors.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
 # Core dependencies
@@ -17,11 +21,10 @@ petal-tongue-discovery = { path = "../petal-tongue-discovery" }
 petal-tongue-ipc = { path = "../petal-tongue-ipc" }
 petal-tongue-scene = { path = "../petal-tongue-scene" }
 
-# TUI Framework
-ratatui = "0.28"
+# ratatui 0.30 shares the lru 0.16 / hashbrown 0.16 stack used elsewhere (avoids foldhash 0.1.5 via old lru).
+ratatui = "0.30"
 
-# Terminal handling
-crossterm = { version = "0.28", features = ["event-stream"] }
+crossterm = { version = "0.29", features = ["event-stream"] }
 
 # Async runtime
 tokio = { workspace = true, features = ["full"] }

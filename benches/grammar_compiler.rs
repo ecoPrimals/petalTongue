@@ -7,7 +7,10 @@ use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use petal_tongue_scene::grammar::{ScaleBinding, VariableBinding, VariableRole};
 use petal_tongue_scene::{CoordinateSystem, GeometryType, GrammarCompiler, GrammarExpr, ScaleType};
 
-#[allow(clippy::cast_precision_loss)]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "bench loop indices fit in f64 exactly (n ≤ 10k ≪ 2^53 mantissa)"
+)]
 fn sample_data(n: usize) -> Vec<serde_json::Value> {
     (0..n)
         .map(|i| {

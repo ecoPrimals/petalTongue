@@ -25,7 +25,7 @@ capabilities_provided:
   - interaction.subscribe
   - sensor.stream.subscribe
   - health.check
-  - capability.list
+  - capabilities.list
 
 # Capabilities this niche requires from the ecosystem
 capabilities_required:
@@ -73,7 +73,7 @@ organisms:
         - interaction.subscribe
         - sensor.stream.subscribe
         - health.check
-        - capability.list
+        - capabilities.list
       config:
         mode: "${PETALTONGUE_MODE:-ui}"
         family_id: "${FAMILY_ID}"
@@ -293,7 +293,7 @@ ipc:
       - sensor.stream.subscribe
       - health.check
       - health.ping
-      - capability.list
+      - capabilities.list
   sse:
     endpoint: "/api/v1/events/stream"
     description: "Consumes biomeOS ecosystem events"

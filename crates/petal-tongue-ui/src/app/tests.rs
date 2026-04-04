@@ -139,7 +139,6 @@ fn tick_clock_access() {
 }
 
 #[test]
-#[allow(unused_mut)]
 fn headless_app_refresh_graph_data() {
     let mut app = PetalTongueApp::new_headless().expect("headless app");
     app.refresh_graph_data();

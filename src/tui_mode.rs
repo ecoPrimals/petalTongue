@@ -53,6 +53,8 @@ pub async fn run(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used)]
+
     use super::*;
 
     #[tokio::test]
@@ -169,6 +171,20 @@ mod tests {
             }
             // else: timeout - acceptable
         }
+    }
+
+    #[tokio::test]
+    async fn test_run_logs_when_snapshot_fails() {
+        let data_service = Arc::new(DataService::new());
+        let graph = data_service.graph();
+        let g2 = Arc::clone(&graph);
+        let h = std::thread::spawn(move || {
+            let _guard = g2.write().unwrap();
+            panic!("intentional poison for tui snapshot branch");
+        });
+        let _ = h.join();
+
+        let _ = tokio::time::timeout(Duration::from_secs(2), run(None, 60, data_service)).await;
     }
 
     #[tokio::test]

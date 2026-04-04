@@ -352,6 +352,15 @@ mod tests {
     }
 
     #[test]
+    fn test_cli_parse_server_with_port() {
+        let cli = Cli::parse_from(["petaltongue", "server", "--port", "12345"]);
+        let Commands::Server { port } = cli.command else {
+            unreachable!("CLI parsed 'server' subcommand")
+        };
+        assert_eq!(port, Some(12345));
+    }
+
+    #[test]
     fn test_cli_parse_status() {
         let cli = Cli::parse_from(["petaltongue", "status"]);
         assert!(matches!(cli.command, Commands::Status { .. }));

@@ -19,7 +19,7 @@
 //! - `x11rb` (X11 display server protocol)
 //! - Platform-specific window management APIs
 //!
-//! These dependencies will be eliminated in ecoBlossom via Toadstool backend.
+//! These dependencies will be eliminated in ecoBlossom via discovered display backend.
 
 use crate::error::{BackendError, Result};
 use async_trait::async_trait;

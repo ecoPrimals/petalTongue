@@ -29,12 +29,6 @@ pub mod domain_theme;
 #[cfg(feature = "egui-render")]
 pub mod visual_2d;
 
-// REMOVED: audio_playback module (was using rodio/ALSA)
-// Audio playback is now handled by:
-// - AudioCanvas (in petal-tongue-ui) - pure Rust /dev/snd access
-// - ToadStool (network) - discovered at runtime
-// - External system audio - discovered at runtime
-
 // BingoCube is a primalTool, discovered at runtime (not a compile-time dependency)
 // ToadStool is a primalTool, discovered at runtime (not a compile-time dependency)
 // ALSA is an external system, discovered at runtime (not a compile-time dependency)
@@ -53,5 +47,4 @@ pub use color_utils::{hsv_to_rgb, lerp_hsv, rgb_to_hsv};
 #[cfg(feature = "egui-render")]
 pub use visual_2d::Visual2DRenderer;
 
-// REMOVED: AudioPlaybackEngine export (was requiring ALSA/rodio)
 // Use AudioCanvas from petal-tongue-ui for pure Rust audio playback

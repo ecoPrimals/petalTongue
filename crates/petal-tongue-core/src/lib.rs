@@ -28,12 +28,12 @@
 pub mod adaptive_rendering; // Adaptive rendering for multi-device support
 pub mod biomeos_discovery; // biomeOS discovery backend
 pub mod capabilities;
-pub mod capability_discovery; // NEW: Capability-based discovery (TRUE PRIMAL)
+pub mod capability_discovery; // Capability-based discovery (TRUE PRIMAL)
 pub mod capability_names;
 pub mod channel; // SAME DAVE channel model (afferent/efferent pathways)
 pub mod common_config;
 pub mod config;
-pub mod config_system; // NEW: Platform-agnostic configuration (XDG-compliant)
+pub mod config_system; // Platform-agnostic configuration (XDG-compliant)
 #[cfg(test)]
 mod config_tests;
 pub mod constants; // Centralized constants (self-knowledge only)
@@ -68,7 +68,6 @@ pub mod types;
 #[cfg(test)]
 mod types_tests;
 
-// NEW: Universal Rendering System
 pub mod awakening; // Awakening experience (default touchpoint)
 pub mod awakening_coordinator; // Timeline coordination for awakening
 pub mod capability_taxonomy; // biomeOS capability taxonomy
@@ -76,13 +75,13 @@ pub mod compute; // Compute provider system (optional GPU)
 pub mod engine; // Universal rendering engine
 pub mod event; // Event bus (multi-modal coordination)
 pub mod frame_introspection; // Content-level self-awareness (what each frame contains)
+#[path = "gpu_compute_provider.rs"]
+pub mod gpu_compute;
 pub mod interaction; // Interaction engine (semantic intents, perspectives, inverse pipeline)
 pub mod modality; // Modality system (trait and registry)
 pub mod rendering_awareness; // Bidirectional UUI awareness (motor + sensory)
 pub mod sensor; // Sensor abstraction layer
 pub mod sensory_matrix; // Sensory Capability Matrix (input x output negotiation)
-#[path = "gpu_compute_provider.rs"]
-pub mod toadstool_compute;
 pub mod uui_glossary; // Universal User Interface glossary (canonical terminology)
 
 // Test fixtures available for this and dependent crates
@@ -222,7 +221,7 @@ pub use awakening_coordinator::{
 pub use compute::{ComputeCapability, ComputeProvider, ComputeRegistry};
 
 /// GPU compute provider (capability-discovered)
-pub use toadstool_compute::{CPUFallbackCompute, ComputeServiceInfo, GpuComputeProvider};
+pub use gpu_compute::{CPUFallbackCompute, ComputeServiceInfo, GpuComputeProvider};
 
 /// Universal rendering engine
 pub use engine::{EngineState, TimeState, UniversalRenderingEngine, ViewMode, Viewport};

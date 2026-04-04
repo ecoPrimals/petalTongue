@@ -23,7 +23,7 @@ impl VisualizationDataProvider for BiomeOSProvider {
         let primals = self
             .get_primals_extended()
             .await
-            .map_err(|e| DiscoveryError::OperationFailed { source: e.into() })?;
+            .map_err(DiscoveryError::from)?;
 
         Ok(primals
             .into_iter()
@@ -68,7 +68,7 @@ impl VisualizationDataProvider for BiomeOSProvider {
             Ok(Err(e)) => Err(DiscoveryError::HealthCheckFailed {
                 name: "biomeOS-device-provider".to_string(),
                 endpoint: self.endpoint().to_string(),
-                source: petal_tongue_discovery::errors::HealthCheckSource::Other(Box::new(e)),
+                source: e.into(),
             }),
             Err(_) => Err(DiscoveryError::ConnectionTimeout {
                 endpoint: self.endpoint().to_string(),

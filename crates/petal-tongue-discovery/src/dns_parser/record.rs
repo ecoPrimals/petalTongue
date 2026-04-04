@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// DNS packet parsing utilities for mDNS
-//
-// Simplified DNS parser focused on service discovery (RFC 1035, RFC 6762, RFC 6763)
+//! DNS resource record types, typed rdata helpers, and generic RR parsing (RFC 1035; SRV RFC 2782).
 
+use super::name::NameParser;
 use crate::errors::{DiscoveryError, DiscoveryResult};
 use rand::Rng;
 use std::net::{Ipv4Addr, Ipv6Addr};
@@ -32,121 +31,6 @@ impl RecordType {
             33 => Some(Self::SRV),
             _ => None,
         }
-    }
-}
-
-/// Parsed DNS header (RFC 1035)
-#[derive(Debug)]
-pub struct DnsHeader {
-    pub transaction_id: u16,
-    pub flags: u16,
-    pub questions: u16,
-    pub answers: u16,
-    pub authority: u16,
-    pub additional: u16,
-}
-
-impl DnsHeader {
-    pub fn parse(data: &[u8]) -> DiscoveryResult<Self> {
-        if data.len() < 12 {
-            return Err(DiscoveryError::DnsParseError {
-                message: "DNS header too short".to_string(),
-            });
-        }
-
-        Ok(Self {
-            transaction_id: u16::from_be_bytes([data[0], data[1]]),
-            flags: u16::from_be_bytes([data[2], data[3]]),
-            questions: u16::from_be_bytes([data[4], data[5]]),
-            answers: u16::from_be_bytes([data[6], data[7]]),
-            authority: u16::from_be_bytes([data[8], data[9]]),
-            additional: u16::from_be_bytes([data[10], data[11]]),
-        })
-    }
-
-    pub const fn is_response(&self) -> bool {
-        (self.flags & 0x8000) != 0
-    }
-}
-
-/// DNS name parser
-pub struct NameParser<'a> {
-    data: &'a [u8],
-}
-
-impl<'a> NameParser<'a> {
-    pub const fn new(data: &'a [u8]) -> Self {
-        Self { data }
-    }
-
-    /// Parse a DNS name starting at offset
-    ///
-    /// Returns (name, `bytes_consumed`)
-    pub fn parse_name(&self, mut offset: usize) -> DiscoveryResult<(String, usize)> {
-        let start_offset = offset;
-        let mut name = String::new();
-        let mut jumped = false;
-        let mut jump_offset = 0;
-
-        loop {
-            if offset >= self.data.len() {
-                return Err(DiscoveryError::DnsParseError {
-                    message: "Name parsing exceeded packet bounds".to_string(),
-                });
-            }
-
-            let len = self.data[offset];
-
-            // Check for compression pointer (top 2 bits set)
-            if (len & 0xC0) == 0xC0 {
-                if offset + 1 >= self.data.len() {
-                    return Err(DiscoveryError::DnsParseError {
-                        message: "Compression pointer incomplete".to_string(),
-                    });
-                }
-
-                // Extract pointer offset (14 bits)
-                let pointer = (((len & 0x3F) as usize) << 8) | (self.data[offset + 1] as usize);
-
-                if !jumped {
-                    jump_offset = offset + 2;
-                    jumped = true;
-                }
-
-                offset = pointer;
-                continue;
-            }
-
-            // End of name
-            if len == 0 {
-                offset += 1;
-                break;
-            }
-
-            // Label
-            if offset + 1 + len as usize > self.data.len() {
-                return Err(DiscoveryError::DnsParseError {
-                    message: "Label length exceeds packet bounds".to_string(),
-                });
-            }
-
-            if !name.is_empty() {
-                name.push('.');
-            }
-
-            let label = &self.data[offset + 1..offset + 1 + len as usize];
-            name.push_str(&String::from_utf8_lossy(label));
-
-            offset += 1 + len as usize;
-        }
-
-        let bytes_consumed = if jumped {
-            jump_offset - start_offset
-        } else {
-            offset - start_offset
-        };
-
-        Ok((name, bytes_consumed))
     }
 }
 
@@ -390,39 +274,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_dns_header_parse() {
-        let data = [
-            0x00, 0x01, // Transaction ID
-            0x84, 0x00, // Flags (response, authoritative)
-            0x00, 0x01, // Questions
-            0x00, 0x02, // Answers
-            0x00, 0x00, // Authority
-            0x00, 0x00, // Additional
-        ];
-
-        let header = DnsHeader::parse(&data).unwrap();
-        assert_eq!(header.transaction_id, 1);
-        assert!(header.is_response());
-        assert_eq!(header.questions, 1);
-        assert_eq!(header.answers, 2);
-    }
-
-    #[test]
-    fn test_name_parser_simple() {
-        let data = [
-            4, b't', b'e', b's', b't', // "test"
-            3, b'c', b'o', b'm', // "com"
-            0,    // end
-        ];
-
-        let parser = NameParser::new(&data);
-        let (name, len) = parser.parse_name(0).unwrap();
-
-        assert_eq!(name, "test.com");
-        assert_eq!(len, 10);
-    }
-
-    #[test]
     fn test_txt_record_parse() {
         let data = [
             7, b'k', b'e', b'y', b'=', b'v', b'a', b'l', // "key=val"
@@ -440,33 +291,6 @@ mod tests {
         let data = [192, 168, 1, 100];
         let a = ARecord::parse(&data).unwrap();
         assert_eq!(a.addr.to_string(), "192.0.2.100");
-    }
-
-    #[test]
-    fn test_dns_header_too_short() {
-        let data = [0x00, 0x01, 0x84];
-        let result = DnsHeader::parse(&data);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_dns_header_not_response() {
-        let data = [
-            0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        ];
-        let header = DnsHeader::parse(&data).expect("parse");
-        assert!(!header.is_response());
-    }
-
-    #[test]
-    fn test_name_parser_compression() {
-        let data = [
-            4, b't', b'e', b's', b't', 3, b'c', b'o', b'm', 0, 0xC0, 0x00,
-        ];
-        let parser = NameParser::new(&data);
-        let (name, len) = parser.parse_name(10).expect("parse with compression");
-        assert_eq!(name, "test.com");
-        assert_eq!(len, 2);
     }
 
     #[test]
@@ -606,25 +430,6 @@ mod tests {
     }
 
     #[test]
-    fn test_dns_header_authority_additional() {
-        let data = [
-            0x12, 0x34, 0x80, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04,
-        ];
-        let header = DnsHeader::parse(&data).expect("parse");
-        assert_eq!(header.transaction_id, 0x1234);
-        assert_eq!(header.authority, 3);
-        assert_eq!(header.additional, 4);
-    }
-
-    #[test]
-    fn test_name_parser_exceeds_bounds() {
-        let data = [4, b't', b'e', b's', b't'];
-        let parser = NameParser::new(&data);
-        let result = parser.parse_name(0);
-        assert!(result.is_err());
-    }
-
-    #[test]
     fn test_srv_record_parse_rdata_too_short() {
         let data = [0u8; 5];
         let result = SrvRecord::parse(&[], 0, &data);
@@ -715,15 +520,6 @@ mod tests {
     }
 
     #[test]
-    fn test_name_parser_single_label() {
-        let data = [4, b't', b'e', b's', b't', 0];
-        let parser = NameParser::new(&data);
-        let (name, len) = parser.parse_name(0).expect("parse");
-        assert_eq!(name, "test");
-        assert_eq!(len, 6);
-    }
-
-    #[test]
     fn test_txt_record_multiple_pairs() {
         let data = [
             3, b'a', b'=', b'1', 3, b'b', b'=', b'2', 5, b'k', b'e', b'y', b'=', b'x',
@@ -739,15 +535,6 @@ mod tests {
     fn test_record_type_ns_cname() {
         assert_eq!(RecordType::from_u16(2), Some(RecordType::NS));
         assert_eq!(RecordType::from_u16(5), Some(RecordType::CNAME));
-    }
-
-    #[test]
-    fn test_dns_header_flags_query() {
-        let data = [
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        ];
-        let header = DnsHeader::parse(&data).expect("parse");
-        assert!(!header.is_response());
     }
 
     #[test]

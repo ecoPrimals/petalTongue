@@ -66,9 +66,37 @@ pub async fn run(data_service: Arc<DataService>, tcp_port: Option<u16>) -> Resul
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used)]
+
     use super::*;
     use petal_tongue_core::test_fixtures::env_test_helpers;
     use std::sync::Arc;
+
+    #[tokio::test]
+    async fn test_run_with_tcp_port_some() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let socket_path = temp.path().join("petaltongue-test-tcp.sock");
+        let socket_str = socket_path.to_string_lossy().to_string();
+
+        let result =
+            env_test_helpers::with_env_var_async("PETALTONGUE_SOCKET", &socket_str, || async {
+                let data_service = Arc::new(DataService::new());
+                tokio::time::timeout(
+                    std::time::Duration::from_millis(500),
+                    run(data_service, Some(0)),
+                )
+                .await
+            })
+            .await;
+
+        if let Ok(Err(e)) = result {
+            let msg = e.to_string();
+            assert!(
+                msg.contains("IPC") || msg.contains("Failed") || msg.contains("bind"),
+                "Expected IPC/bind error, got: {msg}"
+            );
+        }
+    }
 
     #[tokio::test]
     async fn test_run_creates_server_with_valid_socket_path() {

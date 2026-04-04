@@ -120,7 +120,7 @@ impl RetryPolicy {
     /// # Errors
     ///
     /// Returns `DiscoveryError::OperationTimedOut` if the operation times out,
-    /// or `DiscoveryError::OperationFailed` if the closure returns an error.
+    /// or the `DiscoveryError` produced by converting the closure's error type.
     ///
     /// # Example
     ///
@@ -151,7 +151,7 @@ impl RetryPolicy {
     where
         F: Fn() -> Fut + Send,
         Fut: Future<Output = Result<T, E>> + Send,
-        E: std::error::Error + Send + Sync + 'static,
+        E: Into<crate::errors::DiscoveryError>,
     {
         self.execute(|| async {
             tokio::time::timeout(timeout, f())
@@ -159,9 +159,7 @@ impl RetryPolicy {
                 .map_err(|_| crate::errors::DiscoveryError::OperationTimedOut {
                     duration: timeout,
                 })?
-                .map_err(|e| crate::errors::DiscoveryError::OperationFailed {
-                    source: Box::new(e),
-                })
+                .map_err(Into::into)
         })
         .await
     }
@@ -316,7 +314,9 @@ mod tests {
         assert!(result.is_err());
         let err_str = result.unwrap_err().to_string();
         assert!(
-            err_str.contains("connection refused") || err_str.contains("failed"),
+            err_str.contains("connection refused")
+                || err_str.contains("failed")
+                || err_str.contains("I/O error"),
             "got: {err_str}"
         );
     }

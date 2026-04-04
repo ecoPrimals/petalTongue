@@ -12,7 +12,6 @@ async fn test_biomeos_api_contract() {
     }
 
     #[derive(serde::Deserialize)]
-    #[allow(dead_code)]
     struct BiomeOSPrimal {
         id: String,
         name: String,
@@ -53,6 +52,8 @@ async fn test_biomeos_api_contract() {
     assert_eq!(primal.primal_type, "test");
     assert_eq!(primal.health, "healthy");
     assert_eq!(primal.last_seen, 1_234_567_890);
+    assert_eq!(primal.capabilities, vec!["test.capability".to_string()]);
+    assert_eq!(primal.endpoint, "http://localhost:9999");
 
     println!("✅ API contract validation passed");
 }

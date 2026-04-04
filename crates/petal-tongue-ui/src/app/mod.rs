@@ -179,6 +179,8 @@ pub struct PetalTongueApp {
     sensor_stream: Option<Arc<RwLock<petal_tongue_ipc::SensorStreamRegistry>>>,
     /// Shared interaction subscriber registry (UI broadcasts selection changes)
     interaction_subscribers: Option<Arc<RwLock<petal_tongue_ipc::InteractionSubscriberRegistry>>>,
+    /// Push-delivery sender for callback dispatches from GUI-originated events (PT-06)
+    callback_tx: Option<tokio::sync::mpsc::UnboundedSender<petal_tongue_ipc::CallbackDispatch>>,
     /// Previously selected node (for change-detection-based broadcasting)
     last_broadcast_selection: Option<String>,
 
@@ -194,8 +196,8 @@ pub struct PetalTongueApp {
 
     /// Bridge between egui events and the `InteractionEngine` (inverse pipeline for hit-target registration)
     interaction_bridge: EguiInteractionBridge,
-    /// SQUIRREL AI adapter for AI-driven interaction commands
-    squirrel_adapter: crate::squirrel_adapter::SquirrelAdapter,
+    /// AI interaction adapter for AI-driven interaction commands
+    ai_adapter: crate::ai_adapter::AiAdapter,
 }
 
 impl PetalTongueApp {
@@ -265,6 +267,15 @@ impl PetalTongueApp {
         reg: Arc<RwLock<petal_tongue_ipc::InteractionSubscriberRegistry>>,
     ) {
         self.interaction_subscribers = Some(reg);
+    }
+
+    /// Inject the push-delivery sender so GUI-originated interaction events
+    /// reach subscribers with `callback_socket` (PT-06).
+    pub fn set_callback_tx(
+        &mut self,
+        tx: tokio::sync::mpsc::UnboundedSender<petal_tongue_ipc::CallbackDispatch>,
+    ) {
+        self.callback_tx = Some(tx);
     }
 
     /// Create an application in headless mode (no display, no eframe context).

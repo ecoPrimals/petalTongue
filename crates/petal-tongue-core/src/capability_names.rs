@@ -161,28 +161,16 @@ pub mod socket_roles {
     pub const PHYSICS_COMPUTE: &str = "physics-compute";
 }
 
-/// Well-known primal identifiers for discovery and logging.
+/// Self-knowledge primal identifiers.
 ///
-/// These are the ecosystem-standard names primals announce with.
-/// Used for log context and capability filtering — **never** for
-/// hardcoded routing. Runtime discovery uses capability strings.
-#[expect(missing_docs, reason = "constant names mirror their semantic values")]
+/// Only this primal's own name and ecosystem-level socket conventions
+/// are kept here. Other primals are discovered at runtime via
+/// capability-based discovery — no compile-time identity coupling.
 pub mod primal_names {
+    /// This primal's ecosystem identity.
     pub const PETALTONGUE: &str = "petaltongue";
+    /// biomeOS orchestrator socket directory convention (filesystem layout, not primal coupling).
     pub const BIOMEOS: &str = "biomeos";
-    pub const SONGBIRD: &str = "songbird";
-    pub const TOADSTOOL: &str = "toadstool";
-    pub const BARRACUDA: &str = "barracuda";
-    pub const CORALREEF: &str = "coralreef";
-    pub const BEARDOG: &str = "beardog";
-    pub const NESTGATE: &str = "nestgate";
-    pub const SQUIRREL: &str = "squirrel";
-    pub const RHIZOCRYPT: &str = "rhizocrypt";
-    pub const SWEETGRASS: &str = "sweetgrass";
-    pub const LOAMSPINE: &str = "loamspine";
-    pub const SKUNKBAT: &str = "skunkbat";
-    pub const SOURDOUGH: &str = "sourdough";
-    pub const PLASMIDBIN: &str = "plasmidbin";
 }
 
 #[cfg(test)]
