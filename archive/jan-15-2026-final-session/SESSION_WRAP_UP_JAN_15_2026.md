@@ -132,7 +132,7 @@ adaptation based on discovered device capabilities.
 Breaking Changes: None
 Migrations: None required
 
-Co-authored-by: TRUE PRIMAL Architecture <ecoPrimal@pm.me>"
+Co-authored-by: ecoPrimal <ecoPrimal@pm.me>"
 ```
 
 ### Step 4: Push via SSH
