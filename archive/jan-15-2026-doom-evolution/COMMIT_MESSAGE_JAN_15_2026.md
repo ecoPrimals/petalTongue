@@ -103,7 +103,7 @@ Used Doom integration as architectural probe:
 
 Architecture emerged from real problems, not speculation.
 
-Co-authored-by: Claude <ecoPrimal@pm.me>
+Co-authored-by: ecoPrimal <ecoPrimal@pm.me>
 ```
 
 ---
