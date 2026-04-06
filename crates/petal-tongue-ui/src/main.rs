@@ -125,7 +125,7 @@ fn main() -> petal_tongue_ui::error::Result<()> {
         tracing::info!("   - TerminalGUI (ASCII art topology)");
         tracing::info!("   - SVGGUI (vector export)");
         tracing::info!("   - PNGGUI (raster export)");
-        tracing::info!("   - Toadstool WASM (if available)");
+        tracing::info!("   - Network display (if available)");
 
         // Prompt user about display server
         let rt = tokio::runtime::Runtime::new()?;

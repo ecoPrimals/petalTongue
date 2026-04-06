@@ -587,7 +587,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: April 3, 2026  
+**Last Updated**: April 6, 2026  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 

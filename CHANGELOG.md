@@ -100,6 +100,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `DataService::snapshot_sync` tests (happy path, populated graph, poisoned lock).
 - `CHANGELOG.md` (this file).
 - Phase 3 wateringHole handoff document.
+- **CONTEXT.md**: Ecosystem context file for AI tooling and primal discovery
 
 ### Changed
 - `common_config::default_host()` now uses `DEFAULT_LOOPBACK_HOST` constant
@@ -122,6 +123,14 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   `FixtureModeUnavailable`. Config field `mock_mode` accepted as serde alias
   for backwards compatibility.
 - UI label changed from "Mock Mode" to "Fixture Mode (offline)".
+- **Capability naming**: `DisplayCapabilities::toadstool()` → `network_display()`; `"squirrel-ui-adapter"` → `"ai-interaction-adapter"`
+- **Health triad compliance**: `health.readiness` and `health.check` now include `version` and `primal` fields per `DEPLOYMENT_VALIDATION_STANDARD.md`
+- **Workspace lints**: `[workspace.lints.rust] unsafe_code = "forbid"` (was per-crate, now workspace-wide); `rust-version = "1.87"` added
+- **Capability symlink**: Server creates `visualization.sock` → `petaltongue.sock` on start per `CAPABILITY_BASED_DISCOVERY_STANDARD.md`
+- **Lint tightening**: Migrated 33 `#[allow(clippy::unwrap_used)]` to `#[expect]` with reasons; removed where unused
+- **Zero-copy RPC**: Eliminated `req.params.clone()` in `visualization.render`, `visualization.render.scene`, and `capabilities.sensory.negotiate`
+- **Smart refactoring**: `graph_manager.rs` → directory module (314+462 lines); `headless_integration_tests.rs` → 5 themed test files; `dns_parser.rs` → directory module; `spring_adapter.rs` → directory module; `constants.rs` → directory module
+- **Dead code removed**: `audio_providers/` (5 files), `audio_playback.rs`, 13 unused primal name constants, empty feature flags
 
 ### Fixed
 - Removed unfulfilled `#[expect(clippy::unused_self)]` and
@@ -135,6 +144,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Hardcoded `127.0.0.1` in `display/backends/software.rs` replaced with
   `constants::DEFAULT_LOOPBACK_HOST`; hardcoded port `8765` replaced with
   `constants::DEFAULT_WEBSOCKET_PORT`.
+- **PII scrub regression**: `test_a_record_parse` fixture data corrected (192.168.1.100 → 192.0.2.100)
+- **Broken doc paths**: Stale `docs/` references updated
 
 ## [1.6.6] — 2026-04-01
 

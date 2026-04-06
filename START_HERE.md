@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 3, 2026
+**Updated**: April 6, 2026
 
 ---
 
@@ -87,7 +87,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 
 ### Core (`petal-tongue-core`)
 - `constants/` -- Centralized self-knowledge (name, ports, socket names); submodules: `mod.rs`, `network.rs`, `display.rs`, `timeouts.rs`, `thresholds.rs`, `tufte_tolerances.rs`
-- `graph_engine.rs` -- Graph data model (nodes, edges, layout)
+- `graph_engine/` -- Graph data model (nodes, edges, layout); submodules: `mod.rs`, `types.rs`, `layout.rs`, `tests.rs`
 - `config_system.rs` -- XDG-compliant configuration (env > file > defaults)
 - `data_channel.rs` -- DataChannel enum (11 variants: TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter, Scatter3D, FieldMap, GameScene, Soundscape)
 - `capability_names.rs` -- Centralized capability/method/socket/primal constants (62+ capabilities, 2 self-knowledge identities)
