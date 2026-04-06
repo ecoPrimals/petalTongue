@@ -15,7 +15,7 @@ petalTongue answers "show me this data" and "let me interact with this system" f
 - **Version:** 1.6.6
 - **Workspace:** 18 crates (`Cargo.toml` workspace)
 - **MSRV:** 1.87 (`rust-version` in workspace `Cargo.toml`)
-- **Tests:** 6,079+ passing (0 failed)
+- **Tests:** 5,967+ passing (0 failed)
 - **Coverage:** ~90% line (llvm-cov, workspace)
 - **Unsafe:** 0 production blocks (`forbid(unsafe_code)` workspace-wide)
 - **IPC:** JSON-RPC 2.0 over Unix sockets / TCP (REQUIRED); tarpc for Rust-to-Rust hot paths (optional)

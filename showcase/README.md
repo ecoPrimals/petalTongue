@@ -97,7 +97,7 @@ cd 01-local-primal/00-hello-petaltongue/
 2. **Verifiable output**: Exit codes, JSON validation, HTTP status checks
 3. **Progressive complexity**: local -> IPC -> inter-primal
 4. **Graceful degradation**: Inter-primal demos skip cleanly if deps are absent
-5. **Scenario-driven data**: Uses `sandbox/scenarios/*.json` (26 scenarios)
+5. **Scenario-driven data**: Uses `sandbox/scenarios/*.json` (27 scenarios)
 6. **No hardcoded ports**: Demos use high ephemeral ports to avoid conflicts
 
 ---

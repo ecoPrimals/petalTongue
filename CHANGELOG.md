@@ -106,6 +106,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **CI WASM check**: `cargo check --target wasm32-unknown-unknown -p petal-tongue-wasm` added to CI pipeline
 
 ### Changed
+- **Smart refactoring**: `primitive.rs` (816L) → `primitive/mod.rs` (239L) + `primitive/tests.rs` (576L) — directory module pattern
+- **Dependency dedup**: Unified `crossterm` from split 0.28/0.29 to 0.29 across all 4 crates
 - `common_config::default_host()` now uses `DEFAULT_LOOPBACK_HOST` constant
   instead of duplicating `"127.0.0.1"`.
 - `common_config::default_port()` now uses `DEFAULT_HEADLESS_PORT` constant
