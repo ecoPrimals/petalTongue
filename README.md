@@ -75,21 +75,24 @@ petaltongue
 - **Accessibility adapters** -- switch access, audio inverse pipeline, agent adapter for AI
 - **Server-side backpressure** -- rate limiting for 60 Hz streaming
 - **Pipeline DAG orchestration** -- multi-stage workflows with topological sort
+- **Client WASM rendering** -- `petal-tongue-wasm` compiles to `wasm32-unknown-unknown` for offline-capable browser rendering
 - **Scenario loader** -- load JSON scenario files from disk (`--scenario` CLI flag)
 - **Zero-copy state management** -- Arc-wrapped shared state
 - **Centralized configurable constants** -- all timeouts, ports env-overridable
 
-### Crates (16)
+### Crates (18)
 
 | Crate | Purpose |
 |-------|---------|
 | `petal-tongue-core` | Graph engine, capabilities, config, interaction engine, sensory matrix, data bindings, UUI glossary |
+| `petal-tongue-types` | Portable data types (`DataBinding`, `ThresholdRange`) — WASM-compatible, serde-only |
+| `petal-tongue-scene` | Scene graph, animation, grammar compiler, DataBinding compiler, dashboard layout, Tufte constraints, modality compilers, physics bridge |
+| `petal-tongue-wasm` | Client-side WASM rendering — grammar→SVG pipeline for offline-capable browser UIs |
 | `petal-tongue-graph` | Domain-aware chart renderers, 2D rendering, audio sonification |
 | `petal-tongue-ui` | Desktop display (egui/eframe), panels, scenarios, biomeOS |
 | `petal-tongue-tui` | Terminal display (ratatui) |
 | `petal-tongue-ipc` | UDS + TCP JSON-RPC server, tarpc client, visualization handler |
 | `petal-tongue-discovery` | Provider discovery (JSON-RPC, mDNS, Unix socket, scenarios) |
-| `petal-tongue-scene` | Scene graph, animation, grammar compiler, DataBinding compiler, dashboard layout, Tufte constraints, modality compilers, physics bridge |
 | `petal-tongue-entropy` | Human entropy capture (gesture, narrative, visual, audio) |
 | `petal-tongue-animation` | Visual animations |
 | `petal-tongue-adapters` | EcoPrimal adapter traits |
@@ -106,16 +109,16 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,079+ passing, 0 failures (1 pre-existing CLI test excluded) |
+| Tests | 5,967+ passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
 | Coverage | ~90% line (llvm-cov) |
-| Unsafe | `#![forbid(unsafe_code)]` unconditional on all 16 crates + UniBin, zero C deps |
+| Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
-| Files | All under 1,000 lines (largest refactored from 901 → directory module) |
+| Files | All under 800 lines (largest: `primitive/mod.rs` at 239 after smart refactor) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
-| Edition | 2024 (all 16 crates + sandbox) |
+| Edition | 2024 (all 18 crates + sandbox) |
 | External C deps | None -- pure Rust (`rustix` for syscalls, `blake3` pure-Rust hash) |
 | Error handling | Typed `thiserror` errors throughout -- zero `anyhow` in production |
 | Zero-copy IDs | `DataSourceId`, `GrammarId` are `Arc<str>` -- O(1) clone |
@@ -138,7 +141,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 6,079+ tests
+cargo test --workspace --all-features        # 5,967+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps

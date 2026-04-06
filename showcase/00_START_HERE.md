@@ -45,8 +45,8 @@ Runs all local demos that need no external dependencies.
 - **03-inter-primal/**: Integration with Songbird, biomeOS, and the full
   ecosystem. These demos gracefully skip if the other primals are not running.
 
-- **04-spring-integration/**: healthSpring push, wetSpring streaming, and
-  scene engine pipeline demos. Requires running springs or gracefully skips.
+- **04-spring-integration/**: healthSpring push, biomeOS atomic visualization,
+  and scene engine pipeline demos. Requires running springs or gracefully skips.
 
 ## Next steps
 

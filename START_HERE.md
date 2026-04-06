@@ -54,7 +54,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 6,079+ tests
+cargo test --workspace --all-features           # 5,967+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
@@ -89,7 +89,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 - `constants/` -- Centralized self-knowledge (name, ports, socket names); submodules: `mod.rs`, `network.rs`, `display.rs`, `timeouts.rs`, `thresholds.rs`, `tufte_tolerances.rs`
 - `graph_engine/` -- Graph data model (nodes, edges, layout); submodules: `mod.rs`, `types.rs`, `layout.rs`, `tests.rs`
 - `config_system.rs` -- XDG-compliant configuration (env > file > defaults)
-- `data_channel.rs` -- DataChannel enum (11 variants: TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter, Scatter3D, FieldMap, GameScene, Soundscape)
+- `data_channel.rs` -- Re-exports `DataBinding` and `ThresholdRange` from `petal-tongue-types` (11 variants: TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter, Scatter3D, FieldMap, GameScene, Soundscape)
 - `capability_names.rs` -- Centralized capability/method/socket/primal constants (62+ capabilities, 2 self-knowledge identities)
 - `sensory_matrix.rs` -- Sensory Capability Matrix (input×output negotiation for consumer primals)
 - `telemetry_adapter.rs` -- JSONL telemetry ingestion (hotSpring)
