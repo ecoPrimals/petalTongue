@@ -13,12 +13,13 @@ petalTongue answers "show me this data" and "let me interact with this system" f
 - **Language:** 100% Rust (edition 2024), zero C dependencies in application code
 - **License:** AGPL-3.0-or-later (SPDX on all sources)
 - **Version:** 1.6.6
-- **Workspace:** 16 crates (`Cargo.toml` workspace)
+- **Workspace:** 18 crates (`Cargo.toml` workspace)
 - **MSRV:** 1.87 (`rust-version` in workspace `Cargo.toml`)
 - **Tests:** 6,079+ passing (0 failed)
 - **Coverage:** ~90% line (llvm-cov, workspace)
 - **Unsafe:** 0 production blocks (`forbid(unsafe_code)` workspace-wide)
 - **IPC:** JSON-RPC 2.0 over Unix sockets / TCP (REQUIRED); tarpc for Rust-to-Rust hot paths (optional)
+- **WASM:** `petal-tongue-wasm` crate compiles to `wasm32-unknown-unknown` for client-side rendering (grammar → SVG pipeline, offline-capable)
 
 ## Key Capabilities
 
