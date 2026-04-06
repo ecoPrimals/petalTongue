@@ -326,18 +326,20 @@ pub fn handle_capabilities_sensory(
 #[must_use]
 pub fn handle_capabilities_sensory_negotiate(
     _handlers: &RpcHandlers,
-    request: JsonRpcRequest,
+    mut request: JsonRpcRequest,
 ) -> JsonRpcResponse {
     let input: petal_tongue_core::InputCapabilitySet = request
         .params
-        .get("input")
-        .and_then(|v| serde_json::from_value(v.clone()).ok())
+        .as_object_mut()
+        .and_then(|m| m.remove("input"))
+        .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default();
 
     let output: petal_tongue_core::OutputCapabilitySet = request
         .params
-        .get("output")
-        .and_then(|v| serde_json::from_value(v.clone()).ok())
+        .as_object_mut()
+        .and_then(|m| m.remove("output"))
+        .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default();
 
     let validated_paths =

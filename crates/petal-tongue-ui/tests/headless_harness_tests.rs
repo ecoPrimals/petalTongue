@@ -3,7 +3,8 @@
 //! Headless harness integration tests.
 //!
 //! Core tests: mode switching, panel toggles, basic rendering.
-//! See `headless_motor_command_tests.rs` and `headless_integration_tests.rs` for more.
+//! See `headless_motor_command_tests.rs`, `headless_data_flow_tests.rs`, `headless_panel_tests.rs`,
+//! `headless_scenario_tests.rs`, `headless_viewport_tests.rs`, and `headless_frame_tests.rs` for more.
 
 use petal_tongue_core::PanelKind;
 use petal_tongue_ui::headless_harness::HeadlessHarness;
