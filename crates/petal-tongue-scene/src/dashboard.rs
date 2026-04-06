@@ -11,7 +11,7 @@ use crate::primitive::{AnchorPoint, Color, Primitive, StrokeStyle};
 use crate::scene_graph::{SceneGraph, SceneNode};
 use crate::transform::Transform2D;
 
-use petal_tongue_core::DataBinding;
+use petal_tongue_types::DataBinding;
 
 /// Layout strategy for dashboard panels.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -286,7 +286,7 @@ fn grid_dimensions(n: usize, layout: &DashboardLayout) -> (usize, usize) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use petal_tongue_core::DataBinding;
+    use petal_tongue_types::DataBinding;
 
     fn sample_bindings() -> Vec<DataBinding> {
         vec![

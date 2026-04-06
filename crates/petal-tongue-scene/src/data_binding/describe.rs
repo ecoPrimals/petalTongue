@@ -8,7 +8,7 @@
 
 use std::fmt::Write;
 
-use petal_tongue_core::DataBinding;
+use petal_tongue_types::DataBinding;
 
 use crate::modality::{AudioParam, HapticCommand, HapticPattern};
 

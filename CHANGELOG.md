@@ -101,6 +101,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `CHANGELOG.md` (this file).
 - Phase 3 wateringHole handoff document.
 - **CONTEXT.md**: Ecosystem context file for AI tooling and primal discovery
+- **`petal-tongue-wasm`**: Client-side WASM rendering module — grammar→SVG pipeline compiles to `wasm32-unknown-unknown` for offline-capable browser rendering (Gap 6 resolution)
+- **`petal-tongue-types`**: Portable data types crate (`DataBinding`, `ThresholdRange`) extracted from `petal-tongue-core` for WASM compatibility
+- **CI WASM check**: `cargo check --target wasm32-unknown-unknown -p petal-tongue-wasm` added to CI pipeline
 
 ### Changed
 - `common_config::default_host()` now uses `DEFAULT_LOOPBACK_HOST` constant

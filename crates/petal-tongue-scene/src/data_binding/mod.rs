@@ -7,7 +7,7 @@
 pub mod describe;
 mod utils;
 
-use petal_tongue_core::{DataBinding, ThresholdRange};
+use petal_tongue_types::{DataBinding, ThresholdRange};
 use serde_json::Value;
 
 use crate::grammar::{
@@ -363,7 +363,7 @@ impl DataBindingCompiler {
 mod tests {
     use super::*;
     use crate::compiler::GrammarCompiler;
-    use petal_tongue_core::DataBinding;
+    use petal_tongue_types::DataBinding;
 
     #[test]
     fn timeseries_compiles_to_line() {
@@ -579,13 +579,13 @@ mod tests {
             unit: String::new(),
         };
         let thresholds = vec![
-            petal_tongue_core::ThresholdRange {
+            petal_tongue_types::ThresholdRange {
                 label: "Low".to_string(),
                 min: 0.0,
                 max: 0.2,
                 status: "normal".to_string(),
             },
-            petal_tongue_core::ThresholdRange {
+            petal_tongue_types::ThresholdRange {
                 label: "High".to_string(),
                 min: 0.2,
                 max: 1.0,
@@ -621,7 +621,7 @@ mod tests {
             values: vec![1.0],
             unit: String::new(),
         };
-        let thresholds = vec![petal_tongue_core::ThresholdRange {
+        let thresholds = vec![petal_tongue_types::ThresholdRange {
             label: "T".to_string(),
             min: 0.0,
             max: 2.0,
@@ -638,13 +638,13 @@ mod tests {
             utils::resolve_threshold_status(
                 0.5,
                 &[
-                    petal_tongue_core::ThresholdRange {
+                    petal_tongue_types::ThresholdRange {
                         label: "W".to_string(),
                         min: 0.0,
                         max: 1.0,
                         status: "warning".to_string(),
                     },
-                    petal_tongue_core::ThresholdRange {
+                    petal_tongue_types::ThresholdRange {
                         label: "C".to_string(),
                         min: 0.3,
                         max: 0.7,
@@ -761,7 +761,7 @@ mod tests {
             values: vec![0.1, 0.9],
             unit: String::new(),
         };
-        let thresholds = vec![petal_tongue_core::ThresholdRange {
+        let thresholds = vec![petal_tongue_types::ThresholdRange {
             label: "T".to_string(),
             min: 0.0,
             max: 0.5,

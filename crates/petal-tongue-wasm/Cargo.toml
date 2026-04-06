@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+[lints]
+workspace = true
+
+[package]
+name = "petal-tongue-wasm"
+description = "Client-side WASM rendering module for petalTongue grammar visualization"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+readme = "README.md"
+keywords = ["visualization", "wasm", "grammar", "svg"]
+categories = ["visualization", "wasm"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+petal-tongue-scene = { path = "../petal-tongue-scene" }
+petal-tongue-types = { path = "../petal-tongue-types" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+wasm-bindgen = "0.2"
+
+[dev-dependencies]
+serde_json = { workspace = true }

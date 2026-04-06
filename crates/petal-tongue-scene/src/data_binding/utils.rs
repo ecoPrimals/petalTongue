@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Data binding compiler utilities: histogram binning, threshold resolution.
 
-use petal_tongue_core::ThresholdRange;
+use petal_tongue_types::ThresholdRange;
 
 /// Resolve the threshold status for a value against a set of threshold ranges.
 ///

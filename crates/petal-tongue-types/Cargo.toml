@@ -3,8 +3,8 @@
 workspace = true
 
 [package]
-name = "petal-tongue-scene"
-description = "Declarative scene graph, animation, grammar compiler, and modality dispatch"
+name = "petal-tongue-types"
+description = "Portable data types for petalTongue visualization (WASM-compatible)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -15,11 +15,5 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-bytes = { workspace = true }
-petal-tongue-types = { path = "../petal-tongue-types" }
 serde = { workspace = true }
 serde_json = { workspace = true }
-tracing = { workspace = true }
-
-[dev-dependencies]
-proptest = { workspace = true }
