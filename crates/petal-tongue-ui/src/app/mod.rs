@@ -5,9 +5,9 @@
 //!
 //! ## Architecture (`SMART_REFACTORING_POLICY`)
 //!
-//! This module is the application root - naturally centralized. Per
-//! `docs/operations/SMART_REFACTORING_POLICY.md`, app.rs may legitimately be
-//! large because it is the UI integration point.
+//! This module is the application root - naturally centralized. Per smart
+//! refactoring policy, app.rs may legitimately be large because it is the UI
+//! integration point.
 //!
 //! **Why we keep it cohesive:**
 //! - Single responsibility: Application state and lifecycle

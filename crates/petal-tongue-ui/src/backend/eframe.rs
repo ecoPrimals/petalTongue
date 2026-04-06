@@ -90,7 +90,7 @@ impl UIBackend for EguiBackend {
 
         if !has_display {
             tracing::warn!("⚠️  No display server detected");
-            tracing::info!("   Alternatives: Toadstool backend, TUI mode, web mode");
+            tracing::info!("   Alternatives: Discovered display, TUI mode, web mode");
         }
 
         self.initialized = true;

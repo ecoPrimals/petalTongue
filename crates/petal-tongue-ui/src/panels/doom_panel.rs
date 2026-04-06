@@ -209,10 +209,6 @@ impl DoomPanel {
             }
 
             self.prev_keys_down = current_keys;
-
-            // 🖥️ REMOVED: Event processing
-            // We use state polling exclusively now (works for both local AND remote)
-            // Event processing was causing DOUBLE key_down/key_up calls!
         });
 
         // Mouse input
