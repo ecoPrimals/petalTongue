@@ -136,54 +136,64 @@ pub fn handle_showing(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcRes
 /// Accepts either the canonical `VisualizationRenderRequest` format or any
 /// spring-native format recognized by `SpringDataAdapter` (ludoSpring game
 /// channels, ecoPrimals/time-series/v1, bare `DataBinding` arrays).
-pub fn handle_render(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
-    let params = match serde_json::from_value::<VisualizationRenderRequest>(req.params.clone()) {
-        Ok(p) => p,
-        Err(canonical_err) => {
-            // Extract optional metadata fields before moving ownership to the adapter
-            let session_id = req
-                .params
-                .get("session_id")
-                .and_then(|v| v.as_str())
-                .unwrap_or("spring-session")
-                .to_string();
-            let title = req
-                .params
-                .get("title")
-                .and_then(|v| v.as_str())
-                .unwrap_or("Spring Data")
-                .to_string();
-            let domain = req
-                .params
-                .get("domain")
-                .and_then(|v| v.as_str())
-                .map(String::from);
-            let ui_config = req
-                .params
-                .get("ui_config")
-                .and_then(|v| serde_json::from_value::<UiConfig>(v.clone()).ok());
-            let thresholds = req
-                .params
-                .get("thresholds")
-                .and_then(|v| serde_json::from_value(v.clone()).ok())
-                .unwrap_or_default();
+pub fn handle_render(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> JsonRpcResponse {
+    let has_bindings = req.params.get("bindings").is_some();
+    let params = if has_bindings {
+        match serde_json::from_value::<VisualizationRenderRequest>(req.params) {
+            Ok(p) => p,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INVALID_PARAMS,
+                    format!("Invalid params: {e}"),
+                );
+            }
+        }
+    } else {
+        let session_id = req
+            .params
+            .get("session_id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("spring-session")
+            .to_string();
+        let title = req
+            .params
+            .get("title")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Spring Data")
+            .to_string();
+        let domain = req
+            .params
+            .get("domain")
+            .and_then(|v| v.as_str())
+            .map(String::from);
+        let ui_config = req
+            .params
+            .as_object_mut()
+            .and_then(|m| m.remove("ui_config"))
+            .and_then(|v| serde_json::from_value::<UiConfig>(v).ok());
+        let thresholds = req
+            .params
+            .as_object_mut()
+            .and_then(|m| m.remove("thresholds"))
+            .and_then(|v| serde_json::from_value(v).ok())
+            .unwrap_or_default();
 
-            match petal_tongue_core::spring_adapter::SpringDataAdapter::adapt(req.params) {
-                Ok(bindings) if !bindings.is_empty() => VisualizationRenderRequest {
-                    session_id,
-                    title,
-                    bindings,
-                    thresholds,
-                    domain,
-                    ui_config,
-                },
-                _ => {
-                    return JsonRpcResponse::error(
-                        req.id,
-                        error_codes::INVALID_PARAMS,
-                        format!("Invalid params: {canonical_err}"),
-                    );
-                }
+        match petal_tongue_core::spring_adapter::SpringDataAdapter::adapt(req.params) {
+            Ok(bindings) if !bindings.is_empty() => VisualizationRenderRequest {
+                session_id,
+                title,
+                bindings,
+                thresholds,
+                domain,
+                ui_config,
+            },
+            _ => {
+                return JsonRpcResponse::error(
+                    req.id,
+                    error_codes::INVALID_PARAMS,
+                    "Invalid params: unrecognized spring format".to_string(),
+                );
             }
         }
     };
@@ -451,7 +461,7 @@ pub fn handle_capabilities(_handlers: &RpcHandlers, id: Value) -> JsonRpcRespons
 ///
 /// Bypasses the grammar/data-binding pipeline; the `SceneGraph` is stored directly
 /// so springs can submit arbitrary visual scenes.
-pub fn handle_render_scene(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
+pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> JsonRpcResponse {
     let session_id = req
         .params
         .get("session_id")
@@ -459,15 +469,12 @@ pub fn handle_render_scene(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonR
         .unwrap_or("scene-session")
         .to_string();
 
-    let scene_value = match req.params.get("scene") {
-        Some(v) => v.clone(),
-        None => {
-            return JsonRpcResponse::error(
-                req.id,
-                error_codes::INVALID_PARAMS,
-                "Missing 'scene' field",
-            );
-        }
+    let Some(scene_value) = req.params.as_object_mut().and_then(|m| m.remove("scene")) else {
+        return JsonRpcResponse::error(
+            req.id,
+            error_codes::INVALID_PARAMS,
+            "Missing 'scene' field",
+        );
     };
 
     let scene: petal_tongue_scene::scene_graph::SceneGraph =

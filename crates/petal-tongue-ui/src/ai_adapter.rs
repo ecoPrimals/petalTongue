@@ -74,7 +74,7 @@ impl AiAdapter {
     pub async fn new(
         registry: Arc<RwLock<petal_tongue_ipc::InteractionSubscriberRegistry>>,
     ) -> Self {
-        let subscriber_id = "squirrel-ui-adapter".to_string();
+        let subscriber_id = "ai-interaction-adapter".to_string();
         {
             let mut reg = registry.write().await;
             reg.subscribe_with_filter(
@@ -102,7 +102,7 @@ impl AiAdapter {
     #[must_use]
     pub fn new_deferred() -> Self {
         Self {
-            subscriber_id: "squirrel-ui-adapter".to_string(),
+            subscriber_id: "ai-interaction-adapter".to_string(),
             registry: Arc::new(RwLock::new(
                 petal_tongue_ipc::InteractionSubscriberRegistry::new(),
             )),
@@ -304,7 +304,7 @@ mod tests {
     fn poll_converts_events_to_commands() {
         let mut reg = petal_tongue_ipc::InteractionSubscriberRegistry::new();
         reg.subscribe_with_filter(
-            "squirrel-ui-adapter",
+            "ai-interaction-adapter",
             vec!["ai.focus".to_string()],
             None,
             None,

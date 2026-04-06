@@ -65,16 +65,16 @@ pub struct DisplayCapabilities {
 }
 
 impl DisplayCapabilities {
-    /// Toadstool WASM capabilities
+    /// Capability-discovered network display (e.g. WASM backend via Toadstool)
     #[must_use]
-    pub const fn toadstool() -> Self {
+    pub const fn network_display() -> Self {
         Self {
             requires_network: true,
-            requires_gpu: false, // Toadstool handles GPU
+            requires_gpu: false,
             requires_root: false,
             supports_resize: true,
             max_fps: 60,
-            latency_ms: 20, // Network latency
+            latency_ms: 20,
             requires_display_server: false,
             remote_capable: true,
         }
@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn test_display_capabilities_toadstool() {
-        let caps = DisplayCapabilities::toadstool();
+        let caps = DisplayCapabilities::network_display();
         assert!(caps.requires_network);
         assert!(!caps.requires_gpu);
         assert!(!caps.requires_root);
