@@ -299,7 +299,6 @@ fn initialize_central_nervous_system(
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

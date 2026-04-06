@@ -70,7 +70,6 @@ pub fn format_health_confidence(health_percentage: f32, confidence: f32) -> Stri
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

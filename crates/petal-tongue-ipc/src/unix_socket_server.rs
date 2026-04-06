@@ -153,6 +153,20 @@ impl UnixSocketServer {
         );
         info!("   Family ID: {}", self.family_id);
 
+        if let Some(parent) = self.socket_path.parent() {
+            let symlink_path = parent.join("visualization.sock");
+            let _ = std::fs::remove_file(&symlink_path);
+            if let Err(e) = std::os::unix::fs::symlink(&self.socket_path, &symlink_path) {
+                debug!("Could not create capability symlink visualization.sock: {e}");
+            } else {
+                info!(
+                    "🔗 Capability symlink: {} → {}",
+                    symlink_path.display(),
+                    self.socket_path.display()
+                );
+            }
+        }
+
         let tcp_listener = if let Some(port) = self.tcp_port {
             let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
             let listener = tokio::net::TcpListener::bind(addr)
@@ -256,11 +270,18 @@ impl UnixSocketServer {
 
 impl Drop for UnixSocketServer {
     fn drop(&mut self) {
+        if let Some(parent) = self.socket_path.parent() {
+            let symlink_path = parent.join("visualization.sock");
+            if symlink_path.symlink_metadata().is_ok()
+                && let Err(e) = std::fs::remove_file(&symlink_path)
+            {
+                error!("Failed to remove capability symlink: {e}");
+            }
+        }
         if self.socket_path.exists() {
             let result = if self.socket_path.is_file() {
                 std::fs::remove_file(&self.socket_path)
             } else if self.socket_path.is_dir() {
-                // Socket path may be a directory if misconfigured (e.g. PETALTONGUE_SOCKET pointing to a dir)
                 std::fs::remove_dir(&self.socket_path)
             } else {
                 Ok(())

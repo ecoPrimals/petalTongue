@@ -343,7 +343,6 @@ fn register_with_neural_api_background() {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -380,8 +379,10 @@ mod tests {
         let cli = Cli::parse_from(["petal-tongue", "--scenario", "/path/to/scenario.json"]);
         assert!(cli.scenario.is_some());
         assert_eq!(
-            cli.scenario.as_ref().unwrap().to_string_lossy(),
-            "/path/to/scenario.json"
+            cli.scenario
+                .as_ref()
+                .map(|p| p.to_string_lossy().into_owned()),
+            Some("/path/to/scenario.json".to_string())
         );
     }
 
@@ -400,8 +401,10 @@ mod tests {
             None => cli.scenario.clone(),
         };
         assert_eq!(
-            scenario_path.as_ref().unwrap().to_string_lossy(),
-            "/ui.json"
+            scenario_path
+                .as_ref()
+                .map(|p| p.to_string_lossy().into_owned()),
+            Some("/ui.json".to_string())
         );
     }
 
@@ -413,8 +416,10 @@ mod tests {
             None => cli.scenario.clone(),
         };
         assert_eq!(
-            scenario_path.as_ref().unwrap().to_string_lossy(),
-            "/global.json"
+            scenario_path
+                .as_ref()
+                .map(|p| p.to_string_lossy().into_owned()),
+            Some("/global.json".to_string())
         );
     }
 

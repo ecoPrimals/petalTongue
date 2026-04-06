@@ -183,7 +183,6 @@ pub fn render_primal_card(
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::biomeos_integration::{Health, Primal};

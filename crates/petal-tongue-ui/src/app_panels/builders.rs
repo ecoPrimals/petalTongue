@@ -479,7 +479,6 @@ pub fn render_capability_panel(
 pub use super::primal_details::render_primal_details_panel;
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::accessibility::{ColorPalette, ColorScheme};

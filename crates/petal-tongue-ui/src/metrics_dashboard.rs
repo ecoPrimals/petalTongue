@@ -321,7 +321,6 @@ impl Default for MetricsDashboard {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use petal_tongue_core::{NeuralApiMetrics, SystemResourceMetrics};

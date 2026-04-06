@@ -342,7 +342,6 @@ impl GraphCanvas {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use petal_tongue_core::graph_builder::{GraphNode, NodeType, Vec2};

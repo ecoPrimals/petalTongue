@@ -23,10 +23,12 @@ pub fn handle_health_liveness(_handlers: &RpcHandlers, request: JsonRpcRequest) 
 
 /// Handle health.readiness: is the primal ready to serve requests?
 ///
-/// Per `SEMANTIC_METHOD_NAMING_STANDARD.md` v2.2, the canonical response is
-/// `{"status": "ready", ...}`. Checks graph engine and viz state accessibility.
+/// Per `DEPLOYMENT_VALIDATION_STANDARD.md` v1.0 the response MUST include
+/// `version` and `primal` fields alongside `status`.
 #[must_use]
 pub fn handle_health_readiness(handlers: &RpcHandlers, request: JsonRpcRequest) -> JsonRpcResponse {
+    use petal_tongue_core::capability_names::primal_names;
+
     let graph_ok = handlers.graph.read().is_ok();
     let viz_ok = handlers.viz_state.read().is_ok();
     let ready = graph_ok && viz_ok;
@@ -38,6 +40,8 @@ pub fn handle_health_readiness(handlers: &RpcHandlers, request: JsonRpcRequest) 
         json!({
             "status": status,
             "ready": ready,
+            "version": env!("CARGO_PKG_VERSION"),
+            "primal": primal_names::PETALTONGUE,
             "checks": {
                 "graph_engine": graph_ok,
                 "visualization_state": viz_ok,
@@ -46,9 +50,13 @@ pub fn handle_health_readiness(handlers: &RpcHandlers, request: JsonRpcRequest) 
     )
 }
 
-/// Handle health.check: return status, version, uptime, and modalities
+/// Handle health.check: return status, version, primal, uptime, and modalities.
+///
+/// Per `DEPLOYMENT_VALIDATION_STANDARD.md` v1.0 the response MUST include
+/// `version` and `primal` fields.
 #[must_use]
 pub fn handle_health_check(handlers: &RpcHandlers, request: JsonRpcRequest) -> JsonRpcResponse {
+    use petal_tongue_core::capability_names::primal_names;
     use petal_tongue_core::capability_taxonomy::CapabilityTaxonomy;
 
     let modalities = capability_detection::detect_active_modalities();
@@ -60,6 +68,7 @@ pub fn handle_health_check(handlers: &RpcHandlers, request: JsonRpcRequest) -> J
         json!({
             "status": "healthy",
             "version": env!("CARGO_PKG_VERSION"),
+            "primal": primal_names::PETALTONGUE,
             "uptime_seconds": handlers.uptime_seconds(),
             "display_available": display_available,
             "modalities_active": modality_strs,
@@ -433,6 +442,14 @@ mod tests {
         assert!(resp.result.is_some());
         let r = resp.result.unwrap();
         assert_eq!(r["status"], "healthy");
+        assert_eq!(
+            r["primal"], "petaltongue",
+            "DEPLOYMENT_VALIDATION_STANDARD: health.check MUST include primal"
+        );
+        assert!(
+            r["version"].as_str().is_some(),
+            "DEPLOYMENT_VALIDATION_STANDARD: health.check MUST include version"
+        );
         assert!(
             r["modalities_active"]
                 .as_array()
@@ -563,6 +580,14 @@ mod tests {
         let r = resp.result.expect("success");
         assert_eq!(r["status"], "ready");
         assert_eq!(r["ready"], true);
+        assert_eq!(
+            r["primal"], "petaltongue",
+            "DEPLOYMENT_VALIDATION_STANDARD: health.readiness MUST include primal"
+        );
+        assert!(
+            r["version"].as_str().is_some(),
+            "DEPLOYMENT_VALIDATION_STANDARD: health.readiness MUST include version"
+        );
         assert_eq!(r["checks"]["graph_engine"], true);
         assert_eq!(r["checks"]["visualization_state"], true);
     }

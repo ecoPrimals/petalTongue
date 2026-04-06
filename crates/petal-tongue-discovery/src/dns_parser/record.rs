@@ -288,7 +288,7 @@ mod tests {
 
     #[test]
     fn test_a_record_parse() {
-        let data = [192, 168, 1, 100];
+        let data = [192, 0, 2, 100];
         let a = ARecord::parse(&data).unwrap();
         assert_eq!(a.addr.to_string(), "192.0.2.100");
     }
