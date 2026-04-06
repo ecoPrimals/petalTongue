@@ -197,7 +197,6 @@ impl HumanEntropyWindow {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::super::rendering_helpers::{
         capture_state_display, format_recording_duration, modality_selector_enabled,

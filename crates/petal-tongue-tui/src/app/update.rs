@@ -193,7 +193,6 @@ async fn add_log(tui: &RichTUI, message: String) {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use crate::events::{ExternalEvent, KeyAction, TUIEvent, parse_key_event};
     use crate::state::{LogLevel, LogMessage, View};

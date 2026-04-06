@@ -133,7 +133,6 @@ pub fn default_tui_tick_rate() -> Duration {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::test_fixtures::env_test_helpers;

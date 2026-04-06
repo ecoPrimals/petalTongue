@@ -466,7 +466,6 @@ impl TrafficView {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod view_tests {
     use super::*;
     use petal_tongue_core::{PrimalHealthStatus, PrimalId, PrimalInfo};
