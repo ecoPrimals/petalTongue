@@ -4,7 +4,11 @@
 //! Discovers ALL available audio backends at runtime and manages playback.
 //! Mirrors the `DisplayManager` pattern (proven success!).
 
-use super::backends::{DirectBackend, SilentBackend, SocketBackend, SoftwareBackend};
+#[cfg(feature = "audio-direct")]
+use super::backends::DirectBackend;
+#[cfg(feature = "audio-socket")]
+use super::backends::SocketBackend;
+use super::backends::{SilentBackend, SoftwareBackend};
 use super::traits::AudioBackend;
 use crate::error::{AudioError, Result};
 use tracing::{info, warn};
@@ -34,18 +38,24 @@ impl AudioManager {
         // Tier 1: Network Audio (compute primal with audio.synthesis capability)
         // Discovered at runtime via capability probing; not hardcoded to any primal.
 
-        // Tier 2: Socket-Based Audio Servers
-        info!("🔌 Checking for socket-based audio servers...");
-        for socket_backend in SocketBackend::discover_all().await {
-            info!("✅ Socket audio server: {}", socket_backend.metadata().name);
-            backends.push(Box::new(socket_backend));
+        // Tier 2: Socket-Based Audio Servers (optional stub — see `audio-socket` feature)
+        #[cfg(feature = "audio-socket")]
+        {
+            info!("🔌 Checking for socket-based audio servers...");
+            for socket_backend in SocketBackend::discover_all().await {
+                info!("✅ Socket audio server: {}", socket_backend.metadata().name);
+                backends.push(Box::new(socket_backend));
+            }
         }
 
-        // Tier 3: Direct Device Access
-        info!("🎨 Checking for direct audio devices...");
-        for direct_backend in DirectBackend::discover_all() {
-            info!("✅ Direct audio device: {}", direct_backend.metadata().name);
-            backends.push(Box::new(direct_backend));
+        // Tier 3: Direct Device Access (optional stub — see `audio-direct` feature)
+        #[cfg(feature = "audio-direct")]
+        {
+            info!("🎨 Checking for direct audio devices...");
+            for direct_backend in DirectBackend::discover_all() {
+                info!("✅ Direct audio device: {}", direct_backend.metadata().name);
+                backends.push(Box::new(direct_backend));
+            }
         }
 
         // Tier 4: Pure Rust Software Synthesis (always available)

@@ -6,6 +6,7 @@ use anyhow::Result;
 use petal_tongue_core::{GraphEngine, PrimalHealthStatus, PrimalInfo, TopologyEdge};
 use petal_tongue_ui_core::{
     CanvasUI, ExportFormat, SvgUI, TerminalUI, TextUI, UIMode, UniversalUI, detect_best_ui_mode,
+    validate_standalone_html_export, wrap_svg_in_html,
 };
 use std::sync::{Arc, RwLock};
 
@@ -141,7 +142,7 @@ fn test_text_ui_dot_integration() -> Result<()> {
 }
 
 #[test]
-#[allow(clippy::unnecessary_wraps)]
+#[expect(clippy::unnecessary_wraps, reason = "test signature consistency")]
 fn test_canvas_ui_integration() -> Result<()> {
     let graph = create_test_graph();
     let ui = CanvasUI::new(graph, 800, 600);
@@ -149,6 +150,85 @@ fn test_canvas_ui_integration() -> Result<()> {
     // Test capabilities
     assert!(ui.supports(petal_tongue_ui_core::UICapability::Export));
 
+    Ok(())
+}
+
+/// Product-level PT-04 validation: GraphEngine → SvgUI → `ExportFormat::Html` → disk round-trip.
+///
+/// Ensures the full HTML export pipeline matches `wrap_svg_in_html` / `validate_standalone_html_export`
+/// and produces a well-formed standalone document with embedded topology SVG.
+#[test]
+fn test_html_export_e2e_pt04_full_pipeline() -> Result<()> {
+    let graph = create_test_graph();
+    let ui = SvgUI::new(graph, 800, 600);
+
+    let svg = ui.render_to_string()?;
+    assert!(
+        svg.contains("<svg"),
+        "render_to_string must produce SVG before HTML wrap"
+    );
+    assert!(svg.contains("</svg>"));
+
+    // Canonical bytes for this graph (same path `UniversalUI::export` uses for Html).
+    let expected_html =
+        String::from_utf8(wrap_svg_in_html(&svg)).expect("wrap_svg_in_html produces UTF-8");
+    assert!(
+        validate_standalone_html_export(&expected_html),
+        "wrapped HTML must pass PT-04 validation"
+    );
+
+    let temp_file = std::env::temp_dir().join("petal_tongue_ui_core_pt04_e2e.html");
+    let _ = std::fs::remove_file(&temp_file);
+
+    assert_eq!(ExportFormat::Html.extension(), "html");
+    assert_eq!(ExportFormat::Html.mime_type(), "text/html");
+
+    ui.export(&temp_file, ExportFormat::Html)?;
+
+    assert!(temp_file.exists(), "export must create the output file");
+    let from_disk = std::fs::read_to_string(&temp_file)?;
+    assert_eq!(
+        from_disk, expected_html,
+        "file contents must match in-memory HTML export (parity with wrap_svg_in_html)"
+    );
+
+    // Structural checks for auditors / browsers (PT-04).
+    let h = from_disk.trim_start();
+    assert!(
+        h.starts_with("<!DOCTYPE html>"),
+        "must start with HTML5 doctype"
+    );
+    assert!(h.contains("<html lang=\"en\">"), "root element with lang");
+    assert!(
+        h.contains("<head>") && h.contains("</head>"),
+        "head section"
+    );
+    assert!(
+        h.contains("<meta charset=\"utf-8\">"),
+        "charset for standalone viewing"
+    );
+    assert!(
+        h.contains("<title>petalTongue Export</title>"),
+        "document title"
+    );
+    assert!(
+        h.contains("<body>") && h.contains("</body>"),
+        "body section"
+    );
+    assert!(h.contains("<svg"), "embedded SVG opening tag");
+    assert!(h.contains("</svg>"), "embedded SVG closing tag");
+    assert!(
+        h.contains("</html>") && !h.trim_end().ends_with("</svg>"),
+        "document must end with html close, not only svg"
+    );
+    assert!(
+        validate_standalone_html_export(&from_disk),
+        "on-disk HTML must pass validate_standalone_html_export"
+    );
+    // Sample graph labels must appear inside the embedded SVG portion.
+    assert!(from_disk.contains("Test Primal 1"));
+
+    std::fs::remove_file(&temp_file)?;
     Ok(())
 }
 
@@ -357,7 +437,7 @@ fn test_export_io_error() {
 }
 
 #[test]
-#[allow(clippy::unnecessary_wraps)]
+#[expect(clippy::unnecessary_wraps, reason = "test signature consistency")]
 fn test_health_status_colors() -> Result<()> {
     use petal_tongue_ui_core::{health_to_color, health_to_emoji, health_to_percentage};
 

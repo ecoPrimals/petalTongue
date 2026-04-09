@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #![forbid(unsafe_code)]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
-#![warn(missing_docs)]
 #![expect(
     clippy::missing_errors_doc,
     reason = "IPC handlers evolving — error docs tracked"
@@ -74,6 +73,8 @@
 //! └─────────────────────────────────────────────────────────────┘
 //! ```
 
+/// BearDog Transport Security Profile (BTSP): Phase 1 guards/socket naming + Phase 2 stubs (PT-09).
+pub mod btsp;
 /// Runtime capability detection for display modalities
 pub mod capability_detection;
 pub mod client;
@@ -105,6 +106,10 @@ pub mod unix_socket_server;
 pub mod visualization_handler;
 
 // JSON-RPC (universal fallback — listen surface)
+pub use btsp::{
+    BtspGuardError, BtspPosture, HandshakePolicy, current_btsp_posture, domain_symlink_filename,
+    handshake_policy, log_handshake_policy, socket_filename, validate_insecure_guard,
+};
 pub use client::{IpcClient, IpcClientError};
 pub use discovery_helpers::{address_env_var, resolve_primal_socket, socket_env_var};
 pub use ipc_errors::{DispatchOutcome, IpcErrorPhase, StreamItem, exit_code, extract_rpc_error};

@@ -42,7 +42,6 @@ serde_json = { workspace = true }
 reqwest = { workspace = true }
 base64 = { workspace = true }
 bytes = { workspace = true }
-anyhow = { workspace = true }  # Trait compatibility (Sensor::poll_events from petal-tongue-core)
 futures-util = "0.3"  # For SSE stream consumption (StreamExt)
 thiserror = { workspace = true }
 tracing = { workspace = true }
@@ -107,6 +106,10 @@ test-fixtures = ["petal-tongue-core/test-fixtures"]
 
 # Optional feature flags used in cfg (allow cfg checks to pass)
 audio = []   # Audio sensor/provider features
+# Experimental / incomplete backends (PipeWire–PulseAudio socket protocol; direct ALSA ioctl path).
+# Off by default so normal builds do not register non-functional discovery entries.
+audio-socket = []
+audio-direct = []
 window = []  # Window-related display features
 doom = ["dep:doom-core"]  # Doom integration for platform testing
 
@@ -128,6 +131,7 @@ toadstool-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys"]
 # - Windows: WASAPI (via system APIs)
 
 [dev-dependencies]
+anyhow = { workspace = true }  # Integration tests and examples
 petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }  # For tests that use test_fixtures (run: cargo test --features test-fixtures or --features mock)
 tokio = { workspace = true, features = ["test-util", "macros"] }
 tempfile = "3.10"

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![allow(missing_docs)]
 //! Benchmarks for the Grammar of Graphics compiler pipeline.
 //!
 //! Measures grammar expression compilation and scene graph construction throughput.

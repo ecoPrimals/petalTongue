@@ -12,7 +12,7 @@ pub use ipc_types::{KeyModifiersIpc, SensorEventBatch, SensorEventIpc};
 pub use registry::{SensorRegistry, SensorStats};
 pub use types::{
     GestureDirection, GestureType, Key, Modifiers, MouseButton, Sensor, SensorCapabilities,
-    SensorCapability, SensorEvent, SensorType,
+    SensorCapability, SensorError, SensorEvent, SensorType,
 };
 
 #[cfg(test)]

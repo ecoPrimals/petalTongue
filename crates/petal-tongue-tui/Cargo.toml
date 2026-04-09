@@ -35,7 +35,6 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 
 # Error handling
-anyhow = { workspace = true }
 thiserror = { workspace = true }
 
 # Logging
@@ -52,6 +51,7 @@ chrono = { workspace = true }
 dashmap = "6.1"
 
 [dev-dependencies]
+anyhow = { workspace = true }  # examples/simple_demo.rs
 tempfile = "3.10"
 
 [[example]]

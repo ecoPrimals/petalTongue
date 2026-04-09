@@ -8,7 +8,6 @@
 //! This crate provides concrete renderers that consume the abstract
 //! graph engine and represent it visually.
 
-#![warn(missing_docs)]
 #![expect(
     clippy::format_push_string,
     reason = "DOT/SVG builders use incremental string construction"

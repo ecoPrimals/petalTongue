@@ -244,6 +244,9 @@ struct IpcHandles {
 
 /// Build the IPC server, extract shared handles, then start it in a background thread.
 ///
+/// Uses [`petal_tongue_ipc::UnixSocketServer::new`], which wires PT-06 push delivery
+/// (`callback_tx`) for GUI callback notifications.
+///
 /// Returns `None` only when the server fails to construct (e.g. socket path error).
 fn start_ipc_server(
     graph: &Arc<RwLock<GraphEngine>>,

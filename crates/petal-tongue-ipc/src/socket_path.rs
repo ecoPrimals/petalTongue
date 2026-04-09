@@ -8,9 +8,9 @@
 //! all primal sockets live under the shared `biomeos/` directory so that biomeOS socket
 //! scanning can discover them via `readdir()`.
 
+use crate::btsp::BtspPosture;
 use crate::socket_path_error::SocketPathError;
 use petal_tongue_core::capability_names::primal_names;
-use petal_tongue_core::constants::APP_DIR_NAME;
 use std::env;
 use std::path::{Path, PathBuf};
 
@@ -37,6 +37,17 @@ const BIOMEOS_SOCK_DIR: &str = primal_names::BIOMEOS;
 /// - **Graceful Fallback**: Falls back to `/tmp/biomeos/` if XDG runtime unavailable
 /// - **Parent Directory Creation**: Ensures socket parent directory exists
 pub fn get_petaltongue_socket_path() -> Result<PathBuf, SocketPathError> {
+    let posture = crate::btsp::validate_insecure_guard()?;
+    get_petaltongue_socket_path_with_posture(&posture)
+}
+
+/// Resolve the petalTongue socket path using an explicit BTSP posture.
+///
+/// Same rules as [`get_petaltongue_socket_path`], but the filename under
+/// `$XDG_RUNTIME_DIR/biomeos/` follows [`crate::btsp::socket_filename`].
+pub fn get_petaltongue_socket_path_with_posture(
+    posture: &BtspPosture,
+) -> Result<PathBuf, SocketPathError> {
     if let Ok(socket_path) = env::var("PETALTONGUE_SOCKET") {
         let path = PathBuf::from(socket_path);
         if let Some(parent) = path.parent() {
@@ -45,14 +56,16 @@ pub fn get_petaltongue_socket_path() -> Result<PathBuf, SocketPathError> {
         return Ok(path);
     }
 
+    let filename = crate::btsp::socket_filename(posture);
+
     if let Ok(runtime_dir) = get_runtime_dir() {
         let sock_dir = runtime_dir.join(BIOMEOS_SOCK_DIR);
-        let path = sock_dir.join(format!("{APP_DIR_NAME}.sock"));
+        let path = sock_dir.join(&filename);
         std::fs::create_dir_all(&sock_dir)?;
         Ok(path)
     } else {
         let sock_dir = PathBuf::from("/tmp").join(BIOMEOS_SOCK_DIR);
-        let path = sock_dir.join(format!("{APP_DIR_NAME}.sock"));
+        let path = sock_dir.join(&filename);
         std::fs::create_dir_all(&sock_dir)?;
         Ok(path)
     }
@@ -212,6 +225,7 @@ mod tests {
                 ("PETALTONGUE_NODE_ID", None),
                 ("PETALTONGUE_SOCKET", None),
                 ("XDG_RUNTIME_DIR", None),
+                ("BIOMEOS_INSECURE", None),
             ],
             || {
                 if let Ok(path) = get_petaltongue_socket_path() {
@@ -221,6 +235,46 @@ mod tests {
                         "Expected path ending with 'biomeos/petaltongue.sock', got: {path_str}"
                     );
                 }
+            },
+        );
+    }
+
+    #[test]
+    fn test_petaltongue_socket_path_family_scoped() {
+        env_test_helpers::with_env_vars(
+            &[
+                ("FAMILY_ID", Some("acme")),
+                ("PETALTONGUE_SOCKET", None),
+                ("XDG_RUNTIME_DIR", None),
+                ("BIOMEOS_INSECURE", None),
+            ],
+            || {
+                if let Ok(path) = get_petaltongue_socket_path() {
+                    let path_str = path.to_string_lossy();
+                    assert!(
+                        path_str.ends_with("biomeos/petaltongue-acme.sock"),
+                        "Expected family-scoped socket, got: {path_str}"
+                    );
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_btsp_guard_conflicts_with_socket_path() {
+        env_test_helpers::with_env_vars(
+            &[
+                ("FAMILY_ID", Some("prod")),
+                ("BIOMEOS_INSECURE", Some("1")),
+                ("PETALTONGUE_SOCKET", None),
+                ("XDG_RUNTIME_DIR", None),
+            ],
+            || {
+                let err = get_petaltongue_socket_path().expect_err("conflicting posture");
+                assert!(
+                    err.to_string().contains("BTSP guard"),
+                    "Expected BTSP error, got: {err}"
+                );
             },
         );
     }

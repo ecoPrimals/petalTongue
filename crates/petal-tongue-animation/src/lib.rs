@@ -13,8 +13,6 @@
 //! - Temporal patterns (bursts, steady-state)
 //! - Flower opening (awakening experience)
 
-#![warn(missing_docs)]
-
 pub mod flower;
 pub mod visual_flower;
 

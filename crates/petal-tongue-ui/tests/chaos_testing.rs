@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(clippy::unwrap_used, clippy::expect_used, missing_docs)]
 //! Chaos Testing Framework
 //!
 //! Provides fault injection and resilience testing for petalTongue.
@@ -92,7 +92,7 @@ impl ChaosTestRunner {
     }
 
     /// Test: Primal churn (rapid add/remove)
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(clippy::unnecessary_wraps, reason = "chaos test signature consistency")]
     fn test_primal_churn(&mut self) -> Result<()> {
         let start = std::time::Instant::now();
         let scenario_name = "primal_churn";
@@ -161,7 +161,7 @@ impl ChaosTestRunner {
     }
 
     /// Test: High update rate
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(clippy::unnecessary_wraps, reason = "chaos test signature consistency")]
     fn test_high_update_rate(&mut self) -> Result<()> {
         let start = std::time::Instant::now();
         let scenario_name = "high_update_rate";
@@ -228,7 +228,7 @@ impl ChaosTestRunner {
     }
 
     /// Test: Random health changes
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(clippy::unnecessary_wraps, reason = "chaos test signature consistency")]
     fn test_random_health_changes(&mut self) -> Result<()> {
         let start = std::time::Instant::now();
         let scenario_name = "random_health_changes";
@@ -293,7 +293,7 @@ impl ChaosTestRunner {
     }
 
     /// Test: Concurrent modifications
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(clippy::unnecessary_wraps, reason = "chaos test signature consistency")]
     fn test_concurrent_modifications(&mut self) -> Result<()> {
         let start = std::time::Instant::now();
         let scenario_name = "concurrent_modifications";

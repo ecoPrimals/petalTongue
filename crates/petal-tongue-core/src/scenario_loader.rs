@@ -8,6 +8,18 @@ use crate::{DataBinding, ThresholdRange};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
+/// Typed error for scenario loading failures.
+#[derive(Debug, thiserror::Error)]
+pub enum ScenarioError {
+    /// Failed to read the scenario file from disk.
+    #[error("failed to read scenario file: {0}")]
+    Io(#[from] std::io::Error),
+
+    /// Failed to parse scenario JSON.
+    #[error("failed to parse scenario JSON: {0}")]
+    Parse(#[from] serde_json::Error),
+}
+
 /// A loaded scenario from a Spring or external source.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoadedScenario {
@@ -88,8 +100,9 @@ impl LoadedScenario {
     ///
     /// # Errors
     ///
-    /// Returns an error if the file cannot be read or the JSON cannot be parsed.
-    pub fn from_file(path: &Path) -> anyhow::Result<Self> {
+    /// Returns `ScenarioError::Io` if the file cannot be read, or
+    /// `ScenarioError::Parse` if the JSON cannot be parsed.
+    pub fn from_file(path: &Path) -> Result<Self, ScenarioError> {
         let contents = std::fs::read_to_string(path)?;
         let scenario: Self = serde_json::from_str(&contents)?;
         Ok(scenario)
@@ -99,8 +112,8 @@ impl LoadedScenario {
     ///
     /// # Errors
     ///
-    /// Returns an error if the JSON cannot be parsed.
-    pub fn from_json(json: &str) -> anyhow::Result<Self> {
+    /// Returns `ScenarioError::Parse` if the JSON cannot be parsed.
+    pub fn from_json(json: &str) -> Result<Self, ScenarioError> {
         let scenario: Self = serde_json::from_str(json)?;
         Ok(scenario)
     }

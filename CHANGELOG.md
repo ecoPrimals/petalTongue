@@ -7,6 +7,58 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### Added
+- **BTSP Phase 1** (`crate::btsp`): `validate_insecure_guard()` refuses startup
+  when both `FAMILY_ID` and `BIOMEOS_INSECURE=1` are set. Family-scoped socket
+  naming (`petaltongue-{family_id}.sock`) in production posture. Domain symlink
+  (`visualization-{family_id}.sock`) follows `PRIMAL_SELF_KNOWLEDGE_STANDARD`.
+  Guard runs before any subcommand in `main.rs`. (PT-08)
+- **BTSP Phase 2 handshake stub** (`HandshakePolicy`): Logs production posture
+  warning at server startup when `FAMILY_ID` is set but BearDog enforcement is
+  not yet active. Ready for BearDog `btsp.session.*` integration. (PT-09)
+- **PT-04 HTML export product validation**: End-to-end test exercises
+  `wrap_svg_in_html` → validate → write → read-back → structural check.
+- **Audio backend feature gates**: `audio-socket` and `audio-direct` features
+  (opt-in, not default). Stubs now return typed `AudioError` variants instead
+  of silently succeeding. Module docs describe what is needed for full
+  implementation.
+
+### Changed
+- **`anyhow` eliminated from all production crate dependencies**. Moved to
+  `[dev-dependencies]` in `petal-tongue-ui`, `petal-tongue-tui`,
+  `petal-tongue-discovery`; removed entirely from `petal-tongue-ipc`,
+  `petal-tongue-api`, `petal-tongue-graph`. `impl From<anyhow::Error> for
+  UiError` bridge deleted.
+- **`#[allow(` → `#[expect(`** migration: 9 of 11 instances migrated with reason
+  annotations. Only 2 legitimate `dead_code` suppressions on shared test helpers
+  remain as `#[allow(`.
+- **Clone/allocation density reduction** in hot paths:
+  - `property_panel`: `clone_from` for HashMap capacity reuse, in-place
+    `get_mut` + `text_edit_singleline` eliminates per-frame string clones.
+  - `engine.rs`: `Arc::clone(&self)` replaces `self.clone()` in `initialize`
+    and `render_multi`; single `name_for_events` string built once and moved.
+  - `structure.rs`: `ValidationIssue::with_suggestion` accepts `impl
+    Into<String>` so callers pass `&'static str` without `.to_string()`.
+  - `modality.rs`: `available`/`by_tier`/`auto_select` return `&'static str`
+    instead of allocating `String` names.
+- **Smart file refactoring**: 11 large files split by extracting tests into
+  sibling modules (`builders`, `data_binding`, `basic_charts`, `interaction`,
+  `tarpc_types`, `property_panel`, `main`, `live_data`, `unix_socket_server`,
+  `chart_renderer`, `describe`). Max file now 799 lines.
+- **Sandbox mock-biomeos**: Uses `capability_names::primal_names` constants,
+  `discover_primal_socket` for path construction, `.expect()` instead of
+  bare `.unwrap()`.
+
+### Fixed
+- **PT-06**: Verified and documented that `callback_tx` push delivery IS wired
+  in all JSON-RPC paths via `UnixSocketServer::new()`. Modes without IPC
+  (web/tui/headless/ui) are documented as intentionally push-free.
+- Socket path `get_petaltongue_socket_path()` now delegates to BTSP posture for
+  family-scoped naming instead of hardcoded `{APP_DIR_NAME}.sock`.
+
+### Security
+- `BIOMEOS_INSECURE` env var guard prevents production FAMILY_ID from running
+  in insecure mode — conflicting posture is a fatal startup error.
+
 - **Sensory Capability Matrix** (`SensoryCapabilityMatrix`): Formal type system
   that maps input capabilities × output capabilities. Consumer primals
   (ludoSpring, primalSpring, Squirrel) call `capabilities.sensory` to discover

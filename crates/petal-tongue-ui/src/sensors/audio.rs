@@ -5,6 +5,7 @@
 
 use crate::error::{AudioError, Result};
 use async_trait::async_trait;
+use petal_tongue_core::sensor::SensorError;
 use petal_tongue_core::{Sensor, SensorCapabilities, SensorEvent, SensorType};
 use std::time::Instant;
 
@@ -101,7 +102,7 @@ impl Sensor for AudioSensor {
         self.has_output || self.has_input
     }
 
-    async fn poll_events(&mut self) -> anyhow::Result<Vec<SensorEvent>> {
+    async fn poll_events(&mut self) -> std::result::Result<Vec<SensorEvent>, SensorError> {
         let events = Vec::new();
 
         // Audio input polling would go here

@@ -1,17 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Socket audio backend (stub / planned PipeWire and PulseAudio client)
+//! Socket audio backend (incomplete — PipeWire / PulseAudio client)
 //!
-//! **Status:** Runtime discovery of well-known Unix sockets under `XDG_RUNTIME_DIR` (e.g.
-//! `pipewire-0`, `pulse/native`) is implemented, but **no wire protocol is implemented**. A future
-//! version will speak the native protocols used by **PipeWire** and **PulseAudio** over those
-//! sockets (session/stream setup, format negotiation, PCM transfer)—not a custom petalTongue
-//! protocol.
+//! # Cargo feature
+//!
+//! This module is compiled only with the **`audio-socket`** feature on `petal-tongue-ui`.
+//! Default release builds omit it so the runtime does not register a non-functional backend.
+//!
+//! # Status
+//!
+//! Runtime discovery of well-known Unix sockets under `XDG_RUNTIME_DIR` (e.g. `pipewire-0`,
+//! `pulse/native`) is implemented, but **no wire protocol is implemented**. A future version will
+//! speak the native protocols used by **PipeWire** and **PulseAudio** over those sockets (session
+//! / stream setup, format negotiation, PCM transfer)—not a custom petalTongue protocol.
 //!
 //! Until then, [`is_available`](crate::audio::traits::AudioBackend::is_available) is always
-//! `false`, [`play_samples`](crate::audio::traits::AudioBackend::play_samples) returns an error,
-//! and [`capabilities`](crate::audio::traits::AudioBackend::capabilities) reports no usable audio
-//! features. Connecting in [`initialize`](crate::audio::traits::AudioBackend::initialize) on Unix
-//! only establishes a stream; it does not enable playback without the missing protocol layer.
+//! `false`, [`initialize`](crate::audio::traits::AudioBackend::initialize) and
+//! [`play_samples`](crate::audio::traits::AudioBackend::play_samples) return
+//! [`AudioError::SocketConnectionFailed`](crate::error::AudioError::SocketConnectionFailed), and
+//! [`capabilities`](crate::audio::traits::AudioBackend::capabilities) reports no usable audio
+//! features. Opening a raw `UnixStream` without the protocol layer would mislead callers; this
+//! backend does not do that.
 
 use crate::audio::traits::{AudioBackend, AudioCapabilities, BackendMetadata, BackendType};
 use crate::error::{AudioError, Result};
@@ -29,20 +37,13 @@ pub struct DiscoveredSocket {
 /// Socket audio backend
 pub struct SocketBackend {
     socket: DiscoveredSocket,
-    #[cfg(unix)]
-    connection: Option<std::os::unix::net::UnixStream>,
-    #[cfg(not(unix))]
-    connection: Option<()>,
 }
 
 impl SocketBackend {
     /// Create from discovered socket
     #[must_use]
     pub const fn new(socket: DiscoveredSocket) -> Self {
-        Self {
-            socket,
-            connection: None,
-        }
+        Self { socket }
     }
 
     /// Discover ALL socket-based audio servers at runtime
@@ -123,6 +124,13 @@ impl SocketBackend {
             false
         }
     }
+
+    fn not_implemented_message() -> String {
+        "PipeWire/PulseAudio Unix-socket protocol is not implemented; discovery only. \
+         Full implementation: session/stream setup, format negotiation, and PCM transfer over the \
+         native server protocol."
+            .to_string()
+    }
 }
 
 #[async_trait]
@@ -143,7 +151,7 @@ impl AudioBackend for SocketBackend {
     }
 
     async fn is_available(&self) -> bool {
-        // Socket exists, but PipeWire/PulseAudio protocol negotiation
+        // Socket may exist, but PipeWire/PulseAudio protocol negotiation
         // is not implemented yet. Report unavailable so AudioManager
         // skips this backend and falls through to software/silent.
         false
@@ -154,33 +162,21 @@ impl AudioBackend for SocketBackend {
             "🔌 Initializing socket audio backend: {}",
             self.socket.path.display()
         );
-        #[cfg(unix)]
-        {
-            let path = self.socket.path.clone();
-            let _path_display = path.display().to_string();
-            let stream =
-                tokio::task::spawn_blocking(move || std::os::unix::net::UnixStream::connect(&path))
-                    .await
-                    .map_err(|e| AudioError::SocketTaskFailed(e.to_string()))?
-                    .map_err(|e| AudioError::SocketConnectionFailed(e.to_string()))?;
-            self.connection = Some(stream);
-        }
         #[cfg(not(unix))]
         {
-            let _ = self;
             return Err(AudioError::SocketBackendUnavailable.into());
         }
-        Ok(())
+        #[cfg(unix)]
+        {
+            Err(AudioError::SocketConnectionFailed(Self::not_implemented_message()).into())
+        }
     }
 
     async fn play_samples(&mut self, samples: &[f32], sample_rate: u32) -> Result<()> {
         #[cfg(unix)]
         {
-            if self.connection.is_none() {
-                return Err(AudioError::SocketBackendNotInitialized.into());
-            }
             debug!(
-                "🔌 Socket playback: {} samples at {} Hz via {} (PipeWire/PulseAudio protocol stub)",
+                "🔌 Socket playback: {} samples at {} Hz via {} (protocol not implemented)",
                 samples.len(),
                 sample_rate,
                 self.socket.detected_name
@@ -189,11 +185,7 @@ impl AudioBackend for SocketBackend {
                 "Planned PipeWire/PulseAudio socket protocol not implemented for {}",
                 self.socket.detected_name
             );
-            return Err(AudioError::SocketConnectionFailed(
-                "PipeWire/PulseAudio socket protocol not implemented (planned; backend unavailable for playback)"
-                    .to_string(),
-            )
-            .into());
+            return Err(AudioError::SocketConnectionFailed(Self::not_implemented_message()).into());
         }
         #[cfg(not(unix))]
         {
@@ -304,6 +296,22 @@ mod tests {
         assert!(
             !backend.is_available().await,
             "Socket backend reports unavailable (protocol not implemented)"
+        );
+    }
+
+    #[tokio::test]
+    #[cfg(unix)]
+    async fn test_socket_initialize_returns_typed_error() {
+        let socket = DiscoveredSocket {
+            path: PathBuf::from("/dev/null"),
+            detected_name: "Test".to_string(),
+        };
+        let mut backend = SocketBackend::new(socket);
+        let err = backend.initialize().await.unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("not implemented") || msg.contains("PipeWire"),
+            "expected stub error message, got {msg}"
         );
     }
 }

@@ -1,6 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Isomorphic IPC server implementation - Unix sockets with TCP fallback
 //!
+//! # PT-06 (push delivery) — not applicable here
+//!
+//! This module implements the legacy line-delimited [`crate::protocol::IpcCommand`] /
+//! [`crate::protocol::IpcResponse`] protocol. It does **not** use
+//! [`crate::unix_socket_rpc_handlers::RpcHandlers`] or JSON-RPC, so PT-06 callback push
+//! (`callback_tx` / [`crate::push_delivery`]) is not wired: there is no visualization
+//! callback path on this transport.
+//!
+//! **JSON-RPC with PT-06 push** is served by [`crate::UnixSocketServer`] (and
+//! [`crate::server_mode`] in the root binary). This [`IpcServer`] remains for tests and
+//! any code still on the simple command/response protocol.
+//!
 //! TRUE PRIMAL Evolution: Try → Detect → Adapt → Succeed
 //!
 //! # Architecture
@@ -435,6 +447,10 @@ pub enum IpcServerError {
     /// Socket path resolution error
     #[error("Socket path: {0}")]
     SocketPath(#[from] crate::socket_path_error::SocketPathError),
+
+    /// BTSP Phase 1 startup guard (`FAMILY_ID` + `BIOMEOS_INSECURE=1`)
+    #[error(transparent)]
+    BtspGuard(#[from] crate::btsp::BtspGuardError),
 
     /// Socket error
     #[error("Socket error: {0}")]

@@ -5,6 +5,9 @@
 //! Dependencies: ratatui, crossterm (100% Pure Rust)
 //!
 //! Integrates with petal-tongue-tui for full interactive terminal UI.
+//!
+//! **IPC / PT-06:** No JSON-RPC listen surface; no UDS [`petal_tongue_ipc::UnixSocketServer`]
+//! or PT-06 callback push in this mode.
 
 use crate::data_service::DataService;
 use crate::error::AppError;

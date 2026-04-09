@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #![forbid(unsafe_code)]
-#![expect(
-    missing_docs,
-    reason = "doom-core WAD/game types evolving — docs tracked for incremental completion"
-)]
+#![expect(missing_docs, reason = "incremental documentation in progress")]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 //! Doom Core - Doom integration for petalTongue
 //!

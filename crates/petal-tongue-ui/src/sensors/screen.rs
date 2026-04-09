@@ -19,6 +19,7 @@
 use crate::error::{Result, SensorError};
 use async_trait::async_trait;
 use petal_tongue_core::constants;
+use petal_tongue_core::sensor::SensorError as CoreSensorError;
 use petal_tongue_core::{Sensor, SensorCapabilities, SensorEvent, SensorType};
 use std::io::IsTerminal;
 use std::time::Instant;
@@ -103,7 +104,7 @@ impl Sensor for ScreenSensor {
         true
     }
 
-    async fn poll_events(&mut self) -> anyhow::Result<Vec<SensorEvent>> {
+    async fn poll_events(&mut self) -> std::result::Result<Vec<SensorEvent>, CoreSensorError> {
         let mut events = Vec::new();
 
         // Generate heartbeat event if we have one

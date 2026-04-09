@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::unwrap_used, clippy::expect_used)]
-// Integration tests for petalTongue discovery against biomeOS-style payloads.
+#![allow(clippy::unwrap_used, clippy::expect_used, missing_docs)]
+//! Integration tests for petalTongue discovery against biomeOS-style payloads.
 
 #[tokio::test]
 async fn test_biomeos_api_contract() {

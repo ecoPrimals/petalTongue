@@ -271,8 +271,18 @@ impl ToolPanel for SystemMonitorTool {
 
 #[cfg(test)]
 mod tool_tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used)]
+
     use super::*;
+    use crate::tool_integration::ToolPanel;
     use std::time::{Duration, Instant};
+
+    fn tool_ready_to_refresh() -> SystemMonitorTool {
+        SystemMonitorTool {
+            last_refresh: Instant::now().checked_sub(Duration::from_secs(2)).unwrap(),
+            ..Default::default()
+        }
+    }
 
     #[test]
     fn test_refresh_populates_cpu_history() {
@@ -344,5 +354,95 @@ mod tool_tests {
     fn test_default_refresh_interval() {
         let tool = SystemMonitorTool::default();
         assert_eq!(tool.refresh_interval, Duration::from_secs(1));
+    }
+
+    #[test]
+    fn test_render_panel_runs_cpu_memory_scroll_and_repaint() {
+        let mut tool = tool_ready_to_refresh();
+        tool.refresh();
+        tool.toggle_visibility();
+        assert!(tool.is_visible());
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                tool.render_panel(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_panel_sparkline_insufficient_points_returns_early() {
+        let mut tool = tool_ready_to_refresh();
+        tool.refresh();
+        assert_eq!(
+            tool.cpu_history.len(),
+            1,
+            "single sample: sparkline has <2 points and skips line stroke"
+        );
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                tool.render_panel(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_render_panel_sparkline_draws_with_two_or_more_samples() {
+        let mut tool = tool_ready_to_refresh();
+        for _ in 0..3 {
+            tool.last_refresh = Instant::now().checked_sub(Duration::from_secs(2)).unwrap();
+            tool.refresh();
+        }
+        assert!(
+            tool.cpu_history.len() >= 2,
+            "multiple refreshes should yield enough history for sparkline polyline"
+        );
+
+        let ctx = egui::Context::default();
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                tool.render_panel(ui);
+            });
+        });
+    }
+
+    #[test]
+    fn test_metadata_is_stable_across_calls() {
+        let tool = SystemMonitorTool::default();
+        let a = tool.metadata();
+        let b = tool.metadata();
+        assert!(std::ptr::eq(a, b));
+        assert_eq!(a.name, "System Monitor");
+    }
+
+    #[test]
+    fn test_status_message_mem_branch_non_linux_zero_total() {
+        let tool = SystemMonitorTool::default();
+        let msg = tool.status_message().expect("status line");
+        #[cfg(not(target_os = "linux"))]
+        {
+            assert!(
+                msg.contains("MEM: 0.0%"),
+                "non-linux stub returns total_memory == 0"
+            );
+        }
+        #[cfg(target_os = "linux")]
+        {
+            assert!(msg.contains("MEM:"), "{msg}");
+        }
+    }
+
+    #[test]
+    fn test_refresh_updates_last_cpu_usage_after_elapsed_interval() {
+        let mut tool = tool_ready_to_refresh();
+        tool.refresh();
+        let u = tool.last_cpu_usage;
+        assert!(
+            (0.0..=100.0).contains(&u),
+            "cpu usage should be a percentage-like value, got {u}"
+        );
     }
 }

@@ -2,6 +2,10 @@
 //! Web mode - HTTP server with SSE push
 //!
 //! Pure Rust! Dependencies: axum, tower-http (100% Pure Rust)
+//!
+//! **IPC / PT-06:** This mode does not start the JSON-RPC Unix socket server
+//! ([`petal_tongue_ipc::UnixSocketServer`]). Live updates use HTTP SSE only, not
+//! `callback_tx` push over UDS.
 
 use crate::error::AppError;
 use axum::{

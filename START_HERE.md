@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 6, 2026
+**Updated**: April 9, 2026
 
 ---
 
@@ -80,6 +80,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 7. **Files under 1,000 lines** -- Split into cohesive modules at ~800 lines.
 8. **SPDX headers** -- `// SPDX-License-Identifier: AGPL-3.0-or-later` on all `.rs` files.
 9. **Semantic naming** -- JSON-RPC methods follow `{domain}.{operation}` pattern.
+10. **BTSP Phase 1** -- `validate_insecure_guard()` at startup; family-scoped sockets when `FAMILY_ID` set; `BIOMEOS_INSECURE` guard prevents conflicting posture.
 
 ---
 
