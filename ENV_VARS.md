@@ -26,15 +26,36 @@ This document describes all environment variables used by petalTongue.
 
 ### **FAMILY_ID**
 **Type**: String  
-**Default**: `nat0`  
+**Default**: `nat0` (development / standalone)  
 **Required**: No  
 **Example**: `FAMILY_ID=staging`
 
-Family identifier for this petalTongue instance. Used for registration and identity purposes
-(not embedded in the default socket filename per biomeOS standard).
+Family identifier for this petalTongue instance. Controls both identity and BTSP security posture.
 
-**Note**: The default socket path is always `$XDG_RUNTIME_DIR/biomeos/petaltongue.sock`
-regardless of `FAMILY_ID`. The family ID is reported via `identity.get` and `capabilities.list`.
+**BTSP Phase 1 behavior** (per `BTSP_PROTOCOL_STANDARD.md`):
+- **Not set / empty / `"default"`**: Development posture — socket is `petaltongue.sock`, no BTSP handshake.
+- **Set to a non-default value** (e.g. `staging`, `prod-a`): Production posture — socket becomes `petaltongue-{family_id}.sock`, domain symlink `visualization-{family_id}.sock`. BTSP Phase 2 handshake required when BearDog enforces it.
+
+**Precedence**: `PETALTONGUE_FAMILY_ID` > `FAMILY_ID` (primal-specific override per Self-Knowledge Standard).
+
+---
+
+### **BIOMEOS_INSECURE**
+**Type**: Boolean (`1` | `true`)  
+**Default**: Not set  
+**Required**: No  
+**Example**: `BIOMEOS_INSECURE=1`
+
+Development-only flag that explicitly opts into cleartext JSON-RPC without BTSP handshake.
+
+**BTSP Guard**: If both `FAMILY_ID` (non-default) AND `BIOMEOS_INSECURE=1` are set, petalTongue **refuses to start** with a FATAL error. This prevents accidentally running a production family in insecure mode.
+
+**Valid combinations**:
+- `FAMILY_ID` unset + `BIOMEOS_INSECURE=1` → development (cleartext, no handshake)
+- `FAMILY_ID=prod-a` + `BIOMEOS_INSECURE` unset → production (BTSP handshake when enforced)
+- `FAMILY_ID=prod-a` + `BIOMEOS_INSECURE=1` → **FATAL: conflicting posture, startup refused**
+
+**Security Note**: Never set `BIOMEOS_INSECURE=1` in production deployments.
 
 ---
 
@@ -587,7 +608,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: April 6, 2026  
+**Last Updated**: April 9, 2026  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 

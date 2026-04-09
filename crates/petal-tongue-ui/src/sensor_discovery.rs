@@ -146,6 +146,7 @@ mod tests {
 
     #[test]
     fn test_verify_essential_sensors_with_output() {
+        use petal_tongue_core::sensor::SensorError;
         use petal_tongue_core::{SensorCapabilities, SensorEvent, SensorType};
 
         struct MockOutputSensor;
@@ -168,7 +169,7 @@ mod tests {
             fn is_available(&self) -> bool {
                 true
             }
-            async fn poll_events(&mut self) -> anyhow::Result<Vec<SensorEvent>> {
+            async fn poll_events(&mut self) -> std::result::Result<Vec<SensorEvent>, SensorError> {
                 Ok(vec![])
             }
             fn last_activity(&self) -> Option<std::time::Instant> {
@@ -199,6 +200,7 @@ mod tests {
 
     #[test]
     fn test_verify_essential_sensors_input_only_returns_false() {
+        use petal_tongue_core::sensor::SensorError;
         use petal_tongue_core::{SensorCapabilities, SensorEvent, SensorType};
 
         struct MockInputOnlySensor;
@@ -221,7 +223,7 @@ mod tests {
             fn is_available(&self) -> bool {
                 true
             }
-            async fn poll_events(&mut self) -> anyhow::Result<Vec<SensorEvent>> {
+            async fn poll_events(&mut self) -> std::result::Result<Vec<SensorEvent>, SensorError> {
                 Ok(vec![])
             }
             fn last_activity(&self) -> Option<std::time::Instant> {

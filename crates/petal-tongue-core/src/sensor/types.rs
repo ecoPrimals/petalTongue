@@ -5,6 +5,26 @@ use std::time::Instant;
 
 use async_trait::async_trait;
 
+/// Typed error for sensor polling failures.
+#[derive(Debug, thiserror::Error)]
+pub enum SensorError {
+    /// The sensor device is not currently available.
+    #[error("sensor unavailable: {0}")]
+    Unavailable(String),
+
+    /// An I/O error occurred during polling.
+    #[error("sensor I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
+    /// The sensor returned malformed or unparseable data.
+    #[error("sensor data error: {0}")]
+    DataFormat(String),
+
+    /// A timeout occurred waiting for sensor response.
+    #[error("sensor timeout: {0}")]
+    Timeout(String),
+}
+
 /// Universal sensor trait - any input device implements this
 #[async_trait]
 pub trait Sensor: Send + Sync {
@@ -15,7 +35,7 @@ pub trait Sensor: Send + Sync {
     fn is_available(&self) -> bool;
 
     /// Poll for new events (non-blocking)
-    async fn poll_events(&mut self) -> anyhow::Result<Vec<SensorEvent>>;
+    async fn poll_events(&mut self) -> Result<Vec<SensorEvent>, SensorError>;
 
     /// Get last activity timestamp
     fn last_activity(&self) -> Option<Instant>;

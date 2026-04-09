@@ -127,25 +127,25 @@ impl UniversalRenderingEngine {
     /// Get state (read-only)
     #[must_use]
     pub fn state(&self) -> Arc<RwLock<EngineState>> {
-        self.state.clone()
+        Arc::clone(&self.state)
     }
 
     /// Get event bus
     #[must_use]
     pub fn events(&self) -> Arc<EventBus> {
-        self.events.clone()
+        Arc::clone(&self.events)
     }
 
     /// Get modalities (read-only)
     #[must_use]
     pub fn modalities(&self) -> Arc<RwLock<ModalityRegistry>> {
-        self.modalities.clone()
+        Arc::clone(&self.modalities)
     }
 
     /// Get compute providers (read-only)
     #[must_use]
     pub fn compute(&self) -> Arc<RwLock<ComputeRegistry>> {
-        self.compute.clone()
+        Arc::clone(&self.compute)
     }
 
     /// Update selection
@@ -243,10 +243,9 @@ impl UniversalRenderingEngine {
             registry
                 .auto_select()
                 .ok_or(PetalTongueError::NoModalities)?
-                .to_string()
         };
 
-        self.render(&modality_name).await
+        self.render(modality_name).await
     }
 
     /// Start rendering in specific modality
@@ -266,13 +265,15 @@ impl UniversalRenderingEngine {
             .get_mut(modality_name)
             .ok_or_else(|| PetalTongueError::ModalityNotFound(modality_name.to_string()))?;
 
+        let name_for_events = modality_name.to_string();
+
         // Initialize
-        modality.initialize(self.clone()).await?;
+        modality.initialize(Arc::clone(&self)).await?;
 
         // Broadcast start event
         self.events
             .broadcast(EngineEvent::ModalityStarted {
-                name: modality_name.to_string(),
+                name: name_for_events.clone(),
             })
             .await
             .map_err(PetalTongueError::EventBus)?;
@@ -283,7 +284,7 @@ impl UniversalRenderingEngine {
         // Broadcast stop event
         self.events
             .broadcast(EngineEvent::ModalityStopped {
-                name: modality_name.to_string(),
+                name: name_for_events,
             })
             .await
             .ok();
@@ -300,7 +301,7 @@ impl UniversalRenderingEngine {
         let mut handles = Vec::new();
 
         for name in modality_names {
-            let engine = self.clone();
+            let engine = Arc::clone(&self);
             let name = name.to_string();
 
             let handle = tokio::spawn(async move { engine.render(&name).await });

@@ -23,8 +23,6 @@
 //! - **Event Coordination**: Synchronize across modalities
 //! - **Compute Integration**: Optional GPU acceleration (Toadstool)
 
-#![warn(missing_docs)]
-
 pub mod adaptive_rendering; // Adaptive rendering for multi-device support
 pub mod biomeos_discovery; // biomeOS discovery backend
 pub mod capabilities;
@@ -147,7 +145,7 @@ pub use data_channel::{DataBinding, ThresholdRange};
 pub use scenario_builder::{ScenarioBuilder, ScenarioMetadata, VisualizationScene};
 
 /// Loaded scenario from healthSpring-style JSON
-pub use scenario_loader::LoadedScenario;
+pub use scenario_loader::{LoadedScenario, ScenarioError};
 
 /// Domain scenario builders (airSpring, groundSpring)
 pub use scenarios::{

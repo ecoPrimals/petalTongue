@@ -3,6 +3,7 @@
 //! End-to-end tests for petal-tongue-headless binary
 
 use assert_cmd::Command;
+use petal_tongue_ui_core::validate_standalone_html_export;
 use predicates::prelude::*;
 use std::fs;
 use std::path::PathBuf;
@@ -163,15 +164,25 @@ fn test_dot_export_to_file() {
 
 #[test]
 fn test_html_export_to_stdout() {
-    headless_binary()
+    let assert = headless_binary()
         .arg("--mode")
         .arg("html")
         .env("RUST_LOG", "error")
         .assert()
-        .success()
-        .stdout(predicate::str::contains("<!DOCTYPE html>"))
-        .stdout(predicate::str::contains("<svg"))
-        .stdout(predicate::str::contains("</html>"));
+        .success();
+
+    let stdout = String::from_utf8_lossy(&assert.get_output().stdout).into_owned();
+    assert!(
+        validate_standalone_html_export(&stdout),
+        "stdout HTML must pass PT-04 validate_standalone_html_export"
+    );
+    assert!(stdout.contains("<!DOCTYPE html>"));
+    assert!(stdout.contains("<html lang=\"en\">"));
+    assert!(stdout.contains("<head>") && stdout.contains("</head>"));
+    assert!(stdout.contains("<body>") && stdout.contains("</body>"));
+    assert!(stdout.contains("<svg") && stdout.contains("</svg>"));
+    assert!(stdout.contains("</html>"));
+    assert!(stdout.contains("petaltongue-headless") || stdout.contains("petalTongue"));
 }
 
 #[test]
@@ -193,9 +204,26 @@ fn test_html_export_to_file() {
     assert!(output_file.exists());
 
     let content = fs::read_to_string(&output_file).expect("Failed to read file");
-    assert!(content.contains("<!DOCTYPE html>"));
-    assert!(content.contains("<svg"));
-    assert!(content.contains("</html>"));
+    assert!(
+        validate_standalone_html_export(&content),
+        "file HTML must pass PT-04 validate_standalone_html_export"
+    );
+    assert!(content.starts_with("<!DOCTYPE html>"));
+    assert!(content.contains("<html lang=\"en\">"));
+    assert!(content.contains("<meta charset=\"utf-8\">"));
+    assert!(content.contains("<title>petalTongue Export</title>"));
+    assert!(content.contains("<svg") && content.contains("</svg>"));
+    assert!(content.contains("</body>") && content.contains("</html>"));
+    // `render_html` with --output uses SvgUI::export(Html); bytes must match wrap_svg_in_html parity.
+    let svg_start = content.find("<svg").expect("embedded svg");
+    let svg_end = content.rfind("</svg>").expect("embedded svg close");
+    let embedded_svg = &content[svg_start..svg_end + "</svg>".len()];
+    let expected = String::from_utf8(petal_tongue_ui_core::wrap_svg_in_html(embedded_svg))
+        .expect("wrap_svg_in_html is UTF-8");
+    assert_eq!(
+        content, expected,
+        "on-disk file must match wrap_svg_in_html(embedded_svg) for PT-04 parity"
+    );
 
     fs::remove_file(output_file).ok();
 }

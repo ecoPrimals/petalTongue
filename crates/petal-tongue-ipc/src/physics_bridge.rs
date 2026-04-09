@@ -242,11 +242,11 @@ async fn send_jsonrpc_unix(
 
     let (reader, mut writer) = stream.into_split();
 
-    let mut payload = serde_json::to_string(request).map_err(|e| format!("serialize: {e}"))?;
-    payload.push('\n');
+    let mut payload = serde_json::to_vec(request).map_err(|e| format!("serialize: {e}"))?;
+    payload.push(b'\n');
 
     writer
-        .write_all(payload.as_bytes())
+        .write_all(&payload)
         .await
         .map_err(|e| format!("write: {e}"))?;
 

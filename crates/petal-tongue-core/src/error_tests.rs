@@ -117,7 +117,10 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::significant_drop_tightening)]
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "lock ordering deliberate for poison test"
+    )]
     fn test_poison_error_conversion() {
         use std::sync::{Arc, RwLock};
 
@@ -132,8 +135,6 @@ mod tests {
             panic!("intentional panic to poison lock");
         });
 
-        // Try to acquire the poisoned lock
-        #[allow(clippy::significant_drop_tightening)]
         let result = lock.write();
         assert!(result.is_err());
         let err: PetalTongueError = result.unwrap_err().into();

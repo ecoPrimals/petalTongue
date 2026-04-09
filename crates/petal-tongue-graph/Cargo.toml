@@ -31,7 +31,6 @@ tracing = { workspace = true }
 egui = { workspace = true, optional = true }
 egui_extras = { workspace = true, optional = true }
 egui_plot = { workspace = true, optional = true }
-anyhow = { workspace = true }
 
 # Pure Rust audio file generation (no system dependencies - always available)
 hound = { workspace = true }

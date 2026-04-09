@@ -291,4 +291,65 @@ mod tests {
         assert_eq!(ExportFormat::Svg, ExportFormat::Svg);
         assert_ne!(ExportFormat::Svg, ExportFormat::Png);
     }
+
+    /// PT-04 product validation: end-to-end HTML export pipeline.
+    ///
+    /// Exercises wrap_svg_in_html → validate → write → read-back → structural check.
+    #[test]
+    fn pt04_html_export_product_validation() {
+        let sample_svg = concat!(
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" ",
+            "width=\"800\" height=\"600\" viewBox=\"0 0 800 600\">",
+            "<rect width=\"800\" height=\"600\" fill=\"#141822\"/>",
+            "<circle cx=\"400\" cy=\"300\" r=\"20\" fill=\"#4fc3f7\"/>",
+            "<text x=\"400\" y=\"340\" text-anchor=\"middle\" fill=\"white\">",
+            "petalTongue</text>",
+            "</svg>"
+        );
+
+        let html_bytes = wrap_svg_in_html(sample_svg);
+        assert!(!html_bytes.is_empty(), "HTML output must not be empty");
+
+        let html = String::from_utf8(html_bytes).expect("HTML must be valid UTF-8");
+
+        assert!(
+            validate_standalone_html_export(&html),
+            "HTML must pass standalone validation"
+        );
+
+        assert!(
+            html.starts_with("<!DOCTYPE html>"),
+            "must start with DOCTYPE"
+        );
+        assert!(html.contains("<html"), "must contain <html> open tag");
+        assert!(html.contains("</html>"), "must contain </html> close tag");
+        assert!(
+            html.contains("<head>") || html.contains("<head "),
+            "must have <head>"
+        );
+        assert!(
+            html.contains("<body>") || html.contains("<body "),
+            "must have <body>"
+        );
+        assert!(html.contains("</body>"), "must close <body>");
+        assert!(html.contains("charset=\"utf-8\""), "must declare charset");
+        assert!(
+            html.contains("viewport"),
+            "must have viewport meta for responsive"
+        );
+        assert!(html.contains("<svg"), "must embed the SVG");
+        assert!(html.contains("petalTongue"), "must contain SVG content");
+        assert!(html.contains("</svg>"), "must close SVG");
+        assert!(html.contains("<style>"), "must have embedded styles");
+
+        let temp = std::env::temp_dir().join("pt04-html-export-validation.html");
+        std::fs::write(&temp, &html).expect("write temp HTML file");
+        let read_back = std::fs::read_to_string(&temp).expect("read back HTML file");
+        assert_eq!(read_back, html, "round-trip must preserve content");
+        assert!(
+            validate_standalone_html_export(&read_back),
+            "read-back must still pass validation"
+        );
+        let _ = std::fs::remove_file(&temp);
+    }
 }

@@ -34,9 +34,7 @@ pub(super) fn check_cycles(graph: &VisualGraph, result: &mut ValidationResult) {
                 ValidationIssue::error(format!(
                     "Graph contains a cycle involving node '{node_id}'"
                 ))
-                .with_suggestion(
-                    "Remove edges to break the cycle - graphs must be acyclic (DAG)".to_string(),
-                ),
+                .with_suggestion("Remove edges to break the cycle - graphs must be acyclic (DAG)"),
             );
             return;
         }
@@ -86,12 +84,11 @@ pub(super) fn check_unreachable_nodes(graph: &VisualGraph, result: &mut Validati
 
     if start_nodes.is_empty() {
         result.add_issue(
-            ValidationIssue::warning(
-                "No start nodes found - all nodes have incoming edges".to_string(),
-            )
+            ValidationIssue::warning(String::from(
+                "No start nodes found - all nodes have incoming edges",
+            ))
             .with_suggestion(
-                "Add a PrimalStart node or ensure at least one node has no dependencies"
-                    .to_string(),
+                "Add a PrimalStart node or ensure at least one node has no dependencies",
             ),
         );
         return;
@@ -122,9 +119,9 @@ pub(super) fn check_unreachable_nodes(graph: &VisualGraph, result: &mut Validati
             result.add_issue(
                 ValidationIssue::node_warning(
                     node.id.as_str(),
-                    format!("Node '{}' is unreachable", node.id),
+                    format!("Node '{}' is unreachable", node.id.as_str()),
                 )
-                .with_suggestion("Connect this node to the graph or remove it".to_string()),
+                .with_suggestion("Connect this node to the graph or remove it"),
             );
         }
     }

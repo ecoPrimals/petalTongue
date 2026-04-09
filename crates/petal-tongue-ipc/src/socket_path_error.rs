@@ -7,6 +7,10 @@ use thiserror::Error;
 /// Errors from socket path resolution.
 #[derive(Debug, Error)]
 pub enum SocketPathError {
+    /// BTSP Phase 1 startup guard violation (`FAMILY_ID` + `BIOMEOS_INSECURE=1`).
+    #[error(transparent)]
+    BtspGuard(#[from] crate::btsp::BtspGuardError),
+
     /// Failed to create directory
     #[error("Failed to create directory: {0}")]
     CreateDir(#[from] std::io::Error),

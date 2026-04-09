@@ -3,6 +3,8 @@
 //!
 //! Pure Rust! ✅
 //! No display dependencies
+//!
+//! **IPC / PT-06:** Does not start JSON-RPC or PT-06 push; snapshot-style output only.
 
 use crate::data_service::DataService;
 use crate::error::AppError;

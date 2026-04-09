@@ -3,6 +3,11 @@
 //!
 //! Platform dependencies: wayland-sys, x11-sys (acceptable for ecoBud)
 //! This is the 1 mode (out of 5) that has platform dependencies
+//!
+//! **IPC / PT-06:** The UniBin `petaltongue ui` path uses `PetalTongueApp::new_with_shared_graph`
+//! without spawning [`petal_tongue_ipc::UnixSocketServer`], so there is no JSON-RPC UDS or
+//! PT-06 `callback_tx` here. For IPC with push delivery, run `petaltongue server` or the
+//! standalone `petal-tongue` UI binary (which starts [`petal_tongue_ipc::UnixSocketServer`] in `main`).
 
 use petal_tongue_core::constants::PRIMAL_NAME;
 
@@ -107,7 +112,7 @@ pub async fn run(
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
+#[expect(clippy::unwrap_used, reason = "test assertions")]
 mod tests {
     #[cfg(not(feature = "ui"))]
     use std::sync::Arc;

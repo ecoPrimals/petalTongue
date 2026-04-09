@@ -1,0 +1,42 @@
+Open RPG Creative License (ORC License)
+
+This license applies to game mechanics, rules, and interactive system designs
+within the doom-core crate and related game-mechanic content in petalTongue.
+
+Part of the scyBorg Provenance Trio:
+  - Source code: AGPL-3.0-or-later (see LICENSE)
+  - Specifications & documentation: CC-BY-SA 4.0 (see specs/LICENSE.md)
+  - Game mechanics: ORC (this file)
+
+1. GRANT OF LICENSE
+
+The game mechanics, rules, and interactive system designs contained in
+doom-core and any files explicitly marked with ORC license headers are
+licensed under the Open RPG Creative License.
+
+You are free to:
+  - Use the game mechanics in your own works
+  - Modify and adapt the mechanics
+  - Share and distribute works using these mechanics
+
+Under the following terms:
+  - Attribution: You must give appropriate credit
+  - Share-Alike: Derivative game mechanics must be shared under compatible terms
+
+2. RESERVED MATERIAL
+
+The following are NOT licensed under the ORC and remain under AGPL-3.0-or-later:
+  - The Rust source code implementing the mechanics
+  - The petalTongue name and branding
+  - ecoPrimals ecosystem names and identities
+
+3. ATTRIBUTION
+
+Original work by the ecoPrimals project.
+Repository: https://github.com/ecoPrimals/petalTongue
+
+4. COMPATIBILITY
+
+This ORC license is part of the scyBorg Provenance Trio licensing model.
+See ecoPrimals/wateringHole/LICENSING_AND_COPYLEFT.md for the full
+licensing philosophy and compatibility guidance.

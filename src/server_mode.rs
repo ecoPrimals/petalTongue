@@ -3,6 +3,9 @@
 //!
 //! Runs the JSON-RPC server for petalTongue IPC on a Unix domain socket
 //! (always) and optionally on a TCP port via `--port`.
+//!
+//! **PT-06:** [`UnixSocketServer::new`](petal_tongue_ipc::UnixSocketServer::new) wires
+//! push delivery (`spawn_push_delivery` / `callback_tx`) on the JSON-RPC handlers.
 
 use crate::data_service::DataService;
 use crate::error::AppError;

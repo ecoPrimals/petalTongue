@@ -3,15 +3,14 @@
 //!
 //! Serves biomeOS-formatted topology data for testing petalTongue integration
 
-use axum::{
-    extract::Path as AxumPath,
-    http::StatusCode,
-    response::Json,
-    routing::get,
-    Router,
+use axum::{Router, extract::Path as AxumPath, http::StatusCode, response::Json, routing::get};
+use petal_tongue_core::capability_names::{
+    discovery_capabilities, primal_names, self_capabilities,
 };
+use petal_tongue_core::constants::{DEFAULT_HEADLESS_PORT, DEFAULT_WEB_PORT};
+use petal_tongue_ipc::socket_path::discover_primal_socket;
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
+use std::net::{Ipv4Addr, SocketAddr};
 use tower_http::cors::CorsLayer;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -70,21 +69,32 @@ struct HealthStatus {
     primals_total: usize,
 }
 
+fn mock_unix_socket_for_primal(primal_socket_base: &str) -> String {
+    discover_primal_socket(primal_socket_base, None, None)
+        .expect("discover_primal_socket resolves a path via XDG or /tmp fallback")
+        .to_string_lossy()
+        .into_owned()
+}
+
 /// Get mock topology data
 async fn get_topology() -> Json<TopologyResponse> {
+    let bd = primal_names::BEARDOG;
+    let sb = primal_names::SONGBIRD;
+    let pt = primal_names::PETALTONGUE;
+
     let primals = vec![
         Primal {
-            id: "beardog-node-alpha".to_string(),
+            id: format!("{bd}-node-alpha"),
             name: "BearDog Alpha".to_string(),
-            primal_type: "beardog".to_string(),
+            primal_type: bd.to_string(),
             capabilities: vec![
-                "security".to_string(),
-                "encryption".to_string(),
-                "identity".to_string(),
+                self_capabilities::IDENTITY_GET.to_string(),
+                self_capabilities::HEALTH_CHECK.to_string(),
+                self_capabilities::CAPABILITIES_LIST.to_string(),
             ],
             health: "healthy".to_string(),
             endpoints: PrimalEndpoints {
-                unix_socket: Some("/tmp/beardog-node-alpha.sock".to_string()),
+                unix_socket: Some(mock_unix_socket_for_primal(bd)),
                 http: None,
             },
             metadata: Some(PrimalMetadata {
@@ -94,13 +104,17 @@ async fn get_topology() -> Json<TopologyResponse> {
             }),
         },
         Primal {
-            id: "songbird-node-alpha".to_string(),
+            id: format!("{sb}-node-alpha"),
             name: "Songbird Alpha".to_string(),
-            primal_type: "songbird".to_string(),
-            capabilities: vec!["discovery".to_string(), "p2p".to_string(), "btsp".to_string()],
+            primal_type: sb.to_string(),
+            capabilities: vec![
+                discovery_capabilities::IPC_DISCOVER.to_string(),
+                discovery_capabilities::IPC_REGISTER.to_string(),
+                discovery_capabilities::LIFECYCLE_REGISTER.to_string(),
+            ],
             health: "healthy".to_string(),
             endpoints: PrimalEndpoints {
-                unix_socket: Some("/tmp/songbird-node-alpha.sock".to_string()),
+                unix_socket: Some(mock_unix_socket_for_primal(sb)),
                 http: None,
             },
             metadata: Some(PrimalMetadata {
@@ -110,9 +124,9 @@ async fn get_topology() -> Json<TopologyResponse> {
             }),
         },
         Primal {
-            id: "petaltongue-node-alpha".to_string(),
+            id: format!("{pt}-node-alpha"),
             name: "PetalTongue Alpha".to_string(),
-            primal_type: "petaltongue".to_string(),
+            primal_type: pt.to_string(),
             capabilities: vec![
                 "ui.desktop-interface".to_string(),
                 "visualization.graph-rendering".to_string(),
@@ -120,8 +134,8 @@ async fn get_topology() -> Json<TopologyResponse> {
             ],
             health: "healthy".to_string(),
             endpoints: PrimalEndpoints {
-                unix_socket: Some("/tmp/petaltongue-node-alpha.sock".to_string()),
-                http: Some("http://localhost:8080".to_string()),
+                unix_socket: Some(mock_unix_socket_for_primal(pt)),
+                http: Some(format!("http://localhost:{DEFAULT_HEADLESS_PORT}")),
             },
             metadata: Some(PrimalMetadata {
                 version: Some("v0.4.0".to_string()),
@@ -132,10 +146,10 @@ async fn get_topology() -> Json<TopologyResponse> {
     ];
 
     let connections = vec![Connection {
-        from: "songbird-node-alpha".to_string(),
-        to: "beardog-node-alpha".to_string(),
+        from: format!("{sb}-node-alpha"),
+        to: format!("{bd}-node-alpha"),
         connection_type: "capability_invocation".to_string(),
-        capability: Some("encryption".to_string()),
+        capability: Some(self_capabilities::IDENTITY_GET.to_string()),
         metrics: Some(ConnectionMetrics {
             request_count: Some(42),
             avg_latency_ms: Some(2.3),
@@ -180,7 +194,7 @@ async fn get_capabilities() -> Json<serde_json::Value> {
 /// Get specific primal info
 async fn get_primal(AxumPath(primal_id): AxumPath<String>) -> Result<Json<Primal>, StatusCode> {
     let topology = get_topology().await.0;
-    
+
     topology
         .primals
         .into_iter()
@@ -203,7 +217,7 @@ async fn main() {
         .layer(CorsLayer::permissive());
 
     // Start server
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from((Ipv4Addr::LOCALHOST, DEFAULT_WEB_PORT));
     println!("🌱 Mock biomeOS server starting on http://{}", addr);
     println!("   Endpoints:");
     println!("   - GET  /api/v1/topology");
@@ -211,9 +225,13 @@ async fn main() {
     println!("   - GET  /api/v1/capabilities");
     println!("   - GET  /api/v1/primals/:id");
     println!();
-    println!("   Test with: curl http://localhost:3000/api/v1/topology | jq");
+    println!("   Test with: curl http://localhost:{DEFAULT_WEB_PORT}/api/v1/topology | jq");
     println!();
 
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .expect("bind mock-biomeos TCP listener (check DEFAULT_WEB_PORT not in use)");
+    axum::serve(listener, app)
+        .await
+        .expect("mock-biomeos axum server exited with error");
 }

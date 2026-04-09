@@ -171,6 +171,10 @@ pub mod primal_names {
     pub const PETALTONGUE: &str = "petaltongue";
     /// biomeOS orchestrator socket directory convention (filesystem layout, not primal coupling).
     pub const BIOMEOS: &str = "biomeos";
+    /// Well-known primal identifier (identity / security stack); used in topology fixtures and mocks.
+    pub const BEARDOG: &str = "beardog";
+    /// Well-known primal identifier (discovery / P2P stack); used in topology fixtures and mocks.
+    pub const SONGBIRD: &str = "songbird";
 }
 
 #[cfg(test)]

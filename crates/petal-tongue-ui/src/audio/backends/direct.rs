@@ -1,15 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Direct device backend (stub / future target)
+//! Direct device backend (incomplete — future ALSA / OSS path)
 //!
-//! **Status:** Discovery of device nodes is implemented, but **playback is not**. Opening a PCM
-//! node and writing raw samples requires ALSA `ioctl` setup (sample rate, format, buffers, etc.),
-//! which is not implemented. Devices managed by PipeWire or PulseAudio can also block if opened
-//! without going through those stacks.
+//! # Cargo feature
 //!
-//! Callers should treat this module as a **placeholder** for a future direct-hardware path, not as
-//! an active audio backend. [`AudioBackend::is_available`](crate::audio::traits::AudioBackend::is_available)
-//! always returns `false` and [`capabilities`](crate::audio::traits::AudioBackend::capabilities)
-//! reports no playback support until that work lands.
+//! This module is compiled only with the **`audio-direct`** feature on `petal-tongue-ui`.
+//! Default release builds omit it so the runtime does not register a non-functional backend.
+//!
+//! # Status
+//!
+//! Discovery of device nodes is implemented, but **playback is not**. Opening a PCM node and
+//! writing raw samples requires ALSA `ioctl` setup (sample rate, format, buffers, etc.), which is
+//! not implemented. Devices managed by PipeWire or PulseAudio can also block if opened without
+//! going through those stacks.
+//!
+//! Callers should treat this module as a **placeholder** for a future direct-hardware path, not
+//! as an active audio backend. [`AudioBackend::is_available`](crate::audio::traits::AudioBackend::is_available)
+//! always returns `false`; [`initialize`](crate::audio::traits::AudioBackend::initialize) and
+//! [`play_samples`](crate::audio::traits::AudioBackend::play_samples) return
+//! [`AudioError::DirectDeviceUnavailable`](crate::error::AudioError::DirectDeviceUnavailable).
 //!
 //! Discovery heuristics (for when playback exists):
 //! - Linux: `/dev/snd/pcmC*D*p`
@@ -47,14 +55,13 @@ pub enum DeviceType {
 /// Direct device backend
 pub struct DirectBackend {
     device: DiscoveredDevice,
-    file: Option<File>,
 }
 
 impl DirectBackend {
     /// Create from discovered device
     #[must_use]
     pub const fn new(device: DiscoveredDevice) -> Self {
-        Self { device, file: None }
+        Self { device }
     }
 
     /// Discover ALL direct audio devices at runtime
@@ -129,7 +136,15 @@ impl DirectBackend {
         devices
     }
 
-    /// Write samples to device (like `AudioCanvas`!)
+    fn not_playable_message() -> String {
+        "Direct PCM device access requires ALSA ioctl setup (sample rate, format, buffers) which is \
+         not yet implemented. Use socket-based audio servers or software synthesis until this \
+         backend is completed."
+            .to_string()
+    }
+
+    /// Write samples to device (reserved for a future ALSA-backed implementation).
+    #[allow(dead_code)] // Reserved for future ALSA-backed implementation
     pub(crate) fn write_samples_to_device(file: &mut File, samples: &[f32]) -> Result<()> {
         // Convert f32 [-1.0, 1.0] to i16 PCM [-32768, 32767]
         let i16_samples: Vec<i16> = samples
@@ -178,33 +193,18 @@ impl AudioBackend for DirectBackend {
     }
 
     async fn initialize(&mut self) -> Result<()> {
-        Err(AudioError::DirectDeviceUnavailable(
-            "Direct PCM device access requires ALSA ioctl setup (sample rate, format, buffers) \
-             which is not yet implemented. Use socket-based audio servers instead."
-                .to_string(),
-        )
-        .into())
+        Err(AudioError::DirectDeviceUnavailable(Self::not_playable_message()).into())
     }
 
     async fn play_samples(&mut self, samples: &[f32], sample_rate: u32) -> Result<()> {
         debug!(
-            "🎨 Direct playback: {} samples at {} Hz to {}",
+            "🎨 Direct playback: {} samples at {} Hz to {} (not implemented)",
             samples.len(),
             sample_rate,
             self.device.path.display()
         );
 
-        // Ensure device is open
-        if self.file.is_none() {
-            self.initialize().await?;
-        }
-
-        // Write samples directly to hardware!
-        if let Some(file) = &mut self.file {
-            Self::write_samples_to_device(file, samples)?;
-        }
-
-        Ok(())
+        Err(AudioError::DirectDeviceUnavailable(Self::not_playable_message()).into())
     }
 
     fn capabilities(&self) -> AudioCapabilities {
@@ -283,5 +283,19 @@ mod tests {
         assert_eq!(caps.max_sample_rate, 0);
         assert_eq!(caps.max_channels, 0);
         assert_eq!(caps.latency_estimate_ms, 0);
+    }
+
+    #[tokio::test]
+    async fn test_direct_play_samples_returns_typed_error() {
+        let device = DiscoveredDevice {
+            path: PathBuf::from("/dev/null"),
+            device_type: DeviceType::Pcm,
+        };
+        let mut backend = DirectBackend::new(device);
+        let err = backend.play_samples(&[0.0_f32], 44100).await.unwrap_err();
+        assert!(
+            err.to_string().contains("ioctl") || err.to_string().contains("ALSA"),
+            "expected DirectDeviceUnavailable message"
+        );
     }
 }

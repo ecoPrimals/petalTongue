@@ -3,7 +3,7 @@
 
 use std::time::Instant;
 
-use super::types::{Sensor, SensorCapability, SensorEvent, SensorType};
+use super::types::{Sensor, SensorCapability, SensorError, SensorEvent, SensorType};
 
 /// Sensor registry - discovers and manages all sensors
 pub struct SensorRegistry {
@@ -50,12 +50,15 @@ impl SensorRegistry {
             .any(|s| s.capabilities().has_capability(capability))
     }
 
-    /// Poll all sensors for events
+    /// Poll all sensors for events.
+    ///
+    /// Individual sensor poll failures are logged and skipped; the aggregate
+    /// result succeeds as long as the registry itself is healthy.
     ///
     /// # Errors
     ///
-    /// Does not return errors; individual sensor poll failures are logged and skipped.
-    pub async fn poll_all(&mut self) -> anyhow::Result<Vec<SensorEvent>> {
+    /// Returns `SensorError` only if a systemic (non-individual) failure occurs.
+    pub async fn poll_all(&mut self) -> Result<Vec<SensorEvent>, SensorError> {
         let mut all_events = Vec::new();
 
         for sensor in &mut self.sensors {
@@ -123,7 +126,7 @@ pub struct SensorStats {
 #[cfg(test)]
 pub mod mock_sensor {
     use crate::sensor::Sensor;
-    use crate::sensor::types::{SensorCapabilities, SensorEvent};
+    use crate::sensor::types::{SensorCapabilities, SensorError, SensorEvent};
     use async_trait::async_trait;
     use std::time::Instant;
 
@@ -154,7 +157,7 @@ pub mod mock_sensor {
             self.available
         }
 
-        async fn poll_events(&mut self) -> anyhow::Result<Vec<SensorEvent>> {
+        async fn poll_events(&mut self) -> Result<Vec<SensorEvent>, SensorError> {
             Ok(Vec::new())
         }
 

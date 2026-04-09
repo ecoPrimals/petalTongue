@@ -34,7 +34,7 @@
 //!
 //! # Reference
 //!
-//! See `archive/specs-archive/PETALTONGUE_TOADSTOOL_INTEGRATION_ARCHITECTURE.md` for legacy integration notes (same capability-based discovery model).
+//! See `wateringHole/fossilRecord/petaltongue-apr2026-archive/specs-archive/` for legacy integration notes (same capability-based discovery model).
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
 use crate::error::{DisplayError, Result};

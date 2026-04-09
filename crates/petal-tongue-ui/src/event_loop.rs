@@ -5,6 +5,7 @@
 //! Completes the bidirectional feedback loop.
 
 use crate::error::{Result, UiError};
+use petal_tongue_core::sensor::SensorError;
 use petal_tongue_core::{RenderingAwareness, SensorRegistry};
 use std::sync::{Arc, RwLock};
 
@@ -71,7 +72,7 @@ pub async fn poll_sensors_once(
         let rt = tokio::runtime::Handle::current();
         let mut registry = reg
             .write()
-            .map_err(|_| anyhow::anyhow!("sensor registry lock poisoned"))?;
+            .map_err(|_| SensorError::Unavailable("sensor registry lock poisoned".into()))?;
         rt.block_on(registry.poll_all())
     })
     .await

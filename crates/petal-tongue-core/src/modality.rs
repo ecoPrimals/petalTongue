@@ -184,7 +184,7 @@ impl ModalityRegistry {
 
     /// Get all available modalities (filtered by `is_available`)
     #[must_use]
-    pub fn available(&self) -> Vec<&str> {
+    pub fn available(&self) -> Vec<&'static str> {
         self.modalities
             .values()
             .filter(|m| m.is_available())
@@ -194,7 +194,7 @@ impl ModalityRegistry {
 
     /// Get all modalities by tier
     #[must_use]
-    pub fn by_tier(&self, tier: ModalityTier) -> Vec<&str> {
+    pub fn by_tier(&self, tier: ModalityTier) -> Vec<&'static str> {
         self.modalities
             .values()
             .filter(|m| m.tier() == tier && m.is_available())
@@ -203,8 +203,11 @@ impl ModalityRegistry {
     }
 
     /// Auto-select best modality for environment
+    ///
+    /// Returns a `'static` name string (from each modality's [`GUIModality::name`]) so callers
+    /// may use the result after releasing any lock on this registry.
     #[must_use]
-    pub fn auto_select(&self) -> Option<&str> {
+    pub fn auto_select(&self) -> Option<&'static str> {
         // Try in order of preference:
         // 1. Tier 3 (Enhancement) - interactive display
         // 2. Tier 2 (Default) - audio or terminal
@@ -222,7 +225,7 @@ impl ModalityRegistry {
                     if let Some(modality) = self.get(name)
                         && modality.capabilities().interactive
                     {
-                        return Some(name);
+                        return Some(*name);
                     }
                 }
                 // Otherwise return first available

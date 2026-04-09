@@ -116,7 +116,8 @@ petaltongue
 | Coverage | ~90% line (llvm-cov) |
 | Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
-| Files | All under 800 lines (largest: `primitive/mod.rs` at 239 after smart refactor) |
+| BTSP Phase 1 | `validate_insecure_guard()`, family-scoped sockets, domain symlinks |
+| Files | All under 800 lines (largest: 799 after smart refactor of 11 modules) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 18 crates + sandbox) |
 | External C deps | None -- pure Rust (`rustix` for syscalls, `blake3` pure-Rust hash) |

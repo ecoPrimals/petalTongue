@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![allow(missing_docs, reason = "incremental documentation in progress")]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 //! # petalTongue Rich TUI
 //!

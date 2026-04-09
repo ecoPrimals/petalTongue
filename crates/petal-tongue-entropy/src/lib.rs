@@ -49,7 +49,6 @@
 //! # }
 //! ```
 
-#![warn(missing_docs)]
 #![forbid(unsafe_code)]
 
 pub mod error;

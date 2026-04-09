@@ -4,7 +4,6 @@
 //!
 //! Desktop UI application for petalTongue
 
-#![warn(missing_docs)]
 #![forbid(unsafe_code)]
 #![expect(clippy::cast_sign_loss, reason = "UI rendering: f32 coords, u8 colors")]
 #![expect(

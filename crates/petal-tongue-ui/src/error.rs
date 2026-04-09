@@ -55,12 +55,6 @@ pub enum UiError {
     Generic(String),
 }
 
-impl From<anyhow::Error> for UiError {
-    fn from(e: anyhow::Error) -> Self {
-        Self::Generic(e.to_string())
-    }
-}
-
 impl From<petal_tongue_discovery::DiscoveryError> for UiError {
     fn from(e: petal_tongue_discovery::DiscoveryError) -> Self {
         Self::Generic(e.to_string())
