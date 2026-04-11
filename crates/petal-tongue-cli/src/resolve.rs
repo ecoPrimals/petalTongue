@@ -127,9 +127,19 @@ mod tests {
 
     #[test]
     fn test_resolve_instance_id_error_message_invalid() {
-        let result = resolve_instance_id("not-a-uuid");
-        assert!(result.is_err());
-        let err = result.unwrap_err().to_string();
-        assert!(err.contains("Invalid") || err.contains("No instance found"));
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
+            "XDG_DATA_HOME",
+            temp_dir.path().to_str().unwrap(),
+            || {
+                let result = resolve_instance_id("not-a-uuid");
+                assert!(result.is_err());
+                let err = result.unwrap_err().to_string();
+                assert!(
+                    err.contains("Invalid") || err.contains("No instance found"),
+                    "unexpected error: {err}"
+                );
+            },
+        );
     }
 }

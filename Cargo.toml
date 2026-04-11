@@ -200,8 +200,7 @@ clap = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
-# Error handling
-anyhow = { workspace = true }
+# Error handling (thiserror for typed errors; anyhow eliminated from production)
 thiserror = { workspace = true }
 
 # Logging
@@ -216,6 +215,7 @@ petal-tongue-scene = { path = "crates/petal-tongue-scene" }
 png = { version = "0.17", optional = true }
 
 [dev-dependencies]
+anyhow = { workspace = true }
 petal-tongue-core = { path = "crates/petal-tongue-core", features = ["test-fixtures"] }
 tempfile = "3.10"
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -226,6 +226,9 @@ harness = false
 
 [features]
 default = ["ui"]
+# PT-12: eframe/egui/glow (OpenGL/Vulkan) only pulled in by the `ui` feature.
+# Build without --features ui (or --no-default-features) for a server/headless
+# binary with zero native display dependencies (ecoBin clean path).
 ui = ["petal-tongue-ui", "dep:eframe", "dep:egui"]
 examples = ["png"]
 

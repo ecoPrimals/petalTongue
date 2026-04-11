@@ -144,7 +144,7 @@ impl DirectBackend {
     }
 
     /// Write samples to device (reserved for a future ALSA-backed implementation).
-    #[allow(dead_code)] // Reserved for future ALSA-backed implementation
+    #[allow(dead_code)] // conditionally dead depending on audio-direct feature callers
     pub(crate) fn write_samples_to_device(file: &mut File, samples: &[f32]) -> Result<()> {
         // Convert f32 [-1.0, 1.0] to i16 PCM [-32768, 32767]
         let i16_samples: Vec<i16> = samples

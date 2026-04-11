@@ -438,10 +438,9 @@ Live atomic deployments:
 
 ## 📚 Related Documentation
 
-- [Universal UI Vision](../../UNIVERSAL_USER_INTERFACE_EVOLUTION.md)
 - [Formal Specification](../../specs/UNIVERSAL_USER_INTERFACE_SPECIFICATION.md)
-- [Implementation Tracking](../../UNIVERSAL_UI_TRACKING.md)
-- [Socket Configuration](../../SOCKET_CONFIGURATION_COMPLETE.md)
+- [Environment Variables](../../ENV_VARS.md)
+- [Getting Started](../../START_HERE.md)
 
 ---
 

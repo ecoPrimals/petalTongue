@@ -8,7 +8,7 @@ license = "AGPL-3.0-or-later"
 [workspace]
 
 [dependencies]
-petal-tongue-core = { path = "../../crates/petal-tongue-core" }
+petal-tongue-core = { path = "../../crates/petal-tongue-core", features = ["test-fixtures"] }
 petal-tongue-ipc = { path = "../../crates/petal-tongue-ipc" }
 axum = "0.7"
 tokio = { version = "1", features = ["full"] }

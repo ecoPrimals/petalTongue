@@ -171,9 +171,15 @@ pub mod primal_names {
     pub const PETALTONGUE: &str = "petaltongue";
     /// biomeOS orchestrator socket directory convention (filesystem layout, not primal coupling).
     pub const BIOMEOS: &str = "biomeos";
-    /// Well-known primal identifier (identity / security stack); used in topology fixtures and mocks.
+
+    /// Well-known primal identifiers for topology fixtures, mocks, and sandbox tools.
+    ///
+    /// Gated behind `test-fixtures` to enforce self-knowledge in production builds:
+    /// production code must discover other primals at runtime, never at compile time.
+    #[cfg(feature = "test-fixtures")]
     pub const BEARDOG: &str = "beardog";
-    /// Well-known primal identifier (discovery / P2P stack); used in topology fixtures and mocks.
+    /// See [`BEARDOG`] — discovery/P2P stack fixture identity.
+    #[cfg(feature = "test-fixtures")]
     pub const SONGBIRD: &str = "songbird";
 }
 

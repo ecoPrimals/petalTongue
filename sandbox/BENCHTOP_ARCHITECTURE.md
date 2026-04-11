@@ -394,8 +394,7 @@ Coordination:   #f5c2e7  // Pink (NUCLEUS)
 ## 📚 Related Documentation
 
 - [sandbox/README.md](README.md) - Demonstration overview
-- [Neural API Whitepaper](/path/to/whitePaper/neuralAPI/)
-- [RootPulse Whitepaper](/path/to/whitePaper/RootPulse/)
+- [Neural API Spec](../specs/NEURAL_API_INTEGRATION_SPECIFICATION.md)
 - [petalTongue Architecture](../specs/)
 
 ---
