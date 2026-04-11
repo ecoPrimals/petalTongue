@@ -15,7 +15,10 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-# Core dependencies ONLY (zero GUI)
+# Core dependencies ONLY — zero GUI / zero native display deps (PT-12 clean path).
+# No eframe, egui, glow, winit, or OpenGL. This crate compiles and runs on
+# headless servers without any windowing system or GPU.
+# Set PETALTONGUE_HEADLESS=1 to force headless detection in detect_best_ui_mode().
 petal-tongue-core = { path = "../petal-tongue-core" }
 petal-tongue-ui-core = { path = "../petal-tongue-ui-core" }
 petal-tongue-graph = { path = "../petal-tongue-graph" }

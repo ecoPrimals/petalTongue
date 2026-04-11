@@ -117,7 +117,7 @@ petaltongue
 | Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
 | BTSP Phase 1 | `validate_insecure_guard()`, family-scoped sockets, domain symlinks |
-| Files | All under 800 lines (largest: 799 after smart refactor of 11 modules) |
+| Files | All production files under 415 lines after smart refactor of 20 modules (6 test-only files >700) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 18 crates + sandbox) |
 | External C deps | None -- pure Rust (`rustix` for syscalls, `blake3` pure-Rust hash) |

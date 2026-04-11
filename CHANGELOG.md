@@ -23,14 +23,18 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   implementation.
 
 ### Changed
-- **`anyhow` eliminated from all production crate dependencies**. Moved to
-  `[dev-dependencies]` in `petal-tongue-ui`, `petal-tongue-tui`,
+- **`anyhow` eliminated from ALL production dependencies** including root binary.
+  Moved to `[dev-dependencies]` in root, `petal-tongue-ui`, `petal-tongue-tui`,
   `petal-tongue-discovery`; removed entirely from `petal-tongue-ipc`,
   `petal-tongue-api`, `petal-tongue-graph`. `impl From<anyhow::Error> for
   UiError` bridge deleted.
 - **`#[allow(` → `#[expect(`** migration: 9 of 11 instances migrated with reason
   annotations. Only 2 legitimate `dead_code` suppressions on shared test helpers
   remain as `#[allow(`.
+- **Self-knowledge enforcement**: `BEARDOG`/`SONGBIRD` primal constants now
+  gated behind `#[cfg(feature = "test-fixtures")]` — production builds have
+  zero compile-time knowledge of other primal identities. Sandbox updated to
+  enable `test-fixtures`.
 - **Clone/allocation density reduction** in hot paths:
   - `property_panel`: `clone_from` for HashMap capacity reuse, in-place
     `get_mut` + `text_edit_singleline` eliminates per-frame string clones.
@@ -40,20 +44,27 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     Into<String>` so callers pass `&'static str` without `.to_string()`.
   - `modality.rs`: `available`/`by_tier`/`auto_select` return `&'static str`
     instead of allocating `String` names.
-- **Smart file refactoring**: 11 large files split by extracting tests into
-  sibling modules (`builders`, `data_binding`, `basic_charts`, `interaction`,
-  `tarpc_types`, `property_panel`, `main`, `live_data`, `unix_socket_server`,
-  `chart_renderer`, `describe`). Max file now 799 lines.
+- **Smart file refactoring** (20 files total across sprints 4–5): Tests extracted
+  into sibling modules. Sprint 5 added 9 files: `sensory_capabilities`,
+  `unix_socket_rpc_handlers`, `audio_sonification`, `svg`, `engine`,
+  `visual_flower`, `primal_details`, `neural_graph_client`, `provenance_trio`.
+  Max production file now 414 lines (topology.rs); 6 files >700 lines remain
+  (all test-only or domain-specific renderers).
 - **Sandbox mock-biomeos**: Uses `capability_names::primal_names` constants,
   `discover_primal_socket` for path construction, `.expect()` instead of
   bare `.unwrap()`.
 
 ### Fixed
-- **PT-06**: Verified and documented that `callback_tx` push delivery IS wired
+- **PT-06**: Push delivery startup confirmation log added; `callback_tx` wired
   in all JSON-RPC paths via `UnixSocketServer::new()`. Modes without IPC
-  (web/tui/headless/ui) are documented as intentionally push-free.
+  (web/tui/headless/ui) documented as intentionally push-free.
+- **PT-09**: `log_handshake_policy()` now called at `UnixSocketServer::start()`.
+  Domain symlinks use BTSP-aware family-scoped names. `Drop` impl cleans up
+  the correct family-scoped symlink.
 - Socket path `get_petaltongue_socket_path()` now delegates to BTSP posture for
   family-scoped naming instead of hardcoded `{APP_DIR_NAME}.sock`.
+- **Flaky test fixed**: `test_resolve_instance_id_error_message_invalid` now
+  uses `XDG_DATA_HOME` env isolation to prevent filesystem race conditions.
 
 ### Security
 - `BIOMEOS_INSECURE` env var guard prevents production FAMILY_ID from running

@@ -42,6 +42,7 @@ impl UnixSocketServer {
         )));
         let (callback_tx, push_thread) = crate::push_delivery::spawn_push_delivery();
         handlers.callback_tx = Some(callback_tx);
+        info!("📡 PT-06: push delivery activated (callback_tx wired on RPC handlers)");
 
         Ok(Self {
             socket_path,
@@ -132,7 +133,13 @@ impl UnixSocketServer {
     }
 
     /// Start the server: bind UDS (always) and optionally TCP, then accept connections.
+    ///
+    /// Logs BTSP Phase 2 handshake policy at startup so the security posture
+    /// is visible in production logs (PT-09).
     pub async fn start(self: Arc<Self>) -> Result<(), IpcServerError> {
+        let posture = crate::btsp::current_btsp_posture();
+        crate::btsp::log_handshake_policy(&crate::btsp::handshake_policy(&posture));
+
         if self.socket_path.exists() {
             let remove_result = if self.socket_path.is_file() {
                 std::fs::remove_file(&self.socket_path)
@@ -154,10 +161,11 @@ impl UnixSocketServer {
         info!("   Family ID: {}", self.family_id);
 
         if let Some(parent) = self.socket_path.parent() {
-            let symlink_path = parent.join("visualization.sock");
+            let symlink_name = crate::btsp::domain_symlink_filename(&posture);
+            let symlink_path = parent.join(&symlink_name);
             let _ = std::fs::remove_file(&symlink_path);
             if let Err(e) = std::os::unix::fs::symlink(&self.socket_path, &symlink_path) {
-                debug!("Could not create capability symlink visualization.sock: {e}");
+                debug!("Could not create capability symlink {symlink_name}: {e}");
             } else {
                 info!(
                     "🔗 Capability symlink: {} → {}",
@@ -271,7 +279,8 @@ impl UnixSocketServer {
 impl Drop for UnixSocketServer {
     fn drop(&mut self) {
         if let Some(parent) = self.socket_path.parent() {
-            let symlink_path = parent.join("visualization.sock");
+            let posture = crate::btsp::current_btsp_posture();
+            let symlink_path = parent.join(crate::btsp::domain_symlink_filename(&posture));
             if symlink_path.symlink_metadata().is_ok()
                 && let Err(e) = std::fs::remove_file(&symlink_path)
             {

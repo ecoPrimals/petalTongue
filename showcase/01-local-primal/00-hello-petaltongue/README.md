@@ -217,8 +217,8 @@ cat README.md
 ## 📚 Learn More
 
 - [Main README](../../../README.md) - Project overview
-- [Architecture Docs](../../../docs/architecture/) - Design documents
-- [Showcase Index](../../00_SHOWCASE_INDEX.md) - All demos
+- [Specs](../../../specs/) - Architecture specifications
+- [Getting Started](../../../START_HERE.md) - Development setup
 
 ---
 
