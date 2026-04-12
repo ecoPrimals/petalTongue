@@ -22,7 +22,7 @@ pub fn create_test_primal(name: &str, id: &str) -> PrimalInfo {
 }
 
 /// Create a test `PrimalInfo` with capabilities
-#[allow(dead_code)]
+#[allow(dead_code)] // per-binary conditional: some test executables use this, others don't
 #[expect(
     clippy::cast_sign_loss,
     reason = "Unix timestamp for current time is always non-negative"
@@ -40,7 +40,7 @@ pub fn create_test_primal_with_caps(name: &str, id: &str, capabilities: Vec<Stri
 }
 
 /// Create a test `PrimalInfo` with specific health status
-#[allow(dead_code)]
+#[allow(dead_code)] // per-binary conditional: some test executables use this, others don't
 #[expect(
     clippy::cast_sign_loss,
     reason = "Unix timestamp for current time is always non-negative"

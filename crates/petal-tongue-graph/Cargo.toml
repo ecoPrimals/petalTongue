@@ -38,7 +38,7 @@ rand = { workspace = true }
 
 # ✅ ALSA ELIMINATION COMPLETE
 # NO rodio, NO cpal, NO ALSA dependencies
-# Audio playback is external (ToadStool, AudioCanvas, or system-discovered)
+# Audio playback is external (compute provider, AudioCanvas, or system-discovered)
 # This crate only generates audio FILES (WAV via hound - pure Rust)
 
 [features]
@@ -48,7 +48,7 @@ egui-render = ["dep:egui", "dep:egui_extras", "dep:egui_plot", "dep:petal-tongue
 # REMOVED: native-audio feature (was requiring ALSA via rodio)
 # Audio playback is now:
 # - Tier 1: AudioCanvas (pure Rust /dev/snd access) - in petal-tongue-ui
-# - Tier 2: ToadStool (network-based synthesis) - discovered at runtime
+# - Tier 2: Compute provider (network-based synthesis) - discovered at runtime
 # - Tier 3: System audio (EXTERNAL) - discovered at runtime
 
 [dev-dependencies]

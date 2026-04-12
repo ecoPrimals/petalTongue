@@ -36,7 +36,7 @@ cd 01-local-primal/00-hello-petaltongue/
 | # | Demo | What it proves | Time |
 |---|------|---------------|------|
 | 00 | [hello-petaltongue](01-local-primal/00-hello-petaltongue/) | status, version, JSON output | 30s |
-| 01 | [unibin-modes](01-local-primal/01-unibin-modes/) | All 5 modes exist and run | 60s |
+| 01 | [unibin-modes](01-local-primal/01-unibin-modes/) | All 6 subcommands exist and run | 60s |
 | 02 | [scenario-loading](01-local-primal/02-scenario-loading/) | Load 3 scenarios via web mode | 60s |
 | 03 | [web-server](01-local-primal/03-web-server/) | HTTP endpoints, HTML dashboard | 60s |
 | 04 | [headless-api](01-local-primal/04-headless-api/) | Headless rendering pipeline | 30s |

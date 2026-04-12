@@ -2,7 +2,7 @@
 //! Sensor event stream registry for raw input subscriptions.
 //!
 //! External primals subscribe to raw sensor events (pointer, keys, scroll)
-//! for engagement analysis (ludoSpring) and AI adaptation (Squirrel).
+//! for engagement analysis and AI adaptation by consumer primals/springs.
 //! This is distinct from the semantic interaction event system in `interaction`:
 //! sensor streams carry hardware-level input; interaction events carry
 //! data-space intents.
@@ -13,7 +13,7 @@ use std::collections::HashMap;
 /// Registry for sensor event stream subscribers.
 ///
 /// External primals subscribe to raw sensor events (pointer, keys, scroll)
-/// for engagement analysis (ludoSpring) and AI adaptation (Squirrel).
+/// for engagement analysis and AI adaptation by consumer primals/springs.
 #[derive(Default)]
 pub struct SensorStreamRegistry {
     subscribers: HashMap<String, SensorStreamSubscriber>,

@@ -29,7 +29,7 @@
 //!
 //! # Primal Registration
 //!
-//! Per `PRIMAL_IPC_PROTOCOL.md`, primals must register with Songbird on startup:
+//! Per `PRIMAL_IPC_PROTOCOL.md`, primals must register with the discovery/registry provider on startup:
 //!
 //! ```rust,no_run
 //! use petal_tongue_ipc::primal_registration::{RegistrationManager, PrimalRegistration};
@@ -39,7 +39,7 @@
 //!     let registration = PrimalRegistration::petaltongue();
 //!     let manager = RegistrationManager::new(registration);
 //!     
-//!     // Register on startup (graceful if Songbird unavailable)
+//!     // Register on startup (graceful if registry unavailable)
 //!     manager.register_on_startup().await;
 //!     
 //!     // Start heartbeat task
@@ -54,8 +54,8 @@
 //! ```text
 //! ┌─────────────────────────────────────────────────────────────┐
 //! │              PRIMAL-TO-PRIMAL (tarpc)                      │
-//! │  petalTongue → Toadstool (GPU rendering)                   │
-//! │  petalTongue → Songbird (discovery)                        │
+//! │  petalTongue → compute provider (GPU rendering)            │
+//! │  petalTongue → registry provider (discovery)               │
 //! │  Binary RPC, ~10-20 μs latency                             │
 //! └─────────────────────────────────────────────────────────────┘
 //!                            ↓

@@ -1,53 +1,92 @@
-# Context — petalTongue
+# petalTongue — Context
+
+**Version:** 1.6.6
+**Role:** Universal User Interface primal (visualization, presentation, interaction)
+**License:** AGPL-3.0-or-later (scyBorg triple: AGPL + ORC + CC-BY-SA 4.0)
+
+---
 
 ## What This Is
 
-petalTongue is the **Universal User Interface primal** for the ecoPrimals ecosystem: a 100% Pure Rust visualization and interaction engine that translates any computational universe into any modality for any user type. Other primals send data to petalTongue via JSON-RPC, and it compiles that data into visual, audio, haptic, terminal, or API representations using a composable Grammar of Graphics pipeline.
+petalTongue is ecoPrimals' visualization and user interface primal. It translates
+ecosystem state into every available modality — desktop GUI (egui), terminal TUI
+(ratatui), web (axum), headless (SVG/PNG/JSON), and WASM. It implements a
+Grammar of Graphics engine with a declarative scene graph and animation system.
 
-## Role in the Ecosystem
+petalTongue is a **meta-tier** primal: it presents data from other primals but
+does not own computation, storage, or security domains.
 
-petalTongue answers "show me this data" and "let me interact with this system" for every primal and spring in the ecosystem. It does not own compute orchestration (Toadstool/coralReef), cryptography (BearDog), mesh networking (Songbird), or AI inference (Squirrel); it consumes their outputs and renders them for humans and agents through capability-based discovery at runtime.
+## Architecture
 
-## Technical Facts
+18 workspace crates, single UniBin binary (`petaltongue`):
 
-- **Language:** 100% Rust (edition 2024), zero C dependencies in application code
-- **License:** AGPL-3.0-or-later (SPDX on all sources)
-- **Version:** 1.6.6
-- **Workspace:** 18 crates (`Cargo.toml` workspace)
-- **MSRV:** 1.87 (`rust-version` in workspace `Cargo.toml`)
-- **Tests:** 5,967+ passing (0 failed)
-- **Coverage:** ~90% line (llvm-cov, workspace)
-- **Unsafe:** 0 production blocks (`forbid(unsafe_code)` workspace-wide)
-- **IPC:** JSON-RPC 2.0 over Unix sockets / TCP (REQUIRED); tarpc for Rust-to-Rust hot paths (optional)
-- **WASM:** `petal-tongue-wasm` crate compiles to `wasm32-unknown-unknown` for client-side rendering (grammar → SVG pipeline, offline-capable)
+| Crate | Purpose |
+|-------|---------|
+| `petal-tongue-core` | Types, config, sensory discovery, capability registry |
+| `petal-tongue-ipc` | JSON-RPC 2.0 server (UDS + TCP), BTSP, push delivery |
+| `petal-tongue-scene` | Declarative scene graph, modality compilers |
+| `petal-tongue-graph` | Chart rendering, sonification |
+| `petal-tongue-animation` | Manim-style animation system |
+| `petal-tongue-ui` | Native GUI (egui/eframe), feature-gated |
+| `petal-tongue-tui` | Terminal UI (ratatui) |
+| `petal-tongue-ui-core` | Pure Rust abstract UI (text, SVG, canvas) |
+| `petal-tongue-discovery` | Primal/capability discovery clients |
+| `petal-tongue-cli` | CLI handler logic |
+| `petal-tongue-api` | BiomeOS client, HTTP APIs |
+| `petal-tongue-entropy` | Human entropy capture |
+| `petal-tongue-adapters` | Adapter framework |
+| `petal-tongue-headless` | Headless rendering binary |
+| `petal-tongue-telemetry` | Observability and metrics |
+| `petal-tongue-types` | WASM-portable data types |
+| `petal-tongue-wasm` | Browser rendering module |
+| `doom-core` | Doom WAD rendering (platform stress test) |
 
-## Key Capabilities
+## IPC Surface
 
-- **Modes:** `ui` (egui desktop), `tui` (ratatui terminal), `web` (axum), `headless` (SVG/PNG/JSON), `server` (IPC-only), `status` (system info)
-- **Grammar of Graphics:** Composable data→representation pipeline with 11 DataBinding types
-- **Tufte constraints:** Machine-checked visualization quality
-- **Multi-modal output:** Visual, audio, haptic, terminal, braille, JSON API
-- **SAME DAVE model:** Sensory Afferent / Motor Efferent bidirectional feedback loops
-- **Sensory Capability Matrix:** Formal input×output negotiation for consumer primals
-- **Accessibility:** Switch access, audio inverse pipeline, agent adapter for AI
-- **IPC methods:** 60+ JSON-RPC methods across health, capability, visualization, interaction, audio, motor, and UI domains
+JSON-RPC 2.0 over Unix domain sockets (primary) and TCP (`--port`).
+41 methods across domains: `visualization.*`, `interaction.*`, `graph.*`,
+`health.*`, `capability.*`, `identity.*`, `session.*`, `sensor.*`.
 
-## What This Does NOT Do
+BTSP Phase 1 complete: family-scoped socket naming, insecure guard,
+domain symlinks (`visualization.sock`).
 
-petalTongue is not a GPU compute dispatcher (that is Toadstool/coralReef), not a mesh network (Songbird), not encrypted storage (NestGate), not a cryptography provider (BearDog), and not an AI runtime (Squirrel). It discovers and delegates to those capabilities at runtime via the Neural API or filesystem-based capability discovery.
+## Key Design Decisions
 
-## Build and Test
+- **Two-dimensional universality**: universal across modalities (what you see)
+  and substrates (what you run on).
+- **Grammar of Graphics**: primals send grammar expressions, petalTongue
+  compiles to best available representation.
+- **No self-compute**: heavy work (GPU, physics) delegated via IPC to
+  barraCuda, toadStool, coralReef. petalTongue discovers by capability.
+- **Feature-gated GUI**: `ui` feature (default) pulls egui/eframe/glow.
+  Headless builds (`--no-default-features`) have zero native display deps.
+- **Audio discovery**: runtime heuristic backends (socket, direct, software,
+  silent). Socket/direct behind optional features; software/silent always
+  available.
+
+## Ecosystem Position
+
+petalTongue discovers other primals at runtime via capability-based IPC.
+It has zero compile-time knowledge of primal identities in production builds
+(fixture data gated behind `#[cfg(test)]` or `test-fixtures` feature).
+
+Coordinates with biomeOS (orchestration), Songbird (registry), BearDog
+(security/BTSP), and any primal that exposes visualization-relevant
+capabilities.
+
+## Build
 
 ```bash
-cargo build --release
-cargo test --workspace --all-features
-cargo clippy --workspace --all-targets -- -D warnings
-cargo fmt --check
+cargo build --release                     # Full binary (26M musl-static)
+cargo build --release --no-default-features  # Headless only
+cargo test --workspace --all-features     # ~5,800 tests, ~90% coverage
 ```
 
-Run modes: `petaltongue ui`, `petaltongue tui`, `petaltongue web`, `petaltongue server`, `petaltongue headless`, `petaltongue status`.
+## Current State
 
-## Related Repositories
+Sprint 5 complete. All CI gates pass (fmt, clippy pedantic+nursery, doc,
+cargo deny, tests). Zero unsafe, zero TODO/FIXME, zero production mocks,
+zero `#[allow(]` in production. SPDX headers on all source files.
 
-- [wateringHole](https://github.com/ecoPrimals/wateringHole) — ecosystem standards, inter-primal contracts, handoffs
-- [ecoPrimals](https://github.com/ecoPrimals) — organization root for sovereign computing primals
+Remaining backlog: BTSP Phase 2 consumer wiring (cross-primal dep on
+BearDog), aarch64 musl cross-compile for headless, tarpc feature-gating.

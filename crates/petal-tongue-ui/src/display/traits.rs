@@ -39,7 +39,7 @@ pub trait DisplayBackend: Send + Sync {
 /// Display backend capabilities and performance characteristics
 #[derive(Debug, Clone)]
 pub struct DisplayCapabilities {
-    /// Requires network connection (e.g., Toadstool)
+    /// Requires network connection (e.g., remote compute provider)
     pub requires_network: bool,
 
     /// Requires GPU (e.g., OpenGL)
@@ -65,7 +65,7 @@ pub struct DisplayCapabilities {
 }
 
 impl DisplayCapabilities {
-    /// Capability-discovered network display (e.g. WASM backend via Toadstool)
+    /// Capability-discovered network display (e.g. WASM backend via compute provider)
     #[must_use]
     pub const fn network_display() -> Self {
         Self {

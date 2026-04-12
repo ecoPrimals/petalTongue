@@ -5,8 +5,8 @@
 //!
 //! # Architecture
 //!
-//! `UniBin`: 1 binary, 5 modes
-//! ecoBin: 80% (4/5 modes Pure Rust)
+//! `UniBin`: 1 binary, 6 subcommands (5 modes + status)
+//! ecoBin: 80% (4/5 modes Pure Rust; ui requires platform windowing)
 //!
 //! # Concurrency
 //!

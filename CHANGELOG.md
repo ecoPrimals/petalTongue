@@ -6,6 +6,42 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Sprint 6 — Deep Debt Resolution & Compliance Elevation (April 12, 2026)
+
+#### Added
+- **CONTEXT.md** (T8 compliance): 98-line context file per `PUBLIC_SURFACE_STANDARD`.
+- **6 companion test files**: `topology_tests.rs`, `interaction_tests.rs`,
+  `tutorial_mode_tests.rs`, `startup_audio_tests.rs`, `biomeos_client_tests.rs`,
+  `game_scene_renderer_tests.rs` — extracted from production files.
+
+#### Changed
+- **Discovery doc evolution**: 30+ production doc comments evolved from primal-brand
+  names (Songbird, ToadStool, etc.) to capability-based language ("registry provider",
+  "compute provider"). Feature name `toadstool-wasm` → `compute-wasm`.
+- **Smart file refactoring** (6 files): Tests extracted to companion files.
+  `interaction.rs` 690→246, `tutorial_mode.rs` 690→345, `startup_audio.rs` 675→397,
+  `biomeos_client.rs` 684→416, `game_scene_renderer.rs` 692→532,
+  `topology.rs` 735→415. Zero production files >700 LOC.
+- **Idiomatic Rust**: 22 `format!("{}", x)` → `x.to_string()` across TUI/UI crates.
+- **`#[allow(dead_code)]`** in shared test helpers documented with reason comments
+  (known Rust limitation: per-binary conditional lint).
+- **PII scrubbed**: `/home/user/` test path → `/tmp/scenarios/`.
+- **Cargo.toml comments**: Updated to capability-based language across `petal-tongue-ui`,
+  `petal-tongue-graph`.
+
+#### Removed
+- **Dead `crossterm` dependency** from `petal-tongue-core` (optional, never activated).
+
+#### Verified
+- `cargo fmt --check` ✅
+- `cargo clippy --workspace --all-features -D warnings` ✅ (0 warnings)
+- `cargo doc --workspace --all-features -D warnings` ✅
+- `cargo test --workspace --all-features` ✅ (6,087 passed, 0 failures)
+- `cargo deny check` ✅ (advisories, bans, licenses, sources ok)
+- `ring` absent from dep tree (default AND `--all-features`)
+
+---
+
 ### Added
 - **BTSP Phase 1** (`crate::btsp`): `validate_insecure_guard()` refuses startup
   when both `FAMILY_ID` and `BIOMEOS_INSECURE=1` are set. Family-scoped socket

@@ -164,7 +164,7 @@ impl TrustDashboard {
                     .color(palette.text_dim),
             );
             ui.label(
-                RichText::new(format!("{}", ds.total_primals))
+                RichText::new(ds.total_primals.to_string())
                     .size(12.0 * font_scale)
                     .strong(),
             );
@@ -238,7 +238,7 @@ impl TrustDashboard {
                     .color(palette.text_dim),
             );
             ui.label(
-                RichText::new(format!("{}", ds.family_count))
+                RichText::new(ds.family_count.to_string())
                     .size(12.0 * font_scale)
                     .strong(),
             );
@@ -251,7 +251,7 @@ impl TrustDashboard {
                     .color(palette.text_dim),
             );
             ui.label(
-                RichText::new(format!("{}", ds.unique_families))
+                RichText::new(ds.unique_families.to_string())
                     .size(12.0 * font_scale)
                     .strong(),
             );

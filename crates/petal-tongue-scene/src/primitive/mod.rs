@@ -204,7 +204,7 @@ pub enum Primitive {
         data_id: Option<String>,
     },
 
-    /// A 3D triangle mesh (for Toadstool GPU rendering).
+    /// A 3D triangle mesh (for GPU rendering via compute provider).
     Mesh {
         vertices: Vec<MeshVertex>,
         indices: Vec<u32>,

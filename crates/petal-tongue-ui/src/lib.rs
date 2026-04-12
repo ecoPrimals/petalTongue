@@ -144,7 +144,7 @@ pub mod timeline_view;
 pub mod tool_integration;
 pub mod traffic_view;
 pub mod trust_dashboard;
-pub mod universal_discovery; // Capability-based GPU rendering discovery via Songbird // Scene engine -> egui paint command bridge
+pub mod universal_discovery; // Capability-based GPU rendering discovery via registry provider
 
 pub use app::PetalTongueApp;
 pub use human_entropy_window::HumanEntropyWindow;

@@ -41,7 +41,7 @@ pub fn run_update(app: &mut PetalTongueApp, ctx: &egui::Context) {
         }
     }
 
-    // Broadcast sensor events to IPC subscribers (ludoSpring, Squirrel, etc.)
+    // Broadcast sensor events to IPC subscribers (engagement/AI consumers)
     if let Some(ref reg) = app.sensor_stream {
         let events = crate::sensor_feed::collect_sensor_events(ctx);
         if !events.is_empty()

@@ -81,7 +81,7 @@ fn render_status_summary(frame: &mut Frame, area: Rect, state: &TUIState) {
         Line::from(vec![
             Span::raw("Active Primals: "),
             Span::styled(
-                format!("{}", status.active_primals),
+                status.active_primals.to_string(),
                 Style::default().fg(if status.active_primals > 0 {
                     Color::Green
                 } else {
@@ -90,12 +90,12 @@ fn render_status_summary(frame: &mut Frame, area: Rect, state: &TUIState) {
             ),
             Span::raw("  |  Topology Edges: "),
             Span::styled(
-                format!("{}", graph_stats.topology_edge_count),
+                graph_stats.topology_edge_count.to_string(),
                 Style::default().fg(Color::Cyan),
             ),
             Span::raw("  |  Logs: "),
             Span::styled(
-                format!("{}", graph_stats.log_count),
+                graph_stats.log_count.to_string(),
                 Style::default().fg(Color::Gray),
             ),
         ]),
@@ -208,17 +208,11 @@ fn render_topology_summary(frame: &mut Frame, area: Rect, state: &TUIState) {
             Line::from(""),
             Line::from(vec![
                 Span::raw("Nodes: "),
-                Span::styled(
-                    format!("{}", primals.len()),
-                    Style::default().fg(Color::Green),
-                ),
+                Span::styled(primals.len().to_string(), Style::default().fg(Color::Green)),
             ]),
             Line::from(vec![
                 Span::raw("Edges: "),
-                Span::styled(
-                    format!("{}", topology.len()),
-                    Style::default().fg(Color::Cyan),
-                ),
+                Span::styled(topology.len().to_string(), Style::default().fg(Color::Cyan)),
             ]),
             Line::from(""),
             Line::from(vec![Span::styled(

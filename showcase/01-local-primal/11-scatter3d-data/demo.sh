@@ -194,5 +194,5 @@ record_pass "DataBinding reference displayed"
 # -- Cleanup --
 stop_pid "$pid"
 
-demo_complete ""
+demo_complete "12-scene-graph"
 print_results

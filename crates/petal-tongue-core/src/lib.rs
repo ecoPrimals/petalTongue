@@ -21,7 +21,7 @@
 //! - **Awakening Experience**: Default touchpoint (flower opening to sunrise)
 //! - **Modality System**: Multiple representations (audio, visual, text)
 //! - **Event Coordination**: Synchronize across modalities
-//! - **Compute Integration**: Optional GPU acceleration (Toadstool)
+//! - **Compute Integration**: Optional GPU acceleration (via compute provider)
 
 pub mod adaptive_rendering; // Adaptive rendering for multi-device support
 pub mod biomeos_discovery; // biomeOS discovery backend

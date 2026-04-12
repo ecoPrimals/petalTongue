@@ -35,7 +35,7 @@ type of user. It implements a composable **Grammar of Graphics** engine with a
 **declarative scene graph** and **Manim-style animation system**, allowing any
 primal to send a grammar expression that petalTongue compiles to the best
 available representation. Heavy compute (GPU shaders, physics simulations) is
-delegated to barraCuda, Toadstool, and coralReef via IPC.
+delegated to compute providers via capability-based IPC discovery.
 
 The UUI philosophy is **two-dimensional universality**: universal across
 *computational universes* (any data from any primal) and universal across
@@ -109,7 +109,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,967+ passing, 0 failures |
+| Tests | 6,087+ passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
@@ -117,7 +117,7 @@ petaltongue
 | Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
 | BTSP Phase 1 | `validate_insecure_guard()`, family-scoped sockets, domain symlinks |
-| Files | All production files under 415 lines after smart refactor of 20 modules (6 test-only files >700) |
+| Files | All production files under 535 lines after smart refactor of 26 modules (tests extracted to companions) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 18 crates + sandbox) |
 | External C deps | None -- pure Rust (`rustix` for syscalls, `blake3` pure-Rust hash) |
@@ -142,7 +142,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 5,967+ tests
+cargo test --workspace --all-features        # 6,087+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps

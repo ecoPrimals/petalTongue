@@ -27,7 +27,7 @@ tokio = { workspace = true }
 async-trait = "0.1"
 
 # Streaming & Encryption
-# Use workspace reqwest (rustls-tls, NO native-tls/OpenSSL!)
+# Workspace: HTTP-only, no TLS (ecoBin: no ring/openssl)
 reqwest = { workspace = true }
 aes-gcm = "0.10"  # AES-256-GCM authenticated encryption
 rand = { workspace = true }  # For nonce generation

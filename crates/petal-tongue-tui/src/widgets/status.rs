@@ -20,7 +20,7 @@ impl StatusBar {
         let status_text = vec![
             Span::raw("Primals: "),
             Span::styled(
-                format!("{}", status.active_primals),
+                status.active_primals.to_string(),
                 Style::default().fg(if status.active_primals > 0 {
                     Color::Green
                 } else {
@@ -29,7 +29,7 @@ impl StatusBar {
             ),
             Span::raw(" | Devices: "),
             Span::styled(
-                format!("{}", status.discovered_devices),
+                status.discovered_devices.to_string(),
                 Style::default().fg(Color::Cyan),
             ),
             Span::raw(" | Uptime: "),

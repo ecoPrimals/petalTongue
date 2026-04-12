@@ -111,7 +111,7 @@ pub fn render_primal_card(
                 // Capabilities
                 ui.horizontal(|ui| {
                     ui.label("Capabilities:");
-                    ui.label(format!("{}", primal.capabilities.len()));
+                    ui.label(primal.capabilities.len().to_string());
                 });
 
                 ui.add_space(4.0);
@@ -122,7 +122,7 @@ pub fn render_primal_card(
                     if primal.assigned_devices.is_empty() {
                         ui.colored_label(Color32::GRAY, "None");
                     } else {
-                        ui.label(format!("{}", primal.assigned_devices.len()));
+                        ui.label(primal.assigned_devices.len().to_string());
                     }
                 });
             });

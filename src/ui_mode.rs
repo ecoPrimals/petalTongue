@@ -164,7 +164,7 @@ mod tests {
 
     #[test]
     fn test_scenario_to_path_with_path_separators() {
-        let path = scenario_to_path(Some("/home/user/scenarios/demo.json".to_string()));
+        let path = scenario_to_path(Some("/tmp/scenarios/demo.json".to_string()));
         assert!(path.is_some());
         let p = path.unwrap();
         assert!(p.to_string_lossy().contains("demo.json"));

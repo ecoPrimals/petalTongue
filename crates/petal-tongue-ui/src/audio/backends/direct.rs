@@ -27,7 +27,9 @@
 use crate::audio::traits::{AudioBackend, AudioCapabilities, BackendMetadata, BackendType};
 use crate::error::{AudioError, Result};
 use async_trait::async_trait;
+#[cfg(test)]
 use std::fs::File;
+#[cfg(test)]
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use tracing::{debug, info};
@@ -144,7 +146,10 @@ impl DirectBackend {
     }
 
     /// Write samples to device (reserved for a future ALSA-backed implementation).
-    #[allow(dead_code)] // conditionally dead depending on audio-direct feature callers
+    ///
+    /// Currently only exercised by tests; the `play_samples` trait method returns
+    /// `DirectDeviceUnavailable` until ALSA ioctl setup is implemented.
+    #[cfg(test)]
     pub(crate) fn write_samples_to_device(file: &mut File, samples: &[f32]) -> Result<()> {
         // Convert f32 [-1.0, 1.0] to i16 PCM [-32768, 32767]
         let i16_samples: Vec<i16> = samples

@@ -236,7 +236,7 @@ impl MetricsDashboard {
             ui.horizontal(|ui| {
                 ui.label("🌸 Active Primals:");
                 ui.label(
-                    RichText::new(format!("{}", state.active_primals))
+                    RichText::new(state.active_primals.to_string())
                         .strong()
                         .color(Color32::from_rgb(34, 197, 94)),
                 ); // green-500
@@ -244,14 +244,14 @@ impl MetricsDashboard {
 
             ui.horizontal(|ui| {
                 ui.label("📊 Available Graphs:");
-                ui.label(format!("{}", state.graphs_available));
+                ui.label(state.graphs_available.to_string());
             });
 
             ui.horizontal(|ui| {
                 ui.label("⚡ Active Executions:");
                 let rgb = active_executions_color_rgb(state.active_executions);
                 let color = Color32::from_rgb(rgb[0], rgb[1], rgb[2]);
-                ui.label(RichText::new(format!("{}", state.active_executions)).color(color));
+                ui.label(RichText::new(state.active_executions.to_string()).color(color));
             });
         });
     }

@@ -10,16 +10,16 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../../scripts/common.sh"
 
-print_header "UniBin: 1 Binary, 5 Modes"
+print_header "UniBin: 1 Binary, 6 Subcommands"
 print_version_info
 
 step 1 "Prerequisites"
 require_petaltongue
 
-step 2 "Enumerate all 5 subcommands"
+step 2 "Enumerate all 6 subcommands"
 print_command "petaltongue --help"
 HELP=$("${PETALTONGUE_BIN}" --help 2>&1)
-for mode in ui tui web headless status; do
+for mode in ui tui web headless server status; do
     if echo "$HELP" | grep -qw "$mode"; then
         record_pass "Mode found: $mode"
     else
