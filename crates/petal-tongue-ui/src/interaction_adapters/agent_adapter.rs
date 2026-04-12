@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Agent input adapter — formalizes agentic AI (Squirrel) as an `InputAdapter`.
+//! Agent input adapter — formalizes agentic AI as an `InputAdapter`.
 //!
 //! While the existing `AiAdapter` bridges IPC events to the egui UI layer,
 //! this adapter operates at the interaction engine level, translating

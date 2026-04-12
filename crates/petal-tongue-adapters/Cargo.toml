@@ -29,7 +29,7 @@ egui = { workspace = true }
 tokio = { workspace = true }
 
 # HTTP client (for querying ecosystem specs)
-reqwest = { workspace = true }  # Use workspace version (0.12 with rustls-tls)
+reqwest = { workspace = true }  # Workspace: HTTP-only, no TLS (ecoBin: no ring/openssl)
 
 # Logging
 tracing = { workspace = true }

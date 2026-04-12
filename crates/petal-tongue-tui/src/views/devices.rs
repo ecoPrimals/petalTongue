@@ -171,10 +171,7 @@ fn render_device_details(frame: &mut Frame, area: Rect, primals: &Arc<Vec<Primal
         Line::from(""),
         Line::from(vec![
             Span::raw("Total Devices: "),
-            Span::styled(
-                format!("{}", primals.len()),
-                Style::default().fg(Color::Green),
-            ),
+            Span::styled(primals.len().to_string(), Style::default().fg(Color::Green)),
         ]),
         Line::from(vec![
             Span::raw("Total Capabilities: "),

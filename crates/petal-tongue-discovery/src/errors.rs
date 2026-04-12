@@ -14,7 +14,7 @@ pub enum DiscoveryError {
     #[error("No providers found after trying {attempted} source(s): {sources}")]
     NoProvidersFound { attempted: usize, sources: String },
 
-    /// Discovery service (Songbird) not found
+    /// Discovery service (registry provider) not found
     #[error("Discovery service not found. Is it running? (looking for {socket_name})")]
     DiscoveryServiceNotFound { socket_name: String },
 

@@ -28,8 +28,7 @@ pub mod domain_theme;
 #[cfg(feature = "egui-render")]
 pub mod visual_2d;
 
-// BingoCube is a primalTool, discovered at runtime (not a compile-time dependency)
-// ToadStool is a primalTool, discovered at runtime (not a compile-time dependency)
+// External tools and compute providers are discovered at runtime (not compile-time deps)
 // ALSA is an external system, discovered at runtime (not a compile-time dependency)
 
 pub use audio_export::{AudioFileGenerator, AudioFormat, AudioQuality};

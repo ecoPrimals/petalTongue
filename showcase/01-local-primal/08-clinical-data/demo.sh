@@ -88,4 +88,4 @@ print_info "based on the active modality and Tufte constraint validation."
 
 echo
 print_results || true
-demo_complete "02-ipc-protocol/01-unix-socket-server"
+demo_complete "09-domain-themes"

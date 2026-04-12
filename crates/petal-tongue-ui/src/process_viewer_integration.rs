@@ -212,7 +212,7 @@ impl ProcessViewerTool {
                 for process in &self.processes {
                     body.row(18.0, |mut row| {
                         row.col(|ui| {
-                            ui.label(format!("{}", process.pid));
+                            ui.label(process.pid.to_string());
                         });
                         row.col(|ui| {
                             ui.label(&process.name);

@@ -10,7 +10,7 @@
 //! callback path on this transport.
 //!
 //! **JSON-RPC with PT-06 push** is served by [`crate::UnixSocketServer`] (and
-//! [`crate::server_mode`] in the root binary). This [`IpcServer`] remains for tests and
+//! the root binary's `server_mode` module). This [`IpcServer`] remains for tests and
 //! any code still on the simple command/response protocol.
 //!
 //! TRUE PRIMAL Evolution: Try → Detect → Adapt → Succeed
@@ -32,11 +32,9 @@
 //!
 //! # Upstream Alignment
 //!
-//! Follows NUCLEUS cellular machinery pattern:
-//! - beardog: ✅ TCP fallback
-//! - songbird: ✅ TCP fallback
-//! - toadstool: ✅ TCP fallback (v3.0.0)
-//! - petalTongue: 🆕 This implementation!
+//! Follows NUCLEUS cellular machinery pattern: all primals expose both
+//! UDS (primary) and TCP (fallback via `--port`) transports for
+//! capability-based IPC routing.
 
 use crate::protocol::{IpcCommand, IpcResponse};
 use petal_tongue_core::{Instance, InstanceId, platform_dirs};

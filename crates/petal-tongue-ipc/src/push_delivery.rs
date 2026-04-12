@@ -121,6 +121,7 @@ async fn deliver_notification(
 mod tests {
     use super::*;
     use crate::visualization_handler::InteractionEventNotification;
+    use std::sync::Arc;
     use tokio::io::AsyncBufReadExt;
 
     #[tokio::test]
@@ -132,12 +133,12 @@ mod tests {
         let dispatch = CallbackDispatch {
             subscriber_id: "spring-1".to_string(),
             method: "spring.on_interaction".to_string(),
-            events: vec![InteractionEventNotification {
+            events: vec![Arc::new(InteractionEventNotification {
                 event_type: "select".to_string(),
                 targets: vec!["node-1".to_string()],
                 timestamp: "2026-04-02T00:00:00Z".to_string(),
                 perspective_id: None,
-            }],
+            })],
             callback_socket: Some(sock_path.to_string_lossy().into_owned()),
         };
 
@@ -205,12 +206,12 @@ mod tests {
         let dispatch = CallbackDispatch {
             subscriber_id: "tcp-sub".to_string(),
             method: "spring.on_event".to_string(),
-            events: vec![InteractionEventNotification {
+            events: vec![Arc::new(InteractionEventNotification {
                 event_type: "hover".to_string(),
                 targets: vec![],
                 timestamp: "2026-04-02T00:00:00Z".to_string(),
                 perspective_id: Some(1),
-            }],
+            })],
             callback_socket: Some(addr),
         };
 

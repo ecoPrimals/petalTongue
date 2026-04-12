@@ -7,22 +7,45 @@
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::borrow::Cow;
 
 /// Serde helper for base64-encoded Bytes
 mod base64_bytes {
     use base64::{Engine, engine::general_purpose::STANDARD};
     use bytes::Bytes;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use serde::{Deserializer, Serialize, Serializer, de};
 
     pub fn serialize<S: Serializer>(v: &Bytes, s: S) -> Result<S::Ok, S::Error> {
         let b64 = STANDARD.encode(v);
         b64.serialize(s)
     }
 
+    /// Deserialize base64 by visiting a borrowed `&str` when possible,
+    /// avoiding an intermediate `String` allocation.
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Bytes, D::Error> {
-        let s = String::deserialize(d)?;
-        let buf = STANDARD.decode(&s).map_err(serde::de::Error::custom)?;
-        Ok(Bytes::from(buf))
+        struct Base64Visitor;
+
+        impl<'de> de::Visitor<'de> for Base64Visitor {
+            type Value = Bytes;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str("a base64-encoded string")
+            }
+
+            fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                STANDARD.decode(v).map(Bytes::from).map_err(E::custom)
+            }
+
+            fn visit_borrowed_str<E: de::Error>(self, v: &'de str) -> Result<Self::Value, E> {
+                self.visit_str(v)
+            }
+
+            fn visit_string<E: de::Error>(self, v: String) -> Result<Self::Value, E> {
+                self.visit_str(&v)
+            }
+        }
+
+        d.deserialize_str(Base64Visitor)
     }
 }
 
@@ -36,11 +59,14 @@ pub struct BinaryPayload {
     pub content_type: String,
 }
 
+/// The JSON-RPC protocol version string, borrowed at zero cost.
+const JSONRPC_VERSION: Cow<'static, str> = Cow::Borrowed("2.0");
+
 /// JSON-RPC 2.0 Request
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JsonRpcRequest {
     /// Protocol version (always "2.0")
-    pub jsonrpc: String,
+    pub jsonrpc: Cow<'static, str>,
 
     /// Method name to invoke
     pub method: String,
@@ -57,7 +83,7 @@ impl JsonRpcRequest {
     /// Create a new JSON-RPC request
     pub fn new(method: impl Into<String>, params: Value, id: Value) -> Self {
         Self {
-            jsonrpc: "2.0".to_string(),
+            jsonrpc: JSONRPC_VERSION,
             method: method.into(),
             params,
             id,
@@ -69,7 +95,7 @@ impl JsonRpcRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JsonRpcResponse {
     /// Protocol version (always "2.0")
-    pub jsonrpc: String,
+    pub jsonrpc: Cow<'static, str>,
 
     /// Result data (present on success)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -86,9 +112,9 @@ pub struct JsonRpcResponse {
 impl JsonRpcResponse {
     /// Create a successful response
     #[must_use]
-    pub fn success(id: Value, result: Value) -> Self {
+    pub const fn success(id: Value, result: Value) -> Self {
         Self {
-            jsonrpc: "2.0".to_string(),
+            jsonrpc: JSONRPC_VERSION,
             result: Some(result),
             error: None,
             id,
@@ -98,7 +124,7 @@ impl JsonRpcResponse {
     /// Create an error response
     pub fn error(id: Value, code: i32, message: impl Into<String>) -> Self {
         Self {
-            jsonrpc: "2.0".to_string(),
+            jsonrpc: JSONRPC_VERSION,
             result: None,
             error: Some(JsonRpcError {
                 code,
@@ -112,7 +138,7 @@ impl JsonRpcResponse {
     /// Create an error response with additional data
     pub fn error_with_data(id: Value, code: i32, message: impl Into<String>, data: Value) -> Self {
         Self {
-            jsonrpc: "2.0".to_string(),
+            jsonrpc: JSONRPC_VERSION,
             result: None,
             error: Some(JsonRpcError {
                 code,

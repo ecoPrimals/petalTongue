@@ -8,6 +8,7 @@
 use petal_tongue_ipc::{JsonRpcClient, JsonRpcRequest, JsonRpcResponse};
 use proptest::prelude::*;
 use serde_json::Value;
+use std::borrow::Cow;
 
 /// Strategy for JSON-RPC id values (number, string, or null).
 fn json_rpc_id_strategy() -> impl Strategy<Value = Value> {
@@ -60,7 +61,7 @@ fn json_rpc_request_strategy() -> impl Strategy<Value = JsonRpcRequest> {
         json_rpc_id_strategy(),
     )
         .prop_map(|(method, params, id)| JsonRpcRequest {
-            jsonrpc: "2.0".to_string(),
+            jsonrpc: Cow::Borrowed("2.0"),
             method,
             params,
             id,
@@ -73,7 +74,7 @@ fn json_rpc_response_strategy() -> impl Strategy<Value = JsonRpcResponse> {
         // Success response (use json_result_strategy to avoid Some(Null) roundtrip loss)
         (json_result_strategy(), json_rpc_id_strategy()).prop_map(|(result, id)| {
             JsonRpcResponse {
-                jsonrpc: "2.0".to_string(),
+                jsonrpc: Cow::Borrowed("2.0"),
                 result: Some(result),
                 error: None,
                 id,
@@ -82,7 +83,7 @@ fn json_rpc_response_strategy() -> impl Strategy<Value = JsonRpcResponse> {
         // Error response
         (any::<i32>(), "[a-zA-Z0-9 ]{0,64}", json_rpc_id_strategy()).prop_map(
             |(code, message, id)| JsonRpcResponse {
-                jsonrpc: "2.0".to_string(),
+                jsonrpc: Cow::Borrowed("2.0"),
                 result: None,
                 error: Some(petal_tongue_ipc::JsonRpcError {
                     code,

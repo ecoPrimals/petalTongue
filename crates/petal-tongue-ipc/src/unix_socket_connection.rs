@@ -24,23 +24,26 @@ pub enum ConnectionError {
 ///
 /// Transport-generic: works with `UnixStream`, `TcpStream`, or any
 /// `AsyncRead + AsyncWrite` implementor.
+///
+/// Uses `Vec<u8>` + `serde_json::from_slice` instead of `String` + `from_str`
+/// to avoid a redundant UTF-8 validation pass (serde_json validates internally).
 pub async fn handle_connection<S>(handler: &RpcHandlers, stream: S) -> Result<(), ConnectionError>
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
 {
     let (reader, mut writer) = tokio::io::split(stream);
     let mut reader = BufReader::with_capacity(65_536, reader);
-    let mut line = String::new();
+    let mut line_buf: Vec<u8> = Vec::with_capacity(4096);
 
     loop {
-        line.clear();
-        let bytes_read = reader.read_line(&mut line).await?;
+        line_buf.clear();
+        let bytes_read = reader.read_until(b'\n', &mut line_buf).await?;
 
         if bytes_read == 0 {
             break;
         }
 
-        let response = match serde_json::from_str::<JsonRpcRequest>(&line) {
+        let response = match serde_json::from_slice::<JsonRpcRequest>(&line_buf) {
             Ok(request) => {
                 debug!(
                     "Received request: method={}, id={}",

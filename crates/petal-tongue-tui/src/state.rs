@@ -144,7 +144,7 @@ pub struct TUIState {
     /// Discovered primals (capability-based) — Arc for zero-copy `get_primals`
     primals: Arc<RwLock<Arc<Vec<PrimalInfo>>>>,
 
-    /// Topology edges (if Songbird available) — Arc for zero-copy `get_topology`
+    /// Topology edges (from registry/discovery provider) — Arc for zero-copy `get_topology`
     topology: Arc<RwLock<Arc<Vec<TopologyEdge>>>>,
 
     /// Log messages (ring buffer) — Vec; `add_log` is write-heavy, clone on read acceptable
@@ -217,7 +217,7 @@ impl TUIState {
         self.topology.read().await.len()
     }
 
-    /// Update topology (from Songbird)
+    /// Update topology (from registry/discovery provider)
     pub async fn update_topology(&self, topology: Vec<TopologyEdge>) {
         *self.topology.write().await = Arc::new(topology);
     }

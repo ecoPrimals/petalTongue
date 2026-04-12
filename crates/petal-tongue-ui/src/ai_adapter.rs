@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! AI interaction adapter: AI-driven interaction adaptation.
 //!
-//! An AI agent (e.g. Squirrel) subscribes to interaction events via
+//! An AI agent (via agentic IPC) subscribes to interaction events via
 //! `interaction.subscribe` and can push interaction intents back via
 //! `visualization.interact.apply`. This module bridges those IPC events
 //! with the `EguiInteractionBridge` so the UI responds to AI-suggested

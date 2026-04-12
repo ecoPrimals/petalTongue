@@ -131,9 +131,10 @@ fn test_next_id_increments() {
 #[test]
 fn test_extract_result_no_result() {
     use crate::json_rpc::JsonRpcResponse;
+    use std::borrow::Cow;
     let client = JsonRpcClient::new("/tmp/test.sock").expect("valid path");
     let resp = JsonRpcResponse {
-        jsonrpc: "2.0".to_string(),
+        jsonrpc: Cow::Borrowed("2.0"),
         result: None,
         error: None,
         id: serde_json::json!(1),
@@ -150,9 +151,10 @@ fn test_extract_result_no_result() {
 #[test]
 fn test_extract_result_success() {
     use crate::json_rpc::JsonRpcResponse;
+    use std::borrow::Cow;
     let client = JsonRpcClient::new("/tmp/test.sock").expect("valid path");
     let resp = JsonRpcResponse {
-        jsonrpc: "2.0".to_string(),
+        jsonrpc: Cow::Borrowed("2.0"),
         result: Some(serde_json::json!({"status": "ok"})),
         error: None,
         id: serde_json::json!(1),

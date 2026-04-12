@@ -27,13 +27,10 @@ petal-tongue-ipc = { path = "../petal-tongue-ipc" }  # IPC with tarpc PRIMARY
 petal-tongue-scene = { path = "../petal-tongue-scene" }  # Declarative scene graph + modality
 doom-core = { path = "../doom-core", optional = true }  # Doom integration for platform testing
 
-# Songbird is discovered at runtime via IPC (Unix sockets; tarpc primary, JSON-RPC fallback)
-# through petal-tongue-discovery::DiscoveryServiceClient.
-# NO compile-time dependency - TRUE PRIMAL sovereignty!
-
-# BingoCube is a primalTool (ecoPrimals/primalTools/bingoCube)
-# Discovered at runtime via capability-based discovery (like Songbird, ToadStool)
-# NO compile-time dependency - TRUE PRIMAL sovereignty!
+# Registry/discovery and compute providers are discovered at runtime via IPC
+# (Unix sockets; tarpc primary, JSON-RPC fallback) through
+# petal-tongue-discovery::DiscoveryServiceClient.
+# NO compile-time dependency on other primals - TRUE PRIMAL sovereignty!
 
 tokio = { workspace = true }
 tokio-tungstenite = "0.21"  # Pure Rust WebSocket (Collaborative Intelligence)
@@ -86,18 +83,18 @@ pixels = { version = "0.13", optional = true }
 # EVOLVED: nix removed - framebuffer uses configured dimensions + sysfs (screen.rs)
 # No ioctl needed; rustix available in core if future ioctl required
 
-# For Toadstool WASM integration
+# For WASM integration (remote compute provider)
 wasm-bindgen = { version = "0.2", optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
 web-sys = { version = "0.3", optional = true, features = ["Window", "Document", "Element", "HtmlCanvasElement", "CanvasRenderingContext2d"] }
 
 [features]
-# Default: Auto-detect best backend (prefer Toadstool, fall back to eframe)
+# Default: Auto-detect best backend (prefer capability-discovered, fall back to eframe)
 # mock OFF by default (sovereignty). Use --features mock for dev/demo. Tests: cargo test --features mock
 default = ["ui-auto"]
 
 # Backend selection features (ecoBlossom evolution!)
-ui-auto = ["ui-eframe"]  # Auto-detect (currently just eframe, will add Toadstool)
+ui-auto = ["ui-eframe"]  # Auto-detect (currently just eframe, will add compute-provider backend)
 ui-eframe = []           # eframe backend (current, has C deps)
 discovered-display = []  # Capability-discovered display (display::backends::discovered_display_v2 via biomeOS)
 
@@ -121,7 +118,7 @@ mock = ["petal-tongue-discovery/test-fixtures", "petal-tongue-api/test-fixtures"
 # Legacy features (maintained for compatibility)
 external-display = ["ui-eframe"]  # Alias for ui-eframe
 software-rendering = ["softbuffer", "pixels"]
-toadstool-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys"]
+compute-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys"]
 
 # ✅ EVOLUTION COMPLETE: Audio is now pure Rust via AudioCanvas
 # No ALSA dependencies, no build-time C libraries required

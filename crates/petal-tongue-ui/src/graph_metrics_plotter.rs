@@ -83,13 +83,13 @@ impl GraphMetricsPlotter {
         if let (Some(_first), Some(last)) = (self.history.front(), self.history.back()) {
             ui.horizontal(|ui| {
                 ui.label("Nodes:");
-                ui.colored_label(egui::Color32::LIGHT_BLUE, format!("{}", last.node_count));
+                ui.colored_label(egui::Color32::LIGHT_BLUE, last.node_count.to_string());
                 ui.separator();
                 ui.label("Edges:");
-                ui.colored_label(egui::Color32::LIGHT_GREEN, format!("{}", last.edge_count));
+                ui.colored_label(egui::Color32::LIGHT_GREEN, last.edge_count.to_string());
                 ui.separator();
                 ui.label("Samples:");
-                ui.colored_label(egui::Color32::GRAY, format!("{}", self.history.len()));
+                ui.colored_label(egui::Color32::GRAY, self.history.len().to_string());
             });
         }
 

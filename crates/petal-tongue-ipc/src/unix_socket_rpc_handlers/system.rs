@@ -94,7 +94,7 @@ pub fn handle_announce_capabilities(
 
 /// Handle capability.list: return supported capabilities with enriched metadata.
 ///
-/// Follows ecosystem `capability.list` standard (loamSpine/sweetGrass pattern):
+/// Follows ecosystem `capability.list` standard (Wire Standard L2/L3 pattern):
 /// returns version, protocol, transport, methods, and dependency info.
 #[must_use]
 pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
@@ -294,7 +294,7 @@ pub fn handle_lifecycle_status(handlers: &RpcHandlers, id: Value) -> JsonRpcResp
 
 /// Handle `capabilities.sensory`: return the full sensory capability matrix.
 ///
-/// Consumer primals (ludoSpring, primalSpring, Squirrel) call this to discover
+/// Consumer primals and springs call this to discover
 /// what input/output paths are available for the current user/session.
 ///
 /// Optional `"agent": true` param returns an agent-only matrix.
@@ -322,7 +322,7 @@ pub fn handle_capabilities_sensory(
 
 /// Handle `capabilities.sensory.negotiate`: accept input/output overrides and
 /// return a tailored matrix. Primals call this when they already know the
-/// user's capabilities (e.g. from NestGate preferences).
+/// user's capabilities (e.g. from storage provider preferences).
 #[must_use]
 pub fn handle_capabilities_sensory_negotiate(
     _handlers: &RpcHandlers,
@@ -360,10 +360,10 @@ pub fn handle_capabilities_sensory_negotiate(
     JsonRpcResponse::success(request.id, value)
 }
 
-/// Handle `provider.register_capability`: accept toadStool `ProviderRegistry` registrations.
+/// Handle `provider.register_capability`: accept `ProviderRegistry` registrations.
 ///
 /// Springs and primals call this to register their capabilities with petalTongue,
-/// conforming to toadStool S145's `ProviderRegistry` protocol.
+/// conforming to the compute provider's `ProviderRegistry` protocol.
 pub fn handle_provider_register(
     _handlers: &RpcHandlers,
     request: JsonRpcRequest,

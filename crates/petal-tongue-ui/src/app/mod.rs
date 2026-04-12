@@ -161,7 +161,7 @@ pub struct PetalTongueApp {
     tick_clock: TickClock,
     /// Whether continuous 60 Hz mode is active
     continuous_mode: bool,
-    /// Physics world for fixed-timestep simulation (barraCuda delegates here)
+    /// Physics world for fixed-timestep simulation (math compute delegates here)
     physics_world: petal_tongue_scene::physics::PhysicsWorld,
     /// Animation player for scene-graph keyframe interpolation
     animation_player: petal_tongue_scene::animation::AnimationPlayer,
