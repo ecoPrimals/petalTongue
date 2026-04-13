@@ -35,10 +35,43 @@ fn test_cli_parse_server() {
 #[test]
 fn test_cli_parse_server_with_port() {
     let cli = Cli::parse_from(["petaltongue", "server", "--port", "12345"]);
-    let Commands::Server { port } = cli.command else {
+    let Commands::Server { port, socket } = cli.command else {
         unreachable!("CLI parsed 'server' subcommand")
     };
     assert_eq!(port, Some(12345));
+    assert!(socket.is_none());
+}
+
+#[test]
+fn test_cli_parse_server_with_socket() {
+    let cli = Cli::parse_from([
+        "petaltongue",
+        "server",
+        "--socket",
+        "/tmp/biomeos/petaltongue.sock",
+    ]);
+    let Commands::Server { port, socket } = cli.command else {
+        unreachable!("CLI parsed 'server' subcommand")
+    };
+    assert!(port.is_none());
+    assert_eq!(socket.as_deref(), Some("/tmp/biomeos/petaltongue.sock"));
+}
+
+#[test]
+fn test_cli_parse_server_with_socket_and_port() {
+    let cli = Cli::parse_from([
+        "petaltongue",
+        "server",
+        "--socket",
+        "/tmp/biomeos/petaltongue.sock",
+        "--port",
+        "9100",
+    ]);
+    let Commands::Server { port, socket } = cli.command else {
+        unreachable!("CLI parsed 'server' subcommand")
+    };
+    assert_eq!(port, Some(9100));
+    assert_eq!(socket.as_deref(), Some("/tmp/biomeos/petaltongue.sock"));
 }
 
 #[test]
