@@ -63,7 +63,7 @@ impl Drop for EncryptedEntropy {
 /// - Uses TLS for transport (defense in depth)
 /// - Generates fresh random key per session (ephemeral, secure for current use case)
 /// - GCM tag prevents tampering
-/// - Ready for evolution to `BearDog` key exchange when API available
+/// - Ready for evolution to BTSP key exchange when security provider API available
 ///
 /// # Note
 ///

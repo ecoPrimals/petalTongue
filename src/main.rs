@@ -5,8 +5,8 @@
 //!
 //! # Architecture
 //!
-//! `UniBin`: 1 binary, 6 subcommands (5 modes + status)
-//! ecoBin: 80% (4/5 modes Pure Rust; ui requires platform windowing)
+//! `UniBin`: 1 binary, 6 subcommands (ui, tui, web, headless, server, status)
+//! ecoBin: 83% (5/6 subcommands Pure Rust; ui requires platform windowing)
 //!
 //! # Concurrency
 //!
@@ -287,8 +287,8 @@ fn init_tracing(level: &str, format: &str) -> Result<(), AppError> {
 /// Register petalTongue with the ecosystem discovery service
 ///
 /// This implements the `ipc.register` standard from `PRIMAL_IPC_PROTOCOL.md`.
-/// Uses capability-based discovery to find the registration service (could be Songbird
-/// or any other primal providing the "discovery" capability).
+/// Uses capability-based discovery to find the registration service (any primal
+/// providing the "discovery" capability).
 ///
 /// # TRUE PRIMAL: Capability-Based Registration
 /// - Discovers the registration service at runtime (no hardcoded primal name)

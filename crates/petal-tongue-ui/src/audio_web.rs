@@ -14,7 +14,7 @@
 //!
 //! # Inspiration
 //!
-//! Toadstool uses WGPU successfully for graphics.
+//! GPU providers use WGPU successfully for graphics.
 //! petalTongue uses Web Audio for audio.
 //! Same pattern, same success!
 

@@ -2,7 +2,7 @@
 //! GPU command compiler: scene graph to GPU command buffer.
 //!
 //! Compiles scene primitives into a serialized GPU command format
-//! that can be sent to toadStool (rendering) or barraCuda (compute)
+//! that can be sent to a GPU rendering or compute provider
 //! via IPC. The command format is a flat buffer of typed draw calls
 //! suitable for batch submission to a GPU pipeline.
 //!
@@ -58,7 +58,7 @@ pub enum GpuDrawCommand {
     Clear { color: [f32; 4] },
 }
 
-/// A GPU draw command with provenance for primitive ID buffer (barraCuda).
+/// A GPU draw command with provenance for primitive ID buffer.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GpuCommandWithProvenance {
     pub command: GpuDrawCommand,
@@ -115,7 +115,7 @@ impl GpuProvenanceMap {
 /// Compiles scene graph to GPU draw commands.
 ///
 /// The output is `ModalityOutput::GpuCommands` containing a bincode/JSON
-/// serialized `Vec<GpuDrawCommand>` that toadStool or barraCuda can execute.
+/// serialized `Vec<GpuDrawCommand>` for GPU rendering or compute providers.
 #[derive(Debug, Clone, Default)]
 pub struct GpuCompiler {
     viewport_width: f32,

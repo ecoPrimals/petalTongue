@@ -45,7 +45,7 @@ mod tests {
             // If set, should be a valid URL format
             assert!(url.starts_with("http://") || url.starts_with("https://"));
         } else {
-            // None is valid - will use Songbird auto-discovery
+            // None is valid - will use capability-based auto-discovery
         }
     }
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Scenario builders for groundSpring capabilities.
 //!
-//! groundSpring has 395 validation checks and 102 barraCuda delegations for
+//! groundSpring has 395 validation checks and 102 GPU compute delegations for
 //! physics (seismic, spectral, Anderson localization, sensor calibration) but
 //! no petalTongue scenario builders. These fill the visualization gap.
 

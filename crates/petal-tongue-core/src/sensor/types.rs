@@ -266,7 +266,7 @@ pub enum SensorEvent {
 
     /// Voice/speech command from microphone or speech recognizer.
     ///
-    /// Toadstool (or the OS accessibility layer) provides the transcript;
+    /// A compute provider (or the OS accessibility layer) provides the transcript;
     /// petalTongue maps it to an `InteractionIntent`.
     VoiceCommand {
         /// Recognized speech transcript.

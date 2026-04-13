@@ -12,13 +12,13 @@ use std::sync::{Arc, RwLock};
 /// Instrument types for sonification
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Instrument {
-    /// Deep bass (security primals like `BearDog`)
+    /// Deep bass (security/crypto capability providers)
     Bass,
-    /// Rhythmic drums (compute primals like `ToadStool`)
+    /// Rhythmic drums (compute/GPU capability providers)
     Drums,
-    /// Light chimes (discovery primals like Songbird)
+    /// Light chimes (discovery/registry capability providers)
     Chimes,
-    /// Sustained strings (storage primals like `NestGate`)
+    /// Sustained strings (storage/platform capability providers)
     Strings,
     /// High synth (AI primals like Squirrel)
     Synth,
