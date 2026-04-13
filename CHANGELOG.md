@@ -9,6 +9,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Sprint 6 — Deep Debt Resolution & Compliance Elevation (April 12, 2026)
 
 #### Added
+- **`--socket` CLI flag** on `server` subcommand: explicit UDS path override for
+  nucleus_launcher.sh and start_primal.sh alignment. Wired through
+  `UnixSocketServer::new_with_socket()` builder — no unsafe env mutation.
+  Resolves "petalTongue not starting in NUCLEUS" launcher mismatch.
 - **CONTEXT.md** (T8 compliance): 98-line context file per `PUBLIC_SURFACE_STANDARD`.
 - **6 companion test files**: `topology_tests.rs`, `interaction_tests.rs`,
   `tutorial_mode_tests.rs`, `startup_audio_tests.rs`, `biomeos_client_tests.rs`,

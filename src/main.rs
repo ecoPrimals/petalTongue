@@ -115,6 +115,10 @@ enum Commands {
         /// TCP port for newline-delimited JSON-RPC (optional, UDS always active)
         #[arg(long)]
         port: Option<u16>,
+
+        /// Unix domain socket path override (default: $XDG_RUNTIME_DIR/biomeos/petaltongue-{family}.sock)
+        #[arg(long)]
+        socket: Option<String>,
     },
 
     /// Show status and system info (Pure Rust! ✅)
@@ -208,9 +212,9 @@ async fn main() -> Result<(), AppError> {
             );
             headless_mode::run(&bind_addr, workers, data_service).await
         }
-        Commands::Server { port } => {
-            tracing::info!(mode = "server", tcp_port = ?port, "Launching IPC server (no display)");
-            server_mode::run(data_service, port).await
+        Commands::Server { port, socket } => {
+            tracing::info!(mode = "server", tcp_port = ?port, socket = ?socket, "Launching IPC server (no display)");
+            server_mode::run(data_service, port, socket).await
         }
         Commands::Status { verbose, format } => {
             tracing::info!(

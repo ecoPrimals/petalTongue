@@ -32,8 +32,32 @@ pub struct UnixSocketServer {
 impl UnixSocketServer {
     /// Create a new Unix socket server with graph and visualization state
     pub fn new(graph: Arc<std::sync::RwLock<GraphEngine>>) -> Result<Self, IpcServerError> {
+        Self::new_with_socket(graph, None)
+    }
+
+    /// Create a server with an explicit socket path override.
+    ///
+    /// When `socket_override` is `Some`, it takes priority over `PETALTONGUE_SOCKET`
+    /// and the default XDG resolution. This is the preferred way for CLI `--socket`
+    /// flags to propagate without `unsafe` env mutation in Rust 2024.
+    pub fn new_with_socket(
+        graph: Arc<std::sync::RwLock<GraphEngine>>,
+        socket_override: Option<PathBuf>,
+    ) -> Result<Self, IpcServerError> {
         let family_id = socket_path::get_family_id();
-        let socket_path = socket_path::get_petaltongue_socket_path()?;
+        let socket_path = match socket_override {
+            Some(p) => {
+                if let Some(parent) = p.parent() {
+                    std::fs::create_dir_all(parent).map_err(|e| {
+                        IpcServerError::SocketError(format!(
+                            "Failed to create socket parent dir: {e}"
+                        ))
+                    })?;
+                }
+                p
+            }
+            None => socket_path::get_petaltongue_socket_path()?,
+        };
         let viz_state = Arc::new(std::sync::RwLock::new(VisualizationState::new()));
 
         let mut handlers = RpcHandlers::new(graph, family_id.clone(), viz_state);
