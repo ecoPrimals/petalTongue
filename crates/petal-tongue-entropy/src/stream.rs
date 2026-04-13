@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Entropy streaming to biomeOS/BearDog
+//! Entropy streaming to biomeOS (security/crypto integration at the API boundary)
 
 use crate::error::EntropyError;
 use crate::types::EntropyCapture;
@@ -69,7 +69,7 @@ impl Drop for EncryptedEntropy {
 ///
 /// This implementation uses a randomly generated key for demonstration.
 /// In production, the key should be derived from:
-/// - `BearDog`'s public key (for key exchange)
+/// - The security/crypto provider's public key (for key exchange)
 /// - Or a pre-shared key established during primal handshake
 /// - Or ephemeral keys via ECDH
 pub async fn stream_entropy(
@@ -143,15 +143,15 @@ pub async fn stream_entropy(
 /// - ✅ Authentication (GCM tag)
 /// - ✅ Defense in depth (with TLS)
 ///
-/// ## Future Evolution Path (when `BearDog` key exchange is available):
+/// ## Future Evolution Path (when security/crypto-provider key exchange is available):
 ///
 /// 1. **ECDH Key Exchange** (preferred):
-///    - Request `BearDog`'s public key via `/api/v1/public-key`
+///    - Request the security/crypto provider's public key via `/api/v1/public-key`
 ///    - Perform ECDH to establish shared secret
 ///    - Derive AES key using HKDF with context binding
 ///
 /// 2. **Pre-shared Key** (fallback):
-///    - Retrieve family-specific key from `BearDog` during handshake
+///    - Retrieve family-specific key from the security/crypto provider during handshake
 ///    - Use HKDF to derive session-specific keys
 ///
 /// 3. **Key Rotation** (future):
@@ -164,14 +164,14 @@ pub async fn stream_entropy(
 /// - GCM tag prevents tampering
 /// - Random key ensures confidentiality
 ///
-/// When `BearDog` provides key exchange API, this can be evolved without
+/// When the security/crypto provider exposes a key exchange API, this can be evolved without
 /// breaking existing entropy capture flows.
 fn encrypt_entropy(plaintext: &[u8]) -> Result<EncryptedEntropy, EntropyError> {
     // Generate random encryption key (32 bytes for AES-256)
     // This is secure for ephemeral entropy data with TLS transport
-    // EVOLUTION PATH: When BearDog key exchange is available:
-    //   1. let beardog_pubkey = fetch_beardog_public_key().await?;
-    //   2. let shared_secret = ecdh_key_exchange(&our_private_key, &beardog_pubkey)?;
+    // EVOLUTION PATH: When security/crypto-provider key exchange is available:
+    //   1. let provider_pubkey = fetch_security_crypto_public_key().await?;
+    //   2. let shared_secret = ecdh_key_exchange(&our_private_key, &provider_pubkey)?;
     //   3. let key = hkdf_derive(&shared_secret, b"entropy-encryption", 32)?;
     let key = Aes256Gcm::generate_key(&mut OsRng);
     let cipher = Aes256Gcm::new(&key);

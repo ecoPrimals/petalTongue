@@ -4,7 +4,7 @@
 //! Implements network-based discovery of visualization data providers
 //! using UDP multicast and mDNS service discovery (RFC 6762, RFC 6763).
 //!
-//! Based on Songbird's proven UDP multicast implementation.
+//! Based on a proven UDP multicast pattern used by discovery/registry providers.
 
 mod packet;
 

@@ -13,7 +13,7 @@
 //!
 //! # Pattern Alignment
 //!
-//! This follows the same pattern as Songbird discovery:
+//! This follows the same pattern as discovery/registry-based discovery:
 //! - Unix socket discovery
 //! - Runtime capability detection
 //! - Graceful degradation

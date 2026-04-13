@@ -16,7 +16,7 @@
 //!
 //! The graph editor is built on capability discovery:
 //! - No hardcoded node types (discover at runtime)
-//! - No hardcoded primals (query Songbird)
+//! - No hardcoded primals (query the discovery/registry provider)
 //! - Graceful degradation (works without AI)
 //! - Self-stable (no external dependencies required)
 

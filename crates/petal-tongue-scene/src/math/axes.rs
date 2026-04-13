@@ -110,7 +110,7 @@ impl MathObject for NumberLine {
                     reason = "axis labels are integer tick values"
                 )]
                 let label = if (v - v.round()).abs() < 1e-10 {
-                    format!("{}", v.round() as i64)
+                    (v.round() as i64).to_string()
                 } else {
                     format!("{v:.2}")
                 };
@@ -247,7 +247,7 @@ impl MathObject for Axes {
                 prims.push(Primitive::Text {
                     x: sx,
                     y: oy + 8.0,
-                    content: format!("{}", v.round() as i64),
+                    content: (v.round() as i64).to_string(),
                     font_size: self.label_font_size,
                     color: self.color,
                     anchor: AnchorPoint::TopCenter,
@@ -308,7 +308,7 @@ impl MathObject for Axes {
                 prims.push(Primitive::Text {
                     x: ox - 8.0,
                     y: sy,
-                    content: format!("{}", v.round() as i64),
+                    content: (v.round() as i64).to_string(),
                     font_size: self.label_font_size,
                     color: self.color,
                     anchor: AnchorPoint::CenterRight,

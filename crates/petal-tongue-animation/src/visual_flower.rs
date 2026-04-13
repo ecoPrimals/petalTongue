@@ -19,7 +19,10 @@ pub struct VisualFlowerRenderer {
     current_time: f32,
 
     /// Base color (hue in HSV) — used by egui renderer for petal coloring
-    #[cfg_attr(not(feature = "egui"), allow(dead_code))]
+    #[cfg_attr(
+        not(feature = "egui"),
+        expect(dead_code, reason = "field used only by egui renderer")
+    )]
     base_hue: f32,
 }
 
@@ -66,7 +69,10 @@ impl VisualFlowerRenderer {
     }
 
     /// Get opening percentage (0.0 to 1.0) — used by egui renderer
-    #[cfg_attr(not(feature = "egui"), allow(dead_code))]
+    #[cfg_attr(
+        not(feature = "egui"),
+        expect(dead_code, reason = "method used only by egui renderer")
+    )]
     fn opening_percent(&self) -> f32 {
         match self.current_state() {
             FlowerState::Closed => 0.0,

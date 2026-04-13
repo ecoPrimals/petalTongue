@@ -3,7 +3,7 @@
 //!
 //! Tracks the evolution of shaders across the spring ecosystem:
 //! - Which spring contributed which shader
-//! - Delegation chains (spring -> barraCuda -> toadStool -> coralReef)
+//! - Delegation chains (spring → GPU compute provider → compute provider → distributed compute provider)
 //! - Validation status per spring
 //!
 //! Used by petalTongue to render a lineage graph showing shader provenance.

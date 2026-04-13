@@ -77,16 +77,13 @@ tiny-skia = "0.11"  # For egui → pixel rendering
 epaint = { version = "0.29", default-features = false }  # For egui tessellation
 png = "0.17"  # For pixel buffer conversion
 
-# Pure Rust Display Backends
-softbuffer = { version = "0.4", optional = true }
-pixels = { version = "0.13", optional = true }
-# EVOLVED: nix removed - framebuffer uses configured dimensions + sysfs (screen.rs)
-# No ioctl needed; rustix available in core if future ioctl required
-
-# For WASM integration (remote compute provider)
-wasm-bindgen = { version = "0.2", optional = true }
-wasm-bindgen-futures = { version = "0.4", optional = true }
-web-sys = { version = "0.3", optional = true, features = ["Window", "Document", "Element", "HtmlCanvasElement", "CanvasRenderingContext2d"] }
+# EVOLVED (Sprint 6): softbuffer/pixels/wasm deps removed — features were declared
+# but never wired into code. Re-add when pure-Rust display backends are implemented.
+# softbuffer = { version = "0.4", optional = true }
+# pixels = { version = "0.13", optional = true }
+# wasm-bindgen = { version = "0.2", optional = true }
+# wasm-bindgen-futures = { version = "0.4", optional = true }
+# web-sys = { version = "0.3", optional = true, features = [...] }
 
 [features]
 # Default: Auto-detect best backend (prefer capability-discovered, fall back to eframe)
@@ -117,8 +114,10 @@ mock = ["petal-tongue-discovery/test-fixtures", "petal-tongue-api/test-fixtures"
 
 # Legacy features (maintained for compatibility)
 external-display = ["ui-eframe"]  # Alias for ui-eframe
-software-rendering = ["softbuffer", "pixels"]
-compute-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys"]
+# EVOLVED (Sprint 6): software-rendering and compute-wasm removed — deps never wired.
+# Re-add when pure-Rust display backends / WASM compute are implemented.
+# software-rendering = ["softbuffer", "pixels"]
+# compute-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys"]
 
 # ✅ EVOLUTION COMPLETE: Audio is now pure Rust via AudioCanvas
 # No ALSA dependencies, no build-time C libraries required

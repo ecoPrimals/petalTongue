@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #![forbid(unsafe_code)]
-#![allow(missing_docs, reason = "incremental documentation in progress")]
+#![warn(missing_docs)]
 #![expect(
     clippy::missing_errors_doc,
     reason = "error documentation tracked for incremental completion"
