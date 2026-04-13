@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Physics bridge types for barraCuda integration.
+//! Physics bridge types for GPU compute provider integration.
 //!
 //! These types serialize to/from IPC requests for the `math.physics.nbody` RPC.
-//! CPU fallback uses simple Euler integration; production uses barraCuda.
+//! CPU fallback uses simple Euler integration; production delegates to a compute provider.
 
 use serde::{Deserialize, Serialize};
 
@@ -98,7 +98,7 @@ impl PhysicsWorld {
         })
     }
 
-    /// Update positions from barraCuda response.
+    /// Update positions from compute provider IPC response.
     pub fn apply_ipc_response(&mut self, response: &serde_json::Value) {
         let Some(bodies_arr) = response.get("bodies").and_then(|v| v.as_array()) else {
             return;

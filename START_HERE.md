@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 11, 2026
+**Updated**: April 12, 2026
 
 ---
 
@@ -14,6 +14,7 @@ petaltongue tui                    # Terminal display (ratatui)
 petaltongue web                    # Web interface (axum)
 petaltongue headless --mode svg -o out.svg   # Export to SVG
 petaltongue server                 # IPC server (no display)
+petaltongue server --socket /path  # IPC server (explicit UDS path)
 petaltongue status                 # System info
 ```
 

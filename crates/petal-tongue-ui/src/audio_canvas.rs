@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Audio Canvas - Direct Hardware Access (Pure Rust!)
 //!
-//! Inspired by Toadstool's WGPU pattern and framebuffer direct access.
+//! Inspired by the WGPU GPU-provider pattern and framebuffer direct access.
 //!
 //! # Philosophy
 //!

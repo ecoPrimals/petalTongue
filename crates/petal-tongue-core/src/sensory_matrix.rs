@@ -270,7 +270,7 @@ impl SensoryCapabilityMatrix {
             visual_gui: !caps.visual_outputs.is_empty(),
             terminal: true, // always available as a fallback
             audio: !caps.audio_outputs.is_empty(),
-            braille: false, // Toadstool provides this at runtime
+            braille: false, // discovered at runtime from compute/accessibility provider
             haptic: !caps.haptic_outputs.is_empty(),
             description: true, // always available
             svg: true,         // pure-software renderer

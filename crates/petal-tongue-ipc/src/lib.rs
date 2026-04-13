@@ -82,7 +82,7 @@ pub mod discovery_helpers;
 pub mod ipc_errors;
 pub mod json_rpc;
 pub mod json_rpc_client;
-/// Compute bridge: async IPC for barraCuda math/physics/stat/tessellate/project operations
+/// Compute bridge: async IPC for math/physics/stat/tessellate/project operations
 pub mod physics_bridge;
 pub mod primal_registration;
 pub mod primal_registration_error;

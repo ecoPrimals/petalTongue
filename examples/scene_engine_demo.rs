@@ -431,7 +431,7 @@ fn demo_accessibility() {
 }
 
 fn demo_physics() {
-    println!("=== Physics Bridge (barraCuda IPC) ===");
+    println!("=== Physics Bridge (compute provider IPC) ===");
 
     let mut world = PhysicsWorld::new();
     world.add_body(PhysicsBody {

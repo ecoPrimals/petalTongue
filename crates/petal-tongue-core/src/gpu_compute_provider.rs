@@ -206,7 +206,7 @@ impl GpuComputeProvider {
 #[async_trait]
 impl ComputeProvider for GpuComputeProvider {
     fn name(&self) -> &'static str {
-        // Return generic name (not "Toadstool")
+        // Capability-based: name reflects role, not specific primal
         "GPU Compute Provider"
     }
 

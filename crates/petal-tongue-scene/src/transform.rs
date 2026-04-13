@@ -128,7 +128,7 @@ impl Mul for Transform2D {
     }
 }
 
-/// A 3D transform for scenes delegated to Toadstool GPU rendering.
+/// A 3D transform for scenes delegated to GPU compute providers.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Transform3D {
     /// 4x4 column-major matrix.

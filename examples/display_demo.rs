@@ -27,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
         println!("🎨 Available backends:");
         println!("   1. External Display (active)");
         println!("   2. Software Rendering");
-        println!("   3. Toadstool WASM");
+        println!("   3. Compute WASM");
         println!("   4. Framebuffer Direct");
     } else {
         println!("🪟 No display server detected\n");
@@ -54,7 +54,7 @@ async fn main() -> anyhow::Result<()> {
     println!("════════════════════════════════════════════════════════════");
     println!();
     println!("Four-Tier Architecture:");
-    println!("  1. Toadstool WASM  - Primal collaboration, GPU acceleration");
+    println!("  1. Compute WASM  - Primal collaboration, GPU acceleration");
     println!("  2. Software Rendering - Pure Rust, works everywhere");
     println!("  3. Framebuffer Direct - Linux console mode");
     println!("  4. External Display - Traditional GUI (benchmark)");

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! # Compute Provider System
 //!
-//! Optional GPU compute acceleration (e.g., Toadstool).
+//! Optional GPU compute acceleration via capability-discovered providers.
 
 use crate::error::Result;
 use async_trait::async_trait;
@@ -28,7 +28,7 @@ pub enum ComputeCapability {
 
 /// Compute Provider Interface
 ///
-/// Abstracts GPU compute providers (like Toadstool).
+/// Abstracts GPU compute providers discovered at runtime via capability IPC.
 #[async_trait]
 pub trait ComputeProvider: Send + Sync {
     /// Provider name

@@ -35,14 +35,30 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 #### Removed
 - **Dead `crossterm` dependency** from `petal-tongue-core` (optional, never activated).
+- **Dead `nokhwa`/`mozjpeg-sys` C dependency** from `petal-tongue-entropy` (video feature
+  never wired; mozjpeg-sys pulls C compiler).
+- **Dead optional deps** from `petal-tongue-ui`: `softbuffer`, `pixels`, `wasm-bindgen`,
+  `wasm-bindgen-futures`, `web-sys` (features declared but never used in code).
+- **3 dead features**: `software-rendering`, `compute-wasm`, `video`.
+
+#### Lint & Quality Evolution
+- **4 crates graduated**: `#[allow(missing_docs)]` → `#[warn(missing_docs)]` (docs complete
+  for petal-tongue-tui, petal-tongue-cli, petal-tongue-api, petal-tongue-ui-core).
+- **5 conditional `#[allow(dead_code)]`** → `#[expect(dead_code, reason = "...")]`.
+- **6 more test modules extracted** to companion `_tests.rs` files:
+  `output_verification`, `multimodal_stream`, `biomeos_ui_manager`,
+  `discovered_display`, `accessibility`, `universal_discovery`.
+- **5 more `format!("{}", x)`** → `.to_string()` (axes.rs, discovery_service_provider.rs).
+- **~25 more doc comments** evolved to capability-based language across 12+ files.
 
 #### Verified
 - `cargo fmt --check` ✅
 - `cargo clippy --workspace --all-features -D warnings` ✅ (0 warnings)
 - `cargo doc --workspace --all-features -D warnings` ✅
-- `cargo test --workspace --all-features` ✅ (6,087 passed, 0 failures)
+- `cargo test --workspace --all-features` ✅ (6,090+ passed, 0 failures)
 - `cargo deny check` ✅ (advisories, bans, licenses, sources ok)
 - `ring` absent from dep tree (default AND `--all-features`)
+- Zero production files over 680 LOC (32 test modules extracted across sprints)
 
 ---
 

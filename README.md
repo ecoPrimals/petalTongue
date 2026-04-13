@@ -19,6 +19,7 @@ petaltongue tui         # Terminal display (ratatui)
 petaltongue web         # Web interface (axum)
 petaltongue headless    # Headless rendering (SVG/PNG/JSON)
 petaltongue server      # IPC server (UDS, no display)
+petaltongue server --socket /path/to.sock  # explicit UDS path
 petaltongue server --port 9100  # IPC server (UDS + TCP)
 petaltongue status      # System status
 ```
@@ -109,7 +110,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,087+ passing, 0 failures |
+| Tests | 6,090+ passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
@@ -117,10 +118,10 @@ petaltongue
 | Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
 | BTSP Phase 1 | `validate_insecure_guard()`, family-scoped sockets, domain symlinks |
-| Files | All production files under 535 lines after smart refactor of 26 modules (tests extracted to companions) |
+| Files | All production files under 680 LOC after smart refactor of 32 modules (tests extracted to companions) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 18 crates + sandbox) |
-| External C deps | None -- pure Rust (`rustix` for syscalls, `blake3` pure-Rust hash) |
+| External C deps | None -- pure Rust (`rustix` for syscalls, `blake3` pure-Rust hash); `nokhwa`/`mozjpeg-sys` removed |
 | Error handling | Typed `thiserror` errors throughout -- zero `anyhow` in production |
 | Zero-copy IDs | `DataSourceId`, `GrammarId` are `Arc<str>` -- O(1) clone |
 | Property tests | `proptest` for JSON-RPC parser + core data types |
@@ -142,7 +143,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 6,087+ tests
+cargo test --workspace --all-features        # 6,090+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
@@ -173,7 +174,7 @@ Architectural specifications live in `specs/`. See `specs/` for the complete spe
 | `BIDIRECTIONAL_UUI_ARCHITECTURE.md` | SAME DAVE cognitive model |
 | `PRIMAL_MULTIMODAL_RENDERING_SPECIFICATION.md` | Multi-modal rendering pipeline |
 | `GRAMMAR_OF_GRAPHICS_ARCHITECTURE.md` | Composable grammar type system |
-| `UNIVERSAL_VISUALIZATION_PIPELINE.md` | End-to-end data→render pipeline, barraCuda integration |
+| `UNIVERSAL_VISUALIZATION_PIPELINE.md` | End-to-end data→render pipeline, GPU compute integration |
 | `TUFTE_CONSTRAINT_SYSTEM.md` | Machine-checked visualization quality |
 | `INTERACTION_ENGINE_ARCHITECTURE.md` | Bidirectional interaction, perspective system |
 | `SENSORY_INPUT_V1_PERIPHERALS.md` | Sensor discovery, hardware abstraction, SAME DAVE afferent |
