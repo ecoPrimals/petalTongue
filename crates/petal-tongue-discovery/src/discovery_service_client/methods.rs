@@ -20,10 +20,10 @@ impl DiscoveryServiceClient {
     ///
     /// # Example Capabilities
     /// - "visualization" - primals that provide UI/visualization
-    /// - "encryption" - primals that provide encryption (`BearDog`)
-    /// - "storage" - primals that provide persistent storage (`NestGate`)
-    /// - "compute" - primals that provide execution (`ToadStool`)
-    /// - "ai" - primals that provide AI inference (Squirrel)
+    /// - "encryption" - primals that provide encryption (security/crypto provider)
+    /// - "storage" - primals that provide persistent storage (storage/persistence provider)
+    /// - "compute" - primals that provide execution (compute provider)
+    /// - "ai" - primals that provide AI inference (AI/narration provider)
     ///
     /// # Errors
     /// Returns `DiscoveryError` on network/JSON-RPC errors or invalid response.

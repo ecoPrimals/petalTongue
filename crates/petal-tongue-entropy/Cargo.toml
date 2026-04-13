@@ -48,10 +48,6 @@ default = []
 # For entropy capture, we read raw PCM data from audio devices
 # Status: Phase 3 feature (not needed for core functionality)
 
-video = ["nokhwa"]
-
-# Video capture (optional, Phase 3 feature)
-[dependencies.nokhwa]
-version = "0.10"
-optional = true
+# EVOLVED: video/nokhwa removed (Sprint 6) — nokhwa pulls mozjpeg-sys (C dep).
+# Phase 3 video entropy will use pure-Rust capture when ready.
 

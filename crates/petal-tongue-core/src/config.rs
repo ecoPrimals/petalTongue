@@ -13,8 +13,8 @@ pub struct PetalTongueConfig {
     #[serde(flatten)]
     pub common: CommonConfig,
 
-    /// `BiomeOS` discovery endpoint (if not using auto-discovery via Songbird)
-    /// If None, will attempt to discover via Songbird
+    /// `BiomeOS` discovery endpoint (if not using auto-discovery via a discovery/registry provider)
+    /// If None, will attempt runtime discovery via the discovery/registry layer
     #[serde(default)]
     pub biomeos_url: Option<String>,
 

@@ -30,7 +30,13 @@ struct CachedEntry<T> {
     expires_at: Instant,
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "cache helpers used in tests; public API for future providers"
+    )
+)]
 impl<T> CachedEntry<T> {
     fn new(data: T, ttl: Duration) -> Self {
         Self {

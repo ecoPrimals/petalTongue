@@ -3,7 +3,7 @@
 //!
 //! Pure function: reads `egui::InputState`, returns `Vec<SensorEventIpc>`.
 //! Called each frame from `update_headless()` and broadcast to the
-//! `SensorStreamRegistry` for external subscribers (ludoSpring, Squirrel, etc.).
+//! `SensorStreamRegistry` for external subscribers (other springs, AI/narration providers, etc.).
 
 use petal_tongue_core::{KeyModifiersIpc, SensorEventIpc};
 

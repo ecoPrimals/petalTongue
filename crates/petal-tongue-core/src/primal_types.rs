@@ -13,7 +13,7 @@
 //!
 //! ```rust,ignore
 //! // ❌ BAD: Hardcoded name check
-//! if primal.primal_type == "ToadStool" { ... }
+//! if primal.primal_type == "SomeNamedComputePrimal" { ... }
 //!
 //! // ✅ GOOD: Capability-based check
 //! if primal.has_capability("compute.container") { ... }
@@ -26,7 +26,7 @@ use crate::PrimalInfo;
 /// These are the fundamental types of capabilities primals can have.
 /// Any primal can implement any capability.
 pub mod capability_categories {
-    /// Compute capabilities (ToadStool-like)
+    /// Compute capabilities (typical compute provider)
     pub const COMPUTE: &[&str] = &[
         "compute.container",
         "compute.process",
@@ -34,7 +34,7 @@ pub mod capability_categories {
         "compute.execute",
     ];
 
-    /// Discovery/orchestration capabilities (Songbird-like)
+    /// Discovery/orchestration capabilities (typical discovery/registry provider)
     pub const DISCOVERY: &[&str] = &[
         "discovery.primals",
         "discovery.services",
@@ -42,7 +42,7 @@ pub mod capability_categories {
         "orchestration.routing",
     ];
 
-    /// Storage capabilities (NestGate-like)
+    /// Storage capabilities (typical storage/persistence provider)
     pub const STORAGE: &[&str] = &[
         "storage.filesystem",
         "storage.object",
@@ -50,7 +50,7 @@ pub mod capability_categories {
         "storage.cache",
     ];
 
-    /// Security capabilities (BearDog-like)
+    /// Security capabilities (typical security/crypto provider)
     pub const SECURITY: &[&str] = &[
         "security.auth",
         "security.signing",
@@ -58,7 +58,7 @@ pub mod capability_categories {
         "security.identity",
     ];
 
-    /// AI/ML capabilities (Squirrel-like)
+    /// AI/ML capabilities (typical AI/narration provider)
     pub const AI: &[&str] = &["ai.inference", "ai.training", "ai.nlp", "ai.vision"];
 }
 

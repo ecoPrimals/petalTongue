@@ -15,14 +15,14 @@
 //!           ┌────────────────┼────────────────┬────────────────┐
 //!           │                │                │                │
 //!           ▼                ▼                ▼                ▼
-//!    [ToadStool]      [Software]        [Socket]          [Direct]
-//!    Network         Pure Rust       Runtime Disc.     Runtime Disc.
+//!    [Network]        [Software]        [Socket]          [Direct]
+//!    compute tier    Pure Rust       Runtime Disc.     Runtime Disc.
 //!    Tier 1          Tier 2          Tier 3            Tier 4
 //! ```
 //!
 //! # Philosophy
 //!
-//! Just like we discover display backends (Toadstool, Software, Framebuffer),
+//! Just like we discover display backends (compute-tier, software, framebuffer),
 //! we discover audio backends! NO hardcoding of OS-specific APIs.
 
 pub mod backends;

@@ -9,7 +9,7 @@ use async_trait::async_trait;
 /// Universal audio backend trait
 ///
 /// Any audio provider implements this - we don't care HOW!
-/// - `ToadStool` (network synthesis)
+/// - Network/compute provider (network synthesis)
 /// - Software (pure Rust generation)
 /// - Socket servers (`PipeWire`, `PulseAudio`, etc. discovered at runtime)
 /// - Direct devices (/dev/snd, /dev/audio, etc. discovered at runtime)
@@ -24,7 +24,7 @@ pub trait AudioBackend: Send + Sync {
     /// Get priority (lower = preferred)
     ///
     /// Priority order:
-    /// - 10: Network (`ToadStool`)
+    /// - 10: Network (compute provider)
     /// - 30: Socket (PipeWire/PulseAudio/etc.)
     /// - 40: Direct (/dev/snd, /dev/audio, etc.)
     /// - 50: Software (pure Rust synthesis)
@@ -69,7 +69,7 @@ pub struct BackendMetadata {
 /// Backend type (categorization only)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BackendType {
-    /// Network audio (`ToadStool` primal)
+    /// Network audio (compute provider)
     Network,
     /// Pure Rust software synthesis
     Software,

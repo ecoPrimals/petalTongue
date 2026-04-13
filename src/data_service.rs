@@ -206,7 +206,13 @@ impl DataService {
     }
 
     /// Check if Neural API is available.
-    #[cfg_attr(not(test), allow(dead_code))]
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "used only in tests currently; public API for future modes"
+        )
+    )]
     pub const fn has_neural_api(&self) -> bool {
         self.neural_api.is_some()
     }

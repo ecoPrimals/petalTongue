@@ -68,7 +68,7 @@ impl DiscoveryServiceProvider {
         // Test connectivity
         client.health_check().await?;
 
-        let socket_path = format!("{}", client.socket_path().display());
+        let socket_path = client.socket_path().display().to_string();
 
         Ok(Self {
             client: Arc::new(RwLock::new(client)),
@@ -88,7 +88,7 @@ impl DiscoveryServiceProvider {
     /// Create from existing client (for testing)
     #[must_use]
     pub fn from_client(client: DiscoveryServiceClient) -> Self {
-        let socket_path = format!("{}", client.socket_path().display());
+        let socket_path = client.socket_path().display().to_string();
 
         Self {
             client: Arc::new(RwLock::new(client)),

@@ -27,7 +27,7 @@ pub struct ProviderMetadata {
 ///
 /// This trait is capability-based. We don't care if the provider is:
 /// - biomeOS (orchestrator)
-/// - Songbird (discovery primal)
+/// - A discovery/registry provider
 /// - Custom aggregator
 /// - Multiple providers
 ///

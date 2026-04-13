@@ -23,7 +23,10 @@ pub enum AppError {
     Eframe(String),
 
     /// UI mode not available (when built without `ui` feature).
-    #[cfg_attr(feature = "ui", allow(dead_code))]
+    #[cfg_attr(
+        feature = "ui",
+        expect(dead_code, reason = "variant unreachable when ui feature enabled")
+    )]
     #[error(
         "UI mode not available in this build. Try tui or web mode, or rebuild with --features ui"
     )]

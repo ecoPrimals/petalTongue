@@ -21,7 +21,7 @@ pub struct PrimalEndpoint {
     /// Capabilities this primal provides
     pub capabilities: Vec<String>,
 
-    /// Primal type (e.g., "petalTongue", "Toadstool", "Songbird")
+    /// Primal type (e.g., "petalTongue", "compute-provider", "discovery-provider"; display-only)
     pub primal_type: String,
 
     /// Protocol used (e.g., "tarpc", "jsonrpc", "https")

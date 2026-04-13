@@ -112,13 +112,13 @@ pub struct SelfAwarenessData {
     /// Can coordinate multiple primals
     pub can_coordinate: bool,
 
-    /// Has security capabilities (`BearDog`)
+    /// Has security/crypto capabilities
     pub has_security: bool,
 
-    /// Has discovery capabilities (Songbird)
+    /// Has discovery/registry capabilities
     pub has_discovery: bool,
 
-    /// Has compute capabilities (`ToadStool`)
+    /// Has compute capabilities
     pub has_compute: bool,
 }
 
