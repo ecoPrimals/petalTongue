@@ -8,6 +8,7 @@ use crate::capability_discovery::{
     CapabilityQuery, DiscoveryBackend, DiscoveryError, PrimalEndpoint, PrimalEndpoints,
     PrimalHealth,
 };
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::mpsc;
@@ -86,7 +87,7 @@ impl BiomeOsBackend {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl DiscoveryBackend for BiomeOsBackend {
     async fn query(&self, query: &CapabilityQuery) -> Result<Vec<PrimalEndpoint>, DiscoveryError> {
         // Build JSON-RPC request for capability query

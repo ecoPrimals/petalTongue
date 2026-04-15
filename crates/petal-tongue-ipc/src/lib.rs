@@ -73,7 +73,7 @@
 //! └─────────────────────────────────────────────────────────────┘
 //! ```
 
-/// BearDog Transport Security Profile (BTSP): Phase 1 guards/socket naming + Phase 2 stubs (PT-09).
+/// BearDog Transport Security Profile (BTSP): Phase 1 guards/socket naming + Phase 2 enforcement (PT-09).
 pub mod btsp;
 /// Runtime capability detection for display modalities
 pub mod capability_detection;

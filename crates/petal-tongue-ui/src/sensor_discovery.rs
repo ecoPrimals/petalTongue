@@ -5,6 +5,8 @@
 //! No hardcoded assumptions - tests what actually exists.
 
 use crate::error::Result;
+#[cfg(test)]
+use async_trait::async_trait;
 use petal_tongue_core::{Sensor, SensorRegistry};
 use std::sync::{Arc, RwLock};
 
@@ -151,7 +153,7 @@ mod tests {
 
         struct MockOutputSensor;
 
-        #[async_trait::async_trait]
+        #[async_trait]
         impl Sensor for MockOutputSensor {
             fn capabilities(&self) -> &SensorCapabilities {
                 static CAPS: SensorCapabilities = SensorCapabilities {
@@ -205,7 +207,7 @@ mod tests {
 
         struct MockInputOnlySensor;
 
-        #[async_trait::async_trait]
+        #[async_trait]
         impl Sensor for MockInputOnlySensor {
             fn capabilities(&self) -> &SensorCapabilities {
                 static CAPS: SensorCapabilities = SensorCapabilities {

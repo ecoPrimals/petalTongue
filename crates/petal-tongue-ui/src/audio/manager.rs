@@ -30,6 +30,10 @@ impl AudioManager {
     /// # Errors
     ///
     /// Returns an error if no audio backends are available (including silent fallback).
+    #[expect(
+        clippy::unused_async,
+        reason = "async required when audio-socket feature enables network discovery"
+    )]
     pub async fn init() -> Result<Self> {
         info!("🎵 Discovering audio backends (TRUE PRIMAL)...");
 

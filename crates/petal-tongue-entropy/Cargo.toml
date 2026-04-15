@@ -24,7 +24,6 @@ tracing = { workspace = true }
 
 # Async
 tokio = { workspace = true }
-async-trait = "0.1"
 
 # Streaming & Encryption
 # Workspace: HTTP-only, no TLS (ecoBin: no ring/openssl)

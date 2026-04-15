@@ -26,8 +26,8 @@ features = []  # No features by default (avoids ALSA requirement)
 test-threads = 4
 
 [coverage]
-# Minimum coverage threshold — aligned with CI hard fail at 85%
-fail-under = 85
+# Minimum coverage threshold — ecoPrimals target: 90%
+fail-under = 90
 
 # Show uncovered lines
 show-missing = true

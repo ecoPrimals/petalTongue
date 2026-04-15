@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 12, 2026
+**Updated**: April 15, 2026
 
 ---
 
@@ -55,7 +55,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 5,967+ tests
+cargo test --workspace --all-features           # 5,960+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
@@ -78,7 +78,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 4. **Typed error handling** -- `thiserror` everywhere, no `anyhow` in production; `deny(unwrap_used, expect_used)` with `#[expect]` for justified cases.
 5. **`#![forbid(unsafe_code)]`** unless hardware FFI is unavoidable. Document with `// SAFETY:`.
 6. **Concurrent testing** -- No `thread::sleep`. Use `tokio::time::timeout`.
-7. **Files under 1,000 lines** -- Split into cohesive modules at ~800 lines.
+7. **Files under 400 lines** -- Smart domain refactoring into cohesive modules.
 8. **SPDX headers** -- `// SPDX-License-Identifier: AGPL-3.0-or-later` on all `.rs` files.
 9. **Semantic naming** -- JSON-RPC methods follow `{domain}.{operation}` pattern.
 10. **BTSP Phase 1** -- `validate_insecure_guard()` at startup; family-scoped sockets when `FAMILY_ID` set; `BIOMEOS_INSECURE` guard prevents conflicting posture.
@@ -90,10 +90,10 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 ### Core (`petal-tongue-core`)
 - `constants/` -- Centralized self-knowledge (name, ports, socket names); submodules: `mod.rs`, `network.rs`, `display.rs`, `timeouts.rs`, `thresholds.rs`, `tufte_tolerances.rs`
 - `graph_engine/` -- Graph data model (nodes, edges, layout); submodules: `mod.rs`, `types.rs`, `layout.rs`, `tests.rs`
-- `config_system.rs` -- XDG-compliant configuration (env > file > defaults)
+- `config_system/` -- XDG-compliant configuration (env > file > defaults); submodules: `types.rs`, `loader.rs`
 - `data_channel.rs` -- Re-exports `DataBinding` and `ThresholdRange` from `petal-tongue-types` (11 variants: TimeSeries, Distribution, Bar, Gauge, Spectrum, Heatmap, Scatter, Scatter3D, FieldMap, GameScene, Soundscape)
 - `capability_names.rs` -- Centralized capability/method/socket/primal constants (62+ capabilities, 2 self-knowledge identities)
-- `sensory_matrix.rs` -- Sensory Capability Matrix (input×output negotiation for consumer primals)
+- `sensory_matrix/` -- Sensory Capability Matrix (input×output negotiation); submodules: `capability_sets.rs`, `matrix.rs`
 - `telemetry_adapter.rs` -- JSONL telemetry ingestion (hotSpring)
 - `or_exit.rs` -- `OrExit<T>` trait for zero-panic validation binaries
 

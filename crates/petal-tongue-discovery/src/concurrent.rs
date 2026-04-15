@@ -10,6 +10,9 @@ use std::future::Future;
 use std::time::Duration;
 use tokio::time::timeout;
 
+#[cfg(test)]
+use async_trait::async_trait;
+
 /// Result of concurrent discovery with graceful degradation
 pub struct ConcurrentDiscoveryResult {
     /// Successfully discovered providers
@@ -257,7 +260,7 @@ mod tests {
     /// Provider that always fails health_check - for testing error paths
     struct FailingProvider;
 
-    #[async_trait::async_trait]
+    #[async_trait]
     impl VisualizationDataProvider for FailingProvider {
         async fn get_primals(
             &self,

@@ -32,7 +32,7 @@ use std::str::FromStr;
 /// let cap = CapabilityTaxonomy::UIRender;
 /// assert_eq!(cap.as_str(), "ui.render");
 ///
-/// let parsed: CapabilityTaxonomy = "ui.graph".parse().unwrap();
+/// let parsed: CapabilityTaxonomy = "ui.graph".parse().expect("valid taxonomy string in example");
 /// assert_eq!(parsed, CapabilityTaxonomy::UIGraph);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

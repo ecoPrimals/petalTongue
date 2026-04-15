@@ -97,7 +97,10 @@ impl RegistrationClient {
         let socket_base = constants::discovery_service_socket_name();
         let socket_path = crate::socket_path::discover_primal_socket(&socket_base, None, None)
             .map_or_else(
-                |_| format!("/tmp/biomeos/{socket_base}.sock"),
+                |_| {
+                    let prefix = constants::LEGACY_TMP_PREFIX;
+                    format!("{prefix}/biomeos/{socket_base}.sock")
+                },
                 |p| p.to_string_lossy().to_string(),
             );
         Self {

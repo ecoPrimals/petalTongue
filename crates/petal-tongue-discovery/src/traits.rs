@@ -92,7 +92,7 @@ mod tests {
         metadata: ProviderMetadata,
     }
 
-    #[async_trait::async_trait]
+    #[async_trait]
     impl VisualizationDataProvider for MockProvider {
         async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
             Ok(vec![])

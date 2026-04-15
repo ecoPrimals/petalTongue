@@ -14,6 +14,8 @@ mod tests;
 #[cfg(test)]
 mod tests_extended;
 #[cfg(test)]
+mod tests_extended_layout;
+#[cfg(test)]
 mod tests_rendering;
 
 pub use helpers::{

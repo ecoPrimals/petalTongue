@@ -7,6 +7,7 @@
 //! This module provides the foundation for capability-based primal discovery,
 //! eliminating all hardcoded primal names from the codebase.
 
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -186,7 +187,7 @@ pub struct CapabilityDiscovery {
 /// Discovery backend trait
 ///
 /// Different implementations: biomeOS (primary), mDNS (fallback), static config
-#[async_trait::async_trait]
+#[async_trait]
 pub trait DiscoveryBackend: Send + Sync {
     /// Query for primals providing a capability
     async fn query(&self, query: &CapabilityQuery) -> Result<Vec<PrimalEndpoint>, DiscoveryError>;

@@ -79,14 +79,21 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # ~5,800 tests, ~90% coverage
+cargo test --workspace --all-features     # ~5,960 tests, ~90% coverage
 ```
 
 ## Current State
 
-Sprint 5 complete. All CI gates pass (fmt, clippy pedantic+nursery, doc,
-cargo deny, tests). Zero unsafe, zero TODO/FIXME, zero production mocks,
-zero `#[allow(]` in production. SPDX headers on all source files.
+Sprint 7 complete (April 15, 2026). All CI gates pass (fmt, clippy
+pedantic+nursery, doc, cargo deny, tests). Zero unsafe, zero TODO/FIXME,
+zero production unwrap(), zero `#[allow(]` in production. SPDX headers on
+all source files.
+
+Sprint 7 executed: deep debt resolution across 14 production modules
+(smart refactoring by domain, not mechanical splitting), hardcoding evolved
+to capability-based defaults, BTSP provider default evolved from primal
+identity to capability name (`security`), centralized socket path constants.
 
 Remaining backlog: BTSP Phase 2 consumer wiring (cross-primal dep on
-BearDog), aarch64 musl cross-compile for headless, tarpc feature-gating.
+BearDog), BTSP Phase 3 encryption, aarch64 musl cross-compile for headless,
+tarpc feature-gating, audio backend wire protocols (PipeWire/PulseAudio).

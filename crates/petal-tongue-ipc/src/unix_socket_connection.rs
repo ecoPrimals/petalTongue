@@ -31,8 +31,26 @@ pub async fn handle_connection<S>(handler: &RpcHandlers, stream: S) -> Result<()
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
 {
-    let (reader, mut writer) = tokio::io::split(stream);
-    let mut reader = BufReader::with_capacity(65_536, reader);
+    let (reader, writer) = tokio::io::split(stream);
+    let reader = BufReader::with_capacity(65_536, reader);
+    handle_connection_split(handler, reader, writer).await
+}
+
+/// JSON-RPC dispatch loop on pre-split reader/writer halves.
+///
+/// Accepts any `AsyncBufRead` reader (including a `BufReader` that already
+/// has peeked bytes from BTSP first-byte detection) and any `AsyncWrite`
+/// writer. This is the transport-agnostic core shared by both the combined
+/// `handle_connection` path and the UDS peek-then-dispatch path.
+pub(crate) async fn handle_connection_split<R, W>(
+    handler: &RpcHandlers,
+    mut reader: R,
+    mut writer: W,
+) -> Result<(), ConnectionError>
+where
+    R: tokio::io::AsyncBufRead + Unpin,
+    W: tokio::io::AsyncWrite + Unpin,
+{
     let mut line_buf: Vec<u8> = Vec::with_capacity(4096);
 
     loop {

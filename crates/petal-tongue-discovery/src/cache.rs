@@ -32,9 +32,9 @@ struct CachedEntry<T> {
 
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         dead_code,
-        reason = "cache helpers used in tests; public API for future providers"
+        reason = "CachedEntry helpers are exercised via ProviderCache and integration tests"
     )
 )]
 impl<T> CachedEntry<T> {
