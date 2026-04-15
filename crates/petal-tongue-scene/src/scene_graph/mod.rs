@@ -6,6 +6,8 @@ mod node;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_property;
 
 pub use crate::node_id::NodeId;
 pub use graph::SceneGraph;

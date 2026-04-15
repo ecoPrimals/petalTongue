@@ -19,8 +19,10 @@ use tokio::time::timeout;
 use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
 
+pub use packet::parse_mdns_response;
+
 #[cfg(test)]
-pub use packet::{build_mdns_query, parse_mdns_response};
+pub use packet::build_mdns_query;
 
 /// mDNS multicast address (224.0.0.251)
 pub const MDNS_MULTICAST_ADDR: Ipv4Addr = Ipv4Addr::new(224, 0, 0, 251);

@@ -5,6 +5,7 @@
 //! Implements Phase 4 of the UI specification.
 
 mod helpers;
+mod render;
 mod types;
 mod view;
 

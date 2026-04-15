@@ -110,7 +110,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,090+ passing, 0 failures |
+| Tests | 5,960+ passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
@@ -118,7 +118,7 @@ petaltongue
 | Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
 | BTSP Phase 1 | `validate_insecure_guard()`, family-scoped sockets, domain symlinks |
-| Files | All production files under 680 LOC after smart refactor of 32 modules (tests extracted to companions) |
+| Files | All production files under 400 LOC after smart domain refactoring of 46 modules |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 18 crates + sandbox) |
 | External C deps | None -- pure Rust (`rustix` for syscalls, `blake3` pure-Rust hash); `nokhwa`/`mozjpeg-sys` removed |
@@ -143,7 +143,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 6,090+ tests
+cargo test --workspace --all-features        # 5,960+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
@@ -166,7 +166,7 @@ See [ENV_VARS.md](./ENV_VARS.md) for the full reference.
 
 ## Specs
 
-Architectural specifications live in `specs/`. See `specs/` for the complete specification set (20 specs).
+Architectural specifications live in `specs/` (19 specification documents + `LICENSE.md`).
 
 | Spec | Purpose |
 |------|---------|
@@ -209,7 +209,7 @@ See `ecoPrimals/wateringHole/PETALTONGUE_LEVERAGE_GUIDE.md` for:
 - `#![forbid(unsafe_code)]` unless hardware FFI is unavoidable
 - Semantic method naming (`domain.operation`)
 - JSON-RPC 2.0 REQUIRED for inter-primal IPC, tarpc MAY for Rust-to-Rust hot paths, HTTP for external access only
-- All files under 1,000 lines
+- All production files under 400 lines (smart domain refactoring, not mechanical splitting)
 - SPDX headers on all source files
 
 ---

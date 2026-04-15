@@ -2,7 +2,7 @@
 //! BearDog Transport Security Profile (BTSP).
 //!
 //! Phase 1: insecure startup guard, family-scoped socket names, and visualization symlinks.
-//! Phase 2: handshake policy stubs until BearDog enforces sessions.
+//! Phase 2: handshake enforcement via BearDog session delegation.
 
 use petal_tongue_core::constants::APP_DIR_NAME;
 use std::env;
@@ -191,16 +191,23 @@ impl BtspHandshakeConfig {
         let provider_socket = env::var("BTSP_PROVIDER_SOCKET")
             .or_else(|_| env::var("BEARDOG_SOCKET"))
             .ok()
-            .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| {
-                let provider = env::var("BTSP_PROVIDER").unwrap_or_else(|_| "beardog".to_owned());
-                let socket_dir = env::var("BIOMEOS_SOCKET_DIR").unwrap_or_else(|_| {
-                    let xdg = env::var("XDG_RUNTIME_DIR")
-                        .unwrap_or_else(|_| "/tmp".to_owned());
-                    format!("{xdg}/biomeos")
-                });
-                std::path::PathBuf::from(format!("{socket_dir}/{provider}-{}.sock", sanitize_family_segment(&fid)))
-            });
+            .map_or_else(
+                || {
+                    let provider =
+                        env::var("BTSP_PROVIDER").unwrap_or_else(|_| "security".to_owned());
+                    let socket_dir = env::var("BIOMEOS_SOCKET_DIR").unwrap_or_else(|_| {
+                        let xdg = env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| {
+                            petal_tongue_core::constants::LEGACY_TMP_PREFIX.to_owned()
+                        });
+                        format!("{xdg}/biomeos")
+                    });
+                    std::path::PathBuf::from(format!(
+                        "{socket_dir}/{provider}-{}.sock",
+                        sanitize_family_segment(&fid)
+                    ))
+                },
+                std::path::PathBuf::from,
+            );
 
         Some(Self {
             provider_socket,
@@ -265,21 +272,145 @@ async fn provider_call(
     });
     let mut line = serde_json::to_string(&request).map_err(|e| e.to_string())?;
     line.push('\n');
-    stream.write_all(line.as_bytes()).await.map_err(|e| e.to_string())?;
+    stream
+        .write_all(line.as_bytes())
+        .await
+        .map_err(|e| e.to_string())?;
     stream.flush().await.map_err(|e| e.to_string())?;
 
     let mut reader = BufReader::new(stream);
     let mut response_line = String::new();
-    reader.read_line(&mut response_line).await.map_err(|e| e.to_string())?;
+    reader
+        .read_line(&mut response_line)
+        .await
+        .map_err(|e| e.to_string())?;
 
-    let resp: serde_json::Value = serde_json::from_str(&response_line).map_err(|e| e.to_string())?;
+    let resp: serde_json::Value =
+        serde_json::from_str(&response_line).map_err(|e| e.to_string())?;
     if let Some(err) = resp.get("error") {
         return Err(format!("BTSP provider error: {err}"));
     }
-    resp.get("result").cloned().ok_or_else(|| "no result in provider response".to_owned())
+    resp.get("result")
+        .cloned()
+        .ok_or_else(|| "no result in provider response".to_owned())
 }
 
 // ── BTSP Phase 2: Server Handshake ──────────────────────────────────────
+
+/// Extract a string field from a JSON value, returning empty string if absent.
+fn json_str(val: &serde_json::Value, key: &str) -> String {
+    val.get(key)
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("")
+        .to_owned()
+}
+
+/// Read `ClientHello`, create a BearDog session, and send `ServerHello`.
+///
+/// Returns `(session_id, server_ephemeral_pub, client_ephemeral_pub, challenge)`.
+async fn exchange_hello<R, W>(
+    reader: &mut R,
+    writer: &mut W,
+    config: &BtspHandshakeConfig,
+) -> Result<(String, String, String, String), String>
+where
+    R: tokio::io::AsyncReadExt + Unpin,
+    W: tokio::io::AsyncWriteExt + Unpin,
+{
+    let client_hello_bytes = read_frame(reader)
+        .await
+        .map_err(|e| format!("read ClientHello: {e}"))?;
+    let client_hello: serde_json::Value = serde_json::from_slice(&client_hello_bytes)
+        .map_err(|e| format!("parse ClientHello: {e}"))?;
+
+    let client_ephemeral_pub = json_str(&client_hello, "client_ephemeral_pub");
+    let challenge = format!("{:032x}", rand_u128());
+
+    let create_result = provider_call(
+        &config.provider_socket,
+        "btsp.session.create",
+        serde_json::json!({
+            "family_seed_ref": "env:FAMILY_SEED",
+            "client_ephemeral_pub": client_ephemeral_pub,
+            "challenge": challenge,
+        }),
+    )
+    .await?;
+
+    let session_id = json_str(&create_result, "session_id");
+    let server_ephemeral_pub = json_str(&create_result, "server_ephemeral_pub");
+
+    let hello = serde_json::json!({
+        "session_id": session_id,
+        "server_ephemeral_pub": server_ephemeral_pub,
+        "challenge": challenge,
+    });
+    let hello_bytes = serde_json::to_vec(&hello).map_err(|e| e.to_string())?;
+    write_frame(writer, &hello_bytes)
+        .await
+        .map_err(|e| format!("write ServerHello: {e}"))?;
+
+    Ok((
+        session_id,
+        server_ephemeral_pub,
+        client_ephemeral_pub,
+        challenge,
+    ))
+}
+
+/// Read `ChallengeResponse`, verify via BearDog, and reject on failure.
+async fn verify_challenge<R, W>(
+    reader: &mut R,
+    writer: &mut W,
+    config: &BtspHandshakeConfig,
+    session_id: &str,
+    server_ephemeral_pub: &str,
+    client_ephemeral_pub: &str,
+    challenge: &str,
+) -> Result<String, String>
+where
+    R: tokio::io::AsyncReadExt + Unpin,
+    W: tokio::io::AsyncWriteExt + Unpin,
+{
+    let cr_bytes = read_frame(reader)
+        .await
+        .map_err(|e| format!("read ChallengeResponse: {e}"))?;
+    let cr: serde_json::Value =
+        serde_json::from_slice(&cr_bytes).map_err(|e| format!("parse ChallengeResponse: {e}"))?;
+
+    let client_response = json_str(&cr, "response");
+    let preferred_cipher = cr
+        .get("preferred_cipher")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("null")
+        .to_owned();
+
+    let verify = provider_call(
+        &config.provider_socket,
+        "btsp.session.verify",
+        serde_json::json!({
+            "session_id": session_id,
+            "client_response": client_response,
+            "client_ephemeral_pub": client_ephemeral_pub,
+            "server_ephemeral_pub": server_ephemeral_pub,
+            "challenge": challenge,
+        }),
+    )
+    .await?;
+
+    if !verify
+        .get("verified")
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false)
+    {
+        let reason = json_str(&verify, "reason");
+        let err = serde_json::json!({"error": "handshake_failed", "reason": reason});
+        let _ = write_frame(writer, &serde_json::to_vec(&err).unwrap_or_default()).await;
+        return Err(format!("BTSP verify failed: {reason}"));
+    }
+
+    Ok(preferred_cipher)
+}
 
 /// Perform the server-side BTSP handshake on a connection, delegating
 /// crypto to BearDog via `btsp.session.create`, `btsp.session.verify`,
@@ -294,91 +425,37 @@ pub(crate) async fn perform_server_handshake<S>(
 where
     S: tokio::io::AsyncReadExt + tokio::io::AsyncWriteExt + Unpin,
 {
-    // Step 1: Read ClientHello frame
-    let client_hello_bytes = read_frame(stream).await.map_err(|e| format!("read ClientHello: {e}"))?;
-    let client_hello: serde_json::Value = serde_json::from_slice(&client_hello_bytes)
-        .map_err(|e| format!("parse ClientHello: {e}"))?;
+    let (reader, writer) = tokio::io::split(stream);
+    tokio::pin!(reader);
+    tokio::pin!(writer);
+    perform_server_handshake_split(&mut reader, &mut writer, config).await
+}
 
-    let client_ephemeral_pub = client_hello
-        .get("client_ephemeral_pub")
-        .and_then(serde_json::Value::as_str)
-        .unwrap_or("")
-        .to_owned();
+/// Split-stream variant of [`perform_server_handshake`] for use with
+/// pre-split reader/writer pairs (e.g. after UDS first-byte peek).
+pub(crate) async fn perform_server_handshake_split<R, W>(
+    reader: &mut R,
+    writer: &mut W,
+    config: &BtspHandshakeConfig,
+) -> Result<String, String>
+where
+    R: tokio::io::AsyncReadExt + Unpin,
+    W: tokio::io::AsyncWriteExt + Unpin,
+{
+    let (session_id, server_pub, client_pub, challenge) =
+        exchange_hello(reader, writer, config).await?;
 
-    // Step 2: Generate challenge + create session via BearDog
-    let challenge = format!("{:032x}", rand_u128());
+    let preferred_cipher = verify_challenge(
+        reader,
+        writer,
+        config,
+        &session_id,
+        &server_pub,
+        &client_pub,
+        &challenge,
+    )
+    .await?;
 
-    let create_result = provider_call(
-        &config.provider_socket,
-        "btsp.session.create",
-        serde_json::json!({
-            "family_seed_ref": "env:FAMILY_SEED",
-            "client_ephemeral_pub": client_ephemeral_pub,
-            "challenge": challenge,
-        }),
-    ).await?;
-
-    let session_id = create_result
-        .get("session_id")
-        .and_then(serde_json::Value::as_str)
-        .unwrap_or("")
-        .to_owned();
-    let server_ephemeral_pub = create_result
-        .get("server_ephemeral_pub")
-        .and_then(serde_json::Value::as_str)
-        .unwrap_or("")
-        .to_owned();
-
-    // Step 3: Send ServerHello frame
-    let server_hello = serde_json::json!({
-        "session_id": session_id,
-        "server_ephemeral_pub": server_ephemeral_pub,
-        "challenge": challenge,
-    });
-    let hello_bytes = serde_json::to_vec(&server_hello).map_err(|e| e.to_string())?;
-    write_frame(stream, &hello_bytes).await.map_err(|e| format!("write ServerHello: {e}"))?;
-
-    // Step 4: Read ChallengeResponse frame
-    let cr_bytes = read_frame(stream).await.map_err(|e| format!("read ChallengeResponse: {e}"))?;
-    let challenge_response: serde_json::Value = serde_json::from_slice(&cr_bytes)
-        .map_err(|e| format!("parse ChallengeResponse: {e}"))?;
-
-    let client_response = challenge_response
-        .get("response")
-        .and_then(serde_json::Value::as_str)
-        .unwrap_or("")
-        .to_owned();
-    let preferred_cipher = challenge_response
-        .get("preferred_cipher")
-        .and_then(serde_json::Value::as_str)
-        .unwrap_or("null")
-        .to_owned();
-
-    // Step 5: Verify via BearDog
-    let verify_result = provider_call(
-        &config.provider_socket,
-        "btsp.session.verify",
-        serde_json::json!({
-            "session_id": session_id,
-            "client_response": client_response,
-            "client_ephemeral_pub": client_ephemeral_pub,
-            "server_ephemeral_pub": server_ephemeral_pub,
-            "challenge": challenge,
-        }),
-    ).await?;
-
-    let verified = verify_result
-        .get("verified")
-        .and_then(serde_json::Value::as_bool)
-        .unwrap_or(false);
-    if !verified {
-        let reason = verify_result.get("reason").and_then(serde_json::Value::as_str).unwrap_or("unknown");
-        let err_frame = serde_json::json!({"error": "handshake_failed", "reason": reason});
-        let _ = write_frame(stream, &serde_json::to_vec(&err_frame).unwrap_or_default()).await;
-        return Err(format!("BTSP verify failed: {reason}"));
-    }
-
-    // Step 6: Negotiate cipher
     let _negotiate = provider_call(
         &config.provider_socket,
         "btsp.negotiate",
@@ -387,16 +464,18 @@ where
             "preferred_cipher": preferred_cipher,
             "bond_type": "Covalent",
         }),
-    ).await;
+    )
+    .await;
 
-    // Step 7: Send HandshakeComplete
     let complete = serde_json::json!({
         "status": "complete",
         "session_id": session_id,
         "cipher": "null",
     });
     let complete_bytes = serde_json::to_vec(&complete).map_err(|e| e.to_string())?;
-    write_frame(stream, &complete_bytes).await.map_err(|e| format!("write Complete: {e}"))?;
+    write_frame(writer, &complete_bytes)
+        .await
+        .map_err(|e| format!("write Complete: {e}"))?;
 
     tracing::info!(session_id = %session_id, "BTSP handshake complete (null cipher)");
     Ok(session_id)

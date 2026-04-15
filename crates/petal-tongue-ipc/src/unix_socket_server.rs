@@ -265,23 +265,55 @@ impl UnixSocketServer {
     }
 
     /// Handle a UDS connection with optional BTSP handshake.
+    ///
+    /// Uses the same first-byte peek as TCP and NestGate:
+    /// `BufReader::fill_buf()` non-destructively reads the first byte.
+    /// `{` (0x7B) → plain JSON-RPC from biomeOS composition, bypass
+    /// handshake. Otherwise run BTSP. The `BufReader` is kept alive so
+    /// peeked bytes flow into the subsequent read path (handshake or
+    /// JSON-RPC loop) without data loss.
     async fn handle_uds_with_btsp(
         handlers: &RpcHandlers,
-        mut stream: tokio::net::UnixStream,
+        stream: tokio::net::UnixStream,
         btsp_config: Option<Arc<crate::btsp::BtspHandshakeConfig>>,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         if let Some(ref cfg) = btsp_config {
-            match crate::btsp::perform_server_handshake(&mut stream, cfg).await {
-                Ok(session_id) => {
-                    debug!("BTSP authenticated on UDS: session={session_id}");
-                }
-                Err(e) => {
-                    tracing::warn!("BTSP handshake failed on UDS, refusing: {e}");
+            use tokio::io::AsyncBufReadExt;
+
+            let (reader, mut writer) = stream.into_split();
+            let mut buf_reader = tokio::io::BufReader::new(reader);
+
+            let first_byte = match buf_reader.fill_buf().await {
+                Ok(buf) if !buf.is_empty() => buf[0],
+                Ok(_) => {
+                    debug!("BTSP: UDS connection sent EOF before any data, rejecting");
                     return Ok(());
                 }
+                Err(e) => {
+                    error!("BTSP: UDS peek failed: {e}");
+                    return Ok(());
+                }
+            };
+
+            if first_byte == b'{' {
+                debug!("BTSP: first byte is '{{' on UDS, bypassing handshake (JSON-RPC)");
+            } else {
+                match crate::btsp::perform_server_handshake_split(&mut buf_reader, &mut writer, cfg)
+                    .await
+                {
+                    Ok(session_id) => {
+                        debug!("BTSP authenticated on UDS: session={session_id}");
+                    }
+                    Err(e) => {
+                        error!("BTSP handshake failed on UDS, rejecting connection: {e}");
+                        return Ok(());
+                    }
+                }
             }
+            unix_socket_connection::handle_connection_split(handlers, buf_reader, writer).await?;
+        } else {
+            unix_socket_connection::handle_connection(handlers, stream).await?;
         }
-        unix_socket_connection::handle_connection(handlers, stream).await?;
         Ok(())
     }
 
@@ -297,13 +329,17 @@ impl UnixSocketServer {
         if let Some(ref cfg) = btsp_config {
             let mut peek_buf = [0u8; 1];
             let n = stream.peek(&mut peek_buf).await?;
-            if n > 0 && peek_buf[0] != b'{' {
+            if n == 0 {
+                debug!("BTSP: TCP connection sent EOF before any data, rejecting");
+                return Ok(());
+            }
+            if peek_buf[0] != b'{' {
                 match crate::btsp::perform_server_handshake(&mut stream, cfg).await {
                     Ok(session_id) => {
                         debug!("BTSP authenticated on TCP: session={session_id}");
                     }
                     Err(e) => {
-                        tracing::warn!("BTSP handshake failed on TCP, refusing: {e}");
+                        error!("BTSP handshake failed on TCP, rejecting connection: {e}");
                         return Ok(());
                     }
                 }

@@ -36,8 +36,7 @@
 //! # }
 //! ```
 
-#[cfg(test)]
-mod cache;
+pub mod cache;
 mod capabilities;
 pub mod capability_parse;
 #[cfg(any(test, feature = "test-fixtures"))]
@@ -70,7 +69,7 @@ pub use discovery_service_client::DiscoveryServiceClient;
 pub use discovery_service_provider::DiscoveryServiceProvider;
 pub use dynamic_scenario_provider::DynamicScenarioProvider;
 pub use jsonrpc_provider::JsonRpcProvider;
-pub use mdns_provider::MdnsVisualizationProvider;
+pub use mdns_provider::{MdnsVisualizationProvider, parse_mdns_response};
 pub use neural_api_provider::NeuralApiProvider;
 pub use neural_graph_client::{ExecutionResult, ExecutionStatus, GraphMetadata, NeuralGraphClient};
 pub use scenario_provider::ScenarioVisualizationProvider;

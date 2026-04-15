@@ -6,6 +6,33 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Sprint 7 — Deep Domain Refactoring & Capability Evolution (April 15, 2026)
+
+#### Changed
+- **14 production modules smart-refactored by domain** — `wad_loader`, `raycast_renderer`,
+  `sensory_matrix`, `visualization_handler/types`, `graph_editor/rpc_methods`,
+  `protocol_selection`, `unix_socket_rpc_handlers/system`, `primal_panel`,
+  `collector` (telemetry), `traffic_view/view`, `graph_canvas/rendering`,
+  `device_panel`, `config_system`, `compiler` — each decomposed into
+  single-responsibility submodules. All production files now under 400 LOC.
+- **4 test files refactored** — `app/tests`, `traffic_view/tests_extended`,
+  `trust_dashboard/tests`, `headless_panel_coverage_tests` — split by test domain.
+- **BTSP provider default**: `"beardog"` → `"security"` (capability-based, not
+  primal-specific). Socket fallback paths now use centralized `LEGACY_TMP_PREFIX`.
+- **Duplicate socket path templates**: `primal_registration.rs` fallback centralized
+  through `constants::LEGACY_TMP_PREFIX`.
+- **Root docs unified**: Test counts, file size policy, sprint status synchronized
+  across README.md, START_HERE.md, CONTEXT.md.
+
+#### Verified
+- Zero `.unwrap()` in production code (all confined to `#[cfg(test)]`).
+- Zero TODO/FIXME/HACK markers.
+- `ring` not in dependency tree for Linux target; `deny.toml` ban operational.
+- No C dependencies, no `build.rs`, ecoBin pure-Rust compliant.
+- Production mocks properly feature-gated (`mock`, `test-fixtures`).
+- Provenance trio already capability-based (discovers by `dag.session` etc.).
+- 5,960+ tests passing, 0 failures across entire workspace.
+
 ### Sprint 6 — Deep Debt Resolution & Compliance Elevation (April 12, 2026)
 
 #### Added
