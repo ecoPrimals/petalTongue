@@ -158,11 +158,21 @@ impl UnixSocketServer {
 
     /// Start the server: bind UDS (always) and optionally TCP, then accept connections.
     ///
-    /// Logs BTSP Phase 2 handshake policy at startup so the security posture
-    /// is visible in production logs (PT-09).
+    /// BTSP Phase 2: when `BtspHandshakeConfig` is available from the environment,
+    /// every accepted connection must complete a handshake (delegated to BearDog)
+    /// before JSON-RPC is served. Development mode (no FAMILY_ID) skips handshake.
     pub async fn start(self: Arc<Self>) -> Result<(), IpcServerError> {
         let posture = crate::btsp::current_btsp_posture();
         crate::btsp::log_handshake_policy(&crate::btsp::handshake_policy(&posture));
+
+        let btsp_config = crate::btsp::BtspHandshakeConfig::from_env().map(Arc::new);
+        if let Some(ref cfg) = btsp_config {
+            info!(
+                "BTSP Phase 2 active: family={}, provider={}",
+                cfg.family_id,
+                cfg.provider_socket.display()
+            );
+        }
 
         if self.socket_path.exists() {
             let remove_result = if self.socket_path.is_file() {
@@ -216,9 +226,10 @@ impl UnixSocketServer {
                     match result {
                         Ok((stream, _addr)) => {
                             let server = Arc::clone(&self);
+                            let btsp = btsp_config.clone();
                             tokio::spawn(async move {
                                 if let Err(e) =
-                                    unix_socket_connection::handle_connection(&server.handlers, stream).await
+                                    Self::handle_uds_with_btsp(&server.handlers, stream, btsp).await
                                 {
                                     error!("UDS connection error: {e}");
                                 }
@@ -236,10 +247,11 @@ impl UnixSocketServer {
                     match result {
                         Ok((stream, addr)) => {
                             let server = Arc::clone(&self);
+                            let btsp = btsp_config.clone();
                             tokio::spawn(async move {
                                 debug!("TCP connection from {addr}");
                                 if let Err(e) =
-                                    unix_socket_connection::handle_connection(&server.handlers, stream).await
+                                    Self::handle_tcp_with_btsp(&server.handlers, stream, btsp).await
                                 {
                                     error!("TCP connection error: {e}");
                                 }
@@ -250,6 +262,55 @@ impl UnixSocketServer {
                 }
             }
         }
+    }
+
+    /// Handle a UDS connection with optional BTSP handshake.
+    async fn handle_uds_with_btsp(
+        handlers: &RpcHandlers,
+        mut stream: tokio::net::UnixStream,
+        btsp_config: Option<Arc<crate::btsp::BtspHandshakeConfig>>,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        if let Some(ref cfg) = btsp_config {
+            match crate::btsp::perform_server_handshake(&mut stream, cfg).await {
+                Ok(session_id) => {
+                    debug!("BTSP authenticated on UDS: session={session_id}");
+                }
+                Err(e) => {
+                    tracing::warn!("BTSP handshake failed on UDS, refusing: {e}");
+                    return Ok(());
+                }
+            }
+        }
+        unix_socket_connection::handle_connection(handlers, stream).await?;
+        Ok(())
+    }
+
+    /// Handle a TCP connection with optional BTSP handshake.
+    ///
+    /// Applies the same first-byte peek as BearDog: if the first byte is `{`,
+    /// treat it as plain JSON-RPC (biomeOS composition). Otherwise, run BTSP.
+    async fn handle_tcp_with_btsp(
+        handlers: &RpcHandlers,
+        mut stream: tokio::net::TcpStream,
+        btsp_config: Option<Arc<crate::btsp::BtspHandshakeConfig>>,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        if let Some(ref cfg) = btsp_config {
+            let mut peek_buf = [0u8; 1];
+            let n = stream.peek(&mut peek_buf).await?;
+            if n > 0 && peek_buf[0] != b'{' {
+                match crate::btsp::perform_server_handshake(&mut stream, cfg).await {
+                    Ok(session_id) => {
+                        debug!("BTSP authenticated on TCP: session={session_id}");
+                    }
+                    Err(e) => {
+                        tracing::warn!("BTSP handshake failed on TCP, refusing: {e}");
+                        return Ok(());
+                    }
+                }
+            }
+        }
+        unix_socket_connection::handle_connection(handlers, stream).await?;
+        Ok(())
     }
 }
 
