@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![allow(clippy::manual_async_fn)] // test modalities match `GUIModality` desugared signatures
 
 use super::*;
-use crate::modality::{ModalityCapabilities, ModalityTier};
-use async_trait::async_trait;
+use crate::modality::{GUIModality, ModalityCapabilities, ModalityTier, NullModality};
 
 struct MockModality {
     name: &'static str,
     tier: ModalityTier,
 }
 
-#[async_trait]
-impl crate::modality::GUIModality for MockModality {
+impl GUIModality for MockModality {
     fn name(&self) -> &'static str {
         self.name
     }
@@ -20,17 +19,23 @@ impl crate::modality::GUIModality for MockModality {
     fn tier(&self) -> ModalityTier {
         self.tier
     }
-    async fn initialize(&mut self, _engine: Arc<UniversalRenderingEngine>) -> Result<()> {
-        Ok(())
+    fn initialize(
+        &mut self,
+        _engine: Arc<UniversalRenderingEngine<Self>>,
+    ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+        async { Ok(()) }
     }
-    async fn render(&mut self) -> Result<()> {
-        Ok(())
+    fn render(&mut self) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+        async { Ok(()) }
     }
-    async fn handle_event(&mut self, _event: EngineEvent) -> Result<()> {
-        Ok(())
+    fn handle_event(
+        &mut self,
+        _event: EngineEvent,
+    ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+        async { Ok(()) }
     }
-    async fn shutdown(&mut self) -> Result<()> {
-        Ok(())
+    fn shutdown(&mut self) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+        async { Ok(()) }
     }
     fn capabilities(&self) -> ModalityCapabilities {
         ModalityCapabilities::default()
@@ -39,7 +44,7 @@ impl crate::modality::GUIModality for MockModality {
 
 #[tokio::test]
 async fn test_engine_creation() {
-    let engine = UniversalRenderingEngine::new().expect("engine creation");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine creation");
 
     let state = engine.state.read().await;
     assert_eq!(state.view_mode, ViewMode::Graph);
@@ -49,7 +54,7 @@ async fn test_engine_creation() {
 
 #[tokio::test]
 async fn test_selection_update() {
-    let engine = UniversalRenderingEngine::new().expect("engine creation");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine creation");
 
     let mut selected = HashSet::new();
     selected.insert("node1".to_string());
@@ -65,7 +70,7 @@ async fn test_selection_update() {
 
 #[tokio::test]
 async fn test_viewport_update() {
-    let engine = UniversalRenderingEngine::new().expect("engine creation");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine creation");
 
     // Event broadcast may fail if no subscribers - that's OK in tests
     let _ = engine.set_viewport(100.0, 200.0, 1.5).await;
@@ -79,7 +84,7 @@ async fn test_viewport_update() {
 
 #[tokio::test]
 async fn test_discover_modalities() {
-    let engine = UniversalRenderingEngine::new().expect("engine creation");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine creation");
     engine
         .discover_modalities()
         .await
@@ -88,13 +93,13 @@ async fn test_discover_modalities() {
 
 #[tokio::test]
 async fn test_discover_compute() {
-    let engine = UniversalRenderingEngine::new().expect("engine creation");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine creation");
     engine.discover_compute().await.expect("discover compute");
 }
 
 #[tokio::test]
 async fn test_render_auto_no_modalities() {
-    let engine = UniversalRenderingEngine::new().expect("engine creation");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine creation");
     let engine = Arc::new(engine);
     let result = engine.clone().render_auto().await;
     assert!(result.is_err());
@@ -103,7 +108,7 @@ async fn test_render_auto_no_modalities() {
 
 #[tokio::test]
 async fn test_render_unknown_modality() {
-    let engine = UniversalRenderingEngine::new().expect("engine creation");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine creation");
     let engine = Arc::new(engine);
     let result = engine.clone().render("nonexistent").await;
     assert!(result.is_err());
@@ -117,14 +122,14 @@ async fn test_render_unknown_modality() {
 
 #[tokio::test]
 async fn test_render_with_registered_modality() {
-    let engine = UniversalRenderingEngine::new().expect("engine creation");
+    let engine = UniversalRenderingEngine::<MockModality>::new().expect("engine creation");
     {
         let modalities = engine.modalities();
         let mut guard = modalities.write().await;
-        guard.register(Box::new(MockModality {
+        guard.register(MockModality {
             name: "test",
             tier: ModalityTier::AlwaysAvailable,
-        }));
+        });
     }
     let engine = Arc::new(engine);
     let _sub = engine.events().subscribe().await;
@@ -134,18 +139,18 @@ async fn test_render_with_registered_modality() {
 
 #[tokio::test]
 async fn test_render_multi() {
-    let engine = UniversalRenderingEngine::new().expect("engine creation");
+    let engine = UniversalRenderingEngine::<MockModality>::new().expect("engine creation");
     {
         let modalities = engine.modalities();
         let mut guard = modalities.write().await;
-        guard.register(Box::new(MockModality {
+        guard.register(MockModality {
             name: "a",
             tier: ModalityTier::AlwaysAvailable,
-        }));
-        guard.register(Box::new(MockModality {
+        });
+        guard.register(MockModality {
             name: "b",
             tier: ModalityTier::AlwaysAvailable,
-        }));
+        });
     }
     let engine = Arc::new(engine);
     let _sub = engine.events().subscribe().await;
@@ -155,7 +160,7 @@ async fn test_render_multi() {
 
 #[tokio::test]
 async fn test_engine_state_accessors() {
-    let engine = UniversalRenderingEngine::new().expect("engine creation");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine creation");
     let _state = engine.state();
     let _events = engine.events();
     let _modalities = engine.modalities();
@@ -183,15 +188,14 @@ async fn test_engine_state_default() {
 
 #[tokio::test]
 async fn test_engine_lifecycle_new_succeeds() {
-    let engine = UniversalRenderingEngine::new();
+    let engine = UniversalRenderingEngine::<NullModality>::new();
     assert!(engine.is_ok());
 }
 
 #[tokio::test]
 async fn test_engine_modality_initialize_error_propagates() {
     struct FailingModality;
-    #[async_trait]
-    impl crate::modality::GUIModality for FailingModality {
+    impl GUIModality for FailingModality {
         fn name(&self) -> &'static str {
             "failing"
         }
@@ -201,29 +205,39 @@ async fn test_engine_modality_initialize_error_propagates() {
         fn tier(&self) -> ModalityTier {
             ModalityTier::AlwaysAvailable
         }
-        async fn initialize(&mut self, _engine: Arc<UniversalRenderingEngine>) -> Result<()> {
-            Err(crate::error::PetalTongueError::Internal(
-                "init failed".into(),
-            ))
+        fn initialize(
+            &mut self,
+            _engine: Arc<UniversalRenderingEngine<Self>>,
+        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+            async {
+                Err(crate::error::PetalTongueError::Internal(
+                    "init failed".into(),
+                ))
+            }
         }
-        async fn render(&mut self) -> Result<()> {
-            Ok(())
+        fn render(&mut self) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+            async { Ok(()) }
         }
-        async fn handle_event(&mut self, _event: EngineEvent) -> Result<()> {
-            Ok(())
+        fn handle_event(
+            &mut self,
+            _event: EngineEvent,
+        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+            async { Ok(()) }
         }
-        async fn shutdown(&mut self) -> Result<()> {
-            Ok(())
+        fn shutdown(
+            &mut self,
+        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+            async { Ok(()) }
         }
         fn capabilities(&self) -> ModalityCapabilities {
             ModalityCapabilities::default()
         }
     }
-    let engine = UniversalRenderingEngine::new().expect("engine");
+    let engine = UniversalRenderingEngine::<FailingModality>::new().expect("engine");
     {
         let modalities = engine.modalities();
         let mut guard = modalities.write().await;
-        guard.register(Box::new(FailingModality));
+        guard.register(FailingModality);
     }
     let engine = Arc::new(engine);
     let _sub = engine.events().subscribe().await;
@@ -235,8 +249,7 @@ async fn test_engine_modality_initialize_error_propagates() {
 #[tokio::test]
 async fn test_engine_modality_render_error_propagates() {
     struct RenderFailingModality;
-    #[async_trait]
-    impl crate::modality::GUIModality for RenderFailingModality {
+    impl GUIModality for RenderFailingModality {
         fn name(&self) -> &'static str {
             "render_fail"
         }
@@ -246,29 +259,39 @@ async fn test_engine_modality_render_error_propagates() {
         fn tier(&self) -> ModalityTier {
             ModalityTier::AlwaysAvailable
         }
-        async fn initialize(&mut self, _engine: Arc<UniversalRenderingEngine>) -> Result<()> {
-            Ok(())
+        fn initialize(
+            &mut self,
+            _engine: Arc<UniversalRenderingEngine<Self>>,
+        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+            async { Ok(()) }
         }
-        async fn render(&mut self) -> Result<()> {
-            Err(crate::error::PetalTongueError::Internal(
-                "render failed".into(),
-            ))
+        fn render(&mut self) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+            async {
+                Err(crate::error::PetalTongueError::Internal(
+                    "render failed".into(),
+                ))
+            }
         }
-        async fn handle_event(&mut self, _event: EngineEvent) -> Result<()> {
-            Ok(())
+        fn handle_event(
+            &mut self,
+            _event: EngineEvent,
+        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+            async { Ok(()) }
         }
-        async fn shutdown(&mut self) -> Result<()> {
-            Ok(())
+        fn shutdown(
+            &mut self,
+        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+            async { Ok(()) }
         }
         fn capabilities(&self) -> ModalityCapabilities {
             ModalityCapabilities::default()
         }
     }
-    let engine = UniversalRenderingEngine::new().expect("engine");
+    let engine = UniversalRenderingEngine::<RenderFailingModality>::new().expect("engine");
     {
         let modalities = engine.modalities();
         let mut guard = modalities.write().await;
-        guard.register(Box::new(RenderFailingModality));
+        guard.register(RenderFailingModality);
     }
     let engine = Arc::new(engine);
     let _sub = engine.events().subscribe().await;
@@ -279,7 +302,7 @@ async fn test_engine_modality_render_error_propagates() {
 
 #[tokio::test]
 async fn test_engine_set_selection_empty() {
-    let engine = UniversalRenderingEngine::new().expect("engine");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine");
     let empty: HashSet<String> = HashSet::new();
     let _ = engine.set_selection(empty).await;
     let state = engine.state.read().await;
@@ -289,7 +312,7 @@ async fn test_engine_set_selection_empty() {
 
 #[tokio::test]
 async fn test_engine_set_selection_multiple() {
-    let engine = UniversalRenderingEngine::new().expect("engine");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine");
     let mut selected = HashSet::new();
     selected.insert("a".to_string());
     selected.insert("b".to_string());
@@ -305,7 +328,7 @@ async fn test_engine_set_selection_multiple() {
 
 #[tokio::test]
 async fn test_engine_set_viewport_zero_zoom() {
-    let engine = UniversalRenderingEngine::new().expect("engine");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine");
     let _ = engine.set_viewport(0.0, 0.0, 0.5).await;
     let state = engine.state.read().await;
     assert!((state.viewport.zoom - 0.5).abs() < f32::EPSILON);
@@ -314,7 +337,7 @@ async fn test_engine_set_viewport_zero_zoom() {
 
 #[tokio::test]
 async fn test_engine_render_multi_empty_list() {
-    let engine = UniversalRenderingEngine::new().expect("engine");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine");
     let engine = Arc::new(engine);
     let result = engine.clone().render_multi(vec![]).await;
     assert!(result.is_ok());
@@ -322,14 +345,14 @@ async fn test_engine_render_multi_empty_list() {
 
 #[tokio::test]
 async fn test_engine_render_multi_one_fails() {
-    let engine = UniversalRenderingEngine::new().expect("engine");
+    let engine = UniversalRenderingEngine::<MockModality>::new().expect("engine");
     {
         let modalities = engine.modalities();
         let mut guard = modalities.write().await;
-        guard.register(Box::new(MockModality {
+        guard.register(MockModality {
             name: "ok",
             tier: ModalityTier::AlwaysAvailable,
-        }));
+        });
     }
     let engine = Arc::new(engine);
     let _sub = engine.events().subscribe().await;
@@ -363,7 +386,7 @@ async fn test_time_state_copy() {
 
 #[tokio::test]
 async fn test_set_selection_updates_state_even_when_broadcast_fails() {
-    let engine = UniversalRenderingEngine::new().expect("engine");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine");
     let mut selected = HashSet::new();
     selected.insert("node1".to_string());
     let result = engine.set_selection(selected).await;
@@ -378,7 +401,7 @@ async fn test_set_selection_updates_state_even_when_broadcast_fails() {
 
 #[tokio::test]
 async fn test_set_viewport_updates_state_even_when_broadcast_fails() {
-    let engine = UniversalRenderingEngine::new().expect("engine");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine");
     let result = engine.set_viewport(50.0, 75.0, 2.0).await;
     let state = engine.state.read().await;
     assert!((state.viewport.center_x - 50.0).abs() < f32::EPSILON);
@@ -392,7 +415,7 @@ async fn test_set_viewport_updates_state_even_when_broadcast_fails() {
 
 #[tokio::test]
 async fn test_set_selection_succeeds_with_subscriber() {
-    let engine = UniversalRenderingEngine::new().expect("engine");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine");
     let _sub = engine.events().subscribe().await;
     let mut selected = HashSet::new();
     selected.insert("a".to_string());
@@ -402,7 +425,7 @@ async fn test_set_selection_succeeds_with_subscriber() {
 
 #[tokio::test]
 async fn test_set_viewport_succeeds_with_subscriber() {
-    let engine = UniversalRenderingEngine::new().expect("engine");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine");
     let _sub = engine.events().subscribe().await;
     let result = engine.set_viewport(1.0, 2.0, 1.0).await;
     assert!(result.is_ok());
@@ -411,8 +434,7 @@ async fn test_set_viewport_succeeds_with_subscriber() {
 #[tokio::test]
 async fn test_render_completes_and_broadcasts_stop() {
     struct TrackStopModality;
-    #[async_trait]
-    impl crate::modality::GUIModality for TrackStopModality {
+    impl GUIModality for TrackStopModality {
         fn name(&self) -> &'static str {
             "track_stop"
         }
@@ -422,27 +444,35 @@ async fn test_render_completes_and_broadcasts_stop() {
         fn tier(&self) -> ModalityTier {
             ModalityTier::AlwaysAvailable
         }
-        async fn initialize(&mut self, _engine: Arc<UniversalRenderingEngine>) -> Result<()> {
-            Ok(())
+        fn initialize(
+            &mut self,
+            _engine: Arc<UniversalRenderingEngine<Self>>,
+        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+            async { Ok(()) }
         }
-        async fn render(&mut self) -> Result<()> {
-            Ok(())
+        fn render(&mut self) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+            async { Ok(()) }
         }
-        async fn handle_event(&mut self, _event: EngineEvent) -> Result<()> {
-            Ok(())
+        fn handle_event(
+            &mut self,
+            _event: EngineEvent,
+        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+            async { Ok(()) }
         }
-        async fn shutdown(&mut self) -> Result<()> {
-            Ok(())
+        fn shutdown(
+            &mut self,
+        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
+            async { Ok(()) }
         }
         fn capabilities(&self) -> ModalityCapabilities {
             ModalityCapabilities::default()
         }
     }
-    let engine = UniversalRenderingEngine::new().expect("engine");
+    let engine = UniversalRenderingEngine::<TrackStopModality>::new().expect("engine");
     {
         let modalities = engine.modalities();
         let mut guard = modalities.write().await;
-        guard.register(Box::new(TrackStopModality));
+        guard.register(TrackStopModality);
     }
     let engine = Arc::new(engine);
     let _sub = engine.events().subscribe().await;
@@ -460,7 +490,7 @@ async fn test_engine_state_view_mode_variants() {
 
 #[tokio::test]
 async fn test_render_multi_propagates_error() {
-    let engine = UniversalRenderingEngine::new().expect("engine");
+    let engine = UniversalRenderingEngine::<NullModality>::new().expect("engine");
     let engine = Arc::new(engine);
     let result = engine.clone().render_multi(vec!["nonexistent"]).await;
     assert!(result.is_err());

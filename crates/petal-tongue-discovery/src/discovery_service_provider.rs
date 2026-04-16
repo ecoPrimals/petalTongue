@@ -7,7 +7,6 @@
 use crate::discovery_service_client::DiscoveryServiceClient;
 use crate::errors::DiscoveryResult;
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
-use async_trait::async_trait;
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -106,7 +105,6 @@ impl DiscoveryServiceProvider {
     }
 }
 
-#[async_trait]
 impl VisualizationDataProvider for DiscoveryServiceProvider {
     async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         debug!("Querying discovery service for all registered primals");
@@ -114,8 +112,14 @@ impl VisualizationDataProvider for DiscoveryServiceProvider {
         client.get_all_primals().await
     }
 
-    async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
-        match self.get_primals().await {
+    async fn get_topology(
+        &self,
+    ) -> crate::errors::DiscoveryResult<Vec<petal_tongue_core::TopologyEdge>> {
+        let primals = {
+            let c = self.client.read().await;
+            c.get_all_primals().await
+        };
+        match primals {
             Ok(primals) => {
                 if primals.len() < 2 {
                     debug!("Topology: no edges (fewer than two primals)");

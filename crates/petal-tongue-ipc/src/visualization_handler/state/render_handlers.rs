@@ -4,7 +4,7 @@
 //! Compiles scene graphs, runs Tufte validation, and exports to modalities.
 
 use petal_tongue_scene::compiler::GrammarCompiler;
-use petal_tongue_scene::tufte::{ChartjunkDetection, DataInkRatio, TufteConstraint, TufteReport};
+use petal_tongue_scene::tufte::{TufteConstraintImpl, TufteReport};
 
 use super::super::modality;
 use super::super::types::{
@@ -26,8 +26,7 @@ impl VisualizationState {
                 .into_iter()
                 .map(|(_, p)| p.clone())
                 .collect();
-            let data_ink = DataInkRatio;
-            let constraints: Vec<&dyn TufteConstraint> = vec![&data_ink];
+            let constraints = [TufteConstraintImpl::DataInkRatio];
             let report =
                 TufteReport::evaluate_all(&constraints, &primitives, &req.grammar, Some(&req.data));
             serde_json::to_value(&report).ok()
@@ -100,9 +99,10 @@ impl VisualizationState {
             .map(|(_, p)| p.clone())
             .collect();
 
-        let data_ink = DataInkRatio;
-        let chartjunk = ChartjunkDetection;
-        let constraints: Vec<&dyn TufteConstraint> = vec![&data_ink, &chartjunk];
+        let constraints = [
+            TufteConstraintImpl::DataInkRatio,
+            TufteConstraintImpl::ChartjunkDetection,
+        ];
         let report =
             TufteReport::evaluate_all(&constraints, &primitives, &req.grammar, Some(&req.data));
 

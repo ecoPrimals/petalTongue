@@ -148,7 +148,10 @@ pub mod universal_discovery; // Capability-based GPU rendering discovery via reg
 
 pub use app::PetalTongueApp;
 pub use human_entropy_window::HumanEntropyWindow;
-pub use sensors::{AudioSensor, KeyboardSensor, MouseSensor, ScreenSensor, discover_all_sensors};
+pub use sensors::{
+    AudioSensor, KeyboardSensor, MouseSensor, ScreenSensor, SensorImpl, UiSensorRegistry,
+    discover_all_sensors,
+};
 pub use timeline_view::TimelineView;
 pub use traffic_view::TrafficView;
 

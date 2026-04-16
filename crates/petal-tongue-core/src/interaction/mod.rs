@@ -28,21 +28,33 @@
 //! See `specs/INTERACTION_ENGINE_ARCHITECTURE.md` for the full specification.
 
 pub mod adapter;
+pub mod adapters;
 pub mod engine;
+pub mod input_adapter_impl;
 pub mod intent;
 pub mod inverse;
+pub mod inverse_pipeline_impl;
 pub mod perspective;
 pub mod result;
 pub mod target;
 
+#[cfg(test)]
+mod mock_adapters;
+
 // Re-export core types at module level for ergonomic access.
 pub use adapter::{InputAdapter, InputModality, InteractionCapability, InteractionContext};
+pub use adapters::{
+    AgentInputAdapter, AudioInversePipeline, KeyboardAdapter, PointerAdapter, ScanMode,
+    SwitchInputAdapter, VisualInversePipeline,
+};
 pub use engine::InteractionEngine;
+pub use input_adapter_impl::InputAdapterImpl;
 pub use intent::{
     AnnotationContent, InspectionDepth, InteractionIntent, ManipulationOp, NavigationDirection,
     SelectionMode,
 };
 pub use inverse::{InversePipeline, NoOpInversePipeline};
+pub use inverse_pipeline_impl::InversePipelineImpl;
 pub use perspective::{
     Axis, Orientation, OutputModality, Perspective, PerspectiveId, PerspectiveSync,
     PerspectiveViewport,

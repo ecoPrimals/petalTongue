@@ -4,7 +4,7 @@
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use super::InstanceError;
+use super::types::InstanceError;
 
 /// Get the current Unix timestamp
 pub(super) fn current_timestamp() -> u64 {

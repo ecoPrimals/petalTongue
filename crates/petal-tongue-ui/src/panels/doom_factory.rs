@@ -2,7 +2,7 @@
 //! Doom Panel Factory - Registers Doom as an available panel type
 
 use super::doom_panel::DoomPanel;
-use crate::panel_registry::{PanelFactory, PanelInstance, Result};
+use crate::panel_registry::{PanelFactory, PanelInstance, PanelInstanceImpl, Result};
 use crate::scenario::CustomPanelConfig;
 use std::sync::Arc;
 
@@ -14,7 +14,7 @@ impl PanelFactory for DoomPanelFactory {
         "doom_game"
     }
 
-    fn create(&self, config: &CustomPanelConfig) -> Result<Box<dyn PanelInstance>> {
+    fn create(&self, config: &CustomPanelConfig) -> Result<PanelInstanceImpl> {
         tracing::info!("Creating Doom panel: {}", config.title);
 
         // Extract width/height from config, with defaults
@@ -33,7 +33,7 @@ impl PanelFactory for DoomPanelFactory {
             panel.toggle_debug();
         }
 
-        Ok(Box::new(DoomPanelWrapper {
+        Ok(PanelInstanceImpl::Doom(DoomPanelWrapper {
             panel,
             title: config.title.clone(),
         }))
@@ -45,7 +45,7 @@ impl PanelFactory for DoomPanelFactory {
 }
 
 /// Wrapper to adapt `DoomPanel` to `PanelInstance` trait
-struct DoomPanelWrapper {
+pub struct DoomPanelWrapper {
     panel: DoomPanel,
     title: String,
 }
@@ -79,8 +79,10 @@ impl PanelInstance for DoomPanelWrapper {
 
 /// Convenience function to create a Doom panel factory
 #[must_use]
-pub fn create_doom_factory() -> Arc<dyn PanelFactory> {
-    Arc::new(DoomPanelFactory)
+pub fn create_doom_factory() -> Arc<crate::panel_registry::PanelFactoryImpl> {
+    Arc::new(crate::panel_registry::PanelFactoryImpl::Doom(
+        DoomPanelFactory,
+    ))
 }
 
 #[cfg(all(test, feature = "doom"))]

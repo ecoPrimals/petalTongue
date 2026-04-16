@@ -36,7 +36,7 @@ use petal_tongue_core::{DeviceType, PrimalInfo, RenderingCapabilities, UIComplex
 /// Manages adaptive UI rendering across different devices
 pub struct AdaptiveUIManager {
     capabilities: RenderingCapabilities,
-    renderer: Box<dyn AdaptiveUIRenderer>,
+    renderer: renderers::AdaptiveUIRendererImpl,
 }
 
 impl AdaptiveUIManager {

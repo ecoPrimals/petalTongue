@@ -9,13 +9,13 @@ use super::backends::DirectBackend;
 #[cfg(feature = "audio-socket")]
 use super::backends::SocketBackend;
 use super::backends::{SilentBackend, SoftwareBackend};
-use super::traits::AudioBackend;
+use super::traits::{AudioBackend, AudioBackendImpl};
 use crate::error::{AudioError, Result};
 use tracing::{info, warn};
 
 /// Audio manager - coordinates multiple backends
 pub struct AudioManager {
-    backends: Vec<Box<dyn AudioBackend>>,
+    backends: Vec<AudioBackendImpl>,
     active_backend_idx: Option<usize>,
 }
 
@@ -37,7 +37,7 @@ impl AudioManager {
     pub async fn init() -> Result<Self> {
         info!("🎵 Discovering audio backends (TRUE PRIMAL)...");
 
-        let mut backends: Vec<Box<dyn AudioBackend>> = Vec::new();
+        let mut backends: Vec<AudioBackendImpl> = Vec::new();
 
         // Tier 1: Network Audio (compute primal with audio.synthesis capability)
         // Discovered at runtime via capability probing; not hardcoded to any primal.
@@ -48,7 +48,7 @@ impl AudioManager {
             info!("🔌 Checking for socket-based audio servers...");
             for socket_backend in SocketBackend::discover_all().await {
                 info!("✅ Socket audio server: {}", socket_backend.metadata().name);
-                backends.push(Box::new(socket_backend));
+                backends.push(AudioBackendImpl::Socket(socket_backend));
             }
         }
 
@@ -58,24 +58,24 @@ impl AudioManager {
             info!("🎨 Checking for direct audio devices...");
             for direct_backend in DirectBackend::discover_all() {
                 info!("✅ Direct audio device: {}", direct_backend.metadata().name);
-                backends.push(Box::new(direct_backend));
+                backends.push(AudioBackendImpl::Direct(direct_backend));
             }
         }
 
         // Tier 4: Pure Rust Software Synthesis (always available)
         info!("🎼 Pure Rust software synthesis available");
-        backends.push(Box::new(SoftwareBackend::new()));
+        backends.push(AudioBackendImpl::Software(SoftwareBackend::new()));
 
         // Tier 5: Silent Mode (always available, last resort)
         info!("🔇 Silent mode available (graceful degradation)");
-        backends.push(Box::new(SilentBackend::new()));
+        backends.push(AudioBackendImpl::Silent(SilentBackend::new()));
 
         if backends.is_empty() {
             return Err(AudioError::NoBackendsAvailable.into());
         }
 
         // Sort by priority (lower number = higher priority)
-        backends.sort_by_key(|backend| backend.priority());
+        backends.sort_by_key(AudioBackend::priority);
 
         info!("🎵 Found {} audio backend(s)", backends.len());
         for backend in &backends {
@@ -169,13 +169,13 @@ impl AudioManager {
     pub fn active_backend_metadata(&self) -> Option<super::traits::BackendMetadata> {
         self.active_backend_idx
             .and_then(|idx| self.backends.get(idx))
-            .map(|backend| backend.metadata())
+            .map(AudioBackend::metadata)
     }
 
     /// Get all available backends (for display/debugging)
     #[must_use]
     pub fn available_backends(&self) -> Vec<super::traits::BackendMetadata> {
-        self.backends.iter().map(|b| b.metadata()).collect()
+        self.backends.iter().map(AudioBackend::metadata).collect()
     }
 }
 

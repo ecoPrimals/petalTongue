@@ -18,7 +18,8 @@
 use std::time::Instant;
 
 use petal_tongue_core::interaction::{
-    InteractionContext, InteractionEngine, InteractionResult, Perspective, PerspectiveId,
+    InputAdapterImpl, InteractionContext, InteractionEngine, InteractionResult,
+    InversePipelineImpl, Perspective, PerspectiveId,
 };
 use petal_tongue_core::sensor::{MouseButton, SensorEvent};
 
@@ -37,11 +38,11 @@ impl EguiInteractionBridge {
     pub fn new() -> Self {
         let mut engine = InteractionEngine::new();
 
-        engine.register_adapter(Box::new(PointerAdapter::new()));
-        engine.register_adapter(Box::new(KeyboardAdapter::new()));
+        engine.register_adapter(InputAdapterImpl::Pointer(PointerAdapter::new()));
+        engine.register_adapter(InputAdapterImpl::Keyboard(KeyboardAdapter::new()));
 
         let inverse = VisualInversePipeline::new();
-        engine.register_inverse(Box::new(VisualInversePipeline::new()));
+        engine.register_inverse(InversePipelineImpl::Visual(VisualInversePipeline::new()));
 
         let perspective = Perspective::new(0);
         let perspective_id = engine.add_perspective(perspective);

@@ -10,8 +10,10 @@ use std::collections::{HashMap, HashSet};
 use crate::sensor::SensorEvent;
 
 use super::adapter::{InputAdapter, InteractionContext};
+use super::input_adapter_impl::InputAdapterImpl;
 use super::intent::{InteractionIntent, SelectionMode};
 use super::inverse::InversePipeline;
+use super::inverse_pipeline_impl::InversePipelineImpl;
 use super::perspective::{OutputModality, Perspective, PerspectiveId};
 use super::result::{InteractionClock, InteractionEvent, InteractionResult, StateChange};
 use super::target::{DataObjectId, InteractionTarget};
@@ -21,8 +23,8 @@ use super::target::{DataObjectId, InteractionTarget};
 /// The engine does NOT own the rendering loop -- it is called each frame
 /// by whatever rendering system is active (egui, ratatui, headless).
 pub struct InteractionEngine {
-    adapters: Vec<Box<dyn InputAdapter>>,
-    inverse_pipelines: HashMap<OutputModality, Box<dyn InversePipeline>>,
+    adapters: Vec<InputAdapterImpl>,
+    inverse_pipelines: HashMap<OutputModality, InversePipelineImpl>,
     perspectives: HashMap<PerspectiveId, Perspective>,
     clock: InteractionClock,
     pending_results: Vec<InteractionResult>,
@@ -44,7 +46,7 @@ impl InteractionEngine {
     }
 
     /// Register an input adapter.
-    pub fn register_adapter(&mut self, adapter: Box<dyn InputAdapter>) {
+    pub fn register_adapter(&mut self, adapter: InputAdapterImpl) {
         tracing::debug!(
             "Registered input adapter: {} ({})",
             adapter.name(),
@@ -54,7 +56,7 @@ impl InteractionEngine {
     }
 
     /// Register an inverse pipeline for a modality.
-    pub fn register_inverse(&mut self, pipeline: Box<dyn InversePipeline>) {
+    pub fn register_inverse(&mut self, pipeline: InversePipelineImpl) {
         let modality = pipeline.modality();
         tracing::debug!("Registered inverse pipeline for {modality:?}");
         self.inverse_pipelines.insert(modality, pipeline);
@@ -186,12 +188,12 @@ impl InteractionEngine {
 
             // Otherwise, try each inverse pipeline
             for pipeline in self.inverse_pipelines.values() {
-                if let Some(data_id) = pipeline.resolve_to_data_id(target) {
+                if let Some(data_id) = InversePipeline::resolve_to_data_id(pipeline, target) {
                     return vec![data_id];
                 }
                 // Also try resolving from the raw event
-                if let Some(resolved) = pipeline.resolve(event, context)
-                    && let Some(data_id) = pipeline.resolve_to_data_id(&resolved)
+                if let Some(resolved) = InversePipeline::resolve(pipeline, event, context)
+                    && let Some(data_id) = InversePipeline::resolve_to_data_id(pipeline, &resolved)
                 {
                     return vec![data_id];
                 }
@@ -346,7 +348,7 @@ impl InteractionEngine {
 
     /// Get count of registered adapters.
     #[must_use]
-    pub fn adapter_count(&self) -> usize {
+    pub const fn adapter_count(&self) -> usize {
         self.adapters.len()
     }
 

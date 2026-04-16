@@ -2,10 +2,13 @@
 //! Display backend traits and types
 
 use crate::error::Result;
-use async_trait::async_trait;
+use std::future::Future;
 
-/// Display backend trait - implemented by all display systems
-#[async_trait]
+/// Display backend trait - implemented by all display systems.
+#[expect(
+    async_fn_in_trait,
+    reason = "no dyn dispatch — enum dispatch via DisplayBackendImpl"
+)]
 pub trait DisplayBackend: Send + Sync {
     /// Initialize the display backend
     async fn init(&mut self) -> Result<()>;
@@ -17,7 +20,7 @@ pub trait DisplayBackend: Send + Sync {
     ///
     /// Buffer format: width * height * 4 bytes (RGBA)
     /// Buffer layout: row-major, top-left origin
-    async fn present(&mut self, buffer: &[u8]) -> Result<()>;
+    fn present<'a>(&'a mut self, buffer: &'a [u8]) -> impl Future<Output = Result<()>> + Send + 'a;
 
     /// Check if this backend is available on the current system
     fn is_available() -> bool

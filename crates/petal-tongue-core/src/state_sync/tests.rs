@@ -3,81 +3,13 @@
 
 use crate::adaptive_rendering::DeviceType;
 use crate::dynamic_schema::DynamicValue;
-use crate::error::Result;
 use chrono::Utc;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use super::*;
-
-/// In-memory `StatePersistence` for deterministic tests
-struct InMemoryPersistence {
-    storage: Arc<Mutex<HashMap<String, Arc<DeviceState>>>>,
-}
-
-impl InMemoryPersistence {
-    fn new() -> Self {
-        Self {
-            storage: Arc::new(Mutex::new(HashMap::new())),
-        }
-    }
-
-    /// Create a pair that shares storage (for tests that need to verify persistence)
-    fn shared() -> (Self, Self) {
-        let storage = Arc::new(Mutex::new(HashMap::new()));
-        (
-            Self {
-                storage: Arc::clone(&storage),
-            },
-            Self { storage },
-        )
-    }
-
-    fn with_shared_storage(storage: &Arc<Mutex<HashMap<String, Arc<DeviceState>>>>) -> Self {
-        Self {
-            storage: Arc::clone(storage),
-        }
-    }
-}
-
-impl StatePersistence for InMemoryPersistence {
-    /// # Panics
-    ///
-    /// Panics if the internal lock is poisoned (a thread panicked while holding it).
-    fn save(&self, state: &DeviceState) -> Result<()> {
-        let key = state.device_id.clone();
-        let value = Arc::new(state.clone());
-        self.storage
-            .lock()
-            .expect("state_sync: lock poisoned — unrecoverable")
-            .insert(key, value);
-        Ok(())
-    }
-
-    /// # Panics
-    ///
-    /// Panics if the internal lock is poisoned (a thread panicked while holding it).
-    fn load(&self, device_id: &str) -> Result<Option<DeviceState>> {
-        let arc = self
-            .storage
-            .lock()
-            .expect("state_sync: lock poisoned — unrecoverable")
-            .get(device_id)
-            .map(Arc::clone);
-        Ok(arc.map(|a| (*a).clone()))
-    }
-
-    /// # Panics
-    ///
-    /// Panics if the internal lock is poisoned (a thread panicked while holding it).
-    fn delete(&self, device_id: &str) -> Result<()> {
-        self.storage
-            .lock()
-            .expect("state_sync: lock poisoned — unrecoverable")
-            .remove(device_id);
-        Ok(())
-    }
-}
+use crate::state_sync::persistence::StatePersistenceImpl;
+use crate::state_sync::persistence::in_memory::InMemoryPersistence;
 
 #[test]
 fn test_device_state_new() {
@@ -209,7 +141,7 @@ fn test_state_merge_preferences_always() {
 #[test]
 fn test_state_sync_with_persistence_init_new() {
     let persistence = InMemoryPersistence::new();
-    let mut sync = StateSync::with_persistence(Box::new(persistence));
+    let mut sync = StateSync::with_persistence(StatePersistenceImpl::InMemory(persistence));
 
     let state = sync
         .init("device-1".to_string(), DeviceType::Desktop)
@@ -231,7 +163,7 @@ fn test_state_sync_init_loads_existing() {
     );
     persistence.save(&existing).unwrap();
 
-    let mut sync = StateSync::with_persistence(Box::new(persistence));
+    let mut sync = StateSync::with_persistence(StatePersistenceImpl::InMemory(persistence));
     let state = sync
         .init("device-1".to_string(), DeviceType::Desktop)
         .unwrap();
@@ -247,7 +179,7 @@ fn test_state_sync_init_loads_existing() {
 #[test]
 fn test_state_sync_update() {
     let (persistence, persistence_reader) = InMemoryPersistence::shared();
-    let mut sync = StateSync::with_persistence(Box::new(persistence));
+    let mut sync = StateSync::with_persistence(StatePersistenceImpl::InMemory(persistence));
     sync.init("device-1".to_string(), DeviceType::Desktop)
         .unwrap();
 
@@ -266,7 +198,7 @@ fn test_state_sync_update() {
 #[test]
 fn test_state_sync_set_get_ui_state() {
     let persistence = InMemoryPersistence::new();
-    let mut sync = StateSync::with_persistence(Box::new(persistence));
+    let mut sync = StateSync::with_persistence(StatePersistenceImpl::InMemory(persistence));
     sync.init("device-1".to_string(), DeviceType::Desktop)
         .unwrap();
 
@@ -285,7 +217,7 @@ fn test_state_sync_set_get_ui_state() {
 #[test]
 fn test_state_sync_set_ui_state_no_current() {
     let persistence = InMemoryPersistence::new();
-    let mut sync = StateSync::with_persistence(Box::new(persistence));
+    let mut sync = StateSync::with_persistence(StatePersistenceImpl::InMemory(persistence));
 
     sync.set_ui_state("k".to_string(), DynamicValue::String("v".to_string()))
         .unwrap();
@@ -295,7 +227,7 @@ fn test_state_sync_set_ui_state_no_current() {
 #[test]
 fn test_state_sync_current_none() {
     let persistence = InMemoryPersistence::new();
-    let sync = StateSync::with_persistence(Box::new(persistence));
+    let sync = StateSync::with_persistence(StatePersistenceImpl::InMemory(persistence));
     assert!(sync.current().is_none());
 }
 
@@ -363,7 +295,7 @@ fn test_device_state_metadata() {
 #[test]
 fn test_state_sync_get_ui_state_none_before_init() {
     let persistence = InMemoryPersistence::new();
-    let sync = StateSync::with_persistence(Box::new(persistence));
+    let sync = StateSync::with_persistence(StatePersistenceImpl::InMemory(persistence));
     assert!(sync.get_ui_state("any").is_none());
 }
 
@@ -441,13 +373,13 @@ fn test_concurrent_persistence_access() {
     let p2 = InMemoryPersistence::with_shared_storage(&storage);
     let p3 = InMemoryPersistence::with_shared_storage(&storage);
     let h1 = std::thread::spawn(move || {
-        let mut sync = StateSync::with_persistence(Box::new(p1));
+        let mut sync = StateSync::with_persistence(StatePersistenceImpl::InMemory(p1));
         sync.init("dev-a".to_string(), DeviceType::Desktop).unwrap();
         sync.set_ui_state("k".to_string(), DynamicValue::String("v1".to_string()))
             .unwrap();
     });
     let h2 = std::thread::spawn(move || {
-        let mut sync = StateSync::with_persistence(Box::new(p2));
+        let mut sync = StateSync::with_persistence(StatePersistenceImpl::InMemory(p2));
         sync.init("dev-b".to_string(), DeviceType::Phone).unwrap();
         sync.set_ui_state("k".to_string(), DynamicValue::String("v2".to_string()))
             .unwrap();
@@ -471,7 +403,7 @@ fn test_concurrent_persistence_access() {
 #[test]
 fn test_state_transition_init_update_cycle() {
     let (persistence, reader) = InMemoryPersistence::shared();
-    let mut sync = StateSync::with_persistence(Box::new(persistence));
+    let mut sync = StateSync::with_persistence(StatePersistenceImpl::InMemory(persistence));
     sync.init("dev".to_string(), DeviceType::Desktop).unwrap();
     let mut state = sync.current().unwrap().clone();
     state.set_ui_state(
@@ -543,7 +475,7 @@ fn test_in_memory_persistence_shared_isolation() {
 #[test]
 fn test_state_sync_init_twice_returns_cached() {
     let persistence = InMemoryPersistence::new();
-    let mut sync = StateSync::with_persistence(Box::new(persistence));
+    let mut sync = StateSync::with_persistence(StatePersistenceImpl::InMemory(persistence));
     let s1 = sync.init("dev".to_string(), DeviceType::Desktop).unwrap();
     let s2 = sync.init("dev".to_string(), DeviceType::Phone).unwrap();
     assert_eq!(s1.device_id, s2.device_id);

@@ -3,19 +3,23 @@
 
 use std::sync::Arc;
 
-use crate::panel_registry::{PanelInstance, PanelRegistry};
+use crate::panel_registry::{PanelFactoryImpl, PanelInstanceImpl, PanelRegistry};
 #[cfg(feature = "doom")]
 use crate::panels::create_doom_factory;
 
 /// Build the panel registry and any custom panels requested by the scenario.
 pub(super) fn create_panel_registry_and_panels(
     scenario: Option<&crate::scenario::Scenario>,
-) -> (PanelRegistry, Vec<Box<dyn PanelInstance>>) {
+) -> (PanelRegistry, Vec<PanelInstanceImpl>) {
     let mut panel_registry = PanelRegistry::new();
     #[cfg(feature = "doom")]
     panel_registry.register(create_doom_factory());
-    panel_registry.register(Arc::new(crate::panels::MetricsPanelFactory::new()));
-    panel_registry.register(Arc::new(crate::panels::ProprioceptionPanelFactory::new()));
+    panel_registry.register(Arc::new(PanelFactoryImpl::Metrics(
+        crate::panels::MetricsPanelFactory::new(),
+    )));
+    panel_registry.register(Arc::new(PanelFactoryImpl::Proprioception(
+        crate::panels::ProprioceptionPanelFactory::new(),
+    )));
 
     tracing::info!("✅ Panel registry initialized");
     tracing::info!(
@@ -23,7 +27,7 @@ pub(super) fn create_panel_registry_and_panels(
         panel_registry.available_types()
     );
 
-    let mut custom_panels: Vec<Box<dyn PanelInstance>> = Vec::new();
+    let mut custom_panels: Vec<PanelInstanceImpl> = Vec::new();
     if let Some(s) = scenario {
         for panel_config in &s.ui_config.custom_panels {
             match panel_registry.create(panel_config) {

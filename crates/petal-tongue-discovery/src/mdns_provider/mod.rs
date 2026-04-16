@@ -8,7 +8,6 @@
 
 mod packet;
 
-use async_trait::async_trait;
 use petal_tongue_core::{PrimalInfo, TopologyEdge, constants};
 use socket2::{Domain, Protocol, Socket, Type};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
@@ -60,7 +59,7 @@ impl MdnsVisualizationProvider {
     /// Discover visualization providers on the local network
     ///
     /// Uses UDP multicast to query for `_visualization-provider._tcp.local` services.
-    pub async fn discover() -> DiscoveryResult<Vec<Box<dyn VisualizationDataProvider>>> {
+    pub async fn discover() -> DiscoveryResult<Vec<Self>> {
         tracing::info!("Starting mDNS discovery for visualization providers...");
 
         let socket = Self::create_multicast_socket().map_err(|e| {
@@ -116,9 +115,7 @@ impl MdnsVisualizationProvider {
     }
 
     /// Query for visualization provider services
-    async fn query_services(
-        socket: UdpSocket,
-    ) -> DiscoveryResult<Vec<Box<dyn VisualizationDataProvider>>> {
+    async fn query_services(socket: UdpSocket) -> DiscoveryResult<Vec<Self>> {
         let query = packet::build_mdns_query(SERVICE_NAME);
 
         let multicast_target = SocketAddr::V4(SocketAddrV4::new(MDNS_MULTICAST_ADDR, MDNS_PORT));
@@ -139,8 +136,7 @@ impl MdnsVisualizationProvider {
 
                     if let Ok(metadata) = packet::parse_mdns_response(&buf[..len], addr) {
                         let endpoint = metadata.endpoint.clone();
-                        providers.push(Box::new(Self::new(endpoint, metadata))
-                            as Box<dyn VisualizationDataProvider>);
+                        providers.push(Self::new(endpoint, metadata));
                     }
                 }
                 Ok(Err(e)) => {
@@ -155,7 +151,6 @@ impl MdnsVisualizationProvider {
     }
 }
 
-#[async_trait]
 impl VisualizationDataProvider for MdnsVisualizationProvider {
     async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         #[derive(serde::Deserialize)]
@@ -228,10 +223,12 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
     }
 
     async fn health_check(&self) -> DiscoveryResult<String> {
-        let url = format!("{}/api/v1/health", self.endpoint);
+        let meta_name = self.metadata.name.clone();
+        let endpoint = self.endpoint.clone();
+        let client = self.client.clone();
+        let url = format!("{endpoint}/api/v1/health");
 
-        let response = self
-            .client
+        let response = client
             .get(&url)
             .timeout(Duration::from_secs(5))
             .send()
@@ -239,11 +236,11 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
             .map_err(|e| DiscoveryError::MdnsError(format!("Failed to health check: {e}")))?;
 
         if response.status().is_success() {
-            Ok(format!("mDNS provider {} is healthy", self.metadata.name))
+            Ok(format!("mDNS provider {meta_name} is healthy"))
         } else {
             Err(DiscoveryError::ProviderHttpError {
                 status: response.status().as_u16(),
-                endpoint: Some(self.endpoint.clone()),
+                endpoint: Some(endpoint),
             })
         }
     }

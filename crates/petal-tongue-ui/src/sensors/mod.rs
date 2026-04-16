@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![allow(clippy::manual_async_fn)] // explicit `impl Future + Send` on `Sensor` / `SensorImpl`
 //! Concrete sensor implementations
 //!
 //! Platform-specific implementations of the Sensor trait.
@@ -14,14 +15,82 @@ pub use mouse::MouseSensor;
 pub use screen::ScreenSensor;
 
 use crate::error::Result;
-use petal_tongue_core::SensorRegistry;
+use petal_tongue_core::sensor::SensorError;
+use petal_tongue_core::{Sensor, SensorCapabilities, SensorEvent, SensorRegistry};
+
+/// Concrete sensor implementations used by the UI crate (enum dispatch).
+pub enum SensorImpl {
+    /// Spatial pointer input
+    Mouse(MouseSensor),
+    /// Keyboard input
+    Keyboard(KeyboardSensor),
+    /// Display / screen output
+    Screen(ScreenSensor),
+    /// Audio input and/or output
+    Audio(AudioSensor),
+}
+
+impl Sensor for SensorImpl {
+    fn capabilities(&self) -> &SensorCapabilities {
+        match self {
+            Self::Mouse(s) => s.capabilities(),
+            Self::Keyboard(s) => s.capabilities(),
+            Self::Screen(s) => s.capabilities(),
+            Self::Audio(s) => s.capabilities(),
+        }
+    }
+
+    fn is_available(&self) -> bool {
+        match self {
+            Self::Mouse(s) => s.is_available(),
+            Self::Keyboard(s) => s.is_available(),
+            Self::Screen(s) => s.is_available(),
+            Self::Audio(s) => s.is_available(),
+        }
+    }
+
+    fn poll_events(
+        &mut self,
+    ) -> impl std::future::Future<Output = std::result::Result<Vec<SensorEvent>, SensorError>> + Send
+    {
+        async {
+            match self {
+                Self::Mouse(s) => s.poll_events().await,
+                Self::Keyboard(s) => s.poll_events().await,
+                Self::Screen(s) => s.poll_events().await,
+                Self::Audio(s) => s.poll_events().await,
+            }
+        }
+    }
+
+    fn last_activity(&self) -> Option<std::time::Instant> {
+        match self {
+            Self::Mouse(s) => s.last_activity(),
+            Self::Keyboard(s) => s.last_activity(),
+            Self::Screen(s) => s.last_activity(),
+            Self::Audio(s) => s.last_activity(),
+        }
+    }
+
+    fn name(&self) -> &str {
+        match self {
+            Self::Mouse(s) => s.name(),
+            Self::Keyboard(s) => s.name(),
+            Self::Screen(s) => s.name(),
+            Self::Audio(s) => s.name(),
+        }
+    }
+}
+
+/// Sensor registry using the UI sensor enum (production default).
+pub type UiSensorRegistry = SensorRegistry<SensorImpl>;
 
 /// Discover all available sensors at runtime
 ///
 /// # Errors
 ///
 /// Currently always returns `Ok`; discovery failures are logged but do not propagate.
-pub async fn discover_all_sensors() -> Result<SensorRegistry> {
+pub async fn discover_all_sensors() -> Result<UiSensorRegistry> {
     let mut registry = SensorRegistry::new();
 
     tracing::info!("🔍 Discovering sensors...");
@@ -29,7 +98,7 @@ pub async fn discover_all_sensors() -> Result<SensorRegistry> {
     // Try to discover screen
     if let Some(screen) = screen::discover().await {
         tracing::info!("  ✅ Screen detected");
-        registry.register(Box::new(screen));
+        registry.register(SensorImpl::Screen(screen));
     } else {
         tracing::warn!("  ❌ No screen detected");
     }
@@ -37,7 +106,7 @@ pub async fn discover_all_sensors() -> Result<SensorRegistry> {
     // Try to discover keyboard
     if let Some(keyboard) = keyboard::discover().await {
         tracing::info!("  ✅ Keyboard detected");
-        registry.register(Box::new(keyboard));
+        registry.register(SensorImpl::Keyboard(keyboard));
     } else {
         tracing::warn!("  ❌ No keyboard detected");
     }
@@ -45,7 +114,7 @@ pub async fn discover_all_sensors() -> Result<SensorRegistry> {
     // Try to discover mouse
     if let Some(mouse) = mouse::discover().await {
         tracing::info!("  ✅ Mouse detected");
-        registry.register(Box::new(mouse));
+        registry.register(SensorImpl::Mouse(mouse));
     } else {
         tracing::warn!("  ❌ No mouse detected");
     }
@@ -53,7 +122,7 @@ pub async fn discover_all_sensors() -> Result<SensorRegistry> {
     // Try to discover audio
     if let Some(audio) = audio::discover().await {
         tracing::info!("  ✅ Audio detected");
-        registry.register(Box::new(audio));
+        registry.register(SensorImpl::Audio(audio));
     } else {
         tracing::warn!("  ❌ No audio detected");
     }

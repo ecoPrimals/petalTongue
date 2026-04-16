@@ -6,8 +6,9 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
+use super::entity::Instance;
 use super::lifecycle::{current_timestamp, get_registry_path};
-use super::{Instance, InstanceError, InstanceId};
+use super::types::{InstanceError, InstanceId};
 
 /// Registry of all petalTongue instances
 #[derive(Debug, Clone, Serialize, Deserialize)]

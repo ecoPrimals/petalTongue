@@ -5,8 +5,8 @@
 //! to petalTongue. No hardcoded knowledge of specific primals required!
 
 use crate::errors::DiscoveryResult;
-use async_trait::async_trait;
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
+use std::future::Future;
 
 /// Provider metadata for display and debugging
 #[derive(Debug, Clone)]
@@ -32,25 +32,23 @@ pub struct ProviderMetadata {
 /// - Multiple providers
 ///
 /// We only care that they provide the data we need!
-#[async_trait]
 pub trait VisualizationDataProvider: Send + Sync {
     /// Get list of discovered primals
     ///
     /// This is the core capability - providing the list of primals
     /// in the ecosystem.
-    async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>>;
+    fn get_primals(&self) -> impl Future<Output = DiscoveryResult<Vec<PrimalInfo>>> + Send;
 
     /// Get topology edges (connections between primals)
     ///
     /// Optional - if not implemented, petalTongue will infer topology
     /// from primal capabilities.
-    async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
-        // Default: empty topology (will be inferred)
-        Ok(Vec::new())
+    fn get_topology(&self) -> impl Future<Output = DiscoveryResult<Vec<TopologyEdge>>> + Send {
+        async { Ok(Vec::new()) }
     }
 
     /// Health check - verify provider is available
-    async fn health_check(&self) -> DiscoveryResult<String>;
+    fn health_check(&self) -> impl Future<Output = DiscoveryResult<String>> + Send;
 
     /// Get provider metadata
     ///
@@ -92,18 +90,18 @@ mod tests {
         metadata: ProviderMetadata,
     }
 
-    #[async_trait]
     impl VisualizationDataProvider for MockProvider {
-        async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
-            Ok(vec![])
+        fn get_primals(&self) -> impl Future<Output = DiscoveryResult<Vec<PrimalInfo>>> + Send {
+            async { Ok(vec![]) }
         }
 
-        async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
-            Ok(vec![])
+        fn get_topology(&self) -> impl Future<Output = DiscoveryResult<Vec<TopologyEdge>>> + Send {
+            async { Ok(vec![]) }
         }
 
-        async fn health_check(&self) -> DiscoveryResult<String> {
-            Ok("ok".to_string())
+        fn health_check(&self) -> impl Future<Output = DiscoveryResult<String>> + Send {
+            let meta = self.metadata.clone();
+            async move { Ok(meta.name) }
         }
 
         fn get_metadata(&self) -> ProviderMetadata {
@@ -126,7 +124,7 @@ mod tests {
         let topology = provider.get_topology().await.unwrap();
         assert!(topology.is_empty());
         let health = provider.health_check().await.unwrap();
-        assert_eq!(health, "ok");
+        assert_eq!(health, "Mock");
         let meta = provider.get_metadata();
         assert_eq!(meta.name, "Mock");
     }

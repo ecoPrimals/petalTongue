@@ -33,4 +33,4 @@ pub mod traits;
 // Re-exports
 pub use compat::AudioSystemV2;
 pub use manager::AudioManager;
-pub use traits::{AudioBackend, AudioCapabilities, BackendMetadata};
+pub use traits::{AudioBackend, AudioBackendImpl, AudioCapabilities, BackendMetadata};

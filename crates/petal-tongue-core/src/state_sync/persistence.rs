@@ -113,3 +113,111 @@ impl StatePersistence for LocalStatePersistence {
         Ok(())
     }
 }
+
+/// Enum dispatch for [`StatePersistence`] (replaces `Box<dyn StatePersistence>`).
+pub enum StatePersistenceImpl {
+    /// Local JSON files under the app config directory.
+    Local(LocalStatePersistence),
+    /// In-memory store for tests (see `in_memory`).
+    #[cfg(test)]
+    InMemory(in_memory::InMemoryPersistence),
+}
+
+impl StatePersistence for StatePersistenceImpl {
+    fn save(&self, state: &DeviceState) -> Result<()> {
+        match self {
+            Self::Local(p) => p.save(state),
+            #[cfg(test)]
+            Self::InMemory(p) => p.save(state),
+        }
+    }
+
+    fn load(&self, device_id: &str) -> Result<Option<DeviceState>> {
+        match self {
+            Self::Local(p) => p.load(device_id),
+            #[cfg(test)]
+            Self::InMemory(p) => p.load(device_id),
+        }
+    }
+
+    fn delete(&self, device_id: &str) -> Result<()> {
+        match self {
+            Self::Local(p) => p.delete(device_id),
+            #[cfg(test)]
+            Self::InMemory(p) => p.delete(device_id),
+        }
+    }
+}
+
+#[cfg(test)]
+pub(crate) mod in_memory {
+    use std::collections::HashMap;
+    use std::sync::{Arc, Mutex};
+
+    use crate::error::Result;
+
+    use super::super::types::DeviceState;
+    use super::StatePersistence;
+
+    /// In-memory `StatePersistence` for deterministic tests.
+    pub(crate) struct InMemoryPersistence {
+        storage: Arc<Mutex<HashMap<String, Arc<DeviceState>>>>,
+    }
+
+    impl InMemoryPersistence {
+        pub(crate) fn new() -> Self {
+            Self {
+                storage: Arc::new(Mutex::new(HashMap::new())),
+            }
+        }
+
+        /// Create a pair that shares storage (for tests that need to verify persistence).
+        pub(crate) fn shared() -> (Self, Self) {
+            let storage = Arc::new(Mutex::new(HashMap::new()));
+            (
+                Self {
+                    storage: Arc::clone(&storage),
+                },
+                Self { storage },
+            )
+        }
+
+        pub(crate) fn with_shared_storage(
+            storage: &Arc<Mutex<HashMap<String, Arc<DeviceState>>>>,
+        ) -> Self {
+            Self {
+                storage: Arc::clone(storage),
+            }
+        }
+    }
+
+    impl StatePersistence for InMemoryPersistence {
+        fn save(&self, state: &DeviceState) -> Result<()> {
+            let key = state.device_id.clone();
+            let value = Arc::new(state.clone());
+            self.storage
+                .lock()
+                .expect("state_sync: lock poisoned — unrecoverable")
+                .insert(key, value);
+            Ok(())
+        }
+
+        fn load(&self, device_id: &str) -> Result<Option<DeviceState>> {
+            let arc = self
+                .storage
+                .lock()
+                .expect("state_sync: lock poisoned — unrecoverable")
+                .get(device_id)
+                .map(Arc::clone);
+            Ok(arc.map(|a| (*a).clone()))
+        }
+
+        fn delete(&self, device_id: &str) -> Result<()> {
+            self.storage
+                .lock()
+                .expect("state_sync: lock poisoned — unrecoverable")
+                .remove(device_id);
+            Ok(())
+        }
+    }
+}

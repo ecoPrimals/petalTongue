@@ -121,8 +121,10 @@ impl PanelFactory for DoomStatsPanelFactory {
     fn create(
         &self,
         _config: &CustomPanelConfig,
-    ) -> crate::panel_registry::Result<Box<dyn PanelInstance>> {
-        Ok(Box::new(DoomStatsPanel::new(Arc::clone(&self.doom))))
+    ) -> crate::panel_registry::Result<crate::panel_registry::PanelInstanceImpl> {
+        Ok(crate::panel_registry::PanelInstanceImpl::DoomStats(
+            DoomStatsPanel::new(Arc::clone(&self.doom)),
+        ))
     }
 
     fn description(&self) -> &'static str {

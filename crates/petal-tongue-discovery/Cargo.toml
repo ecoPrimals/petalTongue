@@ -17,7 +17,6 @@ categories.workspace = true
 [dependencies]
 # Core dependencies
 petal-tongue-core = { path = "../petal-tongue-core" }
-async-trait = "0.1"
 tokio = { workspace = true }
 thiserror = { workspace = true }
 
@@ -55,7 +54,6 @@ test-fixtures = ["petal-tongue-core/test-fixtures"]
 
 [dev-dependencies]
 anyhow = { workspace = true }  # Unit tests and #[cfg(test)] helpers (mock_server, errors tests)
-async-trait = "0.1"
 petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
 tokio-test = "0.4"
 wiremock = "0.6"

@@ -38,7 +38,6 @@
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
 use crate::error::{DisplayError, Result};
-use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -289,7 +288,6 @@ impl DiscoveredDisplayBackend {
     }
 }
 
-#[async_trait]
 impl DisplayBackend for DiscoveredDisplayBackend {
     async fn init(&mut self) -> Result<()> {
         info!("🌸🦈 Initializing discovered display backend (biomeOS JSON-RPC)...");
@@ -340,9 +338,6 @@ impl DisplayBackend for DiscoveredDisplayBackend {
             info!("   Window: {}", window_id);
         }
         info!("   Dimensions: {}x{}", self.width, self.height);
-
-        // Note: Input subscription would happen here in a real implementation
-        // For now, we focus on display output only
 
         Ok(())
     }
@@ -402,7 +397,6 @@ impl DisplayBackend for DiscoveredDisplayBackend {
     async fn shutdown(&mut self) -> Result<()> {
         info!("🌸 Shutting down discovered display backend");
 
-        // Future: Destroy window, unsubscribe from input
         if let Some(window_id) = &self.window_id {
             info!("   Window: {}", window_id);
         }

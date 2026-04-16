@@ -39,9 +39,10 @@ use crate::graph_canvas::GraphCanvas;
 use crate::interaction_bridge::EguiInteractionBridge;
 use crate::keyboard_shortcuts::KeyboardShortcuts;
 use crate::metrics_dashboard::MetricsDashboard;
-use crate::panel_registry::PanelInstance;
+use crate::panel_registry::PanelInstanceImpl;
 use crate::proprioception::ProprioceptionSystem;
 use crate::proprioception_panel::ProprioceptionPanel;
+use crate::sensors::UiSensorRegistry;
 use crate::system_dashboard::SystemDashboard;
 use crate::tool_integration::ToolManager;
 use crate::trust_dashboard::TrustDashboard;
@@ -50,7 +51,6 @@ use petal_tongue_animation::AnimationEngine;
 use petal_tongue_core::{
     CapabilityDetector, FrameIntrospection, GraphEngine, InteractionCapability, InteractionKind,
     LayoutAlgorithm, MotorCommand, PanelId, PanelKind, PanelSnapshot, RenderingAwareness,
-    SensorRegistry,
 };
 use petal_tongue_discovery::NeuralApiProvider;
 use petal_tongue_graph::{AudioFileGenerator, AudioSonificationRenderer, Visual2DRenderer};
@@ -125,7 +125,7 @@ pub struct PetalTongueApp {
     /// Rendering awareness - motor + sensory feedback loop
     rendering_awareness: Arc<RwLock<RenderingAwareness>>,
     /// Sensor registry - discovered input peripherals
-    sensor_registry: Arc<RwLock<SensorRegistry>>,
+    sensor_registry: Arc<RwLock<UiSensorRegistry>>,
     /// Channel registry - local self-awareness of signal channels (SAME DAVE)
     channel_registry: Arc<RwLock<petal_tongue_core::channel::ChannelRegistry>>,
     /// Frame counter for tracking motor commands
@@ -154,7 +154,7 @@ pub struct PetalTongueApp {
     show_graph_builder: bool,
 
     /// Active custom panels
-    custom_panels: Vec<Box<dyn PanelInstance>>,
+    custom_panels: Vec<PanelInstanceImpl>,
 
     // === Game loop (fixed-timestep tick for physics/animation) ===
     /// Fixed-timestep tick clock for continuous rendering

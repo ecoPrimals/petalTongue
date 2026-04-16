@@ -10,15 +10,15 @@ use super::{TufteConstraint, TufteReport};
 ///
 /// `data` is optional raw data for constraints that need category counts (e.g. color).
 pub fn evaluate_all(
-    constraints: &[&dyn TufteConstraint],
+    constraints: &[super::TufteConstraintImpl],
     primitives: &[Primitive],
     expr: &GrammarExpr,
     data: Option<&[serde_json::Value]>,
 ) -> TufteReport {
     let mut results = Vec::with_capacity(constraints.len());
     for c in constraints {
-        let result = c.evaluate(primitives, expr, data);
-        results.push((c.name().to_string(), result));
+        let result = TufteConstraint::evaluate(c, primitives, expr, data);
+        results.push((TufteConstraint::name(c).to_string(), result));
     }
     #[expect(clippy::cast_precision_loss, reason = "average score: f64 sufficient")]
     let overall_score = if results.is_empty() {

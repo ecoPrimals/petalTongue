@@ -6,7 +6,7 @@
 
 use anyhow::Result;
 use petal_tongue_core::{Key, SensorEvent};
-use petal_tongue_ui::discover_all_sensors;
+use petal_tongue_ui::{UiSensorRegistry, discover_all_sensors};
 use std::time::Duration;
 use tokio::time::sleep;
 
@@ -62,10 +62,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn run_field_interface(
-    registry: &mut petal_tongue_core::SensorRegistry,
-    audio_available: bool,
-) -> Result<()> {
+async fn run_field_interface(registry: &mut UiSensorRegistry, audio_available: bool) -> Result<()> {
     println!("════════════════════════════════════════════════════════════");
     println!("   🎮 Field Interface Active");
     println!("════════════════════════════════════════════════════════════\n");

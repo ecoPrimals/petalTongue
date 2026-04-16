@@ -1,73 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::*;
-use crate::interaction::adapter::{InputModality, InteractionCapability, InteractionContext};
+use crate::interaction::adapter::InteractionContext;
+use crate::interaction::input_adapter_impl::InputAdapterImpl;
 use crate::interaction::intent::{InteractionIntent, SelectionMode};
+use crate::interaction::mock_adapters::{MockInputAdapter, QueuedInputAdapter};
 use crate::interaction::perspective::Perspective;
-use crate::interaction::result::InteractionResult;
 use crate::interaction::target::{DataObjectId, InteractionTarget};
 use crate::sensor::{MouseButton, SensorEvent};
 use std::time::Instant;
-
-struct MockAdapter {
-    translate_returns: Option<InteractionIntent>,
-}
-
-impl crate::interaction::InputAdapter for MockAdapter {
-    fn name(&self) -> &'static str {
-        "mock"
-    }
-    fn modality(&self) -> InputModality {
-        InputModality::PointerMouse
-    }
-    fn capabilities(&self) -> &[InteractionCapability] {
-        &[InteractionCapability::PointSelect]
-    }
-    fn translate(
-        &self,
-        _event: &SensorEvent,
-        _context: &InteractionContext,
-    ) -> Option<InteractionIntent> {
-        self.translate_returns.clone()
-    }
-    fn active_target(&self, _context: &InteractionContext) -> Option<InteractionTarget> {
-        None
-    }
-    fn feedback(&mut self, _result: &InteractionResult) {}
-}
-
-/// Adapter that returns intents from a queue (for testing sequence of intents).
-struct QueuedAdapter {
-    intents: std::sync::Mutex<Vec<InteractionIntent>>,
-}
-
-impl crate::interaction::InputAdapter for QueuedAdapter {
-    fn name(&self) -> &'static str {
-        "queued"
-    }
-    fn modality(&self) -> InputModality {
-        InputModality::PointerMouse
-    }
-    fn capabilities(&self) -> &[InteractionCapability] {
-        &[InteractionCapability::PointSelect]
-    }
-    fn translate(
-        &self,
-        _event: &SensorEvent,
-        _context: &InteractionContext,
-    ) -> Option<InteractionIntent> {
-        let mut intents = self.intents.lock().expect("lock");
-        if intents.is_empty() {
-            None
-        } else {
-            Some(intents.remove(0))
-        }
-    }
-    fn active_target(&self, _context: &InteractionContext) -> Option<InteractionTarget> {
-        None
-    }
-    fn feedback(&mut self, _result: &InteractionResult) {}
-}
 
 #[test]
 fn engine_lifecycle() {
@@ -102,15 +43,12 @@ fn selection_propagation() {
     p2.sync_mode = PerspectiveSync::SharedSelection;
     let id2 = engine.add_perspective(p2);
 
-    // Manually select in p1
     let obj = DataObjectId::new("test", serde_json::json!("row1"));
     engine.perspective_mut(id1).unwrap().select(obj.clone());
 
-    // Propagate
     let mut changes = Vec::new();
     engine.propagate_selection(id1, &mut changes);
 
-    // p2 should now have the same selection
     assert!(engine.perspective(id2).unwrap().is_selected(&obj));
 }
 
@@ -126,7 +64,6 @@ fn navigation_zoom() {
     assert!(vp.zoom > initial_zoom);
 
     super::apply_navigation(&mut vp, &NavigationDirection::Out, 1.0);
-    // Should be approximately back to initial (not exact due to asymmetric scaling)
     assert!(vp.zoom < initial_zoom * 1.2);
 }
 
@@ -147,12 +84,10 @@ fn ipc_event_injection() {
 
     engine.inject_ipc_event(event);
 
-    // Process should drain the pending result
     let ctx = InteractionContext::default_for_perspective(id);
     let results = engine.process_events(&[], &ctx);
     assert_eq!(results.len(), 1);
 
-    // The local perspective should have the remote selection
     assert!(
         engine
             .perspective(id)
@@ -165,7 +100,7 @@ fn ipc_event_injection() {
 fn register_adapter_and_process() {
     let mut engine = InteractionEngine::new();
     let obj = DataObjectId::new("table", serde_json::json!("row1"));
-    engine.register_adapter(Box::new(MockAdapter {
+    engine.register_adapter(InputAdapterImpl::Mock(MockInputAdapter {
         translate_returns: Some(InteractionIntent::Select {
             target: InteractionTarget::DataRow {
                 data_id: obj.clone(),
@@ -195,7 +130,7 @@ fn apply_intent_selection_modes() {
     let obj1 = DataObjectId::new("t", serde_json::json!("r1"));
     let obj2 = DataObjectId::new("t", serde_json::json!("r2"));
 
-    engine.register_adapter(Box::new(QueuedAdapter {
+    engine.register_adapter(InputAdapterImpl::Queued(QueuedInputAdapter {
         intents: std::sync::Mutex::new(vec![
             InteractionIntent::Select {
                 target: InteractionTarget::DataRow {
@@ -232,7 +167,7 @@ fn apply_intent_focus() {
     let mut engine = InteractionEngine::new();
     let id = engine.add_perspective(Perspective::new(0));
     let obj = DataObjectId::new("t", serde_json::json!("r1"));
-    engine.register_adapter(Box::new(MockAdapter {
+    engine.register_adapter(InputAdapterImpl::Mock(MockInputAdapter {
         translate_returns: Some(InteractionIntent::Focus {
             target: InteractionTarget::DataRow {
                 data_id: obj.clone(),
@@ -257,7 +192,7 @@ fn apply_intent_dismiss() {
     let id = engine.add_perspective(Perspective::new(0));
     let obj = DataObjectId::new("t", serde_json::json!("r1"));
     engine.perspective_mut(id).unwrap().select(obj);
-    engine.register_adapter(Box::new(MockAdapter {
+    engine.register_adapter(InputAdapterImpl::Mock(MockInputAdapter {
         translate_returns: Some(InteractionIntent::Dismiss),
     }));
     let ctx = InteractionContext::default_for_perspective(id);
@@ -341,7 +276,7 @@ fn apply_intent_selection_remove() {
         .unwrap()
         .add_to_selection(obj2.clone());
 
-    engine.register_adapter(Box::new(MockAdapter {
+    engine.register_adapter(InputAdapterImpl::Mock(MockInputAdapter {
         translate_returns: Some(InteractionIntent::Select {
             target: InteractionTarget::DataRow {
                 data_id: obj1.clone(),
@@ -371,7 +306,7 @@ fn apply_intent_selection_toggle() {
     let id = engine.add_perspective(Perspective::new(0));
     let obj = DataObjectId::new("t", serde_json::json!("r1"));
 
-    engine.register_adapter(Box::new(QueuedAdapter {
+    engine.register_adapter(InputAdapterImpl::Queued(QueuedInputAdapter {
         intents: std::sync::Mutex::new(vec![
             InteractionIntent::Select {
                 target: InteractionTarget::DataRow {

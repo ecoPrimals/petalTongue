@@ -205,7 +205,8 @@ mod tests {
 
     #[test]
     fn test_sensor_registry_empty() {
-        let registry = SensorRegistry::new();
+        use crate::sensor::registry::mock_sensor::MockSensor;
+        let registry = SensorRegistry::<MockSensor>::new();
         assert_eq!(registry.sensors().len(), 0);
         assert_eq!(registry.active_count(), 0);
         assert!(!registry.has_capability(SensorCapability::Input));
@@ -216,7 +217,8 @@ mod tests {
 
     #[test]
     fn test_sensor_registry_default() {
-        let registry = SensorRegistry::default();
+        use crate::sensor::registry::mock_sensor::MockSensor;
+        let registry = SensorRegistry::<MockSensor>::default();
         assert_eq!(registry.sensors().len(), 0);
     }
 
@@ -303,7 +305,7 @@ mod tests {
     #[test]
     fn test_sensor_registry_register_and_sensors_by_type() {
         use crate::sensor::registry::mock_sensor::MockSensor;
-        let mut registry = SensorRegistry::new();
+        let mut registry = SensorRegistry::<MockSensor>::new();
         let caps = SensorCapabilities {
             sensor_type: SensorType::Keyboard,
             input: true,
@@ -314,7 +316,7 @@ mod tests {
             discrete: true,
             bidirectional: false,
         };
-        registry.register(Box::new(MockSensor::new("kb", caps)));
+        registry.register(MockSensor::new("kb", caps));
         assert_eq!(registry.sensors().len(), 1);
         let by_type = registry.sensors_by_type(SensorType::Keyboard);
         assert_eq!(by_type.len(), 1);
@@ -324,7 +326,7 @@ mod tests {
     #[tokio::test]
     async fn test_sensor_registry_poll_all() {
         use crate::sensor::registry::mock_sensor::MockSensor;
-        let mut registry = SensorRegistry::new();
+        let mut registry = SensorRegistry::<MockSensor>::new();
         let caps = SensorCapabilities {
             sensor_type: SensorType::Mouse,
             input: true,
@@ -335,7 +337,7 @@ mod tests {
             discrete: true,
             bidirectional: false,
         };
-        registry.register(Box::new(MockSensor::new("mouse", caps)));
+        registry.register(MockSensor::new("mouse", caps));
         let events = registry.poll_all().await.expect("poll");
         assert!(events.is_empty());
         assert!(registry.stats().last_poll.is_some());

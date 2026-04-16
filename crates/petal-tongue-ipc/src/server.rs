@@ -383,8 +383,10 @@ fn write_discovery_file(transport: &IpcTransport) -> Result<(), IpcServerError> 
     let runtime_dir = platform_dirs::runtime_dir()
         .map_err(|e| IpcServerError::DiscoveryError(format!("Failed to get runtime dir: {e}")))?;
 
-    // Discovery file path (alongside biomeOS socket layout under `biomeos/`)
-    let discovery_file = runtime_dir.join("biomeos").join("petaltongue-ipc-port");
+    let ecosystem_dir = petal_tongue_core::constants::ecosystem_runtime_dir_name();
+    let discovery_file = runtime_dir
+        .join(&ecosystem_dir)
+        .join("petaltongue-ipc-port");
 
     // Create parent directory if needed
     if let Some(parent) = discovery_file.parent() {
@@ -408,7 +410,10 @@ fn write_discovery_file(transport: &IpcTransport) -> Result<(), IpcServerError> 
 /// Remove discovery file on shutdown
 fn remove_discovery_file() -> Result<(), IpcServerError> {
     if let Ok(runtime_dir) = platform_dirs::runtime_dir() {
-        let discovery_file = runtime_dir.join("biomeos").join("petaltongue-ipc-port");
+        let ecosystem_dir = petal_tongue_core::constants::ecosystem_runtime_dir_name();
+        let discovery_file = runtime_dir
+            .join(&ecosystem_dir)
+            .join("petaltongue-ipc-port");
         if discovery_file.exists() {
             std::fs::remove_file(&discovery_file).map_err(|e| {
                 IpcServerError::DiscoveryError(format!("Failed to remove discovery file: {e}"))

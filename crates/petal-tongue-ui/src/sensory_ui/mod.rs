@@ -17,4 +17,4 @@ mod renderers;
 #[cfg(test)]
 mod tests;
 
-pub use manager::{SensoryUIManager, SensoryUIRenderer};
+pub use manager::{SensoryUIManager, SensoryUIRenderer, SensoryUIRendererImpl};

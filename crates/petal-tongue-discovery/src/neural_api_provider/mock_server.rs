@@ -72,7 +72,9 @@ async fn handle_neural_api_connection(mut stream: tokio::net::UnixStream) {
                 _ => serde_json::json!({"error": "Method not found"}),
             };
             let response = serde_json::json!({"jsonrpc": "2.0", "result": result, "id": id});
-            let response_str = serde_json::to_string(&response).unwrap() + "\n";
+            let response_str = serde_json::to_string(&response)
+                .expect("serialize JSON-RPC response (Value should always serialize)")
+                + "\n";
             let _ = writer.write_all(response_str.as_bytes()).await;
             let _ = writer.flush().await;
         }

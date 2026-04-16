@@ -5,7 +5,6 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
-use async_trait::async_trait;
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
@@ -214,7 +213,6 @@ impl JsonRpcProvider {
     }
 }
 
-#[async_trait]
 impl VisualizationDataProvider for JsonRpcProvider {
     async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         debug!("Calling primal.list via JSON-RPC");

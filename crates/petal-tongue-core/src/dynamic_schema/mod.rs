@@ -36,5 +36,5 @@ mod types;
 #[cfg(test)]
 mod tests;
 
-pub use migrations::{MigrationRegistry, SchemaMigration};
+pub use migrations::{MigrationRegistry, SchemaMigration, SchemaMigrationImpl, V1ToV2Migration};
 pub use types::{DynamicData, DynamicValue, SchemaVersion};

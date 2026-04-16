@@ -4,6 +4,7 @@
 
 use petal_tongue_core::PanelKind;
 use petal_tongue_ui::headless_harness::HeadlessHarness;
+use petal_tongue_ui::tool_integration::ToolPanel;
 
 #[test]
 fn panel_rendering_clinical_mode_multi_frame() {

@@ -19,7 +19,7 @@ use serde_json::Value;
 use crate::grammar::GrammarExpr;
 use crate::primitive::Primitive;
 use crate::scene_graph::{SceneGraph, SceneNode};
-use crate::tufte::{TufteConstraint, TufteReport};
+use crate::tufte::{TufteConstraintImpl, TufteReport};
 
 /// Compiles `GrammarExpr` and data into a `SceneGraph`.
 #[derive(Debug, Clone, Default)]
@@ -37,7 +37,7 @@ impl GrammarCompiler {
         &self,
         expr: &GrammarExpr,
         data: &[Value],
-        constraints: &[&dyn TufteConstraint],
+        constraints: &[TufteConstraintImpl],
     ) -> (SceneGraph, TufteReport) {
         let graph = self.compile(expr, data);
         let primitives: Vec<Primitive> = graph

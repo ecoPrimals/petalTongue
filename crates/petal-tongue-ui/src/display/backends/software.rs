@@ -13,7 +13,6 @@
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
 use crate::error::{DisplayError, Result};
-use async_trait::async_trait;
 use petal_tongue_core::constants;
 use tracing::info;
 
@@ -217,7 +216,6 @@ impl Default for SoftwareDisplay {
     }
 }
 
-#[async_trait]
 impl DisplayBackend for SoftwareDisplay {
     async fn init(&mut self) -> Result<()> {
         info!("🎨 Initializing software rendering backend...");
@@ -265,21 +263,8 @@ impl DisplayBackend for SoftwareDisplay {
         match self.backend {
             SoftwareBackend::Vnc => self.send_vnc_frame(buffer).await,
             SoftwareBackend::WebSocket => self.send_websocket_frame(buffer).await,
-            SoftwareBackend::Window => {
-                // Window presentation: Buffer is already rendered to self.buffer
-                // In a full window system, this would copy buffer to window surface
-                // For now, the buffer exists and can be accessed by window manager
-                // Future: Implement platform-specific window buffer presentation
-                //   - X11: XPutImage to window
-                //   - Wayland: wl_shm buffer attachment
-                //   - Windows: BitBlt to window DC
-                //   - macOS: CGContextDrawImage
-                Ok(())
-            }
-            SoftwareBackend::Memory => {
-                // Buffer is already updated, nothing more to do
-                Ok(())
-            }
+            SoftwareBackend::Window => Ok(()),
+            SoftwareBackend::Memory => Ok(()),
         }
     }
 

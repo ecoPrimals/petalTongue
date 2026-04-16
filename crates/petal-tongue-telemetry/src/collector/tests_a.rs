@@ -3,8 +3,9 @@
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime};
 
-use super::test_fixtures::TestSubscriber;
 use super::*;
+use crate::TelemetrySubscriberImpl;
+use crate::subscriber_impl::TestSubscriber;
 use crate::types::TelemetryEvent;
 
 #[test]
@@ -37,11 +38,9 @@ fn test_subscriber_notification() {
     let collector = TelemetryCollector::default();
     let events_received = Arc::new(RwLock::new(0));
 
-    let subscriber = Box::new(TestSubscriber {
+    collector.add_subscriber(TelemetrySubscriberImpl::Test(TestSubscriber {
         events_received: events_received.clone(),
-    });
-
-    collector.add_subscriber(subscriber);
+    }));
 
     let event = TelemetryEvent::PrimalDiscovered {
         primal_id: "test-1".to_string(),

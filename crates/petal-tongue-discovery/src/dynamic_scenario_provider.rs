@@ -14,7 +14,6 @@
 
 use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
-use async_trait::async_trait;
 use petal_tongue_core::{
     DynamicData, DynamicValue, PrimalHealthStatus, PrimalInfo, Properties, PropertyValue,
     TopologyEdge,
@@ -214,20 +213,20 @@ impl DynamicScenarioProvider {
     }
 }
 
-#[async_trait]
 impl VisualizationDataProvider for DynamicScenarioProvider {
     async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         Ok(self.primals.clone())
     }
 
     async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
+        let primals = self.primals.clone();
         // Auto-generate topology (nucleus-centric star or ring mesh)
         let mut edges = Vec::new();
 
         // Find nucleus-type primal if one exists (type-based, not name-based)
-        if let Some(nucleus) = self.primals.iter().find(|p| p.primal_type == "nucleus") {
+        if let Some(nucleus) = primals.iter().find(|p| p.primal_type == "nucleus") {
             // Connect nucleus to all other primals (star topology)
-            for primal in &self.primals {
+            for primal in &primals {
                 if primal.id != nucleus.id {
                     edges.push(TopologyEdge {
                         from: nucleus.id.clone(),
@@ -239,13 +238,13 @@ impl VisualizationDataProvider for DynamicScenarioProvider {
                     });
                 }
             }
-        } else if self.primals.len() > 1 {
+        } else if primals.len() > 1 {
             // No nucleus primal: create ring mesh
-            for i in 0..self.primals.len() {
-                let next = (i + 1) % self.primals.len();
+            for i in 0..primals.len() {
+                let next = (i + 1) % primals.len();
                 edges.push(TopologyEdge {
-                    from: self.primals[i].id.clone(),
-                    to: self.primals[next].id.clone(),
+                    from: primals[i].id.clone(),
+                    to: primals[next].id.clone(),
                     edge_type: "peer".to_string(),
                     label: Some("Peer connection".to_string()),
                     capability: None,
@@ -258,12 +257,9 @@ impl VisualizationDataProvider for DynamicScenarioProvider {
     }
 
     async fn health_check(&self) -> DiscoveryResult<String> {
-        let name = self.name().unwrap_or("Dynamic Scenario");
-        Ok(format!(
-            "Dynamic scenario '{}' with {} primals",
-            name,
-            self.primals.len()
-        ))
+        let name = self.name().unwrap_or("Dynamic Scenario").to_string();
+        let n = self.primals.len();
+        Ok(format!("Dynamic scenario '{name}' with {n} primals",))
     }
 
     fn get_metadata(&self) -> ProviderMetadata {

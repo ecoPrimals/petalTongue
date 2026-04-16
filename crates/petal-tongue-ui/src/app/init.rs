@@ -23,7 +23,7 @@ use crate::proprioception_panel::ProprioceptionPanel;
 use crate::status_reporter::StatusReporter;
 use crate::system_dashboard::SystemDashboard;
 use crate::system_monitor_integration::SystemMonitorTool;
-use crate::tool_integration::ToolManager;
+use crate::tool_integration::{ToolManager, ToolPanelImpl};
 use crate::trust_dashboard::TrustDashboard;
 use petal_tongue_adapters::{
     AdapterRegistry, EcoPrimalCapabilityAdapter, EcoPrimalFamilyAdapter, EcoPrimalTrustAdapter,
@@ -253,9 +253,15 @@ fn create_renderers(
 
 fn create_adapter_registry() -> AdapterRegistry {
     let adapter_registry = AdapterRegistry::new();
-    adapter_registry.register(Box::new(EcoPrimalTrustAdapter::new()));
-    adapter_registry.register(Box::new(EcoPrimalFamilyAdapter::new()));
-    adapter_registry.register(Box::new(EcoPrimalCapabilityAdapter::new()));
+    adapter_registry.register(petal_tongue_adapters::PropertyAdapterImpl::Trust(
+        EcoPrimalTrustAdapter::new(),
+    ));
+    adapter_registry.register(petal_tongue_adapters::PropertyAdapterImpl::Family(
+        EcoPrimalFamilyAdapter::new(),
+    ));
+    adapter_registry.register(petal_tongue_adapters::PropertyAdapterImpl::Capability(
+        EcoPrimalCapabilityAdapter::new(),
+    ));
     tracing::info!(
         "Registered {} property adapters",
         adapter_registry.adapter_count()
@@ -266,9 +272,9 @@ fn create_adapter_registry() -> AdapterRegistry {
 
 fn create_tool_manager() -> ToolManager {
     let mut tm = ToolManager::new();
-    tm.register_tool(Box::new(SystemMonitorTool::default()));
-    tm.register_tool(Box::new(ProcessViewerTool::default()));
-    tm.register_tool(Box::new(GraphMetricsPlotter::default()));
+    tm.register_tool(ToolPanelImpl::SystemMonitor(SystemMonitorTool::default()));
+    tm.register_tool(ToolPanelImpl::ProcessViewer(ProcessViewerTool::default()));
+    tm.register_tool(ToolPanelImpl::GraphMetrics(GraphMetricsPlotter::default()));
     tm
 }
 
@@ -276,10 +282,10 @@ fn initialize_central_nervous_system(
     runtime: &tokio::runtime::Runtime,
 ) -> (
     Arc<RwLock<petal_tongue_core::RenderingAwareness>>,
-    Arc<RwLock<petal_tongue_core::SensorRegistry>>,
+    Arc<RwLock<crate::sensors::UiSensorRegistry>>,
 ) {
     let rendering_awareness = Arc::new(RwLock::new(petal_tongue_core::RenderingAwareness::new()));
-    let sensor_registry = Arc::new(RwLock::new(petal_tongue_core::SensorRegistry::new()));
+    let sensor_registry = Arc::new(RwLock::new(crate::sensors::UiSensorRegistry::new()));
     tracing::info!("🧠 Central nervous system initialized");
 
     let sensor_registry_clone = Arc::clone(&sensor_registry);
@@ -301,6 +307,8 @@ fn initialize_central_nervous_system(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::panel_registry::PanelInstance;
+    use crate::tool_integration::ToolPanel;
 
     #[test]
     fn test_create_adapter_registry() {

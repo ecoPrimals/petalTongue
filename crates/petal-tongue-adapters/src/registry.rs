@@ -5,7 +5,8 @@
 //! appropriate adapter. If no adapter handles a property, it falls back
 //! to generic key-value display.
 
-use crate::adapter_trait::{BoxedAdapter, NodeDecoration};
+use crate::adapter_impl::PropertyAdapterImpl;
+use crate::adapter_trait::{NodeDecoration, PropertyAdapter};
 use egui::{Color32, Ui};
 use petal_tongue_core::property::{Properties, PropertyValue};
 use std::sync::{Arc, RwLock};
@@ -30,7 +31,7 @@ use std::sync::{Arc, RwLock};
 /// ```
 #[derive(Clone)]
 pub struct AdapterRegistry {
-    adapters: Arc<RwLock<Vec<BoxedAdapter>>>,
+    adapters: Arc<RwLock<Vec<PropertyAdapterImpl>>>,
 }
 
 impl AdapterRegistry {
@@ -46,7 +47,7 @@ impl AdapterRegistry {
     ///
     /// Adapters are checked in registration order (last registered = checked first)
     /// unless they specify a priority.
-    pub fn register(&self, adapter: BoxedAdapter) {
+    pub fn register(&self, adapter: PropertyAdapterImpl) {
         let Ok(mut adapters) = self.adapters.write() else {
             return;
         };
@@ -174,37 +175,24 @@ impl Default for AdapterRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapter_trait::PropertyAdapter;
-
-    struct TestAdapter {
-        name: String,
-    }
-
-    impl PropertyAdapter for TestAdapter {
-        fn name(&self) -> &str {
-            &self.name
-        }
-
-        fn handles(&self, property_key: &str) -> bool {
-            property_key == "test"
-        }
-
-        fn render(&self, _key: &str, _value: &PropertyValue, _ui: &mut Ui) {
-            // Test implementation
-        }
-    }
+    use crate::adapter_impl::PropertyAdapterImpl;
+    use crate::adapter_impl::test_support::{
+        BadgeDecorationAdapter, ColorDecorationAdapter, HighPriorityStub, LowPriorityStub,
+        TestNamedAdapter,
+    };
+    use petal_tongue_core::property::Properties;
 
     #[test]
     fn test_registry_registration() {
         let registry = AdapterRegistry::new();
         assert_eq!(registry.adapter_count(), 0);
 
-        registry.register(Box::new(TestAdapter {
+        registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
             name: "test1".to_string(),
         }));
         assert_eq!(registry.adapter_count(), 1);
 
-        registry.register(Box::new(TestAdapter {
+        registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
             name: "test2".to_string(),
         }));
         assert_eq!(registry.adapter_count(), 2);
@@ -213,10 +201,10 @@ mod tests {
     #[test]
     fn test_registry_adapter_names() {
         let registry = AdapterRegistry::new();
-        registry.register(Box::new(TestAdapter {
+        registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
             name: "alpha".to_string(),
         }));
-        registry.register(Box::new(TestAdapter {
+        registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
             name: "beta".to_string(),
         }));
 
@@ -234,36 +222,9 @@ mod tests {
 
     #[test]
     fn test_registry_priority_sorting() {
-        struct HighPriorityAdapter;
-        impl PropertyAdapter for HighPriorityAdapter {
-            fn name(&self) -> &'static str {
-                "high"
-            }
-            fn handles(&self, _: &str) -> bool {
-                false
-            }
-            fn render(&self, _: &str, _: &PropertyValue, _: &mut Ui) {}
-            fn priority(&self) -> i32 {
-                100
-            }
-        }
-        struct LowPriorityAdapter;
-        impl PropertyAdapter for LowPriorityAdapter {
-            fn name(&self) -> &'static str {
-                "low"
-            }
-            fn handles(&self, _: &str) -> bool {
-                false
-            }
-            fn render(&self, _: &str, _: &PropertyValue, _: &mut Ui) {}
-            fn priority(&self) -> i32 {
-                1
-            }
-        }
-
         let registry = AdapterRegistry::new();
-        registry.register(Box::new(LowPriorityAdapter));
-        registry.register(Box::new(HighPriorityAdapter));
+        registry.register(PropertyAdapterImpl::TestLowPriority(LowPriorityStub));
+        registry.register(PropertyAdapterImpl::TestHighPriority(HighPriorityStub));
 
         let names = registry.adapter_names();
         assert_eq!(names.len(), 2);
@@ -273,7 +234,7 @@ mod tests {
     #[test]
     fn test_registry_lookup_by_handles() {
         let registry = AdapterRegistry::new();
-        registry.register(Box::new(TestAdapter {
+        registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
             name: "test".to_string(),
         }));
         assert!(registry.adapter_count() > 0);
@@ -284,7 +245,7 @@ mod tests {
     #[test]
     fn test_registry_clone_shared_adapters() {
         let registry = AdapterRegistry::new();
-        registry.register(Box::new(TestAdapter {
+        registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
             name: "shared".to_string(),
         }));
         let registry2 = registry.clone();
@@ -293,59 +254,9 @@ mod tests {
 
     #[test]
     fn test_node_decoration_merge() {
-        use crate::adapter_trait::PropertyAdapter;
-        use egui::Color32;
-        use petal_tongue_core::property::Properties;
-
-        struct BadgeAdapter;
-        impl PropertyAdapter for BadgeAdapter {
-            fn name(&self) -> &'static str {
-                "badge"
-            }
-            fn handles(&self, _: &str) -> bool {
-                false
-            }
-            fn render(&self, _: &str, _: &petal_tongue_core::property::PropertyValue, _: &mut Ui) {}
-            fn node_decoration(&self, properties: &Properties) -> Option<NodeDecoration> {
-                if properties.contains_key("badge") {
-                    Some(NodeDecoration {
-                        badge: Some("B".to_string()),
-                        fill_color: None,
-                        ring_color: None,
-                        tooltip: None,
-                    })
-                } else {
-                    None
-                }
-            }
-        }
-
-        struct ColorAdapter;
-        impl PropertyAdapter for ColorAdapter {
-            fn name(&self) -> &'static str {
-                "color"
-            }
-            fn handles(&self, _: &str) -> bool {
-                false
-            }
-            fn render(&self, _: &str, _: &petal_tongue_core::property::PropertyValue, _: &mut Ui) {}
-            fn node_decoration(&self, properties: &Properties) -> Option<NodeDecoration> {
-                if properties.contains_key("color") {
-                    Some(NodeDecoration {
-                        badge: None,
-                        fill_color: Some(Color32::GREEN),
-                        ring_color: None,
-                        tooltip: None,
-                    })
-                } else {
-                    None
-                }
-            }
-        }
-
         let registry = AdapterRegistry::new();
-        registry.register(Box::new(BadgeAdapter));
-        registry.register(Box::new(ColorAdapter));
+        registry.register(PropertyAdapterImpl::TestBadge(BadgeDecorationAdapter));
+        registry.register(PropertyAdapterImpl::TestColor(ColorDecorationAdapter));
 
         let mut props = Properties::new();
         props.insert(
@@ -372,10 +283,10 @@ mod tests {
     #[test]
     fn test_registry_duplicate_registration() {
         let registry = AdapterRegistry::new();
-        registry.register(Box::new(TestAdapter {
+        registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
             name: "dup".to_string(),
         }));
-        registry.register(Box::new(TestAdapter {
+        registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
             name: "dup".to_string(),
         }));
         assert_eq!(registry.adapter_count(), 2);
@@ -405,7 +316,7 @@ mod tests {
         use petal_tongue_core::property::PropertyValue;
 
         let registry = AdapterRegistry::new();
-        registry.register(Box::new(TestAdapter {
+        registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
             name: "test".to_string(),
         }));
         let ctx = egui::Context::default();
@@ -440,7 +351,7 @@ mod tests {
         use petal_tongue_core::property::PropertyValue;
 
         let registry = AdapterRegistry::new();
-        registry.register(Box::new(TestAdapter {
+        registry.register(PropertyAdapterImpl::TestNamed(TestNamedAdapter {
             name: "test".to_string(),
         }));
         let ctx = egui::Context::default();

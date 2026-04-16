@@ -10,7 +10,7 @@ use petal_tongue_scene::{
     GrammarCompiler,
     grammar::{GeometryType, GrammarExpr},
     modality::{AudioCompiler, ModalityCompiler, ModalityOutput, SvgCompiler, TerminalCompiler},
-    tufte::{DataInkRatio, LieFactor, TufteConstraint},
+    tufte::TufteConstraintImpl,
 };
 use serde_json::Value;
 
@@ -127,7 +127,10 @@ fn determinism_with_tufte_constraints_100_runs() {
     let compiler = GrammarCompiler::new();
     let expr = point_expr();
     let data = sample_data();
-    let constraints: Vec<&dyn TufteConstraint> = vec![&DataInkRatio, &LieFactor];
+    let constraints = [
+        TufteConstraintImpl::DataInkRatio,
+        TufteConstraintImpl::LieFactor,
+    ];
 
     let (first_graph, first_report) = compiler.compile_with_constraints(&expr, &data, &constraints);
     let first_json = graph_to_deterministic_json(&first_graph);

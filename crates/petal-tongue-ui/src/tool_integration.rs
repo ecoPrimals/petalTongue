@@ -85,25 +85,146 @@ pub trait ToolPanel: Send + Sync {
     }
 }
 
+#[cfg(test)]
+pub(crate) mod tool_panel_test_support {
+    use super::{ToolCapability, ToolMetadata, ToolPanel};
+
+    pub struct MockTool {
+        pub metadata: ToolMetadata,
+        pub visible: bool,
+    }
+
+    impl MockTool {
+        pub fn new(name: &str) -> Self {
+            Self {
+                metadata: ToolMetadata {
+                    name: name.to_string(),
+                    description: "Mock tool".to_string(),
+                    version: "0.1.0".to_string(),
+                    capabilities: vec![ToolCapability::Visual],
+                    icon: "🔧".to_string(),
+                    source: None,
+                },
+                visible: false,
+            }
+        }
+    }
+
+    impl ToolPanel for MockTool {
+        fn metadata(&self) -> &ToolMetadata {
+            &self.metadata
+        }
+
+        fn is_visible(&self) -> bool {
+            self.visible
+        }
+
+        fn toggle_visibility(&mut self) {
+            self.visible = !self.visible;
+        }
+
+        fn render_panel(&mut self, _ui: &mut egui::Ui) {}
+    }
+}
+
+/// Enum dispatch for all [`ToolPanel`] implementations.
+#[expect(
+    clippy::large_enum_variant,
+    reason = "Intentional enum dispatch; boxing would reintroduce heap indirection"
+)]
+pub enum ToolPanelImpl {
+    /// Live process list (`/proc`).
+    ProcessViewer(crate::process_viewer_integration::ProcessViewerTool),
+    /// Graph topology metrics plotter.
+    GraphMetrics(crate::graph_metrics_plotter::GraphMetricsPlotter),
+    /// CPU / memory system monitor.
+    SystemMonitor(crate::system_monitor_integration::SystemMonitorTool),
+    /// Test-only mock tool.
+    #[cfg(test)]
+    TestMock(tool_panel_test_support::MockTool),
+}
+
+impl ToolPanel for ToolPanelImpl {
+    fn metadata(&self) -> &ToolMetadata {
+        match self {
+            Self::ProcessViewer(t) => ToolPanel::metadata(t),
+            Self::GraphMetrics(t) => ToolPanel::metadata(t),
+            Self::SystemMonitor(t) => ToolPanel::metadata(t),
+            #[cfg(test)]
+            Self::TestMock(t) => ToolPanel::metadata(t),
+        }
+    }
+
+    fn is_visible(&self) -> bool {
+        match self {
+            Self::ProcessViewer(t) => ToolPanel::is_visible(t),
+            Self::GraphMetrics(t) => ToolPanel::is_visible(t),
+            Self::SystemMonitor(t) => ToolPanel::is_visible(t),
+            #[cfg(test)]
+            Self::TestMock(t) => ToolPanel::is_visible(t),
+        }
+    }
+
+    fn toggle_visibility(&mut self) {
+        match self {
+            Self::ProcessViewer(t) => ToolPanel::toggle_visibility(t),
+            Self::GraphMetrics(t) => ToolPanel::toggle_visibility(t),
+            Self::SystemMonitor(t) => ToolPanel::toggle_visibility(t),
+            #[cfg(test)]
+            Self::TestMock(t) => ToolPanel::toggle_visibility(t),
+        }
+    }
+
+    fn render_panel(&mut self, ui: &mut egui::Ui) {
+        match self {
+            Self::ProcessViewer(t) => ToolPanel::render_panel(t, ui),
+            Self::GraphMetrics(t) => ToolPanel::render_panel(t, ui),
+            Self::SystemMonitor(t) => ToolPanel::render_panel(t, ui),
+            #[cfg(test)]
+            Self::TestMock(t) => ToolPanel::render_panel(t, ui),
+        }
+    }
+
+    fn status_message(&self) -> Option<String> {
+        match self {
+            Self::ProcessViewer(t) => ToolPanel::status_message(t),
+            Self::GraphMetrics(t) => ToolPanel::status_message(t),
+            Self::SystemMonitor(t) => ToolPanel::status_message(t),
+            #[cfg(test)]
+            Self::TestMock(t) => ToolPanel::status_message(t),
+        }
+    }
+
+    fn handle_action(&mut self, action: &str) -> Result<(), String> {
+        match self {
+            Self::ProcessViewer(t) => ToolPanel::handle_action(t, action),
+            Self::GraphMetrics(t) => ToolPanel::handle_action(t, action),
+            Self::SystemMonitor(t) => ToolPanel::handle_action(t, action),
+            #[cfg(test)]
+            Self::TestMock(t) => ToolPanel::handle_action(t, action),
+        }
+    }
+}
+
 /// Manager for all integrated tools
 ///
 /// This is what the application holds - a collection of tool panels that can be
 /// dynamically added, removed, and rendered without the app knowing specifics.
 pub struct ToolManager {
-    tools: Vec<Box<dyn ToolPanel>>,
+    tools: Vec<ToolPanelImpl>,
 }
 
 impl ToolManager {
     /// Create a new tool manager
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { tools: Vec::new() }
     }
 
     /// Register a tool
     ///
     /// Tools can be added at runtime based on discovery
-    pub fn register_tool(&mut self, tool: Box<dyn ToolPanel>) {
+    pub fn register_tool(&mut self, tool: ToolPanelImpl) {
         tracing::info!(
             "Registered tool: {} v{} with capabilities: {:?}",
             tool.metadata().name,
@@ -115,36 +236,32 @@ impl ToolManager {
 
     /// Get all registered tools
     #[must_use]
-    pub fn tools(&self) -> &[Box<dyn ToolPanel>] {
+    pub fn tools(&self) -> &[ToolPanelImpl] {
         &self.tools
     }
 
     /// Get mutable reference to tools
-    pub fn tools_mut(&mut self) -> &mut [Box<dyn ToolPanel>] {
+    pub fn tools_mut(&mut self) -> &mut [ToolPanelImpl] {
         &mut self.tools
     }
 
     /// Find a tool by name
     #[must_use]
-    pub fn find_tool(&self, name: &str) -> Option<&dyn ToolPanel> {
-        self.tools
-            .iter()
-            .find(|t| t.metadata().name == name)
-            .map(AsRef::as_ref)
+    pub fn find_tool(&self, name: &str) -> Option<&ToolPanelImpl> {
+        self.tools.iter().find(|t| t.metadata().name == name)
     }
 
     /// Find a tool by name (mutable)
-    pub fn find_tool_mut(&mut self, name: &str) -> Option<&mut Box<dyn ToolPanel>> {
+    pub fn find_tool_mut(&mut self, name: &str) -> Option<&mut ToolPanelImpl> {
         self.tools.iter_mut().find(|t| t.metadata().name == name)
     }
 
     /// Get tools with specific capability
     #[must_use]
-    pub fn tools_with_capability(&self, capability: &ToolCapability) -> Vec<&dyn ToolPanel> {
+    pub fn tools_with_capability(&self, capability: &ToolCapability) -> Vec<&ToolPanelImpl> {
         self.tools
             .iter()
             .filter(|t| t.metadata().capabilities.contains(capability))
-            .map(AsRef::as_ref)
             .collect()
     }
 
@@ -196,7 +313,7 @@ impl ToolManager {
     }
 
     /// Get the currently perceivable tool (if only one should be presented at a time)
-    pub fn visible_tool(&mut self) -> Option<&mut Box<dyn ToolPanel>> {
+    pub fn visible_tool(&mut self) -> Option<&mut ToolPanelImpl> {
         self.tools.iter_mut().find(|t| t.is_visible())
     }
 }
@@ -209,61 +326,23 @@ impl Default for ToolManager {
 
 #[cfg(test)]
 mod tests {
+    use super::tool_panel_test_support::MockTool;
     use super::*;
-
-    struct MockTool {
-        metadata: ToolMetadata,
-        visible: bool,
-    }
-
-    impl MockTool {
-        fn new(name: &str) -> Self {
-            Self {
-                metadata: ToolMetadata {
-                    name: name.to_string(),
-                    description: "Mock tool".to_string(),
-                    version: "0.1.0".to_string(),
-                    capabilities: vec![ToolCapability::Visual],
-                    icon: "🔧".to_string(),
-                    source: None,
-                },
-                visible: false,
-            }
-        }
-    }
-
-    impl ToolPanel for MockTool {
-        fn metadata(&self) -> &ToolMetadata {
-            &self.metadata
-        }
-
-        fn is_visible(&self) -> bool {
-            self.visible
-        }
-
-        fn toggle_visibility(&mut self) {
-            self.visible = !self.visible;
-        }
-
-        fn render_panel(&mut self, _ui: &mut egui::Ui) {
-            // Mock implementation
-        }
-    }
 
     #[test]
     fn test_tool_registration() {
         let mut manager = ToolManager::new();
         assert_eq!(manager.tools().len(), 0);
 
-        manager.register_tool(Box::new(MockTool::new("TestTool")));
+        manager.register_tool(ToolPanelImpl::TestMock(MockTool::new("TestTool")));
         assert_eq!(manager.tools().len(), 1);
     }
 
     #[test]
     fn test_find_tool() {
         let mut manager = ToolManager::new();
-        manager.register_tool(Box::new(MockTool::new("Tool1")));
-        manager.register_tool(Box::new(MockTool::new("Tool2")));
+        manager.register_tool(ToolPanelImpl::TestMock(MockTool::new("Tool1")));
+        manager.register_tool(ToolPanelImpl::TestMock(MockTool::new("Tool2")));
 
         assert!(manager.find_tool("Tool1").is_some());
         assert!(manager.find_tool("Tool2").is_some());
@@ -273,7 +352,7 @@ mod tests {
     #[test]
     fn test_capability_filtering() {
         let mut manager = ToolManager::new();
-        manager.register_tool(Box::new(MockTool::new("VisualTool")));
+        manager.register_tool(ToolPanelImpl::TestMock(MockTool::new("VisualTool")));
 
         let visual_tools = manager.tools_with_capability(&ToolCapability::Visual);
         assert_eq!(visual_tools.len(), 1);
@@ -294,19 +373,19 @@ mod tests {
 
     #[test]
     fn test_handle_action_default() {
-        let mut tool = MockTool::new("TestTool");
+        let mut tool = ToolPanelImpl::TestMock(MockTool::new("TestTool"));
         assert!(tool.handle_action("unknown_action").is_ok());
     }
 
     #[test]
     fn test_visible_tool() {
         let mut manager = ToolManager::new();
-        manager.register_tool(Box::new(MockTool::new("Tool1")));
+        manager.register_tool(ToolPanelImpl::TestMock(MockTool::new("Tool1")));
         assert!(manager.visible_tool().is_none());
 
         let mut tool = MockTool::new("VisibleTool");
         tool.toggle_visibility();
-        manager.register_tool(Box::new(tool));
+        manager.register_tool(ToolPanelImpl::TestMock(tool));
         assert!(manager.visible_tool().is_some());
     }
 
@@ -319,7 +398,7 @@ mod tests {
     #[test]
     fn test_find_tool_mut() {
         let mut manager = ToolManager::new();
-        manager.register_tool(Box::new(MockTool::new("EditableTool")));
+        manager.register_tool(ToolPanelImpl::TestMock(MockTool::new("EditableTool")));
         let tool = manager.find_tool_mut("EditableTool");
         assert!(tool.is_some());
         let tool = manager.find_tool_mut("Nonexistent");
@@ -335,7 +414,7 @@ mod tests {
             ToolCapability::Export,
         ];
         let mut manager = ToolManager::new();
-        manager.register_tool(Box::new(tool));
+        manager.register_tool(ToolPanelImpl::TestMock(tool));
 
         assert_eq!(
             manager.tools_with_capability(&ToolCapability::Visual).len(),
@@ -392,7 +471,7 @@ mod tests {
     #[test]
     fn test_tools_mut_modify() {
         let mut manager = ToolManager::new();
-        manager.register_tool(Box::new(MockTool::new("T1")));
+        manager.register_tool(ToolPanelImpl::TestMock(MockTool::new("T1")));
         let tools = manager.tools_mut();
         assert_eq!(tools.len(), 1);
     }
@@ -428,8 +507,8 @@ mod tests {
         let mut manager = ToolManager::new();
         let mut t1 = MockTool::new("T1");
         t1.toggle_visibility();
-        manager.register_tool(Box::new(t1));
-        manager.register_tool(Box::new(MockTool::new("T2")));
+        manager.register_tool(ToolPanelImpl::TestMock(t1));
+        manager.register_tool(ToolPanelImpl::TestMock(MockTool::new("T2")));
         let visible = manager.visible_tool();
         assert!(visible.is_some());
         assert_eq!(visible.unwrap().metadata().name, "T1");

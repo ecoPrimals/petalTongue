@@ -87,9 +87,6 @@ pub trait PropertyAdapter: Send + Sync {
     }
 }
 
-/// Type-erased adapter for storage in collections
-pub type BoxedAdapter = Box<dyn PropertyAdapter>;
-
 #[cfg(test)]
 mod tests {
     use super::*;

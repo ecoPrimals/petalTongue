@@ -43,18 +43,20 @@
 //! if ecosystem_has("trust-management") {
 //!     let spec = ecosystem_spec("trust-management");
 //!     let adapter = EcoPrimalTrustAdapter::from_spec(spec);
-//!     registry.register(Box::new(adapter));
+//!     registry.register(PropertyAdapterImpl::Trust(adapter));
 //! }
 //!
 //! // Later, render properties
 //! registry.render_property("trust_level", &value, ui);
 //! ```
 
+pub mod adapter_impl;
 pub mod adapter_trait;
 pub mod registry;
 
 // Re-exports
-pub use adapter_trait::{BoxedAdapter, NodeDecoration, PropertyAdapter};
+pub use adapter_impl::PropertyAdapterImpl;
+pub use adapter_trait::{NodeDecoration, PropertyAdapter};
 pub use registry::AdapterRegistry;
 
 // ecoPrimals-specific adapters

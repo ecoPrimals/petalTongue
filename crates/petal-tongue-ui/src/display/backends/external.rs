@@ -13,7 +13,6 @@
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
 use crate::error::{DisplayError, Result};
-use async_trait::async_trait;
 use std::env;
 use tracing::info;
 
@@ -96,7 +95,6 @@ impl Default for ExternalDisplay {
     }
 }
 
-#[async_trait]
 impl DisplayBackend for ExternalDisplay {
     async fn init(&mut self) -> Result<()> {
         info!("🪟 Initializing external display backend...");

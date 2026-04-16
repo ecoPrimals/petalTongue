@@ -6,6 +6,34 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Sprint 8 — dyn Elimination & Modern Rust Evolution (April 16, 2026)
+
+#### Changed
+- **22 custom `dyn` trait objects eliminated** — all evolved to enum dispatch or generics:
+  - 8 async traits: `ComputeProvider`, `GUIModality`, `DiscoveryBackend`, `Sensor`,
+    `AudioBackend`, `DisplayBackend`, `UIBackend`, `VisualizationDataProvider`
+  - 14 non-async traits: `PanelInstance`, `PanelFactory`, `ToolPanel`, `TufteConstraint`,
+    `DataStream`, `AdaptiveUIRenderer`, `SensoryUIRenderer`, `PropertyAdapter`,
+    `SchemaMigration`, `StatePersistence`, `InputAdapter`, `InversePipeline`,
+    `MathObject`, `TelemetrySubscriber`
+- **`async-trait` crate fully removed** — zero `#[async_trait]` annotations (was 47),
+  zero `Pin<Box<dyn Future>>` type aliases, native `async fn` / `impl Future` throughout
+- **11 production modules refactored** — `panel_registry`, `btsp`, `cli_mode`, `braille`,
+  `biomeos_discovery`, `handlers` (CLI), `metrics_dashboard`, `interaction` (graph),
+  `adaptive_rendering`, `instance`, `state` (TUI) — all under 600 LOC
+- **Hardcoded ecosystem path** `"biomeos"` in server.rs evolved to
+  `ecosystem_runtime_dir_name()` (env-configurable via `ECOSYSTEM_RUNTIME_DIR`)
+- **1 production `.unwrap()` fixed** in `neural_api_provider/mock_server.rs`
+
+#### Verified
+- Zero `dyn` for custom traits (only `dyn std::error::Error` + `dyn Fn` remain — idiomatic Rust)
+- Zero `#[async_trait]` annotations, zero `Pin<Box<dyn Future>>` type aliases
+- Zero production `.unwrap()` outside `#[cfg(test)]`
+- Zero TODO/FIXME/HACK, zero unsafe blocks, zero compiler warnings
+- All 19 crate roots + main.rs have `#![forbid(unsafe_code)]`
+- `cargo fmt`, `cargo clippy -D warnings`, `cargo test --all-features` all clean
+- 183 tests passing (workspace binary + integration), 6,100+ total with `--workspace`
+
 ### Sprint 7 — Deep Domain Refactoring & Capability Evolution (April 15, 2026)
 
 #### Changed
@@ -14,7 +42,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   `protocol_selection`, `unix_socket_rpc_handlers/system`, `primal_panel`,
   `collector` (telemetry), `traffic_view/view`, `graph_canvas/rendering`,
   `device_panel`, `config_system`, `compiler` — each decomposed into
-  single-responsibility submodules. All production files now under 400 LOC.
+  single-responsibility submodules.
 - **4 test files refactored** — `app/tests`, `traffic_view/tests_extended`,
   `trust_dashboard/tests`, `headless_panel_coverage_tests` — split by test domain.
 - **BTSP provider default**: `"beardog"` → `"security"` (capability-based, not

@@ -22,7 +22,6 @@
 //! These dependencies will be eliminated in ecoBlossom via discovered display backend.
 
 use crate::error::{BackendError, Result};
-use async_trait::async_trait;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
@@ -34,6 +33,7 @@ use petal_tongue_core::{GraphEngine, RenderingCapabilities};
 ///
 /// This wraps the existing `PetalTongueApp` and eframe integration,
 /// providing the `UIBackend` trait interface.
+#[derive(Debug)]
 pub struct EguiBackend {
     /// Whether backend has been initialized
     initialized: bool,
@@ -53,13 +53,15 @@ impl Default for EguiBackend {
     }
 }
 
-#[async_trait]
 impl UIBackend for EguiBackend {
     fn name(&self) -> &'static str {
         "eframe"
     }
 
-    async fn is_available() -> bool {
+    async fn is_available() -> bool
+    where
+        Self: Sized,
+    {
         // eframe is always available (it's our fallback)
         // Check if we have a display server
         let has_display = std::env::var("DISPLAY").is_ok()

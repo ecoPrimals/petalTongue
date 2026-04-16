@@ -2,7 +2,7 @@
 
 use crate::error::{PetalTongueError, Result};
 
-use super::types::{DynamicData, SchemaVersion};
+use super::types::{DynamicData, DynamicValue, SchemaVersion};
 
 /// Trait for schema migration
 pub trait SchemaMigration {
@@ -19,23 +19,67 @@ pub trait SchemaMigration {
     -> Result<()>;
 }
 
+/// Concrete migration from schema v1.0.0 → v2.0.0 (test / reference implementation).
+pub struct V1ToV2Migration;
+
+impl SchemaMigration for V1ToV2Migration {
+    fn can_migrate(&self, from: SchemaVersion, to: SchemaVersion) -> bool {
+        from == SchemaVersion::new(1, 0, 0) && to == SchemaVersion::new(2, 0, 0)
+    }
+
+    fn migrate(
+        &self,
+        data: &mut DynamicData,
+        _from: SchemaVersion,
+        _to: SchemaVersion,
+    ) -> Result<()> {
+        data.set("migrated".to_string(), DynamicValue::Boolean(true));
+        Ok(())
+    }
+}
+
+/// Enum dispatch for [`SchemaMigration`] implementations.
+pub enum SchemaMigrationImpl {
+    /// v1 → v2 upgrade path.
+    V1ToV2(V1ToV2Migration),
+}
+
+impl SchemaMigration for SchemaMigrationImpl {
+    fn can_migrate(&self, from: SchemaVersion, to: SchemaVersion) -> bool {
+        match self {
+            Self::V1ToV2(m) => m.can_migrate(from, to),
+        }
+    }
+
+    fn migrate(
+        &self,
+        data: &mut DynamicData,
+        from: SchemaVersion,
+        to: SchemaVersion,
+    ) -> Result<()> {
+        match self {
+            Self::V1ToV2(m) => m.migrate(data, from, to),
+        }
+    }
+}
+
 /// Migration registry for managing schema upgrades
 #[derive(Default)]
 pub struct MigrationRegistry {
-    migrations: Vec<Box<dyn SchemaMigration>>,
+    migrations: Vec<SchemaMigrationImpl>,
 }
 
 impl MigrationRegistry {
     /// Create a new migration registry
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             migrations: Vec::new(),
         }
     }
 
     /// Register a migration
-    pub fn register(&mut self, migration: Box<dyn SchemaMigration>) {
+    pub fn register(&mut self, migration: SchemaMigrationImpl) {
         self.migrations.push(migration);
     }
 

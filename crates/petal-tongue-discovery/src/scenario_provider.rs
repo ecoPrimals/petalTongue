@@ -6,7 +6,6 @@
 
 use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::traits::VisualizationDataProvider;
-use async_trait::async_trait;
 use petal_tongue_core::PrimalHealthStatus;
 use petal_tongue_core::{PrimalInfo, Properties, PropertyValue, TopologyEdge};
 use serde::{Deserialize, Serialize};
@@ -120,20 +119,20 @@ impl ScenarioVisualizationProvider {
     }
 }
 
-#[async_trait]
 impl VisualizationDataProvider for ScenarioVisualizationProvider {
     async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         Ok(self.primals.clone())
     }
 
     async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
+        let primals = self.primals.clone();
         // Generate automatic topology based on primal types
         let mut edges = Vec::new();
 
         // Find nucleus-type primal if one exists (type-based, not name-based)
-        if let Some(nucleus) = self.primals.iter().find(|p| p.primal_type == "nucleus") {
+        if let Some(nucleus) = primals.iter().find(|p| p.primal_type == "nucleus") {
             // Connect nucleus to all other primals (star topology)
-            for primal in &self.primals {
+            for primal in &primals {
                 if primal.id != nucleus.id {
                     edges.push(TopologyEdge {
                         from: nucleus.id.clone(),
@@ -148,11 +147,11 @@ impl VisualizationDataProvider for ScenarioVisualizationProvider {
         } else {
             // Without a nucleus primal, create a mesh topology
             // Connect each primal to the next one in a ring
-            for i in 0..self.primals.len() {
-                let next = (i + 1) % self.primals.len();
+            for i in 0..primals.len() {
+                let next = (i + 1) % primals.len();
                 edges.push(TopologyEdge {
-                    from: self.primals[i].id.clone(),
-                    to: self.primals[next].id.clone(),
+                    from: primals[i].id.clone(),
+                    to: primals[next].id.clone(),
                     edge_type: "peer".to_string(),
                     label: Some("Peer connection".to_string()),
                     capability: None,
@@ -165,10 +164,8 @@ impl VisualizationDataProvider for ScenarioVisualizationProvider {
     }
 
     async fn health_check(&self) -> DiscoveryResult<String> {
-        Ok(format!(
-            "Scenario provider with {} primals",
-            self.primals.len()
-        ))
+        let n = self.primals.len();
+        Ok(format!("Scenario provider with {n} primals"))
     }
 
     fn get_metadata(&self) -> crate::traits::ProviderMetadata {

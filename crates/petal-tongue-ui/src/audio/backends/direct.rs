@@ -26,7 +26,6 @@
 
 use crate::audio::traits::{AudioBackend, AudioCapabilities, BackendMetadata, BackendType};
 use crate::error::{AudioError, Result};
-use async_trait::async_trait;
 #[cfg(test)]
 use std::fs::File;
 #[cfg(test)]
@@ -175,7 +174,6 @@ impl DirectBackend {
     }
 }
 
-#[async_trait]
 impl AudioBackend for DirectBackend {
     fn metadata(&self) -> BackendMetadata {
         BackendMetadata {

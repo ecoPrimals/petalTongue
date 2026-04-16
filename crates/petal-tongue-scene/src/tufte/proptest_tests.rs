@@ -32,14 +32,14 @@ proptest! {
     #[test]
     fn prop_tufte_scores_in_range(primitives in proptest::collection::vec(point_strategy(), 0..20)) {
         let expr = GrammarExpr::new("data", GeometryType::Point);
-        let constraints: Vec<&dyn TufteConstraint> = vec![
-            &DataInkRatio,
-            &LieFactor,
-            &ChartjunkDetection,
-            &ColorAccessibility,
-            &DataDensity,
-            &SmallestEffectiveDifference,
-            &SmallMultiplesPreference,
+        let constraints = [
+            TufteConstraintImpl::DataInkRatio,
+            TufteConstraintImpl::LieFactor,
+            TufteConstraintImpl::ChartjunkDetection,
+            TufteConstraintImpl::ColorAccessibility,
+            TufteConstraintImpl::DataDensity,
+            TufteConstraintImpl::SmallestEffectiveDifference,
+            TufteConstraintImpl::SmallMultiplesPreference,
         ];
         let report = TufteReport::evaluate_all(&constraints, &primitives, &expr, None);
         prop_assert!(

@@ -60,7 +60,10 @@ fn tufte_report_evaluate_all_computes_average() {
         make_non_data_primitive(),
     ];
     let expr = GrammarExpr::new("data", GeometryType::Point);
-    let constraints: Vec<&dyn TufteConstraint> = vec![&DataInkRatio, &DataDensity];
+    let constraints = [
+        TufteConstraintImpl::DataInkRatio,
+        TufteConstraintImpl::DataDensity,
+    ];
     let report = TufteReport::evaluate_all(&constraints, &primitives, &expr, None);
     assert_eq!(report.results.len(), 2);
 }

@@ -23,7 +23,6 @@
 
 use crate::audio::traits::{AudioBackend, AudioCapabilities, BackendMetadata, BackendType};
 use crate::error::{AudioError, Result};
-use async_trait::async_trait;
 use std::path::{Path, PathBuf};
 use tracing::{debug, info, warn};
 
@@ -133,7 +132,6 @@ impl SocketBackend {
     }
 }
 
-#[async_trait]
 impl AudioBackend for SocketBackend {
     fn metadata(&self) -> BackendMetadata {
         BackendMetadata {

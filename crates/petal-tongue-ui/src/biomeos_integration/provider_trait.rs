@@ -3,7 +3,6 @@
 //!
 //! Provides backward compatibility with the discovery crate's provider interface.
 
-use async_trait::async_trait;
 use petal_tongue_core::{PrimalInfo, Properties, TopologyEdge};
 use petal_tongue_discovery::{
     DiscoveryError, DiscoveryResult, ProviderMetadata, VisualizationDataProvider,
@@ -17,7 +16,6 @@ use super::types::Health;
 const HEALTH_CHECK_TIMEOUT: std::time::Duration =
     std::time::Duration::from_secs(petal_tongue_core::constants::DEFAULT_RPC_TIMEOUT_SECS);
 
-#[async_trait]
 impl VisualizationDataProvider for BiomeOSProvider {
     async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         let primals = self
@@ -54,7 +52,6 @@ impl VisualizationDataProvider for BiomeOSProvider {
     }
 
     async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
-        // Default: empty topology (override in concrete providers)
         Ok(Vec::new())
     }
 

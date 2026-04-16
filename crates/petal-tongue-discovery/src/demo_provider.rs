@@ -14,7 +14,6 @@
 
 use crate::errors::DiscoveryResult;
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
-use async_trait::async_trait;
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, Properties, PropertyValue, TopologyEdge};
 
 /// Demo provider for development and graceful fallback
@@ -37,7 +36,6 @@ impl Default for DemoVisualizationProvider {
     }
 }
 
-#[async_trait]
 impl VisualizationDataProvider for DemoVisualizationProvider {
     async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         #[expect(
