@@ -95,9 +95,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   naming (`petaltongue-{family_id}.sock`) in production posture. Domain symlink
   (`visualization-{family_id}.sock`) follows `PRIMAL_SELF_KNOWLEDGE_STANDARD`.
   Guard runs before any subcommand in `main.rs`. (PT-08)
-- **BTSP Phase 2 handshake stub** (`HandshakePolicy`): Logs production posture
-  warning at server startup when `FAMILY_ID` is set but BearDog enforcement is
-  not yet active. Ready for BearDog `btsp.session.*` integration. (PT-09)
+- **BTSP Phase 2 handshake enforcement** (`perform_server_handshake`): Real BearDog
+  delegation via `btsp.session.create`, `btsp.session.verify`, and `btsp.negotiate`
+  JSON-RPC methods. First-byte peek on both TCP (`TcpStream::peek`) and UDS
+  (`BufReader::fill_buf`) detects BTSP vs plain JSON-RPC. Handshake failure
+  rejects the connection with `error!` logging. (PT-09)
 - **PT-04 HTML export product validation**: End-to-end test exercises
   `wrap_svg_in_html` → validate → write → read-back → structural check.
 - **Audio backend feature gates**: `audio-socket` and `audio-direct` features
