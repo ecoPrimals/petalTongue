@@ -29,24 +29,24 @@ pub enum KnownVisualizationProvider {
     #[cfg(any(test, feature = "test-fixtures"))]
     Demo(DemoVisualizationProvider),
     /// Test-only: health check always fails.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-fixtures"))]
     FailingHealth(FailingHealthCheckProvider),
     /// Health check never completes (chaos / timeout tests; not for production wiring).
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-fixtures"))]
     HangHealth(HangHealthCheckProvider),
 }
 
 /// Intentionally failing provider for unit tests (`concurrent`, etc.).
 /// Always fails [`VisualizationDataProvider::health_check`] (for tests).
-#[cfg(test)]
+#[cfg(any(test, feature = "test-fixtures"))]
 #[derive(Debug, Clone, Copy)]
 pub struct FailingHealthCheckProvider;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-fixtures"))]
 #[derive(Debug, Clone, Copy)]
 pub struct HangHealthCheckProvider;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-fixtures"))]
 impl VisualizationDataProvider for HangHealthCheckProvider {
     fn get_primals(&self) -> impl Future<Output = DiscoveryResult<Vec<PrimalInfo>>> + Send {
         async { Ok(vec![]) }
@@ -66,7 +66,7 @@ impl VisualizationDataProvider for HangHealthCheckProvider {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-fixtures"))]
 impl VisualizationDataProvider for FailingHealthCheckProvider {
     fn get_primals(&self) -> impl Future<Output = DiscoveryResult<Vec<PrimalInfo>>> + Send {
         async { Ok(vec![]) }
@@ -101,9 +101,9 @@ impl VisualizationDataProvider for KnownVisualizationProvider {
             Self::Scenario(p) => p.get_primals().await,
             #[cfg(any(test, feature = "test-fixtures"))]
             Self::Demo(p) => p.get_primals().await,
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-fixtures"))]
             Self::FailingHealth(p) => p.get_primals().await,
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-fixtures"))]
             Self::HangHealth(p) => p.get_primals().await,
         }
     }
@@ -118,9 +118,9 @@ impl VisualizationDataProvider for KnownVisualizationProvider {
             Self::Scenario(p) => p.get_topology().await,
             #[cfg(any(test, feature = "test-fixtures"))]
             Self::Demo(p) => p.get_topology().await,
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-fixtures"))]
             Self::FailingHealth(p) => p.get_topology().await,
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-fixtures"))]
             Self::HangHealth(p) => p.get_topology().await,
         }
     }
@@ -135,9 +135,9 @@ impl VisualizationDataProvider for KnownVisualizationProvider {
             Self::Scenario(p) => p.health_check().await,
             #[cfg(any(test, feature = "test-fixtures"))]
             Self::Demo(p) => p.health_check().await,
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-fixtures"))]
             Self::FailingHealth(p) => p.health_check().await,
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-fixtures"))]
             Self::HangHealth(p) => p.health_check().await,
         }
     }
@@ -152,9 +152,9 @@ impl VisualizationDataProvider for KnownVisualizationProvider {
             Self::Scenario(p) => p.get_metadata(),
             #[cfg(any(test, feature = "test-fixtures"))]
             Self::Demo(p) => p.get_metadata(),
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-fixtures"))]
             Self::FailingHealth(p) => p.get_metadata(),
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-fixtures"))]
             Self::HangHealth(p) => p.get_metadata(),
         }
     }

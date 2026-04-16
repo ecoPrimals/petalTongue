@@ -21,7 +21,7 @@
 //! # Example
 //!
 //! ```rust,no_run
-//! use petal_tongue_discovery::{discover_visualization_providers, VisualizationCapability};
+//! use petal_tongue_discovery::{discover_visualization_providers, VisualizationCapability, VisualizationDataProvider};
 //!
 //! # async fn example() -> anyhow::Result<()> {
 //! // Discover all primals that provide visualization data
@@ -70,7 +70,9 @@ pub use discovery_service_client::DiscoveryServiceClient;
 pub use discovery_service_provider::DiscoveryServiceProvider;
 pub use dynamic_scenario_provider::DynamicScenarioProvider;
 pub use jsonrpc_provider::JsonRpcProvider;
-#[cfg(test)]
+#[cfg(any(test, feature = "test-fixtures"))]
+pub use known_visualization_provider::FailingHealthCheckProvider;
+#[cfg(any(test, feature = "test-fixtures"))]
 pub use known_visualization_provider::HangHealthCheckProvider;
 pub use known_visualization_provider::KnownVisualizationProvider;
 pub use mdns_provider::{MdnsVisualizationProvider, parse_mdns_response};

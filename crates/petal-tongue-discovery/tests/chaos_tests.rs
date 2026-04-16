@@ -3,7 +3,10 @@
 //! Chaos and fault injection tests for petal-tongue-discovery.
 
 use petal_tongue_core::test_fixtures::env_test_helpers;
+#[cfg(feature = "test-fixtures")]
+use petal_tongue_discovery::HangHealthCheckProvider;
 use petal_tongue_discovery::HealthStatus;
+use petal_tongue_discovery::KnownVisualizationProvider;
 use petal_tongue_discovery::UnixSocketProvider;
 use petal_tongue_discovery::cache::ProviderCache;
 use petal_tongue_discovery::capability_parse::parse_capabilities_from_response;
@@ -13,7 +16,6 @@ use petal_tongue_discovery::concurrent::{
 use petal_tongue_discovery::discover_visualization_providers;
 use petal_tongue_discovery::errors::{DiscoveryError, DiscoveryResult};
 use petal_tongue_discovery::parse_mdns_response;
-use petal_tongue_discovery::{HangHealthCheckProvider, KnownVisualizationProvider};
 use serde_json::json;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -124,6 +126,7 @@ async fn chaos_discovery_source_never_finishes_times_out() {
     assert_eq!(result.failures.len(), 1);
 }
 
+#[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn chaos_provider_health_never_responds_times_out() {
     let providers = vec![KnownVisualizationProvider::HangHealth(
@@ -138,6 +141,7 @@ async fn chaos_provider_health_never_responds_times_out() {
     );
 }
 
+#[cfg(feature = "test-fixtures")]
 #[tokio::test]
 async fn chaos_first_available_all_hang() {
     let providers = vec![
