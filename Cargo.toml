@@ -100,7 +100,7 @@ egui_plot = "0.29"
 # HTTP client -- TLS-free for local IPC (biomeOS, discovery).
 # HTTPS is delegated to beardog/songbird via biomeOS tower atomic.
 # NO ring, NO aws-lc-sys, NO openssl -- ecoBin compliant.
-reqwest = { version = "0.12", default-features = false, features = ["json", "charset", "http2", "stream"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "charset", "http2", "stream"] }
 base64 = "0.22"
 
 # Cryptographic hashing (pure Rust — default-features=false disables C/asm backends)
