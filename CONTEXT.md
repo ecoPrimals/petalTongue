@@ -79,25 +79,29 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # ~5,960 tests, ~90% coverage
+cargo test --workspace --all-features     # ~6,110 tests, ~90% coverage
 ```
 
 ## Current State
 
-Sprint 8 complete (April 16, 2026). All CI gates pass (fmt, clippy
-pedantic+nursery, doc, cargo deny, tests). Zero unsafe, zero TODO/FIXME,
-zero production unwrap(), zero `#[allow(]` in production. SPDX headers on
-all source files.
+Stadial parity gate cleared (April 16, 2026). All CI gates pass (fmt,
+clippy pedantic+nursery, doc, cargo deny, tests). Zero unsafe, zero
+TODO/FIXME, zero production unwrap(), zero `#[allow(]` in production.
+SPDX headers on all source files. Edition 2024, deny.toml enforced.
 
-Sprint 8 executed: complete `dyn` trait object elimination (22 custom
-traits evolved to enum dispatch / generics), `async-trait` crate fully
-removed (native `async fn` in traits via RPITIT), `Pin<Box<dyn Future>>`
-type aliases eliminated, 11 production modules refactored below 600 LOC,
+Stadial gate: `ring` confirmed phantom lockfile entry (never compiled),
+`reqwest` upgraded 0.12→0.13 (no TLS, ecoBin clean), all `dyn` usages
+verified non-trait-object (closures + std Error only).
+
+Sprint 8: complete `dyn` trait object elimination (22 custom traits
+evolved to enum dispatch / generics), `async-trait` crate fully removed
+(native `async fn` in traits via RPITIT), `Pin<Box<dyn Future>>` type
+aliases eliminated, 11 production modules refactored below 600 LOC,
 hardcoded ecosystem paths evolved to env-configurable constants.
 
-Sprint 7 executed: deep debt resolution across 14 production modules
-(smart refactoring by domain, not mechanical splitting), hardcoding evolved
-to capability-based defaults, BTSP provider default evolved from primal
+Sprint 7: deep debt resolution across 14 production modules (smart
+refactoring by domain, not mechanical splitting), hardcoding evolved to
+capability-based defaults, BTSP provider default evolved from primal
 identity to capability name (`security`), centralized socket path constants.
 
 Remaining backlog: BTSP Phase 2 consumer wiring (cross-primal dep on

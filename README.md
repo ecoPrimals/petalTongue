@@ -110,12 +110,12 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,100+ passing, 0 failures |
+| Tests | 6,110+ passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
 | Coverage | ~90% line (llvm-cov) |
-| Unsafe | `#![forbid(unsafe_code)]` unconditional on all 19 crates + UniBin, zero C deps |
+| Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin root, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
 | BTSP Phase 1 | `validate_insecure_guard()`, family-scoped sockets, domain symlinks |
 | Files | All production files under 600 LOC after smart domain refactoring of 57+ modules |
@@ -145,7 +145,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 6,100+ tests
+cargo test --workspace --all-features        # 6,110+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
