@@ -6,6 +6,27 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Stadial Parity Gate Response (April 16, 2026)
+
+#### Changed
+- **`reqwest` 0.12 → 0.13** — zero-breakage upgrade; `default-features = false`,
+  no TLS features, ecoBin clean. `ring` confirmed phantom lockfile entry (Cargo
+  resolver artifact from optional `hyper-rustls`; never compiled).
+- **Test fixture gating fix** — `HangHealthCheckProvider` / `FailingHealthCheckProvider`
+  evolved from `#[cfg(test)]` to `#[cfg(any(test, feature = "test-fixtures"))]` so
+  integration tests (`chaos_tests.rs`) can access them.
+- **CLI duplicate import fix** — removed duplicate `use` block in
+  `petal-tongue-cli/src/handlers/tests.rs`.
+- **Discovery doctest fix** — added `VisualizationDataProvider` trait import to
+  `petal-tongue-discovery` crate-level doctest.
+
+#### Verified
+- `ring` not in build graph (`cargo tree -i ring` empty for all targets/features/edges)
+- `dyn` audit: 23 total occurrences, 6 production (closures + std Error), all non-trait-object
+- Zero production `.unwrap()`, zero TODO/FIXME, zero unsafe
+- `cargo deny check bans` passes, Edition 2024, deny.toml enforced
+- 6,110+ tests passing, 0 failures
+
 ### Sprint 8 — dyn Elimination & Modern Rust Evolution (April 16, 2026)
 
 #### Changed
