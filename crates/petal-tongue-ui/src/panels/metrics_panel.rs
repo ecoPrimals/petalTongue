@@ -248,8 +248,10 @@ impl PanelFactory for MetricsPanelFactory {
     fn create(
         &self,
         _config: &CustomPanelConfig,
-    ) -> crate::panel_registry::Result<Box<dyn PanelInstance>> {
-        Ok(Box::new(MetricsPanel::new()))
+    ) -> crate::panel_registry::Result<crate::panel_registry::PanelInstanceImpl> {
+        Ok(crate::panel_registry::PanelInstanceImpl::Metrics(
+            MetricsPanel::new(),
+        ))
     }
 
     fn description(&self) -> &'static str {

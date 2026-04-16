@@ -55,7 +55,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 5,960+ tests
+cargo test --workspace --all-features           # 6,100+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
@@ -78,7 +78,8 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 4. **Typed error handling** -- `thiserror` everywhere, no `anyhow` in production; `deny(unwrap_used, expect_used)` with `#[expect]` for justified cases.
 5. **`#![forbid(unsafe_code)]`** unless hardware FFI is unavoidable. Document with `// SAFETY:`.
 6. **Concurrent testing** -- No `thread::sleep`. Use `tokio::time::timeout`.
-7. **Files under 400 lines** -- Smart domain refactoring into cohesive modules.
+7. **Files under 600 lines** -- Smart domain refactoring into cohesive modules.
+8. **Zero `dyn`** -- Enum dispatch and generics for custom traits; `dyn` only for `Error`/closures.
 8. **SPDX headers** -- `// SPDX-License-Identifier: AGPL-3.0-or-later` on all `.rs` files.
 9. **Semantic naming** -- JSON-RPC methods follow `{domain}.{operation}` pattern.
 10. **BTSP Phase 1** -- `validate_insecure_guard()` at startup; family-scoped sockets when `FAMILY_ID` set; `BIOMEOS_INSECURE` guard prevents conflicting posture.

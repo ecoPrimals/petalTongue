@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![allow(clippy::manual_async_fn)] // explicit `impl Future + Send` on `DiscoveryBackend`
 //! Capability-Based Discovery System
 //!
 //! TRUE PRIMAL principle: Primals have self-knowledge only.
@@ -7,7 +8,6 @@
 //! This module provides the foundation for capability-based primal discovery,
 //! eliminating all hardcoded primal names from the codebase.
 
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -177,23 +177,28 @@ pub enum PrimalHealth {
 ///
 /// This is the interface that primals use to discover each other.
 /// Implementation delegates to biomeOS or other discovery providers.
-pub struct CapabilityDiscovery {
+pub struct CapabilityDiscovery<B: DiscoveryBackend> {
     /// Cache of discovered primals
     cache: Arc<RwLock<HashMap<String, PrimalEndpoint>>>,
     /// Discovery backend (biomeOS, mDNS, etc.)
-    backend: Box<dyn DiscoveryBackend>,
+    backend: B,
 }
 
 /// Discovery backend trait
 ///
 /// Different implementations: biomeOS (primary), mDNS (fallback), static config
-#[async_trait]
 pub trait DiscoveryBackend: Send + Sync {
     /// Query for primals providing a capability
-    async fn query(&self, query: &CapabilityQuery) -> Result<Vec<PrimalEndpoint>, DiscoveryError>;
+    fn query(
+        &self,
+        query: &CapabilityQuery,
+    ) -> impl std::future::Future<Output = Result<Vec<PrimalEndpoint>, DiscoveryError>> + Send;
 
     /// Subscribe to capability changes (real-time updates)
-    async fn subscribe(&self, query: &CapabilityQuery) -> Result<(), DiscoveryError>;
+    fn subscribe(
+        &self,
+        query: &CapabilityQuery,
+    ) -> impl std::future::Future<Output = Result<(), DiscoveryError>> + Send;
 }
 
 /// Discovery errors
@@ -222,10 +227,10 @@ pub enum DiscoveryError {
     },
 }
 
-impl CapabilityDiscovery {
+impl<B: DiscoveryBackend> CapabilityDiscovery<B> {
     /// Create a new capability discovery service
     #[must_use]
-    pub fn new(backend: Box<dyn DiscoveryBackend>) -> Self {
+    pub fn new(backend: B) -> Self {
         Self {
             cache: Arc::new(RwLock::new(HashMap::new())),
             backend,
@@ -307,7 +312,6 @@ impl CapabilityDiscovery {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use async_trait::async_trait;
 
     #[test]
     fn test_version_compatible_same_major_higher_minor() {
@@ -344,17 +348,21 @@ mod tests {
         results: Vec<PrimalEndpoint>,
     }
 
-    #[async_trait]
     impl DiscoveryBackend for MockDiscoveryBackend {
-        async fn query(
+        fn query(
             &self,
             _query: &CapabilityQuery,
-        ) -> Result<Vec<PrimalEndpoint>, DiscoveryError> {
-            Ok(self.results.clone())
+        ) -> impl std::future::Future<Output = Result<Vec<PrimalEndpoint>, DiscoveryError>> + Send
+        {
+            let results = self.results.clone();
+            async move { Ok(results) }
         }
 
-        async fn subscribe(&self, _query: &CapabilityQuery) -> Result<(), DiscoveryError> {
-            Ok(())
+        fn subscribe(
+            &self,
+            _query: &CapabilityQuery,
+        ) -> impl std::future::Future<Output = Result<(), DiscoveryError>> + Send {
+            async { Ok(()) }
         }
     }
 
@@ -370,9 +378,9 @@ mod tests {
             },
             health: PrimalHealth::Healthy,
         };
-        let backend = Box::new(MockDiscoveryBackend {
+        let backend = MockDiscoveryBackend {
             results: vec![endpoint],
-        });
+        };
         let discovery = CapabilityDiscovery::new(backend);
         let query = CapabilityQuery::new("display");
 
@@ -383,7 +391,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_discover_one_empty_returns_error() {
-        let backend = Box::new(MockDiscoveryBackend { results: vec![] });
+        let backend = MockDiscoveryBackend { results: vec![] };
         let discovery = CapabilityDiscovery::new(backend);
         let query = CapabilityQuery::new("nonexistent");
 
@@ -418,7 +426,7 @@ mod tests {
                 health: PrimalHealth::Degraded,
             },
         ];
-        let backend = Box::new(MockDiscoveryBackend { results: endpoints });
+        let backend = MockDiscoveryBackend { results: endpoints };
         let discovery = CapabilityDiscovery::new(backend);
         let query = CapabilityQuery::new("storage");
 
@@ -428,7 +436,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_discover_all_empty_returns_error() {
-        let backend = Box::new(MockDiscoveryBackend { results: vec![] });
+        let backend = MockDiscoveryBackend { results: vec![] };
         let discovery = CapabilityDiscovery::new(backend);
         let query = CapabilityQuery::new("empty");
 

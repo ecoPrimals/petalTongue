@@ -47,6 +47,7 @@ mod dns_parser;
 mod dynamic_scenario_provider;
 pub mod jsonl_provider;
 mod jsonrpc_provider;
+mod known_visualization_provider;
 mod mdns_provider;
 mod neural_api_provider;
 mod neural_graph_client;
@@ -69,6 +70,9 @@ pub use discovery_service_client::DiscoveryServiceClient;
 pub use discovery_service_provider::DiscoveryServiceProvider;
 pub use dynamic_scenario_provider::DynamicScenarioProvider;
 pub use jsonrpc_provider::JsonRpcProvider;
+#[cfg(test)]
+pub use known_visualization_provider::HangHealthCheckProvider;
+pub use known_visualization_provider::KnownVisualizationProvider;
 pub use mdns_provider::{MdnsVisualizationProvider, parse_mdns_response};
 pub use neural_api_provider::NeuralApiProvider;
 pub use neural_graph_client::{ExecutionResult, ExecutionStatus, GraphMetadata, NeuralGraphClient};
@@ -109,9 +113,9 @@ pub use retry::RetryPolicy;
     clippy::too_many_lines,
     reason = "discovery fallback chain; refactor would obscure priority order"
 )]
-pub async fn discover_visualization_providers()
--> DiscoveryResult<Vec<Box<dyn VisualizationDataProvider>>> {
-    let mut providers: Vec<Box<dyn VisualizationDataProvider>> = Vec::new();
+pub async fn discover_visualization_providers() -> DiscoveryResult<Vec<KnownVisualizationProvider>>
+{
+    let mut providers: Vec<KnownVisualizationProvider> = Vec::new();
 
     // Priority 1: Try Neural API (PREFERRED METHOD - Central Coordinator)
     // Neural API is the single source of truth for all primal state
@@ -119,7 +123,7 @@ pub async fn discover_visualization_providers()
     match NeuralApiProvider::discover(None).await {
         Ok(neural_provider) => {
             tracing::info!("✅ Neural API connected - using as primary provider");
-            providers.push(Box::new(neural_provider) as Box<dyn VisualizationDataProvider>);
+            providers.push(KnownVisualizationProvider::Neural(neural_provider));
 
             // Neural API is our primary source - return it
             return Ok(providers);
@@ -136,7 +140,9 @@ pub async fn discover_visualization_providers()
     match DiscoveryServiceProvider::discover(None).await {
         Ok(discovery_provider) => {
             tracing::info!("✅ Discovery service connected - using as fallback provider");
-            providers.push(Box::new(discovery_provider) as Box<dyn VisualizationDataProvider>);
+            providers.push(KnownVisualizationProvider::DiscoveryService(
+                discovery_provider,
+            ));
 
             return Ok(providers);
         }
@@ -152,7 +158,7 @@ pub async fn discover_visualization_providers()
     match JsonRpcProvider::discover().await {
         Ok(jsonrpc_provider) => {
             tracing::info!("✅ JSON-RPC provider connected - TRUE PRIMAL protocol!");
-            providers.push(Box::new(jsonrpc_provider) as Box<dyn VisualizationDataProvider>);
+            providers.push(KnownVisualizationProvider::JsonRpc(jsonrpc_provider));
 
             // JSON-RPC found, return it as primary provider
             return Ok(providers);
@@ -177,7 +183,11 @@ pub async fn discover_visualization_providers()
                     tracing::debug!("mDNS discovery found no providers");
                 } else {
                     tracing::info!("mDNS discovered {} provider(s)", mdns_providers.len());
-                    providers.extend(mdns_providers);
+                    providers.extend(
+                        mdns_providers
+                            .into_iter()
+                            .map(KnownVisualizationProvider::Mdns),
+                    );
                 }
             }
             Err(e) => {
@@ -268,14 +278,12 @@ pub async fn discover_visualization_providers()
 }
 
 /// Try to connect to a JSON-RPC provider at the given Unix socket path
-async fn try_connect_jsonrpc(
-    socket_path: &str,
-) -> DiscoveryResult<Box<dyn VisualizationDataProvider>> {
+async fn try_connect_jsonrpc(socket_path: &str) -> DiscoveryResult<KnownVisualizationProvider> {
     let provider = JsonRpcProvider::new(socket_path);
 
     // Test connection with health check
     provider.health_check().await?;
-    Ok(Box::new(provider))
+    Ok(KnownVisualizationProvider::JsonRpc(provider))
 }
 
 #[cfg(test)]

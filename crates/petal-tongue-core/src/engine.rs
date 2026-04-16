@@ -10,7 +10,7 @@ use tokio::sync::RwLock;
 use crate::compute::ComputeRegistry;
 use crate::error::{PetalTongueError, Result};
 use crate::event::{EngineEvent, EventBus};
-use crate::modality::ModalityRegistry;
+use crate::modality::{GUIModality, ModalityRegistry, NullModality};
 
 /// Engine State
 ///
@@ -95,7 +95,7 @@ impl Default for EngineState {
 ///
 /// Core engine that manages topology state and coordinates
 /// rendering across multiple modalities.
-pub struct UniversalRenderingEngine {
+pub struct UniversalRenderingEngine<M: GUIModality = NullModality> {
     /// Engine state
     state: Arc<RwLock<EngineState>>,
 
@@ -103,13 +103,13 @@ pub struct UniversalRenderingEngine {
     events: Arc<EventBus>,
 
     /// Registered modalities
-    modalities: Arc<RwLock<ModalityRegistry>>,
+    modalities: Arc<RwLock<ModalityRegistry<M>>>,
 
     /// Compute providers
     compute: Arc<RwLock<ComputeRegistry>>,
 }
 
-impl UniversalRenderingEngine {
+impl<M: GUIModality + 'static> UniversalRenderingEngine<M> {
     /// Create new engine
     ///
     /// # Errors
@@ -138,7 +138,7 @@ impl UniversalRenderingEngine {
 
     /// Get modalities (read-only)
     #[must_use]
-    pub fn modalities(&self) -> Arc<RwLock<ModalityRegistry>> {
+    pub fn modalities(&self) -> Arc<RwLock<ModalityRegistry<M>>> {
         Arc::clone(&self.modalities)
     }
 

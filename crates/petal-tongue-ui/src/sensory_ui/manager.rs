@@ -10,6 +10,74 @@ use crate::sensory_ui::renderers::{
     ImmersiveSensoryUI, MinimalSensoryUI, RichSensoryUI, SimpleSensoryUI, StandardSensoryUI,
 };
 
+/// Enum dispatch for sensory renderers (replaces `Box<dyn SensoryUIRenderer>`).
+pub enum SensoryUIRendererImpl {
+    /// Minimal UI.
+    Minimal(MinimalSensoryUI),
+    /// Simple UI.
+    Simple(SimpleSensoryUI),
+    /// Standard UI.
+    Standard(StandardSensoryUI),
+    /// Rich UI.
+    Rich(RichSensoryUI),
+    /// Immersive UI.
+    Immersive(ImmersiveSensoryUI),
+}
+
+impl SensoryUIRenderer for SensoryUIRendererImpl {
+    fn render_primal_list(&mut self, ui: &mut egui::Ui, primals: &[petal_tongue_core::PrimalInfo]) {
+        match self {
+            Self::Minimal(r) => r.render_primal_list(ui, primals),
+            Self::Simple(r) => r.render_primal_list(ui, primals),
+            Self::Standard(r) => r.render_primal_list(ui, primals),
+            Self::Rich(r) => r.render_primal_list(ui, primals),
+            Self::Immersive(r) => r.render_primal_list(ui, primals),
+        }
+    }
+
+    fn render_topology(
+        &mut self,
+        ui: &mut egui::Ui,
+        graph_engine: &petal_tongue_core::GraphEngine,
+    ) {
+        match self {
+            Self::Minimal(r) => r.render_topology(ui, graph_engine),
+            Self::Simple(r) => r.render_topology(ui, graph_engine),
+            Self::Standard(r) => r.render_topology(ui, graph_engine),
+            Self::Rich(r) => r.render_topology(ui, graph_engine),
+            Self::Immersive(r) => r.render_topology(ui, graph_engine),
+        }
+    }
+
+    fn render_metrics(
+        &mut self,
+        ui: &mut egui::Ui,
+        metrics: Option<&petal_tongue_core::SystemMetrics>,
+    ) {
+        match self {
+            Self::Minimal(r) => r.render_metrics(ui, metrics),
+            Self::Simple(r) => r.render_metrics(ui, metrics),
+            Self::Standard(r) => r.render_metrics(ui, metrics),
+            Self::Rich(r) => r.render_metrics(ui, metrics),
+            Self::Immersive(r) => r.render_metrics(ui, metrics),
+        }
+    }
+
+    fn render_proprioception(
+        &mut self,
+        ui: &mut egui::Ui,
+        proprioception: Option<&petal_tongue_core::ProprioceptionData>,
+    ) {
+        match self {
+            Self::Minimal(r) => r.render_proprioception(ui, proprioception),
+            Self::Simple(r) => r.render_proprioception(ui, proprioception),
+            Self::Standard(r) => r.render_proprioception(ui, proprioception),
+            Self::Rich(r) => r.render_proprioception(ui, proprioception),
+            Self::Immersive(r) => r.render_proprioception(ui, proprioception),
+        }
+    }
+}
+
 /// Sensory-based adaptive UI manager
 ///
 /// This replaces the old `AdaptiveUIManager` which used device types.
@@ -17,7 +85,7 @@ use crate::sensory_ui::renderers::{
 pub struct SensoryUIManager {
     capabilities: SensoryCapabilities,
     ui_complexity: SensoryUIComplexity,
-    renderer: Box<dyn SensoryUIRenderer>,
+    renderer: SensoryUIRendererImpl,
     last_discovery: Instant,
 }
 
@@ -42,13 +110,17 @@ impl SensoryUIManager {
     }
 
     /// Create appropriate renderer for UI complexity level
-    fn create_renderer(complexity: SensoryUIComplexity) -> Box<dyn SensoryUIRenderer> {
+    const fn create_renderer(complexity: SensoryUIComplexity) -> SensoryUIRendererImpl {
         match complexity {
-            SensoryUIComplexity::Minimal => Box::new(MinimalSensoryUI::new()),
-            SensoryUIComplexity::Simple => Box::new(SimpleSensoryUI::new()),
-            SensoryUIComplexity::Standard => Box::new(StandardSensoryUI::new()),
-            SensoryUIComplexity::Rich => Box::new(RichSensoryUI::new()),
-            SensoryUIComplexity::Immersive => Box::new(ImmersiveSensoryUI::new()),
+            SensoryUIComplexity::Minimal => SensoryUIRendererImpl::Minimal(MinimalSensoryUI::new()),
+            SensoryUIComplexity::Simple => SensoryUIRendererImpl::Simple(SimpleSensoryUI::new()),
+            SensoryUIComplexity::Standard => {
+                SensoryUIRendererImpl::Standard(StandardSensoryUI::new())
+            }
+            SensoryUIComplexity::Rich => SensoryUIRendererImpl::Rich(RichSensoryUI::new()),
+            SensoryUIComplexity::Immersive => {
+                SensoryUIRendererImpl::Immersive(ImmersiveSensoryUI::new())
+            }
         }
     }
 

@@ -72,6 +72,112 @@ pub trait TufteConstraint: Send + Sync {
     fn auto_correctable(&self) -> bool;
 }
 
+/// Enum dispatch for [`TufteConstraint`] (replaces `&dyn TufteConstraint`).
+#[derive(Debug, Clone, Copy)]
+pub enum TufteConstraintImpl {
+    /// Data-ink ratio.
+    DataInkRatio,
+    /// Lie factor.
+    LieFactor,
+    /// Chartjunk detection.
+    ChartjunkDetection,
+    /// Color accessibility.
+    ColorAccessibility,
+    /// Data density.
+    DataDensity,
+    /// Smallest effective difference.
+    SmallestEffectiveDifference,
+    /// Small multiples preference.
+    SmallMultiplesPreference,
+}
+
+impl TufteConstraint for TufteConstraintImpl {
+    fn name(&self) -> &str {
+        match self {
+            Self::DataInkRatio => TufteConstraint::name(&DataInkRatio),
+            Self::LieFactor => TufteConstraint::name(&LieFactor),
+            Self::ChartjunkDetection => TufteConstraint::name(&ChartjunkDetection),
+            Self::ColorAccessibility => TufteConstraint::name(&ColorAccessibility),
+            Self::DataDensity => TufteConstraint::name(&DataDensity),
+            Self::SmallestEffectiveDifference => {
+                TufteConstraint::name(&SmallestEffectiveDifference)
+            }
+            Self::SmallMultiplesPreference => TufteConstraint::name(&SmallMultiplesPreference),
+        }
+    }
+
+    fn evaluate(
+        &self,
+        primitives: &[Primitive],
+        expr: &GrammarExpr,
+        data: Option<&[serde_json::Value]>,
+    ) -> ConstraintResult {
+        match self {
+            Self::DataInkRatio => TufteConstraint::evaluate(&DataInkRatio, primitives, expr, data),
+            Self::LieFactor => TufteConstraint::evaluate(&LieFactor, primitives, expr, data),
+            Self::ChartjunkDetection => {
+                TufteConstraint::evaluate(&ChartjunkDetection, primitives, expr, data)
+            }
+            Self::ColorAccessibility => {
+                TufteConstraint::evaluate(&ColorAccessibility, primitives, expr, data)
+            }
+            Self::DataDensity => TufteConstraint::evaluate(&DataDensity, primitives, expr, data),
+            Self::SmallestEffectiveDifference => {
+                TufteConstraint::evaluate(&SmallestEffectiveDifference, primitives, expr, data)
+            }
+            Self::SmallMultiplesPreference => {
+                TufteConstraint::evaluate(&SmallMultiplesPreference, primitives, expr, data)
+            }
+        }
+    }
+
+    fn evaluate_plan(&self, plan: &RenderPlan) -> ConstraintResult {
+        match self {
+            Self::DataInkRatio => TufteConstraint::evaluate_plan(&DataInkRatio, plan),
+            Self::LieFactor => TufteConstraint::evaluate_plan(&LieFactor, plan),
+            Self::ChartjunkDetection => TufteConstraint::evaluate_plan(&ChartjunkDetection, plan),
+            Self::ColorAccessibility => TufteConstraint::evaluate_plan(&ColorAccessibility, plan),
+            Self::DataDensity => TufteConstraint::evaluate_plan(&DataDensity, plan),
+            Self::SmallestEffectiveDifference => {
+                TufteConstraint::evaluate_plan(&SmallestEffectiveDifference, plan)
+            }
+            Self::SmallMultiplesPreference => {
+                TufteConstraint::evaluate_plan(&SmallMultiplesPreference, plan)
+            }
+        }
+    }
+
+    fn severity(&self) -> ConstraintSeverity {
+        match self {
+            Self::DataInkRatio => TufteConstraint::severity(&DataInkRatio),
+            Self::LieFactor => TufteConstraint::severity(&LieFactor),
+            Self::ChartjunkDetection => TufteConstraint::severity(&ChartjunkDetection),
+            Self::ColorAccessibility => TufteConstraint::severity(&ColorAccessibility),
+            Self::DataDensity => TufteConstraint::severity(&DataDensity),
+            Self::SmallestEffectiveDifference => {
+                TufteConstraint::severity(&SmallestEffectiveDifference)
+            }
+            Self::SmallMultiplesPreference => TufteConstraint::severity(&SmallMultiplesPreference),
+        }
+    }
+
+    fn auto_correctable(&self) -> bool {
+        match self {
+            Self::DataInkRatio => TufteConstraint::auto_correctable(&DataInkRatio),
+            Self::LieFactor => TufteConstraint::auto_correctable(&LieFactor),
+            Self::ChartjunkDetection => TufteConstraint::auto_correctable(&ChartjunkDetection),
+            Self::ColorAccessibility => TufteConstraint::auto_correctable(&ColorAccessibility),
+            Self::DataDensity => TufteConstraint::auto_correctable(&DataDensity),
+            Self::SmallestEffectiveDifference => {
+                TufteConstraint::auto_correctable(&SmallestEffectiveDifference)
+            }
+            Self::SmallMultiplesPreference => {
+                TufteConstraint::auto_correctable(&SmallMultiplesPreference)
+            }
+        }
+    }
+}
+
 /// Overall Tufte report from evaluating all constraints.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TufteReport {
@@ -87,7 +193,7 @@ impl TufteReport {
     /// Evaluate all constraints and produce a report.
     /// `data` is optional raw data for constraints that need category counts (e.g. color).
     pub fn evaluate_all(
-        constraints: &[&dyn TufteConstraint],
+        constraints: &[TufteConstraintImpl],
         primitives: &[Primitive],
         expr: &GrammarExpr,
         data: Option<&[serde_json::Value]>,

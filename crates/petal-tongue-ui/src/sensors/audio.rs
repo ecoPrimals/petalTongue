@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![allow(clippy::manual_async_fn)]
 //! Audio sensor - Bidirectional I/O (speaker + microphone)
 //!
 //! Discovers audio capabilities for both output and input.
 
 use crate::error::{AudioError, Result};
-use async_trait::async_trait;
 use petal_tongue_core::sensor::SensorError;
 use petal_tongue_core::{Sensor, SensorCapabilities, SensorEvent, SensorType};
 use std::time::Instant;
@@ -92,7 +92,6 @@ impl AudioSensor {
     }
 }
 
-#[async_trait]
 impl Sensor for AudioSensor {
     fn capabilities(&self) -> &SensorCapabilities {
         &self.capabilities
@@ -102,13 +101,11 @@ impl Sensor for AudioSensor {
         self.has_output || self.has_input
     }
 
-    async fn poll_events(&mut self) -> std::result::Result<Vec<SensorEvent>, SensorError> {
-        let events = Vec::new();
-
-        // Audio input polling would go here
-        // For now, just return empty events
-
-        Ok(events)
+    fn poll_events(
+        &mut self,
+    ) -> impl std::future::Future<Output = std::result::Result<Vec<SensorEvent>, SensorError>> + Send
+    {
+        async { Ok(Vec::new()) }
     }
 
     fn last_activity(&self) -> Option<Instant> {

@@ -32,7 +32,9 @@
 //! ```
 
 mod collector;
+mod subscriber_impl;
 mod types;
 
 pub use collector::TelemetryCollector;
+pub use subscriber_impl::{MetricsUpdateSubscriber, TelemetrySubscriberImpl, TestSubscriber};
 pub use types::{PrimalMetrics, TelemetryEvent, TelemetryMetrics, TelemetrySubscriber};

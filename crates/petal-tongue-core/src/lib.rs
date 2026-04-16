@@ -160,7 +160,8 @@ pub use telemetry_adapter::TelemetryAdapter;
 
 /// Dynamic schema system (Live evolution, no recompilation)
 pub use dynamic_schema::{
-    DynamicData, DynamicValue, MigrationRegistry, SchemaMigration, SchemaVersion,
+    DynamicData, DynamicValue, MigrationRegistry, SchemaMigration, SchemaMigrationImpl,
+    SchemaVersion, V1ToV2Migration,
 };
 
 /// Adaptive rendering (Multi-device support)
@@ -181,7 +182,9 @@ pub use spring_adapter::{
 };
 
 /// State synchronization (Cross-device state)
-pub use state_sync::{DeviceState, LocalStatePersistence, StatePersistence, StateSync};
+pub use state_sync::{
+    DeviceState, LocalStatePersistence, StatePersistence, StatePersistenceImpl, StateSync,
+};
 
 /// Sensory capability system (Runtime I/O discovery)
 pub mod sensory_capabilities;
@@ -216,7 +219,7 @@ pub use awakening_coordinator::{
 };
 
 /// Compute provider system
-pub use compute::{ComputeCapability, ComputeProvider, ComputeRegistry};
+pub use compute::{ComputeCapability, ComputeProvider, ComputeProviderImpl, ComputeRegistry};
 
 /// GPU compute provider (capability-discovered)
 pub use gpu_compute::{CPUFallbackCompute, ComputeServiceInfo, GpuComputeProvider};
@@ -230,6 +233,7 @@ pub use event::{EngineEvent, EventBus};
 /// Modality system
 pub use modality::{
     AccessibilityFeatures, GUIModality, ModalityCapabilities, ModalityRegistry, ModalityTier,
+    NullModality,
 };
 
 /// Frame introspection (content-level self-awareness)
@@ -258,9 +262,11 @@ pub use sensor::{
 
 /// Interaction engine (semantic intents, perspectives, inverse pipeline)
 pub use interaction::{
-    DataObjectId, InputAdapter, InteractionEngine, InteractionEvent, InteractionIntent,
-    InteractionResult, InteractionTarget, InversePipeline, OutputModality, Perspective,
-    PerspectiveId, PerspectiveSync, SelectionMode, StateChange,
+    AgentInputAdapter, AudioInversePipeline, DataObjectId, InputAdapter, InputAdapterImpl,
+    InteractionEngine, InteractionEvent, InteractionIntent, InteractionResult, InteractionTarget,
+    InversePipeline, InversePipelineImpl, KeyboardAdapter, OutputModality, Perspective,
+    PerspectiveId, PerspectiveSync, PointerAdapter, ScanMode, SelectionMode, StateChange,
+    SwitchInputAdapter, VisualInversePipeline,
 };
 
 /// The petalTongue primal.

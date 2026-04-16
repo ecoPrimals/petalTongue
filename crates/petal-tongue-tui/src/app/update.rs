@@ -5,6 +5,7 @@ use crate::error::TuiError;
 use crate::events::{ExternalEvent, KeyAction, TUIEvent, parse_key_event};
 use crate::state::{LogLevel, LogMessage, View};
 use crossterm::event::KeyEvent;
+use petal_tongue_discovery::VisualizationDataProvider;
 
 use super::tui::RichTUI;
 

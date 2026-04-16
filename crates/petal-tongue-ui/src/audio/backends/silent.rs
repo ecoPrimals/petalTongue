@@ -6,7 +6,6 @@
 
 use crate::audio::traits::{AudioBackend, AudioCapabilities, BackendMetadata, BackendType};
 use crate::error::Result;
-use async_trait::async_trait;
 use tracing::debug;
 
 /// Silent backend - graceful degradation
@@ -26,7 +25,6 @@ impl Default for SilentBackend {
     }
 }
 
-#[async_trait]
 impl AudioBackend for SilentBackend {
     fn metadata(&self) -> BackendMetadata {
         BackendMetadata {

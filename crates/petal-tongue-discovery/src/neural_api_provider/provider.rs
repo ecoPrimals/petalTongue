@@ -3,7 +3,6 @@
 
 use crate::errors::{DiscoveryError, DiscoveryResult};
 use crate::traits::{ProviderMetadata, VisualizationDataProvider};
-use async_trait::async_trait;
 use petal_tongue_core::capability_names::socket_roles;
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
 use serde_json::{Value, json};
@@ -209,7 +208,6 @@ impl NeuralApiProvider {
     }
 }
 
-#[async_trait]
 impl VisualizationDataProvider for NeuralApiProvider {
     async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         debug!("Querying Neural API for all primals");

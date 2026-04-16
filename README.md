@@ -110,15 +110,15 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 5,960+ passing, 0 failures |
+| Tests | 6,100+ passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
 | Coverage | ~90% line (llvm-cov) |
-| Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin, zero C deps |
+| Unsafe | `#![forbid(unsafe_code)]` unconditional on all 19 crates + UniBin, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
 | BTSP Phase 1 | `validate_insecure_guard()`, family-scoped sockets, domain symlinks |
-| Files | All production files under 400 LOC after smart domain refactoring of 46 modules |
+| Files | All production files under 600 LOC after smart domain refactoring of 57+ modules |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 18 crates + sandbox) |
 | External C deps | None -- pure Rust (`rustix` for syscalls, `blake3` pure-Rust hash); `nokhwa`/`mozjpeg-sys` removed |
@@ -135,6 +135,8 @@ petaltongue
 | Dispatch classification | `DispatchOutcome<T>` separates protocol vs application errors |
 | Typed exit codes | `exit_code` module (SUCCESS, CONFIG_ERROR, NETWORK_ERROR, USAGE_ERROR) |
 | Supply-chain hygiene | `deny.toml` with `yanked=deny`, `wildcards=warn`, banned C deps |
+| Polymorphism | Zero `dyn` trait objects for custom traits — enum dispatch + generics throughout |
+| Async traits | Native `async fn` in traits (RPITIT) — zero `#[async_trait]`, zero `Pin<Box<dyn Future>>` |
 
 ---
 
@@ -143,7 +145,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 5,960+ tests
+cargo test --workspace --all-features        # 6,100+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
@@ -209,7 +211,8 @@ See `ecoPrimals/wateringHole/PETALTONGUE_LEVERAGE_GUIDE.md` for:
 - `#![forbid(unsafe_code)]` unless hardware FFI is unavoidable
 - Semantic method naming (`domain.operation`)
 - JSON-RPC 2.0 REQUIRED for inter-primal IPC, tarpc MAY for Rust-to-Rust hot paths, HTTP for external access only
-- All production files under 400 lines (smart domain refactoring, not mechanical splitting)
+- All production files under 600 lines (smart domain refactoring, not mechanical splitting)
+- Zero `dyn` for custom traits — use enum dispatch or generics; `dyn` only for `std::error::Error` and closures
 - SPDX headers on all source files
 
 ---

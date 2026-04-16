@@ -11,6 +11,6 @@ mod types;
 #[cfg(test)]
 mod tests;
 
-pub use persistence::{LocalStatePersistence, StatePersistence};
+pub use persistence::{LocalStatePersistence, StatePersistence, StatePersistenceImpl};
 pub use sync::StateSync;
 pub use types::DeviceState;

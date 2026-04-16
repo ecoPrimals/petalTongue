@@ -6,8 +6,9 @@
 use crate::accessibility::ColorPalette;
 use crate::audio::AudioSystemV2;
 use crate::live_data::request_live_updates;
+use crate::sensors::UiSensorRegistry;
 use egui::Ui;
-use petal_tongue_core::{RenderingAwareness, SensorRegistry};
+use petal_tongue_core::RenderingAwareness;
 use std::collections::VecDeque;
 use std::sync::{Arc, RwLock};
 
@@ -334,7 +335,7 @@ impl SystemDashboard {
         palette: &ColorPalette,
         font_scale: f32,
         rendering_awareness: &Arc<RwLock<RenderingAwareness>>,
-        sensor_registry: &Arc<RwLock<SensorRegistry>>,
+        sensor_registry: &Arc<RwLock<UiSensorRegistry>>,
     ) {
         ui.group(|ui| {
             ui.set_width(ui.available_width());
@@ -566,7 +567,7 @@ mod tests {
 
         let palette = ColorPalette::from_scheme(ColorScheme::Default);
         let rendering_awareness = Arc::new(RwLock::new(RenderingAwareness::new()));
-        let sensor_registry = Arc::new(RwLock::new(SensorRegistry::new()));
+        let sensor_registry = Arc::new(RwLock::new(UiSensorRegistry::new()));
 
         let ctx = egui::Context::default();
         let _ = ctx.run(egui::RawInput::default(), |ctx| {

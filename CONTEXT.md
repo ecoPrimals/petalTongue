@@ -84,10 +84,16 @@ cargo test --workspace --all-features     # ~5,960 tests, ~90% coverage
 
 ## Current State
 
-Sprint 7 complete (April 15, 2026). All CI gates pass (fmt, clippy
+Sprint 8 complete (April 16, 2026). All CI gates pass (fmt, clippy
 pedantic+nursery, doc, cargo deny, tests). Zero unsafe, zero TODO/FIXME,
 zero production unwrap(), zero `#[allow(]` in production. SPDX headers on
 all source files.
+
+Sprint 8 executed: complete `dyn` trait object elimination (22 custom
+traits evolved to enum dispatch / generics), `async-trait` crate fully
+removed (native `async fn` in traits via RPITIT), `Pin<Box<dyn Future>>`
+type aliases eliminated, 11 production modules refactored below 600 LOC,
+hardcoded ecosystem paths evolved to env-configurable constants.
 
 Sprint 7 executed: deep debt resolution across 14 production modules
 (smart refactoring by domain, not mechanical splitting), hardcoding evolved

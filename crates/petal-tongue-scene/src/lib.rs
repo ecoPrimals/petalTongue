@@ -73,7 +73,9 @@ pub use grammar::{
     Aesthetic, CoordinateSystem, Facet, FacetLayout, GeometryType, GrammarExpr, ScaleType,
 };
 pub use haptic_sequence::{HapticPulse, HapticSequence};
-pub use math::{Axes, FunctionPlot, MathObject, NumberLine, ParametricCurve, VectorField};
+pub use math::{
+    Axes, FunctionPlot, MathObject, MathObjectImpl, NumberLine, ParametricCurve, VectorField,
+};
 pub use modality::{
     AudioParam, BrailleCell, BrailleCompiler, HapticCommand, HapticCompiler, HapticPattern,
     ModalityCompiler, ModalityOutput,
@@ -90,5 +92,5 @@ pub use transform::{Transform2D, Transform3D};
 pub use tufte::{
     ChartjunkDetection, ColorAccessibility, ConstraintResult, ConstraintSeverity, DataDensity,
     DataInkRatio, LieFactor, SmallMultiplesPreference, SmallestEffectiveDifference,
-    TufteConstraint, TufteReport,
+    TufteConstraint, TufteConstraintImpl, TufteReport,
 };

@@ -55,6 +55,13 @@ pub const DEFAULT_GPU_COMPUTE_ENDPOINT: &str = "tarpc://localhost:9001";
 /// Used when `XDG_RUNTIME_DIR` is unavailable; configurable via explicit socket env vars.
 pub const LEGACY_TMP_PREFIX: &str = "/tmp";
 
+/// Ecosystem runtime directory segment under XDG_RUNTIME_DIR.
+/// Override via `ECOSYSTEM_RUNTIME_DIR` for custom deployments.
+#[must_use]
+pub fn ecosystem_runtime_dir_name() -> String {
+    std::env::var("ECOSYSTEM_RUNTIME_DIR").unwrap_or_else(|_| "biomeos".to_string())
+}
+
 // ---------------------------------------------------------------------------
 // Socket names (capability-based, no primal identity coupling)
 // ---------------------------------------------------------------------------

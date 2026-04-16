@@ -13,9 +13,8 @@
 //! (or when running tests). Production builds without the feature use empty panels.
 
 use super::biomeos_integration::{Device, DeviceStatus, DeviceType, Health, NicheTemplate, Primal};
-use async_trait::async_trait;
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
-use petal_tongue_discovery::{ProviderMetadata, VisualizationDataProvider};
+use petal_tongue_discovery::{DiscoveryResult, ProviderMetadata, VisualizationDataProvider};
 use tracing::{info, warn};
 
 /// Demo provider for graceful fallback when biomeOS unavailable
@@ -309,9 +308,8 @@ impl Default for DemoDeviceProvider {
 }
 
 /// Implement `VisualizationDataProvider` for backward compatibility
-#[async_trait]
 impl VisualizationDataProvider for DemoDeviceProvider {
-    async fn get_primals(&self) -> petal_tongue_discovery::DiscoveryResult<Vec<PrimalInfo>> {
+    async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         Ok(self
             .primals
             .iter()
@@ -337,7 +335,7 @@ impl VisualizationDataProvider for DemoDeviceProvider {
             .collect())
     }
 
-    async fn get_topology(&self) -> petal_tongue_discovery::DiscoveryResult<Vec<TopologyEdge>> {
+    async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
         Ok(vec![
             TopologyEdge {
                 from: "primal-discovery".to_string().into(),
@@ -366,7 +364,7 @@ impl VisualizationDataProvider for DemoDeviceProvider {
         ])
     }
 
-    async fn health_check(&self) -> petal_tongue_discovery::DiscoveryResult<String> {
+    async fn health_check(&self) -> DiscoveryResult<String> {
         Ok("healthy (demo fallback)".to_string())
     }
 

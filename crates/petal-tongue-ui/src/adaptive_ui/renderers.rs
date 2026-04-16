@@ -4,6 +4,61 @@
 use petal_tongue_core::{PrimalInfo, RenderingCapabilities};
 
 use super::AdaptiveUIRenderer;
+
+/// Enum dispatch for device-specific renderers (replaces `Box<dyn AdaptiveUIRenderer>`).
+pub(super) enum AdaptiveUIRendererImpl {
+    Desktop(DesktopUIRenderer),
+    Phone(PhoneUIRenderer),
+    Watch(WatchUIRenderer),
+    Cli(CliUIRenderer),
+    Tablet(TabletUIRenderer),
+    Tv(TvUIRenderer),
+}
+
+impl AdaptiveUIRenderer for AdaptiveUIRendererImpl {
+    fn render_primal_list(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        caps: &RenderingCapabilities,
+    ) {
+        match self {
+            Self::Desktop(r) => r.render_primal_list(ui, primals, caps),
+            Self::Phone(r) => r.render_primal_list(ui, primals, caps),
+            Self::Watch(r) => r.render_primal_list(ui, primals, caps),
+            Self::Cli(r) => r.render_primal_list(ui, primals, caps),
+            Self::Tablet(r) => r.render_primal_list(ui, primals, caps),
+            Self::Tv(r) => r.render_primal_list(ui, primals, caps),
+        }
+    }
+
+    fn render_topology(
+        &self,
+        ui: &mut egui::Ui,
+        primals: &[PrimalInfo],
+        caps: &RenderingCapabilities,
+    ) {
+        match self {
+            Self::Desktop(r) => r.render_topology(ui, primals, caps),
+            Self::Phone(r) => r.render_topology(ui, primals, caps),
+            Self::Watch(r) => r.render_topology(ui, primals, caps),
+            Self::Cli(r) => r.render_topology(ui, primals, caps),
+            Self::Tablet(r) => r.render_topology(ui, primals, caps),
+            Self::Tv(r) => r.render_topology(ui, primals, caps),
+        }
+    }
+
+    fn render_metrics(&self, ui: &mut egui::Ui, metrics_data: &str, caps: &RenderingCapabilities) {
+        match self {
+            Self::Desktop(r) => r.render_metrics(ui, metrics_data, caps),
+            Self::Phone(r) => r.render_metrics(ui, metrics_data, caps),
+            Self::Watch(r) => r.render_metrics(ui, metrics_data, caps),
+            Self::Cli(r) => r.render_metrics(ui, metrics_data, caps),
+            Self::Tablet(r) => r.render_metrics(ui, metrics_data, caps),
+            Self::Tv(r) => r.render_metrics(ui, metrics_data, caps),
+        }
+    }
+}
 use super::formatting::{
     count_healthy_primals, format_cli_primal_line, format_cli_primal_status,
     format_desktop_primal_indicator, format_metrics_line, format_phone_primal_color_rgb,
@@ -15,7 +70,7 @@ use super::formatting::{
 // Desktop UI Renderer (Full Complexity)
 // ============================================================================
 
-struct DesktopUIRenderer;
+pub(super) struct DesktopUIRenderer;
 
 impl DesktopUIRenderer {
     const fn new() -> Self {
@@ -85,7 +140,7 @@ impl AdaptiveUIRenderer for DesktopUIRenderer {
 // Phone UI Renderer (Minimal Complexity)
 // ============================================================================
 
-struct PhoneUIRenderer;
+pub(super) struct PhoneUIRenderer;
 
 impl PhoneUIRenderer {
     const fn new() -> Self {
@@ -141,7 +196,7 @@ impl AdaptiveUIRenderer for PhoneUIRenderer {
 // Watch UI Renderer (Essential Complexity)
 // ============================================================================
 
-struct WatchUIRenderer;
+pub(super) struct WatchUIRenderer;
 
 impl WatchUIRenderer {
     const fn new() -> Self {
@@ -190,7 +245,7 @@ impl AdaptiveUIRenderer for WatchUIRenderer {
 // CLI UI Renderer (Text-only)
 // ============================================================================
 
-struct CliUIRenderer;
+pub(super) struct CliUIRenderer;
 
 impl CliUIRenderer {
     const fn new() -> Self {
@@ -229,7 +284,7 @@ impl AdaptiveUIRenderer for CliUIRenderer {
 // Tablet UI Renderer (Simplified Complexity)
 // ============================================================================
 
-struct TabletUIRenderer;
+pub(super) struct TabletUIRenderer;
 
 impl TabletUIRenderer {
     const fn new() -> Self {
@@ -280,7 +335,7 @@ impl AdaptiveUIRenderer for TabletUIRenderer {
 // TV UI Renderer (Simplified Complexity, 10-foot UI)
 // ============================================================================
 
-struct TvUIRenderer;
+pub(super) struct TvUIRenderer;
 
 impl TvUIRenderer {
     const fn new() -> Self {
@@ -325,18 +380,18 @@ impl AdaptiveUIRenderer for TvUIRenderer {
     }
 }
 
-pub(super) fn create_renderer(
+pub(super) const fn create_renderer(
     device: petal_tongue_core::DeviceType,
-) -> Box<dyn AdaptiveUIRenderer> {
+) -> AdaptiveUIRendererImpl {
     use petal_tongue_core::DeviceType;
 
     match device {
-        DeviceType::Desktop => Box::new(DesktopUIRenderer::new()),
-        DeviceType::Phone => Box::new(PhoneUIRenderer::new()),
-        DeviceType::Watch => Box::new(WatchUIRenderer::new()),
-        DeviceType::CLI => Box::new(CliUIRenderer::new()),
-        DeviceType::Tablet => Box::new(TabletUIRenderer::new()),
-        DeviceType::TV => Box::new(TvUIRenderer::new()),
-        DeviceType::Unknown => Box::new(DesktopUIRenderer::new()),
+        DeviceType::Desktop => AdaptiveUIRendererImpl::Desktop(DesktopUIRenderer::new()),
+        DeviceType::Phone => AdaptiveUIRendererImpl::Phone(PhoneUIRenderer::new()),
+        DeviceType::Watch => AdaptiveUIRendererImpl::Watch(WatchUIRenderer::new()),
+        DeviceType::CLI => AdaptiveUIRendererImpl::Cli(CliUIRenderer::new()),
+        DeviceType::Tablet => AdaptiveUIRendererImpl::Tablet(TabletUIRenderer::new()),
+        DeviceType::TV => AdaptiveUIRendererImpl::Tv(TvUIRenderer::new()),
+        DeviceType::Unknown => AdaptiveUIRendererImpl::Desktop(DesktopUIRenderer::new()),
     }
 }

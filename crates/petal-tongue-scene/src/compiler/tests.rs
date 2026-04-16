@@ -4,7 +4,7 @@ use super::*;
 use crate::domain_palette::palette_for_domain;
 use crate::grammar::{FacetLayout, GeometryType, GrammarExpr};
 use crate::primitive::Primitive;
-use crate::tufte::{DataInkRatio, TufteConstraint};
+use crate::tufte::TufteConstraintImpl;
 
 fn point_expr() -> GrammarExpr {
     GrammarExpr::new("data", GeometryType::Point)
@@ -68,7 +68,7 @@ fn compile_with_constraints_returns_report() {
         serde_json::json!({"x": 1.0, "y": 2.0}),
         serde_json::json!({"x": 3.0, "y": 4.0}),
     ];
-    let constraints: Vec<&dyn TufteConstraint> = vec![&DataInkRatio];
+    let constraints = [TufteConstraintImpl::DataInkRatio];
     let (_graph, report) = compiler.compile_with_constraints(&point_expr(), &data, &constraints);
     assert_eq!(report.results.len(), 1);
     assert_eq!(report.results[0].0, "DataInkRatio");

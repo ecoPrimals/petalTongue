@@ -34,7 +34,6 @@
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
 use crate::error::{DisplayError, Result};
-use async_trait::async_trait;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
@@ -144,7 +143,6 @@ impl Default for FramebufferDisplay {
     }
 }
 
-#[async_trait]
 impl DisplayBackend for FramebufferDisplay {
     async fn init(&mut self) -> Result<()> {
         info!("🖥️  Initializing framebuffer display backend...");

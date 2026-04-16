@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use super::migrations::{MigrationRegistry, SchemaMigration};
+use super::migrations::{MigrationRegistry, SchemaMigrationImpl, V1ToV2Migration};
 use super::types::{DynamicData, DynamicValue, SchemaVersion};
-use crate::error::Result;
 use std::collections::HashMap;
 
 #[test]
@@ -222,23 +221,8 @@ fn test_dynamic_value_number_special() {
 
 #[test]
 fn test_migration_registry_custom_migration() {
-    struct TestMigration;
-    impl SchemaMigration for TestMigration {
-        fn can_migrate(&self, from: SchemaVersion, to: SchemaVersion) -> bool {
-            from.major == 1 && to.major == 2
-        }
-        fn migrate(
-            &self,
-            data: &mut DynamicData,
-            _from: SchemaVersion,
-            _to: SchemaVersion,
-        ) -> Result<()> {
-            data.set("migrated".to_string(), DynamicValue::Boolean(true));
-            Ok(())
-        }
-    }
     let mut registry = MigrationRegistry::new();
-    registry.register(Box::new(TestMigration));
+    registry.register(SchemaMigrationImpl::V1ToV2(V1ToV2Migration));
     let mut data = DynamicData::new();
     data.set("x".to_string(), DynamicValue::String("y".to_string()));
     let from = SchemaVersion::new(1, 0, 0);
@@ -332,23 +316,8 @@ fn test_dynamic_value_from_into_json_value() {
 
 #[test]
 fn test_migration_registry_skips_non_matching() {
-    struct V1ToV2;
-    impl SchemaMigration for V1ToV2 {
-        fn can_migrate(&self, from: SchemaVersion, to: SchemaVersion) -> bool {
-            from.major == 1 && to.major == 2
-        }
-        fn migrate(
-            &self,
-            data: &mut DynamicData,
-            _from: SchemaVersion,
-            _to: SchemaVersion,
-        ) -> Result<()> {
-            data.set("migrated".to_string(), DynamicValue::Boolean(true));
-            Ok(())
-        }
-    }
     let mut registry = MigrationRegistry::new();
-    registry.register(Box::new(V1ToV2));
+    registry.register(SchemaMigrationImpl::V1ToV2(V1ToV2Migration));
     let mut data = DynamicData::new();
     data.set("x".to_string(), DynamicValue::String("y".to_string()));
     let from = SchemaVersion::new(2, 0, 0);

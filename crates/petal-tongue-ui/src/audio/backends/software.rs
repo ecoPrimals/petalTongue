@@ -6,7 +6,6 @@
 
 use crate::audio::traits::{AudioBackend, AudioCapabilities, BackendMetadata, BackendType};
 use crate::error::Result;
-use async_trait::async_trait;
 use tracing::{debug, info};
 
 /// Software synthesis backend - pure Rust audio generation
@@ -32,7 +31,6 @@ impl Default for SoftwareBackend {
     }
 }
 
-#[async_trait]
 impl AudioBackend for SoftwareBackend {
     fn metadata(&self) -> BackendMetadata {
         BackendMetadata {

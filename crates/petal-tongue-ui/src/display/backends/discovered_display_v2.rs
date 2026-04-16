@@ -38,7 +38,6 @@
 
 use crate::display::traits::{DisplayBackend, DisplayCapabilities};
 use crate::error::{DisplayError, Result};
-use async_trait::async_trait;
 use petal_tongue_core::{
     biomeos_discovery::BiomeOsBackend,
     capability_discovery::{CapabilityDiscovery, CapabilityQuery},
@@ -50,7 +49,7 @@ use tracing::{debug, info, warn};
 /// Display backend using tarpc to the provider discovered for the `display` capability (biomeOS discovery).
 pub struct DiscoveredDisplayBackendV2 {
     /// Capability discovery system
-    discovery: Option<CapabilityDiscovery>,
+    discovery: Option<CapabilityDiscovery<BiomeOsBackend>>,
 
     /// tarpc client (high-performance binary RPC)
     tarpc_client: Option<TarpcClient>,
@@ -116,7 +115,7 @@ impl DiscoveredDisplayBackendV2 {
         let backend = BiomeOsBackend::from_env()
             .map_err(|e| DisplayError::BiomeOsDiscoveryBackend(e.to_string()))?;
 
-        let discovery = CapabilityDiscovery::new(Box::new(backend));
+        let discovery = CapabilityDiscovery::new(backend);
 
         Ok(Self {
             discovery: Some(discovery),
@@ -265,7 +264,6 @@ impl DiscoveredDisplayBackendV2 {
     }
 }
 
-#[async_trait]
 impl DisplayBackend for DiscoveredDisplayBackendV2 {
     async fn init(&mut self) -> Result<()> {
         info!("🌸🦈 Initializing discovered display backend (tarpc)...");
@@ -353,7 +351,6 @@ impl DisplayBackend for DiscoveredDisplayBackendV2 {
     async fn shutdown(&mut self) -> Result<()> {
         info!("🌸 Shutting down discovered display backend (tarpc)");
 
-        // Destroy window via tarpc if connected
         if let Some(window_id) = &self.window_id {
             info!("   Destroying window: {}", window_id);
 
@@ -362,7 +359,6 @@ impl DisplayBackend for DiscoveredDisplayBackendV2 {
                     "window_id": window_id,
                 });
 
-                // Best-effort window destruction (don't fail shutdown if this fails)
                 match client
                     .call_method("display.destroy_window", Some(params))
                     .await

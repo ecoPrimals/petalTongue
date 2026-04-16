@@ -5,6 +5,8 @@
 //! Extracted from app/mod.rs for domain separation.
 
 use super::PetalTongueApp;
+use crate::panel_registry::PanelInstance;
+use crate::tool_integration::ToolPanel;
 
 /// Render all panels based on current visibility state.
 pub fn render_all_panels(ctx: &egui::Context, app: &mut PetalTongueApp) {

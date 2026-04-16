@@ -2,8 +2,6 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Chaos and fault injection tests for petal-tongue-discovery.
 
-use async_trait::async_trait;
-use petal_tongue_core::PrimalInfo;
 use petal_tongue_core::test_fixtures::env_test_helpers;
 use petal_tongue_discovery::HealthStatus;
 use petal_tongue_discovery::UnixSocketProvider;
@@ -15,7 +13,7 @@ use petal_tongue_discovery::concurrent::{
 use petal_tongue_discovery::discover_visualization_providers;
 use petal_tongue_discovery::errors::{DiscoveryError, DiscoveryResult};
 use petal_tongue_discovery::parse_mdns_response;
-use petal_tongue_discovery::{ProviderMetadata, VisualizationDataProvider};
+use petal_tongue_discovery::{HangHealthCheckProvider, KnownVisualizationProvider};
 use serde_json::json;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -23,28 +21,6 @@ use std::time::Duration;
 
 #[cfg(feature = "test-fixtures")]
 use petal_tongue_discovery::DemoVisualizationProvider;
-
-struct HangHealthProvider;
-
-#[async_trait]
-impl VisualizationDataProvider for HangHealthProvider {
-    async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
-        Ok(vec![])
-    }
-
-    async fn health_check(&self) -> DiscoveryResult<String> {
-        std::future::pending().await
-    }
-
-    fn get_metadata(&self) -> ProviderMetadata {
-        ProviderMetadata {
-            name: "hang".to_string(),
-            endpoint: "hang://".to_string(),
-            protocol: "test".to_string(),
-            capabilities: vec![],
-        }
-    }
-}
 
 #[tokio::test]
 async fn chaos_no_providers_graceful_degradation() {
@@ -72,8 +48,10 @@ async fn chaos_concurrent_discovery_sources() {
 }
 
 #[cfg(feature = "test-fixtures")]
-async fn one_demo_provider() -> DiscoveryResult<Vec<Box<dyn VisualizationDataProvider>>> {
-    Ok(vec![Box::new(DemoVisualizationProvider::new())])
+async fn one_demo_provider() -> DiscoveryResult<Vec<KnownVisualizationProvider>> {
+    Ok(vec![KnownVisualizationProvider::Demo(
+        DemoVisualizationProvider::new(),
+    )])
 }
 
 #[cfg(feature = "test-fixtures")]
@@ -137,7 +115,7 @@ async fn chaos_rapid_socket_discovery_cycles() {
 async fn chaos_discovery_source_never_finishes_times_out() {
     let result = discover_concurrent(
         vec![("stuck", || async {
-            std::future::pending::<DiscoveryResult<Vec<Box<dyn VisualizationDataProvider>>>>().await
+            std::future::pending::<DiscoveryResult<Vec<KnownVisualizationProvider>>>().await
         })],
         Duration::from_millis(80),
     )
@@ -148,7 +126,9 @@ async fn chaos_discovery_source_never_finishes_times_out() {
 
 #[tokio::test]
 async fn chaos_provider_health_never_responds_times_out() {
-    let providers: Vec<Box<dyn VisualizationDataProvider>> = vec![Box::new(HangHealthProvider)];
+    let providers = vec![KnownVisualizationProvider::HangHealth(
+        HangHealthCheckProvider,
+    )];
     let health = check_all_providers_health(&providers, Duration::from_millis(60)).await;
     assert_eq!(health.len(), 1);
     assert!(
@@ -160,8 +140,10 @@ async fn chaos_provider_health_never_responds_times_out() {
 
 #[tokio::test]
 async fn chaos_first_available_all_hang() {
-    let providers: Vec<Box<dyn VisualizationDataProvider>> =
-        vec![Box::new(HangHealthProvider), Box::new(HangHealthProvider)];
+    let providers = vec![
+        KnownVisualizationProvider::HangHealth(HangHealthCheckProvider),
+        KnownVisualizationProvider::HangHealth(HangHealthCheckProvider),
+    ];
     match discover_first_available(providers, Duration::from_millis(50)).await {
         Ok(_) => panic!("expected all providers to fail or time out"),
         Err(e) => assert!(

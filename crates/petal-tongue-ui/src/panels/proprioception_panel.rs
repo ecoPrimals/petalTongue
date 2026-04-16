@@ -151,8 +151,10 @@ impl PanelFactory for ProprioceptionPanelFactory {
     fn create(
         &self,
         _config: &CustomPanelConfig,
-    ) -> crate::panel_registry::Result<Box<dyn PanelInstance>> {
-        Ok(Box::new(ProprioceptionPanel::new()))
+    ) -> crate::panel_registry::Result<crate::panel_registry::PanelInstanceImpl> {
+        Ok(crate::panel_registry::PanelInstanceImpl::Proprioception(
+            ProprioceptionPanel::new(),
+        ))
     }
 
     fn description(&self) -> &'static str {

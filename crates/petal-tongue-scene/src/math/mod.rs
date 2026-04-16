@@ -21,6 +21,32 @@ pub trait MathObject {
     fn to_primitives(&self) -> Vec<Primitive>;
 }
 
+/// Enum dispatch for [`MathObject`] (replaces `Box<dyn MathObject>` / `&dyn MathObject`).
+pub enum MathObjectImpl {
+    /// Horizontal number line.
+    NumberLine(NumberLine),
+    /// Cartesian axes.
+    Axes(Axes),
+    /// Function plot (line chart).
+    FunctionPlot(FunctionPlot),
+    /// Parametric curve.
+    ParametricCurve(ParametricCurve),
+    /// Vector field.
+    VectorField(VectorField),
+}
+
+impl MathObject for MathObjectImpl {
+    fn to_primitives(&self) -> Vec<Primitive> {
+        match self {
+            Self::NumberLine(o) => o.to_primitives(),
+            Self::Axes(o) => o.to_primitives(),
+            Self::FunctionPlot(o) => o.to_primitives(),
+            Self::ParametricCurve(o) => o.to_primitives(),
+            Self::VectorField(o) => o.to_primitives(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -96,15 +122,15 @@ mod tests {
     }
 
     #[test]
-    fn math_object_trait_object_safe() {
-        fn collect_primitives(obj: &dyn MathObject) -> Vec<Primitive> {
+    fn math_object_enum_dispatch() {
+        fn collect_primitives(obj: &MathObjectImpl) -> Vec<Primitive> {
             obj.to_primitives()
         }
-        let nl = NumberLine::default();
+        let nl = MathObjectImpl::NumberLine(NumberLine::default());
         let prims = collect_primitives(&nl);
         assert!(!prims.is_empty());
 
-        let boxed: Box<dyn MathObject> = Box::new(NumberLine::default());
+        let boxed = Box::new(MathObjectImpl::NumberLine(NumberLine::default()));
         let prims2 = boxed.to_primitives();
         assert!(!prims2.is_empty());
     }

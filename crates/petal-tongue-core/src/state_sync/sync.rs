@@ -7,13 +7,13 @@ use crate::error::Result;
 use chrono::Utc;
 use std::sync::Arc;
 
-use super::persistence::StatePersistence;
+use super::persistence::{StatePersistence, StatePersistenceImpl};
 use super::types::DeviceState;
 
 /// State synchronization coordinator
 pub struct StateSync {
     /// Local persistence
-    persistence: Box<dyn StatePersistence>,
+    persistence: StatePersistenceImpl,
 
     /// Current device state (Arc for zero-copy sharing)
     current_state: Option<Arc<DeviceState>>,
@@ -28,7 +28,9 @@ impl StateSync {
     /// state directory cannot be created.
     pub fn new() -> Result<Self> {
         Ok(Self {
-            persistence: Box::new(super::persistence::LocalStatePersistence::new()?),
+            persistence: StatePersistenceImpl::Local(
+                super::persistence::LocalStatePersistence::new()?,
+            ),
             current_state: None,
         })
     }
@@ -36,7 +38,7 @@ impl StateSync {
     /// Create with custom persistence (for testing)
     #[cfg(test)]
     #[must_use]
-    pub fn with_persistence(persistence: Box<dyn StatePersistence>) -> Self {
+    pub fn with_persistence(persistence: StatePersistenceImpl) -> Self {
         Self {
             persistence,
             current_state: None,

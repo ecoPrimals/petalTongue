@@ -7,7 +7,7 @@ use serde_json::Value;
 use crate::grammar::{GrammarExpr, ScaleType};
 use crate::primitive::Primitive;
 use crate::render_plan::{AxisMeta, PanelBounds, PanelMeta, RenderPlan};
-use crate::tufte::{TufteConstraint, TufteReport};
+use crate::tufte::{TufteConstraintImpl, TufteReport};
 
 use super::GrammarCompiler;
 use super::utils::{x_field, y_field};
@@ -22,7 +22,7 @@ impl GrammarCompiler {
         &self,
         expr: &GrammarExpr,
         data: &[Value],
-        constraints: &[&dyn TufteConstraint],
+        constraints: &[TufteConstraintImpl],
     ) -> RenderPlan {
         let graph = self.compile(expr, data);
         let axes = crate::math::Axes::default();

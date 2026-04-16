@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![allow(clippy::manual_async_fn)]
 //! Keyboard sensor - Discrete input device
 //!
 //! Discovers keyboard capabilities and provides key press events.
 
-use async_trait::async_trait;
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use petal_tongue_core::sensor::SensorError;
 use petal_tongue_core::{Key, Modifiers, Sensor, SensorCapabilities, SensorEvent, SensorType};
@@ -40,7 +40,6 @@ impl KeyboardSensor {
     }
 }
 
-#[async_trait]
 impl Sensor for KeyboardSensor {
     fn capabilities(&self) -> &SensorCapabilities {
         &self.capabilities
@@ -51,33 +50,36 @@ impl Sensor for KeyboardSensor {
         std::io::stdin().is_terminal()
     }
 
-    async fn poll_events(&mut self) -> Result<Vec<SensorEvent>, SensorError> {
-        let mut events = Vec::new();
+    fn poll_events(
+        &mut self,
+    ) -> impl std::future::Future<Output = Result<Vec<SensorEvent>, SensorError>> + Send {
+        async {
+            let mut events = Vec::new();
 
-        // Non-blocking poll with very short timeout
-        match self.input_type {
-            InputType::Terminal => {
-                if event::poll(Duration::from_millis(1))
-                    .map_err(|e| SensorError::Io(std::io::Error::other(e)))?
-                    && let Event::Key(key_event) =
-                        event::read().map_err(|e| SensorError::Io(std::io::Error::other(e)))?
-                {
-                    let timestamp = Instant::now();
-                    self.last_key_press = Some(timestamp);
+            match self.input_type {
+                InputType::Terminal => {
+                    if event::poll(Duration::from_millis(1))
+                        .map_err(|e| SensorError::Io(std::io::Error::other(e)))?
+                        && let Event::Key(key_event) =
+                            event::read().map_err(|e| SensorError::Io(std::io::Error::other(e)))?
+                    {
+                        let timestamp = Instant::now();
+                        self.last_key_press = Some(timestamp);
 
-                    let key = map_keycode(key_event.code);
-                    let modifiers = map_modifiers(key_event.modifiers);
+                        let key = map_keycode(key_event.code);
+                        let modifiers = map_modifiers(key_event.modifiers);
 
-                    events.push(SensorEvent::KeyPress {
-                        key,
-                        modifiers,
-                        timestamp,
-                    });
+                        events.push(SensorEvent::KeyPress {
+                            key,
+                            modifiers,
+                            timestamp,
+                        });
+                    }
                 }
             }
-        }
 
-        Ok(events)
+            Ok(events)
+        }
     }
 
     fn last_activity(&self) -> Option<Instant> {

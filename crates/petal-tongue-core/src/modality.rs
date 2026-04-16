@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![allow(clippy::manual_async_fn)] // explicit `impl Future + Send` on `GUIModality`
 //! # Modality System
 //!
 //! Defines the trait and types for output modalities.
-
-use async_trait::async_trait;
 
 use crate::error::Result;
 use std::sync::Arc;
@@ -99,13 +98,15 @@ pub struct ModalityCapabilities {
     pub accessibility: AccessibilityFeatures,
 }
 
+/// Default no-op modality used when no concrete GUI modality is selected.
+pub struct NullModality;
+
 /// Universal output modality
 ///
 /// Each modality provides a different representation of the same
 /// topology data. Modalities are discovered at runtime and can
 /// run simultaneously.
-#[async_trait]
-pub trait GUIModality: Send + Sync {
+pub trait GUIModality: Sized + Send + Sync {
     /// Get modality name (e.g., "terminal", "soundscape", "egui")
     fn name(&self) -> &'static str;
 
@@ -116,29 +117,75 @@ pub trait GUIModality: Send + Sync {
     fn tier(&self) -> ModalityTier;
 
     /// Initialize modality
-    async fn initialize(&mut self, engine: Arc<UniversalRenderingEngine>) -> Result<()>;
+    fn initialize(
+        &mut self,
+        engine: Arc<UniversalRenderingEngine<Self>>,
+    ) -> impl std::future::Future<Output = Result<()>> + Send;
 
     /// Start rendering (blocking or returns handle)
-    async fn render(&mut self) -> Result<()>;
+    fn render(&mut self) -> impl std::future::Future<Output = Result<()>> + Send;
 
     /// Handle events from other modalities
-    async fn handle_event(&mut self, event: EngineEvent) -> Result<()>;
+    fn handle_event(
+        &mut self,
+        event: EngineEvent,
+    ) -> impl std::future::Future<Output = Result<()>> + Send;
 
     /// Shutdown gracefully
-    async fn shutdown(&mut self) -> Result<()>;
+    fn shutdown(&mut self) -> impl std::future::Future<Output = Result<()>> + Send;
 
     /// Get modality-specific capabilities
     fn capabilities(&self) -> ModalityCapabilities;
 }
 
+impl GUIModality for NullModality {
+    fn name(&self) -> &'static str {
+        "null"
+    }
+
+    fn is_available(&self) -> bool {
+        false
+    }
+
+    fn tier(&self) -> ModalityTier {
+        ModalityTier::AlwaysAvailable
+    }
+
+    fn initialize(
+        &mut self,
+        _engine: Arc<UniversalRenderingEngine<Self>>,
+    ) -> impl std::future::Future<Output = Result<()>> + Send {
+        async { Ok(()) }
+    }
+
+    fn render(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
+        async { Ok(()) }
+    }
+
+    fn handle_event(
+        &mut self,
+        _event: EngineEvent,
+    ) -> impl std::future::Future<Output = Result<()>> + Send {
+        async { Ok(()) }
+    }
+
+    fn shutdown(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
+        async { Ok(()) }
+    }
+
+    fn capabilities(&self) -> ModalityCapabilities {
+        ModalityCapabilities::default()
+    }
+}
+
 /// Modality Registry
 ///
 /// Manages available modalities and selects best for environment.
-pub struct ModalityRegistry {
-    modalities: indexmap::IndexMap<String, Box<dyn GUIModality>>,
+pub struct ModalityRegistry<M: GUIModality = NullModality> {
+    modalities: indexmap::IndexMap<String, M>,
 }
 
-impl ModalityRegistry {
+impl<M: GUIModality> ModalityRegistry<M> {
     /// Create new empty registry
     #[must_use]
     pub fn new() -> Self {
@@ -148,7 +195,7 @@ impl ModalityRegistry {
     }
 
     /// Register a modality
-    pub fn register(&mut self, modality: Box<dyn GUIModality>) {
+    pub fn register(&mut self, modality: M) {
         let name = modality.name().to_string();
         self.modalities.insert(name, modality);
     }
@@ -173,12 +220,12 @@ impl ModalityRegistry {
 
     /// Get a modality by name
     #[must_use]
-    pub fn get(&self, name: &str) -> Option<&dyn GUIModality> {
-        self.modalities.get(name).map(std::convert::AsRef::as_ref)
+    pub fn get(&self, name: &str) -> Option<&M> {
+        self.modalities.get(name)
     }
 
     /// Get mutable modality
-    pub fn get_mut(&mut self, name: &str) -> Option<&mut Box<dyn GUIModality>> {
+    pub fn get_mut(&mut self, name: &str) -> Option<&mut M> {
         self.modalities.get_mut(name)
     }
 
@@ -188,7 +235,7 @@ impl ModalityRegistry {
         self.modalities
             .values()
             .filter(|m| m.is_available())
-            .map(|m| m.name())
+            .map(GUIModality::name)
             .collect()
     }
 
@@ -198,7 +245,7 @@ impl ModalityRegistry {
         self.modalities
             .values()
             .filter(|m| m.tier() == tier && m.is_available())
-            .map(|m| m.name())
+            .map(GUIModality::name)
             .collect()
     }
 
@@ -237,7 +284,7 @@ impl ModalityRegistry {
     }
 }
 
-impl Default for ModalityRegistry {
+impl Default for ModalityRegistry<NullModality> {
     fn default() -> Self {
         Self::new()
     }
@@ -245,7 +292,7 @@ impl Default for ModalityRegistry {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{ModalityCapabilities, ModalityTier, *};
 
     // Mock modality for testing
     struct MockModality {
@@ -254,7 +301,6 @@ mod tests {
         available: bool,
     }
 
-    #[async_trait]
     impl GUIModality for MockModality {
         fn name(&self) -> &'static str {
             self.name
@@ -268,20 +314,26 @@ mod tests {
             self.tier
         }
 
-        async fn initialize(&mut self, _engine: Arc<UniversalRenderingEngine>) -> Result<()> {
-            Ok(())
+        fn initialize(
+            &mut self,
+            _engine: Arc<UniversalRenderingEngine<Self>>,
+        ) -> impl std::future::Future<Output = Result<()>> + Send {
+            async { Ok(()) }
         }
 
-        async fn render(&mut self) -> Result<()> {
-            Ok(())
+        fn render(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
+            async { Ok(()) }
         }
 
-        async fn handle_event(&mut self, _event: EngineEvent) -> Result<()> {
-            Ok(())
+        fn handle_event(
+            &mut self,
+            _event: EngineEvent,
+        ) -> impl std::future::Future<Output = Result<()>> + Send {
+            async { Ok(()) }
         }
 
-        async fn shutdown(&mut self) -> Result<()> {
-            Ok(())
+        fn shutdown(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
+            async { Ok(()) }
         }
 
         fn capabilities(&self) -> ModalityCapabilities {
@@ -291,13 +343,13 @@ mod tests {
 
     #[test]
     fn test_modality_registration() {
-        let mut registry = ModalityRegistry::new();
+        let mut registry = ModalityRegistry::<MockModality>::new();
 
-        registry.register(Box::new(MockModality {
+        registry.register(MockModality {
             name: "terminal",
             tier: ModalityTier::AlwaysAvailable,
             available: true,
-        }));
+        });
 
         assert!(registry.has("terminal"));
         assert!(!registry.has("nonexistent"));
@@ -305,21 +357,21 @@ mod tests {
 
     #[test]
     fn test_auto_select() {
-        let mut registry = ModalityRegistry::new();
+        let mut registry = ModalityRegistry::<MockModality>::new();
 
         // Register Tier 1
-        registry.register(Box::new(MockModality {
+        registry.register(MockModality {
             name: "terminal",
             tier: ModalityTier::AlwaysAvailable,
             available: true,
-        }));
+        });
 
         // Register Tier 3
-        registry.register(Box::new(MockModality {
+        registry.register(MockModality {
             name: "egui",
             tier: ModalityTier::Enhancement,
             available: true,
-        }));
+        });
 
         // Should prefer Tier 3
         let selected = registry.auto_select();
@@ -328,19 +380,19 @@ mod tests {
 
     #[test]
     fn test_tier_filtering() {
-        let mut registry = ModalityRegistry::new();
+        let mut registry = ModalityRegistry::<MockModality>::new();
 
-        registry.register(Box::new(MockModality {
+        registry.register(MockModality {
             name: "terminal",
             tier: ModalityTier::AlwaysAvailable,
             available: true,
-        }));
+        });
 
-        registry.register(Box::new(MockModality {
+        registry.register(MockModality {
             name: "svg",
             tier: ModalityTier::AlwaysAvailable,
             available: true,
-        }));
+        });
 
         let tier1 = registry.by_tier(ModalityTier::AlwaysAvailable);
         assert_eq!(tier1.len(), 2);

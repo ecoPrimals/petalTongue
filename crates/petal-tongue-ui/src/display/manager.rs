@@ -9,13 +9,92 @@
 //! - Priority-based selection
 
 use crate::display::prompt::prompt_for_display_server;
-use crate::display::traits::{BackendPriority, DisplayBackend};
+use crate::display::traits::{BackendPriority, DisplayBackend, DisplayCapabilities};
 use crate::display::{
     DiscoveredDisplayBackend, DiscoveredDisplayBackendV2, ExternalDisplay, FramebufferDisplay,
     SoftwareDisplay,
 };
 use crate::error::{DisplayError, Result};
 use tracing::{info, warn};
+
+/// Enum dispatch for display backends (replaces `Box<dyn DisplayBackend>`).
+pub enum DisplayBackendImpl {
+    DiscoveredV2(DiscoveredDisplayBackendV2),
+    DiscoveredJsonRpc(DiscoveredDisplayBackend),
+    Software(SoftwareDisplay),
+    Framebuffer(FramebufferDisplay),
+    External(ExternalDisplay),
+}
+
+impl DisplayBackend for DisplayBackendImpl {
+    async fn init(&mut self) -> Result<()> {
+        match self {
+            Self::DiscoveredV2(b) => b.init().await,
+            Self::DiscoveredJsonRpc(b) => b.init().await,
+            Self::Software(b) => b.init().await,
+            Self::Framebuffer(b) => b.init().await,
+            Self::External(b) => b.init().await,
+        }
+    }
+
+    fn dimensions(&self) -> (u32, u32) {
+        match self {
+            Self::DiscoveredV2(b) => b.dimensions(),
+            Self::DiscoveredJsonRpc(b) => b.dimensions(),
+            Self::Software(b) => b.dimensions(),
+            Self::Framebuffer(b) => b.dimensions(),
+            Self::External(b) => b.dimensions(),
+        }
+    }
+
+    async fn present(&mut self, buffer: &[u8]) -> Result<()> {
+        match self {
+            Self::DiscoveredV2(b) => b.present(buffer).await,
+            Self::DiscoveredJsonRpc(b) => b.present(buffer).await,
+            Self::Software(b) => b.present(buffer).await,
+            Self::Framebuffer(b) => b.present(buffer).await,
+            Self::External(b) => b.present(buffer).await,
+        }
+    }
+
+    fn is_available() -> bool {
+        DiscoveredDisplayBackendV2::is_available()
+            || DiscoveredDisplayBackend::is_available()
+            || SoftwareDisplay::is_available()
+            || FramebufferDisplay::is_available()
+            || ExternalDisplay::is_available()
+    }
+
+    fn name(&self) -> &str {
+        match self {
+            Self::DiscoveredV2(b) => b.name(),
+            Self::DiscoveredJsonRpc(b) => b.name(),
+            Self::Software(b) => b.name(),
+            Self::Framebuffer(b) => b.name(),
+            Self::External(b) => b.name(),
+        }
+    }
+
+    fn capabilities(&self) -> DisplayCapabilities {
+        match self {
+            Self::DiscoveredV2(b) => b.capabilities(),
+            Self::DiscoveredJsonRpc(b) => b.capabilities(),
+            Self::Software(b) => b.capabilities(),
+            Self::Framebuffer(b) => b.capabilities(),
+            Self::External(b) => b.capabilities(),
+        }
+    }
+
+    async fn shutdown(&mut self) -> Result<()> {
+        match self {
+            Self::DiscoveredV2(b) => b.shutdown().await,
+            Self::DiscoveredJsonRpc(b) => b.shutdown().await,
+            Self::Software(b) => b.shutdown().await,
+            Self::Framebuffer(b) => b.shutdown().await,
+            Self::External(b) => b.shutdown().await,
+        }
+    }
+}
 
 /// Display manager - coordinates multiple backends
 pub struct DisplayManager {
@@ -24,7 +103,7 @@ pub struct DisplayManager {
 }
 
 struct BackendEntry {
-    backend: Box<dyn DisplayBackend>,
+    backend: DisplayBackendImpl,
     priority: BackendPriority,
     initialized: bool,
 }
@@ -47,7 +126,7 @@ impl DisplayManager {
             Ok(discovered_v2) => {
                 info!("✅ Display capability provider discovered via tarpc (high-performance)");
                 backends.push(BackendEntry {
-                    backend: Box::new(discovered_v2),
+                    backend: DisplayBackendImpl::DiscoveredV2(discovered_v2),
                     priority: BackendPriority::DiscoveredDisplay,
                     initialized: false,
                 });
@@ -62,7 +141,7 @@ impl DisplayManager {
                         Ok(discovered_json_rpc) => {
                             info!("✅ Display capability provider discovered (JSON-RPC fallback)");
                             backends.push(BackendEntry {
-                                backend: Box::new(discovered_json_rpc),
+                                backend: DisplayBackendImpl::DiscoveredJsonRpc(discovered_json_rpc),
                                 priority: BackendPriority::DiscoveredDisplay,
                                 initialized: false,
                             });
@@ -84,7 +163,7 @@ impl DisplayManager {
         if SoftwareDisplay::is_available() {
             info!("✅ Software rendering available");
             backends.push(BackendEntry {
-                backend: Box::new(SoftwareDisplay::new()),
+                backend: DisplayBackendImpl::Software(SoftwareDisplay::new()),
                 priority: BackendPriority::Software,
                 initialized: false,
             });
@@ -97,7 +176,7 @@ impl DisplayManager {
             match FramebufferDisplay::new() {
                 Ok(fb) => {
                     backends.push(BackendEntry {
-                        backend: Box::new(fb),
+                        backend: DisplayBackendImpl::Framebuffer(fb),
                         priority: BackendPriority::Framebuffer,
                         initialized: false,
                     });
@@ -113,7 +192,7 @@ impl DisplayManager {
         if ExternalDisplay::is_available() {
             info!("✅ External display server available");
             backends.push(BackendEntry {
-                backend: Box::new(ExternalDisplay::new()),
+                backend: DisplayBackendImpl::External(ExternalDisplay::new()),
                 priority: BackendPriority::External,
                 initialized: false,
             });
@@ -125,7 +204,7 @@ impl DisplayManager {
                 if ExternalDisplay::is_available() {
                     info!("✅ External display server now available");
                     backends.push(BackendEntry {
-                        backend: Box::new(ExternalDisplay::new()),
+                        backend: DisplayBackendImpl::External(ExternalDisplay::new()),
                         priority: BackendPriority::External,
                         initialized: false,
                     });

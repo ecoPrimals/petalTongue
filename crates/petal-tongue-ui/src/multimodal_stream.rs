@@ -28,16 +28,16 @@ pub trait DataStream: Send + Sync {
 /// Renders a data stream in multiple modalities simultaneously
 pub trait MultiModalRenderer {
     /// Render visually (line chart, bar, etc.)
-    fn render_visual(&self, ui: &mut egui::Ui, stream: &dyn DataStream);
+    fn render_visual(&self, ui: &mut egui::Ui, stream: &impl DataStream);
 
     /// Generate audio representation (frequency, volume, waveform)
-    fn render_audio(&self, stream: &dyn DataStream) -> Option<AudioRepresentation>;
+    fn render_audio(&self, stream: &impl DataStream) -> Option<AudioRepresentation>;
 
     /// Generate text description (for assistive technologies)
-    fn render_text(&self, stream: &dyn DataStream) -> String;
+    fn render_text(&self, stream: &impl DataStream) -> String;
 
     /// Generate haptic feedback (future: vibration patterns)
-    fn render_haptic(&self, stream: &dyn DataStream) -> Option<HapticPattern>;
+    fn render_haptic(&self, stream: &impl DataStream) -> Option<HapticPattern>;
 }
 
 /// Audio representation of a data stream
@@ -283,7 +283,7 @@ impl DataStream for NetworkStream {
 pub struct SystemMetricRenderer;
 
 impl MultiModalRenderer for SystemMetricRenderer {
-    fn render_visual(&self, ui: &mut egui::Ui, stream: &dyn DataStream) {
+    fn render_visual(&self, ui: &mut egui::Ui, stream: &impl DataStream) {
         use egui::{Color32, Rect, Sense, vec2};
 
         let value = stream.value();
@@ -321,7 +321,7 @@ impl MultiModalRenderer for SystemMetricRenderer {
         });
     }
 
-    fn render_audio(&self, stream: &dyn DataStream) -> Option<AudioRepresentation> {
+    fn render_audio(&self, stream: &impl DataStream) -> Option<AudioRepresentation> {
         let value = stream.value();
         let label = stream.label();
 
@@ -358,7 +358,7 @@ impl MultiModalRenderer for SystemMetricRenderer {
         }
     }
 
-    fn render_text(&self, stream: &dyn DataStream) -> String {
+    fn render_text(&self, stream: &impl DataStream) -> String {
         let value = stream.value();
         let label = stream.label();
         let percent = value * 100.0;
@@ -374,7 +374,7 @@ impl MultiModalRenderer for SystemMetricRenderer {
         format!("{label}: {percent:.1}% - {status}")
     }
 
-    fn render_haptic(&self, stream: &dyn DataStream) -> Option<HapticPattern> {
+    fn render_haptic(&self, stream: &impl DataStream) -> Option<HapticPattern> {
         let value = stream.value();
 
         Some(HapticPattern {

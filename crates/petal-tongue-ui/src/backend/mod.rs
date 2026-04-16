@@ -48,15 +48,43 @@
 //! # }
 //! ```
 
+#![expect(
+    async_fn_in_trait,
+    reason = "UIBackend uses native async methods; futures are Send for EguiBackend and UIBackendImpl"
+)]
+
 // Backend implementations
 #[cfg(feature = "ui-eframe")]
 pub mod eframe;
 
+#[cfg(feature = "ui-eframe")]
+use crate::backend::eframe::EguiBackend;
 use crate::error::{BackendError, Result};
-use async_trait::async_trait;
 use petal_tongue_core::{GraphEngine, RenderingCapabilities};
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
+
+/// Backend capabilities - what features a backend supports
+#[derive(Debug, Clone, Default)]
+pub struct BackendCapabilities {
+    /// Backend has GPU acceleration
+    pub has_gpu: bool,
+
+    /// Backend supports multiple windows
+    pub multi_window: bool,
+
+    /// Backend supports custom cursors
+    pub custom_cursor: bool,
+
+    /// Backend supports clipboard operations
+    pub clipboard: bool,
+
+    /// Backend is 100% Pure Rust (no C dependencies)
+    pub pure_rust: bool,
+
+    /// Backend requires elevated permissions (e.g., DRM access)
+    pub needs_privileges: bool,
+}
 
 /// UI Backend trait - abstraction over different rendering strategies
 ///
@@ -70,7 +98,6 @@ use std::sync::{Arc, RwLock};
 /// - **Async**: All operations are async for flexibility
 /// - **Graceful**: Errors are recoverable, fallback is possible
 /// - **Testable**: Easy to mock for testing
-#[async_trait]
 pub trait UIBackend: Send + Sync {
     /// Get backend name for logging/debugging
     fn name(&self) -> &'static str;
@@ -122,26 +149,92 @@ pub trait UIBackend: Send + Sync {
     }
 }
 
-/// Backend capabilities - what features a backend supports
-#[derive(Debug, Clone, Default)]
-pub struct BackendCapabilities {
-    /// Backend has GPU acceleration
-    pub has_gpu: bool,
+/// Concrete UI backend (enum dispatch — avoids `dyn` and keeps async methods ergonomic).
+#[derive(Debug)]
+pub enum UIBackendImpl {
+    /// eframe / egui backend (native window).
+    #[cfg(feature = "ui-eframe")]
+    Egui(EguiBackend),
+}
 
-    /// Backend supports multiple windows
-    pub multi_window: bool,
+#[cfg(feature = "ui-eframe")]
+impl UIBackend for UIBackendImpl {
+    fn name(&self) -> &'static str {
+        match self {
+            Self::Egui(b) => b.name(),
+        }
+    }
 
-    /// Backend supports custom cursors
-    pub custom_cursor: bool,
+    async fn is_available() -> bool
+    where
+        Self: Sized,
+    {
+        EguiBackend::is_available().await
+    }
 
-    /// Backend supports clipboard operations
-    pub clipboard: bool,
+    async fn init(&mut self) -> Result<()> {
+        match self {
+            Self::Egui(b) => b.init().await,
+        }
+    }
 
-    /// Backend is 100% Pure Rust (no C dependencies)
-    pub pure_rust: bool,
+    async fn run(
+        &mut self,
+        scenario: Option<PathBuf>,
+        capabilities: RenderingCapabilities,
+        shared_graph: Arc<RwLock<GraphEngine>>,
+    ) -> Result<()> {
+        match self {
+            Self::Egui(b) => b.run(scenario, capabilities, shared_graph).await,
+        }
+    }
 
-    /// Backend requires elevated permissions (e.g., DRM access)
-    pub needs_privileges: bool,
+    async fn shutdown(&mut self) -> Result<()> {
+        match self {
+            Self::Egui(b) => b.shutdown().await,
+        }
+    }
+
+    fn capabilities(&self) -> BackendCapabilities {
+        match self {
+            Self::Egui(b) => b.capabilities(),
+        }
+    }
+}
+
+#[cfg(not(feature = "ui-eframe"))]
+impl UIBackend for UIBackendImpl {
+    fn name(&self) -> &'static str {
+        match *self {}
+    }
+
+    async fn is_available() -> bool
+    where
+        Self: Sized,
+    {
+        unreachable!("UIBackendImpl requires the ui-eframe feature")
+    }
+
+    async fn init(&mut self) -> Result<()> {
+        match *self {}
+    }
+
+    async fn run(
+        &mut self,
+        _scenario: Option<PathBuf>,
+        _capabilities: RenderingCapabilities,
+        _shared_graph: Arc<RwLock<GraphEngine>>,
+    ) -> Result<()> {
+        match *self {}
+    }
+
+    async fn shutdown(&mut self) -> Result<()> {
+        match *self {}
+    }
+
+    fn capabilities(&self) -> BackendCapabilities {
+        match *self {}
+    }
 }
 
 /// Backend choice for manual selection
@@ -188,7 +281,7 @@ impl std::str::FromStr for BackendChoice {
 ///
 /// # Returns
 ///
-/// A boxed backend ready to use, or error if no backends available
+/// A [`UIBackendImpl`] ready to use, or error if no backends available
 ///
 /// # Examples
 ///
@@ -204,7 +297,7 @@ impl std::str::FromStr for BackendChoice {
 /// # Ok(())
 /// # }
 /// ```
-pub async fn create_backend(choice: Option<BackendChoice>) -> Result<Box<dyn UIBackend>> {
+pub async fn create_backend(choice: Option<BackendChoice>) -> Result<UIBackendImpl> {
     let choice = choice.unwrap_or(BackendChoice::Auto);
 
     tracing::info!("🎨 Creating UI backend (choice: {:?})", choice);
@@ -221,7 +314,7 @@ pub async fn create_backend(choice: Option<BackendChoice>) -> Result<Box<dyn UIB
 /// Priority order:
 /// 1. eframe (current default)
 /// 2. Discovered display backends are in `display::backends`
-async fn create_auto_backend() -> Result<Box<dyn UIBackend>> {
+async fn create_auto_backend() -> Result<UIBackendImpl> {
     tracing::info!("🔍 Auto-detecting best UI backend...");
 
     // Use eframe (capability-discovered display backends are in display::backends)
@@ -230,21 +323,20 @@ async fn create_auto_backend() -> Result<Box<dyn UIBackend>> {
 }
 
 /// Create eframe backend
-async fn create_eframe_backend() -> Result<Box<dyn UIBackend>> {
+async fn create_eframe_backend() -> Result<UIBackendImpl> {
     #[cfg(feature = "ui-eframe")]
     {
-        use crate::backend::eframe::EguiBackend;
         let mut backend = EguiBackend::new();
         backend
             .init()
             .await
             .map_err(|e| crate::error::BackendError::EframeRunFailed(e.to_string()))?;
-        Ok(Box::new(backend))
+        Ok(UIBackendImpl::Egui(backend))
     }
 
     #[cfg(not(feature = "ui-eframe"))]
     {
-        return Err(BackendError::EframeNotAvailable.into());
+        Err(BackendError::EframeNotAvailable.into())
     }
 }
 
@@ -252,7 +344,7 @@ async fn create_eframe_backend() -> Result<Box<dyn UIBackend>> {
 ///
 /// The legacy UIBackend-style backend has been removed. Use
 /// `display::backends` with biomeOS instead.
-fn create_discovered_display_backend() -> Result<Box<dyn UIBackend>> {
+fn create_discovered_display_backend() -> Result<UIBackendImpl> {
     Err(BackendError::DisplayBackendNotAvailable.into())
 }
 

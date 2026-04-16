@@ -3,6 +3,7 @@
 //!
 //! Modern async patterns for parallel provider discovery with timeout protection.
 
+use crate::KnownVisualizationProvider;
 use crate::errors::{DiscoveryError, DiscoveryFailure};
 use crate::traits::VisualizationDataProvider;
 use futures::future::{join_all, select_all};
@@ -10,13 +11,10 @@ use std::future::Future;
 use std::time::Duration;
 use tokio::time::timeout;
 
-#[cfg(test)]
-use async_trait::async_trait;
-
 /// Result of concurrent discovery with graceful degradation
 pub struct ConcurrentDiscoveryResult {
     /// Successfully discovered providers
-    pub providers: Vec<Box<dyn VisualizationDataProvider>>,
+    pub providers: Vec<KnownVisualizationProvider>,
     /// Sources that failed (for observability)
     pub failures: Vec<DiscoveryFailure>,
 }
@@ -54,7 +52,7 @@ pub async fn discover_concurrent<F, Fut>(
 ) -> ConcurrentDiscoveryResult
 where
     F: FnOnce() -> Fut + Send + 'static,
-    Fut: Future<Output = Result<Vec<Box<dyn VisualizationDataProvider>>, DiscoveryError>> + Send,
+    Fut: Future<Output = Result<Vec<KnownVisualizationProvider>, DiscoveryError>> + Send,
 {
     let mut all_providers = Vec::new();
     let mut failures = Vec::new();
@@ -133,9 +131,9 @@ where
 /// # }
 /// ```
 pub async fn discover_first_available(
-    providers: Vec<Box<dyn VisualizationDataProvider>>,
+    providers: Vec<KnownVisualizationProvider>,
     timeout_duration: Duration,
-) -> crate::errors::DiscoveryResult<Box<dyn VisualizationDataProvider>> {
+) -> crate::errors::DiscoveryResult<KnownVisualizationProvider> {
     if providers.is_empty() {
         return Err(DiscoveryError::NoProvidersFound {
             attempted: 0,
@@ -187,7 +185,7 @@ pub async fn discover_first_available(
 ///
 /// Returns health status for each provider without failing on errors.
 pub async fn check_all_providers_health(
-    providers: &[Box<dyn VisualizationDataProvider>],
+    providers: &[KnownVisualizationProvider],
     timeout_duration: Duration,
 ) -> Vec<ProviderHealth> {
     let checks = providers.iter().map(|provider| {
@@ -254,42 +252,14 @@ impl ProviderHealth {
 mod tests {
     use super::*;
     use crate::demo_provider::DemoVisualizationProvider;
-    use crate::errors::DiscoveryError;
-    use crate::traits::ProviderMetadata;
-
-    /// Provider that always fails health_check - for testing error paths
-    struct FailingProvider;
-
-    #[async_trait]
-    impl VisualizationDataProvider for FailingProvider {
-        async fn get_primals(
-            &self,
-        ) -> crate::errors::DiscoveryResult<Vec<petal_tongue_core::PrimalInfo>> {
-            Ok(vec![])
-        }
-
-        async fn health_check(&self) -> crate::errors::DiscoveryResult<String> {
-            Err(DiscoveryError::ConfigError(
-                "Intentional failure".to_string(),
-            ))
-        }
-
-        fn get_metadata(&self) -> ProviderMetadata {
-            ProviderMetadata {
-                name: "Failing".to_string(),
-                endpoint: "fail://".to_string(),
-                protocol: "fail".to_string(),
-                capabilities: vec![],
-            }
-        }
-    }
+    use crate::known_visualization_provider::FailingHealthCheckProvider;
 
     #[tokio::test]
     async fn test_parallel_health_checks() {
-        let providers: Vec<Box<dyn VisualizationDataProvider>> = vec![
-            Box::new(DemoVisualizationProvider::new()),
-            Box::new(DemoVisualizationProvider::new()),
-            Box::new(DemoVisualizationProvider::new()),
+        let providers = vec![
+            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
+            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
+            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
         ];
 
         let start = std::time::Instant::now();
@@ -306,9 +276,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_first_available_success() {
-        let providers: Vec<Box<dyn VisualizationDataProvider>> = vec![
-            Box::new(DemoVisualizationProvider::new()),
-            Box::new(DemoVisualizationProvider::new()),
+        let providers = vec![
+            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
+            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
         ];
 
         let result = discover_first_available(providers, Duration::from_secs(1)).await;
@@ -317,7 +287,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_first_available_empty() {
-        let providers: Vec<Box<dyn VisualizationDataProvider>> = vec![];
+        let providers: Vec<KnownVisualizationProvider> = vec![];
 
         let result = discover_first_available(providers, Duration::from_secs(1)).await;
         assert!(result.is_err());
@@ -325,8 +295,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_first_available_all_fail() {
-        let providers: Vec<Box<dyn VisualizationDataProvider>> =
-            vec![Box::new(FailingProvider), Box::new(FailingProvider)];
+        let providers = vec![
+            KnownVisualizationProvider::FailingHealth(FailingHealthCheckProvider),
+            KnownVisualizationProvider::FailingHealth(FailingHealthCheckProvider),
+        ];
 
         let result = discover_first_available(providers, Duration::from_secs(1)).await;
         assert!(result.is_err());
@@ -339,9 +311,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_check_all_providers_health_with_unhealthy() {
-        let providers: Vec<Box<dyn VisualizationDataProvider>> = vec![
-            Box::new(DemoVisualizationProvider::new()),
-            Box::new(FailingProvider),
+        let providers = vec![
+            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
+            KnownVisualizationProvider::FailingHealth(FailingHealthCheckProvider),
         ];
 
         let health = check_all_providers_health(&providers, Duration::from_secs(1)).await;
@@ -354,7 +326,9 @@ mod tests {
     async fn test_concurrent_with_failures() {
         // Test graceful degradation when some sources fail
         let result = ConcurrentDiscoveryResult {
-            providers: vec![Box::new(DemoVisualizationProvider::new())],
+            providers: vec![KnownVisualizationProvider::Demo(
+                DemoVisualizationProvider::new(),
+            )],
             failures: vec![
                 DiscoveryFailure::new("mDNS", "Timeout"),
                 DiscoveryFailure::new("HTTP", "Connection refused"),
@@ -412,10 +386,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_parallel_faster_than_sequential() {
-        let providers: Vec<Box<dyn VisualizationDataProvider>> = vec![
-            Box::new(DemoVisualizationProvider::new()),
-            Box::new(DemoVisualizationProvider::new()),
-            Box::new(DemoVisualizationProvider::new()),
+        let providers = vec![
+            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
+            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
+            KnownVisualizationProvider::Demo(DemoVisualizationProvider::new()),
         ];
 
         let start = std::time::Instant::now();
@@ -431,8 +405,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_discover_concurrent_single_success() {
-        let ok_providers =
-            vec![Box::new(DemoVisualizationProvider::new()) as Box<dyn VisualizationDataProvider>];
+        let ok_providers = vec![KnownVisualizationProvider::Demo(
+            DemoVisualizationProvider::new(),
+        )];
         let result = discover_concurrent(
             vec![("success", || async { Ok(ok_providers) })],
             Duration::from_secs(2),

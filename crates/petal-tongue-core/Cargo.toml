@@ -16,6 +16,7 @@ categories.workspace = true
 
 [dependencies]
 petal-tongue-types = { path = "../petal-tongue-types" }
+petal-tongue-scene = { path = "../petal-tongue-scene" }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -32,7 +33,6 @@ uuid = { version = "1.7", features = ["v4", "serde"] }
 ron = "0.8"
 toml = "0.8"
 # Universal Rendering System dependencies
-async-trait = "0.1"
 indexmap = "2.0"
 # System information (Pure Rust Unix syscalls - EVOLVED from libc!)
 # EVOLUTION: Migrated from libc to rustix for 100% safe Rust

@@ -3,7 +3,8 @@
 
 use crate::tutorial_mode::TutorialMode;
 use petal_tongue_discovery::{
-    NeuralApiProvider, VisualizationDataProvider, discover_visualization_providers,
+    KnownVisualizationProvider, NeuralApiProvider, VisualizationDataProvider,
+    discover_visualization_providers,
 };
 use std::sync::Arc;
 
@@ -13,7 +14,7 @@ pub(super) fn discover_data_providers(
     scenario_path_for_provider: Option<&std::path::PathBuf>,
     tutorial_mode: &TutorialMode,
     runtime: &tokio::runtime::Runtime,
-) -> Vec<Box<dyn VisualizationDataProvider>> {
+) -> Vec<KnownVisualizationProvider> {
     if let (Some(_scenario), Some(path)) = (scenario, scenario_path_for_provider) {
         tracing::info!("📋 Scenario mode: Loading primals with dynamic schema");
         match petal_tongue_discovery::DynamicScenarioProvider::from_file(path) {
@@ -21,13 +22,13 @@ pub(super) fn discover_data_providers(
                 if let Some(version) = provider.version() {
                     tracing::info!("   Schema version: {}", version);
                 }
-                vec![Box::new(provider) as Box<dyn VisualizationDataProvider>]
+                vec![KnownVisualizationProvider::Dynamic(provider)]
             }
             Err(e) => {
                 tracing::error!("Failed to create dynamic scenario provider: {}", e);
                 tracing::info!("Falling back to static provider...");
                 match petal_tongue_discovery::ScenarioVisualizationProvider::from_file(path) {
-                    Ok(provider) => vec![Box::new(provider) as Box<dyn VisualizationDataProvider>],
+                    Ok(provider) => vec![KnownVisualizationProvider::Scenario(provider)],
                     Err(e2) => {
                         tracing::error!("Static provider also failed: {}", e2);
                         vec![]
@@ -39,10 +40,9 @@ pub(super) fn discover_data_providers(
         tracing::info!("📚 Tutorial mode: Using demonstration data");
         #[cfg(feature = "mock")]
         {
-            vec![
-                Box::new(petal_tongue_discovery::DemoVisualizationProvider::new())
-                    as Box<dyn VisualizationDataProvider>,
-            ]
+            vec![KnownVisualizationProvider::Demo(
+                petal_tongue_discovery::DemoVisualizationProvider::new(),
+            )]
         }
         #[cfg(not(feature = "mock"))]
         {
@@ -59,10 +59,9 @@ pub(super) fn discover_data_providers(
                             #[cfg(feature = "mock")]
                             {
                                 tracing::info!("💡 Using tutorial data as graceful fallback");
-                                vec![Box::new(
+                                vec![KnownVisualizationProvider::Demo(
                                     petal_tongue_discovery::DemoVisualizationProvider::new(),
-                                )
-                                    as Box<dyn VisualizationDataProvider>]
+                                )]
                             }
                             #[cfg(not(feature = "mock"))]
                             {
@@ -95,10 +94,9 @@ pub(super) fn discover_data_providers(
                         #[cfg(feature = "mock")]
                         {
                             tracing::info!("💡 Using tutorial data as graceful fallback");
-                            vec![
-                                Box::new(petal_tongue_discovery::DemoVisualizationProvider::new())
-                                    as Box<dyn VisualizationDataProvider>,
-                            ]
+                            vec![KnownVisualizationProvider::Demo(
+                                petal_tongue_discovery::DemoVisualizationProvider::new(),
+                            )]
                         }
                         #[cfg(not(feature = "mock"))]
                         {

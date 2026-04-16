@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![allow(clippy::manual_async_fn)] // test doubles for `Sensor`
 //! Runtime Sensor Discovery
 //!
 //! Discovers available input/output peripherals at startup.
 //! No hardcoded assumptions - tests what actually exists.
 
 use crate::error::Result;
-#[cfg(test)]
-use async_trait::async_trait;
+use crate::sensors::SensorImpl;
 use petal_tongue_core::{Sensor, SensorRegistry};
 use std::sync::{Arc, RwLock};
 
@@ -15,7 +15,7 @@ use std::sync::{Arc, RwLock};
 /// # Errors
 ///
 /// Currently always returns `Ok(())`; discovery failures are logged but do not propagate.
-pub async fn discover_all_sensors(registry: Arc<RwLock<SensorRegistry>>) -> Result<()> {
+pub async fn discover_all_sensors(registry: Arc<RwLock<SensorRegistry<SensorImpl>>>) -> Result<()> {
     tracing::info!("🔍 Starting sensor discovery...");
 
     let mut discovered_count = 0;
@@ -24,7 +24,7 @@ pub async fn discover_all_sensors(registry: Arc<RwLock<SensorRegistry>>) -> Resu
     if let Some(screen) = crate::sensors::screen::discover().await {
         tracing::info!("✅ Discovered: {}", screen.name());
         if let Ok(mut reg) = registry.write() {
-            reg.register(Box::new(screen));
+            reg.register(SensorImpl::Screen(screen));
             discovered_count += 1;
         }
     } else {
@@ -35,7 +35,7 @@ pub async fn discover_all_sensors(registry: Arc<RwLock<SensorRegistry>>) -> Resu
     if let Some(keyboard) = crate::sensors::keyboard::discover().await {
         tracing::info!("✅ Discovered: {}", keyboard.name());
         if let Ok(mut reg) = registry.write() {
-            reg.register(Box::new(keyboard));
+            reg.register(SensorImpl::Keyboard(keyboard));
             discovered_count += 1;
         }
     } else {
@@ -46,7 +46,7 @@ pub async fn discover_all_sensors(registry: Arc<RwLock<SensorRegistry>>) -> Resu
     if let Some(mouse) = crate::sensors::mouse::discover().await {
         tracing::info!("✅ Discovered: {}", mouse.name());
         if let Ok(mut reg) = registry.write() {
-            reg.register(Box::new(mouse));
+            reg.register(SensorImpl::Mouse(mouse));
             discovered_count += 1;
         }
     } else {
@@ -58,7 +58,7 @@ pub async fn discover_all_sensors(registry: Arc<RwLock<SensorRegistry>>) -> Resu
     if let Some(audio) = crate::sensors::audio::discover().await {
         tracing::info!("✅ Discovered: {}", audio.name());
         if let Ok(mut reg) = registry.write() {
-            reg.register(Box::new(audio));
+            reg.register(SensorImpl::Audio(audio));
             discovered_count += 1;
         }
     }
@@ -96,7 +96,7 @@ pub async fn discover_all_sensors(registry: Arc<RwLock<SensorRegistry>>) -> Resu
 }
 
 /// Check if essential sensors are available
-pub fn verify_essential_sensors(registry: &Arc<RwLock<SensorRegistry>>) -> bool {
+pub fn verify_essential_sensors<S: Sensor>(registry: &Arc<RwLock<SensorRegistry<S>>>) -> bool {
     if let Ok(reg) = registry.read() {
         // Need at least one output sensor (screen)
         let mut has_output = false;
@@ -126,7 +126,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_sensor_discovery() {
-        let registry = Arc::new(RwLock::new(SensorRegistry::new()));
+        let registry = Arc::new(RwLock::new(SensorRegistry::<SensorImpl>::new()));
 
         // Discovery should not fail even if no sensors found
         let result = discover_all_sensors(Arc::clone(&registry)).await;
@@ -140,7 +140,7 @@ mod tests {
 
     #[test]
     fn test_verify_essential_sensors() {
-        let registry = Arc::new(RwLock::new(SensorRegistry::new()));
+        let registry = Arc::new(RwLock::new(SensorRegistry::<SensorImpl>::new()));
 
         // With empty registry, should return false (no output)
         assert!(!verify_essential_sensors(&registry));
@@ -153,7 +153,6 @@ mod tests {
 
         struct MockOutputSensor;
 
-        #[async_trait]
         impl Sensor for MockOutputSensor {
             fn capabilities(&self) -> &SensorCapabilities {
                 static CAPS: SensorCapabilities = SensorCapabilities {
@@ -171,8 +170,12 @@ mod tests {
             fn is_available(&self) -> bool {
                 true
             }
-            async fn poll_events(&mut self) -> std::result::Result<Vec<SensorEvent>, SensorError> {
-                Ok(vec![])
+            fn poll_events(
+                &mut self,
+            ) -> impl std::future::Future<
+                Output = std::result::Result<Vec<SensorEvent>, SensorError>,
+            > + Send {
+                async { Ok(vec![]) }
             }
             fn last_activity(&self) -> Option<std::time::Instant> {
                 None
@@ -182,17 +185,14 @@ mod tests {
             }
         }
 
-        let registry = Arc::new(RwLock::new(SensorRegistry::new()));
-        registry
-            .write()
-            .unwrap()
-            .register(Box::new(MockOutputSensor));
+        let registry = Arc::new(RwLock::new(SensorRegistry::<MockOutputSensor>::new()));
+        registry.write().unwrap().register(MockOutputSensor);
         assert!(verify_essential_sensors(&registry));
     }
 
     #[tokio::test]
     async fn test_discover_all_sensors_populates_stats() {
-        let registry = Arc::new(RwLock::new(SensorRegistry::new()));
+        let registry = Arc::new(RwLock::new(SensorRegistry::<SensorImpl>::new()));
         discover_all_sensors(Arc::clone(&registry)).await.unwrap();
 
         let reg = registry.read().unwrap();
@@ -207,7 +207,6 @@ mod tests {
 
         struct MockInputOnlySensor;
 
-        #[async_trait]
         impl Sensor for MockInputOnlySensor {
             fn capabilities(&self) -> &SensorCapabilities {
                 static CAPS: SensorCapabilities = SensorCapabilities {
@@ -225,8 +224,12 @@ mod tests {
             fn is_available(&self) -> bool {
                 true
             }
-            async fn poll_events(&mut self) -> std::result::Result<Vec<SensorEvent>, SensorError> {
-                Ok(vec![])
+            fn poll_events(
+                &mut self,
+            ) -> impl std::future::Future<
+                Output = std::result::Result<Vec<SensorEvent>, SensorError>,
+            > + Send {
+                async { Ok(vec![]) }
             }
             fn last_activity(&self) -> Option<std::time::Instant> {
                 None
@@ -236,11 +239,8 @@ mod tests {
             }
         }
 
-        let registry = Arc::new(RwLock::new(SensorRegistry::new()));
-        registry
-            .write()
-            .unwrap()
-            .register(Box::new(MockInputOnlySensor));
+        let registry = Arc::new(RwLock::new(SensorRegistry::<MockInputOnlySensor>::new()));
+        registry.write().unwrap().register(MockInputOnlySensor);
         assert!(!verify_essential_sensors(&registry));
     }
 }

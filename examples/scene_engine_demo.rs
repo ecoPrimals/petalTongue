@@ -16,7 +16,7 @@ use petal_tongue_scene::{
     primitive::{Color, Primitive, StrokeStyle},
     scene_graph::{SceneGraph, SceneNode},
     transform::Transform2D,
-    tufte::{ChartjunkDetection, DataInkRatio, TufteReport},
+    tufte::{TufteConstraintImpl, TufteReport},
 };
 
 fn main() {
@@ -149,10 +149,10 @@ fn demo_scene_graph() {
 fn demo_tufte() {
     println!("=== Tufte Constraint Validation ===");
 
-    let data_ink = DataInkRatio;
-    let chartjunk = ChartjunkDetection;
-    let constraints: Vec<&dyn petal_tongue_scene::tufte::TufteConstraint> =
-        vec![&data_ink, &chartjunk];
+    let constraints = [
+        TufteConstraintImpl::DataInkRatio,
+        TufteConstraintImpl::ChartjunkDetection,
+    ];
 
     let mut primitives = Vec::new();
     for i in 0..10 {

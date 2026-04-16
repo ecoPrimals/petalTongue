@@ -14,12 +14,13 @@ use std::collections::VecDeque;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
+use crate::subscriber_impl::TelemetrySubscriberImpl;
 use crate::types::{TelemetryEvent, TelemetryMetrics, TelemetrySubscriber};
 
 pub struct TelemetryCollector {
     buffer: Arc<RwLock<VecDeque<TelemetryEvent>>>,
     metrics: Arc<RwLock<TelemetryMetrics>>,
-    subscribers: Arc<RwLock<Vec<Box<dyn TelemetrySubscriber>>>>,
+    subscribers: Arc<RwLock<Vec<TelemetrySubscriberImpl>>>,
     max_buffer_size: usize,
     aggregation_interval: Duration,
 }
@@ -62,7 +63,7 @@ impl TelemetryCollector {
         self.update_metrics(event);
     }
 
-    pub fn add_subscriber(&self, subscriber: Box<dyn TelemetrySubscriber>) {
+    pub fn add_subscriber(&self, subscriber: TelemetrySubscriberImpl) {
         let Ok(mut subscribers) = self.subscribers.write() else {
             tracing::error!("Telemetry subscribers lock poisoned");
             return;

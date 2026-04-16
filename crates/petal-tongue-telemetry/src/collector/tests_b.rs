@@ -3,8 +3,10 @@
 use std::sync::{Arc, RwLock};
 use std::time::SystemTime;
 
-use super::test_fixtures::{MetricsUpdateSubscriber, TestSubscriber, event_primal_id};
+use super::test_fixtures::event_primal_id;
 use super::*;
+use crate::TelemetrySubscriberImpl;
+use crate::subscriber_impl::{MetricsUpdateSubscriber, TestSubscriber};
 use crate::types::TelemetryEvent;
 
 #[test]
@@ -52,10 +54,10 @@ fn test_multiple_subscribers() {
     let count1 = Arc::new(RwLock::new(0usize));
     let count2 = Arc::new(RwLock::new(0usize));
 
-    collector.add_subscriber(Box::new(TestSubscriber {
+    collector.add_subscriber(TelemetrySubscriberImpl::Test(TestSubscriber {
         events_received: count1.clone(),
     }));
-    collector.add_subscriber(Box::new(TestSubscriber {
+    collector.add_subscriber(TelemetrySubscriberImpl::Test(TestSubscriber {
         events_received: count2.clone(),
     }));
 
@@ -203,9 +205,11 @@ fn test_recent_events_order() {
 fn test_subscriber_on_metrics_update_override() {
     let collector = TelemetryCollector::default();
     let updates = Arc::new(RwLock::new(0usize));
-    collector.add_subscriber(Box::new(MetricsUpdateSubscriber {
-        updates: updates.clone(),
-    }));
+    collector.add_subscriber(TelemetrySubscriberImpl::MetricsUpdate(
+        MetricsUpdateSubscriber {
+            updates: updates.clone(),
+        },
+    ));
     collector.push_event(&TelemetryEvent::PrimalDiscovered {
         primal_id: "p1".to_string(),
         primal_type: "compute".to_string(),

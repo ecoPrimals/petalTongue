@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![allow(clippy::manual_async_fn)]
 //! Display sensor - Output surface with verification
 //!
 //! Discovers display capabilities and provides verification of perceivability.
@@ -17,9 +18,7 @@
 //! provide safe interfaces to the underlying platform APIs.
 
 use crate::error::{Result, SensorError};
-use async_trait::async_trait;
 use petal_tongue_core::constants;
-use petal_tongue_core::sensor::SensorError as CoreSensorError;
 use petal_tongue_core::{Sensor, SensorCapabilities, SensorEvent, SensorType};
 use std::io::IsTerminal;
 use std::time::Instant;
@@ -93,7 +92,6 @@ impl ScreenSensor {
     }
 }
 
-#[async_trait]
 impl Sensor for ScreenSensor {
     fn capabilities(&self) -> &SensorCapabilities {
         &self.capabilities
@@ -104,25 +102,29 @@ impl Sensor for ScreenSensor {
         true
     }
 
-    async fn poll_events(&mut self) -> std::result::Result<Vec<SensorEvent>, CoreSensorError> {
-        let mut events = Vec::new();
+    fn poll_events(
+        &mut self,
+    ) -> impl std::future::Future<
+        Output = std::result::Result<Vec<SensorEvent>, petal_tongue_core::sensor::SensorError>,
+    > + Send {
+        async {
+            let mut events = Vec::new();
 
-        // Generate heartbeat event if we have one
-        if let Some(last) = self.last_heartbeat {
-            let latency = last.elapsed();
-            events.push(SensorEvent::Heartbeat {
-                latency,
+            if let Some(last) = self.last_heartbeat {
+                let latency = last.elapsed();
+                events.push(SensorEvent::Heartbeat {
+                    latency,
+                    timestamp: Instant::now(),
+                });
+            }
+
+            events.push(SensorEvent::DisplayVisible {
+                visible: true,
                 timestamp: Instant::now(),
             });
+
+            Ok(events)
         }
-
-        // Generate perceivability confirmation (display exists = perceivable)
-        events.push(SensorEvent::DisplayVisible {
-            visible: true,
-            timestamp: Instant::now(),
-        });
-
-        Ok(events)
     }
 
     fn last_activity(&self) -> Option<Instant> {

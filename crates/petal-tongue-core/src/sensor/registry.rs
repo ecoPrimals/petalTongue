@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![allow(clippy::manual_async_fn)] // mock `Sensor` uses explicit futures like production code
 //! Sensor registry: discovery and management of sensors.
 
 use std::time::Instant;
@@ -6,15 +7,15 @@ use std::time::Instant;
 use super::types::{Sensor, SensorCapability, SensorError, SensorEvent, SensorType};
 
 /// Sensor registry - discovers and manages all sensors
-pub struct SensorRegistry {
-    sensors: Vec<Box<dyn Sensor>>,
+pub struct SensorRegistry<S: Sensor> {
+    sensors: Vec<S>,
     last_poll: Option<Instant>,
 }
 
-impl SensorRegistry {
+impl<S: Sensor> SensorRegistry<S> {
     /// Create new empty registry
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             sensors: Vec::new(),
             last_poll: None,
@@ -22,23 +23,22 @@ impl SensorRegistry {
     }
 
     /// Register a sensor
-    pub fn register(&mut self, sensor: Box<dyn Sensor>) {
+    pub fn register(&mut self, sensor: S) {
         self.sensors.push(sensor);
     }
 
     /// Get all sensors
     #[must_use]
-    pub fn sensors(&self) -> &[Box<dyn Sensor>] {
+    pub fn sensors(&self) -> &[S] {
         &self.sensors
     }
 
     /// Get sensors by type
     #[must_use]
-    pub fn sensors_by_type(&self, sensor_type: SensorType) -> Vec<&dyn Sensor> {
+    pub fn sensors_by_type(&self, sensor_type: SensorType) -> Vec<&S> {
         self.sensors
             .iter()
             .filter(|s| s.capabilities().sensor_type == sensor_type)
-            .map(std::convert::AsRef::as_ref)
             .collect()
     }
 
@@ -102,7 +102,7 @@ impl SensorRegistry {
     }
 }
 
-impl Default for SensorRegistry {
+impl<S: Sensor> Default for SensorRegistry<S> {
     fn default() -> Self {
         Self::new()
     }
@@ -127,7 +127,6 @@ pub struct SensorStats {
 pub mod mock_sensor {
     use crate::sensor::Sensor;
     use crate::sensor::types::{SensorCapabilities, SensorError, SensorEvent};
-    use async_trait::async_trait;
     use std::time::Instant;
 
     /// Mock sensor for testing
@@ -147,7 +146,6 @@ pub mod mock_sensor {
         }
     }
 
-    #[async_trait]
     impl Sensor for MockSensor {
         fn capabilities(&self) -> &SensorCapabilities {
             &self.capabilities
@@ -157,8 +155,11 @@ pub mod mock_sensor {
             self.available
         }
 
-        async fn poll_events(&mut self) -> Result<Vec<SensorEvent>, SensorError> {
-            Ok(Vec::new())
+        fn poll_events(
+            &mut self,
+        ) -> impl std::future::Future<Output = Result<Vec<SensorEvent>, SensorError>> + Send
+        {
+            async { Ok(Vec::new()) }
         }
 
         fn last_activity(&self) -> Option<Instant> {
