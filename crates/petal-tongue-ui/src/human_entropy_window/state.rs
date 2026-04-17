@@ -191,44 +191,29 @@ impl HumanEntropyWindow {
             }
         };
 
-        // Spawn async task (fire and forget for now)
-        // Production: Should track status and retry
         tokio::spawn(async move {
-            let client = match reqwest::Client::builder()
-                .timeout(discovery_timeouts::HTTP_TIMEOUT)
-                .build()
-            {
-                Ok(c) => c,
-                Err(e) => {
-                    warn!("Failed to create HTTP client for entropy streaming: {}", e);
-                    return;
-                }
-            };
+            let client =
+                petal_tongue_ipc::LocalHttpClient::with_timeout(discovery_timeouts::HTTP_TIMEOUT);
 
             match client
-                .post(&endpoint)
-                .header("Content-Type", "application/json")
-                .body(payload)
-                .send()
+                .post_raw(&endpoint, payload, "application/json")
                 .await
             {
                 Ok(response) => {
-                    if response.status().is_success() {
-                        info!("✅ Entropy streamed successfully to {}", endpoint);
+                    if response.is_success() {
+                        info!("Entropy streamed successfully to {}", endpoint);
                     } else {
                         warn!(
-                            "⚠️ Entropy source returned error: {} ({})",
+                            "Entropy source returned error: {} ({})",
                             response.status(),
                             endpoint
                         );
                     }
                 }
                 Err(e) => {
-                    warn!("❌ Failed to stream entropy: {}", e);
+                    warn!("Failed to stream entropy: {}", e);
                 }
             }
-
-            // Entropy is automatically zeroized when dropped
         });
     }
 

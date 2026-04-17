@@ -6,6 +6,31 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### reqwest Elimination — Songbird TLS Delegation (April 17, 2026)
+
+#### Changed
+- **`reqwest` runtime dependency fully eliminated** — replaced with thin
+  `LocalHttpClient` in `petal-tongue-ipc` built on `hyper` + `hyper-util`
+  (already transitive from `axum`, zero new crate additions).
+- **Entire TLS transitive chain removed from lockfile** — `reqwest`,
+  `hyper-rustls`, `rustls`, `rustls-webpki`, `ring` all gone. petalTongue
+  no longer owns any TLS stack; Songbird handles that via tower atomic IPC.
+- **6 crates migrated**: `petal-tongue-api`, `petal-tongue-core`,
+  `petal-tongue-discovery`, `petal-tongue-entropy`, `petal-tongue-ui`,
+  `petal-tongue-adapters` (dead dep removed).
+- **13 code sites replaced** — BiomeOS client, mDNS provider, entropy
+  streaming, SSE consumer, protocol selection, universal discovery all
+  migrated to `LocalHttpClient`.
+- **`LocalHttpClient`** provides GET, POST (JSON + raw), streaming SSE,
+  configurable timeouts, connection pooling — designed for Songbird IPC
+  backend substitution.
+
+#### Verified
+- `cargo tree -i reqwest` → "did not match any packages"
+- Zero `reqwest`, `ring`, `hyper-rustls`, `rustls` in Cargo.lock
+- 6,010+ tests passing, 0 failures
+- `cargo clippy --workspace --all-targets` clean
+
 ### Stadial Parity Gate Response (April 16, 2026)
 
 #### Changed

@@ -19,7 +19,7 @@ pub enum BiomeOsClientError {
         url: String,
         /// Underlying error
         #[source]
-        source: reqwest::Error,
+        source: petal_tongue_ipc::HttpClientError,
     },
 
     /// Server returned an error status

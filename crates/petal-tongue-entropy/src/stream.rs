@@ -93,34 +93,37 @@ pub async fn stream_entropy(
     // 3. Prepare payload
     let _payload = serde_json::to_vec(&encrypted)?;
 
-    // 4. Stream via HTTPS
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(30))
-        .build()?;
+    // 4. Stream via local HTTP (Songbird handles TLS relay when needed)
+    let client =
+        petal_tongue_ipc::LocalHttpClient::with_timeout(std::time::Duration::from_secs(30));
 
+    let modality = entropy.modality().to_string();
+    let quality = format!("{:.2}", entropy.quality());
     let response = client
-        .post(endpoint)
-        .header("Content-Type", "application/json")
-        .header("X-Entropy-Modality", entropy.modality())
-        .header("X-Entropy-Quality", format!("{:.2}", entropy.quality()))
-        .json(&encrypted)
-        .send()
+        .post_json_with_headers(
+            endpoint,
+            &encrypted,
+            &[
+                ("X-Entropy-Modality", &modality),
+                ("X-Entropy-Quality", &quality),
+            ],
+        )
         .await?;
 
     // 4. Zeroize encrypted data after sending
-    drop(encrypted); // Explicitly drop to trigger zeroization
+    drop(encrypted);
 
     // 6. Parse confirmation
     let status = response.status();
-    if !status.is_success() {
-        let error_body = response.text().await.unwrap_or_default();
+    if !response.is_success() {
+        let error_body = response.text().unwrap_or_default();
         return Err(EntropyError::ServerRejected {
             status: status.as_u16(),
             body: error_body,
         });
     }
 
-    let confirmation: StreamConfirmation = response.json().await?;
+    let confirmation: StreamConfirmation = response.json()?;
 
     tracing::info!("✅ Entropy accepted: receipt {}", confirmation.receipt_id);
 

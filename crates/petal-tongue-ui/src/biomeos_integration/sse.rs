@@ -155,32 +155,19 @@ impl SseEventConsumer {
         events: Arc<RwLock<Vec<EcosystemEvent>>>,
         callback: Arc<RwLock<Option<EventCallback>>>,
     ) {
-        use futures_util::StreamExt;
-
         *state.write().await = SseConnectionState::Connecting;
         info!("SSE: connecting to {}", endpoint);
 
-        let client = match reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(0))
-            .build()
-        {
-            Ok(c) => c,
-            Err(e) => {
-                warn!("SSE: failed to build HTTP client: {e}");
-                *state.write().await = SseConnectionState::Failed;
-                return;
-            }
-        };
+        let client =
+            petal_tongue_ipc::LocalHttpClient::with_timeout(std::time::Duration::from_secs(600));
 
-        let response = match client
-            .get(&endpoint)
-            .header("Accept", "text/event-stream")
-            .send()
+        let (status, mut stream) = match client
+            .get_stream(&endpoint, &[("Accept", "text/event-stream")])
             .await
         {
-            Ok(r) if r.status().is_success() => r,
-            Ok(r) => {
-                warn!("SSE: server returned {}", r.status());
+            Ok((s, stream)) if s.is_success() => (s, stream),
+            Ok((s, _)) => {
+                warn!("SSE: server returned {}", s);
                 *state.write().await = SseConnectionState::Failed;
                 return;
             }
@@ -191,15 +178,15 @@ impl SseEventConsumer {
             }
         };
 
+        let _ = status;
         *state.write().await = SseConnectionState::Connected;
         info!("SSE: connected to {}", endpoint);
 
-        let mut stream = response.bytes_stream();
         let mut buffer = String::new();
 
-        while let Some(chunk) = stream.next().await {
-            match chunk {
-                Ok(bytes) => {
+        loop {
+            match stream.next_chunk().await {
+                Ok(Some(bytes)) => {
                     let text = String::from_utf8_lossy(&bytes);
                     buffer.push_str(&text);
 
@@ -223,6 +210,7 @@ impl SseEventConsumer {
                         }
                     }
                 }
+                Ok(None) => break,
                 Err(e) => {
                     warn!("SSE: stream error: {e}");
                     *state.write().await = SseConnectionState::Failed;

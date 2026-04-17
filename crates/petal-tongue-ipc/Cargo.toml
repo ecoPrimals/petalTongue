@@ -28,6 +28,12 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 
+# Thin HTTP client (hyper — already transitive from axum, no new deps)
+hyper = { workspace = true }
+hyper-util = { workspace = true }
+http-body-util = { workspace = true }
+http = { workspace = true }
+
 # tarpc for high-performance primal-to-primal RPC
 tarpc = { workspace = true }
 tokio-util = { workspace = true }

@@ -6,14 +6,15 @@
 use crate::biomeos_error::BiomeOsClientError;
 use petal_tongue_core::constants::discovery_timeouts;
 use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, Properties, TopologyEdge};
+use petal_tongue_ipc::LocalHttpClient;
 use serde::{Deserialize, Serialize};
 
 /// `BiomeOS` API client for live primal discovery
 pub struct BiomeOSClient {
     /// `BiomeOS` API base URL
     base_url: String,
-    /// HTTP client
-    client: reqwest::Client,
+    /// HTTP client (thin hyper wrapper — no TLS, Songbird handles that)
+    client: LocalHttpClient,
     /// Enable fixture mode for development (deterministic data when biomeOS unavailable).
     fixture_mode: bool,
 }
@@ -85,27 +86,9 @@ pub struct DiscoveredPrimal {
 impl BiomeOSClient {
     /// Create a new `BiomeOS` client
     pub fn new(base_url: impl Into<String>) -> Self {
-        // Build HTTP client with robust configuration
-        let client = reqwest::Client::builder()
-            .timeout(discovery_timeouts::HTTP_TIMEOUT)
-            .connect_timeout(discovery_timeouts::HTTP_CONNECT_TIMEOUT)
-            .pool_idle_timeout(discovery_timeouts::HTTP_POOL_IDLE_TIMEOUT)
-            .pool_max_idle_per_host(10) // More idle connections
-            .tcp_keepalive(discovery_timeouts::HTTP_TCP_KEEPALIVE)
-            .http2_keep_alive_interval(Some(discovery_timeouts::HTTP2_KEEPALIVE_INTERVAL))
-            .http2_keep_alive_timeout(discovery_timeouts::HTTP2_KEEPALIVE_TIMEOUT)
-            .build()
-            .unwrap_or_else(|e| {
-                tracing::warn!(
-                    "Failed to build HTTP client with custom config: {}. Using default client.",
-                    e
-                );
-                reqwest::Client::new()
-            });
-
         Self {
             base_url: base_url.into(),
-            client,
+            client: LocalHttpClient::with_timeout(discovery_timeouts::HTTP_TIMEOUT),
             fixture_mode: false,
         }
     }
@@ -134,12 +117,7 @@ impl BiomeOSClient {
         }
 
         let url = format!("{}/api/v1/health", self.base_url);
-        Ok(self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .is_ok_and(|response| response.status().is_success()))
+        Ok(self.client.get(&url).await.is_ok_and(|r| r.is_success()))
     }
 
     /// Discover primals from the biomeOS orchestrator
@@ -160,27 +138,25 @@ impl BiomeOSClient {
             return Err(BiomeOsClientError::FixtureModeUnavailable);
         }
 
-        // Query BiomeOS discovery endpoint
         let url = format!("{}/api/v1/primals", self.base_url);
 
-        let response =
-            self.client
-                .get(&url)
-                .send()
-                .await
-                .map_err(|e| BiomeOsClientError::Network {
-                    url: url.clone(),
-                    source: e,
-                })?;
+        let response = self
+            .client
+            .get(&url)
+            .await
+            .map_err(|e| BiomeOsClientError::Network {
+                url: url.clone(),
+                source: e,
+            })?;
 
-        if !response.status().is_success() {
+        if !response.is_success() {
             return Err(BiomeOsClientError::ServerError {
                 status: response.status().as_u16(),
                 url,
             });
         }
 
-        let discovery = response.json::<DiscoveryResponse>().await.map_err(|e| {
+        let discovery: DiscoveryResponse = response.json().map_err(|e| {
             BiomeOsClientError::Parse(format!(
                 "{e}\n\n\
                 This may indicate:\n\
@@ -193,7 +169,7 @@ impl BiomeOSClient {
         })?;
 
         tracing::info!(
-            "✅ Successfully discovered {} primals from biomeOS",
+            "Successfully discovered {} primals from biomeOS",
             discovery.primals.len()
         );
 
@@ -222,25 +198,23 @@ impl BiomeOSClient {
 
         let url = format!("{}/api/v1/topology", self.base_url);
 
-        let response =
-            self.client
-                .get(&url)
-                .send()
-                .await
-                .map_err(|e| BiomeOsClientError::Network {
-                    url: url.clone(),
-                    source: e,
-                })?;
+        let response = self
+            .client
+            .get(&url)
+            .await
+            .map_err(|e| BiomeOsClientError::Network {
+                url: url.clone(),
+                source: e,
+            })?;
 
-        if !response.status().is_success() {
+        if !response.is_success() {
             return Err(BiomeOsClientError::ServerError {
                 status: response.status().as_u16(),
                 url,
             });
         }
 
-        // Try new format first (nodes + edges + mode)
-        let topology = response.json::<TopologyResponse>().await.map_err(|e| {
+        let topology: TopologyResponse = response.json().map_err(|e| {
             BiomeOsClientError::Parse(format!(
                 "{e}\n\n\
                 Expected format: {{\"nodes\": [...], \"edges\": [...], \"mode\": \"...\"}}"
@@ -248,7 +222,7 @@ impl BiomeOSClient {
         })?;
 
         tracing::debug!(
-            "✅ Successfully retrieved topology: {} nodes, {} edges (mode: {})",
+            "Successfully retrieved topology: {} nodes, {} edges (mode: {})",
             topology.nodes.len(),
             topology.edges.len(),
             topology.mode

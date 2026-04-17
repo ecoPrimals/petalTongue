@@ -9,6 +9,7 @@
 mod packet;
 
 use petal_tongue_core::{PrimalInfo, TopologyEdge, constants};
+use petal_tongue_ipc::LocalHttpClient;
 use socket2::{Domain, Protocol, Socket, Type};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::time::Duration;
@@ -41,8 +42,8 @@ pub struct MdnsVisualizationProvider {
     endpoint: String,
     /// Provider metadata
     metadata: ProviderMetadata,
-    /// HTTP client for queries
-    client: reqwest::Client,
+    /// HTTP client for queries (thin hyper wrapper — no TLS)
+    client: LocalHttpClient,
 }
 
 impl MdnsVisualizationProvider {
@@ -52,7 +53,7 @@ impl MdnsVisualizationProvider {
         Self {
             endpoint,
             metadata,
-            client: reqwest::Client::new(),
+            client: LocalHttpClient::with_timeout(Duration::from_secs(10)),
         }
     }
 
@@ -163,26 +164,20 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
         let response = self
             .client
             .get(&url)
-            .timeout(Duration::from_secs(10))
-            .send()
             .await
             .map_err(|e| DiscoveryError::MdnsError(format!("Failed to query primals: {e}")))?;
 
-        if !response.status().is_success() {
+        if !response.is_success() {
             return Err(DiscoveryError::ProviderHttpError {
                 status: response.status().as_u16(),
                 endpoint: Some(self.endpoint.clone()),
             });
         }
 
-        let data: PrimalsResponse =
-            response
-                .json()
-                .await
-                .map_err(|e| DiscoveryError::ParseError {
-                    data_type: "primals response".to_string(),
-                    message: e.to_string(),
-                })?;
+        let data: PrimalsResponse = response.json().map_err(|e| DiscoveryError::ParseError {
+            data_type: "primals response".to_string(),
+            message: e.to_string(),
+        })?;
 
         Ok(data.primals)
     }
@@ -198,49 +193,40 @@ impl VisualizationDataProvider for MdnsVisualizationProvider {
         let response = self
             .client
             .get(&url)
-            .timeout(Duration::from_secs(10))
-            .send()
             .await
             .map_err(|e| DiscoveryError::MdnsError(format!("Failed to query topology: {e}")))?;
 
-        if !response.status().is_success() {
+        if !response.is_success() {
             return Err(DiscoveryError::ProviderHttpError {
                 status: response.status().as_u16(),
                 endpoint: Some(self.endpoint.clone()),
             });
         }
 
-        let data: TopologyResponse =
-            response
-                .json()
-                .await
-                .map_err(|e| DiscoveryError::ParseError {
-                    data_type: "topology response".to_string(),
-                    message: e.to_string(),
-                })?;
+        let data: TopologyResponse = response.json().map_err(|e| DiscoveryError::ParseError {
+            data_type: "topology response".to_string(),
+            message: e.to_string(),
+        })?;
 
         Ok(data.edges)
     }
 
     async fn health_check(&self) -> DiscoveryResult<String> {
         let meta_name = self.metadata.name.clone();
-        let endpoint = self.endpoint.clone();
-        let client = self.client.clone();
-        let url = format!("{endpoint}/api/v1/health");
+        let url = format!("{}/api/v1/health", self.endpoint);
 
-        let response = client
+        let response = self
+            .client
             .get(&url)
-            .timeout(Duration::from_secs(5))
-            .send()
             .await
             .map_err(|e| DiscoveryError::MdnsError(format!("Failed to health check: {e}")))?;
 
-        if response.status().is_success() {
+        if response.is_success() {
             Ok(format!("mDNS provider {meta_name} is healthy"))
         } else {
             Err(DiscoveryError::ProviderHttpError {
                 status: response.status().as_u16(),
-                endpoint: Some(endpoint),
+                endpoint: Some(self.endpoint.clone()),
             })
         }
     }

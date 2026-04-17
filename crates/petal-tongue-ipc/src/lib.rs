@@ -79,6 +79,8 @@ pub mod btsp;
 pub mod capability_detection;
 pub mod client;
 pub mod discovery_helpers;
+/// Thin HTTP client for local/LAN communication (replaces reqwest).
+pub mod http_client;
 pub mod ipc_errors;
 pub mod json_rpc;
 pub mod json_rpc_client;
@@ -104,6 +106,9 @@ pub mod unix_socket_rpc_handlers;
 /// Unix socket server for petalTongue IPC
 pub mod unix_socket_server;
 pub mod visualization_handler;
+
+// HTTP client (thin hyper wrapper — Songbird-ready)
+pub use http_client::{HttpClientError, HttpResponse, LocalHttpClient, SseStream, http_get};
 
 // JSON-RPC (universal fallback — listen surface)
 pub use btsp::{

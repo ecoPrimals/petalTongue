@@ -26,8 +26,7 @@ tracing = { workspace = true }
 tokio = { workspace = true }
 
 # Streaming & Encryption
-# Workspace: HTTP-only, no TLS (ecoBin: no ring/openssl)
-reqwest = { workspace = true }
+petal-tongue-ipc = { path = "../petal-tongue-ipc" }
 aes-gcm = "0.10"  # AES-256-GCM authenticated encryption
 rand = { workspace = true }  # For nonce generation
 zeroize = { version = "1", features = ["derive"] }  # Secure memory clearing

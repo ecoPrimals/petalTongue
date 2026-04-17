@@ -23,7 +23,6 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
-reqwest = { workspace = true }
 # WebSocket for biomeOS real-time topology/health subscription
 tokio-tungstenite = "0.21"
 futures-util = "0.3"

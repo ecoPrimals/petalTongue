@@ -69,12 +69,10 @@ pub async fn connect_with_priority(endpoint: &str) -> TarpcResult<PrimalConnecti
     }
 }
 
-/// Connect via HTTPS/HTTP with graceful fallback
+/// Connect via HTTP with graceful fallback (TLS delegated to Songbird)
 async fn connect_https(endpoint: &str) -> TarpcResult<PrimalConnection> {
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(10))
-        .build()
-        .map_err(|e| TarpcClientError::Configuration(format!("reqwest client: {e}")))?;
+    let client =
+        petal_tongue_ipc::LocalHttpClient::with_timeout(std::time::Duration::from_secs(10));
 
     for base_url in https_fallback_urls(endpoint) {
         let scheme = if base_url.starts_with("https://") {
@@ -82,7 +80,7 @@ async fn connect_https(endpoint: &str) -> TarpcResult<PrimalConnection> {
         } else {
             "HTTP"
         };
-        info!("🌐 Trying {scheme} for {}", base_url);
+        info!("Trying {scheme} for {}", base_url);
 
         let https_client = HttpsClient {
             base_url: base_url.trim_end_matches('/').to_string(),
@@ -91,11 +89,11 @@ async fn connect_https(endpoint: &str) -> TarpcResult<PrimalConnection> {
 
         match https_client.health().await {
             Ok(_) => {
-                info!("✅ {scheme} connection established");
+                info!("{scheme} connection established");
                 return Ok(PrimalConnection::Https(https_client));
             }
             Err(e) => {
-                warn!("❌ {scheme} connection failed: {}", e);
+                warn!("{scheme} connection failed: {}", e);
             }
         }
     }
