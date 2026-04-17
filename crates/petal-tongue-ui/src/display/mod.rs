@@ -28,10 +28,13 @@ pub mod prompt;
 pub mod renderer;
 pub mod traits;
 
+#[cfg(feature = "discovered-display")]
 pub use backends::{
     discovered_display::DiscoveredDisplayBackend,
-    discovered_display_v2::DiscoveredDisplayBackendV2, external::ExternalDisplay,
-    framebuffer::FramebufferDisplay, software::SoftwareDisplay,
+    discovered_display_v2::DiscoveredDisplayBackendV2,
+};
+pub use backends::{
+    external::ExternalDisplay, framebuffer::FramebufferDisplay, software::SoftwareDisplay,
 };
 pub use manager::DisplayManager;
 pub use prompt::prompt_for_display_server;

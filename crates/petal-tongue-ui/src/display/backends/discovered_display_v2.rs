@@ -42,17 +42,23 @@ use petal_tongue_core::{
     biomeos_discovery::BiomeOsBackend,
     capability_discovery::{CapabilityDiscovery, CapabilityQuery},
 };
-use petal_tongue_ipc::tarpc_client::TarpcClient;
 use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::net::UnixStream;
 use tracing::{debug, info, warn};
 
-/// Display backend using tarpc to the provider discovered for the `display` capability (biomeOS discovery).
+/// Display backend using JSON-RPC to the provider discovered for the `display` capability
+/// via `CapabilityDiscovery<BiomeOsBackend>`.
+///
+/// Discovery uses biomeOS Neural API (capability-based, no hardcoded provider names).
+/// Transport uses JSON-RPC 2.0 over Unix socket — the universal IPC protocol.
 pub struct DiscoveredDisplayBackendV2 {
     /// Capability discovery system
     discovery: Option<CapabilityDiscovery<BiomeOsBackend>>,
 
-    /// tarpc client (high-performance binary RPC)
-    tarpc_client: Option<TarpcClient>,
+    /// JSON-RPC socket path (discovered from primal endpoint)
+    jsonrpc_socket: Option<String>,
 
     /// Window ID returned by the display capability provider
     window_id: Option<String>,
@@ -60,6 +66,9 @@ pub struct DiscoveredDisplayBackendV2 {
     /// Display dimensions
     width: u32,
     height: u32,
+
+    /// JSON-RPC request counter
+    request_id: std::sync::atomic::AtomicU64,
 }
 
 /// Display capabilities from the provider (queried over tarpc)
@@ -111,7 +120,6 @@ impl DiscoveredDisplayBackendV2 {
     ///
     /// Returns an error if the biomeOS discovery backend cannot be created from environment.
     pub fn new() -> Result<Self> {
-        // Create discovery system with biomeOS backend
         let backend = BiomeOsBackend::from_env()
             .map_err(|e| DisplayError::BiomeOsDiscoveryBackend(e.to_string()))?;
 
@@ -119,86 +127,134 @@ impl DiscoveredDisplayBackendV2 {
 
         Ok(Self {
             discovery: Some(discovery),
-            tarpc_client: None,
+            jsonrpc_socket: None,
             window_id: None,
             width: 1920,
             height: 1080,
+            request_id: std::sync::atomic::AtomicU64::new(1),
         })
     }
 
-    /// Create with explicit tarpc client (for testing)
+    /// Create with explicit JSON-RPC socket path (for testing)
     #[must_use]
-    pub const fn with_client(client: TarpcClient) -> Self {
+    pub fn with_socket(socket_path: impl Into<String>) -> Self {
         Self {
             discovery: None,
-            tarpc_client: Some(client),
+            jsonrpc_socket: Some(socket_path.into()),
             window_id: None,
             width: 1920,
             height: 1080,
+            request_id: std::sync::atomic::AtomicU64::new(1),
         }
     }
 
-    /// Discover and connect to the display capability provider via tarpc
+    /// Discover the display capability provider and extract its JSON-RPC socket
     async fn discover_and_connect(&mut self) -> Result<()> {
-        info!("🌸 Discovering display capability provider via biomeOS...");
+        info!("Discovering display capability provider via biomeOS...");
 
         let discovery = self
             .discovery
             .as_ref()
             .ok_or(DisplayError::NoDiscoverySystem)?;
 
-        // Query for display capability (no hardcoded provider name)
         let endpoint = discovery
             .discover_one(&CapabilityQuery::new("display"))
             .await
             .map_err(|e| DisplayError::DisplayDiscoveryFailed(e.to_string()))?;
 
-        info!("✅ Found display provider: {}", endpoint.id);
-        info!("   Capabilities: {:?}", endpoint.capabilities);
+        info!("Found display provider: {}", endpoint.id);
+        debug!("Capabilities: {:?}", endpoint.capabilities);
 
-        // Extract tarpc endpoint
-        let tarpc_endpoint = endpoint
+        // Prefer JSON-RPC socket (universal IPC), fall back to tarpc endpoint string
+        let socket = endpoint
             .endpoints
-            .tarpc
+            .jsonrpc
+            .or(endpoint.endpoints.tarpc)
             .ok_or(DisplayError::NoTarpcEndpoint)?;
 
-        info!("🔌 Connecting via tarpc: {}", tarpc_endpoint);
-
-        // Connect via tarpc for high-performance communication
-        // Note: TarpcClient::new() creates client with lazy connection
-        let client = TarpcClient::new(&tarpc_endpoint)
-            .map_err(|e| DisplayError::TarpcClientCreation(e.to_string()))?;
-
-        self.tarpc_client = Some(client);
-
-        info!("✅ Connected to display provider via tarpc");
+        info!("Display provider socket: {socket}");
+        self.jsonrpc_socket = Some(socket);
 
         Ok(())
     }
 
-    /// Get tarpc client (ensures connected)
-    fn client(&self) -> Result<&TarpcClient> {
-        self.tarpc_client
+    fn next_request_id(&self) -> u64 {
+        self.request_id
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Send a JSON-RPC 2.0 request to the discovered display provider
+    async fn send_request(&self, method: &str, params: Value) -> Result<Value> {
+        let socket_path = self
+            .jsonrpc_socket
             .as_ref()
-            .ok_or(DisplayError::NotConnectedToDisplay)
+            .ok_or(DisplayError::NotConnectedToDisplay)?;
+
+        let mut stream = UnixStream::connect(socket_path)
+            .await
+            .map_err(|e| DisplayError::BiomeOsConnect {
+                path: socket_path.clone(),
+                detail: e.to_string(),
+            })?;
+
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": method,
+            "params": params,
+            "id": self.next_request_id(),
+        });
+
+        let request_str = serde_json::to_string(&request)
+            .map_err(|e| DisplayError::BiomeOsParseJsonRpc(e.to_string()))?;
+
+        stream
+            .write_all(format!("{request_str}\n").as_bytes())
+            .await
+            .map_err(|e| DisplayError::BiomeOsConnect {
+                path: socket_path.clone(),
+                detail: e.to_string(),
+            })?;
+        stream.flush().await.map_err(|e| DisplayError::BiomeOsConnect {
+            path: socket_path.clone(),
+            detail: e.to_string(),
+        })?;
+
+        let (reader, _) = stream.into_split();
+        let mut reader = BufReader::new(reader);
+        let mut response_line = String::new();
+
+        reader
+            .read_line(&mut response_line)
+            .await
+            .map_err(|e| DisplayError::BiomeOsReadResponse(e.to_string()))?;
+
+        let response: Value = serde_json::from_str(&response_line)
+            .map_err(|e| DisplayError::BiomeOsParseJsonRpc(e.to_string()))?;
+
+        if let Some(error) = response.get("error") {
+            return Err(DisplayError::BiomeOsError(error.to_string()).into());
+        }
+
+        response
+            .get("result")
+            .cloned()
+            .ok_or(DisplayError::BiomeOsNoResult)
             .map_err(Into::into)
     }
 
-    /// Query display capabilities via tarpc
+    /// Query display capabilities via JSON-RPC
     async fn query_capabilities(&self) -> Result<DisplayCapabilitiesResponse> {
-        info!("🌸 Querying display capabilities via tarpc...");
+        info!("Querying display capabilities via JSON-RPC...");
 
         let result = self
-            .client()?
-            .call_method("display.query_capabilities", Some(serde_json::json!({})))
-            .await
-            .map_err(|e| DisplayError::QueryCapabilitiesFailed(e.to_string()))?;
+            .send_request("display.query_capabilities", json!({}))
+            .await?;
 
         let caps: DisplayCapabilitiesResponse = serde_json::from_value(result)
             .map_err(|e| DisplayError::ParseDisplayCapabilities(e.to_string()))?;
 
         info!(
-            "✅ Found {} displays, {} input devices",
+            "Found {} displays, {} input devices",
             caps.displays.len(),
             caps.input_devices.len()
         );
@@ -206,31 +262,29 @@ impl DiscoveredDisplayBackendV2 {
         Ok(caps)
     }
 
-    /// Create window via tarpc
+    /// Create window via JSON-RPC
     async fn create_window(&self, title: &str, width: u32, height: u32) -> Result<WindowResponse> {
-        info!("🌸 Creating {}x{} window via tarpc...", width, height);
+        info!("Creating {width}x{height} window via JSON-RPC...");
 
-        let params = serde_json::json!({
+        let params = json!({
             "title": title,
             "width": width,
             "height": height,
         });
 
         let result = self
-            .client()?
-            .call_method("display.create_window", Some(params))
-            .await
-            .map_err(|e| DisplayError::CreateWindowFailed(e.to_string()))?;
+            .send_request("display.create_window", params)
+            .await?;
 
         let window: WindowResponse = serde_json::from_value(result)
             .map_err(|e| DisplayError::ParseWindowResponse(e.to_string()))?;
 
-        info!("✅ Window created: {}", window.window_id);
+        info!("Window created: {}", window.window_id);
 
         Ok(window)
     }
 
-    /// Commit frame via tarpc (high-performance binary RPC)
+    /// Commit frame via JSON-RPC (base64-encoded RGBA)
     async fn commit_frame(&self, buffer: &[u8]) -> Result<()> {
         use base64::{Engine as _, engine::general_purpose};
 
@@ -239,11 +293,9 @@ impl DiscoveredDisplayBackendV2 {
             .as_ref()
             .ok_or(DisplayError::NoWindowCreated)?;
 
-        // tarpc can handle binary data efficiently
-        // For now, we use base64 encoding for compatibility
         let encoded = general_purpose::STANDARD.encode(buffer);
 
-        let params = serde_json::json!({
+        let params = json!({
             "window_id": window_id,
             "format": "rgba8",
             "width": self.width,
@@ -251,14 +303,11 @@ impl DiscoveredDisplayBackendV2 {
             "data": encoded,
         });
 
-        debug!("🎨 Committing frame via tarpc ({} bytes)", buffer.len());
+        debug!("Committing frame via JSON-RPC ({} bytes)", buffer.len());
 
-        self.client()?
-            .call_method("display.commit_frame", Some(params))
-            .await
-            .map_err(|e| DisplayError::CommitFrameFailed(e.to_string()))?;
+        self.send_request("display.commit_frame", params).await?;
 
-        debug!("✅ Frame committed");
+        debug!("Frame committed");
 
         Ok(())
     }
@@ -266,45 +315,38 @@ impl DiscoveredDisplayBackendV2 {
 
 impl DisplayBackend for DiscoveredDisplayBackendV2 {
     async fn init(&mut self) -> Result<()> {
-        info!("🌸🦈 Initializing discovered display backend (tarpc)...");
+        info!("Initializing discovered display backend (capability discovery + JSON-RPC)...");
 
-        // Phase 1: Discover display provider via capability system
         self.discover_and_connect().await?;
 
-        // Phase 2: Query capabilities via tarpc (high-performance)
         let caps = self.query_capabilities().await?;
 
-        // Select primary display
         let display_info = caps
             .displays
             .first()
             .ok_or(DisplayError::NoDisplaysAvailable)?;
 
         info!(
-            "   Display: {} ({})",
-            display_info.connector, display_info.id
-        );
-        info!(
-            "   Resolution: {}x{} @ {}Hz",
+            "Display: {} ({}) {}x{} @ {}Hz",
+            display_info.connector,
+            display_info.id,
             display_info.resolution.width,
             display_info.resolution.height,
             display_info.refresh_rate
         );
 
-        // Update dimensions from actual display
         self.width = display_info.resolution.width;
         self.height = display_info.resolution.height;
 
-        // Create window via tarpc
         let window = self
             .create_window("petalTongue UI", self.width, self.height)
             .await?;
         self.window_id = Some(window.window_id.clone());
 
-        info!("✅ Discovered display backend initialized (tarpc)");
-        info!("   Window: {}", window.window_id);
-        info!("   Dimensions: {}x{}", self.width, self.height);
-        info!("   Transport: tarpc (high-performance binary RPC)");
+        info!(
+            "Discovered display backend initialized: window={}, {}x{}, transport=JSON-RPC/UDS",
+            window.window_id, self.width, self.height
+        );
 
         Ok(())
     }
@@ -327,12 +369,11 @@ impl DisplayBackend for DiscoveredDisplayBackendV2 {
     }
 
     fn is_available() -> bool {
-        // Try to create discovery system
         BiomeOsBackend::from_env().is_ok()
     }
 
     fn name(&self) -> &'static str {
-        "Discovered Display (tarpc)"
+        "Discovered Display (capability discovery)"
     }
 
     fn capabilities(&self) -> DisplayCapabilities {
@@ -342,37 +383,26 @@ impl DisplayBackend for DiscoveredDisplayBackendV2 {
             requires_root: false,
             supports_resize: true,
             max_fps: 60,
-            latency_ms: 8, // Improved with tarpc
+            latency_ms: 10,
             requires_display_server: false,
             remote_capable: true,
         }
     }
 
     async fn shutdown(&mut self) -> Result<()> {
-        info!("🌸 Shutting down discovered display backend (tarpc)");
+        info!("Shutting down discovered display backend (V2)");
 
         if let Some(window_id) = &self.window_id {
-            info!("   Destroying window: {}", window_id);
+            let params = json!({ "window_id": window_id });
 
-            if let Some(client) = &self.tarpc_client {
-                let params = serde_json::json!({
-                    "window_id": window_id,
-                });
-
-                match client
-                    .call_method("display.destroy_window", Some(params))
-                    .await
-                {
-                    Ok(_) => info!("   ✅ Window destroyed"),
-                    Err(e) => warn!("   ⚠️ Failed to destroy window (non-fatal): {}", e),
-                }
+            match self.send_request("display.destroy_window", params).await {
+                Ok(_) => info!("Window {window_id} destroyed"),
+                Err(e) => warn!("Failed to destroy window {window_id} (non-fatal): {e}"),
             }
         }
 
         self.window_id = None;
-        self.tarpc_client = None;
-
-        info!("✅ Discovered display backend (tarpc) shutdown complete");
+        self.jsonrpc_socket = None;
 
         Ok(())
     }
@@ -382,16 +412,20 @@ impl DisplayBackend for DiscoveredDisplayBackendV2 {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_discovered_display_v2_capabilities() {
-        let display = DiscoveredDisplayBackendV2 {
+    fn test_display() -> DiscoveredDisplayBackendV2 {
+        DiscoveredDisplayBackendV2 {
             discovery: None,
-            tarpc_client: None,
+            jsonrpc_socket: None,
             window_id: None,
             width: 1920,
             height: 1080,
-        };
+            request_id: std::sync::atomic::AtomicU64::new(1),
+        }
+    }
 
+    #[test]
+    fn test_discovered_display_v2_capabilities() {
+        let display = test_display();
         let caps = display.capabilities();
         assert!(!caps.requires_network);
         assert!(!caps.requires_gpu);
@@ -402,14 +436,7 @@ mod tests {
 
     #[test]
     fn test_dimensions() {
-        let display = DiscoveredDisplayBackendV2 {
-            discovery: None,
-            tarpc_client: None,
-            window_id: None,
-            width: 1920,
-            height: 1080,
-        };
-
+        let display = test_display();
         assert_eq!(display.dimensions(), (1920, 1080));
     }
 
@@ -421,44 +448,28 @@ mod tests {
     }
 
     #[test]
-    fn test_with_client() {
-        use petal_tongue_ipc::tarpc_client::TarpcClient;
-        let client = TarpcClient::new("tarpc://localhost:9999").unwrap();
-        let display = DiscoveredDisplayBackendV2::with_client(client);
+    fn test_with_socket() {
+        let display = DiscoveredDisplayBackendV2::with_socket("/tmp/test-display.sock");
         assert_eq!(display.dimensions(), (1920, 1080));
-        assert_eq!(display.name(), "Discovered Display (tarpc)");
+        assert!(display.name().contains("capability discovery"));
     }
 
     #[test]
     fn test_name() {
-        let display = DiscoveredDisplayBackendV2 {
-            discovery: None,
-            tarpc_client: None,
-            window_id: None,
-            width: 1920,
-            height: 1080,
-        };
-        assert!(display.name().contains("tarpc"));
+        let display = test_display();
+        assert!(display.name().contains("capability discovery"));
     }
 
     #[test]
     fn test_capabilities_latency() {
-        let display = DiscoveredDisplayBackendV2 {
-            discovery: None,
-            tarpc_client: None,
-            window_id: None,
-            width: 1920,
-            height: 1080,
-        };
+        let display = test_display();
         let caps = display.capabilities();
-        assert_eq!(caps.latency_ms, 8);
+        assert_eq!(caps.latency_ms, 10);
     }
 
     #[tokio::test]
     async fn test_present_invalid_buffer_size() {
-        use petal_tongue_ipc::tarpc_client::TarpcClient;
-        let client = TarpcClient::new("tarpc://localhost:9999").unwrap();
-        let mut display = DiscoveredDisplayBackendV2::with_client(client);
+        let mut display = DiscoveredDisplayBackendV2::with_socket("/tmp/nonexistent.sock");
         let wrong_buffer = vec![0u8; 100];
         let result = display.present(&wrong_buffer).await;
         assert!(result.is_err());
@@ -475,9 +486,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_present_buffer_too_small() {
-        use petal_tongue_ipc::tarpc_client::TarpcClient;
-        let client = TarpcClient::new("tarpc://localhost:9999").unwrap();
-        let mut display = DiscoveredDisplayBackendV2::with_client(client);
+        let mut display = DiscoveredDisplayBackendV2::with_socket("/tmp/nonexistent.sock");
         let expected = expected_rgba8_buffer_size(1920, 1080);
         let too_small = vec![0u8; expected - 1];
         let result = display.present(&too_small).await;
@@ -486,9 +495,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_shutdown_no_window() {
-        use petal_tongue_ipc::tarpc_client::TarpcClient;
-        let client = TarpcClient::new("tarpc://localhost:9999").unwrap();
-        let mut display = DiscoveredDisplayBackendV2::with_client(client);
+        let mut display = DiscoveredDisplayBackendV2::with_socket("/tmp/nonexistent.sock");
         let result = display.shutdown().await;
         assert!(result.is_ok());
     }

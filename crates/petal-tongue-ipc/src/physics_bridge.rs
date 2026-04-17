@@ -189,33 +189,54 @@ async fn try_gpu_physics_step(world: &mut PhysicsWorld) -> Result<usize, String>
     Ok(world.bodies.len())
 }
 
-/// Discover GPU compute socket via runtime scanning.
-///
-/// Capability-based: discovers primals providing `gpu.dispatch` (no hardcoded names).
-/// Follows the ecosystem S139 dual-write pattern for discovery manifests.
+/// Discover GPU compute socket via capability discovery then env/filesystem fallback.
 ///
 /// Priority:
-/// 1. `COMPUTE_SOCKET` env (explicit override)
-/// 2. `$XDG_RUNTIME_DIR/ecoPrimals/` (ecosystem discovery directory, S139 layout)
-/// 3. `$XDG_RUNTIME_DIR/{socket_name}/` (primal-specific)
-/// 4. `/tmp/` fallback
+/// 1. `CapabilityDiscovery<BiomeOsBackend>` — biomeOS Neural API for `compute` domain
+/// 2. `COMPUTE_SOCKET` env (explicit override / escape hatch)
+/// 3. `$XDG_RUNTIME_DIR/ecoPrimals/` (ecosystem S139 layout)
+/// 4. `$XDG_RUNTIME_DIR/{socket_name}/` (primal-specific)
+/// 5. `/tmp/` fallback
 fn discover_compute_socket() -> Result<String, String> {
+    // Primary: biomeOS capability discovery (sync-safe: check socket exists without async)
+    if let Ok(backend) =
+        petal_tongue_core::biomeos_discovery::BiomeOsBackend::from_env()
+    {
+        use petal_tongue_core::capability_discovery::{
+            CapabilityDiscovery, CapabilityQuery,
+        };
+        let discovery = CapabilityDiscovery::new(backend);
+        let query = CapabilityQuery::new("compute");
+
+        if let Ok(rt) = tokio::runtime::Handle::try_current()
+            && let Ok(endpoint) = rt.block_on(discovery.discover_one(&query))
+        {
+            if let Some(jsonrpc) = &endpoint.endpoints.jsonrpc {
+                debug!("Found compute socket via biomeOS capability discovery: {jsonrpc}");
+                return Ok(jsonrpc.clone());
+            }
+            if let Some(tarpc) = &endpoint.endpoints.tarpc {
+                debug!("Found compute tarpc endpoint via biomeOS: {tarpc}");
+                return Ok(tarpc.clone());
+            }
+        }
+    }
+
+    // Escape hatch: explicit env override
     if let Ok(path) = std::env::var("COMPUTE_SOCKET") {
         return Ok(path);
     }
 
+    // Legacy: filesystem scanning (S139 dual-write layout)
     let runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_string());
     let socket_name = std::env::var("PHYSICS_COMPUTE_SOCKET_NAME")
         .unwrap_or_else(|_| "physics-compute".to_string());
 
     let candidates = [
-        // Ecosystem discovery (S139 dual-write layout)
         format!("{runtime_dir}/ecoPrimals/{socket_name}.sock"),
         format!("{runtime_dir}/ecoPrimals/discovery/{socket_name}.sock"),
-        // Primal-specific
         format!("{runtime_dir}/{socket_name}/{socket_name}.sock"),
         format!("{runtime_dir}/{socket_name}.sock"),
-        // Fallback
         format!("/tmp/{socket_name}.sock"),
     ];
 

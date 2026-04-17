@@ -54,9 +54,9 @@ uuid = { version = "1.7", features = ["v4", "serde"] }  # For graph node IDs
 # EVOLUTION COMPLETE: Direct hardware access (like WGPU for graphics!)
 # NO rodio, NO cpal, NO ALSA - just raw /dev/snd device access!
 symphonia = { version = "0.5", default-features = false, features = ["mp3", "wav"] }  # Pure Rust audio decoding
-# winit: Links to X11/Wayland C libs (x11-dl, wayland-client). REQUIRED: petal-tongue-ui is a GUI app;
-# cannot use terminal-only detection. Used for window creation and display dimension discovery.
-winit = "0.30"
+# winit is NOT a direct dependency — it comes transitively through eframe.
+# Screen dimensions use terminal_size (pure Rust), not winit.
+# Window creation is handled by eframe::run_native.
 
 # ✅ EVOLUTION COMPLETE:
 # - AudioCanvas provides direct /dev/snd access (Linux)
@@ -72,7 +72,6 @@ crossterm = "0.29"  # Terminal input/output for sensors (rustix backend, no libc
 terminal_size = "0.4"  # Terminal dimensions for screen sensor
 tiny-skia = "0.11"  # For egui → pixel rendering
 epaint = { version = "0.29", default-features = false }  # For egui tessellation
-png = "0.17"  # For pixel buffer conversion
 
 # EVOLVED (Sprint 6): softbuffer/pixels/wasm deps removed — features were declared
 # but never wired into code. Re-add when pure-Rust display backends are implemented.

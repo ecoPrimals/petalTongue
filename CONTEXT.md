@@ -60,9 +60,34 @@ domain symlinks (`visualization.sock`).
   barraCuda, toadStool, coralReef. petalTongue discovers by capability.
 - **Feature-gated GUI**: `ui` feature (default) pulls egui/eframe/glow.
   Headless builds (`--no-default-features`) have zero native display deps.
-- **Audio discovery**: runtime heuristic backends (socket, direct, software,
-  silent). Socket/direct behind optional features; software/silent always
-  available.
+- **Audio discovery**: tiered backends — ecosystem primal (Tier 1, via
+  capability discovery), socket, direct, software, silent. Socket/direct
+  behind optional features; software/silent always available.
+
+## UUI Boundary — Owns vs Leverages
+
+petalTongue is the UUI engine: pure Rust rendering to any modality on any
+device. Other primals own platform interaction points.
+
+**Owns (pure Rust, in-crate):**
+- egui (layout/interaction), epaint (tessellation), tiny-skia (rasterization)
+- crossterm (terminal I/O), symphonia (audio decode/synthesis)
+- Grammar of Graphics, scene graph, animation, modality adapters
+- IPC server: `visualization.*`, `interaction.*`, `capabilities.sensory.*`
+
+**Leverages (ecosystem primals via `capability.call` / JSON-RPC over UDS):**
+- `display.*` — ToadStool (window lifecycle, frame presentation)
+- `compute.*` / `math.*` — barraCuda via ToadStool (GPU dispatch)
+- `btsp.session.*` — BearDog (transport security)
+- `discovery.*` / `ipc.*` — Songbird + biomeOS (registry, routing)
+- TLS/HTTPS — Songbird relay (design ready)
+- `audio.play` / `audio.stream` — ToadStool (future, wired as Tier 1 stub)
+- `storage.put` / `storage.get` — NestGate (future)
+- `ai.query` / `ai.complete` — Squirrel (future)
+
+The eframe/glow C/FFI stack exists only behind `ui-eframe` feature as a
+development convenience. The architectural path is EguiPixelRenderer →
+DisplayManager → ecosystem `display.*` IPC.
 
 ## Ecosystem Position
 
@@ -79,7 +104,7 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # ~6,110 tests, ~90% coverage
+cargo test --workspace --all-features     # ~6,120 tests, ~90% coverage
 ```
 
 ## Current State
@@ -88,7 +113,7 @@ Stadial parity gate cleared (April 17, 2026). All CI gates pass (fmt,
 clippy pedantic+nursery, doc, cargo deny, tests). Zero unsafe, zero
 TODO/FIXME, zero production unwrap(), zero `#[allow(]` in production.
 SPDX headers on all source files. Edition 2024, deny.toml enforced.
-~6,010 tests passing.
+~6,120 tests passing (all-features).
 
 `reqwest` runtime dependency fully eliminated (April 17). Replaced with
 thin `LocalHttpClient` (hyper + hyper-util, already transitive from axum).
@@ -106,6 +131,13 @@ Sprint 7: deep debt resolution across 14 production modules (smart
 refactoring by domain, not mechanical splitting), hardcoding evolved to
 capability-based defaults, BTSP provider default evolved from primal
 identity to capability name (`security`), centralized socket path constants.
+
+UUI boundary analysis (April 17): dead deps removed (`png`, direct `winit`),
+capability discovery unified (`GpuComputeProvider` and `physics_bridge` now
+use `CapabilityDiscovery<BiomeOsBackend>` as primary path), V2 display backend
+fixed (tarpc→JSON-RPC for `display.*` ops), audio Tier 1 wired (`NetworkBackend`
+via capability discovery, graceful fallback), `discovered-display` feature
+properly gated with `#[cfg]`.
 
 Remaining backlog: BTSP Phase 2 consumer wiring (cross-primal dep on
 BearDog), BTSP Phase 3 encryption, aarch64 musl cross-compile for headless,

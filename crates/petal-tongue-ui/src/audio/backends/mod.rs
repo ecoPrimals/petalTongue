@@ -16,6 +16,7 @@
 
 #[cfg(feature = "audio-direct")]
 mod direct;
+mod network;
 mod silent;
 #[cfg(feature = "audio-socket")]
 mod socket;
@@ -24,6 +25,7 @@ mod software;
 // Re-exports
 #[cfg(feature = "audio-direct")]
 pub use direct::DirectBackend;
+pub use network::NetworkBackend;
 pub use silent::SilentBackend;
 #[cfg(feature = "audio-socket")]
 pub use socket::SocketBackend;
