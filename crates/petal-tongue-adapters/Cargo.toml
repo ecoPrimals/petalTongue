@@ -28,9 +28,6 @@ egui = { workspace = true }
 # Async runtime (for capability discovery)
 tokio = { workspace = true }
 
-# HTTP client (for querying ecosystem specs)
-reqwest = { workspace = true }  # Workspace: HTTP-only, no TLS (ecoBin: no ring/openssl)
-
 # Logging
 tracing = { workspace = true }
 

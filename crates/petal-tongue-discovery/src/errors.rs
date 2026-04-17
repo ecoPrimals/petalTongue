@@ -75,7 +75,7 @@ pub enum DiscoveryError {
     // --- Network / HTTP ---
     /// HTTP request error
     #[error("HTTP request failed")]
-    HttpError(#[from] reqwest::Error),
+    HttpError(#[from] petal_tongue_ipc::HttpClientError),
 
     /// mDNS discovery error
     #[error("mDNS discovery failed: {0}")]
@@ -177,7 +177,7 @@ pub enum HealthCheckSource {
     Io(#[from] std::io::Error),
     /// HTTP request error
     #[error(transparent)]
-    Http(#[from] reqwest::Error),
+    Http(#[from] petal_tongue_ipc::HttpClientError),
     /// JSON parse error on health-check response
     #[error(transparent)]
     Json(#[from] serde_json::Error),

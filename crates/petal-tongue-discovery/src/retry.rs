@@ -63,8 +63,7 @@ impl RetryPolicy {
     /// # async fn example() -> anyhow::Result<()> {
     /// let policy = RetryPolicy::default();
     /// let result = policy.execute(|| async {
-    ///     // Potentially failing operation
-    ///     reqwest::get("http://example.com").await
+    ///     petal_tongue_ipc::http_get("http://example.com").await
     /// }).await?;
     /// # Ok(())
     /// # }
@@ -133,7 +132,7 @@ impl RetryPolicy {
     /// let result = policy.execute_with_timeout(
     ///     Duration::from_secs(5),
     ///     move || async move {
-    ///         reqwest::get("http://example.com").await
+    ///         petal_tongue_ipc::http_get("http://example.com").await
     ///     }
     /// ).await?;
     /// # Ok(())

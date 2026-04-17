@@ -331,7 +331,9 @@ impl UniversalDiscovery {
     ) -> Result<Vec<DiscoveredService>> {
         debug!("Querying service mesh at: {}", endpoint);
 
-        // Try common service mesh APIs (AGNOSTIC)
+        let client =
+            petal_tongue_ipc::LocalHttpClient::with_timeout(std::time::Duration::from_secs(5));
+
         let api_paths = vec![
             format!("/api/v1/capabilities/{}", capability),
             format!("/discover?capability={}", capability),
@@ -341,9 +343,9 @@ impl UniversalDiscovery {
         for path in api_paths {
             let url = format!("{endpoint}{path}");
 
-            if let Ok(response) = reqwest::get(&url).await
-                && response.status().is_success()
-                && let Ok(services) = response.json::<Vec<DiscoveredService>>().await
+            if let Ok(response) = client.get(&url).await
+                && response.is_success()
+                && let Ok(services) = response.json::<Vec<DiscoveredService>>()
                 && !services.is_empty()
             {
                 return Ok(services);

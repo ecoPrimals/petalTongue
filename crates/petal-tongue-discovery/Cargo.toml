@@ -20,8 +20,8 @@ petal-tongue-core = { path = "../petal-tongue-core" }
 tokio = { workspace = true }
 thiserror = { workspace = true }
 
-# HTTP client
-reqwest = { workspace = true }  # Workspace: HTTP-only (no TLS) for local IPC
+# HTTP client (thin hyper wrapper via petal-tongue-ipc)
+petal-tongue-ipc = { path = "../petal-tongue-ipc" }
 
 # Serialization
 serde = { workspace = true }

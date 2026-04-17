@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! HTTPS/HTTP client used when falling back from tarpc/JSON-RPC.
+//! HTTP client used when falling back from tarpc/JSON-RPC.
 
-use petal_tongue_ipc::{TarpcClientError, TarpcResult};
+use petal_tongue_ipc::{LocalHttpClient, TarpcClientError, TarpcResult};
 
 use super::parse::{parse_capabilities_from_json, parse_health_from_json};
 
-/// HTTPS client for primal-to-primal communication
+/// HTTP client for primal-to-primal communication (plain HTTP, no TLS).
 ///
-/// Uses reqwest with TLS. Falls back to HTTP when HTTPS is unavailable.
+/// TLS is delegated to Songbird via tower atomic IPC.
+/// Falls back to HTTP when tarpc/JSON-RPC are unavailable.
 #[derive(Clone)]
 pub struct HttpsClient {
     pub(crate) base_url: String,
-    pub(crate) client: reqwest::Client,
+    pub(crate) client: LocalHttpClient,
 }
 
 impl HttpsClient {
@@ -25,10 +26,9 @@ impl HttpsClient {
         let resp = self
             .client
             .get(&url)
-            .send()
             .await
             .map_err(|e| TarpcClientError::Connection(e.to_string()))?;
-        if !resp.status().is_success() {
+        if !resp.is_success() {
             return Err(TarpcClientError::Connection(format!(
                 "HTTP {}: {}",
                 resp.status(),
@@ -36,7 +36,6 @@ impl HttpsClient {
             )));
         }
         resp.json()
-            .await
             .map_err(|e| TarpcClientError::Serialization(e.to_string()))
     }
 

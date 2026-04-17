@@ -97,10 +97,14 @@ egui_extras = "0.29"
 # Graph visualization
 egui_plot = "0.29"
 
-# HTTP client -- TLS-free for local IPC (biomeOS, discovery).
-# HTTPS is delegated to beardog/songbird via biomeOS tower atomic.
-# NO ring, NO aws-lc-sys, NO openssl -- ecoBin compliant.
-reqwest = { version = "0.13", default-features = false, features = ["json", "charset", "http2", "stream"] }
+# HTTP client — thin hyper wrapper for local IPC (biomeOS, discovery).
+# TLS is delegated to Songbird via tower atomic IPC — petalTongue never owns a TLS stack.
+# hyper/hyper-util/http/http-body-util are already transitive from axum; declaring them
+# as workspace deps adds zero new crates to the lockfile.
+hyper = { version = "1", features = ["client", "http1"] }
+hyper-util = { version = "0.1", features = ["client-legacy", "http1", "tokio"] }
+http-body-util = "0.1"
+http = "1"
 base64 = "0.22"
 
 # Cryptographic hashing (pure Rust — default-features=false disables C/asm backends)

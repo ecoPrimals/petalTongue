@@ -84,14 +84,17 @@ cargo test --workspace --all-features     # ~6,110 tests, ~90% coverage
 
 ## Current State
 
-Stadial parity gate cleared (April 16, 2026). All CI gates pass (fmt,
+Stadial parity gate cleared (April 17, 2026). All CI gates pass (fmt,
 clippy pedantic+nursery, doc, cargo deny, tests). Zero unsafe, zero
 TODO/FIXME, zero production unwrap(), zero `#[allow(]` in production.
 SPDX headers on all source files. Edition 2024, deny.toml enforced.
+~6,010 tests passing.
 
-Stadial gate: `ring` confirmed phantom lockfile entry (never compiled),
-`reqwest` upgraded 0.12→0.13 (no TLS, ecoBin clean), all `dyn` usages
-verified non-trait-object (closures + std Error only).
+`reqwest` runtime dependency fully eliminated (April 17). Replaced with
+thin `LocalHttpClient` (hyper + hyper-util, already transitive from axum).
+`ring`, `hyper-rustls`, `rustls`, `rustls-webpki` all removed from lockfile.
+petalTongue no longer owns any TLS stack — Songbird handles external HTTPS
+via tower atomic IPC.
 
 Sprint 8: complete `dyn` trait object elimination (22 custom traits
 evolved to enum dispatch / generics), `async-trait` crate fully removed

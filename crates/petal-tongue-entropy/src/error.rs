@@ -20,7 +20,7 @@ pub enum EntropyError {
 
     /// Failed to build HTTP client or send request
     #[error("Network request failed: {0}")]
-    Network(#[from] reqwest::Error),
+    Network(#[from] petal_tongue_ipc::HttpClientError),
 
     /// Server rejected the entropy submission
     #[error("Server rejected entropy: {status} - {body}")]

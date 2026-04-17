@@ -20,7 +20,7 @@ pub enum PetalTongueError {
 
     /// `BiomeOS` API client error.
     #[error("BiomeOS API error: {0}")]
-    BiomeOSApi(#[from] reqwest::Error),
+    BiomeOSApi(String),
 
     /// Discovery error.
     #[error("primal discovery failed: {0}")]
