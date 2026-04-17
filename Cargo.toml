@@ -107,8 +107,8 @@ http-body-util = "0.1"
 http = "1"
 base64 = "0.22"
 
-# Cryptographic hashing (pure Rust — default-features=false disables C/asm backends)
-blake3 = { version = "1", default-features = false }
+# Cryptographic hashing — pure Rust (no cc/asm build deps)
+blake3 = { version = "1", default-features = false, features = ["pure"] }
 
 # Time and dates
 chrono = "0.4"
