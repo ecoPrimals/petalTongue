@@ -5,6 +5,7 @@
 
 #[cfg(feature = "audio-direct")]
 use crate::audio::backends::DirectBackend;
+use crate::audio::backends::NetworkBackend;
 #[cfg(feature = "audio-socket")]
 use crate::audio::backends::SocketBackend;
 use crate::audio::backends::{SilentBackend, SoftwareBackend};
@@ -65,6 +66,8 @@ pub trait AudioBackend: Send + Sync {
 
 /// Enum dispatch for concrete audio backends (replaces `Box<dyn AudioBackend>`).
 pub enum AudioBackendImpl {
+    /// Ecosystem audio primal via capability discovery (Tier 1).
+    Network(NetworkBackend),
     /// Direct hardware device backend (`audio-direct` feature).
     #[cfg(feature = "audio-direct")]
     Direct(DirectBackend),
@@ -79,6 +82,7 @@ pub enum AudioBackendImpl {
 
 async fn audio_backend_impl_is_available(backend: &AudioBackendImpl) -> bool {
     match backend {
+        AudioBackendImpl::Network(b) => b.is_available().await,
         #[cfg(feature = "audio-direct")]
         AudioBackendImpl::Direct(b) => b.is_available().await,
         #[cfg(feature = "audio-socket")]
@@ -90,6 +94,7 @@ async fn audio_backend_impl_is_available(backend: &AudioBackendImpl) -> bool {
 
 async fn audio_backend_impl_initialize(backend: &mut AudioBackendImpl) -> Result<()> {
     match backend {
+        AudioBackendImpl::Network(b) => b.initialize().await,
         #[cfg(feature = "audio-direct")]
         AudioBackendImpl::Direct(b) => b.initialize().await,
         #[cfg(feature = "audio-socket")]
@@ -105,6 +110,7 @@ async fn audio_backend_impl_play_samples(
     sample_rate: u32,
 ) -> Result<()> {
     match backend {
+        AudioBackendImpl::Network(b) => b.play_samples(samples, sample_rate).await,
         #[cfg(feature = "audio-direct")]
         AudioBackendImpl::Direct(b) => b.play_samples(samples, sample_rate).await,
         #[cfg(feature = "audio-socket")]
@@ -117,6 +123,7 @@ async fn audio_backend_impl_play_samples(
 impl AudioBackend for AudioBackendImpl {
     fn metadata(&self) -> BackendMetadata {
         match self {
+            Self::Network(b) => b.metadata(),
             #[cfg(feature = "audio-direct")]
             Self::Direct(b) => b.metadata(),
             #[cfg(feature = "audio-socket")]
@@ -128,6 +135,7 @@ impl AudioBackend for AudioBackendImpl {
 
     fn priority(&self) -> u8 {
         match self {
+            Self::Network(b) => b.priority(),
             #[cfg(feature = "audio-direct")]
             Self::Direct(b) => b.priority(),
             #[cfg(feature = "audio-socket")]
@@ -155,6 +163,7 @@ impl AudioBackend for AudioBackendImpl {
 
     fn capabilities(&self) -> AudioCapabilities {
         match self {
+            Self::Network(b) => b.capabilities(),
             #[cfg(feature = "audio-direct")]
             Self::Direct(b) => b.capabilities(),
             #[cfg(feature = "audio-socket")]

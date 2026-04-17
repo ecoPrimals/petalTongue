@@ -30,17 +30,20 @@ impl AudioManager {
     /// # Errors
     ///
     /// Returns an error if no audio backends are available (including silent fallback).
-    #[expect(
-        clippy::unused_async,
-        reason = "async required when audio-socket feature enables network discovery"
-    )]
     pub async fn init() -> Result<Self> {
-        info!("🎵 Discovering audio backends (TRUE PRIMAL)...");
+        info!("Discovering audio backends...");
 
         let mut backends: Vec<AudioBackendImpl> = Vec::new();
 
-        // Tier 1: Network Audio (compute primal with audio.synthesis capability)
-        // Discovered at runtime via capability probing; not hardcoded to any primal.
+        // Tier 1: Ecosystem Audio (capability discovery via biomeOS Neural API)
+        {
+            let network_backend =
+                super::backends::NetworkBackend::discover().await;
+            if network_backend.is_available().await {
+                info!("Ecosystem audio provider available (Tier 1)");
+            }
+            backends.push(AudioBackendImpl::Network(network_backend));
+        }
 
         // Tier 2: Socket-Based Audio Servers (optional stub — see `audio-socket` feature)
         #[cfg(feature = "audio-socket")]

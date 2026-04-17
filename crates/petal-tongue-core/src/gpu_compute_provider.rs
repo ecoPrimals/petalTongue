@@ -4,8 +4,16 @@
 //!
 //! GPU compute acceleration via capability-discovered primal (runtime discovery).
 //! petalTongue never hardcodes which primal provides compute — it discovers
-//! by capability (`gpu.dispatch`, `science.gpu.dispatch`).
+//! by capability (`compute` domain) via `CapabilityDiscovery<BiomeOsBackend>`.
+//!
+//! # Discovery priority
+//!
+//! 1. `CapabilityDiscovery<BiomeOsBackend>` — biomeOS Neural API (primary)
+//! 2. Env overrides — `GPU_RENDERING_ENDPOINT`, `COMPUTE_PROVIDER_ENDPOINT` (escape hatch)
+//! 3. Ecosystem manifests — `$XDG_RUNTIME_DIR/ecoPrimals/discovery/*.json` (legacy S139)
 
+use crate::biomeos_discovery::BiomeOsBackend;
+use crate::capability_discovery::{CapabilityDiscovery, CapabilityQuery, PrimalEndpoint};
 use crate::error::{PetalTongueError, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -28,10 +36,37 @@ pub struct ComputeServiceInfo {
     pub metadata: HashMap<String, String>,
 }
 
+impl From<PrimalEndpoint> for ComputeServiceInfo {
+    fn from(ep: PrimalEndpoint) -> Self {
+        let endpoint = ep
+            .endpoints
+            .tarpc
+            .or(ep.endpoints.jsonrpc)
+            .or(ep.endpoints.https)
+            .unwrap_or_default();
+        let capabilities = ep
+            .capabilities
+            .iter()
+            .map(|c| {
+                c.operation
+                    .as_ref()
+                    .map_or_else(|| c.domain.clone(), |op| format!("{}.{}", c.domain, op))
+            })
+            .collect();
+        Self {
+            id: ep.id,
+            endpoint,
+            capabilities,
+            metadata: HashMap::new(),
+        }
+    }
+}
+
 /// GPU compute provider (capability-discovered)
 ///
-/// Provides GPU acceleration via any primal announcing `gpu.dispatch`.
-/// Discovered at runtime using capability-based discovery.
+/// Provides GPU acceleration via any primal announcing `compute` capability.
+/// Primary discovery through `CapabilityDiscovery<BiomeOsBackend>` (biomeOS Neural API).
+/// Env-var overrides kept as escape hatches, not primary path.
 pub struct GpuComputeProvider {
     /// Service info (if discovered)
     service: Option<ComputeServiceInfo>,
@@ -49,10 +84,8 @@ impl GpuComputeProvider {
     ///
     /// Does not return errors; discovery failures result in an empty provider.
     pub async fn new() -> Result<Self> {
-        // Attempt discovery
         let service = Self::discover_compute_provider().await.ok();
 
-        // Determine capabilities based on discovery
         let capabilities = service
             .as_ref()
             .map_or_else(Vec::new, |svc| Self::parse_capabilities(&svc.capabilities));
@@ -63,14 +96,29 @@ impl GpuComputeProvider {
         })
     }
 
-    /// Discover GPU compute provider via universal discovery.
+    /// Discover GPU compute provider.
     ///
-    /// Uses capability-based discovery (no hardcoded primal names).
-    /// 1. Env override (`GPU_RENDERING_ENDPOINT`, `COMPUTE_PROVIDER_ENDPOINT`)
-    /// 2. Ecosystem directory (`$XDG_RUNTIME_DIR/ecoPrimals/discovery/`)
-    /// 3. `GPU_COMPUTE_ENDPOINT` fallback
-    #[expect(clippy::unused_async, reason = "async for future async discovery APIs")]
+    /// Priority:
+    /// 1. `CapabilityDiscovery<BiomeOsBackend>` — query biomeOS for `compute` domain
+    /// 2. Env override (`GPU_RENDERING_ENDPOINT`, `COMPUTE_PROVIDER_ENDPOINT`)
+    /// 3. Ecosystem manifests (`$XDG_RUNTIME_DIR/ecoPrimals/discovery/*.json`)
+    /// 4. `GPU_COMPUTE_ENDPOINT` final fallback
     async fn discover_compute_provider() -> Result<ComputeServiceInfo> {
+        // Primary: CapabilityDiscovery via biomeOS Neural API
+        if let Ok(backend) = BiomeOsBackend::from_env() {
+            let discovery = CapabilityDiscovery::new(backend);
+            let query = CapabilityQuery::new("compute");
+            if let Ok(endpoint) = discovery.discover_one(&query).await {
+                tracing::info!(
+                    "Found compute provider via biomeOS capability discovery: {}",
+                    endpoint.id
+                );
+                return Ok(ComputeServiceInfo::from(endpoint));
+            }
+            tracing::debug!("biomeOS available but no compute capability provider found");
+        }
+
+        // Escape hatch: explicit env overrides
         if let Ok(endpoint) = std::env::var("GPU_RENDERING_ENDPOINT") {
             tracing::info!("Found GPU rendering service via environment: {endpoint}");
             return Ok(ComputeServiceInfo {
@@ -95,7 +143,7 @@ impl GpuComputeProvider {
             });
         }
 
-        // Ecosystem discovery: scan for manifest files (S139 dual-write layout)
+        // Legacy: ecosystem manifest scan (S139 dual-write layout)
         let runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_string());
         let discovery_dir = format!("{runtime_dir}/ecoPrimals/discovery");
         if let Ok(entries) = std::fs::read_dir(&discovery_dir) {
@@ -126,7 +174,7 @@ impl GpuComputeProvider {
                             .and_then(|i| i.as_str())
                             .unwrap_or("discovered-compute")
                             .to_string();
-                        tracing::info!("Found GPU compute provider via ecosystem discovery: {id}");
+                        tracing::info!("Found GPU compute provider via ecosystem manifest: {id}");
                         return Ok(ComputeServiceInfo {
                             id,
                             endpoint,
@@ -138,7 +186,7 @@ impl GpuComputeProvider {
             }
         }
 
-        // Final fallback: GPU_COMPUTE_ENDPOINT when ecosystem discovery fails (env-driven)
+        // Final fallback: GPU_COMPUTE_ENDPOINT
         if std::env::var("GPU_COMPUTE_ENDPOINT").is_ok() {
             let endpoint = crate::constants::default_gpu_compute_endpoint();
             if !endpoint.is_empty() {

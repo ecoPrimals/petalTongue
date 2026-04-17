@@ -6,6 +6,29 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### UUI Boundary Analysis — Owns vs Leverages (April 17, 2026)
+
+#### Changed
+- **Dead direct deps removed** from `petal-tongue-ui` — `png` (zero source usage),
+  `winit` (never imported; transitive via eframe).
+- **Capability discovery unified** — `GpuComputeProvider` and `physics_bridge`
+  now use `CapabilityDiscovery<BiomeOsBackend>` as primary discovery path,
+  falling back to existing env vars and filesystem scans.
+- **V2 display backend fixed** — `DiscoveredDisplayBackendV2` replaced broken
+  `TarpcClient` with direct JSON-RPC over Unix sockets for `display.*` ops.
+- **Audio Tier 1 `NetworkBackend`** wired — discovers `audio` capability
+  providers via `CapabilityDiscovery` and delegates playback via `audio.play`
+  over JSON-RPC/UDS. Graceful fallback to software/silent when no ecosystem
+  provider exists.
+- **`discovered-display` feature gate** properly wired — `#[cfg(feature =
+  "discovered-display")]` applied to `DiscoveredDisplayBackend`,
+  `DiscoveredDisplayBackendV2`, and their `DisplayBackendImpl` variants.
+
+#### Verified
+- `cargo test --workspace --all-features` — 6,120+ tests passing, 0 failures
+- `cargo clippy --workspace --all-targets` clean
+- Compiles cleanly with and without `discovered-display` feature
+
 ### reqwest Elimination — Songbird TLS Delegation (April 17, 2026)
 
 #### Changed

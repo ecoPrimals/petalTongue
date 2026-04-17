@@ -10,16 +10,17 @@
 
 use crate::display::prompt::prompt_for_display_server;
 use crate::display::traits::{BackendPriority, DisplayBackend, DisplayCapabilities};
-use crate::display::{
-    DiscoveredDisplayBackend, DiscoveredDisplayBackendV2, ExternalDisplay, FramebufferDisplay,
-    SoftwareDisplay,
-};
+#[cfg(feature = "discovered-display")]
+use crate::display::{DiscoveredDisplayBackend, DiscoveredDisplayBackendV2};
+use crate::display::{ExternalDisplay, FramebufferDisplay, SoftwareDisplay};
 use crate::error::{DisplayError, Result};
 use tracing::{info, warn};
 
 /// Enum dispatch for display backends (replaces `Box<dyn DisplayBackend>`).
 pub enum DisplayBackendImpl {
+    #[cfg(feature = "discovered-display")]
     DiscoveredV2(DiscoveredDisplayBackendV2),
+    #[cfg(feature = "discovered-display")]
     DiscoveredJsonRpc(DiscoveredDisplayBackend),
     Software(SoftwareDisplay),
     Framebuffer(FramebufferDisplay),
@@ -29,7 +30,9 @@ pub enum DisplayBackendImpl {
 impl DisplayBackend for DisplayBackendImpl {
     async fn init(&mut self) -> Result<()> {
         match self {
+            #[cfg(feature = "discovered-display")]
             Self::DiscoveredV2(b) => b.init().await,
+            #[cfg(feature = "discovered-display")]
             Self::DiscoveredJsonRpc(b) => b.init().await,
             Self::Software(b) => b.init().await,
             Self::Framebuffer(b) => b.init().await,
@@ -39,7 +42,9 @@ impl DisplayBackend for DisplayBackendImpl {
 
     fn dimensions(&self) -> (u32, u32) {
         match self {
+            #[cfg(feature = "discovered-display")]
             Self::DiscoveredV2(b) => b.dimensions(),
+            #[cfg(feature = "discovered-display")]
             Self::DiscoveredJsonRpc(b) => b.dimensions(),
             Self::Software(b) => b.dimensions(),
             Self::Framebuffer(b) => b.dimensions(),
@@ -49,7 +54,9 @@ impl DisplayBackend for DisplayBackendImpl {
 
     async fn present(&mut self, buffer: &[u8]) -> Result<()> {
         match self {
+            #[cfg(feature = "discovered-display")]
             Self::DiscoveredV2(b) => b.present(buffer).await,
+            #[cfg(feature = "discovered-display")]
             Self::DiscoveredJsonRpc(b) => b.present(buffer).await,
             Self::Software(b) => b.present(buffer).await,
             Self::Framebuffer(b) => b.present(buffer).await,
@@ -58,16 +65,22 @@ impl DisplayBackend for DisplayBackendImpl {
     }
 
     fn is_available() -> bool {
-        DiscoveredDisplayBackendV2::is_available()
+        #[cfg(feature = "discovered-display")]
+        if DiscoveredDisplayBackendV2::is_available()
             || DiscoveredDisplayBackend::is_available()
-            || SoftwareDisplay::is_available()
+        {
+            return true;
+        }
+        SoftwareDisplay::is_available()
             || FramebufferDisplay::is_available()
             || ExternalDisplay::is_available()
     }
 
     fn name(&self) -> &str {
         match self {
+            #[cfg(feature = "discovered-display")]
             Self::DiscoveredV2(b) => b.name(),
+            #[cfg(feature = "discovered-display")]
             Self::DiscoveredJsonRpc(b) => b.name(),
             Self::Software(b) => b.name(),
             Self::Framebuffer(b) => b.name(),
@@ -77,7 +90,9 @@ impl DisplayBackend for DisplayBackendImpl {
 
     fn capabilities(&self) -> DisplayCapabilities {
         match self {
+            #[cfg(feature = "discovered-display")]
             Self::DiscoveredV2(b) => b.capabilities(),
+            #[cfg(feature = "discovered-display")]
             Self::DiscoveredJsonRpc(b) => b.capabilities(),
             Self::Software(b) => b.capabilities(),
             Self::Framebuffer(b) => b.capabilities(),
@@ -87,7 +102,9 @@ impl DisplayBackend for DisplayBackendImpl {
 
     async fn shutdown(&mut self) -> Result<()> {
         match self {
+            #[cfg(feature = "discovered-display")]
             Self::DiscoveredV2(b) => b.shutdown().await,
+            #[cfg(feature = "discovered-display")]
             Self::DiscoveredJsonRpc(b) => b.shutdown().await,
             Self::Software(b) => b.shutdown().await,
             Self::Framebuffer(b) => b.shutdown().await,
@@ -119,41 +136,38 @@ impl DisplayManager {
 
         let mut backends = Vec::new();
 
-        // Tier 1: Try discovered display V2 (tarpc) via capability discovery (highest priority)
-        // Discovery happens at runtime - no hardcoded primal names!
-        info!("🌸 Discovering 'display' capability provider (tarpc)...");
-        match DiscoveredDisplayBackendV2::new() {
-            Ok(discovered_v2) => {
-                info!("✅ Display capability provider discovered via tarpc (high-performance)");
-                backends.push(BackendEntry {
-                    backend: DisplayBackendImpl::DiscoveredV2(discovered_v2),
-                    priority: BackendPriority::DiscoveredDisplay,
-                    initialized: false,
-                });
-            }
-            Err(e) => {
-                info!("⚠️  tarpc display capability discovery failed: {}", e);
-                info!("    Trying JSON-RPC fallback...");
-
-                // Fallback to JSON-RPC version
-                if DiscoveredDisplayBackend::is_available() {
-                    match DiscoveredDisplayBackend::new() {
-                        Ok(discovered_json_rpc) => {
-                            info!("✅ Display capability provider discovered (JSON-RPC fallback)");
-                            backends.push(BackendEntry {
-                                backend: DisplayBackendImpl::DiscoveredJsonRpc(discovered_json_rpc),
-                                priority: BackendPriority::DiscoveredDisplay,
-                                initialized: false,
-                            });
-                        }
-                        Err(e) => {
-                            info!("⚠️  JSON-RPC display capability also failed: {}", e);
-                            info!("    (This is OK - will try other backends)");
+        // Tier 1: Capability-discovered display backends (biomeOS Neural API)
+        #[cfg(feature = "discovered-display")]
+        {
+            info!("Discovering 'display' capability provider...");
+            match DiscoveredDisplayBackendV2::new() {
+                Ok(discovered_v2) => {
+                    info!("Display capability provider discovered (V2, capability discovery)");
+                    backends.push(BackendEntry {
+                        backend: DisplayBackendImpl::DiscoveredV2(discovered_v2),
+                        priority: BackendPriority::DiscoveredDisplay,
+                        initialized: false,
+                    });
+                }
+                Err(e) => {
+                    info!("V2 display discovery failed: {e}, trying JSON-RPC fallback...");
+                    if DiscoveredDisplayBackend::is_available() {
+                        match DiscoveredDisplayBackend::new() {
+                            Ok(discovered_json_rpc) => {
+                                info!("Display capability provider discovered (JSON-RPC fallback)");
+                                backends.push(BackendEntry {
+                                    backend: DisplayBackendImpl::DiscoveredJsonRpc(
+                                        discovered_json_rpc,
+                                    ),
+                                    priority: BackendPriority::DiscoveredDisplay,
+                                    initialized: false,
+                                });
+                            }
+                            Err(e) => {
+                                info!("JSON-RPC display also unavailable: {e}");
+                            }
                         }
                     }
-                } else {
-                    info!("⚠️  No display capability provider available");
-                    info!("    (This is OK - will try other backends)");
                 }
             }
         }
