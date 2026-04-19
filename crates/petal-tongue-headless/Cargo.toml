@@ -21,7 +21,7 @@ categories.workspace = true
 # Set PETALTONGUE_HEADLESS=1 to force headless detection in detect_best_ui_mode().
 petal-tongue-core = { path = "../petal-tongue-core" }
 petal-tongue-ui-core = { path = "../petal-tongue-ui-core" }
-petal-tongue-graph = { path = "../petal-tongue-graph" }
+petal-tongue-graph = { path = "../petal-tongue-graph", default-features = false }
 petal-tongue-discovery = { path = "../petal-tongue-discovery" }
 
 # Async runtime

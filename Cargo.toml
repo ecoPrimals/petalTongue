@@ -118,7 +118,7 @@ proptest = "1.4"
 
 # RPC frameworks for inter-primal communication
 # Per IPC Protocol v3.1: JSON-RPC 2.0 REQUIRED, tarpc MAY for Rust-to-Rust hot paths
-tarpc = { version = "0.34", features = ["full"] }
+tarpc = { version = "0.34", features = ["serde1", "tokio1", "serde-transport", "serde-transport-bincode", "tcp", "unix"] }
 
 # CLI argument parsing
 clap = { version = "4.5", features = ["derive", "cargo"] }
