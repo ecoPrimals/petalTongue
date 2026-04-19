@@ -6,6 +6,33 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Deep Debt Cleanup — Clippy Zero, Typed Errors, Modern Rust (April 15, 2026)
+
+#### Changed
+- **Clippy warnings eliminated** — resolved all 35 remaining warnings across the
+  workspace: unused imports, `const fn` upgrades, `async fn` simplification
+  (replaced verbose `impl Future<Output = …> + Send` with native `async fn`),
+  redundant closures, large enum variant boxing (`MdnsVisualizationProvider`,
+  `HttpsClient`), privacy alignment, missing docs on test variants.
+- **Typed error returns** — `unix_socket_server.rs` connection handlers evolved
+  from `Box<dyn std::error::Error + Send + Sync>` to typed `ConnectionError`.
+- **Module visibility corrected** — `doom-core` endian/map_parse functions use
+  `pub(super)` instead of `pub(crate)` inside private modules; persistence and
+  compute test types visibility aligned with their `#[cfg(test)]` gates.
+- **Enum variant boxing** — `KnownVisualizationProvider::Mdns` and
+  `PrimalConnection::Https` now boxed to eliminate 300+ byte variant size
+  differences.
+
+#### Verified
+- All mocks confirmed `#[cfg(test)]` or `#[cfg(feature = "mock")]` gated — zero
+  production exposure
+- All `dyn` usage audited — remaining are standard `Box<dyn Error>` and
+  `Box<dyn Fn>` callbacks, both idiomatic Rust
+- No hardcoded addresses in production code (all in tests or documentation)
+- No `TODO`/`FIXME`/`HACK` markers in production code
+- `cargo clippy --workspace --all-targets` — 0 warnings
+- `cargo test --workspace --all-features` — 6,144 tests passing, 0 failures
+
 ### UUI Boundary Analysis — Owns vs Leverages (April 17, 2026)
 
 #### Changed

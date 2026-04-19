@@ -52,6 +52,7 @@ pub enum ComputeProviderImpl {
     Gpu(crate::gpu_compute::GpuComputeProvider),
     /// CPU fallback when GPU is unavailable
     CpuFallback(crate::gpu_compute::CPUFallbackCompute),
+    /// Test-only: mock provider for unit tests.
     #[cfg(test)]
     Mock(MockComputeProvider),
 }
@@ -175,7 +176,8 @@ impl Default for ComputeRegistry {
 }
 
 #[cfg(test)]
-pub(crate) struct MockComputeProvider {
+/// Test-only compute provider stub for unit tests.
+pub struct MockComputeProvider {
     name: String,
     caps: Vec<ComputeCapability>,
     available: bool,

@@ -3,9 +3,6 @@
 use petal_tongue_core::{NeuralApiMetrics, SystemMetrics, SystemResourceMetrics};
 
 use super::MetricsDashboard;
-use crate::metrics_dashboard_helpers::{
-    format_bytes, format_uptime_display, prepare_metrics_display, sparkline_points_in_rect,
-};
 
 #[test]
 fn test_new_dashboard() {

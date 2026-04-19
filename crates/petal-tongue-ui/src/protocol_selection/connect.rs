@@ -90,7 +90,7 @@ async fn connect_https(endpoint: &str) -> TarpcResult<PrimalConnection> {
         match https_client.health().await {
             Ok(_) => {
                 info!("{scheme} connection established");
-                return Ok(PrimalConnection::Https(https_client));
+                return Ok(PrimalConnection::Https(Box::new(https_client)));
             }
             Err(e) => {
                 warn!("{scheme} connection failed: {}", e);

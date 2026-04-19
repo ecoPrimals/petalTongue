@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use petal_tongue_core::PrimalId;
-use petal_tongue_core::graph_engine::Position;
 
 use super::graph_ops::{create_edge, create_node_at, delete_node};
 use super::helpers::{interactive_node_id, interactive_node_name, is_edge_duplicate};

@@ -104,7 +104,7 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # ~6,120 tests, ~90% coverage
+cargo test --workspace --all-features     # ~6,140 tests, ~90% coverage
 ```
 
 ## Current State
@@ -113,7 +113,7 @@ Stadial parity gate cleared (April 17, 2026). All CI gates pass (fmt,
 clippy pedantic+nursery, doc, cargo deny, tests). Zero unsafe, zero
 TODO/FIXME, zero production unwrap(), zero `#[allow(]` in production.
 SPDX headers on all source files. Edition 2024, deny.toml enforced.
-~6,120 tests passing (all-features).
+~6,140 tests passing (all-features).
 
 `reqwest` runtime dependency fully eliminated (April 17). Replaced with
 thin `LocalHttpClient` (hyper + hyper-util, already transitive from axum).

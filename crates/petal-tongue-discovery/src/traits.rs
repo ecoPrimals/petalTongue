@@ -91,17 +91,16 @@ mod tests {
     }
 
     impl VisualizationDataProvider for MockProvider {
-        fn get_primals(&self) -> impl Future<Output = DiscoveryResult<Vec<PrimalInfo>>> + Send {
-            async { Ok(vec![]) }
+        async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
+            Ok(vec![])
         }
 
-        fn get_topology(&self) -> impl Future<Output = DiscoveryResult<Vec<TopologyEdge>>> + Send {
-            async { Ok(vec![]) }
+        async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
+            Ok(vec![])
         }
 
-        fn health_check(&self) -> impl Future<Output = DiscoveryResult<String>> + Send {
-            let meta = self.metadata.clone();
-            async move { Ok(meta.name) }
+        async fn health_check(&self) -> DiscoveryResult<String> {
+            Ok(self.metadata.name.clone())
         }
 
         fn get_metadata(&self) -> ProviderMetadata {

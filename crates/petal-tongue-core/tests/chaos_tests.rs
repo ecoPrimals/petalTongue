@@ -36,7 +36,7 @@ fn temp_data_home() -> PathBuf {
     p
 }
 
-fn minimal_config_toml() -> &'static str {
+const fn minimal_config_toml() -> &'static str {
     r#"
 [network]
 web_bind = "0.0.0.0"
@@ -78,7 +78,7 @@ fn chaos_registry_lock_poison_recovery() {
         panic!("intentional poison");
     });
     assert!(handle.join().is_err());
-    let recovered = reg.lock().unwrap_or_else(|e| e.into_inner());
+    let recovered = reg.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     assert_eq!(recovered.count(), 0);
 }
 

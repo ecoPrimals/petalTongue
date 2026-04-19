@@ -5,14 +5,14 @@ use crate::error::DoomError;
 use crate::wad_loader::endian::{i16_le, u16_le};
 use crate::wad_loader::types::{LineDef, Lump, MapData, Sector, Thing, Vertex};
 
-pub(crate) fn is_map_marker(name: &str) -> bool {
+pub(super) fn is_map_marker(name: &str) -> bool {
     if name.len() == 4 && name.starts_with('E') && name.chars().nth(2) == Some('M') {
         return true;
     }
     name.len() == 5 && name.starts_with("MAP")
 }
 
-pub(crate) fn parse_map(
+pub(super) fn parse_map(
     lumps: &[Lump],
     map_index: usize,
     map_name: &str,

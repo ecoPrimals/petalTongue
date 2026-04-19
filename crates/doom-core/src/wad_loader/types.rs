@@ -56,7 +56,7 @@ impl WadData {
         self.maps.first()
     }
 
-    pub(crate) fn new(lumps: Vec<Lump>, maps: Vec<MapData>) -> Self {
+    pub(super) const fn new(lumps: Vec<Lump>, maps: Vec<MapData>) -> Self {
         Self { lumps, maps }
     }
 }

@@ -14,14 +14,19 @@ pub enum PropertyAdapterImpl {
     Trust(EcoPrimalTrustAdapter),
     /// ecoPrimals capability icons.
     Capability(EcoPrimalCapabilityAdapter),
+    /// Test-only: named adapter stub.
     #[cfg(test)]
     TestNamed(test_support::TestNamedAdapter),
+    /// Test-only: high-priority adapter stub.
     #[cfg(test)]
     TestHighPriority(test_support::HighPriorityStub),
+    /// Test-only: low-priority adapter stub.
     #[cfg(test)]
     TestLowPriority(test_support::LowPriorityStub),
+    /// Test-only: badge decoration stub.
     #[cfg(test)]
     TestBadge(test_support::BadgeDecorationAdapter),
+    /// Test-only: color decoration stub.
     #[cfg(test)]
     TestColor(test_support::ColorDecorationAdapter),
 }
