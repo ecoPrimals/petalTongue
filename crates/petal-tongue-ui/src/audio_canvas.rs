@@ -14,7 +14,10 @@ use crate::error::{AudioError, Result};
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+#[cfg(target_os = "linux")]
 use tracing::{debug, info, warn};
+#[cfg(not(target_os = "linux"))]
+use tracing::{debug, info};
 
 /// Audio Canvas - Direct hardware access (like WGPU for graphics!)
 pub struct AudioCanvas {
@@ -25,43 +28,7 @@ pub struct AudioCanvas {
 }
 
 impl AudioCanvas {
-    /// Discover audio playback devices
-    ///
-    /// Scans `/dev/snd/` for PCM playback devices (pure Rust!)
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if `/dev/snd` cannot be read.
-    pub fn discover() -> Result<Vec<PathBuf>> {
-        let mut devices = Vec::new();
-
-        let snd_dir = Path::new("/dev/snd");
-        if !snd_dir.exists() {
-            warn!("/dev/snd not found - no audio devices available");
-            return Ok(devices);
-        }
-
-        for entry in std::fs::read_dir(snd_dir).map_err(|e| {
-            crate::error::UiError::Generic(format!("Failed to read /dev/snd directory: {e}"))
-        })? {
-            let path = entry.map_err(crate::error::UiError::Io)?.path();
-            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-
-            // Find PCM playback devices (format: pcmC0D0p)
-            // 'p' suffix = playback, 'c' suffix = capture
-            if name.starts_with("pcm") && name.ends_with('p') {
-                debug!("Found audio device: {}", path.display());
-                devices.push(path);
-            }
-        }
-
-        info!("🎨 Discovered {} audio canvas device(s)", devices.len());
-        Ok(devices)
-    }
-
     /// Open audio device for direct access
-    ///
-    /// Opens `/dev/snd/pcmC0D0p` directly - no ALSA library!
     ///
     /// # Errors
     ///
@@ -101,14 +68,12 @@ impl AudioCanvas {
             return Err(AudioError::NoAudioDevices.into());
         }
 
-        // Use first device
         Self::open(&devices[0])
     }
 
-    /// Write audio samples directly to hardware!
+    /// Write audio samples directly to hardware
     ///
-    /// Samples are f32 in range [-1.0, 1.0]
-    /// Converted to i16 PCM and written directly to device
+    /// Samples are f32 in range \[-1.0, 1.0\], converted to i16 LE PCM.
     ///
     /// # Errors
     ///
@@ -116,26 +81,12 @@ impl AudioCanvas {
     pub fn write_samples(&mut self, samples: &[f32]) -> Result<()> {
         debug!("🎨 Writing {} samples to audio canvas", samples.len());
 
-        // Convert f32 [-1.0, 1.0] to i16 PCM [-32768, 32767]
-        let i16_samples: Vec<i16> = samples
-            .iter()
-            .map(|&s| {
-                // Clamp to valid range
-                let clamped = s.clamp(-1.0, 1.0);
-                // Scale to i16 range
-                (clamped * 32767.0) as i16
-            })
-            .collect();
-
-        // Convert to bytes (safe transmute via bytemuck or manual)
-        // EVOLVED: Safe Rust - convert i16 samples to bytes
-        // Each i16 is 2 bytes in little-endian format (ALSA default)
-        let mut bytes = Vec::with_capacity(i16_samples.len() * 2);
-        for sample in &i16_samples {
-            bytes.extend_from_slice(&sample.to_le_bytes());
+        let mut bytes = Vec::with_capacity(samples.len() * 2);
+        for &s in samples {
+            let clamped = s.clamp(-1.0, 1.0);
+            bytes.extend_from_slice(&((clamped * 32767.0) as i16).to_le_bytes());
         }
 
-        // Write directly to device!
         self.device
             .write_all(&bytes)
             .map_err(crate::error::UiError::from)?;
@@ -166,7 +117,6 @@ impl AudioCanvas {
     }
 }
 
-/// Platform-specific audio canvas (Linux)
 #[cfg(target_os = "linux")]
 impl AudioCanvas {
     /// Check if audio canvas is available on this platform
@@ -174,20 +124,54 @@ impl AudioCanvas {
     pub fn is_available() -> bool {
         Path::new("/dev/snd").exists()
     }
+
+    /// Discover audio playback devices
+    ///
+    /// Scans `/dev/snd/` for PCM playback devices (pure Rust).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `/dev/snd` cannot be read.
+    pub fn discover() -> Result<Vec<PathBuf>> {
+        let mut devices = Vec::new();
+
+        let snd_dir = Path::new("/dev/snd");
+        if !snd_dir.exists() {
+            warn!("/dev/snd not found - no audio devices available");
+            return Ok(devices);
+        }
+
+        for entry in std::fs::read_dir(snd_dir).map_err(|e| {
+            crate::error::UiError::Generic(format!("Failed to read /dev/snd directory: {e}"))
+        })? {
+            let path = entry.map_err(crate::error::UiError::Io)?.path();
+            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+            if name.starts_with("pcm") && name.ends_with('p') {
+                debug!("Found audio device: {}", path.display());
+                devices.push(path);
+            }
+        }
+
+        info!("🎨 Discovered {} audio canvas device(s)", devices.len());
+        Ok(devices)
+    }
 }
 
-/// Platform-specific audio canvas (macOS)
 #[cfg(target_os = "macos")]
 impl AudioCanvas {
     /// Check if audio canvas is available on this platform
+    #[must_use]
     pub fn is_available() -> bool {
-        // macOS uses /dev/audio or CoreAudio
         Path::new("/dev/audio").exists()
     }
 
     /// Discover audio devices on macOS
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if device enumeration fails.
     pub fn discover() -> Result<Vec<PathBuf>> {
-        // macOS typically uses /dev/audio
         if Path::new("/dev/audio").exists() {
             Ok(vec![PathBuf::from("/dev/audio")])
         } else {
@@ -196,13 +180,39 @@ impl AudioCanvas {
     }
 }
 
-/// Platform-specific audio canvas (Windows)
 #[cfg(target_os = "windows")]
 impl AudioCanvas {
     /// Check if audio canvas is available on this platform
+    #[must_use]
     pub fn is_available() -> bool {
-        // Windows uses WDM/WASAPI - different approach needed
-        false // Windows WDM/WASAPI requires platform-specific integration
+        false
+    }
+
+    /// Discover audio devices on Windows (not yet implemented)
+    ///
+    /// # Errors
+    ///
+    /// Always returns an empty list (WDM/WASAPI requires platform-specific integration).
+    pub fn discover() -> Result<Vec<PathBuf>> {
+        Ok(Vec::new())
+    }
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+impl AudioCanvas {
+    /// Check if audio canvas is available on this platform
+    #[must_use]
+    pub fn is_available() -> bool {
+        false
+    }
+
+    /// Discover audio devices (unsupported platform)
+    ///
+    /// # Errors
+    ///
+    /// Always returns an empty list.
+    pub fn discover() -> Result<Vec<PathBuf>> {
+        Ok(Vec::new())
     }
 }
 

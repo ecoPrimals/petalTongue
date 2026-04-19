@@ -71,20 +71,19 @@ impl ExternalDisplay {
             return Some(ExternalDisplayType::X11);
         }
 
-        // Check for Windows
         #[cfg(target_os = "windows")]
         {
             info!("Running on Windows");
             return Some(ExternalDisplayType::Windows);
         }
 
-        // Check for macOS
         #[cfg(target_os = "macos")]
         {
             info!("Running on macOS");
             return Some(ExternalDisplayType::MacOS);
         }
 
+        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
         None
     }
 }
