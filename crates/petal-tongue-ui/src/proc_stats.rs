@@ -10,9 +10,11 @@
 )]
 
 use std::collections::HashMap;
+#[cfg(target_os = "linux")]
 use std::fs::{self, File};
 
 /// Linux page size (bytes), queried from the kernel at runtime.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 fn page_size() -> u64 {
     #[cfg(target_os = "linux")]
     {
@@ -31,6 +33,7 @@ pub const SOURCE_ID: &str = "proc";
 /// CPU and memory stats (Linux /proc)
 #[derive(Debug, Default, Clone)]
 #[expect(clippy::struct_field_names, reason = "matches /proc/stat field names")]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub struct ProcStats {
     /// Previous CPU sample for delta calculation
     prev_cpu: Option<CpuStatLine>,
@@ -42,6 +45,7 @@ pub struct ProcStats {
 
 /// Parsed line from /proc/stat (cpu or cpuN)
 #[derive(Debug, Clone)]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 struct CpuStatLine {
     user: u64,
     nice: u64,
@@ -53,6 +57,7 @@ struct CpuStatLine {
     steal: u64,
 }
 
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 impl CpuStatLine {
     const fn total(&self) -> u64 {
         self.user
