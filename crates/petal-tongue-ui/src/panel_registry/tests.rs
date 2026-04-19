@@ -2,6 +2,7 @@
 //! Test doubles and panel registry unit tests.
 
 #[cfg(test)]
+#[allow(clippy::module_inception, clippy::redundant_pub_crate)]
 pub(crate) mod panel_test_support {
     use crate::scenario::CustomPanelConfig;
 
@@ -50,7 +51,7 @@ pub(crate) mod panel_test_support {
 }
 
 #[cfg(test)]
-mod tests {
+mod panel_registry_tests {
     use super::panel_test_support::{FailingPanelFactory, MockPanelFactory};
     use crate::scenario::CustomPanelConfig;
     use std::sync::Arc;

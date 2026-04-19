@@ -38,7 +38,7 @@ impl StateSync {
     /// Create with custom persistence (for testing)
     #[cfg(test)]
     #[must_use]
-    pub fn with_persistence(persistence: StatePersistenceImpl) -> Self {
+    pub const fn with_persistence(persistence: StatePersistenceImpl) -> Self {
         Self {
             persistence,
             current_state: None,

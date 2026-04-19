@@ -188,7 +188,7 @@ pub async fn discover_visualization_providers() -> DiscoveryResult<Vec<KnownVisu
                     providers.extend(
                         mdns_providers
                             .into_iter()
-                            .map(KnownVisualizationProvider::Mdns),
+                            .map(|p| KnownVisualizationProvider::Mdns(Box::new(p))),
                     );
                 }
             }

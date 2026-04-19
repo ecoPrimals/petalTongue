@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::geometry::{
-    ArrowPoints, arrow_geometry, edge_color_rgb, edge_stroke_width, grid_color_alpha,
-    grid_line_positions, grid_params, node_colors, node_text_layout,
+    arrow_geometry, edge_color_rgb, edge_stroke_width, grid_color_alpha, grid_line_positions,
+    grid_params, node_colors, node_text_layout,
 };
 use crate::graph_canvas::{DragState, EdgeDrawState, GraphCanvas};
 use petal_tongue_core::graph_builder::{EdgeType, GraphEdge, NodeType};

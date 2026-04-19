@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use super::super::*;
-
 #[test]
 fn mode_presets_produce_commands() {
     let cmds = crate::mode_presets::commands_for_mode("clinical");

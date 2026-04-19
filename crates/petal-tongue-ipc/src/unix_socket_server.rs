@@ -276,7 +276,7 @@ impl UnixSocketServer {
         handlers: &RpcHandlers,
         stream: tokio::net::UnixStream,
         btsp_config: Option<Arc<crate::btsp::BtspHandshakeConfig>>,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<(), unix_socket_connection::ConnectionError> {
         if let Some(ref cfg) = btsp_config {
             use tokio::io::AsyncBufReadExt;
 
@@ -325,7 +325,7 @@ impl UnixSocketServer {
         handlers: &RpcHandlers,
         mut stream: tokio::net::TcpStream,
         btsp_config: Option<Arc<crate::btsp::BtspHandshakeConfig>>,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<(), unix_socket_connection::ConnectionError> {
         if let Some(ref cfg) = btsp_config {
             let mut peek_buf = [0u8; 1];
             let n = stream.peek(&mut peek_buf).await?;

@@ -5,14 +5,17 @@
 use petal_tongue_core::test_fixtures::env_test_helpers;
 #[cfg(feature = "test-fixtures")]
 use petal_tongue_discovery::HangHealthCheckProvider;
+#[cfg(feature = "test-fixtures")]
 use petal_tongue_discovery::HealthStatus;
 use petal_tongue_discovery::KnownVisualizationProvider;
 use petal_tongue_discovery::UnixSocketProvider;
 use petal_tongue_discovery::cache::ProviderCache;
 use petal_tongue_discovery::capability_parse::parse_capabilities_from_response;
-use petal_tongue_discovery::concurrent::{
-    check_all_providers_health, discover_concurrent, discover_first_available,
-};
+#[cfg(feature = "test-fixtures")]
+use petal_tongue_discovery::concurrent::check_all_providers_health;
+use petal_tongue_discovery::concurrent::discover_concurrent;
+#[cfg(feature = "test-fixtures")]
+use petal_tongue_discovery::concurrent::discover_first_available;
 use petal_tongue_discovery::discover_visualization_providers;
 use petal_tongue_discovery::errors::{DiscoveryError, DiscoveryResult};
 use petal_tongue_discovery::parse_mdns_response;

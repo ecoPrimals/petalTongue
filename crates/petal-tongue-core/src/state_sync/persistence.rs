@@ -150,7 +150,7 @@ impl StatePersistence for StatePersistenceImpl {
 }
 
 #[cfg(test)]
-pub(crate) mod in_memory {
+pub mod in_memory {
     use std::collections::HashMap;
     use std::sync::{Arc, Mutex};
 
@@ -160,12 +160,12 @@ pub(crate) mod in_memory {
     use super::StatePersistence;
 
     /// In-memory `StatePersistence` for deterministic tests.
-    pub(crate) struct InMemoryPersistence {
+    pub struct InMemoryPersistence {
         storage: Arc<Mutex<HashMap<String, Arc<DeviceState>>>>,
     }
 
     impl InMemoryPersistence {
-        pub(crate) fn new() -> Self {
+        pub fn new() -> Self {
             Self {
                 storage: Arc::new(Mutex::new(HashMap::new())),
             }

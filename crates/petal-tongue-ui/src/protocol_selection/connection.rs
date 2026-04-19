@@ -16,7 +16,7 @@ pub enum PrimalConnection {
     /// JSON-RPC connection (SECONDARY)
     JsonRpc(JsonRpcClient),
     /// HTTPS connection (FALLBACK)
-    Https(HttpsClient),
+    Https(Box<HttpsClient>),
 }
 
 impl PrimalConnection {

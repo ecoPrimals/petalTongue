@@ -20,7 +20,7 @@ pub enum KnownVisualizationProvider {
     /// JSON-RPC over Unix socket.
     JsonRpc(JsonRpcProvider),
     /// mDNS-discovered provider.
-    Mdns(MdnsVisualizationProvider),
+    Mdns(Box<MdnsVisualizationProvider>),
     /// Dynamic scenario (schema-driven).
     Dynamic(DynamicScenarioProvider),
     /// Static scenario file provider.
@@ -48,12 +48,12 @@ pub struct HangHealthCheckProvider;
 
 #[cfg(any(test, feature = "test-fixtures"))]
 impl VisualizationDataProvider for HangHealthCheckProvider {
-    fn get_primals(&self) -> impl Future<Output = DiscoveryResult<Vec<PrimalInfo>>> + Send {
-        async { Ok(vec![]) }
+    async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
+        Ok(vec![])
     }
 
-    fn health_check(&self) -> impl Future<Output = DiscoveryResult<String>> + Send {
-        async { std::future::pending().await }
+    async fn health_check(&self) -> DiscoveryResult<String> {
+        std::future::pending().await
     }
 
     fn get_metadata(&self) -> ProviderMetadata {
@@ -68,16 +68,14 @@ impl VisualizationDataProvider for HangHealthCheckProvider {
 
 #[cfg(any(test, feature = "test-fixtures"))]
 impl VisualizationDataProvider for FailingHealthCheckProvider {
-    fn get_primals(&self) -> impl Future<Output = DiscoveryResult<Vec<PrimalInfo>>> + Send {
-        async { Ok(vec![]) }
+    async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
+        Ok(vec![])
     }
 
-    fn health_check(&self) -> impl Future<Output = DiscoveryResult<String>> + Send {
-        async {
-            Err(crate::errors::DiscoveryError::ConfigError(
-                "Intentional failure".to_string(),
-            ))
-        }
+    async fn health_check(&self) -> DiscoveryResult<String> {
+        Err(crate::errors::DiscoveryError::ConfigError(
+            "Intentional failure".to_string(),
+        ))
     }
 
     fn get_metadata(&self) -> ProviderMetadata {

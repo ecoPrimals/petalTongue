@@ -71,7 +71,7 @@ impl TrafficView {
 
     #[cfg(test)]
     #[must_use]
-    pub fn show_metrics(&self) -> bool {
+    pub const fn show_metrics(&self) -> bool {
         self.show_metrics
     }
 
