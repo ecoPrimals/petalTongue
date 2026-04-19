@@ -17,7 +17,6 @@ categories.workspace = true
 [dependencies]
 # Core dependencies
 petal-tongue-core = { path = "../petal-tongue-core" }
-petal-tongue-graph = { path = "../petal-tongue-graph" }
 
 # Async runtime
 tokio = { workspace = true }
