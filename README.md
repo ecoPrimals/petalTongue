@@ -17,7 +17,7 @@ cargo build --release
 petaltongue ui          # Desktop display (egui)
 petaltongue tui         # Terminal display (ratatui)
 petaltongue web         # Web interface (axum)
-petaltongue headless    # Headless rendering (SVG/PNG/JSON)
+petaltongue headless    # Headless API server (no display)
 petaltongue server      # IPC server (UDS, no display)
 petaltongue server --socket /path/to.sock  # explicit UDS path
 petaltongue server --port 9100  # IPC server (UDS + TCP)
@@ -49,7 +49,7 @@ petaltongue
 ├── ui        Desktop display (egui, pluggable backend)
 ├── tui       Terminal display (ratatui)
 ├── web       Web interface (axum)
-├── headless  Batch rendering (SVG/PNG/JSON)
+├── headless  Headless API server (no display; SVG/PNG/JSON export via petal-tongue-headless crate)
 ├── server    IPC server (no display)
 └── status    System info
 ```
@@ -110,7 +110,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,140+ passing, 0 failures |
+| Tests | 6,144+ passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
@@ -145,7 +145,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 6,140+ tests
+cargo test --workspace --all-features        # 6,144+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
@@ -208,7 +208,7 @@ See `ecoPrimals/wateringHole/PETALTONGUE_LEVERAGE_GUIDE.md` for:
 - Discover capabilities at runtime, never hardcode primal names
 - Pure Rust, edition 2024, `async`/`await`, `Arc`/`RwLock`
 - Typed error handling (`thiserror`, no `anyhow` in production); `deny(unwrap_used, expect_used)` with `#[expect]` for justified suppressions
-- `#![forbid(unsafe_code)]` unless hardware FFI is unavoidable
+- `#![forbid(unsafe_code)]` unconditional on all crates
 - Semantic method naming (`domain.operation`)
 - JSON-RPC 2.0 REQUIRED for inter-primal IPC, tarpc MAY for Rust-to-Rust hot paths, HTTP for external access only
 - All production files under 600 lines (smart domain refactoring, not mechanical splitting)

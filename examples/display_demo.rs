@@ -26,18 +26,15 @@ async fn main() -> anyhow::Result<()> {
         println!();
         println!("🎨 Available backends:");
         println!("   1. External Display (active)");
-        println!("   2. Software Rendering");
-        println!("   3. Compute WASM");
+        println!("   2. Discovered Display (ecosystem IPC)");
+        println!("   3. Software Rendering");
         println!("   4. Framebuffer Direct");
     } else {
         println!("🪟 No display server detected\n");
         println!("🎨 Pure Rust display backends available:");
-        println!("   1. TerminalGUI (ASCII art)");
-        println!("   2. SVGGUI (vector export)");
-        println!("   3. PNGGUI (raster export)");
-        println!("   4. Toadstool WASM (if available)");
-        println!("   5. Software Rendering");
-        println!("   6. Framebuffer Direct");
+        println!("   1. Discovered Display (ecosystem IPC via capability.call)");
+        println!("   2. Software Rendering (pure Rust, works everywhere)");
+        println!("   3. Framebuffer Direct (Linux console mode)");
         println!();
 
         // Show the prompt
@@ -53,11 +50,11 @@ async fn main() -> anyhow::Result<()> {
     println!("   ✅ Display System Architecture Complete!");
     println!("════════════════════════════════════════════════════════════");
     println!();
-    println!("Four-Tier Architecture:");
-    println!("  1. Compute WASM  - Primal collaboration, GPU acceleration");
-    println!("  2. Software Rendering - Pure Rust, works everywhere");
-    println!("  3. Framebuffer Direct - Linux console mode");
-    println!("  4. External Display - Traditional GUI (benchmark)");
+    println!("Display Backend Tiers:");
+    println!("  1. Discovered (ecosystem primal via capability.call IPC)");
+    println!("  2. Software (pure Rust, works everywhere)");
+    println!("  3. Framebuffer (Linux console mode)");
+    println!("  4. External (traditional GUI via eframe)");
     println!();
     println!("All backends support the awakening experience!");
     println!("════════════════════════════════════════════════════════════\n");
