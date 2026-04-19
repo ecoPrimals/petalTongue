@@ -44,9 +44,9 @@ does not own computation, storage, or security domains.
 ## IPC Surface
 
 JSON-RPC 2.0 over Unix domain sockets (primary) and TCP (`--port`).
-43 methods across domains: `visualization.*`, `interaction.*`, `graph.*`,
-`health.*`, `capability.*`, `identity.*`, `session.*`, `ui.*`, `motor.*`,
-`audio.*`, `lifecycle.*`.
+43 methods across domains: `visualization.*` (incl. `visualization.render.graph`,
+`visualization.session.*`), `interaction.*`, `health.*`, `capabilities.*`,
+`capability.*`, `identity.*`, `ui.*`, `motor.*`, `audio.*`, `lifecycle.*`.
 
 BTSP Phase 1 complete: family-scoped socket naming, insecure guard,
 domain symlinks (`visualization.sock`).
@@ -112,10 +112,15 @@ cargo test --workspace --all-features     # ~6,144 tests, ~90% coverage
 
 Stadial parity gate cleared (April 17, 2026). All CI gates pass (fmt,
 clippy pedantic+nursery, doc, cargo deny, tests). Zero unsafe, zero
-TODO/FIXME, zero production unwrap(), zero `#[allow(]` in production
-(`#[expect]` with reasons for justified suppressions). SPDX headers on all
-source files. Edition 2024, deny.toml enforced.
+TODO/FIXME, zero production `unwrap()`. Lint policy: `#[expect]` with
+reasons for justified suppressions; targeted `#[allow]` only where
+`#[expect]` cannot apply (e.g. `cfg_attr` platform gates). SPDX headers
+on all source files. Edition 2024, deny.toml enforced.
 ~6,144 tests passing (all-features).
+
+macOS cross-arch build fix (April 19, 2026): conflicting `AudioCanvas`
+impl blocks resolved; `petal-tongue-ui` now compiles with zero warnings
+on x86_64-apple-darwin and aarch64-apple-darwin.
 
 `reqwest` runtime dependency fully eliminated (April 17). Replaced with
 thin `LocalHttpClient` (hyper + hyper-util, already transitive from axum).
@@ -142,6 +147,10 @@ fixed (tarpc→JSON-RPC for `display.*` ops), audio Tier 1 wired (`NetworkBacken
 via capability discovery, graceful fallback), `discovered-display` feature
 properly gated with `#[cfg]`.
 
+Dependency cleanup (April 19, 2026): dead `petal-tongue-graph` dep removed
+from `petal-tongue-ui-core`, headless builds no longer pull egui (graph
+`default-features = false`), tarpc trimmed from `full` to specific features.
+
 Remaining backlog: BTSP Phase 2 consumer wiring (cross-primal dep on
 BearDog), BTSP Phase 3 encryption, aarch64 musl cross-compile for headless,
-tarpc feature-gating, audio backend wire protocols (PipeWire/PulseAudio).
+audio backend wire protocols (PipeWire/PulseAudio).

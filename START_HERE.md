@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 15, 2026 (doc refresh)
+**Updated**: April 19, 2026 (doc refresh)
 
 ---
 
@@ -16,6 +16,7 @@ petaltongue headless                         # Headless API server (no display)
 # For CLI SVG/PNG/JSON export: cargo run -p petal-tongue-headless -- --mode svg -o out.svg
 petaltongue server                 # IPC server (no display)
 petaltongue server --socket /path  # IPC server (explicit UDS path)
+petaltongue server --port 9600     # IPC server (TCP listen port)
 petaltongue status                 # System info
 ```
 

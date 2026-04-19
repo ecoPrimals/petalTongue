@@ -166,7 +166,7 @@ pub fn gather_detailed_status() -> DetailedStatus {
         ],
         features: vec![
             "UniBin".to_string(),
-            "ecoBin 80%".to_string(),
+            "Pure Rust".to_string(),
             "Concurrent".to_string(),
             "No sleeps".to_string(),
             "Modern Rust".to_string(),
