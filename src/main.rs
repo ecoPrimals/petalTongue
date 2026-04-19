@@ -6,7 +6,7 @@
 //! # Architecture
 //!
 //! `UniBin`: 1 binary, 6 subcommands (ui, tui, web, headless, server, status)
-//! ecoBin: 83% (5/6 subcommands Pure Rust; ui requires platform windowing)
+//! ecoBin: 100% Pure Rust (ui uses egui/eframe for platform windowing)
 //!
 //! # Concurrency
 //!
@@ -44,7 +44,7 @@ use crate::error::AppError;
     about = "🌸 petalTongue - Universal UI & Visualization System"
 )]
 #[command(
-    long_about = "ecoBud v1.0: UniBin + 80% ecoBin\n\nFully concurrent, modern Rust architecture"
+    long_about = "ecoBud v1.0: UniBin + Pure Rust\n\nFully concurrent, modern Rust architecture"
 )]
 struct Cli {
     /// Log level (trace, debug, info, warn, error)

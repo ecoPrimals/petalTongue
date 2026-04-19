@@ -52,7 +52,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   `DiscoveredDisplayBackendV2`, and their `DisplayBackendImpl` variants.
 
 #### Verified
-- `cargo test --workspace --all-features` — 6,120+ tests passing, 0 failures
+- `cargo test --workspace --all-features` — 6,144 tests passing, 0 failures
 - `cargo clippy --workspace --all-targets` clean
 - Compiles cleanly with and without `discovered-display` feature
 

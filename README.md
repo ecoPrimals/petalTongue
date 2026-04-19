@@ -112,7 +112,7 @@ petaltongue
 |--------|--------|
 | Tests | 6,144+ passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons, zero `#[allow]` in production) |
+| Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons; targeted `#[allow]` only for platform `cfg_attr` gates) |
 | Docs | `cargo doc --workspace --no-deps` clean |
 | Coverage | ~90% line (llvm-cov) |
 | Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin root, zero C deps |
@@ -186,19 +186,13 @@ Architectural specifications live in `specs/` (19 specification documents + `LIC
 
 ## Cross-Primal Integration
 
-See `ecoPrimals/wateringHole/petaltongue/` for inter-primal standards:
+See `infra/wateringHole/petaltongue/` for inter-primal standards:
 - `VISUALIZATION_INTEGRATION_GUIDE.md` -- How other primals send data to petalTongue
 - `SENSORY_CAPABILITY_MATRIX.md` -- Input×output capability negotiation protocol
 - `SCENE_FORMAT_REFERENCE.md` -- GameScene, Soundscape, narrative JSON schemas
-- `BIOMEOS_API_SPECIFICATION.md` -- biomeOS API contract
-- `QUICK_START_FOR_BIOMEOS.md` -- 5-minute integration guide
+- `PETALTONGUE_NEEDS_FROM_ECOSYSTEM.md` -- Ecosystem dependency map
 
-See `ecoPrimals/wateringHole/TOADSTOOL_SENSOR_CONTRACT.md` for hardware sensor IPC protocol.
-
-See `ecoPrimals/wateringHole/PETALTONGUE_LEVERAGE_GUIDE.md` for:
-- Novel self-referential patterns (introspection loop, multi-modal bridge)
-- Duo/trio/quartet combinations with other primals
-- Spring integration recipes
+See `infra/wateringHole/handoffs/` for sprint handoff documents and evolution history.
 
 ---
 
@@ -227,4 +221,4 @@ See `ecoPrimals/wateringHole/PETALTONGUE_LEVERAGE_GUIDE.md` for:
 | Game mechanics (doom-core) | ORC (Open RPG Creative License) |
 | Specifications & documentation | CC-BY-SA 4.0 |
 
-SPDX headers on all source files. See `ecoPrimals/wateringHole/SCYBORG_PROVENANCE_TRIO_GUIDANCE.md`.
+SPDX headers on all source files. See `infra/wateringHole/` for provenance guidance.
