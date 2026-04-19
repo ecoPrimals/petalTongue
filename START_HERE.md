@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 15, 2026
+**Updated**: April 15, 2026 (doc refresh)
 
 ---
 
@@ -12,7 +12,8 @@ cargo build --release
 petaltongue ui                     # Desktop display (egui)
 petaltongue tui                    # Terminal display (ratatui)
 petaltongue web                    # Web interface (axum)
-petaltongue headless --mode svg -o out.svg   # Export to SVG
+petaltongue headless                         # Headless API server (no display)
+# For CLI SVG/PNG/JSON export: cargo run -p petal-tongue-headless -- --mode svg -o out.svg
 petaltongue server                 # IPC server (no display)
 petaltongue server --socket /path  # IPC server (explicit UDS path)
 petaltongue status                 # System info
@@ -55,7 +56,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 6,140+ tests
+cargo test --workspace --all-features           # 6,144+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
@@ -76,7 +77,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 2. **Constants centralized** -- All self-knowledge in `petal_tongue_core::constants`.
 3. **IPC priority** -- JSON-RPC 2.0 REQUIRED (Unix sockets / TCP listen surface), tarpc MAY for Rust-to-Rust hot paths, HTTP for external/browser access only.
 4. **Typed error handling** -- `thiserror` everywhere, no `anyhow` in production; `deny(unwrap_used, expect_used)` with `#[expect]` for justified cases.
-5. **`#![forbid(unsafe_code)]`** unless hardware FFI is unavoidable. Document with `// SAFETY:`.
+5. **`#![forbid(unsafe_code)]`** unconditional on all crates.
 6. **Concurrent testing** -- No `thread::sleep`. Use `tokio::time::timeout`.
 7. **Files under 600 lines** -- Smart domain refactoring into cohesive modules.
 8. **Zero `dyn`** -- Enum dispatch and generics for custom traits; `dyn` only for `Error`/closures.
@@ -146,7 +147,7 @@ only in `primal_names` constants for logging context.
 - **neuralSpring** -- Pipeline DAGs, diverging color scales
 - **wetSpring** -- Backpressure-aware streaming, Scatter 2D ordinations
 - **ludoSpring** -- 7 GameDataChannel types, 60 Hz sensor feed, GameScene/Soundscape rendering
-- **Display backend** -- Discovered via `display` capability (tarpc, capability-discovered)
+- **Display backend** -- Discovered via `display` capability (JSON-RPC/UDS primary, capability-discovered)
 - **Audio backend** -- Discovered via `audio.synthesize` capability
 - **GPU compute** -- Discovered via `compute.dispatch` / `physics-compute` capabilities
 - **Discovery service** -- Discovered via `discovery.query_capability`

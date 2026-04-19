@@ -44,8 +44,9 @@ does not own computation, storage, or security domains.
 ## IPC Surface
 
 JSON-RPC 2.0 over Unix domain sockets (primary) and TCP (`--port`).
-41 methods across domains: `visualization.*`, `interaction.*`, `graph.*`,
-`health.*`, `capability.*`, `identity.*`, `session.*`, `sensor.*`.
+43 methods across domains: `visualization.*`, `interaction.*`, `graph.*`,
+`health.*`, `capability.*`, `identity.*`, `session.*`, `ui.*`, `motor.*`,
+`audio.*`, `lifecycle.*`.
 
 BTSP Phase 1 complete: family-scoped socket naming, insecure guard,
 domain symlinks (`visualization.sock`).
@@ -104,16 +105,17 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # ~6,140 tests, ~90% coverage
+cargo test --workspace --all-features     # ~6,144 tests, ~90% coverage
 ```
 
 ## Current State
 
 Stadial parity gate cleared (April 17, 2026). All CI gates pass (fmt,
 clippy pedantic+nursery, doc, cargo deny, tests). Zero unsafe, zero
-TODO/FIXME, zero production unwrap(), zero `#[allow(]` in production.
-SPDX headers on all source files. Edition 2024, deny.toml enforced.
-~6,140 tests passing (all-features).
+TODO/FIXME, zero production unwrap(), zero `#[allow(]` in production
+(`#[expect]` with reasons for justified suppressions). SPDX headers on all
+source files. Edition 2024, deny.toml enforced.
+~6,144 tests passing (all-features).
 
 `reqwest` runtime dependency fully eliminated (April 17). Replaced with
 thin `LocalHttpClient` (hyper + hyper-util, already transitive from axum).
@@ -122,10 +124,11 @@ petalTongue no longer owns any TLS stack — Songbird handles external HTTPS
 via tower atomic IPC.
 
 Sprint 8: complete `dyn` trait object elimination (22 custom traits
-evolved to enum dispatch / generics), `async-trait` crate fully removed
-(native `async fn` in traits via RPITIT), `Pin<Box<dyn Future>>` type
-aliases eliminated, 11 production modules refactored below 600 LOC,
-hardcoded ecosystem paths evolved to env-configurable constants.
+evolved to enum dispatch / generics), `async-trait` removed from all
+first-party code (native `async fn` in traits via RPITIT; may remain
+as transitive dep via tarpc/axum), `Pin<Box<dyn Future>>` type aliases
+eliminated, 11 production modules refactored below 600 LOC, hardcoded
+ecosystem paths evolved to env-configurable constants.
 
 Sprint 7: deep debt resolution across 14 production modules (smart
 refactoring by domain, not mechanical splitting), hardcoding evolved to

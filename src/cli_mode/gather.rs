@@ -84,7 +84,7 @@ pub async fn gather_status(
     if verbose {
         let status_clone = Arc::clone(&status);
         let detailed_task = tokio::spawn(async move {
-            let detailed = gather_detailed_status().await;
+            let detailed = gather_detailed_status();
             let mut status_guard = status_clone.write().await;
             status_guard.detailed = Some(detailed);
         });
@@ -130,11 +130,7 @@ pub async fn get_total_memory() -> Option<u64> {
     .flatten()
 }
 
-#[allow(
-    clippy::unused_async,
-    reason = "async for future concurrent status gathering"
-)]
-pub async fn gather_detailed_status() -> DetailedStatus {
+pub fn gather_detailed_status() -> DetailedStatus {
     DetailedStatus {
         modes: vec![
             ModeDetails {

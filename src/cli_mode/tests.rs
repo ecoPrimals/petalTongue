@@ -151,9 +151,9 @@ async fn test_status_verbose_json() {
     assert!(result.is_ok());
 }
 
-#[tokio::test]
-async fn test_gather_detailed_status() {
-    let detailed = gather_detailed_status().await;
+#[test]
+fn test_gather_detailed_status() {
+    let detailed = gather_detailed_status();
     assert_eq!(detailed.modes.len(), 5);
     assert!(detailed.features.contains(&"UniBin".to_string()));
     assert!(detailed.features.contains(&"Concurrent".to_string()));
