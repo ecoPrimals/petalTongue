@@ -75,7 +75,7 @@ async fn test_concurrent_discovery() {
         .collect();
 
     // Wait for all to complete in parallel
-    let results = futures::future::join_all(tasks).await;
+    let results = futures_util::future::join_all(tasks).await;
 
     // All should complete without panic
     for result in results {
@@ -140,7 +140,7 @@ async fn test_rapid_repeated_discovery() {
     // Run many discoveries in parallel
     let tasks: Vec<_> = (0..50).map(|_| provider.discover()).collect();
 
-    let results = futures::future::join_all(tasks).await;
+    let results = futures_util::future::join_all(tasks).await;
 
     // All should complete (no deadlocks or resource exhaustion)
     assert_eq!(results.len(), 50);
@@ -161,7 +161,7 @@ async fn test_concurrent_songbird_discovery() {
         })
         .collect();
 
-    let results = futures::future::join_all(tasks).await;
+    let results = futures_util::future::join_all(tasks).await;
 
     // All should complete without panic (may error if Songbird not running)
     for result in results {

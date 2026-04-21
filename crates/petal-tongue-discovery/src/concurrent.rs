@@ -6,7 +6,7 @@
 use crate::KnownVisualizationProvider;
 use crate::errors::{DiscoveryError, DiscoveryFailure};
 use crate::traits::VisualizationDataProvider;
-use futures::future::{join_all, select_all};
+use futures_util::future::{join_all, select_all};
 use std::future::Future;
 use std::time::Duration;
 use tokio::time::timeout;

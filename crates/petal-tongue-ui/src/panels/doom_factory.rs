@@ -33,10 +33,10 @@ impl PanelFactory for DoomPanelFactory {
             panel.toggle_debug();
         }
 
-        Ok(PanelInstanceImpl::Doom(DoomPanelWrapper {
+        Ok(PanelInstanceImpl::Doom(Box::new(DoomPanelWrapper {
             panel,
             title: config.title.clone(),
-        }))
+        })))
     }
 
     fn description(&self) -> &'static str {

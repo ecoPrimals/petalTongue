@@ -183,7 +183,7 @@ impl AudioBackend for SocketBackend {
                 "Planned PipeWire/PulseAudio socket protocol not implemented for {}",
                 self.socket.detected_name
             );
-            return Err(AudioError::SocketConnectionFailed(Self::not_implemented_message()).into());
+            Err(AudioError::SocketConnectionFailed(Self::not_implemented_message()).into())
         }
         #[cfg(not(unix))]
         {

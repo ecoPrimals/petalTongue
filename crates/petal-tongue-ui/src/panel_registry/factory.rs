@@ -31,9 +31,9 @@ pub trait PanelFactory: Send + Sync {
 
 /// Enum dispatch for all built-in [`PanelInstance`] implementations.
 pub enum PanelInstanceImpl {
-    /// Doom game panel (feature `doom`).
+    /// Doom game panel (feature `doom`). Boxed to reduce enum size.
     #[cfg(feature = "doom")]
-    Doom(crate::panels::doom_factory::DoomPanelWrapper),
+    Doom(Box<crate::panels::doom_factory::DoomPanelWrapper>),
     /// Doom statistics overlay (feature `doom`).
     #[cfg(feature = "doom")]
     DoomStats(crate::panels::doom_stats_panel::DoomStatsPanel),
@@ -50,273 +50,273 @@ impl PanelInstance for PanelInstanceImpl {
     fn render(&mut self, ui: &mut egui::Ui) {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::render(p, ui),
+            Self::Doom(p) => p.render(ui),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::render(p, ui),
-            Self::Metrics(p) => PanelInstance::render(p, ui),
-            Self::Proprioception(p) => PanelInstance::render(p, ui),
+            Self::DoomStats(p) => p.render(ui),
+            Self::Metrics(p) => p.render(ui),
+            Self::Proprioception(p) => p.render(ui),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::render(p, ui),
+            Self::TestMock(p) => p.render(ui),
         }
     }
 
     fn title(&self) -> &str {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::title(p),
+            Self::Doom(p) => p.title(),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::title(p),
-            Self::Metrics(p) => PanelInstance::title(p),
-            Self::Proprioception(p) => PanelInstance::title(p),
+            Self::DoomStats(p) => p.title(),
+            Self::Metrics(p) => p.title(),
+            Self::Proprioception(p) => p.title(),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::title(p),
+            Self::TestMock(p) => p.title(),
         }
     }
 
     fn update(&mut self) {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::update(p),
+            Self::Doom(p) => p.update(),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::update(p),
-            Self::Metrics(p) => PanelInstance::update(p),
-            Self::Proprioception(p) => PanelInstance::update(p),
+            Self::DoomStats(p) => p.update(),
+            Self::Metrics(p) => p.update(),
+            Self::Proprioception(p) => p.update(),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::update(p),
+            Self::TestMock(p) => p.update(),
         }
     }
 
     fn on_event(&mut self, event: &egui::Event) {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::on_event(p, event),
+            Self::Doom(p) => p.on_event(event),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::on_event(p, event),
-            Self::Metrics(p) => PanelInstance::on_event(p, event),
-            Self::Proprioception(p) => PanelInstance::on_event(p, event),
+            Self::DoomStats(p) => p.on_event(event),
+            Self::Metrics(p) => p.on_event(event),
+            Self::Proprioception(p) => p.on_event(event),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::on_event(p, event),
+            Self::TestMock(p) => p.on_event(event),
         }
     }
 
     fn wants_keyboard_input(&self) -> bool {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::wants_keyboard_input(p),
+            Self::Doom(p) => p.wants_keyboard_input(),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::wants_keyboard_input(p),
-            Self::Metrics(p) => PanelInstance::wants_keyboard_input(p),
-            Self::Proprioception(p) => PanelInstance::wants_keyboard_input(p),
+            Self::DoomStats(p) => p.wants_keyboard_input(),
+            Self::Metrics(p) => p.wants_keyboard_input(),
+            Self::Proprioception(p) => p.wants_keyboard_input(),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::wants_keyboard_input(p),
+            Self::TestMock(p) => p.wants_keyboard_input(),
         }
     }
 
     fn wants_mouse_input(&self) -> bool {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::wants_mouse_input(p),
+            Self::Doom(p) => p.wants_mouse_input(),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::wants_mouse_input(p),
-            Self::Metrics(p) => PanelInstance::wants_mouse_input(p),
-            Self::Proprioception(p) => PanelInstance::wants_mouse_input(p),
+            Self::DoomStats(p) => p.wants_mouse_input(),
+            Self::Metrics(p) => p.wants_mouse_input(),
+            Self::Proprioception(p) => p.wants_mouse_input(),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::wants_mouse_input(p),
+            Self::TestMock(p) => p.wants_mouse_input(),
         }
     }
 
     fn wants_exclusive_input(&self) -> bool {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::wants_exclusive_input(p),
+            Self::Doom(p) => p.wants_exclusive_input(),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::wants_exclusive_input(p),
-            Self::Metrics(p) => PanelInstance::wants_exclusive_input(p),
-            Self::Proprioception(p) => PanelInstance::wants_exclusive_input(p),
+            Self::DoomStats(p) => p.wants_exclusive_input(),
+            Self::Metrics(p) => p.wants_exclusive_input(),
+            Self::Proprioception(p) => p.wants_exclusive_input(),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::wants_exclusive_input(p),
+            Self::TestMock(p) => p.wants_exclusive_input(),
         }
     }
 
     fn input_priority(&self) -> u8 {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::input_priority(p),
+            Self::Doom(p) => p.input_priority(),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::input_priority(p),
-            Self::Metrics(p) => PanelInstance::input_priority(p),
-            Self::Proprioception(p) => PanelInstance::input_priority(p),
+            Self::DoomStats(p) => p.input_priority(),
+            Self::Metrics(p) => p.input_priority(),
+            Self::Proprioception(p) => p.input_priority(),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::input_priority(p),
+            Self::TestMock(p) => p.input_priority(),
         }
     }
 
     fn on_keyboard_event(&mut self, ctx: &egui::Context) -> crate::focus_manager::InputAction {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::on_keyboard_event(p, ctx),
+            Self::Doom(p) => p.on_keyboard_event(ctx),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::on_keyboard_event(p, ctx),
-            Self::Metrics(p) => PanelInstance::on_keyboard_event(p, ctx),
-            Self::Proprioception(p) => PanelInstance::on_keyboard_event(p, ctx),
+            Self::DoomStats(p) => p.on_keyboard_event(ctx),
+            Self::Metrics(p) => p.on_keyboard_event(ctx),
+            Self::Proprioception(p) => p.on_keyboard_event(ctx),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::on_keyboard_event(p, ctx),
+            Self::TestMock(p) => p.on_keyboard_event(ctx),
         }
     }
 
     fn on_mouse_event(&mut self, ctx: &egui::Context) -> crate::focus_manager::InputAction {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::on_mouse_event(p, ctx),
+            Self::Doom(p) => p.on_mouse_event(ctx),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::on_mouse_event(p, ctx),
-            Self::Metrics(p) => PanelInstance::on_mouse_event(p, ctx),
-            Self::Proprioception(p) => PanelInstance::on_mouse_event(p, ctx),
+            Self::DoomStats(p) => p.on_mouse_event(ctx),
+            Self::Metrics(p) => p.on_mouse_event(ctx),
+            Self::Proprioception(p) => p.on_mouse_event(ctx),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::on_mouse_event(p, ctx),
+            Self::TestMock(p) => p.on_mouse_event(ctx),
         }
     }
 
     fn on_open(&mut self) -> crate::error::Result<()> {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::on_open(p),
+            Self::Doom(p) => p.on_open(),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::on_open(p),
-            Self::Metrics(p) => PanelInstance::on_open(p),
-            Self::Proprioception(p) => PanelInstance::on_open(p),
+            Self::DoomStats(p) => p.on_open(),
+            Self::Metrics(p) => p.on_open(),
+            Self::Proprioception(p) => p.on_open(),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::on_open(p),
+            Self::TestMock(p) => p.on_open(),
         }
     }
 
     fn on_close(&mut self) -> crate::error::Result<()> {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::on_close(p),
+            Self::Doom(p) => p.on_close(),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::on_close(p),
-            Self::Metrics(p) => PanelInstance::on_close(p),
-            Self::Proprioception(p) => PanelInstance::on_close(p),
+            Self::DoomStats(p) => p.on_close(),
+            Self::Metrics(p) => p.on_close(),
+            Self::Proprioception(p) => p.on_close(),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::on_close(p),
+            Self::TestMock(p) => p.on_close(),
         }
     }
 
     fn on_pause(&mut self) {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::on_pause(p),
+            Self::Doom(p) => p.on_pause(),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::on_pause(p),
-            Self::Metrics(p) => PanelInstance::on_pause(p),
-            Self::Proprioception(p) => PanelInstance::on_pause(p),
+            Self::DoomStats(p) => p.on_pause(),
+            Self::Metrics(p) => p.on_pause(),
+            Self::Proprioception(p) => p.on_pause(),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::on_pause(p),
+            Self::TestMock(p) => p.on_pause(),
         }
     }
 
     fn on_resume(&mut self) {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::on_resume(p),
+            Self::Doom(p) => p.on_resume(),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::on_resume(p),
-            Self::Metrics(p) => PanelInstance::on_resume(p),
-            Self::Proprioception(p) => PanelInstance::on_resume(p),
+            Self::DoomStats(p) => p.on_resume(),
+            Self::Metrics(p) => p.on_resume(),
+            Self::Proprioception(p) => p.on_resume(),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::on_resume(p),
+            Self::TestMock(p) => p.on_resume(),
         }
     }
 
     fn on_error(&mut self, error: &dyn std::error::Error) -> PanelAction {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::on_error(p, error),
+            Self::Doom(p) => p.on_error(error),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::on_error(p, error),
-            Self::Metrics(p) => PanelInstance::on_error(p, error),
-            Self::Proprioception(p) => PanelInstance::on_error(p, error),
+            Self::DoomStats(p) => p.on_error(error),
+            Self::Metrics(p) => p.on_error(error),
+            Self::Proprioception(p) => p.on_error(error),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::on_error(p, error),
+            Self::TestMock(p) => p.on_error(error),
         }
     }
 
     fn can_save_state(&self) -> bool {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::can_save_state(p),
+            Self::Doom(p) => p.can_save_state(),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::can_save_state(p),
-            Self::Metrics(p) => PanelInstance::can_save_state(p),
-            Self::Proprioception(p) => PanelInstance::can_save_state(p),
+            Self::DoomStats(p) => p.can_save_state(),
+            Self::Metrics(p) => p.can_save_state(),
+            Self::Proprioception(p) => p.can_save_state(),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::can_save_state(p),
+            Self::TestMock(p) => p.can_save_state(),
         }
     }
 
     fn can_restore_state(&self) -> bool {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::can_restore_state(p),
+            Self::Doom(p) => p.can_restore_state(),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::can_restore_state(p),
-            Self::Metrics(p) => PanelInstance::can_restore_state(p),
-            Self::Proprioception(p) => PanelInstance::can_restore_state(p),
+            Self::DoomStats(p) => p.can_restore_state(),
+            Self::Metrics(p) => p.can_restore_state(),
+            Self::Proprioception(p) => p.can_restore_state(),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::can_restore_state(p),
+            Self::TestMock(p) => p.can_restore_state(),
         }
     }
 
     fn save_state(&self) -> crate::error::Result<serde_json::Value> {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::save_state(p),
+            Self::Doom(p) => p.save_state(),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::save_state(p),
-            Self::Metrics(p) => PanelInstance::save_state(p),
-            Self::Proprioception(p) => PanelInstance::save_state(p),
+            Self::DoomStats(p) => p.save_state(),
+            Self::Metrics(p) => p.save_state(),
+            Self::Proprioception(p) => p.save_state(),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::save_state(p),
+            Self::TestMock(p) => p.save_state(),
         }
     }
 
     fn restore_state(&mut self, state: serde_json::Value) -> crate::error::Result<()> {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::restore_state(p, state),
+            Self::Doom(p) => p.restore_state(state),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::restore_state(p, state),
-            Self::Metrics(p) => PanelInstance::restore_state(p, state),
-            Self::Proprioception(p) => PanelInstance::restore_state(p, state),
+            Self::DoomStats(p) => p.restore_state(state),
+            Self::Metrics(p) => p.restore_state(state),
+            Self::Proprioception(p) => p.restore_state(state),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::restore_state(p, state),
+            Self::TestMock(p) => p.restore_state(state),
         }
     }
 
     fn is_closable(&self) -> bool {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::is_closable(p),
+            Self::Doom(p) => p.is_closable(),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::is_closable(p),
-            Self::Metrics(p) => PanelInstance::is_closable(p),
-            Self::Proprioception(p) => PanelInstance::is_closable(p),
+            Self::DoomStats(p) => p.is_closable(),
+            Self::Metrics(p) => p.is_closable(),
+            Self::Proprioception(p) => p.is_closable(),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::is_closable(p),
+            Self::TestMock(p) => p.is_closable(),
         }
     }
 
     fn is_pausable(&self) -> bool {
         match self {
             #[cfg(feature = "doom")]
-            Self::Doom(p) => PanelInstance::is_pausable(p),
+            Self::Doom(p) => p.is_pausable(),
             #[cfg(feature = "doom")]
-            Self::DoomStats(p) => PanelInstance::is_pausable(p),
-            Self::Metrics(p) => PanelInstance::is_pausable(p),
-            Self::Proprioception(p) => PanelInstance::is_pausable(p),
+            Self::DoomStats(p) => p.is_pausable(),
+            Self::Metrics(p) => p.is_pausable(),
+            Self::Proprioception(p) => p.is_pausable(),
             #[cfg(test)]
-            Self::TestMock(p) => PanelInstance::is_pausable(p),
+            Self::TestMock(p) => p.is_pausable(),
         }
     }
 }

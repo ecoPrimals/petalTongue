@@ -12,7 +12,7 @@
 
 use crate::capability_parse;
 use crate::errors::{DiscoveryError, DiscoveryResult};
-use futures::future::join_all;
+use futures_util::future::join_all;
 use petal_tongue_core::types::{PrimalHealthStatus, PrimalInfo};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
