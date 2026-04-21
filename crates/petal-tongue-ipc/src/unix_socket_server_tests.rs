@@ -405,3 +405,43 @@ async fn test_introspect_works_with_default_awareness() {
         "introspect should succeed with default awareness (PT-05)"
     );
 }
+
+#[test]
+fn btsp_json_announcement_detected() {
+    let announcement = br#"{"protocol":"btsp","version":"1.0"}"#;
+    assert!(
+        UnixSocketServer::is_btsp_json_announcement(announcement),
+        "should detect BTSP JSON-line protocol announcement"
+    );
+}
+
+#[test]
+fn plain_jsonrpc_not_classified_as_btsp() {
+    let jsonrpc = br#"{"jsonrpc":"2.0","method":"health.check","id":1}"#;
+    assert!(
+        !UnixSocketServer::is_btsp_json_announcement(jsonrpc),
+        "plain JSON-RPC should not be classified as BTSP announcement"
+    );
+}
+
+#[test]
+fn non_json_not_classified_as_btsp_announcement() {
+    assert!(
+        !UnixSocketServer::is_btsp_json_announcement(b"\x00\x00\x00\x10"),
+        "length-prefixed binary should not match JSON-line check"
+    );
+}
+
+#[test]
+fn empty_buffer_not_classified_as_btsp() {
+    assert!(!UnixSocketServer::is_btsp_json_announcement(b""));
+}
+
+#[test]
+fn partial_protocol_key_not_classified() {
+    let partial = br#"{"proto":"btsp"}"#;
+    assert!(
+        !UnixSocketServer::is_btsp_json_announcement(partial),
+        "partial key 'proto' should not match"
+    );
+}

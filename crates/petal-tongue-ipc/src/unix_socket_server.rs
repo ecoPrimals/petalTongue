@@ -264,14 +264,26 @@ impl UnixSocketServer {
         }
     }
 
+    /// Classify a peek buffer as JSON-RPC or BTSP protocol announcement.
+    ///
+    /// Three wire formats:
+    /// - Non-`{` first byte → length-prefixed BTSP framing
+    /// - `{` + contains `"protocol"` → BTSP JSON-line announcement
+    /// - `{` + no `"protocol"` → plain JSON-RPC (biomeOS composition)
+    fn is_btsp_json_announcement(buf: &[u8]) -> bool {
+        buf.first() == Some(&b'{')
+            && buf
+                .windows(b"\"protocol\"".len())
+                .any(|w| w == b"\"protocol\"")
+    }
+
     /// Handle a UDS connection with optional BTSP handshake.
     ///
-    /// Uses the same first-byte peek as TCP and NestGate:
-    /// `BufReader::fill_buf()` non-destructively reads the first byte.
-    /// `{` (0x7B) → plain JSON-RPC from biomeOS composition, bypass
-    /// handshake. Otherwise run BTSP. The `BufReader` is kept alive so
-    /// peeked bytes flow into the subsequent read path (handshake or
-    /// JSON-RPC loop) without data loss.
+    /// Uses `BufReader::fill_buf()` to non-destructively peek initial bytes.
+    /// Classifies the wire format as length-prefixed BTSP (non-`{` first byte),
+    /// BTSP JSON-line announcement (`{"protocol":"btsp",...}`), or plain
+    /// JSON-RPC (`{"jsonrpc":"2.0",...}`). The `BufReader` is kept alive so
+    /// peeked bytes flow into the subsequent read path without data loss.
     async fn handle_uds_with_btsp(
         handlers: &RpcHandlers,
         stream: tokio::net::UnixStream,
@@ -283,8 +295,18 @@ impl UnixSocketServer {
             let (reader, mut writer) = stream.into_split();
             let mut buf_reader = tokio::io::BufReader::new(reader);
 
-            let first_byte = match buf_reader.fill_buf().await {
-                Ok(buf) if !buf.is_empty() => buf[0],
+            let needs_handshake = match buf_reader.fill_buf().await {
+                Ok(buf) if !buf.is_empty() => {
+                    if buf[0] != b'{' {
+                        true
+                    } else if Self::is_btsp_json_announcement(buf) {
+                        debug!("BTSP: JSON-line protocol announcement on UDS, routing to handshake");
+                        true
+                    } else {
+                        debug!("BTSP: first bytes are JSON-RPC on UDS, bypassing handshake");
+                        false
+                    }
+                }
                 Ok(_) => {
                     debug!("BTSP: UDS connection sent EOF before any data, rejecting");
                     return Ok(());
@@ -295,9 +317,7 @@ impl UnixSocketServer {
                 }
             };
 
-            if first_byte == b'{' {
-                debug!("BTSP: first byte is '{{' on UDS, bypassing handshake (JSON-RPC)");
-            } else {
+            if needs_handshake {
                 match crate::btsp::perform_server_handshake_split(&mut buf_reader, &mut writer, cfg)
                     .await
                 {
@@ -319,21 +339,32 @@ impl UnixSocketServer {
 
     /// Handle a TCP connection with optional BTSP handshake.
     ///
-    /// Applies the same first-byte peek as BearDog: if the first byte is `{`,
-    /// treat it as plain JSON-RPC (biomeOS composition). Otherwise, run BTSP.
+    /// Peeks up to 64 bytes to classify the wire format (same three-way
+    /// classification as UDS: length-prefixed BTSP, JSON-line BTSP
+    /// announcement, or plain JSON-RPC).
     async fn handle_tcp_with_btsp(
         handlers: &RpcHandlers,
         mut stream: tokio::net::TcpStream,
         btsp_config: Option<Arc<crate::btsp::BtspHandshakeConfig>>,
     ) -> Result<(), unix_socket_connection::ConnectionError> {
         if let Some(ref cfg) = btsp_config {
-            let mut peek_buf = [0u8; 1];
+            let mut peek_buf = [0u8; 64];
             let n = stream.peek(&mut peek_buf).await?;
             if n == 0 {
                 debug!("BTSP: TCP connection sent EOF before any data, rejecting");
                 return Ok(());
             }
-            if peek_buf[0] != b'{' {
+            let peeked = &peek_buf[..n];
+            let needs_handshake = if peeked[0] != b'{' {
+                true
+            } else if Self::is_btsp_json_announcement(peeked) {
+                debug!("BTSP: JSON-line protocol announcement on TCP, routing to handshake");
+                true
+            } else {
+                false
+            };
+
+            if needs_handshake {
                 match crate::btsp::perform_server_handshake(&mut stream, cfg).await {
                     Ok(session_id) => {
                         debug!("BTSP authenticated on TCP: session={session_id}");

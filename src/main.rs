@@ -5,7 +5,7 @@
 //!
 //! # Architecture
 //!
-//! `UniBin`: 1 binary, 6 subcommands (ui, tui, web, headless, server, status)
+//! `UniBin`: 1 binary, 7 subcommands (ui, tui, web, headless, server, live, status)
 //! ecoBin: 100% Pure Rust (ui uses egui/eframe for platform windowing)
 //!
 //! # Concurrency
@@ -30,6 +30,8 @@ mod cli_mode;
 mod data_service;
 mod error;
 mod headless_mode;
+#[cfg(feature = "ui")]
+mod live_mode;
 mod server_mode;
 mod tui_mode;
 mod ui_mode;
@@ -117,6 +119,25 @@ enum Commands {
         port: Option<u16>,
 
         /// Unix domain socket path override (default: $XDG_RUNTIME_DIR/biomeos/petaltongue-{family}.sock)
+        #[arg(long)]
+        socket: Option<String>,
+    },
+
+    /// Launch native desktop display with IPC server (NUCLEUS interactive mode)
+    Live {
+        /// Scenario JSON file to load
+        #[arg(long)]
+        scenario: Option<String>,
+
+        /// Disable audio sonification
+        #[arg(long)]
+        no_audio: bool,
+
+        /// TCP port for newline-delimited JSON-RPC (optional, UDS always active)
+        #[arg(long)]
+        port: Option<u16>,
+
+        /// Unix domain socket path override
         #[arg(long)]
         socket: Option<String>,
     },
@@ -216,6 +237,18 @@ async fn main() -> Result<(), AppError> {
             tracing::info!(mode = "server", tcp_port = ?port, socket = ?socket, "Launching IPC server (no display)");
             server_mode::run(data_service, port, socket).await
         }
+        #[cfg(feature = "ui")]
+        Commands::Live {
+            scenario,
+            no_audio,
+            port,
+            socket,
+        } => {
+            tracing::info!(mode = "live", tcp_port = ?port, socket = ?socket, "Launching NUCLEUS interactive mode (IPC + GUI)");
+            live_mode::run(scenario, no_audio, data_service, port, socket).await
+        }
+        #[cfg(not(feature = "ui"))]
+        Commands::Live { .. } => Err(AppError::UiNotAvailable),
         Commands::Status { verbose, format } => {
             tracing::info!(
                 mode = "status",
