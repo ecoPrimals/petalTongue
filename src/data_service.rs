@@ -79,8 +79,12 @@ impl DataService {
                 tracing::info!("✅ Neural API discovered");
                 self.neural_api = Some(Arc::new(provider));
 
-                // Initial data fetch
-                self.refresh().await?;
+                // Initial data fetch — tolerate API method gaps (biomeOS may not
+                // support primal.list yet). petalTongue stays alive with an empty
+                // graph and populates on the next successful refresh.
+                if let Err(e) = self.refresh().await {
+                    tracing::warn!("⚠️ Initial refresh failed (degraded mode): {e}");
+                }
             }
             Err(e) => {
                 tracing::warn!("⚠️ Neural API not available: {}", e);
