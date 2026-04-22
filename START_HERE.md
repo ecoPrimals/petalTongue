@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 19, 2026 (doc refresh)
+**Updated**: April 21, 2026 (live mode, BTSP peek fix)
 
 ---
 
@@ -17,6 +17,8 @@ petaltongue headless                         # Headless API server (no display)
 petaltongue server                 # IPC server (no display)
 petaltongue server --socket /path  # IPC server (explicit UDS path)
 petaltongue server --port 9600     # IPC server (TCP listen port)
+petaltongue live                   # NUCLEUS interactive (IPC + GUI)
+petaltongue live --port 9090       # live mode with TCP listener
 petaltongue status                 # System info
 ```
 
@@ -154,7 +156,7 @@ only in `primal_names` constants for logging context.
 - **Discovery service** -- Discovered via `discovery.query_capability`
 - **AI agent adapter** -- `ai_adapter` (InputModality::Agent, AgentInputAdapter)
 
-See `ecoPrimals/wateringHole/petaltongue/` for inter-primal standards.
+See `infra/wateringHole/` for inter-primal standards and handoff documents.
 
 ---
 

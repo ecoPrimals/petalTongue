@@ -27,7 +27,7 @@
     
     "custom_panels": [
       {
-        "type": "doom",
+        "type": "doom_game",
         "title": "Doom E1M1",
         "width": 960,
         "height": 720,

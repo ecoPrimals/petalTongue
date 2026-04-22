@@ -27,7 +27,7 @@
     
     "custom_panels": [
       {
-        "type": "doom",
+        "type": "doom_game",
         "title": "Doom Test",
         "width": 800,
         "height": 600,

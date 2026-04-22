@@ -21,6 +21,8 @@ petaltongue headless    # Headless API server (no display)
 petaltongue server      # IPC server (UDS, no display)
 petaltongue server --socket /path/to.sock  # explicit UDS path
 petaltongue server --port 9100  # IPC server (UDS + TCP)
+petaltongue live        # NUCLEUS interactive (IPC + GUI in one process)
+petaltongue live --port 9090    # live mode with TCP listener
 petaltongue status      # System status
 ```
 
@@ -51,6 +53,7 @@ petaltongue
 ├── web       Web interface (axum)
 ├── headless  Headless API server (no display; SVG/PNG/JSON export via petal-tongue-headless crate)
 ├── server    IPC server (no display)
+├── live      NUCLEUS interactive mode (IPC server + GUI in one process)
 └── status    System info
 ```
 
@@ -112,7 +115,7 @@ petaltongue
 |--------|--------|
 | Tests | 6,144+ passing, 0 failures |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons; targeted `#[allow]` only for platform `cfg_attr` gates) |
+| Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons; zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
 | Coverage | ~90% line (llvm-cov) |
 | Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin root, zero C deps |

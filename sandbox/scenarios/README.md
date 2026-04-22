@@ -18,7 +18,7 @@ petaltongue ui --scenario sandbox/scenarios/chaos.json
 ## Available Scenarios
 
 ### `simple.json` (Default)
-- **Primals**: 5 (BearDog, ToadStool, Songbird, NestGate, Squirrel)
+- **Primals**: 3 (basic topology)
 - **Status**: All healthy
 - **Purpose**: Basic demonstration of ecosystem
 - **Use Case**: First-time users, screenshots, documentation
@@ -35,7 +35,33 @@ petaltongue ui --scenario sandbox/scenarios/chaos.json
 - **Purpose**: Chaos testing, failure visualization, alert systems
 - **Use Case**: Testing error handling, health indicators, graceful degradation
 
-## Scenario Format
+## Scenario Formats
+
+Two schema variants coexist:
+
+### `LoadedScenario` (ecosystem mode — `simple.json`, `live-ecosystem.json`, etc.)
+
+```json
+{
+  "name": "Scenario Name",
+  "description": "Human-readable description",
+  "version": "2.0.0",
+  "mode": "live-ecosystem",
+  "ecosystem": {
+    "primals": [
+      {
+        "id": "unique-id",
+        "name": "Display Name",
+        "primal_type": "Security|Compute|Storage|etc",
+        "capabilities": ["cap1", "cap2"],
+        "health": "healthy|degraded|unhealthy|critical"
+      }
+    ]
+  }
+}
+```
+
+### `SandboxScenario` (sandbox provider — `chaos.json`, `complex.json`, etc.)
 
 ```json
 {
@@ -49,15 +75,15 @@ petaltongue ui --scenario sandbox/scenarios/chaos.json
       "endpoint": "http://localhost:port or 'self'",
       "capabilities": ["cap1", "cap2"],
       "health": "healthy|degraded|unhealthy|critical",
-      "last_seen": <unix_timestamp>
+      "last_seen": 1700000000
     }
   ],
-  "topology": [
+  "edges": [
     {
       "from": "primal_id",
       "to": "primal_id",
       "edge_type": "relationship_type",
-      "label": "Optional Label" 
+      "label": "Optional Label"
     }
   ]
 }
@@ -151,6 +177,6 @@ When adding new scenarios:
 ---
 
 **Status**: 27 scenarios available  
-**Last Updated**: April 15, 2026  
+**Last Updated**: April 21, 2026  
 **Maintainer**: petalTongue team
 

@@ -6,6 +6,37 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### `petaltongue live` Mode + BTSP Wire-Format Fix + Deep Debt Zero (April 21, 2026)
+
+#### Added
+- **`petaltongue live` CLI subcommand** — merges `ui` (egui/eframe native window) and
+  `server` (UDS JSON-RPC IPC) into a single process for interactive desktop NUCLEUS
+  deployment. IPC server runs as background `tokio::spawn` task, egui on main thread,
+  connected via `Arc<RwLock<VisualizationState>>`, `SensorStreamRegistry`,
+  `InteractionSubscriberRegistry`, and `CallbackDispatch` sender. Feature-gated behind
+  `ui` with graceful `UiNotAvailable` fallback.
+- **BTSP wire-format detection** — `is_btsp_json_announcement()` three-way classifier:
+  non-`{` → length-prefixed BTSP, `{` + `"protocol"` → BTSP JSON-line announcement,
+  `{` only → plain JSON-RPC. Applied to both `handle_uds_with_btsp` (BufReader peek)
+  and `handle_tcp_with_btsp` (64-byte peek buffer, was 1). 5 unit tests.
+- **`src/live_mode.rs`** — new module combining server + UI with shared state handles.
+
+#### Changed
+- **`DoomPanelWrapper` boxed** in `PanelInstanceImpl` enum — reduces stack size from
+  432 to 8 bytes. All 19 match arm methods migrated from UFCS to method syntax for
+  clean auto-deref through `Box`.
+- **`futures` → `futures-util`** in `petal-tongue-discovery` — lighter dependency,
+  same API surface (`join_all`, `select_all`). 3 source files + 2 test files updated.
+- **`needless_return`** fixed in socket audio backend.
+- **`unused_async`** fixed in chaos test helper (`async fn` → `fn` returning `impl Future`).
+
+#### Verified
+- `cargo clippy --workspace --all-targets --all-features` — **0 warnings**
+- `cargo test --workspace --all-features` — all passing
+- `cargo check --target x86_64-apple-darwin` — macOS cross-check clean
+- 4 remaining `dyn` usages audited: all idiomatic (`Box<dyn Fn>` callbacks,
+  `&dyn std::error::Error`), no evolution needed
+
 ### Deep Debt Cleanup — Clippy Zero, Typed Errors, Modern Rust (April 15, 2026)
 
 #### Changed

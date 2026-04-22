@@ -777,9 +777,9 @@ async fn test_proprioception_panel_rendering() {
 ## 📚 REFERENCES
 
 ### PetalTongue Documentation
-- `NEURAL_API_EVOLUTION_ROADMAP.md` - Evolution plan
-- `TECHNICAL_DEBT_NEURAL_API.md` - Debt tracking
-- `BUILD_INSTRUCTIONS.md` - Build guide
+- `CONTEXT.md` - Architecture and current state
+- `CHANGELOG.md` - Evolution history
+- `START_HERE.md` - Build and development guide
 
 ### BiomeOS Documentation
 - `NEURAL_API_EVOLUTION_JAN_15_2026.md` - Neural API architecture
