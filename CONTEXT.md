@@ -1,6 +1,6 @@
 # petalTongue — Context
 
-**Version:** 1.6.6
+**Version:** 1.6.7
 **Role:** Universal User Interface primal (visualization, presentation, interaction)
 **License:** AGPL-3.0-or-later (scyBorg triple: AGPL + ORC + CC-BY-SA 4.0)
 
@@ -18,7 +18,7 @@ does not own computation, storage, or security domains.
 
 ## Architecture
 
-18 workspace crates, single UniBin binary (`petaltongue`):
+18 workspace crates, single UniBin binary (`petaltongue`, 7 subcommands):
 
 | Crate | Purpose |
 |-------|---------|
@@ -150,6 +150,24 @@ properly gated with `#[cfg]`.
 Dependency cleanup (April 19, 2026): dead `petal-tongue-graph` dep removed
 from `petal-tongue-ui-core`, headless builds no longer pull egui (graph
 `default-features = false`), tarpc trimmed from `full` to specific features.
+
+`petaltongue live` mode (April 21, 2026): new CLI subcommand merging `ui`
+(egui/eframe) and `server` (UDS JSON-RPC IPC) into a single process for
+interactive desktop NUCLEUS deployment. IPC server runs as background tokio
+task, egui on main thread, connected via `Arc<RwLock<VisualizationState>>`
+and companion registries. This is the tier-one deployment mode for every
+spring/garden cell graph.
+
+BTSP wire-format detection fix (April 21, 2026): three-way classification
+in `handle_uds_with_btsp` and `handle_tcp_with_btsp` — non-`{` first byte
+→ length-prefixed BTSP, `{` + `"protocol"` → BTSP JSON-line announcement
+(from primalSpring), `{` only → plain JSON-RPC. Fixes misclassification of
+`{"protocol":"btsp",...}` announcements as invalid JSON-RPC.
+
+Deep debt audit (April 21, 2026): clippy zero warnings achieved (boxed
+`DoomPanelWrapper`, removed needless return, fixed unused async). `futures`
+→ `futures-util` in discovery crate. All 4 remaining `dyn` usages audited
+as idiomatic (callbacks + error trait).
 
 Remaining backlog: BTSP Phase 2 consumer wiring (cross-primal dep on
 BearDog), BTSP Phase 3 encryption, aarch64 musl cross-compile for headless,
