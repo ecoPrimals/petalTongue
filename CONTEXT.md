@@ -1,6 +1,6 @@
 # petalTongue — Context
 
-**Version:** 1.6.7
+**Version:** 1.6.6
 **Role:** Universal User Interface primal (visualization, presentation, interaction)
 **License:** AGPL-3.0-or-later (scyBorg triple: AGPL + ORC + CC-BY-SA 4.0)
 
@@ -107,7 +107,7 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # ~6,144 tests, ~90% coverage
+cargo test --workspace --all-features     # ~6,150+ tests, ~90% coverage
 ```
 
 ## Current State

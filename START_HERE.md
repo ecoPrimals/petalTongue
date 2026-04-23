@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 21, 2026 (live mode, BTSP peek fix)
+**Updated**: April 25, 2026 (async fn traits, BTSP JSON-line relay)
 
 ---
 
@@ -16,7 +16,7 @@ petaltongue headless                         # Headless API server (no display)
 # For CLI SVG/PNG/JSON export: cargo run -p petal-tongue-headless -- --mode svg -o out.svg
 petaltongue server                 # IPC server (no display)
 petaltongue server --socket /path  # IPC server (explicit UDS path)
-petaltongue server --port 9600     # IPC server (TCP listen port)
+petaltongue server --port 9090     # IPC server (TCP listen port)
 petaltongue live                   # NUCLEUS interactive (IPC + GUI)
 petaltongue live --port 9090       # live mode with TCP listener
 petaltongue status                 # System info
@@ -59,7 +59,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 6,144+ tests
+cargo test --workspace --all-features           # 6,150+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
