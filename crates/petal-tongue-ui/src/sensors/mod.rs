@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::manual_async_fn)] // explicit `impl Future + Send` on `Sensor` / `SensorImpl`
 //! Concrete sensor implementations
 //!
 //! Platform-specific implementations of the Sensor trait.
@@ -49,17 +48,14 @@ impl Sensor for SensorImpl {
         }
     }
 
-    fn poll_events(
+    async fn poll_events(
         &mut self,
-    ) -> impl std::future::Future<Output = std::result::Result<Vec<SensorEvent>, SensorError>> + Send
-    {
-        async {
-            match self {
-                Self::Mouse(s) => s.poll_events().await,
-                Self::Keyboard(s) => s.poll_events().await,
-                Self::Screen(s) => s.poll_events().await,
-                Self::Audio(s) => s.poll_events().await,
-            }
+    ) -> std::result::Result<Vec<SensorEvent>, SensorError> {
+        match self {
+            Self::Mouse(s) => s.poll_events().await,
+            Self::Keyboard(s) => s.poll_events().await,
+            Self::Screen(s) => s.poll_events().await,
+            Self::Audio(s) => s.poll_events().await,
         }
     }
 

@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::manual_async_fn)]
 //! Mouse sensor - Spatial input device
 //!
 //! Discovers mouse capabilities and provides activate/movement events.
@@ -52,63 +51,59 @@ impl Sensor for MouseSensor {
         true
     }
 
-    fn poll_events(
-        &mut self,
-    ) -> impl std::future::Future<Output = Result<Vec<SensorEvent>, SensorError>> + Send {
-        async {
-            let mut events = Vec::new();
+    async fn poll_events(&mut self) -> Result<Vec<SensorEvent>, SensorError> {
+        let mut events = Vec::new();
 
-            // Non-blocking poll with very short timeout
-            match self.pointer_type {
-                PointerType::TerminalMouse => {
-                    if event::poll(Duration::from_millis(1))
-                        .map_err(|e| SensorError::Io(std::io::Error::other(e)))?
-                        && let Event::Mouse(mouse_event) =
-                            event::read().map_err(|e| SensorError::Io(std::io::Error::other(e)))?
-                    {
-                        let timestamp = Instant::now();
-                        let x = f32::from(mouse_event.column);
-                        let y = f32::from(mouse_event.row);
+        // Non-blocking poll with very short timeout
+        match self.pointer_type {
+            PointerType::TerminalMouse => {
+                if event::poll(Duration::from_millis(1))
+                    .map_err(|e| SensorError::Io(std::io::Error::other(e)))?
+                    && let Event::Mouse(mouse_event) =
+                        event::read().map_err(|e| SensorError::Io(std::io::Error::other(e)))?
+                {
+                    let timestamp = Instant::now();
+                    let x = f32::from(mouse_event.column);
+                    let y = f32::from(mouse_event.row);
 
-                        match mouse_event.kind {
-                            MouseEventKind::Down(btn) => {
-                                self.last_click = Some(timestamp);
-                                self.last_position = Some((x, y));
+                    match mouse_event.kind {
+                        MouseEventKind::Down(btn) => {
+                            self.last_click = Some(timestamp);
+                            self.last_position = Some((x, y));
 
-                                events.push(SensorEvent::Click {
-                                    x,
-                                    y,
-                                    button: map_button(btn),
-                                    timestamp,
-                                });
-                            }
-                            MouseEventKind::Moved => {
-                                self.last_position = Some((x, y));
-
-                                events.push(SensorEvent::Position { x, y, timestamp });
-                            }
-                            MouseEventKind::ScrollDown => {
-                                events.push(SensorEvent::Scroll {
-                                    delta_x: 0.0,
-                                    delta_y: -1.0,
-                                    timestamp,
-                                });
-                            }
-                            MouseEventKind::ScrollUp => {
-                                events.push(SensorEvent::Scroll {
-                                    delta_x: 0.0,
-                                    delta_y: 1.0,
-                                    timestamp,
-                                });
-                            }
-                            _ => {}
+                            events.push(SensorEvent::Click {
+                                x,
+                                y,
+                                button: map_button(btn),
+                                timestamp,
+                            });
                         }
+                        MouseEventKind::Moved => {
+                            self.last_position = Some((x, y));
+
+                            events.push(SensorEvent::Position { x, y, timestamp });
+                        }
+                        MouseEventKind::ScrollDown => {
+                            events.push(SensorEvent::Scroll {
+                                delta_x: 0.0,
+                                delta_y: -1.0,
+                                timestamp,
+                            });
+                        }
+                        MouseEventKind::ScrollUp => {
+                            events.push(SensorEvent::Scroll {
+                                delta_x: 0.0,
+                                delta_y: 1.0,
+                                timestamp,
+                            });
+                        }
+                        _ => {}
                     }
                 }
             }
-
-            Ok(events)
         }
+
+        Ok(events)
     }
 
     fn last_activity(&self) -> Option<Instant> {

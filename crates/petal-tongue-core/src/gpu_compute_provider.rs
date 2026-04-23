@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::manual_async_fn)] // matches `ComputeProvider` desugared async signatures
 //! # GPU Compute Provider
 //!
 //! GPU compute acceleration via capability-discovered primal (runtime discovery).
@@ -260,36 +259,31 @@ impl ComputeProvider for GpuComputeProvider {
         self.capabilities.clone()
     }
 
-    fn is_available(&self) -> impl std::future::Future<Output = bool> + Send {
-        let available = self.service.is_some();
-        async move { available }
+    async fn is_available(&self) -> bool {
+        self.service.is_some()
     }
 
-    fn initialize(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
-        async {
-            if self.service.is_none() {
-                // Try discovery again
-                self.service = Self::discover_compute_provider().await.ok();
+    async fn initialize(&mut self) -> Result<()> {
+        if self.service.is_none() {
+            // Try discovery again
+            self.service = Self::discover_compute_provider().await.ok();
 
-                if let Some(ref svc) = self.service {
-                    self.capabilities = Self::parse_capabilities(&svc.capabilities);
-                    tracing::info!("✅ GPU compute provider initialized: {}", svc.endpoint);
-                } else {
-                    return Err(PetalTongueError::NoGpuCompute);
-                }
+            if let Some(ref svc) = self.service {
+                self.capabilities = Self::parse_capabilities(&svc.capabilities);
+                tracing::info!("✅ GPU compute provider initialized: {}", svc.endpoint);
+            } else {
+                return Err(PetalTongueError::NoGpuCompute);
             }
-
-            Ok(())
         }
+
+        Ok(())
     }
 
-    fn shutdown(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
-        async {
-            tracing::info!("🔇 Shutting down GPU compute provider");
-            self.service = None;
-            self.capabilities.clear();
-            Ok(())
-        }
+    async fn shutdown(&mut self) -> Result<()> {
+        tracing::info!("🔇 Shutting down GPU compute provider");
+        self.service = None;
+        self.capabilities.clear();
+        Ok(())
     }
 }
 
@@ -328,22 +322,18 @@ impl ComputeProvider for CPUFallbackCompute {
         self.capabilities.clone()
     }
 
-    fn is_available(&self) -> impl std::future::Future<Output = bool> + Send {
-        async { true }
+    async fn is_available(&self) -> bool {
+        true
     }
 
-    fn initialize(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
-        async {
-            tracing::info!("✅ CPU fallback compute initialized");
-            Ok(())
-        }
+    async fn initialize(&mut self) -> Result<()> {
+        tracing::info!("✅ CPU fallback compute initialized");
+        Ok(())
     }
 
-    fn shutdown(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
-        async {
-            tracing::info!("🔇 Shutting down CPU fallback compute");
-            Ok(())
-        }
+    async fn shutdown(&mut self) -> Result<()> {
+        tracing::info!("🔇 Shutting down CPU fallback compute");
+        Ok(())
     }
 }
 

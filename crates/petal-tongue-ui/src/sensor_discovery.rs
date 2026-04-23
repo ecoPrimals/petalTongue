@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::manual_async_fn)] // test doubles for `Sensor`
 //! Runtime Sensor Discovery
 //!
 //! Discovers available input/output peripherals at startup.
@@ -170,12 +169,10 @@ mod tests {
             fn is_available(&self) -> bool {
                 true
             }
-            fn poll_events(
+            async fn poll_events(
                 &mut self,
-            ) -> impl std::future::Future<
-                Output = std::result::Result<Vec<SensorEvent>, SensorError>,
-            > + Send {
-                async { Ok(vec![]) }
+            ) -> std::result::Result<Vec<SensorEvent>, SensorError> {
+                Ok(vec![])
             }
             fn last_activity(&self) -> Option<std::time::Instant> {
                 None
@@ -224,12 +221,10 @@ mod tests {
             fn is_available(&self) -> bool {
                 true
             }
-            fn poll_events(
+            async fn poll_events(
                 &mut self,
-            ) -> impl std::future::Future<
-                Output = std::result::Result<Vec<SensorEvent>, SensorError>,
-            > + Send {
-                async { Ok(vec![]) }
+            ) -> std::result::Result<Vec<SensorEvent>, SensorError> {
+                Ok(vec![])
             }
             fn last_activity(&self) -> Option<std::time::Instant> {
                 None

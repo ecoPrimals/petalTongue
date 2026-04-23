@@ -114,11 +114,17 @@ cargo test --workspace --all-features     # ~6,144 tests, ~90% coverage
 
 Stadial parity gate cleared (April 17, 2026). All CI gates pass (fmt,
 clippy pedantic+nursery, doc, cargo deny, tests). Zero unsafe, zero
-TODO/FIXME, zero production `unwrap()`. Lint policy: `#[expect]` with
+TODO/FIXME, zero production `unwrap()`, zero `#[allow(` in production code
+(only in `#[cfg(test)]` modules). Lint policy: `#[expect]` with
 reasons for justified suppressions; targeted `#[allow]` only where
 `#[expect]` cannot apply (e.g. `cfg_attr` platform gates). SPDX headers
 on all source files. Edition 2024, deny.toml enforced.
-~6,144 tests passing (all-features).
+98 test suites, all passing (all-features).
+
+Native `async fn` in traits (April 25, 2026): eliminated all manual
+`fn -> impl Future + Send` desugaring across 13 production modules.
+All traits now use native `async fn` (RPITIT). Zero `manual_async_fn`
+suppressions remain. Net −100 lines across 21 files.
 
 macOS cross-arch build fix (April 19, 2026): conflicting `AudioCanvas`
 impl blocks resolved; `petal-tongue-ui` now compiles with zero warnings

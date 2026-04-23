@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::manual_async_fn)] // mock `Sensor` uses explicit futures like production code
 //! Sensor registry: discovery and management of sensors.
 
 use std::time::Instant;
@@ -155,11 +154,8 @@ pub mod mock_sensor {
             self.available
         }
 
-        fn poll_events(
-            &mut self,
-        ) -> impl std::future::Future<Output = Result<Vec<SensorEvent>, SensorError>> + Send
-        {
-            async { Ok(Vec::new()) }
+        async fn poll_events(&mut self) -> Result<Vec<SensorEvent>, SensorError> {
+            Ok(Vec::new())
         }
 
         fn last_activity(&self) -> Option<Instant> {

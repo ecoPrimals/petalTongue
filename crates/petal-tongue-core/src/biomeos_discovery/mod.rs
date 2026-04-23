@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::manual_async_fn)] // matches `DiscoveryBackend` desugared async signatures
 //! biomeOS Discovery Backend
 //!
 //! Implements capability-based discovery via biomeOS Neural API.

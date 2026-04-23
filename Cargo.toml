@@ -129,6 +129,9 @@ bincode = "1.3"
 [workspace.lints.rust]
 unsafe_code = "forbid"
 missing_docs = "warn"
+# Native `async fn` in traits is intentional; explicit `impl Future + Send` in traits
+# was removed project-wide in favor of readable async signatures (see engine `render_multi`).
+async_fn_in_trait = "allow"
 
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }

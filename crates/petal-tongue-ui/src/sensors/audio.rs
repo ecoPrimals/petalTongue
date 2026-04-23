@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::manual_async_fn)]
 //! Audio sensor - Bidirectional I/O (speaker + microphone)
 //!
 //! Discovers audio capabilities for both output and input.
@@ -101,11 +100,10 @@ impl Sensor for AudioSensor {
         self.has_output || self.has_input
     }
 
-    fn poll_events(
+    async fn poll_events(
         &mut self,
-    ) -> impl std::future::Future<Output = std::result::Result<Vec<SensorEvent>, SensorError>> + Send
-    {
-        async { Ok(Vec::new()) }
+    ) -> std::result::Result<Vec<SensorEvent>, SensorError> {
+        Ok(Vec::new())
     }
 
     fn last_activity(&self) -> Option<Instant> {

@@ -2,7 +2,6 @@
 //! Display backend traits and types
 
 use crate::error::Result;
-use std::future::Future;
 
 /// Display backend trait - implemented by all display systems.
 #[expect(
@@ -20,7 +19,7 @@ pub trait DisplayBackend: Send + Sync {
     ///
     /// Buffer format: width * height * 4 bytes (RGBA)
     /// Buffer layout: row-major, top-left origin
-    fn present<'a>(&'a mut self, buffer: &'a [u8]) -> impl Future<Output = Result<()>> + Send + 'a;
+    async fn present<'a>(&'a mut self, buffer: &'a [u8]) -> Result<()>;
 
     /// Check if this backend is available on the current system
     fn is_available() -> bool
