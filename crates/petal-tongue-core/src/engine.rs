@@ -292,28 +292,19 @@ impl<M: GUIModality + 'static> UniversalRenderingEngine<M> {
         result
     }
 
-    /// Start rendering in multiple modalities simultaneously
+    /// Start rendering for each listed modality in order
+    ///
+    /// Modalities are rendered sequentially: each run holds an exclusive write lock on the
+    /// modality registry for `initialize` and `render`, so overlapping `tokio::spawn` tasks
+    /// would not run truly in parallel anyway.
     ///
     /// # Errors
     ///
-    /// Returns an error if any modality fails to render or if a spawned task panics.
+    /// Returns an error if any modality fails to render.
     pub async fn render_multi(self: Arc<Self>, modality_names: Vec<&str>) -> Result<()> {
-        let mut handles = Vec::new();
-
         for name in modality_names {
-            let engine = Arc::clone(&self);
-            let name = name.to_string();
-
-            let handle = tokio::spawn(async move { engine.render(&name).await });
-
-            handles.push(handle);
+            self.clone().render(name).await?;
         }
-
-        // Wait for all to complete (or first error)
-        for handle in handles {
-            handle.await??;
-        }
-
         Ok(())
     }
 }

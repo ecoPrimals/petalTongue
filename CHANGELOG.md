@@ -6,6 +6,22 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Native `async fn` in Traits — Manual Desugaring Elimination (April 25, 2026)
+
+#### Changed
+- **13 production modules** converted from `fn -> impl Future + Send` to native
+  `async fn` in traits (RPITIT). Traits affected: `ComputeProvider`, `GUIModality`,
+  `Sensor`, `DiscoveryBackend`, `PrimalLifecycle`, `PrimalHealth`, `AudioBackend`,
+  `DisplayBackend`, `UIBackend`, `VisualizationDataProvider`.
+- All enum-dispatch implementations updated to match new `async fn` signatures.
+- `render_multi` in `engine.rs` simplified to sequential awaits (was spawning
+  tasks that contended on the same write lock).
+- Net reduction: **−100 lines** across 21 files.
+
+#### Removed
+- All `#![allow(clippy::manual_async_fn)]` suppressions (13 modules).
+- Redundant `async { }` / `async move { }` wrapper blocks in all impl methods.
+
 ### BTSP JSON-Line Handshake Relay + BearDog Field Alignment (April 23, 2026)
 
 #### Added

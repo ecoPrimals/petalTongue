@@ -10,7 +10,6 @@ use crate::audio::backends::NetworkBackend;
 use crate::audio::backends::SocketBackend;
 use crate::audio::backends::{SilentBackend, SoftwareBackend};
 use crate::error::Result;
-use std::future::Future;
 
 /// Universal audio backend trait
 ///
@@ -40,23 +39,19 @@ pub trait AudioBackend: Send + Sync {
     ///
     /// This is called at runtime to verify availability.
     /// May return false if hardware is disconnected, service stopped, etc.
-    fn is_available(&self) -> impl Future<Output = bool> + Send;
+    async fn is_available(&self) -> bool;
 
     /// Initialize backend (prepare for playback)
     ///
     /// Called once before first use.
     /// May allocate buffers, connect to services, open devices, etc.
-    fn initialize(&mut self) -> impl Future<Output = Result<()>> + Send;
+    async fn initialize(&mut self) -> Result<()>;
 
     /// Play audio samples (async, non-blocking)
     ///
     /// Samples are f32 in range [-1.0, 1.0]
     /// Backend handles conversion to hardware format (i16, u8, etc.)
-    fn play_samples(
-        &mut self,
-        samples: &[f32],
-        sample_rate: u32,
-    ) -> impl Future<Output = Result<()>> + Send;
+    async fn play_samples(&mut self, samples: &[f32], sample_rate: u32) -> Result<()>;
 
     /// Get capabilities (what can this backend do?)
     ///
@@ -145,20 +140,16 @@ impl AudioBackend for AudioBackendImpl {
         }
     }
 
-    fn is_available(&self) -> impl Future<Output = bool> + Send {
-        audio_backend_impl_is_available(self)
+    async fn is_available(&self) -> bool {
+        audio_backend_impl_is_available(self).await
     }
 
-    fn initialize(&mut self) -> impl Future<Output = Result<()>> + Send {
-        audio_backend_impl_initialize(self)
+    async fn initialize(&mut self) -> Result<()> {
+        audio_backend_impl_initialize(self).await
     }
 
-    fn play_samples(
-        &mut self,
-        samples: &[f32],
-        sample_rate: u32,
-    ) -> impl Future<Output = Result<()>> + Send {
-        audio_backend_impl_play_samples(self, samples, sample_rate)
+    async fn play_samples(&mut self, samples: &[f32], sample_rate: u32) -> Result<()> {
+        audio_backend_impl_play_samples(self, samples, sample_rate).await
     }
 
     fn capabilities(&self) -> AudioCapabilities {

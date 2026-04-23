@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::manual_async_fn)] // test modalities match `GUIModality` desugared signatures
 
 use super::*;
 use crate::modality::{GUIModality, ModalityCapabilities, ModalityTier, NullModality};
@@ -19,23 +18,23 @@ impl GUIModality for MockModality {
     fn tier(&self) -> ModalityTier {
         self.tier
     }
-    fn initialize(
+    async fn initialize(
         &mut self,
         _engine: Arc<UniversalRenderingEngine<Self>>,
-    ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-        async { Ok(()) }
+    ) -> crate::error::Result<()> {
+        Ok(())
     }
-    fn render(&mut self) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-        async { Ok(()) }
+    async fn render(&mut self) -> crate::error::Result<()> {
+        Ok(())
     }
-    fn handle_event(
+    async fn handle_event(
         &mut self,
         _event: EngineEvent,
-    ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-        async { Ok(()) }
+    ) -> crate::error::Result<()> {
+        Ok(())
     }
-    fn shutdown(&mut self) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-        async { Ok(()) }
+    async fn shutdown(&mut self) -> crate::error::Result<()> {
+        Ok(())
     }
     fn capabilities(&self) -> ModalityCapabilities {
         ModalityCapabilities::default()
@@ -205,29 +204,25 @@ async fn test_engine_modality_initialize_error_propagates() {
         fn tier(&self) -> ModalityTier {
             ModalityTier::AlwaysAvailable
         }
-        fn initialize(
+        async fn initialize(
             &mut self,
             _engine: Arc<UniversalRenderingEngine<Self>>,
-        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-            async {
-                Err(crate::error::PetalTongueError::Internal(
-                    "init failed".into(),
-                ))
-            }
+        ) -> crate::error::Result<()> {
+            Err(crate::error::PetalTongueError::Internal(
+                "init failed".into(),
+            ))
         }
-        fn render(&mut self) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-            async { Ok(()) }
+        async fn render(&mut self) -> crate::error::Result<()> {
+            Ok(())
         }
-        fn handle_event(
+        async fn handle_event(
             &mut self,
             _event: EngineEvent,
-        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-            async { Ok(()) }
+        ) -> crate::error::Result<()> {
+            Ok(())
         }
-        fn shutdown(
-            &mut self,
-        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-            async { Ok(()) }
+        async fn shutdown(&mut self) -> crate::error::Result<()> {
+            Ok(())
         }
         fn capabilities(&self) -> ModalityCapabilities {
             ModalityCapabilities::default()
@@ -259,29 +254,25 @@ async fn test_engine_modality_render_error_propagates() {
         fn tier(&self) -> ModalityTier {
             ModalityTier::AlwaysAvailable
         }
-        fn initialize(
+        async fn initialize(
             &mut self,
             _engine: Arc<UniversalRenderingEngine<Self>>,
-        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-            async { Ok(()) }
+        ) -> crate::error::Result<()> {
+            Ok(())
         }
-        fn render(&mut self) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-            async {
-                Err(crate::error::PetalTongueError::Internal(
-                    "render failed".into(),
-                ))
-            }
+        async fn render(&mut self) -> crate::error::Result<()> {
+            Err(crate::error::PetalTongueError::Internal(
+                "render failed".into(),
+            ))
         }
-        fn handle_event(
+        async fn handle_event(
             &mut self,
             _event: EngineEvent,
-        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-            async { Ok(()) }
+        ) -> crate::error::Result<()> {
+            Ok(())
         }
-        fn shutdown(
-            &mut self,
-        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-            async { Ok(()) }
+        async fn shutdown(&mut self) -> crate::error::Result<()> {
+            Ok(())
         }
         fn capabilities(&self) -> ModalityCapabilities {
             ModalityCapabilities::default()
@@ -444,25 +435,23 @@ async fn test_render_completes_and_broadcasts_stop() {
         fn tier(&self) -> ModalityTier {
             ModalityTier::AlwaysAvailable
         }
-        fn initialize(
+        async fn initialize(
             &mut self,
             _engine: Arc<UniversalRenderingEngine<Self>>,
-        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-            async { Ok(()) }
+        ) -> crate::error::Result<()> {
+            Ok(())
         }
-        fn render(&mut self) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-            async { Ok(()) }
+        async fn render(&mut self) -> crate::error::Result<()> {
+            Ok(())
         }
-        fn handle_event(
+        async fn handle_event(
             &mut self,
             _event: EngineEvent,
-        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-            async { Ok(()) }
+        ) -> crate::error::Result<()> {
+            Ok(())
         }
-        fn shutdown(
-            &mut self,
-        ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send {
-            async { Ok(()) }
+        async fn shutdown(&mut self) -> crate::error::Result<()> {
+            Ok(())
         }
         fn capabilities(&self) -> ModalityCapabilities {
             ModalityCapabilities::default()

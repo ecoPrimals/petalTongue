@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::manual_async_fn)] // explicit `impl Future + Send` on `GUIModality`
 //! # Modality System
 //!
 //! Defines the trait and types for output modalities.
@@ -117,22 +116,19 @@ pub trait GUIModality: Sized + Send + Sync {
     fn tier(&self) -> ModalityTier;
 
     /// Initialize modality
-    fn initialize(
+    async fn initialize(
         &mut self,
         engine: Arc<UniversalRenderingEngine<Self>>,
-    ) -> impl std::future::Future<Output = Result<()>> + Send;
+    ) -> Result<()>;
 
     /// Start rendering (blocking or returns handle)
-    fn render(&mut self) -> impl std::future::Future<Output = Result<()>> + Send;
+    async fn render(&mut self) -> Result<()>;
 
     /// Handle events from other modalities
-    fn handle_event(
-        &mut self,
-        event: EngineEvent,
-    ) -> impl std::future::Future<Output = Result<()>> + Send;
+    async fn handle_event(&mut self, event: EngineEvent) -> Result<()>;
 
     /// Shutdown gracefully
-    fn shutdown(&mut self) -> impl std::future::Future<Output = Result<()>> + Send;
+    async fn shutdown(&mut self) -> Result<()>;
 
     /// Get modality-specific capabilities
     fn capabilities(&self) -> ModalityCapabilities;
@@ -151,26 +147,23 @@ impl GUIModality for NullModality {
         ModalityTier::AlwaysAvailable
     }
 
-    fn initialize(
+    async fn initialize(
         &mut self,
         _engine: Arc<UniversalRenderingEngine<Self>>,
-    ) -> impl std::future::Future<Output = Result<()>> + Send {
-        async { Ok(()) }
+    ) -> Result<()> {
+        Ok(())
     }
 
-    fn render(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
-        async { Ok(()) }
+    async fn render(&mut self) -> Result<()> {
+        Ok(())
     }
 
-    fn handle_event(
-        &mut self,
-        _event: EngineEvent,
-    ) -> impl std::future::Future<Output = Result<()>> + Send {
-        async { Ok(()) }
+    async fn handle_event(&mut self, _event: EngineEvent) -> Result<()> {
+        Ok(())
     }
 
-    fn shutdown(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
-        async { Ok(()) }
+    async fn shutdown(&mut self) -> Result<()> {
+        Ok(())
     }
 
     fn capabilities(&self) -> ModalityCapabilities {
@@ -314,26 +307,23 @@ mod tests {
             self.tier
         }
 
-        fn initialize(
+        async fn initialize(
             &mut self,
             _engine: Arc<UniversalRenderingEngine<Self>>,
-        ) -> impl std::future::Future<Output = Result<()>> + Send {
-            async { Ok(()) }
+        ) -> Result<()> {
+            Ok(())
         }
 
-        fn render(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
-            async { Ok(()) }
+        async fn render(&mut self) -> Result<()> {
+            Ok(())
         }
 
-        fn handle_event(
-            &mut self,
-            _event: EngineEvent,
-        ) -> impl std::future::Future<Output = Result<()>> + Send {
-            async { Ok(()) }
+        async fn handle_event(&mut self, _event: EngineEvent) -> Result<()> {
+            Ok(())
         }
 
-        fn shutdown(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
-            async { Ok(()) }
+        async fn shutdown(&mut self) -> Result<()> {
+            Ok(())
         }
 
         fn capabilities(&self) -> ModalityCapabilities {

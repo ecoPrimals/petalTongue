@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::manual_async_fn)]
 //! Display sensor - Output surface with verification
 //!
 //! Discovers display capabilities and provides verification of perceivability.
@@ -102,29 +101,25 @@ impl Sensor for ScreenSensor {
         true
     }
 
-    fn poll_events(
+    async fn poll_events(
         &mut self,
-    ) -> impl std::future::Future<
-        Output = std::result::Result<Vec<SensorEvent>, petal_tongue_core::sensor::SensorError>,
-    > + Send {
-        async {
-            let mut events = Vec::new();
+    ) -> std::result::Result<Vec<SensorEvent>, petal_tongue_core::sensor::SensorError> {
+        let mut events = Vec::new();
 
-            if let Some(last) = self.last_heartbeat {
-                let latency = last.elapsed();
-                events.push(SensorEvent::Heartbeat {
-                    latency,
-                    timestamp: Instant::now(),
-                });
-            }
-
-            events.push(SensorEvent::DisplayVisible {
-                visible: true,
+        if let Some(last) = self.last_heartbeat {
+            let latency = last.elapsed();
+            events.push(SensorEvent::Heartbeat {
+                latency,
                 timestamp: Instant::now(),
             });
-
-            Ok(events)
         }
+
+        events.push(SensorEvent::DisplayVisible {
+            visible: true,
+            timestamp: Instant::now(),
+        });
+
+        Ok(events)
     }
 
     fn last_activity(&self) -> Option<Instant> {

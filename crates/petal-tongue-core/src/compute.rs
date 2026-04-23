@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::manual_async_fn)] // explicit `impl Future + Send` for public trait object safety
 //! # Compute Provider System
 //!
 //! Optional GPU compute acceleration via capability-discovered providers.
@@ -37,13 +36,13 @@ pub trait ComputeProvider: Send + Sync {
     fn capabilities(&self) -> Vec<ComputeCapability>;
 
     /// Check if provider is available
-    fn is_available(&self) -> impl std::future::Future<Output = bool> + Send;
+    async fn is_available(&self) -> bool;
 
     /// Initialize provider
-    fn initialize(&mut self) -> impl std::future::Future<Output = Result<()>> + Send;
+    async fn initialize(&mut self) -> Result<()>;
 
     /// Shutdown provider
-    fn shutdown(&mut self) -> impl std::future::Future<Output = Result<()>> + Send;
+    async fn shutdown(&mut self) -> Result<()>;
 }
 
 /// Production compute provider implementations (see `crate::gpu_compute`).
@@ -76,36 +75,30 @@ impl ComputeProvider for ComputeProviderImpl {
         }
     }
 
-    fn is_available(&self) -> impl std::future::Future<Output = bool> + Send {
-        async move {
-            match self {
-                Self::Gpu(p) => p.is_available().await,
-                Self::CpuFallback(p) => p.is_available().await,
-                #[cfg(test)]
-                Self::Mock(p) => p.is_available().await,
-            }
+    async fn is_available(&self) -> bool {
+        match self {
+            Self::Gpu(p) => p.is_available().await,
+            Self::CpuFallback(p) => p.is_available().await,
+            #[cfg(test)]
+            Self::Mock(p) => p.is_available().await,
         }
     }
 
-    fn initialize(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
-        async move {
-            match self {
-                Self::Gpu(p) => p.initialize().await,
-                Self::CpuFallback(p) => p.initialize().await,
-                #[cfg(test)]
-                Self::Mock(p) => p.initialize().await,
-            }
+    async fn initialize(&mut self) -> Result<()> {
+        match self {
+            Self::Gpu(p) => p.initialize().await,
+            Self::CpuFallback(p) => p.initialize().await,
+            #[cfg(test)]
+            Self::Mock(p) => p.initialize().await,
         }
     }
 
-    fn shutdown(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
-        async move {
-            match self {
-                Self::Gpu(p) => p.shutdown().await,
-                Self::CpuFallback(p) => p.shutdown().await,
-                #[cfg(test)]
-                Self::Mock(p) => p.shutdown().await,
-            }
+    async fn shutdown(&mut self) -> Result<()> {
+        match self {
+            Self::Gpu(p) => p.shutdown().await,
+            Self::CpuFallback(p) => p.shutdown().await,
+            #[cfg(test)]
+            Self::Mock(p) => p.shutdown().await,
         }
     }
 }
@@ -193,17 +186,16 @@ impl ComputeProvider for MockComputeProvider {
         self.caps.clone()
     }
 
-    fn is_available(&self) -> impl std::future::Future<Output = bool> + Send {
-        let available = self.available;
-        async move { available }
+    async fn is_available(&self) -> bool {
+        self.available
     }
 
-    fn initialize(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
-        async { Ok(()) }
+    async fn initialize(&mut self) -> Result<()> {
+        Ok(())
     }
 
-    fn shutdown(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
-        async { Ok(()) }
+    async fn shutdown(&mut self) -> Result<()> {
+        Ok(())
     }
 }
 

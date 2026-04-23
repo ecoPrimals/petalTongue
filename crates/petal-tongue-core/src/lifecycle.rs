@@ -125,14 +125,14 @@ pub trait PrimalLifecycle {
     /// # Errors
     ///
     /// Returns error if startup fails.
-    fn start(&mut self) -> impl std::future::Future<Output = Result<(), PrimalError>> + Send;
+    async fn start(&mut self) -> Result<(), PrimalError>;
 
     /// Stop the primal.
     ///
     /// # Errors
     ///
     /// Returns error if shutdown fails.
-    fn stop(&mut self) -> impl std::future::Future<Output = Result<(), PrimalError>> + Send;
+    async fn stop(&mut self) -> Result<(), PrimalError>;
 }
 
 /// Trait for primal health management.
@@ -145,9 +145,7 @@ pub trait PrimalHealth {
     /// # Errors
     ///
     /// Returns error if health check fails.
-    fn health_check(
-        &self,
-    ) -> impl std::future::Future<Output = Result<HealthReport, PrimalError>> + Send;
+    async fn health_check(&self) -> Result<HealthReport, PrimalError>;
 }
 
 #[cfg(test)]

@@ -6,7 +6,6 @@
 
 use crate::errors::DiscoveryResult;
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
-use std::future::Future;
 
 /// Provider metadata for display and debugging
 #[derive(Debug, Clone)]
@@ -37,18 +36,18 @@ pub trait VisualizationDataProvider: Send + Sync {
     ///
     /// This is the core capability - providing the list of primals
     /// in the ecosystem.
-    fn get_primals(&self) -> impl Future<Output = DiscoveryResult<Vec<PrimalInfo>>> + Send;
+    async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>>;
 
     /// Get topology edges (connections between primals)
     ///
     /// Optional - if not implemented, petalTongue will infer topology
     /// from primal capabilities.
-    fn get_topology(&self) -> impl Future<Output = DiscoveryResult<Vec<TopologyEdge>>> + Send {
-        async { Ok(Vec::new()) }
+    async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
+        Ok(Vec::new())
     }
 
     /// Health check - verify provider is available
-    fn health_check(&self) -> impl Future<Output = DiscoveryResult<String>> + Send;
+    async fn health_check(&self) -> DiscoveryResult<String>;
 
     /// Get provider metadata
     ///

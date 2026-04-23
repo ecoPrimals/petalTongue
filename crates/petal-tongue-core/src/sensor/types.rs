@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::manual_async_fn)] // explicit `impl Future + Send` on `Sensor`
 //! Sensor types: trait, capabilities, events, input types.
 
 use std::time::Instant;
@@ -33,9 +32,7 @@ pub trait Sensor: Send + Sync {
     fn is_available(&self) -> bool;
 
     /// Poll for new events (non-blocking)
-    fn poll_events(
-        &mut self,
-    ) -> impl std::future::Future<Output = Result<Vec<SensorEvent>, SensorError>> + Send;
+    async fn poll_events(&mut self) -> Result<Vec<SensorEvent>, SensorError>;
 
     /// Get last activity timestamp
     fn last_activity(&self) -> Option<Instant>;

@@ -169,53 +169,51 @@ impl BiomeOsBackend {
 }
 
 impl DiscoveryBackend for BiomeOsBackend {
-    fn query(
+    async fn query(
         &self,
         query: &CapabilityQuery,
-    ) -> impl std::future::Future<Output = Result<Vec<PrimalEndpoint>, DiscoveryError>> + Send {
+    ) -> Result<Vec<PrimalEndpoint>, DiscoveryError> {
         let query = query.clone();
         let client = self.client.clone();
-        async move {
-            let request = JsonRpcRequest {
-                jsonrpc: "2.0".to_string(),
-                method: "discovery.query_capability".to_string(),
-                params: serde_json::json!({
-                    "domain": query.domain,
-                    "operation": query.operation,
-                    "version_req": query.version_req,
-                }),
-                id: 1,
-            };
+        let request = JsonRpcRequest {
+            jsonrpc: "2.0".to_string(),
+            method: "discovery.query_capability".to_string(),
+            params: serde_json::json!({
+                "domain": query.domain,
+                "operation": query.operation,
+                "version_req": query.version_req,
+            }),
+            id: 1,
+        };
 
-            let response = client
-                .call(&request)
-                .await
-                .map_err(|e| DiscoveryError::CommunicationError(e.to_string()))?;
+        let response = client
+            .call(&request)
+            .await
+            .map_err(|e| DiscoveryError::CommunicationError(e.to_string()))?;
 
-            if let Some(error) = response.error {
-                if error.message.contains("not found") {
-                    return Err(DiscoveryError::CapabilityNotFound {
-                        domain: query.domain.clone(),
-                    });
-                }
-                return Err(DiscoveryError::CommunicationError(error.message));
+        if let Some(error) = response.error {
+            if error.message.contains("not found") {
+                return Err(DiscoveryError::CapabilityNotFound {
+                    domain: query.domain.clone(),
+                });
             }
-
-            let result = response.result.ok_or_else(|| {
-                DiscoveryError::CommunicationError("No result in response".to_string())
-            })?;
-
-            let primals: Vec<BiomeOsPrimal> = serde_json::from_value(result)
-                .map_err(|e| DiscoveryError::CommunicationError(format!("Parse error: {e}")))?;
-
-            Ok(primals.into_iter().map(std::convert::Into::into).collect())
+            return Err(DiscoveryError::CommunicationError(error.message));
         }
+
+        let result = response.result.ok_or_else(|| {
+            DiscoveryError::CommunicationError("No result in response".to_string())
+        })?;
+
+        let primals: Vec<BiomeOsPrimal> = serde_json::from_value(result)
+            .map_err(|e| DiscoveryError::CommunicationError(format!("Parse error: {e}")))?;
+
+        Ok(primals.into_iter().map(std::convert::Into::into).collect())
     }
 
-    fn subscribe(
+    async fn subscribe(
         &self,
         _query: &CapabilityQuery,
-    ) -> impl std::future::Future<Output = Result<(), DiscoveryError>> + Send {
-        async { Ok(()) }
+    ) -> Result<(), DiscoveryError> {
+        Ok(())
     }
 }

@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::manual_async_fn)] // explicit `impl Future + Send` on `DiscoveryBackend`
 //! Capability-Based Discovery System
 //!
 //! TRUE PRIMAL principle: Primals have self-knowledge only.
@@ -189,16 +188,13 @@ pub struct CapabilityDiscovery<B: DiscoveryBackend> {
 /// Different implementations: biomeOS (primary), mDNS (fallback), static config
 pub trait DiscoveryBackend: Send + Sync {
     /// Query for primals providing a capability
-    fn query(
+    async fn query(
         &self,
         query: &CapabilityQuery,
-    ) -> impl std::future::Future<Output = Result<Vec<PrimalEndpoint>, DiscoveryError>> + Send;
+    ) -> Result<Vec<PrimalEndpoint>, DiscoveryError>;
 
     /// Subscribe to capability changes (real-time updates)
-    fn subscribe(
-        &self,
-        query: &CapabilityQuery,
-    ) -> impl std::future::Future<Output = Result<(), DiscoveryError>> + Send;
+    async fn subscribe(&self, query: &CapabilityQuery) -> Result<(), DiscoveryError>;
 }
 
 /// Discovery errors
@@ -349,20 +345,18 @@ mod tests {
     }
 
     impl DiscoveryBackend for MockDiscoveryBackend {
-        fn query(
+        async fn query(
             &self,
             _query: &CapabilityQuery,
-        ) -> impl std::future::Future<Output = Result<Vec<PrimalEndpoint>, DiscoveryError>> + Send
-        {
-            let results = self.results.clone();
-            async move { Ok(results) }
+        ) -> Result<Vec<PrimalEndpoint>, DiscoveryError> {
+            Ok(self.results.clone())
         }
 
-        fn subscribe(
+        async fn subscribe(
             &self,
             _query: &CapabilityQuery,
-        ) -> impl std::future::Future<Output = Result<(), DiscoveryError>> + Send {
-            async { Ok(()) }
+        ) -> Result<(), DiscoveryError> {
+            Ok(())
         }
     }
 
