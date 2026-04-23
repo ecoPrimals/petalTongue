@@ -33,6 +33,10 @@ capabilities_required:
   - domain: crypto
     operations: [encrypt, sign]
     required: true
+  # BTSP transport security (bearDog)
+  - domain: btsp
+    operations: [session.create, session.verify]
+    required: false
   # Discovery (songbird or equivalent)
   - domain: discovery
     operations: [query]
@@ -260,6 +264,10 @@ modes:
     description: "Web interface mode"
   - id: headless
     description: "Headless API mode for testing and automation"
+  - id: server
+    description: "IPC server mode (UDS + optional TCP, no display)"
+  - id: live
+    description: "NUCLEUS interactive mode (IPC server + GUI in one process)"
 
 # Spring data format compatibility
 data_formats:

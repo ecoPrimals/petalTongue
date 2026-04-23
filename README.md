@@ -20,7 +20,7 @@ petaltongue web         # Web interface (axum)
 petaltongue headless    # Headless API server (no display)
 petaltongue server      # IPC server (UDS, no display)
 petaltongue server --socket /path/to.sock  # explicit UDS path
-petaltongue server --port 9100  # IPC server (UDS + TCP)
+petaltongue server --port 9090  # IPC server (UDS + TCP)
 petaltongue live        # NUCLEUS interactive (IPC + GUI in one process)
 petaltongue live --port 9090    # live mode with TCP listener
 petaltongue status      # System status
@@ -113,7 +113,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,144+ passing, 0 failures |
+| Tests | 6,150+ passing (98 test suites), 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons; zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
@@ -172,6 +172,7 @@ See [ENV_VARS.md](./ENV_VARS.md) for the full reference.
 ## Specs
 
 Architectural specifications live in `specs/` (19 specification documents + `LICENSE.md`).
+Key specs:
 
 | Spec | Purpose |
 |------|---------|
@@ -184,6 +185,16 @@ Architectural specifications live in `specs/` (19 specification documents + `LIC
 | `INTERACTION_ENGINE_ARCHITECTURE.md` | Bidirectional interaction, perspective system |
 | `SENSORY_INPUT_V1_PERIPHERALS.md` | Sensor discovery, hardware abstraction, SAME DAVE afferent |
 | `JSONRPC_PROTOCOL_SPECIFICATION.md` | JSON-RPC 2.0 IPC protocol |
+| `PANEL_SYSTEM_V2.md` | Dashboard panel system and layout engine |
+| `GRAPH_BUILDER_ARCHITECTURE.md` | Chart builder and rendering pipeline |
+| `NEURAL_API_INTEGRATION_SPECIFICATION.md` | biomeOS Neural API client integration |
+| `PURE_RUST_DISPLAY_ARCHITECTURE.md` | Pure-Rust display backend design |
+| `UI_INFRASTRUCTURE_SPECIFICATION.md` | UI framework and infrastructure |
+| `HUMAN_ENTROPY_CAPTURE_SPECIFICATION.md` | Gesture/narrative/visual entropy capture |
+| `PETALTONGUE_AWAKENING_EXPERIENCE.md` | First-run onboarding and awakening flow |
+| `SPOREPRINT_CONTENT_DELIVERY_SPECIFICATION.md` | Content delivery and distribution |
+| `REALTIME_COLLABORATIVE_PIPELINE.md` | Real-time collaborative rendering |
+| `COLLABORATIVE_INTELLIGENCE_INTEGRATION.md` | AI/human collaborative intelligence |
 
 ---
 
