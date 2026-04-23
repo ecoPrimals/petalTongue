@@ -147,3 +147,117 @@ fn handshake_enforced_in_production() {
         HandshakePolicy::Open => panic!("expected EnforceBearDog"),
     }
 }
+
+#[test]
+fn config_from_env_checks_security_provider_socket() {
+    env_test_helpers::with_env_vars(
+        &[
+            ("FAMILY_ID", Some("test-fam")),
+            ("BTSP_PROVIDER_SOCKET", None),
+            ("BEARDOG_SOCKET", None),
+            ("SECURITY_PROVIDER_SOCKET", Some("/tmp/sec.sock")),
+            ("CRYPTO_PROVIDER_SOCKET", None),
+            ("SECURITY_SOCKET", None),
+        ],
+        || {
+            let cfg = super::BtspHandshakeConfig::from_env().expect("should resolve config");
+            assert_eq!(
+                cfg.provider_socket,
+                std::path::PathBuf::from("/tmp/sec.sock")
+            );
+        },
+    );
+}
+
+#[test]
+fn config_from_env_checks_crypto_provider_socket() {
+    env_test_helpers::with_env_vars(
+        &[
+            ("FAMILY_ID", Some("test-fam")),
+            ("BTSP_PROVIDER_SOCKET", None),
+            ("BEARDOG_SOCKET", None),
+            ("SECURITY_PROVIDER_SOCKET", None),
+            ("CRYPTO_PROVIDER_SOCKET", Some("/tmp/crypto.sock")),
+            ("SECURITY_SOCKET", None),
+        ],
+        || {
+            let cfg = super::BtspHandshakeConfig::from_env().expect("should resolve config");
+            assert_eq!(
+                cfg.provider_socket,
+                std::path::PathBuf::from("/tmp/crypto.sock")
+            );
+        },
+    );
+}
+
+#[test]
+fn config_from_env_checks_security_socket() {
+    env_test_helpers::with_env_vars(
+        &[
+            ("FAMILY_ID", Some("test-fam")),
+            ("BTSP_PROVIDER_SOCKET", None),
+            ("BEARDOG_SOCKET", None),
+            ("SECURITY_PROVIDER_SOCKET", None),
+            ("CRYPTO_PROVIDER_SOCKET", None),
+            ("SECURITY_SOCKET", Some("/tmp/security.sock")),
+        ],
+        || {
+            let cfg = super::BtspHandshakeConfig::from_env().expect("should resolve config");
+            assert_eq!(
+                cfg.provider_socket,
+                std::path::PathBuf::from("/tmp/security.sock")
+            );
+        },
+    );
+}
+
+#[test]
+fn load_family_seed_prefers_beardog_env() {
+    env_test_helpers::with_env_vars(
+        &[
+            ("FAMILY_ID", Some("fam")),
+            ("BEARDOG_FAMILY_SEED", Some("YmVhcmRvZy1zZWVk")),
+            ("FAMILY_SEED", Some("ZmFtaWx5LXNlZWQ=")),
+            ("BTSP_PROVIDER_SOCKET", Some("/tmp/test.sock")),
+        ],
+        || {
+            let cfg = super::BtspHandshakeConfig::from_env().expect("should resolve config");
+            assert_eq!(
+                cfg.load_family_seed(),
+                Some("YmVhcmRvZy1zZWVk".to_owned())
+            );
+        },
+    );
+}
+
+#[test]
+fn load_family_seed_falls_back_to_family_seed() {
+    env_test_helpers::with_env_vars(
+        &[
+            ("FAMILY_ID", Some("fam")),
+            ("BEARDOG_FAMILY_SEED", None),
+            ("FAMILY_SEED", Some("ZmFtaWx5LXNlZWQ=")),
+            ("BTSP_PROVIDER_SOCKET", Some("/tmp/test.sock")),
+        ],
+        || {
+            let cfg = super::BtspHandshakeConfig::from_env().expect("should resolve config");
+            assert_eq!(cfg.load_family_seed(), Some("ZmFtaWx5LXNlZWQ=".to_owned()));
+        },
+    );
+}
+
+#[test]
+fn load_family_seed_none_when_unset() {
+    env_test_helpers::with_env_vars(
+        &[
+            ("FAMILY_ID", Some("fam")),
+            ("BEARDOG_FAMILY_SEED", None),
+            ("FAMILY_SEED", None),
+            ("BTSP_PROVIDER_SOCKET", Some("/tmp/test.sock")),
+        ],
+        || {
+            let cfg = super::BtspHandshakeConfig::from_env().expect("should resolve config");
+            assert_eq!(cfg.load_family_seed(), None);
+        },
+    );
+}

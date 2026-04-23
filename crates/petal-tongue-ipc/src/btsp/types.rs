@@ -177,14 +177,19 @@ impl BtspHandshakeConfig {
     /// Returns `Some` when `FAMILY_ID`/`PETALTONGUE_FAMILY_ID` is set to a
     /// production value (non-empty, not `"default"`).
     ///
-    /// Provider socket resolution: `BTSP_PROVIDER_SOCKET` > `BEARDOG_SOCKET`
-    /// > `$BIOMEOS_SOCKET_DIR/{provider}-{family_id}.sock` > `$XDG_RUNTIME_DIR/biomeos/beardog-{family_id}.sock`.
+    /// Provider socket resolution:
+    /// `BTSP_PROVIDER_SOCKET` > `BEARDOG_SOCKET` > `SECURITY_PROVIDER_SOCKET` >
+    /// `CRYPTO_PROVIDER_SOCKET` > `SECURITY_SOCKET` >
+    /// `$BIOMEOS_SOCKET_DIR/{provider}-{family_id}.sock`.
     #[must_use]
     pub fn from_env() -> Option<Self> {
         let fid = raw_family_id_from_env().filter(|s| is_production_family_id(Some(s)))?;
 
         let provider_socket = std::env::var("BTSP_PROVIDER_SOCKET")
             .or_else(|_| std::env::var("BEARDOG_SOCKET"))
+            .or_else(|_| std::env::var("SECURITY_PROVIDER_SOCKET"))
+            .or_else(|_| std::env::var("CRYPTO_PROVIDER_SOCKET"))
+            .or_else(|_| std::env::var("SECURITY_SOCKET"))
             .ok()
             .map_or_else(
                 || {
@@ -208,5 +213,17 @@ impl BtspHandshakeConfig {
             provider_socket,
             family_id: fid,
         })
+    }
+
+    /// Load the base64-encoded family seed from environment.
+    ///
+    /// Resolution: `BEARDOG_FAMILY_SEED` > `FAMILY_SEED`.
+    /// Returns `None` if neither is set.
+    #[must_use]
+    pub fn load_family_seed(&self) -> Option<String> {
+        std::env::var("BEARDOG_FAMILY_SEED")
+            .or_else(|_| std::env::var("FAMILY_SEED"))
+            .ok()
+            .filter(|s| !s.trim().is_empty())
     }
 }

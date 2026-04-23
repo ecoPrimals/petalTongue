@@ -6,6 +6,7 @@
 
 mod client;
 mod framing;
+mod json_line;
 mod server;
 mod types;
 
@@ -19,3 +20,5 @@ pub use types::{
 };
 
 pub use server::{perform_server_handshake, perform_server_handshake_split};
+
+pub use json_line::{relay_json_line_handshake, relay_json_line_handshake_split};
