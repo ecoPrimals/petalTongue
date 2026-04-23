@@ -6,6 +6,41 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### BTSP JSON-Line Handshake Relay + BearDog Field Alignment (April 23, 2026)
+
+#### Added
+- **`btsp/json_line.rs`** — new JSON-line (newline-delimited) BTSP handshake relay module.
+  Full 4-step protocol: read ClientHello line, call BearDog `btsp.session.create` (with
+  real base64 `family_seed`, not reference), send ServerHello line (using BearDog's
+  challenge, not local PRNG), read ChallengeResponse line, call `btsp.session.verify`
+  (with `session_token` + `response` field names), send HandshakeComplete line (`"status":"ok"`).
+- **`BtspHandshakeConfig::load_family_seed()`** — resolves `BEARDOG_FAMILY_SEED` >
+  `FAMILY_SEED` from environment for passing to BearDog `btsp.session.create`.
+- **9 new BTSP tests** — env cascade for `SECURITY_PROVIDER_SOCKET`, `CRYPTO_PROVIDER_SOCKET`,
+  `SECURITY_SOCKET`; `load_family_seed` priority and fallback; `json_str_or` helper.
+
+#### Changed
+- **UDS/TCP accept routing** — JSON-line BTSP announcements (`{"protocol":"btsp",...}`)
+  now route to `relay_json_line_handshake` instead of `perform_server_handshake`
+  (which uses length-prefixed framing). Three-way classification: non-`{` →
+  length-prefixed BTSP, `{` + `"protocol"` → JSON-line relay, `{` only → plain JSON-RPC.
+- **`btsp.session.create`** — sends actual `family_seed` (base64 from env) instead of
+  `family_seed_ref: "env:FAMILY_SEED"`. Uses BearDog's returned challenge (not local
+  `rand_u128()`). Accepts both `session_token` and `session_id` in response.
+- **`btsp.session.verify`** — sends `session_token` (was `session_id`) and `response`
+  (was `client_response`). Sends `preferred_cipher` + `client_ephemeral_pub` per BearDog spec.
+- **HandshakeComplete** — sends `"status":"ok"` (was `"complete"`) per upstream spec.
+- **Provider socket env cascade** — now checks `SECURITY_PROVIDER_SOCKET`,
+  `CRYPTO_PROVIDER_SOCKET`, `SECURITY_SOCKET` between `BEARDOG_SOCKET` and the
+  family-scoped default path.
+- **Removed `rand_u128()`** — no longer generating local challenges; BearDog provides them.
+
+#### Verified
+- `cargo clippy --workspace --all-targets --all-features` — 0 warnings
+- `cargo test --workspace --all-features` — all passing
+- `cargo check --target x86_64-apple-darwin` — macOS cross-check clean
+- 21 BTSP-specific tests all passing (12 existing + 9 new)
+
 ### `petaltongue live` Mode + BTSP Wire-Format Fix + Deep Debt Zero (April 21, 2026)
 
 #### Added

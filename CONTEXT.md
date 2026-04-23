@@ -49,7 +49,9 @@ JSON-RPC 2.0 over Unix domain sockets (primary) and TCP (`--port`).
 `capability.*`, `identity.*`, `ui.*`, `motor.*`, `audio.*`, `lifecycle.*`.
 
 BTSP Phase 1 complete: family-scoped socket naming, insecure guard,
-domain symlinks (`visualization.sock`).
+domain symlinks (`visualization.sock`). BTSP Phase 2 complete: BearDog
+handshake delegation on both UDS and TCP, length-prefixed and JSON-line
+framing, `btsp.session.create/verify/negotiate` via provider client.
 
 ## Key Design Decisions
 
@@ -169,6 +171,14 @@ Deep debt audit (April 21, 2026): clippy zero warnings achieved (boxed
 → `futures-util` in discovery crate. All 4 remaining `dyn` usages audited
 as idiomatic (callbacks + error trait).
 
-Remaining backlog: BTSP Phase 2 consumer wiring (cross-primal dep on
-BearDog), BTSP Phase 3 encryption, aarch64 musl cross-compile for headless,
-audio backend wire protocols (PipeWire/PulseAudio).
+BTSP JSON-line handshake relay (April 23, 2026): primalSpring Phase 45c
+upstream debt resolved. New `btsp/json_line.rs` module implements full
+4-step JSON-line BTSP relay (same pattern as ToadStool, barraCuda, etc.).
+UDS/TCP accept now routes JSON-line BTSP announcements to the new relay
+instead of the length-prefixed handler. BearDog field names aligned
+(`session_token`, `response`, `family_seed`), BearDog challenge used
+(not local PRNG), `SECURITY_PROVIDER_SOCKET`/`CRYPTO_PROVIDER_SOCKET`/
+`SECURITY_SOCKET` added to provider socket cascade.
+
+Remaining backlog: BTSP Phase 3 encryption, aarch64 musl cross-compile
+for headless, audio backend wire protocols (PipeWire/PulseAudio).

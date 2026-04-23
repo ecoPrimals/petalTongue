@@ -15,7 +15,7 @@ fn json_str(val: &serde_json::Value, key: &str) -> String {
 
 /// Read `ClientHello`, create a BearDog session, and send `ServerHello`.
 ///
-/// Returns `(session_id, server_ephemeral_pub, client_ephemeral_pub, challenge)`.
+/// Returns `(session_token, server_ephemeral_pub, client_ephemeral_pub, challenge)`.
 async fn exchange_hello<R, W>(
     reader: &mut R,
     writer: &mut W,
@@ -32,24 +32,34 @@ where
         .map_err(|e| format!("parse ClientHello: {e}"))?;
 
     let client_ephemeral_pub = json_str(&client_hello, "client_ephemeral_pub");
-    let challenge = format!("{:032x}", rand_u128());
+
+    let family_seed = config
+        .load_family_seed()
+        .unwrap_or_else(|| config.family_id.clone());
 
     let create_result = provider_call(
         &config.provider_socket,
         "btsp.session.create",
         serde_json::json!({
-            "family_seed_ref": "env:FAMILY_SEED",
+            "family_seed": family_seed,
             "client_ephemeral_pub": client_ephemeral_pub,
-            "challenge": challenge,
         }),
     )
     .await?;
 
-    let session_id = json_str(&create_result, "session_id");
+    // BearDog may return session_token or session_id
+    let session_token = create_result
+        .get("session_token")
+        .or_else(|| create_result.get("session_id"))
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("")
+        .to_owned();
     let server_ephemeral_pub = json_str(&create_result, "server_ephemeral_pub");
+    // BearDog generates the challenge — relay must use it, not a local one
+    let challenge = json_str(&create_result, "challenge");
 
     let hello = serde_json::json!({
-        "session_id": session_id,
+        "version": 1,
         "server_ephemeral_pub": server_ephemeral_pub,
         "challenge": challenge,
     });
@@ -59,7 +69,7 @@ where
         .map_err(|e| format!("write ServerHello: {e}"))?;
 
     Ok((
-        session_id,
+        session_token,
         server_ephemeral_pub,
         client_ephemeral_pub,
         challenge,
@@ -71,10 +81,10 @@ async fn verify_challenge<R, W>(
     reader: &mut R,
     writer: &mut W,
     config: &BtspHandshakeConfig,
-    session_id: &str,
-    server_ephemeral_pub: &str,
+    session_token: &str,
+    _server_ephemeral_pub: &str,
     client_ephemeral_pub: &str,
-    challenge: &str,
+    _challenge: &str,
 ) -> Result<String, String>
 where
     R: tokio::io::AsyncReadExt + Unpin,
@@ -86,7 +96,7 @@ where
     let cr: serde_json::Value =
         serde_json::from_slice(&cr_bytes).map_err(|e| format!("parse ChallengeResponse: {e}"))?;
 
-    let client_response = json_str(&cr, "response");
+    let response = json_str(&cr, "response");
     let preferred_cipher = cr
         .get("preferred_cipher")
         .and_then(serde_json::Value::as_str)
@@ -97,11 +107,10 @@ where
         &config.provider_socket,
         "btsp.session.verify",
         serde_json::json!({
-            "session_id": session_id,
-            "client_response": client_response,
+            "session_token": session_token,
+            "response": response,
             "client_ephemeral_pub": client_ephemeral_pub,
-            "server_ephemeral_pub": server_ephemeral_pub,
-            "challenge": challenge,
+            "preferred_cipher": preferred_cipher,
         }),
     )
     .await?;
@@ -150,14 +159,14 @@ where
     R: tokio::io::AsyncReadExt + Unpin,
     W: tokio::io::AsyncWriteExt + Unpin,
 {
-    let (session_id, server_pub, client_pub, challenge) =
+    let (session_token, server_pub, client_pub, challenge) =
         exchange_hello(reader, writer, config).await?;
 
     let preferred_cipher = verify_challenge(
         reader,
         writer,
         config,
-        &session_id,
+        &session_token,
         &server_pub,
         &client_pub,
         &challenge,
@@ -168,7 +177,7 @@ where
         &config.provider_socket,
         "btsp.negotiate",
         serde_json::json!({
-            "session_id": session_id,
+            "session_id": session_token,
             "preferred_cipher": preferred_cipher,
             "bond_type": "Covalent",
         }),
@@ -176,8 +185,8 @@ where
     .await;
 
     let complete = serde_json::json!({
-        "status": "complete",
-        "session_id": session_id,
+        "status": "ok",
+        "session_id": session_token,
         "cipher": "null",
     });
     let complete_bytes = serde_json::to_vec(&complete).map_err(|e| e.to_string())?;
@@ -185,17 +194,7 @@ where
         .await
         .map_err(|e| format!("write Complete: {e}"))?;
 
-    tracing::info!(session_id = %session_id, "BTSP handshake complete (null cipher)");
-    Ok(session_id)
+    tracing::info!(session_token = %session_token, "BTSP handshake complete (null cipher)");
+    Ok(session_token)
 }
 
-/// Simple PRNG for challenge nonces (not cryptographically strong —
-/// BearDog provides the real crypto via session.create).
-fn rand_u128() -> u128 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let t = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-    t ^ (std::process::id() as u128) ^ 0x5555_5555_5555_5555_5555_5555_5555_5555
-}
