@@ -215,20 +215,25 @@ impl BtspHandshakeConfig {
         })
     }
 
-    /// Load the raw family seed string from environment.
+    /// Load the family seed from environment, base64-encoded for BearDog.
     ///
-    /// Per SOURDOUGH standard: the value is passed to BearDog as-is
-    /// (trimmed). Do NOT hex-decode or base64-encode — BearDog handles
-    /// encoding internally.
+    /// BearDog's `btsp.session.create` handler base64-decodes the
+    /// `family_seed` parameter. This function reads the raw env var
+    /// (hex string from `nucleus_launcher.sh`), trims whitespace, and
+    /// base64-encodes the bytes for the wire format.
     ///
     /// Resolution: `BEARDOG_FAMILY_SEED` > `FAMILY_SEED`.
     /// Returns `None` if neither is set.
     #[must_use]
     pub fn load_family_seed(&self) -> Option<String> {
+        use base64::Engine;
         std::env::var("BEARDOG_FAMILY_SEED")
             .or_else(|_| std::env::var("FAMILY_SEED"))
             .ok()
             .map(|s| s.trim().to_owned())
             .filter(|s| !s.is_empty())
+            .map(|s| {
+                base64::engine::general_purpose::STANDARD.encode(s.as_bytes())
+            })
     }
 }
