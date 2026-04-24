@@ -261,3 +261,52 @@ fn load_family_seed_none_when_unset() {
         },
     );
 }
+
+#[test]
+fn load_family_seed_passes_raw_hex_unchanged() {
+    let raw_hex = "e06c1785c14c45983eab7f2d9a0b3c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b";
+    env_test_helpers::with_env_vars(
+        &[
+            ("FAMILY_ID", Some("prod")),
+            ("BEARDOG_FAMILY_SEED", None),
+            ("FAMILY_SEED", Some(raw_hex)),
+            ("BTSP_PROVIDER_SOCKET", Some("/tmp/test.sock")),
+        ],
+        || {
+            let cfg = super::BtspHandshakeConfig::from_env().expect("should resolve config");
+            assert_eq!(cfg.load_family_seed(), Some(raw_hex.to_owned()));
+        },
+    );
+}
+
+#[test]
+fn load_family_seed_trims_whitespace() {
+    env_test_helpers::with_env_vars(
+        &[
+            ("FAMILY_ID", Some("prod")),
+            ("BEARDOG_FAMILY_SEED", None),
+            ("FAMILY_SEED", Some("  a1b2c3d4e5f6  ")),
+            ("BTSP_PROVIDER_SOCKET", Some("/tmp/test.sock")),
+        ],
+        || {
+            let cfg = super::BtspHandshakeConfig::from_env().expect("should resolve config");
+            assert_eq!(cfg.load_family_seed(), Some("a1b2c3d4e5f6".to_owned()));
+        },
+    );
+}
+
+#[test]
+fn load_family_seed_empty_after_trim_returns_none() {
+    env_test_helpers::with_env_vars(
+        &[
+            ("FAMILY_ID", Some("prod")),
+            ("BEARDOG_FAMILY_SEED", None),
+            ("FAMILY_SEED", Some("   ")),
+            ("BTSP_PROVIDER_SOCKET", Some("/tmp/test.sock")),
+        ],
+        || {
+            let cfg = super::BtspHandshakeConfig::from_env().expect("should resolve config");
+            assert_eq!(cfg.load_family_seed(), None);
+        },
+    );
+}
