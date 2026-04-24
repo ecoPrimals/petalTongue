@@ -6,6 +6,21 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### BTSP family_seed SOURDOUGH Alignment (April 24, 2026)
+
+#### Fixed
+- **`load_family_seed()` doc comment** — was "base64-encoded family seed" but the
+  function correctly returns the raw env var string per SOURDOUGH standard. Comment
+  updated to document that the value is passed to BearDog as-is (raw hex, not encoded).
+- **Whitespace trimming** — `load_family_seed()` now trims whitespace from the env
+  value before returning. Previously it only used trim for the emptiness check but
+  returned the untrimmed string, which could cause HMAC mismatches if the env var
+  had trailing newlines (common with shell command substitution).
+
+#### Added
+- **3 new BTSP tests** — raw hex passthrough (realistic deployment path), whitespace
+  trimming, and empty-after-trim returns `None`.
+
 ### Native `async fn` in Traits — Manual Desugaring Elimination (April 25, 2026)
 
 #### Changed

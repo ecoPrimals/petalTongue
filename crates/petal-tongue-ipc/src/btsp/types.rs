@@ -215,7 +215,11 @@ impl BtspHandshakeConfig {
         })
     }
 
-    /// Load the base64-encoded family seed from environment.
+    /// Load the raw family seed string from environment.
+    ///
+    /// Per SOURDOUGH standard: the value is passed to BearDog as-is
+    /// (trimmed). Do NOT hex-decode or base64-encode — BearDog handles
+    /// encoding internally.
     ///
     /// Resolution: `BEARDOG_FAMILY_SEED` > `FAMILY_SEED`.
     /// Returns `None` if neither is set.
@@ -224,6 +228,7 @@ impl BtspHandshakeConfig {
         std::env::var("BEARDOG_FAMILY_SEED")
             .or_else(|_| std::env::var("FAMILY_SEED"))
             .ok()
-            .filter(|s| !s.trim().is_empty())
+            .map(|s| s.trim().to_owned())
+            .filter(|s| !s.is_empty())
     }
 }
