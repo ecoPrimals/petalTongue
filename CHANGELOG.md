@@ -6,20 +6,20 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-### BTSP family_seed SOURDOUGH Alignment (April 24, 2026)
+### BTSP family_seed Base64 Encoding Fix (April 24, 2026)
 
 #### Fixed
-- **`load_family_seed()` doc comment** — was "base64-encoded family seed" but the
-  function correctly returns the raw env var string per SOURDOUGH standard. Comment
-  updated to document that the value is passed to BearDog as-is (raw hex, not encoded).
-- **Whitespace trimming** — `load_family_seed()` now trims whitespace from the env
-  value before returning. Previously it only used trim for the emptiness check but
-  returned the untrimmed string, which could cause HMAC mismatches if the env var
-  had trailing newlines (common with shell command substitution).
+- **`load_family_seed()` now base64-encodes** the raw env var string before
+  returning it. BearDog's `btsp.session.create` handler base64-decodes the
+  `family_seed` parameter; sending raw hex caused HMAC mismatches (guidestone
+  error: "BTSP verification failed: unknown"). Aligns with all other converged
+  relay primals (barraCuda, Songbird, coralReef, sweetGrass, etc.).
+- **Whitespace trimming** preserved — env value is trimmed before base64 encoding.
 
-#### Added
-- **3 new BTSP tests** — raw hex passthrough (realistic deployment path), whitespace
-  trimming, and empty-after-trim returns `None`.
+#### Changed
+- **6 BTSP tests updated** — tests now use raw string inputs and verify base64
+  output. Covers: env priority, fallback, raw hex encoding, trim-then-encode,
+  empty-after-trim, and unset returns `None`.
 
 ### Native `async fn` in Traits — Manual Desugaring Elimination (April 25, 2026)
 
