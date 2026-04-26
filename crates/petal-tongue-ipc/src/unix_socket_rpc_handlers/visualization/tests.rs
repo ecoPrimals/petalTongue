@@ -457,3 +457,96 @@ fn handle_render_scene_default_session_id() {
     assert!(resp.error.is_none());
     assert_eq!(resp.result.expect("result")["session_id"], "scene-session");
 }
+
+#[test]
+fn handle_texture_upload_success() {
+    use base64::Engine;
+    let h = test_handlers();
+    let pixel_data = vec![255u8; 4 * 4 * 4]; // 4x4 RGBA
+    let b64 = base64::engine::general_purpose::STANDARD.encode(&pixel_data);
+    let req = JsonRpcRequest::new(
+        "visualization.texture.upload",
+        json!({
+            "texture_id": "test-tex",
+            "width": 4,
+            "height": 4,
+            "format": "rgba8",
+            "data": b64,
+        }),
+        json!(1),
+    );
+    let resp = handle_texture_upload(&h, req);
+    assert!(resp.error.is_none());
+    let r = resp.result.expect("result");
+    assert_eq!(r["texture_id"], "test-tex");
+    assert_eq!(r["status"], "loaded");
+
+    let state = h.viz_state.read().unwrap();
+    let entry = state.texture_registry.get("test-tex").expect("registered");
+    assert_eq!(entry.width, 4);
+    assert_eq!(entry.height, 4);
+    assert_eq!(entry.data.len(), 64);
+}
+
+#[test]
+fn handle_texture_upload_bad_format() {
+    let h = test_handlers();
+    let req = JsonRpcRequest::new(
+        "visualization.texture.upload",
+        json!({
+            "texture_id": "x",
+            "width": 1,
+            "height": 1,
+            "format": "rgb565",
+            "data": "AAAA",
+        }),
+        json!(1),
+    );
+    let resp = handle_texture_upload(&h, req);
+    assert!(resp.error.is_some());
+}
+
+#[test]
+fn handle_texture_upload_bad_size() {
+    use base64::Engine;
+    let h = test_handlers();
+    let short_data = base64::engine::general_purpose::STANDARD.encode(&[0u8; 3]);
+    let req = JsonRpcRequest::new(
+        "visualization.texture.upload",
+        json!({
+            "texture_id": "x",
+            "width": 2,
+            "height": 2,
+            "format": "rgba8",
+            "data": short_data,
+        }),
+        json!(1),
+    );
+    let resp = handle_texture_upload(&h, req);
+    assert!(resp.error.is_some());
+}
+
+#[test]
+fn handle_texture_attach_success() {
+    let h = test_handlers();
+    let req = JsonRpcRequest::new(
+        "visualization.texture.attach",
+        json!({
+            "texture_id": "godot-fb",
+            "source": "memfd://godot-fb-0",
+            "width": 320,
+            "height": 240,
+        }),
+        json!(1),
+    );
+    let resp = handle_texture_attach(&h, req);
+    assert!(resp.error.is_none());
+    let r = resp.result.expect("result");
+    assert_eq!(r["texture_id"], "godot-fb");
+    assert_eq!(r["status"], "attached");
+
+    let state = h.viz_state.read().unwrap();
+    let entry = state.texture_registry.get("godot-fb").expect("registered");
+    assert_eq!(entry.width, 320);
+    assert_eq!(entry.height, 240);
+}

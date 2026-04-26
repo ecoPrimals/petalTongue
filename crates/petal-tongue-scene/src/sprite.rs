@@ -12,6 +12,9 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::primitive::{Color, Primitive, UvRect};
+use crate::scene_graph::SceneNode;
+
 /// A 2D sprite: a positioned, scaled, optionally rotated image region.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Sprite {
@@ -179,6 +182,31 @@ impl Default for GameScene {
     }
 }
 
+impl From<Sprite> for SceneNode {
+    fn from(sprite: Sprite) -> Self {
+        let prim = Primitive::Texture {
+            texture_id: sprite.texture_id.clone().unwrap_or_default(),
+            x: sprite.position[0],
+            y: sprite.position[1],
+            width: sprite.size[0],
+            height: sprite.size[1],
+            uv: sprite.uv_rect.map(|[u, v, w, h]| UvRect { u, v, w, h }),
+            opacity: f32::from(sprite.tint[3]) / 255.0,
+            tint: Some(Color::from_rgba8(
+                sprite.tint[0],
+                sprite.tint[1],
+                sprite.tint[2],
+                sprite.tint[3],
+            )),
+            data_id: Some(sprite.id.clone()),
+        };
+        let label = sprite.label.clone().unwrap_or_else(|| sprite.id.clone());
+        Self::new(&sprite.id)
+            .with_primitive(prim)
+            .with_label(label)
+    }
+}
+
 const fn default_white() -> [u8; 4] {
     [255, 255, 255, 255]
 }
@@ -332,5 +360,79 @@ mod tests {
         assert_eq!(back.sprites.len(), 1);
         assert_eq!(back.entities.len(), 1);
         assert!((back.camera_zoom - 2.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn sprite_to_scene_node_basic() {
+        let sprite = Sprite {
+            id: "hero".to_string(),
+            position: [10.0, 20.0],
+            size: [64.0, 64.0],
+            rotation: 0.0,
+            tint: [255, 128, 0, 200],
+            uv_rect: Some([0.0, 0.0, 0.5, 0.5]),
+            texture_id: Some("hero-sheet".to_string()),
+            z_order: 5,
+            visible: true,
+            label: Some("Hero".to_string()),
+        };
+        let node: SceneNode = sprite.into();
+        assert_eq!(node.id, "hero");
+        assert_eq!(node.label.as_deref(), Some("Hero"));
+
+        assert_eq!(node.primitives.len(), 1);
+        let prim = &node.primitives[0];
+        match prim {
+            Primitive::Texture {
+                texture_id,
+                x,
+                y,
+                width,
+                height,
+                uv,
+                opacity,
+                data_id,
+                ..
+            } => {
+                assert_eq!(texture_id, "hero-sheet");
+                assert!((*x - 10.0).abs() < f64::EPSILON);
+                assert!((*y - 20.0).abs() < f64::EPSILON);
+                assert!((*width - 64.0).abs() < f64::EPSILON);
+                assert!((*height - 64.0).abs() < f64::EPSILON);
+                let uv = uv.as_ref().expect("should have UV rect");
+                assert!((uv.u - 0.0).abs() < f64::EPSILON);
+                assert!((uv.w - 0.5).abs() < f64::EPSILON);
+                assert!((*opacity - 200.0 / 255.0).abs() < f32::EPSILON);
+                assert_eq!(data_id.as_deref(), Some("hero"));
+            }
+            other => panic!("expected Texture primitive, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn sprite_to_scene_node_no_texture_id() {
+        let sprite = Sprite {
+            id: "bare".to_string(),
+            position: [0.0, 0.0],
+            size: [16.0, 16.0],
+            rotation: 0.0,
+            tint: default_white(),
+            uv_rect: None,
+            texture_id: None,
+            z_order: 0,
+            visible: true,
+            label: None,
+        };
+        let node: SceneNode = sprite.into();
+        assert_eq!(node.id, "bare");
+        assert_eq!(node.label.as_deref(), Some("bare"));
+        assert_eq!(node.primitives.len(), 1);
+        match &node.primitives[0] {
+            Primitive::Texture { texture_id, uv, .. } => {
+                assert!(texture_id.is_empty());
+                assert!(uv.is_none());
+            }
+            other => panic!("expected Texture, got {other:?}"),
+        }
     }
 }

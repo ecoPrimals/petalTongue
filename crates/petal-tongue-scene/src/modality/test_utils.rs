@@ -3,7 +3,7 @@
 #[cfg(test)]
 pub fn rich_test_scene() -> crate::scene_graph::SceneGraph {
     use crate::primitive::{
-        AnchorPoint, BezierSegment, Color, FillRule, MeshVertex, Primitive, StrokeStyle,
+        AnchorPoint, BezierSegment, Color, FillRule, MeshVertex, Primitive, StrokeStyle, UvRect,
     };
     use crate::scene_graph::{SceneGraph, SceneNode};
     use crate::transform::Transform2D;
@@ -86,6 +86,24 @@ pub fn rich_test_scene() -> crate::scene_graph::SceneGraph {
         indices: vec![0, 1, 2],
         data_id: Some("mesh".to_string()),
     }));
+    graph.add_to_root(
+        SceneNode::new("texture").with_primitive(Primitive::Texture {
+            texture_id: "test-atlas".to_string(),
+            x: 400.0,
+            y: 100.0,
+            width: 64.0,
+            height: 64.0,
+            uv: Some(UvRect {
+                u: 0.0,
+                v: 0.0,
+                w: 0.5,
+                h: 0.5,
+            }),
+            opacity: 0.9,
+            tint: Some(Color::WHITE),
+            data_id: Some("tex".to_string()),
+        }),
+    );
     let root_id: String = graph.root_id().into();
     let child = SceneNode::new("child")
         .with_transform(Transform2D::translate(10.0, 20.0))

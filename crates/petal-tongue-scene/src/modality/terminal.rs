@@ -150,6 +150,14 @@ impl ModalityCompiler for TerminalCompiler {
                         }
                     }
                 }
+                Primitive::Texture { x, y, .. } => {
+                    let (col, row) = Self::to_cell(*x, *y, w, h);
+                    for (i, ch) in "[IMG]".chars().enumerate() {
+                        if col + i < w && row < h {
+                            grid[row][col + i] = ch;
+                        }
+                    }
+                }
                 _ => {}
             }
         }

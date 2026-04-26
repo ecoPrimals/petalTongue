@@ -8,7 +8,8 @@ use super::RpcHandlers;
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse, error_codes};
 use crate::visualization_handler::{
     DashboardRenderRequest, ExportRequest, GrammarRenderRequest, InteractionApplyRequest,
-    StreamUpdateRequest, UiConfig, ValidateRequest, VisualizationRenderRequest,
+    StreamUpdateRequest, TextureAttachRequest, TextureUploadRequest, UiConfig, ValidateRequest,
+    VisualizationRenderRequest,
 };
 use serde_json::Value;
 
@@ -504,6 +505,141 @@ pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> J
             "session_id": session_id,
             "nodes_accepted": node_count,
             "status": "scene_stored",
+        }),
+    )
+}
+
+/// Handle `visualization.texture.upload`: store base64-decoded RGBA pixel data.
+pub fn handle_texture_upload(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
+    let upload: TextureUploadRequest = match serde_json::from_value(req.params.clone()) {
+        Ok(u) => u,
+        Err(e) => {
+            return JsonRpcResponse::error(
+                req.id,
+                error_codes::INVALID_PARAMS,
+                format!("Invalid texture upload params: {e}"),
+            );
+        }
+    };
+
+    if upload.format != "rgba8" {
+        return JsonRpcResponse::error(
+            req.id,
+            error_codes::INVALID_PARAMS,
+            format!("Unsupported texture format: {}", upload.format),
+        );
+    }
+
+    let expected_len = upload.width as usize * upload.height as usize * 4;
+    let data = match base64::Engine::decode(
+        &base64::engine::general_purpose::STANDARD,
+        &upload.data,
+    ) {
+        Ok(d) => d,
+        Err(e) => {
+            return JsonRpcResponse::error(
+                req.id,
+                error_codes::INVALID_PARAMS,
+                format!("Base64 decode failed: {e}"),
+            );
+        }
+    };
+
+    if data.len() != expected_len {
+        return JsonRpcResponse::error(
+            req.id,
+            error_codes::INVALID_PARAMS,
+            format!(
+                "Data length mismatch: expected {expected_len} bytes ({}x{}x4), got {}",
+                upload.width,
+                upload.height,
+                data.len()
+            ),
+        );
+    }
+
+    {
+        let mut state = handlers
+            .viz_state
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state.texture_registry.insert(
+            upload.texture_id.clone(),
+            upload.width,
+            upload.height,
+            crate::visualization_handler::TextureFormat::Rgba8,
+            data,
+        );
+    }
+
+    tracing::info!(
+        texture_id = %upload.texture_id,
+        width = upload.width,
+        height = upload.height,
+        "Texture uploaded"
+    );
+
+    JsonRpcResponse::success(
+        req.id,
+        serde_json::json!({
+            "texture_id": upload.texture_id,
+            "status": "loaded",
+        }),
+    )
+}
+
+/// Handle `visualization.texture.attach`: register a shared-memory texture source.
+///
+/// Actual memfd mapping is future work (toadStool Display Phase 2). For now this
+/// stores a placeholder entry so the `texture_id` is valid for scene graph references.
+pub fn handle_texture_attach(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
+    let attach: TextureAttachRequest = match serde_json::from_value(req.params.clone()) {
+        Ok(a) => a,
+        Err(e) => {
+            return JsonRpcResponse::error(
+                req.id,
+                error_codes::INVALID_PARAMS,
+                format!("Invalid texture attach params: {e}"),
+            );
+        }
+    };
+
+    if attach.format != "rgba8" {
+        return JsonRpcResponse::error(
+            req.id,
+            error_codes::INVALID_PARAMS,
+            format!("Unsupported texture format: {}", attach.format),
+        );
+    }
+
+    let placeholder_len = attach.width as usize * attach.height as usize * 4;
+    {
+        let mut state = handlers
+            .viz_state
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state.texture_registry.insert(
+            attach.texture_id.clone(),
+            attach.width,
+            attach.height,
+            crate::visualization_handler::TextureFormat::Rgba8,
+            vec![0; placeholder_len],
+        );
+    }
+
+    tracing::info!(
+        texture_id = %attach.texture_id,
+        source = %attach.source,
+        width = attach.width,
+        height = attach.height,
+        "Texture attached (placeholder — memfd mapping pending toadStool Phase 2)"
+    );
+
+    JsonRpcResponse::success(
+        req.id,
+        serde_json::json!({
+            "texture_id": attach.texture_id,
+            "status": "attached",
         }),
     )
 }

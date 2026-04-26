@@ -8,9 +8,11 @@ mod queries;
 mod render_handlers;
 mod session_lifecycle;
 mod stream_handler;
+pub mod texture_registry;
 mod types;
 
 #[cfg(test)]
 mod tests;
 
+pub use texture_registry::{TextureFormat, TextureRegistry};
 pub use types::{RenderSession, VisualizationState};

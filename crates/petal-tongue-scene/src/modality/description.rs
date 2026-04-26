@@ -24,7 +24,8 @@ impl DescriptionCompiler {
         let (x, y) = match prim {
             Primitive::Point { x, y, .. }
             | Primitive::Rect { x, y, .. }
-            | Primitive::Text { x, y, .. } => (*x, *y),
+            | Primitive::Text { x, y, .. }
+            | Primitive::Texture { x, y, .. } => (*x, *y),
             Primitive::Arc { cx, cy, .. } => (*cx, *cy),
             Primitive::Line { points, .. } => points.first().map_or((0.0, 0.0), |p| (p[0], p[1])),
             Primitive::Polygon { points, .. } => {
@@ -44,6 +45,13 @@ impl DescriptionCompiler {
                 (*x - radius, *y - radius, *x + radius, *y + radius)
             }
             Primitive::Rect {
+                x,
+                y,
+                width,
+                height,
+                ..
+            }
+            | Primitive::Texture {
                 x,
                 y,
                 width,
@@ -123,6 +131,7 @@ impl DescriptionCompiler {
             Primitive::Arc { .. } => "Arc",
             Primitive::BezierPath { .. } => "BezierPath",
             Primitive::Mesh { .. } => "Mesh",
+            Primitive::Texture { .. } => "Texture",
         }
     }
 }

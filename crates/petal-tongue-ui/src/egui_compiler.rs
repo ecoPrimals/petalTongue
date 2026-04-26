@@ -179,7 +179,10 @@ impl EguiCompiler {
                     stroke_color: stroke.map_or([0; 4], |s| color_to_rgba(s.color)),
                 })
             }
-            Primitive::Arc { .. } | Primitive::BezierPath { .. } | Primitive::Mesh { .. } => None,
+            Primitive::Arc { .. }
+            | Primitive::BezierPath { .. }
+            | Primitive::Mesh { .. }
+            | Primitive::Texture { .. } => None,
         }
     }
 }

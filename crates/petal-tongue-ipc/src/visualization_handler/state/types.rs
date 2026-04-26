@@ -14,6 +14,8 @@ pub struct VisualizationState {
     pub grammar_scenes:
         std::collections::HashMap<String, petal_tongue_scene::scene_graph::SceneGraph>,
     pub(super) backpressure_config: BackpressureConfig,
+    /// Raster textures uploaded via `visualization.texture.upload` IPC.
+    pub texture_registry: super::texture_registry::TextureRegistry,
 }
 
 /// A single visualization session with its bindings and metadata
@@ -48,6 +50,7 @@ impl VisualizationState {
             sessions: std::collections::HashMap::new(),
             grammar_scenes: std::collections::HashMap::new(),
             backpressure_config: BackpressureConfig::default(),
+            texture_registry: super::texture_registry::TextureRegistry::new(),
         }
     }
 
