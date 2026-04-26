@@ -29,22 +29,24 @@ pub fn window_title() -> String {
     format!("🌸 {PRIMAL_NAME} - Universal Representation System")
 }
 
+/// Run the egui/eframe desktop UI directly on the calling thread.
+///
+/// winit requires the event loop to be initialized on the main thread
+/// (Linux X11/Wayland enforce this). This function must be called from
+/// `fn main()` — never from `tokio::task::spawn_blocking`.
 #[cfg(feature = "ui")]
-pub async fn run(
+pub fn run_on_main_thread(
     scenario: Option<String>,
     no_audio: bool,
-    data_service: Arc<crate::data_service::DataService>,
+    data_service: &Arc<crate::data_service::DataService>,
 ) -> Result<()> {
     tracing::info!(
         scenario = ?scenario,
         no_audio,
-        "Starting desktop display mode"
+        "Starting desktop display mode (main thread)"
     );
 
-    // Run in blocking context (egui is not async)
-    tokio::task::spawn_blocking(move || run_ui_blocking(scenario, no_audio, &data_service))
-        .await
-        .map_err(|e| AppError::TaskPanic(e.to_string()))?
+    run_ui_blocking(scenario, no_audio, data_service)
 }
 
 #[cfg(feature = "ui")]

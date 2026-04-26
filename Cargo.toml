@@ -121,7 +121,7 @@ proptest = "1.4"
 tarpc = { version = "0.34", features = ["serde1", "tokio1", "serde-transport", "serde-transport-bincode", "tcp", "unix"] }
 
 # CLI argument parsing
-clap = { version = "4.5", features = ["derive", "cargo"] }
+clap = { version = "4.5", features = ["derive", "cargo", "env"] }
 tokio-util = { version = "0.7", features = ["codec"] }
 tokio-serde = "0.8"  # Must match tarpc's version
 bincode = "1.3"

@@ -113,13 +113,15 @@ enum Commands {
     },
 
     /// Run IPC server (Unix socket JSON-RPC) without display
+    ///
+    /// Socket path priority: --socket flag > PETALTONGUE_SOCKET env > XDG default
     Server {
         /// TCP port for newline-delimited JSON-RPC (optional, UDS always active)
         #[arg(long)]
         port: Option<u16>,
 
-        /// Unix domain socket path override (default: $XDG_RUNTIME_DIR/biomeos/petaltongue-{family}.sock)
-        #[arg(long)]
+        /// Unix domain socket path override (or set PETALTONGUE_SOCKET env var)
+        #[arg(long, env = "PETALTONGUE_SOCKET")]
         socket: Option<String>,
     },
 
@@ -137,8 +139,8 @@ enum Commands {
         #[arg(long)]
         port: Option<u16>,
 
-        /// Unix domain socket path override
-        #[arg(long)]
+        /// Unix domain socket path override (or set PETALTONGUE_SOCKET env var)
+        #[arg(long, env = "PETALTONGUE_SOCKET")]
         socket: Option<String>,
     },
 
@@ -154,46 +156,89 @@ enum Commands {
     },
 }
 
-#[tokio::main]
-async fn main() -> Result<(), AppError> {
+fn main() -> Result<(), AppError> {
     let cli = Cli::parse();
 
-    // Initialize structured logging (no println!, proper tracing)
     init_tracing(&cli.log_level, &cli.log_format)?;
 
-    // Log startup
     tracing::info!(
         version = env!("CARGO_PKG_VERSION"),
         command = ?cli.command,
         "🌸 petalTongue starting"
     );
 
-    // Load configuration (environment-driven, XDG-compliant)
-    tracing::info!("⚙️ Loading configuration from environment...");
-    let config = Config::from_env().map_err(|e| AppError::Other(e.to_string()))?;
-    tracing::info!(
-        web_port = config.network.web_port,
-        headless_port = config.network.headless_port,
-        "✅ Configuration loaded"
-    );
+    let runtime = tokio::runtime::Runtime::new()
+        .map_err(|e| AppError::Other(format!("Failed to create tokio runtime: {e}")))?;
 
-    // Initialize DataService ONCE (single source of truth for all modes)
-    tracing::info!("📊 Initializing unified DataService...");
-    let mut data_service = data_service::DataService::new();
-    data_service.init().await?;
-    let data_service = std::sync::Arc::new(data_service);
-    tracing::info!("✅ DataService initialized - all modes will use same data source");
+    // Async setup: config, data service, discovery registration
+    let (config, data_service) = runtime.block_on(async {
+        tracing::info!("⚙️ Loading configuration from environment...");
+        let config = Config::from_env().map_err(|e| AppError::Other(e.to_string()))?;
+        tracing::info!(
+            web_port = config.network.web_port,
+            headless_port = config.network.headless_port,
+            "✅ Configuration loaded"
+        );
 
-    // Register with ecosystem discovery service (capability-based, no hardcoded primal names)
-    tracing::info!("🔍 Registering with ecosystem discovery service...");
-    register_with_discovery_service().await;
+        tracing::info!("📊 Initializing unified DataService...");
+        let mut data_service = data_service::DataService::new();
+        data_service.init().await?;
+        let data_service = std::sync::Arc::new(data_service);
+        tracing::info!("✅ DataService initialized - all modes will use same data source");
 
-    // Execute command (all modes are fully async)
+        tracing::info!("🔍 Registering with ecosystem discovery service...");
+        register_with_discovery_service().await;
+
+        Ok::<_, AppError>((config, data_service))
+    })?;
+
+    // PG-40 fix: UI modes (ui, live) run eframe on the main thread.
+    // winit requires main-thread event loop init on Linux (X11/Wayland).
+    // Non-UI modes dispatch async via runtime.block_on().
     let result = match cli.command {
+        #[cfg(feature = "ui")]
         Commands::Ui { scenario, no_audio } => {
             tracing::info!(mode = "ui", "Launching desktop display mode");
-            ui_mode::run(scenario, no_audio, data_service).await
+            ui_mode::run_on_main_thread(scenario, no_audio, &data_service)
         }
+        #[cfg(not(feature = "ui"))]
+        Commands::Ui { .. } => Err(AppError::UiNotAvailable),
+
+        #[cfg(feature = "ui")]
+        Commands::Live {
+            scenario,
+            no_audio,
+            port,
+            socket,
+        } => {
+            tracing::info!(mode = "live", tcp_port = ?port, socket = ?socket, "Launching NUCLEUS interactive mode (IPC + GUI)");
+            live_mode::run_on_main_thread(scenario, no_audio, &data_service, port, socket, &runtime)
+        }
+        #[cfg(not(feature = "ui"))]
+        Commands::Live { .. } => Err(AppError::UiNotAvailable),
+
+        other => runtime.block_on(dispatch_async(other, config, data_service)),
+    };
+
+    match result {
+        Ok(()) => {
+            tracing::info!("🌸 petalTongue shutdown gracefully");
+            Ok(())
+        }
+        Err(e) => {
+            tracing::error!(error = ?e, "🌸 petalTongue encountered an error");
+            Err(e)
+        }
+    }
+}
+
+/// Dispatch non-GUI commands on the async runtime.
+async fn dispatch_async(
+    command: Commands,
+    config: Config,
+    data_service: std::sync::Arc<data_service::DataService>,
+) -> Result<(), AppError> {
+    match command {
         Commands::Tui {
             scenario,
             refresh_rate,
@@ -210,9 +255,7 @@ async fn main() -> Result<(), AppError> {
             scenario,
             workers,
         } => {
-            // Use explicit bind address or fall back to config (capability-based, no hardcoding)
             let bind_addr = bind.unwrap_or_else(|| config.network.web_addr().to_string());
-
             tracing::info!(
                 mode = "web",
                 bind = %bind_addr,
@@ -222,9 +265,7 @@ async fn main() -> Result<(), AppError> {
             web_mode::run(&bind_addr, scenario, workers, data_service).await
         }
         Commands::Headless { bind, workers } => {
-            // Use explicit bind address or fall back to config (capability-based, no hardcoding)
             let bind_addr = bind.unwrap_or_else(|| config.network.headless_addr().to_string());
-
             tracing::info!(
                 mode = "headless",
                 bind = %bind_addr,
@@ -237,18 +278,6 @@ async fn main() -> Result<(), AppError> {
             tracing::info!(mode = "server", tcp_port = ?port, socket = ?socket, "Launching IPC server (no display)");
             server_mode::run(data_service, port, socket).await
         }
-        #[cfg(feature = "ui")]
-        Commands::Live {
-            scenario,
-            no_audio,
-            port,
-            socket,
-        } => {
-            tracing::info!(mode = "live", tcp_port = ?port, socket = ?socket, "Launching NUCLEUS interactive mode (IPC + GUI)");
-            live_mode::run(scenario, no_audio, data_service, port, socket).await
-        }
-        #[cfg(not(feature = "ui"))]
-        Commands::Live { .. } => Err(AppError::UiNotAvailable),
         Commands::Status { verbose, format } => {
             tracing::info!(
                 mode = "status",
@@ -258,18 +287,7 @@ async fn main() -> Result<(), AppError> {
             );
             cli_mode::status(verbose, &format, data_service).await
         }
-    };
-
-    // Handle result
-    match result {
-        Ok(()) => {
-            tracing::info!("🌸 petalTongue shutdown gracefully");
-            Ok(())
-        }
-        Err(e) => {
-            tracing::error!(error = ?e, "🌸 petalTongue encountered an error");
-            Err(e)
-        }
+        Commands::Ui { .. } | Commands::Live { .. } => unreachable!("GUI modes handled on main thread"),
     }
 }
 
