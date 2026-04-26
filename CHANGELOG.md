@@ -6,6 +6,22 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Eliminate all `dyn` from production code (April 26, 2026)
+
+#### Changed
+- `PanelInstance::on_error` — `&dyn std::error::Error` → `&impl std::error::Error`
+  (generic parameter; enum dispatch makes object safety unnecessary).
+- `SseEventConsumer` — `Box<dyn Fn(EcosystemEvent)>` callback replaced with
+  `tokio::sync::mpsc::UnboundedSender<EcosystemEvent>` (async channel pattern).
+- `EventStream` — `Box<dyn Fn(BiomeOSEvent)>` callback replaced with
+  `tokio::sync::mpsc::UnboundedSender<BiomeOSEvent>`.
+- `BiomeOSProvider::subscribe_events_with_callback` →
+  `subscribe_events_with_sender(tx: UnboundedSender<BiomeOSEvent>)`.
+- `EventStream::new()` is now `const fn` (possible after removing heap-allocated
+  closure field).
+- **Result**: 0 `dyn` in production Rust code. All remaining mentions are in comments
+  documenting completed enum-dispatch migrations.
+
 ### PG-40: Fix winit main-thread panic on Linux + PETALTONGUE_SOCKET env binding (April 26, 2026)
 
 #### Fixed

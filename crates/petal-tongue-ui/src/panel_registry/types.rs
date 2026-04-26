@@ -120,9 +120,9 @@ pub trait PanelInstance: Send {
 
     /// Called when panel encounters an error
     /// Return `PanelAction` to indicate what should happen next
-    fn on_error(&mut self, error: &dyn std::error::Error) -> PanelAction {
+    fn on_error(&mut self, error: &impl std::error::Error) -> PanelAction {
         tracing::error!("Panel '{}' error: {}", self.title(), error);
-        PanelAction::Continue // Default: log and continue
+        PanelAction::Continue
     }
 
     // ===== State Persistence =====

@@ -73,14 +73,12 @@ pub enum SseConnectionState {
     Failed,
 }
 
-type EventCallback = Box<dyn Fn(EcosystemEvent) + Send + Sync>;
-
 /// SSE event consumer for biomeOS ecosystem events.
 pub struct SseEventConsumer {
     endpoint: String,
     state: Arc<RwLock<SseConnectionState>>,
     events: Arc<RwLock<Vec<EcosystemEvent>>>,
-    callback: Arc<RwLock<Option<EventCallback>>>,
+    event_tx: Arc<RwLock<Option<tokio::sync::mpsc::UnboundedSender<EcosystemEvent>>>>,
 }
 
 impl SseEventConsumer {
@@ -91,7 +89,7 @@ impl SseEventConsumer {
             endpoint: endpoint.into(),
             state: Arc::new(RwLock::new(SseConnectionState::Disconnected)),
             events: Arc::new(RwLock::new(Vec::new())),
-            callback: Arc::new(RwLock::new(None)),
+            event_tx: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -107,12 +105,9 @@ impl SseEventConsumer {
         self.state.read().await.clone()
     }
 
-    /// Set a callback for incoming events.
-    pub async fn set_callback<F>(&self, callback: F)
-    where
-        F: Fn(EcosystemEvent) + Send + Sync + 'static,
-    {
-        *self.callback.write().await = Some(Box::new(callback));
+    /// Set a channel sender for incoming events (replaces callback pattern).
+    pub async fn set_event_sender(&self, tx: tokio::sync::mpsc::UnboundedSender<EcosystemEvent>) {
+        *self.event_tx.write().await = Some(tx);
     }
 
     /// Drain all buffered events (returns and clears the buffer).
@@ -128,10 +123,10 @@ impl SseEventConsumer {
         let endpoint = self.endpoint.clone();
         let state = Arc::clone(&self.state);
         let events = Arc::clone(&self.events);
-        let callback = Arc::clone(&self.callback);
+        let event_tx = Arc::clone(&self.event_tx);
 
         tokio::spawn(async move {
-            Self::consume_loop(endpoint, state, events, callback).await;
+            Self::consume_loop(endpoint, state, events, event_tx).await;
         });
     }
 
@@ -153,7 +148,7 @@ impl SseEventConsumer {
         endpoint: String,
         state: Arc<RwLock<SseConnectionState>>,
         events: Arc<RwLock<Vec<EcosystemEvent>>>,
-        callback: Arc<RwLock<Option<EventCallback>>>,
+        event_tx: Arc<RwLock<Option<tokio::sync::mpsc::UnboundedSender<EcosystemEvent>>>>,
     ) {
         *state.write().await = SseConnectionState::Connecting;
         info!("SSE: connecting to {}", endpoint);
@@ -200,11 +195,11 @@ impl SseEventConsumer {
                                 .or_else(|| line.strip_prefix("data:"))
                                 && let Some(event) = Self::parse_sse_data(data.trim())
                             {
-                                let cb = callback.read().await;
-                                if let Some(ref f) = *cb {
-                                    f(event.clone());
+                                let tx = event_tx.read().await;
+                                if let Some(ref sender) = *tx {
+                                    let _ = sender.send(event.clone());
                                 }
-                                drop(cb);
+                                drop(tx);
                                 events.write().await.push(event);
                             }
                         }
