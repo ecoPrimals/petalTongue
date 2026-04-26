@@ -228,7 +228,8 @@ fn discover_compute_socket() -> Result<String, String> {
     }
 
     // Legacy: filesystem scanning (S139 dual-write layout)
-    let runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_string());
+    let runtime_dir = std::env::var("XDG_RUNTIME_DIR")
+        .unwrap_or_else(|_| petal_tongue_core::constants::LEGACY_TMP_PREFIX.to_string());
     let socket_name = std::env::var("PHYSICS_COMPUTE_SOCKET_NAME")
         .unwrap_or_else(|_| "physics-compute".to_string());
 
@@ -237,7 +238,10 @@ fn discover_compute_socket() -> Result<String, String> {
         format!("{runtime_dir}/ecoPrimals/discovery/{socket_name}.sock"),
         format!("{runtime_dir}/{socket_name}/{socket_name}.sock"),
         format!("{runtime_dir}/{socket_name}.sock"),
-        format!("/tmp/{socket_name}.sock"),
+        format!(
+            "{}/{socket_name}.sock",
+            petal_tongue_core::constants::LEGACY_TMP_PREFIX
+        ),
     ];
 
     for path in &candidates {

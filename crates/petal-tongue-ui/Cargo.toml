@@ -33,7 +33,7 @@ doom-core = { path = "../doom-core", optional = true }  # Doom integration for p
 # NO compile-time dependency on other primals - TRUE PRIMAL sovereignty!
 
 tokio = { workspace = true }
-tokio-tungstenite = "0.21"  # Pure Rust WebSocket (Collaborative Intelligence)
+tokio-tungstenite = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 base64 = { workspace = true }
@@ -48,7 +48,7 @@ egui = { workspace = true }
 egui_extras = { workspace = true }  # For table widgets in process viewer
 # EVOLVED: libc removed - framebuffer uses sysfs for dimensions (100% safe Rust)
 # system_info uses rustix (petal-tongue-core)
-uuid = { version = "1.7", features = ["v4", "serde"] }  # For graph node IDs
+uuid = { workspace = true }
 
 # Pure Rust Audio (TRUE PRIMAL sovereignty - Audio Canvas!)
 # EVOLUTION COMPLETE: Direct hardware access (like WGPU for graphics!)

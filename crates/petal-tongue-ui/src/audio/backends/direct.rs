@@ -1,20 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Direct device backend (incomplete — future ALSA / OSS path)
+//! Direct device backend (stub — evolution target for ToadStool `audio.play` capability)
 //!
 //! # Cargo feature
 //!
 //! This module is compiled only with the **`audio-direct`** feature on `petal-tongue-ui`.
 //! Default release builds omit it so the runtime does not register a non-functional backend.
 //!
-//! # Status
+//! # Evolution path
+//!
+//! This backend should be replaced by a capability-discovery call to ToadStool:
+//! `capability.call("audio.play", ...)` via the Neural API. petalTongue should not
+//! own ALSA/ioctl/PipeWire internals — ToadStool is the hardware interaction primal.
+//!
+//! # Current status
 //!
 //! Discovery of device nodes is implemented, but **playback is not**. Opening a PCM node and
 //! writing raw samples requires ALSA `ioctl` setup (sample rate, format, buffers, etc.), which is
 //! not implemented. Devices managed by PipeWire or PulseAudio can also block if opened without
 //! going through those stacks.
 //!
-//! Callers should treat this module as a **placeholder** for a future direct-hardware path, not
-//! as an active audio backend. [`AudioBackend::is_available`](crate::audio::traits::AudioBackend::is_available)
+//! Callers should treat this module as a **stub** until ToadStool audio capability is available.
+//! [`AudioBackend::is_available`](crate::audio::traits::AudioBackend::is_available)
 //! always returns `false`; [`initialize`](crate::audio::traits::AudioBackend::initialize) and
 //! [`play_samples`](crate::audio::traits::AudioBackend::play_samples) return
 //! [`AudioError::DirectDeviceUnavailable`](crate::error::AudioError::DirectDeviceUnavailable).

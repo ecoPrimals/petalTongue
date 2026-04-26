@@ -1,19 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Socket audio backend (incomplete — PipeWire / PulseAudio client)
+//! Socket audio backend (stub — evolution target for ToadStool `audio.play` capability)
 //!
 //! # Cargo feature
 //!
 //! This module is compiled only with the **`audio-socket`** feature on `petal-tongue-ui`.
 //! Default release builds omit it so the runtime does not register a non-functional backend.
 //!
-//! # Status
+//! # Evolution path
+//!
+//! This backend should be replaced by a capability-discovery call to ToadStool:
+//! `capability.call("audio.play", ...)` via the Neural API. petalTongue should not
+//! implement PipeWire/PulseAudio wire protocols — ToadStool is the hardware interaction
+//! primal and owns audio device access.
+//!
+//! # Current status
 //!
 //! Runtime discovery of well-known Unix sockets under `XDG_RUNTIME_DIR` (e.g. `pipewire-0`,
-//! `pulse/native`) is implemented, but **no wire protocol is implemented**. A future version will
-//! speak the native protocols used by **PipeWire** and **PulseAudio** over those sockets (session
-//! / stream setup, format negotiation, PCM transfer)—not a custom petalTongue protocol.
+//! `pulse/native`) is implemented, but **no wire protocol is implemented**.
 //!
-//! Until then, [`is_available`](crate::audio::traits::AudioBackend::is_available) is always
+//! [`is_available`](crate::audio::traits::AudioBackend::is_available) is always
 //! `false`, [`initialize`](crate::audio::traits::AudioBackend::initialize) and
 //! [`play_samples`](crate::audio::traits::AudioBackend::play_samples) return
 //! [`AudioError::SocketConnectionFailed`](crate::error::AudioError::SocketConnectionFailed), and
