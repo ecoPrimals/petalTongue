@@ -58,7 +58,9 @@ fn main() -> Result<()> {
     println!("✅ Rendered to {} bytes", buffer.len());
 
     // Save as PNG for verification
-    let output_path = "/tmp/petaltongue_pixel_render_demo.png";
+    let output_dir =
+        std::env::var("DEMO_OUTPUT_DIR").unwrap_or_else(|_| "/tmp".into());
+    let output_path = format!("{output_dir}/petaltongue_pixel_render_demo.png");
     save_as_png(buffer.as_ref(), 800, 600, output_path)?;
     println!("✅ Saved to: {output_path}");
 
