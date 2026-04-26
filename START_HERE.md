@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 25, 2026 (async fn traits, BTSP JSON-line relay)
+**Updated**: April 26, 2026 (PG-43 texture primitive, PG-40 winit fix, dyn elimination, dep consolidation)
 
 ---
 
