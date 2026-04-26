@@ -6,6 +6,40 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### PG-43: Texture Primitive + IPC Methods (April 26, 2026)
+
+#### Added
+- **`Primitive::Texture`** variant in the scene graph — raster content (sprites,
+  images, external engine framebuffers) with `texture_id`, position, size,
+  optional UV sub-region (`UvRect`), opacity, and tint.
+- **`TextureRegistry`** in `VisualizationState` — stores pixel data keyed by
+  `texture_id`, versioned for lazy GPU re-upload.
+- **`visualization.texture.upload`** IPC method — push base64-encoded RGBA pixel
+  data, get a `texture_id` back.
+- **`visualization.texture.attach`** IPC method — register a shared-memory source
+  (memfd URI); actual mapping deferred to toadStool Display Phase 2.
+- **`From<Sprite> for SceneNode`** bridge — converts game `Sprite` models directly
+  into scene graph `Primitive::Texture` nodes.
+- `UvRect` struct for texture atlas sub-region selection.
+- `rich_test_scene()` fixture now includes a Texture primitive for all modality
+  compiler tests.
+- Tests: Primitive serde round-trip (Texture, Texture-no-UV, UvRect), Sprite
+  bridge, TextureRegistry (insert/get/remove/re-upload version), IPC handler
+  (upload success/bad-format/bad-size, attach success).
+
+#### Changed
+- All 12 exhaustive `match Primitive` sites updated across `petal-tongue-scene`
+  (7 sites) and `petal-tongue-ui` (3 sites + 2 wildcards).
+- egui renderer shows a tinted placeholder rect for Texture primitives; full
+  `egui::Shape::image` with `TextureResolver` deferred to display-phase evolution.
+- Terminal modality renders `[IMG]` for Texture primitives.
+- SVG modality emits `<image>` element with `data-texture-id` attribute.
+- Braille modality renders an outline rect for Texture primitives.
+
+#### Deferred
+- **Overlay mode** (transparent windows over external game engines) — depends on
+  toadStool Display Phase 2 and Wayland `wlr-layer-shell` support.
+
 ### Eliminate all `dyn` from production code (April 26, 2026)
 
 #### Changed

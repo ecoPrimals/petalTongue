@@ -57,7 +57,8 @@ pub fn offset_primitive(p: &mut Primitive, dx: f64, dy: f64) {
     match p {
         Primitive::Point { x, y, .. }
         | Primitive::Text { x, y, .. }
-        | Primitive::Rect { x, y, .. } => {
+        | Primitive::Rect { x, y, .. }
+        | Primitive::Texture { x, y, .. } => {
             *x += dx;
             *y += dy;
         }

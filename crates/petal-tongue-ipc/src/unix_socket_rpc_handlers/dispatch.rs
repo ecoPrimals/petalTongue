@@ -60,6 +60,8 @@ impl RpcHandlers {
             "visualization.introspect" => visualization::handle_introspect(self, req.id),
             "visualization.panels" => visualization::handle_panels(self, req.id),
             "visualization.showing" => visualization::handle_showing(self, req),
+            "visualization.texture.upload" => visualization::handle_texture_upload(self, req),
+            "visualization.texture.attach" => visualization::handle_texture_attach(self, req),
             "interaction.subscribe" | "visualization.interact.subscribe" => {
                 self.handle_interaction_subscribe(req)
             }

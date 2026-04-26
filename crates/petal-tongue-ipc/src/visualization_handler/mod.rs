@@ -27,13 +27,14 @@ pub use interaction::{
 };
 pub use pipeline::PipelineRegistry;
 pub use sensor_stream::SensorStreamRegistry;
-pub use state::{RenderSession, VisualizationState};
+pub use state::{RenderSession, TextureFormat, TextureRegistry, VisualizationState};
 pub use stream::{apply_operation, binding_id};
 pub use types::{
     BackpressureConfig, ConstraintResult, DashboardRenderRequest, DashboardRenderResponse,
     DismissRequest, DismissResponse, ExportRequest, ExportResponse, GrammarRenderRequest,
     GrammarRenderResponse, InteractionApplyRequest, InteractionApplyResponse, Perspective,
     SessionStatusRequest, SessionStatusResponse, StreamOperation, StreamUpdateRequest,
-    StreamUpdateResponse, UiConfig, ValidateRequest, ValidateResponse, VisualizationRenderRequest,
-    VisualizationRenderResponse,
+    StreamUpdateResponse, TextureAttachRequest, TextureAttachResponse, TextureUploadRequest,
+    TextureUploadResponse, UiConfig, ValidateRequest, ValidateResponse,
+    VisualizationRenderRequest, VisualizationRenderResponse,
 };

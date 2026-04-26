@@ -14,6 +14,7 @@ mod interact;
 mod render;
 mod session;
 mod stream;
+mod texture;
 mod validate;
 
 pub use dashboard::{DashboardRenderRequest, DashboardRenderResponse};
@@ -24,4 +25,7 @@ pub use interact::{InteractionApplyRequest, InteractionApplyResponse, Perspectiv
 pub use render::{UiConfig, VisualizationRenderRequest, VisualizationRenderResponse};
 pub use session::{SessionStatusRequest, SessionStatusResponse};
 pub use stream::{BackpressureConfig, StreamOperation, StreamUpdateRequest, StreamUpdateResponse};
+pub use texture::{
+    TextureAttachRequest, TextureAttachResponse, TextureUploadRequest, TextureUploadResponse,
+};
 pub use validate::{ConstraintResult, ValidateRequest, ValidateResponse};

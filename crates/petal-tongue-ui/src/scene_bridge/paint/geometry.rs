@@ -31,6 +31,7 @@ pub fn primitive_origin(prim: &Primitive) -> (f64, f64) {
         Primitive::Polygon { points, .. } => points.first().map_or((0.0, 0.0), |p| (p[0], p[1])),
         Primitive::BezierPath { start, .. } => (start[0], start[1]),
         Primitive::Mesh { .. } => (0.0, 0.0),
+        Primitive::Texture { x, y, .. } => (*x, *y),
     }
 }
 

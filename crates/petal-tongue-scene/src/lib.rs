@@ -83,7 +83,7 @@ pub use modality::{
 pub use physics::{CollisionShape, PhysicsBody, PhysicsWorld};
 pub use primitive::{
     AnchorPoint, BezierSegment, Color, FillRule, LineCap, LineJoin, MeshVertex, Primitive,
-    StrokeStyle,
+    StrokeStyle, UvRect,
 };
 pub use provenance::{ProvenanceBuffer, ProvenanceRenderer};
 pub use render_plan::{AxisMeta, PanelBounds, PanelMeta, RenderPlan};

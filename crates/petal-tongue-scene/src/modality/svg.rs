@@ -254,6 +254,25 @@ impl SvgCompiler {
             Primitive::Mesh { .. } => {
                 // 3D only; skip for 2D SVG
             }
+            Primitive::Texture {
+                texture_id,
+                x,
+                y,
+                width,
+                height,
+                opacity,
+                ..
+            } => {
+                let (tx, ty) = transform.apply(*x, *y);
+                let (bx, by) = transform.apply(x + width, y + height);
+                let sw = (bx - tx).abs();
+                let sh = (by - ty).abs();
+                let _ = writeln!(
+                    buf,
+                    "  <image x=\"{tx:.1}\" y=\"{ty:.1}\" width=\"{sw:.1}\" height=\"{sh:.1}\" \
+                     opacity=\"{opacity}\" data-texture-id=\"{texture_id}\" />",
+                );
+            }
         }
     }
 

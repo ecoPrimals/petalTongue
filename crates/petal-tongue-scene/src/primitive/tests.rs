@@ -564,3 +564,78 @@ fn color_partial_eq() {
     assert_eq!(a, b);
     assert_ne!(a, c);
 }
+
+#[test]
+fn primitive_texture_data_id() {
+    let tex = Primitive::Texture {
+        texture_id: "hero-idle".to_string(),
+        x: 10.0,
+        y: 20.0,
+        width: 64.0,
+        height: 64.0,
+        uv: Some(UvRect {
+            u: 0.0,
+            v: 0.0,
+            w: 0.5,
+            h: 0.5,
+        }),
+        opacity: 0.8,
+        tint: Some(Color::WHITE),
+        data_id: Some("sprite-01".to_string()),
+    };
+    assert_eq!(tex.data_id(), Some("sprite-01"));
+    assert!(tex.carries_data());
+}
+
+#[test]
+fn serialization_roundtrip_texture() {
+    let tex = Primitive::Texture {
+        texture_id: "tileset-ground".to_string(),
+        x: 100.0,
+        y: 200.0,
+        width: 32.0,
+        height: 32.0,
+        uv: Some(UvRect {
+            u: 0.25,
+            v: 0.0,
+            w: 0.25,
+            h: 0.25,
+        }),
+        opacity: 1.0,
+        tint: None,
+        data_id: Some("tile-5".to_string()),
+    };
+    let json = serde_json::to_string(&tex).expect("serialization should succeed");
+    let decoded: Primitive = serde_json::from_str(&json).expect("deserialization should succeed");
+    assert_eq!(tex, decoded);
+}
+
+#[test]
+fn serialization_roundtrip_texture_no_uv() {
+    let tex = Primitive::Texture {
+        texture_id: "bg".to_string(),
+        x: 0.0,
+        y: 0.0,
+        width: 800.0,
+        height: 600.0,
+        uv: None,
+        opacity: 0.5,
+        tint: Some(Color::rgba(1.0, 0.0, 0.0, 0.5)),
+        data_id: None,
+    };
+    let json = serde_json::to_string(&tex).expect("serialization should succeed");
+    let decoded: Primitive = serde_json::from_str(&json).expect("deserialization should succeed");
+    assert_eq!(tex, decoded);
+}
+
+#[test]
+fn uv_rect_construction() {
+    let uv = UvRect {
+        u: 0.0,
+        v: 0.0,
+        w: 1.0,
+        h: 1.0,
+    };
+    assert!((uv.w - 1.0).abs() < 1e-10);
+    assert!((uv.h - 1.0).abs() < 1e-10);
+}

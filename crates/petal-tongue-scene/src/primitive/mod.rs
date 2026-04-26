@@ -120,6 +120,15 @@ pub struct MeshVertex {
     pub color: Color,
 }
 
+/// UV sub-region within a texture atlas (normalized 0.0-1.0 coordinates).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct UvRect {
+    pub u: f64,
+    pub v: f64,
+    pub w: f64,
+    pub h: f64,
+}
+
 /// The atomic rendering primitives.
 ///
 /// These map directly to output in any modality:
@@ -210,6 +219,22 @@ pub enum Primitive {
         indices: Vec<u32>,
         data_id: Option<String>,
     },
+
+    /// A raster texture region (sprite, image, external framebuffer).
+    ///
+    /// `texture_id` resolves at render time against a [`TextureRegistry`] —
+    /// uploaded via `visualization.texture.upload` IPC or attached from shared memory.
+    Texture {
+        texture_id: String,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+        uv: Option<UvRect>,
+        opacity: f32,
+        tint: Option<Color>,
+        data_id: Option<String>,
+    },
 }
 
 impl Primitive {
@@ -224,7 +249,8 @@ impl Primitive {
             | Self::Polygon { data_id, .. }
             | Self::Arc { data_id, .. }
             | Self::BezierPath { data_id, .. }
-            | Self::Mesh { data_id, .. } => data_id.as_deref(),
+            | Self::Mesh { data_id, .. }
+            | Self::Texture { data_id, .. } => data_id.as_deref(),
         }
     }
 

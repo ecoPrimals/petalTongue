@@ -328,6 +328,20 @@ impl BrailleCompiler {
                     Self::bresenham(grid, cols, rows, x2, y2, x0, y0, vw, vh);
                 }
             }
+            Primitive::Texture {
+                x,
+                y,
+                width,
+                height,
+                ..
+            } => {
+                let (tx, ty) = transform.apply(*x, *y);
+                let (bx, by) = transform.apply(x + width, y + height);
+                Self::bresenham(grid, cols, rows, tx, ty, bx, ty, vw, vh);
+                Self::bresenham(grid, cols, rows, bx, ty, bx, by, vw, vh);
+                Self::bresenham(grid, cols, rows, bx, by, tx, by, vw, vh);
+                Self::bresenham(grid, cols, rows, tx, by, tx, ty, vw, vh);
+            }
         }
     }
 }

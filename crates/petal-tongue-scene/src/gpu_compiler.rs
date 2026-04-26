@@ -230,9 +230,12 @@ impl GpuCompiler {
                     colors,
                 });
             }
-            Primitive::Arc { .. } | Primitive::BezierPath { .. } | Primitive::Text { .. } => {
-                // Text requires glyph rasterization; Arc/Bezier need tessellation.
-                // Both would be handled by a shader stage in the full GPU pipeline.
+            Primitive::Arc { .. }
+            | Primitive::BezierPath { .. }
+            | Primitive::Text { .. }
+            | Primitive::Texture { .. } => {
+                // Text requires glyph rasterization; Arc/Bezier need tessellation;
+                // Texture needs a sampler stage. All handled by future GPU pipeline.
             }
         }
     }
