@@ -6,6 +6,29 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### PG-40: Fix winit main-thread panic on Linux + PETALTONGUE_SOCKET env binding (April 26, 2026)
+
+#### Fixed
+- **Native display modes (`petaltongue live`, `petaltongue ui`) no longer panic on
+  Linux**. winit 0.30 requires the event loop to be initialized on the main thread
+  (X11/Wayland). The previous code used `tokio::task::spawn_blocking` which ran
+  eframe on a tokio worker thread. Restructured `main()` to build the tokio runtime
+  manually: UI modes run eframe directly on the main thread, non-UI modes dispatch
+  via `runtime.block_on()`.
+- `live_mode.rs`: IPC server, motor drain, and discovery refresh now spawn on the
+  runtime's thread pool (via `runtime.spawn()` / `std::thread::spawn`), while eframe
+  runs on the calling (main) thread.
+- `ui_mode.rs`: `run_on_main_thread()` replaces `spawn_blocking` path.
+
+#### Changed
+- `main()` is no longer `#[tokio::main] async fn`; it is a regular `fn main()` that
+  builds a `tokio::runtime::Runtime` manually and dispatches to `dispatch_async()`
+  for non-GUI modes.
+- `--socket` flag on `server` and `live` commands now reads `PETALTONGUE_SOCKET` env
+  var as fallback via clap's `env` attribute (clap `env` feature enabled).
+- Added doc comment on `Server` command: socket path priority is
+  `--socket flag > PETALTONGUE_SOCKET env > XDG default`.
+
 ### BTSP family_seed Base64 Encoding Fix (April 24, 2026)
 
 #### Fixed

@@ -18,13 +18,19 @@ use std::sync::Arc;
 
 type Result<T> = std::result::Result<T, AppError>;
 
-/// Run live mode: IPC server (background) + egui window (main thread).
-pub async fn run(
+/// Run live mode: IPC server (background tokio tasks) + egui window (main thread).
+///
+/// winit requires the event loop on the main thread (Linux X11/Wayland).
+/// Background tasks (IPC server, motor drain, discovery refresh) are spawned
+/// on the provided tokio `runtime`. The eframe event loop runs directly on
+/// the calling (main) thread and blocks until the window is closed.
+pub fn run_on_main_thread(
     scenario: Option<String>,
     no_audio: bool,
-    data_service: Arc<DataService>,
+    data_service: &Arc<DataService>,
     tcp_port: Option<u16>,
     socket_path: Option<String>,
+    runtime: &tokio::runtime::Runtime,
 ) -> Result<()> {
     let graph = data_service.graph();
 
@@ -46,26 +52,24 @@ pub async fn run(
 
     let server = Arc::new(server);
 
-    // Background: IPC accept loop
-    let server_handle = {
-        let server = Arc::clone(&server);
-        tokio::spawn(async move {
-            if let Err(e) = server.start().await {
-                tracing::error!("IPC server error in live mode: {e}");
-            }
-        })
-    };
+    // Background: IPC accept loop (on tokio runtime thread pool)
+    let ipc_server = Arc::clone(&server);
+    runtime.spawn(async move {
+        if let Err(e) = ipc_server.start().await {
+            tracing::error!("IPC server error in live mode: {e}");
+        }
+    });
 
-    // Background: motor drain (UI does not consume motor_rx directly today)
-    tokio::task::spawn_blocking(move || {
+    // Background: motor drain (OS thread — motor_rx is std::sync)
+    std::thread::spawn(move || {
         while let Ok(cmd) = motor_rx.recv() {
             tracing::debug!(?cmd, "motor command received (live mode)");
         }
     });
 
     // Background: periodic capability discovery refresh
-    let refresh_service = Arc::clone(&data_service);
-    tokio::spawn(async move {
+    let refresh_service = Arc::clone(data_service);
+    runtime.spawn(async move {
         let mut interval =
             tokio::time::interval(petal_tongue_core::constants::default_heartbeat_interval());
         loop {
@@ -79,14 +83,7 @@ pub async fn run(
     tracing::info!("🔌 Live mode starting (IPC server + native GUI)");
 
     // Main thread: egui window (blocks until window is closed)
-    tokio::task::spawn_blocking(move || {
-        run_ui_blocking(scenario, no_audio, &graph, viz_state, sensor_stream, interaction_subs, callback_tx)
-    })
-    .await
-    .map_err(|e| AppError::TaskPanic(e.to_string()))??;
-
-    server_handle.abort();
-    Ok(())
+    run_ui_blocking(scenario, no_audio, &graph, viz_state, sensor_stream, interaction_subs, callback_tx)
 }
 
 fn run_ui_blocking(
