@@ -49,8 +49,8 @@ pub enum BiomeOSEvent {
 pub(super) struct EventStream {
     /// WebSocket connection (if established)
     ws_connection: Option<WebSocketConnection>,
-    /// Event callback (called when events received)
-    callback: Option<Box<dyn Fn(BiomeOSEvent) + Send + Sync>>,
+    /// Channel sender for event delivery (replaces `Box<dyn Fn>` callback).
+    event_tx: Option<tokio::sync::mpsc::UnboundedSender<BiomeOSEvent>>,
 }
 
 /// WebSocket connection wrapper for biomeOS events (state for reconnect + future real client).
@@ -91,10 +91,10 @@ impl WebSocketConnection {
 
 impl EventStream {
     /// Create new event stream (not connected)
-    pub(super) fn new() -> Self {
+    pub(super) const fn new() -> Self {
         Self {
             ws_connection: None,
-            callback: None,
+            event_tx: None,
         }
     }
 
@@ -146,12 +146,9 @@ impl EventStream {
         self.ws_connection.as_ref().is_some_and(|w| w.connected)
     }
 
-    /// Set event callback
-    pub(super) fn set_callback<F>(&mut self, callback: F)
-    where
-        F: Fn(BiomeOSEvent) + Send + Sync + 'static,
-    {
-        self.callback = Some(Box::new(callback));
+    /// Set a channel sender for event delivery.
+    pub(super) fn set_event_sender(&mut self, tx: tokio::sync::mpsc::UnboundedSender<BiomeOSEvent>) {
+        self.event_tx = Some(tx);
     }
 }
 

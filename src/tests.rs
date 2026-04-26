@@ -28,18 +28,24 @@ fn test_cli_parse_headless() {
 
 #[test]
 fn test_cli_parse_server() {
-    let cli = Cli::parse_from(["petaltongue", "server"]);
-    assert!(matches!(cli.command, Commands::Server { .. }));
+    use petal_tongue_core::test_fixtures::env_test_helpers;
+    env_test_helpers::with_env_vars(&[("PETALTONGUE_SOCKET", None)], || {
+        let cli = Cli::parse_from(["petaltongue", "server"]);
+        assert!(matches!(cli.command, Commands::Server { .. }));
+    });
 }
 
 #[test]
 fn test_cli_parse_server_with_port() {
-    let cli = Cli::parse_from(["petaltongue", "server", "--port", "12345"]);
-    let Commands::Server { port, socket } = cli.command else {
-        unreachable!("CLI parsed 'server' subcommand")
-    };
-    assert_eq!(port, Some(12345));
-    assert!(socket.is_none());
+    use petal_tongue_core::test_fixtures::env_test_helpers;
+    env_test_helpers::with_env_vars(&[("PETALTONGUE_SOCKET", None)], || {
+        let cli = Cli::parse_from(["petaltongue", "server", "--port", "12345"]);
+        let Commands::Server { port, socket } = cli.command else {
+            unreachable!("CLI parsed 'server' subcommand")
+        };
+        assert_eq!(port, Some(12345));
+        assert!(socket.is_none());
+    });
 }
 
 #[test]

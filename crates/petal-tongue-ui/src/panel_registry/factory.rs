@@ -229,7 +229,7 @@ impl PanelInstance for PanelInstanceImpl {
         }
     }
 
-    fn on_error(&mut self, error: &dyn std::error::Error) -> PanelAction {
+    fn on_error(&mut self, error: &impl std::error::Error) -> PanelAction {
         match self {
             #[cfg(feature = "doom")]
             Self::Doom(p) => p.on_error(error),

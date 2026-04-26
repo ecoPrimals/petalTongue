@@ -323,20 +323,18 @@ impl BiomeOSProvider {
     /// # Errors
     ///
     /// Returns an error if `subscribe_events` fails.
-    pub async fn subscribe_events_with_callback<F>(&self, callback: F) -> Result<()>
-    where
-        F: Fn(BiomeOSEvent) + Send + Sync + 'static,
-    {
-        // First, establish the subscription
+    pub async fn subscribe_events_with_sender(
+        &self,
+        tx: tokio::sync::mpsc::UnboundedSender<BiomeOSEvent>,
+    ) -> Result<()> {
         self.subscribe_events().await?;
 
-        // Set callback on event stream
         {
             let mut event_stream_guard = self.event_stream.write().await;
 
             if let Some(ref mut event_stream) = *event_stream_guard {
-                event_stream.set_callback(callback);
-                info!("✅ Event callback registered");
+                event_stream.set_event_sender(tx);
+                info!("✅ Event sender registered");
             }
         }
 
