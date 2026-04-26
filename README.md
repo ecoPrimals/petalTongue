@@ -113,7 +113,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,150+ passing (98 test suites), 0 failures |
+| Tests | 6,022+ passing (98 test suites), 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons; zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
@@ -121,7 +121,7 @@ petaltongue
 | Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin root, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
 | BTSP Phase 1 | `validate_insecure_guard()`, family-scoped sockets, domain symlinks |
-| Files | All production files under 600 LOC after smart domain refactoring of 57+ modules |
+| Files | All production files under 650 LOC after smart domain refactoring of 57+ modules |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 18 crates + sandbox) |
 | External C deps | None -- pure Rust (`rustix` for syscalls, `blake3` pure-Rust hash); `nokhwa`/`mozjpeg-sys` removed |
@@ -148,7 +148,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 6,144+ tests
+cargo test --workspace --all-features        # 6,022+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
@@ -220,7 +220,7 @@ See `infra/wateringHole/handoffs/` for sprint handoff documents and evolution hi
 - Semantic method naming (`domain.operation`)
 - JSON-RPC 2.0 REQUIRED for inter-primal IPC, tarpc MAY for Rust-to-Rust hot paths, HTTP for external access only
 - All production files under 600 lines (smart domain refactoring, not mechanical splitting)
-- Zero `dyn` for custom traits — use enum dispatch or generics; `dyn` only for `std::error::Error` and closures
+- Zero `dyn` for custom traits — use enum dispatch or generics; zero `dyn` in production code
 - SPDX headers on all source files
 
 ---

@@ -44,9 +44,10 @@ does not own computation, storage, or security domains.
 ## IPC Surface
 
 JSON-RPC 2.0 over Unix domain sockets (primary) and TCP (`--port`).
-43 methods across domains: `visualization.*` (incl. `visualization.render.graph`,
-`visualization.session.*`), `interaction.*`, `health.*`, `capabilities.*`,
-`capability.*`, `identity.*`, `ui.*`, `motor.*`, `audio.*`, `lifecycle.*`.
+45 methods across domains: `visualization.*` (incl. `visualization.render.graph`,
+`visualization.session.*`, `visualization.texture.upload/attach`),
+`interaction.*`, `health.*`, `capabilities.*`, `capability.*`, `identity.*`,
+`ui.*`, `motor.*`, `audio.*`, `lifecycle.*`.
 
 BTSP Phase 1 complete: family-scoped socket naming, insecure guard,
 domain symlinks (`visualization.sock`). BTSP Phase 2 complete: BearDog
@@ -107,7 +108,7 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # ~6,150+ tests, ~90% coverage
+cargo test --workspace --all-features     # ~6,022+ tests, ~90% coverage
 ```
 
 ## Current State
@@ -186,5 +187,28 @@ instead of the length-prefixed handler. BearDog field names aligned
 (not local PRNG), `SECURITY_PROVIDER_SOCKET`/`CRYPTO_PROVIDER_SOCKET`/
 `SECURITY_SOCKET` added to provider socket cascade.
 
+PG-40 fix (April 26, 2026): `petaltongue live` and `petaltongue ui` no
+longer panic on Linux. winit event loop now runs on main thread; IPC
+server spawns on tokio runtime. `PETALTONGUE_SOCKET` env var bound via
+clap `env` attribute.
+
+Eliminate all `dyn` from production code (April 26, 2026): `PanelInstance::on_error`
+→ `&impl std::error::Error`, `SseEventConsumer`/`EventStream` callbacks → typed
+`tokio::sync::mpsc::UnboundedSender` channels. Zero `dyn` in production Rust code.
+
+PG-43: Texture Primitive + IPC Methods (April 26, 2026): `Primitive::Texture`
+variant with `texture_id`, position, size, UV rect, opacity, tint. `TextureRegistry`
+in `VisualizationState`. `visualization.texture.upload` (base64 RGBA) and
+`visualization.texture.attach` (shared-memory placeholder) IPC methods.
+`From<Sprite> for SceneNode` bridge. All 12 exhaustive match sites updated.
+Overlay mode deferred (toadStool Display Phase 2 dependency).
+
+Dependency consolidation (April 26, 2026): uuid unified to workspace 1.9,
+tokio-tungstenite deduplicated to workspace dep, tarpc `tcp` feature removed
+(only Unix transport used), chrono trimmed to clock+serde, physics_bridge
+hardcoded paths replaced with LEGACY_TMP_PREFIX constant.
+
 Remaining backlog: BTSP Phase 3 encryption, aarch64 musl cross-compile
-for headless, audio backend wire protocols (PipeWire/PulseAudio).
+for headless, audio backend wire protocols (via ToadStool `audio.play`
+capability discovery), overlay mode (toadStool Display Phase 2),
+egui texture resolution (TextureResolver with `egui::Shape::image`).
