@@ -34,7 +34,7 @@ pub enum AppError {
     Tui(String),
 
     /// Task panic (e.g. `spawn_blocking`).
-    #[expect(dead_code, reason = "retained for completeness; exercised in ui_mode tests")]
+    #[cfg_attr(not(test), allow(dead_code, reason = "exercised in ui_mode tests"))]
     #[error("Task panicked: {0}")]
     TaskPanic(String),
 

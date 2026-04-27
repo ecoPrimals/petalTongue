@@ -37,8 +37,12 @@ pub fn run_on_main_thread(
     let (motor_tx, motor_rx) = std::sync::mpsc::channel();
 
     let socket_override = socket_path.map(std::path::PathBuf::from);
+    let rendering_awareness = Arc::new(std::sync::RwLock::new(
+        petal_tongue_core::RenderingAwareness::new(),
+    ));
     let mut server = UnixSocketServer::new_with_socket(graph.clone(), socket_override)
         .map_err(|e| AppError::Other(format!("Failed to create IPC server: {e}")))?
+        .with_rendering_awareness(Arc::clone(&rendering_awareness))
         .with_motor_sender(motor_tx);
 
     if let Some(port) = tcp_port {

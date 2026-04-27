@@ -373,7 +373,7 @@ fn test_handle_announce_capabilities_returns_array() {
 }
 
 #[tokio::test]
-async fn test_default_rendering_awareness_initialized() {
+async fn test_showing_without_awareness_returns_false() {
     let graph = Arc::new(RwLock::new(GraphEngine::new()));
     let server = env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
         UnixSocketServer::new(graph).unwrap()
@@ -386,14 +386,14 @@ async fn test_default_rendering_awareness_initialized() {
     let response = server.handle_request(request).await;
     assert!(
         response.error.is_none(),
-        "should not error when awareness is default-initialized"
+        "showing should degrade gracefully without awareness"
     );
     let result = response.result.unwrap();
-    assert_eq!(result["data_id"], "test-data");
+    assert_eq!(result["showing"], false);
 }
 
 #[tokio::test]
-async fn test_introspect_works_with_default_awareness() {
+async fn test_introspect_without_awareness_returns_error() {
     let graph = Arc::new(RwLock::new(GraphEngine::new()));
     let server = env_test_helpers::with_env_var("XDG_RUNTIME_DIR", "/tmp", || {
         UnixSocketServer::new(graph).unwrap()
@@ -401,8 +401,8 @@ async fn test_introspect_works_with_default_awareness() {
     let request = JsonRpcRequest::new("visualization.introspect", json!({}), json!(1));
     let response = server.handle_request(request).await;
     assert!(
-        response.error.is_none(),
-        "introspect should succeed with default awareness (PT-05)"
+        response.error.is_some(),
+        "introspect should return error without awareness (server mode)"
     );
 }
 

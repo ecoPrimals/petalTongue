@@ -6,6 +6,26 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### PG-53 Follow-up: rendering_awareness Server Mode Bug (April 27, 2026)
+
+#### Fixed
+- **`rendering_awareness` unconditionally `Some` in server mode**: `UnixSocketServer::new_with_socket`
+  was unconditionally setting `rendering_awareness = Some(...)`, causing `proprioception.get` to
+  report `frame_rate: 60`, `mode: "live"`, `window: { present: true }` even in headless `server`
+  mode. Removed the unconditional initialization; `rendering_awareness` now defaults to `None`
+  (the `RpcHandlers::new()` default). Only `live` mode explicitly wires it via
+  `with_rendering_awareness()`.
+- Server mode now correctly reports `frame_rate: 0`, `mode: "server"`, `window: null`.
+- Updated `test_default_rendering_awareness_initialized` and `test_introspect_works_with_default_awareness`
+  to test the correct server-mode behavior (graceful degradation, not false positives).
+
+#### Also fixed (pre-existing lints)
+- `rich_test_scene()` test fixture: added `#[expect(clippy::too_many_lines)]`.
+- `pixel_renderer_demo.rs`: borrow fix on `save_as_png` path argument.
+- `base64::encode` needless borrow in visualization test.
+- `AppError::TaskPanic`: `#[expect(dead_code)]` → `#[cfg_attr(not(test), allow(dead_code))]`
+  (dead in bin target, used in test target).
+
 ### PG-48: musl/plasmidBin winit Main-Thread Panic (April 27, 2026)
 
 #### Fixed

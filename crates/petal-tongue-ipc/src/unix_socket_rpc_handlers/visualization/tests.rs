@@ -510,7 +510,7 @@ fn handle_texture_upload_bad_format() {
 fn handle_texture_upload_bad_size() {
     use base64::Engine;
     let h = test_handlers();
-    let short_data = base64::engine::general_purpose::STANDARD.encode(&[0u8; 3]);
+    let short_data = base64::engine::general_purpose::STANDARD.encode([0u8; 3]);
     let req = JsonRpcRequest::new(
         "visualization.texture.upload",
         json!({
