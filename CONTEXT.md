@@ -108,7 +108,7 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # ~6,022+ tests, ~90% coverage
+cargo test --workspace --all-features     # ~6,024+ tests, ~90% coverage
 ```
 
 ## Current State
@@ -222,6 +222,14 @@ proprioception snapshot for composition scripts. Server mode returns
 `--socket` CLI flag (reconfirmed April 27, 2026): already wired since
 PT-10 (April 10). Both `--socket` flag and `PETALTONGUE_SOCKET` env var
 functional on `server` and `live` subcommands.
+
+Deep debt audit (April 27, 2026): comprehensive audit of 847 .rs files.
+Zero unsafe, zero dyn in production, zero #[allow(] in production, zero
+TODO/FIXME/HACK. No files >650 lines. tempfile version skew (3.8/3.10/3)
+unified to workspace dep. petal-tongue-cli clap consolidated to workspace.
+SVG viewport, SSE keepalive, HTTP stream timeout, web static dir all
+extracted to named constants. All mocks gated behind #[cfg(test)] or
+test-fixtures feature.
 
 Remaining backlog: BTSP Phase 3 encryption, aarch64 musl cross-compile
 for headless, audio backend wire protocols (via ToadStool `audio.play`
