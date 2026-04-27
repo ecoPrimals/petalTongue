@@ -108,15 +108,13 @@ fn run_ui_blocking(
     let scenario_path = crate::ui_mode::scenario_to_path(scenario);
     let capabilities = RenderingCapabilities::detect();
 
-    let options = petal_tongue_ui::eframe::NativeOptions {
-        viewport: petal_tongue_ui::egui::ViewportBuilder::default()
-            .with_inner_size([1400.0, 900.0])
-            .with_min_inner_size([800.0, 600.0])
-            .with_title(crate::ui_mode::window_title())
-            .with_visible(true)
-            .with_active(true),
-        ..Default::default()
-    };
+    let viewport = petal_tongue_ui::egui::ViewportBuilder::default()
+        .with_inner_size([1400.0, 900.0])
+        .with_min_inner_size([800.0, 600.0])
+        .with_title(crate::ui_mode::window_title())
+        .with_visible(true)
+        .with_active(true);
+    let options = crate::ui_mode::native_options_with_any_thread(viewport);
 
     let shared_graph = Arc::clone(graph);
 

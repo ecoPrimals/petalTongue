@@ -2,7 +2,7 @@
 //! JSON-RPC request handlers for petalTongue IPC.
 //!
 //! Dispatches to domain-specific submodules:
-//! - `system` — health.*, identity.get, lifecycle.status, capabilities.list, topology.get
+//! - `system` — health.*, identity.get, lifecycle.status, capabilities.list, topology.get, proprioception.get
 //! - `visualization` — visualization.render, stream, grammar, validate, export, dismiss, interact
 //! - `interaction` — interaction.subscribe, poll, unsubscribe
 //! - `motor` — motor.* (UI efferent bridge)
@@ -79,7 +79,7 @@ impl RpcHandlers {
         }
     }
 
-    fn uptime_seconds(&self) -> u64 {
+    pub(crate) fn uptime_seconds(&self) -> u64 {
         self.start_time.elapsed().unwrap_or_default().as_secs()
     }
 

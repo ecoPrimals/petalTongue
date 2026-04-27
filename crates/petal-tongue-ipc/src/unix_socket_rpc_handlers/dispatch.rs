@@ -21,6 +21,9 @@ impl RpcHandlers {
             "identity.get" => system::handle_identity_get(self, req.id),
             "lifecycle.status" => system::handle_lifecycle_status(self, req.id),
 
+            // Proprioception (SAME DAVE introspection for composition scripts)
+            "proprioception.get" => system::handle_proprioception_get(self, req),
+
             // Capabilities (canonical + aliases per SEMANTIC_METHOD_NAMING_STANDARD)
             "capabilities.list" | "capability.list" | "primal.capabilities" => {
                 system::get_capabilities(self, req.id)

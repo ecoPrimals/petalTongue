@@ -239,3 +239,43 @@ fn handle_lifecycle_status_returns_running() {
     assert_eq!(r["healthy"], true);
     assert!(r["uptime_seconds"].as_u64().is_some());
 }
+
+#[test]
+fn proprioception_get_server_mode_returns_zero_fps() {
+    let h = test_handlers();
+    let req = JsonRpcRequest::new("proprioception.get", serde_json::json!({}), serde_json::json!(1));
+    let resp = handle_proprioception_get(&h, req);
+    let r = resp.result.expect("success");
+    assert!(
+        (r["frame_rate"].as_f64().unwrap() - 0.0).abs() < f64::EPSILON,
+        "server mode must report 0 fps"
+    );
+    assert_eq!(r["active_scenes"], 0);
+    assert_eq!(r["user_interactivity"], "none");
+    assert_eq!(r["mode"], "server");
+    assert!(r["uptime_secs"].as_u64().is_some());
+    assert!(r["window"].is_null(), "server mode has no window");
+}
+
+#[test]
+fn proprioception_get_with_sessions() {
+    use crate::visualization_handler::VisualizationRenderRequest;
+
+    let h = test_handlers();
+    {
+        let mut state = h.viz_state.write().unwrap();
+        state.handle_render(VisualizationRenderRequest {
+            session_id: "s1".to_string(),
+            title: "test".to_string(),
+            bindings: vec![],
+            thresholds: vec![],
+            domain: None,
+            ui_config: None,
+        });
+    }
+    let req = JsonRpcRequest::new("proprioception.get", serde_json::json!({}), serde_json::json!(2));
+    let resp = handle_proprioception_get(&h, req);
+    let r = resp.result.expect("success");
+    assert_eq!(r["active_scenes"], 1);
+    assert_eq!(r["total_frames"], 0);
+}

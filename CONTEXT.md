@@ -44,10 +44,10 @@ does not own computation, storage, or security domains.
 ## IPC Surface
 
 JSON-RPC 2.0 over Unix domain sockets (primary) and TCP (`--port`).
-45 methods across domains: `visualization.*` (incl. `visualization.render.graph`,
+46 methods across domains: `visualization.*` (incl. `visualization.render.graph`,
 `visualization.session.*`, `visualization.texture.upload/attach`),
 `interaction.*`, `health.*`, `capabilities.*`, `capability.*`, `identity.*`,
-`ui.*`, `motor.*`, `audio.*`, `lifecycle.*`.
+`ui.*`, `motor.*`, `audio.*`, `lifecycle.*`, `proprioception.get`.
 
 BTSP Phase 1 complete: family-scoped socket naming, insecure guard,
 domain symlinks (`visualization.sock`). BTSP Phase 2 complete: BearDog
@@ -207,6 +207,21 @@ Dependency consolidation (April 26, 2026): uuid unified to workspace 1.9,
 tokio-tungstenite deduplicated to workspace dep, tarpc `tcp` feature removed
 (only Unix transport used), chrono trimmed to clock+serde, physics_bridge
 hardcoded paths replaced with LEGACY_TMP_PREFIX constant.
+
+PG-48 fix (April 27, 2026): musl/plasmidBin binaries no longer panic in
+`live` mode. Added `EventLoopBuilderExtX11::with_any_thread(true)` hook
+and enabled explicit `x11` + `wayland` eframe features. `winit` added as
+direct workspace dep for platform traits (zero new crate).
+
+PG-53: `proprioception.get` IPC method (April 27, 2026): synthetic
+proprioception snapshot for composition scripts. Server mode returns
+`frame_rate: 0`, `window: null`; live/UI returns `frame_rate: 60`,
+`window: { present: true }`. Also returns `active_scenes`, `total_frames`,
+`user_interactivity`, `mode`, `uptime_secs`.
+
+`--socket` CLI flag (reconfirmed April 27, 2026): already wired since
+PT-10 (April 10). Both `--socket` flag and `PETALTONGUE_SOCKET` env var
+functional on `server` and `live` subcommands.
 
 Remaining backlog: BTSP Phase 3 encryption, aarch64 musl cross-compile
 for headless, audio backend wire protocols (via ToadStool `audio.play`
