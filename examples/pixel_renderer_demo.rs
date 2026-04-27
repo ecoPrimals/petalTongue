@@ -61,7 +61,7 @@ fn main() -> Result<()> {
     let output_dir =
         std::env::var("DEMO_OUTPUT_DIR").unwrap_or_else(|_| "/tmp".into());
     let output_path = format!("{output_dir}/petaltongue_pixel_render_demo.png");
-    save_as_png(buffer.as_ref(), 800, 600, output_path)?;
+    save_as_png(buffer.as_ref(), 800, 600, &output_path)?;
     println!("✅ Saved to: {output_path}");
 
     println!("\n════════════════════════════════════════════════════════════");

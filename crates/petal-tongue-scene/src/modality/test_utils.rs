@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 #[cfg(test)]
+#[expect(clippy::too_many_lines, reason = "exhaustive test fixture covering all primitive variants")]
 pub fn rich_test_scene() -> crate::scene_graph::SceneGraph {
     use crate::primitive::{
         AnchorPoint, BezierSegment, Color, FillRule, MeshVertex, Primitive, StrokeStyle, UvRect,

@@ -219,6 +219,12 @@ proprioception snapshot for composition scripts. Server mode returns
 `window: { present: true }`. Also returns `active_scenes`, `total_frames`,
 `user_interactivity`, `mode`, `uptime_secs`.
 
+PG-53 follow-up (April 27, 2026): `rendering_awareness` was unconditionally
+`Some(...)` in `UnixSocketServer::new_with_socket`, so server-mode
+`proprioception.get` falsely reported `mode: "live"` and `frame_rate: 60`.
+Fixed: removed unconditional init from server constructor; only `live` mode
+now wires `rendering_awareness` via `with_rendering_awareness()`.
+
 `--socket` CLI flag (reconfirmed April 27, 2026): already wired since
 PT-10 (April 10). Both `--socket` flag and `PETALTONGUE_SOCKET` env var
 functional on `server` and `live` subcommands.

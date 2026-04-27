@@ -61,9 +61,6 @@ impl UnixSocketServer {
         let viz_state = Arc::new(std::sync::RwLock::new(VisualizationState::new()));
 
         let mut handlers = RpcHandlers::new(graph, family_id.clone(), viz_state);
-        handlers.rendering_awareness = Some(Arc::new(std::sync::RwLock::new(
-            petal_tongue_core::RenderingAwareness::new(),
-        )));
         let (callback_tx, push_thread) = crate::push_delivery::spawn_push_delivery();
         handlers.callback_tx = Some(callback_tx);
         info!("📡 PT-06: push delivery activated (callback_tx wired on RPC handlers)");
