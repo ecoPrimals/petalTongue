@@ -8,6 +8,11 @@
 //! `callback_tx` push over UDS.
 
 use crate::error::AppError;
+use petal_tongue_core::constants::DEFAULT_SSE_KEEPALIVE_SECS;
+
+/// Static assets directory for the web UI.
+const WEB_STATIC_DIR: &str = "web/static";
+
 use axum::{
     Json, Router,
     extract::State,
@@ -52,7 +57,7 @@ pub async fn run(
         .route("/api/primals", get(primals_handler))
         .route("/api/snapshot", get(snapshot_handler))
         .route("/api/events", get(events_sse_handler))
-        .nest_service("/static", ServeDir::new("web/static"))
+        .nest_service("/static", ServeDir::new(WEB_STATIC_DIR))
         .with_state(data_service);
 
     tracing::info!("🌐 Web UI server listening on http://{}", addr);
@@ -156,7 +161,7 @@ async fn events_sse_handler(
 
     Sse::new(stream).keep_alive(
         axum::response::sse::KeepAlive::new()
-            .interval(std::time::Duration::from_secs(15))
+            .interval(std::time::Duration::from_secs(DEFAULT_SSE_KEEPALIVE_SECS))
             .text("keepalive"),
     )
 }

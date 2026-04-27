@@ -32,4 +32,4 @@ test-fixtures = []
 petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
 tokio = { workspace = true, features = ["test-util", "macros"] }
 wiremock = "0.6"
-tempfile = "3.8"
+tempfile = { workspace = true }

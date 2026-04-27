@@ -17,6 +17,12 @@ pub const DEFAULT_TERMINAL_COLS: u16 = 80;
 /// Default terminal rows (for CLI/text UI).
 pub const DEFAULT_TERMINAL_ROWS: u16 = 24;
 
+/// Default SVG export width in pixels.
+pub const DEFAULT_SVG_WIDTH: u32 = 800;
+
+/// Default SVG export height in pixels.
+pub const DEFAULT_SVG_HEIGHT: u32 = 600;
+
 /// Max FPS for rendering (overridable via config)
 pub const DEFAULT_MAX_FPS: u32 = 60;
 

@@ -58,5 +58,5 @@ petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"
 tokio-test = "0.4"
 wiremock = "0.6"
 futures-util = "0.3"  # For join_all in concurrent tests
-tempfile = "3"
+tempfile = { workspace = true }
 

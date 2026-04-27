@@ -49,7 +49,7 @@ dashmap = "6.1"
 
 [dev-dependencies]
 anyhow = { workspace = true }  # examples/simple_demo.rs
-tempfile = "3.10"
+tempfile = { workspace = true }
 
 [[example]]
 name = "simple_demo"
