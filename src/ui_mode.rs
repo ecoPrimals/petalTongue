@@ -29,6 +29,31 @@ pub fn window_title() -> String {
     format!("🌸 {PRIMAL_NAME} - Universal Representation System")
 }
 
+/// Build `NativeOptions` with the musl-safe `any_thread` event loop hook.
+///
+/// PG-48: musl libc reports thread IDs differently, causing winit's
+/// `is_main_thread()` check to fail even when we ARE on the OS main thread.
+/// `with_any_thread(true)` tells winit to skip that check on X11.
+/// Our code already guarantees main-thread dispatch (PG-40), so this is safe.
+#[cfg(feature = "ui")]
+pub fn native_options_with_any_thread(
+    viewport: petal_tongue_ui::egui::ViewportBuilder,
+) -> petal_tongue_ui::eframe::NativeOptions {
+    petal_tongue_ui::eframe::NativeOptions {
+        viewport,
+        event_loop_builder: Some(Box::new(|builder| {
+            #[cfg(target_os = "linux")]
+            {
+                use winit::platform::x11::EventLoopBuilderExtX11 as _;
+                builder.with_any_thread(true);
+            }
+            #[cfg(not(target_os = "linux"))]
+            let _ = builder;
+        })),
+        ..Default::default()
+    }
+}
+
 /// Run the egui/eframe desktop UI directly on the calling thread.
 ///
 /// winit requires the event loop to be initialized on the main thread
@@ -72,16 +97,13 @@ fn run_ui_blocking(
     // Detect rendering capabilities
     let capabilities = RenderingCapabilities::detect();
 
-    // Setup eframe options
-    let options = petal_tongue_ui::eframe::NativeOptions {
-        viewport: petal_tongue_ui::egui::ViewportBuilder::default()
-            .with_inner_size([1400.0, 900.0])
-            .with_min_inner_size([800.0, 600.0])
-            .with_title(window_title())
-            .with_visible(true)
-            .with_active(true),
-        ..Default::default()
-    };
+    let viewport = petal_tongue_ui::egui::ViewportBuilder::default()
+        .with_inner_size([1400.0, 900.0])
+        .with_min_inner_size([800.0, 600.0])
+        .with_title(window_title())
+        .with_visible(true)
+        .with_active(true);
+    let options = native_options_with_any_thread(viewport);
 
     // Create and run app
     // IMPORTANT: We pass the shared graph from DataService directly

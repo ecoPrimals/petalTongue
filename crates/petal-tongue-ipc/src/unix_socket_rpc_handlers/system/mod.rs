@@ -4,6 +4,7 @@
 mod capabilities;
 mod health;
 mod identity_lifecycle;
+mod proprioception;
 mod provider;
 mod topology;
 
@@ -15,6 +16,7 @@ pub use health::{
     get_health, handle_health_check, handle_health_liveness, handle_health_readiness,
 };
 pub use identity_lifecycle::{handle_identity_get, handle_lifecycle_status};
+pub use proprioception::handle_proprioception_get;
 pub use provider::handle_provider_register;
 pub use topology::get_topology;
 

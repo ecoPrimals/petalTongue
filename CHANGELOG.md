@@ -6,6 +6,36 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### PG-48: musl/plasmidBin winit Main-Thread Panic (April 27, 2026)
+
+#### Fixed
+- **winit `any_thread` for musl**: musl libc reports thread IDs differently,
+  causing winit's `is_main_thread()` check to fail even on the OS main thread.
+  Added `EventLoopBuilderExtX11::with_any_thread(true)` via `NativeOptions.event_loop_builder`
+  hook on Linux. Our PG-40 code already guarantees main-thread dispatch, so
+  this just bypasses the check that was false-positive under musl.
+- **eframe backend features**: enabled explicit `x11` + `wayland` features
+  (previously stripped by `default-features = false`). `winit` added as direct
+  workspace dep for platform extension traits (zero new crate — already transitive).
+- Shared `native_options_with_any_thread()` helper used by both `ui_mode` and
+  `live_mode`.
+
+### PG-53: Server Mode Proprioception (April 27, 2026)
+
+#### Added
+- **`proprioception.get`** IPC method — returns a synthetic proprioception snapshot
+  usable by composition scripts in all modes. Server mode returns `frame_rate: 0`,
+  `window: null`, `mode: "server"`. Live/UI mode returns `frame_rate: 60`,
+  `window: { present: true }`, `mode: "live"`.
+- Fields: `frame_rate`, `active_scenes`, `total_frames`, `user_interactivity`,
+  `mode`, `uptime_secs`, `window`.
+- Tests: server-mode zero FPS, with-sessions scene count.
+
+#### Note
+- `--socket` flag on `server` mode: confirmed fully wired (PT-10, April 10).
+  ludoSpring report was likely from a stale binary. `--socket` + `PETALTONGUE_SOCKET`
+  env both functional.
+
 ### PG-43: Texture Primitive + IPC Methods (April 26, 2026)
 
 #### Added
