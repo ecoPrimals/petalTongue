@@ -10,6 +10,11 @@ use crate::transform::Transform2D;
 
 use super::{ModalityCompiler, ModalityOutput};
 
+/// Default SVG viewport width.
+const SVG_VIEWPORT_WIDTH: u32 = 800;
+/// Default SVG viewport height.
+const SVG_VIEWPORT_HEIGHT: u32 = 600;
+
 /// Compiles scene graph to SVG.
 #[derive(Debug, Clone, Default)]
 pub struct SvgCompiler;
@@ -29,7 +34,10 @@ impl ModalityCompiler for SvgCompiler {
 
     fn compile(&self, scene: &SceneGraph) -> ModalityOutput {
         let mut buf = String::new();
-        buf.push_str(r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">"#);
+        let _ = write!(
+            buf,
+            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {SVG_VIEWPORT_WIDTH} {SVG_VIEWPORT_HEIGHT}">"#,
+        );
 
         for (transform, prim) in scene.flatten() {
             Self::emit_primitive(&mut buf, prim, &transform);

@@ -71,6 +71,13 @@ pub const DEFAULT_RETRY_MAX_SECS: u64 = 10;
 /// Default TUI tick rate in ms (overridable via `PETALTONGUE_TUI_TICK_MS`)
 pub const DEFAULT_TUI_TICK_MS: u64 = 100;
 
+/// SSE keepalive ping interval in seconds (overridable via `PETALTONGUE_SSE_KEEPALIVE_SECS`)
+pub const DEFAULT_SSE_KEEPALIVE_SECS: u64 = 15;
+
+/// HTTP streaming client timeout in seconds (long-lived SSE connections).
+/// Overridable via `PETALTONGUE_SSE_STREAM_TIMEOUT_SECS`.
+pub const DEFAULT_SSE_STREAM_TIMEOUT_SECS: u64 = 600;
+
 // ---------------------------------------------------------------------------
 // Duration helpers (env-driven with fallback)
 // ---------------------------------------------------------------------------

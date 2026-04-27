@@ -49,6 +49,6 @@ test-fixtures = ["dep:temp-env"]
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util", "macros"] }
-tempfile = "3.8"
+tempfile = { workspace = true }
 temp-env = { version = "0.3", features = ["async_closure"] }
 proptest = { workspace = true }
