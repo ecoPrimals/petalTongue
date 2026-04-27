@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 26, 2026 (PG-43 texture primitive, PG-40 winit fix, dyn elimination, dep consolidation)
+**Updated**: April 27, 2026 (PG-48 musl winit fix, PG-53 proprioception.get, deep debt audit)
 
 ---
 

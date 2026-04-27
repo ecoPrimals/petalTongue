@@ -113,7 +113,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,022+ passing (98 test suites), 0 failures |
+| Tests | 6,024+ passing (98 test suites), 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons; zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
@@ -148,7 +148,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 6,022+ tests
+cargo test --workspace --all-features        # 6,024+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
@@ -219,7 +219,7 @@ See `infra/wateringHole/handoffs/` for sprint handoff documents and evolution hi
 - `#![forbid(unsafe_code)]` unconditional on all crates
 - Semantic method naming (`domain.operation`)
 - JSON-RPC 2.0 REQUIRED for inter-primal IPC, tarpc MAY for Rust-to-Rust hot paths, HTTP for external access only
-- All production files under 600 lines (smart domain refactoring, not mechanical splitting)
+- All production files under 650 lines (smart domain refactoring, not mechanical splitting)
 - Zero `dyn` for custom traits — use enum dispatch or generics; zero `dyn` in production code
 - SPDX headers on all source files
 

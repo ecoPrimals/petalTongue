@@ -1,4 +1,4 @@
-# 🌸 petalTongue Rich TUI
+# petalTongue Rich TUI
 
 **A pure Rust terminal user interface for managing the ecoPrimals ecosystem**
 
@@ -6,7 +6,7 @@
 
 ---
 
-## 🎯 Overview
+## Overview
 
 The Rich TUI is a comprehensive, terminal-based interface for managing primals, devices, topology, and biomeOS systems. It provides 8 interactive views with real-time updates, graceful degradation, and zero unsafe code.
 
@@ -21,7 +21,7 @@ The Rich TUI is a comprehensive, terminal-based interface for managing primals, 
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Run the TUI
 
@@ -53,7 +53,7 @@ cargo build --release -p petal-tongue-tui
 
 ---
 
-## 📊 The 8 Views
+## The 8 Views
 
 ### 1. Dashboard (`1`)
 
@@ -169,7 +169,7 @@ cargo build --release -p petal-tongue-tui
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ### Division of Labor
 
@@ -206,7 +206,7 @@ if let Ok(discovery) = DiscoveryServiceClient::discover().await {
 
 ---
 
-## 🛠️ Development
+## Development
 
 ### Project Structure
 
@@ -282,7 +282,7 @@ cargo test -p petal-tongue-tui events::tests
 
 ---
 
-## 🎨 Customization
+## Customization
 
 ### Configuration
 
@@ -331,7 +331,7 @@ pub fn render_my_view(frame: &mut Frame, state: &TUIState) {
 
 ---
 
-## 🌸 TRUE PRIMAL Principles
+## TRUE PRIMAL Principles
 
 ### Zero Hardcoding
 
@@ -365,7 +365,7 @@ pub fn render_my_view(frame: &mut Frame, state: &TUIState) {
 
 ---
 
-## 📈 Metrics
+## Metrics
 
 - **Total LOC:** 2,490
 - **Unsafe Code:** 0 lines
@@ -377,7 +377,7 @@ pub fn render_my_view(frame: &mut Frame, state: &TUIState) {
 
 ---
 
-## 🤝 Integration with biomeOS
+## Integration with biomeOS
 
 ### neuralAPI
 
@@ -408,7 +408,7 @@ Live atomic deployments:
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### TUI won't start
 
@@ -436,7 +436,7 @@ Live atomic deployments:
 
 ---
 
-## 📚 Related Documentation
+## Related Documentation
 
 - [Formal Specification](../../specs/UNIVERSAL_USER_INTERFACE_SPECIFICATION.md)
 - [Environment Variables](../../ENV_VARS.md)
@@ -444,7 +444,7 @@ Live atomic deployments:
 
 ---
 
-## 🌟 Examples
+## Examples
 
 ### Simple Demo
 
@@ -489,21 +489,21 @@ async fn main() -> anyhow::Result<()> {
 
 ---
 
-## 📝 License
+## License
 
 AGPL-3.0 - See LICENSE file
 
 ---
 
-## 🌸 Credits
+## Credits
 
 Part of the ecoPrimals ecosystem
 
-**Different orders of the same architecture.** 🍄🐸
+**Different orders of the same architecture.**
 
 ---
 
-**Status:** Production Ready 🚀  
-**Version:** 1.0.0  
-**Last Updated:** January 12, 2026
+**Status:** Production Ready  
+**Version:** 1.6.6  
+**Last Updated:** April 27, 2026
 
