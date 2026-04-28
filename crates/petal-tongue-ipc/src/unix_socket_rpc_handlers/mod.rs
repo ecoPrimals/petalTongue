@@ -52,6 +52,8 @@ pub struct RpcHandlers {
     /// When set, `handle_interact_apply` sends dispatches here instead of dropping them.
     pub callback_tx:
         Option<tokio::sync::mpsc::UnboundedSender<crate::visualization_handler::CallbackDispatch>>,
+    /// Scene graph integrity signer (NUCLEUS visualization purpose key).
+    pub scene_signer: crate::scene_signer::SceneSigner,
 }
 
 impl RpcHandlers {
@@ -76,6 +78,7 @@ impl RpcHandlers {
             rendering_awareness: None,
             tcp_enabled: false,
             callback_tx: None,
+            scene_signer: crate::scene_signer::SceneSigner::from_env(),
         }
     }
 

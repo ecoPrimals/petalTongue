@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 27, 2026 (PG-48/53, rendering_awareness fix, dep consolidation, discovery evolution)
+**Updated**: April 28, 2026 (Phase 55: awakening evolution, scene signing, sensor stream)
 
 ---
 
@@ -59,7 +59,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 6,156+ tests
+cargo test --workspace --all-features           # 6,045+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)

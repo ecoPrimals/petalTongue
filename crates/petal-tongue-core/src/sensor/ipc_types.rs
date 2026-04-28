@@ -83,6 +83,36 @@ pub enum SensorEventIpc {
         /// Unix epoch milliseconds.
         timestamp_ms: u64,
     },
+    /// Window/viewport gained focus.
+    #[serde(rename = "focus_gained")]
+    FocusGained {
+        /// Unix epoch milliseconds.
+        timestamp_ms: u64,
+    },
+    /// Window/viewport lost focus.
+    #[serde(rename = "focus_lost")]
+    FocusLost {
+        /// Unix epoch milliseconds.
+        timestamp_ms: u64,
+    },
+    /// Viewport resized.
+    #[serde(rename = "window_resize")]
+    WindowResize {
+        /// New width in logical pixels.
+        width: f32,
+        /// New height in logical pixels.
+        height: f32,
+        /// Unix epoch milliseconds.
+        timestamp_ms: u64,
+    },
+    /// Text input (character composition).
+    #[serde(rename = "text_input")]
+    TextInput {
+        /// The composed text string.
+        text: String,
+        /// Unix epoch milliseconds.
+        timestamp_ms: u64,
+    },
 }
 
 impl SensorEventBatch {
@@ -217,5 +247,64 @@ mod tests {
     fn key_modifiers_default() {
         let mods = KeyModifiersIpc::default();
         assert!(!mods.ctrl && !mods.alt && !mods.shift && !mods.meta);
+    }
+
+    #[test]
+    fn serialize_focus_gained() {
+        let event = SensorEventIpc::FocusGained { timestamp_ms: 500 };
+        let json = serde_json::to_string(&event).expect("serialize");
+        assert!(json.contains("\"type\":\"focus_gained\""));
+    }
+
+    #[test]
+    fn serialize_focus_lost() {
+        let event = SensorEventIpc::FocusLost { timestamp_ms: 600 };
+        let json = serde_json::to_string(&event).expect("serialize");
+        assert!(json.contains("\"type\":\"focus_lost\""));
+    }
+
+    #[test]
+    fn serialize_window_resize() {
+        let event = SensorEventIpc::WindowResize {
+            width: 1920.0,
+            height: 1080.0,
+            timestamp_ms: 700,
+        };
+        let json = serde_json::to_string(&event).expect("serialize");
+        assert!(json.contains("\"type\":\"window_resize\""));
+        assert!(json.contains("1920"));
+    }
+
+    #[test]
+    fn serialize_text_input() {
+        let event = SensorEventIpc::TextInput {
+            text: "hello".to_string(),
+            timestamp_ms: 800,
+        };
+        let json = serde_json::to_string(&event).expect("serialize");
+        assert!(json.contains("\"type\":\"text_input\""));
+        assert!(json.contains("\"text\":\"hello\""));
+    }
+
+    #[test]
+    fn roundtrip_new_event_types() {
+        let events = vec![
+            SensorEventIpc::FocusGained { timestamp_ms: 1 },
+            SensorEventIpc::FocusLost { timestamp_ms: 2 },
+            SensorEventIpc::WindowResize {
+                width: 800.0,
+                height: 600.0,
+                timestamp_ms: 3,
+            },
+            SensorEventIpc::TextInput {
+                text: "a".to_string(),
+                timestamp_ms: 4,
+            },
+        ];
+        for event in &events {
+            let json = serde_json::to_string(event).expect("serialize");
+            let decoded: SensorEventIpc = serde_json::from_str(&json).expect("deserialize");
+            assert_eq!(&decoded, event);
+        }
     }
 }

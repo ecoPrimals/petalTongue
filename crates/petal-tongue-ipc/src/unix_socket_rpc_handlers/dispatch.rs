@@ -65,6 +65,7 @@ impl RpcHandlers {
             "visualization.showing" => visualization::handle_showing(self, req),
             "visualization.texture.upload" => visualization::handle_texture_upload(self, req),
             "visualization.texture.attach" => visualization::handle_texture_attach(self, req),
+            "visualization.scene.verify" => visualization::handle_scene_verify(self, req),
             "interaction.subscribe" | "visualization.interact.subscribe" => {
                 self.handle_interaction_subscribe(req)
             }
@@ -78,7 +79,9 @@ impl RpcHandlers {
             "provider.register_capability" => system::handle_provider_register(self, req),
             "audio.synthesize" => audio::handle_audio_synthesize(self, req),
             "motor.set_panel" | "motor.set_zoom" | "motor.fit_to_view" | "motor.set_mode"
-            | "motor.navigate" => motor::handle_motor_command(self, req),
+            | "motor.navigate" | "motor.set_awakening" => {
+                motor::handle_motor_command(self, req)
+            }
             _ => {
                 warn!("Unknown method: {}", method);
                 JsonRpcResponse::error(

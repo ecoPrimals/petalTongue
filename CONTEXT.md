@@ -242,7 +242,19 @@ to workspace deps. Stale `external-display` feature alias removed.
 `universal_discovery.rs` socket search now includes XDG_RUNTIME_DIR as
 priority-1 (was missing — only searched /tmp and /var/run).
 
+Phase 55 audit response (April 28, 2026): three primalSpring asks addressed.
+(1) AWAKENING_ENABLED default changed to false — awakening now off by default,
+compositions invoke via new `motor.set_awakening` IPC method. Awakening is
+invocable, not a hardcoded default. (2) Scene push signing implemented: new
+`SceneSigner` module uses BLAKE3 keyed hash with `PETALTONGUE_SCENE_KEY` env
+var (visualization purpose key per NUCLEUS Two-Tier Crypto Model). Scene pushes
+include `signature` field; `visualization.scene.verify` IPC method added.
+(3) sensor_stream evolved: new discrete event types — `focus_gained`,
+`focus_lost`, `window_resize`, `text_input` — added to `SensorEventIpc`.
+Focus and text input wired in `sensor_feed.rs` collection. 6,045+ tests.
+
 Remaining backlog: BTSP Phase 3 encryption, aarch64 musl cross-compile
 for headless, audio backend wire protocols (via ToadStool `audio.play`
 capability discovery), overlay mode (toadStool Display Phase 2),
-egui texture resolution (TextureResolver with `egui::Shape::image`).
+egui texture resolution (TextureResolver with `egui::Shape::image`),
+BearDog crypto.sign delegation for scene signing (currently local BLAKE3).
