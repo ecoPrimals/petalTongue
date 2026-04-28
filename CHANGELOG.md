@@ -6,6 +6,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Deep Debt Audit: Workspace Dependency Consolidation (April 28, 2026)
+
+#### Changed
+- **15 crates consolidated to workspace dependencies**: `futures-util`, `crossterm`,
+  `terminal_size`, `tiny-skia`, `epaint`, `png`, `svg`, `indexmap`, `colored`, `socket2`,
+  `dashmap`, `lru`, `ron`, `ratatui`, `symphonia` — all moved from per-crate version pins
+  to `{ workspace = true }` in `[workspace.dependencies]`.
+- **Telemetry fallback path**: `/tmp/petaltongue-telemetry` in `jsonl_provider.rs` extracted
+  to `DEFAULT_TELEMETRY_FALLBACK_DIR` constant in `petal-tongue-core`.
+- **Root `png` optional dep**: aligned to workspace reference.
+
 ### Phase 55: Awakening Evolution + Scene Signing + Sensor Stream (April 28, 2026)
 
 #### Changed

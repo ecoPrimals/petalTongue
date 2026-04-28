@@ -59,6 +59,10 @@ pub const DEFAULT_REFRESH_INTERVAL_SECS: u64 = 2;
 /// Default telemetry buffer size (overridable via `PETALTONGUE_TELEMETRY_BUFFER`)
 pub const DEFAULT_TELEMETRY_BUFFER: usize = 10_000;
 
+/// Fallback directory for JSONL telemetry files when `PETALTONGUE_TELEMETRY_DIR` and
+/// `XDG_DATA_HOME` are unset.
+pub const DEFAULT_TELEMETRY_FALLBACK_DIR: &str = "/tmp/petaltongue-telemetry";
+
 /// Default discovery timeout (overridable via `PETALTONGUE_DISCOVERY_TIMEOUT_SECS`)
 pub const DEFAULT_DISCOVERY_TIMEOUT_SECS: u64 = 5;
 

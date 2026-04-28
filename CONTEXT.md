@@ -253,6 +253,14 @@ include `signature` field; `visualization.scene.verify` IPC method added.
 `focus_lost`, `window_resize`, `text_input` — added to `SensorEventIpc`.
 Focus and text input wired in `sensor_feed.rs` collection. 6,045+ tests.
 
+Deep debt audit (April 28, 2026): 15 crates consolidated to workspace deps
+(futures-util, crossterm, terminal_size, tiny-skia, epaint, png, svg,
+indexmap, colored, socket2, dashmap, lru, ron, ratatui, symphonia).
+Telemetry fallback path `/tmp/petaltongue-telemetry` extracted to constant.
+Comprehensive audit confirmed: zero unsafe, zero dyn in production, zero
+TODO/FIXME/HACK, zero #[allow(] in production, all mocks properly gated,
+all unwrap/expect in test code only. 6,045+ tests.
+
 Remaining backlog: BTSP Phase 3 encryption, aarch64 musl cross-compile
 for headless, audio backend wire protocols (via ToadStool `audio.play`
 capability discovery), overlay mode (toadStool Display Phase 2),

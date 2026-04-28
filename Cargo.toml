@@ -142,6 +142,37 @@ tokio-util = { version = "0.7", features = ["codec"] }
 tokio-serde = "0.8"  # Must match tarpc's version
 bincode = "1.3"
 
+# Terminal / TUI shared
+crossterm = "0.29"
+terminal_size = "0.4"
+ratatui = "0.30"
+dashmap = "6.1"
+
+# Async utilities
+futures-util = "0.3"
+
+# Graphics / rendering shared
+tiny-skia = "0.11"
+epaint = { version = "0.29", default-features = false }
+png = "0.17"
+svg = "0.14"
+
+# Data structures
+indexmap = "2.0"
+lru = "0.16"
+
+# Network / discovery
+socket2 = "0.6"
+
+# Serialization (extended)
+ron = "0.8"
+
+# CLI utilities
+colored = "2.1"
+
+# Audio decoding
+symphonia = { version = "0.5", default-features = false }
+
 # Testing
 tempfile = "3.10"
 
@@ -239,7 +270,7 @@ petal-tongue-scene = { path = "crates/petal-tongue-scene" }
 
 # Examples dependencies (optional, not in production)
 # EVOLVED: libc removed - framebuffer_demo uses rustix (via petal-tongue-core)
-png = { version = "0.17", optional = true }
+png = { workspace = true, optional = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
