@@ -491,6 +491,12 @@ pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> J
         };
 
     let node_count = scene.node_count();
+
+    // Sign the canonical scene JSON for integrity verification
+    let signature = serde_json::to_vec(&scene)
+        .ok()
+        .and_then(|canonical| handlers.scene_signer.sign(&canonical));
+
     {
         let mut state = handlers
             .viz_state
@@ -499,14 +505,16 @@ pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> J
         state.grammar_scenes.insert(session_id.clone(), scene);
     }
 
-    JsonRpcResponse::success(
-        req.id,
-        serde_json::json!({
-            "session_id": session_id,
-            "nodes_accepted": node_count,
-            "status": "scene_stored",
-        }),
-    )
+    let mut result = serde_json::json!({
+        "session_id": session_id,
+        "nodes_accepted": node_count,
+        "status": "scene_stored",
+        "signed": signature.is_some(),
+    });
+    if let Some(sig) = signature {
+        result["signature"] = serde_json::json!(sig);
+    }
+    JsonRpcResponse::success(req.id, result)
 }
 
 /// Handle `visualization.texture.upload`: store base64-decoded RGBA pixel data.
@@ -640,6 +648,63 @@ pub fn handle_texture_attach(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
         serde_json::json!({
             "texture_id": attach.texture_id,
             "status": "attached",
+        }),
+    )
+}
+
+/// Handle `visualization.scene.verify`: verify a scene graph's BLAKE3 keyed-hash signature.
+///
+/// Compositions call this to confirm a scene push originated from authentic petalTongue
+/// and was not corrupted by rogue IPC. Requires the session to still be stored.
+pub fn handle_scene_verify(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
+    if !handlers.scene_signer.is_active() {
+        return JsonRpcResponse::error(
+            req.id,
+            error_codes::INTERNAL_ERROR,
+            "Scene signing not configured (no PETALTONGUE_SCENE_KEY)",
+        );
+    }
+
+    let session_id = req.params["session_id"].as_str().unwrap_or("");
+    let signature = req.params["signature"].as_str().unwrap_or("");
+
+    if session_id.is_empty() || signature.is_empty() {
+        return JsonRpcResponse::error(
+            req.id,
+            error_codes::INVALID_PARAMS,
+            "Both 'session_id' and 'signature' are required",
+        );
+    }
+
+    let state = handlers
+        .viz_state
+        .read()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let Some(scene) = state.grammar_scenes.get(session_id) else {
+        return JsonRpcResponse::error(
+            req.id,
+            error_codes::INVALID_PARAMS,
+            format!("No scene found for session '{session_id}'"),
+        );
+    };
+
+    let canonical = match serde_json::to_vec(scene) {
+        Ok(c) => c,
+        Err(e) => {
+            return JsonRpcResponse::error(
+                req.id,
+                error_codes::INTERNAL_ERROR,
+                format!("Scene serialization failed: {e}"),
+            );
+        }
+    };
+
+    let valid = handlers.scene_signer.verify(&canonical, signature);
+    JsonRpcResponse::success(
+        req.id,
+        serde_json::json!({
+            "session_id": session_id,
+            "valid": valid,
         }),
     )
 }

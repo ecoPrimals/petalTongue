@@ -81,7 +81,9 @@ pub fn apply_motor_command(app: &mut PetalTongueApp, cmd: MotorCommand) {
             }
         }
         MotorCommand::SetAwakening { enabled } => {
-            if !enabled {
+            if enabled {
+                app.awakening_overlay.start();
+            } else {
                 app.awakening_overlay.skip();
             }
             tracing::debug!("Motor: SetAwakening({enabled})");

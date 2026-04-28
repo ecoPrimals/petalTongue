@@ -32,16 +32,19 @@ pub(super) fn finalize_app_startup(
     tutorial_mode: &crate::tutorial_mode::TutorialMode,
     needs_fallback: bool,
 ) {
-    // Awakening: respect env var, then scenario config
+    // Awakening: respect env var, then scenario config, then default OFF.
+    // Compositions invoke awakening via `motor.set_awakening { enabled: true }`.
     let env_awakening = std::env::var("AWAKENING_ENABLED")
         .ok()
         .and_then(|v| v.parse::<bool>().ok());
     let scenario_awakening = scenario.map(|s| s.ui_config.awakening_enabled);
-    let awakening_enabled = env_awakening.unwrap_or_else(|| scenario_awakening.unwrap_or(true));
+    let awakening_enabled = env_awakening.unwrap_or_else(|| scenario_awakening.unwrap_or(false));
 
     if awakening_enabled {
-        tracing::info!("🌸 Awakening experience enabled");
+        tracing::info!("🌸 Awakening experience enabled (explicit)");
         app.awakening_overlay.start();
+    } else {
+        tracing::info!("🌸 Awakening disabled — invoke via motor.set_awakening");
     }
 
     tracing::info!("🎵 Initializing startup audio...");

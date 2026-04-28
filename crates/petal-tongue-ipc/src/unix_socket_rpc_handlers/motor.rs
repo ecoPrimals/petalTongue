@@ -56,6 +56,10 @@ pub fn handle_motor_command(handlers: &RpcHandlers, req: JsonRpcRequest) -> Json
                 target_node: node_id,
             })
         }
+        "motor.set_awakening" => {
+            let enabled = req.params["enabled"].as_bool().unwrap_or(false);
+            Some(MotorCommand::SetAwakening { enabled })
+        }
         _ => None,
     };
 
@@ -297,6 +301,36 @@ mod tests {
         assert!(
             matches!(cmd, MotorCommand::Navigate { ref target_node } if target_node == "node-42")
         );
+    }
+
+    #[test]
+    fn motor_set_awakening_enabled() {
+        let (h, rx) = handlers_with_motor();
+        let req = JsonRpcRequest::new("motor.set_awakening", json!({"enabled": true}), json!(1));
+        let resp = handle_motor_command(&h, req);
+        assert!(resp.result.is_some());
+        let cmd = rx.recv().expect("command");
+        assert!(matches!(cmd, MotorCommand::SetAwakening { enabled: true }));
+    }
+
+    #[test]
+    fn motor_set_awakening_disabled() {
+        let (h, rx) = handlers_with_motor();
+        let req = JsonRpcRequest::new("motor.set_awakening", json!({"enabled": false}), json!(1));
+        let resp = handle_motor_command(&h, req);
+        assert!(resp.result.is_some());
+        let cmd = rx.recv().expect("command");
+        assert!(matches!(cmd, MotorCommand::SetAwakening { enabled: false }));
+    }
+
+    #[test]
+    fn motor_set_awakening_default_false() {
+        let (h, rx) = handlers_with_motor();
+        let req = JsonRpcRequest::new("motor.set_awakening", json!({}), json!(1));
+        let resp = handle_motor_command(&h, req);
+        assert!(resp.result.is_some());
+        let cmd = rx.recv().expect("command");
+        assert!(matches!(cmd, MotorCommand::SetAwakening { enabled: false }));
     }
 
     #[test]

@@ -94,6 +94,8 @@ pub mod provenance_trio;
 /// Push delivery for callback dispatches (PT-06 transport upgrade)
 pub mod push_delivery;
 pub mod resilience;
+/// Scene graph integrity signing (NUCLEUS Two-Tier Crypto Model — `visualization` purpose key)
+pub mod scene_signer;
 pub mod server;
 pub mod socket_path;
 pub mod socket_path_error;
@@ -123,6 +125,7 @@ pub use json_rpc_client::{JsonRpcClient, JsonRpcClientError, JsonRpcResult, Topo
 pub use protocol::{InstanceStatus, IpcCommand, IpcResponse};
 pub use resilience::{CircuitBreaker, CircuitState, RetryPolicy};
 pub use server::{IpcServer, IpcServerError};
+pub use scene_signer::SceneSigner;
 pub use unix_socket_server::UnixSocketServer;
 pub use visualization_handler::{
     BackpressureConfig, CallbackDispatch, ConstraintResult, DismissRequest, DismissResponse,

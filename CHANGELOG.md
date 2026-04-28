@@ -6,6 +6,27 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Phase 55: Awakening Evolution + Scene Signing + Sensor Stream (April 28, 2026)
+
+#### Changed
+- **Awakening default changed to OFF**: `AWAKENING_ENABLED` defaults to `false` (was `true`).
+  Compositions invoke awakening via new `motor.set_awakening` IPC method instead of getting
+  hardcoded defaults. Standalone `ui` mode users set `AWAKENING_ENABLED=true` or use scenario config.
+- **`SetAwakening` motor handler**: now supports both `start()` and `skip()` — compositions can
+  enable or disable awakening at any time via IPC.
+
+#### Added
+- **Scene push signing** (`SceneSigner`): BLAKE3 keyed-hash integrity signatures for scene graphs.
+  Uses `PETALTONGUE_SCENE_KEY` env var (hex-encoded 32-byte visualization purpose key per NUCLEUS
+  Two-Tier Crypto Model). Scene push responses include `signed: bool` and optional `signature` field.
+- **`visualization.scene.verify` IPC method**: compositions verify stored scene integrity by providing
+  `session_id` and `signature`.
+- **`motor.set_awakening` IPC method**: compositions control awakening overlay on/off via JSON-RPC.
+- **Sensor stream new event types**: `focus_gained`, `focus_lost`, `window_resize`, `text_input`
+  added to `SensorEventIpc`. Focus and text events wired in `sensor_feed.rs` egui collection.
+- **Capability advertisements**: `visualization.texture.upload`, `visualization.texture.attach`,
+  `visualization.scene.verify`, `motor.set_awakening` added to `capabilities.list` response.
+
 ### Deep Debt Audit: Dependency Consolidation + Discovery Evolution (April 27, 2026)
 
 #### Changed

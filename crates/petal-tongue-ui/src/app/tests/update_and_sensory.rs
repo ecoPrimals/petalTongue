@@ -92,6 +92,8 @@ fn process_sensory_feedback_with_key_event() {
 #[test]
 fn run_update_awakening_path_executes() {
     let mut app = PetalTongueApp::new_headless().expect("headless app");
+    // Awakening defaults to off; explicitly start it to exercise the overlay path
+    app.awakening_overlay.start();
     let ctx = egui::Context::default();
     let _ = ctx.run(egui::RawInput::default(), |ctx| {
         super::super::update::run_update(&mut app, ctx);
@@ -100,6 +102,6 @@ fn run_update_awakening_path_executes() {
     let intro = app.introspect();
     assert!(
         intro.is_panel_visible(petal_tongue_core::PanelKind::Awakening),
-        "headless starts with awakening overlay visible"
+        "awakening overlay visible after explicit start"
     );
 }

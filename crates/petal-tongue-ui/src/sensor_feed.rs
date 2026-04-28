@@ -57,7 +57,7 @@ pub fn collect_sensor_events(ctx: &egui::Context) -> Vec<SensorEventIpc> {
             });
         }
 
-        // Key presses and releases from egui events
+        // Key presses, releases, text input, and focus events from egui events
         for event in &input.events {
             match event {
                 egui::Event::Key {
@@ -87,9 +87,29 @@ pub fn collect_sensor_events(ctx: &egui::Context) -> Vec<SensorEventIpc> {
                         timestamp_ms: now_ms,
                     });
                 }
+                egui::Event::Text(text) => {
+                    if !text.is_empty() {
+                        events.push(SensorEventIpc::TextInput {
+                            text: text.clone(),
+                            timestamp_ms: now_ms,
+                        });
+                    }
+                }
+                egui::Event::WindowFocused(gained) => {
+                    if *gained {
+                        events.push(SensorEventIpc::FocusGained {
+                            timestamp_ms: now_ms,
+                        });
+                    } else {
+                        events.push(SensorEventIpc::FocusLost {
+                            timestamp_ms: now_ms,
+                        });
+                    }
+                }
                 _ => {}
             }
         }
+
     });
 
     events
@@ -162,6 +182,66 @@ mod tests {
                 |e| matches!(e, SensorEventIpc::KeyRelease { key, .. } if key.contains("Escape"))
             ),
             "should produce KeyRelease for Escape"
+        );
+    }
+
+    #[test]
+    fn text_input_event_produced() {
+        let ctx = egui::Context::default();
+        let mut raw = egui::RawInput::default();
+        raw.events.push(egui::Event::Text("abc".to_string()));
+        let _ = ctx.run(raw, |_ctx| {});
+        let events = collect_sensor_events(&ctx);
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, SensorEventIpc::TextInput { text, .. } if text == "abc")),
+            "should produce TextInput for 'abc'"
+        );
+    }
+
+    #[test]
+    fn focus_gained_event_produced() {
+        let ctx = egui::Context::default();
+        let mut raw = egui::RawInput::default();
+        raw.events.push(egui::Event::WindowFocused(true));
+        let _ = ctx.run(raw, |_ctx| {});
+        let events = collect_sensor_events(&ctx);
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, SensorEventIpc::FocusGained { .. })),
+            "should produce FocusGained"
+        );
+    }
+
+    #[test]
+    fn focus_lost_event_produced() {
+        let ctx = egui::Context::default();
+        let mut raw = egui::RawInput::default();
+        raw.events.push(egui::Event::WindowFocused(false));
+        let _ = ctx.run(raw, |_ctx| {});
+        let events = collect_sensor_events(&ctx);
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, SensorEventIpc::FocusLost { .. })),
+            "should produce FocusLost"
+        );
+    }
+
+    #[test]
+    fn empty_text_input_ignored() {
+        let ctx = egui::Context::default();
+        let mut raw = egui::RawInput::default();
+        raw.events.push(egui::Event::Text(String::new()));
+        let _ = ctx.run(raw, |_ctx| {});
+        let events = collect_sensor_events(&ctx);
+        assert!(
+            !events
+                .iter()
+                .any(|e| matches!(e, SensorEventIpc::TextInput { .. })),
+            "empty text should not produce TextInput"
         );
     }
 }

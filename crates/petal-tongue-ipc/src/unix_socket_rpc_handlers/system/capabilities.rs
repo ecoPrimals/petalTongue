@@ -78,6 +78,9 @@ pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
                 methods::VISUALIZATION_SESSION_LIST,
                 methods::VISUALIZATION_SESSION_STATUS,
                 "visualization.render.graph",
+                "visualization.texture.upload",
+                "visualization.texture.attach",
+                "visualization.scene.verify",
                 // Interaction
                 "interaction.subscribe",
                 "interaction.poll",
@@ -96,6 +99,7 @@ pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
                 "motor.fit_to_view",
                 "motor.set_mode",
                 "motor.navigate",
+                "motor.set_awakening",
             ],
             "depends_on": [
                 { "capability": discovery_capabilities::DISPLAY_BACKEND, "required": false },
