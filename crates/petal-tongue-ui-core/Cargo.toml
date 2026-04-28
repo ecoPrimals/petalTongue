@@ -34,17 +34,17 @@ bytes = { workspace = true }
 tracing = { workspace = true }
 
 # Terminal UI (pure Rust, cross-platform)
-crossterm = "0.29"
-terminal_size = "0.4"
+crossterm = { workspace = true }
+terminal_size = { workspace = true }
 
 # 2D rendering (pure Rust, no native deps)
-tiny-skia = "0.11"
+tiny-skia = { workspace = true }
 
 # Image encoding (pure Rust)
-png = "0.17"
+png = { workspace = true }
 
 # SVG generation (pure Rust)
-svg = "0.14"
+svg = { workspace = true }
 
 # Time
 chrono = { workspace = true }

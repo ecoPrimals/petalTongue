@@ -76,7 +76,7 @@ pub fn telemetry_dir() -> Option<PathBuf> {
         }
     }
 
-    let fallback = PathBuf::from("/tmp/petaltongue-telemetry");
+    let fallback = PathBuf::from(petal_tongue_core::constants::DEFAULT_TELEMETRY_FALLBACK_DIR);
     if fallback.is_dir() {
         return Some(fallback);
     }

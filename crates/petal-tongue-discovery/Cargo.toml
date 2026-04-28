@@ -34,17 +34,17 @@ chrono = { workspace = true }
 tracing = { workspace = true }
 
 # Low-level socket for multicast (uses libc for syscalls, not C crypto)
-socket2 = "0.6"
+socket2 = { workspace = true }
 
 # LRU cache for performance optimization (Phase 2) - pure Rust
-lru = "0.16"
+lru = { workspace = true }
 
 # mDNS discovery (optional feature) - pure Rust
 mdns-sd = { version = "0.18", optional = true }
 
 # Modern async patterns (Discovery Evolution)
-futures-util = "0.3"  # join_all, select_all — lighter than full `futures` crate
-rand = { workspace = true }     # For jitter in retry logic
+futures-util = { workspace = true }
+rand = { workspace = true }
 
 [features]
 default = []
@@ -57,6 +57,6 @@ anyhow = { workspace = true }  # Unit tests and #[cfg(test)] helpers (mock_serve
 petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
 tokio-test = "0.4"
 wiremock = "0.6"
-futures-util = "0.3"  # For join_all in concurrent tests
+futures-util = { workspace = true }
 tempfile = { workspace = true }
 
