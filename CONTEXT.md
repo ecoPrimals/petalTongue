@@ -108,7 +108,7 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # ~6,156+ tests, ~90% coverage
+cargo test --workspace --all-features     # ~6,045+ tests, ~90% coverage
 ```
 
 ## Current State
