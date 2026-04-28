@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 28, 2026 (Phase 55: awakening evolution, scene signing, sensor stream)
+**Updated**: April 28, 2026 (Phase 55 + dep consolidation audit)
 
 ---
 

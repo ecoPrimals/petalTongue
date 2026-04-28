@@ -386,6 +386,24 @@ Controls Rust logging verbosity across all crates.
 
 ## UI Configuration
 
+### **AWAKENING_ENABLED**
+**Type**: Boolean (`true` | `false`)  
+**Default**: `false`  
+**Required**: No  
+**Example**: `AWAKENING_ENABLED=true`
+
+Controls whether petalTongue's initial awakening overlay (introductory panels)
+starts automatically on launch.
+
+**When `false`** (default): Awakening is disabled. Compositions invoke it
+on-demand via `motor.set_awakening` IPC method.  
+**When `true`**: Awakening overlay starts immediately when the UI launches.
+
+**Scenario override**: The TOML scenario config field `awakening` takes
+precedence when present; this env var is the fallback.
+
+---
+
 ### **PETALTONGUE_UI_BACKEND**
 **Type**: String  
 **Default**: None (backend selection uses defaults elsewhere)  
@@ -498,7 +516,25 @@ Maximum delay cap for exponential backoff retry.
 
 ---
 
-## Security & Privacy
+## Security & Integrity
+
+### **PETALTONGUE_SCENE_KEY**
+**Type**: String (64-character hex-encoded 32-byte key)  
+**Default**: None (scene signing disabled)  
+**Required**: No  
+**Example**: `PETALTONGUE_SCENE_KEY=$(tower_retrieve_purpose_key "visualization")`
+
+BLAKE3 keyed-hash key for signing scene pushes. When set, every
+`visualization.render.scene` response includes a `signature` field and the
+`visualization.scene.verify` method becomes functional.
+
+**NUCLEUS Two-Tier Crypto**: This is a *visualization purpose key* delegated by
+BearDog. See `NUCLEUS_TWO_TIER_CRYPTO_MODEL.md` for key hierarchy.
+
+**When set**: Scene pushes are signed; compositions can verify authenticity.  
+**When unset**: Signing is skipped; `signed: false` in responses, verify returns `false`.
+
+---
 
 ### **PETALTONGUE_NO_TELEMETRY**
 **Type**: Boolean (`true` | `false`)  
@@ -608,7 +644,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: April 25, 2026  
+**Last Updated**: April 28, 2026  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 
