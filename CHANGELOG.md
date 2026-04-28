@@ -6,6 +6,20 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Deep Debt Audit: Dependency Consolidation + Discovery Evolution (April 27, 2026)
+
+#### Changed
+- **`toml`** in `petal-tongue-core`: consolidated to `{ workspace = true }` (was standalone `0.8`).
+- **`tokio-util`** in `petal-tongue-tui`: consolidated to `{ workspace = true }` (was standalone
+  `0.7`, now inherits workspace `codec` feature).
+- **`rustix`** added to workspace dependencies (`0.38`): `petal-tongue-core` (process) and
+  `petal-tongue-ui` (param) now use `{ workspace = true, features = [...] }`.
+- **`tempfile`** root dev-dep: changed from `"3.10"` to `{ workspace = true }`.
+- **`external-display`** stale feature alias removed from `petal-tongue-ui` (zero cfg references).
+- **`universal_discovery.rs`**: socket search paths now include XDG_RUNTIME_DIR
+  (`/run/user/{uid}`) as priority-1, matching `unix_socket_provider.rs` pattern.
+  Previously only searched `/tmp` and `/var/run`, missing the standard biomeOS socket location.
+
 ### PG-53 Follow-up: rendering_awareness Server Mode Bug (April 27, 2026)
 
 #### Fixed

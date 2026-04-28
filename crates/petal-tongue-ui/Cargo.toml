@@ -65,7 +65,7 @@ symphonia = { version = "0.5", default-features = false, features = ["mp3", "wav
 # See: src/audio_canvas.rs for implementation
 
 # External tool integrations - ecoBin v3.0: pure Rust /proc parsing (see proc_stats.rs)
-rustix = { version = "0.38", features = ["param"] }  # Runtime page_size() for /proc RSS
+rustix = { workspace = true, features = ["param"] }  # Runtime page_size() for /proc RSS
 
 # Pure Rust display system (crossterm = 100% pure Rust)
 crossterm = "0.29"  # Terminal input/output for sensors (rustix backend, no libc)
@@ -108,9 +108,7 @@ doom = ["dep:doom-core"]  # Doom integration for platform testing
 # Enables DemoVisualizationProvider, DemoDeviceProvider, and BiomeOSClient demo mode.
 mock = ["petal-tongue-discovery/test-fixtures", "petal-tongue-api/test-fixtures", "petal-tongue-core/test-fixtures"]
 
-# Legacy features (maintained for compatibility)
-external-display = ["ui-eframe"]  # Alias for ui-eframe
-# EVOLVED (Sprint 6): software-rendering and compute-wasm removed — deps never wired.
+# EVOLVED (Sprint 6): software-rendering, compute-wasm, external-display removed — deps never wired.
 # Re-add when pure-Rust display backends / WASM compute are implemented.
 # software-rendering = ["softbuffer", "pixels"]
 # compute-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys"]

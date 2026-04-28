@@ -243,10 +243,15 @@ impl UniversalDiscovery {
     async fn discover_via_unix_socket(&self, capability: &str) -> Result<Vec<DiscoveredService>> {
         debug!("Probing Unix sockets for capability: {}", capability);
 
-        let socket_paths = vec![
-            "/tmp", "/var/run",
-            // Add more common socket locations
-        ];
+        let mut socket_paths: Vec<std::path::PathBuf> = Vec::with_capacity(4);
+        if let Ok(xdg) = std::env::var("XDG_RUNTIME_DIR") {
+            socket_paths.push(std::path::PathBuf::from(xdg));
+        } else {
+            let uid = petal_tongue_core::system_info::get_current_uid();
+            socket_paths.push(std::path::PathBuf::from(format!("/run/user/{uid}")));
+        }
+        socket_paths.push(std::path::PathBuf::from("/tmp"));
+        socket_paths.push(std::path::PathBuf::from("/var/run"));
 
         let mut services = Vec::new();
 
