@@ -108,7 +108,7 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # ~6,024+ tests, ~90% coverage
+cargo test --workspace --all-features     # ~6,156+ tests, ~90% coverage
 ```
 
 ## Current State
@@ -236,6 +236,11 @@ unified to workspace dep. petal-tongue-cli clap consolidated to workspace.
 SVG viewport, SSE keepalive, HTTP stream timeout, web static dir all
 extracted to named constants. All mocks gated behind #[cfg(test)] or
 test-fixtures feature.
+
+Deep debt pass 2 (April 27, 2026): toml, tokio-util, rustix consolidated
+to workspace deps. Stale `external-display` feature alias removed.
+`universal_discovery.rs` socket search now includes XDG_RUNTIME_DIR as
+priority-1 (was missing — only searched /tmp and /var/run).
 
 Remaining backlog: BTSP Phase 3 encryption, aarch64 musl cross-compile
 for headless, audio backend wire protocols (via ToadStool `audio.play`

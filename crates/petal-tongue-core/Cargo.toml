@@ -30,12 +30,12 @@ futures-util = "0.3"
 # Instance management
 uuid = { workspace = true }
 ron = "0.8"
-toml = "0.8"
+toml = { workspace = true }
 # Universal Rendering System dependencies
 indexmap = "2.0"
 # System information (Pure Rust Unix syscalls - EVOLVED from libc!)
 # EVOLUTION: Migrated from libc to rustix for 100% safe Rust
-rustix = { version = "0.38", features = ["process"] }
+rustix = { workspace = true, features = ["process"] }
 # Terminal dimensions for CLI/adaptive rendering (screen size detection)
 terminal_size = "0.4"
 
