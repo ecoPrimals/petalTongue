@@ -88,21 +88,23 @@ impl RegistrationClient {
     ///
     /// Capability-based discovery: uses discovery service socket (no hardcoded primal names).
     /// Socket path resolution (priority order):
-    /// 1. `discover_primal_socket` using the capability-based name from
+    /// 1. `DISCOVERY_SOCKET` env var (explicit override, used by NUCLEUS compositions)
+    /// 2. `discover_primal_socket` using the capability-based name from
     ///    `petal_tongue_core::constants::discovery_service_socket_name` (includes
     ///    `<SOCKET_BASENAME>_SOCKET` override and standard biomeOS paths)
-    /// 2. Conventional path `/tmp/biomeos/<socket_base>.sock` when `discover_primal_socket` fails
+    /// 3. Conventional path `/tmp/biomeos/<socket_base>.sock` when all else fails
     #[must_use]
     pub fn new() -> Self {
-        let socket_base = constants::discovery_service_socket_name();
-        let socket_path = crate::socket_path::discover_primal_socket(&socket_base, None, None)
-            .map_or_else(
+        let socket_path = std::env::var("DISCOVERY_SOCKET").unwrap_or_else(|_| {
+            let socket_base = constants::discovery_service_socket_name();
+            crate::socket_path::discover_primal_socket(&socket_base, None, None).map_or_else(
                 |_| {
                     let prefix = constants::LEGACY_TMP_PREFIX;
                     format!("{prefix}/biomeos/{socket_base}.sock")
                 },
                 |p| p.to_string_lossy().to_string(),
-            );
+            )
+        });
         Self {
             socket_path,
             request_id: std::sync::atomic::AtomicU64::new(1),
@@ -289,21 +291,33 @@ impl RegistrationManager {
         let interval = self.heartbeat_interval;
 
         tokio::spawn(async move {
-            let mut interval_timer = tokio::time::interval(interval);
+            let mut consecutive_failures: u32 = 0;
 
             loop {
-                interval_timer.tick().await;
+                let backoff = if consecutive_failures == 0 {
+                    interval
+                } else {
+                    let multiplier = 2u64.saturating_pow(consecutive_failures.min(6));
+                    interval.saturating_mul(multiplier.try_into().unwrap_or(u32::MAX))
+                };
+                tokio::time::sleep(backoff).await;
 
                 debug!("Sending heartbeat to discovery service...");
 
                 match client.heartbeat(&primal_name).await {
                     Ok(()) => {
+                        if consecutive_failures > 0 {
+                            info!(
+                                "Heartbeat recovered after {consecutive_failures} consecutive failures"
+                            );
+                        }
+                        consecutive_failures = 0;
                         debug!("✅ Heartbeat successful");
                     }
                     Err(e) => {
+                        consecutive_failures = consecutive_failures.saturating_add(1);
                         warn!(
-                            "Heartbeat failed: {} (discovery service may be unavailable)",
-                            e
+                            "Heartbeat failed (attempt {consecutive_failures}): {e} (backoff: {backoff:?})"
                         );
                     }
                 }
@@ -377,6 +391,22 @@ mod tests {
     }
 
     #[test]
+    fn test_discovery_socket_env_override() {
+        use petal_tongue_core::test_fixtures::env_test_helpers;
+        env_test_helpers::with_env_var(
+            "DISCOVERY_SOCKET",
+            "/run/user/1000/biomeos/songbird-desktop-nucleus.sock",
+            || {
+                let client = RegistrationClient::new();
+                assert_eq!(
+                    client.socket_path,
+                    "/run/user/1000/biomeos/songbird-desktop-nucleus.sock"
+                );
+            },
+        );
+    }
+
+    #[test]
     fn test_registration_manager_creation() {
         let reg = PrimalRegistration::petaltongue();
         let manager = RegistrationManager::new(reg);
@@ -424,6 +454,8 @@ mod tests {
             "motor.set_mode",
             "motor.fit_to_view",
             "motor.navigate",
+            "motor.panel.update",
+            "motor.notification",
             "modality.visual",
             "modality.audio",
             "modality.terminal",

@@ -103,6 +103,28 @@ pub enum MotorCommand {
         sound: String,
     },
 
+    // === Panel content (efferent, from compositions) ===
+    /// Update a panel's content (title and/or body payload)
+    PanelUpdate {
+        /// Which panel to update
+        panel: PanelId,
+        /// Optional new title
+        title: Option<String>,
+        /// JSON payload for the panel content
+        content: serde_json::Value,
+    },
+
+    // === Notifications (efferent, from compositions) ===
+    /// Display a notification in the UI
+    Notification {
+        /// Severity level ("info", "warn", "error", "success")
+        level: String,
+        /// Notification message
+        message: String,
+        /// Optional auto-dismiss duration in milliseconds (None = sticky)
+        duration_ms: Option<u64>,
+    },
+
     // === Continuous mode (game loop) ===
     /// Enable or disable 60 Hz continuous rendering (game loop)
     SetContinuousMode {

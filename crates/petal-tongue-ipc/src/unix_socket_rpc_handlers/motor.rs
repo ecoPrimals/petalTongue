@@ -7,6 +7,20 @@ use super::RpcHandlers;
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse, error_codes};
 use petal_tongue_core::{MotorCommand, PanelId};
 
+fn parse_panel_id(name: &str) -> PanelId {
+    match name {
+        "left_sidebar" | "controls" => PanelId::LeftSidebar,
+        "right_sidebar" => PanelId::RightSidebar,
+        "top_menu" => PanelId::TopMenu,
+        "system_dashboard" | "dashboard" => PanelId::SystemDashboard,
+        "audio" | "audio_panel" => PanelId::AudioPanel,
+        "trust" | "trust_dashboard" => PanelId::TrustDashboard,
+        "proprioception" => PanelId::Proprioception,
+        "graph_stats" => PanelId::GraphStats,
+        other => PanelId::Custom(other.to_string()),
+    }
+}
+
 /// Bridge a JSON-RPC motor command to the UI efferent channel.
 pub fn handle_motor_command(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
     let Some(ref tx) = handlers.motor_tx else {
@@ -21,19 +35,8 @@ pub fn handle_motor_command(handlers: &RpcHandlers, req: JsonRpcRequest) -> Json
         "motor.set_panel" => {
             let panel_name = req.params["panel"].as_str().unwrap_or("");
             let visible = req.params["visible"].as_bool().unwrap_or(true);
-            let pid = match panel_name {
-                "left_sidebar" | "controls" => PanelId::LeftSidebar,
-                "right_sidebar" => PanelId::RightSidebar,
-                "top_menu" => PanelId::TopMenu,
-                "system_dashboard" | "dashboard" => PanelId::SystemDashboard,
-                "audio" | "audio_panel" => PanelId::AudioPanel,
-                "trust" | "trust_dashboard" => PanelId::TrustDashboard,
-                "proprioception" => PanelId::Proprioception,
-                "graph_stats" => PanelId::GraphStats,
-                other => PanelId::Custom(other.to_string()),
-            };
             Some(MotorCommand::SetPanelVisibility {
-                panel: pid,
+                panel: parse_panel_id(panel_name),
                 visible,
             })
         }
@@ -59,6 +62,29 @@ pub fn handle_motor_command(handlers: &RpcHandlers, req: JsonRpcRequest) -> Json
         "motor.set_awakening" => {
             let enabled = req.params["enabled"].as_bool().unwrap_or(false);
             Some(MotorCommand::SetAwakening { enabled })
+        }
+        "motor.panel.update" => {
+            let panel_name = req.params["panel"].as_str().unwrap_or("");
+            let title = req.params["title"].as_str().map(String::from);
+            let content = req.params.get("content").cloned().unwrap_or_default();
+            Some(MotorCommand::PanelUpdate {
+                panel: parse_panel_id(panel_name),
+                title,
+                content,
+            })
+        }
+        "motor.notification" => {
+            let level = req.params["level"]
+                .as_str()
+                .unwrap_or("info")
+                .to_string();
+            let message = req.params["message"].as_str().unwrap_or("").to_string();
+            let duration_ms = req.params["duration_ms"].as_u64();
+            Some(MotorCommand::Notification {
+                level,
+                message,
+                duration_ms,
+            })
         }
         _ => None,
     };
@@ -331,6 +357,70 @@ mod tests {
         assert!(resp.result.is_some());
         let cmd = rx.recv().expect("command");
         assert!(matches!(cmd, MotorCommand::SetAwakening { enabled: false }));
+    }
+
+    #[test]
+    fn motor_panel_update() {
+        let (h, rx) = handlers_with_motor();
+        let req = JsonRpcRequest::new(
+            "motor.panel.update",
+            json!({"panel": "dashboard", "title": "Health", "content": {"cpu": 42}}),
+            json!(1),
+        );
+        let resp = handle_motor_command(&h, req);
+        assert!(resp.result.is_some());
+        let cmd = rx.recv().expect("command");
+        assert!(matches!(
+            cmd,
+            MotorCommand::PanelUpdate {
+                panel: PanelId::SystemDashboard,
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn motor_panel_update_custom() {
+        let (h, rx) = handlers_with_motor();
+        let req = JsonRpcRequest::new(
+            "motor.panel.update",
+            json!({"panel": "game_hud", "content": {"hp": 100}}),
+            json!(2),
+        );
+        let resp = handle_motor_command(&h, req);
+        assert!(resp.result.is_some());
+        let cmd = rx.recv().expect("command");
+        assert!(
+            matches!(cmd, MotorCommand::PanelUpdate { panel: PanelId::Custom(ref s), .. } if s == "game_hud")
+        );
+    }
+
+    #[test]
+    fn motor_notification_info() {
+        let (h, rx) = handlers_with_motor();
+        let req = JsonRpcRequest::new(
+            "motor.notification",
+            json!({"level": "info", "message": "Hello", "duration_ms": 3000}),
+            json!(1),
+        );
+        let resp = handle_motor_command(&h, req);
+        assert!(resp.result.is_some());
+        let cmd = rx.recv().expect("command");
+        assert!(
+            matches!(cmd, MotorCommand::Notification { ref level, ref message, duration_ms: Some(3000) } if level == "info" && message == "Hello")
+        );
+    }
+
+    #[test]
+    fn motor_notification_defaults() {
+        let (h, rx) = handlers_with_motor();
+        let req = JsonRpcRequest::new("motor.notification", json!({}), json!(1));
+        let resp = handle_motor_command(&h, req);
+        assert!(resp.result.is_some());
+        let cmd = rx.recv().expect("command");
+        assert!(
+            matches!(cmd, MotorCommand::Notification { ref level, ref message, duration_ms: None } if level == "info" && message.is_empty())
+        );
     }
 
     #[test]

@@ -108,7 +108,7 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # ~6,045+ tests, ~90% coverage
+cargo test --workspace --all-features     # ~6,054+ tests, ~90% coverage
 ```
 
 ## Current State
@@ -261,8 +261,22 @@ Comprehensive audit confirmed: zero unsafe, zero dyn in production, zero
 TODO/FIXME/HACK, zero #[allow(] in production, all mocks properly gated,
 all unwrap/expect in test code only. 6,045+ tests.
 
+Phase 56 gap resolution (April 29, 2026): primalSpring v0.9.24 deployed
+a live 12-primal Desktop NUCLEUS; gap report identified 3 petalTongue issues.
+(1) GAP-01: `RegistrationClient` now reads `DISCOVERY_SOCKET` env var as
+highest-priority override for heartbeat/registration. Heartbeat uses
+exponential backoff on failure. (2) Motor P0: live mode's IPC motor channel
+was a dead end (logging thread). Replaced with `replace_motor_channel` —
+IPC motor commands now flow directly to the GUI's `drain_motor_commands`.
+New `motor.panel.update` and `motor.notification` methods + MotorCommand
+variants + PanelContentStore and NotificationQueue. (3) GAP-17: confirmed
+`visualization-{family}.sock` symlink already created at server startup
+via `btsp::domain_symlink_filename`. 6,054+ tests.
+
 Remaining backlog: BTSP Phase 3 encryption, aarch64 musl cross-compile
 for headless, audio backend wire protocols (via ToadStool `audio.play`
 capability discovery), overlay mode (toadStool Display Phase 2),
 egui texture resolution (TextureResolver with `egui::Shape::image`),
-BearDog crypto.sign delegation for scene signing (currently local BLAKE3).
+BearDog crypto.sign delegation for scene signing (currently local BLAKE3),
+panel content rendering (PanelContentStore → egui panels),
+notification rendering (NotificationQueue → egui toast/overlay).

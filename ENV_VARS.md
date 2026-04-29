@@ -128,6 +128,24 @@ Host address used when the IPC server binds an ephemeral TCP listener (Phase 3 T
 
 ## Discovery & Integration
 
+### **DISCOVERY_SOCKET**
+**Type**: String (absolute path to Unix socket)  
+**Default**: None (falls back to `DISCOVERY_SERVICE_SOCKET` basename resolution)  
+**Required**: No  
+**Example**: `DISCOVERY_SOCKET=/run/user/1000/biomeos/songbird-desktop-nucleus.sock`
+
+Explicit socket path for the discovery/registry service used by `ipc.register`
+and `ipc.heartbeat`. This is the highest-priority override for registration:
+when set, petalTongue sends heartbeats and registration directly to this socket.
+
+**NUCLEUS pattern**: Composition scripts set this to the Songbird socket
+path for the active family (e.g., `songbird-{FAMILY_ID}.sock`).
+
+**When unset**: Falls back to `DISCOVERY_SERVICE_SOCKET` basename → standard
+biomeOS path resolution (`$XDG_RUNTIME_DIR/biomeos/discovery-service.sock`).
+
+---
+
 ### **BIOMEOS_URL**
 **Type**: String (URL)  
 **Default**: None (discovered at runtime)  

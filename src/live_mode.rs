@@ -26,12 +26,15 @@ type Result<T> = std::result::Result<T, AppError>;
 /// the calling (main) thread and blocks until the window is closed.
 pub fn run_on_main_thread(
     scenario: Option<String>,
-    no_audio: bool,
+    _no_audio: bool,
     data_service: &Arc<DataService>,
     tcp_port: Option<u16>,
     socket_path: Option<String>,
     runtime: &tokio::runtime::Runtime,
 ) -> Result<()> {
+    use petal_tongue_core::{InstanceId, RenderingCapabilities};
+    use petal_tongue_ui::PetalTongueApp;
+
     let graph = data_service.graph();
 
     let (motor_tx, motor_rx) = std::sync::mpsc::channel();
@@ -43,7 +46,7 @@ pub fn run_on_main_thread(
     let mut server = UnixSocketServer::new_with_socket(graph.clone(), socket_override)
         .map_err(|e| AppError::Other(format!("Failed to create IPC server: {e}")))?
         .with_rendering_awareness(Arc::clone(&rendering_awareness))
-        .with_motor_sender(motor_tx);
+        .with_motor_sender(motor_tx.clone());
 
     if let Some(port) = tcp_port {
         server = server.with_tcp_port(port);
@@ -64,13 +67,6 @@ pub fn run_on_main_thread(
         }
     });
 
-    // Background: motor drain (OS thread — motor_rx is std::sync)
-    std::thread::spawn(move || {
-        while let Ok(cmd) = motor_rx.recv() {
-            tracing::debug!(?cmd, "motor command received (live mode)");
-        }
-    });
-
     // Background: periodic capability discovery refresh
     let refresh_service = Arc::clone(data_service);
     runtime.spawn(async move {
@@ -85,22 +81,6 @@ pub fn run_on_main_thread(
     });
 
     tracing::info!("🔌 Live mode starting (IPC server + native GUI)");
-
-    // Main thread: egui window (blocks until window is closed)
-    run_ui_blocking(scenario, no_audio, &graph, viz_state, sensor_stream, interaction_subs, callback_tx)
-}
-
-fn run_ui_blocking(
-    scenario: Option<String>,
-    _no_audio: bool,
-    graph: &Arc<std::sync::RwLock<petal_tongue_core::GraphEngine>>,
-    viz_state: Arc<std::sync::RwLock<petal_tongue_ipc::VisualizationState>>,
-    sensor_stream: Arc<std::sync::RwLock<petal_tongue_ipc::SensorStreamRegistry>>,
-    interaction_subs: Arc<std::sync::RwLock<petal_tongue_ipc::InteractionSubscriberRegistry>>,
-    callback_tx: Option<tokio::sync::mpsc::UnboundedSender<petal_tongue_ipc::CallbackDispatch>>,
-) -> Result<()> {
-    use petal_tongue_core::{InstanceId, RenderingCapabilities};
-    use petal_tongue_ui::PetalTongueApp;
 
     let instance_id = InstanceId::new();
     tracing::info!(
@@ -120,7 +100,7 @@ fn run_ui_blocking(
         .with_active(true);
     let options = crate::ui_mode::native_options_with_any_thread(viewport);
 
-    let shared_graph = Arc::clone(graph);
+    let shared_graph = graph;
 
     petal_tongue_ui::eframe::run_native(
         PRIMAL_NAME,
@@ -138,6 +118,7 @@ fn run_ui_blocking(
             if let Some(tx) = callback_tx {
                 app.set_callback_tx(tx);
             }
+            app.replace_motor_channel(motor_tx, motor_rx);
             Ok(Box::new(app))
         }),
     )

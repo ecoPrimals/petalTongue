@@ -6,6 +6,34 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Phase 56: Desktop NUCLEUS Gap Resolution (April 29, 2026)
+
+#### Fixed
+- **GAP-01 (P1)**: `RegistrationClient` now reads `DISCOVERY_SOCKET` env var
+  as highest-priority override for heartbeat/registration target. Falls back to
+  `DISCOVERY_SERVICE_SOCKET` basename resolution. Heartbeat task uses exponential
+  backoff (2^n × interval, capped at 64×) instead of fixed-interval on failure.
+- **Motor P0**: Live mode motor channel was a dead end — IPC motor commands went
+  to a logging thread, never reaching the GUI. `run_on_main_thread` now passes the
+  IPC motor channel directly into `PetalTongueApp::replace_motor_channel`, so
+  `motor.set_panel`, `motor.set_zoom`, `motor.set_awakening` etc. are applied
+  every frame by `drain_motor_commands`.
+
+#### Added
+- **`motor.panel.update`**: New IPC method for compositions to push content to
+  named panels (title + JSON payload). Backed by `PanelContentStore`.
+- **`motor.notification`**: New IPC method for compositions to display
+  notifications (level, message, optional auto-dismiss duration). Backed by
+  `NotificationQueue`.
+- **`DISCOVERY_SOCKET`** env var documented in `ENV_VARS.md`.
+- 9 new tests (motor panel update, notification, discovery socket override,
+  panel content store, notification queue).
+
+#### Verified
+- **GAP-17**: `visualization-{family}.sock` symlink is already created by
+  `UnixSocketServer::start` via `btsp::domain_symlink_filename`. No code change
+  needed; symlink confirmed functional with `FAMILY_ID=desktop-nucleus`.
+
 ### Deep Debt Audit: Workspace Dependency Consolidation (April 28, 2026)
 
 #### Changed

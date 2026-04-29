@@ -91,6 +91,26 @@ pub fn apply_motor_command(app: &mut PetalTongueApp, cmd: MotorCommand) {
         MotorCommand::LoadScenario { ref path } => {
             tracing::info!("Motor: LoadScenario({path})");
         }
+        MotorCommand::PanelUpdate {
+            ref panel,
+            ref title,
+            ref content,
+        } => {
+            if let Some(t) = title {
+                tracing::info!("Motor: PanelUpdate({panel:?}, title={t})");
+            }
+            app.panel_content_store
+                .update(panel.clone(), title.clone(), content.clone());
+            tracing::debug!("Motor: PanelUpdate({panel:?})");
+        }
+        MotorCommand::Notification {
+            ref level,
+            ref message,
+            duration_ms,
+        } => {
+            app.notification_queue.push(level, message, duration_ms);
+            tracing::info!("Motor: Notification({level}, {message:?})");
+        }
         MotorCommand::SetContinuousMode { enabled } => {
             app.continuous_mode = enabled;
             tracing::debug!("Motor: SetContinuousMode({enabled})");
