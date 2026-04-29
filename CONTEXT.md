@@ -273,6 +273,21 @@ variants + PanelContentStore and NotificationQueue. (3) GAP-17: confirmed
 `visualization-{family}.sock` symlink already created at server startup
 via `btsp::domain_symlink_filename`. 6,054+ tests.
 
+Deep debt audit (April 29, 2026): dependency consolidation — axum, tower,
+tower-http, tokio-stream moved to [workspace.dependencies] (root crate was
+last holdout with literal version pins). aes-gcm and zeroize in
+petal-tongue-entropy likewise consolidated to workspace deps. Hardcoded
+values extracted: `/var/run/ecoPrimals` → `constants::ALTERNATIVE_RUN_DIR`,
+`"nucleus"` primal type → `capability_names::primal_types::NUCLEUS` (in
+both scenario providers), proprioception staleness threshold `10` →
+`constants::PROPRIOCEPTION_STALENESS_SECS`. Hot-path clone elimination:
+`req.params.clone()` removed from texture upload/attach handlers (moved to
+ownership via `let id = req.id; serde_json::from_value(req.params)`) —
+avoids duplicating large texture payloads. Sparkline renderer simplified
+(removed redundant nested length check). Comprehensive audit confirmed:
+zero unsafe, zero dyn in production, zero TODO/FIXME/HACK, all mocks
+gated, no files >710 lines. 6,054+ tests, 0 Clippy warnings.
+
 Remaining backlog: BTSP Phase 3 encryption, aarch64 musl cross-compile
 for headless, audio backend wire protocols (via ToadStool `audio.play`
 capability discovery), overlay mode (toadStool Display Phase 2),

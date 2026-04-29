@@ -165,6 +165,15 @@ pub mod socket_roles {
     pub const PHYSICS_COMPUTE: &str = "physics-compute";
 }
 
+/// Primal type identifiers for topology construction.
+///
+/// These describe semantic roles in the ecosystem graph, not specific primals.
+/// Any primal can declare itself as a given type.
+pub mod primal_types {
+    /// Coordinator / orchestrator node in a star topology.
+    pub const NUCLEUS: &str = "nucleus";
+}
+
 /// Self-knowledge primal identifiers.
 ///
 /// Only this primal's own name and ecosystem-level socket conventions

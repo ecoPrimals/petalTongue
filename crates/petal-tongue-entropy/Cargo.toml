@@ -27,9 +27,9 @@ tokio = { workspace = true }
 
 # Streaming & Encryption
 petal-tongue-ipc = { path = "../petal-tongue-ipc" }
-aes-gcm = "0.10"  # AES-256-GCM authenticated encryption
-rand = { workspace = true }  # For nonce generation
-zeroize = { version = "1", features = ["derive"] }  # Secure memory clearing
+aes-gcm = { workspace = true }
+rand = { workspace = true }
+zeroize = { workspace = true }
 
 # Statistics (minimal)
 # (We'll implement Shannon entropy & variance ourselves for zero-cost)

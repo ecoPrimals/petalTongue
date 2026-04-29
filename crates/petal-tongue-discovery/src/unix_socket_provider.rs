@@ -75,7 +75,9 @@ impl UnixSocketProvider {
         search_paths.push(PathBuf::from("/tmp"));
 
         // Priority 4: /var/run/ecoPrimals (alternative)
-        search_paths.push(PathBuf::from("/var/run/ecoPrimals"));
+        search_paths.push(PathBuf::from(
+            petal_tongue_core::constants::ALTERNATIVE_RUN_DIR,
+        ));
 
         Self { search_paths }
     }
