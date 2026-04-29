@@ -174,6 +174,8 @@ pub(super) fn create_app(
         show_top_menu: true,
         interaction_bridge: EguiInteractionBridge::new(),
         ai_adapter: crate::ai_adapter::AiAdapter::new_deferred(),
+        panel_content_store: super::motor_state::PanelContentStore::default(),
+        notification_queue: super::motor_state::NotificationQueue::default(),
     };
 
     finalize_app_startup(&mut app, scenario.as_ref(), &tutorial_mode, needs_fallback);

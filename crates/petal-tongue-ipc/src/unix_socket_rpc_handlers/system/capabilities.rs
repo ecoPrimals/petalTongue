@@ -100,6 +100,8 @@ pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
                 "motor.set_mode",
                 "motor.navigate",
                 "motor.set_awakening",
+                "motor.panel.update",
+                "motor.notification",
             ],
             "depends_on": [
                 { "capability": discovery_capabilities::DISPLAY_BACKEND, "required": false },

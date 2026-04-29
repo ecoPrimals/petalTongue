@@ -79,9 +79,8 @@ impl RpcHandlers {
             "provider.register_capability" => system::handle_provider_register(self, req),
             "audio.synthesize" => audio::handle_audio_synthesize(self, req),
             "motor.set_panel" | "motor.set_zoom" | "motor.fit_to_view" | "motor.set_mode"
-            | "motor.navigate" | "motor.set_awakening" => {
-                motor::handle_motor_command(self, req)
-            }
+            | "motor.navigate" | "motor.set_awakening" | "motor.panel.update"
+            | "motor.notification" => motor::handle_motor_command(self, req),
             _ => {
                 warn!("Unknown method: {}", method);
                 JsonRpcResponse::error(

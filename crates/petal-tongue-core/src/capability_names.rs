@@ -43,6 +43,8 @@ pub mod self_capabilities {
     pub const MOTOR_SET_MODE: &str = "motor.set_mode";
     pub const MOTOR_FIT_TO_VIEW: &str = "motor.fit_to_view";
     pub const MOTOR_NAVIGATE: &str = "motor.navigate";
+    pub const MOTOR_PANEL_UPDATE: &str = "motor.panel.update";
+    pub const MOTOR_NOTIFICATION: &str = "motor.notification";
 
     pub const MODALITY_VISUAL: &str = "modality.visual";
     pub const MODALITY_AUDIO: &str = "modality.audio";
@@ -90,6 +92,8 @@ pub mod self_capabilities {
         MOTOR_SET_MODE,
         MOTOR_FIT_TO_VIEW,
         MOTOR_NAVIGATE,
+        MOTOR_PANEL_UPDATE,
+        MOTOR_NOTIFICATION,
         MODALITY_VISUAL,
         MODALITY_AUDIO,
         MODALITY_TERMINAL,
@@ -189,7 +193,7 @@ mod tests {
 
     #[test]
     fn self_capabilities_all_count() {
-        assert_eq!(self_capabilities::ALL.len(), 40);
+        assert_eq!(self_capabilities::ALL.len(), 42);
     }
 
     #[test]

@@ -24,6 +24,7 @@
 mod events;
 mod init;
 mod layout;
+pub(crate) mod motor_state;
 mod panel_init;
 mod panels;
 mod provider_init;
@@ -198,6 +199,12 @@ pub struct PetalTongueApp {
     interaction_bridge: EguiInteractionBridge,
     /// AI interaction adapter for AI-driven interaction commands
     ai_adapter: crate::ai_adapter::AiAdapter,
+
+    // === Motor-driven panel content + notifications ===
+    /// Content pushed by compositions via `motor.panel.update`
+    pub(crate) panel_content_store: motor_state::PanelContentStore,
+    /// Notification queue pushed by compositions via `motor.notification`
+    pub(crate) notification_queue: motor_state::NotificationQueue,
 }
 
 impl PetalTongueApp {
@@ -243,6 +250,22 @@ impl PetalTongueApp {
     #[must_use]
     pub fn motor_sender(&self) -> mpsc::Sender<MotorCommand> {
         self.motor_tx.clone()
+    }
+
+    /// Replace the app's motor channel with an externally-created one.
+    ///
+    /// In `live` mode, the IPC server creates a motor `mpsc` channel before
+    /// the GUI exists. This method injects that channel so IPC motor commands
+    /// (`motor.set_panel`, `motor.panel.update`, `motor.notification`, etc.)
+    /// flow directly to the app's `drain_motor_commands` loop rather than a
+    /// dead-end logging thread.
+    pub fn replace_motor_channel(
+        &mut self,
+        tx: mpsc::Sender<MotorCommand>,
+        rx: mpsc::Receiver<MotorCommand>,
+    ) {
+        self.motor_tx = tx;
+        self.motor_rx = rx;
     }
 
     /// Get a handle to the shared graph engine (for IPC server).
