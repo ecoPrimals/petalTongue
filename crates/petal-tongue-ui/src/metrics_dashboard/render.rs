@@ -179,7 +179,7 @@ impl MetricsDashboard {
         let (rect, _response) = ui.allocate_exact_size(desired_size, egui::Sense::hover());
 
         if ui.is_rect_visible(rect) {
-            let points: Vec<egui::Pos2> = sparkline_points_in_rect(
+            let mut points: Vec<egui::Pos2> = sparkline_points_in_rect(
                 values,
                 rect.left(),
                 rect.top(),
@@ -192,21 +192,15 @@ impl MetricsDashboard {
 
             if points.len() >= 2 {
                 let stroke = Stroke::new(2.0, color);
-                ui.painter().add(egui::Shape::line(points.clone(), stroke));
+                let line_shape = egui::Shape::line(points.clone(), stroke);
 
-                if points.len() >= 2 {
-                    let mut area_points = points;
-                    area_points.push(egui::pos2(rect.right(), rect.bottom()));
-                    area_points.push(egui::pos2(rect.left(), rect.bottom()));
-
-                    let fill_color =
-                        Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 30);
-                    ui.painter().add(egui::Shape::convex_polygon(
-                        area_points,
-                        fill_color,
-                        Stroke::NONE,
-                    ));
-                }
+                let fill_color =
+                    Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 30);
+                points.push(egui::pos2(rect.right(), rect.bottom()));
+                points.push(egui::pos2(rect.left(), rect.bottom()));
+                ui.painter()
+                    .add(egui::Shape::convex_polygon(points, fill_color, Stroke::NONE));
+                ui.painter().add(line_shape);
             }
 
             ui.painter().text(

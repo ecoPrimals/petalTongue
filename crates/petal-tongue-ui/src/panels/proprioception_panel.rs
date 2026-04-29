@@ -103,7 +103,7 @@ impl PanelInstance for ProprioceptionPanel {
 
             ui.add_space(2.0);
             let age = self.last_update.elapsed().as_secs();
-            if age < 10 {
+            if age < petal_tongue_core::constants::PROPRIOCEPTION_STALENESS_SECS {
                 ui.label(format!("Updated {age}s ago"));
             } else {
                 ui.colored_label(egui::Color32::YELLOW, format!("Updated {age}s ago"));

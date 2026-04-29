@@ -224,7 +224,10 @@ impl VisualizationDataProvider for DynamicScenarioProvider {
         let mut edges = Vec::new();
 
         // Find nucleus-type primal if one exists (type-based, not name-based)
-        if let Some(nucleus) = primals.iter().find(|p| p.primal_type == "nucleus") {
+        if let Some(nucleus) = primals
+            .iter()
+            .find(|p| p.primal_type == petal_tongue_core::capability_names::primal_types::NUCLEUS)
+        {
             // Connect nucleus to all other primals (star topology)
             for primal in &primals {
                 if primal.id != nucleus.id {

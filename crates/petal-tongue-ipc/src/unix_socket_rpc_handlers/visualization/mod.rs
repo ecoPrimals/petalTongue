@@ -519,11 +519,12 @@ pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> J
 
 /// Handle `visualization.texture.upload`: store base64-decoded RGBA pixel data.
 pub fn handle_texture_upload(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
-    let upload: TextureUploadRequest = match serde_json::from_value(req.params.clone()) {
+    let id = req.id;
+    let upload: TextureUploadRequest = match serde_json::from_value(req.params) {
         Ok(u) => u,
         Err(e) => {
             return JsonRpcResponse::error(
-                req.id,
+                id,
                 error_codes::INVALID_PARAMS,
                 format!("Invalid texture upload params: {e}"),
             );
@@ -532,7 +533,7 @@ pub fn handle_texture_upload(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
 
     if upload.format != "rgba8" {
         return JsonRpcResponse::error(
-            req.id,
+            id,
             error_codes::INVALID_PARAMS,
             format!("Unsupported texture format: {}", upload.format),
         );
@@ -546,7 +547,7 @@ pub fn handle_texture_upload(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
         Ok(d) => d,
         Err(e) => {
             return JsonRpcResponse::error(
-                req.id,
+                id,
                 error_codes::INVALID_PARAMS,
                 format!("Base64 decode failed: {e}"),
             );
@@ -555,7 +556,7 @@ pub fn handle_texture_upload(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
 
     if data.len() != expected_len {
         return JsonRpcResponse::error(
-            req.id,
+            id,
             error_codes::INVALID_PARAMS,
             format!(
                 "Data length mismatch: expected {expected_len} bytes ({}x{}x4), got {}",
@@ -588,7 +589,7 @@ pub fn handle_texture_upload(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
     );
 
     JsonRpcResponse::success(
-        req.id,
+        id,
         serde_json::json!({
             "texture_id": upload.texture_id,
             "status": "loaded",
@@ -601,11 +602,12 @@ pub fn handle_texture_upload(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
 /// Actual memfd mapping is future work (toadStool Display Phase 2). For now this
 /// stores a placeholder entry so the `texture_id` is valid for scene graph references.
 pub fn handle_texture_attach(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
-    let attach: TextureAttachRequest = match serde_json::from_value(req.params.clone()) {
+    let id = req.id;
+    let attach: TextureAttachRequest = match serde_json::from_value(req.params) {
         Ok(a) => a,
         Err(e) => {
             return JsonRpcResponse::error(
-                req.id,
+                id,
                 error_codes::INVALID_PARAMS,
                 format!("Invalid texture attach params: {e}"),
             );
@@ -614,7 +616,7 @@ pub fn handle_texture_attach(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
 
     if attach.format != "rgba8" {
         return JsonRpcResponse::error(
-            req.id,
+            id,
             error_codes::INVALID_PARAMS,
             format!("Unsupported texture format: {}", attach.format),
         );
@@ -644,7 +646,7 @@ pub fn handle_texture_attach(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
     );
 
     JsonRpcResponse::success(
-        req.id,
+        id,
         serde_json::json!({
             "texture_id": attach.texture_id,
             "status": "attached",
