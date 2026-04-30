@@ -52,21 +52,16 @@ fn json_str_or(val: &serde_json::Value, key: &str, alt: &str) -> String {
         .to_owned()
 }
 
-/// Perform the full 4-step JSON-line BTSP handshake relay on a split stream.
-///
-/// The ClientHello line has already been peeked (still in the `BufReader`
-/// buffer) — this function consumes it via `read_line`, then continues the
-/// relay using JSON-line framing throughout.
-pub async fn relay_json_line_handshake_split<R, W>(
+/// Exchange hello with BearDog: read ClientHello, create session, write ServerHello.
+async fn exchange_hello_json_line<R, W>(
     reader: &mut R,
     writer: &mut W,
     config: &BtspHandshakeConfig,
-) -> Result<String, String>
+) -> Result<(String, String), String>
 where
     R: tokio::io::AsyncBufReadExt + Unpin,
     W: tokio::io::AsyncWriteExt + Unpin,
 {
-    // Step 1: consume and parse ClientHello line
     let client_hello = read_json_line(reader).await?;
     let client_ephemeral_pub = client_hello
         .get("client_ephemeral_pub")
@@ -79,7 +74,6 @@ where
         "BTSP JSON-line: parsed ClientHello"
     );
 
-    // Step 2: call BearDog btsp.session.create with the actual family seed
     let family_seed = config
         .load_family_seed()
         .unwrap_or_else(|| config.family_id.clone());
@@ -94,32 +88,46 @@ where
     )
     .await?;
 
-    // BearDog returns session_token (or session_id as fallback)
     let session_token = json_str_or(&create_result, "session_token", "session_id");
     let server_ephemeral_pub = create_result
         .get("server_ephemeral_pub")
         .and_then(serde_json::Value::as_str)
         .unwrap_or("")
         .to_owned();
-    // BearDog generates the challenge — do NOT use a local one
     let challenge = create_result
         .get("challenge")
         .and_then(serde_json::Value::as_str)
         .unwrap_or("")
         .to_owned();
 
-    tracing::debug!(
-        session_token = %session_token,
-        "BTSP JSON-line: session created via BearDog"
-    );
+    tracing::debug!(session_token = %session_token, "BTSP JSON-line: session created via BearDog");
 
-    // Step 3: send ServerHello as JSON line
     let server_hello = serde_json::json!({
         "version": 1,
         "server_ephemeral_pub": server_ephemeral_pub,
         "challenge": challenge,
     });
     write_json_line(writer, &server_hello).await?;
+
+    Ok((session_token, client_ephemeral_pub))
+}
+
+/// Perform the full JSON-line BTSP handshake relay on a split stream.
+///
+/// The ClientHello line has already been peeked (still in the `BufReader`
+/// buffer) — this function consumes it via `read_line`, then continues the
+/// relay using JSON-line framing throughout.
+pub async fn relay_json_line_handshake_split<R, W>(
+    reader: &mut R,
+    writer: &mut W,
+    config: &BtspHandshakeConfig,
+) -> Result<String, String>
+where
+    R: tokio::io::AsyncBufReadExt + Unpin,
+    W: tokio::io::AsyncWriteExt + Unpin,
+{
+    let (session_token, client_ephemeral_pub) =
+        exchange_hello_json_line(reader, writer, config).await?;
 
     // Step 4: read ChallengeResponse line
     let challenge_response = read_json_line(reader).await?;
@@ -161,13 +169,28 @@ where
         return Err(format!("BTSP JSON-line verify failed: {reason}"));
     }
 
-    // Step 6: send HandshakeComplete as JSON line
+    // Step 6: negotiate cipher with BearDog (best-effort; null cipher until Phase 3)
+    let negotiate_result = provider_call(
+        &config.provider_socket,
+        "btsp.negotiate",
+        serde_json::json!({
+            "session_id": session_token,
+            "preferred_cipher": preferred_cipher,
+            "bond_type": "Covalent",
+        }),
+    )
+    .await;
+
+    if let Err(ref e) = negotiate_result {
+        tracing::debug!(error = %e, "BTSP JSON-line: negotiate best-effort failed (non-fatal)");
+    }
+
+    // Step 7: send HandshakeComplete as JSON line
     let session_id = json_str_or(&verify_result, "session_id", "session_token");
-    let cipher = verify_result
-        .get("cipher")
-        .and_then(serde_json::Value::as_str)
-        .unwrap_or("null")
-        .to_owned();
+    let cipher = negotiate_result
+        .ok()
+        .and_then(|v| v.get("cipher").and_then(serde_json::Value::as_str).map(String::from))
+        .unwrap_or_else(|| "null".to_owned());
 
     let complete = serde_json::json!({
         "status": "ok",

@@ -173,7 +173,7 @@ where
     )
     .await?;
 
-    let _negotiate = provider_call(
+    let negotiate_result = provider_call(
         &config.provider_socket,
         "btsp.negotiate",
         serde_json::json!({
@@ -184,10 +184,19 @@ where
     )
     .await;
 
+    if let Err(ref e) = negotiate_result {
+        tracing::debug!(error = %e, "BTSP negotiate best-effort failed (non-fatal)");
+    }
+
+    let cipher = negotiate_result
+        .ok()
+        .and_then(|v| v.get("cipher").and_then(serde_json::Value::as_str).map(String::from))
+        .unwrap_or_else(|| "null".to_owned());
+
     let complete = serde_json::json!({
         "status": "ok",
         "session_id": session_token,
-        "cipher": "null",
+        "cipher": cipher,
     });
     let complete_bytes = serde_json::to_vec(&complete).map_err(|e| e.to_string())?;
     write_frame(writer, &complete_bytes)
