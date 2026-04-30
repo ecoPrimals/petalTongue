@@ -35,7 +35,7 @@ zeroize = { workspace = true }
 # (We'll implement Shannon entropy & variance ourselves for zero-cost)
 
 [dev-dependencies]
-tokio-test = "0.4"
+tokio-test = { workspace = true }
 approx = "0.5"  # For floating-point comparisons in tests
 
 [features]

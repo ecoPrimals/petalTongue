@@ -539,7 +539,8 @@ pub fn handle_texture_upload(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
         );
     }
 
-    let expected_len = upload.width as usize * upload.height as usize * 4;
+    let expected_len =
+        upload.width as usize * upload.height as usize * petal_tongue_core::constants::RGBA8_BYTES_PER_PIXEL;
     let data = match base64::Engine::decode(
         &base64::engine::general_purpose::STANDARD,
         &upload.data,
@@ -622,7 +623,8 @@ pub fn handle_texture_attach(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
         );
     }
 
-    let placeholder_len = attach.width as usize * attach.height as usize * 4;
+    let placeholder_len =
+        attach.width as usize * attach.height as usize * petal_tongue_core::constants::RGBA8_BYTES_PER_PIXEL;
     {
         let mut state = handlers
             .viz_state

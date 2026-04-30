@@ -35,21 +35,21 @@ fn graph_to_scene(handlers: &RpcHandlers) -> (SceneGraph, usize, usize) {
         scene_node.primitives.push(Primitive::Point {
             x: f64::from(node.position.x),
             y: f64::from(node.position.y),
-            radius: 8.0,
+            radius: petal_tongue_core::constants::GRAPH_NODE_RADIUS,
             fill: Some(Color::rgba(0.3, 0.6, 1.0, 1.0)),
             stroke: Some(StrokeStyle {
                 color: Color::rgba(0.2, 0.4, 0.8, 1.0),
-                width: 1.5,
+                width: petal_tongue_core::constants::GRAPH_NODE_STROKE_WIDTH,
                 cap: LineCap::Round,
                 join: LineJoin::Round,
             }),
             data_id: Some(node.info.id.to_string()),
         });
         scene_node.primitives.push(Primitive::Text {
-            x: f64::from(node.position.x) + 12.0,
-            y: f64::from(node.position.y) - 6.0,
+            x: f64::from(node.position.x) + petal_tongue_core::constants::GRAPH_LABEL_OFFSET_X,
+            y: f64::from(node.position.y) + petal_tongue_core::constants::GRAPH_LABEL_OFFSET_Y,
             content: node.info.name.clone(),
-            font_size: 11.0,
+            font_size: petal_tongue_core::constants::GRAPH_LABEL_FONT_SIZE,
             color: Color::rgba(0.85, 0.85, 0.85, 1.0),
             anchor: petal_tongue_scene::primitive::AnchorPoint::CenterLeft,
             bold: false,
@@ -75,7 +75,7 @@ fn graph_to_scene(handlers: &RpcHandlers) -> (SceneGraph, usize, usize) {
                 points: vec![(x1, y1).into(), (x2, y2).into()],
                 stroke: StrokeStyle {
                     color: Color::rgba(0.5, 0.5, 0.5, 0.6),
-                    width: 1.0,
+                    width: petal_tongue_core::constants::GRAPH_EDGE_STROKE_WIDTH,
                     cap: LineCap::Butt,
                     join: LineJoin::Miter,
                 },
