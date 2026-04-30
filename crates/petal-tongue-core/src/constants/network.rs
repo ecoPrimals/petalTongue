@@ -66,6 +66,36 @@ pub fn ecosystem_runtime_dir_name() -> String {
     std::env::var("ECOSYSTEM_RUNTIME_DIR").unwrap_or_else(|_| "biomeos".to_string())
 }
 
+/// Canonical ordered list of directories to search for primal Unix sockets.
+///
+/// Priority:
+/// 1. `$XDG_RUNTIME_DIR` (biomeOS convention)
+/// 2. `/run/user/{uid}` (Linux fallback when XDG unset)
+/// 3. `/tmp` (development / legacy fallback)
+/// 4. `/var/run/ecoPrimals` (alternative ecosystem runtime)
+///
+/// Callers searching for a specific socket typically join each path with a
+/// subdirectory (e.g. `biomeos/`) and the socket filename.
+#[must_use]
+pub fn socket_search_dirs() -> Vec<std::path::PathBuf> {
+    let mut dirs = Vec::with_capacity(4);
+
+    if let Ok(xdg) = std::env::var("XDG_RUNTIME_DIR") {
+        dirs.push(std::path::PathBuf::from(xdg));
+    }
+
+    let uid = crate::system_info::get_current_uid();
+    let run_user = std::path::PathBuf::from(format!("/run/user/{uid}"));
+    if !dirs.iter().any(|d| d == &run_user) {
+        dirs.push(run_user);
+    }
+
+    dirs.push(std::path::PathBuf::from(LEGACY_TMP_PREFIX));
+    dirs.push(std::path::PathBuf::from(ALTERNATIVE_RUN_DIR));
+
+    dirs
+}
+
 // ---------------------------------------------------------------------------
 // Socket names (capability-based, no primal identity coupling)
 // ---------------------------------------------------------------------------

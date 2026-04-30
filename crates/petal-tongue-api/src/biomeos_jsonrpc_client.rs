@@ -18,6 +18,7 @@
 
 use crate::biomeos_error::BiomeOsClientError;
 use petal_tongue_core::capability_names::primal_names;
+use petal_tongue_core::constants;
 use petal_tongue_core::constants::biomeos_socket_name;
 use petal_tongue_core::{PrimalInfo, TopologyEdge};
 use petal_tongue_ipc::socket_path::discover_primal_socket;
@@ -96,7 +97,7 @@ impl BiomeOSJsonRpcClient {
             return Ok(primary);
         }
 
-        let tmp_fallback = PathBuf::from("/tmp")
+        let tmp_fallback = PathBuf::from(constants::LEGACY_TMP_PREFIX)
             .join(primal_names::BIOMEOS)
             .join(format!("{name}.sock"));
         if tmp_fallback.exists() && tmp_fallback != primary {

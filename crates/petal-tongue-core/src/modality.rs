@@ -32,7 +32,7 @@ pub enum ModalityTier {
 
 /// Accessibility features supported by a modality
 #[derive(Debug, Clone, Default)]
-#[expect(clippy::struct_excessive_bools)]
+#[expect(clippy::struct_excessive_bools, reason = "accessibility feature flags are naturally boolean")]
 pub struct AccessibilityFeatures {
     /// Screen reader compatible
     pub screen_reader: bool,
@@ -67,7 +67,7 @@ pub struct AccessibilityFeatures {
 
 /// What a modality can do
 #[derive(Debug, Clone, Default)]
-#[expect(clippy::struct_excessive_bools)]
+#[expect(clippy::struct_excessive_bools, reason = "capability flags are naturally boolean")]
 pub struct ModalityCapabilities {
     /// Can handle user input (interactive)
     pub interactive: bool,

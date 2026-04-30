@@ -8,7 +8,7 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 
 /// DNS record type
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[expect(clippy::upper_case_acronyms)]
+#[expect(clippy::upper_case_acronyms, reason = "DNS record types are canonically all-caps (A, AAAA, SRV, TXT)")]
 pub enum RecordType {
     A = 1,     // IPv4 address
     NS = 2,    // Name server

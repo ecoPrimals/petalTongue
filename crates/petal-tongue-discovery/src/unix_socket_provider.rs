@@ -53,33 +53,12 @@ pub struct UnixSocketProvider {
 impl UnixSocketProvider {
     /// Create a new Unix socket provider
     ///
-    /// Searches for Unix sockets in:
-    /// 1. $`XDG_RUNTIME_DIR` (e.g., /run/user/1000) - biomeOS convention
-    /// 2. /tmp - fallback for development
-    /// 3. /var/run/ecoPrimals - alternative runtime directory
+    /// Searches canonical socket directories (XDG, /run/user, /tmp, /var/run/ecoPrimals).
     #[must_use]
     pub fn new() -> Self {
-        let mut search_paths = Vec::new();
-
-        // Priority 1: XDG_RUNTIME_DIR (biomeOS convention)
-        if let Ok(xdg_runtime) = std::env::var("XDG_RUNTIME_DIR") {
-            search_paths.push(PathBuf::from(xdg_runtime));
+        Self {
+            search_paths: petal_tongue_core::constants::socket_search_dirs(),
         }
-
-        // Priority 2: /run/user/<uid> (fallback if XDG not set)
-        // EVOLVED: Now using safe rustix-based function from core (was unsafe libc::getuid())
-        let uid = petal_tongue_core::system_info::get_current_uid();
-        search_paths.push(PathBuf::from(format!("/run/user/{uid}")));
-
-        // Priority 3: /tmp (development fallback)
-        search_paths.push(PathBuf::from("/tmp"));
-
-        // Priority 4: /var/run/ecoPrimals (alternative)
-        search_paths.push(PathBuf::from(
-            petal_tongue_core::constants::ALTERNATIVE_RUN_DIR,
-        ));
-
-        Self { search_paths }
     }
 
     /// Discover all primals via Unix sockets

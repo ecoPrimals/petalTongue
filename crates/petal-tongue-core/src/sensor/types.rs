@@ -43,7 +43,7 @@ pub trait Sensor: Send + Sync {
 
 /// Describes what a sensor can do
 #[derive(Debug, Clone)]
-#[expect(clippy::struct_excessive_bools)]
+#[expect(clippy::struct_excessive_bools, reason = "capability flags are naturally boolean")]
 pub struct SensorCapabilities {
     /// Type of sensor
     pub sensor_type: SensorType,

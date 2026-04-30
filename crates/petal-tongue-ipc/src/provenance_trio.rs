@@ -309,7 +309,8 @@ impl TrioAvailability {
 /// Uses runtime scanning of `$XDG_RUNTIME_DIR/biomeos/` and `/tmp/` for sockets
 /// that advertise the requested capability. Returns `None` if no provider found.
 fn discover_capability_socket(capability: &str) -> Option<String> {
-    let runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_string());
+    let runtime_dir = std::env::var("XDG_RUNTIME_DIR")
+        .unwrap_or_else(|_| petal_tongue_core::constants::LEGACY_TMP_PREFIX.to_string());
 
     // Check environment override: <CAPABILITY_UPPER>_SOCKET
     let env_key = format!("{}_SOCKET", capability.replace('.', "_").to_uppercase());

@@ -61,7 +61,7 @@ use std::sync::{Arc, RwLock};
 use std::time::Instant;
 
 /// The main petalTongue UI application
-#[expect(clippy::struct_excessive_bools)]
+#[expect(clippy::struct_excessive_bools, reason = "UI app state naturally requires many boolean flags")]
 pub struct PetalTongueApp {
     /// Capability detector (knows what modalities are actually available)
     capabilities: CapabilityDetector,
