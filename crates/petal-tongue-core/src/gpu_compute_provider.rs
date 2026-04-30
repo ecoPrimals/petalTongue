@@ -143,7 +143,8 @@ impl GpuComputeProvider {
         }
 
         // Legacy: ecosystem manifest scan (S139 dual-write layout)
-        let runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_string());
+        let runtime_dir = std::env::var("XDG_RUNTIME_DIR")
+            .unwrap_or_else(|_| crate::constants::LEGACY_TMP_PREFIX.to_string());
         let discovery_dir = format!("{runtime_dir}/ecoPrimals/discovery");
         if let Ok(entries) = std::fs::read_dir(&discovery_dir) {
             for entry in entries.flatten() {

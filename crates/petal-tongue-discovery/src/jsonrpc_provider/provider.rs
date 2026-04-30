@@ -80,18 +80,23 @@ impl JsonRpcProvider {
     #[doc(hidden)]
     pub fn get_standard_socket_paths() -> DiscoveryResult<Vec<PathBuf>> {
         let uid = petal_tongue_core::system_info::get_current_uid();
+        let run_user = format!("/run/user/{uid}");
 
         Ok(vec![
             PathBuf::from(format!(
-                "/run/user/{uid}/{}.sock",
+                "{run_user}/{}.sock",
                 biomeos_device_management_socket_name()
             )),
-            PathBuf::from(format!("/run/user/{uid}/{}.sock", biomeos_ui_socket_name())),
+            PathBuf::from(format!("{run_user}/{}.sock", biomeos_ui_socket_name())),
             PathBuf::from(format!(
-                "/run/user/{uid}/{}.sock",
+                "{run_user}/{}.sock",
                 discovery_service_socket_name()
             )),
-            PathBuf::from(format!("/tmp/{}.sock", biomeos_legacy_socket_name())),
+            PathBuf::from(format!(
+                "{}/{}.sock",
+                petal_tongue_core::constants::LEGACY_TMP_PREFIX,
+                biomeos_legacy_socket_name()
+            )),
         ])
     }
 

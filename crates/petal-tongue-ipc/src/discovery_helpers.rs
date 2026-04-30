@@ -4,6 +4,7 @@
 use std::path::PathBuf;
 
 use petal_tongue_core::capability_names::primal_names;
+use petal_tongue_core::constants;
 
 /// Env var name for primal socket, e.g. `socket_env_var("example")` → `"EXAMPLE_SOCKET"`.
 #[must_use]
@@ -53,7 +54,7 @@ pub fn resolve_primal_socket_with_env(
         return Some(p.clone());
     }
 
-    let tmp_path = PathBuf::from("/tmp")
+    let tmp_path = PathBuf::from(constants::LEGACY_TMP_PREFIX)
         .join(primal_names::BIOMEOS)
         .join(format!("{primal}.sock"));
     if path_exists_as_file(&tmp_path) {

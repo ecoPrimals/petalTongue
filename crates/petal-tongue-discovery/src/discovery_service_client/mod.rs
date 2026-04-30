@@ -68,24 +68,9 @@ impl DiscoveryServiceClient {
         Err(crate::errors::DiscoveryError::DiscoveryServiceNotFound { socket_name })
     }
 
-    /// Get standard search paths for Unix sockets
+    /// Get standard search paths for Unix sockets.
     pub(crate) fn get_search_paths() -> Vec<PathBuf> {
-        let mut paths = Vec::new();
-
-        // Priority 1: XDG_RUNTIME_DIR
-        if let Ok(xdg_runtime) = std::env::var("XDG_RUNTIME_DIR") {
-            paths.push(PathBuf::from(xdg_runtime));
-        }
-
-        // Priority 2: /run/user/<uid>
-        // EVOLVED: Now using safe rustix-based function from core (was unsafe libc::getuid())
-        let uid = petal_tongue_core::system_info::get_current_uid();
-        paths.push(PathBuf::from(format!("/run/user/{uid}")));
-
-        // Priority 3: /tmp (development)
-        paths.push(PathBuf::from("/tmp"));
-
-        paths
+        petal_tongue_core::constants::socket_search_dirs()
     }
 
     /// Create client with explicit socket path (for testing)
