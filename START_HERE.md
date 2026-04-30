@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 30, 2026 (PG-48 Wayland fix, Motor P0 panel/notification rendering)
+**Updated**: April 30, 2026 (socket search path centralization, #[expect] reasons)
 
 ---
 

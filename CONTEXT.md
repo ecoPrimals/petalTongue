@@ -302,6 +302,15 @@ toast overlays (up to 5) with level-appropriate colors (info/warn/error/
 success). `drain_expired()` called each frame to auto-dismiss timed toasts.
 6,054+ tests, 0 Clippy warnings.
 
+Socket path centralization (April 30, 2026): 8+ duplicated socket search
+path constructions across 6 crates replaced with single `socket_search_dirs()`
+helper in `constants::network`. Canonical priority: XDG_RUNTIME_DIR →
+/run/user/{uid} → /tmp → /var/run/ecoPrimals. All remaining inline `/tmp`
+literals now use `LEGACY_TMP_PREFIX` constant. All 6 bare `#[expect]`
+attributes gained reason strings (struct_excessive_bools, unnecessary_wraps,
+upper_case_acronyms). Zero hardcoded `/tmp` in production code. 6,054+ tests,
+0 Clippy warnings.
+
 Remaining backlog: BTSP Phase 3 encryption, aarch64 musl cross-compile
 for headless, audio backend wire protocols (via ToadStool `audio.play`
 capability discovery), overlay mode (toadStool Display Phase 2),
