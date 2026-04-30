@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 30, 2026 (socket search path centralization, #[expect] reasons)
+**Updated**: April 30, 2026 (PT-04/PT-09 fixes, dev dep consolidation, graph rendering constants)
 
 ---
 
