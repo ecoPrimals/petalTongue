@@ -54,9 +54,9 @@ uuid = { workspace = true }
 # EVOLUTION COMPLETE: Direct hardware access (like WGPU for graphics!)
 # NO rodio, NO cpal, NO ALSA - just raw /dev/snd device access!
 symphonia = { workspace = true, features = ["mp3", "wav"] }
-# winit is NOT a direct dependency — it comes transitively through eframe.
-# Screen dimensions use terminal_size (pure Rust), not winit.
-# Window creation is handled by eframe::run_native.
+# PG-48: winit needed directly for platform extension traits
+# (EventLoopBuilderExtX11/Wayland::with_any_thread) in eframe backend.
+winit = { workspace = true }
 
 # ✅ EVOLUTION COMPLETE:
 # - AudioCanvas provides direct /dev/snd access (Linux)

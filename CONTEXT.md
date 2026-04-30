@@ -288,10 +288,22 @@ avoids duplicating large texture payloads. Sparkline renderer simplified
 zero unsafe, zero dyn in production, zero TODO/FIXME/HACK, all mocks
 gated, no files >710 lines. 6,054+ tests, 0 Clippy warnings.
 
+PG-48 + Motor P0 resolution (April 30, 2026): primalSpring v0.9.24 remote
+validation surfaced two blockers. (1) PG-48: musl plasmidBin binary panics
+on live mode startup — `native_options_with_any_thread` only applied X11
+`with_any_thread`, not Wayland. Fixed: both X11 and Wayland extension traits
+now called with fully-qualified syntax. Also applied to `EguiBackend`
+fallback path. winit added as direct dep to petal-tongue-ui for platform
+traits. (2) Motor P0: `motor.panel.update` and `motor.notification` data
+was stored in `PanelContentStore` and `NotificationQueue` but never rendered.
+Fixed: composition panel content renders in floating "Composition Panels"
+egui window with recursive JSON display. Notifications render as floating
+toast overlays (up to 5) with level-appropriate colors (info/warn/error/
+success). `drain_expired()` called each frame to auto-dismiss timed toasts.
+6,054+ tests, 0 Clippy warnings.
+
 Remaining backlog: BTSP Phase 3 encryption, aarch64 musl cross-compile
 for headless, audio backend wire protocols (via ToadStool `audio.play`
 capability discovery), overlay mode (toadStool Display Phase 2),
 egui texture resolution (TextureResolver with `egui::Shape::image`),
-BearDog crypto.sign delegation for scene signing (currently local BLAKE3),
-panel content rendering (PanelContentStore → egui panels),
-notification rendering (NotificationQueue → egui toast/overlay).
+BearDog crypto.sign delegation for scene signing (currently local BLAKE3).

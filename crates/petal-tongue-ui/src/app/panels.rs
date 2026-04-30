@@ -283,6 +283,17 @@ pub fn render_all_panels(ctx: &egui::Context, app: &mut PetalTongueApp) {
         }
     }
 
+    // Motor-driven panel content (from compositions via motor.panel.update)
+    if !app.panel_content_store.is_empty() {
+        egui::Window::new("Composition Panels")
+            .default_width(350.0)
+            .default_pos([200.0, 200.0])
+            .resizable(true)
+            .show(ctx, |ui| {
+                render_motor_panel_content(ui, &app.panel_content_store);
+            });
+    }
+
     egui::CentralPanel::default().show(ctx, |ui| {
         if let Some(tool) = app.tools.visible_tool() {
             tool.render_panel(ui);
@@ -290,4 +301,133 @@ pub fn render_all_panels(ctx: &egui::Context, app: &mut PetalTongueApp) {
             app.visual_renderer.render(ui);
         }
     });
+
+    // Motor-driven notifications (from compositions via motor.notification)
+    app.notification_queue.drain_expired();
+    if !app.notification_queue.is_empty() {
+        render_notification_toasts(ctx, &app.notification_queue);
+    }
+}
+
+/// Render composition-driven panel content pushed via `motor.panel.update`.
+fn render_motor_panel_content(
+    ui: &mut egui::Ui,
+    store: &super::motor_state::PanelContentStore,
+) {
+    for (panel_key, content) in store.iter() {
+        if let Some(title) = &content.title {
+            ui.heading(title);
+        } else {
+            ui.heading(panel_key);
+        }
+        ui.separator();
+        render_json_value(ui, &content.content, 0);
+        ui.add_space(8.0);
+    }
+}
+
+/// Render a JSON value as egui labels (recursive for objects/arrays).
+fn render_json_value(ui: &mut egui::Ui, value: &serde_json::Value, depth: usize) {
+    const MAX_DEPTH: usize = 4;
+    match value {
+        serde_json::Value::Object(map) => {
+            for (k, v) in map {
+                if depth < MAX_DEPTH && (v.is_object() || v.is_array()) {
+                    ui.collapsing(k, |ui| {
+                        render_json_value(ui, v, depth + 1);
+                    });
+                } else {
+                    ui.horizontal(|ui| {
+                        ui.strong(format!("{k}:"));
+                        ui.label(format_json_leaf(v));
+                    });
+                }
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            for (i, v) in arr.iter().enumerate() {
+                if depth < MAX_DEPTH && (v.is_object() || v.is_array()) {
+                    ui.collapsing(format!("[{i}]"), |ui| {
+                        render_json_value(ui, v, depth + 1);
+                    });
+                } else {
+                    ui.label(format!("[{i}] {}", format_json_leaf(v)));
+                }
+            }
+        }
+        other => {
+            ui.label(format_json_leaf(other));
+        }
+    }
+}
+
+fn format_json_leaf(v: &serde_json::Value) -> String {
+    match v {
+        serde_json::Value::String(s) => s.clone(),
+        serde_json::Value::Number(n) => n.to_string(),
+        serde_json::Value::Bool(b) => b.to_string(),
+        serde_json::Value::Null => "null".to_string(),
+        other => other.to_string(),
+    }
+}
+
+/// Render notification toasts as floating overlays at the top of the screen.
+fn render_notification_toasts(
+    ctx: &egui::Context,
+    queue: &super::motor_state::NotificationQueue,
+) {
+    let screen = ctx.screen_rect();
+    let toast_width = 400.0_f32.min(screen.width() - 40.0);
+    let start_x = screen.center().x - toast_width / 2.0;
+    let mut y_offset = 40.0;
+
+    for (i, entry) in queue.active().iter().enumerate().take(5) {
+        let (bg, text_color) = notification_colors(&entry.level);
+
+        egui::Area::new(egui::Id::new(format!("notification_toast_{i}")))
+            .fixed_pos([start_x, y_offset])
+            .order(egui::Order::Foreground)
+            .show(ctx, |ui| {
+                egui::Frame::none()
+                    .fill(bg)
+                    .rounding(6.0)
+                    .inner_margin(egui::Margin::symmetric(16.0, 10.0))
+                    .show(ui, |ui| {
+                        ui.set_width(toast_width);
+                        ui.horizontal(|ui| {
+                            let icon = match entry.level.as_str() {
+                                "error" => "!!",
+                                "warn" => "!",
+                                "success" => "OK",
+                                _ => "i",
+                            };
+                            ui.colored_label(text_color, icon);
+                            ui.colored_label(text_color, &entry.message);
+                        });
+                    });
+            });
+        y_offset += 48.0;
+    }
+    ctx.request_repaint();
+}
+
+fn notification_colors(level: &str) -> (egui::Color32, egui::Color32) {
+    match level {
+        "error" => (
+            egui::Color32::from_rgb(120, 30, 30),
+            egui::Color32::from_rgb(255, 180, 180),
+        ),
+        "warn" => (
+            egui::Color32::from_rgb(120, 100, 20),
+            egui::Color32::from_rgb(255, 230, 140),
+        ),
+        "success" => (
+            egui::Color32::from_rgb(30, 100, 40),
+            egui::Color32::from_rgb(180, 255, 190),
+        ),
+        _ => (
+            egui::Color32::from_rgb(40, 55, 80),
+            egui::Color32::from_rgb(200, 220, 255),
+        ),
+    }
 }
