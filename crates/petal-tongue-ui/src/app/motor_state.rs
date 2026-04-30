@@ -3,11 +3,6 @@
 //!
 //! IPC compositions push content via `motor.panel.update` and
 //! `motor.notification` — the UI reads from these stores each frame.
-#![allow(
-    dead_code,
-    reason = "public API for panel/notification rendering, wired in future UI pass"
-)]
-
 use petal_tongue_core::PanelId;
 use std::collections::HashMap;
 use std::time::Instant;
@@ -17,6 +12,7 @@ use std::time::Instant;
 pub struct PanelContent {
     pub title: Option<String>,
     pub content: serde_json::Value,
+    #[expect(dead_code, reason = "tracked for future staleness rendering")]
     pub updated_at: Instant,
 }
 
@@ -44,12 +40,14 @@ impl PanelContentStore {
         );
     }
 
+    #[expect(dead_code, reason = "public API for per-panel lookup, used in tests")]
     #[must_use]
     pub fn get(&self, panel: &PanelId) -> Option<&PanelContent> {
         let key = format!("{panel:?}");
         self.panels.get(&key)
     }
 
+    #[expect(dead_code, reason = "public API for store size, used in tests")]
     #[must_use]
     pub fn len(&self) -> usize {
         self.panels.len()
@@ -58,6 +56,11 @@ impl PanelContentStore {
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.panels.is_empty()
+    }
+
+    /// Iterate over all stored panel content entries.
+    pub fn iter(&self) -> impl Iterator<Item = (&str, &PanelContent)> {
+        self.panels.iter().map(|(k, v)| (k.as_str(), v))
     }
 }
 
@@ -103,6 +106,7 @@ impl NotificationQueue {
         &self.entries
     }
 
+    #[expect(dead_code, reason = "public API for queue size, used in tests")]
     #[must_use]
     pub const fn len(&self) -> usize {
         self.entries.len()

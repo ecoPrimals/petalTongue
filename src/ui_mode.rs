@@ -33,8 +33,9 @@ pub fn window_title() -> String {
 ///
 /// PG-48: musl libc reports thread IDs differently, causing winit's
 /// `is_main_thread()` check to fail even when we ARE on the OS main thread.
-/// `with_any_thread(true)` tells winit to skip that check on X11.
-/// Our code already guarantees main-thread dispatch (PG-40), so this is safe.
+/// `with_any_thread(true)` tells winit to skip that check on both X11 and
+/// Wayland. Our code already guarantees main-thread dispatch (PG-40), so
+/// this is safe.
 #[cfg(feature = "ui")]
 pub fn native_options_with_any_thread(
     viewport: petal_tongue_ui::egui::ViewportBuilder,
@@ -44,8 +45,10 @@ pub fn native_options_with_any_thread(
         event_loop_builder: Some(Box::new(|builder| {
             #[cfg(target_os = "linux")]
             {
-                use winit::platform::x11::EventLoopBuilderExtX11 as _;
-                builder.with_any_thread(true);
+                winit::platform::x11::EventLoopBuilderExtX11::with_any_thread(builder, true);
+                winit::platform::wayland::EventLoopBuilderExtWayland::with_any_thread(
+                    builder, true,
+                );
             }
             #[cfg(not(target_os = "linux"))]
             let _ = builder;

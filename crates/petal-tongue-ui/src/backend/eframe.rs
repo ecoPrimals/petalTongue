@@ -127,6 +127,18 @@ impl UIBackend for EguiBackend {
                 .with_inner_size([w as f32, h as f32])
                 .with_min_inner_size([800.0, 600.0])
                 .with_icon(load_icon()),
+            // PG-48: musl libc thread-ID mismatch — skip winit main-thread check
+            event_loop_builder: Some(Box::new(|builder| {
+                #[cfg(target_os = "linux")]
+                {
+                    winit::platform::x11::EventLoopBuilderExtX11::with_any_thread(builder, true);
+                    winit::platform::wayland::EventLoopBuilderExtWayland::with_any_thread(
+                        builder, true,
+                    );
+                }
+                #[cfg(not(target_os = "linux"))]
+                let _ = builder;
+            })),
             ..Default::default()
         };
 
