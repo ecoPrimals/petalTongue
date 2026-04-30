@@ -40,7 +40,7 @@ socket2 = { workspace = true }
 lru = { workspace = true }
 
 # mDNS discovery (optional feature) - pure Rust
-mdns-sd = { version = "0.18", optional = true }
+mdns-sd = { workspace = true, optional = true }
 
 # Modern async patterns (Discovery Evolution)
 futures-util = { workspace = true }
@@ -55,8 +55,8 @@ test-fixtures = ["petal-tongue-core/test-fixtures"]
 [dev-dependencies]
 anyhow = { workspace = true }  # Unit tests and #[cfg(test)] helpers (mock_server, errors tests)
 petal-tongue-core = { path = "../petal-tongue-core", features = ["test-fixtures"] }
-tokio-test = "0.4"
-wiremock = "0.6"
+tokio-test = { workspace = true }
+wiremock = { workspace = true }
 futures-util = { workspace = true }
 tempfile = { workspace = true }
 

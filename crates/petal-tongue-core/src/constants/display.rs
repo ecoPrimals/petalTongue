@@ -37,3 +37,28 @@ pub fn default_window_size() -> (u32, u32) {
         env_or("PETALTONGUE_WINDOW_HEIGHT", DEFAULT_WINDOW_HEIGHT),
     )
 }
+
+// ---------------------------------------------------------------------------
+// Graph rendering geometry (used by IPC scene compilation)
+// ---------------------------------------------------------------------------
+
+/// Node circle radius for graph topology visualization.
+pub const GRAPH_NODE_RADIUS: f64 = 8.0;
+
+/// Node border stroke width.
+pub const GRAPH_NODE_STROKE_WIDTH: f32 = 1.5;
+
+/// Edge line stroke width.
+pub const GRAPH_EDGE_STROKE_WIDTH: f32 = 1.0;
+
+/// Text label offset X from node center.
+pub const GRAPH_LABEL_OFFSET_X: f64 = 12.0;
+
+/// Text label offset Y from node center.
+pub const GRAPH_LABEL_OFFSET_Y: f64 = -6.0;
+
+/// Font size for node labels.
+pub const GRAPH_LABEL_FONT_SIZE: f64 = 11.0;
+
+/// Bytes per pixel for RGBA8 texture format.
+pub const RGBA8_BYTES_PER_PIXEL: usize = 4;
