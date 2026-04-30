@@ -312,6 +312,18 @@ attributes gained reason strings (struct_excessive_bools, unnecessary_wraps,
 upper_case_acronyms). Zero hardcoded `/tmp` in production code. 6,054+ tests,
 0 Clippy warnings.
 
+PT-04/PT-09/dev dep audit (April 30, 2026): primalSpring Phase 56c
+audit items resolved. (1) PT-04: HTML export `compile_html` was using a
+duplicated inline HTML template; now calls shared `wrap_svg_in_html`.
+(2) PT-09: BTSP JSON-line relay path now calls `btsp.negotiate` (was
+missing — only length-prefixed path called it). Both paths log negotiate
+results. (3) PT-06: push delivery confirmed already activated in all IPC
+modes (stale audit note). Dev deps consolidated: tokio-test, wiremock,
+assert_cmd, predicates, criterion, temp-env, mdns-sd moved to workspace.
+Graph rendering magic numbers extracted to `constants::display`
+(GRAPH_NODE_RADIUS, stroke widths, label offsets, RGBA8_BYTES_PER_PIXEL).
+6,054+ tests, 0 Clippy warnings.
+
 Remaining backlog: BTSP Phase 3 encryption, aarch64 musl cross-compile
 for headless, audio backend wire protocols (via ToadStool `audio.play`
 capability discovery), overlay mode (toadStool Display Phase 2),
