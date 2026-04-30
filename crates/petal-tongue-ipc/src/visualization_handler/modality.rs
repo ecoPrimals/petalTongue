@@ -31,16 +31,9 @@ fn compile_html(scene: &SceneGraph) -> (serde_json::Value, String) {
     match compiler.compile(scene) {
         ModalityOutput::Svg(b) => {
             let svg = String::from_utf8_lossy(b.as_ref());
-            let html = format!(
-                "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\
-                 <meta charset=\"utf-8\">\
-                 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\
-                 <title>petalTongue Export</title>\
-                 <style>body{{margin:0;display:flex;justify-content:center;\
-                 align-items:center;min-height:100vh;background:#1a1a2e}}\
-                 svg{{max-width:100%;height:auto}}</style>\
-                 </head>\n<body>\n{svg}\n</body>\n</html>"
-            );
+            let html_bytes = petal_tongue_ui_core::wrap_svg_in_html(&svg);
+            let html = String::from_utf8(html_bytes)
+                .unwrap_or_else(|e| String::from_utf8_lossy(e.as_bytes()).into_owned());
             if !petal_tongue_ui_core::validate_standalone_html_export(&html) {
                 warn!("HTML modality output failed validation (PT-04)");
                 return (serde_json::Value::Null, "error".into());

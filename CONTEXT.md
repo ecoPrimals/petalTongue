@@ -52,7 +52,8 @@ JSON-RPC 2.0 over Unix domain sockets (primary) and TCP (`--port`).
 BTSP Phase 1 complete: family-scoped socket naming, insecure guard,
 domain symlinks (`visualization.sock`). BTSP Phase 2 complete: BearDog
 handshake delegation on both UDS and TCP, length-prefixed and JSON-line
-framing, `btsp.session.create/verify/negotiate` via provider client.
+framing, `btsp.session.create`, `btsp.session.verify`, and `btsp.negotiate`
+via provider client (negotiate is best-effort; null cipher until Phase 3).
 
 ## Key Design Decisions
 
