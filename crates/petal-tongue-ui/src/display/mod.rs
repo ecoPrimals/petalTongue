@@ -30,8 +30,7 @@ pub mod traits;
 
 #[cfg(feature = "discovered-display")]
 pub use backends::{
-    discovered_display::DiscoveredDisplayBackend,
-    discovered_display_v2::DiscoveredDisplayBackendV2,
+    discovered_display::DiscoveredDisplayBackend, discovered_display_v2::DiscoveredDisplayBackendV2,
 };
 pub use backends::{
     external::ExternalDisplay, framebuffer::FramebufferDisplay, software::SoftwareDisplay,

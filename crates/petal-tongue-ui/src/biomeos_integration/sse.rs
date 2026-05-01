@@ -153,11 +153,10 @@ impl SseEventConsumer {
         *state.write().await = SseConnectionState::Connecting;
         info!("SSE: connecting to {}", endpoint);
 
-        let client = petal_tongue_ipc::LocalHttpClient::with_timeout(
-            std::time::Duration::from_secs(
+        let client =
+            petal_tongue_ipc::LocalHttpClient::with_timeout(std::time::Duration::from_secs(
                 petal_tongue_core::constants::DEFAULT_SSE_STREAM_TIMEOUT_SECS,
-            ),
-        );
+            ));
 
         let (status, mut stream) = match client
             .get_stream(&endpoint, &[("Accept", "text/event-stream")])

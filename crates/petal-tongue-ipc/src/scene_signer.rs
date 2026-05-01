@@ -136,7 +136,10 @@ mod tests {
     #[test]
     fn signer_rejects_wrong_signature() {
         let signer = SceneSigner::with_key(test_key());
-        assert!(!signer.verify(b"payload", "0000000000000000000000000000000000000000000000000000000000000000"));
+        assert!(!signer.verify(
+            b"payload",
+            "0000000000000000000000000000000000000000000000000000000000000000"
+        ));
     }
 
     #[test]

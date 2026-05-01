@@ -35,6 +35,6 @@ pub use types::{
     GrammarRenderResponse, InteractionApplyRequest, InteractionApplyResponse, Perspective,
     SessionStatusRequest, SessionStatusResponse, StreamOperation, StreamUpdateRequest,
     StreamUpdateResponse, TextureAttachRequest, TextureAttachResponse, TextureUploadRequest,
-    TextureUploadResponse, UiConfig, ValidateRequest, ValidateResponse,
-    VisualizationRenderRequest, VisualizationRenderResponse,
+    TextureUploadResponse, UiConfig, ValidateRequest, ValidateResponse, VisualizationRenderRequest,
+    VisualizationRenderResponse,
 };

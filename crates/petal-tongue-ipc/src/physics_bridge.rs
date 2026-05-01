@@ -199,12 +199,8 @@ async fn try_gpu_physics_step(world: &mut PhysicsWorld) -> Result<usize, String>
 /// 5. `/tmp/` fallback
 fn discover_compute_socket() -> Result<String, String> {
     // Primary: biomeOS capability discovery (sync-safe: check socket exists without async)
-    if let Ok(backend) =
-        petal_tongue_core::biomeos_discovery::BiomeOsBackend::from_env()
-    {
-        use petal_tongue_core::capability_discovery::{
-            CapabilityDiscovery, CapabilityQuery,
-        };
+    if let Ok(backend) = petal_tongue_core::biomeos_discovery::BiomeOsBackend::from_env() {
+        use petal_tongue_core::capability_discovery::{CapabilityDiscovery, CapabilityQuery};
         let discovery = CapabilityDiscovery::new(backend);
         let query = CapabilityQuery::new("compute");
 

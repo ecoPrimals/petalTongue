@@ -1,5 +1,95 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Types for `visualization.render.dashboard`.
+//!
+//! # Wire-level JSON-RPC schema
+//!
+//! ## Request
+//!
+//! ```json
+//! {
+//!   "jsonrpc": "2.0",
+//!   "method": "visualization.render.dashboard",
+//!   "params": {
+//!     "session_id": "dash-abc123",
+//!     "title": "Ecosystem Health",
+//!     "bindings": [
+//!       {
+//!         "channel_type": "timeseries",
+//!         "id": "cpu",
+//!         "label": "CPU Usage",
+//!         "x_label": "Time",
+//!         "y_label": "Percent",
+//!         "unit": "%",
+//!         "x_values": [0.0, 1.0, 2.0],
+//!         "y_values": [45.0, 62.0, 58.0]
+//!       },
+//!       {
+//!         "channel_type": "gauge",
+//!         "id": "mem",
+//!         "label": "Memory",
+//!         "value": 4.2,
+//!         "min": 0.0,
+//!         "max": 16.0,
+//!         "unit": "GiB",
+//!         "normal_range": [0.0, 12.0],
+//!         "warning_range": [12.0, 14.0]
+//!       }
+//!     ],
+//!     "domain": "health",
+//!     "modality": "svg",
+//!     "max_columns": 3
+//!   },
+//!   "id": 1
+//! }
+//! ```
+//!
+//! ### Required fields
+//!
+//! | Field        | Type               | Description                                         |
+//! |--------------|--------------------|-----------------------------------------------------|
+//! | `session_id` | `string`           | Unique session identifier (caller-assigned)          |
+//! | `title`      | `string`           | Dashboard title rendered above the grid              |
+//! | `bindings`   | `DataBinding[]`    | Array of data bindings — each becomes one panel      |
+//!
+//! ### Optional fields
+//!
+//! | Field         | Type     | Default  | Description                                  |
+//! |---------------|----------|----------|----------------------------------------------|
+//! | `domain`      | `string` | `null`   | Domain hint for theming (`"health"`, etc.)   |
+//! | `modality`    | `string` | `"svg"`  | Output modality: `"svg"` or `"description"` |
+//! | `max_columns` | `usize`  | `3`      | Maximum grid columns for panel layout        |
+//!
+//! ### `DataBinding` variants
+//!
+//! Each element in `bindings` is tagged via `channel_type`:
+//! `"timeseries"`, `"distribution"`, `"bar"`, `"gauge"`, `"heatmap"`,
+//! `"scatter3d"`, `"scatter"`, `"fieldmap"`, `"game_scene"`, `"soundscape"`,
+//! `"spectrum"`. See [`DataBinding`] for per-variant fields.
+//!
+//! ## Response
+//!
+//! ```json
+//! {
+//!   "jsonrpc": "2.0",
+//!   "result": {
+//!     "session_id": "dash-abc123",
+//!     "output": "<svg>...</svg>",
+//!     "modality": "svg",
+//!     "panel_count": 2,
+//!     "columns": 2,
+//!     "rows": 1,
+//!     "scene_nodes": 12,
+//!     "total_primitives": 48
+//!   },
+//!   "id": 1
+//! }
+//! ```
+//!
+//! ## Error codes
+//!
+//! | Code   | Meaning                                           |
+//! |--------|---------------------------------------------------|
+//! | `-32602` | Invalid params — missing `session_id`, `title`, or `bindings`, or malformed binding |
 
 use petal_tongue_core::DataBinding;
 use serde::{Deserialize, Serialize};

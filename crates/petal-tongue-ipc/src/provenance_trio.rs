@@ -320,8 +320,8 @@ fn discover_capability_socket(capability: &str) -> Option<String> {
         return Some(path);
     }
 
-    // Scan biomeos directory for capability providers
-    let biomeos_dir = format!("{runtime_dir}/biomeos");
+    let eco_dir = petal_tongue_core::constants::ecosystem_runtime_dir_name();
+    let biomeos_dir = format!("{runtime_dir}/{eco_dir}");
     if let Ok(entries) = std::fs::read_dir(&biomeos_dir) {
         for entry in entries.flatten() {
             let path = entry.path();

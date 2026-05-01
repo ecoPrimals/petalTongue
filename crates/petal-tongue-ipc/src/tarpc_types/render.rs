@@ -41,6 +41,32 @@ pub struct RenderRequest {
     pub metadata: Option<HashMap<String, String>>,
 }
 
+/// Structured render error with machine-readable code and human-readable detail.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RenderError {
+    /// Machine-readable error code (e.g. `"invalid_format"`, `"timeout"`, `"gpu_unavailable"`).
+    pub code: String,
+    /// Human-readable description.
+    pub message: String,
+}
+
+impl std::fmt::Display for RenderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.code, self.message)
+    }
+}
+
+impl RenderError {
+    /// Convenience constructor from a plain message (code defaults to `"render_error"`).
+    #[must_use]
+    pub fn from_message(message: impl Into<String>) -> Self {
+        Self {
+            code: "render_error".to_owned(),
+            message: message.into(),
+        }
+    }
+}
+
 /// Graph rendering response
 ///
 /// Rendered visualization or frame buffer output.
@@ -61,8 +87,8 @@ pub struct RenderResponse {
     /// Output height in pixels
     pub height: u32,
 
-    /// Error message if failed
-    pub error: Option<String>,
+    /// Structured error if the render failed.
+    pub error: Option<RenderError>,
 
     /// Render time in milliseconds
     pub render_time_ms: u64,

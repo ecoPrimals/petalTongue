@@ -53,7 +53,8 @@ async fn chaos_concurrent_discovery_sources() {
 }
 
 #[cfg(feature = "test-fixtures")]
-fn one_demo_provider() -> impl std::future::Future<Output = DiscoveryResult<Vec<KnownVisualizationProvider>>> {
+fn one_demo_provider()
+-> impl std::future::Future<Output = DiscoveryResult<Vec<KnownVisualizationProvider>>> {
     std::future::ready(Ok(vec![KnownVisualizationProvider::Demo(
         DemoVisualizationProvider::new(),
     )]))

@@ -113,14 +113,14 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,054+ passing (98 test suites), 0 failures |
+| Tests | 6,191+ passing (98 test suites), 0 failures |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons; zero `#[allow]` in production) |
 | Docs | `cargo doc --workspace --no-deps` clean |
 | Coverage | ~90% line (llvm-cov) |
 | Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin root, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
-| BTSP Phase 1 | `validate_insecure_guard()`, family-scoped sockets, domain symlinks |
+| BTSP Phase 2 | Typed `BtspHandshakeError`, BearDog provider delegation, NULL cipher handshake operational |
 | Files | All production files under 710 LOC (smart domain refactoring, 57+ modules) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 18 crates + sandbox) |
@@ -137,7 +137,7 @@ petaltongue
 | Dual-format discovery | Parses 4 capability formats (flat, enriched, nested, result-wrapped) |
 | Dispatch classification | `DispatchOutcome<T>` separates protocol vs application errors |
 | Typed exit codes | `exit_code` module (SUCCESS, CONFIG_ERROR, NETWORK_ERROR, USAGE_ERROR) |
-| Supply-chain hygiene | `deny.toml` with `yanked=deny`, `wildcards=warn`, banned C deps |
+| Supply-chain hygiene | `deny.toml` with `yanked=deny`, `wildcards=warn`, banned C deps + `async-trait` regression guard |
 | Polymorphism | Zero `dyn` trait objects for custom traits — enum dispatch + generics throughout |
 | Async traits | Native `async fn` in traits (RPITIT) — zero `#[async_trait]`, zero `Pin<Box<dyn Future>>` |
 
@@ -148,7 +148,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 6,054+ tests
+cargo test --workspace --all-features        # 6,191+ tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps

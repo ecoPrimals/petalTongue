@@ -37,8 +37,7 @@ impl AudioManager {
 
         // Tier 1: Ecosystem Audio (capability discovery via biomeOS Neural API)
         {
-            let network_backend =
-                super::backends::NetworkBackend::discover().await;
+            let network_backend = super::backends::NetworkBackend::discover().await;
             if network_backend.is_available().await {
                 info!("Ecosystem audio provider available (Tier 1)");
             }

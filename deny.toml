@@ -48,6 +48,9 @@ deny = [
     { name = "lz4-sys", wrappers = [] },
     { name = "libsqlite3-sys", wrappers = [] },
     { name = "cryptoki-sys", wrappers = [] },
+    # Interstadial invariant: native async fn in traits (edition 2024).
+    # Wrappers: transitive via axum (web mode) and opentelemetry (tarpc tracing).
+    { name = "async-trait", wrappers = ["axum", "axum-core", "opentelemetry_sdk"] },
 ]
 
 [sources]

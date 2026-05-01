@@ -163,10 +163,6 @@ impl EdgeAnimation {
             particle.update(delta_time);
         }
 
-        // Remove completed particles (if using one-shot mode)
-        // Currently particles loop, so this isn't needed
-        // self.particles.retain(|p| !p.is_complete());
-
         // Update thickness based on bandwidth
         self.thickness_multiplier = self.bandwidth.mul_add(2.0, 1.0);
     }

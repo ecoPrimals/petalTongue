@@ -287,7 +287,9 @@ async fn dispatch_async(
             );
             cli_mode::status(verbose, &format, data_service).await
         }
-        Commands::Ui { .. } | Commands::Live { .. } => unreachable!("GUI modes handled on main thread"),
+        Commands::Ui { .. } | Commands::Live { .. } => {
+            unreachable!("GUI modes handled on main thread")
+        }
     }
 }
 

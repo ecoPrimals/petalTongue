@@ -201,9 +201,7 @@ impl From<Sprite> for SceneNode {
             data_id: Some(sprite.id.clone()),
         };
         let label = sprite.label.clone().unwrap_or_else(|| sprite.id.clone());
-        Self::new(&sprite.id)
-            .with_primitive(prim)
-            .with_label(label)
+        Self::new(&sprite.id).with_primitive(prim).with_label(label)
     }
 }
 

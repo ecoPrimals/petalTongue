@@ -100,9 +100,7 @@ impl Sensor for AudioSensor {
         self.has_output || self.has_input
     }
 
-    async fn poll_events(
-        &mut self,
-    ) -> std::result::Result<Vec<SensorEvent>, SensorError> {
+    async fn poll_events(&mut self) -> std::result::Result<Vec<SensorEvent>, SensorError> {
         Ok(Vec::new())
     }
 

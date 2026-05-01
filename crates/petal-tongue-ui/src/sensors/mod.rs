@@ -48,9 +48,7 @@ impl Sensor for SensorImpl {
         }
     }
 
-    async fn poll_events(
-        &mut self,
-    ) -> std::result::Result<Vec<SensorEvent>, SensorError> {
+    async fn poll_events(&mut self) -> std::result::Result<Vec<SensorEvent>, SensorError> {
         match self {
             Self::Mouse(s) => s.poll_events().await,
             Self::Keyboard(s) => s.poll_events().await,

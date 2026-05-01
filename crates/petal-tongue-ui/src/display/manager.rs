@@ -66,9 +66,7 @@ impl DisplayBackend for DisplayBackendImpl {
 
     fn is_available() -> bool {
         #[cfg(feature = "discovered-display")]
-        if DiscoveredDisplayBackendV2::is_available()
-            || DiscoveredDisplayBackend::is_available()
-        {
+        if DiscoveredDisplayBackendV2::is_available() || DiscoveredDisplayBackend::is_available() {
             return true;
         }
         SoftwareDisplay::is_available()

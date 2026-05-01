@@ -14,10 +14,10 @@ use crate::error::{AudioError, Result};
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
-#[cfg(target_os = "linux")]
-use tracing::{debug, info, warn};
 #[cfg(not(target_os = "linux"))]
 use tracing::{debug, info};
+#[cfg(target_os = "linux")]
+use tracing::{debug, info, warn};
 
 /// Audio Canvas - Direct hardware access (like WGPU for graphics!)
 pub struct AudioCanvas {

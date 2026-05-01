@@ -222,10 +222,7 @@ fn load_family_seed_prefers_beardog_env() {
         ],
         || {
             let cfg = super::BtspHandshakeConfig::from_env().expect("should resolve config");
-            assert_eq!(
-                cfg.load_family_seed(),
-                Some("YmVhcmRvZy1zZWVk".to_owned())
-            );
+            assert_eq!(cfg.load_family_seed(), Some("YmVhcmRvZy1zZWVk".to_owned()));
         },
     );
 }
@@ -265,7 +262,8 @@ fn load_family_seed_none_when_unset() {
 #[test]
 fn load_family_seed_base64_encodes_raw_hex() {
     let raw_hex = "e06c1785c14c45983eab7f2d9a0b3c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b";
-    let expected_b64 = "ZTA2YzE3ODVjMTRjNDU5ODNlYWI3ZjJkOWEwYjNjNWQ2ZTdmOGE5YjBjMWQyZTNmNGE1YjZjN2Q4ZTlmMGExYg==";
+    let expected_b64 =
+        "ZTA2YzE3ODVjMTRjNDU5ODNlYWI3ZjJkOWEwYjNjNWQ2ZTdmOGE5YjBjMWQyZTNmNGE1YjZjN2Q4ZTlmMGExYg==";
     env_test_helpers::with_env_vars(
         &[
             ("FAMILY_ID", Some("prod")),
@@ -291,10 +289,7 @@ fn load_family_seed_trims_then_encodes() {
         ],
         || {
             let cfg = super::BtspHandshakeConfig::from_env().expect("should resolve config");
-            assert_eq!(
-                cfg.load_family_seed(),
-                Some("YTFiMmMzZDRlNWY2".to_owned())
-            );
+            assert_eq!(cfg.load_family_seed(), Some("YTFiMmMzZDRlNWY2".to_owned()));
         },
     );
 }

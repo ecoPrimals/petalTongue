@@ -14,33 +14,62 @@
 //!   6. Write HandshakeComplete line
 
 use super::client::provider_call;
+use super::error::BtspHandshakeError;
 use super::types::BtspHandshakeConfig;
 
 /// Read one newline-delimited JSON line.
-async fn read_json_line<R>(reader: &mut R) -> Result<serde_json::Value, String>
+async fn read_json_line<R>(reader: &mut R) -> Result<serde_json::Value, BtspHandshakeError>
 where
     R: tokio::io::AsyncBufReadExt + Unpin,
 {
-    let mut line = String::new();
+    let mut buf: Vec<u8> = Vec::with_capacity(4096);
     reader
-        .read_line(&mut line)
+        .read_until(b'\n', &mut buf)
         .await
-        .map_err(|e| format!("read JSON line: {e}"))?;
-    if line.is_empty() {
-        return Err("EOF before JSON line".to_owned());
+        .map_err(|e| BtspHandshakeError::Io {
+            context: "read JSON line",
+            source: e,
+        })?;
+    if buf.is_empty() {
+        return Err(BtspHandshakeError::UnexpectedEof {
+            expected: "JSON line",
+        });
     }
-    serde_json::from_str(line.trim_end()).map_err(|e| format!("parse JSON line: {e}"))
+    let trimmed = if buf.last() == Some(&b'\n') {
+        &buf[..buf.len() - 1]
+    } else {
+        &buf
+    };
+    serde_json::from_slice(trimmed).map_err(|e| BtspHandshakeError::Json {
+        context: "parse JSON line",
+        source: e,
+    })
 }
 
 /// Write a JSON value as a newline-terminated line.
-async fn write_json_line<W>(writer: &mut W, val: &serde_json::Value) -> Result<(), String>
+async fn write_json_line<W>(
+    writer: &mut W,
+    val: &serde_json::Value,
+) -> Result<(), BtspHandshakeError>
 where
     W: tokio::io::AsyncWriteExt + Unpin,
 {
-    let mut buf = serde_json::to_vec(val).map_err(|e| e.to_string())?;
+    let mut buf = serde_json::to_vec(val).map_err(|e| BtspHandshakeError::Json {
+        context: "serialize JSON line",
+        source: e,
+    })?;
     buf.push(b'\n');
-    writer.write_all(&buf).await.map_err(|e| e.to_string())?;
-    writer.flush().await.map_err(|e| e.to_string())
+    writer
+        .write_all(&buf)
+        .await
+        .map_err(|e| BtspHandshakeError::Io {
+            context: "write JSON line",
+            source: e,
+        })?;
+    writer.flush().await.map_err(|e| BtspHandshakeError::Io {
+        context: "flush JSON line",
+        source: e,
+    })
 }
 
 /// Extract a string field, falling back to an alternate key.
@@ -57,7 +86,7 @@ async fn exchange_hello_json_line<R, W>(
     reader: &mut R,
     writer: &mut W,
     config: &BtspHandshakeConfig,
-) -> Result<(String, String), String>
+) -> Result<(String, String), BtspHandshakeError>
 where
     R: tokio::io::AsyncBufReadExt + Unpin,
     W: tokio::io::AsyncWriteExt + Unpin,
@@ -121,7 +150,7 @@ pub async fn relay_json_line_handshake_split<R, W>(
     reader: &mut R,
     writer: &mut W,
     config: &BtspHandshakeConfig,
-) -> Result<String, String>
+) -> Result<String, BtspHandshakeError>
 where
     R: tokio::io::AsyncBufReadExt + Unpin,
     W: tokio::io::AsyncWriteExt + Unpin,
@@ -129,7 +158,6 @@ where
     let (session_token, client_ephemeral_pub) =
         exchange_hello_json_line(reader, writer, config).await?;
 
-    // Step 4: read ChallengeResponse line
     let challenge_response = read_json_line(reader).await?;
     let response = challenge_response
         .get("response")
@@ -142,7 +170,6 @@ where
         .unwrap_or("null")
         .to_owned();
 
-    // Step 5: call BearDog btsp.session.verify with correct field names
     let verify_result = provider_call(
         &config.provider_socket,
         "btsp.session.verify",
@@ -163,13 +190,13 @@ where
         let reason = verify_result
             .get("reason")
             .and_then(serde_json::Value::as_str)
-            .unwrap_or("unknown");
+            .unwrap_or("unknown")
+            .to_owned();
         let err_msg = serde_json::json!({"error": "handshake_failed", "reason": reason});
         let _ = write_json_line(writer, &err_msg).await;
-        return Err(format!("BTSP JSON-line verify failed: {reason}"));
+        return Err(BtspHandshakeError::VerifyFailed { reason });
     }
 
-    // Step 6: negotiate cipher with BearDog (best-effort; null cipher until Phase 3)
     let negotiate_result = provider_call(
         &config.provider_socket,
         "btsp.negotiate",
@@ -185,11 +212,14 @@ where
         tracing::debug!(error = %e, "BTSP JSON-line: negotiate best-effort failed (non-fatal)");
     }
 
-    // Step 7: send HandshakeComplete as JSON line
     let session_id = json_str_or(&verify_result, "session_id", "session_token");
     let cipher = negotiate_result
         .ok()
-        .and_then(|v| v.get("cipher").and_then(serde_json::Value::as_str).map(String::from))
+        .and_then(|v| {
+            v.get("cipher")
+                .and_then(serde_json::Value::as_str)
+                .map(String::from)
+        })
         .unwrap_or_else(|| "null".to_owned());
 
     let complete = serde_json::json!({
@@ -213,7 +243,7 @@ where
 pub async fn relay_json_line_handshake<S>(
     stream: &mut S,
     config: &BtspHandshakeConfig,
-) -> Result<String, String>
+) -> Result<String, BtspHandshakeError>
 where
     S: tokio::io::AsyncReadExt + tokio::io::AsyncWriteExt + Unpin,
 {

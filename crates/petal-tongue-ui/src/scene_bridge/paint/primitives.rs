@@ -241,9 +241,16 @@ pub fn paint_primitive(
             let min = world_to_screen(transform, offset, *x, *y);
             let max = world_to_screen(transform, offset, x + width, y + height);
             let rect = Rect::from_min_max(min, max);
-            let base = tint.map(super::color::to_color32).unwrap_or(Color32::from_gray(180));
+            let base = tint
+                .map(super::color::to_color32)
+                .unwrap_or(Color32::from_gray(180));
             let fill_c = apply_opacity(base, opacity * tex_opacity);
-            painter.rect(rect, Rounding::ZERO, fill_c, Stroke::new(1.0, Color32::GRAY));
+            painter.rect(
+                rect,
+                Rounding::ZERO,
+                fill_c,
+                Stroke::new(1.0, Color32::GRAY),
+            );
             Some(rect)
         }
     }

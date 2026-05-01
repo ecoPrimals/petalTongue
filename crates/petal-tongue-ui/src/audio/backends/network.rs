@@ -39,10 +39,7 @@ impl NetworkBackend {
         let query = CapabilityQuery::new("audio");
         let endpoint = discovery.discover_one(&query).await.ok()?;
 
-        endpoint
-            .endpoints
-            .jsonrpc
-            .or(endpoint.endpoints.tarpc)
+        endpoint.endpoints.jsonrpc.or(endpoint.endpoints.tarpc)
     }
 
     async fn send_play_request(
@@ -55,10 +52,7 @@ impl NetworkBackend {
         use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
         use tokio::net::UnixStream;
 
-        let pcm_bytes: Vec<u8> = samples
-            .iter()
-            .flat_map(|s| s.to_le_bytes())
-            .collect();
+        let pcm_bytes: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
         let encoded = general_purpose::STANDARD.encode(&pcm_bytes);
 
         let request = serde_json::json!({
@@ -77,7 +71,10 @@ impl NetworkBackend {
             .await
             .map_err(|e| format!("connect: {e}"))?;
 
-        let payload = format!("{}\n", serde_json::to_string(&request).map_err(|e| e.to_string())?);
+        let payload = format!(
+            "{}\n",
+            serde_json::to_string(&request).map_err(|e| e.to_string())?
+        );
         stream
             .write_all(payload.as_bytes())
             .await
@@ -140,9 +137,15 @@ impl AudioBackend for NetworkBackend {
             .ok_or(crate::error::AudioError::NoActiveBackend)?
             .clone();
 
-        match self.send_play_request(&socket_path, samples, sample_rate).await {
+        match self
+            .send_play_request(&socket_path, samples, sample_rate)
+            .await
+        {
             Ok(()) => {
-                debug!("Played {} samples via ecosystem audio provider", samples.len());
+                debug!(
+                    "Played {} samples via ecosystem audio provider",
+                    samples.len()
+                );
                 Ok(())
             }
             Err(e) => {

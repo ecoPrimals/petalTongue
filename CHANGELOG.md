@@ -6,6 +6,30 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### primalSpring Phase 56 Audit Response (May 1, 2026)
+
+#### Fixed
+- **PG-48**: Verified musl `live` mode panic already resolved (`with_any_thread(true)` on
+  X11+Wayland across `ui_mode.rs`, `live_mode.rs`, and `backend/eframe.rs`).
+- **GAP-12**: Added wire-level JSON-RPC schema documentation for `visualization.render.dashboard`
+  (required: `session_id`, `title`, `bindings`; optional with defaults: `domain`, `modality`,
+  `max_columns`). Full request/response examples and error code table.
+
+#### Changed
+- **deny.toml**: Added `async-trait` to `[bans] deny` with wrappers for transitive deps
+  (`axum`, `axum-core`, `opentelemetry_sdk`). Prevents regression to pre-edition-2024 patterns.
+- **BTSP Phase 2 → Phase 2 in README**: Quality table now reflects operational Phase 2
+  status (typed `BtspHandshakeError`, BearDog provider delegation, NULL cipher handshake).
+
+#### Verified
+- `cargo deny check bans`: passes (interstadial quality gate).
+- `cargo clippy`: 0 warnings.
+- `cargo fmt`: 0 violations.
+- `cargo test --workspace --all-features`: 6,191 passed, 0 failed.
+- `cargo doc`: 0 warnings.
+- Edition 2024, `async-trait` eliminated (zero direct usage).
+- BTSP Phase 2 operational (20+ handshake tests).
+
 ### Phase 56: Desktop NUCLEUS Gap Resolution (April 29, 2026)
 
 #### Fixed

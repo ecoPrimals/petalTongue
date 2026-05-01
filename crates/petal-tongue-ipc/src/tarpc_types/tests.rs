@@ -247,11 +247,14 @@ fn test_render_response_with_error() {
         data: Bytes::new(),
         width: 0,
         height: 0,
-        error: Some("Render failed".to_string()),
+        error: Some(RenderError::from_message("Render failed")),
         render_time_ms: 0,
     };
     assert!(!response.success);
-    assert_eq!(response.error.as_deref(), Some("Render failed"));
+    assert_eq!(
+        response.error.as_ref().map(|e| e.message.as_str()),
+        Some("Render failed")
+    );
 }
 
 #[test]

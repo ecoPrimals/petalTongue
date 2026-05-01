@@ -199,7 +199,8 @@ impl BtspHandshakeConfig {
                         let xdg = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| {
                             petal_tongue_core::constants::LEGACY_TMP_PREFIX.to_owned()
                         });
-                        format!("{xdg}/biomeos")
+                        let dir_name = petal_tongue_core::constants::ecosystem_runtime_dir_name();
+                        format!("{xdg}/{dir_name}")
                     });
                     std::path::PathBuf::from(format!(
                         "{socket_dir}/{provider}-{}.sock",
@@ -232,8 +233,6 @@ impl BtspHandshakeConfig {
             .ok()
             .map(|s| s.trim().to_owned())
             .filter(|s| !s.is_empty())
-            .map(|s| {
-                base64::engine::general_purpose::STANDARD.encode(s.as_bytes())
-            })
+            .map(|s| base64::engine::general_purpose::STANDARD.encode(s.as_bytes()))
     }
 }

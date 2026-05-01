@@ -36,7 +36,7 @@ mod service;
 pub use discovery::PrimalEndpoint;
 pub use health::{HealthStatus, ProtocolInfo, VersionInfo};
 pub use metrics::PrimalMetrics;
-pub use render::{RenderRequest, RenderResponse};
+pub use render::{RenderError, RenderRequest, RenderResponse};
 pub use service::{PetalTongueRpc, PetalTongueRpcClient};
 
 #[cfg(test)]

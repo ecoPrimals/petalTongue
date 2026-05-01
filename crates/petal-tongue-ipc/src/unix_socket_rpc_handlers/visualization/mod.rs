@@ -539,21 +539,20 @@ pub fn handle_texture_upload(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
         );
     }
 
-    let expected_len =
-        upload.width as usize * upload.height as usize * petal_tongue_core::constants::RGBA8_BYTES_PER_PIXEL;
-    let data = match base64::Engine::decode(
-        &base64::engine::general_purpose::STANDARD,
-        &upload.data,
-    ) {
-        Ok(d) => d,
-        Err(e) => {
-            return JsonRpcResponse::error(
-                id,
-                error_codes::INVALID_PARAMS,
-                format!("Base64 decode failed: {e}"),
-            );
-        }
-    };
+    let expected_len = upload.width as usize
+        * upload.height as usize
+        * petal_tongue_core::constants::RGBA8_BYTES_PER_PIXEL;
+    let data =
+        match base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &upload.data) {
+            Ok(d) => d,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    id,
+                    error_codes::INVALID_PARAMS,
+                    format!("Base64 decode failed: {e}"),
+                );
+            }
+        };
 
     if data.len() != expected_len {
         return JsonRpcResponse::error(
@@ -623,8 +622,9 @@ pub fn handle_texture_attach(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
         );
     }
 
-    let placeholder_len =
-        attach.width as usize * attach.height as usize * petal_tongue_core::constants::RGBA8_BYTES_PER_PIXEL;
+    let placeholder_len = attach.width as usize
+        * attach.height as usize
+        * petal_tongue_core::constants::RGBA8_BYTES_PER_PIXEL;
     {
         let mut state = handlers
             .viz_state

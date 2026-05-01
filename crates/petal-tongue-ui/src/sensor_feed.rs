@@ -109,7 +109,6 @@ pub fn collect_sensor_events(ctx: &egui::Context) -> Vec<SensorEventIpc> {
                 _ => {}
             }
         }
-
     });
 
     events

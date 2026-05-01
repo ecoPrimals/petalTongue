@@ -43,7 +43,10 @@ pub(super) fn get_base_dir() -> Result<PathBuf, InstanceError> {
 }
 
 /// Get the socket directory
-#[expect(clippy::unnecessary_wraps, reason = "Result return needed for trait consistency with fallible callers")]
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "Result return needed for trait consistency with fallible callers"
+)]
 pub(super) fn get_socket_dir() -> Result<PathBuf, InstanceError> {
     if let Ok(uid) = std::env::var("UID") {
         let run_dir = PathBuf::from(format!(

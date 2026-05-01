@@ -303,7 +303,9 @@ impl UnixSocketServer {
                     if buf[0] != b'{' {
                         BtspRoute::LengthPrefixed
                     } else if Self::is_btsp_json_announcement(buf) {
-                        debug!("BTSP: JSON-line protocol announcement on UDS, routing to JSON-line handshake");
+                        debug!(
+                            "BTSP: JSON-line protocol announcement on UDS, routing to JSON-line handshake"
+                        );
                         BtspRoute::JsonLine
                     } else {
                         debug!("BTSP: first bytes are JSON-RPC on UDS, bypassing handshake");
@@ -330,7 +332,9 @@ impl UnixSocketServer {
                     .await
                     {
                         Ok(session_token) => {
-                            debug!("BTSP authenticated on UDS (length-prefixed): session={session_token}");
+                            debug!(
+                                "BTSP authenticated on UDS (length-prefixed): session={session_token}"
+                            );
                         }
                         Err(e) => {
                             error!("BTSP handshake failed on UDS, rejecting connection: {e}");
@@ -347,10 +351,14 @@ impl UnixSocketServer {
                     .await
                     {
                         Ok(session_token) => {
-                            debug!("BTSP authenticated on UDS (JSON-line): session={session_token}");
+                            debug!(
+                                "BTSP authenticated on UDS (JSON-line): session={session_token}"
+                            );
                         }
                         Err(e) => {
-                            error!("BTSP JSON-line handshake failed on UDS, rejecting connection: {e}");
+                            error!(
+                                "BTSP JSON-line handshake failed on UDS, rejecting connection: {e}"
+                            );
                             return Ok(());
                         }
                     }
@@ -385,7 +393,9 @@ impl UnixSocketServer {
             let is_json_line = if peeked[0] != b'{' {
                 false
             } else if Self::is_btsp_json_announcement(peeked) {
-                debug!("BTSP: JSON-line protocol announcement on TCP, routing to JSON-line handshake");
+                debug!(
+                    "BTSP: JSON-line protocol announcement on TCP, routing to JSON-line handshake"
+                );
                 true
             } else {
                 debug!("BTSP: first bytes are JSON-RPC on TCP, bypassing handshake");
@@ -407,7 +417,9 @@ impl UnixSocketServer {
             } else {
                 match crate::btsp::perform_server_handshake(&mut stream, cfg).await {
                     Ok(session_token) => {
-                        debug!("BTSP authenticated on TCP (length-prefixed): session={session_token}");
+                        debug!(
+                            "BTSP authenticated on TCP (length-prefixed): session={session_token}"
+                        );
                     }
                     Err(e) => {
                         error!("BTSP handshake failed on TCP, rejecting connection: {e}");

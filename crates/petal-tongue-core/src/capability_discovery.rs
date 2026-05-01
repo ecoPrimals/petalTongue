@@ -188,10 +188,7 @@ pub struct CapabilityDiscovery<B: DiscoveryBackend> {
 /// Different implementations: biomeOS (primary), mDNS (fallback), static config
 pub trait DiscoveryBackend: Send + Sync {
     /// Query for primals providing a capability
-    async fn query(
-        &self,
-        query: &CapabilityQuery,
-    ) -> Result<Vec<PrimalEndpoint>, DiscoveryError>;
+    async fn query(&self, query: &CapabilityQuery) -> Result<Vec<PrimalEndpoint>, DiscoveryError>;
 
     /// Subscribe to capability changes (real-time updates)
     async fn subscribe(&self, query: &CapabilityQuery) -> Result<(), DiscoveryError>;
@@ -352,10 +349,7 @@ mod tests {
             Ok(self.results.clone())
         }
 
-        async fn subscribe(
-            &self,
-            _query: &CapabilityQuery,
-        ) -> Result<(), DiscoveryError> {
+        async fn subscribe(&self, _query: &CapabilityQuery) -> Result<(), DiscoveryError> {
             Ok(())
         }
     }

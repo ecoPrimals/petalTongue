@@ -27,10 +27,7 @@ impl GUIModality for MockModality {
     async fn render(&mut self) -> crate::error::Result<()> {
         Ok(())
     }
-    async fn handle_event(
-        &mut self,
-        _event: EngineEvent,
-    ) -> crate::error::Result<()> {
+    async fn handle_event(&mut self, _event: EngineEvent) -> crate::error::Result<()> {
         Ok(())
     }
     async fn shutdown(&mut self) -> crate::error::Result<()> {
@@ -215,10 +212,7 @@ async fn test_engine_modality_initialize_error_propagates() {
         async fn render(&mut self) -> crate::error::Result<()> {
             Ok(())
         }
-        async fn handle_event(
-            &mut self,
-            _event: EngineEvent,
-        ) -> crate::error::Result<()> {
+        async fn handle_event(&mut self, _event: EngineEvent) -> crate::error::Result<()> {
             Ok(())
         }
         async fn shutdown(&mut self) -> crate::error::Result<()> {
@@ -265,10 +259,7 @@ async fn test_engine_modality_render_error_propagates() {
                 "render failed".into(),
             ))
         }
-        async fn handle_event(
-            &mut self,
-            _event: EngineEvent,
-        ) -> crate::error::Result<()> {
+        async fn handle_event(&mut self, _event: EngineEvent) -> crate::error::Result<()> {
             Ok(())
         }
         async fn shutdown(&mut self) -> crate::error::Result<()> {
@@ -444,10 +435,7 @@ async fn test_render_completes_and_broadcasts_stop() {
         async fn render(&mut self) -> crate::error::Result<()> {
             Ok(())
         }
-        async fn handle_event(
-            &mut self,
-            _event: EngineEvent,
-        ) -> crate::error::Result<()> {
+        async fn handle_event(&mut self, _event: EngineEvent) -> crate::error::Result<()> {
             Ok(())
         }
         async fn shutdown(&mut self) -> crate::error::Result<()> {
