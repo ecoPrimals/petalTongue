@@ -5,6 +5,8 @@
 //! Phase 2: handshake enforcement via BearDog session delegation.
 
 mod client;
+/// Typed errors for BTSP handshake operations.
+pub mod error;
 mod framing;
 mod json_line;
 mod server;

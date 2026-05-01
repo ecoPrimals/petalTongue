@@ -32,7 +32,10 @@ pub enum ModalityTier {
 
 /// Accessibility features supported by a modality
 #[derive(Debug, Clone, Default)]
-#[expect(clippy::struct_excessive_bools, reason = "accessibility feature flags are naturally boolean")]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "accessibility feature flags are naturally boolean"
+)]
 pub struct AccessibilityFeatures {
     /// Screen reader compatible
     pub screen_reader: bool,
@@ -67,7 +70,10 @@ pub struct AccessibilityFeatures {
 
 /// What a modality can do
 #[derive(Debug, Clone, Default)]
-#[expect(clippy::struct_excessive_bools, reason = "capability flags are naturally boolean")]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "capability flags are naturally boolean"
+)]
 pub struct ModalityCapabilities {
     /// Can handle user input (interactive)
     pub interactive: bool,
@@ -116,10 +122,7 @@ pub trait GUIModality: Sized + Send + Sync {
     fn tier(&self) -> ModalityTier;
 
     /// Initialize modality
-    async fn initialize(
-        &mut self,
-        engine: Arc<UniversalRenderingEngine<Self>>,
-    ) -> Result<()>;
+    async fn initialize(&mut self, engine: Arc<UniversalRenderingEngine<Self>>) -> Result<()>;
 
     /// Start rendering (blocking or returns handle)
     async fn render(&mut self) -> Result<()>;
@@ -147,10 +150,7 @@ impl GUIModality for NullModality {
         ModalityTier::AlwaysAvailable
     }
 
-    async fn initialize(
-        &mut self,
-        _engine: Arc<UniversalRenderingEngine<Self>>,
-    ) -> Result<()> {
+    async fn initialize(&mut self, _engine: Arc<UniversalRenderingEngine<Self>>) -> Result<()> {
         Ok(())
     }
 
@@ -307,10 +307,7 @@ mod tests {
             self.tier
         }
 
-        async fn initialize(
-            &mut self,
-            _engine: Arc<UniversalRenderingEngine<Self>>,
-        ) -> Result<()> {
+        async fn initialize(&mut self, _engine: Arc<UniversalRenderingEngine<Self>>) -> Result<()> {
             Ok(())
         }
 

@@ -198,8 +198,11 @@ impl MetricsDashboard {
                     Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 30);
                 points.push(egui::pos2(rect.right(), rect.bottom()));
                 points.push(egui::pos2(rect.left(), rect.bottom()));
-                ui.painter()
-                    .add(egui::Shape::convex_polygon(points, fill_color, Stroke::NONE));
+                ui.painter().add(egui::Shape::convex_polygon(
+                    points,
+                    fill_color,
+                    Stroke::NONE,
+                ));
                 ui.painter().add(line_shape);
             }
 

@@ -2,6 +2,7 @@
 //! Server-side BTSP handshake (delegates crypto to BearDog).
 
 use super::client::provider_call;
+use super::error::BtspHandshakeError;
 use super::framing::{read_frame, write_frame};
 use super::types::BtspHandshakeConfig;
 
@@ -20,16 +21,22 @@ async fn exchange_hello<R, W>(
     reader: &mut R,
     writer: &mut W,
     config: &BtspHandshakeConfig,
-) -> Result<(String, String, String, String), String>
+) -> Result<(String, String, String, String), BtspHandshakeError>
 where
     R: tokio::io::AsyncReadExt + Unpin,
     W: tokio::io::AsyncWriteExt + Unpin,
 {
     let client_hello_bytes = read_frame(reader)
         .await
-        .map_err(|e| format!("read ClientHello: {e}"))?;
-    let client_hello: serde_json::Value = serde_json::from_slice(&client_hello_bytes)
-        .map_err(|e| format!("parse ClientHello: {e}"))?;
+        .map_err(|e| BtspHandshakeError::Io {
+            context: "read ClientHello",
+            source: e,
+        })?;
+    let client_hello: serde_json::Value =
+        serde_json::from_slice(&client_hello_bytes).map_err(|e| BtspHandshakeError::Json {
+            context: "parse ClientHello",
+            source: e,
+        })?;
 
     let client_ephemeral_pub = json_str(&client_hello, "client_ephemeral_pub");
 
@@ -47,7 +54,6 @@ where
     )
     .await?;
 
-    // BearDog may return session_token or session_id
     let session_token = create_result
         .get("session_token")
         .or_else(|| create_result.get("session_id"))
@@ -55,7 +61,6 @@ where
         .unwrap_or("")
         .to_owned();
     let server_ephemeral_pub = json_str(&create_result, "server_ephemeral_pub");
-    // BearDog generates the challenge — relay must use it, not a local one
     let challenge = json_str(&create_result, "challenge");
 
     let hello = serde_json::json!({
@@ -63,10 +68,16 @@ where
         "server_ephemeral_pub": server_ephemeral_pub,
         "challenge": challenge,
     });
-    let hello_bytes = serde_json::to_vec(&hello).map_err(|e| e.to_string())?;
+    let hello_bytes = serde_json::to_vec(&hello).map_err(|e| BtspHandshakeError::Json {
+        context: "serialize ServerHello",
+        source: e,
+    })?;
     write_frame(writer, &hello_bytes)
         .await
-        .map_err(|e| format!("write ServerHello: {e}"))?;
+        .map_err(|e| BtspHandshakeError::Io {
+            context: "write ServerHello",
+            source: e,
+        })?;
 
     Ok((
         session_token,
@@ -85,16 +96,22 @@ async fn verify_challenge<R, W>(
     _server_ephemeral_pub: &str,
     client_ephemeral_pub: &str,
     _challenge: &str,
-) -> Result<String, String>
+) -> Result<String, BtspHandshakeError>
 where
     R: tokio::io::AsyncReadExt + Unpin,
     W: tokio::io::AsyncWriteExt + Unpin,
 {
     let cr_bytes = read_frame(reader)
         .await
-        .map_err(|e| format!("read ChallengeResponse: {e}"))?;
+        .map_err(|e| BtspHandshakeError::Io {
+            context: "read ChallengeResponse",
+            source: e,
+        })?;
     let cr: serde_json::Value =
-        serde_json::from_slice(&cr_bytes).map_err(|e| format!("parse ChallengeResponse: {e}"))?;
+        serde_json::from_slice(&cr_bytes).map_err(|e| BtspHandshakeError::Json {
+            context: "parse ChallengeResponse",
+            source: e,
+        })?;
 
     let response = json_str(&cr, "response");
     let preferred_cipher = cr
@@ -123,7 +140,7 @@ where
         let reason = json_str(&verify, "reason");
         let err = serde_json::json!({"error": "handshake_failed", "reason": reason});
         let _ = write_frame(writer, &serde_json::to_vec(&err).unwrap_or_default()).await;
-        return Err(format!("BTSP verify failed: {reason}"));
+        return Err(BtspHandshakeError::VerifyFailed { reason });
     }
 
     Ok(preferred_cipher)
@@ -138,7 +155,7 @@ where
 pub async fn perform_server_handshake<S>(
     stream: &mut S,
     config: &BtspHandshakeConfig,
-) -> Result<String, String>
+) -> Result<String, BtspHandshakeError>
 where
     S: tokio::io::AsyncReadExt + tokio::io::AsyncWriteExt + Unpin,
 {
@@ -154,7 +171,7 @@ pub async fn perform_server_handshake_split<R, W>(
     reader: &mut R,
     writer: &mut W,
     config: &BtspHandshakeConfig,
-) -> Result<String, String>
+) -> Result<String, BtspHandshakeError>
 where
     R: tokio::io::AsyncReadExt + Unpin,
     W: tokio::io::AsyncWriteExt + Unpin,
@@ -190,7 +207,11 @@ where
 
     let cipher = negotiate_result
         .ok()
-        .and_then(|v| v.get("cipher").and_then(serde_json::Value::as_str).map(String::from))
+        .and_then(|v| {
+            v.get("cipher")
+                .and_then(serde_json::Value::as_str)
+                .map(String::from)
+        })
         .unwrap_or_else(|| "null".to_owned());
 
     let complete = serde_json::json!({
@@ -198,12 +219,17 @@ where
         "session_id": session_token,
         "cipher": cipher,
     });
-    let complete_bytes = serde_json::to_vec(&complete).map_err(|e| e.to_string())?;
+    let complete_bytes = serde_json::to_vec(&complete).map_err(|e| BtspHandshakeError::Json {
+        context: "serialize HandshakeComplete",
+        source: e,
+    })?;
     write_frame(writer, &complete_bytes)
         .await
-        .map_err(|e| format!("write Complete: {e}"))?;
+        .map_err(|e| BtspHandshakeError::Io {
+            context: "write HandshakeComplete",
+            source: e,
+        })?;
 
     tracing::info!(session_token = %session_token, "BTSP handshake complete (null cipher)");
     Ok(session_token)
 }
-

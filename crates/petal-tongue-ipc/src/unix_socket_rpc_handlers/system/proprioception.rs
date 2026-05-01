@@ -20,7 +20,10 @@ use serde_json::json;
 /// - `uptime_secs` (u64)
 /// - `window` (object|null): null in server mode
 #[must_use]
-pub fn handle_proprioception_get(handlers: &RpcHandlers, request: JsonRpcRequest) -> JsonRpcResponse {
+pub fn handle_proprioception_get(
+    handlers: &RpcHandlers,
+    request: JsonRpcRequest,
+) -> JsonRpcResponse {
     let uptime = handlers.uptime_seconds();
 
     let (active_scenes, frame_count) = handlers

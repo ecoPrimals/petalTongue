@@ -190,12 +190,13 @@ impl DiscoveredDisplayBackendV2 {
             .as_ref()
             .ok_or(DisplayError::NotConnectedToDisplay)?;
 
-        let mut stream = UnixStream::connect(socket_path)
-            .await
-            .map_err(|e| DisplayError::BiomeOsConnect {
-                path: socket_path.clone(),
-                detail: e.to_string(),
-            })?;
+        let mut stream =
+            UnixStream::connect(socket_path)
+                .await
+                .map_err(|e| DisplayError::BiomeOsConnect {
+                    path: socket_path.clone(),
+                    detail: e.to_string(),
+                })?;
 
         let request = json!({
             "jsonrpc": "2.0",
@@ -214,10 +215,13 @@ impl DiscoveredDisplayBackendV2 {
                 path: socket_path.clone(),
                 detail: e.to_string(),
             })?;
-        stream.flush().await.map_err(|e| DisplayError::BiomeOsConnect {
-            path: socket_path.clone(),
-            detail: e.to_string(),
-        })?;
+        stream
+            .flush()
+            .await
+            .map_err(|e| DisplayError::BiomeOsConnect {
+                path: socket_path.clone(),
+                detail: e.to_string(),
+            })?;
 
         let (reader, _) = stream.into_split();
         let mut reader = BufReader::new(reader);
@@ -272,9 +276,7 @@ impl DiscoveredDisplayBackendV2 {
             "height": height,
         });
 
-        let result = self
-            .send_request("display.create_window", params)
-            .await?;
+        let result = self.send_request("display.create_window", params).await?;
 
         let window: WindowResponse = serde_json::from_value(result)
             .map_err(|e| DisplayError::ParseWindowResponse(e.to_string()))?;

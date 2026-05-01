@@ -64,8 +64,8 @@ pub fn get_petaltongue_socket_path_with_posture(
         std::fs::create_dir_all(&sock_dir)?;
         Ok(path)
     } else {
-        let sock_dir = PathBuf::from(petal_tongue_core::constants::LEGACY_TMP_PREFIX)
-            .join(BIOMEOS_SOCK_DIR);
+        let sock_dir =
+            PathBuf::from(petal_tongue_core::constants::LEGACY_TMP_PREFIX).join(BIOMEOS_SOCK_DIR);
         let path = sock_dir.join(&filename);
         std::fs::create_dir_all(&sock_dir)?;
         Ok(path)

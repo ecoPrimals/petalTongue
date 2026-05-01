@@ -169,10 +169,7 @@ impl BiomeOsBackend {
 }
 
 impl DiscoveryBackend for BiomeOsBackend {
-    async fn query(
-        &self,
-        query: &CapabilityQuery,
-    ) -> Result<Vec<PrimalEndpoint>, DiscoveryError> {
+    async fn query(&self, query: &CapabilityQuery) -> Result<Vec<PrimalEndpoint>, DiscoveryError> {
         let query = query.clone();
         let client = self.client.clone();
         let request = JsonRpcRequest {
@@ -210,10 +207,7 @@ impl DiscoveryBackend for BiomeOsBackend {
         Ok(primals.into_iter().map(std::convert::Into::into).collect())
     }
 
-    async fn subscribe(
-        &self,
-        _query: &CapabilityQuery,
-    ) -> Result<(), DiscoveryError> {
+    async fn subscribe(&self, _query: &CapabilityQuery) -> Result<(), DiscoveryError> {
         Ok(())
     }
 }

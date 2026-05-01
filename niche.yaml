@@ -300,7 +300,8 @@ ipc:
       - interaction.poll
       - sensor.stream.subscribe
       - health.check
-      - health.ping
+      - health.liveness
+      - health.readiness
       - capabilities.list
   sse:
     endpoint: "/api/v1/events/stream"

@@ -74,10 +74,7 @@ pub fn handle_motor_command(handlers: &RpcHandlers, req: JsonRpcRequest) -> Json
             })
         }
         "motor.notification" => {
-            let level = req.params["level"]
-                .as_str()
-                .unwrap_or("info")
-                .to_string();
+            let level = req.params["level"].as_str().unwrap_or("info").to_string();
             let message = req.params["message"].as_str().unwrap_or("").to_string();
             let duration_ms = req.params["duration_ms"].as_u64();
             Some(MotorCommand::Notification {

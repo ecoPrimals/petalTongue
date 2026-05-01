@@ -169,9 +169,7 @@ mod tests {
             fn is_available(&self) -> bool {
                 true
             }
-            async fn poll_events(
-                &mut self,
-            ) -> std::result::Result<Vec<SensorEvent>, SensorError> {
+            async fn poll_events(&mut self) -> std::result::Result<Vec<SensorEvent>, SensorError> {
                 Ok(vec![])
             }
             fn last_activity(&self) -> Option<std::time::Instant> {
@@ -221,9 +219,7 @@ mod tests {
             fn is_available(&self) -> bool {
                 true
             }
-            async fn poll_events(
-                &mut self,
-            ) -> std::result::Result<Vec<SensorEvent>, SensorError> {
+            async fn poll_events(&mut self) -> std::result::Result<Vec<SensorEvent>, SensorError> {
                 Ok(vec![])
             }
             fn last_activity(&self) -> Option<std::time::Instant> {

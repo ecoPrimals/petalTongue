@@ -147,7 +147,10 @@ impl EventStream {
     }
 
     /// Set a channel sender for event delivery.
-    pub(super) fn set_event_sender(&mut self, tx: tokio::sync::mpsc::UnboundedSender<BiomeOSEvent>) {
+    pub(super) fn set_event_sender(
+        &mut self,
+        tx: tokio::sync::mpsc::UnboundedSender<BiomeOSEvent>,
+    ) {
         self.event_tx = Some(tx);
     }
 }

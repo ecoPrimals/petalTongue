@@ -5,6 +5,7 @@
 //! registry stores it keyed by `texture_id`. Renderers (egui, SVG export) look
 //! up entries at paint time.
 
+use bytes::Bytes;
 use std::collections::HashMap;
 
 /// Pixel format for uploaded textures.
@@ -15,13 +16,17 @@ pub enum TextureFormat {
 }
 
 /// A single uploaded texture entry.
+///
+/// Uses `bytes::Bytes` for refcounted zero-copy sharing of pixel data
+/// across renderers without duplicating the buffer.
 #[derive(Debug, Clone)]
 pub struct TextureEntry {
     pub width: u32,
     pub height: u32,
     pub format: TextureFormat,
     /// Raw pixel bytes (length = width * height * bytes_per_pixel).
-    pub data: Vec<u8>,
+    /// Refcounted via `Bytes` for zero-copy sharing across renderers.
+    pub data: Bytes,
     /// Monotonically increasing version; bumped on re-upload so renderers
     /// know to refresh their GPU-side copy.
     pub version: u64,
@@ -45,13 +50,16 @@ impl TextureRegistry {
     }
 
     /// Insert or replace a texture. Returns the assigned version.
+    ///
+    /// Accepts `impl Into<Bytes>` so callers can pass `Vec<u8>`, `Bytes`,
+    /// or `&'static [u8]` without an explicit conversion.
     pub fn insert(
         &mut self,
         texture_id: String,
         width: u32,
         height: u32,
         format: TextureFormat,
-        data: Vec<u8>,
+        data: impl Into<Bytes>,
     ) -> u64 {
         let version = self.next_version;
         self.next_version += 1;
@@ -61,7 +69,7 @@ impl TextureRegistry {
                 width,
                 height,
                 format,
-                data,
+                data: data.into(),
                 version,
             },
         );
@@ -104,7 +112,13 @@ mod tests {
     #[test]
     fn insert_and_get() {
         let mut reg = TextureRegistry::new();
-        let v = reg.insert("hero".into(), 64, 64, TextureFormat::Rgba8, vec![0; 64 * 64 * 4]);
+        let v = reg.insert(
+            "hero".into(),
+            64,
+            64,
+            TextureFormat::Rgba8,
+            vec![0; 64 * 64 * 4],
+        );
         assert_eq!(v, 1);
         let entry = reg.get("hero").unwrap();
         assert_eq!(entry.width, 64);
@@ -115,8 +129,20 @@ mod tests {
     #[test]
     fn re_upload_bumps_version() {
         let mut reg = TextureRegistry::new();
-        reg.insert("hero".into(), 32, 32, TextureFormat::Rgba8, vec![0; 32 * 32 * 4]);
-        let v2 = reg.insert("hero".into(), 64, 64, TextureFormat::Rgba8, vec![0; 64 * 64 * 4]);
+        reg.insert(
+            "hero".into(),
+            32,
+            32,
+            TextureFormat::Rgba8,
+            vec![0; 32 * 32 * 4],
+        );
+        let v2 = reg.insert(
+            "hero".into(),
+            64,
+            64,
+            TextureFormat::Rgba8,
+            vec![0; 64 * 64 * 4],
+        );
         assert_eq!(v2, 2);
         assert_eq!(reg.get("hero").unwrap().width, 64);
     }

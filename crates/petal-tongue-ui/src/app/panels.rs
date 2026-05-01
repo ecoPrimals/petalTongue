@@ -310,10 +310,7 @@ pub fn render_all_panels(ctx: &egui::Context, app: &mut PetalTongueApp) {
 }
 
 /// Render composition-driven panel content pushed via `motor.panel.update`.
-fn render_motor_panel_content(
-    ui: &mut egui::Ui,
-    store: &super::motor_state::PanelContentStore,
-) {
+fn render_motor_panel_content(ui: &mut egui::Ui, store: &super::motor_state::PanelContentStore) {
     for (panel_key, content) in store.iter() {
         if let Some(title) = &content.title {
             ui.heading(title);
@@ -372,10 +369,7 @@ fn format_json_leaf(v: &serde_json::Value) -> String {
 }
 
 /// Render notification toasts as floating overlays at the top of the screen.
-fn render_notification_toasts(
-    ctx: &egui::Context,
-    queue: &super::motor_state::NotificationQueue,
-) {
+fn render_notification_toasts(ctx: &egui::Context, queue: &super::motor_state::NotificationQueue) {
     let screen = ctx.screen_rect();
     let toast_width = 400.0_f32.min(screen.width() - 40.0);
     let start_x = screen.center().x - toast_width / 2.0;

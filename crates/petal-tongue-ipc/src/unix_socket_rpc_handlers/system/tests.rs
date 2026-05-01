@@ -243,7 +243,11 @@ fn handle_lifecycle_status_returns_running() {
 #[test]
 fn proprioception_get_server_mode_returns_zero_fps() {
     let h = test_handlers();
-    let req = JsonRpcRequest::new("proprioception.get", serde_json::json!({}), serde_json::json!(1));
+    let req = JsonRpcRequest::new(
+        "proprioception.get",
+        serde_json::json!({}),
+        serde_json::json!(1),
+    );
     let resp = handle_proprioception_get(&h, req);
     let r = resp.result.expect("success");
     assert!(
@@ -273,7 +277,11 @@ fn proprioception_get_with_sessions() {
             ui_config: None,
         });
     }
-    let req = JsonRpcRequest::new("proprioception.get", serde_json::json!({}), serde_json::json!(2));
+    let req = JsonRpcRequest::new(
+        "proprioception.get",
+        serde_json::json!({}),
+        serde_json::json!(2),
+    );
     let resp = handle_proprioception_get(&h, req);
     let r = resp.result.expect("success");
     assert_eq!(r["active_scenes"], 1);

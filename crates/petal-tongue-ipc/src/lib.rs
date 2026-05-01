@@ -115,7 +115,8 @@ pub use http_client::{HttpClientError, HttpResponse, LocalHttpClient, SseStream,
 // JSON-RPC (universal fallback — listen surface)
 pub use btsp::{
     BtspGuardError, BtspPosture, HandshakePolicy, current_btsp_posture, domain_symlink_filename,
-    handshake_policy, log_handshake_policy, socket_filename, validate_insecure_guard,
+    error::BtspHandshakeError, handshake_policy, log_handshake_policy, socket_filename,
+    validate_insecure_guard,
 };
 pub use client::{IpcClient, IpcClientError};
 pub use discovery_helpers::{address_env_var, resolve_primal_socket, socket_env_var};
@@ -124,8 +125,8 @@ pub use json_rpc::{JsonRpcError, JsonRpcRequest, JsonRpcResponse};
 pub use json_rpc_client::{JsonRpcClient, JsonRpcClientError, JsonRpcResult, TopologyData};
 pub use protocol::{InstanceStatus, IpcCommand, IpcResponse};
 pub use resilience::{CircuitBreaker, CircuitState, RetryPolicy};
-pub use server::{IpcServer, IpcServerError};
 pub use scene_signer::SceneSigner;
+pub use server::{IpcServer, IpcServerError};
 pub use unix_socket_server::UnixSocketServer;
 pub use visualization_handler::{
     BackpressureConfig, CallbackDispatch, ConstraintResult, DismissRequest, DismissResponse,
@@ -141,5 +142,5 @@ pub use visualization_handler::{
 pub use tarpc_client::{TarpcClient, TarpcClientError, TarpcResult};
 pub use tarpc_types::{
     HealthStatus, PetalTongueRpc, PetalTongueRpcClient, PrimalEndpoint, PrimalMetrics,
-    ProtocolInfo, RenderRequest, RenderResponse, VersionInfo,
+    ProtocolInfo, RenderError, RenderRequest, RenderResponse, VersionInfo,
 };

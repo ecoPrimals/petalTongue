@@ -23,12 +23,7 @@ pub struct PanelContentStore {
 }
 
 impl PanelContentStore {
-    pub fn update(
-        &mut self,
-        panel: PanelId,
-        title: Option<String>,
-        content: serde_json::Value,
-    ) {
+    pub fn update(&mut self, panel: PanelId, title: Option<String>, content: serde_json::Value) {
         let key = format!("{panel:?}");
         self.panels.insert(
             key,
