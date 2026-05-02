@@ -377,7 +377,7 @@ async fn test_set_selection_updates_state_even_when_broadcast_fails() {
     assert!(state.selection.contains("node1"));
     drop(state);
     if let Err(e) = result {
-        assert!(e.to_string().contains("broadcast"));
+        assert!(e.to_string().contains("event bus"));
     }
 }
 
@@ -391,7 +391,7 @@ async fn test_set_viewport_updates_state_even_when_broadcast_fails() {
     assert!((state.viewport.zoom - 2.0).abs() < f32::EPSILON);
     drop(state);
     if let Err(e) = result {
-        assert!(e.to_string().contains("broadcast"));
+        assert!(e.to_string().contains("event bus"));
     }
 }
 

@@ -284,7 +284,7 @@ fn query_display_dimensions() -> Option<(usize, usize)> {
 
 /// Query X11 display dimensions
 fn query_x11_dimensions() -> Option<(usize, usize)> {
-    // EVOLVED: Use pure Rust (winit) instead of external commands!
+    // Pure Rust (winit) display dimensions
     use crate::display_pure_rust;
 
     if let Some((width, height)) = display_pure_rust::get_display_dimensions_pure_rust() {

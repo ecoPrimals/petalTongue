@@ -10,6 +10,7 @@ mod types;
 #[cfg(test)]
 mod tests;
 
+pub use builder::GraphEdgeError;
 pub use types::{
     EdgeType, GraphEdge, GraphLayout, GraphNode, NodeType, NodeVisualState, Vec2, VisualGraph,
 };

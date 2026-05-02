@@ -41,11 +41,6 @@ approx = "0.5"  # For floating-point comparisons in tests
 [features]
 default = []
 
-# EVOLUTION COMPLETE: Audio entropy capture now uses AudioCanvas (pure Rust!)
-# NO cpal, NO hound, NO ALSA dependencies - direct /dev/snd access
-# For entropy capture, we read raw PCM data from audio devices
-# Status: Phase 3 feature (not needed for core functionality)
-
-# EVOLVED: video/nokhwa removed (Sprint 6) — nokhwa pulls mozjpeg-sys (C dep).
-# Phase 3 video entropy will use pure-Rust capture when ready.
+# Audio entropy: pure Rust AudioCanvas (/dev/snd). Phase 3 feature.
+# Video entropy: Phase 3 (nokhwa removed — mozjpeg-sys C dep).
 

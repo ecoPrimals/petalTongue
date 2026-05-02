@@ -46,23 +46,12 @@ chrono = { workspace = true }
 eframe = { workspace = true }
 egui = { workspace = true }
 egui_extras = { workspace = true }  # For table widgets in process viewer
-# EVOLVED: libc removed - framebuffer uses sysfs for dimensions (100% safe Rust)
-# system_info uses rustix (petal-tongue-core)
 uuid = { workspace = true }
 
-# Pure Rust Audio (TRUE PRIMAL sovereignty - Audio Canvas!)
-# EVOLUTION COMPLETE: Direct hardware access (like WGPU for graphics!)
-# NO rodio, NO cpal, NO ALSA - just raw /dev/snd device access!
+# Pure Rust audio: AudioCanvas (/dev/snd) + symphonia (MP3/WAV/FLAC decode)
 symphonia = { workspace = true, features = ["mp3", "wav"] }
-# PG-48: winit needed directly for platform extension traits
-# (EventLoopBuilderExtX11/Wayland::with_any_thread) in eframe backend.
+# PG-48: winit needed for platform extension traits (with_any_thread)
 winit = { workspace = true }
-
-# ✅ EVOLUTION COMPLETE:
-# - AudioCanvas provides direct /dev/snd access (Linux)
-# - symphonia provides pure Rust audio decoding (MP3, WAV, FLAC)
-# - Zero C dependencies for audio!
-# See: src/audio_canvas.rs for implementation
 
 # External tool integrations - ecoBin v3.0: pure Rust /proc parsing (see proc_stats.rs)
 rustix = { workspace = true, features = ["param"] }  # Runtime page_size() for /proc RSS
@@ -73,13 +62,6 @@ terminal_size = { workspace = true }
 tiny-skia = { workspace = true }
 epaint = { workspace = true }
 
-# EVOLVED (Sprint 6): softbuffer/pixels/wasm deps removed — features were declared
-# but never wired into code. Re-add when pure-Rust display backends are implemented.
-# softbuffer = { version = "0.4", optional = true }
-# pixels = { version = "0.13", optional = true }
-# wasm-bindgen = { version = "0.2", optional = true }
-# wasm-bindgen-futures = { version = "0.4", optional = true }
-# web-sys = { version = "0.3", optional = true, features = [...] }
 
 [features]
 # Default: Auto-detect best backend (prefer capability-discovered, fall back to eframe)
@@ -108,17 +90,6 @@ doom = ["dep:doom-core"]  # Doom integration for platform testing
 # Enables DemoVisualizationProvider, DemoDeviceProvider, and BiomeOSClient demo mode.
 mock = ["petal-tongue-discovery/test-fixtures", "petal-tongue-api/test-fixtures", "petal-tongue-core/test-fixtures"]
 
-# EVOLVED (Sprint 6): software-rendering, compute-wasm, external-display removed — deps never wired.
-# Re-add when pure-Rust display backends / WASM compute are implemented.
-# software-rendering = ["softbuffer", "pixels"]
-# compute-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys"]
-
-# ✅ EVOLUTION COMPLETE: Audio is now pure Rust via AudioCanvas
-# No ALSA dependencies, no build-time C libraries required
-# Audio features work out of the box on all platforms:
-# - Linux: Direct /dev/snd access (AudioCanvas)
-# - macOS: CoreAudio (via system APIs)
-# - Windows: WASAPI (via system APIs)
 
 [dev-dependencies]
 anyhow = { workspace = true }  # Integration tests and examples

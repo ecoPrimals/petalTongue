@@ -3,18 +3,12 @@
 //!
 //! Plays signature audio tone followed by startup music when petalTongue launches.
 //!
-//! Architecture (TRUE PRIMAL - Pure Rust):
-//! 1. Signature Tone: Pure Rust generation (rodio, always works)
-//! 2. Startup Music: Embedded MP3 decoded with pure Rust (symphonia)
+//! Architecture:
+//! 1. Signature Tone: Pure Rust generation via AudioCanvas
+//! 2. Startup Music: Embedded MP3 decoded with symphonia (pure Rust)
 //! 3. Fallback: External file if embedded not available
 //!
-//! # Sovereignty
-//!
-//! **EVOLVED**: Now uses 100% pure Rust audio stack!
-//! - rodio: Cross-platform audio playback
-//! - symphonia: Pure Rust MP3/WAV decoder
-//! - NO external dependencies (mpv, ffplay, aplay, etc.)
-//! - Self-stable operation guaranteed
+//! Pure Rust audio stack — zero C dependencies.
 
 use crate::audio::AudioSystemV2;
 #[cfg(test)]
@@ -24,41 +18,62 @@ use bytes::Bytes;
 use std::path::{Path, PathBuf};
 use tracing::{info, warn};
 
-/// Play audio samples using Audio Canvas (direct hardware access!)
-///
-/// EVOLVED: Like WGPU for graphics, we write directly to /dev/snd!
-/// NO rodio, NO cpal, NO ALSA library - just raw device access!
-fn play_audio_pure_rust(samples: &[f32]) -> Result<(), String> {
+/// Error during startup audio playback or decoding.
+#[derive(Debug, thiserror::Error)]
+pub enum StartupAudioError {
+    /// Audio canvas device open or write failed.
+    #[error("{context}: {source}")]
+    AudioCanvas {
+        context: &'static str,
+        source: crate::error::UiError,
+    },
+    /// Audio file read failed.
+    #[error("Failed to read audio file: {0}")]
+    FileRead(std::io::Error),
+    /// Audio decoding failed.
+    #[error("{context}: {source}")]
+    Decode {
+        context: &'static str,
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+}
+
+/// Play audio samples via AudioCanvas (direct /dev/snd access).
+fn play_audio_pure_rust(samples: &[f32]) -> Result<(), StartupAudioError> {
     use crate::audio_canvas::AudioCanvas;
 
-    // Open audio device directly (like opening framebuffer!)
-    let mut canvas =
-        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {e}"))?;
+    let mut canvas = AudioCanvas::open_default().map_err(|e| StartupAudioError::AudioCanvas {
+        context: "Failed to open audio canvas",
+        source: e,
+    })?;
 
-    // Write samples directly to hardware!
     canvas
         .write_samples(samples)
-        .map_err(|e| format!("Failed to write samples: {e}"))?;
+        .map_err(|e| StartupAudioError::AudioCanvas {
+            context: "Failed to write samples",
+            source: e,
+        })?;
 
     Ok(())
 }
 
 /// Play embedded MP3 using Audio Canvas + symphonia (100% pure Rust!)
-fn play_embedded_mp3_pure_rust(mp3_data: Bytes) -> Result<(), String> {
+fn play_embedded_mp3_pure_rust(mp3_data: Bytes) -> Result<(), StartupAudioError> {
     use crate::audio_canvas::AudioCanvas;
 
-    // Decode MP3 with symphonia (pure Rust!)
-    let decoded =
-        decode_audio_symphonia(mp3_data).map_err(|e| format!("Failed to decode MP3: {e}"))?;
+    let decoded = decode_audio_symphonia(mp3_data)?;
 
-    // Open audio canvas
-    let mut canvas =
-        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {e}"))?;
+    let mut canvas = AudioCanvas::open_default().map_err(|e| StartupAudioError::AudioCanvas {
+        context: "Failed to open audio canvas",
+        source: e,
+    })?;
 
-    // Write samples directly to hardware!
     canvas
         .write_samples(&decoded.samples)
-        .map_err(|e| format!("Failed to write samples: {e}"))?;
+        .map_err(|e| StartupAudioError::AudioCanvas {
+            context: "Failed to write samples",
+            source: e,
+        })?;
 
     Ok(())
 }
@@ -68,7 +83,7 @@ fn play_embedded_mp3_pure_rust(mp3_data: Bytes) -> Result<(), String> {
 /// # Errors
 ///
 /// Returns an error if format probing fails, no default track exists, decoder creation fails, or sample rate is missing.
-pub fn decode_audio_symphonia(audio_data: Bytes) -> Result<DecodedAudio, String> {
+pub fn decode_audio_symphonia(audio_data: Bytes) -> Result<DecodedAudio, StartupAudioError> {
     use std::io::Cursor;
     use symphonia::core::audio::{AudioBufferRef, Signal};
     use symphonia::core::codecs::DecoderOptions;
@@ -90,16 +105,33 @@ pub fn decode_audio_symphonia(audio_data: Bytes) -> Result<DecodedAudio, String>
             &FormatOptions::default(),
             &MetadataOptions::default(),
         )
-        .map_err(|e| format!("Probe failed: {e}"))?;
+        .map_err(|e| StartupAudioError::Decode {
+            context: "Probe failed",
+            source: Box::new(e),
+        })?;
 
     let mut format = probed.format;
-    let track = format.default_track().ok_or("No default track")?;
+    let track = format
+        .default_track()
+        .ok_or_else(|| StartupAudioError::Decode {
+            context: "No default track",
+            source: "missing default track in media".into(),
+        })?;
 
     let mut decoder = symphonia::default::get_codecs()
         .make(&track.codec_params, &DecoderOptions::default())
-        .map_err(|e| format!("Decoder creation failed: {e}"))?;
+        .map_err(|e| StartupAudioError::Decode {
+            context: "Decoder creation failed",
+            source: Box::new(e),
+        })?;
 
-    let sample_rate = track.codec_params.sample_rate.ok_or("No sample rate")? as f32;
+    let sample_rate = track
+        .codec_params
+        .sample_rate
+        .ok_or_else(|| StartupAudioError::Decode {
+            context: "No sample rate",
+            source: "missing sample rate in codec params".into(),
+        })? as f32;
 
     let mut samples = Vec::new();
 
@@ -139,22 +171,24 @@ pub struct DecodedAudio {
 }
 
 /// Play audio file using Audio Canvas + symphonia (100% pure Rust!)
-fn play_file_pure_rust(path: &Path) -> Result<(), String> {
+fn play_file_pure_rust(path: &Path) -> Result<(), StartupAudioError> {
     use crate::audio_canvas::AudioCanvas;
     use std::fs;
 
-    let data = Bytes::from(fs::read(path).map_err(|e| format!("Failed to read audio file: {e}"))?);
-    let decoded =
-        decode_audio_symphonia(data).map_err(|e| format!("Failed to decode audio: {e}"))?;
+    let data = Bytes::from(fs::read(path).map_err(StartupAudioError::FileRead)?);
+    let decoded = decode_audio_symphonia(data)?;
 
-    // Open audio canvas
-    let mut canvas =
-        AudioCanvas::open_default().map_err(|e| format!("Failed to open audio canvas: {e}"))?;
+    let mut canvas = AudioCanvas::open_default().map_err(|e| StartupAudioError::AudioCanvas {
+        context: "Failed to open audio canvas",
+        source: e,
+    })?;
 
-    // Write samples directly to hardware!
     canvas
         .write_samples(&decoded.samples)
-        .map_err(|e| format!("Failed to write samples: {e}"))?;
+        .map_err(|e| StartupAudioError::AudioCanvas {
+            context: "Failed to write samples",
+            source: e,
+        })?;
 
     Ok(())
 }
@@ -306,7 +340,6 @@ impl StartupAudio {
                 let wav_path = temp_dir.join("petaltongue_signature.wav");
                 let wav_bytes = export_wav(&signature);
 
-                // EVOLVED: Pure Rust audio playback (no external dependencies!)
                 match play_audio_pure_rust(&signature) {
                     Ok(()) => {
                         info!("✅ Signature tone played with pure Rust (rodio)");
@@ -345,7 +378,6 @@ impl StartupAudio {
                 } else if let Some(path) = music_path {
                     info!("🎵 Playing external startup music: {}", path.display());
 
-                    // EVOLVED: Play external file with pure Rust!
                     match play_file_pure_rust(&path) {
                         Ok(()) => {
                             info!("✅ External startup music played successfully (rodio)");

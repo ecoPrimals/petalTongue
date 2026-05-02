@@ -19,6 +19,11 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
 
+/// Error when parsing a capability string that doesn't match any known taxonomy entry.
+#[derive(Debug, Clone, thiserror::Error)]
+#[error("Unknown capability: {0}")]
+pub struct ParseCapabilityError(pub String);
+
 /// Capability taxonomy following biomeOS convention
 ///
 /// Capabilities use dot-notation for hierarchical organization:
@@ -312,11 +317,10 @@ impl fmt::Display for CapabilityTaxonomy {
 }
 
 impl FromStr for CapabilityTaxonomy {
-    type Err = String;
+    type Err = ParseCapabilityError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            // UI Capabilities
             "ui.render" => Ok(Self::UIRender),
             "ui.visualization" => Ok(Self::UIVisualization),
             "ui.graph" => Ok(Self::UIGraph),
@@ -324,32 +328,27 @@ impl FromStr for CapabilityTaxonomy {
             "ui.audio" => Ok(Self::UIAudio),
             "ui.framebuffer" => Ok(Self::UIFramebuffer),
 
-            // Visualization Capabilities
             "visualization.render" => Ok(Self::VisualizationRender),
             "visualization.render.stream" => Ok(Self::VisualizationRenderStream),
             "visualization.interact" => Ok(Self::VisualizationInteract),
             "visualization.interact.subscribe" => Ok(Self::VisualizationInteractSubscribe),
             "visualization.provenance" => Ok(Self::VisualizationProvenance),
 
-            // Input Capabilities
             "ui.input.keyboard" => Ok(Self::UIInputKeyboard),
             "ui.input.mouse" => Ok(Self::UIInputMouse),
             "ui.input.touch" => Ok(Self::UIInputTouch),
 
-            // Discovery Capabilities
             "discovery.mdns" => Ok(Self::DiscoveryMDNS),
             "discovery.http" => Ok(Self::DiscoveryHTTP),
 
-            // Storage Capabilities
             "storage.persistent" => Ok(Self::StoragePersistent),
             "storage.cache" => Ok(Self::StorageCache),
 
-            // Communication Capabilities
             "ipc.tarpc" => Ok(Self::IpcTarpc),
             "ipc.json-rpc" => Ok(Self::IpcJsonRpc),
             "ipc.unix-socket" => Ok(Self::IpcUnixSocket),
 
-            _ => Err(format!("Unknown capability: {s}")),
+            _ => Err(ParseCapabilityError(s.to_owned())),
         }
     }
 }

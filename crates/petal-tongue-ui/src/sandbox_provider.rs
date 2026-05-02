@@ -13,6 +13,26 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tracing::info;
 
+/// Error loading a sandbox scenario.
+#[derive(Debug, thiserror::Error)]
+pub enum SandboxError {
+    /// Scenario file does not exist.
+    #[error("Sandbox scenario not found: {0}")]
+    NotFound(PathBuf),
+    /// File read failed.
+    #[error("Failed to read scenario file: {0}")]
+    Read(std::io::Error),
+    /// JSON deserialization failed.
+    #[error("Failed to parse scenario JSON: {0}")]
+    Parse(serde_json::Error),
+    /// Sandbox directory not found.
+    #[error("Sandbox directory not found. Set PETALTONGUE_SANDBOX_DIR or run from project root.")]
+    DirNotFound,
+    /// Current directory inaccessible.
+    #[error("Failed to get current directory: {0}")]
+    CurrentDir(std::io::Error),
+}
+
 /// Sandbox scenario for demonstrations
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SandboxScenario {
@@ -39,26 +59,20 @@ pub struct SandboxEdge {
 }
 
 /// Load sandbox scenario from file
-pub fn load_sandbox_scenario(name: &str) -> Result<SandboxScenario, String> {
-    // Find sandbox directory (relative to project root)
+pub fn load_sandbox_scenario(name: &str) -> Result<SandboxScenario, SandboxError> {
     let sandbox_path = find_sandbox_dir()?;
     let scenario_file = sandbox_path.join("scenarios").join(format!("{name}.json"));
 
     info!("📦 Loading sandbox scenario from: {:?}", scenario_file);
 
     if !scenario_file.exists() {
-        return Err(format!(
-            "Sandbox scenario not found: {}",
-            scenario_file.display()
-        ));
+        return Err(SandboxError::NotFound(scenario_file));
     }
 
-    // Read and parse JSON
-    let contents = std::fs::read_to_string(&scenario_file)
-        .map_err(|e| format!("Failed to read scenario file: {e}"))?;
+    let contents = std::fs::read_to_string(&scenario_file).map_err(SandboxError::Read)?;
 
-    let mut scenario: SandboxScenario = serde_json::from_str(&contents)
-        .map_err(|e| format!("Failed to parse scenario JSON: {e}"))?;
+    let mut scenario: SandboxScenario =
+        serde_json::from_str(&contents).map_err(SandboxError::Parse)?;
 
     // Migrate biomeOS metadata into properties for adapter-based rendering
     for primal in &mut scenario.primals {
@@ -75,8 +89,7 @@ pub fn load_sandbox_scenario(name: &str) -> Result<SandboxScenario, String> {
 }
 
 /// Find sandbox directory
-fn find_sandbox_dir() -> Result<PathBuf, String> {
-    // Try environment variable first
+fn find_sandbox_dir() -> Result<PathBuf, SandboxError> {
     if let Ok(sandbox) = std::env::var("PETALTONGUE_SANDBOX_DIR") {
         let path = PathBuf::from(sandbox);
         if path.exists() {
@@ -84,39 +97,31 @@ fn find_sandbox_dir() -> Result<PathBuf, String> {
         }
     }
 
-    // Try relative to current directory
-    let current_dir =
-        std::env::current_dir().map_err(|e| format!("Failed to get current directory: {e}"))?;
+    let current_dir = std::env::current_dir().map_err(SandboxError::CurrentDir)?;
 
-    // Try ./sandbox
     let sandbox = current_dir.join("sandbox");
     if sandbox.exists() {
         return Ok(sandbox);
     }
 
-    // Try ../sandbox (if running from crates/)
     let sandbox = current_dir
         .parent()
-        .ok_or("No parent directory")?
+        .ok_or(SandboxError::DirNotFound)?
         .join("sandbox");
     if sandbox.exists() {
         return Ok(sandbox);
     }
 
-    // Try ../../sandbox (if running from crates/petal-tongue-ui/)
     let sandbox = current_dir
         .parent()
         .and_then(|p| p.parent())
-        .ok_or("No grandparent directory")?
+        .ok_or(SandboxError::DirNotFound)?
         .join("sandbox");
     if sandbox.exists() {
         return Ok(sandbox);
     }
 
-    Err(
-        "Sandbox directory not found. Set PETALTONGUE_SANDBOX_DIR or run from project root."
-            .to_string(),
-    )
+    Err(SandboxError::DirNotFound)
 }
 
 /// List available sandbox scenarios
@@ -153,7 +158,7 @@ pub fn list_sandbox_scenarios() -> Vec<String> {
 ///
 /// Loads `sandbox/scenarios/simple.json`. Returns error if file not found—
 /// callers should use `TutorialMode::populate_minimal_example` for graceful degradation.
-pub fn get_default_scenario() -> Result<SandboxScenario, String> {
+pub fn get_default_scenario() -> Result<SandboxScenario, SandboxError> {
     load_sandbox_scenario("simple")
 }
 

@@ -13,6 +13,29 @@ use petal_tongue_core::biomeos_discovery::BiomeOsBackend;
 use petal_tongue_core::capability_discovery::{CapabilityDiscovery, CapabilityQuery};
 use tracing::{debug, info, warn};
 
+/// Error during network audio playback over UDS.
+#[derive(Debug, thiserror::Error)]
+enum NetworkAudioError {
+    /// Socket connection failed.
+    #[error("connect: {0}")]
+    Connect(std::io::Error),
+    /// JSON serialization failed.
+    #[error("{0}")]
+    Serialize(serde_json::Error),
+    /// I/O error during send/receive.
+    #[error("{context}: {source}")]
+    Io {
+        context: &'static str,
+        source: std::io::Error,
+    },
+    /// JSON-RPC response parse error.
+    #[error("parse: {0}")]
+    Parse(serde_json::Error),
+    /// Remote audio provider returned an error.
+    #[error("audio.play error: {0}")]
+    RemoteError(serde_json::Value),
+}
+
 /// Network audio backend — delegates to ecosystem audio primal via capability discovery.
 pub struct NetworkBackend {
     socket_path: Option<String>,
@@ -47,7 +70,7 @@ impl NetworkBackend {
         socket_path: &str,
         samples: &[f32],
         sample_rate: u32,
-    ) -> std::result::Result<(), String> {
+    ) -> std::result::Result<(), NetworkAudioError> {
         use base64::{Engine as _, engine::general_purpose};
         use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
         use tokio::net::UnixStream;
@@ -69,17 +92,23 @@ impl NetworkBackend {
 
         let mut stream = UnixStream::connect(socket_path)
             .await
-            .map_err(|e| format!("connect: {e}"))?;
+            .map_err(NetworkAudioError::Connect)?;
 
         let payload = format!(
             "{}\n",
-            serde_json::to_string(&request).map_err(|e| e.to_string())?
+            serde_json::to_string(&request).map_err(NetworkAudioError::Serialize)?
         );
         stream
             .write_all(payload.as_bytes())
             .await
-            .map_err(|e| format!("write: {e}"))?;
-        stream.flush().await.map_err(|e| format!("flush: {e}"))?;
+            .map_err(|e| NetworkAudioError::Io {
+                context: "write",
+                source: e,
+            })?;
+        stream.flush().await.map_err(|e| NetworkAudioError::Io {
+            context: "flush",
+            source: e,
+        })?;
 
         let (reader, _) = stream.into_split();
         let mut reader = BufReader::new(reader);
@@ -87,13 +116,16 @@ impl NetworkBackend {
         reader
             .read_line(&mut line)
             .await
-            .map_err(|e| format!("read: {e}"))?;
+            .map_err(|e| NetworkAudioError::Io {
+                context: "read",
+                source: e,
+            })?;
 
         let response: serde_json::Value =
-            serde_json::from_str(&line).map_err(|e| format!("parse: {e}"))?;
+            serde_json::from_str(&line).map_err(NetworkAudioError::Parse)?;
 
         if let Some(err) = response.get("error") {
-            return Err(format!("audio.play error: {err}"));
+            return Err(NetworkAudioError::RemoteError(err.clone()));
         }
 
         Ok(())
@@ -150,7 +182,7 @@ impl AudioBackend for NetworkBackend {
             }
             Err(e) => {
                 warn!("Ecosystem audio playback failed: {e}");
-                Err(crate::error::AudioError::SocketConnectionFailed(e).into())
+                Err(crate::error::AudioError::SocketConnectionFailed(e.to_string()).into())
             }
         }
     }

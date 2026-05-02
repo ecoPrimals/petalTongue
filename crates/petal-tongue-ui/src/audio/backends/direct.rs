@@ -165,7 +165,7 @@ impl DirectBackend {
             })
             .collect();
 
-        // Convert to bytes - EVOLVED: Safe Rust using standard library
+        // Convert to bytes (i16 little-endian for ALSA)
         // Each i16 is 2 bytes in little-endian format (ALSA default)
         let mut bytes = Vec::with_capacity(i16_samples.len() * 2);
         for sample in &i16_samples {

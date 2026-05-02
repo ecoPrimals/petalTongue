@@ -323,7 +323,7 @@ pub fn detect_visual_topology() -> (OutputTopology, Vec<String>) {
 pub fn detect_audio_topology() -> (OutputTopology, Vec<String>) {
     let mut evidence = Vec::new();
 
-    // EVOLVED: Audio Canvas - direct device detection!
+    // Audio Canvas — direct device detection via /dev/snd
     // Check /dev/snd for audio devices (Linux)
     if let Ok(devices) = crate::audio_canvas::AudioCanvas::discover() {
         if devices.is_empty() {

@@ -33,8 +33,7 @@ ron = { workspace = true }
 toml = { workspace = true }
 # Universal Rendering System dependencies
 indexmap = { workspace = true }
-# System information (Pure Rust Unix syscalls - EVOLVED from libc!)
-# EVOLUTION: Migrated from libc to rustix for 100% safe Rust
+# System information (pure Rust Unix syscalls via rustix)
 rustix = { workspace = true, features = ["process"] }
 # Terminal dimensions for CLI/adaptive rendering (screen size detection)
 terminal_size = { workspace = true }
