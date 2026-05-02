@@ -11,7 +11,8 @@
 //!   3. Write ServerHello line
 //!   4. Read ChallengeResponse line → extract response, preferred_cipher
 //!   5. Call BearDog `btsp.session.verify`
-//!   6. Write HandshakeComplete line
+//!   6. Call BearDog `btsp.negotiate` (best-effort, non-fatal — Phase 3 cipher selection)
+//!   7. Write HandshakeComplete line (includes negotiated cipher or `"null"`)
 
 use super::client::provider_call;
 use super::error::BtspHandshakeError;

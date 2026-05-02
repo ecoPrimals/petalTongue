@@ -3,7 +3,7 @@
 
 use super::error::BtspHandshakeError;
 
-/// Call a BearDog `btsp.session.*` RPC via UDS.
+/// Call a BearDog BTSP RPC method via UDS (`btsp.session.*`, `btsp.negotiate`).
 pub(super) async fn provider_call(
     socket: &std::path::Path,
     method: &str,
