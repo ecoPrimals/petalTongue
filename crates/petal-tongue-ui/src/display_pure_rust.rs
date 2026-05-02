@@ -1,15 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pure Rust Display Detection
 //!
-//! TRUE PRIMAL display detection using environment and system APIs (no external commands).
-//!
-//! # Sovereignty
-//!
-//! **EVOLVED**: 100% Pure Rust display detection!
-//! - Environment variables + fallbacks
-//! - NO external commands (xrandr, xdpyinfo, pgrep, xdotool)
-//! - Works on: X11, Wayland, macOS, Windows
-//! - Self-stable operation guaranteed
+//! Display detection using environment variables and system APIs — zero
+//! external commands. Works on X11, Wayland, macOS, Windows.
 //!
 //! Note: winit monitor detection requires an active event loop which is complex
 //! for our use case. We use simpler, more reliable methods.

@@ -43,8 +43,8 @@ impl AudioSensor {
 
     /// Play a tone (minimal output)
     ///
-    /// EVOLVED: Capability-based audio using `AudioCanvas` (direct hardware)
-    /// Primals discover audio capability at runtime rather than compile-time features
+    /// Capability-based audio via `AudioCanvas` (direct hardware).
+    /// Audio capability discovered at runtime rather than compile-time features.
     ///
     /// # Errors
     ///

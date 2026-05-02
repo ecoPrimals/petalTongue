@@ -286,9 +286,9 @@ impl StatusReporter {
     /// # Errors
     ///
     /// Returns an error if JSON serialization fails.
-    pub fn get_status_json(&self) -> Result<String, String> {
+    pub fn get_status_json(&self) -> Result<String, serde_json::Error> {
         let status = self.get_status();
-        serde_json::to_string_pretty(&status).map_err(|e| e.to_string())
+        serde_json::to_string_pretty(&status)
     }
 
     /// Health check - returns true if system is healthy

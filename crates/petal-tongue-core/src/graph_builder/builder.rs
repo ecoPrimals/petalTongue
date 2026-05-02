@@ -5,8 +5,28 @@
 
 use chrono::Utc;
 use std::collections::HashSet;
+use thiserror::Error;
 
 use super::types::{GraphEdge, GraphLayout, GraphNode, VisualGraph};
+
+/// Error when adding an edge to the graph.
+#[derive(Debug, Error)]
+pub enum GraphEdgeError {
+    /// The source node does not exist.
+    #[error("Source node '{0}' not found")]
+    SourceNotFound(String),
+    /// The target node does not exist.
+    #[error("Target node '{0}' not found")]
+    TargetNotFound(String),
+    /// An edge between these nodes already exists.
+    #[error("Edge from '{from}' to '{to}' already exists")]
+    Duplicate {
+        /// Source node ID.
+        from: String,
+        /// Target node ID.
+        to: String,
+    },
+}
 
 impl VisualGraph {
     /// Create a new empty graph
@@ -56,25 +76,23 @@ impl VisualGraph {
     ///
     /// Returns an error if the source or target node does not exist, or if an
     /// edge from the source to the target already exists.
-    pub fn add_edge(&mut self, edge: GraphEdge) -> Result<(), String> {
-        // Validate that both nodes exist
+    pub fn add_edge(&mut self, edge: GraphEdge) -> Result<(), GraphEdgeError> {
         if !self.nodes.iter().any(|n| n.id == edge.from) {
-            return Err(format!("Source node '{}' not found", edge.from));
+            return Err(GraphEdgeError::SourceNotFound(edge.from));
         }
         if !self.nodes.iter().any(|n| n.id == edge.to) {
-            return Err(format!("Target node '{}' not found", edge.to));
+            return Err(GraphEdgeError::TargetNotFound(edge.to));
         }
 
-        // Check for duplicate edges
         if self
             .edges
             .iter()
             .any(|e| e.from == edge.from && e.to == edge.to)
         {
-            return Err(format!(
-                "Edge from '{}' to '{}' already exists",
-                edge.from, edge.to
-            ));
+            return Err(GraphEdgeError::Duplicate {
+                from: edge.from,
+                to: edge.to,
+            });
         }
 
         self.edges.push(edge);

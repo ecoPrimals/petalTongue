@@ -14,7 +14,37 @@
 use petal_tongue_core::capability_names::primal_names;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use thiserror::Error;
 use tracing::{debug, warn};
+
+/// Error during a provenance trio RPC call.
+#[derive(Debug, Error)]
+pub(crate) enum ProvenanceRpcError {
+    /// Failed to connect to the provenance socket.
+    #[error("connect {path}: {source}")]
+    Connect {
+        path: String,
+        source: std::io::Error,
+    },
+    /// JSON serialization failed.
+    #[error("serialize: {0}")]
+    Serialize(serde_json::Error),
+    /// I/O error during request/response.
+    #[error("{context}: {source}")]
+    Io {
+        context: &'static str,
+        source: std::io::Error,
+    },
+    /// Failed to parse the JSON-RPC response.
+    #[error("parse: {0}")]
+    Parse(serde_json::Error),
+    /// The provider returned a JSON-RPC error object.
+    #[error("RPC error: {0}")]
+    RpcError(Value),
+    /// The provider response contained no `result` field.
+    #[error("no result in response")]
+    NoResult,
+}
 
 /// Provenance session tracking a visualization's lineage.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -235,13 +265,22 @@ impl ProvenanceTrioClient {
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
     }
 
-    async fn send_rpc(&self, socket: &str, method: &str, params: Value) -> Result<Value, String> {
+    async fn send_rpc(
+        &self,
+        socket: &str,
+        method: &str,
+        params: Value,
+    ) -> Result<Value, ProvenanceRpcError> {
         use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
         use tokio::net::UnixStream;
 
-        let stream = UnixStream::connect(socket)
-            .await
-            .map_err(|e| format!("connect {socket}: {e}"))?;
+        let stream =
+            UnixStream::connect(socket)
+                .await
+                .map_err(|e| ProvenanceRpcError::Connect {
+                    path: socket.to_owned(),
+                    source: e,
+                })?;
 
         let (reader, mut writer) = stream.into_split();
 
@@ -252,30 +291,36 @@ impl ProvenanceTrioClient {
             "id": self.next_id(),
         });
 
-        let mut buf = serde_json::to_vec(&request).map_err(|e| format!("serialize: {e}"))?;
+        let mut buf = serde_json::to_vec(&request).map_err(ProvenanceRpcError::Serialize)?;
         buf.push(b'\n');
 
         writer
             .write_all(&buf)
             .await
-            .map_err(|e| format!("write: {e}"))?;
+            .map_err(|e| ProvenanceRpcError::Io {
+                context: "write",
+                source: e,
+            })?;
 
         let mut buf = BufReader::new(reader);
         let mut line = String::new();
         buf.read_line(&mut line)
             .await
-            .map_err(|e| format!("read: {e}"))?;
+            .map_err(|e| ProvenanceRpcError::Io {
+                context: "read",
+                source: e,
+            })?;
 
-        let response: Value = serde_json::from_str(&line).map_err(|e| format!("parse: {e}"))?;
+        let response: Value = serde_json::from_str(&line).map_err(ProvenanceRpcError::Parse)?;
 
         if let Some(error) = response.get("error") {
-            return Err(format!("RPC error: {error}"));
+            return Err(ProvenanceRpcError::RpcError(error.clone()));
         }
 
         response
             .get("result")
             .cloned()
-            .ok_or_else(|| "no result in response".to_string())
+            .ok_or(ProvenanceRpcError::NoResult)
     }
 }
 

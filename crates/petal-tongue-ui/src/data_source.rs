@@ -15,6 +15,20 @@ use petal_tongue_api::BiomeOSClient;
 use petal_tongue_core::{GraphEngine, PrimalInfo, TopologyEdge};
 use std::sync::{Arc, RwLock};
 
+/// Error during data source refresh or graph update.
+#[derive(Debug, thiserror::Error)]
+pub enum DataSourceError {
+    /// Failed to discover primals via biomeOS.
+    #[error("Failed to discover primals: {0}")]
+    Discovery(petal_tongue_api::BiomeOsClientError),
+    /// Failed to fetch topology.
+    #[error("Failed to get topology: {0}")]
+    Topology(petal_tongue_api::BiomeOsClientError),
+    /// Failed to acquire the graph lock.
+    #[error("Failed to acquire graph lock: {0}")]
+    LockPoisoned(String),
+}
+
 /// Data source for topology information
 ///
 /// Handles fetching primal discovery and topology data from `BiomeOS`.
@@ -44,20 +58,20 @@ impl DataSource {
     /// # Errors
     ///
     /// Returns an error if primal discovery or topology fetch fails.
-    pub async fn refresh_topology(&self) -> Result<(Vec<PrimalInfo>, Vec<TopologyEdge>), String> {
-        // Discover primals via BiomeOS
+    pub async fn refresh_topology(
+        &self,
+    ) -> Result<(Vec<PrimalInfo>, Vec<TopologyEdge>), DataSourceError> {
         let primals = self
             .client
             .discover_primals()
             .await
-            .map_err(|e| format!("Failed to discover primals: {e}"))?;
+            .map_err(DataSourceError::Discovery)?;
 
-        // Get topology edges
         let edges = self
             .client
             .get_topology()
             .await
-            .map_err(|e| format!("Failed to get topology: {e}"))?;
+            .map_err(DataSourceError::Topology)?;
 
         Ok((primals, edges))
     }
@@ -74,10 +88,10 @@ impl DataSource {
         graph: &Arc<RwLock<GraphEngine>>,
         primals: Vec<PrimalInfo>,
         edges: Vec<TopologyEdge>,
-    ) -> Result<(), String> {
+    ) -> Result<(), DataSourceError> {
         let mut graph = graph
             .write()
-            .map_err(|e| format!("Failed to acquire graph lock: {e}"))?;
+            .map_err(|e| DataSourceError::LockPoisoned(e.to_string()))?;
 
         // Clear existing data
         graph.clear();
@@ -103,7 +117,10 @@ impl DataSource {
     /// # Errors
     ///
     /// Returns an error if topology refresh fails or graph update fails.
-    pub async fn refresh_and_update(&self, graph: &Arc<RwLock<GraphEngine>>) -> Result<(), String> {
+    pub async fn refresh_and_update(
+        &self,
+        graph: &Arc<RwLock<GraphEngine>>,
+    ) -> Result<(), DataSourceError> {
         let (primals, edges) = self.refresh_topology().await?;
         self.update_graph(graph, primals, edges)?;
         Ok(())

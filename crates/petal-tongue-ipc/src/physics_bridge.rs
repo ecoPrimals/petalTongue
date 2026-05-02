@@ -14,7 +14,37 @@
 
 use petal_tongue_scene::physics::PhysicsWorld;
 use serde_json::json;
+use thiserror::Error;
 use tracing::debug;
+
+/// Error during a compute bridge RPC call or socket discovery.
+#[derive(Debug, Error)]
+enum ComputeBridgeError {
+    /// No compute socket found via any discovery method.
+    #[error("GPU compute socket not found (not running or not discoverable)")]
+    SocketNotFound,
+    /// Failed to connect to the compute socket.
+    #[error("connect: {0}")]
+    Connect(std::io::Error),
+    /// JSON serialization failed.
+    #[error("serialize: {0}")]
+    Serialize(serde_json::Error),
+    /// I/O error during request/response.
+    #[error("{context}: {source}")]
+    Io {
+        context: &'static str,
+        source: std::io::Error,
+    },
+    /// Failed to parse the JSON-RPC response.
+    #[error("parse response: {0}")]
+    Parse(serde_json::Error),
+    /// IPC send failed at a higher level.
+    #[error("IPC send failed: {0}")]
+    Send(Box<Self>),
+    /// The compute primal returned an error.
+    #[error("Compute primal error: {0}")]
+    ComputeError(String),
+}
 
 /// Result of a physics step (either GPU or CPU fallback).
 #[derive(Debug, Clone)]
@@ -126,7 +156,7 @@ async fn try_dispatch(
     method: &str,
     op: &str,
     params: &serde_json::Value,
-) -> Result<serde_json::Value, String> {
+) -> Result<serde_json::Value, ComputeBridgeError> {
     let socket_path = discover_compute_socket()?;
 
     let request = json!({
@@ -141,7 +171,7 @@ async fn try_dispatch(
 
     let response = send_jsonrpc_unix(&socket_path, &request)
         .await
-        .map_err(|e| format!("IPC send failed: {e}"))?;
+        .map_err(|e| ComputeBridgeError::Send(Box::new(e)))?;
 
     response.get("result").cloned().ok_or_else(|| {
         let err = response
@@ -149,7 +179,7 @@ async fn try_dispatch(
             .and_then(|e| e.get("message"))
             .and_then(|m| m.as_str())
             .unwrap_or("unknown error");
-        format!("Compute primal error: {err}")
+        ComputeBridgeError::ComputeError(err.to_owned())
     })
 }
 
@@ -157,7 +187,7 @@ async fn try_dispatch(
 ///
 /// Uses compute primal's IPC contract: `compute.dispatch` with `op` field.
 /// When compute primal adds physics ops, this will dispatch `math.physics.nbody`.
-async fn try_gpu_physics_step(world: &mut PhysicsWorld) -> Result<usize, String> {
+async fn try_gpu_physics_step(world: &mut PhysicsWorld) -> Result<usize, ComputeBridgeError> {
     let socket_path = discover_compute_socket()?;
 
     let request = json!({
@@ -174,7 +204,7 @@ async fn try_gpu_physics_step(world: &mut PhysicsWorld) -> Result<usize, String>
 
     let response = send_jsonrpc_unix(&socket_path, &request)
         .await
-        .map_err(|e| format!("IPC send failed: {e}"))?;
+        .map_err(|e| ComputeBridgeError::Send(Box::new(e)))?;
 
     let result = response.get("result").ok_or_else(|| {
         let err = response
@@ -182,7 +212,7 @@ async fn try_gpu_physics_step(world: &mut PhysicsWorld) -> Result<usize, String>
             .and_then(|e| e.get("message"))
             .and_then(|m| m.as_str())
             .unwrap_or("unknown error");
-        format!("Compute primal error: {err}")
+        ComputeBridgeError::ComputeError(err.to_owned())
     })?;
 
     world.apply_ipc_response(result);
@@ -197,7 +227,7 @@ async fn try_gpu_physics_step(world: &mut PhysicsWorld) -> Result<usize, String>
 /// 3. `$XDG_RUNTIME_DIR/ecoPrimals/` (ecosystem S139 layout)
 /// 4. `$XDG_RUNTIME_DIR/{socket_name}/` (primal-specific)
 /// 5. `/tmp/` fallback
-fn discover_compute_socket() -> Result<String, String> {
+fn discover_compute_socket() -> Result<String, ComputeBridgeError> {
     // Primary: biomeOS capability discovery (sync-safe: check socket exists without async)
     if let Ok(backend) = petal_tongue_core::biomeos_discovery::BiomeOsBackend::from_env() {
         use petal_tongue_core::capability_discovery::{CapabilityDiscovery, CapabilityQuery};
@@ -246,39 +276,45 @@ fn discover_compute_socket() -> Result<String, String> {
         }
     }
 
-    Err("GPU compute socket not found (not running or not discoverable)".into())
+    Err(ComputeBridgeError::SocketNotFound)
 }
 
 /// Send a JSON-RPC request over a Unix socket and read the response.
 async fn send_jsonrpc_unix(
     socket_path: &str,
     request: &serde_json::Value,
-) -> Result<serde_json::Value, String> {
+) -> Result<serde_json::Value, ComputeBridgeError> {
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
     use tokio::net::UnixStream;
 
     let stream = UnixStream::connect(socket_path)
         .await
-        .map_err(|e| format!("connect: {e}"))?;
+        .map_err(ComputeBridgeError::Connect)?;
 
     let (reader, mut writer) = stream.into_split();
 
-    let mut payload = serde_json::to_vec(request).map_err(|e| format!("serialize: {e}"))?;
+    let mut payload = serde_json::to_vec(request).map_err(ComputeBridgeError::Serialize)?;
     payload.push(b'\n');
 
     writer
         .write_all(&payload)
         .await
-        .map_err(|e| format!("write: {e}"))?;
+        .map_err(|e| ComputeBridgeError::Io {
+            context: "write",
+            source: e,
+        })?;
 
     let mut buf_reader = BufReader::new(reader);
     let mut line = String::new();
     buf_reader
         .read_line(&mut line)
         .await
-        .map_err(|e| format!("read: {e}"))?;
+        .map_err(|e| ComputeBridgeError::Io {
+            context: "read",
+            source: e,
+        })?;
 
-    serde_json::from_str(&line).map_err(|e| format!("parse response: {e}"))
+    serde_json::from_str(&line).map_err(ComputeBridgeError::Parse)
 }
 
 #[cfg(test)]

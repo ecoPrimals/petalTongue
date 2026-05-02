@@ -6,6 +6,44 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### String Error Elimination — Typed Error Evolution (May 2, 2026)
+
+#### Changed
+- **provenance_trio.rs**: `send_rpc` evolved from `Result<Value, String>` to
+  `Result<Value, ProvenanceRpcError>` (6 typed variants: Connect, Serialize, Io,
+  Parse, RpcError, NoResult).
+- **physics_bridge.rs**: 5 functions evolved from `Result<_, String>` to
+  `ComputeBridgeError` (7 variants including recursive `Send` for IPC layering).
+- **audio.rs** (IPC handler): `encode_wav_base64` evolved from `Result<String, String>`
+  to `Result<String, WavEncodeError>` wrapping `hound::Error`.
+- **graph_builder/builder.rs**: `add_edge` evolved from `Result<(), String>` to
+  `Result<(), GraphEdgeError>` (SourceNotFound, TargetNotFound, Duplicate).
+- **event.rs**: `EventBus::broadcast` evolved from `Result<usize, String>` to
+  `Result<usize, broadcast::error::SendError<EngineEvent>>` (direct tokio type).
+- **capability_taxonomy.rs**: `FromStr::Err` evolved from `String` to
+  `ParseCapabilityError` typed error.
+- **biomeos_discovery/backend.rs**: `connect_and_forward` evolved from
+  `Result<(), String>` to `WebSocketBridgeError` (4 variants).
+- **status_reporter/reporter.rs**: `get_status_json` evolved from
+  `Result<String, String>` to `Result<String, serde_json::Error>`.
+- **startup_audio.rs**: 4 functions evolved from `Result<(), String>` to
+  `StartupAudioError` (AudioCanvas, FileRead, Decode variants).
+- **data_source.rs**: 3 functions evolved from `Result<_, String>` to
+  `DataSourceError` (Discovery, Topology, LockPoisoned).
+- **sandbox_provider.rs**: 3 functions evolved from `Result<_, String>` to
+  `SandboxError` (NotFound, Read, Parse, DirNotFound, CurrentDir).
+- **audio/backends/network.rs**: `send_play_request` evolved from
+  `Result<(), String>` to `NetworkAudioError` (5 variants).
+- **tool_integration.rs**: `ToolPanel::handle_action` evolved from
+  `Result<(), String>` to `Result<(), ToolActionError>`.
+
+#### Verified
+- `cargo clippy`: 0 warnings.
+- `cargo fmt`: 0 violations.
+- `cargo test --workspace --all-features`: 6,191 passed, 0 failed.
+- `cargo deny check bans`: passes.
+- Zero `Result<_, String>` remaining in IPC, bridge, or public API surfaces.
+
 ### primalSpring Phase 56 Audit Response (May 1, 2026)
 
 #### Fixed

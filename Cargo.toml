@@ -288,7 +288,7 @@ tracing-subscriber = { workspace = true }
 petal-tongue-scene = { path = "crates/petal-tongue-scene" }
 
 # Examples dependencies (optional, not in production)
-# EVOLVED: libc removed - framebuffer_demo uses rustix (via petal-tongue-core)
+# framebuffer_demo uses rustix (via petal-tongue-core)
 png = { workspace = true, optional = true }
 
 [dev-dependencies]

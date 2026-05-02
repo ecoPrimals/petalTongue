@@ -81,9 +81,17 @@ pub fn handle_audio_synthesize(
     JsonRpcResponse::success(req.id, result)
 }
 
+/// Error during WAV encoding.
+#[derive(Debug, thiserror::Error)]
+enum WavEncodeError {
+    /// WAV writer/sample/finalize error.
+    #[error("{0}")]
+    Hound(#[from] hound::Error),
+}
+
 fn encode_wav_base64(
     samples: &petal_tongue_scene::soundscape::StereoSamples,
-) -> Result<String, String> {
+) -> Result<String, WavEncodeError> {
     use std::io::Cursor;
 
     let spec = hound::WavSpec {
@@ -93,8 +101,7 @@ fn encode_wav_base64(
         sample_format: hound::SampleFormat::Int,
     };
     let mut buf = Cursor::new(Vec::new());
-    let mut writer =
-        hound::WavWriter::new(&mut buf, spec).map_err(|e| format!("WAV writer: {e}"))?;
+    let mut writer = hound::WavWriter::new(&mut buf, spec)?;
 
     let interleaved = samples.interleaved();
     for s in &interleaved {
@@ -103,13 +110,9 @@ fn encode_wav_base64(
             reason = "audio: f32 [-1,1] → i16 intentional"
         )]
         let sample_i16 = (s.clamp(-1.0, 1.0) * f32::from(i16::MAX)) as i16;
-        writer
-            .write_sample(sample_i16)
-            .map_err(|e| format!("WAV sample: {e}"))?;
+        writer.write_sample(sample_i16)?;
     }
-    writer
-        .finalize()
-        .map_err(|e| format!("WAV finalize: {e}"))?;
+    writer.finalize()?;
 
     use base64::Engine;
     let wav_bytes = buf.into_inner();

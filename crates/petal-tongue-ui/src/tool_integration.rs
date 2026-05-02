@@ -13,6 +13,11 @@
 
 use egui;
 
+/// Error from a tool panel action.
+#[derive(Debug, thiserror::Error)]
+#[error("{0}")]
+pub struct ToolActionError(pub String);
+
 /// Capabilities that a tool can advertise
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ToolCapability {
@@ -80,7 +85,7 @@ pub trait ToolPanel: Send + Sync {
     /// # Errors
     ///
     /// Returns `Err` if the action fails or is not supported.
-    fn handle_action(&mut self, _action: &str) -> Result<(), String> {
+    fn handle_action(&mut self, _action: &str) -> Result<(), ToolActionError> {
         Ok(())
     }
 }
@@ -195,7 +200,7 @@ impl ToolPanel for ToolPanelImpl {
         }
     }
 
-    fn handle_action(&mut self, action: &str) -> Result<(), String> {
+    fn handle_action(&mut self, action: &str) -> Result<(), ToolActionError> {
         match self {
             Self::ProcessViewer(t) => ToolPanel::handle_action(t, action),
             Self::GraphMetrics(t) => ToolPanel::handle_action(t, action),

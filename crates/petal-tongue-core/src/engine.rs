@@ -164,7 +164,7 @@ impl<M: GUIModality + 'static> UniversalRenderingEngine<M> {
         self.events
             .broadcast(EngineEvent::SelectionChanged { selected })
             .await
-            .map_err(PetalTongueError::EventBus)?;
+            .map_err(|e| PetalTongueError::EventBus(e.to_string()))?;
 
         Ok(())
     }
@@ -193,7 +193,7 @@ impl<M: GUIModality + 'static> UniversalRenderingEngine<M> {
                 zoom,
             })
             .await
-            .map_err(PetalTongueError::EventBus)?;
+            .map_err(|e| PetalTongueError::EventBus(e.to_string()))?;
 
         Ok(())
     }
@@ -276,7 +276,7 @@ impl<M: GUIModality + 'static> UniversalRenderingEngine<M> {
                 name: name_for_events.clone(),
             })
             .await
-            .map_err(PetalTongueError::EventBus)?;
+            .map_err(|e| PetalTongueError::EventBus(e.to_string()))?;
 
         // Start rendering
         let result = modality.render().await;

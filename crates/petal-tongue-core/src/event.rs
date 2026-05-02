@@ -171,10 +171,11 @@ impl EventBus {
         clippy::unused_async,
         reason = "async for future broadcast::Sender API"
     )]
-    pub async fn broadcast(&self, event: EngineEvent) -> Result<usize, String> {
-        self.tx
-            .send(event)
-            .map_err(|e| format!("Failed to broadcast event: {e}"))
+    pub async fn broadcast(
+        &self,
+        event: EngineEvent,
+    ) -> Result<usize, broadcast::error::SendError<EngineEvent>> {
+        self.tx.send(event)
     }
 
     /// Get subscriber count

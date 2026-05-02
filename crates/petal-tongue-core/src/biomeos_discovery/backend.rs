@@ -9,6 +9,23 @@ use tokio::sync::mpsc;
 use super::client::BiomeOsClient;
 use super::types::{BiomeOSDiscoveryEvent, BiomeOsPrimal, JsonRpcRequest};
 
+/// Error during WebSocket topology subscription.
+#[derive(Debug, thiserror::Error)]
+enum WebSocketBridgeError {
+    /// Failed to establish the WebSocket connection.
+    #[error("WebSocket connect failed: {0}")]
+    Connect(tokio_tungstenite::tungstenite::Error),
+    /// WebSocket protocol error during message receive.
+    #[error("WebSocket error: {0}")]
+    Protocol(tokio_tungstenite::tungstenite::Error),
+    /// Server sent a close frame.
+    #[error("WebSocket closed by server")]
+    ClosedByServer,
+    /// The WebSocket stream ended without a close frame.
+    #[error("WebSocket stream ended")]
+    StreamEnded,
+}
+
 /// biomeOS discovery backend
 #[derive(Debug)]
 pub struct BiomeOsBackend {
@@ -126,13 +143,13 @@ impl BiomeOsBackend {
     async fn connect_and_forward(
         url: &str,
         tx: &mpsc::Sender<BiomeOSDiscoveryEvent>,
-    ) -> Result<(), String> {
+    ) -> Result<(), WebSocketBridgeError> {
         use futures_util::{SinkExt, StreamExt};
         use tokio_tungstenite::connect_async;
 
         let (ws_stream, _) = connect_async(url)
             .await
-            .map_err(|e| format!("WebSocket connect failed: {e}"))?;
+            .map_err(WebSocketBridgeError::Connect)?;
 
         let (mut write, mut read) = ws_stream.split();
 
@@ -158,13 +175,13 @@ impl BiomeOsBackend {
                     }
                 }
                 Ok(tokio_tungstenite::tungstenite::Message::Close(_)) => {
-                    return Err("WebSocket closed by server".to_string());
+                    return Err(WebSocketBridgeError::ClosedByServer);
                 }
-                Err(e) => return Err(format!("WebSocket error: {e}")),
+                Err(e) => return Err(WebSocketBridgeError::Protocol(e)),
                 _ => {}
             }
         }
-        Err("WebSocket stream ended".to_string())
+        Err(WebSocketBridgeError::StreamEnded)
     }
 }
 
