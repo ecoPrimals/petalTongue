@@ -87,13 +87,11 @@ pub fn collect_sensor_events(ctx: &egui::Context) -> Vec<SensorEventIpc> {
                         timestamp_ms: now_ms,
                     });
                 }
-                egui::Event::Text(text) => {
-                    if !text.is_empty() {
-                        events.push(SensorEventIpc::TextInput {
-                            text: text.clone(),
-                            timestamp_ms: now_ms,
-                        });
-                    }
+                egui::Event::Text(text) if !text.is_empty() => {
+                    events.push(SensorEventIpc::TextInput {
+                        text: text.clone(),
+                        timestamp_ms: now_ms,
+                    });
                 }
                 egui::Event::WindowFocused(gained) => {
                     if *gained {

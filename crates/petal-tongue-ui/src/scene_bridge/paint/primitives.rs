@@ -30,10 +30,7 @@ pub fn paint_primitive(
         } => {
             let center = world_to_screen(transform, offset, *x, *y);
             let r = *radius as f32;
-            let fill_c = apply_opacity(
-                fill.map(to_color32).unwrap_or(Color32::TRANSPARENT),
-                opacity,
-            );
+            let fill_c = apply_opacity(fill.map_or(Color32::TRANSPARENT, to_color32), opacity);
             let stroke_s = stroke.as_ref().map_or(Stroke::NONE, to_egui_stroke);
             painter.circle(center, r, fill_c, stroke_s);
             Some(Rect::from_center_size(center, egui::vec2(r * 2.0, r * 2.0)))
@@ -73,10 +70,7 @@ pub fn paint_primitive(
             let min = world_to_screen(transform, offset, *x, *y);
             let max = world_to_screen(transform, offset, x + width, y + height);
             let rect = Rect::from_min_max(min, max);
-            let fill_c = apply_opacity(
-                fill.map(to_color32).unwrap_or(Color32::TRANSPARENT),
-                opacity,
-            );
+            let fill_c = apply_opacity(fill.map_or(Color32::TRANSPARENT, to_color32), opacity);
             let stroke_s = stroke.as_ref().map_or(Stroke::NONE, to_egui_stroke);
             let rounding = Rounding::same(*corner_radius as f32);
             painter.rect(rect, rounding, fill_c, stroke_s);
@@ -241,9 +235,7 @@ pub fn paint_primitive(
             let min = world_to_screen(transform, offset, *x, *y);
             let max = world_to_screen(transform, offset, x + width, y + height);
             let rect = Rect::from_min_max(min, max);
-            let base = tint
-                .map(super::color::to_color32)
-                .unwrap_or(Color32::from_gray(180));
+            let base = tint.map_or(Color32::from_gray(180), super::color::to_color32);
             let fill_c = apply_opacity(base, opacity * tex_opacity);
             painter.rect(
                 rect,

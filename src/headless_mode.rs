@@ -68,13 +68,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_headless_concurrent() {
-        // Test runs in parallel with others - no sleeps needed!
         let handles: Vec<_> = (0..4)
-            .map(|i| {
+            .map(|_| {
                 tokio::spawn(async move {
-                    let port = format!("0.0.0.0:{}", 8080 + i);
+                    let bind = petal_tongue_core::constants::default_headless_bind();
                     let data_service = Arc::new(DataService::new());
-                    run(&port, 1, data_service).await
+                    run(&bind, 1, data_service).await
                 })
             })
             .collect();
@@ -88,7 +87,8 @@ mod tests {
     async fn test_headless_output_format() {
         let mut output = Vec::new();
         let data_service = Arc::new(DataService::new());
-        run_with_output("0.0.0.0:8080", 4, data_service, &mut output)
+        let bind = petal_tongue_core::constants::default_headless_bind();
+        run_with_output(&bind, 4, data_service, &mut output)
             .await
             .unwrap();
 
@@ -113,7 +113,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_headless_snapshot_error_path() {
-        // Poison the graph lock so snapshot() returns Err
         let data_service = Arc::new(DataService::new());
         let graph = data_service.graph();
         let _ = std::thread::spawn(move || {
@@ -122,9 +121,9 @@ mod tests {
         })
         .join();
 
-        // run_with_output should still return Ok (error is logged, not propagated)
         let mut output = Vec::new();
-        let result = run_with_output("0.0.0.0:8080", 4, data_service, &mut output).await;
+        let bind = petal_tongue_core::constants::default_headless_bind();
+        let result = run_with_output(&bind, 4, data_service, &mut output).await;
         assert!(
             result.is_ok(),
             "run should succeed even when snapshot fails"
@@ -158,7 +157,8 @@ mod tests {
             ));
         }
         let mut output = Vec::new();
-        run_with_output("0.0.0.0:8080", 4, data_service, &mut output)
+        let bind = petal_tongue_core::constants::default_headless_bind();
+        run_with_output(&bind, 4, data_service, &mut output)
             .await
             .unwrap();
         let stdout = String::from_utf8_lossy(&output);

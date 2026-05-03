@@ -226,8 +226,7 @@ impl StartupAudio {
 
         // Check if user wants to disable embedded music
         let use_embedded = std::env::var("PETALTONGUE_DISABLE_EMBEDDED_MUSIC")
-            .map(|v| v != "1" && v.to_lowercase() != "true")
-            .unwrap_or(true);
+            .map_or(true, |v| v != "1" && v.to_lowercase() != "true");
 
         if use_embedded {
             info!("🎵 Using embedded startup music (self-contained)");

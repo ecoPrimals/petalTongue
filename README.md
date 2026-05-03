@@ -17,9 +17,10 @@ cargo build --release
 petaltongue ui          # Desktop display (egui)
 petaltongue tui         # Terminal display (ratatui)
 petaltongue web         # Web interface (axum)
+petaltongue web --port 4000     # web on explicit port (UniBin v1.1)
 petaltongue headless    # Headless API server (no display)
+petaltongue headless --port 9000  # headless on explicit port
 petaltongue server      # IPC server (UDS, no display)
-petaltongue server --socket /path/to.sock  # explicit UDS path
 petaltongue server --port 9090  # IPC server (UDS + TCP)
 petaltongue live        # NUCLEUS interactive (IPC + GUI in one process)
 petaltongue live --port 9090    # live mode with TCP listener
@@ -113,11 +114,11 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,191+ passing (98 test suites), 0 failures |
+| Tests | 6,200+ passing, 0 failures (`--all-features`) |
 | Formatting | `cargo fmt --check` clean |
-| Clippy | Zero warnings (pedantic + nursery; `#[expect]` with reasons; zero `#[allow]` in production) |
-| Docs | `cargo doc --workspace --no-deps` clean |
-| Coverage | ~90% line (llvm-cov) |
+| Clippy | Zero warnings (`--all-features`, pedantic + nursery; `#[expect]` with reasons) |
+| Docs | `cargo doc --workspace --no-deps` zero warnings |
+| Coverage | ~85% line (llvm-cov), 90% target |
 | Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin root, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
 | BTSP Phase 2 | Typed `BtspHandshakeError`, BearDog provider delegation, NULL cipher handshake operational |
@@ -148,8 +149,8 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 6,191+ tests
-cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace --all-features        # 6,200+ tests
+cargo clippy --workspace --all-features -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
 cargo llvm-cov --workspace --summary-only    # Coverage (~90% line)

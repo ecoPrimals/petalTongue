@@ -183,7 +183,7 @@ impl Default for DiscoveryConfig {
             timeout: Duration::from_millis(200),
             retry_attempts: 3,
             retry_delay: Duration::from_millis(100),
-            cache_ttl: Duration::from_secs(60),
+            cache_ttl: Duration::from_mins(1),
         }
     }
 }

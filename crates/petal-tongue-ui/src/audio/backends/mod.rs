@@ -6,9 +6,9 @@
 //!
 //! # Feature-gated stub backends (evolution targets for ToadStool `audio.play` capability)
 //!
-//! - **`audio-socket`**: [`SocketBackend`] — discovers PipeWire/PulseAudio sockets but does not
+//! - **`audio-socket`**: `SocketBackend` — discovers PipeWire/PulseAudio sockets but does not
 //!   implement their wire protocols (see module docs in `socket.rs`).
-//! - **`audio-direct`**: [`DirectBackend`] — discovers `/dev/snd` (etc.) but does not implement
+//! - **`audio-direct`**: `DirectBackend` — discovers `/dev/snd` (etc.) but does not implement
 //!   ALSA `ioctl` playback (see `direct.rs`).
 //!
 //! Without these features, [`crate::audio::AudioManager`] only registers software synthesis and

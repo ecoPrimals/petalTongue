@@ -277,7 +277,7 @@ impl OutputVerificationSystem {
 
         // Check for stale confirmations
         for (modality, verification) in &mut self.verifications {
-            if verification.is_stale(Duration::from_secs(300)) {
+            if verification.is_stale(Duration::from_mins(5)) {
                 warn!(
                     "⚠️  {:?} output confirmation is stale (no recent confirmation)",
                     modality

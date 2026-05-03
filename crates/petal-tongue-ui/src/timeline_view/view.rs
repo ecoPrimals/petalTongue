@@ -55,7 +55,7 @@ impl TimelineView {
 
     pub fn add_event(&mut self, event: TimelineEvent) {
         self.events.push(event);
-        self.events.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        self.events.sort_by_key(|event| event.timestamp);
     }
 
     pub fn clear(&mut self) {

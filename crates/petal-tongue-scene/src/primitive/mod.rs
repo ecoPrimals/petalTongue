@@ -222,7 +222,7 @@ pub enum Primitive {
 
     /// A raster texture region (sprite, image, external framebuffer).
     ///
-    /// `texture_id` resolves at render time against a [`TextureRegistry`] —
+    /// `texture_id` resolves at render time against a `TextureRegistry` —
     /// uploaded via `visualization.texture.upload` IPC or attached from shared memory.
     Texture {
         texture_id: String,

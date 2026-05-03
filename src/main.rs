@@ -88,7 +88,11 @@ enum Commands {
 
     /// Launch web UI server (Pure Rust backend! ✅)
     Web {
-        /// Bind address (default: from config or 0.0.0.0:<`web_port`>)
+        /// TCP port (UniBin standard: `--port` binds `0.0.0.0:PORT`)
+        #[arg(long)]
+        port: Option<u16>,
+
+        /// Bind address override (takes precedence over --port)
         #[arg(long)]
         bind: Option<String>,
 
@@ -103,7 +107,11 @@ enum Commands {
 
     /// Run headless API server (Pure Rust! ✅)
     Headless {
-        /// Bind address (default: from config or 0.0.0.0:<`headless_port`>)
+        /// TCP port (UniBin standard: `--port` binds `0.0.0.0:PORT`)
+        #[arg(long)]
+        port: Option<u16>,
+
+        /// Bind address override (takes precedence over --port)
         #[arg(long)]
         bind: Option<String>,
 
@@ -251,11 +259,12 @@ async fn dispatch_async(
             tui_mode::run(scenario, refresh_rate, data_service).await
         }
         Commands::Web {
+            port,
             bind,
             scenario,
             workers,
         } => {
-            let bind_addr = bind.unwrap_or_else(|| config.network.web_addr().to_string());
+            let bind_addr = resolve_bind(bind, port, || config.network.web_addr().to_string());
             tracing::info!(
                 mode = "web",
                 bind = %bind_addr,
@@ -264,8 +273,12 @@ async fn dispatch_async(
             );
             web_mode::run(&bind_addr, scenario, workers, data_service).await
         }
-        Commands::Headless { bind, workers } => {
-            let bind_addr = bind.unwrap_or_else(|| config.network.headless_addr().to_string());
+        Commands::Headless {
+            port,
+            bind,
+            workers,
+        } => {
+            let bind_addr = resolve_bind(bind, port, || config.network.headless_addr().to_string());
             tracing::info!(
                 mode = "headless",
                 bind = %bind_addr,
@@ -291,6 +304,21 @@ async fn dispatch_async(
             unreachable!("GUI modes handled on main thread")
         }
     }
+}
+
+/// Resolve bind address from `--bind` (explicit), `--port` (UniBin standard), or config default.
+fn resolve_bind(
+    bind: Option<String>,
+    port: Option<u16>,
+    default: impl FnOnce() -> String,
+) -> String {
+    if let Some(b) = bind {
+        return b;
+    }
+    if let Some(p) = port {
+        return format!("0.0.0.0:{p}");
+    }
+    default()
 }
 
 /// Initialize structured logging with proper filtering

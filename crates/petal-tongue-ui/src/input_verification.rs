@@ -263,7 +263,7 @@ impl InputVerificationSystem {
         for (modality, verification) in &mut self.verifications {
             verification.update_interactivity();
 
-            if verification.is_stale(Duration::from_secs(300)) {
+            if verification.is_stale(Duration::from_mins(5)) {
                 warn!("⚠️  {:?} input is stale (no recent input)", modality);
                 verification.status_message =
                     format!("{modality:?} input: No recent activity detected");

@@ -26,15 +26,11 @@ pub fn handle_proprioception_get(
 ) -> JsonRpcResponse {
     let uptime = handlers.uptime_seconds();
 
-    let (active_scenes, frame_count) = handlers
-        .viz_state
-        .read()
-        .map(|state| {
-            let scenes = state.sessions.len();
-            let frames: u64 = state.sessions.values().map(|s| s.frame_count).sum();
-            (scenes, frames)
-        })
-        .unwrap_or((0, 0));
+    let (active_scenes, frame_count) = handlers.viz_state.read().map_or((0, 0), |state| {
+        let scenes = state.sessions.len();
+        let frames: u64 = state.sessions.values().map(|s| s.frame_count).sum();
+        (scenes, frames)
+    });
 
     let has_ui = handlers.rendering_awareness.is_some();
 

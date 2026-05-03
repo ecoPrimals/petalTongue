@@ -71,12 +71,8 @@ impl RenderingCapabilities {
         }
 
         // 2. Graphical environment detected → use defaults (actual size from winit at runtime)
-        let has_graphical = std::env::var("DISPLAY")
-            .map(|d| !d.is_empty())
-            .unwrap_or(false)
-            || std::env::var("WAYLAND_DISPLAY")
-                .map(|w| !w.is_empty())
-                .unwrap_or(false);
+        let has_graphical = std::env::var("DISPLAY").is_ok_and(|d| !d.is_empty())
+            || std::env::var("WAYLAND_DISPLAY").is_ok_and(|w| !w.is_empty());
 
         if has_graphical {
             return (1400.0, 900.0);
@@ -122,18 +118,12 @@ impl RenderingCapabilities {
         }
 
         // 2. Wayland/touch-friendly session (often indicates touch-capable device)
-        if std::env::var("WAYLAND_DISPLAY")
-            .map(|w| !w.is_empty())
-            .unwrap_or(false)
-        {
+        if std::env::var("WAYLAND_DISPLAY").is_ok_and(|w| !w.is_empty()) {
             // Wayland is common on touch devices (tablets, convertibles)
             // Conservative: don't assume touch from Wayland alone
         }
 
-        if std::env::var("XDG_SESSION_TYPE")
-            .map(|s| s.to_lowercase() == "wayland")
-            .unwrap_or(false)
-        {
+        if std::env::var("XDG_SESSION_TYPE").is_ok_and(|s| s.to_lowercase() == "wayland") {
             // Wayland session - could be touch, but we already checked devices
         }
 
