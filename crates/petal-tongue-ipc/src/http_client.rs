@@ -2,8 +2,8 @@
 //! Thin HTTP client for local/LAN communication (plain HTTP, no TLS).
 //!
 //! Built on `hyper` + `hyper-util` — both already in the dep tree from `axum`.
-//! petalTongue never owns a TLS stack; external HTTPS is delegated to Songbird
-//! via tower atomic IPC.
+//! petalTongue never owns a TLS stack; external HTTPS is delegated to the
+//! TLS-capable provider via tower atomic IPC.
 //!
 //! This module replaces `reqwest` for all local HTTP needs (biomeOS API,
 //! mDNS discovery, entropy streaming, SSE consumption, etc.).
@@ -92,7 +92,7 @@ impl HttpResponse {
 /// Thin HTTP client for plain-HTTP local/LAN communication.
 ///
 /// Wraps `hyper-util`'s connection-pooling client. Supports GET and POST with
-/// configurable timeouts. No TLS — Songbird handles that via IPC relay.
+/// configurable timeouts. No TLS — the TLS provider handles that via IPC relay.
 #[derive(Clone)]
 pub struct LocalHttpClient {
     client: HyperClient,

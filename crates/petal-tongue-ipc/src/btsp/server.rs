@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Server-side BTSP handshake (delegates crypto to BearDog).
+//! Server-side BTSP handshake (delegates crypto to the security provider).
 
 use super::client::provider_call;
 use super::error::BtspHandshakeError;
@@ -14,7 +14,7 @@ fn json_str(val: &serde_json::Value, key: &str) -> String {
         .to_owned()
 }
 
-/// Read `ClientHello`, create a BearDog session, and send `ServerHello`.
+/// Read `ClientHello`, create a provider session, and send `ServerHello`.
 ///
 /// Returns `(session_token, server_ephemeral_pub, client_ephemeral_pub, challenge)`.
 async fn exchange_hello<R, W>(
@@ -93,7 +93,7 @@ struct VerifyResult {
     session_key: Option<Vec<u8>>,
 }
 
-/// Read `ChallengeResponse`, verify via BearDog, and reject on failure.
+/// Read `ChallengeResponse`, verify via the security provider, and reject on failure.
 async fn verify_challenge<R, W>(
     reader: &mut R,
     writer: &mut W,
@@ -162,7 +162,7 @@ where
 }
 
 /// Perform the server-side BTSP handshake on a connection, delegating
-/// crypto to BearDog via `btsp.session.create`, `btsp.session.verify`,
+/// crypto to the security provider via `btsp.session.create`, `btsp.session.verify`,
 /// and `btsp.negotiate`.
 ///
 /// Returns a [`HandshakeResult`] containing the negotiated cipher and

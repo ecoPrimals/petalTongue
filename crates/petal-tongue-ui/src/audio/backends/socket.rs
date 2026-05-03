@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Socket audio backend (stub — evolution target for ToadStool `audio.play` capability)
+//! Socket audio backend (stub — evolution target for `audio.play` capability provider)
 //!
 //! # Cargo feature
 //!
@@ -8,10 +8,10 @@
 //!
 //! # Evolution path
 //!
-//! This backend should be replaced by a capability-discovery call to ToadStool:
+//! This backend should be replaced by a capability-discovery call:
 //! `capability.call("audio.play", ...)` via the Neural API. petalTongue should not
-//! implement PipeWire/PulseAudio wire protocols — ToadStool is the hardware interaction
-//! primal and owns audio device access.
+//! implement PipeWire/PulseAudio wire protocols — the hardware interaction primal
+//! owns audio device access.
 //!
 //! # Current status
 //!

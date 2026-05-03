@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 pub struct BiomeOSClient {
     /// `BiomeOS` API base URL
     base_url: String,
-    /// HTTP client (thin hyper wrapper — no TLS, Songbird handles that)
+    /// HTTP client (thin hyper wrapper — no TLS, delegated to ecosystem provider)
     client: LocalHttpClient,
     /// Enable fixture mode for development (deterministic data when biomeOS unavailable).
     fixture_mode: bool,

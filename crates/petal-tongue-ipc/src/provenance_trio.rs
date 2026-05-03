@@ -3,9 +3,9 @@
 //!
 //! Connects petalTongue visualization sessions to the provenance trio:
 //!
-//! - **rhizoCrypt** (ephemeral DAG): Creates session vertices for active visualizations
-//! - **sweetGrass** (attribution): Records data source contributions
-//! - **loamSpine** (permanent ledger): Archives exported visualizations
+//! - **ephemeral DAG** (`dag.session`): Creates session vertices for active visualizations
+//! - **attribution** (`braid.create`): Records data source contributions
+//! - **permanent ledger** (`spine.create`): Archives exported visualizations
 //!
 //! All primals are discovered by capability, not by name. If any primal in the
 //! trio is unavailable, petalTongue continues operating without provenance
@@ -51,11 +51,11 @@ pub(crate) enum ProvenanceRpcError {
 pub struct ProvenanceSession {
     /// Session identifier (matches `RenderSession` id)
     pub session_id: String,
-    /// rhizoCrypt vertex ID (if registered)
+    /// Ephemeral DAG vertex ID (if registered via `dag.session`)
     pub vertex_id: Option<String>,
-    /// sweetGrass braid ID (if created)
+    /// Attribution braid ID (if created via `braid.create`)
     pub braid_id: Option<String>,
-    /// loamSpine entry ID (if archived)
+    /// Permanent ledger entry ID (if archived via `spine.create`)
     pub spine_entry_id: Option<String>,
 }
 
@@ -74,9 +74,9 @@ impl ProvenanceTrioClient {
     /// Discover the provenance trio by capability.
     ///
     /// Scans runtime sockets for primals providing:
-    /// - `dag.session` (rhizoCrypt or equivalent)
-    /// - `braid.create` (sweetGrass or equivalent)
-    /// - `spine.create` (loamSpine or equivalent)
+    /// - `dag.session` (ephemeral DAG provider)
+    /// - `braid.create` (attribution provider)
+    /// - `spine.create` (permanent ledger provider)
     #[must_use]
     pub fn discover() -> Self {
         Self {
@@ -118,7 +118,7 @@ impl ProvenanceTrioClient {
 
     /// Begin provenance tracking for a visualization session.
     ///
-    /// Creates an ephemeral DAG vertex and a sweetGrass braid.
+    /// Creates an ephemeral DAG vertex and an attribution braid.
     /// Returns a `ProvenanceSession` with IDs for further tracking.
     pub async fn begin_session(
         &self,
@@ -133,7 +133,7 @@ impl ProvenanceTrioClient {
             spine_entry_id: None,
         };
 
-        // Register with ephemeral DAG (rhizoCrypt or equivalent)
+        // Register with ephemeral DAG provider (capability: dag.session)
         if let Some(socket) = &self.ephemeral_socket {
             match self
                 .send_rpc(
@@ -163,7 +163,7 @@ impl ProvenanceTrioClient {
             }
         }
 
-        // Create attribution braid (sweetGrass or equivalent)
+        // Create attribution braid (capability: braid.create)
         if let Some(socket) = &self.attribution_socket {
             match self
                 .send_rpc(
@@ -327,11 +327,11 @@ impl ProvenanceTrioClient {
 /// Availability of provenance trio members.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct TrioAvailability {
-    /// Ephemeral DAG (rhizoCrypt) is available.
+    /// Ephemeral DAG provider (`dag.session`) is available.
     pub ephemeral_dag: bool,
-    /// Attribution (sweetGrass) is available.
+    /// Attribution provider (`braid.create`) is available.
     pub attribution: bool,
-    /// Permanent ledger (loamSpine) is available.
+    /// Permanent ledger provider (`spine.create`) is available.
     pub permanent_ledger: bool,
 }
 

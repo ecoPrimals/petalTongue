@@ -62,9 +62,10 @@ pub struct EcoPrimalTrustAdapter {
 }
 
 impl EcoPrimalTrustAdapter {
-    /// Create adapter with default configuration
+    /// Create adapter with default configuration.
     ///
-    /// This is temporary - in the future, config will come from ecosystem discovery
+    /// Prefer [`from_capability_spec`](Self::from_capability_spec) when ecosystem
+    /// discovery is available; this constructor uses built-in defaults.
     #[must_use]
     pub fn new() -> Self {
         Self::from_config(TrustConfig::default())

@@ -7,11 +7,11 @@
 //!
 //! Wire protocol (from PRIMALSPRING_PHASE45C_BTSP_DEFAULT_UPSTREAM_HANDOFF):
 //!   1. Read ClientHello line → extract `client_ephemeral_pub`
-//!   2. Call BearDog `btsp.session.create` → get session_token, server_ephemeral_pub, challenge
+//!   2. Call provider `btsp.session.create` → get session_token, server_ephemeral_pub, challenge
 //!   3. Write ServerHello line
 //!   4. Read ChallengeResponse line → extract response, preferred_cipher
-//!   5. Call BearDog `btsp.session.verify`
-//!   6. Call BearDog `btsp.negotiate` (best-effort, non-fatal — Phase 3 cipher selection)
+//!   5. Call provider `btsp.session.verify`
+//!   6. Call provider `btsp.negotiate` (best-effort, non-fatal — Phase 3 cipher selection)
 //!   7. Write HandshakeComplete line (includes negotiated cipher or `"null"`)
 
 use super::client::provider_call;
@@ -82,7 +82,7 @@ fn json_str_or(val: &serde_json::Value, key: &str, alt: &str) -> String {
         .to_owned()
 }
 
-/// Exchange hello with BearDog: read ClientHello, create session, write ServerHello.
+/// Exchange hello with provider: read ClientHello, create session, write ServerHello.
 async fn exchange_hello_json_line<R, W>(
     reader: &mut R,
     writer: &mut W,
@@ -130,7 +130,7 @@ where
         .unwrap_or("")
         .to_owned();
 
-    tracing::debug!(session_token = %session_token, "BTSP JSON-line: session created via BearDog");
+    tracing::debug!(session_token = %session_token, "BTSP JSON-line: session created via security provider");
 
     let server_hello = serde_json::json!({
         "version": 1,

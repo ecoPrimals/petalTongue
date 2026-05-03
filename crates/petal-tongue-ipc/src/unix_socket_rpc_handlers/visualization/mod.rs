@@ -599,7 +599,7 @@ pub fn handle_texture_upload(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
 
 /// Handle `visualization.texture.attach`: register a shared-memory texture source.
 ///
-/// Actual memfd mapping is future work (toadStool Display Phase 2). For now this
+/// Actual memfd mapping is future work (Display Phase 2). For now this
 /// stores a placeholder entry so the `texture_id` is valid for scene graph references.
 pub fn handle_texture_attach(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonRpcResponse {
     let id = req.id;
@@ -644,7 +644,7 @@ pub fn handle_texture_attach(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
         source = %attach.source,
         width = attach.width,
         height = attach.height,
-        "Texture attached (placeholder — memfd mapping pending toadStool Phase 2)"
+        "Texture attached (placeholder — memfd mapping pending display capability Phase 2)"
     );
 
     JsonRpcResponse::success(

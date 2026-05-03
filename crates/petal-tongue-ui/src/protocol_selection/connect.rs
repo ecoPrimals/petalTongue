@@ -69,7 +69,7 @@ pub async fn connect_with_priority(endpoint: &str) -> TarpcResult<PrimalConnecti
     }
 }
 
-/// Connect via HTTP with graceful fallback (TLS delegated to Songbird)
+/// Connect via HTTP with graceful fallback (TLS delegated to ecosystem provider)
 async fn connect_https(endpoint: &str) -> TarpcResult<PrimalConnection> {
     let client =
         petal_tongue_ipc::LocalHttpClient::with_timeout(std::time::Duration::from_secs(10));

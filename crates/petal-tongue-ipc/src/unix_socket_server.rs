@@ -156,7 +156,7 @@ impl UnixSocketServer {
     /// Start the server: bind UDS (always) and optionally TCP, then accept connections.
     ///
     /// BTSP Phase 2: when `BtspHandshakeConfig` is available from the environment,
-    /// every accepted connection must complete a handshake (delegated to BearDog)
+    /// every accepted connection must complete a handshake (delegated to the security provider)
     /// before JSON-RPC is served. Development mode (no FAMILY_ID) skips handshake.
     pub async fn start(self: Arc<Self>) -> Result<(), IpcServerError> {
         let posture = crate::btsp::current_btsp_posture();

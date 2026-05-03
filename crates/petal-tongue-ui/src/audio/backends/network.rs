@@ -51,7 +51,7 @@ impl NetworkBackend {
         if socket_path.is_some() {
             info!("Discovered ecosystem audio provider via biomeOS capability discovery");
         } else {
-            debug!("No ecosystem audio provider found (expected until ToadStool wires audio.*)");
+            debug!("No ecosystem audio provider found (expected until audio.* capability is wired)");
         }
         Self { socket_path }
     }

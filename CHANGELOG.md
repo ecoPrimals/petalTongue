@@ -6,6 +6,63 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### TRUE PRIMAL Name Evolution — Capability-Based Language (May 3, 2026)
+
+#### Changed
+- **BTSP `EnforceBearDog` → `EnforceProvider`**: Renamed handshake policy enum
+  variant to capability-based term. All doc comments and log messages evolved
+  from "BearDog" to "security provider" across 8 BTSP files (types.rs, server.rs,
+  json_line.rs, phase3.rs, error.rs, client.rs, mod.rs, tests.rs).
+- **Audio backends**: "ToadStool" references evolved to `audio.play` capability
+  provider language in socket.rs, direct.rs, network.rs, mod.rs.
+- **Provenance trio**: `rhizoCrypt`/`sweetGrass`/`loamSpine` references in
+  provenance_trio.rs evolved to capability-based terms (`dag.session`,
+  `braid.create`, `spine.create` providers). Historical attribution in
+  ipc_errors.rs and resilience.rs preserved as code provenance.
+- **HTTP/TLS delegation**: "Songbird" references in http_client.rs,
+  https_client.rs, connect.rs, biomeos_client.rs, stream.rs evolved to
+  "TLS provider" / "ecosystem provider".
+- **Scene signer**: "BearDog" references evolved to "security provider".
+- **Visualization handler**: "toadStool Phase 2" evolved to "display capability
+  Phase 2" in texture attach placeholder docs.
+- **Trust adapter**: "temporary" comment evolved to proper API guidance pointing
+  to `from_capability_spec()`.
+- **README.md**: BTSP quality row updated from Phase 2 to Phase 3 with
+  ChaCha20-Poly1305 and 13/13 ecosystem parity.
+
+#### Verified
+- Zero hardcoded primal names in production code (BearDog, ToadStool, Songbird
+  only remain in test fixtures and historical code provenance comments).
+- `cargo clippy --workspace --all-features`: 0 warnings.
+- `cargo doc --workspace --no-deps` with `-D warnings`: 0 warnings.
+- `cargo test --workspace --all-features`: 2,261+ passed, 0 failed.
+
+### BTSP Phase 3 Transport Switch — 13/13 Ecosystem Parity (May 3, 2026)
+
+#### Added
+- **`btsp/phase3.rs`**: New module implementing ChaCha20-Poly1305 AEAD encrypted
+  frame I/O for BTSP Phase 3. Includes `SessionKeys` (HKDF-SHA256 directional
+  key derivation), `Phase3Session` (encrypt/decrypt), `read_encrypted_frame`,
+  `write_encrypted_frame`, `handle_encrypted_stream`, and `try_phase3_negotiate`
+  for post-handshake nonce exchange. 10 unit tests.
+- **`HandshakeResult` struct** (types.rs): Bundles session_token + cipher +
+  session_key from Phase 2 handshake for Phase 3 upgrade.
+- **`KeyDerivationFailed` + `Phase3Crypto` error variants** (error.rs): Typed
+  errors for HKDF and AEAD failures.
+- **Dependencies**: `chacha20poly1305 0.10`, `hkdf 0.12`, `sha2 0.10`,
+  `rand 0.8`, `zeroize 1` — all pure Rust, compatible with digest 0.10 ecosystem.
+
+#### Changed
+- **`server.rs` + `json_line.rs`**: Both handshake functions now return
+  `HandshakeResult` including base64-decoded session_key from
+  `btsp.session.verify`.
+- **`unix_socket_server.rs`**: After handshake, checks if cipher is
+  `chacha20-poly1305` and session_key is present. If so, upgrades connection to
+  encrypted frame I/O via `try_phase3_upgrade_split`. Both UDS and TCP paths
+  covered. Extracted `run_uds_handshake` helper for line-count compliance.
+- **Wire format**: `[4B BE length][12B random nonce][ciphertext + 16B Poly1305 tag]`
+  per ecosystem standard.
+
 ### Deep Debt Sweep — Idiomatic Rust Evolution (May 3, 2026)
 
 #### Fixed
