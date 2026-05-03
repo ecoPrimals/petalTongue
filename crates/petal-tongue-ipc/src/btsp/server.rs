@@ -4,7 +4,7 @@
 use super::client::provider_call;
 use super::error::BtspHandshakeError;
 use super::framing::{read_frame, write_frame};
-use super::types::BtspHandshakeConfig;
+use super::types::{BtspHandshakeConfig, HandshakeResult};
 
 /// Extract a string field from a JSON value, returning empty string if absent.
 fn json_str(val: &serde_json::Value, key: &str) -> String {
@@ -87,6 +87,12 @@ where
     ))
 }
 
+/// Verify result: preferred cipher + optional session key for Phase 3.
+struct VerifyResult {
+    preferred_cipher: String,
+    session_key: Option<Vec<u8>>,
+}
+
 /// Read `ChallengeResponse`, verify via BearDog, and reject on failure.
 async fn verify_challenge<R, W>(
     reader: &mut R,
@@ -96,7 +102,7 @@ async fn verify_challenge<R, W>(
     _server_ephemeral_pub: &str,
     client_ephemeral_pub: &str,
     _challenge: &str,
-) -> Result<String, BtspHandshakeError>
+) -> Result<VerifyResult, BtspHandshakeError>
 where
     R: tokio::io::AsyncReadExt + Unpin,
     W: tokio::io::AsyncWriteExt + Unpin,
@@ -143,19 +149,28 @@ where
         return Err(BtspHandshakeError::VerifyFailed { reason });
     }
 
-    Ok(preferred_cipher)
+    use base64::Engine;
+    let session_key = verify
+        .get("session_key")
+        .and_then(serde_json::Value::as_str)
+        .and_then(|s| base64::engine::general_purpose::STANDARD.decode(s).ok());
+
+    Ok(VerifyResult {
+        preferred_cipher,
+        session_key,
+    })
 }
 
 /// Perform the server-side BTSP handshake on a connection, delegating
 /// crypto to BearDog via `btsp.session.create`, `btsp.session.verify`,
 /// and `btsp.negotiate`.
 ///
-/// After a successful handshake, the same stream is used for plain
-/// newline-delimited JSON-RPC (null cipher — Phase 3 will add encryption).
+/// Returns a [`HandshakeResult`] containing the negotiated cipher and
+/// session key material for Phase 3 transport switch.
 pub async fn perform_server_handshake<S>(
     stream: &mut S,
     config: &BtspHandshakeConfig,
-) -> Result<String, BtspHandshakeError>
+) -> Result<HandshakeResult, BtspHandshakeError>
 where
     S: tokio::io::AsyncReadExt + tokio::io::AsyncWriteExt + Unpin,
 {
@@ -171,7 +186,7 @@ pub async fn perform_server_handshake_split<R, W>(
     reader: &mut R,
     writer: &mut W,
     config: &BtspHandshakeConfig,
-) -> Result<String, BtspHandshakeError>
+) -> Result<HandshakeResult, BtspHandshakeError>
 where
     R: tokio::io::AsyncReadExt + Unpin,
     W: tokio::io::AsyncWriteExt + Unpin,
@@ -179,7 +194,7 @@ where
     let (session_token, server_pub, client_pub, challenge) =
         exchange_hello(reader, writer, config).await?;
 
-    let preferred_cipher = verify_challenge(
+    let verify = verify_challenge(
         reader,
         writer,
         config,
@@ -195,7 +210,7 @@ where
         "btsp.negotiate",
         serde_json::json!({
             "session_id": session_token,
-            "preferred_cipher": preferred_cipher,
+            "preferred_cipher": verify.preferred_cipher,
             "bond_type": "Covalent",
         }),
     )
@@ -230,6 +245,15 @@ where
             source: e,
         })?;
 
-    tracing::info!(session_token = %session_token, "BTSP handshake complete (null cipher)");
-    Ok(session_token)
+    tracing::info!(
+        session_token = %session_token,
+        cipher = %cipher,
+        has_session_key = verify.session_key.is_some(),
+        "BTSP handshake complete"
+    );
+    Ok(HandshakeResult {
+        session_token,
+        cipher,
+        session_key: verify.session_key,
+    })
 }
