@@ -16,7 +16,7 @@
 
 use super::client::provider_call;
 use super::error::BtspHandshakeError;
-use super::types::BtspHandshakeConfig;
+use super::types::{BtspHandshakeConfig, HandshakeResult};
 
 /// Read one newline-delimited JSON line.
 async fn read_json_line<R>(reader: &mut R) -> Result<serde_json::Value, BtspHandshakeError>
@@ -147,11 +147,14 @@ where
 /// The ClientHello line has already been peeked (still in the `BufReader`
 /// buffer) — this function consumes it via `read_line`, then continues the
 /// relay using JSON-line framing throughout.
+///
+/// Returns a [`HandshakeResult`] containing the negotiated cipher and
+/// session key material for Phase 3 transport switch.
 pub async fn relay_json_line_handshake_split<R, W>(
     reader: &mut R,
     writer: &mut W,
     config: &BtspHandshakeConfig,
-) -> Result<String, BtspHandshakeError>
+) -> Result<HandshakeResult, BtspHandshakeError>
 where
     R: tokio::io::AsyncBufReadExt + Unpin,
     W: tokio::io::AsyncWriteExt + Unpin,
@@ -198,6 +201,12 @@ where
         return Err(BtspHandshakeError::VerifyFailed { reason });
     }
 
+    use base64::Engine;
+    let session_key = verify_result
+        .get("session_key")
+        .and_then(serde_json::Value::as_str)
+        .and_then(|s| base64::engine::general_purpose::STANDARD.decode(s).ok());
+
     let negotiate_result = provider_call(
         &config.provider_socket,
         "btsp.negotiate",
@@ -232,9 +241,15 @@ where
 
     tracing::info!(
         session_token = %session_token,
-        "BTSP JSON-line handshake complete (cipher={cipher})"
+        cipher = %cipher,
+        has_session_key = session_key.is_some(),
+        "BTSP JSON-line handshake complete"
     );
-    Ok(session_token)
+    Ok(HandshakeResult {
+        session_token,
+        cipher,
+        session_key,
+    })
 }
 
 /// Perform JSON-line BTSP handshake on a full stream (TCP path).
@@ -244,7 +259,7 @@ where
 pub async fn relay_json_line_handshake<S>(
     stream: &mut S,
     config: &BtspHandshakeConfig,
-) -> Result<String, BtspHandshakeError>
+) -> Result<HandshakeResult, BtspHandshakeError>
 where
     S: tokio::io::AsyncReadExt + tokio::io::AsyncWriteExt + Unpin,
 {

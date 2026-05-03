@@ -55,4 +55,18 @@ pub enum BtspHandshakeError {
         /// Rejection reason from the security provider.
         reason: String,
     },
+
+    /// Phase 3 key derivation failed (HKDF or cipher init).
+    #[error("Phase 3 key derivation: {context}")]
+    KeyDerivationFailed {
+        /// Which derivation step failed.
+        context: &'static str,
+    },
+
+    /// Phase 3 AEAD encrypt/decrypt operation failed.
+    #[error("Phase 3 crypto: {context}")]
+    Phase3Crypto {
+        /// What failed (encrypt, decrypt, or frame validation).
+        context: &'static str,
+    },
 }

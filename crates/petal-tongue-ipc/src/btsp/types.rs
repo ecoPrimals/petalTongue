@@ -159,6 +159,20 @@ pub fn log_handshake_policy(policy: &HandshakePolicy) {
     }
 }
 
+/// Result of a BTSP handshake (Phase 2) with optional Phase 3 material.
+#[derive(Debug, Clone)]
+pub struct HandshakeResult {
+    /// Session token from BearDog.
+    pub session_token: String,
+    /// Negotiated cipher suite (`"chacha20-poly1305"` or `"null"`).
+    pub cipher: String,
+    /// Session key from `btsp.session.verify` (base64-decoded bytes).
+    ///
+    /// Used as the IKM for Phase 3 HKDF key derivation. `None` if
+    /// the verify response did not include a session key.
+    pub session_key: Option<Vec<u8>>,
+}
+
 /// Configuration for BTSP server-side handshake (Phase 2).
 ///
 /// When present, every accepted connection must complete a BTSP handshake
