@@ -267,7 +267,7 @@ impl ConnectionStatus {
 
         if let Some(last) = self.last_connection {
             let elapsed = last.elapsed();
-            if elapsed < Duration::from_secs(60) {
+            if elapsed < Duration::from_mins(1) {
                 ui.label(
                     RichText::new(format!(
                         "  Last connected: {:.0}s ago",

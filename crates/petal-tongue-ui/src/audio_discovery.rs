@@ -118,15 +118,12 @@ impl AudioDiscovery {
             debug!("Found PipeWire socket: {}", socket_path.display());
 
             // Check if we can access it
-            let accessible = socket_path
-                .metadata()
-                .map(|m| {
-                    use std::os::unix::fs::PermissionsExt;
-                    let mode = m.permissions().mode();
-                    // Check if socket is accessible (user or world readable/writable)
-                    (mode & 0o600) != 0 || (mode & 0o006) != 0
-                })
-                .unwrap_or(false);
+            let accessible = socket_path.metadata().is_ok_and(|m| {
+                use std::os::unix::fs::PermissionsExt;
+                let mode = m.permissions().mode();
+                // Check if socket is accessible (user or world readable/writable)
+                (mode & 0o600) != 0 || (mode & 0o006) != 0
+            });
 
             Some(AudioSocket {
                 path: socket_path,
@@ -154,14 +151,11 @@ impl AudioDiscovery {
         if socket_path.exists() {
             debug!("Found PulseAudio socket: {}", socket_path.display());
 
-            let accessible = socket_path
-                .metadata()
-                .map(|m| {
-                    use std::os::unix::fs::PermissionsExt;
-                    let mode = m.permissions().mode();
-                    (mode & 0o600) != 0 || (mode & 0o006) != 0
-                })
-                .unwrap_or(false);
+            let accessible = socket_path.metadata().is_ok_and(|m| {
+                use std::os::unix::fs::PermissionsExt;
+                let mode = m.permissions().mode();
+                (mode & 0o600) != 0 || (mode & 0o006) != 0
+            });
 
             Some(AudioSocket {
                 path: socket_path,

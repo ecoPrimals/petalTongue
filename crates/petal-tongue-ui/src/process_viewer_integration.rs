@@ -11,6 +11,7 @@
 
 use crate::proc_stats::{ProcStats, ProcessInfo as ProcProcessInfo};
 use crate::tool_integration::{ToolCapability, ToolMetadata, ToolPanel};
+use std::cmp::Reverse;
 use std::time::{Duration, Instant};
 
 /// Process information for display (wraps `proc_stats::ProcessInfo` for tests)
@@ -113,7 +114,7 @@ fn filter_and_sort_processes(
                 .partial_cmp(&a.cpu_usage)
                 .unwrap_or(std::cmp::Ordering::Equal)
         }),
-        SortColumn::Memory => processes.sort_by(|a, b| b.memory.cmp(&a.memory)),
+        SortColumn::Memory => processes.sort_by_key(|p| Reverse(p.memory)),
     }
     processes.truncate(max_display);
     processes
@@ -181,7 +182,7 @@ impl ProcessViewerTool {
     fn render_process_table(&self, ui: &mut egui::Ui) {
         use egui_extras::{Column, TableBuilder};
 
-        ui.label(format!("Showing {} processes", self.processes.len(),));
+        ui.label(format!("Showing {} processes", self.processes.len()));
 
         ui.add_space(5.0);
 

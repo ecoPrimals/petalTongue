@@ -206,9 +206,15 @@ fn test_cli_parse_headless_with_all_options() {
         "--workers",
         "2",
     ]);
-    let Commands::Headless { bind, workers } = cli.command else {
+    let Commands::Headless {
+        port,
+        bind,
+        workers,
+    } = cli.command
+    else {
         unreachable!("CLI parsed 'headless' subcommand")
     };
+    assert!(port.is_none());
     assert_eq!(bind.as_deref(), Some("0.0.0.0:7070"));
     assert_eq!(workers, 2);
 }
@@ -389,6 +395,45 @@ fn test_subcommand_routing_headless_bind_resolution() {
         unreachable!("parsed headless")
     };
     assert!(bind.is_none(), "default headless has no explicit bind");
+}
+
+/// UniBin v1.1: --port flag on headless resolves to 0.0.0.0:<port>
+#[test]
+fn test_cli_parse_headless_port_flag() {
+    let cli = Cli::parse_from(["petaltongue", "headless", "--port", "9000"]);
+    let Commands::Headless { port, bind, .. } = cli.command else {
+        unreachable!("parsed headless")
+    };
+    assert_eq!(port, Some(9000));
+    assert!(bind.is_none());
+}
+
+/// UniBin v1.1: --port flag on web resolves to 0.0.0.0:<port>
+#[test]
+fn test_cli_parse_web_port_flag() {
+    let cli = Cli::parse_from(["petaltongue", "web", "--port", "4000"]);
+    let Commands::Web { port, bind, .. } = cli.command else {
+        unreachable!("parsed web")
+    };
+    assert_eq!(port, Some(4000));
+    assert!(bind.is_none());
+}
+
+/// --bind takes precedence over --port
+#[test]
+fn test_resolve_bind_precedence() {
+    assert_eq!(
+        resolve_bind(Some("1.2.3.4:99".into()), Some(9000), || "default".into()),
+        "1.2.3.4:99"
+    );
+    assert_eq!(
+        resolve_bind(None, Some(9000), || "default".into()),
+        "0.0.0.0:9000"
+    );
+    assert_eq!(
+        resolve_bind(None, None, || "0.0.0.0:8080".into()),
+        "0.0.0.0:8080"
+    );
 }
 
 /// Config loading error path - same map_err as main() line 142

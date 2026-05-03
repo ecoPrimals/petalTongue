@@ -178,8 +178,7 @@ impl DiscoveryServiceClient {
         let last_seen = value["last_seen"].as_u64().unwrap_or_else(|| {
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_secs())
-                .unwrap_or(0) // Fallback to epoch if clock is broken
+                .map_or(0, |d| d.as_secs())
         });
 
         Ok(PrimalInfo::new(

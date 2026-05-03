@@ -6,6 +6,50 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Deep Debt Sweep — Idiomatic Rust Evolution (May 3, 2026)
+
+#### Fixed
+- **Clippy `--all-features` clean**: Fixed 25+ lints newly surfaced by running
+  clippy with `--all-features` (previously CI only ran default features).
+  - `map_unwrap_or`: `.map().unwrap_or()` → `.map_or()` / `.map_or_else()` /
+    `.is_ok_and()` across 12 files (svg.rs, data_service.rs, detection.rs,
+    methods.rs, proprioception.rs, gather.rs, startup_audio.rs, primitives.rs,
+    provider_trait.rs, live_data, audio_discovery).
+  - `duration_suboptimal_units`: `Duration::from_secs(60)` → `from_mins(1)`
+    across 5 files (timeouts.rs, types.rs, provider_trait.rs,
+    input_verification.rs, output_verification.rs, live_data).
+  - `sort_by` → `sort_by_key` in 4 files (sensor_feed, timeline_view,
+    trust_dashboard/compute, process_viewer_integration).
+  - Stale `#[expect(dead_code)]` → `#[allow(dead_code)]` in motor_state.rs.
+  - Trailing comma removal (dynamic_scenario_provider, process_viewer_integration).
+- **Doc warnings**: Fixed 4 broken intra-doc links (TextureRegistry,
+  InputAdapter, SocketBackend, DirectBackend) and 2 unclosed HTML tags.
+
+#### Added
+- **UniBin v1.1 `--port` flag**: Web and Headless modes now accept `--port`
+  per the UniBin Architecture Standard. `--bind` takes precedence; `--port`
+  resolves to `0.0.0.0:<PORT>`. New `resolve_bind()` helper and 4 tests.
+- **CI `--all-features`**: clippy, test, and doc steps now use `--all-features`.
+  Doc step added with `-D warnings` RUSTDOCFLAGS gate.
+
+#### Removed
+- **Dead `audio_web.rs`**: 301-line file using `web_audio_api` crate not in
+  Cargo.toml, never wired into module tree. Deleted.
+
+#### Changed
+- **Hardcoded test ports evolved**: headless_mode.rs and web_mode.rs tests now
+  use `constants::default_headless_bind()`, `DEFAULT_WEB_PORT`,
+  `DEFAULT_LOOPBACK_HOST` instead of literal `"0.0.0.0:8080"` strings.
+- **web/index.html**: "6 subcommands" → "7 subcommands".
+- README.md quality table updated (coverage 85%, --all-features gates).
+
+#### Verified
+- `cargo fmt --check`: 0 violations.
+- `cargo clippy --workspace --all-features -- -D warnings`: 0 warnings.
+- `cargo test --workspace --all-features`: 6,200+ passed, 0 failed.
+- `cargo doc --workspace --no-deps`: 0 warnings.
+- `cargo llvm-cov --workspace --lib`: 85.2% line coverage.
+
 ### String Error Elimination — Typed Error Evolution (May 2, 2026)
 
 #### Changed

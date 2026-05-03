@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Default [`InputAdapter`] and [`InversePipeline`](crate::interaction::InversePipeline) implementations.
+//! Default [`InputAdapter`](super::InputAdapter) and [`InversePipeline`](crate::interaction::InversePipeline) implementations.
 
 pub mod agent_adapter;
 pub mod audio_inverse;

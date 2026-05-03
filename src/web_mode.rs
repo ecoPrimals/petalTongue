@@ -199,8 +199,10 @@ mod tests {
 
     #[test]
     fn test_bind_address_parse() {
-        let addr: SocketAddr = "127.0.0.1:8080".parse().expect("valid bind");
-        assert_eq!(addr.port(), 8080);
+        use petal_tongue_core::constants::{DEFAULT_HEADLESS_PORT, DEFAULT_LOOPBACK_HOST};
+        let bind = format!("{DEFAULT_LOOPBACK_HOST}:{DEFAULT_HEADLESS_PORT}");
+        let addr: SocketAddr = bind.parse().expect("valid bind");
+        assert_eq!(addr.port(), DEFAULT_HEADLESS_PORT);
     }
 
     #[test]
@@ -211,16 +213,19 @@ mod tests {
 
     #[test]
     fn test_bind_address_default_format() {
-        // Format used by main when config fallback: "0.0.0.0:{port}"
-        let addr: SocketAddr = "0.0.0.0:3000".parse().expect("valid default bind");
-        assert_eq!(addr.port(), 3000);
+        use petal_tongue_core::constants::{DEFAULT_BIND_HOST, DEFAULT_WEB_PORT};
+        let bind = format!("{DEFAULT_BIND_HOST}:{DEFAULT_WEB_PORT}");
+        let addr: SocketAddr = bind.parse().expect("valid default bind");
+        assert_eq!(addr.port(), DEFAULT_WEB_PORT);
         assert!(addr.ip().is_unspecified());
     }
 
     #[test]
     fn test_bind_address_loopback_with_port() {
-        let addr: SocketAddr = "127.0.0.1:8080".parse().expect("valid loopback");
-        assert_eq!(addr.port(), 8080);
+        use petal_tongue_core::constants::{DEFAULT_HEADLESS_PORT, DEFAULT_LOOPBACK_HOST};
+        let bind = format!("{DEFAULT_LOOPBACK_HOST}:{DEFAULT_HEADLESS_PORT}");
+        let addr: SocketAddr = bind.parse().expect("valid loopback");
+        assert_eq!(addr.port(), DEFAULT_HEADLESS_PORT);
         assert!(addr.ip().is_loopback());
     }
 

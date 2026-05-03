@@ -165,11 +165,9 @@ impl DataService {
             (primals, edges)
         };
 
-        // Get current timestamp (fallback to 0 if system clock is invalid)
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
+            .map_or(0, |d| d.as_secs());
 
         Ok(DataSnapshot {
             primals,
@@ -194,8 +192,7 @@ impl DataService {
 
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
+            .map_or(0, |d| d.as_secs());
 
         Some(DataSnapshot {
             primals,

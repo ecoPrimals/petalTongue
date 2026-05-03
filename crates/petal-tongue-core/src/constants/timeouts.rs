@@ -20,7 +20,7 @@ pub mod discovery_timeouts {
     /// HTTP connection pool idle timeout
     pub const HTTP_POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(90);
     /// TCP keepalive interval
-    pub const HTTP_TCP_KEEPALIVE: Duration = Duration::from_secs(60);
+    pub const HTTP_TCP_KEEPALIVE: Duration = Duration::from_mins(1);
     /// HTTP/2 keepalive ping interval
     pub const HTTP2_KEEPALIVE_INTERVAL: Duration = Duration::from_secs(30);
     /// HTTP/2 keepalive ping timeout
@@ -29,7 +29,7 @@ pub mod discovery_timeouts {
     /// Discovery cache: primals TTL
     pub const CACHE_PRIMALS_TTL: Duration = Duration::from_secs(30);
     /// Discovery cache: topology TTL
-    pub const CACHE_TOPOLOGY_TTL: Duration = Duration::from_secs(60);
+    pub const CACHE_TOPOLOGY_TTL: Duration = Duration::from_mins(1);
     /// Discovery cache: health TTL
     pub const CACHE_HEALTH_TTL: Duration = Duration::from_secs(10);
 

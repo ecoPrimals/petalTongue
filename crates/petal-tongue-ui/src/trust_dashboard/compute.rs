@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Pure functions for trust display computation (fully testable, no egui context).
 
+use std::cmp::Reverse;
+
 use super::types::{AverageTrustDisplay, TrustDisplayState, TrustLevelRow, TrustSummary};
 
 /// Map a trust level label + count to a display row (emoji, color, percentage).
@@ -62,7 +64,7 @@ pub fn prepare_trust_display(summary: &TrustSummary, elapsed_secs: u64) -> Trust
         .iter()
         .map(|(label, &count)| trust_level_to_display_row(label, count, summary.total_primals))
         .collect();
-    rows.sort_by(|a, b| b.count.cmp(&a.count));
+    rows.sort_by_key(|row| Reverse(row.count));
 
     TrustDisplayState {
         rows,

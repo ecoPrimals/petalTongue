@@ -61,9 +61,7 @@ pub async fn gather_status(
 
     let status_clone = Arc::clone(&status);
     let system_info_task = tokio::spawn(async move {
-        let cpu_count = std::thread::available_parallelism()
-            .map(std::num::NonZero::get)
-            .unwrap_or(1);
+        let cpu_count = std::thread::available_parallelism().map_or(1, std::num::NonZero::get);
 
         let memory_total = get_total_memory().await;
 
