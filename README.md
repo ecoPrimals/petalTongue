@@ -121,7 +121,7 @@ petaltongue
 | Coverage | ~85% line (llvm-cov), 90% target |
 | Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin root, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
-| BTSP Phase 2 | Typed `BtspHandshakeError`, BearDog provider delegation, NULL cipher handshake operational |
+| BTSP Phase 3 | Full encrypted transport (ChaCha20-Poly1305 AEAD); HKDF-SHA256 key derivation; 13/13 ecosystem parity |
 | Files | All production files under 710 LOC (smart domain refactoring, 57+ modules) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 18 crates + sandbox) |

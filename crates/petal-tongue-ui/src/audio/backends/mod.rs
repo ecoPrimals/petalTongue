@@ -4,7 +4,7 @@
 //! Each backend implements the `AudioBackend` trait.
 //! Backends are discovered at runtime - NO hardcoding!
 //!
-//! # Feature-gated stub backends (evolution targets for ToadStool `audio.play` capability)
+//! # Feature-gated stub backends (evolution targets for `audio.play` capability provider)
 //!
 //! - **`audio-socket`**: `SocketBackend` — discovers PipeWire/PulseAudio sockets but does not
 //!   implement their wire protocols (see module docs in `socket.rs`).

@@ -7,7 +7,7 @@ use thiserror::Error;
 /// Error during a BTSP provider RPC call or handshake step.
 #[derive(Debug, Error)]
 pub enum BtspHandshakeError {
-    /// Failed to connect to the BearDog security provider socket.
+    /// Failed to connect to the security provider socket.
     #[error("BTSP provider {path}: {source}")]
     ProviderConnect {
         /// Path to the provider socket that was unreachable.
@@ -49,7 +49,7 @@ pub enum BtspHandshakeError {
     #[error("no result in provider response")]
     NoResult,
 
-    /// BearDog verification rejected the handshake.
+    /// Security provider rejected the handshake verification.
     #[error("BTSP verify failed: {reason}")]
     VerifyFailed {
         /// Rejection reason from the security provider.

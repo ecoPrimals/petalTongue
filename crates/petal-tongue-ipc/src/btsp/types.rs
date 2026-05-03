@@ -126,8 +126,8 @@ pub(super) fn sanitize_family_segment(s: &str) -> String {
 pub enum HandshakePolicy {
     /// Development: no handshake required.
     Open,
-    /// Production: BearDog handshake enforced on all connections.
-    EnforceBearDog {
+    /// Production: security provider handshake enforced on all connections.
+    EnforceProvider {
         /// Family identifier.
         family_id: String,
     },
@@ -138,7 +138,7 @@ pub enum HandshakePolicy {
 pub fn handshake_policy(posture: &BtspPosture) -> HandshakePolicy {
     match posture {
         BtspPosture::Development => HandshakePolicy::Open,
-        BtspPosture::Production { family_id } => HandshakePolicy::EnforceBearDog {
+        BtspPosture::Production { family_id } => HandshakePolicy::EnforceProvider {
             family_id: family_id.clone(),
         },
     }
@@ -150,10 +150,10 @@ pub fn log_handshake_policy(policy: &HandshakePolicy) {
         HandshakePolicy::Open => {
             tracing::debug!("BTSP Phase 2: development mode — no handshake required");
         }
-        HandshakePolicy::EnforceBearDog { family_id } => {
+        HandshakePolicy::EnforceProvider { family_id } => {
             tracing::info!(
                 family_id = %family_id,
-                "BTSP Phase 2: BearDog handshake enforced on all connections"
+                "BTSP Phase 2: security provider handshake enforced on all connections"
             );
         }
     }
@@ -162,7 +162,7 @@ pub fn log_handshake_policy(policy: &HandshakePolicy) {
 /// Result of a BTSP handshake (Phase 2) with optional Phase 3 material.
 #[derive(Debug, Clone)]
 pub struct HandshakeResult {
-    /// Session token from BearDog.
+    /// Session token from the security provider.
     pub session_token: String,
     /// Negotiated cipher suite (`"chacha20-poly1305"` or `"null"`).
     pub cipher: String,
@@ -176,10 +176,10 @@ pub struct HandshakeResult {
 /// Configuration for BTSP server-side handshake (Phase 2).
 ///
 /// When present, every accepted connection must complete a BTSP handshake
-/// via the BearDog security provider before JSON-RPC is served.
+/// via the security provider before JSON-RPC is served.
 #[derive(Debug, Clone)]
 pub struct BtspHandshakeConfig {
-    /// Path to BearDog's UDS socket for `btsp.session.*` RPCs.
+    /// Path to the security provider's UDS socket for `btsp.session.*` RPCs.
     pub provider_socket: std::path::PathBuf,
     /// Family identifier.
     pub family_id: String,
@@ -230,9 +230,9 @@ impl BtspHandshakeConfig {
         })
     }
 
-    /// Load the family seed from environment, base64-encoded for BearDog.
+    /// Load the family seed from environment, base64-encoded for the provider.
     ///
-    /// BearDog's `btsp.session.create` handler base64-decodes the
+    /// The provider's `btsp.session.create` handler base64-decodes the
     /// `family_seed` parameter. This function reads the raw env var
     /// (hex string from `nucleus_launcher.sh`), trims whitespace, and
     /// base64-encodes the bytes for the wire format.

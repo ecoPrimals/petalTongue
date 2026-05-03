@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Direct device backend (stub — evolution target for ToadStool `audio.play` capability)
+//! Direct device backend (stub — evolution target for `audio.play` capability provider)
 //!
 //! # Cargo feature
 //!
@@ -8,9 +8,9 @@
 //!
 //! # Evolution path
 //!
-//! This backend should be replaced by a capability-discovery call to ToadStool:
+//! This backend should be replaced by a capability-discovery call:
 //! `capability.call("audio.play", ...)` via the Neural API. petalTongue should not
-//! own ALSA/ioctl/PipeWire internals — ToadStool is the hardware interaction primal.
+//! own ALSA/ioctl/PipeWire internals — the hardware interaction primal owns audio.
 //!
 //! # Current status
 //!
@@ -19,7 +19,7 @@
 //! not implemented. Devices managed by PipeWire or PulseAudio can also block if opened without
 //! going through those stacks.
 //!
-//! Callers should treat this module as a **stub** until ToadStool audio capability is available.
+//! Callers should treat this module as a **stub** until the `audio.play` capability is available.
 //! [`AudioBackend::is_available`](crate::audio::traits::AudioBackend::is_available)
 //! always returns `false`; [`initialize`](crate::audio::traits::AudioBackend::initialize) and
 //! [`play_samples`](crate::audio::traits::AudioBackend::play_samples) return

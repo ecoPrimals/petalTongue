@@ -39,7 +39,7 @@ pub struct SessionKeys {
 impl SessionKeys {
     /// Derive directional session keys from the handshake material.
     ///
-    /// Per BearDog W81 / ecosystem standard:
+    /// Per ecosystem standard (W81):
     /// - `salt = client_nonce || server_nonce`
     /// - `ikm  = handshake_key` (session_key from `btsp.session.verify`)
     /// - `info = "btsp-session-v1-c2s"` → client-to-server key

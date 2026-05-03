@@ -93,7 +93,7 @@ pub async fn stream_entropy(
     // 3. Prepare payload
     let _payload = serde_json::to_vec(&encrypted)?;
 
-    // 4. Stream via local HTTP (Songbird handles TLS relay when needed)
+    // 4. Stream via local HTTP (TLS provider handles relay when needed)
     let client =
         petal_tongue_ipc::LocalHttpClient::with_timeout(std::time::Duration::from_secs(30));
 
@@ -229,7 +229,7 @@ mod tests {
         );
 
         // Note: Can't decrypt with different key (which is expected in production)
-        // In production, only biomeOS/BearDog with the matching private key can decrypt
+        // In production, only the security provider with the matching private key can decrypt
     }
 
     #[test]

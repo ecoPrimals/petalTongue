@@ -143,8 +143,8 @@ fn handshake_enforced_in_production() {
         family_id: "x".to_string(),
     };
     match handshake_policy(&p) {
-        HandshakePolicy::EnforceBearDog { family_id } => assert_eq!(family_id, "x"),
-        HandshakePolicy::Open => panic!("expected EnforceBearDog"),
+        HandshakePolicy::EnforceProvider { family_id } => assert_eq!(family_id, "x"),
+        HandshakePolicy::Open => panic!("expected EnforceProvider"),
     }
 }
 

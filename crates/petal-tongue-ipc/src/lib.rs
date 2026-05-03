@@ -73,7 +73,7 @@
 //! └─────────────────────────────────────────────────────────────┘
 //! ```
 
-/// BearDog Transport Security Profile (BTSP): Phase 1 guards/socket naming + Phase 2 enforcement (PT-09).
+/// Transport Security Profile (BTSP): Phase 1 guards/socket naming + Phase 2/3 enforcement (PT-09).
 pub mod btsp;
 /// Runtime capability detection for display modalities
 pub mod capability_detection;
@@ -89,7 +89,7 @@ pub mod physics_bridge;
 pub mod primal_registration;
 pub mod primal_registration_error;
 pub mod protocol;
-/// Provenance trio: rhizoCrypt + sweetGrass + loamSpine session lineage
+/// Provenance trio: ephemeral DAG + attribution + ledger session lineage
 pub mod provenance_trio;
 /// Push delivery for callback dispatches (PT-06 transport upgrade)
 pub mod push_delivery;
@@ -109,7 +109,7 @@ pub mod unix_socket_rpc_handlers;
 pub mod unix_socket_server;
 pub mod visualization_handler;
 
-// HTTP client (thin hyper wrapper — Songbird-ready)
+// HTTP client (thin hyper wrapper — TLS delegated to ecosystem provider)
 pub use http_client::{HttpClientError, HttpResponse, LocalHttpClient, SseStream, http_get};
 
 // JSON-RPC (universal fallback — listen surface)

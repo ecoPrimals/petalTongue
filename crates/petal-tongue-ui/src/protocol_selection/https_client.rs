@@ -7,7 +7,7 @@ use super::parse::{parse_capabilities_from_json, parse_health_from_json};
 
 /// HTTP client for primal-to-primal communication (plain HTTP, no TLS).
 ///
-/// TLS is delegated to Songbird via tower atomic IPC.
+/// TLS is delegated to the TLS-capable provider via tower atomic IPC.
 /// Falls back to HTTP when tarpc/JSON-RPC are unavailable.
 #[derive(Clone)]
 pub struct HttpsClient {

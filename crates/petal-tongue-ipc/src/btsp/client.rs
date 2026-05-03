@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! BearDog BTSP provider client (JSON-RPC over UDS).
+//! BTSP security provider client (JSON-RPC over UDS).
 
 use super::error::BtspHandshakeError;
 
-/// Call a BearDog BTSP RPC method via UDS (`btsp.session.*`, `btsp.negotiate`).
+/// Call a BTSP RPC method on the security provider via UDS (`btsp.session.*`, `btsp.negotiate`).
 pub(super) async fn provider_call(
     socket: &std::path::Path,
     method: &str,

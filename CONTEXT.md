@@ -50,10 +50,12 @@ JSON-RPC 2.0 over Unix domain sockets (primary) and TCP (`--port`).
 `ui.*`, `motor.*`, `audio.*`, `lifecycle.*`, `proprioception.get`.
 
 BTSP Phase 1 complete: family-scoped socket naming, insecure guard,
-domain symlinks (`visualization.sock`). BTSP Phase 2 complete: BearDog
-handshake delegation on both UDS and TCP, length-prefixed and JSON-line
-framing, `btsp.session.create`, `btsp.session.verify`, and `btsp.negotiate`
-via provider client (negotiate is best-effort; null cipher until Phase 3).
+domain symlinks (`visualization.sock`). BTSP Phase 2 complete: security
+provider handshake delegation on both UDS and TCP, length-prefixed and
+JSON-line framing, `btsp.session.create`, `btsp.session.verify`, and
+`btsp.negotiate` via provider client. BTSP Phase 3 complete:
+ChaCha20-Poly1305 AEAD encrypted frame I/O after negotiate; HKDF-SHA256
+directional key derivation; 13/13 ecosystem parity.
 
 ## Key Design Decisions
 
@@ -81,12 +83,12 @@ device. Other primals own platform interaction points.
 - IPC server: `visualization.*`, `interaction.*`, `capabilities.sensory.*`
 
 **Leverages (ecosystem primals via `capability.call` / JSON-RPC over UDS):**
-- `display.*` — ToadStool (window lifecycle, frame presentation)
-- `compute.*` / `math.*` — barraCuda via ToadStool (GPU dispatch)
-- `btsp.session.*` — BearDog (transport security)
-- `discovery.*` / `ipc.*` — Songbird + biomeOS (registry, routing)
-- TLS/HTTPS — Songbird relay (design ready)
-- `audio.play` / `audio.stream` — ToadStool (future, wired as Tier 1 stub)
+- `display.*` — display capability provider (window lifecycle, frame presentation)
+- `compute.*` / `math.*` — compute capability provider (GPU dispatch)
+- `btsp.session.*` — security provider (transport security)
+- `discovery.*` / `ipc.*` — discovery + registry providers (routing)
+- TLS/HTTPS — TLS capability provider relay (design ready)
+- `audio.play` / `audio.stream` — audio capability provider (stub, Tier 1)
 - `storage.put` / `storage.get` — NestGate (future)
 - `ai.query` / `ai.complete` — Squirrel (future)
 
@@ -100,8 +102,8 @@ petalTongue discovers other primals at runtime via capability-based IPC.
 It has zero compile-time knowledge of primal identities in production builds
 (fixture data gated behind `#[cfg(test)]` or `test-fixtures` feature).
 
-Coordinates with biomeOS (orchestration), Songbird (registry), BearDog
-(security/BTSP), and any primal that exposes visualization-relevant
+Coordinates with biomeOS (orchestration) and any primal that exposes
+security, registry, or visualization-relevant
 capabilities.
 
 ## Build
@@ -181,12 +183,12 @@ as idiomatic (callbacks + error trait).
 
 BTSP JSON-line handshake relay (April 23, 2026): primalSpring Phase 45c
 upstream debt resolved. New `btsp/json_line.rs` module implements full
-4-step JSON-line BTSP relay (same pattern as ToadStool, barraCuda, etc.).
-UDS/TCP accept now routes JSON-line BTSP announcements to the new relay
-instead of the length-prefixed handler. BearDog field names aligned
-(`session_token`, `response`, `family_seed`), BearDog challenge used
-(not local PRNG), `SECURITY_PROVIDER_SOCKET`/`CRYPTO_PROVIDER_SOCKET`/
-`SECURITY_SOCKET` added to provider socket cascade.
+4-step JSON-line BTSP relay (ecosystem pattern). UDS/TCP accept now routes
+JSON-line BTSP announcements to the new relay instead of the
+length-prefixed handler. Provider field names aligned (`session_token`,
+`response`, `family_seed`), provider challenge used (not local PRNG),
+`SECURITY_PROVIDER_SOCKET`/`CRYPTO_PROVIDER_SOCKET`/`SECURITY_SOCKET`
+added to provider socket cascade.
 
 PG-40 fix (April 26, 2026): `petaltongue live` and `petaltongue ui` no
 longer panic on Linux. winit event loop now runs on main thread; IPC
@@ -202,7 +204,7 @@ variant with `texture_id`, position, size, UV rect, opacity, tint. `TextureRegis
 in `VisualizationState`. `visualization.texture.upload` (base64 RGBA) and
 `visualization.texture.attach` (shared-memory placeholder) IPC methods.
 `From<Sprite> for SceneNode` bridge. All 12 exhaustive match sites updated.
-Overlay mode deferred (toadStool Display Phase 2 dependency).
+Overlay mode deferred (display capability Phase 2 dependency).
 
 Dependency consolidation (April 26, 2026): uuid unified to workspace 1.9,
 tokio-tungstenite deduplicated to workspace dep, tarpc `tcp` feature removed
@@ -324,8 +326,8 @@ Graph rendering magic numbers extracted to `constants::display`
 (GRAPH_NODE_RADIUS, stroke widths, label offsets, RGBA8_BYTES_PER_PIXEL).
 6,054+ tests, 0 Clippy warnings.
 
-Remaining backlog: BTSP Phase 3 encryption, aarch64 musl cross-compile
-for headless, audio backend wire protocols (via ToadStool `audio.play`
-capability discovery), overlay mode (toadStool Display Phase 2),
-egui texture resolution (TextureResolver with `egui::Shape::image`),
-BearDog crypto.sign delegation for scene signing (currently local BLAKE3).
+Remaining backlog: aarch64 musl cross-compile for headless, audio backend
+wire protocols (via `audio.play` capability discovery), overlay mode
+(display capability Phase 2), egui texture resolution (TextureResolver
+with `egui::Shape::image`), `crypto.sign` delegation to security provider
+for scene signing (currently local BLAKE3).

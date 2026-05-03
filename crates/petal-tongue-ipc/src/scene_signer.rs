@@ -2,13 +2,13 @@
 //! Scene graph integrity signing using BLAKE3 keyed hash.
 //!
 //! Implements the `visualization` purpose key from the NUCLEUS Two-Tier Crypto Model.
-//! When a purpose key is available (via `PETALTONGUE_SCENE_KEY` env var or BearDog
+//! When a purpose key is available (via `PETALTONGUE_SCENE_KEY` env var or security provider
 //! `secrets.retrieve("visualization")`), scene pushes carry a BLAKE3 keyed-hash
 //! signature that compositions can verify to ensure authentic UI updates.
 //!
 //! Key sources (priority order):
 //! 1. `PETALTONGUE_SCENE_KEY` — hex-encoded 32-byte key from composition bootstrap
-//! 2. Future: BearDog `crypto.sign` delegation via IPC
+//! 2. Future: `crypto.sign` delegation to security provider via IPC
 //! 3. If no key is available, signing is skipped (unsigned scenes are valid but unverified)
 
 /// A scene signer that produces BLAKE3 keyed-hash signatures.
@@ -39,7 +39,7 @@ impl SceneSigner {
         Self { key }
     }
 
-    /// Create a signer with an explicit key (for testing or BearDog delegation).
+    /// Create a signer with an explicit key (for testing or provider delegation).
     #[must_use]
     pub const fn with_key(key: [u8; blake3::KEY_LEN]) -> Self {
         Self { key: Some(key) }
