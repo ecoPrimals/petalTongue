@@ -191,8 +191,8 @@ impl BtspHandshakeConfig {
     /// Returns `Some` when `FAMILY_ID`/`PETALTONGUE_FAMILY_ID` is set to a
     /// production value (non-empty, not `"default"`).
     ///
-    /// Provider socket resolution:
-    /// `BTSP_PROVIDER_SOCKET` > `BEARDOG_SOCKET` > `SECURITY_PROVIDER_SOCKET` >
+    /// Provider socket resolution (first match wins):
+    /// `BTSP_PROVIDER_SOCKET` > `BEARDOG_SOCKET` (legacy) > `SECURITY_PROVIDER_SOCKET` >
     /// `CRYPTO_PROVIDER_SOCKET` > `SECURITY_SOCKET` >
     /// `$BIOMEOS_SOCKET_DIR/{provider}-{family_id}.sock`.
     #[must_use]
@@ -237,7 +237,7 @@ impl BtspHandshakeConfig {
     /// (hex string from `nucleus_launcher.sh`), trims whitespace, and
     /// base64-encodes the bytes for the wire format.
     ///
-    /// Resolution: `BEARDOG_FAMILY_SEED` > `FAMILY_SEED`.
+    /// Resolution: `BEARDOG_FAMILY_SEED` (legacy) > `FAMILY_SEED`.
     /// Returns `None` if neither is set.
     #[must_use]
     pub fn load_family_seed(&self) -> Option<String> {
