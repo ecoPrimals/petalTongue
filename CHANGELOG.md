@@ -56,7 +56,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   only remain in test fixtures and historical code provenance comments).
 - `cargo clippy --workspace --all-features`: 0 warnings.
 - `cargo doc --workspace --no-deps` with `-D warnings`: 0 warnings.
-- `cargo test --workspace --all-features`: 2,261+ passed, 0 failed.
+- `cargo test --workspace --all-features`: 6,200+ passed, 0 failed.
 
 ### BTSP Phase 3 Transport Switch — 13/13 Ecosystem Parity (May 3, 2026)
 

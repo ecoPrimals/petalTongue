@@ -201,13 +201,13 @@ Key specs:
 
 ## Cross-Primal Integration
 
-See `infra/wateringHole/petaltongue/` for inter-primal standards:
+See `../../infra/wateringHole/petaltongue/` (ecoPrimals monorepo root) for inter-primal standards:
 - `VISUALIZATION_INTEGRATION_GUIDE.md` -- How other primals send data to petalTongue
 - `SENSORY_CAPABILITY_MATRIX.md` -- Input×output capability negotiation protocol
 - `SCENE_FORMAT_REFERENCE.md` -- GameScene, Soundscape, narrative JSON schemas
 - `PETALTONGUE_NEEDS_FROM_ECOSYSTEM.md` -- Ecosystem dependency map
 
-See `infra/wateringHole/handoffs/` for sprint handoff documents and evolution history.
+See `../../infra/wateringHole/handoffs/` for sprint handoff documents and evolution history.
 
 ---
 
@@ -236,4 +236,4 @@ See `infra/wateringHole/handoffs/` for sprint handoff documents and evolution hi
 | Game mechanics (doom-core) | ORC (Open RPG Creative License) |
 | Specifications & documentation | CC-BY-SA 4.0 |
 
-SPDX headers on all source files. See `infra/wateringHole/` for provenance guidance.
+SPDX headers on all source files. See `../../infra/wateringHole/` for provenance guidance.
