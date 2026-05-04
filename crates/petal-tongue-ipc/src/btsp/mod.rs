@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! BearDog-derived Transport Security Profile (BTSP).
+//! Ecosystem Transport Security Profile (BTSP).
 //!
 //! Phase 1: insecure startup guard, family-scoped socket names, and visualization symlinks.
 //! Phase 2: handshake enforcement via security provider delegation.
