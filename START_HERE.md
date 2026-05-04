@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: April 30, 2026 (PT-04/PT-09 fixes, dev dep consolidation, graph rendering constants)
+**Updated**: May 4, 2026 (Phase 58 audit closure, GAP-12 schemas, BTSP Phase 3, TRUE PRIMAL evolution)
 
 ---
 
@@ -59,8 +59,8 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 6,054+ tests
-cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace --all-features           # 6,200+ tests
+cargo clippy --workspace --all-features -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
 cargo llvm-cov --workspace --summary-only       # Coverage (~90% line)
@@ -86,7 +86,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 8. **Zero `dyn`** -- Enum dispatch and generics for custom traits; `dyn` only for `Error`/closures.
 9. **SPDX headers** -- `// SPDX-License-Identifier: AGPL-3.0-or-later` on all `.rs` files.
 10. **Semantic naming** -- JSON-RPC methods follow `{domain}.{operation}` pattern.
-11. **BTSP Phase 1** -- `validate_insecure_guard()` at startup; family-scoped sockets when `FAMILY_ID` set; `BIOMEOS_INSECURE` guard prevents conflicting posture.
+11. **BTSP Phases 1-3** -- Phase 1: `validate_insecure_guard()` at startup; family-scoped sockets. Phase 2: security provider handshake delegation (UDS + TCP). Phase 3: ChaCha20-Poly1305 AEAD encrypted frame I/O after `btsp.negotiate`; 13/13 ecosystem parity.
 
 ---
 
@@ -151,12 +151,12 @@ only in `primal_names` constants for logging context.
 - **wetSpring** -- Backpressure-aware streaming, Scatter 2D ordinations
 - **ludoSpring** -- 7 GameDataChannel types, 60 Hz sensor feed, GameScene/Soundscape rendering
 - **Display backend** -- Discovered via `display` capability (JSON-RPC/UDS primary, capability-discovered)
-- **Audio backend** -- Discovered via `audio.synthesize` capability
+- **Audio backend** -- Discovered via `audio.play` capability
 - **GPU compute** -- Discovered via `compute.dispatch` / `physics-compute` capabilities
 - **Discovery service** -- Discovered via `discovery.query_capability`
 - **AI agent adapter** -- `ai_adapter` (InputModality::Agent, AgentInputAdapter)
 
-See `infra/wateringHole/` for inter-primal standards and handoff documents.
+See `../../infra/wateringHole/` (ecoPrimals monorepo root) for inter-primal standards and handoff documents.
 
 ---
 

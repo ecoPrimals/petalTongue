@@ -755,7 +755,7 @@ mod tests {
 
 ```bash
 #!/bin/bash
-# showcase/awakening-demo.sh
+# Example: awakening demo invocation
 
 echo "🌸 petalTongue Awakening Demo"
 echo ""
@@ -767,9 +767,8 @@ echo "  4. Tutorial invitation"
 echo ""
 read -p "Press Enter to begin..."
 
-# Run with full awakening
-cargo run --release --bin petal-tongue \
-    --features embedded_startup_music,embedded_visuals
+# Run with full awakening (UniBin)
+petaltongue ui
 
 echo ""
 echo "✓ Demo complete!"

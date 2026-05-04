@@ -64,7 +64,7 @@ directional key derivation; 13/13 ecosystem parity.
 - **Grammar of Graphics**: primals send grammar expressions, petalTongue
   compiles to best available representation.
 - **No self-compute**: heavy work (GPU, physics) delegated via IPC to
-  barraCuda, toadStool, coralReef. petalTongue discovers by capability.
+  compute, display, and ledger capability providers. petalTongue discovers by capability.
 - **Feature-gated GUI**: `ui` feature (default) pulls egui/eframe/glow.
   Headless builds (`--no-default-features`) have zero native display deps.
 - **Audio discovery**: tiered backends — ecosystem primal (Tier 1, via
@@ -89,8 +89,8 @@ device. Other primals own platform interaction points.
 - `discovery.*` / `ipc.*` — discovery + registry providers (routing)
 - TLS/HTTPS — TLS capability provider relay (design ready)
 - `audio.play` / `audio.stream` — audio capability provider (stub, Tier 1)
-- `storage.put` / `storage.get` — NestGate (future)
-- `ai.query` / `ai.complete` — Squirrel (future)
+- `storage.put` / `storage.get` — storage capability provider (future)
+- `ai.query` / `ai.complete` — AI capability provider (future)
 
 The eframe/glow C/FFI stack exists only behind `ui-eframe` feature as a
 development convenience. The architectural path is EguiPixelRenderer →
@@ -111,7 +111,7 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # ~6,054+ tests, ~90% coverage
+cargo test --workspace --all-features     # 6,200+ tests, ~90% coverage
 ```
 
 ## Current State
@@ -137,8 +137,8 @@ on x86_64-apple-darwin and aarch64-apple-darwin.
 `reqwest` runtime dependency fully eliminated (April 17). Replaced with
 thin `LocalHttpClient` (hyper + hyper-util, already transitive from axum).
 `ring`, `hyper-rustls`, `rustls`, `rustls-webpki` all removed from lockfile.
-petalTongue no longer owns any TLS stack — Songbird handles external HTTPS
-via tower atomic IPC.
+petalTongue no longer owns any TLS stack — TLS-capable ecosystem provider
+handles external HTTPS via tower atomic IPC.
 
 Sprint 8: complete `dyn` trait object elimination (22 custom traits
 evolved to enum dispatch / generics), `async-trait` removed from all
@@ -325,6 +325,32 @@ assert_cmd, predicates, criterion, temp-env, mdns-sd moved to workspace.
 Graph rendering magic numbers extracted to `constants::display`
 (GRAPH_NODE_RADIUS, stroke widths, label offsets, RGBA8_BYTES_PER_PIXEL).
 6,054+ tests, 0 Clippy warnings.
+
+BTSP Phase 3 transport switch (May 3, 2026): ChaCha20-Poly1305 AEAD
+encrypted frame I/O after `btsp.negotiate` handshake. HKDF-SHA256
+directional key derivation (client→server / server→client). Wire format:
+`[4B BE length][12B nonce][ciphertext+tag]`. Both UDS and TCP paths handle
+Phase 3 upgrade. 13/13 ecosystem parity achieved.
+
+TRUE PRIMAL name evolution (May 3, 2026): comprehensive sweep removing
+all hardcoded primal names from production code. BearDog → "security
+provider", ToadStool → "display capability provider", Songbird → "TLS
+provider", rhizoCrypt/sweetGrass/loamSpine → capability-based terms.
+Test fixtures and historical provenance comments preserved.
+
+Deep debt sweep (May 3, 2026): clippy pedantic+nursery zero warnings,
+`--port` UniBin flag, dead code removal (`audio_web.rs`), broken doc
+links fixed, CI evolved to `--all-features`. BTSP docs evolved from
+"BearDog-derived" to "Ecosystem Transport Security Profile".
+
+primalSpring Phase 58 audit response (May 4, 2026): all 5 audit items
+resolved. Phase 3 encryption, musl/winit PG-48, PT-04 HTML export,
+PT-06 push delivery all confirmed already shipped. GAP-12 closed:
+`visualization.capabilities` now returns machine-readable `methods`
+object with parameter schemas for all visualization methods (dashboard,
+scene, render, export). BTSP legacy env vars (`BEARDOG_SOCKET`,
+`BEARDOG_FAMILY_SEED`) documented as "(legacy)" in fallback chain.
+6,200+ tests, 0 Clippy warnings.
 
 Remaining backlog: aarch64 musl cross-compile for headless, audio backend
 wire protocols (via `audio.play` capability discovery), overlay mode
