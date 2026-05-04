@@ -6,6 +6,27 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### primalSpring Phase 58 Audit Response (May 4, 2026)
+
+#### Added
+- **GAP-12 machine-readable method schemas**: `visualization.capabilities` now
+  returns a `methods` object with parameter schemas for all visualization
+  methods (`visualization.render.dashboard`, `visualization.render.scene`,
+  `visualization.render`, `visualization.export`). Each schema includes
+  required/optional params with types, defaults, and descriptions. Enables
+  downstream consumers to programmatically discover dashboard parameters.
+
+#### Verified (stale audit items confirmed resolved)
+- **Phase 3 transport encryption** (item 1): Shipped — `btsp/phase3.rs` with
+  ChaCha20-Poly1305 AEAD, 13/13 ecosystem parity.
+- **musl/winit threading panic** (item 2): Fixed — `with_any_thread(true)` in
+  all 3 call sites (ui_mode, live_mode, backend/eframe). PG-40 + PG-48.
+- **PT-04 HTML export** (item 3): Complete — `ExportFormat::Html` via
+  `wrap_svg_in_html`, headless CLI + IPC + e2e tests green.
+- **PT-06 push delivery** (item 4): Active — `callback_tx` wired in
+  `UnixSocketServer::new_with_socket` via `spawn_push_delivery()`, live mode
+  GUI broadcasts through same channel.
+
 ### TRUE PRIMAL Name Evolution — Capability-Based Language (May 3, 2026)
 
 #### Changed
