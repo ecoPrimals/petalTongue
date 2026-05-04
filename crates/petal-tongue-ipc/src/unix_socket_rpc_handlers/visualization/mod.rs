@@ -428,6 +428,7 @@ pub fn handle_interact_perspectives(handlers: &RpcHandlers, id: Value) -> JsonRp
 }
 
 /// Handle visualization.capabilities: return supported `DataBinding` variant names
+/// and machine-readable method schemas (GAP-12).
 pub fn handle_capabilities(_handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
     let variants = [
         "TimeSeries",
@@ -454,8 +455,74 @@ pub fn handle_capabilities(_handlers: &RpcHandlers, id: Value) -> JsonRpcRespons
             "output_modalities": output_modalities,
             "tufte_constraints": tufte_constraints,
             "scene_engine": true,
+            "methods": method_schemas(),
         }),
     )
+}
+
+/// Machine-readable parameter schemas for visualization methods (GAP-12).
+fn method_schemas() -> serde_json::Value {
+    serde_json::json!({
+        "visualization.render.dashboard": {
+            "description": "Compile data bindings into a multi-panel dashboard layout",
+            "params": {
+                "required": {
+                    "session_id": { "type": "string", "description": "Unique session identifier (caller-assigned)" },
+                    "title":      { "type": "string", "description": "Dashboard title rendered above the grid" },
+                    "bindings":   { "type": "array",  "items": "DataBinding", "description": "Data bindings — each becomes one panel" }
+                },
+                "optional": {
+                    "domain":      { "type": "string", "default": null, "description": "Domain hint for theming (e.g. health, physics)" },
+                    "modality":    { "type": "string", "default": "svg", "enum": ["svg", "description"], "description": "Output modality" },
+                    "max_columns": { "type": "integer", "default": 3, "description": "Maximum grid columns for panel layout" }
+                }
+            },
+            "result": {
+                "session_id":       { "type": "string" },
+                "output":           { "type": "string", "description": "Compiled SVG or description text" },
+                "modality":         { "type": "string" },
+                "panel_count":      { "type": "integer" },
+                "columns":          { "type": "integer" },
+                "rows":             { "type": "integer" },
+                "scene_nodes":      { "type": "integer" },
+                "total_primitives": { "type": "integer" }
+            }
+        },
+        "visualization.render.scene": {
+            "description": "Submit a serialized SceneGraph directly (bypasses grammar pipeline)",
+            "params": {
+                "required": {
+                    "scene": { "type": "object", "description": "SceneGraph JSON (nodes + edges)" }
+                },
+                "optional": {
+                    "session_id": { "type": "string", "default": "scene-session" }
+                }
+            }
+        },
+        "visualization.render": {
+            "description": "Render a single DataBinding into the scene engine",
+            "params": {
+                "required": {
+                    "session_id": { "type": "string" },
+                    "binding":    { "type": "object", "items": "DataBinding" }
+                },
+                "optional": {
+                    "modality": { "type": "string", "default": "svg", "enum": ["svg", "html", "audio", "description"] }
+                }
+            }
+        },
+        "visualization.export": {
+            "description": "Export current session as SVG/HTML/description",
+            "params": {
+                "required": {
+                    "session_id": { "type": "string" }
+                },
+                "optional": {
+                    "modality": { "type": "string", "default": "svg" }
+                }
+            }
+        }
+    })
 }
 
 /// Handle visualization.render.scene: directly submit a serialized `SceneGraph`.
