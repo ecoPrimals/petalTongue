@@ -8,7 +8,7 @@ use serde_json::json;
 /// Handle `identity.get`: return primal identity for capability-based discovery.
 ///
 /// Per `CAPABILITY_BASED_DISCOVERY_STANDARD.md` v1.1, every primal MUST implement
-/// `identity.get` so sourDough and other discovery agents can identify it.
+/// `identity.get` so discovery agents can identify it.
 #[must_use]
 pub fn handle_identity_get(handlers: &RpcHandlers, id: serde_json::Value) -> JsonRpcResponse {
     use petal_tongue_core::capability_names::primal_names;
