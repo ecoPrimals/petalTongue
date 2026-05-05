@@ -6,6 +6,25 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Port Alignment + Discovery Escalation Hierarchy (May 5, 2026)
+
+#### Added
+- **Ecosystem TCP fallback port**: `ECOSYSTEM_TCP_FALLBACK_PORT = 9900` in
+  `constants/network.rs`. Aligned with primalSpring's move from 9600 to avoid
+  rhizoCrypt tarpc conflict. Port added to `DEFAULT_DISCOVERY_PORTS` for
+  Tier-5 TCP probing.
+- **Discovery escalation hierarchy docs**: `petal-tongue-discovery/src/lib.rs`
+  module docs rewritten with 5-tier hierarchy from primalSpring standard:
+  Songbird `ipc.resolve` (Tier 1, future), Neural API (Tier 2),
+  UDS filesystem (Tier 3), socket registry (Tier 4), TCP probing (Tier 5).
+
+#### Changed
+- **Last 2 hardcoded primal names evolved**: `identity_lifecycle.rs` "sourDough"
+  → "discovery agents"; `audio_sonification.rs` "Squirrel" → "AI capability
+  providers". All remaining primal names in production code are either legacy
+  env vars (documented), historical provenance attribution, ecosystem standard
+  references, or test fixtures.
+
 ### primalSpring Phase 58 Audit Response (May 4, 2026)
 
 #### Added
