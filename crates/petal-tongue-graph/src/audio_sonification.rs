@@ -20,7 +20,7 @@ pub enum Instrument {
     Chimes,
     /// Sustained strings (storage/platform capability providers)
     Strings,
-    /// High synth (AI primals like Squirrel)
+    /// High synth (AI capability providers)
     Synth,
     /// Default instrument
     Default,
