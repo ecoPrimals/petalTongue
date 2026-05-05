@@ -12,11 +12,24 @@
 //! **No primal is special.** Any primal can provide visualization data.
 //! We discover by capability, not by name.
 //!
-//! # Discovery Methods
+//! # Discovery Escalation Hierarchy
 //!
-//! 1. **mDNS/Multicast** - Automatic local discovery (preferred)
-//! 2. **Environment Hints** - Manual fallback configuration
-//! 3. **Demo Provider** - Development/testing mode (when `test-fixtures` feature enabled)
+//! Aligned with primalSpring's ecosystem-wide 5-tier discovery:
+//!
+//! 1. **Songbird `ipc.resolve`** — Highest-fidelity routing with cross-gate capability.
+//!    *Not yet implemented; future evolution path.*
+//! 2. **biomeOS Neural API** — Central coordinator (`primal.list`, topology, metrics).
+//!    Maps to `NeuralApiProvider` in this crate.
+//! 3. **UDS filesystem convention** — `{role}-{family}.sock` under `socket_search_dirs()`.
+//!    Maps to `DiscoveryServiceProvider`, `UnixSocketProvider`, `discovery_helpers`.
+//! 4. **Socket registry / manifests** — Discovery service `discovery.query` over UDS.
+//!    Maps to `DiscoveryServiceProvider` + `JsonRpcProvider`.
+//! 5. **TCP probing** — Well-known ports from `DEFAULT_DISCOVERY_PORTS` (including
+//!    ecosystem-assigned `ECOSYSTEM_TCP_FALLBACK_PORT`).
+//!    Maps to `universal_discovery::HttpProbe` and `default_discovery_ports()`.
+//!
+//! Every tier is valid. No primal is required to support all tiers.
+//! mDNS runs as a parallel discovery lane when enabled.
 //!
 //! # Example
 //!

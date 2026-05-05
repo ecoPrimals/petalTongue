@@ -352,8 +352,16 @@ scene, render, export). BTSP legacy env vars (`BEARDOG_SOCKET`,
 `BEARDOG_FAMILY_SEED`) documented as "(legacy)" in fallback chain.
 6,200+ tests, 0 Clippy warnings.
 
+Port alignment + discovery hierarchy (May 5, 2026): ecosystem TCP fallback
+port aligned to 9900 (moved from 9600 to avoid rhizoCrypt tarpc conflict).
+`ECOSYSTEM_TCP_FALLBACK_PORT` constant added, included in
+`DEFAULT_DISCOVERY_PORTS`. Discovery crate docs updated with 5-tier
+escalation hierarchy aligned to primalSpring standard.
+
 Remaining backlog: aarch64 musl cross-compile for headless, audio backend
 wire protocols (via `audio.play` capability discovery), overlay mode
 (display capability Phase 2), egui texture resolution (TextureResolver
 with `egui::Shape::image`), `crypto.sign` delegation to security provider
-for scene signing (currently local BLAKE3).
+for scene signing (currently local BLAKE3), Songbird Tier-1 `ipc.resolve`
+integration (future — requires Songbird socket path resolution), Phase 3
+self-hosted sporePrint (requires petalTongue + Songbird coordination).

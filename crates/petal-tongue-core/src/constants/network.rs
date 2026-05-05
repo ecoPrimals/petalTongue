@@ -31,8 +31,15 @@ pub const DEFAULT_SANDBOX_DISCOVERY_PORT: u16 = 8080;
 /// Default display backend / GPU compute port (overridable via `DISPLAY_BACKEND_PORT` env var).
 pub const DEFAULT_DISPLAY_BACKEND_PORT: u16 = 9001;
 
+/// Ecosystem-assigned TCP fallback port for petalTongue.
+///
+/// Used by primalSpring Tier-5 TCP probing when UDS and capability discovery
+/// are unavailable. Overridable via `PETALTONGUE_TCP_PORT` env var.
+/// Moved from 9600 → 9900 to avoid conflict with rhizoCrypt tarpc (9600).
+pub const ECOSYSTEM_TCP_FALLBACK_PORT: u16 = 9900;
+
 /// Default ports for HTTP discovery when `PETALTONGUE_DISCOVERY_PORTS` / `DISCOVERY_PORTS` not set.
-pub const DEFAULT_DISCOVERY_PORTS: &[u16] = &[8080, 8081, 3000, 9000];
+pub const DEFAULT_DISCOVERY_PORTS: &[u16] = &[8080, 8081, 3000, 9000, 9900];
 
 // ---------------------------------------------------------------------------
 // Hosts
