@@ -261,15 +261,22 @@ impl UnixSocketServer {
         }
     }
 
-    /// Classify a peek buffer as JSON-RPC or BTSP protocol announcement.
+    /// Classify a peek buffer as BTSP JSON-line protocol announcement.
     ///
-    /// Three wire formats:
+    /// Whitespace-tolerant: leading ASCII whitespace is ignored before
+    /// checking for `{` (sweetGrass `detect_protocol` pattern).
+    ///
+    /// Three wire formats (after whitespace trim):
     /// - Non-`{` first byte → length-prefixed BTSP framing
     /// - `{` + contains `"protocol"` → BTSP JSON-line announcement
     /// - `{` + no `"protocol"` → plain JSON-RPC (biomeOS composition)
     fn is_btsp_json_announcement(buf: &[u8]) -> bool {
-        buf.first() == Some(&b'{')
-            && buf
+        let trimmed = buf
+            .iter()
+            .position(|b| !b.is_ascii_whitespace())
+            .map_or(&[][..], |pos| &buf[pos..]);
+        trimmed.first() == Some(&b'{')
+            && trimmed
                 .windows(b"\"protocol\"".len())
                 .any(|w| w == b"\"protocol\"")
     }
@@ -335,7 +342,8 @@ impl UnixSocketServer {
 
         let route = match buf_reader.fill_buf().await {
             Ok(buf) if !buf.is_empty() => {
-                if buf[0] != b'{' {
+                let first_non_ws = buf.iter().find(|b| !b.is_ascii_whitespace());
+                if first_non_ws != Some(&b'{') {
                     BtspRoute::LengthPrefixed
                 } else if Self::is_btsp_json_announcement(buf) {
                     debug!("BTSP: JSON-line announcement on UDS, routing to JSON-line handshake");
@@ -394,13 +402,20 @@ impl UnixSocketServer {
     ///
     /// Peeks up to 64 bytes to classify the wire format (same three-way
     /// classification as UDS: length-prefixed BTSP, JSON-line BTSP
-    /// announcement, or plain JSON-RPC).
+    /// announcement, or plain JSON-RPC). Leading ASCII whitespace is
+    /// skipped before classification (sweetGrass tolerance pattern).
     ///
     /// After a successful BTSP handshake with a non-null cipher, attempts
     /// Phase 3 transport switch to encrypted frame I/O.
+    ///
+    /// For JSON-line BTSP: the stream is split and wrapped in a BufReader
+    /// **before** the handshake, and the same BufReader is carried through
+    /// to Phase 3 negotiate + encrypted framing. This prevents byte loss
+    /// from a transient BufReader that prefetches beyond the handshake
+    /// (barraCuda Sprint 51b / coralReef Iter 90 pattern).
     async fn handle_tcp_with_btsp(
         handlers: &RpcHandlers,
-        mut stream: tokio::net::TcpStream,
+        stream: tokio::net::TcpStream,
         btsp_config: Option<Arc<crate::btsp::BtspHandshakeConfig>>,
     ) -> Result<(), unix_socket_connection::ConnectionError> {
         if let Some(ref cfg) = btsp_config {
@@ -411,7 +426,11 @@ impl UnixSocketServer {
                 return Ok(());
             }
             let peeked = &peek_buf[..n];
-            let is_json_line = if peeked[0] != b'{' {
+
+            let first_non_ws = peeked.iter().find(|b| !b.is_ascii_whitespace());
+            let is_json_start = first_non_ws == Some(&b'{');
+
+            let is_json_line = if !is_json_start {
                 false
             } else if Self::is_btsp_json_announcement(peeked) {
                 debug!(
@@ -424,57 +443,106 @@ impl UnixSocketServer {
                 return Ok(());
             };
 
-            let handshake_result = if is_json_line {
-                match crate::btsp::relay_json_line_handshake(&mut stream, cfg).await {
-                    Ok(result) => {
-                        debug!(
-                            "BTSP authenticated on TCP (JSON-line): session={}",
-                            result.session_token
-                        );
-                        result
-                    }
-                    Err(e) => {
-                        error!("BTSP JSON-line handshake failed on TCP, rejecting connection: {e}");
-                        return Ok(());
-                    }
-                }
-            } else {
-                match crate::btsp::perform_server_handshake(&mut stream, cfg).await {
-                    Ok(result) => {
-                        debug!(
-                            "BTSP authenticated on TCP (length-prefixed): session={}",
-                            result.session_token
-                        );
-                        result
-                    }
-                    Err(e) => {
-                        error!("BTSP handshake failed on TCP, rejecting connection: {e}");
-                        return Ok(());
-                    }
-                }
-            };
-
-            if Self::is_phase3_cipher(&handshake_result.cipher) {
-                if let Some(ref session_key) = handshake_result.session_key {
-                    let (reader, writer) = tokio::io::split(stream);
-                    let buf_reader = tokio::io::BufReader::new(reader);
-                    return Self::try_phase3_upgrade_split(
-                        handlers,
-                        buf_reader,
-                        writer,
-                        &handshake_result.cipher,
-                        session_key,
-                    )
-                    .await;
-                }
-                info!(
-                    "Phase 3: cipher={} but no session_key from verify, staying plaintext",
-                    handshake_result.cipher
-                );
+            if is_json_line {
+                return Self::run_tcp_json_line_btsp(handlers, stream, cfg).await;
             }
+            return Self::run_tcp_length_prefixed_btsp(handlers, stream, cfg).await;
         }
         unix_socket_connection::handle_connection(handlers, stream).await?;
         Ok(())
+    }
+
+    /// TCP JSON-line BTSP: split first, BufReader survives through Phase 3.
+    async fn run_tcp_json_line_btsp(
+        handlers: &RpcHandlers,
+        stream: tokio::net::TcpStream,
+        cfg: &crate::btsp::BtspHandshakeConfig,
+    ) -> Result<(), unix_socket_connection::ConnectionError> {
+        let (reader, writer) = tokio::io::split(stream);
+        let mut buf_reader = tokio::io::BufReader::new(reader);
+        let mut pin_writer = writer;
+
+        let handshake_result = match crate::btsp::relay_json_line_handshake_split(
+            &mut buf_reader,
+            &mut pin_writer,
+            cfg,
+        )
+        .await
+        {
+            Ok(result) => {
+                debug!(
+                    "BTSP authenticated on TCP (JSON-line): session={}",
+                    result.session_token
+                );
+                result
+            }
+            Err(e) => {
+                error!("BTSP JSON-line handshake failed on TCP, rejecting connection: {e}");
+                return Ok(());
+            }
+        };
+
+        if Self::is_phase3_cipher(&handshake_result.cipher) {
+            if let Some(ref session_key) = handshake_result.session_key {
+                return Self::try_phase3_upgrade_split(
+                    handlers,
+                    buf_reader,
+                    pin_writer,
+                    &handshake_result.cipher,
+                    session_key,
+                )
+                .await;
+            }
+            info!(
+                "Phase 3: cipher={} but no session_key from verify, staying plaintext",
+                handshake_result.cipher
+            );
+        }
+
+        unix_socket_connection::handle_connection_split(handlers, buf_reader, pin_writer).await
+    }
+
+    /// TCP length-prefixed BTSP: handshake reads raw frames, no BufReader.
+    async fn run_tcp_length_prefixed_btsp(
+        handlers: &RpcHandlers,
+        mut stream: tokio::net::TcpStream,
+        cfg: &crate::btsp::BtspHandshakeConfig,
+    ) -> Result<(), unix_socket_connection::ConnectionError> {
+        let handshake_result =
+            match crate::btsp::perform_server_handshake(&mut stream, cfg).await {
+                Ok(result) => {
+                    debug!(
+                        "BTSP authenticated on TCP (length-prefixed): session={}",
+                        result.session_token
+                    );
+                    result
+                }
+                Err(e) => {
+                    error!("BTSP handshake failed on TCP, rejecting connection: {e}");
+                    return Ok(());
+                }
+            };
+
+        if Self::is_phase3_cipher(&handshake_result.cipher) {
+            if let Some(ref session_key) = handshake_result.session_key {
+                let (reader, writer) = tokio::io::split(stream);
+                let buf_reader = tokio::io::BufReader::new(reader);
+                return Self::try_phase3_upgrade_split(
+                    handlers,
+                    buf_reader,
+                    writer,
+                    &handshake_result.cipher,
+                    session_key,
+                )
+                .await;
+            }
+            info!(
+                "Phase 3: cipher={} but no session_key from verify, staying plaintext",
+                handshake_result.cipher
+            );
+        }
+
+        unix_socket_connection::handle_connection(handlers, stream).await
     }
 
     /// Whether the cipher requires Phase 3 encrypted transport.

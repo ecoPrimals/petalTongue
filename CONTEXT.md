@@ -358,10 +358,30 @@ port aligned to 9900 (moved from 9600 to avoid rhizoCrypt tarpc conflict).
 `DEFAULT_DISCOVERY_PORTS`. Discovery crate docs updated with 5-tier
 escalation hierarchy aligned to primalSpring standard.
 
+Cross-cutting audit response (May 6, 2026): primalSpring downstream audit
+items resolved:
+
+- **Tier-1 Songbird registration**: `ipc.register` now advertises concrete
+  transport endpoints (`transports: { uds: "...", tcp: "0.0.0.0:PORT" }`).
+  TCP endpoint included when `--port` is active (`server`/`live` modes).
+  Songbird `ipc.resolve` can now route directly without probing.
+- **BufReader post-negotiate fix**: TCP JSON-line BTSP path restructured
+  to split + BufReader **before** handshake; same BufReader carried through
+  to Phase 3 negotiate and encrypted framing. Prevents prefetch byte loss
+  (barraCuda Sprint 51b / coralReef Iter 90 class of bug).
+- **Whitespace-tolerant TCP protocol detection**: Both TCP and UDS accept
+  paths now skip leading ASCII whitespace before classifying first byte
+  (sweetGrass `detect_protocol` tolerance pattern). `is_btsp_json_announcement`
+  also whitespace-tolerant.
+- **Wire Standard L3**: Confirmed already compliant — `capabilities.list`
+  returns `protocol: "json-rpc-2.0"` and `transport: ["unix-socket", "tcp"]`
+  dynamically.
+
+6,200+ tests, 0 Clippy warnings, 0 doc warnings, 0 unsafe blocks.
+
 Remaining backlog: aarch64 musl cross-compile for headless, audio backend
 wire protocols (via `audio.play` capability discovery), overlay mode
 (display capability Phase 2), egui texture resolution (TextureResolver
 with `egui::Shape::image`), `crypto.sign` delegation to security provider
-for scene signing (currently local BLAKE3), Songbird Tier-1 `ipc.resolve`
-integration (future — requires Songbird socket path resolution), Phase 3
-self-hosted sporePrint (requires petalTongue + Songbird coordination).
+for scene signing (currently local BLAKE3), Phase 3 self-hosted sporePrint
+(requires petalTongue + Songbird coordination).

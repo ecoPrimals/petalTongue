@@ -347,7 +347,7 @@ fn test_init_tracing_formats() {
 #[tokio::test]
 async fn test_register_with_discovery_service_completes() {
     // Registration runs to completion (gracefully handles service unavailability)
-    register_with_discovery_service().await;
+    register_with_discovery_service(None).await;
 }
 
 #[test]
