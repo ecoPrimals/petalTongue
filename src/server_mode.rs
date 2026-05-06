@@ -16,7 +16,7 @@ use std::sync::Arc;
 ///
 /// Binds the UDS at `$XDG_RUNTIME_DIR/biomeos/petaltongue.sock` (always).
 /// When `tcp_port` is provided, also binds a newline-delimited TCP JSON-RPC
-/// listener on `0.0.0.0:<port>`.
+/// listener on `bind_host:port` (default `127.0.0.1`; PG-55).
 ///
 /// Spawns a periodic discovery refresh so the graph engine has live topology
 /// data even without a display attached (PT-07: external event source).
@@ -26,6 +26,7 @@ use std::sync::Arc;
 pub async fn run(
     data_service: Arc<DataService>,
     tcp_port: Option<u16>,
+    tcp_bind_host: std::net::IpAddr,
     socket_path: Option<String>,
 ) -> Result<(), AppError> {
     let graph = data_service.graph();
@@ -35,7 +36,8 @@ pub async fn run(
     let socket_override = socket_path.map(std::path::PathBuf::from);
     let mut server = UnixSocketServer::new_with_socket(graph, socket_override)
         .map_err(|e| AppError::Other(format!("Failed to create IPC server: {e}")))?
-        .with_motor_sender(motor_tx);
+        .with_motor_sender(motor_tx)
+        .with_tcp_bind_host(tcp_bind_host);
 
     if let Some(port) = tcp_port {
         server = server.with_tcp_port(port);
@@ -91,7 +93,12 @@ mod tests {
                 let data_service = Arc::new(DataService::new());
                 tokio::time::timeout(
                     std::time::Duration::from_millis(500),
-                    run(data_service, Some(0), None),
+                    run(
+                        data_service,
+                        Some(0),
+                        std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST),
+                        None,
+                    ),
                 )
                 .await
             })
@@ -117,7 +124,12 @@ mod tests {
                 let data_service = Arc::new(DataService::new());
                 tokio::time::timeout(
                     std::time::Duration::from_millis(500),
-                    run(data_service, None, None),
+                    run(
+                        data_service,
+                        None,
+                        std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST),
+                        None,
+                    ),
                 )
                 .await
             })
@@ -142,7 +154,12 @@ mod tests {
         let data_service = Arc::new(DataService::new());
         let result = tokio::time::timeout(
             std::time::Duration::from_millis(500),
-            run(data_service, None, Some(socket_str)),
+            run(
+                data_service,
+                None,
+                std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST),
+                Some(socket_str),
+            ),
         )
         .await;
 
@@ -158,7 +175,13 @@ mod tests {
     #[tokio::test]
     async fn test_run_propagates_socket_path_error() {
         let data_service = Arc::new(DataService::new());
-        let result = run(data_service, None, Some("/".to_string())).await;
+        let result = run(
+            data_service,
+            None,
+            std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST),
+            Some("/".to_string()),
+        )
+        .await;
 
         if let Err(e) = result {
             let msg = e.to_string();

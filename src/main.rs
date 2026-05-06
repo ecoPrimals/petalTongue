@@ -128,6 +128,10 @@ enum Commands {
         #[arg(long)]
         port: Option<u16>,
 
+        /// TCP bind host (default: 127.0.0.1; use 0.0.0.0 for Docker/network)
+        #[arg(long, env = "PETALTONGUE_IPC_HOST")]
+        bind: Option<String>,
+
         /// Unix domain socket path override (or set PETALTONGUE_SOCKET env var)
         #[arg(long, env = "PETALTONGUE_SOCKET")]
         socket: Option<String>,
@@ -146,6 +150,10 @@ enum Commands {
         /// TCP port for newline-delimited JSON-RPC (optional, UDS always active)
         #[arg(long)]
         port: Option<u16>,
+
+        /// TCP bind host (default: 127.0.0.1; use 0.0.0.0 for Docker/network)
+        #[arg(long, env = "PETALTONGUE_IPC_HOST")]
+        bind: Option<String>,
 
         /// Unix domain socket path override (or set PETALTONGUE_SOCKET env var)
         #[arg(long, env = "PETALTONGUE_SOCKET")]
@@ -178,9 +186,11 @@ fn main() -> Result<(), AppError> {
     let runtime = tokio::runtime::Runtime::new()
         .map_err(|e| AppError::Other(format!("Failed to create tokio runtime: {e}")))?;
 
-    let cli_tcp_port = match &cli.command {
-        Commands::Server { port, .. } | Commands::Live { port, .. } => *port,
-        _ => None,
+    let (cli_tcp_port, cli_bind_host) = match &cli.command {
+        Commands::Server { port, bind, .. } | Commands::Live { port, bind, .. } => {
+            (*port, parse_ipc_bind_host(bind.as_deref()))
+        }
+        _ => (None, std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST)),
     };
 
     // Async setup: config, data service, discovery registration
@@ -200,7 +210,7 @@ fn main() -> Result<(), AppError> {
         tracing::info!("✅ DataService initialized - all modes will use same data source");
 
         tracing::info!("🔍 Registering with ecosystem discovery service...");
-        register_with_discovery_service(cli_tcp_port).await;
+        register_with_discovery_service(cli_tcp_port, cli_bind_host).await;
 
         Ok::<_, AppError>((config, data_service))
     })?;
@@ -222,10 +232,20 @@ fn main() -> Result<(), AppError> {
             scenario,
             no_audio,
             port,
+            bind,
             socket,
         } => {
-            tracing::info!(mode = "live", tcp_port = ?port, socket = ?socket, "Launching NUCLEUS interactive mode (IPC + GUI)");
-            live_mode::run_on_main_thread(scenario, no_audio, &data_service, port, socket, &runtime)
+            let bind_host = parse_ipc_bind_host(bind.as_deref());
+            tracing::info!(mode = "live", tcp_port = ?port, ?bind_host, socket = ?socket, "Launching NUCLEUS interactive mode (IPC + GUI)");
+            live_mode::run_on_main_thread(
+                scenario,
+                no_audio,
+                &data_service,
+                port,
+                bind_host,
+                socket,
+                &runtime,
+            )
         }
         #[cfg(not(feature = "ui"))]
         Commands::Live { .. } => Err(AppError::UiNotAvailable),
@@ -292,9 +312,10 @@ async fn dispatch_async(
             );
             headless_mode::run(&bind_addr, workers, data_service).await
         }
-        Commands::Server { port, socket } => {
-            tracing::info!(mode = "server", tcp_port = ?port, socket = ?socket, "Launching IPC server (no display)");
-            server_mode::run(data_service, port, socket).await
+        Commands::Server { port, bind, socket } => {
+            let bind_host = parse_ipc_bind_host(bind.as_deref());
+            tracing::info!(mode = "server", tcp_port = ?port, ?bind_host, socket = ?socket, "Launching IPC server (no display)");
+            server_mode::run(data_service, port, bind_host, socket).await
         }
         Commands::Status { verbose, format } => {
             tracing::info!(
@@ -324,6 +345,15 @@ fn resolve_bind(
         return format!("0.0.0.0:{p}");
     }
     default()
+}
+
+/// Parse an IPC TCP bind host from the `--bind` flag or `PETALTONGUE_IPC_HOST` env.
+///
+/// PG-55: secure default `127.0.0.1`. Docker/network-facing deployments
+/// use `--bind 0.0.0.0`. Matches Squirrel SQ-04 / coralReef `--bind` pattern.
+fn parse_ipc_bind_host(bind: Option<&str>) -> std::net::IpAddr {
+    bind.and_then(|s| s.parse().ok())
+        .unwrap_or(std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST))
 }
 
 /// Initialize structured logging with proper filtering
@@ -383,12 +413,12 @@ fn init_tracing(level: &str, format: &str) -> Result<(), AppError> {
 /// - Discovers the registration service at runtime (no hardcoded primal name)
 /// - Gracefully handles service unavailability (standalone mode works fine)
 /// - Self-knowledge only: petalTongue knows its own capabilities, not others
-async fn register_with_discovery_service(tcp_port: Option<u16>) {
+async fn register_with_discovery_service(tcp_port: Option<u16>, tcp_bind_host: std::net::IpAddr) {
     use petal_tongue_ipc::primal_registration::{PrimalRegistration, RegistrationManager};
 
     let mut registration = PrimalRegistration::petaltongue();
     if let Some(port) = tcp_port {
-        registration = registration.with_tcp_port(port);
+        registration = registration.with_tcp_endpoint(tcp_bind_host, port);
     }
 
     tracing::debug!(

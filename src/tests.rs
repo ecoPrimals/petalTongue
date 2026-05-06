@@ -40,7 +40,7 @@ fn test_cli_parse_server_with_port() {
     use petal_tongue_core::test_fixtures::env_test_helpers;
     env_test_helpers::with_env_vars(&[("PETALTONGUE_SOCKET", None)], || {
         let cli = Cli::parse_from(["petaltongue", "server", "--port", "12345"]);
-        let Commands::Server { port, socket } = cli.command else {
+        let Commands::Server { port, socket, .. } = cli.command else {
             unreachable!("CLI parsed 'server' subcommand")
         };
         assert_eq!(port, Some(12345));
@@ -56,7 +56,7 @@ fn test_cli_parse_server_with_socket() {
         "--socket",
         "/tmp/biomeos/petaltongue.sock",
     ]);
-    let Commands::Server { port, socket } = cli.command else {
+    let Commands::Server { port, socket, .. } = cli.command else {
         unreachable!("CLI parsed 'server' subcommand")
     };
     assert!(port.is_none());
@@ -73,11 +73,52 @@ fn test_cli_parse_server_with_socket_and_port() {
         "--port",
         "9100",
     ]);
-    let Commands::Server { port, socket } = cli.command else {
+    let Commands::Server { port, socket, .. } = cli.command else {
         unreachable!("CLI parsed 'server' subcommand")
     };
     assert_eq!(port, Some(9100));
     assert_eq!(socket.as_deref(), Some("/tmp/biomeos/petaltongue.sock"));
+}
+
+#[test]
+fn test_cli_parse_server_with_bind() {
+    let cli = Cli::parse_from([
+        "petaltongue",
+        "server",
+        "--port",
+        "9900",
+        "--bind",
+        "0.0.0.0",
+    ]);
+    let Commands::Server { port, bind, .. } = cli.command else {
+        unreachable!("CLI parsed 'server' subcommand")
+    };
+    assert_eq!(port, Some(9900));
+    assert_eq!(bind.as_deref(), Some("0.0.0.0"));
+}
+
+#[test]
+fn test_parse_ipc_bind_host_defaults_to_localhost() {
+    let host = parse_ipc_bind_host(None);
+    assert_eq!(host, std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST));
+}
+
+#[test]
+fn test_parse_ipc_bind_host_accepts_wildcard() {
+    let host = parse_ipc_bind_host(Some("0.0.0.0"));
+    assert_eq!(host, std::net::IpAddr::V4(std::net::Ipv4Addr::UNSPECIFIED));
+}
+
+#[test]
+fn test_parse_ipc_bind_host_accepts_ipv6() {
+    let host = parse_ipc_bind_host(Some("::1"));
+    assert_eq!(host, std::net::IpAddr::V6(std::net::Ipv6Addr::LOCALHOST));
+}
+
+#[test]
+fn test_parse_ipc_bind_host_invalid_falls_back_to_localhost() {
+    let host = parse_ipc_bind_host(Some("not-an-ip"));
+    assert_eq!(host, std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST));
 }
 
 #[test]
@@ -347,7 +388,8 @@ fn test_init_tracing_formats() {
 #[tokio::test]
 async fn test_register_with_discovery_service_completes() {
     // Registration runs to completion (gracefully handles service unavailability)
-    register_with_discovery_service(None).await;
+    register_with_discovery_service(None, std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST))
+        .await;
 }
 
 #[test]
