@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: May 4, 2026 (Phase 58 audit closure, GAP-12 schemas, BTSP Phase 3, TRUE PRIMAL evolution)
+**Updated**: May 6, 2026 (cross-cutting audit: tier-1 registration, BufReader fix, whitespace tolerance)
 
 ---
 
@@ -82,7 +82,7 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 4. **Typed error handling** -- `thiserror` everywhere, no `anyhow` in production; `deny(unwrap_used, expect_used)` with `#[expect]` for justified cases.
 5. **`#![forbid(unsafe_code)]`** unconditional on all crates.
 6. **Concurrent testing** -- No `thread::sleep`. Use `tokio::time::timeout`.
-7. **Files under 710 lines** -- Smart domain refactoring into cohesive modules.
+7. **Files under 800 lines** -- Smart domain refactoring into cohesive modules.
 8. **Zero `dyn`** -- Enum dispatch and generics for custom traits; `dyn` only for `Error`/closures.
 9. **SPDX headers** -- `// SPDX-License-Identifier: AGPL-3.0-or-later` on all `.rs` files.
 10. **Semantic naming** -- JSON-RPC methods follow `{domain}.{operation}` pattern.
