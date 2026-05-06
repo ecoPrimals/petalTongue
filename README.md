@@ -122,7 +122,7 @@ petaltongue
 | Unsafe | `#![forbid(unsafe_code)]` unconditional on all 18 crates + UniBin root, zero C deps |
 | License | AGPL-3.0-or-later, SPDX headers on all source files |
 | BTSP Phase 3 | Full encrypted transport (ChaCha20-Poly1305 AEAD); HKDF-SHA256 key derivation; 13/13 ecosystem parity |
-| Files | All production files under 710 LOC (smart domain refactoring, 57+ modules) |
+| Files | All production files under 800 LOC (smart domain refactoring, 57+ modules) |
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 18 crates + sandbox) |
 | External C deps | None -- pure Rust (`rustix` for syscalls, `blake3` pure-Rust hash); `nokhwa`/`mozjpeg-sys` removed |
@@ -220,7 +220,7 @@ See `../../infra/wateringHole/handoffs/` for sprint handoff documents and evolut
 - `#![forbid(unsafe_code)]` unconditional on all crates
 - Semantic method naming (`domain.operation`)
 - JSON-RPC 2.0 REQUIRED for inter-primal IPC, tarpc MAY for Rust-to-Rust hot paths, HTTP for external access only
-- All production files under 710 lines (smart domain refactoring, not mechanical splitting)
+- All production files under 800 lines (smart domain refactoring, not mechanical splitting)
 - Zero `dyn` for custom traits — use enum dispatch or generics; zero `dyn` in production code
 - SPDX headers on all source files
 
