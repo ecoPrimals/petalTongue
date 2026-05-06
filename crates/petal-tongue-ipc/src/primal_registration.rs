@@ -33,6 +33,13 @@ pub struct PrimalRegistration {
     /// Version string (e.g., "1.6.6")
     pub version: String,
 
+    /// Concrete transport endpoints for Songbird tier-1 routing.
+    ///
+    /// Wire Standard L3: advertise UDS and/or TCP so `ipc.resolve`
+    /// callers can reach this primal without probing.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transports: Option<serde_json::Map<String, Value>>,
+
     /// Optional metadata
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<serde_json::Map<String, Value>>,
@@ -64,6 +71,11 @@ impl PrimalRegistration {
             ]),
         );
 
+        let mut transports = serde_json::Map::new();
+        if let Ok(uds_path) = crate::socket_path::get_petaltongue_socket_path() {
+            transports.insert("uds".to_string(), json!(uds_path.to_string_lossy()));
+        }
+
         Self {
             name: primal_names::PETALTONGUE.to_string(),
             endpoint: format!("/primal/{}", primal_names::PETALTONGUE),
@@ -72,8 +84,20 @@ impl PrimalRegistration {
                 .map(|s| (*s).to_string())
                 .collect(),
             version: env!("CARGO_PKG_VERSION").to_string(),
+            transports: Some(transports),
             metadata: Some(metadata),
         }
+    }
+
+    /// Set TCP transport endpoint for Songbird tier-1 routing.
+    ///
+    /// When `--port` is active, calling this advertises the TCP address
+    /// so `ipc.resolve` can return it directly without probing.
+    #[must_use]
+    pub fn with_tcp_port(mut self, port: u16) -> Self {
+        let transports = self.transports.get_or_insert_with(serde_json::Map::new);
+        transports.insert("tcp".to_string(), json!(format!("0.0.0.0:{port}")));
+        self
     }
 }
 
@@ -155,6 +179,7 @@ impl RegistrationClient {
                 "endpoint": registration.endpoint,
                 "capabilities": registration.capabilities,
                 "version": registration.version,
+                "transports": registration.transports,
                 "metadata": registration.metadata,
             },
             "id": request_id,
@@ -571,11 +596,63 @@ mod tests {
             endpoint: "/primal/custom".to_string(),
             capabilities: vec!["test.cap".to_string()],
             version: "0.1.0".to_string(),
+            transports: None,
             metadata: None,
         };
         let json = serde_json::to_string(&reg).expect("serialize");
         assert!(!json.contains("metadata") || json.contains("null"));
         let restored: PrimalRegistration = serde_json::from_str(&json).expect("deserialize");
         assert!(restored.metadata.is_none());
+    }
+
+    #[test]
+    fn test_petaltongue_registration_includes_uds_transport() {
+        let reg = PrimalRegistration::petaltongue();
+        let transports = reg.transports.as_ref().expect("transports present");
+        assert!(
+            transports.contains_key("uds"),
+            "UDS transport should be advertised"
+        );
+        let uds = transports["uds"].as_str().expect("uds is string");
+        assert!(
+            uds.contains("petaltongue"),
+            "UDS path should reference petaltongue"
+        );
+    }
+
+    #[test]
+    fn test_with_tcp_port_adds_tcp_transport() {
+        let reg = PrimalRegistration::petaltongue().with_tcp_port(9900);
+        let transports = reg.transports.as_ref().expect("transports present");
+        assert!(
+            transports.contains_key("tcp"),
+            "TCP transport should be advertised when port is set"
+        );
+        assert_eq!(transports["tcp"], "0.0.0.0:9900");
+        assert!(
+            transports.contains_key("uds"),
+            "UDS should still be present"
+        );
+    }
+
+    #[test]
+    fn test_transports_serialized_in_register_payload() {
+        let reg = PrimalRegistration::petaltongue().with_tcp_port(9900);
+        let request = json!({
+            "jsonrpc": "2.0",
+            "method": "ipc.register",
+            "params": {
+                "name": reg.name,
+                "endpoint": reg.endpoint,
+                "capabilities": reg.capabilities,
+                "version": reg.version,
+                "transports": reg.transports,
+                "metadata": reg.metadata,
+            },
+            "id": 1,
+        });
+        let params = &request["params"];
+        assert!(params["transports"]["uds"].is_string());
+        assert_eq!(params["transports"]["tcp"], "0.0.0.0:9900");
     }
 }

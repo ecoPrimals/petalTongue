@@ -178,6 +178,11 @@ fn main() -> Result<(), AppError> {
     let runtime = tokio::runtime::Runtime::new()
         .map_err(|e| AppError::Other(format!("Failed to create tokio runtime: {e}")))?;
 
+    let cli_tcp_port = match &cli.command {
+        Commands::Server { port, .. } | Commands::Live { port, .. } => *port,
+        _ => None,
+    };
+
     // Async setup: config, data service, discovery registration
     let (config, data_service) = runtime.block_on(async {
         tracing::info!("⚙️ Loading configuration from environment...");
@@ -195,7 +200,7 @@ fn main() -> Result<(), AppError> {
         tracing::info!("✅ DataService initialized - all modes will use same data source");
 
         tracing::info!("🔍 Registering with ecosystem discovery service...");
-        register_with_discovery_service().await;
+        register_with_discovery_service(cli_tcp_port).await;
 
         Ok::<_, AppError>((config, data_service))
     })?;
@@ -365,40 +370,39 @@ fn init_tracing(level: &str, format: &str) -> Result<(), AppError> {
     Ok(())
 }
 
-/// Register petalTongue with the ecosystem discovery service
+/// Register petalTongue with the ecosystem discovery service.
 ///
 /// This implements the `ipc.register` standard from `PRIMAL_IPC_PROTOCOL.md`.
 /// Uses capability-based discovery to find the registration service (any primal
 /// providing the "discovery" capability).
 ///
+/// When `tcp_port` is `Some`, the registration advertises the TCP endpoint
+/// so Songbird can return it for tier-1 `ipc.resolve` routing.
+///
 /// # TRUE PRIMAL: Capability-Based Registration
 /// - Discovers the registration service at runtime (no hardcoded primal name)
 /// - Gracefully handles service unavailability (standalone mode works fine)
 /// - Self-knowledge only: petalTongue knows its own capabilities, not others
-async fn register_with_discovery_service() {
+async fn register_with_discovery_service(tcp_port: Option<u16>) {
     use petal_tongue_ipc::primal_registration::{PrimalRegistration, RegistrationManager};
 
-    // Create petalTongue registration (self-knowledge only)
-    let registration = PrimalRegistration::petaltongue();
+    let mut registration = PrimalRegistration::petaltongue();
+    if let Some(port) = tcp_port {
+        registration = registration.with_tcp_port(port);
+    }
 
     tracing::debug!(
-        "📝 Registration: {} v{} with {} capabilities",
+        "📝 Registration: {} v{} with {} capabilities, transports={:?}",
         registration.name,
         registration.version,
-        registration.capabilities.len()
+        registration.capabilities.len(),
+        registration.transports,
     );
 
-    // Create registration manager (handles discovery service lookup)
     let manager = RegistrationManager::new(registration);
-
-    // Attempt registration with discovered service (gracefully handles failure)
     manager.register_on_startup().await;
-
-    // Spawn heartbeat task (maintains discovery presence)
     let _heartbeat_handle = manager.spawn_heartbeat_task();
 
-    // Note: Heartbeat task runs in background until process exit
-    // It automatically handles reconnection if discovery service restarts
     tracing::debug!("✅ Primal registration complete (heartbeat task spawned)");
 }
 

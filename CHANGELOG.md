@@ -6,6 +6,35 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Cross-Cutting Audit Response — primalSpring Phase 59 (May 6, 2026)
+
+#### Added
+- **Tier-1 Songbird registration with transport endpoints**: `ipc.register`
+  payload now includes `transports: { uds: "<socket_path>", tcp: "0.0.0.0:PORT" }`.
+  TCP endpoint advertised when `--port` is active (`server`/`live` modes).
+  Songbird `ipc.resolve` can now route to petalTongue directly without probing.
+  New `PrimalRegistration::with_tcp_port()` builder method. 3 new tests.
+- **Whitespace-tolerant TCP/UDS protocol detection**: Both accept paths now
+  skip leading ASCII whitespace before classifying the first meaningful byte
+  (sweetGrass `detect_protocol` tolerance pattern). `is_btsp_json_announcement`
+  also whitespace-tolerant. Prevents misclassification when peers send
+  leading CR/LF/spaces.
+
+#### Fixed
+- **BufReader post-negotiate byte loss on TCP JSON-line path**: TCP JSON-line
+  BTSP handshake now splits + BufReaders the stream **before** the handshake
+  (calling `relay_json_line_handshake_split` instead of the combined
+  `relay_json_line_handshake`). The same BufReader is carried through to
+  Phase 3 negotiate + encrypted framing, preventing prefetched post-handshake
+  bytes from being lost when a transient BufReader was dropped. Aligned with
+  barraCuda Sprint 51b / coralReef Iter 90 fix pattern.
+
+#### Verified
+- **Wire Standard L3 on `capabilities.list`**: Already compliant —
+  `capabilities.list` returns `protocol: "json-rpc-2.0"` and
+  `transport: ["unix-socket", "tcp"]` dynamically (TCP included when
+  `tcp_enabled` is set via `--port`).
+
 ### Port Alignment + Discovery Escalation Hierarchy (May 5, 2026)
 
 #### Added
