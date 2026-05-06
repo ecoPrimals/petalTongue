@@ -40,9 +40,6 @@ terminal_size = { workspace = true }
 # 2D rendering (pure Rust, no native deps)
 tiny-skia = { workspace = true }
 
-# Image encoding (pure Rust)
-png = { workspace = true }
-
 # SVG generation (pure Rust)
 svg = { workspace = true }
 

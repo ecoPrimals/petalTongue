@@ -91,16 +91,16 @@ pub struct Phase3Session {
 impl Phase3Session {
     /// Create a new Phase 3 session from derived keys.
     pub fn new(keys: &SessionKeys) -> Result<Self, BtspHandshakeError> {
-        let encrypt_cipher = ChaCha20Poly1305::new_from_slice(&keys.encrypt_key).map_err(
-            |_| BtspHandshakeError::KeyDerivationFailed {
+        let encrypt_cipher = ChaCha20Poly1305::new_from_slice(&keys.encrypt_key).map_err(|_| {
+            BtspHandshakeError::KeyDerivationFailed {
                 context: "encrypt cipher init",
-            },
-        )?;
-        let decrypt_cipher = ChaCha20Poly1305::new_from_slice(&keys.decrypt_key).map_err(
-            |_| BtspHandshakeError::KeyDerivationFailed {
+            }
+        })?;
+        let decrypt_cipher = ChaCha20Poly1305::new_from_slice(&keys.decrypt_key).map_err(|_| {
+            BtspHandshakeError::KeyDerivationFailed {
                 context: "decrypt cipher init",
-            },
-        )?;
+            }
+        })?;
         Ok(Self {
             encrypt_cipher,
             decrypt_cipher,
@@ -113,12 +113,11 @@ impl Phase3Session {
         rand::Rng::fill(&mut rand::thread_rng(), &mut nonce_bytes);
 
         let nonce = Nonce::from_slice(&nonce_bytes);
-        let ciphertext =
-            self.encrypt_cipher
-                .encrypt(nonce, plaintext)
-                .map_err(|_| BtspHandshakeError::Phase3Crypto {
-                    context: "encrypt frame",
-                })?;
+        let ciphertext = self.encrypt_cipher.encrypt(nonce, plaintext).map_err(|_| {
+            BtspHandshakeError::Phase3Crypto {
+                context: "encrypt frame",
+            }
+        })?;
 
         let mut frame = Vec::with_capacity(NONCE_SIZE + ciphertext.len());
         frame.extend_from_slice(&nonce_bytes);
@@ -136,11 +135,11 @@ impl Phase3Session {
         let nonce = Nonce::from_slice(&frame[..NONCE_SIZE]);
         let ciphertext = &frame[NONCE_SIZE..];
 
-        self.decrypt_cipher
-            .decrypt(nonce, ciphertext)
-            .map_err(|_| BtspHandshakeError::Phase3Crypto {
+        self.decrypt_cipher.decrypt(nonce, ciphertext).map_err(|_| {
+            BtspHandshakeError::Phase3Crypto {
                 context: "decrypt frame (authentication failed)",
-            })
+            }
+        })
     }
 }
 
@@ -149,10 +148,13 @@ pub async fn read_encrypted_frame<R: tokio::io::AsyncReadExt + Unpin>(
     reader: &mut R,
     session: &Phase3Session,
 ) -> Result<Vec<u8>, BtspHandshakeError> {
-    let len = reader.read_u32().await.map_err(|e| BtspHandshakeError::Io {
-        context: "read encrypted frame length",
-        source: e,
-    })?;
+    let len = reader
+        .read_u32()
+        .await
+        .map_err(|e| BtspHandshakeError::Io {
+            context: "read encrypted frame length",
+            source: e,
+        })?;
     if len > MAX_FRAME_SIZE {
         return Err(BtspHandshakeError::Io {
             context: "encrypted frame too large",
@@ -237,11 +239,7 @@ where
 
         let response = match serde_json::from_slice::<JsonRpcRequest>(&plaintext) {
             Ok(request) => {
-                tracing::debug!(
-                    "Phase 3: method={}, id={}",
-                    request.method,
-                    request.id
-                );
+                tracing::debug!("Phase 3: method={}, id={}", request.method, request.id);
                 handler.handle_request(request).await
             }
             Err(e) => {
@@ -446,8 +444,8 @@ mod tests {
 
     #[test]
     fn phase3_nonce_uniqueness() {
-        let keys = SessionKeys::derive(b"key-32-bytes-long-xxxxxxxxxxxxxx", b"cn", b"sn", true)
-            .unwrap();
+        let keys =
+            SessionKeys::derive(b"key-32-bytes-long-xxxxxxxxxxxxxx", b"cn", b"sn", true).unwrap();
         let session = Phase3Session::new(&keys).unwrap();
 
         let frame1 = session.encrypt_frame(b"msg1").unwrap();
@@ -473,8 +471,8 @@ mod tests {
 
     #[test]
     fn phase3_short_frame_rejected() {
-        let keys = SessionKeys::derive(b"key-32-bytes-long-xxxxxxxxxxxxxx", b"cn", b"sn", true)
-            .unwrap();
+        let keys =
+            SessionKeys::derive(b"key-32-bytes-long-xxxxxxxxxxxxxx", b"cn", b"sn", true).unwrap();
         let session = Phase3Session::new(&keys).unwrap();
 
         assert!(session.decrypt_frame(&[0u8; 10]).is_err());
@@ -482,10 +480,10 @@ mod tests {
 
     #[test]
     fn phase3_wrong_key_rejected() {
-        let keys_a = SessionKeys::derive(b"key-a-32-bytes-long-xxxxxxxxxxxx", b"cn", b"sn", true)
-            .unwrap();
-        let keys_b = SessionKeys::derive(b"key-b-32-bytes-long-xxxxxxxxxxxx", b"cn", b"sn", false)
-            .unwrap();
+        let keys_a =
+            SessionKeys::derive(b"key-a-32-bytes-long-xxxxxxxxxxxx", b"cn", b"sn", true).unwrap();
+        let keys_b =
+            SessionKeys::derive(b"key-b-32-bytes-long-xxxxxxxxxxxx", b"cn", b"sn", false).unwrap();
 
         let session_a = Phase3Session::new(&keys_a).unwrap();
         let session_b = Phase3Session::new(&keys_b).unwrap();
