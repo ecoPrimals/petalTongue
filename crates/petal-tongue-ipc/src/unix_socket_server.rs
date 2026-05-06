@@ -508,20 +508,19 @@ impl UnixSocketServer {
         mut stream: tokio::net::TcpStream,
         cfg: &crate::btsp::BtspHandshakeConfig,
     ) -> Result<(), unix_socket_connection::ConnectionError> {
-        let handshake_result =
-            match crate::btsp::perform_server_handshake(&mut stream, cfg).await {
-                Ok(result) => {
-                    debug!(
-                        "BTSP authenticated on TCP (length-prefixed): session={}",
-                        result.session_token
-                    );
-                    result
-                }
-                Err(e) => {
-                    error!("BTSP handshake failed on TCP, rejecting connection: {e}");
-                    return Ok(());
-                }
-            };
+        let handshake_result = match crate::btsp::perform_server_handshake(&mut stream, cfg).await {
+            Ok(result) => {
+                debug!(
+                    "BTSP authenticated on TCP (length-prefixed): session={}",
+                    result.session_token
+                );
+                result
+            }
+            Err(e) => {
+                error!("BTSP handshake failed on TCP, rejecting connection: {e}");
+                return Ok(());
+            }
+        };
 
         if Self::is_phase3_cipher(&handshake_result.cipher) {
             if let Some(ref session_key) = handshake_result.session_key {
