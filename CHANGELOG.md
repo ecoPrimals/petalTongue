@@ -6,6 +6,18 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### PG-55 `--bind` Flag — primalSpring Phase 60 (May 6, 2026)
+
+#### Added
+- **`--bind` flag for `server` and `live` modes** (PG-55): TCP bind host is now
+  configurable via `--bind <IP>` or `PETALTONGUE_IPC_HOST` env var. Secure
+  default `127.0.0.1` — Docker/network deployments use `--bind 0.0.0.0`.
+  Matches Squirrel SQ-04 / coralReef `--bind` ecosystem pattern.
+- `UnixSocketServer::with_tcp_bind_host()` builder method for programmatic override.
+- `PrimalRegistration::with_tcp_endpoint(host, port)` replaces `with_tcp_port(port)`,
+  carrying the actual bind host into the Songbird `ipc.register` payload.
+- 5 new tests: CLI `--bind` parsing, `parse_ipc_bind_host` for wildcard/IPv6/invalid/default.
+
 ### Cross-Cutting Audit Response — primalSpring Phase 59 (May 6, 2026)
 
 #### Added

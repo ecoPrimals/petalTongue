@@ -25,6 +25,7 @@ type Result<T> = std::result::Result<T, AppError>;
 fn create_live_server(
     data_service: &Arc<DataService>,
     tcp_port: Option<u16>,
+    tcp_bind_host: std::net::IpAddr,
     socket_path: Option<String>,
 ) -> Result<(
     UnixSocketServer,
@@ -41,7 +42,8 @@ fn create_live_server(
     let mut server = UnixSocketServer::new_with_socket(graph, socket_override)
         .map_err(|e| AppError::Other(format!("Failed to create IPC server: {e}")))?
         .with_rendering_awareness(Arc::clone(&rendering_awareness))
-        .with_motor_sender(motor_tx.clone());
+        .with_motor_sender(motor_tx.clone())
+        .with_tcp_bind_host(tcp_bind_host);
 
     if let Some(port) = tcp_port {
         server = server.with_tcp_port(port);
@@ -61,13 +63,15 @@ pub fn run_on_main_thread(
     _no_audio: bool,
     data_service: &Arc<DataService>,
     tcp_port: Option<u16>,
+    tcp_bind_host: std::net::IpAddr,
     socket_path: Option<String>,
     runtime: &tokio::runtime::Runtime,
 ) -> Result<()> {
     use petal_tongue_core::{InstanceId, RenderingCapabilities};
     use petal_tongue_ui::PetalTongueApp;
 
-    let (server, motor_tx, motor_rx) = create_live_server(data_service, tcp_port, socket_path)?;
+    let (server, motor_tx, motor_rx) =
+        create_live_server(data_service, tcp_port, tcp_bind_host, socket_path)?;
 
     let viz_state = server.visualization_state_handle();
     let sensor_stream = server.sensor_stream_handle();
@@ -148,17 +152,19 @@ mod tests {
         Arc::new(DataService::new())
     }
 
+    const LOCALHOST: std::net::IpAddr = std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST);
+
     #[test]
     fn create_live_server_succeeds_with_defaults() {
         let ds = test_data_service();
-        let result = create_live_server(&ds, None, None);
+        let result = create_live_server(&ds, None, LOCALHOST, None);
         assert!(result.is_ok(), "server creation should succeed standalone");
     }
 
     #[test]
     fn create_live_server_with_tcp_port() {
         let ds = test_data_service();
-        let result = create_live_server(&ds, Some(0), None);
+        let result = create_live_server(&ds, Some(0), LOCALHOST, None);
         assert!(
             result.is_ok(),
             "server creation with TCP port 0 should succeed"
@@ -170,7 +176,12 @@ mod tests {
         let tmp = tempfile::tempdir().expect("tempdir");
         let sock = tmp.path().join("live-test.sock");
         let ds = test_data_service();
-        let result = create_live_server(&ds, None, Some(sock.to_string_lossy().into_owned()));
+        let result = create_live_server(
+            &ds,
+            None,
+            LOCALHOST,
+            Some(sock.to_string_lossy().into_owned()),
+        );
         assert!(
             result.is_ok(),
             "server creation with socket override should succeed"
@@ -180,7 +191,7 @@ mod tests {
     #[test]
     fn server_has_shared_state_handles() {
         let ds = test_data_service();
-        let (server, _tx, _rx) = create_live_server(&ds, None, None).expect("server");
+        let (server, _tx, _rx) = create_live_server(&ds, None, LOCALHOST, None).expect("server");
         let _viz = server.visualization_state_handle();
         let _sensor = server.sensor_stream_handle();
         let _subs = server.interaction_subscribers_handle();
@@ -191,7 +202,7 @@ mod tests {
         use petal_tongue_core::MotorCommand;
 
         let ds = test_data_service();
-        let (_server, tx, rx) = create_live_server(&ds, None, None).expect("server");
+        let (_server, tx, rx) = create_live_server(&ds, None, LOCALHOST, None).expect("server");
         tx.send(MotorCommand::RenderFrame { frame_id: 42 })
             .expect("send ok");
         let msg = rx.recv().expect("recv ok");

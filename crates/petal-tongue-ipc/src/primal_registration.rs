@@ -94,9 +94,9 @@ impl PrimalRegistration {
     /// When `--port` is active, calling this advertises the TCP address
     /// so `ipc.resolve` can return it directly without probing.
     #[must_use]
-    pub fn with_tcp_port(mut self, port: u16) -> Self {
+    pub fn with_tcp_endpoint(mut self, host: std::net::IpAddr, port: u16) -> Self {
         let transports = self.transports.get_or_insert_with(serde_json::Map::new);
-        transports.insert("tcp".to_string(), json!(format!("0.0.0.0:{port}")));
+        transports.insert("tcp".to_string(), json!(format!("{host}:{port}")));
         self
     }
 }
@@ -621,14 +621,15 @@ mod tests {
     }
 
     #[test]
-    fn test_with_tcp_port_adds_tcp_transport() {
-        let reg = PrimalRegistration::petaltongue().with_tcp_port(9900);
+    fn test_with_tcp_endpoint_adds_tcp_transport() {
+        let host = std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST);
+        let reg = PrimalRegistration::petaltongue().with_tcp_endpoint(host, 9900);
         let transports = reg.transports.as_ref().expect("transports present");
         assert!(
             transports.contains_key("tcp"),
             "TCP transport should be advertised when port is set"
         );
-        assert_eq!(transports["tcp"], "0.0.0.0:9900");
+        assert_eq!(transports["tcp"], "127.0.0.1:9900");
         assert!(
             transports.contains_key("uds"),
             "UDS should still be present"
@@ -637,7 +638,8 @@ mod tests {
 
     #[test]
     fn test_transports_serialized_in_register_payload() {
-        let reg = PrimalRegistration::petaltongue().with_tcp_port(9900);
+        let host = std::net::IpAddr::V4(std::net::Ipv4Addr::new(0, 0, 0, 0));
+        let reg = PrimalRegistration::petaltongue().with_tcp_endpoint(host, 9900);
         let request = json!({
             "jsonrpc": "2.0",
             "method": "ipc.register",

@@ -25,6 +25,7 @@ pub struct UnixSocketServer {
     handlers: RpcHandlers,
     motor_tx: Option<std::sync::mpsc::Sender<petal_tongue_core::MotorCommand>>,
     tcp_port: Option<u16>,
+    tcp_bind_host: std::net::IpAddr,
     /// Keeps the PT-06 push delivery thread alive for the server lifetime.
     _push_delivery_thread: std::thread::JoinHandle<()>,
 }
@@ -71,6 +72,7 @@ impl UnixSocketServer {
             handlers,
             motor_tx: None,
             tcp_port: None,
+            tcp_bind_host: std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST),
             _push_delivery_thread: push_thread,
         })
     }
@@ -153,6 +155,17 @@ impl UnixSocketServer {
         self
     }
 
+    /// Override the TCP bind host (default: `127.0.0.1`).
+    ///
+    /// PG-55: `--bind` flag for Docker/network-facing deployments.
+    /// Secure default (`127.0.0.1`) — use `0.0.0.0` only when
+    /// cross-network access is intentional.
+    #[must_use]
+    pub const fn with_tcp_bind_host(mut self, host: std::net::IpAddr) -> Self {
+        self.tcp_bind_host = host;
+        self
+    }
+
     /// Start the server: bind UDS (always) and optionally TCP, then accept connections.
     ///
     /// BTSP Phase 2: when `BtspHandshakeConfig` is available from the environment,
@@ -207,7 +220,7 @@ impl UnixSocketServer {
         }
 
         let tcp_listener = if let Some(port) = self.tcp_port {
-            let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
+            let addr = std::net::SocketAddr::new(self.tcp_bind_host, port);
             let listener = tokio::net::TcpListener::bind(addr)
                 .await
                 .map_err(|e| IpcServerError::SocketError(format!("TCP bind {addr}: {e}")))?;

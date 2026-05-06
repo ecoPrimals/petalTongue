@@ -377,6 +377,12 @@ items resolved:
   returns `protocol: "json-rpc-2.0"` and `transport: ["unix-socket", "tcp"]`
   dynamically.
 
+- **PG-55 `--bind` flag**: `server` and `live` modes now accept `--bind <IP>`
+  (or `PETALTONGUE_IPC_HOST` env var) to configure TCP bind host. Secure
+  default `127.0.0.1` — Docker/network deployments use `--bind 0.0.0.0`.
+  Matches Squirrel SQ-04 / coralReef ecosystem pattern. Songbird
+  `ipc.register` payload carries the actual bind host.
+
 6,200+ tests, 0 Clippy warnings, 0 doc warnings, 0 unsafe blocks.
 
 Remaining backlog: aarch64 musl cross-compile for headless, audio backend
