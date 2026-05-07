@@ -45,6 +45,9 @@ pub struct Config {
 
     /// Performance limits
     pub performance: PerformanceConfig,
+
+    /// Web mode configuration (PT-3: static serving, backend, caching)
+    pub web: WebServeConfig,
 }
 
 /// Network configuration
@@ -91,6 +94,54 @@ impl Default for NetworkConfig {
             headless_bind: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
             headless_port: DEFAULT_HEADLESS_PORT,
             workers: 4,
+        }
+    }
+}
+
+/// Web serving mode configuration (PT-3).
+///
+/// Controls static file serving, backend selection, and caching for `web` mode.
+/// CLI flags (`--docroot`, `--backend`) take precedence over config values.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct WebServeConfig {
+    /// Document root directory for static file serving (PT-1 catch-all).
+    /// When set, all requests not matched by API routes fall through to
+    /// `tower_http::ServeDir` serving files from this path.
+    pub docroot: Option<PathBuf>,
+
+    /// Content backend: `"filesystem"` (default) or `"nestgate"` (future PT-2).
+    pub backend: String,
+
+    /// Default index file name served when a directory is requested.
+    pub index_file: String,
+
+    /// Static file cache TTL in seconds (for `Cache-Control` headers).
+    pub cache_ttl_secs: u64,
+}
+
+impl Default for WebServeConfig {
+    fn default() -> Self {
+        Self {
+            docroot: None,
+            backend: "filesystem".to_string(),
+            index_file: "index.html".to_string(),
+            cache_ttl_secs: 3600,
+        }
+    }
+}
+
+impl WebServeConfig {
+    pub(crate) fn merge(self, other: Self) -> Self {
+        Self {
+            docroot: other.docroot.or(self.docroot),
+            backend: if other.backend == "filesystem" && self.backend != "filesystem" {
+                self.backend
+            } else {
+                other.backend
+            },
+            index_file: other.index_file,
+            cache_ttl_secs: other.cache_ttl_secs,
         }
     }
 }

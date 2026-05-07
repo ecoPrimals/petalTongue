@@ -87,6 +87,10 @@ enum Commands {
     },
 
     /// Launch web UI server (Pure Rust backend! ✅)
+    ///
+    /// When `--docroot` is provided, serves static files from that directory
+    /// as a fallback for any path not matched by the API routes. This enables
+    /// sovereign static site serving (sporePrint, Zola builds, etc.).
     Web {
         /// TCP port (UniBin standard: `--port` binds `0.0.0.0:PORT`)
         #[arg(long)]
@@ -100,7 +104,19 @@ enum Commands {
         #[arg(long)]
         scenario: Option<String>,
 
-        /// Number of worker threads
+        /// Static file document root for catch-all serving (e.g., Zola build output)
+        #[arg(long, env = "PETALTONGUE_DOCROOT")]
+        docroot: Option<String>,
+
+        /// Also start UDS JSON-RPC IPC server alongside HTTP (NUCLEUS dual-port mode)
+        #[arg(long)]
+        ipc: bool,
+
+        /// TCP port for IPC JSON-RPC when --ipc is active (optional, UDS always active)
+        #[arg(long)]
+        ipc_port: Option<u16>,
+
+        /// Number of worker threads (configures tokio runtime)
         #[arg(long, default_value = "4")]
         workers: usize,
     },
@@ -183,7 +199,18 @@ fn main() -> Result<(), AppError> {
         "🌸 petalTongue starting"
     );
 
-    let runtime = tokio::runtime::Runtime::new()
+    let cli_workers = match &cli.command {
+        Commands::Web { workers, .. } | Commands::Headless { workers, .. } => Some(*workers),
+        _ => None,
+    };
+
+    let mut rt_builder = tokio::runtime::Builder::new_multi_thread();
+    rt_builder.enable_all();
+    if let Some(w) = cli_workers {
+        rt_builder.worker_threads(w);
+    }
+    let runtime = rt_builder
+        .build()
         .map_err(|e| AppError::Other(format!("Failed to create tokio runtime: {e}")))?;
 
     let (cli_tcp_port, cli_bind_host) = match &cli.command {
@@ -287,16 +314,55 @@ async fn dispatch_async(
             port,
             bind,
             scenario,
+            docroot,
+            ipc,
+            ipc_port,
             workers,
         } => {
             let bind_addr = resolve_bind(bind, port, || config.network.web_addr().to_string());
+            let effective_docroot = docroot.or_else(|| {
+                config
+                    .web
+                    .docroot
+                    .as_ref()
+                    .map(|p| p.to_string_lossy().into_owned())
+            });
             tracing::info!(
                 mode = "web",
                 bind = %bind_addr,
+                docroot = ?effective_docroot,
+                ipc,
+                ipc_port = ?ipc_port,
                 workers,
                 "Launching web UI server (Pure Rust!)"
             );
-            web_mode::run(&bind_addr, scenario, workers, data_service).await
+
+            if ipc {
+                let ipc_service = std::sync::Arc::clone(&data_service);
+                let ipc_tcp = ipc_port;
+                tokio::spawn(async move {
+                    if let Err(e) = server_mode::run(
+                        ipc_service,
+                        ipc_tcp,
+                        std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST),
+                        None,
+                    )
+                    .await
+                    {
+                        tracing::error!("IPC server error (web+ipc mode): {e}");
+                    }
+                });
+                tracing::info!("🔌 IPC server co-started alongside web (PT-4 dual-port mode)");
+            }
+
+            web_mode::run(
+                &bind_addr,
+                scenario,
+                effective_docroot,
+                workers,
+                data_service,
+            )
+            .await
         }
         Commands::Headless {
             port,

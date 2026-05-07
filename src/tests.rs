@@ -309,6 +309,24 @@ fn test_cli_parse_web_with_scenario() {
 }
 
 #[test]
+fn test_cli_parse_web_with_docroot() {
+    let cli = Cli::parse_from(["petaltongue", "web", "--docroot", "/var/www/site"]);
+    let Commands::Web { docroot, .. } = cli.command else {
+        unreachable!("parsed web")
+    };
+    assert_eq!(docroot.as_deref(), Some("/var/www/site"));
+}
+
+#[test]
+fn test_cli_parse_web_docroot_default_none() {
+    let cli = Cli::parse_from(["petaltongue", "web"]);
+    let Commands::Web { docroot, .. } = cli.command else {
+        unreachable!("parsed web")
+    };
+    assert!(docroot.is_none(), "docroot should default to None");
+}
+
+#[test]
 fn test_cli_custom_log_format() {
     let cli = Cli::parse_from(["petaltongue", "--log-format", "compact", "status"]);
     assert_eq!(cli.log_format, "compact");

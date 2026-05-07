@@ -30,39 +30,83 @@ use tower_http::services::ServeDir;
 
 use crate::data_service::DataService;
 
+/// Web server configuration for [`run`].
+pub struct WebConfig<'a> {
+    /// Bind address (`host:port`).
+    pub bind: &'a str,
+    /// Scenario JSON file to load (currently logged only).
+    pub scenario: Option<String>,
+    /// Static file document root for catch-all serving (`--docroot`).
+    pub docroot: Option<String>,
+    /// Number of tokio worker threads (currently logged only; runtime is pre-built).
+    pub workers: usize,
+}
+
+/// Start the web UI HTTP server.
+///
+/// PT-1: When `docroot` is set, a `tower_http::ServeDir` catch-all fallback
+/// serves arbitrary static files (HTML, CSS, JS, images). This enables
+/// sovereign static site hosting (sporePrint, Zola builds, etc.).
 pub async fn run(
     bind: &str,
     scenario: Option<String>,
+    docroot: Option<String>,
     workers: usize,
     data_service: Arc<DataService>,
 ) -> Result<(), AppError> {
-    tracing::info!(
+    let cfg = WebConfig {
         bind,
-        scenario = ?scenario,
+        scenario,
+        docroot,
         workers,
+    };
+    run_with_config(cfg, data_service).await
+}
+
+async fn run_with_config(
+    cfg: WebConfig<'_>,
+    data_service: Arc<DataService>,
+) -> Result<(), AppError> {
+    tracing::info!(
+        bind = cfg.bind,
+        scenario = ?cfg.scenario,
+        docroot = ?cfg.docroot,
+        workers = cfg.workers,
         "Starting web UI server (Pure Rust!)"
     );
 
-    let addr: SocketAddr = bind
+    let addr: SocketAddr = cfg
+        .bind
         .parse()
         .map_err(|e| AppError::Other(format!("Failed to parse bind address: {e}")))?;
 
-    tracing::info!("✅ Using shared DataService (zero duplication!)");
-
-    // Build router with shared state
-    let app = Router::new()
+    let mut app = Router::new()
         .route("/", get(index_handler))
         .route("/health", get(health_handler))
         .route("/api/status", get(status_handler))
         .route("/api/primals", get(primals_handler))
         .route("/api/snapshot", get(snapshot_handler))
         .route("/api/events", get(events_sse_handler))
-        .nest_service("/static", ServeDir::new(WEB_STATIC_DIR))
-        .with_state(data_service);
+        .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));
+
+    if let Some(ref docroot) = cfg.docroot {
+        let docroot_path = std::path::Path::new(docroot);
+        if !docroot_path.is_dir() {
+            return Err(AppError::Other(format!(
+                "--docroot path does not exist or is not a directory: {docroot}"
+            )));
+        }
+        tracing::info!(
+            docroot,
+            "📂 Serving static files from docroot (PT-1 catch-all)"
+        );
+        app = app.fallback_service(ServeDir::new(docroot).append_index_html_on_directories(true));
+    }
+
+    let app = app.with_state(data_service);
 
     tracing::info!("🌐 Web UI server listening on http://{}", addr);
 
-    // Start server (fully concurrent!)
     let listener = tokio::net::TcpListener::bind(&addr)
         .await
         .map_err(|e| AppError::Other(format!("Failed to bind to address: {e}")))?;
@@ -351,7 +395,7 @@ mod tests {
     #[tokio::test]
     async fn test_run_invalid_bind_address() {
         let data_service = Arc::new(DataService::new());
-        let result = run("not-a-valid-address", None, 4, data_service).await;
+        let result = run("not-a-valid-address", None, None, 4, data_service).await;
         assert!(result.is_err());
         let err_msg = result.unwrap_err().to_string();
         assert!(err_msg.contains("parse") || err_msg.contains("bind"));
@@ -360,14 +404,14 @@ mod tests {
     #[tokio::test]
     async fn test_run_empty_bind_address() {
         let data_service = Arc::new(DataService::new());
-        let result = run("", None, 4, data_service).await;
+        let result = run("", None, None, 4, data_service).await;
         assert!(result.is_err());
     }
 
     #[tokio::test]
     async fn test_run_invalid_port() {
         let data_service = Arc::new(DataService::new());
-        let result = run("127.0.0.1:999999", None, 4, data_service).await;
+        let result = run("127.0.0.1:999999", None, None, 4, data_service).await;
         assert!(result.is_err());
     }
 
@@ -418,5 +462,90 @@ mod tests {
         let html = index_handler().await;
         assert!(html.0.contains("<!DOCTYPE html>"));
         assert!(html.0.contains("petalTongue"));
+    }
+
+    #[tokio::test]
+    async fn test_run_invalid_docroot_rejects() {
+        let data_service = Arc::new(DataService::new());
+        let result = run(
+            "127.0.0.1:0",
+            None,
+            Some("/nonexistent/docroot/path".to_string()),
+            4,
+            data_service,
+        )
+        .await;
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(
+            msg.contains("docroot"),
+            "error should mention docroot: {msg}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_docroot_fallback_serves_static_files() {
+        use axum::body::Body;
+
+        let tmp = tempfile::tempdir().expect("tempdir");
+        std::fs::write(tmp.path().join("index.html"), "<html>hello</html>").expect("write");
+        std::fs::write(tmp.path().join("style.css"), "body {}").expect("write");
+
+        let data_service = Arc::new(DataService::new());
+        let app = Router::new()
+            .route("/health", get(health_handler))
+            .fallback_service(ServeDir::new(tmp.path()).append_index_html_on_directories(true))
+            .with_state(data_service);
+
+        let req = axum::http::Request::builder()
+            .uri("/style.css")
+            .body(Body::empty())
+            .unwrap();
+        let response = tower::ServiceExt::oneshot(app.clone(), req).await.unwrap();
+        assert_eq!(response.status(), 200);
+
+        let req = axum::http::Request::builder()
+            .uri("/")
+            .body(Body::empty())
+            .unwrap();
+        let response = tower::ServiceExt::oneshot(app.clone(), req).await.unwrap();
+        assert_eq!(response.status(), 200);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        assert!(
+            std::str::from_utf8(&body).unwrap().contains("hello"),
+            "/ should serve index.html from docroot"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_api_routes_take_precedence_over_docroot() {
+        use axum::body::Body;
+
+        let tmp = tempfile::tempdir().expect("tempdir");
+        std::fs::create_dir_all(tmp.path().join("api")).expect("mkdir");
+        std::fs::write(tmp.path().join("api/status"), "shadowed").expect("write");
+
+        let data_service = Arc::new(DataService::new());
+        let app = Router::new()
+            .route("/api/status", get(status_handler))
+            .fallback_service(ServeDir::new(tmp.path()).append_index_html_on_directories(true))
+            .with_state(data_service);
+
+        let req = axum::http::Request::builder()
+            .uri("/api/status")
+            .body(Body::empty())
+            .unwrap();
+        let response = tower::ServiceExt::oneshot(app, req).await.unwrap();
+        assert_eq!(response.status(), 200);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(
+            json["mode"], "web",
+            "API route should take precedence over docroot file"
+        );
     }
 }
