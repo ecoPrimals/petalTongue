@@ -38,19 +38,24 @@ pub struct WebConfig<'a> {
     pub scenario: Option<String>,
     /// Static file document root for catch-all serving (`--docroot`).
     pub docroot: Option<String>,
+    /// Content backend: `"filesystem"` or `"nestgate"`.
+    pub backend: &'a str,
     /// Number of tokio worker threads (currently logged only; runtime is pre-built).
     pub workers: usize,
 }
 
 /// Start the web UI HTTP server.
 ///
-/// PT-1: When `docroot` is set, a `tower_http::ServeDir` catch-all fallback
-/// serves arbitrary static files (HTML, CSS, JS, images). This enables
-/// sovereign static site hosting (sporePrint, Zola builds, etc.).
+/// PT-1: When `docroot` is set with `backend = "filesystem"`, a
+/// `tower_http::ServeDir` catch-all fallback serves arbitrary static files.
+///
+/// PT-13: When `backend = "nestgate"`, a content-addressed fallback queries
+/// NestGate `content.resolve` via JSON-RPC over UDS for path resolution.
 pub async fn run(
     bind: &str,
     scenario: Option<String>,
     docroot: Option<String>,
+    backend: &str,
     workers: usize,
     data_service: Arc<DataService>,
 ) -> Result<(), AppError> {
@@ -58,6 +63,7 @@ pub async fn run(
         bind,
         scenario,
         docroot,
+        backend,
         workers,
     };
     run_with_config(cfg, data_service).await
@@ -71,6 +77,7 @@ async fn run_with_config(
         bind = cfg.bind,
         scenario = ?cfg.scenario,
         docroot = ?cfg.docroot,
+        backend = cfg.backend,
         workers = cfg.workers,
         "Starting web UI server (Pure Rust!)"
     );
@@ -89,18 +96,34 @@ async fn run_with_config(
         .route("/api/events", get(events_sse_handler))
         .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));
 
-    if let Some(ref docroot) = cfg.docroot {
-        let docroot_path = std::path::Path::new(docroot);
-        if !docroot_path.is_dir() {
-            return Err(AppError::Other(format!(
-                "--docroot path does not exist or is not a directory: {docroot}"
-            )));
+    match cfg.backend {
+        "nestgate" => {
+            let client = Arc::new(NestGateContentClient::from_env());
+            tracing::info!(
+                socket = %client.socket_path.display(),
+                "🗄️  NestGate content-addressed backend active (PT-13)"
+            );
+            app = app.fallback(move |req: axum::extract::Request| {
+                nestgate_fallback(req, Arc::clone(&client))
+            });
         }
-        tracing::info!(
-            docroot,
-            "📂 Serving static files from docroot (PT-1 catch-all)"
-        );
-        app = app.fallback_service(ServeDir::new(docroot).append_index_html_on_directories(true));
+        _ => {
+            if let Some(ref docroot) = cfg.docroot {
+                let docroot_path = std::path::Path::new(docroot);
+                if !docroot_path.is_dir() {
+                    return Err(AppError::Other(format!(
+                        "--docroot path does not exist or is not a directory: {docroot}"
+                    )));
+                }
+                tracing::info!(
+                    docroot,
+                    "📂 Serving static files from docroot (PT-1 catch-all)"
+                );
+                app = app.fallback_service(
+                    ServeDir::new(docroot).append_index_html_on_directories(true),
+                );
+            }
+        }
     }
 
     let app = app.with_state(data_service);
@@ -116,6 +139,139 @@ async fn run_with_config(
         .map_err(|e| AppError::Other(format!("Web server error: {e}")))?;
 
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// PT-13: NestGate content-addressed backend
+// ---------------------------------------------------------------------------
+
+/// JSON-RPC client for NestGate `content.resolve` / `content.get`.
+///
+/// Socket discovery follows the ecosystem convention:
+/// `NESTGATE_SOCKET` env → `$BIOMEOS_SOCKET_DIR/nestgate-{family}.sock`
+/// → `$XDG_RUNTIME_DIR/biomeos/nestgate-default.sock`.
+struct NestGateContentClient {
+    socket_path: std::path::PathBuf,
+    request_id: std::sync::atomic::AtomicU64,
+}
+
+impl NestGateContentClient {
+    /// Resolve NestGate socket from the environment.
+    fn from_env() -> Self {
+        let socket_path = std::env::var("NESTGATE_SOCKET").map_or_else(
+            |_| {
+                let family = std::env::var("FAMILY_ID")
+                    .or_else(|_| std::env::var("PETALTONGUE_FAMILY_ID"))
+                    .unwrap_or_else(|_| "default".to_owned());
+                let dir = std::env::var("BIOMEOS_SOCKET_DIR").unwrap_or_else(|_| {
+                    let xdg =
+                        std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_owned());
+                    let seg = petal_tongue_core::constants::ecosystem_runtime_dir_name();
+                    format!("{xdg}/{seg}")
+                });
+                std::path::PathBuf::from(format!("{dir}/nestgate-{family}.sock"))
+            },
+            std::path::PathBuf::from,
+        );
+        Self {
+            socket_path,
+            request_id: std::sync::atomic::AtomicU64::new(1),
+        }
+    }
+
+    fn next_id(&self) -> u64 {
+        self.request_id
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Call `content.resolve` — returns `(content_bytes, mime_type)` or `None`.
+    async fn resolve(&self, path: &str) -> Result<Option<(Vec<u8>, String)>, String> {
+        use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
+        use tokio::net::UnixStream;
+
+        let mut stream = UnixStream::connect(&self.socket_path)
+            .await
+            .map_err(|e| format!("NestGate connect({}): {e}", self.socket_path.display()))?;
+
+        let req = serde_json::json!({
+            "jsonrpc": "2.0",
+            "method": "content.resolve",
+            "params": { "path": path },
+            "id": self.next_id(),
+        });
+        let mut line = serde_json::to_string(&req).map_err(|e| e.to_string())?;
+        line.push('\n');
+        stream
+            .write_all(line.as_bytes())
+            .await
+            .map_err(|e| format!("NestGate write: {e}"))?;
+        stream
+            .flush()
+            .await
+            .map_err(|e| format!("NestGate flush: {e}"))?;
+
+        let (reader, _) = stream.into_split();
+        let mut reader = tokio::io::BufReader::new(reader);
+        let mut resp_line = String::new();
+        reader
+            .read_line(&mut resp_line)
+            .await
+            .map_err(|e| format!("NestGate read: {e}"))?;
+
+        let resp: serde_json::Value =
+            serde_json::from_str(&resp_line).map_err(|e| format!("NestGate parse: {e}"))?;
+
+        if resp.get("error").is_some() {
+            return Ok(None);
+        }
+
+        let result = resp.get("result").ok_or("NestGate: no result field")?;
+        let content_b64 = result
+            .get("content")
+            .and_then(|v| v.as_str())
+            .ok_or("NestGate: missing content field")?;
+        let mime = result
+            .get("mime_type")
+            .and_then(|v| v.as_str())
+            .unwrap_or("application/octet-stream");
+
+        use base64::Engine as _;
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(content_b64)
+            .map_err(|e| format!("NestGate base64 decode: {e}"))?;
+
+        Ok(Some((bytes, mime.to_owned())))
+    }
+}
+
+/// Axum fallback handler that resolves content via NestGate.
+async fn nestgate_fallback(
+    req: axum::extract::Request,
+    client: Arc<NestGateContentClient>,
+) -> axum::response::Response {
+    let path = req.uri().path().to_owned();
+    match client.resolve(&path).await {
+        Ok(Some((body, mime))) => axum::response::Response::builder()
+            .status(axum::http::StatusCode::OK)
+            .header(axum::http::header::CONTENT_TYPE, mime)
+            .body(axum::body::Body::from(body))
+            .unwrap_or_else(|_| {
+                (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    "response build error",
+                )
+                    .into_response()
+            }),
+        Ok(None) => (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response(),
+        Err(e) => {
+            tracing::error!(path, error = %e, "NestGate content.resolve failed");
+            (
+                axum::http::StatusCode::BAD_GATEWAY,
+                format!("NestGate backend unavailable: {e}"),
+            )
+                .into_response()
+        }
+    }
 }
 
 async fn index_handler() -> Html<&'static str> {
@@ -395,7 +551,15 @@ mod tests {
     #[tokio::test]
     async fn test_run_invalid_bind_address() {
         let data_service = Arc::new(DataService::new());
-        let result = run("not-a-valid-address", None, None, 4, data_service).await;
+        let result = run(
+            "not-a-valid-address",
+            None,
+            None,
+            "filesystem",
+            4,
+            data_service,
+        )
+        .await;
         assert!(result.is_err());
         let err_msg = result.unwrap_err().to_string();
         assert!(err_msg.contains("parse") || err_msg.contains("bind"));
@@ -404,14 +568,22 @@ mod tests {
     #[tokio::test]
     async fn test_run_empty_bind_address() {
         let data_service = Arc::new(DataService::new());
-        let result = run("", None, None, 4, data_service).await;
+        let result = run("", None, None, "filesystem", 4, data_service).await;
         assert!(result.is_err());
     }
 
     #[tokio::test]
     async fn test_run_invalid_port() {
         let data_service = Arc::new(DataService::new());
-        let result = run("127.0.0.1:999999", None, None, 4, data_service).await;
+        let result = run(
+            "127.0.0.1:999999",
+            None,
+            None,
+            "filesystem",
+            4,
+            data_service,
+        )
+        .await;
         assert!(result.is_err());
     }
 
@@ -471,6 +643,7 @@ mod tests {
             "127.0.0.1:0",
             None,
             Some("/nonexistent/docroot/path".to_string()),
+            "filesystem",
             4,
             data_service,
         )
@@ -548,4 +721,94 @@ mod tests {
             "API route should take precedence over docroot file"
         );
     }
+
+    #[test]
+    fn test_nestgate_client_from_env_default() {
+        let client = NestGateContentClient::from_env();
+        let path_str = client.socket_path.to_string_lossy();
+        assert!(
+            path_str.contains("nestgate-"),
+            "socket path should contain 'nestgate-': {path_str}"
+        );
+        assert!(
+            path_str.ends_with(".sock"),
+            "socket path should end with .sock: {path_str}"
+        );
+    }
+
+    #[test]
+    fn test_nestgate_client_from_env_override() {
+        petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
+            "NESTGATE_SOCKET",
+            "/custom/nestgate.sock",
+            || {
+                let client = NestGateContentClient::from_env();
+                assert_eq!(
+                    client.socket_path,
+                    std::path::PathBuf::from("/custom/nestgate.sock")
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn test_nestgate_client_request_id_increments() {
+        let client = NestGateContentClient::from_env();
+        let id1 = client.next_id();
+        let id2 = client.next_id();
+        assert_eq!(id2, id1 + 1);
+    }
+
+    #[tokio::test]
+    async fn test_nestgate_fallback_unavailable_returns_502() {
+        use axum::body::Body;
+
+        let client = Arc::new(NestGateContentClient {
+            socket_path: std::path::PathBuf::from("/tmp/nonexistent-nestgate-test.sock"),
+            request_id: std::sync::atomic::AtomicU64::new(1),
+        });
+        let req = axum::http::Request::builder()
+            .uri("/some/page.html")
+            .body(Body::empty())
+            .unwrap();
+        let resp = nestgate_fallback(req, client).await;
+        assert_eq!(resp.status(), axum::http::StatusCode::BAD_GATEWAY);
+    }
+
+    #[tokio::test]
+    async fn test_nestgate_backend_installs_fallback() {
+        use axum::body::Body;
+
+        let client = Arc::new(NestGateContentClient {
+            socket_path: std::path::PathBuf::from("/tmp/nonexistent-nestgate-test.sock"),
+            request_id: std::sync::atomic::AtomicU64::new(1),
+        });
+        let client_clone = Arc::clone(&client);
+        let data_service = Arc::new(DataService::new());
+        let app = Router::new()
+            .route("/health", get(health_handler))
+            .fallback(move |req: axum::extract::Request| {
+                nestgate_fallback(req, Arc::clone(&client_clone))
+            })
+            .with_state(data_service);
+
+        let req = axum::http::Request::builder()
+            .uri("/health")
+            .body(Body::empty())
+            .unwrap();
+        let resp = tower::ServiceExt::oneshot(app.clone(), req).await.unwrap();
+        assert_eq!(resp.status(), 200, "API route should still work");
+
+        let req = axum::http::Request::builder()
+            .uri("/unknown/path")
+            .body(Body::empty())
+            .unwrap();
+        let resp = tower::ServiceExt::oneshot(app, req).await.unwrap();
+        assert_eq!(
+            resp.status(),
+            502,
+            "nestgate fallback should return 502 when socket unavailable"
+        );
+    }
+
 }

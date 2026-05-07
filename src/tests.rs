@@ -327,6 +327,24 @@ fn test_cli_parse_web_docroot_default_none() {
 }
 
 #[test]
+fn test_cli_parse_web_with_backend() {
+    let cli = Cli::parse_from(["petaltongue", "web", "--backend", "nestgate"]);
+    let Commands::Web { backend, .. } = cli.command else {
+        unreachable!("parsed web")
+    };
+    assert_eq!(backend, "nestgate");
+}
+
+#[test]
+fn test_cli_parse_web_backend_default() {
+    let cli = Cli::parse_from(["petaltongue", "web"]);
+    let Commands::Web { backend, .. } = cli.command else {
+        unreachable!("parsed web")
+    };
+    assert_eq!(backend, "filesystem");
+}
+
+#[test]
 fn test_cli_custom_log_format() {
     let cli = Cli::parse_from(["petaltongue", "--log-format", "compact", "status"]);
     assert_eq!(cli.log_format, "compact");

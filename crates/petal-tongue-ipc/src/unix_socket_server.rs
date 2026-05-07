@@ -13,7 +13,7 @@ use serde_json::Value;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::net::UnixListener;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 /// JSON-RPC IPC server for petalTongue.
 ///
@@ -313,9 +313,15 @@ impl UnixSocketServer {
             let handshake_result =
                 Self::run_uds_handshake(&mut buf_reader, &mut writer, cfg).await?;
 
-            if let Some(ref hs) = handshake_result
-                && Self::is_phase3_cipher(&hs.cipher)
-            {
+            let Some(ref hs) = handshake_result else {
+                warn!(
+                    family_id = %cfg.family_id,
+                    "BTSP Phase 2: rejecting unauthenticated UDS connection (PT-09 enforcement)"
+                );
+                return Ok(());
+            };
+
+            if Self::is_phase3_cipher(&hs.cipher) {
                 if let Some(ref session_key) = hs.session_key {
                     return Self::try_phase3_upgrade_split(
                         handlers,
@@ -451,8 +457,10 @@ impl UnixSocketServer {
                 );
                 true
             } else {
-                debug!("BTSP: first bytes are JSON-RPC on TCP, bypassing handshake");
-                unix_socket_connection::handle_connection(handlers, stream).await?;
+                warn!(
+                    "BTSP Phase 2: rejecting unauthenticated TCP connection — \
+                     plain JSON-RPC without handshake (PT-09 enforcement)"
+                );
                 return Ok(());
             };
 
