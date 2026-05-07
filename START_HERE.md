@@ -13,6 +13,7 @@ petaltongue ui                     # Desktop display (egui)
 petaltongue tui                    # Terminal display (ratatui)
 petaltongue web                                # Web interface (axum)
 petaltongue web --docroot /var/www/site        # Static file serving (sporePrint/Zola)
+petaltongue web --backend nestgate             # Content-addressed via NestGate (PT-13)
 petaltongue web --docroot ./public --ipc       # HTTP + IPC dual-port (NUCLEUS mode)
 petaltongue web --docroot ./public --ipc --ipc-port 9900  # NUCLEUS full deployment
 petaltongue headless                           # Headless API server (no display)

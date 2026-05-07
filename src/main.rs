@@ -108,6 +108,10 @@ enum Commands {
         #[arg(long, env = "PETALTONGUE_DOCROOT")]
         docroot: Option<String>,
 
+        /// Content backend: "filesystem" (default) or "nestgate" (content-addressed)
+        #[arg(long, env = "PETALTONGUE_WEB_BACKEND", default_value = "filesystem")]
+        backend: String,
+
         /// Also start UDS JSON-RPC IPC server alongside HTTP (NUCLEUS dual-port mode)
         #[arg(long)]
         ipc: bool,
@@ -315,51 +319,21 @@ async fn dispatch_async(
             bind,
             scenario,
             docroot,
+            backend,
             ipc,
             ipc_port,
             workers,
         } => {
-            let bind_addr = resolve_bind(bind, port, || config.network.web_addr().to_string());
-            let effective_docroot = docroot.or_else(|| {
-                config
-                    .web
-                    .docroot
-                    .as_ref()
-                    .map(|p| p.to_string_lossy().into_owned())
-            });
-            tracing::info!(
-                mode = "web",
-                bind = %bind_addr,
-                docroot = ?effective_docroot,
-                ipc,
-                ipc_port = ?ipc_port,
-                workers,
-                "Launching web UI server (Pure Rust!)"
-            );
-
-            if ipc {
-                let ipc_service = std::sync::Arc::clone(&data_service);
-                let ipc_tcp = ipc_port;
-                tokio::spawn(async move {
-                    if let Err(e) = server_mode::run(
-                        ipc_service,
-                        ipc_tcp,
-                        std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST),
-                        None,
-                    )
-                    .await
-                    {
-                        tracing::error!("IPC server error (web+ipc mode): {e}");
-                    }
-                });
-                tracing::info!("🔌 IPC server co-started alongside web (PT-4 dual-port mode)");
-            }
-
-            web_mode::run(
-                &bind_addr,
+            dispatch_web(
+                port,
+                bind,
                 scenario,
-                effective_docroot,
+                docroot,
+                backend,
+                ipc,
+                ipc_port,
                 workers,
+                config,
                 data_service,
             )
             .await
@@ -396,6 +370,73 @@ async fn dispatch_async(
             unreachable!("GUI modes handled on main thread")
         }
     }
+}
+
+/// Dispatch `web` command — extracted to keep `dispatch_async` under the line limit.
+#[allow(clippy::too_many_arguments)]
+async fn dispatch_web(
+    port: Option<u16>,
+    bind: Option<String>,
+    scenario: Option<String>,
+    docroot: Option<String>,
+    backend: String,
+    ipc: bool,
+    ipc_port: Option<u16>,
+    workers: usize,
+    config: Config,
+    data_service: std::sync::Arc<data_service::DataService>,
+) -> Result<(), AppError> {
+    let bind_addr = resolve_bind(bind, port, || config.network.web_addr().to_string());
+    let effective_docroot = docroot.or_else(|| {
+        config
+            .web
+            .docroot
+            .as_ref()
+            .map(|p| p.to_string_lossy().into_owned())
+    });
+    let effective_backend = if backend == "filesystem" {
+        config.web.backend.clone()
+    } else {
+        backend
+    };
+    tracing::info!(
+        mode = "web",
+        bind = %bind_addr,
+        docroot = ?effective_docroot,
+        backend = %effective_backend,
+        ipc,
+        ipc_port = ?ipc_port,
+        workers,
+        "Launching web UI server (Pure Rust!)"
+    );
+
+    if ipc {
+        let ipc_service = std::sync::Arc::clone(&data_service);
+        let ipc_tcp = ipc_port;
+        tokio::spawn(async move {
+            if let Err(e) = server_mode::run(
+                ipc_service,
+                ipc_tcp,
+                std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST),
+                None,
+            )
+            .await
+            {
+                tracing::error!("IPC server error (web+ipc mode): {e}");
+            }
+        });
+        tracing::info!("🔌 IPC server co-started alongside web (PT-4 dual-port mode)");
+    }
+
+    web_mode::run(
+        &bind_addr,
+        scenario,
+        effective_docroot,
+        &effective_backend,
+        workers,
+        data_service,
+    )
+    .await
 }
 
 /// Resolve bind address from `--bind` (explicit), `--port` (UniBin standard), or config default.

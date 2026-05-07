@@ -317,10 +317,11 @@ upper_case_acronyms). Zero hardcoded `/tmp` in production code. 6,054+ tests,
 PT-04/PT-09/dev dep audit (April 30, 2026): primalSpring Phase 56c
 audit items resolved. (1) PT-04: HTML export `compile_html` was using a
 duplicated inline HTML template; now calls shared `wrap_svg_in_html`.
-(2) PT-09: BTSP JSON-line relay path now calls `btsp.negotiate` (was
-missing — only length-prefixed path called it). Both paths log negotiate
-results. (3) PT-06: push delivery confirmed already activated in all IPC
-modes (stale audit note). Dev deps consolidated: tokio-test, wiremock,
+(2) PT-09 (Phase 56c): BTSP JSON-line relay path now calls `btsp.negotiate`
+(was missing — only length-prefixed path called it). Both paths log negotiate
+results. PT-09 (Phase 60): enforcement gate upgraded — unauthenticated
+connections rejected (not just warned) when `FAMILY_ID` set. (3) PT-06:
+push delivery confirmed already activated in all IPC modes (stale audit note). Dev deps consolidated: tokio-test, wiremock,
 assert_cmd, predicates, criterion, temp-env, mdns-sd moved to workspace.
 Graph rendering magic numbers extracted to `constants::display`
 (GRAPH_NODE_RADIUS, stroke widths, label offsets, RGBA8_BYTES_PER_PIXEL).
@@ -386,15 +387,19 @@ items resolved:
 - **projectNUCLEUS sovereignty gaps (PT-1 through PT-5)**: PT-1 `--docroot`
   catch-all static file serving (RESOLVED). PT-3 `WebServeConfig` schema
   (RESOLVED). PT-4 `--ipc` dual-port mode for NUCLEUS (RESOLVED). PT-5
-  `--workers` wired to tokio runtime (RESOLVED). PT-2 NestGate content
-  backend (future — filesystem first, graduate to `storage.retrieve_blob`).
+  `--workers` wired to tokio runtime (RESOLVED). PT-2/PT-13 NestGate content
+  backend (RESOLVED — `--backend nestgate` queries NestGate `content.resolve`).
+
+- **primalSpring Phase 60 (PT-09 + PT-13)**: PT-09 BTSP Phase 2 enforcement
+  (RESOLVED — unauthenticated connections rejected when `FAMILY_ID` set,
+  petalTongue now matches all 12 other primals). PT-13 NestGate content-addressed
+  backend for `web` mode (RESOLVED — `--backend nestgate` with UDS JSON-RPC).
 
 6,200+ tests, 0 Clippy warnings, 0 doc warnings, 0 unsafe blocks.
 
-Remaining backlog: PT-2 NestGate content-addressed backend for `web` mode,
-aarch64 musl cross-compile for headless, audio backend wire protocols (via
-`audio.play` capability discovery), overlay mode (display capability Phase 2),
-egui texture resolution (TextureResolver with `egui::Shape::image`),
-`crypto.sign` delegation to security provider for scene signing (currently
-local BLAKE3), Phase 3 self-hosted sporePrint (requires petalTongue +
-Songbird + NestGate coordination).
+Remaining backlog: aarch64 musl cross-compile for headless, audio backend wire
+protocols (via `audio.play` capability discovery), overlay mode (display
+capability Phase 2), egui texture resolution (TextureResolver with
+`egui::Shape::image`), `crypto.sign` delegation to security provider for scene
+signing (currently local BLAKE3), Phase 3 self-hosted sporePrint (requires
+petalTongue + Songbird + NestGate coordination).

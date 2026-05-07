@@ -6,6 +6,29 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### primalSpring Phase 60 — PT-09 + PT-13 (May 7, 2026)
+
+#### Added
+- **PT-13 (P2): NestGate content-addressed backend for `web` mode.** When
+  `--backend nestgate` (or `PETALTONGUE_WEB_BACKEND=nestgate`), the HTTP fallback
+  queries NestGate `content.resolve` via JSON-RPC over UDS instead of serving
+  from the filesystem. Socket discovery follows ecosystem convention
+  (`NESTGATE_SOCKET` env → `$BIOMEOS_SOCKET_DIR/nestgate-{family}.sock`).
+  Returns content with correct MIME type; 404 on missing; 502 on backend failure.
+- **PT-09 (P2): BTSP Phase 2 enforcement.** When `FAMILY_ID` is set (production
+  posture), unauthenticated connections are now **rejected** instead of warned.
+  UDS: `run_uds_handshake` returning `None` (plain JSON-RPC, handshake failure,
+  or EOF) results in connection drop with `warn!` log. TCP: plain JSON-RPC
+  without BTSP announcement is rejected with `warn!`. petalTongue is now aligned
+  with all 12 other primals on BTSP enforcement.
+- `--backend` CLI flag for `web` mode (default `"filesystem"`).
+- 9 new tests: NestGate client construction, env override, ID increment,
+  fallback 502, backend install, CLI `--backend` parsing (2), backend default.
+
+#### Changed
+- Extracted `dispatch_web()` from `dispatch_async()` to stay under line limit.
+- `web_mode::run` signature expanded: accepts `backend: &str`.
+
 ### projectNUCLEUS Sovereignty Gaps (PT-1 through PT-5) — May 7, 2026
 
 #### Added
