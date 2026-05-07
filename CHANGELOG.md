@@ -6,6 +6,33 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### projectNUCLEUS Sovereignty Gaps (PT-1 through PT-5) — May 7, 2026
+
+#### Added
+- **PT-1 (High): `--docroot` static file catch-all** for `web` mode. When
+  `--docroot <path>` (or `PETALTONGUE_DOCROOT` env) is provided, a
+  `tower_http::ServeDir` fallback serves arbitrary files from that directory.
+  `append_index_html_on_directories(true)` makes `GET /` serve `index.html`.
+  API routes (`/health`, `/api/*`) take precedence. Unblocks sovereign static
+  site serving (sporePrint, Zola builds, GitHub Pages replacement).
+- **PT-3 (Medium): `WebServeConfig` schema** in `config_system::types`.
+  New config section `[web]` with `docroot`, `backend` (filesystem|nestgate),
+  `index_file` (default `index.html`), `cache_ttl_secs` (default 3600).
+  CLI `--docroot` overrides config. `PETALTONGUE_DOCROOT` env override wired.
+- **PT-4 (Medium): `--ipc` flag for `web` mode** (NUCLEUS dual-port mode).
+  When `--ipc` is passed, `web` mode co-starts the UDS JSON-RPC server
+  alongside the HTTP server. Optional `--ipc-port` for TCP JSON-RPC.
+  Enables single-process HTTP+IPC for NUCLEUS deployments.
+- **PT-5 (Low): `--workers` flag now wired to tokio runtime**. `web` and
+  `headless` modes' `--workers N` value is passed to
+  `tokio::runtime::Builder::worker_threads(N)`. Previously logged but ignored.
+- 7 new tests: docroot path validation, catch-all serving, API route precedence,
+  CLI `--docroot` parsing, docroot default None.
+
+#### Changed
+- `web_mode::run` signature expanded: accepts `docroot: Option<String>`.
+- Extracted `WebConfig` struct and `run_with_config` for testability.
+
 ### PG-55 `--bind` Flag — primalSpring Phase 60 (May 6, 2026)
 
 #### Added

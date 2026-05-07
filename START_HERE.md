@@ -11,17 +11,20 @@ cargo build --release
 
 petaltongue ui                     # Desktop display (egui)
 petaltongue tui                    # Terminal display (ratatui)
-petaltongue web                    # Web interface (axum)
-petaltongue headless                         # Headless API server (no display)
+petaltongue web                                # Web interface (axum)
+petaltongue web --docroot /var/www/site        # Static file serving (sporePrint/Zola)
+petaltongue web --docroot ./public --ipc       # HTTP + IPC dual-port (NUCLEUS mode)
+petaltongue web --docroot ./public --ipc --ipc-port 9900  # NUCLEUS full deployment
+petaltongue headless                           # Headless API server (no display)
 # For CLI SVG/PNG/JSON export: cargo run -p petal-tongue-headless -- --mode svg -o out.svg
-petaltongue server                         # IPC server (no display)
-petaltongue server --socket /path          # IPC server (explicit UDS path)
-petaltongue server --port 9090             # IPC server (TCP on 127.0.0.1:9090)
+petaltongue server                             # IPC server (no display)
+petaltongue server --socket /path              # IPC server (explicit UDS path)
+petaltongue server --port 9090                 # IPC server (TCP on 127.0.0.1:9090)
 petaltongue server --port 9090 --bind 0.0.0.0  # TCP on all interfaces (Docker)
-petaltongue live                           # NUCLEUS interactive (IPC + GUI)
-petaltongue live --port 9090               # live mode with TCP listener
+petaltongue live                               # NUCLEUS interactive (IPC + GUI)
+petaltongue live --port 9090                   # live mode with TCP listener
 petaltongue live --port 9090 --bind 0.0.0.0    # live mode network-facing
-petaltongue status                 # System info
+petaltongue status                             # System info
 ```
 
 ## Configuration

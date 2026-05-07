@@ -74,6 +74,7 @@ impl Config {
         self.discovery = DiscoveryConfig::merge(self.discovery, other.discovery);
         self.thresholds = ThresholdsConfig::merge(self.thresholds, other.thresholds);
         self.performance = PerformanceConfig::merge(self.performance, other.performance);
+        self.web = self.web.merge(other.web);
         self
     }
 
@@ -89,6 +90,11 @@ impl Config {
             self.network.headless_port = port
                 .parse()
                 .map_err(|_| ConfigError::EnvError("Invalid HEADLESS_PORT".to_string()))?;
+        }
+
+        // Web overrides
+        if let Ok(docroot) = std::env::var("PETALTONGUE_DOCROOT") {
+            self.web.docroot = Some(PathBuf::from(docroot));
         }
 
         // Discovery overrides

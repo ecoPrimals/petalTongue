@@ -14,5 +14,5 @@ mod tests;
 
 pub use types::{
     Config, ConfigError, DiscoveryConfig, NetworkConfig, PathsConfig, PerformanceConfig,
-    ThresholdsConfig,
+    ThresholdsConfig, WebServeConfig,
 };

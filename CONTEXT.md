@@ -383,11 +383,18 @@ items resolved:
   Matches Squirrel SQ-04 / coralReef ecosystem pattern. Songbird
   `ipc.register` payload carries the actual bind host.
 
+- **projectNUCLEUS sovereignty gaps (PT-1 through PT-5)**: PT-1 `--docroot`
+  catch-all static file serving (RESOLVED). PT-3 `WebServeConfig` schema
+  (RESOLVED). PT-4 `--ipc` dual-port mode for NUCLEUS (RESOLVED). PT-5
+  `--workers` wired to tokio runtime (RESOLVED). PT-2 NestGate content
+  backend (future — filesystem first, graduate to `storage.retrieve_blob`).
+
 6,200+ tests, 0 Clippy warnings, 0 doc warnings, 0 unsafe blocks.
 
-Remaining backlog: aarch64 musl cross-compile for headless, audio backend
-wire protocols (via `audio.play` capability discovery), overlay mode
-(display capability Phase 2), egui texture resolution (TextureResolver
-with `egui::Shape::image`), `crypto.sign` delegation to security provider
-for scene signing (currently local BLAKE3), Phase 3 self-hosted sporePrint
-(requires petalTongue + Songbird coordination).
+Remaining backlog: PT-2 NestGate content-addressed backend for `web` mode,
+aarch64 musl cross-compile for headless, audio backend wire protocols (via
+`audio.play` capability discovery), overlay mode (display capability Phase 2),
+egui texture resolution (TextureResolver with `egui::Shape::image`),
+`crypto.sign` delegation to security provider for scene signing (currently
+local BLAKE3), Phase 3 self-hosted sporePrint (requires petalTongue +
+Songbird + NestGate coordination).
