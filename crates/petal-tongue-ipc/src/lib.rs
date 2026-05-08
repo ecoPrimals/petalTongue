@@ -84,6 +84,8 @@ pub mod http_client;
 pub mod ipc_errors;
 pub mod json_rpc;
 pub mod json_rpc_client;
+/// JH-0 MethodGate: pre-dispatch authorization for JSON-RPC methods.
+pub mod method_gate;
 /// Compute bridge: async IPC for math/physics/stat/tessellate/project operations
 pub mod physics_bridge;
 pub mod primal_registration;
@@ -123,6 +125,7 @@ pub use discovery_helpers::{address_env_var, resolve_primal_socket, socket_env_v
 pub use ipc_errors::{DispatchOutcome, IpcErrorPhase, StreamItem, exit_code, extract_rpc_error};
 pub use json_rpc::{JsonRpcError, JsonRpcRequest, JsonRpcResponse};
 pub use json_rpc_client::{JsonRpcClient, JsonRpcClientError, JsonRpcResult, TopologyData};
+pub use method_gate::{CallerContext, ConnectionOrigin, EnforcementMode, MethodGate};
 pub use protocol::{InstanceStatus, IpcCommand, IpcResponse};
 pub use resilience::{CircuitBreaker, CircuitState, RetryPolicy};
 pub use scene_signer::SceneSigner;

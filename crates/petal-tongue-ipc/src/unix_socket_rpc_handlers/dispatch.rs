@@ -4,12 +4,34 @@
 use super::RpcHandlers;
 use super::{audio, graph, motor, system, ui, visualization, visualization_session};
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse, error_codes};
+use crate::method_gate::CallerContext;
 use tracing::warn;
 
 impl RpcHandlers {
-    /// Dispatch JSON-RPC request to the appropriate handler
-    pub async fn handle_request(&self, req: JsonRpcRequest) -> JsonRpcResponse {
+    /// Dispatch JSON-RPC request to the appropriate handler.
+    ///
+    /// JH-0: `auth.*` methods are intercepted before the dispatch table.
+    /// All other methods pass through [`MethodGate::check`] first.
+    pub async fn handle_request(
+        &self,
+        req: JsonRpcRequest,
+        ctx: &CallerContext,
+    ) -> JsonRpcResponse {
         let method = req.method.as_str();
+
+        // JH-0: auth introspection methods — handled inline (need gate + context)
+        match method {
+            "auth.check" => return self.method_gate.handle_auth_check(req.id, ctx),
+            "auth.mode" => return self.method_gate.handle_auth_mode(req.id),
+            "auth.peer_info" => return self.method_gate.handle_auth_peer_info(req.id, ctx),
+            _ => {}
+        }
+
+        // JH-0: pre-dispatch authorization gate
+        if let Some(rejection) = self.method_gate.check(method, &req.id, ctx) {
+            return rejection;
+        }
+
         match method {
             // Health (with SEMANTIC_METHOD_NAMING_STANDARD aliases)
             "health.check" | "status" | "check" => system::handle_health_check(self, req),

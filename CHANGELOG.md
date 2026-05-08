@@ -6,6 +6,31 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### JH-0 MethodGate Pre-Dispatch Authorization (May 8, 2026)
+
+#### Added
+- **JH-0: MethodGate module** (`crates/petal-tongue-ipc/src/method_gate.rs`, 494 LOC).
+  Every JSON-RPC call now passes through `MethodGate::check()` before reaching the
+  handler dispatch table.
+- **Method classification**: Public methods (always allowed): `health.*`, `identity.get`,
+  `capabilities.list`, `capability.list`, `lifecycle.status`, `auth.*`, legacy aliases
+  (`ping`, `status`, `check`). Everything else is Protected.
+- **Auth introspection methods**: `auth.check`, `auth.mode`, `auth.peer_info` —
+  intercepted inline before dispatch, advertised in `capabilities.list`.
+- **CallerContext threading**: Connection origin (Unix/Loopback/Remote) and bearer
+  token tracked per-connection through NDJSON, BTSP Phase 3, and all dispatch paths.
+- **Error codes**: `-32001 PERMISSION_DENIED`, `-32000 UNAUTHORIZED`.
+- **`PETALTONGUE_AUTH_MODE` env**: `permissive` (default, backward-compatible) or
+  `enforced` (rejects unauthenticated protected calls).
+- 26 unit tests in `method_gate::tests`.
+
+#### Changed
+- `RpcHandlers::handle_request()` now accepts `&CallerContext`.
+- `handle_connection`, `handle_connection_split`, `handle_encrypted_stream`,
+  `try_phase3_negotiate`, `try_phase3_upgrade_split` — all accept `&CallerContext`.
+- `handle_tcp_with_btsp` now accepts `peer_addr: SocketAddr` for origin detection.
+- All existing test call sites updated to pass `CallerContext::unix()`.
+
 ### primalSpring Phase 60 — PT-09 + PT-13 (May 7, 2026)
 
 #### Added

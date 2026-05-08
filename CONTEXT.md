@@ -57,6 +57,14 @@ JSON-line framing, `btsp.session.create`, `btsp.session.verify`, and
 ChaCha20-Poly1305 AEAD encrypted frame I/O after negotiate; HKDF-SHA256
 directional key derivation; 13/13 ecosystem parity.
 
+JH-0 MethodGate: pre-dispatch authorization on all JSON-RPC calls.
+Public methods (`health.*`, `identity.get`, `capabilities.list`,
+`lifecycle.status`, `auth.*`) always pass. Protected methods
+(`visualization.*`, `interaction.*`, `ui.*`, `motor.*`, `audio.*`)
+require a bearer token in enforced mode. Default: permissive.
+Env: `PETALTONGUE_AUTH_MODE=enforced`. Auth introspection:
+`auth.check`, `auth.mode`, `auth.peer_info`.
+
 ## Key Design Decisions
 
 - **Two-dimensional universality**: universal across modalities (what you see)

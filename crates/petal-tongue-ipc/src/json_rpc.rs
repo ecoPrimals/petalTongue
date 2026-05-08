@@ -186,6 +186,12 @@ pub mod error_codes {
     pub const SERVER_ERROR_START: i32 = -32000;
     /// Upper bound of the server error range
     pub const SERVER_ERROR_END: i32 = -32099;
+
+    /// Caller identity not established (JH-0 MethodGate).
+    pub const UNAUTHORIZED: i32 = -32000;
+
+    /// Protected method called without valid token (JH-0 MethodGate).
+    pub const PERMISSION_DENIED: i32 = -32001;
 }
 
 #[cfg(test)]
