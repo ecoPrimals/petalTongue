@@ -57,6 +57,10 @@ pub fn get_capabilities(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
                 "capabilities.list",
                 "capability.announce",
                 "capabilities.sensory",
+                // Auth introspection (JH-0 MethodGate)
+                "auth.check",
+                "auth.mode",
+                "auth.peer_info",
                 "capabilities.sensory.negotiate",
                 "topology.get",
                 "provider.register_capability",

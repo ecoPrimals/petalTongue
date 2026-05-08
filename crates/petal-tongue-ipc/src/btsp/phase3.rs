@@ -217,6 +217,7 @@ pub async fn handle_encrypted_stream<R, W>(
     reader: &mut R,
     writer: &mut W,
     session: &Phase3Session,
+    ctx: &crate::method_gate::CallerContext,
 ) -> Result<(), crate::unix_socket_connection::ConnectionError>
 where
     R: tokio::io::AsyncReadExt + Unpin,
@@ -240,7 +241,8 @@ where
         let response = match serde_json::from_slice::<JsonRpcRequest>(&plaintext) {
             Ok(request) => {
                 tracing::debug!("Phase 3: method={}, id={}", request.method, request.id);
-                handler.handle_request(request).await
+                let per_req = ctx.clone().with_token_from_params(&request.params);
+                handler.handle_request(request, &per_req).await
             }
             Err(e) => {
                 tracing::error!("Phase 3: parse error: {e}");
@@ -286,6 +288,7 @@ pub(crate) async fn try_phase3_negotiate<R, W>(
     writer: &mut W,
     handler: &RpcHandlers,
     cipher_hint: &str,
+    ctx: &crate::method_gate::CallerContext,
 ) -> Result<Option<NegotiateResult>, crate::unix_socket_connection::ConnectionError>
 where
     R: tokio::io::AsyncBufRead + Unpin,
@@ -326,7 +329,8 @@ where
             "Phase 3: first post-handshake message is {} (not btsp.negotiate), staying plaintext",
             request.method
         );
-        let response = handler.handle_request(request).await;
+        let per_req = ctx.clone().with_token_from_params(&request.params);
+        let response = handler.handle_request(request, &per_req).await;
         let mut buf = serde_json::to_vec(&response)?;
         buf.push(b'\n');
         writer.write_all(&buf).await?;

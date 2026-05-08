@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 use super::*;
 use crate::json_rpc::JsonRpcRequest;
+use crate::method_gate::CallerContext;
 use serde_json::json;
 
 fn test_handlers() -> RpcHandlers {
     let graph = Arc::new(RwLock::new(GraphEngine::new()));
     let viz_state = Arc::new(RwLock::new(VisualizationState::new()));
     RpcHandlers::new(graph, "test".to_string(), viz_state)
+}
+
+fn test_ctx() -> CallerContext {
+    CallerContext::unix()
 }
 
 #[test]
@@ -116,7 +121,7 @@ async fn dispatch_interaction_subscribe() {
         json!({"subscriber_id": "test-spring"}),
         json!(1),
     );
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.result.is_some());
     assert_eq!(resp.result.unwrap()["subscribed"], true);
 }
@@ -125,7 +130,7 @@ async fn dispatch_interaction_subscribe() {
 async fn dispatch_unknown_method_returns_method_not_found() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("unknown.method", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_some());
     assert_eq!(
         resp.error.as_ref().expect("err").code,
@@ -138,7 +143,7 @@ async fn dispatch_unknown_method_returns_method_not_found() {
 async fn dispatch_visualization_introspect() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("visualization.introspect", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_some());
 }
 
@@ -146,7 +151,7 @@ async fn dispatch_visualization_introspect() {
 async fn dispatch_topology_get() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("topology.get", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     let r = resp.result.unwrap();
     assert!(r["nodes"].is_array());
@@ -157,7 +162,7 @@ async fn dispatch_topology_get() {
 async fn dispatch_health_check() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("health.check", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert_eq!(resp.result.unwrap()["status"], "healthy");
 }
@@ -166,7 +171,7 @@ async fn dispatch_health_check() {
 async fn dispatch_health_liveness() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("health.liveness", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     let r = resp.result.unwrap();
     assert_eq!(r["status"], "alive");
@@ -177,7 +182,7 @@ async fn dispatch_health_liveness() {
 async fn dispatch_health_readiness() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("health.readiness", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     let r = resp.result.unwrap();
     assert_eq!(r["status"], "ready");
@@ -188,7 +193,7 @@ async fn dispatch_health_readiness() {
 async fn dispatch_ping_alias_routes_to_liveness() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("ping", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert_eq!(resp.result.unwrap()["status"], "alive");
 }
@@ -197,7 +202,7 @@ async fn dispatch_ping_alias_routes_to_liveness() {
 async fn dispatch_status_alias_routes_to_health_check() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("status", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert_eq!(resp.result.unwrap()["status"], "healthy");
 }
@@ -206,7 +211,7 @@ async fn dispatch_status_alias_routes_to_health_check() {
 async fn dispatch_identity_get() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("identity.get", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert_eq!(resp.result.unwrap()["primal"], "petaltongue");
 }
@@ -215,7 +220,7 @@ async fn dispatch_identity_get() {
 async fn dispatch_lifecycle_status() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("lifecycle.status", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     let r = resp.result.unwrap();
     assert_eq!(r["state"], "running");
@@ -226,7 +231,7 @@ async fn dispatch_lifecycle_status() {
 async fn dispatch_primal_capabilities_alias() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("primal.capabilities", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert!(resp.result.unwrap()["capabilities"].as_array().is_some());
 }
@@ -235,7 +240,7 @@ async fn dispatch_primal_capabilities_alias() {
 async fn dispatch_capability_list() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("capability.list", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert!(resp.result.unwrap()["capabilities"].as_array().is_some());
 }
@@ -244,7 +249,7 @@ async fn dispatch_capability_list() {
 async fn dispatch_visualization_capabilities() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("visualization.capabilities", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert!(
         resp.result.unwrap()["data_binding_variants"]
@@ -257,7 +262,7 @@ async fn dispatch_visualization_capabilities() {
 async fn dispatch_sensor_stream_subscribe() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("interaction.sensor_stream.subscribe", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert!(resp.result.unwrap()["subscription_id"].as_str().is_some());
 }
@@ -270,7 +275,7 @@ async fn dispatch_sensor_stream_unsubscribe_empty_id_returns_error() {
         json!({"subscription_id": ""}),
         json!(1),
     );
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_some());
     assert_eq!(
         resp.error.as_ref().expect("err").code,
@@ -286,7 +291,7 @@ async fn dispatch_sensor_stream_poll_empty_id_returns_error() {
         json!({"subscription_id": ""}),
         json!(1),
     );
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_some());
     assert_eq!(
         resp.error.as_ref().expect("err").code,
@@ -298,7 +303,7 @@ async fn dispatch_sensor_stream_poll_empty_id_returns_error() {
 async fn dispatch_sensor_stream_subscribe_and_unsubscribe() {
     let h = test_handlers();
     let sub_req = JsonRpcRequest::new("interaction.sensor_stream.subscribe", json!({}), json!(1));
-    let sub_resp = h.handle_request(sub_req).await;
+    let sub_resp = h.handle_request(sub_req, &test_ctx()).await;
     let sub_id = sub_resp.result.unwrap()["subscription_id"]
         .as_str()
         .unwrap()
@@ -308,7 +313,7 @@ async fn dispatch_sensor_stream_subscribe_and_unsubscribe() {
         json!({"subscription_id": sub_id}),
         json!(2),
     );
-    let unsub_resp = h.handle_request(unsub_req).await;
+    let unsub_resp = h.handle_request(unsub_req, &test_ctx()).await;
     assert!(unsub_resp.result.is_some());
     assert_eq!(unsub_resp.result.unwrap()["unsubscribed"], true);
 }
@@ -317,7 +322,7 @@ async fn dispatch_sensor_stream_subscribe_and_unsubscribe() {
 async fn dispatch_sensor_stream_poll_with_valid_id() {
     let h = test_handlers();
     let sub_req = JsonRpcRequest::new("interaction.sensor_stream.subscribe", json!({}), json!(1));
-    let sub_resp = h.handle_request(sub_req).await;
+    let sub_resp = h.handle_request(sub_req, &test_ctx()).await;
     let sub_id = sub_resp.result.unwrap()["subscription_id"]
         .as_str()
         .unwrap()
@@ -335,7 +340,7 @@ async fn dispatch_sensor_stream_poll_with_valid_id() {
 async fn dispatch_ui_render() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("ui.render", json!({"content_type": "graph"}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert_eq!(resp.result.unwrap()["rendered"], true);
 }
@@ -348,7 +353,7 @@ async fn dispatch_ui_display_status() {
         json!({"primal_name": "test-primal"}),
         json!(1),
     );
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert_eq!(resp.result.unwrap()["primal"], "test-primal");
 }
@@ -357,7 +362,7 @@ async fn dispatch_ui_display_status() {
 async fn dispatch_health_get() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("health.get", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert_eq!(resp.result.unwrap()["status"], "healthy");
 }
@@ -374,7 +379,7 @@ async fn dispatch_provider_register_capability() {
         }),
         json!(1),
     );
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert_eq!(resp.result.unwrap()["registered"], true);
 }
@@ -383,7 +388,7 @@ async fn dispatch_provider_register_capability() {
 async fn dispatch_visualization_session_list() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("visualization.session.list", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     let r = resp.result.unwrap();
     assert!(r["sessions"].as_array().is_some());
@@ -393,7 +398,7 @@ async fn dispatch_visualization_session_list() {
 async fn dispatch_visualization_interact_perspectives() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("visualization.interact.perspectives", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert!(resp.result.unwrap()["perspectives"].as_array().is_some());
 }
@@ -402,7 +407,7 @@ async fn dispatch_visualization_interact_perspectives() {
 async fn dispatch_interaction_poll_missing_subscriber_id() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("interaction.poll", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_some());
     assert_eq!(
         resp.error.as_ref().expect("err").code,
@@ -414,7 +419,7 @@ async fn dispatch_interaction_poll_missing_subscriber_id() {
 async fn dispatch_interaction_unsubscribe_missing_subscriber_id() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("interaction.unsubscribe", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_some());
     assert_eq!(
         resp.error.as_ref().expect("err").code,
@@ -430,7 +435,7 @@ async fn dispatch_visualization_interact_subscribe_alias() {
         json!({"subscriber_id": "viz-sub"}),
         json!(1),
     );
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert_eq!(resp.result.unwrap()["subscribed"], true);
 }
@@ -446,7 +451,7 @@ async fn dispatch_interaction_subscribe_with_event_filter() {
         }),
         json!(1),
     );
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert_eq!(resp.result.unwrap()["subscribed"], true);
 }
@@ -459,13 +464,13 @@ async fn dispatch_interaction_unsubscribe_alias() {
         json!({"subscriber_id": "unsub-alias"}),
         json!(1),
     );
-    h.handle_request(sub_req).await;
+    h.handle_request(sub_req, &test_ctx()).await;
     let unsub_req = JsonRpcRequest::new(
         "visualization.interact.unsubscribe",
         json!({"subscriber_id": "unsub-alias"}),
         json!(2),
     );
-    let resp = h.handle_request(unsub_req).await;
+    let resp = h.handle_request(unsub_req, &test_ctx()).await;
     assert!(resp.error.is_none());
     assert_eq!(resp.result.unwrap()["unsubscribed"], true);
 }

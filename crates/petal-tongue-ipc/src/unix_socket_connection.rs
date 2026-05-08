@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse, error_codes};
+use crate::method_gate::CallerContext;
 use crate::unix_socket_rpc_handlers::RpcHandlers;
 use serde_json::json;
 use thiserror::Error;
@@ -27,13 +28,17 @@ pub enum ConnectionError {
 ///
 /// Uses `Vec<u8>` + `serde_json::from_slice` instead of `String` + `from_str`
 /// to avoid a redundant UTF-8 validation pass (serde_json validates internally).
-pub async fn handle_connection<S>(handler: &RpcHandlers, stream: S) -> Result<(), ConnectionError>
+pub async fn handle_connection<S>(
+    handler: &RpcHandlers,
+    stream: S,
+    ctx: &CallerContext,
+) -> Result<(), ConnectionError>
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
 {
     let (reader, writer) = tokio::io::split(stream);
     let reader = BufReader::with_capacity(65_536, reader);
-    handle_connection_split(handler, reader, writer).await
+    handle_connection_split(handler, reader, writer, ctx).await
 }
 
 /// JSON-RPC dispatch loop on pre-split reader/writer halves.
@@ -46,6 +51,7 @@ pub(crate) async fn handle_connection_split<R, W>(
     handler: &RpcHandlers,
     mut reader: R,
     mut writer: W,
+    ctx: &CallerContext,
 ) -> Result<(), ConnectionError>
 where
     R: tokio::io::AsyncBufRead + Unpin,
@@ -67,7 +73,8 @@ where
                     "Received request: method={}, id={}",
                     request.method, request.id
                 );
-                handler.handle_request(request).await
+                let per_req = ctx.clone().with_token_from_params(&request.params);
+                handler.handle_request(request, &per_req).await
             }
             Err(e) => {
                 error!("Failed to parse JSON-RPC request: {}", e);

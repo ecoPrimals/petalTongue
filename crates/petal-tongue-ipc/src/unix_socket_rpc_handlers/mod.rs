@@ -26,6 +26,7 @@ use std::sync::{Arc, RwLock};
 use std::time::SystemTime;
 
 use crate::json_rpc::{JsonRpcRequest, JsonRpcResponse, error_codes};
+use crate::method_gate::MethodGate;
 
 /// JSON-RPC request handlers for petalTongue IPC
 pub struct RpcHandlers {
@@ -54,6 +55,8 @@ pub struct RpcHandlers {
         Option<tokio::sync::mpsc::UnboundedSender<crate::visualization_handler::CallbackDispatch>>,
     /// Scene graph integrity signer (NUCLEUS visualization purpose key).
     pub scene_signer: crate::scene_signer::SceneSigner,
+    /// JH-0: Pre-dispatch authorization gate.
+    pub method_gate: MethodGate,
 }
 
 impl RpcHandlers {
@@ -79,6 +82,7 @@ impl RpcHandlers {
             tcp_enabled: false,
             callback_tx: None,
             scene_signer: crate::scene_signer::SceneSigner::from_env(),
+            method_gate: MethodGate::from_env(),
         }
     }
 

@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: May 6, 2026 (cross-cutting audit: tier-1 registration, BufReader fix, whitespace tolerance)
+**Updated**: May 8, 2026 (JH-0 MethodGate adoption, auth introspection, CallerContext threading)
 
 ---
 
@@ -36,6 +36,9 @@ Priority: Environment > Config file > Defaults
 export PETALTONGUE_WEB_PORT=8080
 export PETALTONGUE_HEADLESS_PORT=9000
 export BIOMEOS_NEURAL_API_SOCKET=/run/user/$(id -u)/biomeos-neural-api.sock
+
+# JH-0 MethodGate authorization mode (default: permissive)
+export PETALTONGUE_AUTH_MODE=enforced  # reject unauthenticated protected calls
 
 # Tuning & timing (optional)
 export PETALTONGUE_RPC_TIMEOUT_SECS=5

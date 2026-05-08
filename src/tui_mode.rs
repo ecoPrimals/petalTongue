@@ -82,7 +82,7 @@ mod tests {
 
     #[test]
     fn test_tui_config_1hz() {
-        let tick_rate = Duration::from_millis(1000);
+        let tick_rate = Duration::from_secs(1);
         assert_eq!(tick_rate.as_millis(), 1000);
     }
 

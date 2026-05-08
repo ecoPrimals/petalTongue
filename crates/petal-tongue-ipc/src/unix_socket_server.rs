@@ -261,7 +261,7 @@ impl UnixSocketServer {
                             tokio::spawn(async move {
                                 debug!("TCP connection from {addr}");
                                 if let Err(e) =
-                                    Self::handle_tcp_with_btsp(&server.handlers, stream, btsp).await
+                                    Self::handle_tcp_with_btsp(&server.handlers, stream, btsp, addr).await
                                 {
                                     error!("TCP connection error: {e}");
                                 }
@@ -321,6 +321,8 @@ impl UnixSocketServer {
                 return Ok(());
             };
 
+            let ctx = crate::method_gate::CallerContext::unix();
+
             if Self::is_phase3_cipher(&hs.cipher) {
                 if let Some(ref session_key) = hs.session_key {
                     return Self::try_phase3_upgrade_split(
@@ -329,6 +331,7 @@ impl UnixSocketServer {
                         writer,
                         &hs.cipher,
                         session_key,
+                        &ctx,
                     )
                     .await;
                 }
@@ -338,9 +341,11 @@ impl UnixSocketServer {
                 );
             }
 
-            unix_socket_connection::handle_connection_split(handlers, buf_reader, writer).await?;
+            unix_socket_connection::handle_connection_split(handlers, buf_reader, writer, &ctx)
+                .await?;
         } else {
-            unix_socket_connection::handle_connection(handlers, stream).await?;
+            let ctx = crate::method_gate::CallerContext::unix();
+            unix_socket_connection::handle_connection(handlers, stream, &ctx).await?;
         }
         Ok(())
     }
@@ -436,6 +441,7 @@ impl UnixSocketServer {
         handlers: &RpcHandlers,
         stream: tokio::net::TcpStream,
         btsp_config: Option<Arc<crate::btsp::BtspHandshakeConfig>>,
+        peer_addr: std::net::SocketAddr,
     ) -> Result<(), unix_socket_connection::ConnectionError> {
         if let Some(ref cfg) = btsp_config {
             let mut peek_buf = [0u8; 64];
@@ -464,12 +470,14 @@ impl UnixSocketServer {
                 return Ok(());
             };
 
+            let ctx = crate::method_gate::CallerContext::tcp(peer_addr);
             if is_json_line {
-                return Self::run_tcp_json_line_btsp(handlers, stream, cfg).await;
+                return Self::run_tcp_json_line_btsp(handlers, stream, cfg, &ctx).await;
             }
-            return Self::run_tcp_length_prefixed_btsp(handlers, stream, cfg).await;
+            return Self::run_tcp_length_prefixed_btsp(handlers, stream, cfg, &ctx).await;
         }
-        unix_socket_connection::handle_connection(handlers, stream).await?;
+        let ctx = crate::method_gate::CallerContext::tcp(peer_addr);
+        unix_socket_connection::handle_connection(handlers, stream, &ctx).await?;
         Ok(())
     }
 
@@ -478,6 +486,7 @@ impl UnixSocketServer {
         handlers: &RpcHandlers,
         stream: tokio::net::TcpStream,
         cfg: &crate::btsp::BtspHandshakeConfig,
+        ctx: &crate::method_gate::CallerContext,
     ) -> Result<(), unix_socket_connection::ConnectionError> {
         let (reader, writer) = tokio::io::split(stream);
         let mut buf_reader = tokio::io::BufReader::new(reader);
@@ -511,6 +520,7 @@ impl UnixSocketServer {
                     pin_writer,
                     &handshake_result.cipher,
                     session_key,
+                    ctx,
                 )
                 .await;
             }
@@ -520,7 +530,7 @@ impl UnixSocketServer {
             );
         }
 
-        unix_socket_connection::handle_connection_split(handlers, buf_reader, pin_writer).await
+        unix_socket_connection::handle_connection_split(handlers, buf_reader, pin_writer, ctx).await
     }
 
     /// TCP length-prefixed BTSP: handshake reads raw frames, no BufReader.
@@ -528,6 +538,7 @@ impl UnixSocketServer {
         handlers: &RpcHandlers,
         mut stream: tokio::net::TcpStream,
         cfg: &crate::btsp::BtspHandshakeConfig,
+        ctx: &crate::method_gate::CallerContext,
     ) -> Result<(), unix_socket_connection::ConnectionError> {
         let handshake_result = match crate::btsp::perform_server_handshake(&mut stream, cfg).await {
             Ok(result) => {
@@ -553,6 +564,7 @@ impl UnixSocketServer {
                     writer,
                     &handshake_result.cipher,
                     session_key,
+                    ctx,
                 )
                 .await;
             }
@@ -562,7 +574,7 @@ impl UnixSocketServer {
             );
         }
 
-        unix_socket_connection::handle_connection(handlers, stream).await
+        unix_socket_connection::handle_connection(handlers, stream, ctx).await
     }
 
     /// Whether the cipher requires Phase 3 encrypted transport.
@@ -582,6 +594,7 @@ impl UnixSocketServer {
         mut writer: W,
         cipher_hint: &str,
         session_key: &[u8],
+        ctx: &crate::method_gate::CallerContext,
     ) -> Result<(), unix_socket_connection::ConnectionError>
     where
         R: tokio::io::AsyncBufRead + tokio::io::AsyncRead + Unpin,
@@ -592,6 +605,7 @@ impl UnixSocketServer {
             &mut writer,
             handlers,
             cipher_hint,
+            ctx,
         )
         .await?;
 
@@ -622,11 +636,12 @@ impl UnixSocketServer {
                 &mut reader,
                 &mut writer,
                 &session,
+                ctx,
             )
             .await
         } else {
             debug!("Phase 3: negotiate not completed, continuing with plaintext NDJSON");
-            unix_socket_connection::handle_connection_split(handlers, reader, writer).await
+            unix_socket_connection::handle_connection_split(handlers, reader, writer, ctx).await
         }
     }
 }
@@ -648,7 +663,8 @@ impl UnixSocketServer {
     }
 
     async fn handle_request(&self, request: JsonRpcRequest) -> crate::json_rpc::JsonRpcResponse {
-        self.handlers.handle_request(request).await
+        let ctx = crate::method_gate::CallerContext::unix();
+        self.handlers.handle_request(request, &ctx).await
     }
 
     fn get_topology(&self, id: Value) -> crate::json_rpc::JsonRpcResponse {

@@ -810,5 +810,4 @@ mod tests {
             "nestgate fallback should return 502 when socket unavailable"
         );
     }
-
 }

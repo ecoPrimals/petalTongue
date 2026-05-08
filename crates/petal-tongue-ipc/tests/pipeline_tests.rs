@@ -5,6 +5,7 @@
 use petal_tongue_core::graph_engine::GraphEngine;
 use petal_tongue_ipc::VisualizationState;
 use petal_tongue_ipc::json_rpc::JsonRpcRequest;
+use petal_tongue_ipc::method_gate::CallerContext;
 use petal_tongue_ipc::unix_socket_connection;
 use petal_tongue_ipc::unix_socket_rpc_handlers::RpcHandlers;
 use petal_tongue_scene::primitive::{Color, Primitive};
@@ -18,6 +19,10 @@ fn test_handlers() -> RpcHandlers {
     let graph = Arc::new(RwLock::new(GraphEngine::new()));
     let viz_state = Arc::new(RwLock::new(VisualizationState::new()));
     RpcHandlers::new(graph, "test-pipeline".to_string(), viz_state)
+}
+
+fn test_ctx() -> CallerContext {
+    CallerContext::unix()
 }
 
 #[tokio::test]
@@ -43,7 +48,7 @@ async fn test_e2e_visualization_pipeline() {
         }),
         json!(1),
     );
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none(), "expected success: {:?}", resp.error);
     let r = resp.result.expect("result");
     assert_eq!(r["status"], "rendering");
@@ -81,7 +86,7 @@ async fn test_concurrent_sessions() {
         }),
         json!(1),
     );
-    let resp_a = h.handle_request(req_a).await;
+    let resp_a = h.handle_request(req_a, &test_ctx()).await;
     assert!(resp_a.error.is_none());
     assert_eq!(resp_a.result.as_ref().unwrap()["session_id"], "session-a");
     assert_eq!(resp_a.result.as_ref().unwrap()["bindings_accepted"], 1);
@@ -104,7 +109,7 @@ async fn test_concurrent_sessions() {
         }),
         json!(2),
     );
-    let resp_b = h.handle_request(req_b).await;
+    let resp_b = h.handle_request(req_b, &test_ctx()).await;
     assert!(resp_b.error.is_none());
     assert_eq!(resp_b.result.as_ref().unwrap()["session_id"], "session-b");
     assert_eq!(resp_b.result.as_ref().unwrap()["bindings_accepted"], 1);
@@ -158,7 +163,7 @@ async fn test_render_scene_direct() {
         }),
         json!(1),
     );
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none(), "expected success: {:?}", resp.error);
     let r = resp.result.expect("result");
     assert_eq!(r["status"], "scene_stored");
@@ -184,7 +189,7 @@ async fn test_session_list() {
         }),
         json!(1),
     );
-    h.handle_request(req1).await;
+    h.handle_request(req1, &test_ctx()).await;
 
     let req2 = JsonRpcRequest::new(
         "visualization.render",
@@ -195,10 +200,10 @@ async fn test_session_list() {
         }),
         json!(2),
     );
-    h.handle_request(req2).await;
+    h.handle_request(req2, &test_ctx()).await;
 
     let req_list = JsonRpcRequest::new("visualization.session.list", json!({}), json!(3));
-    let resp = h.handle_request(req_list).await;
+    let resp = h.handle_request(req_list, &test_ctx()).await;
     assert!(resp.error.is_none());
     let r = resp.result.expect("result");
     let sessions = r["sessions"].as_array().expect("sessions array");
@@ -221,7 +226,7 @@ async fn test_session_list() {
 async fn test_sensor_stream_subscribe() {
     let h = test_handlers();
     let req = JsonRpcRequest::new("interaction.sensor_stream.subscribe", json!({}), json!(1));
-    let resp = h.handle_request(req).await;
+    let resp = h.handle_request(req, &test_ctx()).await;
     assert!(resp.error.is_none());
     let r = resp.result.expect("result");
     assert!(r["subscription_id"].as_str().is_some());
@@ -232,7 +237,7 @@ async fn test_sensor_stream_subscribe() {
 async fn test_sensor_stream_poll_empty() {
     let h = test_handlers();
     let sub_req = JsonRpcRequest::new("interaction.sensor_stream.subscribe", json!({}), json!(1));
-    let sub_resp = h.handle_request(sub_req).await;
+    let sub_resp = h.handle_request(sub_req, &test_ctx()).await;
     let subscription_id = sub_resp.result.unwrap()["subscription_id"]
         .as_str()
         .unwrap()
@@ -243,7 +248,7 @@ async fn test_sensor_stream_poll_empty() {
         json!({ "subscription_id": subscription_id }),
         json!(2),
     );
-    let poll_resp = h.handle_request(poll_req).await;
+    let poll_resp = h.handle_request(poll_req, &test_ctx()).await;
     assert!(poll_resp.error.is_none());
     let r = poll_resp.result.expect("result");
     let events = r["events"].as_array().expect("events array");
@@ -257,7 +262,7 @@ async fn test_sensor_stream_poll_empty() {
 async fn test_sensor_stream_unsubscribe() {
     let h = test_handlers();
     let sub_req = JsonRpcRequest::new("interaction.sensor_stream.subscribe", json!({}), json!(1));
-    let sub_resp = h.handle_request(sub_req).await;
+    let sub_resp = h.handle_request(sub_req, &test_ctx()).await;
     let subscription_id = sub_resp.result.unwrap()["subscription_id"]
         .as_str()
         .unwrap()
@@ -268,7 +273,7 @@ async fn test_sensor_stream_unsubscribe() {
         json!({ "subscription_id": subscription_id }),
         json!(2),
     );
-    let unsub_resp = h.handle_request(unsub_req).await;
+    let unsub_resp = h.handle_request(unsub_req, &test_ctx()).await;
     assert!(unsub_resp.error.is_none());
     let r = unsub_resp.result.expect("result");
     assert_eq!(r["unsubscribed"], true);
@@ -287,7 +292,8 @@ async fn test_unix_socket_connection_handle_request() {
     let server_handlers = Arc::clone(&handlers);
     tokio::spawn(async move {
         let (stream, _) = listener.accept().await.expect("accept");
-        unix_socket_connection::handle_connection(&server_handlers, stream)
+        let ctx = CallerContext::unix();
+        unix_socket_connection::handle_connection(&server_handlers, stream, &ctx)
             .await
             .expect("handle_connection");
     });
