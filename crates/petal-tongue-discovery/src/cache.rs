@@ -304,7 +304,7 @@ mod tests {
         let cache = ProviderCache::with_ttls(
             10,
             Duration::from_millis(50), // Very short TTL for testing
-            Duration::from_secs(60),
+            Duration::from_mins(1),
             Duration::from_secs(10),
         );
 
@@ -407,21 +407,21 @@ mod tests {
             .put(
                 CacheKey::Primals,
                 vec!["1".to_string()],
-                Duration::from_secs(60),
+                Duration::from_mins(1),
             )
             .await;
         cache
             .put(
                 CacheKey::Topology,
                 vec!["2".to_string()],
-                Duration::from_secs(60),
+                Duration::from_mins(1),
             )
             .await;
         cache
             .put(
                 CacheKey::Health,
                 vec!["3".to_string()],
-                Duration::from_secs(60),
+                Duration::from_mins(1),
             )
             .await;
 

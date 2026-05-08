@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "test code uses unwrap/expect for brevity"
+)]
 //! Comprehensive tests for quality assessment
 //!
 //! Tests verify Shannon entropy, variance, and histogram algorithms.
@@ -7,7 +11,8 @@
 #![allow(
     clippy::float_cmp,
     clippy::unreadable_literal,
-    clippy::redundant_closure
+    clippy::redundant_closure,
+    reason = "deterministic quality tests need exact floats, descriptive literals, and explicit closures"
 )]
 
 use petal_tongue_entropy::quality::{create_histogram_buckets, shannon_entropy, variance};

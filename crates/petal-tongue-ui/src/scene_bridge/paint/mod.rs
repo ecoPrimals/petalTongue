@@ -75,7 +75,11 @@ pub fn paint_plan(painter: &Painter, plan: &RenderPlan, offset: Vec2) {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used, clippy::expect_used)]
+    #![allow(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        reason = "test code uses unwrap/expect for brevity"
+    )]
 
     use super::*;
     use egui::{Painter, Sense, Vec2};

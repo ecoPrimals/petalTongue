@@ -1,10 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "test code uses unwrap/expect for brevity"
+)]
 //! Comprehensive tests for entropy streaming
 //!
 //! Tests verify encryption, zeroization, and streaming logic.
 
-#![allow(clippy::float_cmp)]
+#![allow(
+    clippy::float_cmp,
+    reason = "exact float comparison acceptable in deterministic test assertions"
+)]
 
 use petal_tongue_entropy::types::*;
 use std::time::Duration;

@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::unwrap_used, clippy::expect_used, missing_docs)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    missing_docs,
+    reason = "test code uses unwrap/expect for brevity"
+)]
 
 use chrono::Utc;
 use petal_tongue_core::{PrimalHealthStatus, PrimalId, PrimalInfo};

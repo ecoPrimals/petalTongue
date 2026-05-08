@@ -102,7 +102,7 @@ fn test_is_stale_none_confirmed() {
 fn test_is_stale_recently_confirmed() {
     let mut v = OutputVerification::unverified(OutputModality::Visual);
     v.confirm_via_interaction();
-    assert!(!v.is_stale(Duration::from_secs(300)));
+    assert!(!v.is_stale(Duration::from_mins(5)));
 }
 
 #[test]

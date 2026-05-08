@@ -1,10 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "test code uses unwrap/expect for brevity"
+)]
 //! Comprehensive tests for `graph_engine` module
 //!
 //! Tests verify the core graph structure, layout algorithms, and node positioning.
 
-#![allow(clippy::float_cmp)]
+#![allow(
+    clippy::float_cmp,
+    reason = "exact float comparison acceptable in deterministic test assertions"
+)]
 
 use petal_tongue_core::{
     GraphEngine, PrimalHealthStatus, PrimalId, PrimalInfo, TopologyEdge, graph_engine::Position,

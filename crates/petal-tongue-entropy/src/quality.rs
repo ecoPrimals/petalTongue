@@ -386,7 +386,7 @@ mod tests {
             Duration::from_millis(50),
             Duration::from_millis(100),
             Duration::from_millis(500),
-            Duration::from_millis(1000),
+            Duration::from_secs(1),
         ];
         let entropy = timing_entropy(&durations);
         assert!(entropy > 0.5, "varied durations should have high entropy");

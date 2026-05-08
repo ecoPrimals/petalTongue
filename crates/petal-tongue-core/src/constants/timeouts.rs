@@ -181,7 +181,7 @@ mod tests {
     #[test]
     fn test_default_heartbeat_interval_env_override() {
         env_test_helpers::with_env_var("PETALTONGUE_HEARTBEAT_INTERVAL_SECS", "60", || {
-            assert_eq!(default_heartbeat_interval(), Duration::from_secs(60));
+            assert_eq!(default_heartbeat_interval(), Duration::from_mins(1));
         });
     }
 

@@ -100,6 +100,7 @@ impl SceneSigner {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fmt::Write;
 
     fn test_key() -> [u8; blake3::KEY_LEN] {
         let mut key = [0u8; blake3::KEY_LEN];
@@ -113,7 +114,12 @@ mod tests {
     }
 
     fn test_key_hex() -> String {
-        test_key().iter().map(|b| format!("{b:02x}")).collect()
+        test_key()
+            .iter()
+            .fold(String::with_capacity(blake3::KEY_LEN * 2), |mut acc, &b| {
+                let _ = write!(acc, "{b:02x}");
+                acc
+            })
     }
 
     #[test]

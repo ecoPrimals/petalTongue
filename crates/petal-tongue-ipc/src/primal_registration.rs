@@ -638,7 +638,7 @@ mod tests {
 
     #[test]
     fn test_transports_serialized_in_register_payload() {
-        let host = std::net::IpAddr::V4(std::net::Ipv4Addr::new(0, 0, 0, 0));
+        let host = std::net::IpAddr::V4(std::net::Ipv4Addr::UNSPECIFIED);
         let reg = PrimalRegistration::petaltongue().with_tcp_endpoint(host, 9900);
         let request = json!({
             "jsonrpc": "2.0",

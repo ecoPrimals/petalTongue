@@ -1,10 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "test code uses unwrap/expect for brevity"
+)]
 //! Tests for `scenario_loader` module.
 //!
 //! Verifies parsing of healthSpring-style scenario JSON produced by `dump_scenarios`.
 
-#![allow(clippy::float_cmp)]
+#![allow(
+    clippy::float_cmp,
+    reason = "exact float comparison acceptable in deterministic test assertions"
+)]
 
 use petal_tongue_core::{DataBinding, LoadedScenario};
 use std::path::Path;

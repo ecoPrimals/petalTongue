@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "test code uses unwrap/expect for brevity"
+)]
 //! Integration tests for the visualization pipeline and IPC handlers.
 
 use petal_tongue_core::graph_engine::GraphEngine;
@@ -21,7 +25,7 @@ fn test_handlers() -> RpcHandlers {
     RpcHandlers::new(graph, "test-pipeline".to_string(), viz_state)
 }
 
-fn test_ctx() -> CallerContext {
+const fn test_ctx() -> CallerContext {
     CallerContext::unix()
 }
 

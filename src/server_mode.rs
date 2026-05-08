@@ -76,7 +76,11 @@ pub async fn run(
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used, clippy::expect_used)]
+    #![allow(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        reason = "test code uses unwrap/expect for brevity"
+    )]
 
     use super::*;
     use petal_tongue_core::test_fixtures::env_test_helpers;

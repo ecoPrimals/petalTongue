@@ -296,7 +296,10 @@ impl Default for GestureEntropyCapture {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::float_cmp)]
+    #![allow(
+        clippy::float_cmp,
+        reason = "exact float comparison acceptable in deterministic test assertions"
+    )]
 
     use super::*;
 

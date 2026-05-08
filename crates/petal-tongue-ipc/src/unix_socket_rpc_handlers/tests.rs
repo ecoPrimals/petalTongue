@@ -332,7 +332,7 @@ async fn dispatch_sensor_stream_poll_with_valid_id() {
         json!({"subscription_id": sub_id}),
         json!(2),
     );
-    let poll_resp = h.handle_request(poll_req).await;
+    let poll_resp = h.handle_request(poll_req, &test_ctx()).await;
     assert!(poll_resp.result.is_some());
 }
 

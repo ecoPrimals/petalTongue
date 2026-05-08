@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "test code uses unwrap/expect for brevity"
+)]
 //! Chaos tests for SAME DAVE proprioception system
 //!
 //! These tests verify the system handles failures gracefully:
@@ -255,7 +259,7 @@ fn chaos_stale_confirmation_handling() {
 
     // Confirm
     verification.confirm_via_interaction();
-    assert!(!verification.is_stale(Duration::from_secs(60)));
+    assert!(!verification.is_stale(Duration::from_mins(1)));
 
     // Check staleness with zero duration (should be stale)
     assert!(verification.is_stale(Duration::from_secs(0)));
