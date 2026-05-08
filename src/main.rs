@@ -373,7 +373,10 @@ async fn dispatch_async(
 }
 
 /// Dispatch `web` command — extracted to keep `dispatch_async` under the line limit.
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "web dispatch aggregates CLI + config params"
+)]
 async fn dispatch_web(
     port: Option<u16>,
     bind: Option<String>,

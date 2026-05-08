@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Property-based tests for core data types: BoundingBox, DataObjectId, FilterExpr.
 
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "test code uses unwrap/expect for brevity"
+)]
 
 use petal_tongue_core::interaction::{BoundingBox, DataObjectId, FilterExpr};
 use proptest::prelude::*;

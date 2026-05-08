@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "test code uses unwrap/expect for brevity"
+)]
 //! Chaos and fault injection tests for petal-tongue-ipc.
 
 use petal_tongue_core::graph_engine::GraphEngine;
 use petal_tongue_core::test_fixtures::env_test_helpers;
 use petal_tongue_ipc::json_rpc::error_codes;
+use petal_tongue_ipc::method_gate::CallerContext;
 use petal_tongue_ipc::unix_socket_connection::handle_connection;
 use petal_tongue_ipc::unix_socket_rpc_handlers::RpcHandlers;
 use petal_tongue_ipc::validate_insecure_guard;
@@ -32,7 +37,8 @@ fn spawn_line_server() -> (tempfile::TempDir, PathBuf) {
             if let Ok((stream, _)) = listener.accept().await {
                 let hh = Arc::clone(&accept_loop);
                 tokio::spawn(async move {
-                    let _ = handle_connection(hh.as_ref(), stream).await;
+                    let ctx = CallerContext::unix();
+                    let _ = handle_connection(hh.as_ref(), stream, &ctx).await;
                 });
             }
         }

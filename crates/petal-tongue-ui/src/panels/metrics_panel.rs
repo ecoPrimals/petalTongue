@@ -328,10 +328,10 @@ mod tests {
     #[test]
     fn test_uptime_formatting() {
         assert_eq!(format_uptime(Duration::from_secs(59)), "0m");
-        assert_eq!(format_uptime(Duration::from_secs(60)), "1m");
-        assert_eq!(format_uptime(Duration::from_secs(3600)), "1h 0m");
+        assert_eq!(format_uptime(Duration::from_mins(1)), "1m");
+        assert_eq!(format_uptime(Duration::from_hours(1)), "1h 0m");
         assert_eq!(format_uptime(Duration::from_secs(3661)), "1h 1m");
-        assert_eq!(format_uptime(Duration::from_secs(86400)), "1d 0h 0m");
+        assert_eq!(format_uptime(Duration::from_hours(24)), "1d 0h 0m");
         assert_eq!(format_uptime(Duration::from_secs(90061)), "1d 1h 1m");
     }
 

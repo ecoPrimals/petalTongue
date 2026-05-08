@@ -227,7 +227,7 @@ fn test_interactivity_state_idle() {
         y: 0.0,
         button: MouseButton::Left,
         timestamp: Instant::now()
-            .checked_sub(Duration::from_secs(60))
+            .checked_sub(Duration::from_mins(1))
             .expect("60s ago should be representable"),
     };
     awareness.sensory_feedback(&click);

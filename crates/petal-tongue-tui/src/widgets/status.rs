@@ -86,7 +86,7 @@ mod tests {
     #[test]
     fn format_duration_two_hours_fifteen_minutes() {
         assert_eq!(
-            format_duration(std::time::Duration::from_secs(8100)),
+            format_duration(std::time::Duration::from_mins(135)),
             "2h 15m 0s"
         );
     }
@@ -94,7 +94,7 @@ mod tests {
     #[test]
     fn format_duration_hours_only() {
         assert_eq!(
-            format_duration(std::time::Duration::from_secs(3600)),
+            format_duration(std::time::Duration::from_hours(1)),
             "1h 0m 0s"
         );
     }
@@ -115,7 +115,7 @@ mod tests {
     #[test]
     fn format_duration_many_hours() {
         assert_eq!(
-            format_duration(std::time::Duration::from_secs(90_000)),
+            format_duration(std::time::Duration::from_hours(25)),
             "25h 0m 0s"
         );
     }
@@ -129,7 +129,7 @@ mod tests {
         let status = crate::state::SystemStatus {
             active_primals: 3,
             discovered_devices: 2,
-            uptime: std::time::Duration::from_secs(3600),
+            uptime: std::time::Duration::from_hours(1),
             last_update: chrono::Utc::now(),
         };
         terminal

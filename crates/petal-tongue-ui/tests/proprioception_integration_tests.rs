@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "test code uses unwrap/expect for brevity"
+)]
 //! Integration tests for SAME DAVE proprioception system
 //!
 //! Tests the complete sensory-motor self-awareness system including:
@@ -315,7 +319,7 @@ mod output_verification_tests {
         verification.confirm_via_interaction();
 
         // Fresh confirmation with reasonable threshold
-        assert!(!verification.is_stale(Duration::from_secs(60)));
+        assert!(!verification.is_stale(Duration::from_mins(1)));
 
         // Zero threshold should always be stale (tests the boundary condition)
         assert!(verification.is_stale(Duration::from_secs(0)));

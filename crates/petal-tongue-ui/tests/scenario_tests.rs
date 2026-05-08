@@ -1,10 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "test code uses unwrap/expect for brevity"
+)]
 //! Unit tests for scenario loading and parsing
 //!
 //! Tests the modular UI control system introduced in v2.2.0
 
-#![allow(clippy::unnecessary_get_then_check, clippy::bool_assert_comparison)]
+#![allow(
+    clippy::unnecessary_get_then_check,
+    clippy::bool_assert_comparison,
+    reason = "test assertions prefer explicit comparison for clarity"
+)]
 
 use petal_tongue_ui::scenario::{FeatureFlags, PanelVisibility, Scenario};
 use std::path::PathBuf;

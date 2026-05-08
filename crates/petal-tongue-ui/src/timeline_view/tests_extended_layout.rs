@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Timeline View - Lane layout, rendering, and screen-rect extended tests
 
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "test code uses unwrap/expect for brevity"
+)]
 
 use super::{
     EventStatus, TimelineEvent, TimelineView, build_primal_lanes, compute_lane_height,
