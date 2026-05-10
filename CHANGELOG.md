@@ -6,6 +6,32 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Notebook Rendering + PT-3 Completion (May 10, 2026)
+
+#### Added
+- **Jupyter notebook renderer** (`src/notebook_render.rs`, 553 LOC).
+  `.ipynb` files served via docroot or NestGate are rendered to complete HTML
+  documents with responsive styling and dark-mode support.
+- **`metadata.title`** → `<title>` + `<h1>` page header; falls back to "Notebook".
+- **`--strip-sources` / `PETALTONGUE_STRIP_SOURCES`**: hides code input cells,
+  showing only outputs (for documentation/presentation mode).
+- **`--cache-ttl` / `PETALTONGUE_CACHE_TTL`**: `Cache-Control: max-age` header
+  on all served static content (wires `WebServeConfig.cache_ttl_secs`).
+- Markdown cells rendered via `pulldown-cmark` (CommonMark + tables, strikethrough,
+  task lists, footnotes). Code cells as `<pre><code>` with language annotation.
+  Rich outputs: HTML passthrough, SVG, base64 images, plain text, error tracebacks.
+- `WebServeConfig.strip_sources` field with TOML + env override.
+- `is_ipynb()` case-insensitive extension helper.
+- `docroot_fallback()` — custom Axum handler replacing `ServeDir` for `.ipynb`
+  rendering and `Cache-Control` injection on all responses.
+- New dependency: `pulldown-cmark 0.13` (pure Rust, `html` feature only).
+- 14 notebook rendering unit tests + 4 web-mode integration tests.
+
+#### Changed
+- `web_mode::run()` now takes `WebConfig` struct (was 8 positional params).
+- NestGate fallback now renders `.ipynb` content as HTML before serving raw bytes.
+- `WebConfig.workers` doc updated (was stale "currently logged only").
+
 ### JH-0 MethodGate Pre-Dispatch Authorization (May 8, 2026)
 
 #### Added

@@ -100,7 +100,8 @@ impl Default for NetworkConfig {
 
 /// Web serving mode configuration (PT-3).
 ///
-/// Controls static file serving, backend selection, and caching for `web` mode.
+/// Controls static file serving, backend selection, caching, and notebook
+/// rendering for `web` mode.
 /// CLI flags (`--docroot`, `--backend`) take precedence over config values.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -110,7 +111,7 @@ pub struct WebServeConfig {
     /// `tower_http::ServeDir` serving files from this path.
     pub docroot: Option<PathBuf>,
 
-    /// Content backend: `"filesystem"` (default) or `"nestgate"` (future PT-2).
+    /// Content backend: `"filesystem"` (default) or `"nestgate"`.
     pub backend: String,
 
     /// Default index file name served when a directory is requested.
@@ -118,6 +119,9 @@ pub struct WebServeConfig {
 
     /// Static file cache TTL in seconds (for `Cache-Control` headers).
     pub cache_ttl_secs: u64,
+
+    /// Hide code input cells when rendering `.ipynb` notebooks (show outputs only).
+    pub strip_sources: bool,
 }
 
 impl Default for WebServeConfig {
@@ -127,6 +131,7 @@ impl Default for WebServeConfig {
             backend: "filesystem".to_string(),
             index_file: "index.html".to_string(),
             cache_ttl_secs: 3600,
+            strip_sources: false,
         }
     }
 }
@@ -142,6 +147,7 @@ impl WebServeConfig {
             },
             index_file: other.index_file,
             cache_ttl_secs: other.cache_ttl_secs,
+            strip_sources: other.strip_sources || self.strip_sources,
         }
     }
 }

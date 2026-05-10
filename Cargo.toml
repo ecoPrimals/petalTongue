@@ -164,6 +164,9 @@ lru = "0.16"
 # Network / discovery
 socket2 = "0.6"
 
+# Markdown rendering (pure Rust — notebook cell rendering)
+pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
+
 # Serialization (extended)
 ron = "0.8"
 
@@ -280,6 +283,9 @@ clap = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 base64 = { workspace = true }
+
+# Markdown rendering (notebook cells)
+pulldown-cmark = { workspace = true }
 
 # Error handling (thiserror for typed errors; anyhow eliminated from production)
 thiserror = { workspace = true }

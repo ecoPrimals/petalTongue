@@ -32,6 +32,7 @@ mod error;
 mod headless_mode;
 #[cfg(feature = "ui")]
 mod live_mode;
+mod notebook_render;
 mod server_mode;
 mod tui_mode;
 mod ui_mode;
@@ -123,6 +124,14 @@ enum Commands {
         /// Number of worker threads (configures tokio runtime)
         #[arg(long, default_value = "4")]
         workers: usize,
+
+        /// Hide code cells when rendering .ipynb notebooks (outputs only)
+        #[arg(long, env = "PETALTONGUE_STRIP_SOURCES")]
+        strip_sources: bool,
+
+        /// Cache-Control max-age in seconds for static files (0 = no cache header)
+        #[arg(long, env = "PETALTONGUE_CACHE_TTL")]
+        cache_ttl: Option<u64>,
     },
 
     /// Run headless API server (Pure Rust! ✅)
@@ -323,6 +332,8 @@ async fn dispatch_async(
             ipc,
             ipc_port,
             workers,
+            strip_sources,
+            cache_ttl,
         } => {
             dispatch_web(
                 port,
@@ -333,6 +344,8 @@ async fn dispatch_async(
                 ipc,
                 ipc_port,
                 workers,
+                strip_sources,
+                cache_ttl,
                 config,
                 data_service,
             )
@@ -386,6 +399,8 @@ async fn dispatch_web(
     ipc: bool,
     ipc_port: Option<u16>,
     workers: usize,
+    strip_sources: bool,
+    cache_ttl: Option<u64>,
     config: Config,
     data_service: std::sync::Arc<data_service::DataService>,
 ) -> Result<(), AppError> {
@@ -402,6 +417,9 @@ async fn dispatch_web(
     } else {
         backend
     };
+    let effective_strip = strip_sources || config.web.strip_sources;
+    let effective_cache_ttl = cache_ttl.unwrap_or(config.web.cache_ttl_secs);
+
     tracing::info!(
         mode = "web",
         bind = %bind_addr,
@@ -410,6 +428,8 @@ async fn dispatch_web(
         ipc,
         ipc_port = ?ipc_port,
         workers,
+        strip_sources = effective_strip,
+        cache_ttl = effective_cache_ttl,
         "Launching web UI server (Pure Rust!)"
     );
 
@@ -431,15 +451,16 @@ async fn dispatch_web(
         tracing::info!("🔌 IPC server co-started alongside web (PT-4 dual-port mode)");
     }
 
-    web_mode::run(
-        &bind_addr,
+    let cfg = web_mode::WebConfig {
+        bind: &bind_addr,
         scenario,
-        effective_docroot,
-        &effective_backend,
+        docroot: effective_docroot,
+        backend: &effective_backend,
         workers,
-        data_service,
-    )
-    .await
+        strip_sources: effective_strip,
+        cache_ttl_secs: effective_cache_ttl,
+    };
+    web_mode::run(cfg, data_service).await
 }
 
 /// Resolve bind address from `--bind` (explicit), `--port` (UniBin standard), or config default.
