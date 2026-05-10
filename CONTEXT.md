@@ -403,6 +403,14 @@ items resolved:
   petalTongue now matches all 12 other primals). PT-13 NestGate content-addressed
   backend for `web` mode (RESOLVED — `--backend nestgate` with UDS JSON-RPC).
 
+- **Notebook rendering** (May 10, 2026): Jupyter `.ipynb` files served from
+  docroot or NestGate are rendered as styled HTML pages. `metadata.title`
+  populates `<title>` + `<h1>` header. `--strip-sources` /
+  `PETALTONGUE_STRIP_SOURCES` hides code input cells. `--cache-ttl` /
+  `PETALTONGUE_CACHE_TTL` sets `Cache-Control` headers. Markdown cells via
+  `pulldown-cmark`; code cells as `<pre><code>`; rich outputs (HTML, SVG,
+  base64 images). Pure Rust, dark-mode responsive CSS.
+
 6,200+ tests, 0 Clippy warnings, 0 doc warnings, 0 unsafe blocks.
 
 Remaining backlog: aarch64 musl cross-compile for headless, audio backend wire

@@ -96,6 +96,16 @@ impl Config {
         if let Ok(docroot) = std::env::var("PETALTONGUE_DOCROOT") {
             self.web.docroot = Some(PathBuf::from(docroot));
         }
+        if let Ok(ttl) = std::env::var("PETALTONGUE_CACHE_TTL") {
+            self.web.cache_ttl_secs = ttl
+                .parse()
+                .map_err(|_| ConfigError::EnvError("Invalid CACHE_TTL".to_string()))?;
+        }
+        if std::env::var("PETALTONGUE_STRIP_SOURCES")
+            .is_ok_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        {
+            self.web.strip_sources = true;
+        }
 
         // Discovery overrides
         if let Ok(timeout) = std::env::var("PETALTONGUE_DISCOVERY_TIMEOUT") {

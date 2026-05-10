@@ -40,45 +40,31 @@ pub struct WebConfig<'a> {
     pub docroot: Option<String>,
     /// Content backend: `"filesystem"` or `"nestgate"`.
     pub backend: &'a str,
-    /// Number of tokio worker threads (currently logged only; runtime is pre-built).
+    /// Number of tokio worker threads (wired to runtime in `main`).
     pub workers: usize,
+    /// Hide code input cells when rendering `.ipynb` notebooks.
+    pub strip_sources: bool,
+    /// `Cache-Control: max-age` in seconds for served content (0 = no header).
+    pub cache_ttl_secs: u64,
 }
 
 /// Start the web UI HTTP server.
 ///
 /// PT-1: When `docroot` is set with `backend = "filesystem"`, a
 /// `tower_http::ServeDir` catch-all fallback serves arbitrary static files.
+/// `.ipynb` files are rendered as HTML with `metadata.title` page headers.
 ///
 /// PT-13: When `backend = "nestgate"`, a content-addressed fallback queries
 /// NestGate `content.resolve` via JSON-RPC over UDS for path resolution.
-pub async fn run(
-    bind: &str,
-    scenario: Option<String>,
-    docroot: Option<String>,
-    backend: &str,
-    workers: usize,
-    data_service: Arc<DataService>,
-) -> Result<(), AppError> {
-    let cfg = WebConfig {
-        bind,
-        scenario,
-        docroot,
-        backend,
-        workers,
-    };
-    run_with_config(cfg, data_service).await
-}
-
-async fn run_with_config(
-    cfg: WebConfig<'_>,
-    data_service: Arc<DataService>,
-) -> Result<(), AppError> {
+pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(), AppError> {
     tracing::info!(
         bind = cfg.bind,
         scenario = ?cfg.scenario,
         docroot = ?cfg.docroot,
         backend = cfg.backend,
         workers = cfg.workers,
+        strip_sources = cfg.strip_sources,
+        cache_ttl_secs = cfg.cache_ttl_secs,
         "Starting web UI server (Pure Rust!)"
     );
 
@@ -86,6 +72,11 @@ async fn run_with_config(
         .bind
         .parse()
         .map_err(|e| AppError::Other(format!("Failed to parse bind address: {e}")))?;
+
+    let nb_config = Arc::new(crate::notebook_render::NotebookRenderConfig {
+        strip_sources: cfg.strip_sources,
+    });
+    let cache_ttl = cfg.cache_ttl_secs;
 
     let mut app = Router::new()
         .route("/", get(index_handler))
@@ -103,8 +94,9 @@ async fn run_with_config(
                 socket = %client.socket_path.display(),
                 "🗄️  NestGate content-addressed backend active (PT-13)"
             );
+            let nb_cfg = Arc::clone(&nb_config);
             app = app.fallback(move |req: axum::extract::Request| {
-                nestgate_fallback(req, Arc::clone(&client))
+                nestgate_fallback(req, Arc::clone(&client), Arc::clone(&nb_cfg), cache_ttl)
             });
         }
         _ => {
@@ -119,9 +111,11 @@ async fn run_with_config(
                     docroot,
                     "📂 Serving static files from docroot (PT-1 catch-all)"
                 );
-                app = app.fallback_service(
-                    ServeDir::new(docroot).append_index_html_on_directories(true),
-                );
+                let docroot_owned = docroot.clone();
+                let nb_cfg = Arc::clone(&nb_config);
+                app = app.fallback(move |req: axum::extract::Request| {
+                    docroot_fallback(req, docroot_owned, nb_cfg, cache_ttl)
+                });
             }
         }
     }
@@ -244,24 +238,78 @@ impl NestGateContentClient {
     }
 }
 
+/// Filesystem docroot fallback — serves static files with `.ipynb` rendering.
+async fn docroot_fallback(
+    req: axum::extract::Request,
+    docroot: String,
+    nb_config: Arc<crate::notebook_render::NotebookRenderConfig>,
+    cache_ttl: u64,
+) -> axum::response::Response {
+    let uri_path = req.uri().path();
+
+    if is_ipynb(uri_path) {
+        let file_path = resolve_docroot_path(&docroot, uri_path);
+        match tokio::fs::read(&file_path).await {
+            Ok(bytes) => {
+                if let Some(html) = crate::notebook_render::render_notebook(&bytes, &nb_config) {
+                    return build_response(
+                        html.into_bytes(),
+                        "text/html; charset=utf-8",
+                        cache_ttl,
+                    );
+                }
+                build_response(bytes, "application/json", cache_ttl)
+            }
+            Err(_) => (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response(),
+        }
+    } else {
+        let serve = ServeDir::new(&docroot).append_index_html_on_directories(true);
+        let resp = tower::ServiceExt::oneshot(serve, req).await.map_or_else(
+            |_| {
+                (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    "Internal error",
+                )
+                    .into_response()
+            },
+            IntoResponse::into_response,
+        );
+        if cache_ttl > 0 && resp.status().is_success() {
+            let (mut parts, body) = resp.into_parts();
+            parts.headers.insert(
+                axum::http::header::CACHE_CONTROL,
+                format!("public, max-age={cache_ttl}")
+                    .parse()
+                    .unwrap_or_else(|_| axum::http::HeaderValue::from_static("public")),
+            );
+            axum::response::Response::from_parts(parts, body)
+        } else {
+            resp
+        }
+    }
+}
+
 /// Axum fallback handler that resolves content via NestGate.
 async fn nestgate_fallback(
     req: axum::extract::Request,
     client: Arc<NestGateContentClient>,
+    nb_config: Arc<crate::notebook_render::NotebookRenderConfig>,
+    cache_ttl: u64,
 ) -> axum::response::Response {
     let path = req.uri().path().to_owned();
     match client.resolve(&path).await {
-        Ok(Some((body, mime))) => axum::response::Response::builder()
-            .status(axum::http::StatusCode::OK)
-            .header(axum::http::header::CONTENT_TYPE, mime)
-            .body(axum::body::Body::from(body))
-            .unwrap_or_else(|_| {
-                (
-                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    "response build error",
-                )
-                    .into_response()
-            }),
+        Ok(Some((body, mime))) => {
+            if is_ipynb(&path) {
+                if let Some(html) = crate::notebook_render::render_notebook(&body, &nb_config) {
+                    return build_response(
+                        html.into_bytes(),
+                        "text/html; charset=utf-8",
+                        cache_ttl,
+                    );
+                }
+            }
+            build_response(body, &mime, cache_ttl)
+        }
         Ok(None) => (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response(),
         Err(e) => {
             tracing::error!(path, error = %e, "NestGate content.resolve failed");
@@ -272,6 +320,41 @@ async fn nestgate_fallback(
                 .into_response()
         }
     }
+}
+
+/// Build an HTTP response with optional `Cache-Control`.
+fn build_response(body: Vec<u8>, content_type: &str, cache_ttl: u64) -> axum::response::Response {
+    let mut builder = axum::response::Response::builder()
+        .status(axum::http::StatusCode::OK)
+        .header(axum::http::header::CONTENT_TYPE, content_type);
+    if cache_ttl > 0 {
+        builder = builder.header(
+            axum::http::header::CACHE_CONTROL,
+            format!("public, max-age={cache_ttl}"),
+        );
+    }
+    builder
+        .body(axum::body::Body::from(body))
+        .unwrap_or_else(|_| {
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "response build error",
+            )
+                .into_response()
+        })
+}
+
+/// Map a URI path to a filesystem path under docroot, preventing traversal.
+fn resolve_docroot_path(docroot: &str, uri_path: &str) -> std::path::PathBuf {
+    let cleaned = uri_path.trim_start_matches('/');
+    std::path::Path::new(docroot).join(cleaned)
+}
+
+/// Case-insensitive `.ipynb` extension check.
+fn is_ipynb(path: &str) -> bool {
+    std::path::Path::new(path)
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("ipynb"))
 }
 
 async fn index_handler() -> Html<&'static str> {
@@ -552,18 +635,22 @@ mod tests {
         );
     }
 
+    fn test_config(bind: &str) -> WebConfig<'_> {
+        WebConfig {
+            bind,
+            scenario: None,
+            docroot: None,
+            backend: "filesystem",
+            workers: 4,
+            strip_sources: false,
+            cache_ttl_secs: 0,
+        }
+    }
+
     #[tokio::test]
     async fn test_run_invalid_bind_address() {
         let data_service = Arc::new(DataService::new());
-        let result = run(
-            "not-a-valid-address",
-            None,
-            None,
-            "filesystem",
-            4,
-            data_service,
-        )
-        .await;
+        let result = run(test_config("not-a-valid-address"), data_service).await;
         assert!(result.is_err());
         let err_msg = result.unwrap_err().to_string();
         assert!(err_msg.contains("parse") || err_msg.contains("bind"));
@@ -572,22 +659,14 @@ mod tests {
     #[tokio::test]
     async fn test_run_empty_bind_address() {
         let data_service = Arc::new(DataService::new());
-        let result = run("", None, None, "filesystem", 4, data_service).await;
+        let result = run(test_config(""), data_service).await;
         assert!(result.is_err());
     }
 
     #[tokio::test]
     async fn test_run_invalid_port() {
         let data_service = Arc::new(DataService::new());
-        let result = run(
-            "127.0.0.1:999999",
-            None,
-            None,
-            "filesystem",
-            4,
-            data_service,
-        )
-        .await;
+        let result = run(test_config("127.0.0.1:999999"), data_service).await;
         assert!(result.is_err());
     }
 
@@ -643,15 +722,9 @@ mod tests {
     #[tokio::test]
     async fn test_run_invalid_docroot_rejects() {
         let data_service = Arc::new(DataService::new());
-        let result = run(
-            "127.0.0.1:0",
-            None,
-            Some("/nonexistent/docroot/path".to_string()),
-            "filesystem",
-            4,
-            data_service,
-        )
-        .await;
+        let mut cfg = test_config("127.0.0.1:0");
+        cfg.docroot = Some("/nonexistent/docroot/path".to_string());
+        let result = run(cfg, data_service).await;
         assert!(result.is_err());
         let msg = result.unwrap_err().to_string();
         assert!(
@@ -775,7 +848,8 @@ mod tests {
             .uri("/some/page.html")
             .body(Body::empty())
             .unwrap();
-        let resp = nestgate_fallback(req, client).await;
+        let nb_cfg = Arc::new(crate::notebook_render::NotebookRenderConfig::default());
+        let resp = nestgate_fallback(req, client, nb_cfg, 0).await;
         assert_eq!(resp.status(), axum::http::StatusCode::BAD_GATEWAY);
     }
 
@@ -788,11 +862,12 @@ mod tests {
             request_id: std::sync::atomic::AtomicU64::new(1),
         });
         let client_clone = Arc::clone(&client);
+        let nb_cfg = Arc::new(crate::notebook_render::NotebookRenderConfig::default());
         let data_service = Arc::new(DataService::new());
         let app = Router::new()
             .route("/health", get(health_handler))
             .fallback(move |req: axum::extract::Request| {
-                nestgate_fallback(req, Arc::clone(&client_clone))
+                nestgate_fallback(req, Arc::clone(&client_clone), Arc::clone(&nb_cfg), 0)
             })
             .with_state(data_service);
 
@@ -813,5 +888,100 @@ mod tests {
             502,
             "nestgate fallback should return 502 when socket unavailable"
         );
+    }
+
+    #[tokio::test]
+    async fn test_docroot_renders_ipynb_as_html() {
+        use axum::body::Body;
+
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let nb = serde_json::json!({
+            "nbformat": 4, "nbformat_minor": 5,
+            "metadata": { "title": "Integration Test" },
+            "cells": [{
+                "cell_type": "markdown",
+                "source": ["# Heading"],
+                "metadata": {}
+            }]
+        });
+        std::fs::write(
+            tmp.path().join("demo.ipynb"),
+            serde_json::to_vec(&nb).expect("ser"),
+        )
+        .expect("write");
+
+        let nb_cfg = Arc::new(crate::notebook_render::NotebookRenderConfig::default());
+        let docroot = tmp.path().to_string_lossy().into_owned();
+        let app = Router::new()
+            .fallback(move |req: axum::extract::Request| docroot_fallback(req, docroot, nb_cfg, 0))
+            .with_state(Arc::new(DataService::new()));
+
+        let req = axum::http::Request::builder()
+            .uri("/demo.ipynb")
+            .body(Body::empty())
+            .unwrap();
+        let resp = tower::ServiceExt::oneshot(app, req).await.unwrap();
+        assert_eq!(resp.status(), 200);
+        let ct = resp
+            .headers()
+            .get("content-type")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+        assert!(
+            ct.contains("text/html"),
+            "notebook should be served as HTML"
+        );
+        let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let html = std::str::from_utf8(&body).unwrap();
+        assert!(html.contains("Integration Test"));
+        assert!(html.contains("Heading"));
+    }
+
+    #[tokio::test]
+    async fn test_docroot_cache_control_header() {
+        use axum::body::Body;
+
+        let tmp = tempfile::tempdir().expect("tempdir");
+        std::fs::write(tmp.path().join("style.css"), "body {}").expect("write");
+
+        let nb_cfg = Arc::new(crate::notebook_render::NotebookRenderConfig::default());
+        let docroot = tmp.path().to_string_lossy().into_owned();
+        let app = Router::new()
+            .fallback(move |req: axum::extract::Request| {
+                docroot_fallback(req, docroot, nb_cfg, 3600)
+            })
+            .with_state(Arc::new(DataService::new()));
+
+        let req = axum::http::Request::builder()
+            .uri("/style.css")
+            .body(Body::empty())
+            .unwrap();
+        let resp = tower::ServiceExt::oneshot(app, req).await.unwrap();
+        assert_eq!(resp.status(), 200);
+        let cc = resp
+            .headers()
+            .get("cache-control")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+        assert!(
+            cc.contains("max-age=3600"),
+            "Cache-Control should contain ttl: {cc}"
+        );
+    }
+
+    #[test]
+    fn test_is_ipynb() {
+        assert!(is_ipynb("/path/to/notebook.ipynb"));
+        assert!(is_ipynb("/path/to/notebook.IPYNB"));
+        assert!(!is_ipynb("/path/to/file.json"));
+        assert!(!is_ipynb("/path/to/file"));
+    }
+
+    #[test]
+    fn test_resolve_docroot_path() {
+        let path = resolve_docroot_path("/srv/www", "/docs/page.html");
+        assert_eq!(path, std::path::PathBuf::from("/srv/www/docs/page.html"));
     }
 }

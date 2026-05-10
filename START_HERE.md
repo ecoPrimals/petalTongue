@@ -13,9 +13,11 @@ petaltongue ui                     # Desktop display (egui)
 petaltongue tui                    # Terminal display (ratatui)
 petaltongue web                                # Web interface (axum)
 petaltongue web --docroot /var/www/site        # Static file serving (sporePrint/Zola)
+petaltongue web --docroot ./nb --strip-sources # Serve .ipynb as HTML, hide code cells
 petaltongue web --backend nestgate             # Content-addressed via NestGate (PT-13)
 petaltongue web --docroot ./public --ipc       # HTTP + IPC dual-port (NUCLEUS mode)
 petaltongue web --docroot ./public --ipc --ipc-port 9900  # NUCLEUS full deployment
+petaltongue web --cache-ttl 7200              # 2-hour Cache-Control on static files
 petaltongue headless                           # Headless API server (no display)
 # For CLI SVG/PNG/JSON export: cargo run -p petal-tongue-headless -- --mode svg -o out.svg
 petaltongue server                             # IPC server (no display)
@@ -39,6 +41,11 @@ export BIOMEOS_NEURAL_API_SOCKET=/run/user/$(id -u)/biomeos-neural-api.sock
 
 # JH-0 MethodGate authorization mode (default: permissive)
 export PETALTONGUE_AUTH_MODE=enforced  # reject unauthenticated protected calls
+
+# Web mode: notebook rendering & caching
+export PETALTONGUE_STRIP_SOURCES=true  # hide code cells in .ipynb rendering
+export PETALTONGUE_CACHE_TTL=3600      # Cache-Control max-age (seconds)
+export PETALTONGUE_DOCROOT=/var/www    # static file document root
 
 # Tuning & timing (optional)
 export PETALTONGUE_RPC_TIMEOUT_SECS=5
