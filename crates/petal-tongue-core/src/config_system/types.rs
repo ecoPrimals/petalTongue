@@ -100,8 +100,8 @@ impl Default for NetworkConfig {
 
 /// Web serving mode configuration (PT-3).
 ///
-/// Controls static file serving, backend selection, caching, and notebook
-/// rendering for `web` mode.
+/// Controls static file serving, backend selection, caching, CORS, SPA routing,
+/// and notebook rendering for `web` mode.
 /// CLI flags (`--docroot`, `--backend`) take precedence over config values.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -122,6 +122,14 @@ pub struct WebServeConfig {
 
     /// Hide code input cells when rendering `.ipynb` notebooks (show outputs only).
     pub strip_sources: bool,
+
+    /// SPA (single-page application) mode: serve `index.html` for missing paths
+    /// instead of 404, enabling client-side routing (React, Vue, Svelte, etc.).
+    pub spa: bool,
+
+    /// CORS allowed origins. Empty = same-origin only. `["*"]` = allow all.
+    /// Example: `["https://primals.eco", "http://localhost:3000"]`
+    pub allowed_origins: Vec<String>,
 }
 
 impl Default for WebServeConfig {
@@ -132,6 +140,8 @@ impl Default for WebServeConfig {
             index_file: "index.html".to_string(),
             cache_ttl_secs: 3600,
             strip_sources: false,
+            spa: false,
+            allowed_origins: Vec::new(),
         }
     }
 }
@@ -148,6 +158,12 @@ impl WebServeConfig {
             index_file: other.index_file,
             cache_ttl_secs: other.cache_ttl_secs,
             strip_sources: other.strip_sources || self.strip_sources,
+            spa: other.spa || self.spa,
+            allowed_origins: if other.allowed_origins.is_empty() {
+                self.allowed_origins
+            } else {
+                other.allowed_origins
+            },
         }
     }
 }

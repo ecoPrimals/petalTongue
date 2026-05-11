@@ -46,6 +46,10 @@ pub struct WebConfig<'a> {
     pub strip_sources: bool,
     /// `Cache-Control: max-age` in seconds for served content (0 = no header).
     pub cache_ttl_secs: u64,
+    /// SPA mode: serve `index.html` for missing paths (client-side routing).
+    pub spa: bool,
+    /// CORS allowed origins. Empty = same-origin only. `["*"]` = allow all.
+    pub allowed_origins: Vec<String>,
 }
 
 /// Start the web UI HTTP server.
@@ -65,6 +69,8 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         workers = cfg.workers,
         strip_sources = cfg.strip_sources,
         cache_ttl_secs = cfg.cache_ttl_secs,
+        spa = cfg.spa,
+        allowed_origins = ?cfg.allowed_origins,
         "Starting web UI server (Pure Rust!)"
     );
 
@@ -77,6 +83,7 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         strip_sources: cfg.strip_sources,
     });
     let cache_ttl = cfg.cache_ttl_secs;
+    let spa = cfg.spa;
 
     let mut app = Router::new()
         .route("/", get(index_handler))
@@ -109,18 +116,28 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
                 }
                 tracing::info!(
                     docroot,
+                    spa,
                     "📂 Serving static files from docroot (PT-1 catch-all)"
                 );
                 let docroot_owned = docroot.clone();
                 let nb_cfg = Arc::clone(&nb_config);
                 app = app.fallback(move |req: axum::extract::Request| {
-                    docroot_fallback(req, docroot_owned, nb_cfg, cache_ttl)
+                    docroot_fallback(req, docroot_owned, nb_cfg, cache_ttl, spa)
                 });
             }
         }
     }
 
-    let app = app.with_state(data_service);
+    let app = if cfg.allowed_origins.is_empty() {
+        app.with_state(data_service)
+    } else {
+        let cors = build_cors_layer(&cfg.allowed_origins);
+        tracing::info!(
+            origins = ?cfg.allowed_origins,
+            "🌍 CORS enabled"
+        );
+        app.layer(cors).with_state(data_service)
+    };
 
     tracing::info!("🌐 Web UI server listening on http://{}", addr);
 
@@ -133,6 +150,30 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .map_err(|e| AppError::Other(format!("Web server error: {e}")))?;
 
     Ok(())
+}
+
+/// Build a CORS layer from the configured allowed origins.
+fn build_cors_layer(origins: &[String]) -> tower_http::cors::CorsLayer {
+    use tower_http::cors::{AllowOrigin, CorsLayer};
+
+    let cors = CorsLayer::new()
+        .allow_methods([
+            axum::http::Method::GET,
+            axum::http::Method::POST,
+            axum::http::Method::OPTIONS,
+        ])
+        .allow_headers([
+            axum::http::header::CONTENT_TYPE,
+            axum::http::header::AUTHORIZATION,
+        ]);
+
+    if origins.len() == 1 && origins[0] == "*" {
+        cors.allow_origin(AllowOrigin::any())
+    } else {
+        let parsed: Vec<axum::http::HeaderValue> =
+            origins.iter().filter_map(|o| o.parse().ok()).collect();
+        cors.allow_origin(parsed)
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -239,11 +280,15 @@ impl NestGateContentClient {
 }
 
 /// Filesystem docroot fallback — serves static files with `.ipynb` rendering.
+///
+/// When `spa` is `true`, missing paths serve `{docroot}/index.html` instead of
+/// 404, enabling client-side routing for single-page applications.
 async fn docroot_fallback(
     req: axum::extract::Request,
     docroot: String,
     nb_config: Arc<crate::notebook_render::NotebookRenderConfig>,
     cache_ttl: u64,
+    spa: bool,
 ) -> axum::response::Response {
     let uri_path = req.uri().path();
 
@@ -260,6 +305,7 @@ async fn docroot_fallback(
                 }
                 build_response(bytes, "application/json", cache_ttl)
             }
+            Err(_) if spa => serve_spa_index(&docroot, cache_ttl).await,
             Err(_) => (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response(),
         }
     } else {
@@ -274,6 +320,11 @@ async fn docroot_fallback(
             },
             IntoResponse::into_response,
         );
+
+        if resp.status() == axum::http::StatusCode::NOT_FOUND && spa {
+            return serve_spa_index(&docroot, cache_ttl).await;
+        }
+
         if cache_ttl > 0 && resp.status().is_success() {
             let (mut parts, body) = resp.into_parts();
             parts.headers.insert(
@@ -287,6 +338,15 @@ async fn docroot_fallback(
             resp
         }
     }
+}
+
+/// Serve `{docroot}/index.html` for SPA catch-all routing.
+async fn serve_spa_index(docroot: &str, cache_ttl: u64) -> axum::response::Response {
+    let index = std::path::Path::new(docroot).join("index.html");
+    tokio::fs::read(&index).await.map_or_else(
+        |_| (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response(),
+        |bytes| build_response(bytes, "text/html; charset=utf-8", cache_ttl),
+    )
 }
 
 /// Axum fallback handler that resolves content via NestGate.
@@ -644,6 +704,8 @@ mod tests {
             workers: 4,
             strip_sources: false,
             cache_ttl_secs: 0,
+            spa: false,
+            allowed_origins: Vec::new(),
         }
     }
 
@@ -913,7 +975,9 @@ mod tests {
         let nb_cfg = Arc::new(crate::notebook_render::NotebookRenderConfig::default());
         let docroot = tmp.path().to_string_lossy().into_owned();
         let app = Router::new()
-            .fallback(move |req: axum::extract::Request| docroot_fallback(req, docroot, nb_cfg, 0))
+            .fallback(move |req: axum::extract::Request| {
+                docroot_fallback(req, docroot, nb_cfg, 0, false)
+            })
             .with_state(Arc::new(DataService::new()));
 
         let req = axum::http::Request::builder()
@@ -950,7 +1014,7 @@ mod tests {
         let docroot = tmp.path().to_string_lossy().into_owned();
         let app = Router::new()
             .fallback(move |req: axum::extract::Request| {
-                docroot_fallback(req, docroot, nb_cfg, 3600)
+                docroot_fallback(req, docroot, nb_cfg, 3600, false)
             })
             .with_state(Arc::new(DataService::new()));
 
@@ -983,5 +1047,112 @@ mod tests {
     fn test_resolve_docroot_path() {
         let path = resolve_docroot_path("/srv/www", "/docs/page.html");
         assert_eq!(path, std::path::PathBuf::from("/srv/www/docs/page.html"));
+    }
+
+    #[tokio::test]
+    async fn test_spa_serves_index_for_missing_path() {
+        use axum::body::Body;
+
+        let tmp = tempfile::tempdir().expect("tempdir");
+        std::fs::write(tmp.path().join("index.html"), "<html>SPA</html>").expect("write");
+        std::fs::write(tmp.path().join("style.css"), "body {}").expect("write");
+
+        let nb_cfg = Arc::new(crate::notebook_render::NotebookRenderConfig::default());
+        let docroot = tmp.path().to_string_lossy().into_owned();
+        let app = Router::new()
+            .fallback(move |req: axum::extract::Request| {
+                docroot_fallback(req, docroot, nb_cfg, 0, true)
+            })
+            .with_state(Arc::new(DataService::new()));
+
+        let req = axum::http::Request::builder()
+            .uri("/nonexistent/route")
+            .body(Body::empty())
+            .unwrap();
+        let resp = tower::ServiceExt::oneshot(app.clone(), req).await.unwrap();
+        assert_eq!(
+            resp.status(),
+            200,
+            "SPA should serve index.html for missing paths"
+        );
+        let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        assert!(
+            std::str::from_utf8(&body).unwrap().contains("SPA"),
+            "body should be index.html content"
+        );
+
+        let req = axum::http::Request::builder()
+            .uri("/style.css")
+            .body(Body::empty())
+            .unwrap();
+        let resp = tower::ServiceExt::oneshot(app, req).await.unwrap();
+        assert_eq!(resp.status(), 200, "existing files should still be served");
+    }
+
+    #[tokio::test]
+    async fn test_non_spa_returns_404() {
+        use axum::body::Body;
+
+        let tmp = tempfile::tempdir().expect("tempdir");
+        std::fs::write(tmp.path().join("index.html"), "<html>ok</html>").expect("write");
+
+        let nb_cfg = Arc::new(crate::notebook_render::NotebookRenderConfig::default());
+        let docroot = tmp.path().to_string_lossy().into_owned();
+        let app = Router::new()
+            .fallback(move |req: axum::extract::Request| {
+                docroot_fallback(req, docroot, nb_cfg, 0, false)
+            })
+            .with_state(Arc::new(DataService::new()));
+
+        let req = axum::http::Request::builder()
+            .uri("/nonexistent/route")
+            .body(Body::empty())
+            .unwrap();
+        let resp = tower::ServiceExt::oneshot(app, req).await.unwrap();
+        assert_eq!(resp.status(), 404, "non-SPA mode should return 404");
+    }
+
+    #[test]
+    fn test_cors_layer_wildcard() {
+        let layer = build_cors_layer(&["*".to_string()]);
+        drop(layer);
+    }
+
+    #[test]
+    fn test_cors_layer_specific_origins() {
+        let layer = build_cors_layer(&[
+            "https://primals.eco".to_string(),
+            "http://localhost:3000".to_string(),
+        ]);
+        drop(layer);
+    }
+
+    #[tokio::test]
+    async fn test_cors_preflight_responds() {
+        use axum::body::Body;
+
+        let data_service = Arc::new(DataService::new());
+        let cors = build_cors_layer(&["*".to_string()]);
+        let app = Router::new()
+            .route("/health", get(health_handler))
+            .layer(cors)
+            .with_state(data_service);
+
+        let req = axum::http::Request::builder()
+            .method(axum::http::Method::OPTIONS)
+            .uri("/health")
+            .header("origin", "https://example.com")
+            .header("access-control-request-method", "GET")
+            .body(Body::empty())
+            .unwrap();
+        let resp = tower::ServiceExt::oneshot(app, req).await.unwrap();
+        let acao = resp
+            .headers()
+            .get("access-control-allow-origin")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+        assert_eq!(acao, "*", "wildcard CORS should respond with *");
     }
 }

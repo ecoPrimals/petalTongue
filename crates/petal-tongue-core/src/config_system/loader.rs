@@ -106,6 +106,18 @@ impl Config {
         {
             self.web.strip_sources = true;
         }
+        if std::env::var("PETALTONGUE_SPA")
+            .is_ok_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        {
+            self.web.spa = true;
+        }
+        if let Ok(origins) = std::env::var("PETALTONGUE_ALLOWED_ORIGINS") {
+            self.web.allowed_origins = origins
+                .split(',')
+                .map(|s| s.trim().to_owned())
+                .filter(|s| !s.is_empty())
+                .collect();
+        }
 
         // Discovery overrides
         if let Ok(timeout) = std::env::var("PETALTONGUE_DISCOVERY_TIMEOUT") {
