@@ -6,6 +6,23 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### SPA Catch-All + CORS Production Config (May 11, 2026)
+
+#### Added
+- **`--spa` / `PETALTONGUE_SPA`**: SPA (single-page application) mode. When
+  enabled, missing paths serve `{docroot}/index.html` instead of 404, enabling
+  client-side routing for React/Vue/Svelte/etc. SPAs.
+- **`--allowed-origins` / `PETALTONGUE_ALLOWED_ORIGINS`**: CORS configuration
+  via `tower_http::cors::CorsLayer`. Comma-separated origins, or `"*"` for
+  permissive. Allows GET/POST/OPTIONS with Content-Type + Authorization headers.
+- `WebServeConfig.spa` and `WebServeConfig.allowed_origins` fields with
+  TOML, env, and CLI override support.
+- `build_cors_layer()` — constructs tower-http CORS middleware from config.
+- `serve_spa_index()` — serves docroot `index.html` for SPA catch-all.
+- `tower-http` `"cors"` feature enabled.
+- 5 new tests: SPA routing, non-SPA 404, CORS wildcard, CORS specific origins,
+  CORS preflight response.
+
 ### Notebook Rendering + PT-3 Completion (May 10, 2026)
 
 #### Added

@@ -132,6 +132,14 @@ enum Commands {
         /// Cache-Control max-age in seconds for static files (0 = no cache header)
         #[arg(long, env = "PETALTONGUE_CACHE_TTL")]
         cache_ttl: Option<u64>,
+
+        /// SPA mode: serve index.html for missing paths (client-side routing)
+        #[arg(long, env = "PETALTONGUE_SPA")]
+        spa: bool,
+
+        /// CORS allowed origins (comma-separated, or "*" for all)
+        #[arg(long, env = "PETALTONGUE_ALLOWED_ORIGINS", value_delimiter = ',')]
+        allowed_origins: Vec<String>,
     },
 
     /// Run headless API server (Pure Rust! ✅)
@@ -334,6 +342,8 @@ async fn dispatch_async(
             workers,
             strip_sources,
             cache_ttl,
+            spa,
+            allowed_origins,
         } => {
             dispatch_web(
                 port,
@@ -346,6 +356,8 @@ async fn dispatch_async(
                 workers,
                 strip_sources,
                 cache_ttl,
+                spa,
+                allowed_origins,
                 config,
                 data_service,
             )
@@ -401,6 +413,8 @@ async fn dispatch_web(
     workers: usize,
     strip_sources: bool,
     cache_ttl: Option<u64>,
+    spa: bool,
+    allowed_origins: Vec<String>,
     config: Config,
     data_service: std::sync::Arc<data_service::DataService>,
 ) -> Result<(), AppError> {
@@ -419,6 +433,12 @@ async fn dispatch_web(
     };
     let effective_strip = strip_sources || config.web.strip_sources;
     let effective_cache_ttl = cache_ttl.unwrap_or(config.web.cache_ttl_secs);
+    let effective_spa = spa || config.web.spa;
+    let effective_origins = if allowed_origins.is_empty() {
+        config.web.allowed_origins.clone()
+    } else {
+        allowed_origins
+    };
 
     tracing::info!(
         mode = "web",
@@ -430,6 +450,8 @@ async fn dispatch_web(
         workers,
         strip_sources = effective_strip,
         cache_ttl = effective_cache_ttl,
+        spa = effective_spa,
+        allowed_origins = ?effective_origins,
         "Launching web UI server (Pure Rust!)"
     );
 
@@ -459,6 +481,8 @@ async fn dispatch_web(
         workers,
         strip_sources: effective_strip,
         cache_ttl_secs: effective_cache_ttl,
+        spa: effective_spa,
+        allowed_origins: effective_origins,
     };
     web_mode::run(cfg, data_service).await
 }

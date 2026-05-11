@@ -411,6 +411,12 @@ items resolved:
   `pulldown-cmark`; code cells as `<pre><code>`; rich outputs (HTML, SVG,
   base64 images). Pure Rust, dark-mode responsive CSS.
 
+- **SPA catch-all + CORS** (May 11, 2026): `--spa` / `PETALTONGUE_SPA` serves
+  `index.html` for missing paths (React/Vue/Svelte client-side routing).
+  `--allowed-origins` / `PETALTONGUE_ALLOWED_ORIGINS` wires CORS via
+  `tower_http::cors::CorsLayer`. Enables production deployment for SPA
+  frontends and cross-origin API consumers.
+
 6,200+ tests, 0 Clippy warnings, 0 doc warnings, 0 unsafe blocks.
 
 Remaining backlog: aarch64 musl cross-compile for headless, audio backend wire
@@ -418,4 +424,6 @@ protocols (via `audio.play` capability discovery), overlay mode (display
 capability Phase 2), egui texture resolution (TextureResolver with
 `egui::Shape::image`), `crypto.sign` delegation to security provider for scene
 signing (currently local BLAKE3), Phase 3 self-hosted sporePrint (requires
-petalTongue + Songbird + NestGate coordination).
+petalTongue + Songbird + NestGate coordination). `backend=nestgate`
+end-to-end validation blocked on NestGate wiring `content.*` across all
+transport paths (SemanticRouter, isomorphic IPC, HTTP API).
