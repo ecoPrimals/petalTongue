@@ -6,6 +6,22 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Live Dashboard + NestGate Index Routing (May 13, 2026)
+
+#### Changed
+- **`web/index.html` live dashboard**: Rewrote the embedded dashboard from a
+  static status dump to a live ecosystem view.  Subscribes to `/api/events`
+  (SSE) for real-time `DataSnapshot` updates, fetches `/api/snapshot` on load,
+  renders discovered primals (health pill, type, capabilities, endpoint) and
+  topology edges.  Dark/light mode via `prefers-color-scheme`.  Status bar
+  shows mode, backend, and event counter.
+- **NestGate-aware `GET /`**: When `backend=nestgate`, the root route tries
+  `content.resolve("/")` from NestGate first, falling back to the compiled-in
+  dashboard if NestGate has no published root document.  Filesystem backend
+  continues to serve the embedded dashboard directly.
+- **Stale doc cleanup**: `CONTEXT.md` updated — `backend=nestgate` is
+  UNBLOCKED (NestGate Session 60 shipped `content.*` transport parity).
+
 ### SPA Catch-All + CORS Production Config (May 11, 2026)
 
 #### Added
