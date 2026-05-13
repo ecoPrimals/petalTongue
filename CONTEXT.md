@@ -425,5 +425,8 @@ capability Phase 2), egui texture resolution (TextureResolver with
 `egui::Shape::image`), `crypto.sign` delegation to security provider for scene
 signing (currently local BLAKE3), Phase 3 self-hosted sporePrint (requires
 petalTongue + Songbird + NestGate coordination). `backend=nestgate`
-end-to-end validation blocked on NestGate wiring `content.*` across all
-transport paths (SemanticRouter, isomorphic IPC, HTTP API).
+is UNBLOCKED — NestGate Session 60 shipped `content.*` transport parity
+across all paths (SemanticRouter, isomorphic IPC, HTTP API). Live dashboard
+wires SSE topology stream (`/api/events`), primal grid, and NestGate-aware
+index routing (`GET /` resolves through `content.resolve("/")` when
+`backend=nestgate`, falling back to the compiled-in dashboard).

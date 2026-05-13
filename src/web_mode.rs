@@ -86,7 +86,6 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
     let spa = cfg.spa;
 
     let mut app = Router::new()
-        .route("/", get(index_handler))
         .route("/health", get(health_handler))
         .route("/api/status", get(status_handler))
         .route("/api/primals", get(primals_handler))
@@ -94,37 +93,37 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .route("/api/events", get(events_sse_handler))
         .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));
 
-    match cfg.backend {
-        "nestgate" => {
-            let client = Arc::new(NestGateContentClient::from_env());
+    if cfg.backend == "nestgate" {
+        let client = Arc::new(NestGateContentClient::from_env());
+        tracing::info!(
+            socket = %client.socket_path.display(),
+            "NestGate content-addressed backend active (PT-13)"
+        );
+        let index_client = Arc::clone(&client);
+        app = app.route("/", get(move || nestgate_index(Arc::clone(&index_client))));
+        let nb_cfg = Arc::clone(&nb_config);
+        app = app.fallback(move |req: axum::extract::Request| {
+            nestgate_fallback(req, Arc::clone(&client), Arc::clone(&nb_cfg), cache_ttl)
+        });
+    } else {
+        app = app.route("/", get(index_handler));
+        if let Some(ref docroot) = cfg.docroot {
+            let docroot_path = std::path::Path::new(docroot);
+            if !docroot_path.is_dir() {
+                return Err(AppError::Other(format!(
+                    "--docroot path does not exist or is not a directory: {docroot}"
+                )));
+            }
             tracing::info!(
-                socket = %client.socket_path.display(),
-                "🗄️  NestGate content-addressed backend active (PT-13)"
+                docroot,
+                spa,
+                "Serving static files from docroot (PT-1 catch-all)"
             );
+            let docroot_owned = docroot.clone();
             let nb_cfg = Arc::clone(&nb_config);
             app = app.fallback(move |req: axum::extract::Request| {
-                nestgate_fallback(req, Arc::clone(&client), Arc::clone(&nb_cfg), cache_ttl)
+                docroot_fallback(req, docroot_owned, nb_cfg, cache_ttl, spa)
             });
-        }
-        _ => {
-            if let Some(ref docroot) = cfg.docroot {
-                let docroot_path = std::path::Path::new(docroot);
-                if !docroot_path.is_dir() {
-                    return Err(AppError::Other(format!(
-                        "--docroot path does not exist or is not a directory: {docroot}"
-                    )));
-                }
-                tracing::info!(
-                    docroot,
-                    spa,
-                    "📂 Serving static files from docroot (PT-1 catch-all)"
-                );
-                let docroot_owned = docroot.clone();
-                let nb_cfg = Arc::clone(&nb_config);
-                app = app.fallback(move |req: axum::extract::Request| {
-                    docroot_fallback(req, docroot_owned, nb_cfg, cache_ttl, spa)
-                });
-            }
         }
     }
 
@@ -419,6 +418,16 @@ fn is_ipynb(path: &str) -> bool {
 
 async fn index_handler() -> Html<&'static str> {
     Html(include_str!("../web/index.html"))
+}
+
+/// NestGate-aware index: try `content.resolve("/")` first, fall back to
+/// the compiled-in dashboard so the page is always reachable even when
+/// NestGate has no published root document.
+async fn nestgate_index(client: Arc<NestGateContentClient>) -> axum::response::Response {
+    match client.resolve("/").await {
+        Ok(Some((body, mime))) => build_response(body, &mime, 0),
+        _ => Html(include_str!("../web/index.html")).into_response(),
+    }
 }
 
 async fn health_handler() -> impl IntoResponse {
