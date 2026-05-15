@@ -49,7 +49,7 @@ impl DataBindingCompiler {
                 let data: Vec<Value> = x_values
                     .iter()
                     .zip(y_values.iter())
-                    .map(|(x, y)| serde_json::json!({"x": x, "y": y}))
+                    .map(|(x, y)| serde_json::json!({"x": x, "y": y, "data_id": id}))
                     .collect();
                 (expr, data)
             }
@@ -71,7 +71,8 @@ impl DataBindingCompiler {
                 let data: Vec<Value> = bins
                     .iter()
                     .zip(counts.iter())
-                    .map(|(x, y)| serde_json::json!({"x": x, "y": y}))
+                    .enumerate()
+                    .map(|(i, (x, y))| serde_json::json!({"x": x, "y": y, "data_id": format!("bin-{i}")}))
                     .collect();
                 (expr, data)
             }
@@ -97,7 +98,7 @@ impl DataBindingCompiler {
                     .iter()
                     .enumerate()
                     .zip(values.iter())
-                    .map(|((i, cat), v)| serde_json::json!({"x": i, "y": v, "label": cat}))
+                    .map(|((i, cat), v)| serde_json::json!({"x": i, "y": v, "label": cat, "data_id": cat}))
                     .collect();
                 (expr, data)
             }
@@ -124,7 +125,7 @@ impl DataBindingCompiler {
                 } else {
                     0.5
                 };
-                let data = vec![serde_json::json!({"x": 0, "y": normalized, "label": label})];
+                let data = vec![serde_json::json!({"x": 0, "y": normalized, "label": label, "data_id": id})];
                 (expr, data)
             }
             DataBinding::Spectrum {
@@ -148,7 +149,7 @@ impl DataBindingCompiler {
                 let data: Vec<Value> = frequencies
                     .iter()
                     .zip(amplitudes.iter())
-                    .map(|(x, y)| serde_json::json!({"x": x, "y": y}))
+                    .map(|(x, y)| serde_json::json!({"x": x, "y": y, "data_id": id}))
                     .collect();
                 (expr, data)
             }
@@ -178,14 +179,14 @@ impl DataBindingCompiler {
                     .flat_map(|(row, y_label)| {
                         x_labels.iter().enumerate().map(move |(col, x_label)| {
                             let val = values.get(row * cols + col).copied().unwrap_or(0.0);
-                            serde_json::json!({"x": col, "y": row, "value": val, "x_label": x_label, "y_label": y_label})
+                            serde_json::json!({"x": col, "y": row, "value": val, "x_label": x_label, "y_label": y_label, "data_id": format!("{x_label}:{y_label}")})
                         })
                     })
                     .collect();
                 (expr, data)
             }
             DataBinding::Scatter {
-                id, label, x, y, ..
+                id, label, x, y, point_labels, ..
             } => {
                 let expr = GrammarExpr::new(id.as_str(), GeometryType::Point)
                     .with_x("x")
@@ -201,7 +202,14 @@ impl DataBindingCompiler {
                 let data: Vec<Value> = x
                     .iter()
                     .zip(y.iter())
-                    .map(|(xi, yi)| serde_json::json!({"x": xi, "y": yi}))
+                    .enumerate()
+                    .map(|(i, (xi, yi))| {
+                        let did = point_labels.get(i).map_or_else(
+                            || format!("pt-{i}"),
+                            |lbl| lbl.clone(),
+                        );
+                        serde_json::json!({"x": xi, "y": yi, "data_id": did})
+                    })
                     .collect();
                 (expr, data)
             }
@@ -236,7 +244,8 @@ impl DataBindingCompiler {
                     .enumerate()
                     .map(|(i, ((xi, yi), zi))| {
                         let label = point_labels.get(i).map_or("", std::string::String::as_str);
-                        serde_json::json!({"x": xi, "y": yi, "z": zi, "label": label})
+                        let did = if label.is_empty() { format!("pt-{i}") } else { label.to_string() };
+                        serde_json::json!({"x": xi, "y": yi, "z": zi, "label": label, "data_id": did})
                     })
                     .collect();
                 (expr, data)
@@ -267,7 +276,7 @@ impl DataBindingCompiler {
                     .flat_map(|(row, gy)| {
                         grid_x.iter().enumerate().map(move |(col, gx)| {
                             let val = values.get(row * cols + col).copied().unwrap_or(0.0);
-                            serde_json::json!({"x": gx, "y": gy, "value": val})
+                            serde_json::json!({"x": gx, "y": gy, "value": val, "data_id": format!("({gx},{gy})")})
                         })
                     })
                     .collect();
@@ -298,6 +307,96 @@ impl DataBindingCompiler {
                     expr
                 };
                 (expr, vec![definition.clone()])
+            }
+            DataBinding::GenomeTrack {
+                id,
+                label,
+                tracks,
+                segments,
+                ..
+            } => {
+                let expr = GrammarExpr::new(id.as_str(), GeometryType::Tile)
+                    .with_x("x")
+                    .with_y("y")
+                    .with_title(label.as_str())
+                    .with_scale("x", ScaleType::Linear)
+                    .with_scale("y", ScaleType::Categorical);
+                let expr = if let Some(d) = domain {
+                    expr.with_domain(d)
+                } else {
+                    expr
+                };
+                let data: Vec<Value> = segments
+                    .iter()
+                    .filter_map(|seg| {
+                        let track = seg.get("track").and_then(Value::as_str).unwrap_or("");
+                        let track_idx = tracks.iter().position(|t| t == track).unwrap_or(0);
+                        let start = seg.get("start").and_then(Value::as_f64)?;
+                        let end = seg.get("end").and_then(Value::as_f64)?;
+                        let mid = (start + end) / 2.0;
+                        let name = seg
+                            .get("name")
+                            .or_else(|| seg.get("label"))
+                            .and_then(Value::as_str)
+                            .unwrap_or(track);
+                        Some(serde_json::json!({
+                            "x": mid,
+                            "y": track_idx,
+                            "value": end - start,
+                            "x_label": format!("{start:.0}–{end:.0}"),
+                            "y_label": track,
+                            "label": name,
+                            "data_id": name,
+                        }))
+                    })
+                    .collect();
+                (expr, data)
+            }
+            DataBinding::CircularMap {
+                id,
+                label,
+                rings,
+                arcs,
+                ..
+            } => {
+                let mut expr = GrammarExpr::new(id.as_str(), GeometryType::Arc)
+                    .with_x("x")
+                    .with_y("y")
+                    .with_title(label.as_str());
+                expr.coordinate = CoordinateSystem::Polar;
+                let expr = if let Some(d) = domain {
+                    expr.with_domain(d)
+                } else {
+                    expr
+                };
+                let data: Vec<Value> = arcs
+                    .iter()
+                    .filter_map(|arc| {
+                        let ring_name = arc.get("ring").and_then(Value::as_str)
+                            .or_else(|| arc.get("ring").and_then(Value::as_u64).map(|_| ""))
+                            .unwrap_or("");
+                        let ring_idx = if let Some(idx) = arc.get("ring").and_then(Value::as_u64) {
+                            idx as usize
+                        } else {
+                            rings.iter().position(|r| r == ring_name).unwrap_or(0)
+                        };
+                        let start = arc.get("start_angle").and_then(Value::as_f64)?;
+                        let end = arc.get("end_angle").and_then(Value::as_f64)?;
+                        let name = arc.get("label").and_then(Value::as_str)
+                            .or_else(|| arc.get("name").and_then(Value::as_str))
+                            .unwrap_or("feature");
+                        let category = arc.get("category").and_then(Value::as_str).unwrap_or("");
+                        Some(serde_json::json!({
+                            "x": (start + end) / 2.0,
+                            "y": ring_idx,
+                            "value": end - start,
+                            "label": name,
+                            "category": category,
+                            "data_id": name,
+                        }))
+                    })
+                    .collect();
+                (expr, data)
             }
         }
     }

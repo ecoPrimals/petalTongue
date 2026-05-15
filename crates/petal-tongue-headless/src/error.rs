@@ -14,6 +14,10 @@ pub enum HeadlessError {
     /// UI core error.
     #[error(transparent)]
     UiCore(#[from] UiCoreError),
+
+    /// IO error (file write, directory creation).
+    #[error("IO error: {0}")]
+    IoError(String),
 }
 
 impl<T> From<std::sync::PoisonError<T>> for HeadlessError {

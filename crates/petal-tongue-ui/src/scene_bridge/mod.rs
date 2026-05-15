@@ -56,7 +56,8 @@ impl<'a> SceneWidget<'a> {
     }
 
     pub fn show(self, ui: &mut Ui) -> egui::Response {
-        let (response, painter) = ui.allocate_painter(self.desired_size, Sense::hover());
+        let (response, painter) =
+            ui.allocate_painter(self.desired_size, Sense::click_and_drag().union(Sense::hover()));
         let offset = response.rect.min.to_vec2();
         if let Some(hit_map) = self.hit_map {
             *hit_map = paint_plan_tracked(&painter, self.plan, offset);

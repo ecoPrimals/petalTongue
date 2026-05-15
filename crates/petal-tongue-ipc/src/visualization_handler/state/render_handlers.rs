@@ -11,7 +11,7 @@ use super::super::types::{
     ConstraintResult, DashboardRenderRequest, DashboardRenderResponse, ExportRequest,
     ExportResponse, GrammarRenderRequest, GrammarRenderResponse, ValidateRequest, ValidateResponse,
 };
-use super::types::VisualizationState;
+use super::types::{CompiledBinding, VisualizationState};
 
 impl VisualizationState {
     /// Handle `visualization.render.grammar`: compile a grammar expression through
@@ -39,8 +39,15 @@ impl VisualizationState {
 
         let (output, modality) = modality::compile_modality(&scene, &req.modality);
 
-        // Store scene metadata in a grammar session for future streaming/updates
-        self.grammar_scenes.insert(req.session_id.clone(), scene);
+        self.grammar_scenes.insert(
+            req.session_id.clone(),
+            CompiledBinding {
+                scene,
+                grammar: req.grammar.clone(),
+                prev_scene: None,
+                source_binding: None,
+            },
+        );
 
         GrammarRenderResponse {
             session_id: req.session_id,
@@ -73,8 +80,19 @@ impl VisualizationState {
 
         let (output, modality_used) = modality::compile_modality(&dashboard.scene, &req.modality);
 
-        self.grammar_scenes
-            .insert(req.session_id.clone(), dashboard.scene);
+        let dashboard_grammar = petal_tongue_scene::grammar::GrammarExpr::new(
+            "dashboard",
+            petal_tongue_scene::grammar::GeometryType::Tile,
+        );
+        self.grammar_scenes.insert(
+            req.session_id.clone(),
+            CompiledBinding {
+                scene: dashboard.scene,
+                grammar: dashboard_grammar,
+                prev_scene: None,
+                source_binding: None,
+            },
+        );
 
         DashboardRenderResponse {
             session_id: req.session_id,
@@ -142,9 +160,9 @@ impl VisualizationState {
                 req.session_id,
                 super::super::stream::binding_id(binding)
             );
-            if let Some(scene) = self.grammar_scenes.get(&scene_key) {
+            if let Some(compiled) = self.grammar_scenes.get(&scene_key) {
                 let (output, format) =
-                    modality::compile_binding_modality(binding, scene, &req.format);
+                    modality::compile_binding_modality(binding, &compiled.scene, &req.format);
                 return ExportResponse {
                     session_id: req.session_id,
                     format,
@@ -155,8 +173,8 @@ impl VisualizationState {
                 };
             }
         }
-        if let Some(scene) = self.grammar_scenes.get(&req.session_id) {
-            let (output, format) = modality::compile_modality(scene, &req.format);
+        if let Some(compiled) = self.grammar_scenes.get(&req.session_id) {
+            let (output, format) = modality::compile_modality(&compiled.scene, &req.format);
             ExportResponse {
                 session_id: req.session_id,
                 format,

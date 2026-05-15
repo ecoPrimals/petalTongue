@@ -10,7 +10,7 @@ use super::super::stream::binding_id;
 use super::super::types::{
     DismissRequest, DismissResponse, VisualizationRenderRequest, VisualizationRenderResponse,
 };
-use super::types::{RenderSession, VisualizationState};
+use super::types::{CompiledBinding, RenderSession, VisualizationState};
 
 impl VisualizationState {
     /// Handle a visualization.render request, creating or replacing a session
@@ -42,7 +42,15 @@ impl VisualizationState {
                 let (grammar_expr, data) = DataBindingCompiler::compile(binding, domain);
                 let scene = compiler.compile(&grammar_expr, &data);
                 let binding_key = format!("{}:{}", req.session_id, binding_id(binding));
-                self.grammar_scenes.insert(binding_key, scene);
+                self.grammar_scenes.insert(
+                    binding_key,
+                    CompiledBinding {
+                        scene,
+                        grammar: grammar_expr,
+                        prev_scene: None,
+                        source_binding: Some(binding.clone()),
+                    },
+                );
             }
         }
         VisualizationRenderResponse {

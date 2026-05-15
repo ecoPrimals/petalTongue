@@ -205,6 +205,49 @@ pub enum DataBinding {
         /// Unit of measurement for amplitudes.
         unit: String,
     },
+    /// Linear genome/sequence annotation track (e.g., breseq genome overview,
+    /// EFM hypermutable sites, CryptKeeper burden map).
+    ///
+    /// Renders as stacked horizontal bars where each segment represents an
+    /// annotated region (gene, IS element, mutation) along a 1D coordinate axis.
+    #[serde(rename = "genome_track")]
+    GenomeTrack {
+        /// Unique identifier for this channel within the visualization.
+        id: String,
+        /// Human-readable display name.
+        label: String,
+        /// Total length of the sequence (bp) for x-axis scaling.
+        sequence_length: f64,
+        /// Track/layer names (y-axis categories, e.g., "SNP", "IS insertion").
+        tracks: Vec<String>,
+        /// Segment annotations: each object has `track`, `start`, `end`, and
+        /// optional `name` / `value` fields. Rendered as colored tiles.
+        segments: Vec<serde_json::Value>,
+        /// Unit for segment values (e.g., "count", "rate").
+        unit: String,
+    },
+    /// Circular/polar annotation map (e.g., pLannotate plasmid maps,
+    /// breseq circular genome overviews).
+    ///
+    /// Renders as concentric arc rings in polar coordinates where each arc
+    /// represents a feature (gene, promoter, terminator) at angular positions
+    /// derived from `start_angle = 360 * position / sequence_length`.
+    #[serde(rename = "circular_map")]
+    CircularMap {
+        /// Unique identifier for this channel within the visualization.
+        id: String,
+        /// Human-readable display name.
+        label: String,
+        /// Total sequence length (bp) — used to compute angular positions.
+        sequence_length: f64,
+        /// Ring/layer names (concentric tracks, e.g., "Forward", "Reverse").
+        rings: Vec<String>,
+        /// Arc segments: each object has `ring`, `start_angle`, `end_angle`,
+        /// `category`, and optional `name` fields.
+        arcs: Vec<serde_json::Value>,
+        /// Unit for any associated values.
+        unit: String,
+    },
 }
 
 /// Threshold range with status (normal/warning/critical for any metric)
@@ -254,5 +297,43 @@ mod tests {
         let restored: ThresholdRange = serde_json::from_str(&json).expect("deserialize");
         assert_eq!(restored.label, "Critical");
         assert_eq!(restored.status, "critical");
+    }
+
+    #[test]
+    fn genome_track_round_trip() {
+        let json = r#"{
+            "channel_type": "genome_track",
+            "id": "test_track",
+            "label": "Test Genome Track",
+            "sequence_length": 4629812.0,
+            "tracks": ["SNP", "IS insertion"],
+            "segments": [
+                {"track": "SNP", "start": 2450, "end": 2451, "name": "thrA"}
+            ],
+            "unit": "count"
+        }"#;
+        let binding: DataBinding = serde_json::from_str(json).expect("deserialize");
+        assert!(matches!(binding, DataBinding::GenomeTrack { .. }));
+        let serialized = serde_json::to_string(&binding).expect("serialize");
+        let _restored: DataBinding = serde_json::from_str(&serialized).expect("round-trip");
+    }
+
+    #[test]
+    fn circular_map_round_trip() {
+        let json = r#"{
+            "channel_type": "circular_map",
+            "id": "test_circular",
+            "label": "Test Plasmid Map",
+            "sequence_length": 2686.0,
+            "rings": ["Forward", "Reverse"],
+            "arcs": [
+                {"ring": 0, "start_angle": 53.05, "end_angle": 60.55, "category": "CDS", "label": "lacZ-alpha"}
+            ],
+            "unit": "degrees"
+        }"#;
+        let binding: DataBinding = serde_json::from_str(json).expect("deserialize");
+        assert!(matches!(binding, DataBinding::CircularMap { .. }));
+        let serialized = serde_json::to_string(&binding).expect("serialize");
+        let _restored: DataBinding = serde_json::from_str(&serialized).expect("round-trip");
     }
 }

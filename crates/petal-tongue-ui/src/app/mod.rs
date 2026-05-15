@@ -60,6 +60,20 @@ use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::time::Instant;
 
+/// What occupies the central panel when no tool is active.
+#[derive(Debug, Clone, Default)]
+pub enum CentralView {
+    /// The default graph topology renderer.
+    #[default]
+    Graph,
+    /// Live scientific visualization of IPC-pushed DataBindings.
+    /// An optional session filter narrows to a single binding's expanded view.
+    SceneViewer {
+        /// When `Some`, show a single binding full-size; when `None`, show the tiled grid.
+        session_filter: Option<String>,
+    },
+}
+
 /// The main petalTongue UI application
 #[expect(
     clippy::struct_excessive_bools,
@@ -197,6 +211,9 @@ pub struct PetalTongueApp {
     motor_tx: mpsc::Sender<MotorCommand>,
     /// Show top menu bar (controllable via motor commands)
     show_top_menu: bool,
+
+    /// What occupies the central panel when no tool is active.
+    pub(crate) central_view: CentralView,
 
     /// Bridge between egui events and the `InteractionEngine` (inverse pipeline for hit-target registration)
     interaction_bridge: EguiInteractionBridge,

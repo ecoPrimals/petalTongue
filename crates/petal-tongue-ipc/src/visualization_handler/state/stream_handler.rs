@@ -6,14 +6,42 @@
 
 use super::super::stream::{apply_operation, binding_id};
 use super::super::types::{StreamUpdateRequest, StreamUpdateResponse};
-use super::types::VisualizationState;
+use super::types::{CompiledBinding, VisualizationState};
+
+use petal_tongue_scene::compiler::GrammarCompiler;
+use petal_tongue_scene::data_binding::DataBindingCompiler;
 
 impl VisualizationState {
+    /// Recompile a single binding into `grammar_scenes` so the SceneViewer
+    /// reflects the latest stream update.
+    fn recompile_binding(
+        grammar_scenes: &mut std::collections::HashMap<String, CompiledBinding>,
+        session_id: &str,
+        bid: &str,
+        binding: &petal_tongue_core::DataBinding,
+        domain: Option<&str>,
+    ) {
+        let (grammar_expr, data) = DataBindingCompiler::compile(binding, domain);
+        let compiler = GrammarCompiler::new();
+        let scene = compiler.compile(&grammar_expr, &data);
+        let key = format!("{session_id}:{bid}");
+        let prev_scene = grammar_scenes.get(&key).map(|cb| cb.scene.clone());
+        grammar_scenes.insert(key, CompiledBinding {
+            scene,
+            grammar: grammar_expr,
+            prev_scene,
+            source_binding: Some(binding.clone()),
+        });
+    }
+
     /// Handle a visualization.render.stream incremental update.
     ///
     /// Enforces server-side backpressure: when a session exceeds the configured
     /// update rate, `backpressure_active` is set in the response so springs can
     /// throttle. Updates are still accepted during backpressure to avoid data loss.
+    ///
+    /// After each accepted update, the affected binding is recompiled into
+    /// `grammar_scenes` so the SceneViewer displays the latest data.
     pub fn handle_stream_update(&mut self, req: StreamUpdateRequest) -> StreamUpdateResponse {
         let max_rate = self.backpressure_config.max_updates_per_sec;
         let cooldown = self.backpressure_config.cooldown;
@@ -34,6 +62,13 @@ impl VisualizationState {
                         apply_operation(binding, &req.operation);
                         session.updated_at = now;
                         session.frame_count += 1;
+                        Self::recompile_binding(
+                            &mut self.grammar_scenes,
+                            &req.session_id,
+                            &req.binding_id,
+                            binding,
+                            session.domain.as_deref(),
+                        );
                         return StreamUpdateResponse {
                             session_id: req.session_id,
                             binding_id: req.binding_id,
@@ -86,6 +121,13 @@ impl VisualizationState {
                 apply_operation(binding, &req.operation);
                 session.updated_at = now;
                 session.frame_count += 1;
+                Self::recompile_binding(
+                    &mut self.grammar_scenes,
+                    &req.session_id,
+                    &req.binding_id,
+                    binding,
+                    session.domain.as_deref(),
+                );
                 (true, session.backpressure_active)
             } else {
                 (false, session.backpressure_active)
