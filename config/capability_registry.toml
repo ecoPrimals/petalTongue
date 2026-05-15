@@ -1,0 +1,119 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Capability Registry — petalTongue
+#
+# Mirrors primalSpring canonical registry pattern. Lists every JSON-RPC
+# method petalTongue SERVES (as the visualization primal) and CONSUMES
+# (from other primals for content, discovery, orchestration).
+#
+# The served methods here must match the [visualization], [interaction],
+# [render], and [viz] domains in primalSpring's capability_registry.toml.
+
+# ─── Methods petalTongue SERVES ───────────────────────────────────────
+
+[visualization]
+owner = "petaltongue"
+role = "server"
+methods = [
+    "visualization.capabilities",
+    "visualization.export",
+    "visualization.render",
+    "visualization.render.dashboard",
+    "visualization.render.grammar",
+    "visualization.render.scene",
+    "visualization.render.stream",
+    "visualization.session.create",
+    "visualization.session.list",
+]
+
+[interaction]
+owner = "petaltongue"
+role = "server"
+methods = [
+    "interaction.poll",
+    "interaction.sensor_stream.poll",
+    "interaction.subscribe",
+]
+
+[render]
+owner = "petaltongue"
+role = "server"
+methods = [
+    "render.dashboard",
+]
+
+[viz]
+owner = "petaltongue"
+role = "server"
+methods = [
+    "viz.dashboard",
+    "viz.query",
+    "viz.render",
+    "viz.stream",
+]
+
+[health]
+owner = "petaltongue"
+role = "server"
+methods = [
+    "health.check",
+    "health.liveness",
+    "health.version",
+]
+
+[capabilities]
+owner = "petaltongue"
+role = "server"
+methods = [
+    "capability.list",
+]
+
+# ─── Methods petalTongue CONSUMES ─────────────────────────────────────
+
+[content]
+owner = "nestgate"
+role = "client"
+consumed_by = "web_mode::nestgate"
+methods = [
+    "content.get",
+    "content.resolve",
+]
+
+[discovery]
+owner = "songbird"
+role = "client"
+consumed_by = "primal_registration"
+methods = [
+    "ipc.register",
+    "ipc.resolve",
+]
+
+# ─── Meta-Tier Signal Participation ───────────────────────────────────
+#
+# petalTongue participates in 3 meta signals:
+# - meta.intent: STARTS loop (capture_intent via interaction.poll)
+# - meta.render: ENDS loop (render_output via viz.render)
+# - meta.observe: participates (render_state via viz.stream)
+
+[signals.meta]
+tier = "meta"
+role = "participant"
+signals = [
+    { name = "intent", role = "entry", capability = "interaction.poll" },
+    { name = "render", role = "exit", capability = "viz.render" },
+    { name = "observe", role = "participant", capability = "viz.stream" },
+]
+
+# ─── Test fixtures ────────────────────────────────────────────────────
+
+[test_fixtures]
+owner = "tests"
+methods = [
+    "test.method",
+]
+
+[false_positives]
+owner = "none"
+methods = [
+    "index.html",
+]

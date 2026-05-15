@@ -6,8 +6,18 @@
 
 [graph]
 id = "petaltongue_deploy"
+name = "petalTongue Visualization Niche"
 description = "petalTongue visualization niche atop Node Atomic"
-coordination = "Sequential"
+version = "1.1.0"
+coordination = "sequential"
+
+[graph.metadata]
+security_model = "btsp_enforced"
+transport = "uds_only"
+secure_by_default = true
+fragments = ["tower_atomic"]
+resolve = true
+meta_signals = ["meta.intent", "meta.render", "meta.observe"]
 
 # Phase 1: Tower Atomic (security + discovery foundation)
 [[nodes]]
