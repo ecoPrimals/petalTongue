@@ -7,6 +7,8 @@
 //! ([`petal_tongue_ipc::UnixSocketServer`]). Live updates use HTTP SSE only, not
 //! `callback_tx` push over UDS.
 
+pub(crate) mod nestgate;
+
 use crate::error::AppError;
 use petal_tongue_core::constants::DEFAULT_SSE_KEEPALIVE_SECS;
 
@@ -94,16 +96,16 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));
 
     if cfg.backend == "nestgate" {
-        let client = Arc::new(NestGateContentClient::from_env());
+        let client = Arc::new(nestgate::NestGateContentClient::from_env());
         tracing::info!(
             socket = %client.socket_path.display(),
             "NestGate content-addressed backend active (PT-13)"
         );
         let index_client = Arc::clone(&client);
-        app = app.route("/", get(move || nestgate_index(Arc::clone(&index_client))));
+        app = app.route("/", get(move || nestgate::nestgate_index(Arc::clone(&index_client))));
         let nb_cfg = Arc::clone(&nb_config);
         app = app.fallback(move |req: axum::extract::Request| {
-            nestgate_fallback(req, Arc::clone(&client), Arc::clone(&nb_cfg), cache_ttl)
+            nestgate::nestgate_fallback(req, Arc::clone(&client), Arc::clone(&nb_cfg), cache_ttl)
         });
     } else {
         app = app.route("/", get(index_handler));
@@ -133,12 +135,12 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         let cors = build_cors_layer(&cfg.allowed_origins);
         tracing::info!(
             origins = ?cfg.allowed_origins,
-            "🌍 CORS enabled"
+            "CORS enabled"
         );
         app.layer(cors).with_state(data_service)
     };
 
-    tracing::info!("🌐 Web UI server listening on http://{}", addr);
+    tracing::info!("Web UI server listening on http://{}", addr);
 
     let listener = tokio::net::TcpListener::bind(&addr)
         .await
@@ -175,108 +177,7 @@ fn build_cors_layer(origins: &[String]) -> tower_http::cors::CorsLayer {
     }
 }
 
-// ---------------------------------------------------------------------------
-// PT-13: NestGate content-addressed backend
-// ---------------------------------------------------------------------------
-
-/// JSON-RPC client for NestGate `content.resolve` / `content.get`.
-///
-/// Socket discovery follows the ecosystem convention:
-/// `NESTGATE_SOCKET` env → `$BIOMEOS_SOCKET_DIR/nestgate-{family}.sock`
-/// → `$XDG_RUNTIME_DIR/biomeos/nestgate-default.sock`.
-struct NestGateContentClient {
-    socket_path: std::path::PathBuf,
-    request_id: std::sync::atomic::AtomicU64,
-}
-
-impl NestGateContentClient {
-    /// Resolve NestGate socket from the environment.
-    fn from_env() -> Self {
-        let socket_path = std::env::var("NESTGATE_SOCKET").map_or_else(
-            |_| {
-                let family = std::env::var("FAMILY_ID")
-                    .or_else(|_| std::env::var("PETALTONGUE_FAMILY_ID"))
-                    .unwrap_or_else(|_| "default".to_owned());
-                let dir = std::env::var("BIOMEOS_SOCKET_DIR").unwrap_or_else(|_| {
-                    let xdg =
-                        std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_owned());
-                    let seg = petal_tongue_core::constants::ecosystem_runtime_dir_name();
-                    format!("{xdg}/{seg}")
-                });
-                std::path::PathBuf::from(format!("{dir}/nestgate-{family}.sock"))
-            },
-            std::path::PathBuf::from,
-        );
-        Self {
-            socket_path,
-            request_id: std::sync::atomic::AtomicU64::new(1),
-        }
-    }
-
-    fn next_id(&self) -> u64 {
-        self.request_id
-            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-    }
-
-    /// Call `content.resolve` — returns `(content_bytes, mime_type)` or `None`.
-    async fn resolve(&self, path: &str) -> Result<Option<(Vec<u8>, String)>, String> {
-        use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
-        use tokio::net::UnixStream;
-
-        let mut stream = UnixStream::connect(&self.socket_path)
-            .await
-            .map_err(|e| format!("NestGate connect({}): {e}", self.socket_path.display()))?;
-
-        let req = serde_json::json!({
-            "jsonrpc": "2.0",
-            "method": "content.resolve",
-            "params": { "path": path },
-            "id": self.next_id(),
-        });
-        let mut line = serde_json::to_string(&req).map_err(|e| e.to_string())?;
-        line.push('\n');
-        stream
-            .write_all(line.as_bytes())
-            .await
-            .map_err(|e| format!("NestGate write: {e}"))?;
-        stream
-            .flush()
-            .await
-            .map_err(|e| format!("NestGate flush: {e}"))?;
-
-        let (reader, _) = stream.into_split();
-        let mut reader = tokio::io::BufReader::new(reader);
-        let mut resp_line = String::new();
-        reader
-            .read_line(&mut resp_line)
-            .await
-            .map_err(|e| format!("NestGate read: {e}"))?;
-
-        let resp: serde_json::Value =
-            serde_json::from_str(&resp_line).map_err(|e| format!("NestGate parse: {e}"))?;
-
-        if resp.get("error").is_some() {
-            return Ok(None);
-        }
-
-        let result = resp.get("result").ok_or("NestGate: no result field")?;
-        let content_b64 = result
-            .get("content")
-            .and_then(|v| v.as_str())
-            .ok_or("NestGate: missing content field")?;
-        let mime = result
-            .get("mime_type")
-            .and_then(|v| v.as_str())
-            .unwrap_or("application/octet-stream");
-
-        use base64::Engine as _;
-        let bytes = base64::engine::general_purpose::STANDARD
-            .decode(content_b64)
-            .map_err(|e| format!("NestGate base64 decode: {e}"))?;
-
-        Ok(Some((bytes, mime.to_owned())))
-    }
-}
+// ── Filesystem fallback ─────────────────────────────────────────────────
 
 /// Filesystem docroot fallback — serves static files with `.ipynb` rendering.
 ///
@@ -348,41 +249,10 @@ async fn serve_spa_index(docroot: &str, cache_ttl: u64) -> axum::response::Respo
     )
 }
 
-/// Axum fallback handler that resolves content via NestGate.
-async fn nestgate_fallback(
-    req: axum::extract::Request,
-    client: Arc<NestGateContentClient>,
-    nb_config: Arc<crate::notebook_render::NotebookRenderConfig>,
-    cache_ttl: u64,
-) -> axum::response::Response {
-    let path = req.uri().path().to_owned();
-    match client.resolve(&path).await {
-        Ok(Some((body, mime))) => {
-            if is_ipynb(&path) {
-                if let Some(html) = crate::notebook_render::render_notebook(&body, &nb_config) {
-                    return build_response(
-                        html.into_bytes(),
-                        "text/html; charset=utf-8",
-                        cache_ttl,
-                    );
-                }
-            }
-            build_response(body, &mime, cache_ttl)
-        }
-        Ok(None) => (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response(),
-        Err(e) => {
-            tracing::error!(path, error = %e, "NestGate content.resolve failed");
-            (
-                axum::http::StatusCode::BAD_GATEWAY,
-                format!("NestGate backend unavailable: {e}"),
-            )
-                .into_response()
-        }
-    }
-}
+// ── Shared utilities ────────────────────────────────────────────────────
 
 /// Build an HTTP response with optional `Cache-Control`.
-fn build_response(body: Vec<u8>, content_type: &str, cache_ttl: u64) -> axum::response::Response {
+pub(crate) fn build_response(body: Vec<u8>, content_type: &str, cache_ttl: u64) -> axum::response::Response {
     let mut builder = axum::response::Response::builder()
         .status(axum::http::StatusCode::OK)
         .header(axum::http::header::CONTENT_TYPE, content_type);
@@ -410,24 +280,16 @@ fn resolve_docroot_path(docroot: &str, uri_path: &str) -> std::path::PathBuf {
 }
 
 /// Case-insensitive `.ipynb` extension check.
-fn is_ipynb(path: &str) -> bool {
+pub(crate) fn is_ipynb(path: &str) -> bool {
     std::path::Path::new(path)
         .extension()
         .is_some_and(|ext| ext.eq_ignore_ascii_case("ipynb"))
 }
 
-async fn index_handler() -> Html<&'static str> {
-    Html(include_str!("../web/index.html"))
-}
+// ── Route handlers ──────────────────────────────────────────────────────
 
-/// NestGate-aware index: try `content.resolve("/")` first, fall back to
-/// the compiled-in dashboard so the page is always reachable even when
-/// NestGate has no published root document.
-async fn nestgate_index(client: Arc<NestGateContentClient>) -> axum::response::Response {
-    match client.resolve("/").await {
-        Ok(Some((body, mime))) => build_response(body, &mime, 0),
-        _ => Html(include_str!("../web/index.html")).into_response(),
-    }
+async fn index_handler() -> Html<&'static str> {
+    Html(include_str!("../../web/index.html"))
 }
 
 async fn health_handler() -> impl IntoResponse {
@@ -446,14 +308,12 @@ async fn status_handler() -> impl IntoResponse {
 }
 
 async fn primals_handler(State(service): State<Arc<DataService>>) -> impl IntoResponse {
-    // Get real data from unified service!
     match service.snapshot().await {
         Ok(snapshot) => Json(serde_json::json!({
             "primals": snapshot.primals,
             "timestamp": snapshot.timestamp,
         })),
         Err(e) => {
-            // GraphLockPoisoned often indicates test-induced state; use debug to avoid noisy test output
             if e.to_string().contains("Graph lock poisoned") {
                 tracing::debug!("Failed to get snapshot: {}", e);
             } else {
@@ -486,8 +346,7 @@ async fn snapshot_handler(State(service): State<Arc<DataService>>) -> impl IntoR
 /// SSE endpoint that pushes `DataUpdate` events from `DataService::subscribe()`.
 ///
 /// Per PT-02 / `IPC_COMPLIANCE_MATRIX.md` v1.2: the browser receives live
-/// topology changes without polling.  Each SSE frame carries a full
-/// `DataSnapshot` serialised as JSON so the client can replace its local state.
+/// topology changes without polling.
 async fn events_sse_handler(
     State(service): State<Arc<DataService>>,
 ) -> Sse<impl tokio_stream::Stream<Item = Result<Event, std::convert::Infallible>>> {
@@ -527,6 +386,7 @@ mod tests {
     )]
 
     use super::*;
+    use super::nestgate::{NestGateContentClient, nestgate_fallback};
 
     #[tokio::test]
     async fn test_status_endpoint() {
@@ -743,8 +603,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_primals_handler_snapshot_error() {
-        // Use a dedicated DataService and poison its lock to verify error handling.
-        // Run in single-threaded context to avoid poisoning affecting other tests.
         let data_service = Arc::new(DataService::new());
         let graph = data_service.graph();
         let _ = std::thread::spawn(move || {
@@ -765,7 +623,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_snapshot_handler_snapshot_error() {
-        // Use a dedicated DataService and poison its lock to verify error handling.
         let data_service = Arc::new(DataService::new());
         let graph = data_service.graph();
         let _ = std::thread::spawn(move || {

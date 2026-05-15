@@ -6,11 +6,21 @@ use std::collections::BTreeSet;
 use serde_json::Value;
 
 use crate::domain_palette::{DomainPalette, categorical_color};
-use crate::grammar::{GeometryType, GrammarExpr};
+use crate::grammar::{CoordinateSystem, GeometryType, GrammarExpr};
 use crate::math::Axes;
 use crate::primitive::{AnchorPoint, Color, LineCap, LineJoin, Primitive, StrokeStyle};
 
 use super::utils::get_number;
+
+/// Extract a semantic `data_id` from a data row, falling back to a synthetic ID.
+fn row_data_id(data: &[Value], index: usize, fallback_prefix: &str) -> String {
+    data.get(index)
+        .and_then(|row| row.as_object())
+        .and_then(|o| o.get("data_id"))
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .map_or_else(|| format!("{fallback_prefix}-{index}"), String::from)
+}
 
 /// Compile geometry from grammar expression into primitives.
 #[expect(
@@ -40,7 +50,7 @@ pub fn compile_geometry(
                     radius: 4.0,
                     fill: Some(primary),
                     stroke: None,
-                    data_id: Some(format!("pt-{i}")),
+                    data_id: Some(row_data_id(data, i, "pt")),
                 }
             })
             .collect(),
@@ -69,7 +79,7 @@ pub fn compile_geometry(
                         fill: Some(categorical_color(palette, i)),
                         stroke: None,
                         corner_radius: 0.0,
-                        data_id: Some(format!("bar-{i}")),
+                        data_id: Some(row_data_id(data, i, "bar")),
                     }
                 })
                 .collect()
@@ -248,7 +258,7 @@ pub fn compile_geometry(
                                 join: LineJoin::Miter,
                             }),
                             corner_radius: 0.0,
-                            data_id: Some(format!("tile-{i}")),
+                            data_id: Some(row_data_id(data, i, "tile")),
                         }
                     })
                     .collect()
@@ -256,7 +266,113 @@ pub fn compile_geometry(
         }
 
         GeometryType::Arc => {
-            if let Some(&[_, value]) = points.first() {
+            if expr.coordinate == CoordinateSystem::Polar && points.len() > 1 {
+                // Polar multi-arc: each row is (midpoint_angle, ring_index) with
+                // `value` = angular span. Renders concentric arc features like
+                // pLannotate circular plasmid maps.
+                let cx = axes.origin.0 + axes.width / 2.0;
+                let cy = axes.origin.1 - axes.height / 2.0;
+                let base_radius = axes.width.min(axes.height) * 0.25;
+                let ring_spacing = axes.width.min(axes.height) * 0.06;
+                let arc_thickness = ring_spacing * 0.7;
+
+                // Backbone circle
+                let mut prims = vec![Primitive::Arc {
+                    cx,
+                    cy,
+                    radius: base_radius,
+                    start_angle: 0.0,
+                    end_angle: std::f64::consts::TAU,
+                    fill: None,
+                    stroke: Some(StrokeStyle {
+                        color: palette.primary,
+                        width: 1.5,
+                        cap: LineCap::Butt,
+                        join: LineJoin::Miter,
+                    }),
+                    data_id: Some("backbone".to_string()),
+                }];
+
+                for (i, (&[mid_angle_deg, ring_idx], row)) in
+                    points.iter().zip(data.iter()).enumerate()
+                {
+                    let span_deg = row
+                        .as_object()
+                        .and_then(|o| get_number(o, "value"))
+                        .unwrap_or(10.0);
+                    let start_deg = mid_angle_deg - span_deg / 2.0;
+                    let end_deg = mid_angle_deg + span_deg / 2.0;
+
+                    let start_rad = start_deg.to_radians() - std::f64::consts::FRAC_PI_2;
+                    let end_rad = end_deg.to_radians() - std::f64::consts::FRAC_PI_2;
+
+                    let ring = ring_idx.max(0.0) as usize;
+                    let r = base_radius + (ring as f64 + 1.0) * ring_spacing;
+
+                    let fill = categorical_color(palette, i);
+
+                    // Sample arc polygon (inner + outer arcs, closed)
+                    let n_samples = ((end_rad - start_rad).abs() * 20.0)
+                        .ceil()
+                        .max(8.0) as usize;
+                    let mut poly_pts = Vec::with_capacity(n_samples * 2 + 2);
+                    let r_inner = r - arc_thickness / 2.0;
+                    let r_outer = r + arc_thickness / 2.0;
+
+                    // Outer arc (forward)
+                    for j in 0..=n_samples {
+                        #[expect(clippy::cast_precision_loss, reason = "arc sampling")]
+                        let t = j as f64 / n_samples as f64;
+                        let angle = start_rad + t * (end_rad - start_rad);
+                        poly_pts.push([cx + r_outer * angle.cos(), cy + r_outer * angle.sin()]);
+                    }
+                    // Inner arc (reverse)
+                    for j in (0..=n_samples).rev() {
+                        #[expect(clippy::cast_precision_loss, reason = "arc sampling")]
+                        let t = j as f64 / n_samples as f64;
+                        let angle = start_rad + t * (end_rad - start_rad);
+                        poly_pts.push([cx + r_inner * angle.cos(), cy + r_inner * angle.sin()]);
+                    }
+
+                    prims.push(Primitive::Polygon {
+                        points: poly_pts,
+                        fill,
+                        stroke: Some(StrokeStyle {
+                            color: Color::rgba(0.0, 0.0, 0.0, 0.15),
+                            width: 0.5,
+                            cap: LineCap::Butt,
+                            join: LineJoin::Miter,
+                        }),
+                        fill_rule: crate::primitive::FillRule::NonZero,
+                        data_id: Some(row_data_id(data, i, "arc")),
+                    });
+
+                    // Label at midpoint of outer arc
+                    let label = row
+                        .as_object()
+                        .and_then(|o| o.get("label"))
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("");
+                    if !label.is_empty() && span_deg > 15.0 {
+                        let mid_rad = (start_rad + end_rad) / 2.0;
+                        let label_r = r_outer + 6.0;
+                        prims.push(Primitive::Text {
+                            x: cx + label_r * mid_rad.cos(),
+                            y: cy + label_r * mid_rad.sin(),
+                            content: label.to_string(),
+                            font_size: 8.0,
+                            color: Color::BLACK,
+                            anchor: AnchorPoint::Center,
+                            bold: false,
+                            italic: false,
+                            data_id: None,
+                        });
+                    }
+                }
+
+                prims
+            } else if let Some(&[_, value]) = points.first() {
+                // Cartesian gauge (single-arc)
                 let cx = axes.origin.0 + axes.width / 2.0;
                 let cy = axes.origin.1;
                 let radius = axes.width.min(axes.height) * 0.4;

@@ -131,6 +131,18 @@ pub fn run_update(app: &mut PetalTongueApp, ctx: &egui::Context) {
                 }
             );
         }
+        if i.key_pressed(egui::Key::V) && !i.modifiers.ctrl && !i.modifiers.shift {
+            app.central_view = match &app.central_view {
+                super::CentralView::Graph => {
+                    tracing::info!("Central view → SceneViewer");
+                    super::CentralView::SceneViewer { session_filter: None }
+                }
+                super::CentralView::SceneViewer { .. } => {
+                    tracing::info!("Central view → Graph");
+                    super::CentralView::Graph
+                }
+            };
+        }
     });
 
     // Apply keyboard shortcuts (Ctrl+D, Ctrl+A, Ctrl+H, Escape, etc.)
@@ -199,6 +211,10 @@ pub fn run_update(app: &mut PetalTongueApp, ctx: &egui::Context) {
         && crate::live_sessions::has_updates_since(viz_state, app.last_session_poll)
     {
         app.last_session_poll = Instant::now();
+        if matches!(app.central_view, super::CentralView::Graph) {
+            app.central_view = super::CentralView::SceneViewer { session_filter: None };
+            tracing::info!("Auto-switching to SceneViewer (IPC session arrived)");
+        }
         ctx.request_repaint();
     }
 

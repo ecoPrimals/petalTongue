@@ -22,6 +22,7 @@ pub use validation::{
 /// Number of z-bands for color/size encoding (higher z = darker, larger).
 pub const Z_BANDS: usize = 8;
 
+#[expect(dead_code, reason = "pre-SceneGraph legacy renderer — SceneGraph pipeline handles heatmap via grammar compilation")]
 pub fn draw_heatmap(
     ui: &mut Ui,
     label: &str,
@@ -45,12 +46,35 @@ pub fn draw_heatmap(
         return;
     }
 
-    let Some((vmin, _vmax, range)) = value_range(values) else {
+    let Some((vmin, vmax, range)) = value_range(values) else {
         ui.label(RichText::new("(no value range)").color(palette.caution));
         return;
     };
     let cell_w = (ui.available_width().min(320.0) / cols as f32).max(8.0);
     let cell_h = 14.0_f32;
+
+    // Column labels (x-axis)
+    if cols > 1 {
+        ui.horizontal(|ui| {
+            ui.label(RichText::new("").small()); // spacer for y-label column
+            for x_label in x_labels {
+                let (rect, _) =
+                    ui.allocate_exact_size(egui::vec2(cell_w, cell_h), egui::Sense::hover());
+                let truncated = if x_label.len() > 6 {
+                    format!("{}…", &x_label[..5])
+                } else {
+                    x_label.clone()
+                };
+                ui.painter().text(
+                    rect.center(),
+                    egui::Align2::CENTER_CENTER,
+                    truncated,
+                    egui::FontId::proportional(8.0),
+                    palette.text_dim,
+                );
+            }
+        });
+    }
 
     for (row, y_label) in y_labels.iter().enumerate() {
         ui.horizontal(|ui| {
@@ -58,12 +82,343 @@ pub fn draw_heatmap(
             for col in 0..cols {
                 let t = normalize_value(values[row * cols + col], vmin, range);
                 let color = palette.positive.linear_multiply(t.max(0.15_f32));
-                let (rect, _) =
+                let (rect, resp) =
                     ui.allocate_exact_size(egui::vec2(cell_w, cell_h), egui::Sense::hover());
                 ui.painter().rect_filled(rect, 2.0, color);
+                if resp.hovered() {
+                    let val = values[row * cols + col];
+                    let x_lbl = x_labels.get(col).map_or("?", String::as_str);
+                    resp.on_hover_text(format!("{y_label} × {x_lbl}: {val:.3}"));
+                }
             }
         });
     }
+
+    // Colorbar
+    ui.horizontal(|ui| {
+        ui.label(RichText::new(format!("{vmin:.2}")).small().color(palette.text_dim));
+        let bar_w = ui.available_width().min(200.0);
+        let n_stops = 20;
+        let stop_w = bar_w / n_stops as f32;
+        for i in 0..n_stops {
+            let t = (i as f32 + 0.5) / n_stops as f32;
+            let color = palette.positive.linear_multiply(t.max(0.15));
+            let (rect, _) =
+                ui.allocate_exact_size(egui::vec2(stop_w, 10.0), egui::Sense::hover());
+            ui.painter().rect_filled(rect, 0.0, color);
+        }
+        ui.label(RichText::new(format!("{vmax:.2}")).small().color(palette.text_dim));
+    });
+}
+
+/// Draw a linear genome track with stacked horizontal bars.
+///
+/// Expects JSON segments with `start`, `end`, `track` (category name),
+/// optional `strand` (+/-), optional `label`.
+#[expect(dead_code, reason = "pre-SceneGraph legacy renderer — SceneGraph pipeline handles genome_track via grammar compilation")]
+pub fn draw_genome_track(
+    ui: &mut Ui,
+    label: &str,
+    sequence_length: f64,
+    tracks: &[String],
+    segments: &[serde_json::Value],
+    unit: &str,
+    domain: Option<&str>,
+) {
+    let palette = domain_theme::palette_for_domain(domain.unwrap_or("health"));
+    ui.label(
+        RichText::new(format!("{label} ({unit}) — {:.0} bp", sequence_length))
+            .strong()
+            .color(palette.text_dim),
+    );
+
+    let avail_w = ui.available_width().min(400.0);
+    let track_height = 16.0_f32;
+    let track_spacing = 2.0_f32;
+
+    // Genomic axis
+    let axis_ticks = format_genomic_axis(sequence_length);
+    ui.horizontal(|ui| {
+        for (pos, tick_label) in &axis_ticks {
+            let frac = (*pos / sequence_length) as f32;
+            let x_off = frac * avail_w;
+            let (rect, _) =
+                ui.allocate_exact_size(egui::vec2(0.0, 0.0), egui::Sense::hover());
+            ui.painter().text(
+                egui::pos2(rect.left() + x_off, rect.top()),
+                egui::Align2::CENTER_TOP,
+                tick_label,
+                egui::FontId::proportional(8.0),
+                palette.text_dim,
+            );
+        }
+    });
+
+    // One row per track category
+    let category_colors: Vec<egui::Color32> = tracks
+        .iter()
+        .enumerate()
+        .map(|(i, _)| {
+            let hues = [
+                palette.info,
+                palette.positive,
+                palette.caution,
+                palette.text_dim,
+            ];
+            hues[i % hues.len()]
+        })
+        .collect();
+
+    for (track_idx, track_name) in tracks.iter().enumerate() {
+        let base_color = category_colors[track_idx];
+        ui.horizontal(|ui| {
+            ui.label(RichText::new(track_name).small().color(palette.text_dim));
+            let (rect, _) = ui.allocate_exact_size(
+                egui::vec2(avail_w, track_height + track_spacing),
+                egui::Sense::hover(),
+            );
+            let painter = ui.painter();
+
+            // Background track line
+            painter.rect_filled(
+                egui::Rect::from_min_size(
+                    egui::pos2(rect.left(), rect.top() + track_height * 0.4),
+                    egui::vec2(avail_w, 2.0),
+                ),
+                0.0,
+                palette.text_dim.gamma_multiply(0.2),
+            );
+
+            // Draw segments belonging to this track
+            for seg in segments {
+                let obj = match seg.as_object() {
+                    Some(o) => o,
+                    None => continue,
+                };
+                let seg_track = obj
+                    .get("track")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
+                if seg_track != track_name {
+                    continue;
+                }
+                let start = obj.get("start").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                let end = obj.get("end").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                let strand = obj.get("strand").and_then(|v| v.as_str()).unwrap_or("+");
+                let seg_label = obj.get("label").and_then(|v| v.as_str()).unwrap_or("");
+
+                let x0 = (start / sequence_length) as f32 * avail_w + rect.left();
+                let x1 = (end / sequence_length) as f32 * avail_w + rect.left();
+                let w = (x1 - x0).max(2.0);
+                let y_top = rect.top();
+
+                if strand == "+" || strand == "-" {
+                    // Arrow-shaped segment
+                    let arrow_w = w.min(6.0);
+                    let mid_y = y_top + track_height / 2.0;
+                    let points = if strand == "+" {
+                        vec![
+                            egui::pos2(x0, y_top),
+                            egui::pos2(x0 + w - arrow_w, y_top),
+                            egui::pos2(x0 + w, mid_y),
+                            egui::pos2(x0 + w - arrow_w, y_top + track_height),
+                            egui::pos2(x0, y_top + track_height),
+                        ]
+                    } else {
+                        vec![
+                            egui::pos2(x0 + arrow_w, y_top),
+                            egui::pos2(x0 + w, y_top),
+                            egui::pos2(x0 + w, y_top + track_height),
+                            egui::pos2(x0 + arrow_w, y_top + track_height),
+                            egui::pos2(x0, mid_y),
+                        ]
+                    };
+                    painter.add(egui::Shape::convex_polygon(
+                        points,
+                        base_color.gamma_multiply(0.7),
+                        egui::Stroke::new(0.5, base_color),
+                    ));
+                } else {
+                    painter.rect_filled(
+                        egui::Rect::from_min_size(
+                            egui::pos2(x0, y_top),
+                            egui::vec2(w, track_height),
+                        ),
+                        2.0,
+                        base_color.gamma_multiply(0.7),
+                    );
+                }
+
+                if !seg_label.is_empty() && w > 20.0 {
+                    painter.text(
+                        egui::pos2(x0 + w / 2.0, y_top + track_height / 2.0),
+                        egui::Align2::CENTER_CENTER,
+                        seg_label,
+                        egui::FontId::proportional(7.0),
+                        egui::Color32::WHITE,
+                    );
+                }
+            }
+        });
+    }
+}
+
+/// Draw a circular plasmid/genome map with concentric feature arcs.
+#[expect(dead_code, reason = "pre-SceneGraph legacy renderer — SceneGraph pipeline handles circular_map via grammar compilation")]
+pub fn draw_circular_map(
+    ui: &mut Ui,
+    label: &str,
+    sequence_length: f64,
+    _rings: &[String],
+    arcs: &[serde_json::Value],
+    unit: &str,
+    domain: Option<&str>,
+) {
+    let palette = domain_theme::palette_for_domain(domain.unwrap_or("health"));
+    ui.label(
+        RichText::new(format!("{label} ({unit})"))
+            .strong()
+            .color(palette.text_dim),
+    );
+
+    let size = ui.available_width().min(300.0);
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), egui::Sense::hover());
+    let painter = ui.painter();
+    let center = rect.center();
+    let base_radius: f32 = size * 0.25;
+    let ring_spacing: f32 = size * 0.04;
+
+    // Backbone circle
+    painter.circle_stroke(
+        center,
+        base_radius,
+        egui::Stroke::new(1.5, palette.info),
+    );
+
+    let category_colors = [
+        palette.info,
+        palette.positive,
+        palette.caution,
+        egui::Color32::from_rgb(180, 120, 200),
+        egui::Color32::from_rgb(200, 160, 80),
+    ];
+
+    for arc in arcs {
+        let obj = match arc.as_object() {
+            Some(o) => o,
+            None => continue,
+        };
+        let start_angle = obj
+            .get("start_angle")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0);
+        let end_angle = obj
+            .get("end_angle")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0);
+        let ring_idx = obj
+            .get("ring")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0) as usize;
+        let arc_label = obj
+            .get("label")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+
+        let r = base_radius + (ring_idx as f32 + 1.0) * ring_spacing;
+        let color = category_colors[ring_idx % category_colors.len()];
+
+        // Convert degrees to radians, rotate -90 so 0 is at top
+        let start_rad = (start_angle as f32).to_radians() - std::f32::consts::FRAC_PI_2;
+        let end_rad = (end_angle as f32).to_radians() - std::f32::consts::FRAC_PI_2;
+        let n_samples = ((end_rad - start_rad).abs() * 16.0).ceil().max(4.0) as usize;
+
+        let arc_thickness = ring_spacing * 0.7;
+        let r_inner = r - arc_thickness / 2.0;
+        let r_outer = r + arc_thickness / 2.0;
+
+        let mut poly = Vec::with_capacity(n_samples * 2 + 2);
+        for j in 0..=n_samples {
+            let t = j as f32 / n_samples as f32;
+            let angle = start_rad + t * (end_rad - start_rad);
+            poly.push(egui::pos2(
+                center.x + r_outer * angle.cos(),
+                center.y + r_outer * angle.sin(),
+            ));
+        }
+        for j in (0..=n_samples).rev() {
+            let t = j as f32 / n_samples as f32;
+            let angle = start_rad + t * (end_rad - start_rad);
+            poly.push(egui::pos2(
+                center.x + r_inner * angle.cos(),
+                center.y + r_inner * angle.sin(),
+            ));
+        }
+
+        painter.add(egui::Shape::convex_polygon(
+            poly,
+            color.gamma_multiply(0.7),
+            egui::Stroke::new(0.5, color),
+        ));
+
+        // Feature label at midpoint
+        if !arc_label.is_empty() && (end_angle - start_angle).abs() > 15.0 {
+            let mid_rad = (start_rad + end_rad) / 2.0;
+            let label_r = r_outer + 8.0;
+            painter.text(
+                egui::pos2(
+                    center.x + label_r * mid_rad.cos(),
+                    center.y + label_r * mid_rad.sin(),
+                ),
+                egui::Align2::CENTER_CENTER,
+                arc_label,
+                egui::FontId::proportional(7.0),
+                palette.text_dim,
+            );
+        }
+    }
+
+    // Center label
+    let bp_label = format_bp(sequence_length);
+    painter.text(
+        center,
+        egui::Align2::CENTER_CENTER,
+        format!("{label}\n{bp_label}"),
+        egui::FontId::proportional(10.0),
+        palette.text_dim,
+    );
+}
+
+/// Format genomic coordinate as bp / kbp / Mbp.
+fn format_bp(bp: f64) -> String {
+    if bp >= 1_000_000.0 {
+        format!("{:.2} Mbp", bp / 1_000_000.0)
+    } else if bp >= 1_000.0 {
+        format!("{:.1} kbp", bp / 1_000.0)
+    } else {
+        format!("{:.0} bp", bp)
+    }
+}
+
+/// Generate tick positions and labels for a genomic axis.
+fn format_genomic_axis(seq_len: f64) -> Vec<(f64, String)> {
+    let step = if seq_len >= 1_000_000.0 {
+        500_000.0
+    } else if seq_len >= 100_000.0 {
+        50_000.0
+    } else if seq_len >= 10_000.0 {
+        5_000.0
+    } else {
+        1_000.0
+    };
+
+    let mut ticks = Vec::new();
+    let mut pos = 0.0;
+    while pos <= seq_len {
+        ticks.push((pos, format_bp(pos)));
+        pos += step;
+    }
+    ticks
 }
 
 /// Draw 2D scatter plot (e.g., `PCoA` ordination, UMAP embedding).
@@ -231,6 +586,7 @@ pub fn draw_scatter3d(ui: &mut Ui, params: &Scatter3dParams<'_>) {
     );
 }
 
+#[expect(dead_code, reason = "pre-SceneGraph legacy renderer — SceneGraph pipeline handles fieldmap via grammar compilation")]
 pub fn draw_fieldmap(
     ui: &mut Ui,
     label: &str,
@@ -274,6 +630,7 @@ pub fn draw_fieldmap(
     }
 }
 
+#[expect(dead_code, reason = "pre-SceneGraph legacy renderer — SceneGraph pipeline handles spectrum via grammar compilation")]
 pub fn draw_spectrum(
     ui: &mut Ui,
     label: &str,

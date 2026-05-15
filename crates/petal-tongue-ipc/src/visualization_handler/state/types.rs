@@ -6,13 +6,29 @@
 
 use super::super::types::BackpressureConfig;
 
+/// A compiled binding: the `SceneGraph` produced by the Grammar of Graphics
+/// pipeline, paired with the `GrammarExpr` that produced it so downstream
+/// consumers (the live GUI, export, etc.) can build full `RenderPlan`s.
+#[derive(Debug, Clone)]
+pub struct CompiledBinding {
+    /// The compiled scene graph ready for rendering/export.
+    pub scene: petal_tongue_scene::scene_graph::SceneGraph,
+    /// The grammar expression that produced this scene, retained for `RenderPlan` construction.
+    pub grammar: petal_tongue_scene::grammar::GrammarExpr,
+    /// Previous scene graph, retained for data-driven transition animations.
+    /// Set by `handle_stream_update` before recompilation so the UI can
+    /// interpolate between old and new states.
+    pub prev_scene: Option<petal_tongue_scene::scene_graph::SceneGraph>,
+    /// Source `DataBinding` retained for local recompilation (e.g. parameter controls).
+    pub source_binding: Option<petal_tongue_core::DataBinding>,
+}
+
 /// Manages active visualization sessions from springs/primals
 pub struct VisualizationState {
     /// Active visualization sessions keyed by session ID.
     pub sessions: std::collections::HashMap<String, RenderSession>,
     /// Grammar-compiled scene graphs keyed by `"session_id:binding_id"`.
-    pub grammar_scenes:
-        std::collections::HashMap<String, petal_tongue_scene::scene_graph::SceneGraph>,
+    pub grammar_scenes: std::collections::HashMap<String, CompiledBinding>,
     pub(super) backpressure_config: BackpressureConfig,
     /// Raster textures uploaded via `visualization.texture.upload` IPC.
     pub texture_registry: super::texture_registry::TextureRegistry,

@@ -171,7 +171,9 @@ fn binding_id(b: &DataBinding) -> &str {
         | DataBinding::FieldMap { id, .. }
         | DataBinding::Spectrum { id, .. }
         | DataBinding::GameScene { id, .. }
-        | DataBinding::Soundscape { id, .. } => id,
+        | DataBinding::Soundscape { id, .. }
+        | DataBinding::GenomeTrack { id, .. }
+        | DataBinding::CircularMap { id, .. } => id,
     }
 }
 

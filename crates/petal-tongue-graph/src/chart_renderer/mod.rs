@@ -16,6 +16,7 @@
 mod basic_charts;
 mod domain_charts;
 mod game_scene_renderer;
+mod scene_paint;
 mod soundscape_renderer;
 
 use egui::Ui;
@@ -75,15 +76,10 @@ pub fn draw_channel(ui: &mut Ui, binding: &DataBinding, domain: Option<&str>) {
             normal_range,
             warning_range,
         ),
-        DataBinding::Heatmap {
-            label,
-            x_labels,
-            y_labels,
-            values,
-            unit,
-            ..
-        } => {
-            domain_charts::draw_heatmap(ui, label, x_labels, y_labels, values, unit, domain);
+        DataBinding::Heatmap { .. } => {
+            if !scene_paint::draw_binding_via_scene(ui, binding, domain) {
+                ui.label("(empty heatmap scene)");
+            }
         }
         DataBinding::Scatter {
             label,
@@ -131,24 +127,15 @@ pub fn draw_channel(ui: &mut Ui, binding: &DataBinding, domain: Option<&str>) {
                 },
             );
         }
-        DataBinding::FieldMap {
-            label,
-            grid_x,
-            grid_y,
-            values,
-            unit,
-            ..
-        } => {
-            domain_charts::draw_fieldmap(ui, label, grid_x, grid_y, values, unit, domain);
+        DataBinding::FieldMap { .. } => {
+            if !scene_paint::draw_binding_via_scene(ui, binding, domain) {
+                ui.label("(empty fieldmap scene)");
+            }
         }
-        DataBinding::Spectrum {
-            label,
-            frequencies,
-            amplitudes,
-            unit,
-            ..
-        } => {
-            domain_charts::draw_spectrum(ui, label, frequencies, amplitudes, unit, domain);
+        DataBinding::Spectrum { .. } => {
+            if !scene_paint::draw_binding_via_scene(ui, binding, domain) {
+                ui.label("(empty spectrum scene)");
+            }
         }
         DataBinding::GameScene { label, scene, .. } => {
             game_scene_renderer::draw_game_scene(ui, label, scene);
@@ -157,6 +144,16 @@ pub fn draw_channel(ui: &mut Ui, binding: &DataBinding, domain: Option<&str>) {
             label, definition, ..
         } => {
             soundscape_renderer::draw_soundscape(ui, label, definition);
+        }
+        DataBinding::GenomeTrack { .. } => {
+            if !scene_paint::draw_binding_via_scene(ui, binding, domain) {
+                ui.label("(empty genome track scene)");
+            }
+        }
+        DataBinding::CircularMap { .. } => {
+            if !scene_paint::draw_binding_via_scene(ui, binding, domain) {
+                ui.label("(empty circular map scene)");
+            }
         }
     }
 }

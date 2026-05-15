@@ -12,6 +12,7 @@ use petal_tongue_ipc::json_rpc::JsonRpcRequest;
 use petal_tongue_ipc::method_gate::CallerContext;
 use petal_tongue_ipc::unix_socket_connection;
 use petal_tongue_ipc::unix_socket_rpc_handlers::RpcHandlers;
+use petal_tongue_scene::modality::{ModalityCompiler, ModalityOutput, SvgCompiler};
 use petal_tongue_scene::primitive::{Color, Primitive};
 use petal_tongue_scene::scene_graph::{SceneGraph, SceneNode};
 use serde_json::json;
@@ -329,4 +330,260 @@ async fn test_unix_socket_connection_handle_request() {
         serde_json::from_str(response_line.trim()).expect("parse");
     assert!(err_response["error"].is_object());
     assert_eq!(err_response["error"]["code"], -32700);
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Barrick Lab baselines — full pipeline test
+// ──────────────────────────────────────────────────────────────────────────
+
+fn barrick_baselines_bindings() -> Vec<serde_json::Value> {
+    vec![
+        json!({
+            "channel_type": "genome_track",
+            "id": "bl_breseq_genome", "label": "breseq Genome Track",
+            "sequence_length": 4629812.0,
+            "tracks": ["SNP", "IS Element"],
+            "segments": [
+                {"track": "SNP", "start": 70867.0, "end": 70868.0, "strand": ".", "label": "SNP"},
+                {"track": "IS Element", "start": 776697.0, "end": 778028.0, "strand": "+", "label": "IS1"}
+            ],
+            "unit": "bp"
+        }),
+        json!({
+            "channel_type": "bar",
+            "id": "bl_breseq_evidence", "label": "Evidence Types",
+            "categories": ["RA", "MC", "JC"], "values": [42.0, 12.0, 23.0], "unit": "count"
+        }),
+        json!({
+            "channel_type": "gauge",
+            "id": "bl_breseq_mutations", "label": "Total Mutations",
+            "value": 94.0, "min": 0.0, "max": 200.0, "unit": "mutations",
+            "normal_range": [0.0, 50.0], "warning_range": [50.0, 150.0]
+        }),
+        json!({
+            "channel_type": "circular_map",
+            "id": "bl_plannotate_map", "label": "pUC19",
+            "sequence_length": 2686.0,
+            "rings": ["features"],
+            "arcs": [
+                {"start_angle": 0.0, "end_angle": 90.0, "ring": 0, "label": "ori"},
+                {"start_angle": 120.0, "end_angle": 200.0, "ring": 0, "label": "AmpR"}
+            ],
+            "unit": "bp"
+        }),
+        json!({
+            "channel_type": "bar",
+            "id": "bl_plannotate_features", "label": "Feature Lengths",
+            "categories": ["ori", "AmpR", "lacZ"], "values": [600.0, 860.0, 510.0], "unit": "bp"
+        }),
+        json!({
+            "channel_type": "scatter",
+            "id": "bl_ostir_tir", "label": "OSTIR TIR",
+            "x": [42.0, 156.0, 891.0], "y": [1200.0, 45000.0, 8900.0],
+            "point_labels": ["RBS1", "RBS2", "RBS3"],
+            "x_label": "Position", "y_label": "TIR", "unit": "au"
+        }),
+        json!({
+            "channel_type": "distribution",
+            "id": "bl_ostir_rate_dist", "label": "TIR Distribution",
+            "values": [42.8, 127.5, 85.2], "mean": 85.15, "std": 59.9,
+            "comparison_value": 100.0, "unit": "au"
+        }),
+        json!({
+            "channel_type": "genome_track",
+            "id": "bl_cryptkeeper_track", "label": "CryptKeeper",
+            "sequence_length": 4629812.0,
+            "tracks": ["ORFs", "Cryptic Promoters"],
+            "segments": [
+                {"track": "ORFs", "start": 100000.0, "end": 102000.0, "strand": "+", "label": "lacZ"},
+                {"track": "Cryptic Promoters", "start": 101800.0, "end": 102200.0, "strand": "+", "label": "P_crypto"}
+            ],
+            "unit": "bp"
+        }),
+        json!({
+            "channel_type": "genome_track",
+            "id": "bl_efm_track", "label": "EFM Features",
+            "sequence_length": 4629812.0,
+            "tracks": ["IS Target", "Repeat Indel"],
+            "segments": [
+                {"track": "IS Target", "start": 776697.0, "end": 778028.0, "strand": "+", "label": "IS1"},
+                {"track": "Repeat Indel", "start": 1200000.0, "end": 1200500.0, "strand": ".", "label": "repeat1"}
+            ],
+            "unit": "bp"
+        }),
+        json!({
+            "channel_type": "scatter",
+            "id": "bl_md_divergence", "label": "Marker Divergence",
+            "x": [0.0, 100.0, 500.0, 1000.0], "y": [0.0, 0.15, 0.52, 0.78],
+            "point_labels": ["t0", "t100", "t500", "t1000"],
+            "x_label": "Generations", "y_label": "Divergence", "unit": "rel"
+        }),
+        json!({
+            "channel_type": "heatmap",
+            "id": "bl_rna_mi_cov", "label": "RNA MI Covariance",
+            "x_labels": ["p1", "p2", "p3"], "y_labels": ["p1", "p2", "p3"],
+            "values": [1.0, 0.8, 0.2, 0.8, 1.0, 0.3, 0.2, 0.3, 1.0], "unit": "bits"
+        }),
+        json!({
+            "channel_type": "spectrum",
+            "id": "bl_rna_mi_entropy", "label": "Positional Entropy",
+            "frequencies": [1.0, 2.0, 3.0, 4.0], "amplitudes": [0.3, 0.7, 0.5, 0.9], "unit": "bits"
+        }),
+        json!({
+            "channel_type": "timeseries",
+            "id": "bl_growth_curve", "label": "Growth Curve",
+            "x_label": "Time", "y_label": "OD600", "unit": "OD",
+            "x_values": [0.0, 1.0, 2.0, 3.0], "y_values": [0.05, 0.12, 0.35, 0.78]
+        }),
+    ]
+}
+
+#[tokio::test]
+async fn test_barrick_baselines_full_pipeline() {
+    let h = test_handlers();
+    let bindings = barrick_baselines_bindings();
+    let binding_count = bindings.len();
+
+    let req = JsonRpcRequest::new(
+        "visualization.render",
+        json!({
+            "session_id": "barrick-baselines",
+            "title": "Barrick Lab Baselines",
+            "domain": "genomics",
+            "bindings": bindings
+        }),
+        json!(1),
+    );
+    let resp = h.handle_request(req, &test_ctx()).await;
+    assert!(resp.error.is_none(), "expected success: {:?}", resp.error);
+    let r = resp.result.expect("result");
+    assert_eq!(r["status"], "rendering");
+    assert_eq!(
+        r["bindings_accepted"].as_u64().unwrap_or(0),
+        binding_count as u64,
+        "all bindings should be accepted"
+    );
+
+    let viz_state = h.viz_state.read().unwrap();
+
+    // Verify grammar_scenes has entries for each binding
+    let scene_keys: Vec<&String> = viz_state
+        .grammar_scenes
+        .keys()
+        .filter(|k| k.starts_with("barrick-baselines:"))
+        .collect();
+    assert_eq!(
+        scene_keys.len(),
+        binding_count,
+        "expected {binding_count} grammar_scenes, got {}: {scene_keys:?}",
+        scene_keys.len()
+    );
+
+    // Verify each scene has at least some primitives and exports to valid SVG
+    let svg_compiler = SvgCompiler::new();
+    for key in &scene_keys {
+        let compiled = viz_state
+            .grammar_scenes
+            .get(*key)
+            .unwrap_or_else(|| panic!("missing scene for {key}"));
+        assert!(
+            compiled.scene.total_primitives() > 0,
+            "{key}: scene should have >0 primitives, got {}",
+            compiled.scene.total_primitives()
+        );
+
+        let output = svg_compiler.compile(&compiled.scene);
+        let svg = match output {
+            ModalityOutput::Svg(bytes) => {
+                String::from_utf8(bytes.to_vec()).expect("valid UTF-8")
+            }
+            other => panic!("{key}: expected SVG, got {other:?}"),
+        };
+        assert!(
+            svg.starts_with("<svg"),
+            "{key}: SVG should start with <svg"
+        );
+        assert!(
+            svg.ends_with("</svg>"),
+            "{key}: SVG should end with </svg>"
+        );
+        assert!(
+            !svg.contains("NaN"),
+            "{key}: SVG should not contain NaN"
+        );
+        assert!(
+            !svg.contains("Infinity"),
+            "{key}: SVG should not contain Infinity"
+        );
+    }
+}
+
+#[tokio::test]
+async fn test_barrick_baselines_stream_recompile() {
+    let h = test_handlers();
+
+    let req = JsonRpcRequest::new(
+        "visualization.render",
+        json!({
+            "session_id": "stream-test",
+            "title": "Stream Test",
+            "bindings": [{
+                "channel_type": "timeseries",
+                "id": "ts-stream",
+                "label": "Live TS",
+                "x_label": "t", "y_label": "v", "unit": "u",
+                "x_values": [0.0, 1.0], "y_values": [10.0, 20.0]
+            }]
+        }),
+        json!(1),
+    );
+    h.handle_request(req, &test_ctx()).await;
+
+    // Verify initial scene exists
+    {
+        let viz_state = h.viz_state.read().unwrap();
+        assert!(
+            viz_state.grammar_scenes.contains_key("stream-test:ts-stream"),
+            "initial scene should exist"
+        );
+        let initial_prims = viz_state.grammar_scenes["stream-test:ts-stream"]
+            .scene
+            .total_primitives();
+        assert!(initial_prims > 0);
+    }
+
+    // Send a stream update (append_point)
+    let stream_req = JsonRpcRequest::new(
+        "visualization.render.stream",
+        json!({
+            "session_id": "stream-test",
+            "binding_id": "ts-stream",
+            "operation": {
+                "type": "append",
+                "x_values": [2.0],
+                "y_values": [30.0]
+            }
+        }),
+        json!(2),
+    );
+    let stream_resp = h.handle_request(stream_req, &test_ctx()).await;
+    assert!(
+        stream_resp.error.is_none(),
+        "stream update should succeed: {:?}",
+        stream_resp.error
+    );
+    let r = stream_resp.result.expect("result");
+    assert_eq!(r["accepted"], true);
+
+    // Verify scene was recompiled (should now have updated data)
+    let viz_state = h.viz_state.read().unwrap();
+    assert!(
+        viz_state.grammar_scenes.contains_key("stream-test:ts-stream"),
+        "scene should still exist after stream update"
+    );
+    let scene = &viz_state.grammar_scenes["stream-test:ts-stream"];
+    assert!(
+        scene.scene.total_primitives() > 0,
+        "recompiled scene should have primitives"
+    );
 }

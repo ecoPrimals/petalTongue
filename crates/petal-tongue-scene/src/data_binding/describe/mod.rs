@@ -118,6 +118,32 @@ pub fn describe_binding(binding: &DataBinding) -> String {
         DataBinding::Soundscape {
             label, definition, ..
         } => describe_soundscape(label, definition),
+        DataBinding::GenomeTrack {
+            label,
+            tracks,
+            segments,
+            unit,
+            ..
+        } => {
+            format!(
+                "Genome track '{label}': {t} tracks, {s} annotated segments ({unit}).",
+                t = tracks.len(),
+                s = segments.len(),
+            )
+        }
+        DataBinding::CircularMap {
+            label,
+            rings,
+            arcs,
+            unit,
+            ..
+        } => {
+            format!(
+                "Circular map '{label}': {r} rings, {a} arc features ({unit}).",
+                r = rings.len(),
+                a = arcs.len(),
+            )
+        }
     }
 }
 

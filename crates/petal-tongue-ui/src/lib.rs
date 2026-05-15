@@ -135,6 +135,8 @@ pub mod neural_registration;
 #[cfg(any(test, feature = "mock"))]
 pub mod sandbox_provider;
 pub mod scene_bridge;
+pub mod scene_interaction;
+pub mod scene_viewer;
 pub mod sensor_feed;
 pub mod state;
 pub mod status_reporter;
@@ -146,7 +148,7 @@ pub mod traffic_view;
 pub mod trust_dashboard;
 pub mod universal_discovery; // Capability-based GPU rendering discovery via registry provider
 
-pub use app::PetalTongueApp;
+pub use app::{CentralView, PetalTongueApp};
 pub use human_entropy_window::HumanEntropyWindow;
 pub use sensors::{
     AudioSensor, KeyboardSensor, MouseSensor, ScreenSensor, SensorImpl, UiSensorRegistry,

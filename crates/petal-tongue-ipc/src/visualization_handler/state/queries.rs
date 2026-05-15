@@ -6,7 +6,7 @@
 use petal_tongue_core::DataBinding;
 
 use super::super::types::{SessionStatusRequest, SessionStatusResponse};
-use super::types::{RenderSession, VisualizationState};
+use super::types::{CompiledBinding, RenderSession, VisualizationState};
 
 impl VisualizationState {
     /// Handle `visualization.session.status`: return session health metrics.
@@ -55,12 +55,9 @@ impl VisualizationState {
             .collect()
     }
 
-    /// Get a compiled scene graph by session ID (for downstream rendering).
+    /// Get a compiled binding (scene + grammar) by key (for downstream rendering).
     #[must_use]
-    pub fn grammar_scene(
-        &self,
-        session_id: &str,
-    ) -> Option<&petal_tongue_scene::scene_graph::SceneGraph> {
-        self.grammar_scenes.get(session_id)
+    pub fn grammar_scene(&self, key: &str) -> Option<&CompiledBinding> {
+        self.grammar_scenes.get(key)
     }
 }

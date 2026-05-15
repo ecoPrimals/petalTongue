@@ -298,7 +298,19 @@ pub fn render_all_panels(ctx: &egui::Context, app: &mut PetalTongueApp) {
         if let Some(tool) = app.tools.visible_tool() {
             tool.render_panel(ui);
         } else {
-            app.visual_renderer.render(ui);
+            match &app.central_view {
+                super::CentralView::Graph => {
+                    app.visual_renderer.render(ui);
+                }
+                super::CentralView::SceneViewer { session_filter } => {
+                    crate::scene_viewer::render_with_interaction(
+                        ui,
+                        &app.visualization_state,
+                        session_filter.as_deref(),
+                        app.interaction_subscribers.as_ref(),
+                    );
+                }
+            }
         }
     });
 

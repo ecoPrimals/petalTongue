@@ -169,6 +169,84 @@ impl Default for Axes {
 }
 
 impl Axes {
+    /// Create axes auto-fitted to the data point ranges with 5% padding.
+    ///
+    /// Computes min/max from the points, adds padding, and picks a
+    /// human-friendly tick step (1, 2, 5 multiples of powers of 10).
+    #[must_use]
+    pub fn from_data(points: &[[f64; 2]]) -> Self {
+        if points.is_empty() {
+            return Self::default();
+        }
+
+        let mut x_min = f64::INFINITY;
+        let mut x_max = f64::NEG_INFINITY;
+        let mut y_min = f64::INFINITY;
+        let mut y_max = f64::NEG_INFINITY;
+
+        for &[x, y] in points {
+            if x.is_finite() {
+                x_min = x_min.min(x);
+                x_max = x_max.max(x);
+            }
+            if y.is_finite() {
+                y_min = y_min.min(y);
+                y_max = y_max.max(y);
+            }
+        }
+
+        if !x_min.is_finite() || !x_max.is_finite() {
+            x_min = -10.0;
+            x_max = 10.0;
+        }
+        if !y_min.is_finite() || !y_max.is_finite() {
+            y_min = -10.0;
+            y_max = 10.0;
+        }
+
+        // Ensure non-degenerate ranges
+        if (x_max - x_min).abs() < f64::EPSILON {
+            x_min -= 1.0;
+            x_max += 1.0;
+        }
+        if (y_max - y_min).abs() < f64::EPSILON {
+            y_min -= 1.0;
+            y_max += 1.0;
+        }
+
+        // For bar charts and similar, anchor y at 0 if data is all non-negative
+        if y_min >= 0.0 {
+            y_min = 0.0;
+        }
+
+        let x_pad = (x_max - x_min) * 0.05;
+        let y_pad = (y_max - y_min) * 0.05;
+        x_min -= x_pad;
+        x_max += x_pad;
+        y_min -= y_pad;
+        y_max += y_pad;
+
+        let x_step = nice_tick_step(x_min, x_max, 8);
+        let y_step = nice_tick_step(y_min, y_max, 6);
+
+        // Snap axis bounds to tick multiples for clean labels
+        x_min = (x_min / x_step).floor() * x_step;
+        x_max = (x_max / x_step).ceil() * x_step;
+        y_min = (y_min / y_step).floor() * y_step;
+        y_max = (y_max / y_step).ceil() * y_step;
+
+        Self {
+            x_range: (x_min, x_max, x_step),
+            y_range: (y_min, y_max, y_step),
+            origin: (60.0, 360.0),
+            width: 340.0,
+            height: 300.0,
+            color: Color::BLACK,
+            show_labels: true,
+            label_font_size: 10.0,
+        }
+    }
+
     /// Map data coordinates (x, y) to screen coordinates.
     #[must_use]
     pub fn data_to_screen(&self, x: f64, y: f64) -> (f64, f64) {
@@ -240,14 +318,10 @@ impl MathObject for Axes {
                 data_id: None,
             });
             if self.show_labels {
-                #[expect(
-                    clippy::cast_possible_truncation,
-                    reason = "axis labels are integer tick values"
-                )]
                 prims.push(Primitive::Text {
                     x: sx,
                     y: oy + 8.0,
-                    content: (v.round() as i64).to_string(),
+                    content: format_tick(v, x_step),
                     font_size: self.label_font_size,
                     color: self.color,
                     anchor: AnchorPoint::TopCenter,
@@ -301,14 +375,10 @@ impl MathObject for Axes {
                 data_id: None,
             });
             if self.show_labels {
-                #[expect(
-                    clippy::cast_possible_truncation,
-                    reason = "axis labels are integer tick values"
-                )]
                 prims.push(Primitive::Text {
                     x: ox - 8.0,
                     y: sy,
-                    content: (v.round() as i64).to_string(),
+                    content: format_tick(v, y_step),
                     font_size: self.label_font_size,
                     color: self.color,
                     anchor: AnchorPoint::CenterRight,
@@ -341,6 +411,54 @@ impl MathObject for Axes {
 
         prims
     }
+}
+
+/// Choose a "nice" tick step for an axis spanning `lo..hi` with approximately
+/// `target_ticks` ticks. Returns a multiple of 1, 2, or 5 times a power of 10.
+fn nice_tick_step(lo: f64, hi: f64, target_ticks: usize) -> f64 {
+    let range = (hi - lo).abs().max(f64::EPSILON);
+    #[expect(clippy::cast_precision_loss, reason = "target_ticks always small")]
+    let raw = range / target_ticks.max(1) as f64;
+
+    let magnitude = 10.0_f64.powf(raw.log10().floor());
+    let residual = raw / magnitude;
+
+    let nice = if residual <= 1.5 {
+        1.0
+    } else if residual <= 3.5 {
+        2.0
+    } else if residual <= 7.5 {
+        5.0
+    } else {
+        10.0
+    };
+
+    (nice * magnitude).max(f64::EPSILON)
+}
+
+/// Format a tick value with appropriate precision for the given step size.
+pub fn format_tick(value: f64, step: f64) -> String {
+    let abs_val = value.abs();
+
+    // For very large values, use compact notation
+    if abs_val >= 1_000_000.0 {
+        return format!("{:.1}M", value / 1_000_000.0);
+    }
+    if abs_val >= 1_000.0 {
+        return format!("{:.1}k", value / 1_000.0);
+    }
+
+    // Determine decimal places from step size
+    if step >= 1.0 {
+        if (value - value.round()).abs() < 1e-10 {
+            #[expect(clippy::cast_possible_truncation, reason = "axis label rounding")]
+            return (value.round() as i64).to_string();
+        }
+        return format!("{value:.1}");
+    }
+
+    let decimals = (-step.log10()).ceil().max(0.0).min(6.0) as usize;
+    format!("{value:.decimals$}")
 }
 
 #[cfg(test)]

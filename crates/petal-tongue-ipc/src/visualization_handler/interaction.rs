@@ -218,7 +218,12 @@ impl InteractionSubscriberRegistry {
                     .unwrap_or_default();
                 format!("{}Z", now.as_secs())
             },
-            perspective_id: None,
+            perspective_id: req.grammar_id.as_ref().map(|gid| {
+                use std::hash::{Hash, Hasher};
+                let mut h = std::collections::hash_map::DefaultHasher::new();
+                gid.hash(&mut h);
+                h.finish()
+            }),
         };
         let callbacks = self.broadcast(&event);
         let response = InteractionApplyResponse {

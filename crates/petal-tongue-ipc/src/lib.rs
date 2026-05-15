@@ -132,8 +132,8 @@ pub use scene_signer::SceneSigner;
 pub use server::{IpcServer, IpcServerError};
 pub use unix_socket_server::UnixSocketServer;
 pub use visualization_handler::{
-    BackpressureConfig, CallbackDispatch, ConstraintResult, DismissRequest, DismissResponse,
-    ExportRequest, ExportResponse, GrammarRenderRequest, GrammarRenderResponse,
+    BackpressureConfig, CallbackDispatch, CompiledBinding, ConstraintResult, DismissRequest,
+    DismissResponse, ExportRequest, ExportResponse, GrammarRenderRequest, GrammarRenderResponse,
     InteractionApplyRequest, InteractionApplyResponse, InteractionEventNotification,
     InteractionSubscriberRegistry, Perspective, PipelineRegistry, SensorStreamRegistry,
     SessionStatusRequest, SessionStatusResponse, StreamOperation, StreamUpdateRequest,

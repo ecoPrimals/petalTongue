@@ -27,7 +27,6 @@ impl GrammarCompiler {
             .as_deref()
             .map_or_else(|| palette_for_domain("measurement"), palette_for_domain);
 
-        let axes = Axes::default();
         let mut points: Vec<[f64; 2]> = Vec::new();
         for (i, obj) in data.iter().enumerate() {
             let obj = obj.as_object();
@@ -40,6 +39,8 @@ impl GrammarCompiler {
                 .unwrap_or(0.0);
             points.push([x, y]);
         }
+
+        let axes = Axes::from_data(&points);
 
         let stroke = StrokeStyle {
             color: palette.primary,

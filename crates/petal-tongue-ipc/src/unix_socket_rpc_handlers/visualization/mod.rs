@@ -440,6 +440,8 @@ pub fn handle_capabilities(_handlers: &RpcHandlers, id: Value) -> JsonRpcRespons
         "Scatter",
         "FieldMap",
         "Spectrum",
+        "GenomeTrack",
+        "CircularMap",
     ];
     let grammar_geometry = [
         "Point", "Line", "Bar", "Area", "Ribbon", "Tile", "Arc", "ErrorBar", "Mesh3D", "Sphere",
@@ -569,7 +571,19 @@ pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> J
             .viz_state
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.grammar_scenes.insert(session_id.clone(), scene);
+        let grammar_placeholder = petal_tongue_scene::grammar::GrammarExpr::new(
+            "scene",
+            petal_tongue_scene::grammar::GeometryType::Tile,
+        );
+        state.grammar_scenes.insert(
+            session_id.clone(),
+            crate::visualization_handler::CompiledBinding {
+                scene,
+                grammar: grammar_placeholder,
+                prev_scene: None,
+                source_binding: None,
+            },
+        );
     }
 
     let mut result = serde_json::json!({
@@ -751,7 +765,7 @@ pub fn handle_scene_verify(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonR
         .viz_state
         .read()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    let Some(scene) = state.grammar_scenes.get(session_id) else {
+    let Some(compiled) = state.grammar_scenes.get(session_id) else {
         return JsonRpcResponse::error(
             req.id,
             error_codes::INVALID_PARAMS,
@@ -759,7 +773,7 @@ pub fn handle_scene_verify(handlers: &RpcHandlers, req: JsonRpcRequest) -> JsonR
         );
     };
 
-    let canonical = match serde_json::to_vec(scene) {
+    let canonical = match serde_json::to_vec(&compiled.scene) {
         Ok(c) => c,
         Err(e) => {
             return JsonRpcResponse::error(

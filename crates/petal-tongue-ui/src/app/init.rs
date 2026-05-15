@@ -172,6 +172,7 @@ pub(super) fn create_app(
         motor_rx,
         motor_tx,
         show_top_menu: true,
+        central_view: super::CentralView::default(),
         interaction_bridge: EguiInteractionBridge::new(),
         ai_adapter: crate::ai_adapter::AiAdapter::new_deferred(),
         panel_content_store: super::motor_state::PanelContentStore::default(),

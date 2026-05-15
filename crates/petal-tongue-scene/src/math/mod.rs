@@ -9,7 +9,7 @@ mod axes;
 mod curves;
 mod vector_field;
 
-pub use axes::{Axes, NumberLine};
+pub use axes::{Axes, NumberLine, format_tick};
 pub use curves::{FunctionPlot, ParametricCurve};
 pub use vector_field::{ArrowSpec, VectorField};
 
