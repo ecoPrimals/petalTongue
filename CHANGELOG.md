@@ -6,6 +6,22 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Stale Socket Cleanup + PID File (May 18, 2026)
+
+#### Changed
+- **Socket startup**: Replaced `exists()` + conditional remove with
+  unconditional `remove_file()` ignoring `NotFound`. Eliminates TOCTOU race
+  between existence check and removal. Both `unix_socket_server.rs` and
+  `server.rs` paths hardened.
+- **Socket shutdown (Drop)**: Simplified to unconditional `remove_file` with
+  `is_dir` fallback (for edge cases). PID file cleaned up alongside socket.
+
+#### Added
+- **PID file**: `petaltongue.pid` written alongside `petaltongue.sock` on
+  startup, containing the server PID. Enables instant `kill(pid, 0)` liveness
+  checks by consumer primals without connect overhead. Removed on shutdown.
+  Per `DEPLOYMENT_VALIDATION_STANDARD.md` §stale-socket-cleanup.
+
 ### Stadial Gate Readiness (May 17, 2026)
 
 #### Added
