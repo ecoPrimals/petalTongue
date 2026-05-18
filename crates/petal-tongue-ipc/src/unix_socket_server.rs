@@ -15,6 +15,29 @@ use std::sync::Arc;
 use tokio::net::UnixListener;
 use tracing::{debug, error, info, warn};
 
+/// Derive `<name>.pid` path from a socket path (e.g. `petaltongue.sock` → `petaltongue.pid`).
+fn pid_path(socket_path: &std::path::Path) -> PathBuf {
+    socket_path.with_extension("pid")
+}
+
+/// Write a PID file alongside the socket so consumers can do instant
+/// `kill(pid, 0)` liveness checks without connect overhead.
+/// Per `DEPLOYMENT_VALIDATION_STANDARD.md` §stale-socket-cleanup.
+fn write_pid_file(socket_path: &std::path::Path) {
+    let path = pid_path(socket_path);
+    if let Err(e) = std::fs::write(&path, std::process::id().to_string()) {
+        debug!("Could not write PID file {}: {e}", path.display());
+    } else {
+        debug!("PID file: {}", path.display());
+    }
+}
+
+/// Remove the PID file on shutdown.
+fn remove_pid_file(socket_path: &std::path::Path) {
+    let path = pid_path(socket_path);
+    let _ = std::fs::remove_file(&path);
+}
+
 /// JSON-RPC IPC server for petalTongue.
 ///
 /// Listens on a Unix domain socket (always) and optionally on a TCP port
@@ -184,25 +207,29 @@ impl UnixSocketServer {
             );
         }
 
-        if self.socket_path.exists() {
-            let remove_result = if self.socket_path.is_file() {
-                std::fs::remove_file(&self.socket_path)
-            } else if self.socket_path.is_dir() {
-                std::fs::remove_dir(&self.socket_path)
-            } else {
-                Ok(())
-            };
-            remove_result.map_err(|e| IpcServerError::IoError(format!("{e}")))?;
-            debug!("Removed old socket: {}", self.socket_path.display());
+        // Remove stale socket before bind (crash-recovery hygiene per
+        // DEPLOYMENT_VALIDATION_STANDARD §stale-socket-cleanup).
+        // Unconditional remove avoids TOCTOU race with exists() check.
+        match std::fs::remove_file(&self.socket_path) {
+            Ok(()) => debug!("Removed stale socket: {}", self.socket_path.display()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => {
+                return Err(IpcServerError::IoError(format!(
+                    "Failed to remove stale socket {}: {e}",
+                    self.socket_path.display()
+                )));
+            }
         }
 
         let uds_listener = UnixListener::bind(&self.socket_path)
             .map_err(|e| IpcServerError::SocketError(format!("{e}")))?;
         info!(
-            "🔌 Unix socket server listening: {}",
+            "Unix socket server listening: {}",
             self.socket_path.display()
         );
         info!("   Family ID: {}", self.family_id);
+
+        write_pid_file(&self.socket_path);
 
         if let Some(parent) = self.socket_path.parent() {
             let symlink_name = crate::btsp::domain_symlink_filename(&posture);
@@ -705,19 +732,20 @@ impl Drop for UnixSocketServer {
                 error!("Failed to remove capability symlink: {e}");
             }
         }
-        if self.socket_path.exists() {
-            let result = if self.socket_path.is_file() {
-                std::fs::remove_file(&self.socket_path)
-            } else if self.socket_path.is_dir() {
+        remove_pid_file(&self.socket_path);
+        let result = std::fs::remove_file(&self.socket_path).or_else(|_| {
+            if self.socket_path.is_dir() {
                 std::fs::remove_dir(&self.socket_path)
             } else {
                 Ok(())
-            };
-            if let Err(e) = result {
-                error!("Failed to remove socket: {}", e);
-            } else {
+            }
+        });
+        match result {
+            Ok(()) if !self.socket_path.exists() => {
                 info!("Cleaned up socket: {}", self.socket_path.display());
             }
+            Ok(()) => {}
+            Err(e) => error!("Failed to remove socket: {e}"),
         }
     }
 }

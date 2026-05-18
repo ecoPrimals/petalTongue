@@ -128,11 +128,17 @@ impl IpcServer {
         let socket_path = instance.socket_path.clone();
         let instance_id = instance.id.clone();
 
-        // Remove old socket if it exists
-        if socket_path.exists() {
-            std::fs::remove_file(&socket_path).map_err(|e| {
-                IpcServerError::SocketError(format!("Failed to remove old socket: {e}"))
-            })?;
+        // Remove stale socket before bind (crash-recovery hygiene per
+        // DEPLOYMENT_VALIDATION_STANDARD §stale-socket-cleanup)
+        match std::fs::remove_file(&socket_path) {
+            Ok(()) => debug!("Removed stale socket: {}", socket_path.display()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => {
+                return Err(IpcServerError::SocketError(format!(
+                    "Failed to remove old socket {}: {e}",
+                    socket_path.display()
+                )));
+            }
         }
 
         // Create Unix listener
