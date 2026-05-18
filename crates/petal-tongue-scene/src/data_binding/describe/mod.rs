@@ -17,6 +17,10 @@ use crate::modality::{AudioParam, HapticCommand, HapticPattern};
 /// Designed for screen readers, braille output, and audio TTS narration.
 /// Returns structured prose that conveys the semantic content regardless
 /// of visual or auditory rendering.
+#[expect(
+    clippy::too_many_lines,
+    reason = "match exhausts all DataBinding variants"
+)]
 #[must_use]
 pub fn describe_binding(binding: &DataBinding) -> String {
     match binding {

@@ -7,17 +7,17 @@
 //! `NESTGATE_SOCKET` env → `$BIOMEOS_SOCKET_DIR/nestgate-{family}.sock`
 //! → `$XDG_RUNTIME_DIR/biomeos/nestgate-default.sock`.
 
-use std::sync::Arc;
 use axum::response::{Html, IntoResponse};
+use std::sync::Arc;
 
-pub(crate) struct NestGateContentClient {
-    pub(crate) socket_path: std::path::PathBuf,
-    pub(crate) request_id: std::sync::atomic::AtomicU64,
+pub struct NestGateContentClient {
+    pub socket_path: std::path::PathBuf,
+    pub request_id: std::sync::atomic::AtomicU64,
 }
 
 impl NestGateContentClient {
     /// Resolve NestGate socket from the environment.
-    pub(crate) fn from_env() -> Self {
+    pub fn from_env() -> Self {
         let socket_path = std::env::var("NESTGATE_SOCKET").map_or_else(
             |_| {
                 let family = std::env::var("FAMILY_ID")
@@ -39,13 +39,13 @@ impl NestGateContentClient {
         }
     }
 
-    pub(crate) fn next_id(&self) -> u64 {
+    pub fn next_id(&self) -> u64 {
         self.request_id
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
     }
 
     /// Call `content.resolve` — returns `(content_bytes, mime_type)` or `None`.
-    pub(crate) async fn resolve(&self, path: &str) -> Result<Option<(Vec<u8>, String)>, String> {
+    pub async fn resolve(&self, path: &str) -> Result<Option<(Vec<u8>, String)>, String> {
         use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
         use tokio::net::UnixStream;
 
@@ -106,7 +106,7 @@ impl NestGateContentClient {
 
 /// NestGate-aware index: try `content.resolve("/")` first, fall back to
 /// the compiled-in dashboard.
-pub(crate) async fn nestgate_index(client: Arc<NestGateContentClient>) -> axum::response::Response {
+pub async fn nestgate_index(client: Arc<NestGateContentClient>) -> axum::response::Response {
     match client.resolve("/").await {
         Ok(Some((body, mime))) => super::build_response(body, &mime, 0),
         _ => Html(include_str!("../../web/index.html")).into_response(),
@@ -114,7 +114,7 @@ pub(crate) async fn nestgate_index(client: Arc<NestGateContentClient>) -> axum::
 }
 
 /// Axum fallback handler that resolves content via NestGate.
-pub(crate) async fn nestgate_fallback(
+pub async fn nestgate_fallback(
     req: axum::extract::Request,
     client: Arc<NestGateContentClient>,
     nb_config: Arc<crate::notebook_render::NotebookRenderConfig>,

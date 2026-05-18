@@ -341,11 +341,11 @@ fn barrick_baselines_bindings() -> Vec<serde_json::Value> {
         json!({
             "channel_type": "genome_track",
             "id": "bl_breseq_genome", "label": "breseq Genome Track",
-            "sequence_length": 4629812.0,
+            "sequence_length": 4_629_812.0,
             "tracks": ["SNP", "IS Element"],
             "segments": [
                 {"track": "SNP", "start": 70867.0, "end": 70868.0, "strand": ".", "label": "SNP"},
-                {"track": "IS Element", "start": 776697.0, "end": 778028.0, "strand": "+", "label": "IS1"}
+                {"track": "IS Element", "start": 776_697.0, "end": 778_028.0, "strand": "+", "label": "IS1"}
             ],
             "unit": "bp"
         }),
@@ -392,22 +392,22 @@ fn barrick_baselines_bindings() -> Vec<serde_json::Value> {
         json!({
             "channel_type": "genome_track",
             "id": "bl_cryptkeeper_track", "label": "CryptKeeper",
-            "sequence_length": 4629812.0,
+            "sequence_length": 4_629_812.0,
             "tracks": ["ORFs", "Cryptic Promoters"],
             "segments": [
-                {"track": "ORFs", "start": 100000.0, "end": 102000.0, "strand": "+", "label": "lacZ"},
-                {"track": "Cryptic Promoters", "start": 101800.0, "end": 102200.0, "strand": "+", "label": "P_crypto"}
+                {"track": "ORFs", "start": 100_000.0, "end": 102_000.0, "strand": "+", "label": "lacZ"},
+                {"track": "Cryptic Promoters", "start": 101_800.0, "end": 102_200.0, "strand": "+", "label": "P_crypto"}
             ],
             "unit": "bp"
         }),
         json!({
             "channel_type": "genome_track",
             "id": "bl_efm_track", "label": "EFM Features",
-            "sequence_length": 4629812.0,
+            "sequence_length": 4_629_812.0,
             "tracks": ["IS Target", "Repeat Indel"],
             "segments": [
-                {"track": "IS Target", "start": 776697.0, "end": 778028.0, "strand": "+", "label": "IS1"},
-                {"track": "Repeat Indel", "start": 1200000.0, "end": 1200500.0, "strand": ".", "label": "repeat1"}
+                {"track": "IS Target", "start": 776_697.0, "end": 778_028.0, "strand": "+", "label": "IS1"},
+                {"track": "Repeat Indel", "start": 1_200_000.0, "end": 1_200_500.0, "strand": ".", "label": "repeat1"}
             ],
             "unit": "bp"
         }),
@@ -494,23 +494,12 @@ async fn test_barrick_baselines_full_pipeline() {
 
         let output = svg_compiler.compile(&compiled.scene);
         let svg = match output {
-            ModalityOutput::Svg(bytes) => {
-                String::from_utf8(bytes.to_vec()).expect("valid UTF-8")
-            }
+            ModalityOutput::Svg(bytes) => String::from_utf8(bytes.to_vec()).expect("valid UTF-8"),
             other => panic!("{key}: expected SVG, got {other:?}"),
         };
-        assert!(
-            svg.starts_with("<svg"),
-            "{key}: SVG should start with <svg"
-        );
-        assert!(
-            svg.ends_with("</svg>"),
-            "{key}: SVG should end with </svg>"
-        );
-        assert!(
-            !svg.contains("NaN"),
-            "{key}: SVG should not contain NaN"
-        );
+        assert!(svg.starts_with("<svg"), "{key}: SVG should start with <svg");
+        assert!(svg.ends_with("</svg>"), "{key}: SVG should end with </svg>");
+        assert!(!svg.contains("NaN"), "{key}: SVG should not contain NaN");
         assert!(
             !svg.contains("Infinity"),
             "{key}: SVG should not contain Infinity"
@@ -543,7 +532,9 @@ async fn test_barrick_baselines_stream_recompile() {
     {
         let viz_state = h.viz_state.read().unwrap();
         assert!(
-            viz_state.grammar_scenes.contains_key("stream-test:ts-stream"),
+            viz_state
+                .grammar_scenes
+                .contains_key("stream-test:ts-stream"),
             "initial scene should exist"
         );
         let initial_prims = viz_state.grammar_scenes["stream-test:ts-stream"]
@@ -578,7 +569,9 @@ async fn test_barrick_baselines_stream_recompile() {
     // Verify scene was recompiled (should now have updated data)
     let viz_state = h.viz_state.read().unwrap();
     assert!(
-        viz_state.grammar_scenes.contains_key("stream-test:ts-stream"),
+        viz_state
+            .grammar_scenes
+            .contains_key("stream-test:ts-stream"),
         "scene should still exist after stream update"
     );
     let scene = &viz_state.grammar_scenes["stream-test:ts-stream"];

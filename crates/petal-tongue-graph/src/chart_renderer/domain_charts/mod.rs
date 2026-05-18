@@ -22,7 +22,10 @@ pub use validation::{
 /// Number of z-bands for color/size encoding (higher z = darker, larger).
 pub const Z_BANDS: usize = 8;
 
-#[expect(dead_code, reason = "pre-SceneGraph legacy renderer — SceneGraph pipeline handles heatmap via grammar compilation")]
+#[expect(
+    dead_code,
+    reason = "pre-SceneGraph legacy renderer — SceneGraph pipeline handles heatmap via grammar compilation"
+)]
 pub fn draw_heatmap(
     ui: &mut Ui,
     label: &str,
@@ -96,18 +99,25 @@ pub fn draw_heatmap(
 
     // Colorbar
     ui.horizontal(|ui| {
-        ui.label(RichText::new(format!("{vmin:.2}")).small().color(palette.text_dim));
+        ui.label(
+            RichText::new(format!("{vmin:.2}"))
+                .small()
+                .color(palette.text_dim),
+        );
         let bar_w = ui.available_width().min(200.0);
         let n_stops = 20;
         let stop_w = bar_w / n_stops as f32;
         for i in 0..n_stops {
             let t = (i as f32 + 0.5) / n_stops as f32;
             let color = palette.positive.linear_multiply(t.max(0.15));
-            let (rect, _) =
-                ui.allocate_exact_size(egui::vec2(stop_w, 10.0), egui::Sense::hover());
+            let (rect, _) = ui.allocate_exact_size(egui::vec2(stop_w, 10.0), egui::Sense::hover());
             ui.painter().rect_filled(rect, 0.0, color);
         }
-        ui.label(RichText::new(format!("{vmax:.2}")).small().color(palette.text_dim));
+        ui.label(
+            RichText::new(format!("{vmax:.2}"))
+                .small()
+                .color(palette.text_dim),
+        );
     });
 }
 
@@ -115,7 +125,14 @@ pub fn draw_heatmap(
 ///
 /// Expects JSON segments with `start`, `end`, `track` (category name),
 /// optional `strand` (+/-), optional `label`.
-#[expect(dead_code, reason = "pre-SceneGraph legacy renderer — SceneGraph pipeline handles genome_track via grammar compilation")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "legacy genome-track UI: genomic axis, per-track segments, and strand-aware drawing are intentionally kept inline"
+)]
+#[expect(
+    dead_code,
+    reason = "pre-SceneGraph legacy renderer — SceneGraph pipeline handles genome_track via grammar compilation"
+)]
 pub fn draw_genome_track(
     ui: &mut Ui,
     label: &str,
@@ -127,7 +144,7 @@ pub fn draw_genome_track(
 ) {
     let palette = domain_theme::palette_for_domain(domain.unwrap_or("health"));
     ui.label(
-        RichText::new(format!("{label} ({unit}) — {:.0} bp", sequence_length))
+        RichText::new(format!("{label} ({unit}) — {sequence_length:.0} bp"))
             .strong()
             .color(palette.text_dim),
     );
@@ -142,8 +159,7 @@ pub fn draw_genome_track(
         for (pos, tick_label) in &axis_ticks {
             let frac = (*pos / sequence_length) as f32;
             let x_off = frac * avail_w;
-            let (rect, _) =
-                ui.allocate_exact_size(egui::vec2(0.0, 0.0), egui::Sense::hover());
+            let (rect, _) = ui.allocate_exact_size(egui::vec2(0.0, 0.0), egui::Sense::hover());
             ui.painter().text(
                 egui::pos2(rect.left() + x_off, rect.top()),
                 egui::Align2::CENTER_TOP,
@@ -191,19 +207,21 @@ pub fn draw_genome_track(
 
             // Draw segments belonging to this track
             for seg in segments {
-                let obj = match seg.as_object() {
-                    Some(o) => o,
-                    None => continue,
+                let Some(obj) = seg.as_object() else {
+                    continue;
                 };
-                let seg_track = obj
-                    .get("track")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
+                let seg_track = obj.get("track").and_then(|v| v.as_str()).unwrap_or("");
                 if seg_track != track_name {
                     continue;
                 }
-                let start = obj.get("start").and_then(|v| v.as_f64()).unwrap_or(0.0);
-                let end = obj.get("end").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                let start = obj
+                    .get("start")
+                    .and_then(serde_json::Value::as_f64)
+                    .unwrap_or(0.0);
+                let end = obj
+                    .get("end")
+                    .and_then(serde_json::Value::as_f64)
+                    .unwrap_or(0.0);
                 let strand = obj.get("strand").and_then(|v| v.as_str()).unwrap_or("+");
                 let seg_label = obj.get("label").and_then(|v| v.as_str()).unwrap_or("");
 
@@ -264,7 +282,10 @@ pub fn draw_genome_track(
 }
 
 /// Draw a circular plasmid/genome map with concentric feature arcs.
-#[expect(dead_code, reason = "pre-SceneGraph legacy renderer — SceneGraph pipeline handles circular_map via grammar compilation")]
+#[expect(
+    dead_code,
+    reason = "pre-SceneGraph legacy renderer — SceneGraph pipeline handles circular_map via grammar compilation"
+)]
 pub fn draw_circular_map(
     ui: &mut Ui,
     label: &str,
@@ -289,11 +310,7 @@ pub fn draw_circular_map(
     let ring_spacing: f32 = size * 0.04;
 
     // Backbone circle
-    painter.circle_stroke(
-        center,
-        base_radius,
-        egui::Stroke::new(1.5, palette.info),
-    );
+    painter.circle_stroke(center, base_radius, egui::Stroke::new(1.5, palette.info));
 
     let category_colors = [
         palette.info,
@@ -304,25 +321,24 @@ pub fn draw_circular_map(
     ];
 
     for arc in arcs {
-        let obj = match arc.as_object() {
-            Some(o) => o,
-            None => continue,
+        let Some(obj) = arc.as_object() else {
+            continue;
         };
         let start_angle = obj
             .get("start_angle")
-            .and_then(|v| v.as_f64())
+            .and_then(serde_json::Value::as_f64)
             .unwrap_or(0.0);
         let end_angle = obj
             .get("end_angle")
-            .and_then(|v| v.as_f64())
+            .and_then(serde_json::Value::as_f64)
             .unwrap_or(0.0);
         let ring_idx = obj
             .get("ring")
-            .and_then(|v| v.as_u64())
+            .and_then(serde_json::Value::as_u64)
             .unwrap_or(0) as usize;
         let arc_label = obj
             .get("label")
-            .and_then(|v| v.as_str())
+            .and_then(serde_json::Value::as_str)
             .unwrap_or("");
 
         let r = base_radius + (ring_idx as f32 + 1.0) * ring_spacing;
@@ -363,7 +379,7 @@ pub fn draw_circular_map(
 
         // Feature label at midpoint
         if !arc_label.is_empty() && (end_angle - start_angle).abs() > 15.0 {
-            let mid_rad = (start_rad + end_rad) / 2.0;
+            let mid_rad = f32::midpoint(start_rad, end_rad);
             let label_r = r_outer + 8.0;
             painter.text(
                 egui::pos2(
@@ -396,7 +412,7 @@ fn format_bp(bp: f64) -> String {
     } else if bp >= 1_000.0 {
         format!("{:.1} kbp", bp / 1_000.0)
     } else {
-        format!("{:.0} bp", bp)
+        format!("{bp:.0} bp")
     }
 }
 
@@ -586,7 +602,10 @@ pub fn draw_scatter3d(ui: &mut Ui, params: &Scatter3dParams<'_>) {
     );
 }
 
-#[expect(dead_code, reason = "pre-SceneGraph legacy renderer — SceneGraph pipeline handles fieldmap via grammar compilation")]
+#[expect(
+    dead_code,
+    reason = "pre-SceneGraph legacy renderer — SceneGraph pipeline handles fieldmap via grammar compilation"
+)]
 pub fn draw_fieldmap(
     ui: &mut Ui,
     label: &str,
@@ -630,7 +649,10 @@ pub fn draw_fieldmap(
     }
 }
 
-#[expect(dead_code, reason = "pre-SceneGraph legacy renderer — SceneGraph pipeline handles spectrum via grammar compilation")]
+#[expect(
+    dead_code,
+    reason = "pre-SceneGraph legacy renderer — SceneGraph pipeline handles spectrum via grammar compilation"
+)]
 pub fn draw_spectrum(
     ui: &mut Ui,
     label: &str,

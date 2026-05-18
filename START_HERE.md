@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: May 8, 2026 (JH-0 MethodGate adoption, auth introspection, CallerContext threading)
+**Updated**: May 17, 2026 (stadial gate readiness, health triad HTTP routes, btsp.capabilities, stability tiers)
 
 ---
 

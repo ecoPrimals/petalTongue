@@ -26,12 +26,15 @@ impl VisualizationState {
         let scene = compiler.compile(&grammar_expr, &data);
         let key = format!("{session_id}:{bid}");
         let prev_scene = grammar_scenes.get(&key).map(|cb| cb.scene.clone());
-        grammar_scenes.insert(key, CompiledBinding {
-            scene,
-            grammar: grammar_expr,
-            prev_scene,
-            source_binding: Some(binding.clone()),
-        });
+        grammar_scenes.insert(
+            key,
+            CompiledBinding {
+                scene,
+                grammar: grammar_expr,
+                prev_scene,
+                source_binding: Some(binding.clone()),
+            },
+        );
     }
 
     /// Handle a visualization.render.stream incremental update.

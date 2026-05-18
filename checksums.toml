@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# BLAKE3 checksums for petalTongue v1.6.6
+# Per PLASMIDBIN_PUSH_AUTOMATION_STANDARD.md from wateringHole.
+#
+# Regenerate: b3sum <file>
+
+[source]
+"Cargo.toml" = "71096414df2015f07b27d9aa103b64c5db8daa9e19b91f97dec8284d614ff758"
+"Cargo.lock" = "c96043aa49f6c8fb11b9e5e7041f4a7c07b94402168ad8c0bde3cc3213ca2f09"
+"manifest.toml" = "b37d945b02d97bb2f9d4efc848696476e55f305a360f44ef4a5f85d1a18f4a0a"
+"src/main.rs" = "a1dc49173d2154f9e2de679d51059d12fc11cd9410509307ba04330f08244e69"
+
+[seed]
+fingerprint = "2a57a4aaed1a1e11cd977670d2c3c523a49b5ef38217e024aa76637b8b806255"
+method = "blake3(blake3(Cargo.toml) || blake3(Cargo.lock) || blake3(manifest.toml) || blake3(src/main.rs))"

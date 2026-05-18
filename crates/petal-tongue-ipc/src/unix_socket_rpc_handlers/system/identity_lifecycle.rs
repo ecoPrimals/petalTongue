@@ -42,3 +42,24 @@ pub fn handle_lifecycle_status(handlers: &RpcHandlers, id: serde_json::Value) ->
         }),
     )
 }
+
+/// Handle `btsp.capabilities`: return supported BTSP transport security features.
+///
+/// Per `BTSP_PROTOCOL_STANDARD.md`, primals advertise their cipher suite and
+/// protocol version so peers can negotiate encrypted transport.
+#[must_use]
+pub fn handle_btsp_capabilities(handlers: &RpcHandlers, id: serde_json::Value) -> JsonRpcResponse {
+    let btsp_active = handlers.family_id != "default" && !handlers.family_id.is_empty();
+
+    JsonRpcResponse::success(
+        id,
+        json!({
+            "protocol": "btsp-v1",
+            "ciphers": ["chacha20-poly1305"],
+            "key_derivation": "hkdf-sha256",
+            "phases": [1, 2, 3],
+            "active": btsp_active,
+            "family_id": &handlers.family_id,
+        }),
+    )
+}

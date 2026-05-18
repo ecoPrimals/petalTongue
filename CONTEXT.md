@@ -430,3 +430,57 @@ across all paths (SemanticRouter, isomorphic IPC, HTTP API). Live dashboard
 wires SSE topology stream (`/api/events`), primal grid, and NestGate-aware
 index routing (`GET /` resolves through `content.resolve("/")` when
 `backend=nestgate`, falling back to the compiled-in dashboard).
+
+## Stadial Readiness (May 17, 2026)
+
+**Gate status**: 9.5/10 — interstadial exit CLEARED.
+
+### Method Stability Tiers
+
+| Tier | Methods | Meaning |
+|------|---------|---------|
+| **Stable** | `health.check`, `health.liveness`, `health.readiness`, `health.get`, `identity.get`, `lifecycle.status`, `capabilities.list`, `capability.announce`, `primal.announce`, `btsp.capabilities`, `auth.check`, `auth.mode`, `auth.peer_info`, `topology.get`, `proprioception.get` | Wire-compatible across versions; no breaking changes without major version bump |
+| **Stable** | `visualization.render`, `visualization.validate`, `visualization.export`, `visualization.capabilities`, `visualization.introspect`, `visualization.panels`, `visualization.showing`, `visualization.dismiss` | Core rendering pipeline — stabilized since v1.4 |
+| **Evolving** | `visualization.render.stream`, `visualization.render.grammar`, `visualization.render.dashboard`, `visualization.render.scene`, `visualization.render.graph`, `visualization.session.list`, `visualization.session.status`, `visualization.texture.upload`, `visualization.texture.attach`, `visualization.scene.verify` | Functional but response shapes may evolve |
+| **Evolving** | `visualization.interact.apply`, `visualization.interact.perspectives`, `interaction.subscribe`, `interaction.poll`, `interaction.unsubscribe`, `interaction.sensor_stream.*` | Interaction pipeline — stabilizing |
+| **Evolving** | `audio.synthesize`, `ui.render`, `ui.display_status`, `motor.*`, `provider.register_capability`, `capabilities.sensory`, `capabilities.sensory.negotiate` | Domain-specific — stable within current consumers |
+
+### Degradation Behavior
+
+When petalTongue is unavailable:
+
+- **Ecosystem impact**: No visualization, no live dashboard, no web-mode content
+  serving. All primals continue operating — petalTongue is a representation
+  layer, not a control plane.
+- **Springs**: Springs that render dashboards (esotericWebb, lithoSpore) fall
+  back to text/JSON output or cached state. No data loss.
+- **projectNUCLEUS**: Static site serving stops if petalTongue hosts sporePrint.
+  Content remains in NestGate or filesystem; another HTTP server can serve it.
+- **Composition graphs**: `petaltongue_deploy.toml` marks petalTongue as
+  non-critical. biomeOS skips visualization steps when petalTongue is absent.
+- **IPC callers**: Get connection refused → standard JSON-RPC retry/fallback.
+
+### Downstream Pairing
+
+| Partner | Integration | Status |
+|---------|-------------|--------|
+| **esotericWebb** | Game UI rendering via `visualization.render.scene` + `motor.*` | Functional |
+| **lithoSpore** | Validation dashboard via `visualization.render.dashboard` + `/api/events` SSE | Planned |
+| **projectNUCLEUS** | sporePrint sovereign serving via `web` mode + NestGate backend | Functional |
+| **wetSpring** | Fermentation visualization via `visualization.render.grammar` | Planned |
+
+### Platform Audio Dependencies
+
+petalTongue is **pure Rust** (`deny.toml` bans C crypto and native TLS). Audio:
+
+- **Graph engine** (`petal-tongue-graph`): WAV-only output via `hound` crate.
+  No native audio playback deps. Pure Rust on all platforms.
+- **UI mode** (`petal-tongue-ui`): Decoding via `symphonia` (mp3, wav features).
+  No system audio library required for decode. Playback delegates to
+  `audio.play` capability discovery at runtime (not compiled in).
+- **Headless/server/web modes**: No audio dependencies active. Build with
+  `--no-default-features` to exclude the `ui` feature entirely.
+- **Linux note**: `eframe` (egui backend) may pull transitive windowing deps
+  (`wayland-sys`, `x11-dl`) for the `ui` mode. These are display deps, not
+  audio. Build with `--no-default-features --features=""` for a zero-GUI binary.
+- **macOS/Windows**: No additional system deps beyond standard windowing.

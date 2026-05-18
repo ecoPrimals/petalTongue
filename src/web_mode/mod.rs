@@ -7,7 +7,7 @@
 //! ([`petal_tongue_ipc::UnixSocketServer`]). Live updates use HTTP SSE only, not
 //! `callback_tx` push over UDS.
 
-pub(crate) mod nestgate;
+pub mod nestgate;
 
 use crate::error::AppError;
 use petal_tongue_core::constants::DEFAULT_SSE_KEEPALIVE_SECS;
@@ -89,6 +89,8 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
 
     let mut app = Router::new()
         .route("/health", get(health_handler))
+        .route("/health/liveness", get(liveness_handler))
+        .route("/health/readiness", get(readiness_handler))
         .route("/api/status", get(status_handler))
         .route("/api/primals", get(primals_handler))
         .route("/api/snapshot", get(snapshot_handler))
@@ -102,7 +104,10 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
             "NestGate content-addressed backend active (PT-13)"
         );
         let index_client = Arc::clone(&client);
-        app = app.route("/", get(move || nestgate::nestgate_index(Arc::clone(&index_client))));
+        app = app.route(
+            "/",
+            get(move || nestgate::nestgate_index(Arc::clone(&index_client))),
+        );
         let nb_cfg = Arc::clone(&nb_config);
         app = app.fallback(move |req: axum::extract::Request| {
             nestgate::nestgate_fallback(req, Arc::clone(&client), Arc::clone(&nb_cfg), cache_ttl)
@@ -252,7 +257,11 @@ async fn serve_spa_index(docroot: &str, cache_ttl: u64) -> axum::response::Respo
 // ── Shared utilities ────────────────────────────────────────────────────
 
 /// Build an HTTP response with optional `Cache-Control`.
-pub(crate) fn build_response(body: Vec<u8>, content_type: &str, cache_ttl: u64) -> axum::response::Response {
+pub fn build_response(
+    body: Vec<u8>,
+    content_type: &str,
+    cache_ttl: u64,
+) -> axum::response::Response {
     let mut builder = axum::response::Response::builder()
         .status(axum::http::StatusCode::OK)
         .header(axum::http::header::CONTENT_TYPE, content_type);
@@ -280,7 +289,7 @@ fn resolve_docroot_path(docroot: &str, uri_path: &str) -> std::path::PathBuf {
 }
 
 /// Case-insensitive `.ipynb` extension check.
-pub(crate) fn is_ipynb(path: &str) -> bool {
+pub fn is_ipynb(path: &str) -> bool {
     std::path::Path::new(path)
         .extension()
         .is_some_and(|ext| ext.eq_ignore_ascii_case("ipynb"))
@@ -294,7 +303,26 @@ async fn index_handler() -> Html<&'static str> {
 
 async fn health_handler() -> impl IntoResponse {
     Json(serde_json::json!({
-        "status": "ok"
+        "status": "ok",
+        "primal": "petaltongue",
+        "version": env!("CARGO_PKG_VERSION"),
+        "mode": "web",
+    }))
+}
+
+async fn liveness_handler() -> impl IntoResponse {
+    Json(serde_json::json!({
+        "status": "alive",
+        "alive": true,
+    }))
+}
+
+async fn readiness_handler() -> impl IntoResponse {
+    Json(serde_json::json!({
+        "status": "ready",
+        "ready": true,
+        "version": env!("CARGO_PKG_VERSION"),
+        "primal": "petaltongue",
     }))
 }
 
@@ -385,8 +413,8 @@ mod tests {
         reason = "test code uses unwrap/expect for brevity"
     )]
 
-    use super::*;
     use super::nestgate::{NestGateContentClient, nestgate_fallback};
+    use super::*;
 
     #[tokio::test]
     async fn test_status_endpoint() {

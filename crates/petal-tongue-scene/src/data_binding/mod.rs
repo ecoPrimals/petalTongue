@@ -125,7 +125,9 @@ impl DataBindingCompiler {
                 } else {
                     0.5
                 };
-                let data = vec![serde_json::json!({"x": 0, "y": normalized, "label": label, "data_id": id})];
+                let data = vec![
+                    serde_json::json!({"x": 0, "y": normalized, "label": label, "data_id": id}),
+                ];
                 (expr, data)
             }
             DataBinding::Spectrum {
@@ -186,7 +188,12 @@ impl DataBindingCompiler {
                 (expr, data)
             }
             DataBinding::Scatter {
-                id, label, x, y, point_labels, ..
+                id,
+                label,
+                x,
+                y,
+                point_labels,
+                ..
             } => {
                 let expr = GrammarExpr::new(id.as_str(), GeometryType::Point)
                     .with_x("x")
@@ -204,10 +211,10 @@ impl DataBindingCompiler {
                     .zip(y.iter())
                     .enumerate()
                     .map(|(i, (xi, yi))| {
-                        let did = point_labels.get(i).map_or_else(
-                            || format!("pt-{i}"),
-                            |lbl| lbl.clone(),
-                        );
+                        let did = point_labels
+                            .get(i)
+                            .cloned()
+                            .unwrap_or_else(|| format!("pt-{i}"));
                         serde_json::json!({"x": xi, "y": yi, "data_id": did})
                     })
                     .collect();
@@ -333,7 +340,7 @@ impl DataBindingCompiler {
                         let track_idx = tracks.iter().position(|t| t == track).unwrap_or(0);
                         let start = seg.get("start").and_then(Value::as_f64)?;
                         let end = seg.get("end").and_then(Value::as_f64)?;
-                        let mid = (start + end) / 2.0;
+                        let mid = f64::midpoint(start, end);
                         let name = seg
                             .get("name")
                             .or_else(|| seg.get("label"))
@@ -372,22 +379,25 @@ impl DataBindingCompiler {
                 let data: Vec<Value> = arcs
                     .iter()
                     .filter_map(|arc| {
-                        let ring_name = arc.get("ring").and_then(Value::as_str)
+                        let ring_name = arc
+                            .get("ring")
+                            .and_then(Value::as_str)
                             .or_else(|| arc.get("ring").and_then(Value::as_u64).map(|_| ""))
                             .unwrap_or("");
-                        let ring_idx = if let Some(idx) = arc.get("ring").and_then(Value::as_u64) {
-                            idx as usize
-                        } else {
-                            rings.iter().position(|r| r == ring_name).unwrap_or(0)
-                        };
+                        let ring_idx = arc.get("ring").and_then(Value::as_u64).map_or_else(
+                            || rings.iter().position(|r| r == ring_name).unwrap_or(0),
+                            |idx| idx as usize,
+                        );
                         let start = arc.get("start_angle").and_then(Value::as_f64)?;
                         let end = arc.get("end_angle").and_then(Value::as_f64)?;
-                        let name = arc.get("label").and_then(Value::as_str)
+                        let name = arc
+                            .get("label")
+                            .and_then(Value::as_str)
                             .or_else(|| arc.get("name").and_then(Value::as_str))
                             .unwrap_or("feature");
                         let category = arc.get("category").and_then(Value::as_str).unwrap_or("");
                         Some(serde_json::json!({
-                            "x": (start + end) / 2.0,
+                            "x": f64::midpoint(start, end),
                             "y": ring_idx,
                             "value": end - start,
                             "label": name,

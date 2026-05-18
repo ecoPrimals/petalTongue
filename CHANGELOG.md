@@ -6,6 +6,42 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Stadial Gate Readiness (May 17, 2026)
+
+#### Added
+- **`btsp.capabilities` JSON-RPC method**: Returns supported BTSP protocol
+  version, cipher suite (chacha20-poly1305), key derivation (hkdf-sha256),
+  and active BTSP status. Classified Public in MethodGate.
+- **`primal.announce` dispatch alias**: Routes to `capability.announce` per
+  stadial gate requirement. Classified Public in MethodGate.
+- **`/health/liveness` + `/health/readiness` HTTP routes**: Web mode now
+  exposes the health triad as HTTP endpoints matching the JSON-RPC shape.
+- **`count` field in `capabilities.list` response**: Method count is computed
+  from the actual methods vec (stadial wire standard compliance).
+- **`proprioception.get` + `btsp.capabilities`** added to capabilities methods list.
+- **`checksums.toml`**: BLAKE3 hashes for Cargo.toml, Cargo.lock, manifest.toml,
+  src/main.rs per PLASMIDBIN_PUSH_AUTOMATION_STANDARD.
+- **`seed_fingerprint`** in manifest.toml: BLAKE3 hash of source identity.
+- **Manifest method registry**: Updated from 12 to 55 methods to match the
+  full dispatch table (was missing health triad, auth, visualization session,
+  motor, interaction, and system methods).
+- **Stability tiers**: All methods annotated as Stable or Evolving in CONTEXT.md.
+- **Degradation documentation**: What happens when petalTongue is down.
+- **Downstream pairing**: esotericWebb, lithoSpore, projectNUCLEUS, wetSpring.
+- **Platform audio documentation**: Per-crate audio dependency breakdown.
+
+#### Changed
+- **Web `/health` response enriched**: Now returns `primal`, `version`, `mode`
+  alongside `status` (was bare `{"status":"ok"}`).
+- **README.md**: Added version (v1.6.6) to header.
+- **START_HERE.md**: Updated date to May 17, 2026.
+
+#### Fixed
+- **Pre-existing clippy lints** (petal-tongue-scene, petal-tongue-graph):
+  `cast_sign_loss`, `manual_midpoint`, `too_many_lines`, `redundant_closure`,
+  `let_else`, `long_literal_lacking_separators`, `manual_clamp`,
+  `expect_used` in tests, `format_args`, `match_same_arms`, `const_fn`.
+
 ### Live Dashboard + NestGate Index Routing (May 13, 2026)
 
 #### Changed

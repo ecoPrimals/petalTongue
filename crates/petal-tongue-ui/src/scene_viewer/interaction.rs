@@ -8,16 +8,12 @@ use petal_tongue_ipc::{InteractionApplyRequest, InteractionSubscriberRegistry};
 use petal_tongue_scene::animation::Easing;
 use std::sync::{Arc, RwLock};
 
-pub(crate) const HIGHLIGHT_COLOR: egui::Color32 = egui::Color32::from_rgb(100, 180, 255);
-pub(crate) const HOVER_COLOR: egui::Color32 = egui::Color32::from_rgba_premultiplied(100, 180, 255, 80);
-pub(crate) const TRANSITION_DURATION_SECS: f64 = 0.35;
+pub const HIGHLIGHT_COLOR: egui::Color32 = egui::Color32::from_rgb(100, 180, 255);
+pub const HOVER_COLOR: egui::Color32 = egui::Color32::from_rgba_premultiplied(100, 180, 255, 80);
+pub const TRANSITION_DURATION_SECS: f64 = 0.35;
 
 /// Handle scroll-zoom and drag-pan on the camera (expanded view only).
-pub(crate) fn handle_camera_input(
-    ui: &mut egui::Ui,
-    response: &egui::Response,
-    camera_id: egui::Id,
-) {
+pub fn handle_camera_input(ui: &mut egui::Ui, response: &egui::Response, camera_id: egui::Id) {
     let mut cam: ViewCamera =
         ui.data_mut(|d| d.get_temp::<ViewCamera>(camera_id).unwrap_or_default());
 
@@ -27,15 +23,14 @@ pub(crate) fn handle_camera_input(
             let factor = if scroll > 0.0 { 1.1 } else { 1.0 / 1.1 };
             let focal = ui
                 .input(|i| i.pointer.hover_pos())
-                .unwrap_or(response.rect.center());
+                .unwrap_or_else(|| response.rect.center());
             cam.zoom_at(focal - response.rect.min.to_vec2(), factor);
             ui.ctx().request_repaint();
         }
     }
 
     if response.dragged_by(egui::PointerButton::Middle)
-        || (response.dragged_by(egui::PointerButton::Primary)
-            && ui.input(|i| i.modifiers.ctrl))
+        || (response.dragged_by(egui::PointerButton::Primary) && ui.input(|i| i.modifiers.ctrl))
     {
         cam.offset += response.drag_delta();
         ui.ctx().request_repaint();
@@ -45,7 +40,7 @@ pub(crate) fn handle_camera_input(
 }
 
 /// Like `handle_scene_interaction` but transforms hit-map queries through the camera.
-pub(crate) fn handle_scene_interaction_with_camera(
+pub fn handle_scene_interaction_with_camera(
     ui: &mut egui::Ui,
     response: &egui::Response,
     hit_map: &FrameHitMap,
@@ -54,8 +49,7 @@ pub(crate) fn handle_scene_interaction_with_camera(
     binding_key: &str,
     interaction_subs: Option<&Arc<RwLock<InteractionSubscriberRegistry>>>,
 ) {
-    let cam: ViewCamera =
-        ui.data_mut(|d| d.get_temp::<ViewCamera>(camera_id).unwrap_or_default());
+    let cam: ViewCamera = ui.data_mut(|d| d.get_temp::<ViewCamera>(camera_id).unwrap_or_default());
 
     let mut ix_state: SceneInteractionState = ui.data_mut(|d| {
         d.get_temp::<SceneInteractionState>(state_id)
@@ -66,7 +60,7 @@ pub(crate) fn handle_scene_interaction_with_camera(
         if let Some(pos) = ui.input(|i| i.pointer.hover_pos()) {
             let scene_pt = cam.screen_to_scene(pos, response.rect.min);
             if let Some(prov) = hit_map.query(scene_pt.x, scene_pt.y) {
-                ix_state.hovered_id = prov.data_id.clone();
+                ix_state.hovered_id.clone_from(&prov.data_id);
                 ix_state.hovered_prov = Some(prov.clone());
 
                 egui::show_tooltip_at_pointer(
@@ -101,25 +95,24 @@ pub(crate) fn handle_scene_interaction_with_camera(
 
     if response.clicked()
         && !ui.input(|i| i.modifiers.ctrl)
+        && let Some(pos) = ui.input(|i| i.pointer.interact_pos())
     {
-        if let Some(pos) = ui.input(|i| i.pointer.interact_pos()) {
-            let scene_pt = cam.screen_to_scene(pos, response.rect.min);
-            if let Some(prov) = hit_map.query(scene_pt.x, scene_pt.y) {
-                if let Some(ref data_id) = prov.data_id {
-                    let selected = ix_state.toggle_selection(data_id);
-                    fire_interaction_event(
-                        interaction_subs,
-                        if selected { "select" } else { "deselect" },
-                        data_id,
-                        binding_key,
-                    );
-                }
-            } else {
-                if !ix_state.selected_ids.is_empty() {
-                    fire_interaction_event(interaction_subs, "deselect", "*", binding_key);
-                }
-                ix_state.clear_selection();
+        let scene_pt = cam.screen_to_scene(pos, response.rect.min);
+        if let Some(prov) = hit_map.query(scene_pt.x, scene_pt.y) {
+            if let Some(ref data_id) = prov.data_id {
+                let selected = ix_state.toggle_selection(data_id);
+                fire_interaction_event(
+                    interaction_subs,
+                    if selected { "select" } else { "deselect" },
+                    data_id,
+                    binding_key,
+                );
             }
+        } else {
+            if !ix_state.selected_ids.is_empty() {
+                fire_interaction_event(interaction_subs, "deselect", "*", binding_key);
+            }
+            ix_state.clear_selection();
         }
     }
 
@@ -127,7 +120,7 @@ pub(crate) fn handle_scene_interaction_with_camera(
 }
 
 /// Process click and hover events against the hit map (tiled view).
-pub(crate) fn handle_scene_interaction(
+pub fn handle_scene_interaction(
     ui: &mut egui::Ui,
     response: &egui::Response,
     hit_map: &FrameHitMap,
@@ -144,7 +137,7 @@ pub(crate) fn handle_scene_interaction(
         if let Some(pos) = ui.input(|i| i.pointer.hover_pos()) {
             let local = pos - response.rect.min.to_vec2();
             if let Some(prov) = hit_map.query(local.x, local.y) {
-                ix_state.hovered_id = prov.data_id.clone();
+                ix_state.hovered_id.clone_from(&prov.data_id);
                 ix_state.hovered_prov = Some(prov.clone());
 
                 egui::show_tooltip_at_pointer(
@@ -165,9 +158,7 @@ pub(crate) fn handle_scene_interaction(
                             .size(10.0)
                             .color(egui::Color32::from_gray(140)),
                         );
-                        if ix_state.is_selected(
-                            prov.data_id.as_deref().unwrap_or(""),
-                        ) {
+                        if ix_state.is_selected(prov.data_id.as_deref().unwrap_or("")) {
                             ui.label(
                                 egui::RichText::new("selected")
                                     .size(9.0)
@@ -186,25 +177,25 @@ pub(crate) fn handle_scene_interaction(
         ix_state.hovered_prov = None;
     }
 
-    if response.clicked() {
-        if let Some(pos) = ui.input(|i| i.pointer.interact_pos()) {
-            let local = pos - response.rect.min.to_vec2();
-            if let Some(prov) = hit_map.query(local.x, local.y) {
-                if let Some(ref data_id) = prov.data_id {
-                    let selected = ix_state.toggle_selection(data_id);
-                    fire_interaction_event(
-                        interaction_subs,
-                        if selected { "select" } else { "deselect" },
-                        data_id,
-                        binding_key,
-                    );
-                }
-            } else {
-                if !ix_state.selected_ids.is_empty() {
-                    fire_interaction_event(interaction_subs, "deselect", "*", binding_key);
-                }
-                ix_state.clear_selection();
+    if response.clicked()
+        && let Some(pos) = ui.input(|i| i.pointer.interact_pos())
+    {
+        let local = pos - response.rect.min.to_vec2();
+        if let Some(prov) = hit_map.query(local.x, local.y) {
+            if let Some(ref data_id) = prov.data_id {
+                let selected = ix_state.toggle_selection(data_id);
+                fire_interaction_event(
+                    interaction_subs,
+                    if selected { "select" } else { "deselect" },
+                    data_id,
+                    binding_key,
+                );
             }
+        } else {
+            if !ix_state.selected_ids.is_empty() {
+                fire_interaction_event(interaction_subs, "deselect", "*", binding_key);
+            }
+            ix_state.clear_selection();
         }
     }
 
@@ -212,7 +203,7 @@ pub(crate) fn handle_scene_interaction(
 }
 
 /// Draw highlight overlays for selected and hovered primitives.
-pub(crate) fn draw_selection_overlays(
+pub fn draw_selection_overlays(
     ui: &egui::Ui,
     response: &egui::Response,
     hit_map: &FrameHitMap,
@@ -254,7 +245,7 @@ pub(crate) fn draw_selection_overlays(
 }
 
 /// Render a compact detail strip showing the currently selected element(s).
-pub(crate) fn render_detail_strip(ui: &mut egui::Ui, state_id: egui::Id) {
+pub fn render_detail_strip(ui: &mut egui::Ui, state_id: egui::Id) {
     let ix_state: SceneInteractionState = ui.data(|d| {
         d.get_temp::<SceneInteractionState>(state_id)
             .unwrap_or_default()
@@ -284,18 +275,15 @@ pub(crate) fn render_detail_strip(ui: &mut egui::Ui, state_id: egui::Id) {
                             .color(egui::Color32::from_gray(200)),
                     );
                 }
-                if let Some(ref prov) = ix_state.hovered_prov {
-                    if ix_state.is_selected(prov.data_id.as_deref().unwrap_or("")) {
-                        ui.separator();
-                        ui.label(
-                            egui::RichText::new(format!(
-                                "({:.4}, {:.4})",
-                                prov.world_x, prov.world_y
-                            ))
+                if let Some(ref prov) = ix_state.hovered_prov
+                    && ix_state.is_selected(prov.data_id.as_deref().unwrap_or(""))
+                {
+                    ui.separator();
+                    ui.label(
+                        egui::RichText::new(format!("({:.4}, {:.4})", prov.world_x, prov.world_y))
                             .size(10.0)
                             .color(egui::Color32::from_gray(160)),
-                        );
-                    }
+                    );
                 }
             });
         });
@@ -303,7 +291,7 @@ pub(crate) fn render_detail_strip(ui: &mut egui::Ui, state_id: egui::Id) {
 
 /// Check if a compiled binding is in a data-driven transition and render a
 /// fade overlay. Returns true if animation is still active and requires repaint.
-pub(crate) fn handle_transition_animation(
+pub fn handle_transition_animation(
     ui: &mut egui::Ui,
     response: &egui::Response,
     compiled: &petal_tongue_ipc::CompiledBinding,
@@ -315,7 +303,8 @@ pub(crate) fn handle_transition_animation(
 
     let transition_id = egui::Id::new("scene_transition").with(key);
     let current_time = ui.input(|i| i.time);
-    let start: f64 = ui.data_mut(|d| *d.get_temp_mut_or_insert_with(transition_id, || current_time));
+    let start: f64 =
+        ui.data_mut(|d| *d.get_temp_mut_or_insert_with(transition_id, || current_time));
     let elapsed = current_time - start;
     let t = (elapsed / TRANSITION_DURATION_SECS).min(1.0);
 
@@ -339,14 +328,16 @@ pub(crate) fn handle_transition_animation(
 }
 
 /// Fire an `InteractionApplyRequest` through the IPC registry.
-pub(crate) fn fire_interaction_event(
+pub fn fire_interaction_event(
     subs: Option<&Arc<RwLock<InteractionSubscriberRegistry>>>,
     intent: &str,
     target: &str,
     grammar_id: &str,
 ) {
     let Some(reg_arc) = subs else { return };
-    let Ok(mut reg) = reg_arc.try_write() else { return };
+    let Ok(mut reg) = reg_arc.try_write() else {
+        return;
+    };
     let req = InteractionApplyRequest {
         intent: intent.to_string(),
         targets: vec![target.to_string()],
