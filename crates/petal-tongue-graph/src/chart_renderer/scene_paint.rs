@@ -23,7 +23,7 @@ fn to_egui_stroke(s: &StrokeStyle) -> Stroke {
     Stroke::new(s.width, to_color32(s.color))
 }
 
-fn anchor_to_align2(anchor: &AnchorPoint) -> egui::Align2 {
+const fn anchor_to_align2(anchor: &AnchorPoint) -> egui::Align2 {
     match anchor {
         AnchorPoint::TopLeft => egui::Align2::LEFT_TOP,
         AnchorPoint::TopCenter => egui::Align2::CENTER_TOP,
@@ -42,17 +42,17 @@ fn world_to_screen(transform: &Transform2D, offset: Vec2, x: f64, y: f64) -> Pos
     Pos2::new(tx as f32 + offset.x, ty as f32 + offset.y)
 }
 
-fn world_points_to_screen(
-    transform: &Transform2D,
-    offset: Vec2,
-    points: &[[f64; 2]],
-) -> Vec<Pos2> {
+fn world_points_to_screen(transform: &Transform2D, offset: Vec2, points: &[[f64; 2]]) -> Vec<Pos2> {
     points
         .iter()
         .map(|[x, y]| world_to_screen(transform, offset, *x, *y))
         .collect()
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "single egui SceneGraph painter: one exhaustive match arm per primitive variant"
+)]
 fn paint_primitive(painter: &Painter, prim: &Primitive, transform: &Transform2D, offset: Vec2) {
     match prim {
         Primitive::Point {
@@ -249,13 +249,21 @@ fn paint_primitive(painter: &Painter, prim: &Primitive, transform: &Transform2D,
             let max = world_to_screen(transform, offset, x + width, y + height);
             let rect = Rect::from_min_max(min, max);
             let fill_c = tint.map_or(Color32::from_gray(180), to_color32);
-            painter.rect(rect, Rounding::ZERO, fill_c, Stroke::new(1.0, Color32::GRAY));
+            painter.rect(
+                rect,
+                Rounding::ZERO,
+                fill_c,
+                Stroke::new(1.0, Color32::GRAY),
+            );
         }
     }
 }
 
 /// Paint a `SceneGraph` into an egui `Painter` at the given screen offset.
-#[expect(dead_code, reason = "superseded by scene_bridge::paint::paint_scene which adds hit-map tracking")]
+#[expect(
+    dead_code,
+    reason = "superseded by scene_bridge::paint::paint_scene which adds hit-map tracking"
+)]
 pub fn paint_scene(painter: &Painter, scene: &SceneGraph, offset: Vec2) {
     for (transform, prim, _node_id, _opacity) in scene.flatten_with_opacity() {
         paint_primitive(painter, prim, &transform, offset);
@@ -276,10 +284,7 @@ pub fn draw_binding_via_scene(
     use petal_tongue_scene::data_binding::DataBindingCompiler;
 
     let (grammar_expr, data) = DataBindingCompiler::compile(binding, domain);
-    let title = grammar_expr
-        .title
-        .clone()
-        .unwrap_or_default();
+    let title = grammar_expr.title.clone().unwrap_or_default();
     let compiler = GrammarCompiler::new();
     let scene = compiler.compile(&grammar_expr, &data);
 
@@ -296,8 +301,12 @@ pub fn draw_binding_via_scene(
         );
     }
 
-    let (mut min_x, mut min_y, mut max_x, mut max_y) =
-        (f64::INFINITY, f64::INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY);
+    let (mut min_x, mut min_y, mut max_x, mut max_y) = (
+        f64::INFINITY,
+        f64::INFINITY,
+        f64::NEG_INFINITY,
+        f64::NEG_INFINITY,
+    );
     for (transform, prim, _, _) in &flat {
         let (ox, oy) = prim_origin(prim);
         let (tx, ty) = transform.apply(ox, oy);
@@ -314,10 +323,7 @@ pub fn draw_binding_via_scene(
     let display_h = (scene_h * scale) as f32;
     let display_h = display_h.clamp(60.0, 400.0);
 
-    let (rect, _) = ui.allocate_exact_size(
-        egui::vec2(avail_w, display_h),
-        egui::Sense::hover(),
-    );
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(avail_w, display_h), egui::Sense::hover());
     let painter = ui.painter_at(rect);
 
     let scale_x = f64::from(avail_w) / scene_w;
@@ -345,9 +351,9 @@ pub fn draw_binding_via_scene(
 
 fn prim_origin(prim: &Primitive) -> (f64, f64) {
     match prim {
-        Primitive::Point { x, y, .. } => (*x, *y),
-        Primitive::Rect { x, y, .. } => (*x, *y),
-        Primitive::Text { x, y, .. } => (*x, *y),
+        Primitive::Point { x, y, .. }
+        | Primitive::Rect { x, y, .. }
+        | Primitive::Text { x, y, .. } => (*x, *y),
         Primitive::Arc { cx, cy, .. } => (*cx, *cy),
         Primitive::Line { points, .. } => points.first().map_or((0.0, 0.0), |p| (p[0], p[1])),
         Primitive::Polygon { points, .. } => points.first().map_or((0.0, 0.0), |p| (p[0], p[1])),

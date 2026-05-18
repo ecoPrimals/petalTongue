@@ -10,7 +10,7 @@ use petal_tongue_scene::render_plan::RenderPlan;
 /// Render a collapsible parameter strip for interactive exploration.
 /// Returns an overridden `RenderPlan` if the user has tweaked parameters,
 /// or `None` to use the default compiled plan.
-pub(crate) fn render_parameter_strip(
+pub fn render_parameter_strip(
     ui: &mut egui::Ui,
     compiled: &petal_tongue_ipc::CompiledBinding,
     key: &str,
@@ -19,7 +19,14 @@ pub(crate) fn render_parameter_strip(
     let mut expanded: bool = ui.data_mut(|d| d.get_temp(strip_id).unwrap_or(false));
 
     ui.horizontal(|ui| {
-        if ui.small_button(if expanded { "Hide controls" } else { "Controls" }).clicked() {
+        if ui
+            .small_button(if expanded {
+                "Hide controls"
+            } else {
+                "Controls"
+            })
+            .clicked()
+        {
             expanded = !expanded;
             ui.data_mut(|d| d.insert_temp(strip_id, expanded));
         }
@@ -70,7 +77,11 @@ pub(crate) fn render_parameter_strip(
         .inner_margin(6.0)
         .show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.label(egui::RichText::new("Geometry:").size(10.0).color(egui::Color32::from_gray(160)));
+                ui.label(
+                    egui::RichText::new("Geometry:")
+                        .size(10.0)
+                        .color(egui::Color32::from_gray(160)),
+                );
                 let geom_options = [
                     ("Point", GeometryType::Point),
                     ("Line", GeometryType::Line),
@@ -79,7 +90,8 @@ pub(crate) fn render_parameter_strip(
                     ("Tile", GeometryType::Tile),
                     ("Arc", GeometryType::Arc),
                 ];
-                let current_label = geom_options.iter()
+                let current_label = geom_options
+                    .iter()
                     .find(|(_, g)| *g == params.geometry)
                     .map_or("?", |(l, _)| l);
                 egui::ComboBox::from_id_salt(egui::Id::new("param_geom").with(key))
@@ -87,7 +99,10 @@ pub(crate) fn render_parameter_strip(
                     .width(70.0)
                     .show_ui(ui, |ui| {
                         for (label, geom) in &geom_options {
-                            if ui.selectable_label(params.geometry == *geom, *label).clicked() {
+                            if ui
+                                .selectable_label(params.geometry == *geom, *label)
+                                .clicked()
+                            {
                                 params.geometry = *geom;
                                 changed = true;
                             }
@@ -95,12 +110,17 @@ pub(crate) fn render_parameter_strip(
                     });
 
                 ui.separator();
-                ui.label(egui::RichText::new("Coord:").size(10.0).color(egui::Color32::from_gray(160)));
+                ui.label(
+                    egui::RichText::new("Coord:")
+                        .size(10.0)
+                        .color(egui::Color32::from_gray(160)),
+                );
                 let coord_options = [
                     ("Cartesian", CoordinateSystem::Cartesian),
                     ("Polar", CoordinateSystem::Polar),
                 ];
-                let current_coord = coord_options.iter()
+                let current_coord = coord_options
+                    .iter()
                     .find(|(_, c)| *c == params.coordinate)
                     .map_or("?", |(l, _)| l);
                 egui::ComboBox::from_id_salt(egui::Id::new("param_coord").with(key))
@@ -108,7 +128,10 @@ pub(crate) fn render_parameter_strip(
                     .width(80.0)
                     .show_ui(ui, |ui| {
                         for (label, coord) in &coord_options {
-                            if ui.selectable_label(params.coordinate == *coord, *label).clicked() {
+                            if ui
+                                .selectable_label(params.coordinate == *coord, *label)
+                                .clicked()
+                            {
                                 params.coordinate = *coord;
                                 changed = true;
                             }
@@ -116,14 +139,19 @@ pub(crate) fn render_parameter_strip(
                     });
 
                 ui.separator();
-                ui.label(egui::RichText::new("X scale:").size(10.0).color(egui::Color32::from_gray(160)));
+                ui.label(
+                    egui::RichText::new("X scale:")
+                        .size(10.0)
+                        .color(egui::Color32::from_gray(160)),
+                );
                 let scale_options = [
                     ("Linear", ScaleType::Linear),
                     ("Log", ScaleType::Log),
                     ("Sqrt", ScaleType::Sqrt),
                     ("Categorical", ScaleType::Categorical),
                 ];
-                let current_xs = scale_options.iter()
+                let current_xs = scale_options
+                    .iter()
                     .find(|(_, s)| *s == params.x_scale)
                     .map_or("?", |(l, _)| l);
                 egui::ComboBox::from_id_salt(egui::Id::new("param_xs").with(key))
@@ -131,7 +159,10 @@ pub(crate) fn render_parameter_strip(
                     .width(80.0)
                     .show_ui(ui, |ui| {
                         for (label, scale) in &scale_options {
-                            if ui.selectable_label(params.x_scale == *scale, *label).clicked() {
+                            if ui
+                                .selectable_label(params.x_scale == *scale, *label)
+                                .clicked()
+                            {
                                 params.x_scale = *scale;
                                 changed = true;
                             }
@@ -139,8 +170,13 @@ pub(crate) fn render_parameter_strip(
                     });
 
                 ui.separator();
-                ui.label(egui::RichText::new("Y scale:").size(10.0).color(egui::Color32::from_gray(160)));
-                let current_ys = scale_options.iter()
+                ui.label(
+                    egui::RichText::new("Y scale:")
+                        .size(10.0)
+                        .color(egui::Color32::from_gray(160)),
+                );
+                let current_ys = scale_options
+                    .iter()
                     .find(|(_, s)| *s == params.y_scale)
                     .map_or("?", |(l, _)| l);
                 egui::ComboBox::from_id_salt(egui::Id::new("param_ys").with(key))
@@ -148,7 +184,10 @@ pub(crate) fn render_parameter_strip(
                     .width(80.0)
                     .show_ui(ui, |ui| {
                         for (label, scale) in &scale_options {
-                            if ui.selectable_label(params.y_scale == *scale, *label).clicked() {
+                            if ui
+                                .selectable_label(params.y_scale == *scale, *label)
+                                .clicked()
+                            {
                                 params.y_scale = *scale;
                                 changed = true;
                             }
@@ -178,7 +217,7 @@ pub(crate) fn render_parameter_strip(
         return None;
     }
 
-    if let Some(ref source_binding) = compiled.source_binding {
+    compiled.source_binding.as_ref().map(|source_binding| {
         let domain = compiled.grammar.domain.as_deref();
         let (mut grammar, data) = DataBindingCompiler::compile(source_binding, domain);
         grammar.geometry = params.geometry;
@@ -192,8 +231,6 @@ pub(crate) fn render_parameter_strip(
         }
         let compiler = GrammarCompiler::new();
         let scene = compiler.compile(&grammar, &data);
-        Some(RenderPlan::new(scene, grammar))
-    } else {
-        None
-    }
+        RenderPlan::new(scene, grammar)
+    })
 }

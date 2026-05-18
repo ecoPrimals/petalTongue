@@ -43,6 +43,9 @@ impl RpcHandlers {
             "identity.get" => system::handle_identity_get(self, req.id),
             "lifecycle.status" => system::handle_lifecycle_status(self, req.id),
 
+            // BTSP introspection
+            "btsp.capabilities" => system::handle_btsp_capabilities(self, req.id),
+
             // Proprioception (SAME DAVE introspection for composition scripts)
             "proprioception.get" => system::handle_proprioception_get(self, req),
 
@@ -50,7 +53,9 @@ impl RpcHandlers {
             "capabilities.list" | "capability.list" | "primal.capabilities" => {
                 system::get_capabilities(self, req.id)
             }
-            "capability.announce" => system::handle_announce_capabilities(self, req),
+            "capability.announce" | "primal.announce" => {
+                system::handle_announce_capabilities(self, req)
+            }
             "capabilities.sensory" => system::handle_capabilities_sensory(self, req),
             "capabilities.sensory.negotiate" => {
                 system::handle_capabilities_sensory_negotiate(self, req)

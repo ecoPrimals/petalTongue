@@ -10,6 +10,7 @@ display_name = "petalTongue"
 description = "Universal Visualization Primal for ecoPrimals"
 version = "1.6.6"
 license = "AGPL-3.0-or-later"
+seed_fingerprint = "2a57a4aaed1a1e11cd977670d2c3c523a49b5ef38217e024aa76637b8b806255"
 
 [organism.binary]
 name = "petaltongue"
@@ -18,18 +19,61 @@ entry_point = "src/main.rs"
 [organism.capabilities]
 domains = ["visualization", "interaction", "sensor"]
 methods = [
+    "health.check",
+    "health.liveness",
+    "health.readiness",
+    "health.get",
+    "identity.get",
+    "lifecycle.status",
+    "capabilities.list",
+    "capability.announce",
+    "primal.announce",
+    "btsp.capabilities",
+    "auth.check",
+    "auth.mode",
+    "auth.peer_info",
     "visualization.render",
     "visualization.render.stream",
-    "visualization.interact",
-    "visualization.interact.select",
-    "visualization.interact.subscribe",
-    "visualization.interact.sync",
+    "visualization.render.grammar",
+    "visualization.render.dashboard",
+    "visualization.render.scene",
+    "visualization.validate",
+    "visualization.export",
+    "visualization.capabilities",
+    "visualization.dismiss",
+    "visualization.interact.apply",
+    "visualization.interact.perspectives",
+    "visualization.introspect",
+    "visualization.panels",
+    "visualization.showing",
+    "visualization.session.list",
+    "visualization.session.status",
+    "visualization.render.graph",
+    "visualization.texture.upload",
+    "visualization.texture.attach",
+    "visualization.scene.verify",
     "interaction.subscribe",
-    "sensor.stream.subscribe",
-    "sensor.stream.unsubscribe",
-    "sensor.stream.poll",
-    "health.check",
-    "capabilities.list",
+    "interaction.poll",
+    "interaction.unsubscribe",
+    "interaction.sensor_stream.subscribe",
+    "interaction.sensor_stream.unsubscribe",
+    "interaction.sensor_stream.poll",
+    "audio.synthesize",
+    "ui.render",
+    "ui.display_status",
+    "motor.set_panel",
+    "motor.set_zoom",
+    "motor.fit_to_view",
+    "motor.set_mode",
+    "motor.navigate",
+    "motor.set_awakening",
+    "motor.panel.update",
+    "motor.notification",
+    "topology.get",
+    "proprioception.get",
+    "provider.register_capability",
+    "capabilities.sensory",
+    "capabilities.sensory.negotiate",
 ]
 
 [organism.ipc]
@@ -57,7 +101,9 @@ config_error = 2
 network_error = 3
 
 [organism.health]
-endpoint = "health.check"
+liveness = "health.liveness"
+readiness = "health.readiness"
+check = "health.check"
 heartbeat_interval_secs = 30
 
 [ecobin]

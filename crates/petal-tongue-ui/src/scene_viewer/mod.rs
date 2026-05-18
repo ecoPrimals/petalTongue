@@ -54,7 +54,10 @@ pub fn render_with_interaction(
     };
 
     if state.grammar_scenes.is_empty() {
-        render_empty(ui, "No visualization sessions \u{2014} push data with litho visualize --format dashboard");
+        render_empty(
+            ui,
+            "No visualization sessions \u{2014} push data with litho visualize --format dashboard",
+        );
         return;
     }
 
@@ -97,11 +100,7 @@ fn render_summary_bar(ui: &mut egui::Ui, state: &VisualizationState) {
     let session_count = state.sessions.len();
     let scene_count = state.grammar_scenes.len();
     ui.horizontal(|ui| {
-        ui.label(
-            egui::RichText::new("Scene Viewer")
-                .size(14.0)
-                .strong(),
-        );
+        ui.label(egui::RichText::new("Scene Viewer").size(14.0).strong());
         ui.separator();
         ui.label(
             egui::RichText::new(format!(
@@ -163,8 +162,13 @@ fn render_expanded(
 
         interaction::handle_camera_input(ui, &response, camera_id);
         interaction::handle_scene_interaction_with_camera(
-            ui, &response, &hit_map, interaction_id, camera_id,
-            key, interaction_subs,
+            ui,
+            &response,
+            &hit_map,
+            interaction_id,
+            camera_id,
+            key,
+            interaction_subs,
         );
         interaction::draw_selection_overlays(ui, &response, &hit_map, interaction_id);
         if interaction::handle_transition_animation(ui, &response, compiled, key) {
@@ -187,13 +191,21 @@ fn render_tiled(
 ) {
     let viewer_id = egui::Id::new("scene_viewer_state");
     let available_width = ui.available_width();
-    let columns = if available_width > 900.0 { 3 } else if available_width > 500.0 { 2 } else { 1 };
+    let columns = if available_width > 900.0 {
+        3
+    } else if available_width > 500.0 {
+        2
+    } else {
+        1
+    };
     let tile_width = (available_width - (columns as f32 - 1.0) * 8.0) / columns as f32;
     let tile_height = tile_width * 0.65;
     let tile_size = egui::Vec2::new(tile_width, tile_height);
 
-    let mut session_groups: std::collections::BTreeMap<String, Vec<(String, &petal_tongue_ipc::CompiledBinding)>> =
-        std::collections::BTreeMap::new();
+    let mut session_groups: std::collections::BTreeMap<
+        String,
+        Vec<(String, &petal_tongue_ipc::CompiledBinding)>,
+    > = std::collections::BTreeMap::new();
     for (key, compiled) in &state.grammar_scenes {
         let session_id = key.split(':').next().unwrap_or(key).to_string();
         session_groups
@@ -219,8 +231,7 @@ fn render_tiled(
 
                 ui.horizontal(|ui| {
                     ui.label(
-                        egui::RichText::new("\u{25cf}")
-                            .color(egui::Color32::from_rgb(r, g, b)),
+                        egui::RichText::new("\u{25cf}").color(egui::Color32::from_rgb(r, g, b)),
                     );
                     ui.label(egui::RichText::new(title).size(13.0).strong());
                     ui.label(
@@ -260,12 +271,15 @@ fn render_tiled(
                             any_animating = true;
                         }
 
-                        let plan = RenderPlan::new(
-                            compiled.scene.clone(),
-                            compiled.grammar.clone(),
-                        );
+                        let plan =
+                            RenderPlan::new(compiled.scene.clone(), compiled.grammar.clone());
 
-                        let bg = egui::Color32::from_rgba_unmultiplied(25, 25, 25, (opacity * 255.0) as u8);
+                        let bg = egui::Color32::from_rgba_unmultiplied(
+                            25,
+                            25,
+                            25,
+                            (opacity * 255.0) as u8,
+                        );
                         let stroke_alpha = (opacity * 255.0) as u8;
                         let frame = egui::Frame::none()
                             .fill(bg)
@@ -278,11 +292,8 @@ fn render_tiled(
 
                         frame.show(ui, |ui| {
                             ui.set_opacity(opacity);
-                            let chart_title = compiled
-                                .grammar
-                                .title
-                                .as_deref()
-                                .unwrap_or(key.as_str());
+                            let chart_title =
+                                compiled.grammar.title.as_deref().unwrap_or(key.as_str());
                             ui.label(
                                 egui::RichText::new(chart_title)
                                     .size(11.0)
@@ -296,11 +307,22 @@ fn render_tiled(
 
                             let interaction_id = egui::Id::new("scene_ix").with(key);
                             interaction::handle_scene_interaction(
-                                ui, &response, &hit_map, interaction_id,
-                                key, interaction_subs,
+                                ui,
+                                &response,
+                                &hit_map,
+                                interaction_id,
+                                key,
+                                interaction_subs,
                             );
-                            interaction::draw_selection_overlays(ui, &response, &hit_map, interaction_id);
-                            if interaction::handle_transition_animation(ui, &response, compiled, key) {
+                            interaction::draw_selection_overlays(
+                                ui,
+                                &response,
+                                &hit_map,
+                                interaction_id,
+                            );
+                            if interaction::handle_transition_animation(
+                                ui, &response, compiled, key,
+                            ) {
                                 any_animating = true;
                             }
                         });

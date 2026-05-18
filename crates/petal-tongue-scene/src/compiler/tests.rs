@@ -404,10 +404,22 @@ fn axes_data_to_screen_no_nan() {
     let axes = Axes::from_data(&points);
     for &[x, y] in &points {
         let (sx, sy) = axes.data_to_screen(x, y);
-        assert!(!sx.is_nan(), "screen x should not be NaN for data ({x}, {y})");
-        assert!(!sy.is_nan(), "screen y should not be NaN for data ({x}, {y})");
-        assert!(sx.is_finite(), "screen x should be finite for data ({x}, {y})");
-        assert!(sy.is_finite(), "screen y should be finite for data ({x}, {y})");
+        assert!(
+            !sx.is_nan(),
+            "screen x should not be NaN for data ({x}, {y})"
+        );
+        assert!(
+            !sy.is_nan(),
+            "screen y should not be NaN for data ({x}, {y})"
+        );
+        assert!(
+            sx.is_finite(),
+            "screen x should be finite for data ({x}, {y})"
+        );
+        assert!(
+            sy.is_finite(),
+            "screen y should be finite for data ({x}, {y})"
+        );
     }
 }
 
@@ -513,10 +525,7 @@ fn genome_track_binding_compiles_to_tile() {
     };
     let (expr, data) = DataBindingCompiler::compile(&binding, Some("genomics"));
     assert_eq!(expr.geometry, GeometryType::Tile);
-    assert!(
-        !data.is_empty(),
-        "GenomeTrack should produce data rows"
-    );
+    assert!(!data.is_empty(), "GenomeTrack should produce data rows");
 
     let compiler = GrammarCompiler::new();
     let scene = compiler.compile(&expr, &data);
@@ -543,10 +552,7 @@ fn circular_map_binding_compiles_to_arc_polar() {
     let (expr, data) = DataBindingCompiler::compile(&binding, Some("genomics"));
     assert_eq!(expr.geometry, GeometryType::Arc);
     assert_eq!(expr.coordinate, CoordinateSystem::Polar);
-    assert!(
-        !data.is_empty(),
-        "CircularMap should produce data rows"
-    );
+    assert!(!data.is_empty(), "CircularMap should produce data rows");
 
     let compiler = GrammarCompiler::new();
     let scene = compiler.compile(&expr, &data);
@@ -555,10 +561,7 @@ fn circular_map_binding_compiles_to_arc_polar() {
         .iter()
         .filter(|p| matches!(p, Primitive::Polygon { .. }))
         .count();
-    assert_eq!(
-        polygon_count, 2,
-        "2 arcs → 2 polygons, got {polygon_count}"
-    );
+    assert_eq!(polygon_count, 2, "2 arcs → 2 polygons, got {polygon_count}");
 }
 
 #[test]
@@ -566,49 +569,72 @@ fn all_databinding_variants_produce_nonempty_scenes() {
     use petal_tongue_types::DataBinding;
     let bindings: Vec<DataBinding> = vec![
         DataBinding::TimeSeries {
-            id: "ts".into(), label: "TS".into(),
-            x_label: "t".into(), y_label: "v".into(), unit: "u".into(),
-            x_values: vec![0.0, 1.0], y_values: vec![10.0, 20.0],
+            id: "ts".into(),
+            label: "TS".into(),
+            x_label: "t".into(),
+            y_label: "v".into(),
+            unit: "u".into(),
+            x_values: vec![0.0, 1.0],
+            y_values: vec![10.0, 20.0],
         },
         DataBinding::Bar {
-            id: "b".into(), label: "Bar".into(),
+            id: "b".into(),
+            label: "Bar".into(),
             categories: vec!["A".into(), "B".into()],
-            values: vec![10.0, 20.0], unit: "u".into(),
+            values: vec![10.0, 20.0],
+            unit: "u".into(),
         },
         DataBinding::Gauge {
-            id: "g".into(), label: "G".into(),
-            value: 0.7, min: 0.0, max: 1.0, unit: "u".into(),
-            normal_range: [0.2, 0.8], warning_range: [0.1, 0.9],
+            id: "g".into(),
+            label: "G".into(),
+            value: 0.7,
+            min: 0.0,
+            max: 1.0,
+            unit: "u".into(),
+            normal_range: [0.2, 0.8],
+            warning_range: [0.1, 0.9],
         },
         DataBinding::Heatmap {
-            id: "h".into(), label: "H".into(),
+            id: "h".into(),
+            label: "H".into(),
             x_labels: vec!["a".into(), "b".into()],
             y_labels: vec!["r1".into()],
-            values: vec![1.0, 2.0], unit: "u".into(),
+            values: vec![1.0, 2.0],
+            unit: "u".into(),
         },
         DataBinding::Scatter {
-            id: "sc".into(), label: "Sc".into(),
-            x: vec![1.0, 2.0], y: vec![3.0, 4.0],
+            id: "sc".into(),
+            label: "Sc".into(),
+            x: vec![1.0, 2.0],
+            y: vec![3.0, 4.0],
             point_labels: vec!["p1".into(), "p2".into()],
-            x_label: "x".into(), y_label: "y".into(), unit: "u".into(),
+            x_label: "x".into(),
+            y_label: "y".into(),
+            unit: "u".into(),
         },
         DataBinding::Spectrum {
-            id: "sp".into(), label: "Sp".into(),
+            id: "sp".into(),
+            label: "Sp".into(),
             frequencies: vec![100.0, 200.0],
-            amplitudes: vec![0.5, 0.8], unit: "dB".into(),
+            amplitudes: vec![0.5, 0.8],
+            unit: "dB".into(),
         },
         DataBinding::GenomeTrack {
-            id: "gt".into(), label: "GT".into(),
+            id: "gt".into(),
+            label: "GT".into(),
             sequence_length: 5000.0,
             tracks: vec!["t1".into()],
             segments: vec![serde_json::json!({"track": "t1", "start": 0.0, "end": 1000.0})],
             unit: "bp".into(),
         },
         DataBinding::CircularMap {
-            id: "cm".into(), label: "CM".into(),
+            id: "cm".into(),
+            label: "CM".into(),
             sequence_length: 3000.0,
             rings: vec!["r1".into()],
-            arcs: vec![serde_json::json!({"start_angle": 0.0, "end_angle": 180.0, "ring": 0, "label": "feat"})],
+            arcs: vec![
+                serde_json::json!({"start_angle": 0.0, "end_angle": 180.0, "ring": 0, "label": "feat"}),
+            ],
             unit: "bp".into(),
         },
     ];

@@ -135,7 +135,9 @@ pub fn run_update(app: &mut PetalTongueApp, ctx: &egui::Context) {
             app.central_view = match &app.central_view {
                 super::CentralView::Graph => {
                     tracing::info!("Central view → SceneViewer");
-                    super::CentralView::SceneViewer { session_filter: None }
+                    super::CentralView::SceneViewer {
+                        session_filter: None,
+                    }
                 }
                 super::CentralView::SceneViewer { .. } => {
                     tracing::info!("Central view → Graph");
@@ -212,7 +214,9 @@ pub fn run_update(app: &mut PetalTongueApp, ctx: &egui::Context) {
     {
         app.last_session_poll = Instant::now();
         if matches!(app.central_view, super::CentralView::Graph) {
-            app.central_view = super::CentralView::SceneViewer { session_filter: None };
+            app.central_view = super::CentralView::SceneViewer {
+                session_filter: None,
+            };
             tracing::info!("Auto-switching to SceneViewer (IPC session arrived)");
         }
         ctx.request_repaint();

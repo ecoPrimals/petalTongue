@@ -6,9 +6,10 @@
 
 use super::super::types::BackpressureConfig;
 
-/// A compiled binding: the `SceneGraph` produced by the Grammar of Graphics
-/// pipeline, paired with the `GrammarExpr` that produced it so downstream
-/// consumers (the live GUI, export, etc.) can build full `RenderPlan`s.
+/// A compiled binding: scene graph plus the grammar that produced it.
+///
+/// The `SceneGraph` comes from the Grammar of Graphics pipeline; retaining
+/// `GrammarExpr` lets downstream code (GUI, export, etc.) build full `RenderPlan`s.
 #[derive(Debug, Clone)]
 pub struct CompiledBinding {
     /// The compiled scene graph ready for rendering/export.

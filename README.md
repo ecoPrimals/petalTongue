@@ -1,6 +1,6 @@
 # petalTongue
 
-**The Universal User Interface Primal for ecoPrimals**
+**The Universal User Interface Primal for ecoPrimals** — v1.6.6
 
 [![License: AGPL-3.0-or-later](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue.svg)](./LICENSE)
 

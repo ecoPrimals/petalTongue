@@ -457,7 +457,8 @@ pub fn format_tick(value: f64, step: f64) -> String {
         return format!("{value:.1}");
     }
 
-    let decimals = (-step.log10()).ceil().max(0.0).min(6.0) as usize;
+    #[expect(clippy::cast_sign_loss, reason = "clamped to [0, 6]")]
+    let decimals = (-step.log10()).ceil().clamp(0.0, 6.0) as usize;
     format!("{value:.decimals$}")
 }
 

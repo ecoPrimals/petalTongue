@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#![allow(clippy::expect_used, reason = "test assertions")]
+
 //! Tier 2 SVG validation: compile representative DataBindings through the
 //! full primal pipeline (DataBindingCompiler → GrammarCompiler → SvgCompiler)
 //! and assert structural SVG validity.
@@ -62,9 +64,9 @@ fn breseq_genome_track() -> DataBinding {
         tracks: vec!["SNP".into(), "IS Element".into(), "Large Deletion".into()],
         segments: vec![
             json!({"track": "SNP", "start": 70867.0, "end": 70868.0, "strand": ".", "label": "SNP"}),
-            json!({"track": "SNP", "start": 1234567.0, "end": 1234568.0, "strand": ".", "label": "SNP2"}),
-            json!({"track": "IS Element", "start": 776697.0, "end": 778028.0, "strand": "+", "label": "IS1"}),
-            json!({"track": "Large Deletion", "start": 1298712.0, "end": 1330044.0, "strand": ".", "label": "DEL1"}),
+            json!({"track": "SNP", "start": 1_234_567.0, "end": 1_234_568.0, "strand": ".", "label": "SNP2"}),
+            json!({"track": "IS Element", "start": 776_697.0, "end": 778_028.0, "strand": "+", "label": "IS1"}),
+            json!({"track": "Large Deletion", "start": 1_298_712.0, "end": 1_330_044.0, "strand": ".", "label": "DEL1"}),
         ],
         unit: "bp".into(),
     }
@@ -124,7 +126,13 @@ fn ostir_scatter() -> DataBinding {
         label: "OSTIR TIR Predictions".into(),
         x: vec![42.0, 156.0, 891.0, 12345.0, 72891.0],
         y: vec![1200.0, 45000.0, 8900.0, 120.0, 67000.0],
-        point_labels: vec!["RBS1".into(), "RBS2".into(), "RBS3".into(), "RBS4".into(), "RBS5".into()],
+        point_labels: vec![
+            "RBS1".into(),
+            "RBS2".into(),
+            "RBS3".into(),
+            "RBS4".into(),
+            "RBS5".into(),
+        ],
         x_label: "Position (nt)".into(),
         y_label: "TIR (au)".into(),
         unit: "au".into(),
@@ -150,9 +158,9 @@ fn cryptkeeper_genome_track() -> DataBinding {
         sequence_length: 4_629_812.0,
         tracks: vec!["ORFs/Features".into(), "Cryptic Promoters".into()],
         segments: vec![
-            json!({"track": "ORFs/Features", "start": 100000.0, "end": 102000.0, "strand": "+", "label": "lacZ"}),
-            json!({"track": "ORFs/Features", "start": 500000.0, "end": 501500.0, "strand": "-", "label": "araC"}),
-            json!({"track": "Cryptic Promoters", "start": 101800.0, "end": 102200.0, "strand": "+", "label": "P_crypto_1"}),
+            json!({"track": "ORFs/Features", "start": 100_000.0, "end": 102_000.0, "strand": "+", "label": "lacZ"}),
+            json!({"track": "ORFs/Features", "start": 500_000.0, "end": 501_500.0, "strand": "-", "label": "araC"}),
+            json!({"track": "Cryptic Promoters", "start": 101_800.0, "end": 102_200.0, "strand": "+", "label": "P_crypto_1"}),
         ],
         unit: "bp".into(),
     }
@@ -163,11 +171,15 @@ fn efm_genome_track() -> DataBinding {
         id: "bl_efm_rate_track".into(),
         label: "EFM Rate-Colored Features".into(),
         sequence_length: 4_629_812.0,
-        tracks: vec!["IS Target".into(), "Repeat Indel".into(), "Base Sub Hotspot".into()],
+        tracks: vec![
+            "IS Target".into(),
+            "Repeat Indel".into(),
+            "Base Sub Hotspot".into(),
+        ],
         segments: vec![
-            json!({"track": "IS Target", "start": 776697.0, "end": 778028.0, "strand": "+", "label": "IS1"}),
-            json!({"track": "Repeat Indel", "start": 1200000.0, "end": 1200500.0, "strand": ".", "label": "repeat1"}),
-            json!({"track": "Base Sub Hotspot", "start": 3500000.0, "end": 3500100.0, "strand": ".", "label": "hotspot1"}),
+            json!({"track": "IS Target", "start": 776_697.0, "end": 778_028.0, "strand": "+", "label": "IS1"}),
+            json!({"track": "Repeat Indel", "start": 1_200_000.0, "end": 1_200_500.0, "strand": ".", "label": "repeat1"}),
+            json!({"track": "Base Sub Hotspot", "start": 3_500_000.0, "end": 3_500_100.0, "strand": ".", "label": "hotspot1"}),
         ],
         unit: "bp".into(),
     }
@@ -179,7 +191,13 @@ fn marker_divergence_scatter() -> DataBinding {
         label: "Marker Divergence Experiment 1".into(),
         x: vec![0.0, 100.0, 200.0, 500.0, 1000.0],
         y: vec![0.0, 0.15, 0.28, 0.52, 0.78],
-        point_labels: vec!["t0".into(), "t100".into(), "t200".into(), "t500".into(), "t1000".into()],
+        point_labels: vec![
+            "t0".into(),
+            "t100".into(),
+            "t200".into(),
+            "t500".into(),
+            "t1000".into(),
+        ],
         x_label: "Generations".into(),
         y_label: "Divergence".into(),
         unit: "rel".into(),
@@ -193,10 +211,7 @@ fn rna_mi_heatmap() -> DataBinding {
         x_labels: vec!["pos1".into(), "pos2".into(), "pos3".into(), "pos4".into()],
         y_labels: vec!["pos1".into(), "pos2".into(), "pos3".into(), "pos4".into()],
         values: vec![
-            1.0, 0.8, 0.2, 0.1,
-            0.8, 1.0, 0.3, 0.15,
-            0.2, 0.3, 1.0, 0.7,
-            0.1, 0.15, 0.7, 1.0,
+            1.0, 0.8, 0.2, 0.1, 0.8, 1.0, 0.3, 0.15, 0.2, 0.3, 1.0, 0.7, 0.1, 0.15, 0.7, 1.0,
         ],
         unit: "bits".into(),
     }
@@ -253,8 +268,8 @@ fn all_baselines_compile_to_valid_svg() {
         assert_valid_svg(&svg, name);
         assert!(
             svg.len() > 100,
-            "{name}: SVG should be substantial, got {} bytes",
-            svg.len()
+            "{name}: SVG should be substantial, got {len} bytes",
+            len = svg.len()
         );
     }
 }

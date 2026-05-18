@@ -306,15 +306,18 @@ pub fn compile_geometry(
                     let start_rad = start_deg.to_radians() - std::f64::consts::FRAC_PI_2;
                     let end_rad = end_deg.to_radians() - std::f64::consts::FRAC_PI_2;
 
+                    #[expect(clippy::cast_sign_loss, reason = "clamped to non-negative")]
                     let ring = ring_idx.max(0.0) as usize;
                     let r = base_radius + (ring as f64 + 1.0) * ring_spacing;
 
                     let fill = categorical_color(palette, i);
 
                     // Sample arc polygon (inner + outer arcs, closed)
-                    let n_samples = ((end_rad - start_rad).abs() * 20.0)
-                        .ceil()
-                        .max(8.0) as usize;
+                    #[expect(
+                        clippy::cast_sign_loss,
+                        reason = "abs + ceil + max(8) is non-negative"
+                    )]
+                    let n_samples = ((end_rad - start_rad).abs() * 20.0).ceil().max(8.0) as usize;
                     let mut poly_pts = Vec::with_capacity(n_samples * 2 + 2);
                     let r_inner = r - arc_thickness / 2.0;
                     let r_outer = r + arc_thickness / 2.0;
@@ -354,7 +357,7 @@ pub fn compile_geometry(
                         .and_then(|v| v.as_str())
                         .unwrap_or("");
                     if !label.is_empty() && span_deg > 15.0 {
-                        let mid_rad = (start_rad + end_rad) / 2.0;
+                        let mid_rad = f64::midpoint(start_rad, end_rad);
                         let label_r = r_outer + 6.0;
                         prims.push(Primitive::Text {
                             x: cx + label_r * mid_rad.cos(),
