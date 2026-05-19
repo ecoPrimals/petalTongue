@@ -6,6 +6,27 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### S3 Shadow Parity: GitHub Pages Equivalence (May 19, 2026)
+
+Wave 24 content hosting shadow run (S3) — proving sovereign petalTongue +
+NestGate can replace GitHub Pages without regression.
+
+#### Added
+- **Gzip + Brotli compression**: `tower_http::compression::CompressionLayer`
+  on all HTTP responses. Automatic content negotiation via `Accept-Encoding`.
+  Enabled `compression-gzip` and `compression-br` tower-http features.
+- **Security headers**: `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`,
+  `Permissions-Policy: camera=(), microphone=(), geolocation=()` on all
+  responses via axum middleware. Matches GitHub Pages security posture.
+- **HTTP request tracing**: `tower_http::trace::TraceLayer` with structured
+  spans (`method`, `uri`) and response logging (`status`, `latency_ms`).
+  Feeds shadow run TTFB and 404 rate metrics via tracing subscriber.
+- **Custom 404 pages**: `{docroot}/404.html` served with status 404 when
+  present (GitHub Pages / Jekyll convention). Falls back to plain text if
+  no custom page exists. `Cache-Control: no-cache` on error pages.
+- tower-http features: `set-header`, `compression-gzip`, `compression-br`.
+
 ### Stale Socket Cleanup + PID File (May 18, 2026)
 
 #### Changed

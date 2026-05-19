@@ -28,7 +28,9 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio_stream::StreamExt as _;
 use tokio_stream::wrappers::BroadcastStream;
+use tower_http::compression::CompressionLayer;
 use tower_http::services::ServeDir;
+use tower_http::trace::TraceLayer;
 
 use crate::data_service::DataService;
 
@@ -62,6 +64,10 @@ pub struct WebConfig<'a> {
 ///
 /// PT-13: When `backend = "nestgate"`, a content-addressed fallback queries
 /// NestGate `content.resolve` via JSON-RPC over UDS for path resolution.
+#[expect(
+    clippy::too_many_lines,
+    reason = "router setup with all middleware layers"
+)]
 pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(), AppError> {
     tracing::info!(
         bind = cfg.bind,
@@ -134,6 +140,32 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         }
     }
 
+    // Shadow parity layers (S3: GitHub Pages equivalence)
+    app = app
+        .layer(CompressionLayer::new())
+        .layer(axum::middleware::from_fn(security_headers_middleware))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(|req: &axum::http::Request<_>| {
+                    tracing::info_span!(
+                        "http",
+                        method = %req.method(),
+                        uri = %req.uri(),
+                    )
+                })
+                .on_response(
+                    |resp: &axum::http::Response<_>,
+                     latency: std::time::Duration,
+                     _span: &tracing::Span| {
+                        tracing::info!(
+                            status = resp.status().as_u16(),
+                            latency_ms = latency.as_millis() as u64,
+                            "response"
+                        );
+                    },
+                ),
+        );
+
     let app = if cfg.allowed_origins.is_empty() {
         app.with_state(data_service)
     } else {
@@ -182,6 +214,35 @@ fn build_cors_layer(origins: &[String]) -> tower_http::cors::CorsLayer {
     }
 }
 
+/// Security response headers for GitHub Pages parity (S3 shadow run).
+///
+/// GitHub Pages sends `X-Content-Type-Options: nosniff` and
+/// `X-Frame-Options: DENY` on all responses.
+async fn security_headers_middleware(
+    req: axum::http::Request<axum::body::Body>,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let mut resp = next.run(req).await;
+    let headers = resp.headers_mut();
+    headers.insert(
+        axum::http::header::X_CONTENT_TYPE_OPTIONS,
+        axum::http::HeaderValue::from_static("nosniff"),
+    );
+    headers.insert(
+        axum::http::header::X_FRAME_OPTIONS,
+        axum::http::HeaderValue::from_static("DENY"),
+    );
+    headers.insert(
+        axum::http::HeaderName::from_static("referrer-policy"),
+        axum::http::HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+    headers.insert(
+        axum::http::HeaderName::from_static("permissions-policy"),
+        axum::http::HeaderValue::from_static("camera=(), microphone=(), geolocation=()"),
+    );
+    resp
+}
+
 // ── Filesystem fallback ─────────────────────────────────────────────────
 
 /// Filesystem docroot fallback — serves static files with `.ipynb` rendering.
@@ -211,7 +272,7 @@ async fn docroot_fallback(
                 build_response(bytes, "application/json", cache_ttl)
             }
             Err(_) if spa => serve_spa_index(&docroot, cache_ttl).await,
-            Err(_) => (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response(),
+            Err(_) => serve_custom_404(&docroot).await,
         }
     } else {
         let serve = ServeDir::new(&docroot).append_index_html_on_directories(true);
@@ -226,8 +287,11 @@ async fn docroot_fallback(
             IntoResponse::into_response,
         );
 
-        if resp.status() == axum::http::StatusCode::NOT_FOUND && spa {
-            return serve_spa_index(&docroot, cache_ttl).await;
+        if resp.status() == axum::http::StatusCode::NOT_FOUND {
+            if spa {
+                return serve_spa_index(&docroot, cache_ttl).await;
+            }
+            return serve_custom_404(&docroot).await;
         }
 
         if cache_ttl > 0 && resp.status().is_success() {
@@ -252,6 +316,25 @@ async fn serve_spa_index(docroot: &str, cache_ttl: u64) -> axum::response::Respo
         |_| (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response(),
         |bytes| build_response(bytes, "text/html; charset=utf-8", cache_ttl),
     )
+}
+
+/// Serve `{docroot}/404.html` if it exists, otherwise plain text 404.
+/// GitHub Pages convention: site-level custom error page.
+async fn serve_custom_404(docroot: &str) -> axum::response::Response {
+    let page = std::path::Path::new(docroot).join("404.html");
+    if let Ok(bytes) = tokio::fs::read(&page).await {
+        let mut resp = axum::response::Response::builder()
+            .status(axum::http::StatusCode::NOT_FOUND)
+            .header(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")
+            .body(axum::body::Body::from(bytes))
+            .unwrap_or_else(|_| (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response());
+        resp.headers_mut().insert(
+            axum::http::header::CACHE_CONTROL,
+            axum::http::HeaderValue::from_static("no-cache"),
+        );
+        return resp;
+    }
+    (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response()
 }
 
 // ── Shared utilities ────────────────────────────────────────────────────
