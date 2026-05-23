@@ -588,7 +588,7 @@ async fn announce_to_neural_api() {
         "jsonrpc": "2.0",
         "method": "primal.announce",
         "params": {
-            "name": primal_names::PETALTONGUE,
+            "primal": primal_names::PETALTONGUE,
             "version": env!("CARGO_PKG_VERSION"),
             "socket": uds_path,
             "capabilities": ["render", "ui", "accessibility"],

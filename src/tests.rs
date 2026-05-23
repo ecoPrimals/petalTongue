@@ -551,3 +551,85 @@ fn test_app_error_result_propagates() {
     assert!(result.is_err());
     assert!(matches!(result, Err(AppError::UiNotAvailable)));
 }
+
+/// Verify `primal.announce` payload shape matches biomeOS v3.68 schema (Wave 44).
+#[test]
+fn test_neural_api_announce_payload_shape() {
+    use petal_tongue_core::capability_names::{primal_names, self_capabilities};
+
+    let payload = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "primal.announce",
+        "params": {
+            "primal": primal_names::PETALTONGUE,
+            "version": env!("CARGO_PKG_VERSION"),
+            "socket": "/tmp/biomeos/petaltongue.sock",
+            "capabilities": ["render", "ui", "accessibility"],
+            "methods": self_capabilities::ALL,
+            "signal_tiers": ["meta"],
+            "cost_hints": {
+                "render": 30.0,
+                "ui": 20.0,
+                "accessibility": 10.0,
+            },
+            "latency_estimates": {
+                "render": 16,
+                "ui": 10,
+                "accessibility": 5,
+            },
+        },
+        "id": 1,
+    });
+
+    let params = payload.get("params").expect("params present");
+
+    assert_eq!(
+        params["primal"], "petaltongue",
+        "must use 'primal' not 'name'"
+    );
+    assert!(params.get("name").is_none(), "must not contain 'name' key");
+    assert!(params["socket"].is_string(), "socket must be a string path");
+    assert!(
+        params["capabilities"].is_array(),
+        "capabilities must be array"
+    );
+    assert!(params["methods"].is_array(), "methods must be array");
+    assert!(
+        !params["methods"].as_array().unwrap().is_empty(),
+        "methods must be non-empty"
+    );
+    assert!(
+        params["signal_tiers"].is_array(),
+        "signal_tiers must be array"
+    );
+    assert!(
+        params["cost_hints"].is_object(),
+        "cost_hints must be object"
+    );
+    assert!(
+        params["latency_estimates"].is_object(),
+        "latency_estimates must be object"
+    );
+
+    let cost = params["cost_hints"].as_object().unwrap();
+    assert!(
+        cost.contains_key("render"),
+        "cost_hints must include render"
+    );
+    assert!(cost.contains_key("ui"), "cost_hints must include ui");
+    assert!(
+        cost.contains_key("accessibility"),
+        "cost_hints must include accessibility"
+    );
+
+    let latency = params["latency_estimates"].as_object().unwrap();
+    assert!(
+        latency.contains_key("render"),
+        "latency must include render"
+    );
+    assert!(latency.contains_key("ui"), "latency must include ui");
+    assert!(
+        latency.contains_key("accessibility"),
+        "latency must include accessibility"
+    );
+}
