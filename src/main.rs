@@ -257,8 +257,10 @@ fn main() -> Result<(), AppError> {
         let data_service = std::sync::Arc::new(data_service);
         tracing::info!("✅ DataService initialized - all modes will use same data source");
 
-        tracing::info!("🔍 Registering with ecosystem discovery service...");
+        tracing::info!("Registering with ecosystem discovery service...");
         register_with_discovery_service(cli_tcp_port, cli_bind_host).await;
+
+        announce_to_neural_api().await;
 
         Ok::<_, AppError>((config, data_service))
     })?;
@@ -565,6 +567,82 @@ fn init_tracing(level: &str, format: &str) -> Result<(), AppError> {
 /// so Songbird can return it for tier-1 `ipc.resolve` routing.
 ///
 /// # TRUE PRIMAL: Capability-Based Registration
+/// Announce to biomeOS Neural API for capability-based routing (Wave 43).
+///
+/// Sends `primal.announce` with cost hints and latency estimates so the Neural
+/// API can make intelligent routing decisions. Fire-and-forget: standalone mode
+/// works fine if the Neural API is unavailable.
+async fn announce_to_neural_api() {
+    use petal_tongue_core::capability_names::primal_names;
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+
+    let family = std::env::var("FAMILY_ID").unwrap_or_else(|_| "default".to_string());
+    let socket_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_string());
+    let socket = format!("{socket_dir}/biomeos/neural-api-{family}.sock");
+
+    let uds_path = petal_tongue_ipc::socket_path::get_petaltongue_socket_path()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_default();
+
+    let payload = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "primal.announce",
+        "params": {
+            "name": primal_names::PETALTONGUE,
+            "version": env!("CARGO_PKG_VERSION"),
+            "socket": uds_path,
+            "capabilities": ["render", "ui", "accessibility"],
+            "methods": petal_tongue_core::capability_names::self_capabilities::ALL,
+            "signal_tiers": ["meta"],
+            "cost_hints": {
+                "render": 30.0,
+                "ui": 20.0,
+                "accessibility": 10.0,
+            },
+            "latency_estimates": {
+                "render": 16,
+                "ui": 10,
+                "accessibility": 5,
+            },
+        },
+        "id": 1,
+    });
+
+    let Ok(mut stream) = tokio::time::timeout(
+        std::time::Duration::from_millis(500),
+        tokio::net::UnixStream::connect(&socket),
+    )
+    .await
+    .unwrap_or(Err(std::io::ErrorKind::TimedOut.into())) else {
+        tracing::debug!(
+            socket,
+            "Neural API not reachable — skipping primal.announce"
+        );
+        return;
+    };
+
+    let mut buf = serde_json::to_vec(&payload).unwrap_or_default();
+    buf.push(b'\n');
+    if stream.write_all(&buf).await.is_err() || stream.flush().await.is_err() {
+        tracing::debug!("Neural API write failed — skipping primal.announce");
+        return;
+    }
+
+    let (reader, _) = stream.into_split();
+    let mut reader = BufReader::new(reader);
+    let mut line = String::new();
+    if let Ok(Ok(_)) = tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        reader.read_line(&mut line),
+    )
+    .await
+    {
+        tracing::info!("Neural API primal.announce accepted");
+    } else {
+        tracing::debug!("Neural API response timeout — announce may still have succeeded");
+    }
+}
+
 /// - Discovers the registration service at runtime (no hardcoded primal name)
 /// - Gracefully handles service unavailability (standalone mode works fine)
 /// - Self-knowledge only: petalTongue knows its own capabilities, not others
