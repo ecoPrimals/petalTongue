@@ -144,7 +144,10 @@ fn handle_health_liveness_returns_alive() {
     let resp = handle_health_liveness(&h, req);
     let r = resp.result.expect("success");
     assert_eq!(r["status"], "alive");
-    assert_eq!(r["alive"], true);
+    assert!(
+        r.get("alive").is_none(),
+        "health.liveness must return exactly {{\"status\":\"alive\"}} per DEPLOYMENT_BEHAVIOR_STANDARD"
+    );
 }
 
 #[test]
