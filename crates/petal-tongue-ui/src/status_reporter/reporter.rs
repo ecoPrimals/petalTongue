@@ -359,7 +359,7 @@ mod tests {
     #[test]
     fn test_report_audio_event_success() {
         let reporter = StatusReporter::new();
-        reporter.report_audio_event("startup", "rodio", true, None);
+        reporter.report_audio_event("startup", "hound", true, None);
         let status = reporter.get_status();
         assert!(status.audio.last_sound.is_some());
         let event = status
@@ -368,7 +368,7 @@ mod tests {
             .as_ref()
             .expect("last_sound present");
         assert_eq!(event.sound_name, "startup");
-        assert_eq!(event.provider, "rodio");
+        assert_eq!(event.provider, "hound");
         assert!(event.success);
         assert!(status.audio.recent_failures.is_empty());
     }
@@ -378,7 +378,7 @@ mod tests {
         let reporter = StatusReporter::new();
         reporter.report_audio_event(
             "startup",
-            "rodio",
+            "hound",
             false,
             Some("Device not found".to_string()),
         );
@@ -426,9 +426,9 @@ mod tests {
     fn test_update_audio_system() {
         let reporter = StatusReporter::new();
         reporter.update_audio_system(
-            "rodio".to_string(),
+            "hound".to_string(),
             vec![AudioProviderInfo {
-                name: "rodio".to_string(),
+                name: "hound".to_string(),
                 available: true,
                 sounds_count: 5,
                 description: "Pure Rust".to_string(),
@@ -437,7 +437,7 @@ mod tests {
         );
         let status = reporter.get_status();
         assert!(status.audio.initialized);
-        assert_eq!(status.audio.current_provider, "rodio");
+        assert_eq!(status.audio.current_provider, "hound");
         assert_eq!(status.audio.available_providers.len(), 1);
         assert_eq!(status.audio.system_players.len(), 1);
     }

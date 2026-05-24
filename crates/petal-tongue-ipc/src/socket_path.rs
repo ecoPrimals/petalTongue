@@ -282,22 +282,15 @@ mod tests {
 
     #[test]
     fn test_discover_primal_socket() {
-        env_test_helpers::with_env_vars(
-            &[
-                ("FAMILY_ID", None),
-                ("BEARDOG_SOCKET", None),
-                ("XDG_RUNTIME_DIR", None),
-            ],
-            || {
-                if let Ok(path) = discover_primal_socket("beardog", None, None) {
-                    let path_str = path.to_string_lossy();
-                    assert!(
-                        path_str.ends_with("biomeos/beardog.sock"),
-                        "Expected biomeos/beardog.sock, got: {path_str}"
-                    );
-                }
-            },
-        );
+        env_test_helpers::with_env_vars(&[("FAMILY_ID", None), ("XDG_RUNTIME_DIR", None)], || {
+            if let Ok(path) = discover_primal_socket("beardog", None, None) {
+                let path_str = path.to_string_lossy();
+                assert!(
+                    path_str.ends_with("biomeos/beardog.sock"),
+                    "Expected biomeos/beardog.sock, got: {path_str}"
+                );
+            }
+        });
     }
 
     #[test]

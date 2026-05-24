@@ -125,7 +125,7 @@ impl SensoryCapabilities {
     // ========================================================================
 
     fn discover_audio() -> Vec<AudioOutputCapability> {
-        // Use cpal or platform APIs to detect audio devices
+        // Detect audio output via platform APIs (PipeWire/PulseAudio/ALSA)
         // For now, assume stereo output is available
 
         vec![AudioOutputCapability::Stereo {

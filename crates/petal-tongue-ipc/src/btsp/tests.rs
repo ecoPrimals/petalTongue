@@ -154,7 +154,6 @@ fn config_from_env_checks_security_provider_socket() {
         &[
             ("FAMILY_ID", Some("test-fam")),
             ("BTSP_PROVIDER_SOCKET", None),
-            ("BEARDOG_SOCKET", None),
             ("SECURITY_PROVIDER_SOCKET", Some("/tmp/sec.sock")),
             ("CRYPTO_PROVIDER_SOCKET", None),
             ("SECURITY_SOCKET", None),
@@ -175,7 +174,6 @@ fn config_from_env_checks_crypto_provider_socket() {
         &[
             ("FAMILY_ID", Some("test-fam")),
             ("BTSP_PROVIDER_SOCKET", None),
-            ("BEARDOG_SOCKET", None),
             ("SECURITY_PROVIDER_SOCKET", None),
             ("CRYPTO_PROVIDER_SOCKET", Some("/tmp/crypto.sock")),
             ("SECURITY_SOCKET", None),
@@ -196,7 +194,6 @@ fn config_from_env_checks_security_socket() {
         &[
             ("FAMILY_ID", Some("test-fam")),
             ("BTSP_PROVIDER_SOCKET", None),
-            ("BEARDOG_SOCKET", None),
             ("SECURITY_PROVIDER_SOCKET", None),
             ("CRYPTO_PROVIDER_SOCKET", None),
             ("SECURITY_SOCKET", Some("/tmp/security.sock")),
@@ -212,17 +209,17 @@ fn config_from_env_checks_security_socket() {
 }
 
 #[test]
-fn load_family_seed_prefers_beardog_env() {
+fn load_family_seed_prefers_btsp_env() {
     env_test_helpers::with_env_vars(
         &[
             ("FAMILY_ID", Some("fam")),
-            ("BEARDOG_FAMILY_SEED", Some("beardog-seed")),
+            ("BTSP_FAMILY_SEED", Some("btsp-seed")),
             ("FAMILY_SEED", Some("family-seed")),
             ("BTSP_PROVIDER_SOCKET", Some("/tmp/test.sock")),
         ],
         || {
             let cfg = super::BtspHandshakeConfig::from_env().expect("should resolve config");
-            assert_eq!(cfg.load_family_seed(), Some("YmVhcmRvZy1zZWVk".to_owned()));
+            assert_eq!(cfg.load_family_seed(), Some("YnRzcC1zZWVk".to_owned()));
         },
     );
 }
@@ -232,7 +229,7 @@ fn load_family_seed_falls_back_to_family_seed() {
     env_test_helpers::with_env_vars(
         &[
             ("FAMILY_ID", Some("fam")),
-            ("BEARDOG_FAMILY_SEED", None),
+            ("BTSP_FAMILY_SEED", None),
             ("FAMILY_SEED", Some("family-seed")),
             ("BTSP_PROVIDER_SOCKET", Some("/tmp/test.sock")),
         ],
@@ -248,7 +245,7 @@ fn load_family_seed_none_when_unset() {
     env_test_helpers::with_env_vars(
         &[
             ("FAMILY_ID", Some("fam")),
-            ("BEARDOG_FAMILY_SEED", None),
+            ("BTSP_FAMILY_SEED", None),
             ("FAMILY_SEED", None),
             ("BTSP_PROVIDER_SOCKET", Some("/tmp/test.sock")),
         ],
@@ -267,7 +264,7 @@ fn load_family_seed_base64_encodes_raw_hex() {
     env_test_helpers::with_env_vars(
         &[
             ("FAMILY_ID", Some("prod")),
-            ("BEARDOG_FAMILY_SEED", None),
+            ("BTSP_FAMILY_SEED", None),
             ("FAMILY_SEED", Some(raw_hex)),
             ("BTSP_PROVIDER_SOCKET", Some("/tmp/test.sock")),
         ],
@@ -283,7 +280,7 @@ fn load_family_seed_trims_then_encodes() {
     env_test_helpers::with_env_vars(
         &[
             ("FAMILY_ID", Some("prod")),
-            ("BEARDOG_FAMILY_SEED", None),
+            ("BTSP_FAMILY_SEED", None),
             ("FAMILY_SEED", Some("  a1b2c3d4e5f6  ")),
             ("BTSP_PROVIDER_SOCKET", Some("/tmp/test.sock")),
         ],
@@ -299,7 +296,7 @@ fn load_family_seed_empty_after_trim_returns_none() {
     env_test_helpers::with_env_vars(
         &[
             ("FAMILY_ID", Some("prod")),
-            ("BEARDOG_FAMILY_SEED", None),
+            ("BTSP_FAMILY_SEED", None),
             ("FAMILY_SEED", Some("   ")),
             ("BTSP_PROVIDER_SOCKET", Some("/tmp/test.sock")),
         ],
