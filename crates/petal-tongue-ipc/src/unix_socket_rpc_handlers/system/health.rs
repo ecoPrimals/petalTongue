@@ -8,15 +8,14 @@ use serde_json::json;
 
 /// Handle health.liveness: lightweight probe for Kubernetes/biomeOS — is the process alive?
 ///
-/// Per `SEMANTIC_METHOD_NAMING_STANDARD.md` v2.2, the canonical response is
-/// `{"status": "alive"}`. The `alive` boolean is kept for backward compat.
+/// Per `DEPLOYMENT_BEHAVIOR_STANDARD.md` Wave 47 the canonical response is
+/// exactly `{"status": "alive"}`. Health sweeps use `jq -r .status`.
 #[must_use]
 pub fn handle_health_liveness(_handlers: &RpcHandlers, request: JsonRpcRequest) -> JsonRpcResponse {
     JsonRpcResponse::success(
         request.id,
         json!({
             "status": "alive",
-            "alive": true,
         }),
     )
 }

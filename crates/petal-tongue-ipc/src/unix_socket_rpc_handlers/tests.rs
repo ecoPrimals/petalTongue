@@ -175,7 +175,10 @@ async fn dispatch_health_liveness() {
     assert!(resp.error.is_none());
     let r = resp.result.unwrap();
     assert_eq!(r["status"], "alive");
-    assert_eq!(r["alive"], true);
+    assert!(
+        r.get("alive").is_none(),
+        "health.liveness must not include legacy 'alive' field"
+    );
 }
 
 #[tokio::test]

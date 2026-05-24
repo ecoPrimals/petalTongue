@@ -87,6 +87,12 @@ pub fn run_on_main_thread(
         }
     });
 
+    runtime.spawn(async {
+        crate::signal::shutdown_signal().await;
+        tracing::info!("Live mode: signal received, exiting");
+        std::process::exit(0);
+    });
+
     let refresh_service = Arc::clone(data_service);
     runtime.spawn(async move {
         let mut interval =

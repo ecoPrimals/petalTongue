@@ -184,7 +184,7 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .map_err(|e| AppError::Other(format!("Failed to bind to address: {e}")))?;
 
     axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
+        .with_graceful_shutdown(crate::signal::shutdown_signal())
         .await
         .map_err(|e| AppError::Other(format!("Web server error: {e}")))?;
 
@@ -341,30 +341,6 @@ async fn serve_custom_404(docroot: &str) -> axum::response::Response {
 
 // ── Shared utilities ────────────────────────────────────────────────────
 
-/// Wait for SIGTERM or Ctrl+C for graceful shutdown.
-///
-/// Per `DEPLOYMENT_BEHAVIOR_STANDARD.md` (Wave 47): all long-running primals
-/// must handle both SIGINT and SIGTERM so `nucleus_launcher.sh` and systemd
-/// can shut them down cleanly.
-async fn shutdown_signal() {
-    let ctrl_c = tokio::signal::ctrl_c();
-    #[cfg(unix)]
-    {
-        #[expect(clippy::expect_used, reason = "SIGTERM registration is unrecoverable")]
-        let mut sigterm = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-            .expect("SIGTERM handler registration");
-        tokio::select! {
-            _ = ctrl_c => tracing::info!("SIGINT received, shutting down"),
-            _ = sigterm.recv() => tracing::info!("SIGTERM received, shutting down"),
-        }
-    }
-    #[cfg(not(unix))]
-    {
-        ctrl_c.await.ok();
-        tracing::info!("SIGINT received, shutting down");
-    }
-}
-
 /// Build an HTTP response with optional `Cache-Control`.
 pub fn build_response(
     body: Vec<u8>,
@@ -422,7 +398,6 @@ async fn health_handler() -> impl IntoResponse {
 async fn liveness_handler() -> impl IntoResponse {
     Json(serde_json::json!({
         "status": "alive",
-        "alive": true,
     }))
 }
 

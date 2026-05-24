@@ -34,6 +34,7 @@ mod headless_mode;
 mod live_mode;
 mod notebook_render;
 mod server_mode;
+mod signal;
 mod tui_mode;
 mod ui_mode;
 mod web_mode;
