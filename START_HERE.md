@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: May 17, 2026 (stadial gate readiness, health triad HTTP routes, btsp.capabilities, stability tiers)
+**Updated**: May 24, 2026 (Wave 47 behavioral convergence, SIGTERM handler, content_backend evolution, BTSP overstep cleanup)
 
 ---
 
@@ -17,7 +17,7 @@ petaltongue web --docroot ./nb --strip-sources # Serve .ipynb as HTML, hide code
 petaltongue web --docroot ./dist --spa         # SPA mode (missing paths → index.html)
 petaltongue web --allowed-origins '*'          # CORS: allow all origins
 petaltongue web --allowed-origins https://primals.eco,http://localhost:3000
-petaltongue web --backend nestgate             # NestGate CAS (GET / resolves via content.resolve)
+petaltongue web --backend content-provider     # Content backend (GET / resolves via content.resolve)
 petaltongue web --docroot ./public --ipc       # HTTP + IPC dual-port (NUCLEUS mode)
 petaltongue web --docroot ./public --ipc --ipc-port 9900  # NUCLEUS full deployment
 petaltongue web --cache-ttl 7200              # 2-hour Cache-Control on static files

@@ -6,6 +6,41 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Deep Debt Resolution + TRUE PRIMAL Evolution (May 24, 2026)
+
+Wave 47 behavioral convergence + capability-based discovery rewiring.
+
+#### Changed
+- **web_mode/mod.rs smart refactor** (1136L → 3 focused files):
+  `mod.rs` (185L orchestrator), `handlers.rs` (263L HTTP + SSE + fallback),
+  `tests.rs` (652L). No file over 800 lines in the workspace.
+- **NestGate → capability-based content_backend**: `nestgate.rs` replaced by
+  `content_backend.rs`. `NestGateContentClient` → `ContentBackendClient`.
+  Socket discovery: `CONTENT_BACKEND_SOCKET` > `NESTGATE_SOCKET` (compat) >
+  `CONTENT_BACKEND_PROVIDER`-based convention. CLI accepts both `"nestgate"`
+  (compat) and `"content-provider"` as `--backend` values.
+- **BTSP overstep removed**: `BEARDOG_SOCKET` and `BEARDOG_FAMILY_SEED`
+  replaced with role-based `BTSP_PROVIDER_SOCKET` / `SECURITY_PROVIDER_SOCKET` /
+  `BTSP_FAMILY_SEED` / `FAMILY_SEED`. No production code references another
+  primal by name.
+- **Display V1 discovery**: Added `DISPLAY_BACKEND_SOCKET` role-based env
+  override (was orchestrator-only `BIOMEOS_SOCKET`).
+- **Provenance trio discovery**: Refactored hardcoded match arms to generic
+  domain-prefix extraction with well-known aliases. Added
+  `PROVENANCE_TRIO_SOCKET` shared env override.
+- **Stale references cleaned**: Removed "rodio" from audio log messages
+  (replaced with "hound" / "pure Rust audio"), removed "cpal" comments,
+  removed cross-primal port comment (rhizoCrypt 9600) from network constants.
+
+#### Added
+- **Graceful shutdown (SIGTERM + SIGINT)**: Shared `signal.rs` module used by
+  all three long-running modes (web via `with_graceful_shutdown`, server via
+  `tokio::select!`, live via spawned signal task). Per
+  `DEPLOYMENT_BEHAVIOR_STANDARD.md`.
+- **`health.liveness` normalized**: Returns exactly `{"status":"alive"}` on
+  both HTTP (`/health/liveness`) and IPC (`health.liveness`). Removed legacy
+  `"alive":true` field.
+
 ### S3 Shadow Parity: GitHub Pages Equivalence (May 19, 2026)
 
 Wave 24 content hosting shadow run (S3) — proving sovereign petalTongue +
