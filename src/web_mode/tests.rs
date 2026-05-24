@@ -5,8 +5,8 @@
     reason = "test code uses unwrap/expect for brevity"
 )]
 
+use super::content_backend::{ContentBackendClient, content_fallback};
 use super::handlers::*;
-use super::nestgate::{NestGateContentClient, nestgate_fallback};
 use super::*;
 
 use std::sync::Arc;
@@ -357,13 +357,9 @@ async fn test_api_routes_take_precedence_over_docroot() {
 }
 
 #[test]
-fn test_nestgate_client_from_env_default() {
-    let client = NestGateContentClient::from_env();
+fn test_content_backend_client_from_env_default() {
+    let client = ContentBackendClient::from_env();
     let path_str = client.socket_path.to_string_lossy();
-    assert!(
-        path_str.contains("nestgate-"),
-        "socket path should contain 'nestgate-': {path_str}"
-    );
     assert!(
         path_str.ends_with(".sock"),
         "socket path should end with .sock: {path_str}"
@@ -371,34 +367,34 @@ fn test_nestgate_client_from_env_default() {
 }
 
 #[test]
-fn test_nestgate_client_from_env_override() {
+fn test_content_backend_client_env_override() {
     petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
-        "NESTGATE_SOCKET",
-        "/custom/nestgate.sock",
+        "CONTENT_BACKEND_SOCKET",
+        "/custom/content.sock",
         || {
-            let client = NestGateContentClient::from_env();
+            let client = ContentBackendClient::from_env();
             assert_eq!(
                 client.socket_path,
-                std::path::PathBuf::from("/custom/nestgate.sock")
+                std::path::PathBuf::from("/custom/content.sock")
             );
         },
     );
 }
 
 #[test]
-fn test_nestgate_client_request_id_increments() {
-    let client = NestGateContentClient::from_env();
+fn test_content_backend_request_id_increments() {
+    let client = ContentBackendClient::from_env();
     let id1 = client.next_id();
     let id2 = client.next_id();
     assert_eq!(id2, id1 + 1);
 }
 
 #[tokio::test]
-async fn test_nestgate_fallback_unavailable_returns_502() {
+async fn test_content_fallback_unavailable_returns_502() {
     use axum::body::Body;
 
-    let client = Arc::new(NestGateContentClient {
-        socket_path: std::path::PathBuf::from("/tmp/nonexistent-nestgate-test.sock"),
+    let client = Arc::new(ContentBackendClient {
+        socket_path: std::path::PathBuf::from("/tmp/nonexistent-content-test.sock"),
         request_id: std::sync::atomic::AtomicU64::new(1),
     });
     let req = axum::http::Request::builder()
@@ -406,16 +402,16 @@ async fn test_nestgate_fallback_unavailable_returns_502() {
         .body(Body::empty())
         .unwrap();
     let nb_cfg = Arc::new(crate::notebook_render::NotebookRenderConfig::default());
-    let resp = nestgate_fallback(req, client, nb_cfg, 0).await;
+    let resp = content_fallback(req, client, nb_cfg, 0).await;
     assert_eq!(resp.status(), axum::http::StatusCode::BAD_GATEWAY);
 }
 
 #[tokio::test]
-async fn test_nestgate_backend_installs_fallback() {
+async fn test_content_backend_installs_fallback() {
     use axum::body::Body;
 
-    let client = Arc::new(NestGateContentClient {
-        socket_path: std::path::PathBuf::from("/tmp/nonexistent-nestgate-test.sock"),
+    let client = Arc::new(ContentBackendClient {
+        socket_path: std::path::PathBuf::from("/tmp/nonexistent-content-test.sock"),
         request_id: std::sync::atomic::AtomicU64::new(1),
     });
     let client_clone = Arc::clone(&client);
@@ -424,7 +420,7 @@ async fn test_nestgate_backend_installs_fallback() {
     let app = Router::new()
         .route("/health", get(health_handler))
         .fallback(move |req: axum::extract::Request| {
-            nestgate_fallback(req, Arc::clone(&client_clone), Arc::clone(&nb_cfg), 0)
+            content_fallback(req, Arc::clone(&client_clone), Arc::clone(&nb_cfg), 0)
         })
         .with_state(data_service);
 
@@ -443,7 +439,7 @@ async fn test_nestgate_backend_installs_fallback() {
     assert_eq!(
         resp.status(),
         502,
-        "nestgate fallback should return 502 when socket unavailable"
+        "content fallback should return 502 when socket unavailable"
     );
 }
 

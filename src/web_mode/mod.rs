@@ -7,8 +7,8 @@
 //! ([`petal_tongue_ipc::UnixSocketServer`]). Live updates use HTTP SSE only, not
 //! `callback_tx` push over UDS.
 
+pub mod content_backend;
 mod handlers;
-pub mod nestgate;
 #[cfg(test)]
 mod tests;
 
@@ -93,20 +93,20 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .route("/api/events", get(events_sse_handler))
         .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));
 
-    if cfg.backend == "nestgate" {
-        let client = Arc::new(nestgate::NestGateContentClient::from_env());
+    if cfg.backend == "nestgate" || cfg.backend == "content-provider" {
+        let client = Arc::new(content_backend::ContentBackendClient::from_env());
         tracing::info!(
             socket = %client.socket_path.display(),
-            "NestGate content-addressed backend active (PT-13)"
+            "Content backend active (capability: content.resolve)"
         );
         let index_client = Arc::clone(&client);
         app = app.route(
             "/",
-            get(move || nestgate::nestgate_index(Arc::clone(&index_client))),
+            get(move || content_backend::content_index(Arc::clone(&index_client))),
         );
         let nb = Arc::clone(&nb_config);
         app = app.fallback(move |req: axum::extract::Request| {
-            nestgate::nestgate_fallback(req, Arc::clone(&client), Arc::clone(&nb), cache_ttl)
+            content_backend::content_fallback(req, Arc::clone(&client), Arc::clone(&nb), cache_ttl)
         });
     } else {
         app = app.route("/", get(index_handler));

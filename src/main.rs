@@ -110,7 +110,7 @@ enum Commands {
         #[arg(long, env = "PETALTONGUE_DOCROOT")]
         docroot: Option<String>,
 
-        /// Content backend: "filesystem" (default) or "nestgate" (content-addressed)
+        /// Content backend: "filesystem" (default) or "content-provider" / "nestgate"
         #[arg(long, env = "PETALTONGUE_WEB_BACKEND", default_value = "filesystem")]
         backend: String,
 

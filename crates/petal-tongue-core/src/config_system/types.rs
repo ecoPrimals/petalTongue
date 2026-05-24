@@ -111,7 +111,7 @@ pub struct WebServeConfig {
     /// `tower_http::ServeDir` serving files from this path.
     pub docroot: Option<PathBuf>,
 
-    /// Content backend: `"filesystem"` (default) or `"nestgate"`.
+    /// Content backend: `"filesystem"` (default) or `"content-provider"`.
     pub backend: String,
 
     /// Default index file name served when a directory is requested.
