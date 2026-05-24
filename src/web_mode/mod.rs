@@ -39,7 +39,7 @@ pub struct WebConfig<'a> {
     pub scenario: Option<String>,
     /// Static file document root for catch-all serving (`--docroot`).
     pub docroot: Option<String>,
-    /// Content backend: `"filesystem"` or `"nestgate"`.
+    /// Content backend: `"filesystem"` or `"content-provider"` / `"nestgate"` (compat).
     pub backend: &'a str,
     /// Number of tokio worker threads (wired to runtime in `main`).
     pub workers: usize,

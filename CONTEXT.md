@@ -357,8 +357,8 @@ resolved. Phase 3 encryption, musl/winit PG-48, PT-04 HTML export,
 PT-06 push delivery all confirmed already shipped. GAP-12 closed:
 `visualization.capabilities` now returns machine-readable `methods`
 object with parameter schemas for all visualization methods (dashboard,
-scene, render, export). BTSP legacy env vars (`BEARDOG_SOCKET`,
-`BEARDOG_FAMILY_SEED`) documented as "(legacy)" in fallback chain.
+scene, render, export). BTSP uses role-based env vars
+(`BTSP_PROVIDER_SOCKET`, `SECURITY_PROVIDER_SOCKET`, `BTSP_FAMILY_SEED`).
 6,200+ tests, 0 Clippy warnings.
 
 Port alignment + discovery hierarchy (May 5, 2026): ecosystem TCP fallback
@@ -395,16 +395,18 @@ items resolved:
 - **projectNUCLEUS sovereignty gaps (PT-1 through PT-5)**: PT-1 `--docroot`
   catch-all static file serving (RESOLVED). PT-3 `WebServeConfig` schema
   (RESOLVED). PT-4 `--ipc` dual-port mode for NUCLEUS (RESOLVED). PT-5
-  `--workers` wired to tokio runtime (RESOLVED). PT-2/PT-13 NestGate content
-  backend (RESOLVED — `--backend nestgate` queries NestGate `content.resolve`).
+  `--workers` wired to tokio runtime (RESOLVED). PT-2/PT-13 content backend
+  (RESOLVED — `--backend content-provider` queries `content.resolve` via
+  capability-based socket discovery).
 
 - **primalSpring Phase 60 (PT-09 + PT-13)**: PT-09 BTSP Phase 2 enforcement
   (RESOLVED — unauthenticated connections rejected when `FAMILY_ID` set,
-  petalTongue now matches all 12 other primals). PT-13 NestGate content-addressed
-  backend for `web` mode (RESOLVED — `--backend nestgate` with UDS JSON-RPC).
+  petalTongue now matches all 12 other primals). PT-13 content-addressed
+  backend for `web` mode (RESOLVED — `--backend content-provider` with UDS
+  JSON-RPC, capability-based discovery via `CONTENT_BACKEND_SOCKET`).
 
 - **Notebook rendering** (May 10, 2026): Jupyter `.ipynb` files served from
-  docroot or NestGate are rendered as styled HTML pages. `metadata.title`
+  docroot or content backend are rendered as styled HTML pages. `metadata.title`
   populates `<title>` + `<h1>` header. `--strip-sources` /
   `PETALTONGUE_STRIP_SOURCES` hides code input cells. `--cache-ttl` /
   `PETALTONGUE_CACHE_TTL` sets `Cache-Control` headers. Markdown cells via
@@ -424,12 +426,12 @@ protocols (via `audio.play` capability discovery), overlay mode (display
 capability Phase 2), egui texture resolution (TextureResolver with
 `egui::Shape::image`), `crypto.sign` delegation to security provider for scene
 signing (currently local BLAKE3), Phase 3 self-hosted sporePrint (requires
-petalTongue + Songbird + NestGate coordination). `backend=nestgate`
-is UNBLOCKED — NestGate Session 60 shipped `content.*` transport parity
-across all paths (SemanticRouter, isomorphic IPC, HTTP API). Live dashboard
-wires SSE topology stream (`/api/events`), primal grid, and NestGate-aware
-index routing (`GET /` resolves through `content.resolve("/")` when
-`backend=nestgate`, falling back to the compiled-in dashboard).
+petalTongue + Songbird + content provider coordination).
+`backend=content-provider` is UNBLOCKED — content backend uses capability-based
+socket discovery (`CONTENT_BACKEND_SOCKET` / `CONTENT_BACKEND_PROVIDER`).
+Live dashboard wires SSE topology stream (`/api/events`), primal grid, and
+content-aware index routing (`GET /` resolves through `content.resolve("/")` when
+`backend=content-provider`, falling back to the compiled-in dashboard).
 
 ## Stadial Readiness (May 17, 2026)
 
@@ -455,7 +457,7 @@ When petalTongue is unavailable:
 - **Springs**: Springs that render dashboards (esotericWebb, lithoSpore) fall
   back to text/JSON output or cached state. No data loss.
 - **projectNUCLEUS**: Static site serving stops if petalTongue hosts sporePrint.
-  Content remains in NestGate or filesystem; another HTTP server can serve it.
+  Content remains in content provider or filesystem; another HTTP server can serve it.
 - **Composition graphs**: `petaltongue_deploy.toml` marks petalTongue as
   non-critical. biomeOS skips visualization steps when petalTongue is absent.
 - **IPC callers**: Get connection refused → standard JSON-RPC retry/fallback.
@@ -466,7 +468,7 @@ When petalTongue is unavailable:
 |---------|-------------|--------|
 | **esotericWebb** | Game UI rendering via `visualization.render.scene` + `motor.*` | Functional |
 | **lithoSpore** | Validation dashboard via `visualization.render.dashboard` + `/api/events` SSE | Planned |
-| **projectNUCLEUS** | sporePrint sovereign serving via `web` mode + NestGate backend | Functional |
+| **projectNUCLEUS** | sporePrint sovereign serving via `web` mode + content backend | Functional |
 | **wetSpring** | Fermentation visualization via `visualization.render.grammar` | Planned |
 
 ### Platform Audio Dependencies
