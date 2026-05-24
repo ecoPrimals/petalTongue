@@ -351,15 +351,23 @@ impl TrioAvailability {
 
 /// Discover a socket providing a given capability.
 ///
-/// Uses runtime scanning of `$XDG_RUNTIME_DIR/biomeos/` and `/tmp/` for sockets
-/// that advertise the requested capability. Returns `None` if no provider found.
+/// Resolution:
+/// 1. `<CAPABILITY_UPPER>_SOCKET` env var (e.g. `DAG_SESSION_SOCKET`)
+/// 2. `PROVENANCE_TRIO_SOCKET` env var (shared for all trio operations)
+/// 3. Scan `$XDG_RUNTIME_DIR/biomeos/` for `.sock` files whose stem
+///    contains the capability domain prefix.
 fn discover_capability_socket(capability: &str) -> Option<String> {
     let runtime_dir = std::env::var("XDG_RUNTIME_DIR")
         .unwrap_or_else(|_| petal_tongue_core::constants::LEGACY_TMP_PREFIX.to_string());
 
-    // Check environment override: <CAPABILITY_UPPER>_SOCKET
     let env_key = format!("{}_SOCKET", capability.replace('.', "_").to_uppercase());
     if let Ok(path) = std::env::var(&env_key)
+        && std::path::Path::new(&path).exists()
+    {
+        return Some(path);
+    }
+
+    if let Ok(path) = std::env::var("PROVENANCE_TRIO_SOCKET")
         && std::path::Path::new(&path).exists()
     {
         return Some(path);
@@ -371,8 +379,6 @@ fn discover_capability_socket(capability: &str) -> Option<String> {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.extension().is_some_and(|ext| ext == "sock") {
-                // Socket found; would need to query capability.list to confirm
-                // For now, use naming convention as hint
                 let name = path.file_stem().unwrap_or_default().to_string_lossy();
                 if capability_matches_socket_name(capability, &name) {
                     return Some(path.to_string_lossy().to_string());
@@ -384,14 +390,19 @@ fn discover_capability_socket(capability: &str) -> Option<String> {
     None
 }
 
-/// Heuristic: does a socket name suggest it provides a capability?
+/// Check if a socket name suggests it provides a given capability.
+///
+/// Uses the domain prefix (the part before the first `.`) from the
+/// capability string. Provenance trio methods have well-known domain
+/// aliases — `contribution.*` maps to `braid`, `entry.*` maps to `spine`.
 fn capability_matches_socket_name(capability: &str, socket_name: &str) -> bool {
-    match capability {
-        "dag.session" | "dag.vertex.create" => socket_name.contains("dag"),
-        "braid.create" | "contribution.record" => socket_name.contains("braid"),
-        "spine.create" | "entry.append" => socket_name.contains("spine"),
-        _ => false,
-    }
+    let domain = capability.split('.').next().unwrap_or(capability);
+    let effective_domain = match domain {
+        "contribution" => "braid",
+        "entry" => "spine",
+        other => other,
+    };
+    socket_name.contains(effective_domain)
 }
 
 /// Compute a BLAKE3 hash of data (returns first 8 bytes as u64 for display).

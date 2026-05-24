@@ -725,7 +725,7 @@ pub fn handle_texture_attach(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
         source = %attach.source,
         width = attach.width,
         height = attach.height,
-        "Texture attached (placeholder — memfd mapping pending display capability Phase 2)"
+        "Texture attached (zero-init buffer — memfd shared-memory pending)"
     );
 
     JsonRpcResponse::success(

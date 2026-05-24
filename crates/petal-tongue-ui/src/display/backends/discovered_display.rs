@@ -133,14 +133,17 @@ impl DiscoveredDisplayBackend {
         }
     }
 
-    /// Discover biomeOS socket path
+    /// Discover display orchestrator socket path (role-based).
+    ///
+    /// Resolution: `DISPLAY_BACKEND_SOCKET` env > `BIOMEOS_SOCKET` env
+    /// > XDG runtime dir probe > legacy fallback.
     fn discover_biomeos_socket() -> Result<std::path::PathBuf> {
-        // 1. Environment variable
+        if let Ok(path) = std::env::var("DISPLAY_BACKEND_SOCKET") {
+            return Ok(path.into());
+        }
         if let Ok(path) = std::env::var("BIOMEOS_SOCKET") {
             return Ok(path.into());
         }
-
-        // 2. XDG runtime directory
         if let Ok(runtime_dir) = std::env::var("XDG_RUNTIME_DIR") {
             let path = std::path::PathBuf::from(runtime_dir).join(format!(
                 "{}.sock",
@@ -150,8 +153,6 @@ impl DiscoveredDisplayBackend {
                 return Ok(path);
             }
         }
-
-        // 3. Fallback: capability-based discovery via petal-tongue-core constants
         Ok(petal_tongue_core::constants::biomeos_legacy_socket())
     }
 
