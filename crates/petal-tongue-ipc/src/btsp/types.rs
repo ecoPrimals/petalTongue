@@ -192,15 +192,13 @@ impl BtspHandshakeConfig {
     /// production value (non-empty, not `"default"`).
     ///
     /// Provider socket resolution (first match wins):
-    /// `BTSP_PROVIDER_SOCKET` > `BEARDOG_SOCKET` (legacy) > `SECURITY_PROVIDER_SOCKET` >
-    /// `CRYPTO_PROVIDER_SOCKET` > `SECURITY_SOCKET` >
-    /// `$BIOMEOS_SOCKET_DIR/{provider}-{family_id}.sock`.
+    /// `BTSP_PROVIDER_SOCKET` > `SECURITY_PROVIDER_SOCKET` > `CRYPTO_PROVIDER_SOCKET` >
+    /// `SECURITY_SOCKET` > `$BIOMEOS_SOCKET_DIR/{provider}-{family_id}.sock`.
     #[must_use]
     pub fn from_env() -> Option<Self> {
         let fid = raw_family_id_from_env().filter(|s| is_production_family_id(Some(s)))?;
 
         let provider_socket = std::env::var("BTSP_PROVIDER_SOCKET")
-            .or_else(|_| std::env::var("BEARDOG_SOCKET"))
             .or_else(|_| std::env::var("SECURITY_PROVIDER_SOCKET"))
             .or_else(|_| std::env::var("CRYPTO_PROVIDER_SOCKET"))
             .or_else(|_| std::env::var("SECURITY_SOCKET"))
@@ -237,12 +235,12 @@ impl BtspHandshakeConfig {
     /// (hex string from `nucleus_launcher.sh`), trims whitespace, and
     /// base64-encodes the bytes for the wire format.
     ///
-    /// Resolution: `BEARDOG_FAMILY_SEED` (legacy) > `FAMILY_SEED`.
+    /// Resolution: `BTSP_FAMILY_SEED` > `FAMILY_SEED`.
     /// Returns `None` if neither is set.
     #[must_use]
     pub fn load_family_seed(&self) -> Option<String> {
         use base64::Engine;
-        std::env::var("BEARDOG_FAMILY_SEED")
+        std::env::var("BTSP_FAMILY_SEED")
             .or_else(|_| std::env::var("FAMILY_SEED"))
             .ok()
             .map(|s| s.trim().to_owned())

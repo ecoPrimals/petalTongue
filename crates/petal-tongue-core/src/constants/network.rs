@@ -35,7 +35,6 @@ pub const DEFAULT_DISPLAY_BACKEND_PORT: u16 = 9001;
 ///
 /// Used by primalSpring Tier-5 TCP probing when UDS and capability discovery
 /// are unavailable. Overridable via `PETALTONGUE_TCP_PORT` env var.
-/// Moved from 9600 → 9900 to avoid conflict with rhizoCrypt tarpc (9600).
 pub const ECOSYSTEM_TCP_FALLBACK_PORT: u16 = 9900;
 
 /// Default ports for HTTP discovery when `PETALTONGUE_DISCOVERY_PORTS` / `DISCOVERY_PORTS` not set.

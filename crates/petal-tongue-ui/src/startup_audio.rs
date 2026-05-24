@@ -341,7 +341,7 @@ impl StartupAudio {
 
                 match play_audio_pure_rust(&signature) {
                     Ok(()) => {
-                        info!("✅ Signature tone played with pure Rust (rodio)");
+                        info!("Signature tone played with pure Rust audio");
                     }
                     Err(e) => {
                         warn!(
@@ -368,7 +368,7 @@ impl StartupAudio {
                         Bytes::from_static(Self::get_embedded_music()),
                     ) {
                         Ok(()) => {
-                            info!("✅ Embedded startup music played successfully (rodio)");
+                            info!("Embedded startup music played successfully");
                         }
                         Err(e) => {
                             warn!("⚠️ Failed to play embedded music: {}", e);
@@ -379,7 +379,7 @@ impl StartupAudio {
 
                     match play_file_pure_rust(&path) {
                         Ok(()) => {
-                            info!("✅ External startup music played successfully (rodio)");
+                            info!("External startup music played successfully");
                         }
                         Err(e) => {
                             warn!("⚠️ Failed to play external music: {}", e);
