@@ -18,10 +18,14 @@ categories = ["visualization", "wasm"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+console_error_panic_hook = "0.1.7"
 petal-tongue-scene = { path = "../petal-tongue-scene" }
 petal-tongue-types = { path = "../petal-tongue-types" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 wasm-bindgen = "0.2"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Oz"]
 
 [dev-dependencies]
