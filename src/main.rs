@@ -59,6 +59,10 @@ struct Cli {
     #[arg(long, default_value = "pretty")]
     log_format: String,
 
+    /// Family namespace for multi-gate deployments (also settable via FAMILY_ID env)
+    #[arg(long, env = "FAMILY_ID")]
+    family_id: Option<String>,
+
     #[command(subcommand)]
     command: Commands,
 }
@@ -218,6 +222,7 @@ fn main() -> Result<(), AppError> {
     tracing::info!(
         version = env!("CARGO_PKG_VERSION"),
         command = ?cli.command,
+        family_id = cli.family_id.as_deref().unwrap_or("(env)"),
         "🌸 petalTongue starting"
     );
 

@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-PETALTONGUE="$PROJECT_ROOT/target/release/petaltongue"
+PETALTONGUE="${PETALTONGUE_BIN:-petaltongue}"
 
 # Colors for output
 GREEN='\033[0;32m'
