@@ -193,25 +193,25 @@ cargo build --release
 
 **Live Ecosystem**:
 ```bash
-./target/release/petaltongue ui \
+petaltongue ui \
   --scenario sandbox/scenarios/live-ecosystem.json
 ```
 
 **Graph Builder**:
 ```bash
-./target/release/petaltongue ui \
+petaltongue ui \
   --scenario sandbox/scenarios/graph-studio.json
 ```
 
 **RootPulse**:
 ```bash
-./target/release/petaltongue ui \
+petaltongue ui \
   --scenario sandbox/scenarios/rootpulse-demo.json
 ```
 
 **Neural API**:
 ```bash
-./target/release/petaltongue ui \
+petaltongue ui \
   --scenario sandbox/scenarios/neural-api-test.json
 ```
 
