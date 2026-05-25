@@ -28,15 +28,16 @@ This document describes all environment variables used by petalTongue.
 **Type**: String  
 **Default**: `nat0` (development / standalone)  
 **Required**: No  
-**Example**: `FAMILY_ID=staging`
+**Example**: `FAMILY_ID=staging`  
+**CLI flag**: `--family-id <value>` (global, before subcommand)
 
 Family identifier for this petalTongue instance. Controls both identity and BTSP security posture.
 
-**BTSP Phase 1 behavior** (per `BTSP_PROTOCOL_STANDARD.md`):
+**BTSP behavior** (per `BTSP_PROTOCOL_STANDARD.md`):
 - **Not set / empty / `"default"`**: Development posture — socket is `petaltongue.sock`, no BTSP handshake.
-- **Set to a non-default value** (e.g. `staging`, `prod-a`): Production posture — socket becomes `petaltongue-{family_id}.sock`, domain symlink `visualization-{family_id}.sock`. BTSP Phase 2 handshake required when BearDog enforces it.
+- **Set to a non-default value** (e.g. `staging`, `prod-a`): Production posture — socket becomes `petaltongue-{family_id}.sock`, domain symlink `visualization-{family_id}.sock`. BTSP handshake required when the security provider enforces it.
 
-**Precedence**: `PETALTONGUE_FAMILY_ID` > `FAMILY_ID` (primal-specific override per Self-Knowledge Standard).
+**Precedence**: `--family-id` CLI flag > `PETALTONGUE_FAMILY_ID` env > `FAMILY_ID` env (primal-specific override per Self-Knowledge Standard).
 
 ---
 
@@ -81,6 +82,111 @@ Use `PETALTONGUE_SOCKET` for explicit multi-instance socket placement.
 Standard XDG runtime directory for socket placement. This is the standard Unix location for user-level runtime files.
 
 **TRUE PRIMAL Principle**: Uses standard Unix conventions rather than hardcoded paths.
+
+---
+
+## Web Mode Configuration
+
+### **PETALTONGUE_DOCROOT**
+**Type**: String (directory path)  
+**Default**: None  
+**Required**: No  
+**CLI flag**: `--docroot <path>` (web subcommand)  
+**Example**: `PETALTONGUE_DOCROOT=/var/www/sporeprint`
+
+Static file document root for catch-all serving. When set, petalTongue serves
+files from this directory for any HTTP path not matched by API routes.
+
+### **PETALTONGUE_WEB_BACKEND**
+**Type**: String  
+**Default**: `filesystem`  
+**Required**: No  
+**CLI flag**: `--backend <value>` (web subcommand)  
+**Example**: `PETALTONGUE_WEB_BACKEND=content-provider`
+
+Content backend strategy: `filesystem` (local docroot), `content-provider` or
+`nestgate` (capability-based content backend via UDS).
+
+### **PETALTONGUE_STRIP_SOURCES**
+**Type**: Boolean  
+**Default**: `false`  
+**CLI flag**: `--strip-sources` (web subcommand)  
+**Example**: `PETALTONGUE_STRIP_SOURCES=1`
+
+Hide code cells when rendering `.ipynb` notebooks (outputs only).
+
+### **PETALTONGUE_CACHE_TTL**
+**Type**: Integer (seconds)  
+**Default**: None (no Cache-Control header)  
+**CLI flag**: `--cache-ttl <seconds>` (web subcommand)  
+**Example**: `PETALTONGUE_CACHE_TTL=3600`
+
+Cache-Control max-age for static file responses.
+
+### **PETALTONGUE_SPA**
+**Type**: Boolean  
+**Default**: `false`  
+**CLI flag**: `--spa` (web subcommand)  
+**Example**: `PETALTONGUE_SPA=1`
+
+SPA mode: serve `index.html` for missing paths (client-side routing support
+for React/Vue/Svelte apps).
+
+### **PETALTONGUE_ALLOWED_ORIGINS**
+**Type**: String (comma-separated)  
+**Default**: None  
+**CLI flag**: `--allowed-origins <origin>[,<origin>]` (web subcommand)  
+**Example**: `PETALTONGUE_ALLOWED_ORIGINS=https://example.com,http://localhost:3000`
+
+CORS allowed origins. Use `*` for all origins (development only).
+
+---
+
+## Capability-Based Discovery (Wave 47)
+
+### **CONTENT_BACKEND_SOCKET**
+**Type**: String (socket path)  
+**Default**: None (falls back to `NESTGATE_SOCKET` or capability discovery)  
+**Example**: `CONTENT_BACKEND_SOCKET=/run/user/1000/biomeos/content.sock`
+
+Direct socket path for the content backend provider. Prioritized over legacy
+`NESTGATE_SOCKET` and provider-name construction.
+
+### **CONTENT_BACKEND_PROVIDER**
+**Type**: String  
+**Default**: `nestgate`  
+**Example**: `CONTENT_BACKEND_PROVIDER=content-provider`
+
+Provider name used to construct the socket path when neither
+`CONTENT_BACKEND_SOCKET` nor `NESTGATE_SOCKET` is set.
+
+### **DISPLAY_BACKEND_SOCKET**
+**Type**: String (socket path)  
+**Default**: None (falls back to `BIOMEOS_SOCKET` discovery)  
+**Example**: `DISPLAY_BACKEND_SOCKET=/run/user/1000/biomeos/display.sock`
+
+Direct socket path for the display orchestrator backend.
+
+### **BTSP_PROVIDER_SOCKET**
+**Type**: String (socket path)  
+**Default**: None (falls back to `SECURITY_PROVIDER_SOCKET` > `CRYPTO_PROVIDER_SOCKET` > `SECURITY_SOCKET`)  
+**Example**: `BTSP_PROVIDER_SOCKET=/run/user/1000/biomeos/btsp.sock`
+
+Socket path for the BTSP security provider used during handshake delegation.
+
+### **BTSP_FAMILY_SEED**
+**Type**: String  
+**Default**: None  
+**Example**: `BTSP_FAMILY_SEED=deadbeef...`
+
+Family seed for BTSP key derivation. Prioritized over legacy `FAMILY_SEED`.
+
+### **PROVENANCE_TRIO_SOCKET**
+**Type**: String (socket path)  
+**Default**: None (falls back to domain-prefix socket discovery)  
+**Example**: `PROVENANCE_TRIO_SOCKET=/run/user/1000/biomeos/provenance.sock`
+
+Override socket path for the provenance trio (DAG, Braid, Spine) services.
 
 ---
 
@@ -547,7 +653,7 @@ BLAKE3 keyed-hash key for signing scene pushes. When set, every
 `visualization.scene.verify` method becomes functional.
 
 **NUCLEUS Two-Tier Crypto**: This is a *visualization purpose key* delegated by
-BearDog. See `NUCLEUS_TWO_TIER_CRYPTO_MODEL.md` for key hierarchy.
+the security provider. See `NUCLEUS_TWO_TIER_CRYPTO_MODEL.md` for key hierarchy.
 
 **When set**: Scene pushes are signed; compositions can verify authenticity.  
 **When unset**: Signing is skipped; `signed: false` in responses, verify returns `false`.
@@ -662,7 +768,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: April 30, 2026  
+**Last Updated**: May 25, 2026 (Wave 49)  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 

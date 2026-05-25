@@ -88,6 +88,7 @@ ui = { description = "Desktop GUI (egui)", subcommand = "ui" }
 tui = { description = "Terminal UI (ratatui)", subcommand = "tui" }
 web = { description = "Web dashboard", subcommand = "web" }
 headless = { description = "Headless mode (no GUI)", subcommand = "headless" }
+live = { description = "Desktop GUI + IPC (NUCLEUS interactive)", subcommand = "live" }
 status = { description = "Health and capability info", subcommand = "status" }
 
 [organism.signals]

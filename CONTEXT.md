@@ -44,10 +44,12 @@ does not own computation, storage, or security domains.
 ## IPC Surface
 
 JSON-RPC 2.0 over Unix domain sockets (primary) and TCP (`--port`).
-46 methods across domains: `visualization.*` (incl. `visualization.render.graph`,
-`visualization.session.*`, `visualization.texture.upload/attach`),
+55 methods across domains: `visualization.*` (render, stream, grammar, dashboard,
+scene, export, validate, session, texture, introspect, panels, showing, dismiss),
 `interaction.*`, `health.*`, `capabilities.*`, `capability.*`, `identity.*`,
-`ui.*`, `motor.*`, `audio.*`, `lifecycle.*`, `proprioception.get`.
+`ui.*`, `motor.*`, `audio.*`, `lifecycle.*`, `topology.get`,
+`proprioception.get`, `provider.register_capability`, `auth.*`, `btsp.*`,
+`primal.announce`.
 
 BTSP Phase 1 complete: family-scoped socket naming, insecure guard,
 domain symlinks (`visualization.sock`). BTSP Phase 2 complete: security
@@ -119,7 +121,7 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # 6,200+ tests, ~90% coverage
+cargo test --workspace --all-features     # 6,321+ tests, ~90% coverage
 ```
 
 ## Current State
