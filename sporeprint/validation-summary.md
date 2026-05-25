@@ -1,6 +1,6 @@
 +++
 title = "petalTongue Validation Summary"
-description = "Universal user interface primal — 6,297+ tests, 55 IPC methods, 18 crates, 7 modes, pure Rust"
+description = "Universal user interface primal — 6,321+ tests, 55 IPC methods, 18 crates, 7 modes, pure Rust"
 date = 2026-05-20
 
 [taxonomies]
@@ -11,7 +11,7 @@ springs = []
 ## Status
 
 - **v1.6.6** — workspace edition 2024, `forbid(unsafe_code)`
-- **6,297+ tests** passing, 0 failed (unit + integration + doc + property)
+- **6,321+ tests** passing, 0 failed (unit + integration + doc + property)
 - **55 IPC methods** across 10 domain categories (health, identity, auth,
   capabilities, visualization, interaction, audio, UI, motor, BTSP)
 - **18 workspace crates** (core, IPC, graph, scene, discovery, adapters,
@@ -40,7 +40,7 @@ springs = []
 ## Web Mode (S3 Shadow Parity)
 
 - **Static file serving** from `--docroot` with directory index (`ServeDir`)
-- **NestGate backend** (`--backend nestgate`): content-addressed via `content.resolve`
+- **Content backend** (`--backend content-provider`): capability-based content via `content.resolve` (legacy `--backend nestgate` still accepted)
 - **SPA catch-all** (`--spa`): client-side routing support
 - **CORS** (`--allowed-origins`): configurable origin allowlist
 - **Gzip + Brotli compression** via `CompressionLayer`
@@ -72,7 +72,7 @@ springs = []
 |---------|-------------|
 | esotericWebb | Game UI via `visualization.render.scene` + `motor.*` |
 | lithoSpore | Validation dashboard via `visualization.render.dashboard` + SSE |
-| projectNUCLEUS | sporePrint sovereign serving via `web` mode + NestGate |
+| projectNUCLEUS | sporePrint sovereign serving via `web` mode + content backend |
 | wetSpring | Fermentation visualization via `visualization.render.grammar` |
 
 ## See Also
