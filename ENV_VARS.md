@@ -11,11 +11,15 @@ This document describes all environment variables used by petalTongue.
 **Example**: `PETALTONGUE_SOCKET=/run/user/1000/biomeos/petaltongue.sock`
 
 **HIGHEST PRIORITY** socket path override. When set, petalTongue will use this exact socket path.
+Also settable via the global `--socket` CLI flag (Wave 54). The `nucleus_launcher.sh` passes
+`--socket $SOCKET_DIR/petaltongue-${FAMILY_ID}.sock` to every primal.
 
-**biomeOS Socket Standard** (per `IPC_COMPLIANCE_MATRIX.md` v1.3):
-- Priority 1: `PETALTONGUE_SOCKET` (explicit override)
-- Priority 2: `$XDG_RUNTIME_DIR/biomeos/petaltongue.sock` (standard)
-- Priority 3: `/tmp/biomeos/petaltongue.sock` (fallback)
+**Resolution priority** (per `IPC_COMPLIANCE_MATRIX.md` v1.3):
+- Priority 1: Subcommand `--socket` flag (e.g. `petaltongue server --socket /path`)
+- Priority 2: Global `--socket` flag (e.g. `petaltongue --socket /path server`)
+- Priority 3: `PETALTONGUE_SOCKET` env var
+- Priority 4: `$XDG_RUNTIME_DIR/biomeos/petaltongue.sock` (standard)
+- Priority 5: `/tmp/biomeos/petaltongue.sock` (fallback)
 
 **Use Cases**:
 - Atomic deployments with custom socket locations
@@ -768,7 +772,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: May 25, 2026 (Wave 49)  
+**Last Updated**: May 27, 2026 (Wave 54 — global `--socket`/`--port` CLI flags)  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 

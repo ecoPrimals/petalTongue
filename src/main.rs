@@ -63,6 +63,14 @@ struct Cli {
     #[arg(long, env = "FAMILY_ID")]
     family_id: Option<String>,
 
+    /// Unix domain socket path (global; subcommand --socket takes precedence)
+    #[arg(long, env = "PETALTONGUE_SOCKET")]
+    socket: Option<String>,
+
+    /// TCP port (global; subcommand --port takes precedence)
+    #[arg(long)]
+    port: Option<u16>,
+
     #[command(subcommand)]
     command: Commands,
 }
@@ -164,7 +172,7 @@ enum Commands {
 
     /// Run IPC server (Unix socket JSON-RPC) without display
     ///
-    /// Socket path priority: --socket flag > PETALTONGUE_SOCKET env > XDG default
+    /// Socket path priority: subcommand --socket > global --socket > PETALTONGUE_SOCKET env > XDG default
     Server {
         /// TCP port for newline-delimited JSON-RPC (optional, UDS always active)
         #[arg(long)]
@@ -214,15 +222,23 @@ enum Commands {
     },
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "CLI dispatch aggregates global + subcommand flags"
+)]
 fn main() -> Result<(), AppError> {
     let cli = Cli::parse();
 
     init_tracing(&cli.log_level, &cli.log_format)?;
 
+    let global_socket = cli.socket.clone();
+    let global_port = cli.port;
+
     tracing::info!(
         version = env!("CARGO_PKG_VERSION"),
         command = ?cli.command,
         family_id = cli.family_id.as_deref().unwrap_or("(env)"),
+        socket = global_socket.as_deref().unwrap_or("(default)"),
         "🌸 petalTongue starting"
     );
 
@@ -241,10 +257,14 @@ fn main() -> Result<(), AppError> {
         .map_err(|e| AppError::Other(format!("Failed to create tokio runtime: {e}")))?;
 
     let (cli_tcp_port, cli_bind_host) = match &cli.command {
-        Commands::Server { port, bind, .. } | Commands::Live { port, bind, .. } => {
-            (*port, parse_ipc_bind_host(bind.as_deref()))
-        }
-        _ => (None, std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST)),
+        Commands::Server { port, bind, .. } | Commands::Live { port, bind, .. } => (
+            (*port).or(global_port),
+            parse_ipc_bind_host(bind.as_deref()),
+        ),
+        _ => (
+            global_port,
+            std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST),
+        ),
     };
 
     // Async setup: config, data service, discovery registration
@@ -291,22 +311,30 @@ fn main() -> Result<(), AppError> {
             bind,
             socket,
         } => {
+            let merged_socket = socket.or(global_socket);
+            let merged_port = port.or(global_port);
             let bind_host = parse_ipc_bind_host(bind.as_deref());
-            tracing::info!(mode = "live", tcp_port = ?port, ?bind_host, socket = ?socket, "Launching NUCLEUS interactive mode (IPC + GUI)");
+            tracing::info!(mode = "live", tcp_port = ?merged_port, ?bind_host, socket = ?merged_socket, "Launching NUCLEUS interactive mode (IPC + GUI)");
             live_mode::run_on_main_thread(
                 scenario,
                 no_audio,
                 &data_service,
-                port,
+                merged_port,
                 bind_host,
-                socket,
+                merged_socket,
                 &runtime,
             )
         }
         #[cfg(not(feature = "ui"))]
         Commands::Live { .. } => Err(AppError::UiNotAvailable),
 
-        other => runtime.block_on(dispatch_async(other, config, data_service)),
+        other => runtime.block_on(dispatch_async(
+            other,
+            config,
+            data_service,
+            global_socket,
+            global_port,
+        )),
     };
 
     match result {
@@ -326,6 +354,8 @@ async fn dispatch_async(
     command: Commands,
     config: Config,
     data_service: std::sync::Arc<data_service::DataService>,
+    global_socket: Option<String>,
+    global_port: Option<u16>,
 ) -> Result<(), AppError> {
     match command {
         Commands::Tui {
@@ -368,6 +398,7 @@ async fn dispatch_async(
                 allowed_origins,
                 config,
                 data_service,
+                global_socket,
             )
             .await
         }
@@ -376,7 +407,9 @@ async fn dispatch_async(
             bind,
             workers,
         } => {
-            let bind_addr = resolve_bind(bind, port, || config.network.headless_addr().to_string());
+            let bind_addr = resolve_bind(bind, port.or(global_port), || {
+                config.network.headless_addr().to_string()
+            });
             tracing::info!(
                 mode = "headless",
                 bind = %bind_addr,
@@ -386,9 +419,11 @@ async fn dispatch_async(
             headless_mode::run(&bind_addr, workers, data_service).await
         }
         Commands::Server { port, bind, socket } => {
+            let merged_socket = socket.or(global_socket);
+            let merged_port = port.or(global_port);
             let bind_host = parse_ipc_bind_host(bind.as_deref());
-            tracing::info!(mode = "server", tcp_port = ?port, ?bind_host, socket = ?socket, "Launching IPC server (no display)");
-            server_mode::run(data_service, port, bind_host, socket).await
+            tracing::info!(mode = "server", tcp_port = ?merged_port, ?bind_host, socket = ?merged_socket, "Launching IPC server (no display)");
+            server_mode::run(data_service, merged_port, bind_host, merged_socket).await
         }
         Commands::Status { verbose, format } => {
             tracing::info!(
@@ -425,6 +460,7 @@ async fn dispatch_web(
     allowed_origins: Vec<String>,
     config: Config,
     data_service: std::sync::Arc<data_service::DataService>,
+    global_socket: Option<String>,
 ) -> Result<(), AppError> {
     let bind_addr = resolve_bind(bind, port, || config.network.web_addr().to_string());
     let effective_docroot = docroot.or_else(|| {
@@ -471,7 +507,7 @@ async fn dispatch_web(
                 ipc_service,
                 ipc_tcp,
                 std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST),
-                None,
+                global_socket,
             )
             .await
             {
