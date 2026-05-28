@@ -67,7 +67,7 @@ impl PetalTongueConfig {
     /// Get `BiomeOS` URL from environment or config
     #[must_use]
     pub fn biomeos_url(&self) -> String {
-        std::env::var("BIOMEOS_URL")
+        std::env::var(crate::constants::BIOMEOS_URL)
             .ok()
             .or_else(|| self.biomeos_url.clone())
             .unwrap_or_else(|| {

@@ -60,7 +60,7 @@ impl BiomeOsBackend {
     pub fn from_env() -> Result<Self, DiscoveryError> {
         use crate::platform_dirs;
 
-        if let Ok(socket_path) = std::env::var("BIOMEOS_NEURAL_API_SOCKET") {
+        if let Ok(socket_path) = std::env::var(crate::constants::BIOMEOS_NEURAL_API_SOCKET) {
             let path = std::path::PathBuf::from(&socket_path);
             if path.exists() {
                 return Ok(Self::new(socket_path));
@@ -116,7 +116,7 @@ impl BiomeOsBackend {
     }
 
     fn derive_websocket_url() -> String {
-        if let Ok(url) = std::env::var("BIOMEOS_WS_ENDPOINT") {
+        if let Ok(url) = std::env::var(crate::constants::BIOMEOS_WS_ENDPOINT) {
             return url;
         }
         crate::constants::default_biomeos_ws_topology_url()

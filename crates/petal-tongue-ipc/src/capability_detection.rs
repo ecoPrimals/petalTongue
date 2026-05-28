@@ -14,7 +14,9 @@ pub fn detect_active_modalities() -> Vec<CapabilityTaxonomy> {
 
     modalities.push(CapabilityTaxonomy::UITerminal);
 
-    if std::env::var("DISPLAY").is_ok() || std::env::var("WAYLAND_DISPLAY").is_ok() {
+    if std::env::var(petal_tongue_core::constants::DISPLAY).is_ok()
+        || std::env::var(petal_tongue_core::constants::WAYLAND_DISPLAY).is_ok()
+    {
         modalities.push(CapabilityTaxonomy::UIVisualization);
     }
 

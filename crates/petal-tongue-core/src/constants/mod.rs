@@ -11,6 +11,7 @@
 //! - [`thresholds`] — health warnings; [`tufte_tolerances`] — visualization
 
 mod display;
+mod env_vars;
 mod network;
 mod timeouts;
 
@@ -18,6 +19,7 @@ pub mod thresholds;
 pub mod tufte_tolerances;
 
 pub use display::*;
+pub use env_vars::*;
 pub use network::*;
 pub use timeouts::*;
 

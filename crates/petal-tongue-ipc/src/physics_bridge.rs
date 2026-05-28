@@ -249,14 +249,14 @@ fn discover_compute_socket() -> Result<String, ComputeBridgeError> {
     }
 
     // Escape hatch: explicit env override
-    if let Ok(path) = std::env::var("COMPUTE_SOCKET") {
+    if let Ok(path) = std::env::var(petal_tongue_core::constants::COMPUTE_SOCKET) {
         return Ok(path);
     }
 
     // Legacy: filesystem scanning (S139 dual-write layout)
-    let runtime_dir = std::env::var("XDG_RUNTIME_DIR")
+    let runtime_dir = std::env::var(petal_tongue_core::constants::XDG_RUNTIME_DIR)
         .unwrap_or_else(|_| petal_tongue_core::constants::LEGACY_TMP_PREFIX.to_string());
-    let socket_name = std::env::var("PHYSICS_COMPUTE_SOCKET_NAME")
+    let socket_name = std::env::var(petal_tongue_core::constants::PHYSICS_COMPUTE_SOCKET_NAME)
         .unwrap_or_else(|_| "physics-compute".to_string());
 
     let candidates = [

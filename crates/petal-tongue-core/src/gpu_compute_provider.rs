@@ -118,7 +118,7 @@ impl GpuComputeProvider {
         }
 
         // Escape hatch: explicit env overrides
-        if let Ok(endpoint) = std::env::var("GPU_RENDERING_ENDPOINT") {
+        if let Ok(endpoint) = std::env::var(crate::constants::GPU_RENDERING_ENDPOINT) {
             tracing::info!("Found GPU rendering service via environment: {endpoint}");
             return Ok(ComputeServiceInfo {
                 id: "discovered-gpu-renderer".to_string(),
@@ -128,7 +128,7 @@ impl GpuComputeProvider {
             });
         }
 
-        if let Ok(endpoint) = std::env::var("COMPUTE_PROVIDER_ENDPOINT") {
+        if let Ok(endpoint) = std::env::var(crate::constants::COMPUTE_PROVIDER_ENDPOINT) {
             tracing::info!("Found compute provider via environment: {endpoint}");
             return Ok(ComputeServiceInfo {
                 id: "discovered-compute-provider".to_string(),
@@ -143,7 +143,7 @@ impl GpuComputeProvider {
         }
 
         // Legacy: ecosystem manifest scan (S139 dual-write layout)
-        let runtime_dir = std::env::var("XDG_RUNTIME_DIR")
+        let runtime_dir = std::env::var(crate::constants::XDG_RUNTIME_DIR)
             .unwrap_or_else(|_| crate::constants::LEGACY_TMP_PREFIX.to_string());
         let discovery_dir = format!("{runtime_dir}/ecoPrimals/discovery");
         if let Ok(entries) = std::fs::read_dir(&discovery_dir) {
@@ -187,7 +187,7 @@ impl GpuComputeProvider {
         }
 
         // Final fallback: GPU_COMPUTE_ENDPOINT
-        if std::env::var("GPU_COMPUTE_ENDPOINT").is_ok() {
+        if std::env::var(crate::constants::GPU_COMPUTE_ENDPOINT).is_ok() {
             let endpoint = crate::constants::default_gpu_compute_endpoint();
             if !endpoint.is_empty() {
                 tracing::info!("Using GPU compute endpoint from env: {endpoint}");

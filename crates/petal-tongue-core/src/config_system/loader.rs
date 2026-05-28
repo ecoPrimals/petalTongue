@@ -27,7 +27,7 @@ impl Config {
         let mut config = Self::default();
 
         // Try to load from file (if specified or in XDG config dir)
-        if let Ok(path) = std::env::var("PETALTONGUE_CONFIG") {
+        if let Ok(path) = std::env::var(crate::constants::PETALTONGUE_CONFIG) {
             config = config.merge(Self::from_file(&path)?);
         } else if let Ok(xdg_config) = Self::xdg_config_path()
             && xdg_config.exists()
@@ -81,37 +81,37 @@ impl Config {
     /// Apply environment variable overrides
     fn apply_env_overrides(&mut self) -> Result<(), ConfigError> {
         // Network overrides
-        if let Ok(port) = std::env::var("PETALTONGUE_WEB_PORT") {
+        if let Ok(port) = std::env::var(crate::constants::PETALTONGUE_WEB_PORT) {
             self.network.web_port = port
                 .parse()
                 .map_err(|_| ConfigError::EnvError("Invalid WEB_PORT".to_string()))?;
         }
-        if let Ok(port) = std::env::var("PETALTONGUE_HEADLESS_PORT") {
+        if let Ok(port) = std::env::var(crate::constants::PETALTONGUE_HEADLESS_PORT) {
             self.network.headless_port = port
                 .parse()
                 .map_err(|_| ConfigError::EnvError("Invalid HEADLESS_PORT".to_string()))?;
         }
 
         // Web overrides
-        if let Ok(docroot) = std::env::var("PETALTONGUE_DOCROOT") {
+        if let Ok(docroot) = std::env::var(crate::constants::PETALTONGUE_DOCROOT) {
             self.web.docroot = Some(PathBuf::from(docroot));
         }
-        if let Ok(ttl) = std::env::var("PETALTONGUE_CACHE_TTL") {
+        if let Ok(ttl) = std::env::var(crate::constants::PETALTONGUE_CACHE_TTL) {
             self.web.cache_ttl_secs = ttl
                 .parse()
                 .map_err(|_| ConfigError::EnvError("Invalid CACHE_TTL".to_string()))?;
         }
-        if std::env::var("PETALTONGUE_STRIP_SOURCES")
+        if std::env::var(crate::constants::PETALTONGUE_STRIP_SOURCES)
             .is_ok_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
         {
             self.web.strip_sources = true;
         }
-        if std::env::var("PETALTONGUE_SPA")
+        if std::env::var(crate::constants::PETALTONGUE_SPA)
             .is_ok_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
         {
             self.web.spa = true;
         }
-        if let Ok(origins) = std::env::var("PETALTONGUE_ALLOWED_ORIGINS") {
+        if let Ok(origins) = std::env::var(crate::constants::PETALTONGUE_ALLOWED_ORIGINS) {
             self.web.allowed_origins = origins
                 .split(',')
                 .map(|s| s.trim().to_owned())
@@ -120,7 +120,7 @@ impl Config {
         }
 
         // Discovery overrides
-        if let Ok(timeout) = std::env::var("PETALTONGUE_DISCOVERY_TIMEOUT") {
+        if let Ok(timeout) = std::env::var(crate::constants::PETALTONGUE_DISCOVERY_TIMEOUT) {
             let ms = timeout
                 .parse()
                 .map_err(|_| ConfigError::EnvError("Invalid DISCOVERY_TIMEOUT".to_string()))?;

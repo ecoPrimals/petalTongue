@@ -28,18 +28,18 @@ impl ContentBackendClient {
     ///    `CONTENT_BACKEND_PROVIDER` env var (default `"nestgate"` for now)
     /// 3. `$XDG_RUNTIME_DIR/biomeos/{provider}-{family}.sock` fallback
     pub fn from_env() -> Self {
-        let socket_path = std::env::var("CONTENT_BACKEND_SOCKET")
-            .or_else(|_| std::env::var("NESTGATE_SOCKET"))
+        let socket_path = std::env::var(petal_tongue_core::constants::CONTENT_BACKEND_SOCKET)
+            .or_else(|_| std::env::var(petal_tongue_core::constants::NESTGATE_SOCKET))
             .map_or_else(
                 |_| {
-                    let provider = std::env::var("CONTENT_BACKEND_PROVIDER")
+                    let provider = std::env::var(petal_tongue_core::constants::CONTENT_BACKEND_PROVIDER)
                         .unwrap_or_else(|_| "nestgate".to_owned());
-                    let family = std::env::var("FAMILY_ID")
-                        .or_else(|_| std::env::var("PETALTONGUE_FAMILY_ID"))
+                    let family = std::env::var(petal_tongue_core::constants::FAMILY_ID)
+                        .or_else(|_| std::env::var(petal_tongue_core::constants::PETALTONGUE_FAMILY_ID))
                         .unwrap_or_else(|_| "default".to_owned());
-                    let dir = std::env::var("BIOMEOS_SOCKET_DIR").unwrap_or_else(|_| {
-                        let xdg =
-                            std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_owned());
+                    let dir = std::env::var(petal_tongue_core::constants::BIOMEOS_SOCKET_DIR).unwrap_or_else(|_| {
+                        let xdg = std::env::var(petal_tongue_core::constants::XDG_RUNTIME_DIR)
+                            .unwrap_or_else(|_| "/tmp".to_owned());
                         let seg = petal_tongue_core::constants::ecosystem_runtime_dir_name();
                         format!("{xdg}/{seg}")
                     });

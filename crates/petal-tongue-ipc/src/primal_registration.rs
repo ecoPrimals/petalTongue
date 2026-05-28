@@ -119,7 +119,7 @@ impl RegistrationClient {
     /// 3. Conventional path `/tmp/biomeos/<socket_base>.sock` when all else fails
     #[must_use]
     pub fn new() -> Self {
-        let socket_path = std::env::var("DISCOVERY_SOCKET").unwrap_or_else(|_| {
+        let socket_path = std::env::var(constants::DISCOVERY_SOCKET).unwrap_or_else(|_| {
             let socket_base = constants::discovery_service_socket_name();
             crate::socket_path::discover_primal_socket(&socket_base, None, None).map_or_else(
                 |_| {
