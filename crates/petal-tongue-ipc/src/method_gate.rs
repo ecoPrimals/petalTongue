@@ -15,6 +15,7 @@
 //! [`Enforced`]: EnforcementMode::Enforced
 
 use crate::json_rpc::{JsonRpcResponse, error_codes};
+use petal_tongue_core::constants;
 use serde_json::json;
 
 /// JSON-RPC error code: caller identity not established.
@@ -45,8 +46,8 @@ impl EnforcementMode {
     /// Read from `PETALTONGUE_AUTH_MODE` (or `AUTH_MODE` fallback).
     #[must_use]
     pub fn from_env() -> Self {
-        let val = std::env::var("PETALTONGUE_AUTH_MODE")
-            .or_else(|_| std::env::var("AUTH_MODE"))
+        let val = std::env::var(constants::PETALTONGUE_AUTH_MODE)
+            .or_else(|_| std::env::var(constants::AUTH_MODE))
             .unwrap_or_default();
         if val.eq_ignore_ascii_case("enforced") {
             Self::Enforced

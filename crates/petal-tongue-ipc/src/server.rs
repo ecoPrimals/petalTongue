@@ -170,7 +170,7 @@ impl IpcServer {
         let instance_id = instance.id.clone();
 
         // Bind to any available port (host from PETALTONGUE_TCP_BIND_HOST or 127.0.0.1)
-        let bind_host = std::env::var("PETALTONGUE_TCP_BIND_HOST")
+        let bind_host = std::env::var(petal_tongue_core::constants::PETALTONGUE_TCP_BIND_HOST)
             .unwrap_or_else(|_| petal_tongue_core::constants::DEFAULT_LOOPBACK_HOST.to_string());
         let listener = TcpListener::bind(format!("{bind_host}:0"))
             .await

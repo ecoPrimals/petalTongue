@@ -5,6 +5,7 @@
 //! capability-based naming (no hardcoded primal identities).
 
 use super::env_or;
+use super::env_vars as env;
 
 // ---------------------------------------------------------------------------
 // Ports
@@ -69,7 +70,7 @@ pub const ALTERNATIVE_RUN_DIR: &str = "/var/run/ecoPrimals";
 /// Override via `ECOSYSTEM_RUNTIME_DIR` for custom deployments.
 #[must_use]
 pub fn ecosystem_runtime_dir_name() -> String {
-    std::env::var("ECOSYSTEM_RUNTIME_DIR").unwrap_or_else(|_| "biomeos".to_string())
+    std::env::var(env::ECOSYSTEM_RUNTIME_DIR).unwrap_or_else(|_| "biomeos".to_string())
 }
 
 /// Canonical ordered list of directories to search for primal Unix sockets.
@@ -86,7 +87,7 @@ pub fn ecosystem_runtime_dir_name() -> String {
 pub fn socket_search_dirs() -> Vec<std::path::PathBuf> {
     let mut dirs = Vec::with_capacity(4);
 
-    if let Ok(xdg) = std::env::var("XDG_RUNTIME_DIR") {
+    if let Ok(xdg) = std::env::var(env::XDG_RUNTIME_DIR) {
         dirs.push(std::path::PathBuf::from(xdg));
     }
 
@@ -110,14 +111,14 @@ pub fn socket_search_dirs() -> Vec<std::path::PathBuf> {
 /// Overridable via `BIOMEOS_SOCKET_NAME` env var for custom deployments
 #[must_use]
 pub fn biomeos_socket_name() -> String {
-    std::env::var("BIOMEOS_SOCKET_NAME").unwrap_or_else(|_| "biomeos-neural-api".to_string())
+    std::env::var(env::BIOMEOS_SOCKET_NAME).unwrap_or_else(|_| "biomeos-neural-api".to_string())
 }
 
 /// Device management socket name (capability: device management)
 /// Overridable via `BIOMEOS_DEVICE_MANAGEMENT_SOCKET` env var
 #[must_use]
 pub fn biomeos_device_management_socket_name() -> String {
-    std::env::var("BIOMEOS_DEVICE_MANAGEMENT_SOCKET")
+    std::env::var(env::BIOMEOS_DEVICE_MANAGEMENT_SOCKET)
         .unwrap_or_else(|_| "biomeos-device-management".to_string())
 }
 
@@ -125,14 +126,14 @@ pub fn biomeos_device_management_socket_name() -> String {
 /// Overridable via `BIOMEOS_UI_SOCKET` env var
 #[must_use]
 pub fn biomeos_ui_socket_name() -> String {
-    std::env::var("BIOMEOS_UI_SOCKET").unwrap_or_else(|_| "biomeos-ui".to_string())
+    std::env::var(env::BIOMEOS_UI_SOCKET).unwrap_or_else(|_| "biomeos-ui".to_string())
 }
 
 /// Discovery service socket name (capability: discovery/registry)
 /// Overridable via `DISCOVERY_SERVICE_SOCKET` env var
 #[must_use]
 pub fn discovery_service_socket_name() -> String {
-    std::env::var("DISCOVERY_SERVICE_SOCKET").unwrap_or_else(|_| "discovery-service".to_string())
+    std::env::var(env::DISCOVERY_SERVICE_SOCKET).unwrap_or_else(|_| "discovery-service".to_string())
 }
 
 /// Legacy /tmp biomeOS socket name (fallback).
@@ -141,7 +142,7 @@ pub fn discovery_service_socket_name() -> String {
 /// compile-time primal dependency. Overridable via `BIOMEOS_LEGACY_SOCKET`.
 #[must_use]
 pub fn biomeos_legacy_socket_name() -> String {
-    std::env::var("BIOMEOS_LEGACY_SOCKET").unwrap_or_else(|_| "biomeos".to_string())
+    std::env::var(env::BIOMEOS_LEGACY_SOCKET).unwrap_or_else(|_| "biomeos".to_string())
 }
 
 // ---------------------------------------------------------------------------
@@ -152,7 +153,7 @@ pub fn biomeos_legacy_socket_name() -> String {
 /// Reads `DISPLAY_BACKEND_PORT`; falls back to `DEFAULT_DISPLAY_BACKEND_PORT`.
 #[must_use]
 pub fn display_backend_port() -> u16 {
-    env_or("DISPLAY_BACKEND_PORT", DEFAULT_DISPLAY_BACKEND_PORT)
+    env_or(env::DISPLAY_BACKEND_PORT, DEFAULT_DISPLAY_BACKEND_PORT)
 }
 
 // ---------------------------------------------------------------------------
@@ -166,7 +167,7 @@ pub fn display_backend_port() -> u16 {
 pub fn default_bind_addr() -> &'static str {
     static BIND: std::sync::OnceLock<String> = std::sync::OnceLock::new();
     BIND.get_or_init(|| {
-        std::env::var("PETALTONGUE_BIND_ADDR").unwrap_or_else(|_| DEFAULT_LOOPBACK_HOST.to_string())
+        std::env::var(env::PETALTONGUE_BIND_ADDR).unwrap_or_else(|_| DEFAULT_LOOPBACK_HOST.to_string())
     })
 }
 
@@ -175,7 +176,7 @@ pub fn default_bind_addr() -> &'static str {
 /// Port is overridable via `PETALTONGUE_WEB_PORT` env var.
 #[must_use]
 pub fn default_web_bind() -> String {
-    let port = env_or("PETALTONGUE_WEB_PORT", DEFAULT_WEB_PORT);
+    let port = env_or(env::PETALTONGUE_WEB_PORT, DEFAULT_WEB_PORT);
     let addr = default_bind_addr();
     format!("{addr}:{port}")
 }
@@ -185,7 +186,7 @@ pub fn default_web_bind() -> String {
 /// Port is overridable via `PETALTONGUE_HEADLESS_PORT` env var.
 #[must_use]
 pub fn default_headless_bind() -> String {
-    let port = env_or("PETALTONGUE_HEADLESS_PORT", DEFAULT_HEADLESS_PORT);
+    let port = env_or(env::PETALTONGUE_HEADLESS_PORT, DEFAULT_HEADLESS_PORT);
     let addr = default_bind_addr();
     format!("{addr}:{port}")
 }
@@ -206,10 +207,10 @@ pub fn biomeos_legacy_socket() -> std::path::PathBuf {
 /// `COMPUTE_PROVIDER_ENDPOINT` > `GPU_COMPUTE_ENDPOINT` > constant.
 #[must_use]
 pub fn default_gpu_compute_endpoint() -> String {
-    std::env::var("PETALTONGUE_GPU_COMPUTE_ENDPOINT")
-        .or_else(|_| std::env::var("GPU_RENDERING_ENDPOINT"))
-        .or_else(|_| std::env::var("COMPUTE_PROVIDER_ENDPOINT"))
-        .or_else(|_| std::env::var("GPU_COMPUTE_ENDPOINT"))
+    std::env::var(env::PETALTONGUE_GPU_COMPUTE_ENDPOINT)
+        .or_else(|_| std::env::var(env::GPU_RENDERING_ENDPOINT))
+        .or_else(|_| std::env::var(env::COMPUTE_PROVIDER_ENDPOINT))
+        .or_else(|_| std::env::var(env::GPU_COMPUTE_ENDPOINT))
         .unwrap_or_else(|_| DEFAULT_GPU_COMPUTE_ENDPOINT.to_string())
 }
 
@@ -224,8 +225,8 @@ pub fn gpu_compute_endpoint() -> String {
 /// Reads `PETALTONGUE_DISCOVERY_PORTS` or `DISCOVERY_PORTS` (comma-separated).
 #[must_use]
 pub fn default_discovery_ports() -> Vec<u16> {
-    std::env::var("PETALTONGUE_DISCOVERY_PORTS")
-        .or_else(|_| std::env::var("DISCOVERY_PORTS"))
+    std::env::var(env::PETALTONGUE_DISCOVERY_PORTS)
+        .or_else(|_| std::env::var(env::DISCOVERY_PORTS))
         .map_or_else(
             |_| DEFAULT_DISCOVERY_PORTS.to_vec(),
             |s| {
@@ -240,10 +241,10 @@ pub fn default_discovery_ports() -> Vec<u16> {
 /// Parses `BIOMEOS_URL` or uses `PETALTONGUE_LIVE_TARGET`; fallback: `localhost:{DEFAULT_WEB_PORT}`.
 #[must_use]
 pub fn default_biomeos_connection_target() -> String {
-    if let Ok(t) = std::env::var("PETALTONGUE_LIVE_TARGET") {
+    if let Ok(t) = std::env::var(env::PETALTONGUE_LIVE_TARGET) {
         return t;
     }
-    if let Ok(url) = std::env::var("BIOMEOS_URL")
+    if let Ok(url) = std::env::var(env::BIOMEOS_URL)
         && let Some(rest) = url
             .strip_prefix("http://")
             .or_else(|| url.strip_prefix("https://"))
@@ -257,8 +258,8 @@ pub fn default_biomeos_connection_target() -> String {
 /// Uses `PETALTONGUE_WEB_URL` or `BIOMEOS_URL`; fallback from [`default_biomeos_connection_target`].
 #[must_use]
 pub fn default_web_url() -> String {
-    std::env::var("PETALTONGUE_WEB_URL")
-        .or_else(|_| std::env::var("BIOMEOS_URL"))
+    std::env::var(env::PETALTONGUE_WEB_URL)
+        .or_else(|_| std::env::var(env::BIOMEOS_URL))
         .unwrap_or_else(|_| format!("http://{}", default_biomeos_connection_target()))
 }
 
@@ -266,7 +267,7 @@ pub fn default_web_url() -> String {
 /// Uses `PETALTONGUE_ENTROPY_ENDPOINT`; fallback: host from env + default port.
 #[must_use]
 pub fn default_entropy_stream_endpoint() -> String {
-    std::env::var("PETALTONGUE_ENTROPY_ENDPOINT").unwrap_or_else(|_| {
+    std::env::var(env::PETALTONGUE_ENTROPY_ENDPOINT).unwrap_or_else(|_| {
         format!(
             "http://{}/api/v1/entropy/stream",
             default_biomeos_connection_target()
@@ -278,10 +279,10 @@ pub fn default_entropy_stream_endpoint() -> String {
 /// Uses `PETALTONGUE_WEB_URL` or `PETALTONGUE_HEADLESS_URL`; fallback from port.
 #[must_use]
 pub fn default_headless_url() -> String {
-    std::env::var("PETALTONGUE_WEB_URL")
-        .or_else(|_| std::env::var("PETALTONGUE_HEADLESS_URL"))
+    std::env::var(env::PETALTONGUE_WEB_URL)
+        .or_else(|_| std::env::var(env::PETALTONGUE_HEADLESS_URL))
         .unwrap_or_else(|_| {
-            let port = env_or("PETALTONGUE_HEADLESS_PORT", DEFAULT_HEADLESS_PORT);
+            let port = env_or(env::PETALTONGUE_HEADLESS_PORT, DEFAULT_HEADLESS_PORT);
             let target = default_biomeos_connection_target();
             let host = target.split(':').next().unwrap_or("localhost");
             format!("http://{host}:{port}")
@@ -292,11 +293,11 @@ pub fn default_headless_url() -> String {
 /// Uses `PETALTONGUE_SANDBOX_SECURITY_ENDPOINT` or `PETALTONGUE_HEADLESS_ENDPOINT`; fallback from port.
 #[must_use]
 pub fn default_sandbox_security_url() -> String {
-    std::env::var("PETALTONGUE_SANDBOX_SECURITY_ENDPOINT")
-        .or_else(|_| std::env::var("PETALTONGUE_HEADLESS_ENDPOINT"))
+    std::env::var(env::PETALTONGUE_SANDBOX_SECURITY_ENDPOINT)
+        .or_else(|_| std::env::var(env::PETALTONGUE_HEADLESS_ENDPOINT))
         .unwrap_or_else(|_| {
             let port = env_or(
-                "PETALTONGUE_SANDBOX_SECURITY_PORT",
+                env::PETALTONGUE_SANDBOX_SECURITY_PORT,
                 DEFAULT_SANDBOX_SECURITY_PORT,
             );
             let target = default_biomeos_connection_target();
@@ -310,10 +311,10 @@ pub fn default_sandbox_security_url() -> String {
 /// If `PETALTONGUE_WS_ENDPOINT` is set, returns it verbatim (assumed complete).
 /// Otherwise builds from `BIOMEOS_WS_PORT` (or default) + loopback + path.
 fn ws_url(path: &str) -> String {
-    if let Ok(url) = std::env::var("PETALTONGUE_WS_ENDPOINT") {
+    if let Ok(url) = std::env::var(env::PETALTONGUE_WS_ENDPOINT) {
         return url;
     }
-    let port = env_or("BIOMEOS_WS_PORT", DEFAULT_HEADLESS_PORT);
+    let port = env_or(env::BIOMEOS_WS_PORT, DEFAULT_HEADLESS_PORT);
     format!("ws://{DEFAULT_LOOPBACK_HOST}:{port}/{path}")
 }
 

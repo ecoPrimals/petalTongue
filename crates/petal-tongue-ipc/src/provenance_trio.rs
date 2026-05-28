@@ -357,7 +357,7 @@ impl TrioAvailability {
 /// 3. Scan `$XDG_RUNTIME_DIR/biomeos/` for `.sock` files whose stem
 ///    contains the capability domain prefix.
 fn discover_capability_socket(capability: &str) -> Option<String> {
-    let runtime_dir = std::env::var("XDG_RUNTIME_DIR")
+    let runtime_dir = std::env::var(petal_tongue_core::constants::XDG_RUNTIME_DIR)
         .unwrap_or_else(|_| petal_tongue_core::constants::LEGACY_TMP_PREFIX.to_string());
 
     let env_key = format!("{}_SOCKET", capability.replace('.', "_").to_uppercase());
@@ -367,7 +367,7 @@ fn discover_capability_socket(capability: &str) -> Option<String> {
         return Some(path);
     }
 
-    if let Ok(path) = std::env::var("PROVENANCE_TRIO_SOCKET")
+    if let Ok(path) = std::env::var(petal_tongue_core::constants::PROVENANCE_TRIO_SOCKET)
         && std::path::Path::new(&path).exists()
     {
         return Some(path);

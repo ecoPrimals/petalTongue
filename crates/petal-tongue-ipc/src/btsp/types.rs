@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! BTSP types: posture, guard error, socket naming, handshake policy, provider config.
 
-use petal_tongue_core::constants::APP_DIR_NAME;
+use petal_tongue_core::constants::{self, APP_DIR_NAME};
 use std::env;
 use thiserror::Error;
 
@@ -32,9 +32,9 @@ pub enum BtspPosture {
 }
 
 pub(super) fn raw_family_id_from_env() -> Option<String> {
-    env::var("FAMILY_ID")
+    env::var(constants::FAMILY_ID)
         .ok()
-        .or_else(|| env::var("PETALTONGUE_FAMILY_ID").ok())
+        .or_else(|| env::var(constants::PETALTONGUE_FAMILY_ID).ok())
 }
 
 pub(super) fn is_production_family_id(fid: Option<&String>) -> bool {
@@ -64,7 +64,7 @@ pub fn validate_insecure_guard() -> Result<BtspPosture, BtspGuardError> {
     let fid = raw_family_id_from_env();
     let is_prod = is_production_family_id(fid.as_ref());
 
-    let biomeos_insecure = env::var("BIOMEOS_INSECURE").ok();
+    let biomeos_insecure = env::var(constants::BIOMEOS_INSECURE).ok();
     let is_insecure = biomeos_insecure
         .as_ref()
         .is_some_and(|v| v == "1" || v.eq_ignore_ascii_case("true"));
@@ -198,17 +198,17 @@ impl BtspHandshakeConfig {
     pub fn from_env() -> Option<Self> {
         let fid = raw_family_id_from_env().filter(|s| is_production_family_id(Some(s)))?;
 
-        let provider_socket = std::env::var("BTSP_PROVIDER_SOCKET")
-            .or_else(|_| std::env::var("SECURITY_PROVIDER_SOCKET"))
-            .or_else(|_| std::env::var("CRYPTO_PROVIDER_SOCKET"))
-            .or_else(|_| std::env::var("SECURITY_SOCKET"))
+        let provider_socket = std::env::var(constants::BTSP_PROVIDER_SOCKET)
+            .or_else(|_| std::env::var(constants::SECURITY_PROVIDER_SOCKET))
+            .or_else(|_| std::env::var(constants::CRYPTO_PROVIDER_SOCKET))
+            .or_else(|_| std::env::var(constants::SECURITY_SOCKET))
             .ok()
             .map_or_else(
                 || {
-                    let provider =
-                        std::env::var("BTSP_PROVIDER").unwrap_or_else(|_| "security".to_owned());
-                    let socket_dir = std::env::var("BIOMEOS_SOCKET_DIR").unwrap_or_else(|_| {
-                        let xdg = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| {
+                    let provider = std::env::var(constants::BTSP_PROVIDER)
+                        .unwrap_or_else(|_| "security".to_owned());
+                    let socket_dir = std::env::var(constants::BIOMEOS_SOCKET_DIR).unwrap_or_else(|_| {
+                        let xdg = std::env::var(constants::XDG_RUNTIME_DIR).unwrap_or_else(|_| {
                             petal_tongue_core::constants::LEGACY_TMP_PREFIX.to_owned()
                         });
                         let dir_name = petal_tongue_core::constants::ecosystem_runtime_dir_name();
@@ -240,8 +240,8 @@ impl BtspHandshakeConfig {
     #[must_use]
     pub fn load_family_seed(&self) -> Option<String> {
         use base64::Engine;
-        std::env::var("BTSP_FAMILY_SEED")
-            .or_else(|_| std::env::var("FAMILY_SEED"))
+        std::env::var(constants::BTSP_FAMILY_SEED)
+            .or_else(|_| std::env::var(constants::FAMILY_SEED))
             .ok()
             .map(|s| s.trim().to_owned())
             .filter(|s| !s.is_empty())

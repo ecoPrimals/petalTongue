@@ -26,7 +26,7 @@ impl SceneSigner {
     /// Returns a no-op signer if the variable is absent or malformed.
     #[must_use]
     pub fn from_env() -> Self {
-        let key = std::env::var("PETALTONGUE_SCENE_KEY")
+        let key = std::env::var(petal_tongue_core::constants::PETALTONGUE_SCENE_KEY)
             .ok()
             .and_then(|hex| Self::decode_hex_key(&hex));
 
