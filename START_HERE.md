@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: May 24, 2026 (Wave 47 behavioral convergence, SIGTERM handler, content_backend evolution, BTSP overstep cleanup)
+**Updated**: May 29, 2026 (Wave 61 — DH-1 /tmp cleanup, dep trim, TRUE PRIMAL fix, mock isolation)
 
 ---
 
@@ -31,6 +31,11 @@ petaltongue live                               # NUCLEUS interactive (IPC + GUI)
 petaltongue live --port 9090                   # live mode with TCP listener
 petaltongue live --port 9090 --bind 0.0.0.0    # live mode network-facing
 petaltongue status                             # System info
+
+# Global flags (apply to all subcommands):
+petaltongue --socket /run/user/1000/biomeos/petaltongue.sock server
+petaltongue --port 9090 web --docroot ./public
+petaltongue --family-id nucleus01 live
 ```
 
 ## Configuration
@@ -41,6 +46,7 @@ Priority: Environment > Config file > Defaults
 export PETALTONGUE_WEB_PORT=8080
 export PETALTONGUE_HEADLESS_PORT=9000
 export BIOMEOS_NEURAL_API_SOCKET=/run/user/$(id -u)/biomeos-neural-api.sock
+export BIOMEOS_SOCKET_DIR=/run/user/$(id -u)/biomeos  # DH-1: socket base dir
 
 # JH-0 MethodGate authorization mode (default: permissive)
 export PETALTONGUE_AUTH_MODE=enforced  # reject unauthenticated protected calls
@@ -80,7 +86,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 6,321+ tests
+cargo test --workspace --all-features           # 6,191+ tests
 cargo clippy --workspace --all-features -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
@@ -177,7 +183,8 @@ only in `primal_names` constants for logging context.
 - **Discovery service** -- Discovered via `discovery.query_capability`
 - **AI agent adapter** -- `ai_adapter` (InputModality::Agent, AgentInputAdapter)
 
-See `../../infra/wateringHole/` (ecoPrimals monorepo root) for inter-primal standards and handoff documents.
+Inter-primal standards and handoff documents live in the ecoPrimals monorepo at
+`infra/wateringHole/` (accessed via `../../infra/wateringHole/` from this repo's checkout location).
 
 ---
 
