@@ -354,12 +354,9 @@ impl TrioAvailability {
 /// Resolution:
 /// 1. `<CAPABILITY_UPPER>_SOCKET` env var (e.g. `DAG_SESSION_SOCKET`)
 /// 2. `PROVENANCE_TRIO_SOCKET` env var (shared for all trio operations)
-/// 3. Scan `$XDG_RUNTIME_DIR/biomeos/` for `.sock` files whose stem
+/// 3. Scan DH-1 socket search dirs for `.sock` files whose stem
 ///    contains the capability domain prefix.
 fn discover_capability_socket(capability: &str) -> Option<String> {
-    let runtime_dir = std::env::var(petal_tongue_core::constants::XDG_RUNTIME_DIR)
-        .unwrap_or_else(|_| petal_tongue_core::constants::LEGACY_TMP_PREFIX.to_string());
-
     let env_key = format!("{}_SOCKET", capability.replace('.', "_").to_uppercase());
     if let Ok(path) = std::env::var(&env_key)
         && std::path::Path::new(&path).exists()
@@ -373,8 +370,7 @@ fn discover_capability_socket(capability: &str) -> Option<String> {
         return Some(path);
     }
 
-    let eco_dir = petal_tongue_core::constants::ecosystem_runtime_dir_name();
-    let biomeos_dir = format!("{runtime_dir}/{eco_dir}");
+    let biomeos_dir = petal_tongue_core::constants::resolve_biomeos_socket_dir();
     if let Ok(entries) = std::fs::read_dir(&biomeos_dir) {
         for entry in entries.flatten() {
             let path = entry.path();

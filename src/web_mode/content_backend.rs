@@ -32,17 +32,17 @@ impl ContentBackendClient {
             .or_else(|_| std::env::var(petal_tongue_core::constants::NESTGATE_SOCKET))
             .map_or_else(
                 |_| {
-                    let provider = std::env::var(petal_tongue_core::constants::CONTENT_BACKEND_PROVIDER)
-                        .unwrap_or_else(|_| "nestgate".to_owned());
+                    let provider =
+                        std::env::var(petal_tongue_core::constants::CONTENT_BACKEND_PROVIDER)
+                            .unwrap_or_else(|_| "nestgate".to_owned());
                     let family = std::env::var(petal_tongue_core::constants::FAMILY_ID)
-                        .or_else(|_| std::env::var(petal_tongue_core::constants::PETALTONGUE_FAMILY_ID))
+                        .or_else(|_| {
+                            std::env::var(petal_tongue_core::constants::PETALTONGUE_FAMILY_ID)
+                        })
                         .unwrap_or_else(|_| "default".to_owned());
-                    let dir = std::env::var(petal_tongue_core::constants::BIOMEOS_SOCKET_DIR).unwrap_or_else(|_| {
-                        let xdg = std::env::var(petal_tongue_core::constants::XDG_RUNTIME_DIR)
-                            .unwrap_or_else(|_| "/tmp".to_owned());
-                        let seg = petal_tongue_core::constants::ecosystem_runtime_dir_name();
-                        format!("{xdg}/{seg}")
-                    });
+                    let dir = petal_tongue_core::constants::resolve_biomeos_socket_dir()
+                        .to_string_lossy()
+                        .into_owned();
                     std::path::PathBuf::from(format!("{dir}/{provider}-{family}.sock"))
                 },
                 std::path::PathBuf::from,

@@ -55,7 +55,7 @@ pub struct ProtocolInfo {
     /// Protocol name ("tarpc", "jsonrpc", "https")
     pub name: String,
 
-    /// Endpoint (e.g., "<tarpc://localhost:9001>", "<unix:///tmp/petaltongue.sock>")
+    /// Endpoint (e.g., `"tarpc://localhost:9001"`, `"unix:///run/user/1000/biomeos/petaltongue.sock"`)
     pub endpoint: String,
 
     /// Whether this protocol is currently enabled

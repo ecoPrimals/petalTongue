@@ -618,9 +618,10 @@ async fn announce_to_neural_api() {
     use petal_tongue_core::capability_names::primal_names;
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
-    let family = std::env::var(petal_tongue_core::constants::FAMILY_ID).unwrap_or_else(|_| "default".to_string());
-    let socket_dir = std::env::var(petal_tongue_core::constants::XDG_RUNTIME_DIR).unwrap_or_else(|_| "/tmp".to_string());
-    let socket = format!("{socket_dir}/biomeos/neural-api-{family}.sock");
+    let family = std::env::var(petal_tongue_core::constants::FAMILY_ID)
+        .unwrap_or_else(|_| "default".to_string());
+    let socket_dir = petal_tongue_core::constants::resolve_biomeos_socket_dir();
+    let socket = format!("{}/neural-api-{family}.sock", socket_dir.display());
 
     let uds_path = petal_tongue_ipc::socket_path::get_petaltongue_socket_path()
         .map(|p| p.to_string_lossy().to_string())

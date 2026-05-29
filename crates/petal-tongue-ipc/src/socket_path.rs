@@ -10,12 +10,8 @@
 
 use crate::btsp::BtspPosture;
 use crate::socket_path_error::SocketPathError;
-use petal_tongue_core::capability_names::primal_names;
 use std::env;
 use std::path::{Path, PathBuf};
-
-/// Shared biomeOS socket directory name.
-const BIOMEOS_SOCK_DIR: &str = primal_names::BIOMEOS;
 
 /// Get the socket path for this petalTongue instance.
 ///
@@ -24,7 +20,10 @@ const BIOMEOS_SOCK_DIR: &str = primal_names::BIOMEOS;
 /// # Environment Variables (Priority Order)
 ///
 /// 1. **`PETALTONGUE_SOCKET`**: Explicit socket path override (highest priority)
-/// 2. **`XDG_RUNTIME_DIR`**: Runtime directory (standard, falls back to `/run/user/<uid>`)
+/// 2. **`BIOMEOS_SOCKET_DIR`**: Explicit socket directory (DH-1 tier)
+/// 3. **`XDG_RUNTIME_DIR`**: Runtime directory (standard)
+/// 4. `/run/user/<uid>`: Linux fallback
+/// 5. `/tmp/biomeos/`: Legacy last resort
 ///
 /// # biomeOS Socket Standard Compliance
 ///
@@ -34,7 +33,7 @@ const BIOMEOS_SOCK_DIR: &str = primal_names::BIOMEOS;
 ///
 /// - **Explicit Override**: `PETALTONGUE_SOCKET` for custom paths
 /// - **XDG Compliant**: Uses `/run/user/<uid>/biomeos/` for secure sockets
-/// - **Graceful Fallback**: Falls back to `/tmp/biomeos/` if XDG runtime unavailable
+/// - **BIOMEOS_SOCKET_DIR**: Deployment override for `ProtectSystem=strict`
 /// - **Parent Directory Creation**: Ensures socket parent directory exists
 pub fn get_petaltongue_socket_path() -> Result<PathBuf, SocketPathError> {
     let posture = crate::btsp::validate_insecure_guard()?;
@@ -58,18 +57,10 @@ pub fn get_petaltongue_socket_path_with_posture(
 
     let filename = crate::btsp::socket_filename(posture);
 
-    if let Ok(runtime_dir) = get_runtime_dir() {
-        let sock_dir = runtime_dir.join(BIOMEOS_SOCK_DIR);
-        let path = sock_dir.join(&filename);
-        std::fs::create_dir_all(&sock_dir)?;
-        Ok(path)
-    } else {
-        let sock_dir =
-            PathBuf::from(petal_tongue_core::constants::LEGACY_TMP_PREFIX).join(BIOMEOS_SOCK_DIR);
-        let path = sock_dir.join(&filename);
-        std::fs::create_dir_all(&sock_dir)?;
-        Ok(path)
-    }
+    let sock_dir = petal_tongue_core::constants::resolve_biomeos_socket_dir();
+    let path = sock_dir.join(&filename);
+    std::fs::create_dir_all(&sock_dir)?;
+    Ok(path)
 }
 
 /// Get the family ID for this instance
@@ -103,7 +94,8 @@ pub fn get_node_id() -> String {
 /// # biomeOS Socket Standard
 ///
 /// Returns an error if neither XDG nor `/run/user/<uid>` are available.
-/// Callers should fall back to `/tmp/` in this case (see `get_petaltongue_socket_path`).
+/// Callers should use [`petal_tongue_core::constants::resolve_biomeos_socket_dir()`]
+/// for the DH-1 compliant fallback chain.
 ///
 /// # TRUE PRIMAL: Capability-Based
 ///
@@ -135,11 +127,13 @@ pub fn get_runtime_dir() -> Result<PathBuf, SocketPathError> {
 ///
 /// Follows the biomeOS convention: `$XDG_RUNTIME_DIR/biomeos/<primal>.sock`.
 ///
-/// # Discovery Chain
+/// # Discovery Chain (DH-1 compliant)
 ///
 /// 1. `<PRIMAL>_SOCKET` env var (explicit override)
-/// 2. `$XDG_RUNTIME_DIR/biomeos/<primal>.sock` (standard)
-/// 3. `/tmp/biomeos/<primal>.sock` (fallback)
+/// 2. `$BIOMEOS_SOCKET_DIR/<primal>.sock` (deployment override)
+/// 3. `$XDG_RUNTIME_DIR/biomeos/<primal>.sock` (standard)
+/// 4. `/run/user/{uid}/biomeos/<primal>.sock` (Linux fallback)
+/// 5. `/tmp/biomeos/<primal>.sock` (legacy last resort)
 ///
 /// The `family_id` and `node_id` parameters are accepted for API compatibility
 /// but are not embedded in the default socket filename (per ecosystem standard).
@@ -153,15 +147,8 @@ pub fn discover_primal_socket(
         return Ok(PathBuf::from(socket_path));
     }
 
-    if let Ok(runtime_dir) = get_runtime_dir() {
-        return Ok(runtime_dir
-            .join(BIOMEOS_SOCK_DIR)
-            .join(format!("{primal_name}.sock")));
-    }
-
-    Ok(PathBuf::from(format!(
-        "/tmp/{BIOMEOS_SOCK_DIR}/{primal_name}.sock"
-    )))
+    Ok(petal_tongue_core::constants::resolve_biomeos_socket_dir()
+        .join(format!("{primal_name}.sock")))
 }
 
 /// Check if a socket path exists and is accessible

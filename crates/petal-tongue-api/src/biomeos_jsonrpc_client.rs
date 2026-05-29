@@ -88,7 +88,7 @@ impl BiomeOSJsonRpcClient {
             }
         }
 
-        // 2. Canonical biomeOS layout (`$XDG_RUNTIME_DIR` or `/tmp` + `biomeos/<name>.sock`)
+        // 2. Canonical biomeOS layout (DH-1: BIOMEOS_SOCKET_DIR > XDG > /tmp)
         let name = biomeos_socket_name();
         let primary = discover_primal_socket(&name, None, None).map_err(|e| {
             BiomeOsClientError::SocketNotFound(format!("biomeOS socket path resolution: {e}"))
@@ -97,18 +97,20 @@ impl BiomeOSJsonRpcClient {
             return Ok(primary);
         }
 
-        let tmp_fallback = PathBuf::from(constants::LEGACY_TMP_PREFIX)
-            .join(primal_names::BIOMEOS)
-            .join(format!("{name}.sock"));
-        if tmp_fallback.exists() && tmp_fallback != primary {
-            return Ok(tmp_fallback);
+        // Scan all DH-1 search dirs as fallback
+        for search_dir in constants::socket_search_dirs() {
+            let candidate = search_dir
+                .join(primal_names::BIOMEOS)
+                .join(format!("{name}.sock"));
+            if candidate.exists() && candidate != primary {
+                return Ok(candidate);
+            }
         }
 
-        // No socket found - return helpful error instead of silent default
         Err(BiomeOsClientError::SocketNotFound(format!(
             "biomeOS socket not found. Set BIOMEOS_SOCKET env var or ensure biomeOS is running. \
             Checked: $BIOMEOS_SOCKET, $BIOMEOS_NEURAL_API_SOCKET, \
-            $XDG_RUNTIME_DIR/biomeos/{name}.sock, /tmp/biomeos/{name}.sock"
+            BIOMEOS_SOCKET_DIR, $XDG_RUNTIME_DIR/biomeos/{name}.sock"
         )))
     }
 

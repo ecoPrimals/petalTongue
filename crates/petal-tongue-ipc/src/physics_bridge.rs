@@ -224,9 +224,7 @@ async fn try_gpu_physics_step(world: &mut PhysicsWorld) -> Result<usize, Compute
 /// Priority:
 /// 1. `CapabilityDiscovery<BiomeOsBackend>` — biomeOS Neural API for `compute` domain
 /// 2. `COMPUTE_SOCKET` env (explicit override / escape hatch)
-/// 3. `$XDG_RUNTIME_DIR/ecoPrimals/` (ecosystem S139 layout)
-/// 4. `$XDG_RUNTIME_DIR/{socket_name}/` (primal-specific)
-/// 5. `/tmp/` fallback
+/// 3. Filesystem scanning: `$BIOMEOS_SOCKET_DIR` > `$XDG_RUNTIME_DIR` > `/tmp/` (DH-1 tier)
 fn discover_compute_socket() -> Result<String, ComputeBridgeError> {
     // Primary: biomeOS capability discovery (sync-safe: check socket exists without async)
     if let Ok(backend) = petal_tongue_core::biomeos_discovery::BiomeOsBackend::from_env() {
@@ -248,31 +246,30 @@ fn discover_compute_socket() -> Result<String, ComputeBridgeError> {
         }
     }
 
-    // Escape hatch: explicit env override
     if let Ok(path) = std::env::var(petal_tongue_core::constants::COMPUTE_SOCKET) {
         return Ok(path);
     }
 
-    // Legacy: filesystem scanning (S139 dual-write layout)
-    let runtime_dir = std::env::var(petal_tongue_core::constants::XDG_RUNTIME_DIR)
-        .unwrap_or_else(|_| petal_tongue_core::constants::LEGACY_TMP_PREFIX.to_string());
     let socket_name = std::env::var(petal_tongue_core::constants::PHYSICS_COMPUTE_SOCKET_NAME)
         .unwrap_or_else(|_| "physics-compute".to_string());
 
-    let candidates = [
-        format!("{runtime_dir}/ecoPrimals/{socket_name}.sock"),
-        format!("{runtime_dir}/ecoPrimals/discovery/{socket_name}.sock"),
-        format!("{runtime_dir}/{socket_name}/{socket_name}.sock"),
-        format!("{runtime_dir}/{socket_name}.sock"),
-        format!(
-            "{}/{socket_name}.sock",
-            petal_tongue_core::constants::LEGACY_TMP_PREFIX
-        ),
-    ];
-
-    for path in &candidates {
-        if std::path::Path::new(path).exists() {
-            return Ok(path.clone());
+    for search_dir in petal_tongue_core::constants::socket_search_dirs() {
+        let candidates = [
+            search_dir
+                .join("ecoPrimals")
+                .join(format!("{socket_name}.sock")),
+            search_dir
+                .join("ecoPrimals/discovery")
+                .join(format!("{socket_name}.sock")),
+            search_dir
+                .join(&socket_name)
+                .join(format!("{socket_name}.sock")),
+            search_dir.join(format!("{socket_name}.sock")),
+        ];
+        for path in &candidates {
+            if path.exists() {
+                return Ok(path.to_string_lossy().to_string());
+            }
         }
     }
 

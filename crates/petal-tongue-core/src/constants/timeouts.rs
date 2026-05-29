@@ -61,7 +61,34 @@ pub const DEFAULT_TELEMETRY_BUFFER: usize = 10_000;
 
 /// Fallback directory for JSONL telemetry files when `PETALTONGUE_TELEMETRY_DIR` and
 /// `XDG_DATA_HOME` are unset.
+///
+/// DH-1: uses `XDG_DATA_HOME/petaltongue/telemetry` when available,
+/// otherwise `/var/lib/petaltongue/telemetry` (VPS) or `/tmp/petaltongue-telemetry` (last resort).
 pub const DEFAULT_TELEMETRY_FALLBACK_DIR: &str = "/tmp/petaltongue-telemetry";
+
+/// Resolve the telemetry directory with DH-1 tier chain.
+///
+/// Priority: `PETALTONGUE_TELEMETRY_DIR` env > `$XDG_DATA_HOME/petaltongue/telemetry`
+/// > `/var/lib/petaltongue/telemetry` (if writable parent) > `/tmp/petaltongue-telemetry`.
+#[must_use]
+pub fn resolve_telemetry_dir() -> std::path::PathBuf {
+    if let Ok(dir) = std::env::var("PETALTONGUE_TELEMETRY_DIR") {
+        return std::path::PathBuf::from(dir);
+    }
+    if let Ok(xdg) = std::env::var("XDG_DATA_HOME") {
+        return std::path::PathBuf::from(xdg)
+            .join("petaltongue")
+            .join("telemetry");
+    }
+    let var_lib = std::path::PathBuf::from("/var/lib/petaltongue/telemetry");
+    if var_lib
+        .parent()
+        .is_some_and(|p| p.exists() || p.parent().is_some_and(std::path::Path::exists))
+    {
+        return var_lib;
+    }
+    std::path::PathBuf::from(DEFAULT_TELEMETRY_FALLBACK_DIR)
+}
 
 /// Default discovery timeout (overridable via `PETALTONGUE_DISCOVERY_TIMEOUT_SECS`)
 pub const DEFAULT_DISCOVERY_TIMEOUT_SECS: u64 = 5;

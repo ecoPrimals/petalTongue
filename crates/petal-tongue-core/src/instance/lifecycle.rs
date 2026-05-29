@@ -58,7 +58,7 @@ pub(super) fn get_socket_dir() -> Result<PathBuf, InstanceError> {
         }
     }
 
-    Ok(PathBuf::from(crate::constants::LEGACY_TMP_PREFIX).join(crate::constants::APP_DIR_NAME))
+    Ok(crate::constants::resolve_biomeos_socket_dir().join(crate::constants::APP_DIR_NAME))
 }
 
 /// Get the path to the instance registry file
