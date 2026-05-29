@@ -32,9 +32,10 @@ fn test_help_flag() {
 #[test]
 fn test_terminal_mode() {
     headless_binary()
+        .arg("--demo")
         .arg("--mode")
         .arg("terminal")
-        .env("RUST_LOG", "error") // Suppress logs for cleaner output
+        .env("RUST_LOG", "error")
         .assert()
         .success()
         .stdout(predicate::str::contains("petalTongue Topology"))
@@ -45,6 +46,7 @@ fn test_terminal_mode() {
 #[test]
 fn test_svg_export_to_stdout() {
     headless_binary()
+        .arg("--demo")
         .arg("--mode")
         .arg("svg")
         .env("RUST_LOG", "error")
@@ -57,6 +59,7 @@ fn test_svg_export_to_stdout() {
 #[test]
 fn test_json_export_to_stdout() {
     headless_binary()
+        .arg("--demo")
         .arg("--mode")
         .arg("json")
         .env("RUST_LOG", "error")
@@ -70,6 +73,7 @@ fn test_json_export_to_stdout() {
 #[test]
 fn test_dot_export_to_stdout() {
     headless_binary()
+        .arg("--demo")
         .arg("--mode")
         .arg("dot")
         .env("RUST_LOG", "error")
@@ -84,10 +88,10 @@ fn test_svg_export_to_file() {
     let temp_dir = std::env::temp_dir();
     let output_file = temp_dir.join("e2e_test_topology.svg");
 
-    // Remove file if it exists
     let _ = fs::remove_file(&output_file);
 
     headless_binary()
+        .arg("--demo")
         .arg("--mode")
         .arg("svg")
         .arg("--output")
@@ -113,10 +117,10 @@ fn test_json_export_to_file() {
     let temp_dir = std::env::temp_dir();
     let output_file = temp_dir.join("e2e_test_topology.json");
 
-    // Remove file if it exists
     let _ = fs::remove_file(&output_file);
 
     headless_binary()
+        .arg("--demo")
         .arg("--mode")
         .arg("json")
         .arg("--output")
@@ -143,10 +147,10 @@ fn test_dot_export_to_file() {
     let temp_dir = std::env::temp_dir();
     let output_file = temp_dir.join("e2e_test_topology.dot");
 
-    // Remove file if it exists
     let _ = fs::remove_file(&output_file);
 
     headless_binary()
+        .arg("--demo")
         .arg("--mode")
         .arg("dot")
         .arg("--output")
@@ -169,6 +173,7 @@ fn test_dot_export_to_file() {
 #[test]
 fn test_html_export_to_stdout() {
     let assert = headless_binary()
+        .arg("--demo")
         .arg("--mode")
         .arg("html")
         .env("RUST_LOG", "error")
@@ -197,6 +202,7 @@ fn test_html_export_to_file() {
     let _ = fs::remove_file(&output_file);
 
     headless_binary()
+        .arg("--demo")
         .arg("--mode")
         .arg("html")
         .arg("--output")
@@ -235,6 +241,7 @@ fn test_html_export_to_file() {
 #[test]
 fn test_custom_dimensions() {
     headless_binary()
+        .arg("--demo")
         .arg("--mode")
         .arg("svg")
         .arg("--width")
@@ -314,8 +321,8 @@ fn test_output_consistency() {
     let _ = fs::remove_file(&file1);
     let _ = fs::remove_file(&file2);
 
-    // First run
     headless_binary()
+        .arg("--demo")
         .arg("--mode")
         .arg("json")
         .arg("--output")
@@ -324,8 +331,8 @@ fn test_output_consistency() {
         .assert()
         .success();
 
-    // Second run
     headless_binary()
+        .arg("--demo")
         .arg("--mode")
         .arg("json")
         .arg("--output")
@@ -377,6 +384,7 @@ fn test_concurrent_exports() {
             let file = file.clone();
             thread::spawn(move || {
                 headless_binary()
+                    .arg("--demo")
                     .arg("--mode")
                     .arg("svg")
                     .arg("--output")

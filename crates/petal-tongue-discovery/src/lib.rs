@@ -73,9 +73,6 @@ pub mod concurrent;
 pub mod errors;
 pub mod retry;
 
-#[cfg(feature = "mdns")]
-mod mdns_discovery;
-
 pub use capabilities::VisualizationCapability;
 #[cfg(any(test, feature = "test-fixtures"))]
 pub use demo_provider::DemoVisualizationProvider;

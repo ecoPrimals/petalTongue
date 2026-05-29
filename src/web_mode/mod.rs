@@ -39,7 +39,7 @@ pub struct WebConfig<'a> {
     pub scenario: Option<String>,
     /// Static file document root for catch-all serving (`--docroot`).
     pub docroot: Option<String>,
-    /// Content backend: `"filesystem"` or `"content-provider"` / `"nestgate"` (compat).
+    /// Content backend: `"filesystem"` or `"content-provider"` (capability-based).
     pub backend: &'a str,
     /// Number of tokio worker threads (wired to runtime in `main`).
     pub workers: usize,
@@ -93,7 +93,7 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .route("/api/events", get(events_sse_handler))
         .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));
 
-    if cfg.backend == "nestgate" || cfg.backend == "content-provider" {
+    if cfg.backend == "content-provider" || cfg.backend == "nestgate" {
         let client = Arc::new(content_backend::ContentBackendClient::from_env());
         tracing::info!(
             socket = %client.socket_path.display(),

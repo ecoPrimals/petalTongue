@@ -26,7 +26,7 @@ ratatui = { workspace = true }
 crossterm = { workspace = true, features = ["event-stream"] }
 
 # Async runtime
-tokio = { workspace = true, features = ["full"] }
+tokio = { workspace = true }
 tokio-util = { workspace = true }
 
 # Serialization

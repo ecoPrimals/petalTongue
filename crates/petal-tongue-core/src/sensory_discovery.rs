@@ -125,13 +125,40 @@ impl SensoryCapabilities {
     // ========================================================================
 
     fn discover_audio() -> Vec<AudioOutputCapability> {
-        // Detect audio output via platform APIs (PipeWire/PulseAudio/ALSA)
-        // For now, assume stereo output is available
+        #[cfg(target_os = "linux")]
+        {
+            if std::path::Path::new("/proc/asound/cards").exists()
+                || crate::system_info::get_user_runtime_dir()
+                    .join("pipewire-0")
+                    .exists()
+                || crate::system_info::get_user_runtime_dir()
+                    .join("pulse")
+                    .exists()
+            {
+                return vec![AudioOutputCapability::Stereo {
+                    sample_rate: 48000,
+                    bit_depth: 16,
+                }];
+            }
+            tracing::debug!("No audio subsystem detected (ALSA/PipeWire/PulseAudio)");
+            vec![]
+        }
 
-        vec![AudioOutputCapability::Stereo {
-            sample_rate: 48000,
-            bit_depth: 16,
-        }]
+        #[cfg(target_arch = "wasm32")]
+        {
+            vec![AudioOutputCapability::Stereo {
+                sample_rate: 48000,
+                bit_depth: 16,
+            }]
+        }
+
+        #[cfg(not(any(target_os = "linux", target_arch = "wasm32")))]
+        {
+            vec![AudioOutputCapability::Stereo {
+                sample_rate: 48000,
+                bit_depth: 16,
+            }]
+        }
     }
 
     // ========================================================================
@@ -236,15 +263,33 @@ impl SensoryCapabilities {
     // ========================================================================
 
     fn discover_audio_input() -> Vec<AudioInputCapability> {
-        // Check for microphone
-        // For now, assume microphone is available
+        #[cfg(target_os = "linux")]
+        {
+            let has_capture = std::path::Path::new("/proc/asound/pcm").exists()
+                || crate::system_info::get_user_runtime_dir()
+                    .join("pipewire-0")
+                    .exists();
+            if has_capture {
+                return vec![AudioInputCapability {
+                    sample_rate: 48000,
+                    channels: 1,
+                    has_noise_cancellation: false,
+                    supports_wake_word: false,
+                }];
+            }
+            tracing::debug!("No audio input subsystem detected");
+            vec![]
+        }
 
-        vec![AudioInputCapability {
-            sample_rate: 48000,
-            channels: 1, // Mono microphone
-            has_noise_cancellation: false,
-            supports_wake_word: false,
-        }]
+        #[cfg(not(target_os = "linux"))]
+        {
+            vec![AudioInputCapability {
+                sample_rate: 48000,
+                channels: 1,
+                has_noise_cancellation: false,
+                supports_wake_word: false,
+            }]
+        }
     }
 
     // ========================================================================
