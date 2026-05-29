@@ -114,7 +114,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,321+ passing, 0 failures (`--all-features`) |
+| Tests | 6,191+ passing, 0 failures (`--all-features`) |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (`--all-features`, pedantic + nursery; `#[expect]` with reasons) |
 | Docs | `cargo doc --workspace --no-deps` zero warnings |
@@ -149,7 +149,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 6,321+ tests
+cargo test --workspace --all-features        # 6,191+ tests
 cargo clippy --workspace --all-features -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
@@ -201,13 +201,13 @@ Key specs:
 
 ## Cross-Primal Integration
 
-See `../../infra/wateringHole/petaltongue/` (ecoPrimals monorepo root) for inter-primal standards:
+Inter-primal standards live in the ecoPrimals monorepo at `infra/wateringHole/`:
 - `VISUALIZATION_INTEGRATION_GUIDE.md` -- How other primals send data to petalTongue
 - `SENSORY_CAPABILITY_MATRIX.md` -- Input×output capability negotiation protocol
 - `SCENE_FORMAT_REFERENCE.md` -- GameScene, Soundscape, narrative JSON schemas
 - `PETALTONGUE_NEEDS_FROM_ECOSYSTEM.md` -- Ecosystem dependency map
 
-See `../../infra/wateringHole/handoffs/` for sprint handoff documents and evolution history.
+Sprint handoffs at `infra/wateringHole/handoffs/`.
 
 ---
 
@@ -236,4 +236,4 @@ See `../../infra/wateringHole/handoffs/` for sprint handoff documents and evolut
 | Game mechanics (doom-core) | ORC (Open RPG Creative License) |
 | Specifications & documentation | CC-BY-SA 4.0 |
 
-SPDX headers on all source files. See `../../infra/wateringHole/` for provenance guidance.
+SPDX headers on all source files. See `infra/wateringHole/` (ecoPrimals monorepo) for provenance guidance.

@@ -6,6 +6,28 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Deep Debt Cleanup + DH-1 Compliance (May 29, 2026)
+
+Wave 61 ecosystem tightening — dep trim, TRUE PRIMAL fix, mock isolation, DH-1 /tmp cleanup.
+
+#### Changed
+- **DH-1 /tmp cleanup**: All production socket and data writes now resolve through
+  the tiered chain: `BIOMEOS_SOCKET_DIR` > `XDG_RUNTIME_DIR` > `/run/user/{uid}` > `/tmp`.
+  `resolve_biomeos_socket_dir()` is the canonical resolver. Unblocks `ProtectSystem=strict`.
+- **Dependency trim**: Removed dead `mdns-sd`, trimmed `tokio/full` → explicit 8-feature set,
+  dropped unused `serde/rc`, `clap/cargo`, `tower-http/set-header`. Bumped `tower` 0.4 → 0.5.
+- **TRUE PRIMAL**: `content_backend.rs` default provider changed from `"nestgate"` to
+  `"content-provider"` (capability-based, not primal-coupled).
+- **Mock leak isolation**: UI auto-fallback no longer injects fake primals on empty discovery.
+  Headless binary demo topology now requires `--demo` or `SHOWCASE_MODE=true`.
+  Sensory discovery probes Linux audio subsystems before reporting capabilities.
+- **Global CLI flags**: `--socket`, `--port`, `--family-id` accepted before subcommands (Wave 54).
+
+#### Removed
+- `mdns-sd` workspace dependency (never imported; custom mDNS in `mdns_provider/`)
+- `mdns_discovery.rs` module and `mdns` feature from `petal-tongue-discovery`
+- Unconditional demo topology from headless binary default path
+
 ### Deep Debt Resolution + TRUE PRIMAL Evolution (May 24, 2026)
 
 Wave 47 behavioral convergence + capability-based discovery rewiring.

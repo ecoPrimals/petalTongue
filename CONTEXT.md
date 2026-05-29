@@ -421,7 +421,14 @@ items resolved:
   `tower_http::cors::CorsLayer`. Enables production deployment for SPA
   frontends and cross-origin API consumers.
 
-6,200+ tests, 0 Clippy warnings, 0 doc warnings, 0 unsafe blocks.
+6,191+ tests, 0 Clippy warnings, 0 doc warnings, 0 unsafe blocks.
+
+Wave 61 status (May 29, 2026): DH-1 /tmp cleanup complete (all socket paths
+through `resolve_biomeos_socket_dir()` tiered chain). Dep trim: dead `mdns-sd`
+removed, `tokio/full` → explicit features, `tower` 0.4→0.5. TRUE PRIMAL fix:
+content backend default is `"content-provider"` (capability-based). Mock leaks
+isolated: auto-fallback and headless demo gated behind explicit opt-in. Sensory
+discovery probes Linux audio subsystems.
 
 Remaining backlog: aarch64 musl cross-compile for headless, audio backend wire
 protocols (via `audio.play` capability discovery), overlay mode (display
@@ -469,9 +476,9 @@ When petalTongue is unavailable:
 | Partner | Integration | Status |
 |---------|-------------|--------|
 | **esotericWebb** | Game UI rendering via `visualization.render.scene` + `motor.*` | Functional |
-| **lithoSpore** | Validation dashboard via `visualization.render.dashboard` + `/api/events` SSE | Planned |
+| **lithoSpore** | Validation dashboard via `visualization.render.dashboard` + `/api/events` SSE | Spring-side |
 | **projectNUCLEUS** | sporePrint sovereign serving via `web` mode + content backend | Functional |
-| **wetSpring** | Fermentation visualization via `visualization.render.grammar` | Planned |
+| **wetSpring** | Fermentation visualization via `visualization.render.grammar` | Spring-side |
 
 ### Platform Audio Dependencies
 
