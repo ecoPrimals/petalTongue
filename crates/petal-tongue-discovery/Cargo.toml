@@ -39,16 +39,12 @@ socket2 = { workspace = true }
 # LRU cache for performance optimization (Phase 2) - pure Rust
 lru = { workspace = true }
 
-# mDNS discovery (optional feature) - pure Rust
-mdns-sd = { workspace = true, optional = true }
-
 # Modern async patterns (Discovery Evolution)
 futures-util = { workspace = true }
 rand = { workspace = true }
 
 [features]
 default = []
-mdns = ["mdns-sd"]
 # Mock provider - Run tests with: cargo test --features test-fixtures
 test-fixtures = ["petal-tongue-core/test-fixtures"]
 

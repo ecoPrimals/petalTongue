@@ -32,6 +32,8 @@ struct Args {
     output: Option<String>,
     width: u32,
     height: u32,
+    scenario: Option<String>,
+    demo: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -61,6 +63,10 @@ impl Args {
         let mut output = None;
         let mut width = 1920;
         let mut height = 1080;
+        let mut scenario = None;
+        let mut demo = std::env::var("SHOWCASE_MODE")
+            .ok()
+            .is_some_and(|v| v == "true" || v == "1");
 
         while let Some(arg) = args.next() {
             match arg.as_str() {
@@ -95,6 +101,12 @@ impl Args {
                         height = h.parse().unwrap_or(1080);
                     }
                 }
+                "--scenario" | "-s" => {
+                    scenario = args.next();
+                }
+                "--demo" => {
+                    demo = true;
+                }
                 "--help" => {
                     print_help();
                     std::process::exit(0);
@@ -112,6 +124,8 @@ impl Args {
             output,
             width,
             height,
+            scenario,
+            demo,
         }
     }
 }
@@ -127,6 +141,8 @@ USAGE:
 OPTIONS:
     -m, --mode <MODE>       Output mode [auto, terminal, svg, json, dot, png, html, baselines]
     -o, --output <FILE>     Output file (required for export modes)
+    -s, --scenario <FILE>   Load graph data from scenario JSON file
+    --demo                  Load built-in demonstration topology (also via SHOWCASE_MODE=true)
     -w, --width <WIDTH>     Width in pixels (default: 1920)
     -h, --height <HEIGHT>   Height in pixels (default: 1080)
     --help                  Show this help message
@@ -183,8 +199,7 @@ fn main() -> Result<(), HeadlessError> {
     // Create graph
     let graph = Arc::new(RwLock::new(GraphEngine::new()));
 
-    // Load data (tutorial mode or discovery)
-    load_graph_data(&graph)?;
+    load_graph_data(&graph, &args)?;
 
     // Determine UI mode
     let ui_mode = match args.mode {
@@ -213,16 +228,111 @@ fn main() -> Result<(), HeadlessError> {
     Ok(())
 }
 
-/// Load graph data (tutorial mode or discovery)
-fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessError> {
-    use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
+/// Load graph data from scenario file, demo topology, or leave empty for headless export.
+fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), HeadlessError> {
+    #[expect(
+        clippy::option_if_let_else,
+        reason = "three-way branch is clearer as if-let"
+    )]
+    if let Some(ref path) = args.scenario {
+        load_scenario_file(graph, path)
+    } else if args.demo {
+        load_demo_topology(graph)
+    } else {
+        tracing::info!(
+            "No data source specified — graph is empty. \
+             Use --scenario <file> or --demo for sample data."
+        );
+        Ok(())
+    }
+}
 
-    // For now, create a simple example topology
-    tracing::info!("📚 Loading demonstration topology");
+/// Load graph from a scenario JSON file.
+fn load_scenario_file(graph: &Arc<RwLock<GraphEngine>>, path: &str) -> Result<(), HeadlessError> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| HeadlessError::IoError(format!("scenario read {path}: {e}")))?;
+    let scenario: serde_json::Value = serde_json::from_str(&content)
+        .map_err(|e| HeadlessError::IoError(format!("scenario parse {path}: {e}")))?;
 
     let mut g = graph.write()?;
+    if let Some(nodes) = scenario.get("primals").and_then(|v| v.as_array()) {
+        for node in nodes {
+            if let (Some(id), Some(name), Some(domain)) = (
+                node.get("id").and_then(|v| v.as_str()),
+                node.get("name").and_then(|v| v.as_str()),
+                node.get("domain").and_then(|v| v.as_str()),
+            ) {
+                let caps = node
+                    .get("capabilities")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|v| v.as_str().map(String::from))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                g.add_node(petal_tongue_core::PrimalInfo::new(
+                    id,
+                    name,
+                    domain,
+                    node.get("endpoint")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("unix://local"),
+                    caps,
+                    petal_tongue_core::PrimalHealthStatus::Healthy,
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_secs(),
+                ));
+            }
+        }
+    }
+    if let Some(edges) = scenario.get("edges").and_then(|v| v.as_array()) {
+        for edge in edges {
+            if let (Some(from), Some(to)) = (
+                edge.get("from").and_then(|v| v.as_str()),
+                edge.get("to").and_then(|v| v.as_str()),
+            ) {
+                g.add_edge(petal_tongue_core::TopologyEdge {
+                    from: from.into(),
+                    to: to.into(),
+                    edge_type: edge
+                        .get("type")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("connected")
+                        .to_string(),
+                    label: edge.get("label").and_then(|v| v.as_str()).map(String::from),
+                    capability: None,
+                    metrics: None,
+                });
+            }
+        }
+    }
+    g.layout(10);
+    let (nc, ec) = (g.nodes().len(), g.edges().len());
+    drop(g);
+    tracing::info!("📋 Scenario loaded from {path}: {nc} primals, {ec} edges");
+    Ok(())
+}
 
-    // Create some example primals
+/// Built-in demonstration topology (opt-in via `--demo` or `SHOWCASE_MODE`).
+fn load_demo_topology(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessError> {
+    use petal_tongue_core::{PrimalHealthStatus, PrimalInfo, TopologyEdge};
+
+    tracing::info!("📚 Loading demonstration topology (--demo)");
+
+    let mut g = graph.write()?;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+
+    let health_id = std::env::var("PETALTONGUE_HEADLESS_DEMO_HEALTH_ID")
+        .unwrap_or_else(|_| "health-monitor-1".to_string());
+    let health_name = std::env::var("PETALTONGUE_HEADLESS_DEMO_HEALTH_NAME")
+        .unwrap_or_else(|_| "Health Monitor".to_string());
+
     let primals = vec![
         PrimalInfo::new(
             "petaltongue-headless",
@@ -231,24 +341,16 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessError
             constants::default_headless_url(),
             vec!["visualization".to_string(), "export".to_string()],
             PrimalHealthStatus::Healthy,
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs(),
+            now,
         ),
         PrimalInfo::new(
-            std::env::var("PETALTONGUE_HEADLESS_DEMO_HEALTH_ID")
-                .unwrap_or_else(|_| "health-monitor-1".to_string()),
-            std::env::var("PETALTONGUE_HEADLESS_DEMO_HEALTH_NAME")
-                .unwrap_or_else(|_| "Health Monitor".to_string()),
+            health_id.as_str(),
+            health_name.as_str(),
             "Health Monitoring",
             constants::default_web_url(),
             vec!["health".to_string(), "monitoring".to_string()],
             PrimalHealthStatus::Healthy,
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs(),
+            now,
         ),
         PrimalInfo::new(
             "encryption-demo-1",
@@ -257,21 +359,14 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessError
             constants::default_sandbox_security_url(),
             vec!["encryption".to_string(), "messaging".to_string()],
             PrimalHealthStatus::Warning,
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs(),
+            now,
         ),
     ];
 
-    // Add primals to graph
     for primal in primals {
         g.add_node(primal);
     }
 
-    // Add some connections (use same env-driven IDs for edges)
-    let health_id = std::env::var("PETALTONGUE_HEADLESS_DEMO_HEALTH_ID")
-        .unwrap_or_else(|_| "health-monitor-1".to_string());
     g.add_edge(TopologyEdge {
         from: health_id.into(),
         to: "petaltongue-headless".into(),
@@ -289,17 +384,10 @@ fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessError
         metrics: None,
     });
 
-    // Apply layout (10 iterations for force-directed layout)
     g.layout(10);
-
-    let node_count = g.nodes().len();
-    let edge_count = g.edges().len();
+    let (nc, ec) = (g.nodes().len(), g.edges().len());
     drop(g);
-    tracing::info!(
-        "📊 Loaded: {} primals, {} connections",
-        node_count,
-        edge_count
-    );
+    tracing::info!("📊 Loaded: {nc} primals, {ec} connections");
 
     Ok(())
 }

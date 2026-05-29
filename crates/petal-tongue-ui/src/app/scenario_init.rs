@@ -113,9 +113,9 @@ pub(super) fn finalize_app_startup(
     } else if tutorial_mode.is_enabled() {
         tutorial_mode.load_into_graph(std::sync::Arc::clone(&app.graph), app.current_layout);
     } else if needs_fallback {
-        crate::tutorial_mode::TutorialMode::create_fallback_scenario(
-            std::sync::Arc::clone(&app.graph),
-            app.current_layout,
+        tracing::info!(
+            "No data providers discovered — graph will be empty until ecosystem connects. \
+             Set SHOWCASE_MODE=true or pass --scenario for demo data."
         );
     } else {
         app.refresh_graph_data();

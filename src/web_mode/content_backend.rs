@@ -5,10 +5,11 @@
 //! JSON-RPC client for any primal exposing `content.resolve` / `content.get`.
 //! Socket discovery follows the capability-first pattern:
 //! `CONTENT_BACKEND_SOCKET` env → ecosystem socket-dir convention
-//! → `$XDG_RUNTIME_DIR/biomeos/{content-provider}-{family}.sock`.
+//! → `$BIOMEOS_SOCKET_DIR/{content-provider}-{family}.sock`.
 //!
-//! The backend is primal-agnostic: petalTongue discovers the content provider
-//! by socket, not by name.
+//! TRUE PRIMAL: The backend is primal-agnostic. petalTongue discovers the content
+//! provider by capability socket, never by primal name. The default socket prefix
+//! is `content-provider` (capability-based), overridable via `CONTENT_BACKEND_PROVIDER`.
 
 use axum::response::{Html, IntoResponse};
 use std::sync::Arc;
@@ -25,8 +26,12 @@ impl ContentBackendClient {
     /// Resolution order (first match wins):
     /// 1. `CONTENT_BACKEND_SOCKET` — explicit override
     /// 2. `$BIOMEOS_SOCKET_DIR/{provider}-{family}.sock` where provider is
-    ///    `CONTENT_BACKEND_PROVIDER` env var (default `"nestgate"` for now)
+    ///    `CONTENT_BACKEND_PROVIDER` env var (default `"content-provider"`)
     /// 3. `$XDG_RUNTIME_DIR/biomeos/{provider}-{family}.sock` fallback
+    ///
+    /// TRUE PRIMAL: The default provider name is capability-based (`content-provider`),
+    /// not coupled to any specific primal identity. Override via `CONTENT_BACKEND_PROVIDER`
+    /// or `CONTENT_BACKEND_SOCKET` for explicit routing.
     pub fn from_env() -> Self {
         let socket_path = std::env::var(petal_tongue_core::constants::CONTENT_BACKEND_SOCKET)
             .or_else(|_| std::env::var(petal_tongue_core::constants::NESTGATE_SOCKET))
@@ -34,7 +39,7 @@ impl ContentBackendClient {
                 |_| {
                     let provider =
                         std::env::var(petal_tongue_core::constants::CONTENT_BACKEND_PROVIDER)
-                            .unwrap_or_else(|_| "nestgate".to_owned());
+                            .unwrap_or_else(|_| "content-provider".to_owned());
                     let family = std::env::var(petal_tongue_core::constants::FAMILY_ID)
                         .or_else(|_| {
                             std::env::var(petal_tongue_core::constants::PETALTONGUE_FAMILY_ID)
