@@ -190,8 +190,7 @@ fn create_status_reporter(capabilities: &CapabilityDetector) -> Arc<StatusReport
         reporter.enable_status_file(std::path::PathBuf::from(status_file));
     } else {
         reporter.enable_status_file(
-            std::path::PathBuf::from(constants::LEGACY_TMP_PREFIX)
-                .join(format!("{APP_DIR_NAME}_status.json")),
+            constants::resolve_biomeos_socket_dir().join(format!("{APP_DIR_NAME}_status.json")),
         );
     }
 

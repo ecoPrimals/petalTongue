@@ -115,16 +115,15 @@ impl RegistrationClient {
     /// 1. `DISCOVERY_SOCKET` env var (explicit override, used by NUCLEUS compositions)
     /// 2. `discover_primal_socket` using the capability-based name from
     ///    `petal_tongue_core::constants::discovery_service_socket_name` (includes
-    ///    `<SOCKET_BASENAME>_SOCKET` override and standard biomeOS paths)
-    /// 3. Conventional path `/tmp/biomeos/<socket_base>.sock` when all else fails
+    ///    `<SOCKET_BASENAME>_SOCKET` override and DH-1 `BIOMEOS_SOCKET_DIR` tier)
     #[must_use]
     pub fn new() -> Self {
         let socket_path = std::env::var(constants::DISCOVERY_SOCKET).unwrap_or_else(|_| {
             let socket_base = constants::discovery_service_socket_name();
             crate::socket_path::discover_primal_socket(&socket_base, None, None).map_or_else(
                 |_| {
-                    let prefix = constants::LEGACY_TMP_PREFIX;
-                    format!("{prefix}/biomeos/{socket_base}.sock")
+                    let dir = constants::resolve_biomeos_socket_dir();
+                    format!("{}/{socket_base}.sock", dir.display())
                 },
                 |p| p.to_string_lossy().to_string(),
             )

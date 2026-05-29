@@ -16,7 +16,7 @@ pub enum SocketPathError {
     CreateDir(#[from] std::io::Error),
 
     /// Runtime directory does not exist
-    #[error("Runtime directory does not exist: {path}. Will fall back to /tmp/")]
+    #[error("Runtime directory does not exist: {path}. Using BIOMEOS_SOCKET_DIR fallback chain.")]
     RuntimeDirNotFound {
         /// Path that was checked
         path: PathBuf,

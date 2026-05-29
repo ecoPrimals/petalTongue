@@ -26,7 +26,7 @@ pub struct DetectedProtocol {
 /// Detect protocol from endpoint string
 ///
 /// # Arguments
-/// * `endpoint` - Endpoint URL (e.g., "<tarpc://localhost:9001>", "<unix:///tmp/service.sock>")
+/// * `endpoint` - Endpoint URL (e.g., `"tarpc://localhost:9001"`, `"unix:///run/user/1000/biomeos/service.sock"`)
 ///
 /// # Returns
 /// Detected protocol or HTTPS as fallback

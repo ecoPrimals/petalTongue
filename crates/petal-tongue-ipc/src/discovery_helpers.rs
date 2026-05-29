@@ -22,8 +22,8 @@ fn path_exists_as_file(p: &std::path::Path) -> bool {
     p.exists() && p.is_file()
 }
 
-/// Resolves primal socket: env override → `$XDG_RUNTIME_DIR/biomeos/{primal}.sock`
-/// → `/tmp/biomeos/{primal}.sock`. Returns first path that exists as a file.
+/// Resolves primal socket: env override → DH-1 socket search dirs (DI for tests).
+/// Returns first path that exists as a file.
 #[must_use]
 pub fn resolve_primal_socket(primal: &str) -> Option<PathBuf> {
     resolve_primal_socket_with_env(primal, |k| std::env::var(k).ok())
@@ -43,22 +43,31 @@ pub fn resolve_primal_socket_with_env(
         }
     }
 
-    let xdg_path = env_reader("XDG_RUNTIME_DIR").map(|d| {
-        PathBuf::from(d)
-            .join(primal_names::BIOMEOS)
-            .join(format!("{primal}.sock"))
-    });
-    if let Some(ref p) = xdg_path
-        && path_exists_as_file(p)
-    {
-        return Some(p.clone());
+    // DH-1 tier: BIOMEOS_SOCKET_DIR > XDG > /run/user/{uid} > /tmp
+    let mut search_dirs = Vec::new();
+    if let Some(dir) = env_reader(constants::BIOMEOS_SOCKET_DIR) {
+        search_dirs.push(PathBuf::from(dir));
+    }
+    if let Some(xdg) = env_reader(constants::XDG_RUNTIME_DIR) {
+        let p = PathBuf::from(xdg);
+        if !search_dirs.contains(&p) {
+            search_dirs.push(p);
+        }
+    }
+    // Real env fallback for /run/user/{uid} and /tmp
+    for d in constants::socket_search_dirs() {
+        if !search_dirs.contains(&d) {
+            search_dirs.push(d);
+        }
     }
 
-    let tmp_path = PathBuf::from(constants::LEGACY_TMP_PREFIX)
-        .join(primal_names::BIOMEOS)
-        .join(format!("{primal}.sock"));
-    if path_exists_as_file(&tmp_path) {
-        return Some(tmp_path);
+    for search_dir in search_dirs {
+        let candidate = search_dir
+            .join(primal_names::BIOMEOS)
+            .join(format!("{primal}.sock"));
+        if path_exists_as_file(&candidate) {
+            return Some(candidate);
+        }
     }
 
     None

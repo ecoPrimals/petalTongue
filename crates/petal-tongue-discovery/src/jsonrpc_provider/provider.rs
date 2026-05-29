@@ -65,9 +65,9 @@ impl JsonRpcProvider {
 
         Err(DiscoveryError::NoJsonRpcProvidersFound {
             message: format!(
-                "Tried standard paths: /run/user/{{uid}}/{}.sock, /run/user/{{uid}}/{}.sock, \
-                 /run/user/{{uid}}/{}.sock, /tmp/{}.sock. \
-                 Set BIOMEOS_URL=unix:///path/to/socket for custom path",
+                "Tried DH-1 search dirs ({} dirs) with socket names: {}, {}, {}, {}. \
+                 Set BIOMEOS_URL=unix:///path/to/socket or BIOMEOS_SOCKET_DIR for custom path",
+                petal_tongue_core::constants::socket_search_dirs().len(),
                 biomeos_device_management_socket_name(),
                 biomeos_ui_socket_name(),
                 discovery_service_socket_name(),
@@ -76,28 +76,22 @@ impl JsonRpcProvider {
         })
     }
 
-    /// Get standard Unix socket paths to scan
+    /// Get standard Unix socket paths to scan (DH-1: searches all tier dirs)
     #[doc(hidden)]
     pub fn get_standard_socket_paths() -> DiscoveryResult<Vec<PathBuf>> {
-        let uid = petal_tongue_core::system_info::get_current_uid();
-        let run_user = format!("/run/user/{uid}");
-
-        Ok(vec![
-            PathBuf::from(format!(
-                "{run_user}/{}.sock",
-                biomeos_device_management_socket_name()
-            )),
-            PathBuf::from(format!("{run_user}/{}.sock", biomeos_ui_socket_name())),
-            PathBuf::from(format!(
-                "{run_user}/{}.sock",
-                discovery_service_socket_name()
-            )),
-            PathBuf::from(format!(
-                "{}/{}.sock",
-                petal_tongue_core::constants::LEGACY_TMP_PREFIX,
-                biomeos_legacy_socket_name()
-            )),
-        ])
+        let socket_names = [
+            biomeos_device_management_socket_name(),
+            biomeos_ui_socket_name(),
+            discovery_service_socket_name(),
+            biomeos_legacy_socket_name(),
+        ];
+        let mut paths = Vec::new();
+        for search_dir in petal_tongue_core::constants::socket_search_dirs() {
+            for name in &socket_names {
+                paths.push(search_dir.join(format!("{name}.sock")));
+            }
+        }
+        Ok(paths)
     }
 
     async fn test_connection(path: &Path) -> DiscoveryResult<()> {

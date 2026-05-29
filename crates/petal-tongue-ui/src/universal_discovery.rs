@@ -236,8 +236,9 @@ impl UniversalDiscovery {
 
     /// Discover via Unix socket probing (AGNOSTIC)
     ///
-    /// Probes common socket locations WITHOUT assuming names:
-    /// - /tmp/*.sock
+    /// Probes DH-1 socket search dirs + common locations WITHOUT assuming names:
+    /// - $BIOMEOS_SOCKET_DIR/*.sock
+    /// - $XDG_RUNTIME_DIR/biomeos/*.sock
     /// - /var/run/*.sock
     /// - ~/.local/share/*/sockets/*
     async fn discover_via_unix_socket(&self, capability: &str) -> Result<Vec<DiscoveredService>> {

@@ -21,7 +21,7 @@
 //! use petal_tongue_ipc::JsonRpcClient;
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let client = JsonRpcClient::new("/tmp/biomeos/petaltongue.sock")?;
+//! let client = JsonRpcClient::new("/run/user/1000/biomeos/petaltongue.sock")?;
 //! let health = client.call("health.check", serde_json::json!({})).await?;
 //! println!("Health: {:?}", health);
 //! # Ok(())
