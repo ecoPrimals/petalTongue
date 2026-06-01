@@ -12,25 +12,35 @@ use std::collections::HashMap;
 /// A node in the entity-graph.json format.
 #[derive(Debug, Deserialize)]
 pub struct GraphNode {
+    /// Canonical lowercase identifier (e.g. "beardog").
     pub id: String,
+    /// Human-readable label shown in the visualization.
     pub display: String,
+    /// Entity category (primal, spring, product, infra, garden).
     pub kind: String,
+    /// Unicode glyph representing this entity.
     pub emoji: String,
 }
 
 /// An edge in the entity-graph.json format.
 #[derive(Debug, Deserialize)]
 pub struct GraphEdge {
+    /// Source node ID.
     pub source: String,
+    /// Target node ID.
     pub target: String,
+    /// Relationship label (e.g. "validates", "depends_on").
     pub relation: String,
+    /// Whether this edge is an inverse/back-reference.
     pub inverse: bool,
 }
 
 /// The full entity graph JSON structure.
 #[derive(Debug, Deserialize)]
 pub struct EntityGraph {
+    /// All entities participating in the graph.
     pub nodes: Vec<GraphNode>,
+    /// Relationships between entities.
     pub edges: Vec<GraphEdge>,
 }
 

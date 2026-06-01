@@ -24,10 +24,15 @@ pub use nucleus::{build_nucleus_expand_animation, build_nucleus_scene};
 /// A registered visualization builder.
 #[derive(Debug, Clone, Deserialize)]
 pub struct VizEntry {
+    /// URL-safe identifier (e.g. "entity-graph").
     pub slug: String,
+    /// Human-readable display name.
     pub title: String,
+    /// Short summary of what this visualization shows.
     pub description: String,
+    /// Optional path to external data feeding the visualization.
     pub data_source: Option<PathBuf>,
+    /// Whether this visualization supports animated transitions.
     pub has_animation: bool,
 }
 
