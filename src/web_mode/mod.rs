@@ -110,17 +110,17 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
             content_backend::content_fallback(req, Arc::clone(&client), Arc::clone(&nb), cache_ttl)
         });
     } else if cfg.backend == "content-direct" {
-        let content_dir = cfg.docroot.clone().unwrap_or_else(|| "content".to_string());
-        let content_path = std::path::PathBuf::from(&content_dir);
-        if !content_path.is_dir() {
+        let docroot = cfg.docroot.as_deref().unwrap_or("content");
+        let content_dir = std::path::PathBuf::from(docroot);
+        if !content_dir.is_dir() {
             return Err(AppError::Other(format!(
-                "--docroot must point to a content directory for content-direct backend: {content_dir}"
+                "content-direct backend requires a valid --docroot: {docroot}"
             )));
         }
-        let state = Arc::new(content_direct::ContentDirectState::new(content_path));
+        let state = Arc::new(content_direct::ContentDirectState::new(content_dir));
         tracing::info!(
-            content_dir,
-            "Content-direct backend active (filesystem → DocumentNode → modality)"
+            docroot,
+            "Content-direct backend active (filesystem → DocumentNode pipeline)"
         );
         let index_state = Arc::clone(&state);
         app = app.route(
