@@ -27,9 +27,8 @@ use petal_tongue_core::config_system::Config;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod cli_mode;
-pub mod content_render;
+mod content_render;
 mod data_service;
-pub mod viz_data;
 mod error;
 mod headless_mode;
 #[cfg(feature = "ui")]
@@ -39,6 +38,7 @@ mod server_mode;
 mod signal;
 mod tui_mode;
 mod ui_mode;
+mod viz_data;
 mod web_mode;
 
 use crate::error::AppError;

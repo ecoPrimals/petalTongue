@@ -3,11 +3,11 @@
 //!
 //! Reads raw markdown from a content directory, renders through the
 //! DocumentNode pipeline, and serves the result. This mirrors what
-//! `content-provider` does via NestGate IPC, but reads from disk directly.
+//! `content-provider` does via content-provider IPC, but reads from disk directly.
 //!
 //! Usage: `petaltongue web --backend content-direct --docroot <content_dir>`
 //!
-//! The content directory should be the sporePrint `content/` folder.
+//! The content directory should be a folder of markdown content with TOML front matter.
 //! A sibling `config.toml` is loaded for entity registry resolution.
 //! A sibling `static/` directory is served for CSS/images.
 
@@ -39,7 +39,10 @@ impl ContentDirectState {
         let registry = if config_path.exists() {
             content_render::load_entity_registry(&config_path)
         } else {
-            tracing::warn!(?config_path, "config.toml not found, entity resolution disabled");
+            tracing::warn!(
+                ?config_path,
+                "config.toml not found, entity resolution disabled"
+            );
             HashMap::new()
         };
 
@@ -61,7 +64,13 @@ impl ContentDirectState {
 
         let viz_registry = crate::viz_data::VizRegistry::discover(static_dir.as_deref());
 
-        Self { content_dir, static_dir, registry, nav, viz_registry }
+        Self {
+            content_dir,
+            static_dir,
+            registry,
+            nav,
+            viz_registry,
+        }
     }
 
     /// Resolve a URL path to a markdown file on disk.
@@ -103,11 +112,7 @@ impl ContentDirectState {
         let static_dir = self.static_dir.as_ref()?;
         let clean = url_path.trim_start_matches('/');
         let path = static_dir.join(clean);
-        if path.is_file() {
-            Some(path)
-        } else {
-            None
-        }
+        if path.is_file() { Some(path) } else { None }
     }
 }
 
@@ -153,7 +158,9 @@ pub async fn content_direct_fallback(
     if let Some(file_path) = state.resolve_content_path(&path) {
         match std::fs::read_to_string(&file_path) {
             Ok(content) => {
-                return render_content_with_modality(&content, &path, &accept, &query, &state, cache_ttl);
+                return render_content_with_modality(
+                    &content, &path, &accept, &query, &state, cache_ttl,
+                );
             }
             Err(e) => {
                 tracing::error!(path = %file_path.display(), error = %e, "Failed to read content");
@@ -165,7 +172,11 @@ pub async fn content_direct_fallback(
 }
 
 /// Render markdown content through the DocumentNode pipeline.
-fn render_content(source: &str, path: &str, state: &ContentDirectState) -> axum::response::Response {
+fn render_content(
+    source: &str,
+    path: &str,
+    state: &ContentDirectState,
+) -> axum::response::Response {
     render_content_with_modality(source, path, "text/html", "", state, 0)
 }
 
@@ -194,7 +205,11 @@ fn render_content_with_modality(
 
     if wants_json {
         let json = serde_json::to_string_pretty(&doc).unwrap_or_default();
-        build_response(json.into_bytes(), "application/json; charset=utf-8", cache_ttl)
+        build_response(
+            json.into_bytes(),
+            "application/json; charset=utf-8",
+            cache_ttl,
+        )
     } else if wants_description {
         let output = document_compiler::compile_to_description(&doc);
         match output {
@@ -250,7 +265,8 @@ fn build_response(body: Vec<u8>, content_type: &str, cache_ttl: u64) -> axum::re
     let mut resp = axum::response::Response::new(axum::body::Body::from(body));
     resp.headers_mut().insert(
         header::CONTENT_TYPE,
-        HeaderValue::from_str(content_type).unwrap_or_else(|_| HeaderValue::from_static("application/octet-stream")),
+        HeaderValue::from_str(content_type)
+            .unwrap_or_else(|_| HeaderValue::from_static("application/octet-stream")),
     );
     if cache_ttl > 0 {
         let val = format!("public, max-age={cache_ttl}");
@@ -263,8 +279,8 @@ fn build_response(body: Vec<u8>, content_type: &str, cache_ttl: u64) -> axum::re
 
 fn fallback_index() -> axum::response::Html<&'static str> {
     axum::response::Html(
-        r#"<!DOCTYPE html><html><head><title>sporePrint (petalTongue)</title></head>
-<body><h1>sporePrint</h1><p>Content-direct mode active. Navigate to a content path.</p></body></html>"#,
+        r#"<!DOCTYPE html><html><head><title>petalTongue</title></head>
+<body><h1>petalTongue</h1><p>Content-direct mode active. Navigate to a content path.</p></body></html>"#,
     )
 }
 
@@ -279,12 +295,16 @@ fn expand_viz_embeds(source: &str, state: &ContentDirectState) -> String {
     let prefix = "{{ viz_embed(src=\"";
     while let Some(start) = result.find(prefix) {
         let after = &result[start + prefix.len()..];
-        let Some(end) = after.find("\") }}") else { break };
+        let Some(end) = after.find("\") }}") else {
+            break;
+        };
         let viz_path = &after[..end];
         let full_end = start + prefix.len() + end + 5;
 
         let viz_slug = viz_path.strip_prefix("/viz/").unwrap_or(viz_path);
-        let svg_content = state.viz_registry.build_scene(viz_slug)
+        let svg_content = state
+            .viz_registry
+            .build_scene(viz_slug)
             .and_then(|scene| {
                 let compiler = SvgCompiler::new();
                 match compiler.compile(&scene) {
@@ -309,9 +329,9 @@ fn handle_viz_route(
     state: &ContentDirectState,
     cache_ttl: u64,
 ) -> axum::response::Response {
+    use petal_tongue_scene::modality::description::DescriptionCompiler;
     use petal_tongue_scene::modality::svg::SvgCompiler;
     use petal_tongue_scene::modality::{ModalityCompiler, ModalityOutput};
-    use petal_tongue_scene::modality::description::DescriptionCompiler;
 
     let format = if query.contains("format=scene-json") {
         "scene-json"
@@ -330,7 +350,11 @@ fn handle_viz_route(
         return match state.viz_registry.build_animation(viz_name) {
             Some(seq) => {
                 let json = serde_json::to_string(&seq).unwrap_or_default();
-                build_response(json.into_bytes(), "application/json; charset=utf-8", cache_ttl)
+                build_response(
+                    json.into_bytes(),
+                    "application/json; charset=utf-8",
+                    cache_ttl,
+                )
             }
             None => build_response(
                 b"No animation defined for this visualization".to_vec(),
@@ -353,7 +377,11 @@ fn handle_viz_route(
     match format {
         "scene-json" => {
             let json = serde_json::to_string(&scene).unwrap_or_default();
-            build_response(json.into_bytes(), "application/json; charset=utf-8", cache_ttl)
+            build_response(
+                json.into_bytes(),
+                "application/json; charset=utf-8",
+                cache_ttl,
+            )
         }
         "description" => {
             let compiler = DescriptionCompiler::new();

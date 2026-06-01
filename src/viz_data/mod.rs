@@ -15,7 +15,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-pub use entity_graph::{build_entity_graph_scene, load_entity_graph, EntityGraph};
+pub use entity_graph::{EntityGraph, build_entity_graph_scene, load_entity_graph};
 pub use kderm::{build_kderm_relay_animation, build_kderm_scene};
 pub use nucleus::{build_nucleus_expand_animation, build_nucleus_scene};
 
@@ -46,30 +46,41 @@ impl VizRegistry {
         let graph_exists = graph_path.as_ref().is_some_and(|p| p.is_file());
 
         if graph_exists {
-            entries.insert("entity-graph".to_string(), VizEntry {
-                slug: "entity-graph".to_string(),
-                title: "Entity Graph Explorer".to_string(),
-                description: "Force-directed graph of ecosystem entities and relationships".to_string(),
-                data_source: graph_path,
-                has_animation: false,
-            });
+            entries.insert(
+                "entity-graph".to_string(),
+                VizEntry {
+                    slug: "entity-graph".to_string(),
+                    title: "Entity Graph Explorer".to_string(),
+                    description: "Force-directed graph of ecosystem entities and relationships"
+                        .to_string(),
+                    data_source: graph_path,
+                    has_animation: false,
+                },
+            );
         }
 
-        entries.insert("kderm-topology".to_string(), VizEntry {
-            slug: "kderm-topology".to_string(),
-            title: "K-Derm Diderm Topology".to_string(),
-            description: "5-layer cross-section of sovereign infrastructure with relay chain".to_string(),
-            data_source: None,
-            has_animation: true,
-        });
+        entries.insert(
+            "kderm-topology".to_string(),
+            VizEntry {
+                slug: "kderm-topology".to_string(),
+                title: "K-Derm Diderm Topology".to_string(),
+                description: "5-layer cross-section of sovereign infrastructure with relay chain"
+                    .to_string(),
+                data_source: None,
+                has_animation: true,
+            },
+        );
 
-        entries.insert("nucleus-composition".to_string(), VizEntry {
-            slug: "nucleus-composition".to_string(),
-            title: "NUCLEUS Atomics Composition".to_string(),
-            description: "Nested composition layers from Tower to Full NUCLEUS".to_string(),
-            data_source: None,
-            has_animation: true,
-        });
+        entries.insert(
+            "nucleus-composition".to_string(),
+            VizEntry {
+                slug: "nucleus-composition".to_string(),
+                title: "NUCLEUS Atomics Composition".to_string(),
+                description: "Nested composition layers from Tower to Full NUCLEUS".to_string(),
+                data_source: None,
+                has_animation: true,
+            },
+        );
 
         Self { entries }
     }

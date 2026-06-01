@@ -138,12 +138,6 @@ pub async fn content_index(client: Arc<ContentBackendClient>) -> axum::response:
 }
 
 /// Axum fallback handler that resolves content via the backend.
-///
-/// When the resolved content is markdown (`.md`), it is rendered through the
-/// DocumentNode pipeline into the modality requested by the Accept header:
-/// - `text/html` (default) → full HTML page
-/// - `text/plain` or `?modality=description` → accessible text description
-/// - `application/json` → raw page metadata as JSON
 pub async fn content_fallback(
     req: axum::extract::Request,
     client: Arc<ContentBackendClient>,
@@ -151,14 +145,6 @@ pub async fn content_fallback(
     cache_ttl: u64,
 ) -> axum::response::Response {
     let path = req.uri().path().to_owned();
-    let accept = req
-        .headers()
-        .get(axum::http::header::ACCEPT)
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("text/html")
-        .to_owned();
-    let query = req.uri().query().unwrap_or("").to_owned();
-
     match client.resolve(&path).await {
         Ok(Some((body, mime))) => {
             if super::is_ipynb(&path) {
@@ -170,11 +156,6 @@ pub async fn content_fallback(
                     );
                 }
             }
-
-            if mime.starts_with("text/markdown") || path.ends_with(".md") {
-                return render_markdown_content(&body, &path, &accept, &query, cache_ttl);
-            }
-
             super::build_response(body, &mime, cache_ttl)
         }
         Ok(None) => (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response(),
@@ -185,52 +166,6 @@ pub async fn content_fallback(
                 format!("Content backend unavailable: {e}"),
             )
                 .into_response()
-        }
-    }
-}
-
-/// Render markdown content through the DocumentNode pipeline into the requested modality.
-fn render_markdown_content(
-    body: &[u8],
-    path: &str,
-    accept: &str,
-    query: &str,
-    cache_ttl: u64,
-) -> axum::response::Response {
-    use petal_tongue_scene::modality::document_compiler;
-
-    let source = String::from_utf8_lossy(body);
-    let doc = crate::content_render::parse_document(&source, path);
-
-    let wants_description = accept.contains("text/plain") || query.contains("modality=description");
-    let wants_json = accept.contains("application/json") || query.contains("modality=json");
-
-    if wants_json {
-        let json = serde_json::to_string_pretty(&doc).unwrap_or_default();
-        super::build_response(json.into_bytes(), "application/json; charset=utf-8", cache_ttl)
-    } else if wants_description {
-        let output = document_compiler::compile_to_description(&doc);
-        match output {
-            petal_tongue_scene::ModalityOutput::Description(bytes) => {
-                super::build_response(bytes.to_vec(), "text/plain; charset=utf-8", cache_ttl)
-            }
-            _ => super::build_response(
-                b"Rendering error".to_vec(),
-                "text/plain",
-                0,
-            ),
-        }
-    } else {
-        let output = document_compiler::compile_to_html(&doc);
-        match output {
-            petal_tongue_scene::ModalityOutput::Svg(bytes) => {
-                super::build_response(bytes.to_vec(), "text/html; charset=utf-8", cache_ttl)
-            }
-            _ => super::build_response(
-                b"Rendering error".to_vec(),
-                "text/plain",
-                0,
-            ),
         }
     }
 }
