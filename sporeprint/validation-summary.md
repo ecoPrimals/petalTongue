@@ -1,7 +1,7 @@
 +++
 title = "petalTongue Validation Summary"
-description = "Universal user interface primal — 6,191+ tests, 53 IPC methods, 18 crates, 7 modes, pure Rust"
-date = 2026-05-29
+description = "Universal user interface primal — 6,208+ tests, 53 IPC methods, 18 crates, 7 modes, pure Rust"
+date = 2026-06-01
 
 [taxonomies]
 primals = ["petaltongue"]
@@ -11,7 +11,7 @@ springs = []
 ## Status
 
 - **v1.6.6** — workspace edition 2024, `forbid(unsafe_code)`
-- **6,191+ tests** passing, 0 failed (unit + integration + doc + property)
+- **6,208+ tests** passing, 0 failed (unit + integration + doc + property)
 - **53 IPC methods** across 10 domain categories (health, identity, auth,
   capabilities, visualization, interaction, audio, UI, motor, BTSP)
 - **18 workspace crates** (core, IPC, graph, scene, discovery, adapters,
@@ -21,7 +21,9 @@ springs = []
 - **BTSP Phase 3** encrypted transport (ChaCha20-Poly1305 + HKDF-SHA256)
 - **MethodGate** (JH-0): public/protected method classification with auth enforcement
 - **DH-1 /tmp cleanup**: All socket paths through `BIOMEOS_SOCKET_DIR` tier chain
-- **Stadial gate**: READY (post-primordial, Wave 61 clean)
+- **Stadial gate**: READY (post-primordial, Wave 67 clean)
+- **Content pipeline**: `content_render` + `viz_data` + `content_direct` wired and compiled
+- **flockGate W67/W68 review**: document.rs types, VizRegistry pattern, TRUE PRIMAL fixes applied
 
 ## Key Capabilities
 

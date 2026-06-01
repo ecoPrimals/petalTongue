@@ -59,7 +59,11 @@ fn render_html_node(node: &DocumentNode, buf: &mut String) {
             }
             buf.push_str("</blockquote>\n");
         }
-        DocumentNode::List { ordered, start, items } => {
+        DocumentNode::List {
+            ordered,
+            start,
+            items,
+        } => {
             if *ordered {
                 if let Some(s) = start {
                     let _ = write!(buf, "<ol start=\"{s}\">\n");
@@ -103,11 +107,14 @@ fn render_html_node(node: &DocumentNode, buf: &mut String) {
         DocumentNode::EntityReference(entity) => {
             render_html_entity(entity, buf);
         }
-        DocumentNode::EntityMetrics { key, loc_display, tests_display, files, crates } => {
-            let _ = write!(
-                buf,
-                "<div class=\"entity-metrics\" data-entity=\"{key}\">"
-            );
+        DocumentNode::EntityMetrics {
+            key,
+            loc_display,
+            tests_display,
+            files,
+            crates,
+        } => {
+            let _ = write!(buf, "<div class=\"entity-metrics\" data-entity=\"{key}\">");
             let _ = write!(buf, "<span class=\"loc\">{loc_display}</span>");
             let _ = write!(buf, " <span class=\"tests\">{tests_display}</span>");
             if let Some(f) = files {
@@ -131,7 +138,11 @@ fn render_html_page(meta: &PageMeta, body: &[DocumentNode], buf: &mut String) {
     buf.push_str("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n");
     let _ = write!(buf, "<title>{}</title>\n", html_escape(&meta.title));
     if let Some(desc) = &meta.description {
-        let _ = write!(buf, "<meta name=\"description\" content=\"{}\" />\n", html_escape(desc));
+        let _ = write!(
+            buf,
+            "<meta name=\"description\" content=\"{}\" />\n",
+            html_escape(desc)
+        );
     }
     buf.push_str("</head>\n<body>\n<article>\n");
     let _ = write!(buf, "<h1>{}</h1>\n", html_escape(&meta.title));
@@ -168,8 +179,20 @@ fn render_html_inlines(inlines: &[Inline], buf: &mut String) {
                 render_html_inlines(inner, buf);
                 buf.push_str("</em>");
             }
+            Inline::Strikethrough(inner) => {
+                buf.push_str("<del>");
+                render_html_inlines(inner, buf);
+                buf.push_str("</del>");
+            }
             Inline::Code(c) => {
                 let _ = write!(buf, "<code>{}</code>", html_escape(c));
+            }
+            Inline::Image { alt, src, title } => {
+                let _ = write!(buf, "<img src=\"{src}\" alt=\"{}\"", html_escape(alt));
+                if let Some(t) = title {
+                    let _ = write!(buf, " title=\"{t}\"");
+                }
+                buf.push_str(" />");
             }
             Inline::Link { text, href, title } => {
                 let _ = write!(buf, "<a href=\"{href}\"");
@@ -209,13 +232,31 @@ fn render_html_entity(entity: &EntityRef, buf: &mut String) {
 fn render_html_nav(sections: &[NavSection], buf: &mut String) {
     buf.push_str("<nav class=\"site-nav\">\n");
     for section in sections {
-        let active = if section.active { " class=\"active\"" } else { "" };
+        let active = if section.active {
+            " class=\"active\""
+        } else {
+            ""
+        };
         let _ = write!(buf, "<details{active} open>\n");
-        let _ = write!(buf, "<summary><a href=\"{}\">{}</a></summary>\n", section.path, html_escape(&section.title));
+        let _ = write!(
+            buf,
+            "<summary><a href=\"{}\">{}</a></summary>\n",
+            section.path,
+            html_escape(&section.title)
+        );
         buf.push_str("<ul>\n");
         for page in &section.pages {
-            let current = if page.current { " class=\"current\"" } else { "" };
-            let _ = write!(buf, "<li{current}><a href=\"{}\">{}</a></li>\n", page.path, html_escape(&page.title));
+            let current = if page.current {
+                " class=\"current\""
+            } else {
+                ""
+            };
+            let _ = write!(
+                buf,
+                "<li{current}><a href=\"{}\">{}</a></li>\n",
+                page.path,
+                html_escape(&page.title)
+            );
         }
         buf.push_str("</ul>\n</details>\n");
     }
@@ -283,10 +324,17 @@ fn render_description_node(node: &DocumentNode, buf: &mut String, depth: usize) 
             }
         }
         DocumentNode::Table { headers, rows } => {
-            let _ = writeln!(buf, "{indent}[Table: {} columns, {} rows]", headers.len(), rows.len());
+            let _ = writeln!(
+                buf,
+                "{indent}[Table: {} columns, {} rows]",
+                headers.len(),
+                rows.len()
+            );
             let _ = write!(buf, "{indent}  Headers: ");
             for (i, h) in headers.iter().enumerate() {
-                if i > 0 { buf.push_str(" | "); }
+                if i > 0 {
+                    buf.push_str(" | ");
+                }
                 render_description_inlines(h, buf);
             }
             let _ = writeln!(buf);
@@ -296,18 +344,33 @@ fn render_description_node(node: &DocumentNode, buf: &mut String, depth: usize) 
         }
         DocumentNode::EntityReference(entity) => {
             let _ = writeln!(
-                buf, "{indent}[Entity: {} {} - {}]",
-                entity.emoji, entity.display,
+                buf,
+                "{indent}[Entity: {} {} - {}]",
+                entity.emoji,
+                entity.display,
                 entity.description.as_deref().unwrap_or("no description")
             );
         }
-        DocumentNode::EntityMetrics { key, loc_display, tests_display, .. } => {
-            let _ = writeln!(buf, "{indent}[Metrics for {key}: {loc_display}, {tests_display}]");
+        DocumentNode::EntityMetrics {
+            key,
+            loc_display,
+            tests_display,
+            ..
+        } => {
+            let _ = writeln!(
+                buf,
+                "{indent}[Metrics for {key}: {loc_display}, {tests_display}]"
+            );
         }
         DocumentNode::NavTree { sections } => {
             let _ = writeln!(buf, "{indent}[Navigation: {} sections]", sections.len());
             for section in sections {
-                let _ = writeln!(buf, "{indent}  Section: {} ({} pages)", section.title, section.pages.len());
+                let _ = writeln!(
+                    buf,
+                    "{indent}  Section: {} ({} pages)",
+                    section.title,
+                    section.pages.len()
+                );
             }
         }
         DocumentNode::RawHtml(_) => {
@@ -320,7 +383,7 @@ fn render_description_inlines(inlines: &[Inline], buf: &mut String) {
     for inline in inlines {
         match inline {
             Inline::Text(t) => buf.push_str(t),
-            Inline::Bold(inner) | Inline::Italic(inner) => {
+            Inline::Bold(inner) | Inline::Italic(inner) | Inline::Strikethrough(inner) => {
                 render_description_inlines(inner, buf);
             }
             Inline::Code(c) => {
@@ -329,6 +392,9 @@ fn render_description_inlines(inlines: &[Inline], buf: &mut String) {
             Inline::Link { text, href, .. } => {
                 render_description_inlines(text, buf);
                 let _ = write!(buf, " (link: {href})");
+            }
+            Inline::Image { alt, src, .. } => {
+                let _ = write!(buf, "[Image: {alt} ({src})]");
             }
             Inline::Entity(entity) => {
                 let _ = write!(buf, "{} {}", entity.emoji, entity.display);
@@ -368,11 +434,9 @@ mod tests {
                 description: Some("A test page".into()),
                 ..PageMeta::default()
             },
-            body: vec![
-                DocumentNode::Paragraph {
-                    inlines: vec![Inline::Text("Body text.".into())],
-                },
-            ],
+            body: vec![DocumentNode::Paragraph {
+                inlines: vec![Inline::Text("Body text.".into())],
+            }],
         };
         let output = compile_to_html(&doc);
         match output {

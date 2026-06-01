@@ -6,6 +6,34 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### flockGate W67/W68 Review + Content Pipeline Wiring (June 1, 2026)
+
+Wave 67 — reviewed and integrated flockGate deliverables: content rendering pipeline,
+VizRegistry pattern, and document scene graph types.
+
+#### Added
+- **Module wiring**: `content_render`, `viz_data/`, and `web_mode/content_direct`
+  modules are now compiled into the binary (previously orphaned dead code).
+- **Inline variants**: `Inline::Strikethrough` and `Inline::Image` added to document
+  scene graph and handled by both `compile_markdown` and modality compilers (HTML +
+  description). Closes gap where pulldown-cmark parsed them but they were silently dropped.
+- **Table shortcode resolution**: `resolve_shortcodes` now walks `DocumentNode::Table` cells.
+
+#### Changed
+- **TRUE PRIMAL fix**: Removed hardcoded `/primals/{key}/` and `/springs/{key}/` URL
+  fallbacks from `expand_entity_shortcodes`. Entity href now comes from registry `page`
+  field only — no ecosystem layout assumptions baked into petalTongue.
+- **Serde robustness**: `PageMeta`, `EntityRegistryEntry`, `SiteContent` gained
+  `#[serde(default)]` for safe partial deserialization.
+- **Type quality**: All document types gained `PartialEq` (+ `Eq` where `toml::Value`
+  absence allows). Enables `assert_eq!` in downstream tests.
+- **Doc coupling cleanup**: Removed sporePrint/NestGate name coupling from module docs
+  and HTML output in `content_render.rs` and `content_direct.rs`.
+
+#### Fixed
+- `toml` workspace dependency added to root binary crate (was missing, blocked compilation
+  of `content_render`).
+
 ### Deep Debt Cleanup + DH-1 Compliance (May 29, 2026)
 
 Wave 61 ecosystem tightening — dep trim, TRUE PRIMAL fix, mock isolation, DH-1 /tmp cleanup.

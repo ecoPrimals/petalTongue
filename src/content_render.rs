@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Content rendering pipeline — markdown + TOML front matter to DocumentNode.
 //!
-//! This module implements the pure-primal content pipeline for sporePrint:
-//! raw markdown with TOML `+++` front matter is parsed into a typed
-//! `DocumentNode` tree that can be compiled to any output modality.
+//! Parses raw markdown with TOML `+++` front matter into a typed
+//! `DocumentNode` tree that can be compiled to any output modality
+//! (HTML, description, braille, audio).
 //!
-//! Pipeline: content.resolve (NestGate) → parse → render → modality output.
+//! Pipeline: content source → split front matter → compile markdown → resolve shortcodes → modality output.
 
-use petal_tongue_scene::document::{
-    DocumentNode, EntityRef, Inline, ListItem, PageMeta,
-};
+use petal_tongue_scene::document::{DocumentNode, EntityRef, Inline, ListItem, PageMeta};
 use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
 use std::collections::HashMap;
 
@@ -163,12 +161,38 @@ pub fn compile_markdown(markdown: &str) -> Vec<DocumentNode> {
                 Tag::Strong => {
                     stack.push(StackFrame::Strong(Vec::new()));
                 }
-                Tag::Link { dest_url, title, .. } => {
+                Tag::Strikethrough => {
+                    stack.push(StackFrame::Strikethrough(Vec::new()));
+                }
+                Tag::Link {
+                    dest_url, title, ..
+                } => {
                     stack.push(StackFrame::Link {
                         href: dest_url.to_string(),
-                        title: if title.is_empty() { None } else { Some(title.to_string()) },
+                        title: if title.is_empty() {
+                            None
+                        } else {
+                            Some(title.to_string())
+                        },
                         inlines: Vec::new(),
                     });
+                }
+                Tag::Image {
+                    dest_url, title, ..
+                } => {
+                    push_inline(
+                        &mut stack,
+                        &mut inline_buf,
+                        Inline::Image {
+                            alt: String::new(),
+                            src: dest_url.to_string(),
+                            title: if title.is_empty() {
+                                None
+                            } else {
+                                Some(title.to_string())
+                            },
+                        },
+                    );
                 }
                 _ => {}
             },
@@ -201,7 +225,12 @@ pub fn compile_markdown(markdown: &str) -> Vec<DocumentNode> {
                     }
                 }
                 TagEnd::List(_) => {
-                    if let Some(StackFrame::List { ordered, start, items }) = stack.pop() {
+                    if let Some(StackFrame::List {
+                        ordered,
+                        start,
+                        items,
+                    }) = stack.pop()
+                    {
                         let target = current_block_target(&mut stack, &mut nodes);
                         target.push(DocumentNode::List {
                             ordered,
@@ -213,7 +242,10 @@ pub fn compile_markdown(markdown: &str) -> Vec<DocumentNode> {
                 TagEnd::Item => {
                     if let Some(StackFrame::ListItem(content)) = stack.pop() {
                         if let Some(StackFrame::List { items, .. }) = stack.last_mut() {
-                            items.push(ListItem { checked: None, content });
+                            items.push(ListItem {
+                                checked: None,
+                                content,
+                            });
                         }
                     }
                 }
@@ -237,13 +269,18 @@ pub fn compile_markdown(markdown: &str) -> Vec<DocumentNode> {
                 TagEnd::TableRow => {}
                 TagEnd::TableCell => {
                     let cell_inlines = std::mem::take(&mut inline_buf);
-                    if let Some(StackFrame::Table { headers, rows, in_head }) = stack.last_mut() {
+                    if let Some(StackFrame::Table {
+                        headers,
+                        rows,
+                        in_head,
+                    }) = stack.last_mut()
+                    {
                         if *in_head {
                             headers.push(cell_inlines);
                         } else {
-                            if rows.is_empty() || rows.last().map_or(false, |r| {
-                                r.len() >= headers.len()
-                            }) {
+                            if rows.is_empty()
+                                || rows.last().map_or(false, |r| r.len() >= headers.len())
+                            {
                                 rows.push(Vec::new());
                             }
                             if let Some(row) = rows.last_mut() {
@@ -263,31 +300,51 @@ pub fn compile_markdown(markdown: &str) -> Vec<DocumentNode> {
                     }
                 }
                 TagEnd::Link => {
-                    if let Some(StackFrame::Link { href, title, inlines }) = stack.pop() {
-                        push_inline(&mut stack, &mut inline_buf, Inline::Link { text: inlines, href, title });
+                    if let Some(StackFrame::Link {
+                        href,
+                        title,
+                        inlines,
+                    }) = stack.pop()
+                    {
+                        push_inline(
+                            &mut stack,
+                            &mut inline_buf,
+                            Inline::Link {
+                                text: inlines,
+                                href,
+                                title,
+                            },
+                        );
                     }
                 }
+                TagEnd::Strikethrough => {
+                    if let Some(StackFrame::Strikethrough(inlines)) = stack.pop() {
+                        push_inline(&mut stack, &mut inline_buf, Inline::Strikethrough(inlines));
+                    }
+                }
+                TagEnd::Image => {}
                 _ => {}
             },
-            Event::Text(text) => {
-                match stack.last_mut() {
-                    Some(StackFrame::CodeBlock(_, content)) => {
-                        content.push_str(&text);
-                    }
-                    Some(StackFrame::Emphasis(inlines)) => {
-                        inlines.push(Inline::Text(text.to_string()));
-                    }
-                    Some(StackFrame::Strong(inlines)) => {
-                        inlines.push(Inline::Text(text.to_string()));
-                    }
-                    Some(StackFrame::Link { inlines, .. }) => {
-                        inlines.push(Inline::Text(text.to_string()));
-                    }
-                    _ => {
-                        inline_buf.push(Inline::Text(text.to_string()));
-                    }
+            Event::Text(text) => match stack.last_mut() {
+                Some(StackFrame::CodeBlock(_, content)) => {
+                    content.push_str(&text);
                 }
-            }
+                Some(StackFrame::Emphasis(inlines)) => {
+                    inlines.push(Inline::Text(text.to_string()));
+                }
+                Some(StackFrame::Strong(inlines)) => {
+                    inlines.push(Inline::Text(text.to_string()));
+                }
+                Some(StackFrame::Strikethrough(inlines)) => {
+                    inlines.push(Inline::Text(text.to_string()));
+                }
+                Some(StackFrame::Link { inlines, .. }) => {
+                    inlines.push(Inline::Text(text.to_string()));
+                }
+                _ => {
+                    inline_buf.push(Inline::Text(text.to_string()));
+                }
+            },
             Event::Code(code) => {
                 push_inline(&mut stack, &mut inline_buf, Inline::Code(code.to_string()));
             }
@@ -312,14 +369,15 @@ pub fn compile_markdown(markdown: &str) -> Vec<DocumentNode> {
 /// Parse a full markdown document (front matter + body) into a `DocumentNode::Page`.
 pub fn parse_document(input: &str, path: &str) -> DocumentNode {
     let (front_matter, body) = split_front_matter(input);
-    let mut meta = front_matter
-        .map(parse_front_matter)
-        .unwrap_or_default();
+    let mut meta = front_matter.map(parse_front_matter).unwrap_or_default();
     meta.path = path.to_string();
 
     let body_nodes = compile_markdown(body);
 
-    DocumentNode::Page { meta, body: body_nodes }
+    DocumentNode::Page {
+        meta,
+        body: body_nodes,
+    }
 }
 
 /// Resolve entity shortcodes (`{{ entity(name="...") }}`) in inline text.
@@ -336,6 +394,11 @@ pub fn resolve_shortcodes(
             DocumentNode::List { items, .. } => {
                 for item in items {
                     resolve_shortcodes(&mut item.content, registry);
+                }
+            }
+            DocumentNode::Table { headers, rows } => {
+                for cell in headers.iter_mut().chain(rows.iter_mut().flatten()) {
+                    resolve_inlines(cell, registry);
                 }
             }
             _ => {}
@@ -374,13 +437,7 @@ fn expand_entity_shortcodes(
         if let Some(end_quote) = after_prefix.find("\") }}") {
             let key = &after_prefix[..end_quote];
             if let Some(entry) = registry.get(key) {
-                let href = entry.page.clone().unwrap_or_else(|| {
-                    match entry.kind.as_str() {
-                        "primal" => format!("/primals/{key}/"),
-                        "spring" => format!("/springs/{key}/"),
-                        _ => String::new(),
-                    }
-                });
+                let href = entry.page.clone().unwrap_or_default();
                 result.push(Inline::Entity(EntityRef {
                     key: key.to_string(),
                     display: entry.display.clone(),
@@ -410,13 +467,26 @@ fn expand_entity_shortcodes(
 enum StackFrame {
     Heading(u8),
     CodeBlock(Option<String>, String),
-    List { ordered: bool, start: Option<u64>, items: Vec<ListItem> },
+    List {
+        ordered: bool,
+        start: Option<u64>,
+        items: Vec<ListItem>,
+    },
     ListItem(Vec<DocumentNode>),
     BlockQuote(Vec<DocumentNode>),
-    Table { headers: Vec<Vec<Inline>>, rows: Vec<Vec<Vec<Inline>>>, in_head: bool },
+    Table {
+        headers: Vec<Vec<Inline>>,
+        rows: Vec<Vec<Vec<Inline>>>,
+        in_head: bool,
+    },
     Emphasis(Vec<Inline>),
     Strong(Vec<Inline>),
-    Link { href: String, title: Option<String>, inlines: Vec<Inline> },
+    Strikethrough(Vec<Inline>),
+    Link {
+        href: String,
+        title: Option<String>,
+        inlines: Vec<Inline>,
+    },
 }
 
 fn current_block_target<'a>(
@@ -445,11 +515,12 @@ fn push_inline(stack: &mut [StackFrame], inline_buf: &mut Vec<Inline>, inline: I
 fn inline_to_text(inline: &Inline) -> String {
     match inline {
         Inline::Text(t) => t.clone(),
-        Inline::Bold(inlines) | Inline::Italic(inlines) => {
+        Inline::Bold(inlines) | Inline::Italic(inlines) | Inline::Strikethrough(inlines) => {
             inlines.iter().map(inline_to_text).collect()
         }
         Inline::Code(c) => c.clone(),
         Inline::Link { text, .. } => text.iter().map(inline_to_text).collect(),
+        Inline::Image { alt, .. } => alt.clone(),
         Inline::Entity(e) => format!("{} {}", e.emoji, e.display),
         Inline::LineBreak => " ".to_string(),
     }
@@ -466,7 +537,7 @@ fn slugify(text: &str) -> String {
         .join("-")
 }
 
-/// Load entity registry from a sporePrint `config.toml` file.
+/// Load entity registry from a content site's `config.toml` file.
 ///
 /// Parses `[extra.entity_registry.<key>]` sections into the typed registry map.
 pub fn load_entity_registry(
@@ -500,37 +571,84 @@ pub fn load_entity_registry(
     let mut registry = HashMap::with_capacity(registry_table.len());
 
     for (key, value) in registry_table {
-        let Some(entry_table) = value.as_table() else { continue };
+        let Some(entry_table) = value.as_table() else {
+            continue;
+        };
 
-        let display = entry_table.get("display").and_then(|v| v.as_str()).unwrap_or(key).to_string();
-        let emoji = entry_table.get("emoji").and_then(|v| v.as_str()).unwrap_or("").to_string();
-        let kind = entry_table.get("kind").and_then(|v| v.as_str()).unwrap_or("unknown").to_string();
-        let description = entry_table.get("description").and_then(|v| v.as_str()).map(String::from);
-        let page = entry_table.get("page").and_then(|v| v.as_str()).map(String::from);
-        let repo = entry_table.get("repo").and_then(|v| v.as_str()).map(String::from);
-        let domain = entry_table.get("domain").and_then(|v| v.as_str()).map(String::from);
-        let loc = entry_table.get("loc").and_then(|v| v.as_integer()).map(|n| n as u64);
-        let loc_display = entry_table.get("loc_display").and_then(|v| v.as_str()).map(String::from);
-        let tests = entry_table.get("tests").and_then(|v| v.as_integer()).map(|n| n as u64);
-        let tests_display = entry_table.get("tests_display").and_then(|v| v.as_str()).map(String::from);
-        let files = entry_table.get("files").and_then(|v| v.as_integer()).map(|n| n as u64);
-        let crates = entry_table.get("crates").and_then(|v| v.as_integer()).map(|n| n as u64);
+        let display = entry_table
+            .get("display")
+            .and_then(|v| v.as_str())
+            .unwrap_or(key)
+            .to_string();
+        let emoji = entry_table
+            .get("emoji")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let kind = entry_table
+            .get("kind")
+            .and_then(|v| v.as_str())
+            .unwrap_or("unknown")
+            .to_string();
+        let description = entry_table
+            .get("description")
+            .and_then(|v| v.as_str())
+            .map(String::from);
+        let page = entry_table
+            .get("page")
+            .and_then(|v| v.as_str())
+            .map(String::from);
+        let repo = entry_table
+            .get("repo")
+            .and_then(|v| v.as_str())
+            .map(String::from);
+        let domain = entry_table
+            .get("domain")
+            .and_then(|v| v.as_str())
+            .map(String::from);
+        let loc = entry_table
+            .get("loc")
+            .and_then(|v| v.as_integer())
+            .map(|n| n as u64);
+        let loc_display = entry_table
+            .get("loc_display")
+            .and_then(|v| v.as_str())
+            .map(String::from);
+        let tests = entry_table
+            .get("tests")
+            .and_then(|v| v.as_integer())
+            .map(|n| n as u64);
+        let tests_display = entry_table
+            .get("tests_display")
+            .and_then(|v| v.as_str())
+            .map(String::from);
+        let files = entry_table
+            .get("files")
+            .and_then(|v| v.as_integer())
+            .map(|n| n as u64);
+        let crates = entry_table
+            .get("crates")
+            .and_then(|v| v.as_integer())
+            .map(|n| n as u64);
 
-        registry.insert(key.clone(), EntityRegistryEntry {
-            display,
-            emoji,
-            kind,
-            description,
-            page,
-            repo,
-            domain,
-            loc,
-            loc_display,
-            tests,
-            tests_display,
-            files,
-            crates,
-        });
+        registry.insert(
+            key.clone(),
+            EntityRegistryEntry {
+                display,
+                emoji,
+                kind,
+                description,
+                page,
+                repo,
+                domain,
+                loc,
+                loc_display,
+                tests,
+                tests_display,
+                files,
+                crates,
+            },
+        );
     }
 
     registry
@@ -540,7 +658,9 @@ pub fn load_entity_registry(
 ///
 /// Reads `_index.md` front matter from each subdirectory to get section titles.
 /// Returns sorted `NavSection` entries for sidebar rendering.
-pub fn build_nav_tree(content_dir: &std::path::Path) -> Vec<petal_tongue_scene::document::NavSection> {
+pub fn build_nav_tree(
+    content_dir: &std::path::Path,
+) -> Vec<petal_tongue_scene::document::NavSection> {
     use petal_tongue_scene::document::{NavPage, NavSection};
 
     let mut sections: Vec<(i32, NavSection)> = Vec::new();
@@ -549,10 +669,7 @@ pub fn build_nav_tree(content_dir: &std::path::Path) -> Vec<petal_tongue_scene::
         return Vec::new();
     };
 
-    let mut dirs: Vec<_> = entries
-        .flatten()
-        .filter(|e| e.path().is_dir())
-        .collect();
+    let mut dirs: Vec<_> = entries.flatten().filter(|e| e.path().is_dir()).collect();
     dirs.sort_by_key(|e| e.file_name());
 
     for entry in dirs {
@@ -565,7 +682,10 @@ pub fn build_nav_tree(content_dir: &std::path::Path) -> Vec<petal_tongue_scene::
                 let (fm, _) = split_front_matter(&content);
                 fm.map(|toml_str| {
                     let tbl: toml::Table = toml::from_str(toml_str).unwrap_or_default();
-                    tbl.get("title").and_then(|v| v.as_str()).unwrap_or(&dir_name).to_string()
+                    tbl.get("title")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or(&dir_name)
+                        .to_string()
                 })
                 .unwrap_or_else(|| dir_name.clone())
             } else {
@@ -582,7 +702,9 @@ pub fn build_nav_tree(content_dir: &std::path::Path) -> Vec<petal_tongue_scene::
                     let (fm, _) = split_front_matter(&c);
                     fm.and_then(|t| {
                         let tbl: toml::Table = toml::from_str(t).ok()?;
-                        tbl.get("weight").and_then(|v| v.as_integer()).map(|w| w as i32)
+                        tbl.get("weight")
+                            .and_then(|v| v.as_integer())
+                            .map(|w| w as i32)
                     })
                 })
                 .unwrap_or(999)
@@ -605,7 +727,11 @@ pub fn build_nav_tree(content_dir: &std::path::Path) -> Vec<petal_tongue_scene::
 
             for file_entry in file_entries {
                 let file_path = file_entry.path();
-                let stem = file_path.file_stem().unwrap_or_default().to_string_lossy().to_string();
+                let stem = file_path
+                    .file_stem()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
 
                 let page_title = if let Ok(content) = std::fs::read_to_string(&file_path) {
                     let (fm, _) = split_front_matter(&content);
@@ -626,12 +752,15 @@ pub fn build_nav_tree(content_dir: &std::path::Path) -> Vec<petal_tongue_scene::
             }
         }
 
-        sections.push((weight, NavSection {
-            title,
-            path: format!("/{dir_name}/"),
-            pages,
-            active: false,
-        }));
+        sections.push((
+            weight,
+            NavSection {
+                title,
+                path: format!("/{dir_name}/"),
+                pages,
+                active: false,
+            },
+        ));
     }
 
     sections.sort_by_key(|(w, _)| *w);
@@ -665,7 +794,10 @@ mod tests {
         assert_eq!(meta.title, "Test Page");
         assert_eq!(meta.description.as_deref(), Some("A test"));
         assert_eq!(meta.weight, Some(5));
-        assert_eq!(meta.taxonomies.get("primals").unwrap(), &["beardog", "songbird"]);
+        assert_eq!(
+            meta.taxonomies.get("primals").unwrap(),
+            &["beardog", "songbird"]
+        );
     }
 
     #[test]
@@ -713,21 +845,24 @@ mod tests {
     #[test]
     fn shortcode_expansion() {
         let mut registry = HashMap::new();
-        registry.insert("beardog".to_string(), petal_tongue_scene::document::EntityRegistryEntry {
-            display: "BearDog".into(),
-            emoji: "🐻🐕".into(),
-            kind: "primal".into(),
-            description: Some("Crypto identity".into()),
-            page: None,
-            repo: None,
-            domain: None,
-            loc: None,
-            loc_display: None,
-            tests: None,
-            tests_display: None,
-            files: None,
-            crates: None,
-        });
+        registry.insert(
+            "beardog".to_string(),
+            petal_tongue_scene::document::EntityRegistryEntry {
+                display: "BearDog".into(),
+                emoji: "🐻🐕".into(),
+                kind: "primal".into(),
+                description: Some("Crypto identity".into()),
+                page: None,
+                repo: None,
+                domain: None,
+                loc: None,
+                loc_display: None,
+                tests: None,
+                tests_display: None,
+                files: None,
+                crates: None,
+            },
+        );
 
         let text = "See {{ entity(name=\"beardog\") }} for details.";
         let result = expand_entity_shortcodes(text, &registry);
@@ -736,7 +871,7 @@ mod tests {
             Inline::Entity(e) => {
                 assert_eq!(e.key, "beardog");
                 assert_eq!(e.display, "BearDog");
-                assert_eq!(e.href.as_deref(), Some("/primals/beardog/"));
+                assert_eq!(e.href, None);
             }
             _ => panic!("expected entity ref"),
         }
@@ -745,6 +880,9 @@ mod tests {
     #[test]
     fn slugify_works() {
         assert_eq!(slugify("Hello World"), "hello-world");
-        assert_eq!(slugify("The Five Properties — Adapted"), "the-five-properties-adapted");
+        assert_eq!(
+            slugify("The Five Properties — Adapted"),
+            "the-five-properties-adapted"
+        );
     }
 }

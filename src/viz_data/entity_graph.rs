@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Entity graph scene builder — force-directed layout from JSON data.
 
-use petal_tongue_scene::primitive::{AnchorPoint, Color, LineCap, LineJoin, Primitive, StrokeStyle};
+use petal_tongue_scene::primitive::{
+    AnchorPoint, Color, LineCap, LineJoin, Primitive, StrokeStyle,
+};
 use petal_tongue_scene::scene_graph::{SceneGraph, SceneNode};
 use petal_tongue_scene::transform::Transform2D;
 use serde::Deserialize;
@@ -60,10 +62,19 @@ fn relation_color(relation: &str) -> Color {
 }
 
 /// Fruchterman-Reingold-style force-directed layout.
-fn force_layout(nodes: &[GraphNode], edges: &[GraphEdge], width: f64, height: f64) -> HashMap<String, (f64, f64)> {
+fn force_layout(
+    nodes: &[GraphNode],
+    edges: &[GraphEdge],
+    width: f64,
+    height: f64,
+) -> HashMap<String, (f64, f64)> {
     let n = nodes.len();
     let mut positions: Vec<(f64, f64)> = Vec::with_capacity(n);
-    let id_to_idx: HashMap<&str, usize> = nodes.iter().enumerate().map(|(i, n)| (n.id.as_str(), i)).collect();
+    let id_to_idx: HashMap<&str, usize> = nodes
+        .iter()
+        .enumerate()
+        .map(|(i, n)| (n.id.as_str(), i))
+        .collect();
 
     for i in 0..n {
         let angle = 2.0 * std::f64::consts::PI * (i as f64) / (n as f64);
@@ -99,8 +110,12 @@ fn force_layout(nodes: &[GraphNode], edges: &[GraphEdge], width: f64, height: f6
             if edge.inverse {
                 continue;
             }
-            let Some(&si) = id_to_idx.get(edge.source.as_str()) else { continue };
-            let Some(&ti) = id_to_idx.get(edge.target.as_str()) else { continue };
+            let Some(&si) = id_to_idx.get(edge.source.as_str()) else {
+                continue;
+            };
+            let Some(&ti) = id_to_idx.get(edge.target.as_str()) else {
+                continue;
+            };
             let dx = positions[si].0 - positions[ti].0;
             let dy = positions[si].1 - positions[ti].1;
             let dist = dx.hypot(dy).max(1.0);
@@ -122,7 +137,11 @@ fn force_layout(nodes: &[GraphNode], edges: &[GraphEdge], width: f64, height: f6
         }
     }
 
-    nodes.iter().enumerate().map(|(i, n)| (n.id.clone(), positions[i])).collect()
+    nodes
+        .iter()
+        .enumerate()
+        .map(|(i, n)| (n.id.clone(), positions[i]))
+        .collect()
 }
 
 /// Build the entity graph scene from parsed JSON data.
@@ -140,8 +159,12 @@ pub fn build_entity_graph_scene(graph: &EntityGraph) -> SceneGraph {
         if edge.inverse {
             continue;
         }
-        let Some(&(sx, sy)) = positions.get(&edge.source) else { continue };
-        let Some(&(tx, ty)) = positions.get(&edge.target) else { continue };
+        let Some(&(sx, sy)) = positions.get(&edge.source) else {
+            continue;
+        };
+        let Some(&(tx, ty)) = positions.get(&edge.target) else {
+            continue;
+        };
 
         let edge_prim = Primitive::Line {
             points: vec![[sx, sy], [tx, ty]],
@@ -165,7 +188,9 @@ pub fn build_entity_graph_scene(graph: &EntityGraph) -> SceneGraph {
     scene.add_to_root(nodes_group);
 
     for gn in &graph.nodes {
-        let Some(&(x, y)) = positions.get(&gn.id) else { continue };
+        let Some(&(x, y)) = positions.get(&gn.id) else {
+            continue;
+        };
         let color = kind_color(&gn.kind);
         let radius = match gn.kind.as_str() {
             "primal" => 10.0,
@@ -175,22 +200,29 @@ pub fn build_entity_graph_scene(graph: &EntityGraph) -> SceneGraph {
         };
 
         let circle = Primitive::Point {
-            x, y, radius,
+            x,
+            y,
+            radius,
             fill: Some(color),
             stroke: Some(StrokeStyle {
                 color: Color::from_rgba8(30, 30, 46, 200),
-                width: 1.5, cap: LineCap::Round, join: LineJoin::Round,
+                width: 1.5,
+                cap: LineCap::Round,
+                join: LineJoin::Round,
             }),
             data_id: Some(gn.id.clone()),
         };
 
         let label = Primitive::Text {
-            x, y: y + radius + 12.0,
+            x,
+            y: y + radius + 12.0,
             content: gn.display.clone(),
             font_size: 9.0,
             color: Color::from_rgba8(205, 214, 244, 255),
             anchor: AnchorPoint::TopCenter,
-            bold: false, italic: false, data_id: None,
+            bold: false,
+            italic: false,
+            data_id: None,
         };
 
         let node = SceneNode::new(format!("node-{}", gn.id))
@@ -208,9 +240,13 @@ pub fn build_entity_graph_scene(graph: &EntityGraph) -> SceneGraph {
 
 fn build_legend(width: f64) -> SceneNode {
     let kinds = [
-        ("primal", "Primals"), ("spring", "Springs"), ("product", "Products"),
-        ("composition", "Compositions"), ("concept", "Concepts"),
-        ("infra", "Infrastructure"), ("org", "Organizations"),
+        ("primal", "Primals"),
+        ("spring", "Springs"),
+        ("product", "Products"),
+        ("composition", "Compositions"),
+        ("concept", "Concepts"),
+        ("infra", "Infrastructure"),
+        ("org", "Organizations"),
     ];
 
     let mut legend = SceneNode::new("legend")
@@ -220,15 +256,23 @@ fn build_legend(width: f64) -> SceneNode {
     for (i, (kind, label)) in kinds.iter().enumerate() {
         let y = i as f64 * 18.0 + 5.0;
         legend.primitives.push(Primitive::Point {
-            x: 8.0, y: y + 4.0, radius: 5.0,
-            fill: Some(kind_color(kind)), stroke: None, data_id: None,
+            x: 8.0,
+            y: y + 4.0,
+            radius: 5.0,
+            fill: Some(kind_color(kind)),
+            stroke: None,
+            data_id: None,
         });
         legend.primitives.push(Primitive::Text {
-            x: 20.0, y,
-            content: (*label).to_string(), font_size: 10.0,
+            x: 20.0,
+            y,
+            content: (*label).to_string(),
+            font_size: 10.0,
             color: Color::from_rgba8(186, 194, 222, 255),
             anchor: AnchorPoint::TopLeft,
-            bold: false, italic: false, data_id: None,
+            bold: false,
+            italic: false,
+            data_id: None,
         });
     }
 
