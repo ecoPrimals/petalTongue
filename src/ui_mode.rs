@@ -374,8 +374,8 @@ mod tests {
         let data_service = Arc::new(crate::data_service::DataService::new());
         let result = run(None, false, data_service).await;
         let err = result.unwrap_err();
-        // Verify it's a proper error chain (has at least one error in chain)
-        assert!(err.chain().next().is_some());
+        // Verify it's a proper error (has a Display representation)
+        assert!(!err.to_string().is_empty());
     }
 
     #[test]

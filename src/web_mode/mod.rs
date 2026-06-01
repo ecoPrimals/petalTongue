@@ -8,6 +8,7 @@
 //! `callback_tx` push over UDS.
 
 pub mod content_backend;
+pub mod content_direct;
 mod handlers;
 #[cfg(test)]
 mod tests;
@@ -107,6 +108,27 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         let nb = Arc::clone(&nb_config);
         app = app.fallback(move |req: axum::extract::Request| {
             content_backend::content_fallback(req, Arc::clone(&client), Arc::clone(&nb), cache_ttl)
+        });
+    } else if cfg.backend == "content-direct" {
+        let content_dir = cfg.docroot.clone().unwrap_or_else(|| "content".to_string());
+        let content_path = std::path::PathBuf::from(&content_dir);
+        if !content_path.is_dir() {
+            return Err(AppError::Other(format!(
+                "--docroot must point to a content directory for content-direct backend: {content_dir}"
+            )));
+        }
+        let state = Arc::new(content_direct::ContentDirectState::new(content_path));
+        tracing::info!(
+            content_dir,
+            "Content-direct backend active (filesystem → DocumentNode → modality)"
+        );
+        let index_state = Arc::clone(&state);
+        app = app.route(
+            "/",
+            get(move || content_direct::content_direct_index(Arc::clone(&index_state))),
+        );
+        app = app.fallback(move |req: axum::extract::Request| {
+            content_direct::content_direct_fallback(req, Arc::clone(&state), cache_ttl)
         });
     } else {
         app = app.route("/", get(index_handler));
