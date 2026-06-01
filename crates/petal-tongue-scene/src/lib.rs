@@ -26,6 +26,7 @@ pub mod animation;
 pub mod audio_synthesis;
 pub mod compiler;
 pub mod dashboard;
+pub mod document;
 pub mod data_binding;
 pub mod domain_palette;
 pub mod equation;
@@ -79,6 +80,7 @@ pub use math::{
 pub use modality::{
     AudioParam, BrailleCell, BrailleCompiler, HapticCommand, HapticCompiler, HapticPattern,
     ModalityCompiler, ModalityOutput,
+    document_compiler::{compile_to_description, compile_to_html},
 };
 pub use physics::{CollisionShape, PhysicsBody, PhysicsWorld};
 pub use primitive::{

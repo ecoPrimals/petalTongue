@@ -7,6 +7,7 @@
 pub mod audio;
 pub mod braille;
 pub mod description;
+pub mod document_compiler;
 pub mod haptic;
 pub mod svg;
 pub mod terminal;
