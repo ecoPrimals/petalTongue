@@ -25,6 +25,7 @@ pub struct ContentDirectState {
     pub static_dir: Option<PathBuf>,
     pub registry: HashMap<String, EntityRegistryEntry>,
     pub nav: Vec<NavSection>,
+    pub viz_registry: crate::viz_data::VizRegistry,
 }
 
 impl ContentDirectState {
@@ -58,7 +59,9 @@ impl ContentDirectState {
             "Content-direct backend initialized"
         );
 
-        Self { content_dir, static_dir, registry, nav }
+        let viz_registry = crate::viz_data::VizRegistry::discover(static_dir.as_deref());
+
+        Self { content_dir, static_dir, registry, nav, viz_registry }
     }
 
     /// Resolve a URL path to a markdown file on disk.
@@ -136,6 +139,11 @@ pub async fn content_direct_fallback(
         .to_owned();
     let query = req.uri().query().unwrap_or("").to_owned();
 
+    // Visualization routes
+    if path.starts_with("/viz/") {
+        return handle_viz_route(&path, &query, &state, cache_ttl);
+    }
+
     // Static files first (Zola convention: static/foo served at /foo)
     if let Some(file_path) = state.resolve_static_path(&path) {
         return serve_static_file(&file_path, cache_ttl).await;
@@ -172,7 +180,9 @@ fn render_content_with_modality(
 ) -> axum::response::Response {
     use petal_tongue_scene::modality::document_compiler;
 
-    let mut doc = content_render::parse_document(source, path);
+    // Pre-process: expand viz_embed shortcodes into inline SVG
+    let source = expand_viz_embeds(source, state);
+    let mut doc = content_render::parse_document(&source, path);
 
     // Resolve shortcodes against registry
     if let petal_tongue_scene::document::DocumentNode::Page { body, .. } = &mut doc {
@@ -229,6 +239,7 @@ fn mime_from_extension(path: &Path) -> &'static str {
         Some("ico") => "image/x-icon",
         Some("xml") => "application/xml",
         Some("txt") => "text/plain; charset=utf-8",
+        Some("wasm") => "application/wasm",
         _ => "application/octet-stream",
     }
 }
@@ -255,4 +266,112 @@ fn fallback_index() -> axum::response::Html<&'static str> {
         r#"<!DOCTYPE html><html><head><title>sporePrint (petalTongue)</title></head>
 <body><h1>sporePrint</h1><p>Content-direct mode active. Navigate to a content path.</p></body></html>"#,
     )
+}
+
+/// Expand `{{ viz_embed(src="/viz/...") }}` shortcodes into inline SVG.
+///
+/// Uses the `VizRegistry` for capability-based scene building.
+fn expand_viz_embeds(source: &str, state: &ContentDirectState) -> String {
+    use petal_tongue_scene::modality::svg::SvgCompiler;
+    use petal_tongue_scene::modality::{ModalityCompiler, ModalityOutput};
+
+    let mut result = source.to_string();
+    let prefix = "{{ viz_embed(src=\"";
+    while let Some(start) = result.find(prefix) {
+        let after = &result[start + prefix.len()..];
+        let Some(end) = after.find("\") }}") else { break };
+        let viz_path = &after[..end];
+        let full_end = start + prefix.len() + end + 5;
+
+        let viz_slug = viz_path.strip_prefix("/viz/").unwrap_or(viz_path);
+        let svg_content = state.viz_registry.build_scene(viz_slug)
+            .and_then(|scene| {
+                let compiler = SvgCompiler::new();
+                match compiler.compile(&scene) {
+                    ModalityOutput::Svg(bytes) => String::from_utf8(bytes.to_vec()).ok(),
+                    _ => None,
+                }
+            })
+            .unwrap_or_default();
+
+        result.replace_range(start..full_end, &svg_content);
+    }
+    result
+}
+
+/// Handle /viz/* routes for ecosystem visualizations.
+///
+/// Uses the `VizRegistry` for capability-based discovery — no hardcoded
+/// visualization names in the route handler itself.
+fn handle_viz_route(
+    path: &str,
+    query: &str,
+    state: &ContentDirectState,
+    cache_ttl: u64,
+) -> axum::response::Response {
+    use petal_tongue_scene::modality::svg::SvgCompiler;
+    use petal_tongue_scene::modality::{ModalityCompiler, ModalityOutput};
+    use petal_tongue_scene::modality::description::DescriptionCompiler;
+
+    let format = if query.contains("format=scene-json") {
+        "scene-json"
+    } else if query.contains("format=description") {
+        "description"
+    } else if query.contains("format=animation-json") {
+        "animation-json"
+    } else {
+        "svg"
+    };
+
+    let viz_name = path.strip_prefix("/viz/").unwrap_or("");
+
+    // Animation format doesn't require a scene build
+    if format == "animation-json" {
+        return match state.viz_registry.build_animation(viz_name) {
+            Some(seq) => {
+                let json = serde_json::to_string(&seq).unwrap_or_default();
+                build_response(json.into_bytes(), "application/json; charset=utf-8", cache_ttl)
+            }
+            None => build_response(
+                b"No animation defined for this visualization".to_vec(),
+                "text/plain",
+                0,
+            ),
+        };
+    }
+
+    // Build scene via registry (capability-based discovery)
+    let Some(scene) = state.viz_registry.build_scene(viz_name) else {
+        let available = state.viz_registry.available().join(", ");
+        return build_response(
+            format!("Unknown visualization: {viz_name}. Available: {available}").into_bytes(),
+            "text/plain",
+            0,
+        );
+    };
+
+    match format {
+        "scene-json" => {
+            let json = serde_json::to_string(&scene).unwrap_or_default();
+            build_response(json.into_bytes(), "application/json; charset=utf-8", cache_ttl)
+        }
+        "description" => {
+            let compiler = DescriptionCompiler::new();
+            match compiler.compile(&scene) {
+                ModalityOutput::Description(bytes) => {
+                    build_response(bytes.to_vec(), "text/plain; charset=utf-8", cache_ttl)
+                }
+                _ => build_response(b"Description compilation error".to_vec(), "text/plain", 0),
+            }
+        }
+        _ => {
+            let compiler = SvgCompiler::new();
+            match compiler.compile(&scene) {
+                ModalityOutput::Svg(bytes) => {
+                    build_response(bytes.to_vec(), "image/svg+xml; charset=utf-8", cache_ttl)
+                }
+                _ => build_response(b"SVG compilation error".to_vec(), "text/plain", 0),
+            }
+        }
+    }
 }
