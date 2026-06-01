@@ -29,6 +29,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 mod cli_mode;
 pub mod content_render;
 mod data_service;
+pub mod viz_data;
 mod error;
 mod headless_mode;
 #[cfg(feature = "ui")]
