@@ -22,7 +22,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Metadata extracted from TOML `+++` front matter.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct PageMeta {
     pub title: String,
     pub description: Option<String>,
@@ -34,8 +35,8 @@ pub struct PageMeta {
     pub extra: HashMap<String, toml::Value>,
 }
 
-/// A resolved entity reference from the sporePrint registry.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// A resolved entity reference for shortcode expansion.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EntityRef {
     pub key: String,
     pub display: String,
@@ -45,13 +46,23 @@ pub struct EntityRef {
 }
 
 /// Inline content elements within a paragraph or heading.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Inline {
     Text(String),
     Bold(Vec<Inline>),
     Italic(Vec<Inline>),
+    Strikethrough(Vec<Inline>),
     Code(String),
-    Link { text: Vec<Inline>, href: String, title: Option<String> },
+    Link {
+        text: Vec<Inline>,
+        href: String,
+        title: Option<String>,
+    },
+    Image {
+        alt: String,
+        src: String,
+        title: Option<String>,
+    },
     Entity(EntityRef),
     LineBreak,
 }
@@ -61,28 +72,45 @@ pub enum Inline {
 /// Designed for multi-modal compilation: the same `DocumentNode` tree can
 /// produce HTML for sighted users, structured text for screen readers,
 /// braille patterns for tactile displays, or audio with sonified navigation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DocumentNode {
     /// A complete page with metadata and body content.
-    Page { meta: PageMeta, body: Vec<DocumentNode> },
+    Page {
+        meta: PageMeta,
+        body: Vec<DocumentNode>,
+    },
 
     /// Heading (h1-h6) with anchor ID for navigation.
-    Heading { level: u8, inlines: Vec<Inline>, id: String },
+    Heading {
+        level: u8,
+        inlines: Vec<Inline>,
+        id: String,
+    },
 
     /// Paragraph of inline content.
     Paragraph { inlines: Vec<Inline> },
 
     /// Fenced code block with optional language annotation.
-    CodeBlock { language: Option<String>, content: String },
+    CodeBlock {
+        language: Option<String>,
+        content: String,
+    },
 
     /// Block quote (recursive content).
     BlockQuote { children: Vec<DocumentNode> },
 
     /// Ordered or unordered list.
-    List { ordered: bool, start: Option<u64>, items: Vec<ListItem> },
+    List {
+        ordered: bool,
+        start: Option<u64>,
+        items: Vec<ListItem>,
+    },
 
     /// Table with headers and rows.
-    Table { headers: Vec<Vec<Inline>>, rows: Vec<Vec<Vec<Inline>>> },
+    Table {
+        headers: Vec<Vec<Inline>>,
+        rows: Vec<Vec<Vec<Inline>>>,
+    },
 
     /// Horizontal rule / thematic break.
     ThematicBreak,
@@ -91,7 +119,13 @@ pub enum DocumentNode {
     EntityReference(EntityRef),
 
     /// Entity metrics line (LOC/tests/files).
-    EntityMetrics { key: String, loc_display: String, tests_display: String, files: Option<u64>, crates: Option<u64> },
+    EntityMetrics {
+        key: String,
+        loc_display: String,
+        tests_display: String,
+        files: Option<u64>,
+        crates: Option<u64>,
+    },
 
     /// Navigation tree (site structure for sidebar).
     NavTree { sections: Vec<NavSection> },
@@ -101,14 +135,14 @@ pub enum DocumentNode {
 }
 
 /// A list item, which may contain nested block content.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ListItem {
     pub checked: Option<bool>,
     pub content: Vec<DocumentNode>,
 }
 
 /// A section in the navigation tree.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NavSection {
     pub title: String,
     pub path: String,
@@ -117,7 +151,7 @@ pub struct NavSection {
 }
 
 /// A page entry in navigation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NavPage {
     pub title: String,
     pub path: String,
@@ -125,7 +159,7 @@ pub struct NavPage {
 }
 
 /// Search index entry for full-text search.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SearchEntry {
     pub title: String,
     pub path: String,
@@ -133,8 +167,9 @@ pub struct SearchEntry {
     pub body_preview: String,
 }
 
-/// The complete site content model — loaded at startup from NestGate.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+/// The complete site content model — loaded at startup from a content provider.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct SiteContent {
     pub pages: Vec<DocumentNode>,
     pub nav: Vec<NavSection>,
@@ -142,8 +177,9 @@ pub struct SiteContent {
     pub entity_registry: HashMap<String, EntityRegistryEntry>,
 }
 
-/// An entity in the registry (mirrors sporePrint config.toml schema).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// An entity in the registry — configurable content entity with display metadata.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct EntityRegistryEntry {
     pub display: String,
     pub emoji: String,
