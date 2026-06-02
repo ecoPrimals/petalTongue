@@ -57,14 +57,14 @@ pub fn has_updates_since(viz_state: &Arc<RwLock<VisualizationState>>, since: Ins
 
 /// Format domain as a display label.
 #[must_use]
-pub fn domain_label(domain: &Option<String>) -> &str {
-    domain.as_deref().unwrap_or("general")
+pub fn domain_label(domain: Option<&str>) -> &str {
+    domain.unwrap_or("general")
 }
 
 /// Color hint for a domain (r, g, b).
 #[must_use]
-pub fn domain_color_rgb(domain: &Option<String>) -> (u8, u8, u8) {
-    match domain.as_deref() {
+pub fn domain_color_rgb(domain: Option<&str>) -> (u8, u8, u8) {
+    match domain {
         Some("health") => (100, 180, 200),
         Some("physics") => (180, 120, 220),
         Some("ecology") => (120, 170, 100),
@@ -109,8 +109,8 @@ pub fn render_sessions_panel(ui: &mut egui::Ui, viz_state: &Arc<RwLock<Visualiza
     ui.separator();
 
     for summary in &summaries {
-        let (r, g, b) = domain_color_rgb(&summary.domain);
-        let domain_text = domain_label(&summary.domain);
+        let (r, g, b) = domain_color_rgb(summary.domain.as_deref());
+        let domain_text = domain_label(summary.domain.as_deref());
 
         ui.horizontal(|ui| {
             ui.label(egui::RichText::new("●").color(egui::Color32::from_rgb(r, g, b)));
@@ -142,30 +142,24 @@ mod tests {
 
     #[test]
     fn domain_label_known() {
-        assert_eq!(domain_label(&Some("health".to_string())), "health");
+        assert_eq!(domain_label(Some("health")), "health");
     }
 
     #[test]
     fn domain_label_none() {
-        assert_eq!(domain_label(&None), "general");
+        assert_eq!(domain_label(None), "general");
     }
 
     #[test]
     fn domain_color_known_domains() {
-        assert_eq!(
-            domain_color_rgb(&Some("health".to_string())),
-            (100, 180, 200)
-        );
-        assert_eq!(domain_color_rgb(&Some("game".to_string())), (220, 160, 80));
+        assert_eq!(domain_color_rgb(Some("health")), (100, 180, 200));
+        assert_eq!(domain_color_rgb(Some("game")), (220, 160, 80));
     }
 
     #[test]
     fn domain_color_unknown() {
-        assert_eq!(
-            domain_color_rgb(&Some("unknown".to_string())),
-            (160, 160, 170)
-        );
-        assert_eq!(domain_color_rgb(&None), (160, 160, 170));
+        assert_eq!(domain_color_rgb(Some("unknown")), (160, 160, 170));
+        assert_eq!(domain_color_rgb(None), (160, 160, 170));
     }
 
     #[test]

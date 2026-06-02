@@ -29,7 +29,6 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 egui = { workspace = true, optional = true }
-egui_extras = { workspace = true, optional = true }
 egui_plot = { workspace = true, optional = true }
 
 # Pure Rust audio file generation (no system dependencies - always available)
@@ -43,7 +42,7 @@ rand = { workspace = true }
 
 [features]
 default = ["egui-render"]
-egui-render = ["dep:egui", "dep:egui_extras", "dep:egui_plot", "dep:petal-tongue-scene"]
+egui-render = ["dep:egui", "dep:egui_plot", "dep:petal-tongue-scene"]
 
 # REMOVED: native-audio feature (was requiring ALSA via rodio)
 # Audio playback is now:

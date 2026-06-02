@@ -130,9 +130,9 @@ impl PanelInstance for MetricsPanel {
         }
 
         let display = prepare_metrics_panel_display(
-            &self.last_metrics,
+            self.last_metrics.as_ref(),
             self.last_update,
-            &self.error_message,
+            self.error_message.as_deref(),
         );
 
         ui.heading("📊 System Metrics");
@@ -384,7 +384,7 @@ mod tests {
         };
 
         let last_update = Instant::now().checked_sub(Duration::from_secs(5)).unwrap();
-        let display = prepare_metrics_panel_display(&Some(metrics), last_update, &None);
+        let display = prepare_metrics_panel_display(Some(&metrics), last_update, None);
         assert!(display.metrics_summary.is_some());
         let s = display.metrics_summary.unwrap();
         assert_eq!(s.cpu_percent, 25.0);

@@ -305,7 +305,7 @@ pub fn render_all_panels(ctx: &egui::Context, app: &mut PetalTongueApp) {
                 super::CentralView::SceneViewer { session_filter } => {
                     crate::scene_viewer::render_with_interaction(
                         ui,
-                        &app.visualization_state,
+                        app.visualization_state.as_ref(),
                         session_filter.as_deref(),
                         app.interaction_subscribers.as_ref(),
                     );

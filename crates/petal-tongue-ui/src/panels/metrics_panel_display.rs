@@ -59,16 +59,16 @@ pub struct MetricsSummary {
 /// Prepares display state from metrics, last update time, and optional error.
 #[must_use]
 pub fn prepare_metrics_panel_display(
-    metrics: &Option<SystemMetrics>,
+    metrics: Option<&SystemMetrics>,
     last_update: Instant,
-    error: &Option<String>,
+    error: Option<&str>,
 ) -> MetricsPanelDisplayState {
     let age_secs = last_update.elapsed().as_secs();
     let is_stale = age_secs >= 30;
 
-    let update_age_text = metrics.as_ref().map(|_| format_update_age(age_secs));
+    let update_age_text = metrics.map(|_| format_update_age(age_secs));
 
-    let metrics_summary = metrics.as_ref().map(|m| MetricsSummary {
+    let metrics_summary = metrics.map(|m| MetricsSummary {
         cpu_percent: m.system.cpu_percent,
         memory_percent: m.system.memory_percent,
         memory_used_mb: m.system.memory_used_mb,
@@ -82,7 +82,7 @@ pub fn prepare_metrics_panel_display(
 
     MetricsPanelDisplayState {
         metrics_summary,
-        error_message: error.clone(),
+        error_message: error.map(String::from),
         update_age_text,
         is_stale,
     }
@@ -132,7 +132,7 @@ mod tests {
         };
 
         let last_update = Instant::now().checked_sub(Duration::from_secs(2)).unwrap();
-        let display = prepare_metrics_panel_display(&Some(metrics), last_update, &None);
+        let display = prepare_metrics_panel_display(Some(&metrics), last_update, None);
 
         assert!(display.metrics_summary.is_some());
         let summary = display.metrics_summary.unwrap();
@@ -150,11 +150,8 @@ mod tests {
     #[test]
     fn test_prepare_metrics_panel_display_stale() {
         let last_update = Instant::now().checked_sub(Duration::from_secs(45)).unwrap();
-        let display = prepare_metrics_panel_display(
-            &None,
-            last_update,
-            &Some("Neural API not available".to_string()),
-        );
+        let display =
+            prepare_metrics_panel_display(None, last_update, Some("Neural API not available"));
 
         assert!(display.metrics_summary.is_none());
         assert_eq!(
@@ -185,7 +182,7 @@ mod tests {
         };
 
         let last_update = Instant::now().checked_sub(Duration::from_secs(35)).unwrap();
-        let display = prepare_metrics_panel_display(&Some(metrics), last_update, &None);
+        let display = prepare_metrics_panel_display(Some(&metrics), last_update, None);
 
         assert!(display.metrics_summary.is_some());
         assert_eq!(display.update_age_text.as_deref(), Some("Stale (>30s)"));

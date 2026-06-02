@@ -163,7 +163,8 @@ pub const BIOMEOS_WS_ENDPOINT: &str = "BIOMEOS_WS_ENDPOINT";
 /// Content backend socket path override.
 pub const CONTENT_BACKEND_SOCKET: &str = "CONTENT_BACKEND_SOCKET";
 
-/// nestgate content provider socket path override (legacy alias).
+/// Legacy content provider socket alias. Use `CONTENT_BACKEND_SOCKET` instead.
+#[deprecated(since = "1.6.7", note = "use CONTENT_BACKEND_SOCKET (TRUE PRIMAL)")]
 pub const NESTGATE_SOCKET: &str = "NESTGATE_SOCKET";
 
 /// Content backend provider name prefix override.

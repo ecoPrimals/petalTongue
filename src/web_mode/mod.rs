@@ -94,7 +94,7 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .route("/api/events", get(events_sse_handler))
         .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));
 
-    if cfg.backend == "content-provider" || cfg.backend == "nestgate" {
+    if cfg.backend == "content-provider" {
         let client = Arc::new(content_backend::ContentBackendClient::from_env());
         tracing::info!(
             socket = %client.socket_path.display(),
