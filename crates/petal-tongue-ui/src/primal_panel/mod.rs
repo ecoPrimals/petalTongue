@@ -73,7 +73,7 @@ impl PrimalPanel {
     }
 
     /// Update primals from provider
-    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
+    #[expect(clippy::unused_async, reason = "async for caller uniformity")]
     pub async fn refresh(&mut self, primals: Vec<Primal>) {
         debug!("🔄 Refreshing primal panel with {} primals", primals.len());
         self.primals = primals;

@@ -43,7 +43,7 @@ impl GraphEditorService {
     /// # Errors
     ///
     /// Returns an error if graph validation fails or topological sort fails (e.g., cycles).
-    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
+    #[expect(clippy::unused_async, reason = "async for caller uniformity")]
     pub async fn get_preview(&self, req: GetPreviewRequest) -> Result<GetPreviewResponse> {
         debug!("Getting execution preview for graph '{}'", req.graph.id);
 

@@ -120,7 +120,7 @@ impl Sensor for AudioSensor {
 }
 
 /// Discover audio capabilities
-#[expect(clippy::unused_async, reason = "async for trait compatibility")]
+#[expect(clippy::unused_async, reason = "async for caller uniformity")]
 pub async fn discover() -> Option<AudioSensor> {
     // Try to discover audio output
     let has_output = probe_audio_output();

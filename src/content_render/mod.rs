@@ -28,16 +28,14 @@ pub fn split_front_matter(input: &str) -> (Option<&str>, &str) {
     let after_first = &trimmed[3..];
     let after_first = after_first.strip_prefix('\n').unwrap_or(after_first);
 
-    if let Some(end_pos) = after_first.find("\n+++") {
+    after_first.find("\n+++").map_or((None, input), |end_pos| {
         let toml_content = &after_first[..end_pos];
         let body_start = end_pos + 4; // skip "\n+++"
         let body = after_first[body_start..]
             .strip_prefix('\n')
-            .unwrap_or(&after_first[body_start..]);
+            .unwrap_or_else(|| &after_first[body_start..]);
         (Some(toml_content), body)
-    } else {
-        (None, input)
-    }
+    })
 }
 
 /// Parse TOML front matter into a `PageMeta`.
@@ -61,7 +59,7 @@ pub fn parse_front_matter(toml_str: &str) -> PageMeta {
 
     let weight = table
         .get("weight")
-        .and_then(|v| v.as_integer())
+        .and_then(toml::Value::as_integer)
         .map(|w| w as i32);
 
     let mut taxonomies = HashMap::new();
@@ -110,245 +108,15 @@ pub fn compile_markdown(markdown: &str) -> Vec<DocumentNode> {
 
     for event in parser {
         match event {
-            Event::Start(tag) => match tag {
-                Tag::Heading { level, .. } => {
-                    stack.push(StackFrame::Heading(level as u8));
-                    inline_buf.clear();
-                }
-                Tag::Paragraph => {
-                    inline_buf.clear();
-                }
-                Tag::CodeBlock(kind) => {
-                    let lang = match kind {
-                        pulldown_cmark::CodeBlockKind::Fenced(l) => {
-                            let s = l.to_string();
-                            if s.is_empty() { None } else { Some(s) }
-                        }
-                        pulldown_cmark::CodeBlockKind::Indented => None,
-                    };
-                    stack.push(StackFrame::CodeBlock(lang, String::new()));
-                }
-                Tag::List(start) => {
-                    stack.push(StackFrame::List {
-                        ordered: start.is_some(),
-                        start,
-                        items: Vec::new(),
-                    });
-                }
-                Tag::Item => {
-                    stack.push(StackFrame::ListItem(Vec::new()));
-                }
-                Tag::BlockQuote(_) => {
-                    stack.push(StackFrame::BlockQuote(Vec::new()));
-                }
-                Tag::Table(_) => {
-                    stack.push(StackFrame::Table {
-                        headers: Vec::new(),
-                        rows: Vec::new(),
-                        in_head: false,
-                    });
-                }
-                Tag::TableHead => {
-                    if let Some(StackFrame::Table { in_head, .. }) = stack.last_mut() {
-                        *in_head = true;
-                    }
-                }
-                Tag::TableRow => {
-                    inline_buf.clear();
-                }
-                Tag::TableCell => {
-                    inline_buf.clear();
-                }
-                Tag::Emphasis => {
-                    stack.push(StackFrame::Emphasis(Vec::new()));
-                }
-                Tag::Strong => {
-                    stack.push(StackFrame::Strong(Vec::new()));
-                }
-                Tag::Strikethrough => {
-                    stack.push(StackFrame::Strikethrough(Vec::new()));
-                }
-                Tag::Link {
-                    dest_url, title, ..
-                } => {
-                    stack.push(StackFrame::Link {
-                        href: dest_url.to_string(),
-                        title: if title.is_empty() {
-                            None
-                        } else {
-                            Some(title.to_string())
-                        },
-                        inlines: Vec::new(),
-                    });
-                }
-                Tag::Image {
-                    dest_url, title, ..
-                } => {
-                    push_inline(
-                        &mut stack,
-                        &mut inline_buf,
-                        Inline::Image {
-                            alt: String::new(),
-                            src: dest_url.to_string(),
-                            title: if title.is_empty() {
-                                None
-                            } else {
-                                Some(title.to_string())
-                            },
-                        },
-                    );
-                }
-                _ => {}
-            },
-            Event::End(tag_end) => match tag_end {
-                TagEnd::Heading(_) => {
-                    if let Some(StackFrame::Heading(level)) = stack.pop() {
-                        let text: String = inline_buf.iter().map(inline_to_text).collect();
-                        let id = slugify(&text);
-                        nodes.push(DocumentNode::Heading {
-                            level,
-                            inlines: std::mem::take(&mut inline_buf),
-                            id,
-                        });
-                    }
-                }
-                TagEnd::Paragraph => {
-                    let inlines = std::mem::take(&mut inline_buf);
-                    if !inlines.is_empty() {
-                        let target = current_block_target(&mut stack, &mut nodes);
-                        target.push(DocumentNode::Paragraph { inlines });
-                    }
-                }
-                TagEnd::CodeBlock => {
-                    if let Some(StackFrame::CodeBlock(lang, content)) = stack.pop() {
-                        let target = current_block_target(&mut stack, &mut nodes);
-                        target.push(DocumentNode::CodeBlock {
-                            language: lang,
-                            content,
-                        });
-                    }
-                }
-                TagEnd::List(_) => {
-                    if let Some(StackFrame::List {
-                        ordered,
-                        start,
-                        items,
-                    }) = stack.pop()
-                    {
-                        let target = current_block_target(&mut stack, &mut nodes);
-                        target.push(DocumentNode::List {
-                            ordered,
-                            start: start.map(|s| s as u64),
-                            items,
-                        });
-                    }
-                }
-                TagEnd::Item => {
-                    if let Some(StackFrame::ListItem(content)) = stack.pop() {
-                        if let Some(StackFrame::List { items, .. }) = stack.last_mut() {
-                            items.push(ListItem {
-                                checked: None,
-                                content,
-                            });
-                        }
-                    }
-                }
-                TagEnd::BlockQuote(_) => {
-                    if let Some(StackFrame::BlockQuote(children)) = stack.pop() {
-                        let target = current_block_target(&mut stack, &mut nodes);
-                        target.push(DocumentNode::BlockQuote { children });
-                    }
-                }
-                TagEnd::Table => {
-                    if let Some(StackFrame::Table { headers, rows, .. }) = stack.pop() {
-                        let target = current_block_target(&mut stack, &mut nodes);
-                        target.push(DocumentNode::Table { headers, rows });
-                    }
-                }
-                TagEnd::TableHead => {
-                    if let Some(StackFrame::Table { in_head, .. }) = stack.last_mut() {
-                        *in_head = false;
-                    }
-                }
-                TagEnd::TableRow => {}
-                TagEnd::TableCell => {
-                    let cell_inlines = std::mem::take(&mut inline_buf);
-                    if let Some(StackFrame::Table {
-                        headers,
-                        rows,
-                        in_head,
-                    }) = stack.last_mut()
-                    {
-                        if *in_head {
-                            headers.push(cell_inlines);
-                        } else {
-                            if rows.is_empty()
-                                || rows.last().map_or(false, |r| r.len() >= headers.len())
-                            {
-                                rows.push(Vec::new());
-                            }
-                            if let Some(row) = rows.last_mut() {
-                                row.push(cell_inlines);
-                            }
-                        }
-                    }
-                }
-                TagEnd::Emphasis => {
-                    if let Some(StackFrame::Emphasis(inlines)) = stack.pop() {
-                        push_inline(&mut stack, &mut inline_buf, Inline::Italic(inlines));
-                    }
-                }
-                TagEnd::Strong => {
-                    if let Some(StackFrame::Strong(inlines)) = stack.pop() {
-                        push_inline(&mut stack, &mut inline_buf, Inline::Bold(inlines));
-                    }
-                }
-                TagEnd::Link => {
-                    if let Some(StackFrame::Link {
-                        href,
-                        title,
-                        inlines,
-                    }) = stack.pop()
-                    {
-                        push_inline(
-                            &mut stack,
-                            &mut inline_buf,
-                            Inline::Link {
-                                text: inlines,
-                                href,
-                                title,
-                            },
-                        );
-                    }
-                }
-                TagEnd::Strikethrough => {
-                    if let Some(StackFrame::Strikethrough(inlines)) = stack.pop() {
-                        push_inline(&mut stack, &mut inline_buf, Inline::Strikethrough(inlines));
-                    }
-                }
-                TagEnd::Image => {}
-                _ => {}
-            },
-            Event::Text(text) => match stack.last_mut() {
-                Some(StackFrame::CodeBlock(_, content)) => {
-                    content.push_str(&text);
-                }
-                Some(StackFrame::Emphasis(inlines)) => {
-                    inlines.push(Inline::Text(text.to_string()));
-                }
-                Some(StackFrame::Strong(inlines)) => {
-                    inlines.push(Inline::Text(text.to_string()));
-                }
-                Some(StackFrame::Strikethrough(inlines)) => {
-                    inlines.push(Inline::Text(text.to_string()));
-                }
-                Some(StackFrame::Link { inlines, .. }) => {
-                    inlines.push(Inline::Text(text.to_string()));
-                }
-                _ => {
-                    inline_buf.push(Inline::Text(text.to_string()));
-                }
-            },
+            Event::Start(tag) => {
+                handle_markdown_start(tag, &mut inline_buf, &mut stack);
+            }
+            Event::End(tag_end) => {
+                handle_markdown_end(tag_end, &mut nodes, &mut inline_buf, &mut stack);
+            }
+            Event::Text(text) => {
+                handle_markdown_text(&text, &mut inline_buf, &mut stack);
+            }
             Event::Code(code) => {
                 push_inline(&mut stack, &mut inline_buf, Inline::Code(code.to_string()));
             }
@@ -386,14 +154,16 @@ pub fn parse_document(input: &str, path: &str) -> DocumentNode {
 
 /// Resolve entity shortcodes (`{{ entity(name="...") }}`) in inline text.
 pub fn resolve_shortcodes(
-    nodes: &mut Vec<DocumentNode>,
+    nodes: &mut [DocumentNode],
     registry: &HashMap<String, petal_tongue_scene::document::EntityRegistryEntry>,
 ) {
     for node in nodes.iter_mut() {
         match node {
             DocumentNode::Page { body, .. } => resolve_shortcodes(body, registry),
-            DocumentNode::Paragraph { inlines } => resolve_inlines(inlines, registry),
-            DocumentNode::Heading { inlines, .. } => resolve_inlines(inlines, registry),
+            DocumentNode::Paragraph { inlines }
+            | DocumentNode::Heading { inlines, .. } => {
+                resolve_inlines(inlines, registry);
+            }
             DocumentNode::BlockQuote { children } => resolve_shortcodes(children, registry),
             DocumentNode::List { items, .. } => {
                 for item in items {
@@ -493,8 +263,257 @@ enum StackFrame {
     },
 }
 
+fn handle_markdown_start(tag: Tag, inline_buf: &mut Vec<Inline>, stack: &mut Vec<StackFrame>) {
+    match tag {
+        Tag::Heading { level, .. } => {
+            stack.push(StackFrame::Heading(level as u8));
+            inline_buf.clear();
+        }
+        Tag::Paragraph | Tag::TableRow | Tag::TableCell => {
+            inline_buf.clear();
+        }
+        Tag::CodeBlock(kind) => {
+            let lang = match kind {
+                pulldown_cmark::CodeBlockKind::Fenced(l) => {
+                    let s = l.to_string();
+                    if s.is_empty() { None } else { Some(s) }
+                }
+                pulldown_cmark::CodeBlockKind::Indented => None,
+            };
+            stack.push(StackFrame::CodeBlock(lang, String::new()));
+        }
+        Tag::List(start) => {
+            stack.push(StackFrame::List {
+                ordered: start.is_some(),
+                start,
+                items: Vec::new(),
+            });
+        }
+        Tag::Item => {
+            stack.push(StackFrame::ListItem(Vec::new()));
+        }
+        Tag::BlockQuote(_) => {
+            stack.push(StackFrame::BlockQuote(Vec::new()));
+        }
+        Tag::Table(_) => {
+            stack.push(StackFrame::Table {
+                headers: Vec::new(),
+                rows: Vec::new(),
+                in_head: false,
+            });
+        }
+        Tag::TableHead => {
+            if let Some(StackFrame::Table { in_head, .. }) = stack.last_mut() {
+                *in_head = true;
+            }
+        }
+        Tag::Emphasis => {
+            stack.push(StackFrame::Emphasis(Vec::new()));
+        }
+        Tag::Strong => {
+            stack.push(StackFrame::Strong(Vec::new()));
+        }
+        Tag::Strikethrough => {
+            stack.push(StackFrame::Strikethrough(Vec::new()));
+        }
+        Tag::Link {
+            dest_url, title, ..
+        } => {
+            stack.push(StackFrame::Link {
+                href: dest_url.to_string(),
+                title: if title.is_empty() {
+                    None
+                } else {
+                    Some(title.to_string())
+                },
+                inlines: Vec::new(),
+            });
+        }
+        Tag::Image {
+            dest_url, title, ..
+        } => {
+            push_inline(
+                stack,
+                inline_buf,
+                Inline::Image {
+                    alt: String::new(),
+                    src: dest_url.to_string(),
+                    title: if title.is_empty() {
+                        None
+                    } else {
+                        Some(title.to_string())
+                    },
+                },
+            );
+        }
+        _ => {}
+    }
+}
+
+fn handle_markdown_end(
+    tag_end: TagEnd,
+    nodes: &mut Vec<DocumentNode>,
+    inline_buf: &mut Vec<Inline>,
+    stack: &mut Vec<StackFrame>,
+) {
+    match tag_end {
+        TagEnd::Heading(_) => {
+            if let Some(StackFrame::Heading(level)) = stack.pop() {
+                let text: String = inline_buf.iter().map(inline_to_text).collect();
+                let id = slugify(&text);
+                nodes.push(DocumentNode::Heading {
+                    level,
+                    inlines: std::mem::take(inline_buf),
+                    id,
+                });
+            }
+        }
+        TagEnd::Paragraph => {
+            let inlines = std::mem::take(inline_buf);
+            if !inlines.is_empty() {
+                let target = current_block_target(stack, nodes);
+                target.push(DocumentNode::Paragraph { inlines });
+            }
+        }
+        TagEnd::CodeBlock => {
+            if let Some(StackFrame::CodeBlock(lang, content)) = stack.pop() {
+                let target = current_block_target(stack, nodes);
+                target.push(DocumentNode::CodeBlock {
+                    language: lang,
+                    content,
+                });
+            }
+        }
+        TagEnd::List(_) => {
+            if let Some(StackFrame::List {
+                ordered,
+                start,
+                items,
+            }) = stack.pop()
+            {
+                let target = current_block_target(stack, nodes);
+                target.push(DocumentNode::List {
+                    ordered,
+                    start,
+                    items,
+                });
+            }
+        }
+        TagEnd::Item => {
+            if let Some(StackFrame::ListItem(content)) = stack.pop() {
+                if let Some(StackFrame::List { items, .. }) = stack.last_mut() {
+                    items.push(ListItem {
+                        checked: None,
+                        content,
+                    });
+                }
+            }
+        }
+        TagEnd::BlockQuote(_) => {
+            if let Some(StackFrame::BlockQuote(children)) = stack.pop() {
+                let target = current_block_target(stack, nodes);
+                target.push(DocumentNode::BlockQuote { children });
+            }
+        }
+        TagEnd::Table => {
+            if let Some(StackFrame::Table { headers, rows, .. }) = stack.pop() {
+                let target = current_block_target(stack, nodes);
+                target.push(DocumentNode::Table { headers, rows });
+            }
+        }
+        TagEnd::TableHead => {
+            if let Some(StackFrame::Table { in_head, .. }) = stack.last_mut() {
+                *in_head = false;
+            }
+        }
+        TagEnd::TableCell => finish_table_cell(inline_buf, stack),
+        TagEnd::Emphasis => finish_emphasis(stack, inline_buf),
+        TagEnd::Strong => finish_strong(stack, inline_buf),
+        TagEnd::Link => finish_link(stack, inline_buf),
+        TagEnd::Strikethrough => finish_strikethrough(stack, inline_buf),
+        _ => {}
+    }
+}
+
+fn finish_table_cell(inline_buf: &mut Vec<Inline>, stack: &mut [StackFrame]) {
+    let cell_inlines = std::mem::take(inline_buf);
+    if let Some(StackFrame::Table {
+        headers,
+        rows,
+        in_head,
+    }) = stack.last_mut()
+    {
+        if *in_head {
+            headers.push(cell_inlines);
+        } else {
+            if rows.is_empty() || rows.last().is_some_and(|r| r.len() >= headers.len()) {
+                rows.push(Vec::new());
+            }
+            if let Some(row) = rows.last_mut() {
+                row.push(cell_inlines);
+            }
+        }
+    }
+}
+
+fn finish_emphasis(stack: &mut Vec<StackFrame>, inline_buf: &mut Vec<Inline>) {
+    if let Some(StackFrame::Emphasis(inlines)) = stack.pop() {
+        push_inline(stack, inline_buf, Inline::Italic(inlines));
+    }
+}
+
+fn finish_strong(stack: &mut Vec<StackFrame>, inline_buf: &mut Vec<Inline>) {
+    if let Some(StackFrame::Strong(inlines)) = stack.pop() {
+        push_inline(stack, inline_buf, Inline::Bold(inlines));
+    }
+}
+
+fn finish_link(stack: &mut Vec<StackFrame>, inline_buf: &mut Vec<Inline>) {
+    if let Some(StackFrame::Link {
+        href,
+        title,
+        inlines,
+    }) = stack.pop()
+    {
+        push_inline(
+            stack,
+            inline_buf,
+            Inline::Link {
+                text: inlines,
+                href,
+                title,
+            },
+        );
+    }
+}
+
+fn finish_strikethrough(stack: &mut Vec<StackFrame>, inline_buf: &mut Vec<Inline>) {
+    if let Some(StackFrame::Strikethrough(inlines)) = stack.pop() {
+        push_inline(stack, inline_buf, Inline::Strikethrough(inlines));
+    }
+}
+
+fn handle_markdown_text(text: &str, inline_buf: &mut Vec<Inline>, stack: &mut [StackFrame]) {
+    match stack.last_mut() {
+        Some(StackFrame::CodeBlock(_, content)) => {
+            content.push_str(text);
+        }
+        Some(
+            StackFrame::Emphasis(inlines)
+                | StackFrame::Strong(inlines)
+                | StackFrame::Strikethrough(inlines)
+                | StackFrame::Link { inlines, .. },
+        ) => {
+            inlines.push(Inline::Text(text.to_string()));
+        }
+        _ => {
+            inline_buf.push(Inline::Text(text.to_string()));
+        }
+    }
+}
+
 fn current_block_target<'a>(
-    stack: &'a mut Vec<StackFrame>,
+    stack: &'a mut [StackFrame],
     root: &'a mut Vec<DocumentNode>,
 ) -> &'a mut Vec<DocumentNode> {
     for frame in stack.iter_mut().rev() {
@@ -509,9 +528,11 @@ fn current_block_target<'a>(
 
 fn push_inline(stack: &mut [StackFrame], inline_buf: &mut Vec<Inline>, inline: Inline) {
     match stack.last_mut() {
-        Some(StackFrame::Emphasis(inlines)) => inlines.push(inline),
-        Some(StackFrame::Strong(inlines)) => inlines.push(inline),
-        Some(StackFrame::Link { inlines, .. }) => inlines.push(inline),
+        Some(
+            StackFrame::Emphasis(inlines)
+                | StackFrame::Strong(inlines)
+                | StackFrame::Link { inlines, .. },
+        ) => inlines.push(inline),
         _ => inline_buf.push(inline),
     }
 }

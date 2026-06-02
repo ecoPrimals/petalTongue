@@ -15,7 +15,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-pub use entity_graph::{EntityGraph, build_entity_graph_scene, load_entity_graph};
+pub use entity_graph::{build_entity_graph_scene, load_entity_graph};
 pub use kderm::{build_kderm_relay_animation, build_kderm_scene};
 pub use nucleus::{build_nucleus_expand_animation, build_nucleus_scene};
 
@@ -25,10 +25,13 @@ pub use nucleus::{build_nucleus_expand_animation, build_nucleus_scene};
 #[derive(Debug, Clone, Deserialize)]
 pub struct VizEntry {
     /// URL-safe identifier (e.g. "entity-graph").
+    #[expect(dead_code)]
     pub slug: String,
     /// Human-readable display name.
+    #[expect(dead_code)]
     pub title: String,
     /// Short summary of what this visualization shows.
+    #[expect(dead_code)]
     pub description: String,
     /// Optional path to external data feeding the visualization.
     pub data_source: Option<PathBuf>,
@@ -96,6 +99,7 @@ impl VizRegistry {
     }
 
     /// Get a viz entry by slug.
+    #[expect(dead_code)]
     pub fn get(&self, slug: &str) -> Option<&VizEntry> {
         self.entries.get(slug)
     }

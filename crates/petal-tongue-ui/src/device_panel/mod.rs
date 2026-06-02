@@ -82,7 +82,7 @@ impl DevicePanel {
     }
 
     /// Update devices from provider
-    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
+    #[expect(clippy::unused_async, reason = "async for caller uniformity")]
     pub async fn refresh(&mut self, devices: Vec<Device>) {
         tracing::debug!("🔄 Refreshing device panel with {} devices", devices.len());
         self.devices = devices;

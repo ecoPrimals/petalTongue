@@ -262,7 +262,6 @@ impl ComputeProvider for GpuComputeProvider {
         self.capabilities.clone()
     }
 
-    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn is_available(&self) -> bool {
         self.service.is_some()
     }
@@ -283,7 +282,6 @@ impl ComputeProvider for GpuComputeProvider {
         Ok(())
     }
 
-    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn shutdown(&mut self) -> Result<()> {
         tracing::info!("🔇 Shutting down GPU compute provider");
         self.service = None;
@@ -327,18 +325,15 @@ impl ComputeProvider for CPUFallbackCompute {
         self.capabilities.clone()
     }
 
-    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn is_available(&self) -> bool {
         true
     }
 
-    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn initialize(&mut self) -> Result<()> {
         tracing::info!("✅ CPU fallback compute initialized");
         Ok(())
     }
 
-    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn shutdown(&mut self) -> Result<()> {
         tracing::info!("🔇 Shutting down CPU fallback compute");
         Ok(())

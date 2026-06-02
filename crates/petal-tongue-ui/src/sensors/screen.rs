@@ -79,7 +79,7 @@ impl ScreenSensor {
     /// # Errors
     ///
     /// Currently always returns `Ok(())`.
-    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
+    #[expect(clippy::unused_async, reason = "async for caller uniformity")]
     pub async fn send_heartbeat(&mut self) -> Result<()> {
         if self.display_type == DisplayType::Terminal {
             // Query cursor position as heartbeat
@@ -150,7 +150,7 @@ pub enum DisplayType {
 }
 
 /// Discover screen capabilities
-#[expect(clippy::unused_async, reason = "async for trait compatibility")]
+#[expect(clippy::unused_async, reason = "async for caller uniformity")]
 pub async fn discover() -> Option<ScreenSensor> {
     // Method 1: Terminal
     if std::io::stdout().is_terminal()

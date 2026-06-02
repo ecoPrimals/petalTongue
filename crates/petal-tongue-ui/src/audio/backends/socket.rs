@@ -54,7 +54,7 @@ impl SocketBackend {
     ///
     /// This is NOT hardcoded to PipeWire/PulseAudio!
     /// We discover whatever socket-based audio exists.
-    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
+    #[expect(clippy::unused_async, reason = "async for caller uniformity")]
     pub async fn discover_all() -> Vec<Self> {
         let mut backends = Vec::new();
 

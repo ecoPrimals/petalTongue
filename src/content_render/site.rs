@@ -74,27 +74,30 @@ fn parse_entity_entry(key: &str, t: &toml::Table) -> EntityRegistryEntry {
         page: t.get("page").and_then(|v| v.as_str()).map(String::from),
         repo: t.get("repo").and_then(|v| v.as_str()).map(String::from),
         domain: t.get("domain").and_then(|v| v.as_str()).map(String::from),
-        loc: t.get("loc").and_then(|v| v.as_integer()).map(|n| n as u64),
+        loc: t
+            .get("loc")
+            .and_then(toml::Value::as_integer)
+            .and_then(|n| u64::try_from(n).ok()),
         loc_display: t
             .get("loc_display")
             .and_then(|v| v.as_str())
             .map(String::from),
         tests: t
             .get("tests")
-            .and_then(|v| v.as_integer())
-            .map(|n| n as u64),
+            .and_then(toml::Value::as_integer)
+            .and_then(|n| u64::try_from(n).ok()),
         tests_display: t
             .get("tests_display")
             .and_then(|v| v.as_str())
             .map(String::from),
         files: t
             .get("files")
-            .and_then(|v| v.as_integer())
-            .map(|n| n as u64),
+            .and_then(toml::Value::as_integer)
+            .and_then(|n| u64::try_from(n).ok()),
         crates: t
             .get("crates")
-            .and_then(|v| v.as_integer())
-            .map(|n| n as u64),
+            .and_then(toml::Value::as_integer)
+            .and_then(|n| u64::try_from(n).ok()),
     }
 }
 
@@ -110,7 +113,7 @@ pub fn build_nav_tree(content_dir: &std::path::Path) -> Vec<NavSection> {
     };
 
     let mut dirs: Vec<_> = entries.flatten().filter(|e| e.path().is_dir()).collect();
-    dirs.sort_by_key(|e| e.file_name());
+    dirs.sort_by_key(std::fs::DirEntry::file_name);
 
     for entry in dirs {
         let dir_path = entry.path();
@@ -160,7 +163,7 @@ fn read_section_meta(index_path: &std::path::Path, dir_name: &str) -> (String, i
 
     let weight = tbl
         .get("weight")
-        .and_then(|v| v.as_integer())
+        .and_then(toml::Value::as_integer)
         .map_or(999, |w| w as i32);
 
     (title, weight)
@@ -178,7 +181,7 @@ fn scan_section_pages(dir_path: &std::path::Path, dir_name: &str) -> Vec<NavPage
             p.is_file() && p.extension().is_some_and(|e| e == "md") && f.file_name() != "_index.md"
         })
         .collect();
-    file_entries.sort_by_key(|e| e.file_name());
+    file_entries.sort_by_key(std::fs::DirEntry::file_name);
 
     file_entries
         .into_iter()
