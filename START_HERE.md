@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: May 29, 2026 (Wave 61 — DH-1 /tmp cleanup, dep trim, TRUE PRIMAL fix, mock isolation)
+**Updated**: June 2, 2026 (Wave 69 — modernization pass, error typing, dep narrowing, dead code elimination)
 
 ---
 
@@ -86,7 +86,7 @@ Full reference: [ENV_VARS.md](./ENV_VARS.md)
 ## Development
 
 ```bash
-cargo test --workspace --all-features           # 6,191+ tests
+cargo test --workspace --all-features           # 6,208+ tests
 cargo clippy --workspace --all-features -- -D warnings
 cargo fmt --check                               # Format check (clean)
 cargo doc --workspace --no-deps                 # Docs (clean)
@@ -145,7 +145,6 @@ petaltongue ui --scenario sandbox/scenarios/healthspring-diagnostic.json
 - `discovery_service_client/` -- Discovery service capability queries (mod, protocol, methods)
 - `discovery_service_provider.rs` -- Discovery service visualization provider (topology inference)
 - `jsonrpc_provider/` -- JSON-RPC visualization provider
-- `mdns_provider/` -- mDNS/DNS-SD zero-config discovery (optional `mdns` feature)
 - `capability_parse.rs` -- 4-format capability parsing (flat, enriched, nested, result-wrapped)
 - `cache.rs` -- LRU discovery result cache
 - `dns_parser/` -- Pure-Rust DNS packet parser (SRV, TXT, PTR, A records); submodules: `header.rs`, `name.rs`, `record.rs`

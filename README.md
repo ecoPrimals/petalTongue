@@ -97,7 +97,7 @@ petaltongue
 | `petal-tongue-ui` | Desktop display (egui/eframe), panels, scenarios, biomeOS |
 | `petal-tongue-tui` | Terminal display (ratatui) |
 | `petal-tongue-ipc` | UDS + TCP JSON-RPC server, tarpc client, visualization handler |
-| `petal-tongue-discovery` | Provider discovery (JSON-RPC, mDNS, Unix socket, scenarios) |
+| `petal-tongue-discovery` | Provider discovery (JSON-RPC, Unix socket, DNS-SD, scenarios) |
 | `petal-tongue-entropy` | Human entropy capture (gesture, narrative, visual, audio) |
 | `petal-tongue-animation` | Visual animations |
 | `petal-tongue-adapters` | EcoPrimal adapter traits |
@@ -114,7 +114,7 @@ petaltongue
 
 | Metric | Status |
 |--------|--------|
-| Tests | 6,191+ passing, 0 failures (`--all-features`) |
+| Tests | 6,208+ passing, 0 failures (`--all-features`) |
 | Formatting | `cargo fmt --check` clean |
 | Clippy | Zero warnings (`--all-features`, pedantic + nursery; `#[expect]` with reasons) |
 | Docs | `cargo doc --workspace --no-deps` zero warnings |
@@ -126,7 +126,7 @@ petaltongue
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 18 crates + sandbox) |
 | External C deps | None -- pure Rust (`rustix` for syscalls, `blake3` pure-Rust hash); `nokhwa`/`mozjpeg-sys` removed |
-| Error handling | Typed `thiserror` errors throughout -- zero `anyhow`, zero `Result<_, String>` in production |
+| Error handling | Typed `thiserror` errors throughout -- zero `anyhow`, zero `Result<_, String>`, typed `#[from]` error chains in production |
 | Zero-copy IDs | `DataSourceId`, `GrammarId` are `Arc<str>` -- O(1) clone |
 | Property tests | `proptest` for JSON-RPC parser + core data types |
 | Cross-primal e2e | Real Unix socket server ↔ JSON-RPC client integration tests |
@@ -149,7 +149,7 @@ petaltongue
 ```bash
 # Prerequisites: Rust stable (edition 2024) — pinned via rust-toolchain.toml
 cargo build --workspace
-cargo test --workspace --all-features        # 6,191+ tests
+cargo test --workspace --all-features        # 6,208+ tests
 cargo clippy --workspace --all-features -- -D warnings
 cargo fmt --check
 cargo doc --workspace --no-deps
