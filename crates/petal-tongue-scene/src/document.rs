@@ -49,12 +49,12 @@ pub struct EntityRef {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Inline {
     Text(String),
-    Bold(Vec<Inline>),
-    Italic(Vec<Inline>),
-    Strikethrough(Vec<Inline>),
+    Bold(Vec<Self>),
+    Italic(Vec<Self>),
+    Strikethrough(Vec<Self>),
     Code(String),
     Link {
-        text: Vec<Inline>,
+        text: Vec<Self>,
         href: String,
         title: Option<String>,
     },
@@ -75,10 +75,7 @@ pub enum Inline {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DocumentNode {
     /// A complete page with metadata and body content.
-    Page {
-        meta: PageMeta,
-        body: Vec<DocumentNode>,
-    },
+    Page { meta: PageMeta, body: Vec<Self> },
 
     /// Heading (h1-h6) with anchor ID for navigation.
     Heading {
@@ -97,7 +94,7 @@ pub enum DocumentNode {
     },
 
     /// Block quote (recursive content).
-    BlockQuote { children: Vec<DocumentNode> },
+    BlockQuote { children: Vec<Self> },
 
     /// Ordered or unordered list.
     List {
@@ -159,7 +156,7 @@ pub struct NavPage {
 }
 
 /// Search index entry for full-text search.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SearchEntry {
     pub title: String,
     pub path: String,
@@ -178,7 +175,7 @@ pub struct SiteContent {
 }
 
 /// An entity in the registry — configurable content entity with display metadata.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct EntityRegistryEntry {
     pub display: String,
