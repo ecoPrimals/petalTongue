@@ -7,10 +7,7 @@ use petal_tongue_core::GraphEngine;
 use std::sync::{Arc, RwLock};
 
 /// Load graph data from scenario file, demo topology, or leave empty for headless export.
-pub fn load_graph_data(
-    graph: &Arc<RwLock<GraphEngine>>,
-    args: &Args,
-) -> Result<(), HeadlessError> {
+pub fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), HeadlessError> {
     #[expect(
         clippy::option_if_let_else,
         reason = "three-way branch is clearer as if-let"
