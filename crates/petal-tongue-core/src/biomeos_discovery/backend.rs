@@ -226,6 +226,7 @@ impl DiscoveryBackend for BiomeOsBackend {
         Ok(primals.into_iter().map(std::convert::Into::into).collect())
     }
 
+    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn subscribe(&self, _query: &CapabilityQuery) -> Result<(), DiscoveryError> {
         Ok(())
     }

@@ -297,6 +297,7 @@ impl PrimalLifecycle for PetalTongue {
         self.state
     }
 
+    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn start(&mut self) -> Result<(), PrimalError> {
         self.state = PrimalState::Starting;
         tracing::info!("petalTongue starting...");
@@ -309,6 +310,7 @@ impl PrimalLifecycle for PetalTongue {
         Ok(())
     }
 
+    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn stop(&mut self) -> Result<(), PrimalError> {
         self.state = PrimalState::Stopping;
         tracing::info!("petalTongue stopping...");
@@ -333,6 +335,7 @@ impl PrimalHealth for PetalTongue {
         }
     }
 
+    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn health_check(&self) -> Result<HealthReport, PrimalError> {
         Ok(
             HealthReport::new(crate::constants::PRIMAL_NAME, env!("CARGO_PKG_VERSION"))

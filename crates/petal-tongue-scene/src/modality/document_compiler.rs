@@ -82,25 +82,7 @@ fn render_html_node(node: &DocumentNode, buf: &mut String) {
                 buf.push_str("</ul>\n");
             }
         }
-        DocumentNode::Table { headers, rows } => {
-            buf.push_str("<table>\n<thead><tr>\n");
-            for header in headers {
-                buf.push_str("<th>");
-                render_html_inlines(header, buf);
-                buf.push_str("</th>");
-            }
-            buf.push_str("\n</tr></thead>\n<tbody>\n");
-            for row in rows {
-                buf.push_str("<tr>");
-                for cell in row {
-                    buf.push_str("<td>");
-                    render_html_inlines(cell, buf);
-                    buf.push_str("</td>");
-                }
-                buf.push_str("</tr>\n");
-            }
-            buf.push_str("</tbody></table>\n");
-        }
+        DocumentNode::Table { headers, rows } => render_html_table(headers, rows, buf),
         DocumentNode::ThematicBreak => {
             buf.push_str("<hr />\n");
         }
@@ -130,6 +112,26 @@ fn render_html_node(node: &DocumentNode, buf: &mut String) {
             buf.push_str(html);
         }
     }
+}
+
+fn render_html_table(headers: &[Vec<Inline>], rows: &[Vec<Vec<Inline>>], buf: &mut String) {
+    buf.push_str("<table>\n<thead><tr>\n");
+    for header in headers {
+        buf.push_str("<th>");
+        render_html_inlines(header, buf);
+        buf.push_str("</th>");
+    }
+    buf.push_str("\n</tr></thead>\n<tbody>\n");
+    for row in rows {
+        buf.push_str("<tr>");
+        for cell in row {
+            buf.push_str("<td>");
+            render_html_inlines(cell, buf);
+            buf.push_str("</td>");
+        }
+        buf.push_str("</tr>\n");
+    }
+    buf.push_str("</tbody></table>\n");
 }
 
 fn render_html_entity_metrics(

@@ -155,10 +155,12 @@ pub fn is_ipynb(path: &str) -> bool {
 
 // ── Route handlers ──────────────────────────────────────────────────────
 
+#[expect(clippy::unused_async, reason = "axum handler signature")]
 pub(super) async fn index_handler() -> Html<&'static str> {
     Html(include_str!("../../web/index.html"))
 }
 
+#[expect(clippy::unused_async, reason = "axum handler signature")]
 pub(super) async fn health_handler() -> impl IntoResponse {
     Json(serde_json::json!({
         "status": "ok",
@@ -168,12 +170,14 @@ pub(super) async fn health_handler() -> impl IntoResponse {
     }))
 }
 
+#[expect(clippy::unused_async, reason = "axum handler signature")]
 pub(super) async fn liveness_handler() -> impl IntoResponse {
     Json(serde_json::json!({
         "status": "alive",
     }))
 }
 
+#[expect(clippy::unused_async, reason = "axum handler signature")]
 pub(super) async fn readiness_handler() -> impl IntoResponse {
     Json(serde_json::json!({
         "status": "ready",
@@ -183,6 +187,7 @@ pub(super) async fn readiness_handler() -> impl IntoResponse {
     }))
 }
 
+#[expect(clippy::unused_async, reason = "axum handler signature")]
 pub(super) async fn status_handler() -> impl IntoResponse {
     Json(serde_json::json!({
         "status": "ok",
@@ -232,6 +237,7 @@ pub(super) async fn snapshot_handler(State(service): State<Arc<DataService>>) ->
 ///
 /// Per PT-02 / `IPC_COMPLIANCE_MATRIX.md` v1.2: the browser receives live
 /// topology changes without polling.
+#[expect(clippy::unused_async, reason = "axum handler signature")]
 pub(super) async fn events_sse_handler(
     State(service): State<Arc<DataService>>,
 ) -> Sse<impl tokio_stream::Stream<Item = Result<Event, std::convert::Infallible>>> {

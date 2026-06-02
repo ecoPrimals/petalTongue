@@ -150,18 +150,22 @@ impl GUIModality for NullModality {
         ModalityTier::AlwaysAvailable
     }
 
+    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn initialize(&mut self, _engine: Arc<UniversalRenderingEngine<Self>>) -> Result<()> {
         Ok(())
     }
 
+    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn render(&mut self) -> Result<()> {
         Ok(())
     }
 
+    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn handle_event(&mut self, _event: EngineEvent) -> Result<()> {
         Ok(())
     }
 
+    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn shutdown(&mut self) -> Result<()> {
         Ok(())
     }
