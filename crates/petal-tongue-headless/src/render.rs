@@ -4,9 +4,7 @@
 use crate::args::Args;
 use crate::error::HeadlessError;
 use petal_tongue_core::GraphEngine;
-use petal_tongue_ui_core::{
-    CanvasUI, ExportFormat, SvgUI, TerminalUI, TextUI, UniversalUI,
-};
+use petal_tongue_ui_core::{CanvasUI, ExportFormat, SvgUI, TerminalUI, TextUI, UniversalUI};
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
@@ -19,10 +17,7 @@ pub fn render_terminal(graph: Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessEr
 }
 
 /// Render SVG
-pub fn render_svg(
-    graph: Arc<RwLock<GraphEngine>>,
-    args: &Args,
-) -> Result<(), HeadlessError> {
+pub fn render_svg(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), HeadlessError> {
     let ui = SvgUI::new(graph, args.width, args.height);
 
     if let Some(ref output) = args.output {
@@ -37,10 +32,7 @@ pub fn render_svg(
 }
 
 /// Render JSON
-pub fn render_json(
-    graph: Arc<RwLock<GraphEngine>>,
-    args: &Args,
-) -> Result<(), HeadlessError> {
+pub fn render_json(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), HeadlessError> {
     let ui = TextUI::new(graph).with_format(ExportFormat::Json);
 
     if let Some(ref output) = args.output {
@@ -55,10 +47,7 @@ pub fn render_json(
 }
 
 /// Render DOT
-pub fn render_dot(
-    graph: Arc<RwLock<GraphEngine>>,
-    args: &Args,
-) -> Result<(), HeadlessError> {
+pub fn render_dot(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), HeadlessError> {
     let ui = TextUI::new(graph).with_format(ExportFormat::Dot);
 
     if let Some(ref output) = args.output {
@@ -73,10 +62,7 @@ pub fn render_dot(
 }
 
 /// Render PNG
-pub fn render_png(
-    graph: Arc<RwLock<GraphEngine>>,
-    args: &Args,
-) -> Result<(), HeadlessError> {
+pub fn render_png(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), HeadlessError> {
     let ui = CanvasUI::new(graph, args.width, args.height);
 
     if let Some(ref output) = args.output {
@@ -91,10 +77,7 @@ pub fn render_png(
 }
 
 /// Render HTML (SVG wrapped in a standalone HTML document) (PT-04)
-pub fn render_html(
-    graph: Arc<RwLock<GraphEngine>>,
-    args: &Args,
-) -> Result<(), HeadlessError> {
+pub fn render_html(graph: Arc<RwLock<GraphEngine>>, args: &Args) -> Result<(), HeadlessError> {
     let ui = SvgUI::new(graph, args.width, args.height);
 
     if let Some(ref output) = args.output {
