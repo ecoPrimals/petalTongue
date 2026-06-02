@@ -117,6 +117,7 @@ impl ContentDirectState {
 }
 
 /// Index handler for the content-direct backend.
+#[expect(clippy::unused_async, reason = "axum handler signature")]
 pub async fn content_direct_index(state: Arc<ContentDirectState>) -> axum::response::Response {
     let root_path = state.content_dir.join("_index.md");
     if root_path.is_file() {

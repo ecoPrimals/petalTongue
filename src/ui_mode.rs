@@ -130,6 +130,10 @@ fn run_ui_blocking(
 }
 
 #[cfg(not(feature = "ui"))]
+#[expect(
+    clippy::unused_async,
+    reason = "feature-gated stub matches async signature"
+)]
 pub async fn run(
     _scenario: Option<String>,
     _no_audio: bool,

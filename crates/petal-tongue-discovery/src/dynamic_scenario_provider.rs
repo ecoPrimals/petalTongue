@@ -214,10 +214,12 @@ impl DynamicScenarioProvider {
 }
 
 impl VisualizationDataProvider for DynamicScenarioProvider {
+    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         Ok(self.primals.clone())
     }
 
+    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
         let primals = self.primals.clone();
         // Auto-generate topology (nucleus-centric star or ring mesh)
@@ -259,6 +261,7 @@ impl VisualizationDataProvider for DynamicScenarioProvider {
         Ok(edges)
     }
 
+    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn health_check(&self) -> DiscoveryResult<String> {
         let name = self.name().unwrap_or("Dynamic Scenario").to_string();
         let n = self.primals.len();
