@@ -42,7 +42,6 @@ pub trait VisualizationDataProvider: Send + Sync {
     ///
     /// Optional - if not implemented, petalTongue will infer topology
     /// from primal capabilities.
-    #[expect(clippy::unused_async, reason = "async trait default impl")]
     async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
         Ok(Vec::new())
     }

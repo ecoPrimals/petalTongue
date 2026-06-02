@@ -24,6 +24,7 @@ pub struct ContentDirectState {
     pub content_dir: PathBuf,
     pub static_dir: Option<PathBuf>,
     pub registry: HashMap<String, EntityRegistryEntry>,
+    #[expect(dead_code)]
     pub nav: Vec<NavSection>,
     pub viz_registry: crate::viz_data::VizRegistry,
 }
@@ -32,7 +33,7 @@ impl ContentDirectState {
     /// Initialize from a content directory path.
     /// Expects `config.toml` as sibling of the content dir (or parent).
     pub fn new(content_dir: PathBuf) -> Self {
-        let parent = content_dir.parent().unwrap_or(Path::new("."));
+        let parent = content_dir.parent().unwrap_or_else(|| Path::new("."));
         let config_path = parent.join("config.toml");
         let static_dir = parent.join("static");
 
@@ -121,10 +122,10 @@ impl ContentDirectState {
 pub async fn content_direct_index(state: Arc<ContentDirectState>) -> axum::response::Response {
     let root_path = state.content_dir.join("_index.md");
     if root_path.is_file() {
-        match std::fs::read_to_string(&root_path) {
-            Ok(content) => render_content(&content, "/", &state),
-            Err(_) => fallback_index().into_response(),
-        }
+        std::fs::read_to_string(&root_path).map_or_else(
+            |_| fallback_index().into_response(),
+            |content| render_content(&content, "/", &state),
+        )
     } else {
         fallback_index().into_response()
     }
@@ -231,13 +232,13 @@ fn render_content_with_modality(
 }
 
 async fn serve_static_file(path: &Path, cache_ttl: u64) -> axum::response::Response {
-    match tokio::fs::read(path).await {
-        Ok(bytes) => {
+    tokio::fs::read(path).await.map_or_else(
+        |_| (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response(),
+        |bytes| {
             let mime = mime_from_extension(path);
             build_response(bytes, mime, cache_ttl)
-        }
-        Err(_) => (axum::http::StatusCode::NOT_FOUND, "Not Found").into_response(),
-    }
+        },
+    )
 }
 
 fn mime_from_extension(path: &Path) -> &'static str {
@@ -278,10 +279,10 @@ fn build_response(body: Vec<u8>, content_type: &str, cache_ttl: u64) -> axum::re
     resp
 }
 
-fn fallback_index() -> axum::response::Html<&'static str> {
+const fn fallback_index() -> axum::response::Html<&'static str> {
     axum::response::Html(
-        r#"<!DOCTYPE html><html><head><title>petalTongue</title></head>
-<body><h1>petalTongue</h1><p>Content-direct mode active. Navigate to a content path.</p></body></html>"#,
+        r"<!DOCTYPE html><html><head><title>petalTongue</title></head>
+<body><h1>petalTongue</h1><p>Content-direct mode active. Navigate to a content path.</p></body></html>",
     )
 }
 
@@ -348,21 +349,23 @@ fn handle_viz_route(
 
     // Animation format doesn't require a scene build
     if format == "animation-json" {
-        return match state.viz_registry.build_animation(viz_name) {
-            Some(seq) => {
+        return state.viz_registry.build_animation(viz_name).map_or_else(
+            || {
+                build_response(
+                    b"No animation defined for this visualization".to_vec(),
+                    "text/plain",
+                    0,
+                )
+            },
+            |seq| {
                 let json = serde_json::to_string(&seq).unwrap_or_default();
                 build_response(
                     json.into_bytes(),
                     "application/json; charset=utf-8",
                     cache_ttl,
                 )
-            }
-            None => build_response(
-                b"No animation defined for this visualization".to_vec(),
-                "text/plain",
-                0,
-            ),
-        };
+            },
+        );
     }
 
     // Build scene via registry (capability-based discovery)

@@ -224,7 +224,7 @@ impl UniversalDiscovery {
     }
 
     /// Discover via config file (AGNOSTIC)
-    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
+    #[expect(clippy::unused_async, reason = "async for future config file I/O")]
     async fn discover_via_config(&self, capability: &str) -> Result<Vec<DiscoveredService>> {
         debug!("Checking config file for capability: {capability}");
 
@@ -278,7 +278,7 @@ impl UniversalDiscovery {
     /// - _discovery._tcp.local
     /// - _gpu-rendering._tcp.local
     /// - _compute._tcp.local
-    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
+    #[expect(clippy::unused_async, reason = "async for future mDNS I/O")]
     async fn discover_via_mdns(&self, capability: &str) -> Result<Vec<DiscoveredService>> {
         debug!("Querying mDNS for capability: {}", capability);
 
@@ -385,7 +385,7 @@ impl UniversalDiscovery {
     }
 
     /// Query a Unix socket generically
-    #[expect(clippy::unused_async, reason = "async for trait compatibility")]
+    #[expect(clippy::unused_async, reason = "async for future UDS I/O")]
     async fn query_unix_socket(
         &self,
         endpoint: &str,

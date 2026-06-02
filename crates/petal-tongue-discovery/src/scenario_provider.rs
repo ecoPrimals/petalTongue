@@ -120,12 +120,10 @@ impl ScenarioVisualizationProvider {
 }
 
 impl VisualizationDataProvider for ScenarioVisualizationProvider {
-    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn get_primals(&self) -> DiscoveryResult<Vec<PrimalInfo>> {
         Ok(self.primals.clone())
     }
 
-    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
         let primals = self.primals.clone();
         // Generate automatic topology based on primal types
@@ -168,7 +166,6 @@ impl VisualizationDataProvider for ScenarioVisualizationProvider {
         Ok(edges)
     }
 
-    #[expect(clippy::unused_async, reason = "trait requires async")]
     async fn health_check(&self) -> DiscoveryResult<String> {
         let n = self.primals.len();
         Ok(format!("Scenario provider with {n} primals"))
