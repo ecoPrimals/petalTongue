@@ -16,27 +16,16 @@
 
 use std::path::PathBuf;
 
-/// Error type for directory resolution
-#[derive(Debug)]
-pub struct DirError {
-    message: String,
-}
+/// Error type for directory resolution.
+#[derive(Debug, thiserror::Error)]
+#[error("Directory error: {0}")]
+pub struct DirError(String);
 
 impl DirError {
     fn new(msg: impl Into<String>) -> Self {
-        Self {
-            message: msg.into(),
-        }
+        Self(msg.into())
     }
 }
-
-impl std::fmt::Display for DirError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Directory error: {}", self.message)
-    }
-}
-
-impl std::error::Error for DirError {}
 
 /// Get platform-specific data directory
 ///

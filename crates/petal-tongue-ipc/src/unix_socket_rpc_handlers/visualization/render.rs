@@ -72,7 +72,7 @@ pub fn handle_render(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> JsonRpc
                 return JsonRpcResponse::error(
                     req.id,
                     error_codes::INVALID_PARAMS,
-                    "Invalid params: unrecognized spring format".to_string(),
+                    "Invalid params: unrecognized spring format".to_owned(),
                 );
             }
         }

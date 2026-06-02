@@ -37,7 +37,7 @@ pub fn render_dashboard(bindings_json: &str, config_json: &str) -> String {
     };
 
     if bindings.is_empty() {
-        return "Error: empty bindings array".to_string();
+        return "Error: empty bindings array".to_owned();
     }
 
     let config = if config_json.is_empty() {

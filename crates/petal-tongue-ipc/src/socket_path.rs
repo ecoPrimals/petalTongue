@@ -73,7 +73,7 @@ pub fn get_petaltongue_socket_path_with_posture(
 /// hardcode any other primal's family IDs.
 #[must_use]
 pub fn get_family_id() -> String {
-    env::var("FAMILY_ID").unwrap_or_else(|_| "nat0".to_string())
+    env::var("FAMILY_ID").unwrap_or_else(|_| "nat0".to_owned())
 }
 
 /// Get the node ID for this instance.
@@ -82,7 +82,7 @@ pub fn get_family_id() -> String {
 /// Used for registration and identity purposes (not embedded in the default socket filename).
 #[must_use]
 pub fn get_node_id() -> String {
-    env::var("PETALTONGUE_NODE_ID").unwrap_or_else(|_| "default".to_string())
+    env::var("PETALTONGUE_NODE_ID").unwrap_or_else(|_| "default".to_owned())
 }
 
 /// Get the runtime directory for socket placement
@@ -174,9 +174,7 @@ fn get_current_uid() -> Result<u32, SocketPathError> {
         .map_err(|e| SocketPathError::GetUid(format!("Failed to run 'id -u': {e}")))?;
 
     if !output.status.success() {
-        return Err(SocketPathError::GetUid(
-            "'id -u' command failed".to_string(),
-        ));
+        return Err(SocketPathError::GetUid("'id -u' command failed".to_owned()));
     }
 
     let uid_str = String::from_utf8(output.stdout)

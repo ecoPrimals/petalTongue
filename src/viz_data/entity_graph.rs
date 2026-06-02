@@ -276,7 +276,7 @@ fn build_legend(width: f64) -> SceneNode {
         legend.primitives.push(Primitive::Text {
             x: 20.0,
             y,
-            content: (*label).to_string(),
+            content: (*label).to_owned(),
             font_size: 10.0,
             color: Color::from_rgba8(186, 194, 222, 255),
             anchor: AnchorPoint::TopLeft,

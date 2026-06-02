@@ -24,7 +24,6 @@ pub struct ContentDirectState {
     pub content_dir: PathBuf,
     pub static_dir: Option<PathBuf>,
     pub registry: HashMap<String, EntityRegistryEntry>,
-    #[expect(dead_code)]
     pub nav: Vec<NavSection>,
     pub viz_registry: crate::viz_data::VizRegistry,
 }
@@ -129,6 +128,21 @@ pub async fn content_direct_index(state: Arc<ContentDirectState>) -> axum::respo
     } else {
         fallback_index().into_response()
     }
+}
+
+/// Navigation tree handler — returns discovered nav sections as JSON.
+#[expect(clippy::unused_async, reason = "axum handler signature")]
+pub async fn content_direct_nav(state: Arc<ContentDirectState>) -> axum::response::Response {
+    let json = serde_json::to_string(&state.nav).unwrap_or_default();
+    build_response(json.into_bytes(), "application/json; charset=utf-8", 0)
+}
+
+/// Visualization registry listing — returns all discovered visualizations as JSON.
+#[expect(clippy::unused_async, reason = "axum handler signature")]
+pub async fn content_direct_viz_list(state: Arc<ContentDirectState>) -> axum::response::Response {
+    let entries = state.viz_registry.list();
+    let json = serde_json::to_string(&entries).unwrap_or_default();
+    build_response(json.into_bytes(), "application/json; charset=utf-8", 0)
 }
 
 /// Fallback handler — resolves content from the filesystem.
@@ -293,7 +307,7 @@ fn expand_viz_embeds(source: &str, state: &ContentDirectState) -> String {
     use petal_tongue_scene::modality::svg::SvgCompiler;
     use petal_tongue_scene::modality::{ModalityCompiler, ModalityOutput};
 
-    let mut result = source.to_string();
+    let mut result = source.to_owned();
     let prefix = "{{ viz_embed(src=\"";
     while let Some(start) = result.find(prefix) {
         let after = &result[start + prefix.len()..];

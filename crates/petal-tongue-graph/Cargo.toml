@@ -23,7 +23,6 @@ petal-tongue-scene = { path = "../petal-tongue-scene", optional = true }
 # Discovered at runtime via capability-based discovery
 # NO compile-time dependency - TRUE PRIMAL sovereignty!
 
-tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
