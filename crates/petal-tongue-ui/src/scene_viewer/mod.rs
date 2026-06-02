@@ -31,7 +31,7 @@ const STAGGER_DELAY_SECS: f64 = 0.15;
 /// interaction event system so springs can react to user picks.
 pub fn render(
     ui: &mut egui::Ui,
-    viz_state: &Option<Arc<RwLock<VisualizationState>>>,
+    viz_state: Option<&Arc<RwLock<VisualizationState>>>,
     session_filter: Option<&str>,
 ) {
     render_with_interaction(ui, viz_state, session_filter, None);
@@ -40,7 +40,7 @@ pub fn render(
 /// Extended render that bridges scene clicks to IPC interaction events.
 pub fn render_with_interaction(
     ui: &mut egui::Ui,
-    viz_state: &Option<Arc<RwLock<VisualizationState>>>,
+    viz_state: Option<&Arc<RwLock<VisualizationState>>>,
     session_filter: Option<&str>,
     interaction_subs: Option<&Arc<RwLock<InteractionSubscriberRegistry>>>,
 ) {
@@ -223,8 +223,7 @@ fn render_tiled(
             for (session_id, bindings) in &session_groups {
                 let session_meta = state.sessions.get(session_id);
                 let title = session_meta.map_or(session_id.as_str(), |s| s.title.as_str());
-                let domain = session_meta.and_then(|s| s.domain.clone());
-                let (r, g, b) = domain_color_rgb(&domain);
+                let (r, g, b) = domain_color_rgb(session_meta.and_then(|s| s.domain.as_deref()));
                 let age_text = session_meta
                     .map(|s| format_session_age(s.updated_at.elapsed().as_secs_f32()))
                     .unwrap_or_default();

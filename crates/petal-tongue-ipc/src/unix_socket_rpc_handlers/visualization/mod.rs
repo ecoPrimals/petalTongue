@@ -342,15 +342,15 @@ pub fn handle_render_scene(handlers: &RpcHandlers, mut req: JsonRpcRequest) -> J
             .viz_state
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let grammar_placeholder = petal_tongue_scene::grammar::GrammarExpr::new(
-            "scene",
+        let identity_grammar = petal_tongue_scene::grammar::GrammarExpr::new(
+            "scene-import",
             petal_tongue_scene::grammar::GeometryType::Tile,
         );
         state.grammar_scenes.insert(
             session_id.clone(),
             crate::visualization_handler::CompiledBinding {
                 scene,
-                grammar: grammar_placeholder,
+                grammar: identity_grammar,
                 prev_scene: None,
                 source_binding: None,
             },
@@ -474,7 +474,7 @@ pub fn handle_texture_attach(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
         );
     }
 
-    let placeholder_len = attach.width as usize
+    let initial_len = attach.width as usize
         * attach.height as usize
         * petal_tongue_core::constants::RGBA8_BYTES_PER_PIXEL;
     {
@@ -487,7 +487,7 @@ pub fn handle_texture_attach(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
             attach.width,
             attach.height,
             crate::visualization_handler::TextureFormat::Rgba8,
-            vec![0; placeholder_len],
+            vec![0; initial_len],
         );
     }
 
@@ -496,7 +496,7 @@ pub fn handle_texture_attach(handlers: &RpcHandlers, req: JsonRpcRequest) -> Jso
         source = %attach.source,
         width = attach.width,
         height = attach.height,
-        "Texture attached (zero-init buffer — memfd shared-memory pending)"
+        "Texture slot registered (awaiting pixel upload via texture.upload)"
     );
 
     JsonRpcResponse::success(

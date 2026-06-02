@@ -19,6 +19,7 @@ pub enum AppError {
     NeuralApi(String),
 
     /// eframe/display error.
+    #[cfg(feature = "ui")]
     #[error("eframe error: {0}")]
     Eframe(String),
 
@@ -85,6 +86,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "ui")]
     fn test_eframe_constructor() {
         let err = AppError::Eframe("window creation failed".to_string());
         assert!(matches!(err, AppError::Eframe(_)));

@@ -34,7 +34,6 @@ impl ContentBackendClient {
     /// or `CONTENT_BACKEND_SOCKET` for explicit routing.
     pub fn from_env() -> Self {
         let socket_path = std::env::var(petal_tongue_core::constants::CONTENT_BACKEND_SOCKET)
-            .or_else(|_| std::env::var(petal_tongue_core::constants::NESTGATE_SOCKET))
             .map_or_else(
                 |_| {
                     let provider =

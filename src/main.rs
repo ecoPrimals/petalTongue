@@ -37,6 +37,7 @@ mod notebook_render;
 mod server_mode;
 mod signal;
 mod tui_mode;
+#[cfg(feature = "ui")]
 mod ui_mode;
 mod viz_data;
 mod web_mode;
