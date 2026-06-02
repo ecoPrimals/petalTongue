@@ -160,8 +160,7 @@ pub fn resolve_shortcodes(
     for node in nodes.iter_mut() {
         match node {
             DocumentNode::Page { body, .. } => resolve_shortcodes(body, registry),
-            DocumentNode::Paragraph { inlines }
-            | DocumentNode::Heading { inlines, .. } => {
+            DocumentNode::Paragraph { inlines } | DocumentNode::Heading { inlines, .. } => {
                 resolve_inlines(inlines, registry);
             }
             DocumentNode::BlockQuote { children } => resolve_shortcodes(children, registry),
@@ -500,9 +499,9 @@ fn handle_markdown_text(text: &str, inline_buf: &mut Vec<Inline>, stack: &mut [S
         }
         Some(
             StackFrame::Emphasis(inlines)
-                | StackFrame::Strong(inlines)
-                | StackFrame::Strikethrough(inlines)
-                | StackFrame::Link { inlines, .. },
+            | StackFrame::Strong(inlines)
+            | StackFrame::Strikethrough(inlines)
+            | StackFrame::Link { inlines, .. },
         ) => {
             inlines.push(Inline::Text(text.to_string()));
         }
@@ -530,8 +529,8 @@ fn push_inline(stack: &mut [StackFrame], inline_buf: &mut Vec<Inline>, inline: I
     match stack.last_mut() {
         Some(
             StackFrame::Emphasis(inlines)
-                | StackFrame::Strong(inlines)
-                | StackFrame::Link { inlines, .. },
+            | StackFrame::Strong(inlines)
+            | StackFrame::Link { inlines, .. },
         ) => inlines.push(inline),
         _ => inline_buf.push(inline),
     }
