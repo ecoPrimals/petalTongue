@@ -39,6 +39,10 @@ pub enum AppError {
     #[error("Task panicked: {0}")]
     TaskPanic(String),
 
+    /// IO error.
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+
     /// Wrapped error from dependencies.
     #[error("{0}")]
     Other(String),
@@ -47,12 +51,6 @@ pub enum AppError {
 impl<T> From<std::sync::PoisonError<T>> for AppError {
     fn from(err: std::sync::PoisonError<T>) -> Self {
         Self::GraphLockPoisoned(err.to_string())
-    }
-}
-
-impl From<std::io::Error> for AppError {
-    fn from(err: std::io::Error) -> Self {
-        Self::Other(err.to_string())
     }
 }
 
@@ -149,7 +147,7 @@ mod tests {
     fn test_from_io_error() {
         let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
         let app_err: AppError = io_err.into();
-        assert!(matches!(app_err, AppError::Other(_)));
+        assert!(matches!(app_err, AppError::Io(_)));
         assert!(app_err.to_string().contains("file not found"));
     }
 
@@ -157,7 +155,7 @@ mod tests {
     fn test_from_io_error_permission_denied() {
         let io_err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "access denied");
         let app_err: AppError = io_err.into();
-        assert!(matches!(app_err, AppError::Other(_)));
+        assert!(matches!(app_err, AppError::Io(_)));
         assert!(app_err.to_string().contains("access denied"));
     }
 

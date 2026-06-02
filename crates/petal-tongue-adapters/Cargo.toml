@@ -25,9 +25,6 @@ serde_json = { workspace = true }
 # UI (for rendering adapters)
 egui = { workspace = true }
 
-# Async runtime (for capability discovery)
-tokio = { workspace = true }
-
 # Logging
 tracing = { workspace = true }
 

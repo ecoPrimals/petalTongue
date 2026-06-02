@@ -13,7 +13,7 @@ pub fn render_baselines(args: &Args) -> Result<(), HeadlessError> {
 
     let output_dir = args.output.as_deref().unwrap_or("baselines_svg");
     let out_path = Path::new(output_dir);
-    std::fs::create_dir_all(out_path).map_err(|e| HeadlessError::IoError(e.to_string()))?;
+    std::fs::create_dir_all(out_path)?;
 
     let bindings = baseline_bindings();
     let compiler = GrammarCompiler::new();
@@ -41,8 +41,7 @@ pub fn render_baselines(args: &Args) -> Result<(), HeadlessError> {
 
         let file_name = format!("{name}.svg");
         let file_path = out_path.join(&file_name);
-        std::fs::write(&file_path, &svg_bytes)
-            .map_err(|e| HeadlessError::IoError(e.to_string()))?;
+        std::fs::write(&file_path, &svg_bytes)?;
 
         tracing::info!(
             "  {name}: {} primitives -> {}",

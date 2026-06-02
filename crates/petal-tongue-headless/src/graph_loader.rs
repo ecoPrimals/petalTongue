@@ -28,9 +28,9 @@ pub fn load_graph_data(graph: &Arc<RwLock<GraphEngine>>, args: &Args) -> Result<
 /// Load graph from a scenario JSON file.
 fn load_scenario_file(graph: &Arc<RwLock<GraphEngine>>, path: &str) -> Result<(), HeadlessError> {
     let content = std::fs::read_to_string(path)
-        .map_err(|e| HeadlessError::IoError(format!("scenario read {path}: {e}")))?;
+        .map_err(|e| HeadlessError::ScenarioLoad(format!("read {path}: {e}")))?;
     let scenario: serde_json::Value = serde_json::from_str(&content)
-        .map_err(|e| HeadlessError::IoError(format!("scenario parse {path}: {e}")))?;
+        .map_err(|e| HeadlessError::ScenarioLoad(format!("parse {path}: {e}")))?;
 
     let mut g = graph.write()?;
     if let Some(nodes) = scenario.get("primals").and_then(|v| v.as_array()) {
@@ -108,9 +108,9 @@ fn load_demo_topology(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessEr
         .as_secs();
 
     let health_id = std::env::var("PETALTONGUE_HEADLESS_DEMO_HEALTH_ID")
-        .unwrap_or_else(|_| "health-monitor-1".to_string());
+        .unwrap_or_else(|_| "health-monitor-1".to_owned());
     let health_name = std::env::var("PETALTONGUE_HEADLESS_DEMO_HEALTH_NAME")
-        .unwrap_or_else(|_| "Health Monitor".to_string());
+        .unwrap_or_else(|_| "Health Monitor".to_owned());
 
     let primals = vec![
         PrimalInfo::new(
@@ -118,7 +118,7 @@ fn load_demo_topology(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessEr
             "petalTongue Headless",
             "Visualization",
             constants::default_headless_url(),
-            vec!["visualization".to_string(), "export".to_string()],
+            vec!["visualization".to_owned(), "export".to_owned()],
             PrimalHealthStatus::Healthy,
             now,
         ),
@@ -127,7 +127,7 @@ fn load_demo_topology(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessEr
             health_name.as_str(),
             "Health Monitoring",
             constants::default_web_url(),
-            vec!["health".to_string(), "monitoring".to_string()],
+            vec!["health".to_owned(), "monitoring".to_owned()],
             PrimalHealthStatus::Healthy,
             now,
         ),
@@ -136,7 +136,7 @@ fn load_demo_topology(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessEr
             "Encryption Primal",
             "Encrypted Communication",
             constants::default_sandbox_security_url(),
-            vec!["encryption".to_string(), "messaging".to_string()],
+            vec!["encryption".to_owned(), "messaging".to_owned()],
             PrimalHealthStatus::Warning,
             now,
         ),
@@ -149,16 +149,16 @@ fn load_demo_topology(graph: &Arc<RwLock<GraphEngine>>) -> Result<(), HeadlessEr
     g.add_edge(TopologyEdge {
         from: health_id.into(),
         to: "petaltongue-headless".into(),
-        edge_type: "monitors".to_string(),
-        label: Some("Health Monitoring".to_string()),
+        edge_type: "monitors".to_owned(),
+        label: Some("Health Monitoring".to_owned()),
         capability: None,
         metrics: None,
     });
     g.add_edge(TopologyEdge {
         from: "encryption-demo-1".into(),
         to: "petaltongue-headless".into(),
-        edge_type: "sends_data".to_string(),
-        label: Some("Encrypted Messages".to_string()),
+        edge_type: "sends_data".to_owned(),
+        label: Some("Encrypted Messages".to_owned()),
         capability: None,
         metrics: None,
     });

@@ -36,7 +36,7 @@ pub fn handle_audio_synthesize(
             return JsonRpcResponse::error(
                 req.id,
                 error_codes::INVALID_PARAMS,
-                "Missing required 'definition' parameter".to_string(),
+                "Missing required 'definition' parameter".to_owned(),
             );
         }
     };

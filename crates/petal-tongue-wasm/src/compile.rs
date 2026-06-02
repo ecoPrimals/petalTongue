@@ -22,7 +22,7 @@ pub fn scene_to_svg(scene: &SceneGraph) -> String {
     let compiler = SvgCompiler::new();
     match compiler.compile(scene) {
         ModalityOutput::Svg(bytes) => String::from_utf8_lossy(&bytes).into_owned(),
-        _ => "Error: SVG compilation produced unexpected modality".to_string(),
+        _ => "Error: SVG compilation produced unexpected modality".to_owned(),
     }
 }
 
@@ -33,7 +33,7 @@ pub fn compile_scene_to_modality(scene: &SceneGraph, modality: &str) -> String {
             let compiler = petal_tongue_scene::modality::description::DescriptionCompiler::new();
             match compiler.compile(scene) {
                 ModalityOutput::Description(bytes) => String::from_utf8_lossy(&bytes).into_owned(),
-                _ => "Error: description compilation produced unexpected modality".to_string(),
+                _ => "Error: description compilation produced unexpected modality".to_owned(),
             }
         }
         "terminal" => {
@@ -44,7 +44,7 @@ pub fn compile_scene_to_modality(scene: &SceneGraph, modality: &str) -> String {
                     .map(|row| row.iter().collect::<String>())
                     .collect::<Vec<_>>()
                     .join("\n"),
-                _ => "Error: terminal compilation produced unexpected modality".to_string(),
+                _ => "Error: terminal compilation produced unexpected modality".to_owned(),
             }
         }
         other => format!("Error: unsupported modality: {other}"),

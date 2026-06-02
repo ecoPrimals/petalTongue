@@ -17,7 +17,11 @@ pub enum HeadlessError {
 
     /// IO error (file write, directory creation).
     #[error("IO error: {0}")]
-    IoError(String),
+    Io(#[from] std::io::Error),
+
+    /// Scenario file load/parse error.
+    #[error("Scenario load error: {0}")]
+    ScenarioLoad(String),
 }
 
 impl<T> From<std::sync::PoisonError<T>> for HeadlessError {

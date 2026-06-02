@@ -31,7 +31,7 @@ pub fn handle_introspect(handlers: &RpcHandlers, id: Value) -> JsonRpcResponse {
         return JsonRpcResponse::error(
             id,
             error_codes::INTERNAL_ERROR,
-            "Rendering awareness not wired to IPC".to_string(),
+            "Rendering awareness not wired to IPC".to_owned(),
         );
     };
     let awareness = awareness_arc

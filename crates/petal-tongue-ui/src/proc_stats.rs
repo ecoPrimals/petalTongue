@@ -124,7 +124,10 @@ impl ProcStats {
         }
     }
 
-    /// Total memory in bytes
+    /// Total memory in bytes.
+    ///
+    /// On non-Linux platforms, returns the value from `PETALTONGUE_TOTAL_MEMORY_BYTES`
+    /// if set, otherwise 0.
     #[must_use]
     pub fn total_memory(&self) -> u64 {
         #[cfg(target_os = "linux")]
@@ -135,11 +138,16 @@ impl ProcStats {
         #[cfg(not(target_os = "linux"))]
         {
             let _ = self;
-            0
+            std::env::var("PETALTONGUE_TOTAL_MEMORY_BYTES")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(0)
         }
     }
 
-    /// Used memory in bytes (`MemTotal` - `MemAvailable`)
+    /// Used memory in bytes (`MemTotal` - `MemAvailable`).
+    ///
+    /// Returns 0 on non-Linux platforms (/proc not available).
     #[must_use]
     pub fn used_memory(&self) -> u64 {
         #[cfg(target_os = "linux")]
@@ -154,7 +162,9 @@ impl ProcStats {
         }
     }
 
-    /// Number of CPU cores (from /proc/stat cpuN lines)
+    /// Number of CPU cores (from /proc/stat cpuN lines).
+    ///
+    /// On non-Linux, attempts `std::thread::available_parallelism()` as a portable fallback.
     #[must_use]
     pub fn cpu_count(&self) -> usize {
         #[cfg(target_os = "linux")]
@@ -165,7 +175,9 @@ impl ProcStats {
         #[cfg(not(target_os = "linux"))]
         {
             let _ = self;
-            1
+            std::thread::available_parallelism()
+                .map(std::num::NonZero::get)
+                .unwrap_or(1)
         }
     }
 
@@ -307,7 +319,7 @@ fn read_proc_stat(pid: u32) -> Option<(String, u64, u64, u64)> {
     // Format: pid (comm) state ppid ... utime stime ... rss
     // comm can contain spaces/parens, so we find the last ")" to split
     let close_paren = s.rfind(')')?;
-    let comm = s[1..close_paren].to_string();
+    let comm = s[1..close_paren].to_owned();
     let rest = s[close_paren + 1..].trim_start();
     let parts: Vec<&str> = rest.split_whitespace().collect();
     // ppid=0, pgrp=1, session=2, tty=3, tpgid=4, flags=5, minflt=6, cminflt=7, majflt=8, cmajflt=9

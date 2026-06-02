@@ -11,7 +11,7 @@ pub mod nucleus;
 
 use petal_tongue_scene::animation::Sequence;
 use petal_tongue_scene::scene_graph::SceneGraph;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -22,16 +22,13 @@ pub use nucleus::{build_nucleus_expand_animation, build_nucleus_scene};
 // ── Visualization Registry ──────────────────────────────────────────────
 
 /// A registered visualization builder.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VizEntry {
     /// URL-safe identifier (e.g. "entity-graph").
-    #[expect(dead_code)]
     pub slug: String,
     /// Human-readable display name.
-    #[expect(dead_code)]
     pub title: String,
     /// Short summary of what this visualization shows.
-    #[expect(dead_code)]
     pub description: String,
     /// Optional path to external data feeding the visualization.
     pub data_source: Option<PathBuf>,
@@ -55,12 +52,12 @@ impl VizRegistry {
 
         if graph_exists {
             entries.insert(
-                "entity-graph".to_string(),
+                "entity-graph".to_owned(),
                 VizEntry {
-                    slug: "entity-graph".to_string(),
-                    title: "Entity Graph Explorer".to_string(),
+                    slug: "entity-graph".to_owned(),
+                    title: "Entity Graph Explorer".to_owned(),
                     description: "Force-directed graph of ecosystem entities and relationships"
-                        .to_string(),
+                        .to_owned(),
                     data_source: graph_path,
                     has_animation: false,
                 },
@@ -68,23 +65,23 @@ impl VizRegistry {
         }
 
         entries.insert(
-            "kderm-topology".to_string(),
+            "kderm-topology".to_owned(),
             VizEntry {
-                slug: "kderm-topology".to_string(),
-                title: "K-Derm Diderm Topology".to_string(),
+                slug: "kderm-topology".to_owned(),
+                title: "K-Derm Diderm Topology".to_owned(),
                 description: "5-layer cross-section of sovereign infrastructure with relay chain"
-                    .to_string(),
+                    .to_owned(),
                 data_source: None,
                 has_animation: true,
             },
         );
 
         entries.insert(
-            "nucleus-composition".to_string(),
+            "nucleus-composition".to_owned(),
             VizEntry {
-                slug: "nucleus-composition".to_string(),
-                title: "NUCLEUS Atomics Composition".to_string(),
-                description: "Nested composition layers from Tower to Full NUCLEUS".to_string(),
+                slug: "nucleus-composition".to_owned(),
+                title: "NUCLEUS Atomics Composition".to_owned(),
+                description: "Nested composition layers from Tower to Full NUCLEUS".to_owned(),
                 data_source: None,
                 has_animation: true,
             },
@@ -99,14 +96,18 @@ impl VizRegistry {
     }
 
     /// Get a viz entry by slug.
-    #[expect(dead_code)]
     pub fn get(&self, slug: &str) -> Option<&VizEntry> {
         self.entries.get(slug)
     }
 
+    /// List all registered visualizations.
+    pub fn list(&self) -> Vec<&VizEntry> {
+        self.entries.values().collect()
+    }
+
     /// Build a scene for the given slug, or None if unknown.
     pub fn build_scene(&self, slug: &str) -> Option<SceneGraph> {
-        let entry = self.entries.get(slug)?;
+        let entry = self.get(slug)?;
         match slug {
             "entity-graph" => {
                 let path = entry.data_source.as_ref()?;
@@ -121,7 +122,7 @@ impl VizRegistry {
 
     /// Build an animation sequence for the given slug, or None.
     pub fn build_animation(&self, slug: &str) -> Option<Sequence> {
-        let entry = self.entries.get(slug)?;
+        let entry = self.get(slug)?;
         if !entry.has_animation {
             return None;
         }

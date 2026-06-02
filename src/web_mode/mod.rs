@@ -123,10 +123,21 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
             "Content-direct backend active (filesystem → DocumentNode pipeline)"
         );
         let index_state = Arc::clone(&state);
-        app = app.route(
-            "/",
-            get(move || content_direct::content_direct_index(Arc::clone(&index_state))),
-        );
+        let nav_state = Arc::clone(&state);
+        let viz_list_state = Arc::clone(&state);
+        app = app
+            .route(
+                "/",
+                get(move || content_direct::content_direct_index(Arc::clone(&index_state))),
+            )
+            .route(
+                "/api/nav",
+                get(move || content_direct::content_direct_nav(Arc::clone(&nav_state))),
+            )
+            .route(
+                "/api/viz",
+                get(move || content_direct::content_direct_viz_list(Arc::clone(&viz_list_state))),
+            );
         app = app.fallback(move |req: axum::extract::Request| {
             content_direct::content_direct_fallback(req, Arc::clone(&state), cache_ttl)
         });

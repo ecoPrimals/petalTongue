@@ -83,12 +83,12 @@ pub fn build_kderm_scene() -> SceneGraph {
                 join: LineJoin::Miter,
             }),
             corner_radius: 4.0,
-            data_id: Some(layer.name.to_string()),
+            data_id: Some(layer.name.to_owned()),
         };
         let label = Primitive::Text {
             x: 50.0,
             y: layer.y + 16.0,
-            content: layer.label.to_string(),
+            content: layer.label.to_owned(),
             font_size: 12.0,
             color: Color::from_rgba8(205, 214, 244, 255),
             anchor: AnchorPoint::TopLeft,
@@ -161,12 +161,12 @@ pub fn build_kderm_scene() -> SceneGraph {
                 cap: LineCap::Round,
                 join: LineJoin::Round,
             }),
-            data_id: Some(vps.name.to_string()),
+            data_id: Some(vps.name.to_owned()),
         };
         let label = Primitive::Text {
             x: vps.x,
             y: layer_y + 22.0,
-            content: vps.name.to_string(),
+            content: vps.name.to_owned(),
             font_size: 10.0,
             color: Color::from_rgba8(205, 214, 244, 255),
             anchor: AnchorPoint::TopCenter,
@@ -255,7 +255,7 @@ pub fn build_kderm_scene() -> SceneGraph {
         let text = Primitive::Text {
             x: *x,
             y: *y,
-            content: label.to_string(),
+            content: (*label).to_owned(),
             font_size: 9.0,
             color: *color,
             anchor: AnchorPoint::CenterLeft,
@@ -271,7 +271,7 @@ pub fn build_kderm_scene() -> SceneGraph {
     let title = SceneNode::new("title").with_primitive(Primitive::Text {
         x: width / 2.0,
         y: 580.0,
-        content: "K-Derm Diderm Architecture — Sovereign Infrastructure Topology".to_string(),
+        content: "K-Derm Diderm Architecture — Sovereign Infrastructure Topology".to_owned(),
         font_size: 14.0,
         color: Color::from_rgba8(205, 214, 244, 255),
         anchor: AnchorPoint::BottomCenter,
@@ -295,12 +295,12 @@ pub fn build_kderm_relay_animation() -> Sequence {
 
     let mut animations = Vec::new();
 
-    for (i, (relay_id, from_node, to_node)) in steps.iter().enumerate() {
+    for (i, &(relay_id, from_node, to_node)) in steps.iter().enumerate() {
         let delay = i as f64 * 1.2;
 
         animations.push(Animation {
             target: AnimationTarget::Scale {
-                node_id: from_node.to_string(),
+                node_id: from_node.to_owned(),
                 from: 1.0,
                 to: 1.3,
             },
@@ -310,7 +310,7 @@ pub fn build_kderm_relay_animation() -> Sequence {
         });
         animations.push(Animation {
             target: AnimationTarget::StrokeDraw {
-                node_id: relay_id.to_string(),
+                node_id: relay_id.to_owned(),
             },
             duration_secs: 0.6,
             easing: Easing::EaseInOut,
@@ -318,7 +318,7 @@ pub fn build_kderm_relay_animation() -> Sequence {
         });
         animations.push(Animation {
             target: AnimationTarget::Opacity {
-                node_id: relay_id.to_string(),
+                node_id: relay_id.to_owned(),
                 from: 0.0,
                 to: 1.0,
             },
@@ -328,7 +328,7 @@ pub fn build_kderm_relay_animation() -> Sequence {
         });
         animations.push(Animation {
             target: AnimationTarget::Scale {
-                node_id: to_node.to_string(),
+                node_id: to_node.to_owned(),
                 from: 1.0,
                 to: 1.3,
             },
@@ -338,7 +338,7 @@ pub fn build_kderm_relay_animation() -> Sequence {
         });
         animations.push(Animation {
             target: AnimationTarget::Scale {
-                node_id: from_node.to_string(),
+                node_id: from_node.to_owned(),
                 from: 1.3,
                 to: 1.0,
             },
@@ -350,7 +350,7 @@ pub fn build_kderm_relay_animation() -> Sequence {
 
     animations.push(Animation {
         target: AnimationTarget::Scale {
-            node_id: "vps-GitHub".to_string(),
+            node_id: "vps-GitHub".to_owned(),
             from: 1.3,
             to: 1.0,
         },
