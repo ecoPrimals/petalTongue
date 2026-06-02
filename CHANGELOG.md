@@ -6,6 +6,40 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 69 Deep Debt + Modernization Pass (June 2, 2026)
+
+Wave 69 — error typing evolution, dependency narrowing, dead code elimination,
+idiomatic Rust modernization.
+
+#### Changed
+- **Error typing**: `DirError` manual `Display`/`Error` → `thiserror` derive.
+  `HeadlessError::IoError(String)` → `Io(#[from] std::io::Error)` with typed
+  `ScenarioLoad` variant for JSON parse errors. `AppError` gained typed `Io`
+  variant, manual `From<io::Error>` removed.
+- **Tokio dep narrowing**: Removed tokio from 4 crates that didn't use it in
+  production (graph, animation, adapters, telemetry). Moved to dev-deps for 2
+  test-only crates (entropy, cli). Narrowed features for api to
+  `[net, io-util, time, rt]`.
+- **Dead code elimination**: `VizEntry` gained `Serialize`, `slug`/`title`/
+  `description` fields now live (API response type). `VizRegistry::get()` wired
+  into `build_scene`/`build_animation`. New `list()` method. `ContentDirectState.nav`
+  wired to `/api/nav` endpoint. New `/api/viz` listing endpoint.
+- **ProcStats non-Linux**: `cpu_count()` uses `std::thread::available_parallelism()`
+  instead of hardcoded `1`. `total_memory()` reads `PETALTONGUE_TOTAL_MEMORY_BYTES`
+  env fallback.
+- **Idiomatic Rust**: `.to_string()` on string literals → `.to_owned()` across
+  viz_data, IPC handlers, WASM compilers, headless graph_loader, socket_path.
+- **TRUE PRIMAL (Wave 69)**: Removed `nestgate` backend alias from `web_mode`,
+  removed env fallback from `content_backend`, deprecated `NESTGATE_SOCKET`
+  constant. Dep trim: `tarpc/unix`, `egui_extras`, `rustix` 0.38→1.x. IPC
+  evolution: `grammar_placeholder` → `identity_grammar`, texture attach slot
+  registration semantics.
+
+#### Verified
+- `cargo fmt --check`: clean
+- `cargo clippy --workspace`: 0 warnings
+- `cargo test --workspace`: 6,208 passed, 0 failed
+
 ### flockGate W67/W68 Review + Content Pipeline Wiring (June 1, 2026)
 
 Wave 67 — reviewed and integrated flockGate deliverables: content rendering pipeline,

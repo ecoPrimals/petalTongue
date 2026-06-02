@@ -1,7 +1,7 @@
 +++
 title = "petalTongue Validation Summary"
 description = "Universal user interface primal — 6,208+ tests, 53 IPC methods, 18 crates, 7 modes, pure Rust"
-date = 2026-06-01
+date = 2026-06-02
 
 [taxonomies]
 primals = ["petaltongue"]
@@ -21,9 +21,10 @@ springs = []
 - **BTSP Phase 3** encrypted transport (ChaCha20-Poly1305 + HKDF-SHA256)
 - **MethodGate** (JH-0): public/protected method classification with auth enforcement
 - **DH-1 /tmp cleanup**: All socket paths through `BIOMEOS_SOCKET_DIR` tier chain
-- **Stadial gate**: READY (post-primordial, Wave 67 clean)
+- **Stadial gate**: READY (post-primordial, Wave 69 clean)
 - **Content pipeline**: `content_render` + `viz_data` + `content_direct` wired and compiled
 - **flockGate W67/W68 review**: document.rs types, VizRegistry pattern, TRUE PRIMAL fixes applied
+- **Wave 69 modernization**: error typing evolution, dep narrowing (6 crates), dead code elimination, `.to_owned()` idiom pass
 
 ## Key Capabilities
 
@@ -43,7 +44,7 @@ springs = []
 ## Web Mode (S3 Shadow Parity)
 
 - **Static file serving** from `--docroot` with directory index (`ServeDir`)
-- **Content backend** (`--backend content-provider`): capability-based content via `content.resolve` (legacy `--backend nestgate` still accepted)
+- **Content backend** (`--backend content-provider`): capability-based content via `content.resolve`
 - **SPA catch-all** (`--spa`): client-side routing support
 - **CORS** (`--allowed-origins`): configurable origin allowlist
 - **Gzip + Brotli compression** via `CompressionLayer`

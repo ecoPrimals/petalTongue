@@ -121,7 +121,7 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # 6,321+ tests, ~90% coverage
+cargo test --workspace --all-features     # 6,208+ tests, ~90% coverage
 ```
 
 ## Current State
@@ -421,7 +421,7 @@ items resolved:
   `tower_http::cors::CorsLayer`. Enables production deployment for SPA
   frontends and cross-origin API consumers.
 
-6,191+ tests, 0 Clippy warnings, 0 doc warnings, 0 unsafe blocks.
+6,208+ tests, 0 Clippy warnings, 0 doc warnings, 0 unsafe blocks.
 
 Wave 61 status (May 29, 2026): DH-1 /tmp cleanup complete (all socket paths
 through `resolve_biomeos_socket_dir()` tiered chain). Dep trim: dead `mdns-sd`
@@ -429,6 +429,21 @@ removed, `tokio/full` → explicit features, `tower` 0.4→0.5. TRUE PRIMAL fix:
 content backend default is `"content-provider"` (capability-based). Mock leaks
 isolated: auto-fallback and headless demo gated behind explicit opt-in. Sensory
 discovery probes Linux audio subsystems.
+
+Wave 69 deep debt + modernization (June 2, 2026): TRUE PRIMAL — removed
+`nestgate` backend alias and env fallback, deprecated `NESTGATE_SOCKET`
+constant. Dep trimming — removed `tarpc/unix`, removed `egui_extras`,
+bumped `rustix` 0.38→1.x. IPC evolution — `grammar_placeholder` →
+`identity_grammar`, `handle_texture_attach` to slot registration semantics.
+Modernization pass — `DirError` manual Display/Error → `thiserror` derive,
+`HeadlessError::IoError(String)` → `Io(#[from] std::io::Error)` + typed
+`ScenarioLoad` variant, `AppError` typed `Io` variant. Tokio dep narrowing:
+removed from 4 crates (graph, animation, adapters, telemetry), moved to
+dev-deps for 2 (entropy, cli), narrowed features for api. Dead code
+eliminated: `VizEntry`/`VizRegistry` fully wired with `Serialize`, `list()`,
+`get()`, `/api/nav` + `/api/viz` endpoints. `ProcStats` non-Linux evolution:
+`cpu_count()` uses `available_parallelism()`, `total_memory()` reads env
+fallback. Mechanical `.to_string()` → `.to_owned()` on string literals.
 
 Remaining backlog: aarch64 musl cross-compile for headless, audio backend wire
 protocols (via `audio.play` capability discovery), overlay mode (display
