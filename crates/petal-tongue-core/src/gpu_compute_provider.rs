@@ -143,12 +143,10 @@ impl GpuComputeProvider {
         }
 
         // Legacy: ecosystem manifest scan (S139 dual-write layout)
-        // Search all DH-1 socket search dirs for ecoPrimals/discovery manifests
-        for search_dir in crate::constants::socket_search_dirs() {
-            let discovery_dir = search_dir.join("ecoPrimals/discovery");
-            let Ok(entries) = std::fs::read_dir(&discovery_dir) else {
-                continue;
-            };
+        let runtime_dir = std::env::var(crate::constants::XDG_RUNTIME_DIR)
+            .unwrap_or_else(|_| crate::constants::LEGACY_TMP_PREFIX.to_string());
+        let discovery_dir = format!("{runtime_dir}/ecoPrimals/discovery");
+        if let Ok(entries) = std::fs::read_dir(&discovery_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.extension().is_some_and(|e| e == "json")

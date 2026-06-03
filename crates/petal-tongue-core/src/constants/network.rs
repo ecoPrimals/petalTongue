@@ -59,15 +59,11 @@ pub const DEFAULT_BIND_HOST: &str = "0.0.0.0";
 pub const DEFAULT_GPU_COMPUTE_ENDPOINT: &str = "tarpc://localhost:9001";
 
 /// Legacy /tmp socket fallback path prefix.
-///
-/// **DH-1 Note**: Production code should prefer [`resolve_biomeos_socket_dir()`]
-/// which checks `BIOMEOS_SOCKET_DIR` before falling back here. This constant
-/// remains only as the lowest-priority fallback. Zero `/tmp` writes when
-/// `BIOMEOS_SOCKET_DIR` or `XDG_RUNTIME_DIR` is set.
+/// Used when `XDG_RUNTIME_DIR` is unavailable; configurable via explicit socket env vars.
 pub const LEGACY_TMP_PREFIX: &str = "/tmp";
 
 /// Alternative runtime directory for ecosystem sockets.
-/// Searched after `BIOMEOS_SOCKET_DIR`, XDG, and `/run/user/{uid}`.
+/// Searched after XDG_RUNTIME_DIR and /tmp when scanning for primals.
 pub const ALTERNATIVE_RUN_DIR: &str = "/var/run/ecoPrimals";
 
 /// Ecosystem runtime directory segment under XDG_RUNTIME_DIR.
@@ -77,74 +73,31 @@ pub fn ecosystem_runtime_dir_name() -> String {
     std::env::var(env::ECOSYSTEM_RUNTIME_DIR).unwrap_or_else(|_| "biomeos".to_string())
 }
 
-/// Resolve the biomeOS socket directory with the DH-1 tier chain.
-///
-/// Priority:
-/// 1. `BIOMEOS_SOCKET_DIR` env var (explicit — deployment/membrane control)
-/// 2. `$XDG_RUNTIME_DIR/biomeos/` (XDG standard)
-/// 3. `/run/user/{uid}/biomeos/` (Linux fallback)
-/// 4. `/tmp/biomeos/` (legacy last resort)
-///
-/// This is the canonical function all socket resolution should use when
-/// building a fallback path. It guarantees `ProtectSystem=strict` compliance
-/// when `BIOMEOS_SOCKET_DIR` is set.
-#[must_use]
-pub fn resolve_biomeos_socket_dir() -> std::path::PathBuf {
-    let seg = ecosystem_runtime_dir_name();
-
-    if let Ok(dir) = std::env::var(env::BIOMEOS_SOCKET_DIR) {
-        return std::path::PathBuf::from(dir);
-    }
-
-    if let Ok(xdg) = std::env::var(env::XDG_RUNTIME_DIR) {
-        return std::path::PathBuf::from(xdg).join(&seg);
-    }
-
-    let uid = crate::system_info::get_current_uid();
-    let run_user = std::path::PathBuf::from(format!("/run/user/{uid}"));
-    if run_user.exists() || run_user.parent().is_some_and(std::path::Path::exists) {
-        return run_user.join(&seg);
-    }
-
-    std::path::PathBuf::from(LEGACY_TMP_PREFIX).join(&seg)
-}
-
 /// Canonical ordered list of directories to search for primal Unix sockets.
 ///
 /// Priority:
-/// 1. `$BIOMEOS_SOCKET_DIR` (explicit override — DH-1 tier)
-/// 2. `$XDG_RUNTIME_DIR` (biomeOS convention)
-/// 3. `/run/user/{uid}` (Linux fallback when XDG unset)
-/// 4. `/tmp` (development / legacy fallback)
-/// 5. `/var/run/ecoPrimals` (alternative ecosystem runtime)
+/// 1. `$XDG_RUNTIME_DIR` (biomeOS convention)
+/// 2. `/run/user/{uid}` (Linux fallback when XDG unset)
+/// 3. `/tmp` (development / legacy fallback)
+/// 4. `/var/run/ecoPrimals` (alternative ecosystem runtime)
 ///
 /// Callers searching for a specific socket typically join each path with a
 /// subdirectory (e.g. `biomeos/`) and the socket filename.
 #[must_use]
 pub fn socket_search_dirs() -> Vec<std::path::PathBuf> {
-    let mut dirs = Vec::with_capacity(5);
-
-    if let Ok(dir) = std::env::var(env::BIOMEOS_SOCKET_DIR) {
-        dirs.push(std::path::PathBuf::from(dir));
-    }
+    let mut dirs = Vec::with_capacity(4);
 
     if let Ok(xdg) = std::env::var(env::XDG_RUNTIME_DIR) {
-        let p = std::path::PathBuf::from(xdg);
-        if !dirs.contains(&p) {
-            dirs.push(p);
-        }
+        dirs.push(std::path::PathBuf::from(xdg));
     }
 
     let uid = crate::system_info::get_current_uid();
     let run_user = std::path::PathBuf::from(format!("/run/user/{uid}"));
-    if !dirs.contains(&run_user) {
+    if !dirs.iter().any(|d| d == &run_user) {
         dirs.push(run_user);
     }
 
-    let tmp = std::path::PathBuf::from(LEGACY_TMP_PREFIX);
-    if !dirs.contains(&tmp) {
-        dirs.push(tmp);
-    }
+    dirs.push(std::path::PathBuf::from(LEGACY_TMP_PREFIX));
     dirs.push(std::path::PathBuf::from(ALTERNATIVE_RUN_DIR));
 
     dirs
@@ -214,8 +167,7 @@ pub fn display_backend_port() -> u16 {
 pub fn default_bind_addr() -> &'static str {
     static BIND: std::sync::OnceLock<String> = std::sync::OnceLock::new();
     BIND.get_or_init(|| {
-        std::env::var(env::PETALTONGUE_BIND_ADDR)
-            .unwrap_or_else(|_| DEFAULT_LOOPBACK_HOST.to_string())
+        std::env::var(env::PETALTONGUE_BIND_ADDR).unwrap_or_else(|_| DEFAULT_LOOPBACK_HOST.to_string())
     })
 }
 
@@ -239,13 +191,11 @@ pub fn default_headless_bind() -> String {
     format!("{addr}:{port}")
 }
 
-/// Build a biomeOS socket path using the DH-1 tier chain.
-///
-/// Uses [`resolve_biomeos_socket_dir()`] for the directory and
-/// `BIOMEOS_SOCKET_NAME` env var for the filename.
+/// Build a legacy biomeOS socket path (`/tmp/biomeos-neural-api.sock`).
+/// Uses `BIOMEOS_SOCKET_NAME` env var if set.
 #[must_use]
 pub fn biomeos_legacy_socket() -> std::path::PathBuf {
-    resolve_biomeos_socket_dir().join(format!("{}.sock", biomeos_socket_name()))
+    std::path::PathBuf::from(LEGACY_TMP_PREFIX).join(format!("{}.sock", biomeos_socket_name()))
 }
 
 // ---------------------------------------------------------------------------
@@ -513,35 +463,8 @@ mod tests {
     fn test_biomeos_legacy_socket_path() {
         env_test_helpers::with_env_var("BIOMEOS_SOCKET_NAME", "test-sock", || {
             let path = biomeos_legacy_socket();
-            assert!(
-                path.to_string_lossy().ends_with("test-sock.sock"),
-                "should end with socket name: {path:?}"
-            );
-        });
-    }
-
-    #[test]
-    fn test_biomeos_legacy_socket_with_socket_dir_override() {
-        env_test_helpers::with_env_vars(
-            &[
-                ("BIOMEOS_SOCKET_DIR", Some("/run/biomeos-custom")),
-                ("BIOMEOS_SOCKET_NAME", Some("override-sock")),
-            ],
-            || {
-                let path = biomeos_legacy_socket();
-                assert_eq!(
-                    path.to_string_lossy(),
-                    "/run/biomeos-custom/override-sock.sock"
-                );
-            },
-        );
-    }
-
-    #[test]
-    fn test_resolve_biomeos_socket_dir_env_override() {
-        env_test_helpers::with_env_var("BIOMEOS_SOCKET_DIR", "/custom/socket/dir", || {
-            let dir = resolve_biomeos_socket_dir();
-            assert_eq!(dir, std::path::PathBuf::from("/custom/socket/dir"));
+            assert!(path.to_string_lossy().ends_with("test-sock.sock"));
+            assert!(path.to_string_lossy().contains("/tmp"));
         });
     }
 
