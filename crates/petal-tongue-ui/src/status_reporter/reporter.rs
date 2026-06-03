@@ -27,48 +27,48 @@ impl StatusReporter {
     pub fn new() -> Self {
         let status = SystemStatus {
             timestamp: chrono::Utc::now().to_rfc3339(),
-            health: "initializing".to_string(),
+            health: "initializing".to_owned(),
             modalities: ModalityStatus {
                 visual2d: ModalityState {
                     available: false,
                     tested: false,
-                    reason: "Not yet tested".to_string(),
+                    reason: "Not yet tested".to_owned(),
                     last_used: None,
                 },
                 audio: ModalityState {
                     available: false,
                     tested: false,
-                    reason: "Not yet tested".to_string(),
+                    reason: "Not yet tested".to_owned(),
                     last_used: None,
                 },
                 animation: ModalityState {
                     available: false,
                     tested: false,
-                    reason: "Not yet tested".to_string(),
+                    reason: "Not yet tested".to_owned(),
                     last_used: None,
                 },
                 text_description: ModalityState {
                     available: false,
                     tested: false,
-                    reason: "Not yet tested".to_string(),
+                    reason: "Not yet tested".to_owned(),
                     last_used: None,
                 },
                 haptic: ModalityState {
                     available: false,
                     tested: false,
-                    reason: "Not yet tested".to_string(),
+                    reason: "Not yet tested".to_owned(),
                     last_used: None,
                 },
                 vr3d: ModalityState {
                     available: false,
                     tested: false,
-                    reason: "Not yet tested".to_string(),
+                    reason: "Not yet tested".to_owned(),
                     last_used: None,
                 },
             },
             audio: AudioStatus {
                 initialized: false,
-                current_provider: "none".to_string(),
+                current_provider: "none".to_owned(),
                 available_providers: Vec::new(),
                 last_sound: None,
                 recent_failures: Vec::new(),
@@ -84,7 +84,7 @@ impl StatusReporter {
             ui: UIStatus {
                 window_open: false,
                 fps: 0.0,
-                active_view: "initializing".to_string(),
+                active_view: "initializing".to_owned(),
                 keyboard_shortcuts_enabled: false,
                 accessibility_features: Vec::new(),
             },
@@ -172,8 +172,8 @@ impl StatusReporter {
         let mut status = lock_ignore_poison(&self.status);
 
         let event = AudioEvent {
-            sound_name: sound_name.to_string(),
-            provider: provider.to_string(),
+            sound_name: sound_name.to_owned(),
+            provider: provider.to_owned(),
             timestamp: chrono::Utc::now().to_rfc3339(),
             success,
             error_message: error_message.clone(),
@@ -195,11 +195,11 @@ impl StatusReporter {
 
             // Add as an issue
             status.issues.push(Issue {
-                severity: "error".to_string(),
-                category: "audio".to_string(),
+                severity: "error".to_owned(),
+                category: "audio".to_owned(),
                 message: failure_msg.clone(),
                 suggested_action: Some(
-                    "Check audio system availability. Install mpv or aplay.".to_string(),
+                    "Check audio system availability. Install mpv or aplay.".to_owned(),
                 ),
                 timestamp: chrono::Utc::now().to_rfc3339(),
             });
@@ -234,7 +234,7 @@ impl StatusReporter {
     /// Update overall health
     pub fn update_health(&self, health: &str) {
         let mut status = lock_ignore_poison(&self.status);
-        status.health = health.to_string();
+        health.clone_into(&mut status.health);
         drop(status);
 
         self.write_status_file();
@@ -244,9 +244,9 @@ impl StatusReporter {
     fn add_event(&self, category: &str, severity: &str, message: &str) {
         let event = StatusEvent {
             timestamp: chrono::Utc::now().to_rfc3339(),
-            category: category.to_string(),
-            severity: severity.to_string(),
-            message: message.to_string(),
+            category: category.to_owned(),
+            severity: severity.to_owned(),
+            message: message.to_owned(),
         };
 
         let mut events = lock_ignore_poison(&self.events);
@@ -340,7 +340,7 @@ mod tests {
     #[test]
     fn test_update_modality() {
         let reporter = StatusReporter::new();
-        reporter.update_modality("visual2d", true, true, "Test passed".to_string());
+        reporter.update_modality("visual2d", true, true, "Test passed".to_owned());
         let status = reporter.get_status();
         assert!(status.modalities.visual2d.available);
         assert!(status.modalities.visual2d.tested);
@@ -351,7 +351,7 @@ mod tests {
     #[test]
     fn test_update_modality_unknown() {
         let reporter = StatusReporter::new();
-        reporter.update_modality("unknown_mod", true, false, "test".to_string());
+        reporter.update_modality("unknown_mod", true, false, "test".to_owned());
         // Should not panic - unknown modality is logged
         let _ = reporter.get_status();
     }
@@ -380,7 +380,7 @@ mod tests {
             "startup",
             "hound",
             false,
-            Some("Device not found".to_string()),
+            Some("Device not found".to_owned()),
         );
         let status = reporter.get_status();
         assert!(status.audio.last_sound.is_some());
@@ -407,7 +407,7 @@ mod tests {
     #[test]
     fn test_get_critical_issues() {
         let reporter = StatusReporter::new();
-        reporter.report_audio_event("x", "y", false, Some("err".to_string()));
+        reporter.report_audio_event("x", "y", false, Some("err".to_owned()));
         let issues = reporter.get_critical_issues();
         assert!(!issues.is_empty());
         assert_eq!(issues[0].severity, "error");
@@ -426,14 +426,14 @@ mod tests {
     fn test_update_audio_system() {
         let reporter = StatusReporter::new();
         reporter.update_audio_system(
-            "hound".to_string(),
+            "hound".to_owned(),
             vec![AudioProviderInfo {
-                name: "hound".to_string(),
+                name: "hound".to_owned(),
                 available: true,
                 sounds_count: 5,
-                description: "Pure Rust".to_string(),
+                description: "Pure Rust".to_owned(),
             }],
-            vec!["aplay".to_string()],
+            vec!["aplay".to_owned()],
         );
         let status = reporter.get_status();
         assert!(status.audio.initialized);
@@ -459,7 +459,7 @@ mod tests {
             "haptic",
             "vr3d",
         ] {
-            reporter.update_modality(modality, true, true, "Test".to_string());
+            reporter.update_modality(modality, true, true, "Test".to_owned());
         }
         let status = reporter.get_status();
         assert!(status.modalities.visual2d.available);
@@ -473,7 +473,7 @@ mod tests {
     #[test]
     fn test_update_modality_unavailable() {
         let reporter = StatusReporter::new();
-        reporter.update_modality("visual2d", false, true, "Test failed".to_string());
+        reporter.update_modality("visual2d", false, true, "Test failed".to_owned());
         let status = reporter.get_status();
         assert!(!status.modalities.visual2d.available);
         assert!(status.modalities.visual2d.last_used.is_none());
@@ -521,10 +521,10 @@ mod tests {
     #[test]
     fn test_serde_roundtrip_issue() {
         let issue = Issue {
-            severity: "error".to_string(),
-            category: "audio".to_string(),
-            message: "Test".to_string(),
-            suggested_action: Some("Fix it".to_string()),
+            severity: "error".to_owned(),
+            category: "audio".to_owned(),
+            message: "Test".to_owned(),
+            suggested_action: Some("Fix it".to_owned()),
             timestamp: chrono::Utc::now().to_rfc3339(),
         };
         let json = serde_json::to_string(&issue).expect("serialize issue");
@@ -536,9 +536,9 @@ mod tests {
     fn test_serde_roundtrip_status_event() {
         let event = StatusEvent {
             timestamp: chrono::Utc::now().to_rfc3339(),
-            category: "modality".to_string(),
-            severity: "info".to_string(),
-            message: "Test event".to_string(),
+            category: "modality".to_owned(),
+            severity: "info".to_owned(),
+            message: "Test event".to_owned(),
         };
         let json = serde_json::to_string(&event).expect("serialize event");
         let restored: StatusEvent = serde_json::from_str(&json).expect("deserialize event");
@@ -551,9 +551,9 @@ mod tests {
         // Add a warning - should NOT be in critical issues
         let mut status = lock_ignore_poison(&*reporter.status);
         status.issues.push(Issue {
-            severity: "warning".to_string(),
-            category: "test".to_string(),
-            message: "Warning".to_string(),
+            severity: "warning".to_owned(),
+            category: "test".to_owned(),
+            message: "Warning".to_owned(),
             suggested_action: None,
             timestamp: chrono::Utc::now().to_rfc3339(),
         });

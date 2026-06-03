@@ -73,10 +73,7 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         "Starting web UI server (Pure Rust!)"
     );
 
-    let addr: std::net::SocketAddr = cfg
-        .bind
-        .parse()
-        .map_err(|e| AppError::Other(format!("Failed to parse bind address: {e}")))?;
+    let addr: std::net::SocketAddr = cfg.bind.parse()?;
 
     let nb_config = Arc::new(crate::notebook_render::NotebookRenderConfig {
         strip_sources: cfg.strip_sources,
@@ -198,14 +195,11 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
 
     tracing::info!("Web UI server listening on http://{}", addr);
 
-    let listener = tokio::net::TcpListener::bind(&addr)
-        .await
-        .map_err(|e| AppError::Other(format!("Failed to bind to address: {e}")))?;
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
 
     axum::serve(listener, app)
         .with_graceful_shutdown(crate::signal::shutdown_signal())
-        .await
-        .map_err(|e| AppError::Other(format!("Web server error: {e}")))?;
+        .await?;
 
     tracing::info!("Web server shut down gracefully");
     Ok(())

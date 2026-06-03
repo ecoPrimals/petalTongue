@@ -6,7 +6,35 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-### Deep Debt Pass: TRUE PRIMAL + Typed Errors + Idiom Sweep (June 3, 2026)
+### Deep Debt Pass 2: AppError Evolution + Async Safety + Idiom Sweep (June 3, 2026)
+
+Second deep debt pass: evolving error types, fixing async-safety, broad idiom sweep.
+
+#### Changed
+- **AppError typed sources**: Added `#[from]` conversions for `ConfigError`,
+  `IpcServerError`, `AddrParseError`, `serde_json::Error`, and
+  `tokio::task::JoinError`. Eliminated 11 `AppError::Other(format!())`
+  call sites in `main.rs`, `web_mode/mod.rs`, `server_mode.rs`,
+  `live_mode.rs`, `cli_mode/mod.rs`, and `cli_mode/gather.rs`.
+- **Async-safe file I/O**: `content_direct.rs` index and fallback handlers
+  migrated from blocking `std::fs::read_to_string` to `tokio::fs::read_to_string`.
+- **Idiomatic Rust sweep**: Replaced 220+ additional `"literal".to_string()`
+  with `.to_owned()` across 7 more files: `gather.rs`, `scenario/convert.rs`,
+  `tutorial_mode.rs`, `trust.rs`, `ai_adapter.rs`, `status_reporter.rs`,
+  `jsonrpc_provider.rs`.
+- **Clippy cleanup**: Removed unfulfilled `too_many_lines` expectation from
+  `main()` (function simplified by typed error evolution); fixed
+  `clone_into` pattern in `status_reporter`.
+
+#### Verified
+- Telemetry paths follow DH-1 tiered resolution (`PETALTONGUE_TELEMETRY_DIR`
+  > `XDG_DATA_HOME` > `/var/lib` > `/tmp` last resort) — not hardcoding debt.
+- All `localhost:8080` references are test-only fixtures.
+- Clone hotspots in `demo_device_provider` / `status_reporter` are
+  trait-mandated or lock-safety patterns — acceptable.
+- **6,217 tests pass**, zero Clippy warnings, `unsafe_code = "forbid"` enforced.
+
+### Deep Debt Pass 1: TRUE PRIMAL + Typed Errors + Idiom Sweep (June 3, 2026)
 
 Comprehensive deep debt audit and resolution pass.
 

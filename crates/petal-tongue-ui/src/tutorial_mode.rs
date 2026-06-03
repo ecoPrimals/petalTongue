@@ -55,7 +55,7 @@ impl TutorialMode {
             .unwrap_or(false);
 
         let scenario_name =
-            std::env::var("SANDBOX_SCENARIO").unwrap_or_else(|_| "simple".to_string());
+            std::env::var("SANDBOX_SCENARIO").unwrap_or_else(|_| "simple".to_owned());
 
         if enabled {
             info!("🎭 TUTORIAL MODE ENABLED");
@@ -74,7 +74,7 @@ impl TutorialMode {
     pub fn disabled() -> Self {
         Self {
             enabled: false,
-            scenario_name: "scenario".to_string(),
+            scenario_name: "scenario".to_owned(),
         }
     }
 
@@ -232,15 +232,15 @@ impl TutorialMode {
 
         graph.add_node(PrimalInfo {
             id: "petaltongue-tutorial".into(),
-            name: petal_tongue_core::constants::PRIMAL_NAME.to_string(),
-            primal_type: "Visualization".to_string(),
+            name: petal_tongue_core::constants::PRIMAL_NAME.to_owned(),
+            primal_type: "Visualization".to_owned(),
             endpoint: format!("unix://{socket_dir}/biomeos/petaltongue.sock"),
             capabilities: vec![
-                "ui.render".to_string(),
-                "ui.visualization".to_string(),
-                "ui.audio".to_string(),
-                "ipc.unix-socket".to_string(),
-                "ipc.json-rpc".to_string(),
+                "ui.render".to_owned(),
+                "ui.visualization".to_owned(),
+                "ui.audio".to_owned(),
+                "ipc.unix-socket".to_owned(),
+                "ipc.json-rpc".to_owned(),
             ],
             health: PrimalHealthStatus::Healthy,
             last_seen: now,
@@ -249,9 +249,9 @@ impl TutorialMode {
             properties: {
                 let mut props = Properties::new();
                 props.insert(
-                    "tutorial_note".to_string(),
+                    "tutorial_note".to_owned(),
                     petal_tongue_core::PropertyValue::String(
-                        "Tutorial data. Start real primals to see actual topology.".to_string(),
+                        "Tutorial data. Start real primals to see actual topology.".to_owned(),
                     ),
                 );
                 props
@@ -260,14 +260,14 @@ impl TutorialMode {
 
         graph.add_node(PrimalInfo {
             id: "security-example".into(),
-            name: "Security Primal".to_string(),
-            primal_type: "Security".to_string(),
-            endpoint: "discovered-at-runtime".to_string(),
+            name: "Security Primal".to_owned(),
+            primal_type: "Security".to_owned(),
+            endpoint: "discovered-at-runtime".to_owned(),
             capabilities: vec![
-                "security.auth".to_string(),
-                "security.signing".to_string(),
-                "security.encryption".to_string(),
-                "security.identity".to_string(),
+                "security.auth".to_owned(),
+                "security.signing".to_owned(),
+                "security.encryption".to_owned(),
+                "security.identity".to_owned(),
             ],
             health: PrimalHealthStatus::Healthy,
             last_seen: now,
@@ -278,13 +278,13 @@ impl TutorialMode {
 
         graph.add_node(PrimalInfo {
             id: "discovery-example".into(),
-            name: "Discovery Primal".to_string(),
-            primal_type: "Discovery".to_string(),
-            endpoint: "discovered-at-runtime".to_string(),
+            name: "Discovery Primal".to_owned(),
+            primal_type: "Discovery".to_owned(),
+            endpoint: "discovered-at-runtime".to_owned(),
             capabilities: vec![
-                "discovery.primals".to_string(),
-                "discovery.services".to_string(),
-                "orchestration.workflow".to_string(),
+                "discovery.primals".to_owned(),
+                "discovery.services".to_owned(),
+                "orchestration.workflow".to_owned(),
             ],
             health: PrimalHealthStatus::Healthy,
             last_seen: now,
@@ -296,8 +296,8 @@ impl TutorialMode {
         graph.add_edge(petal_tongue_core::TopologyEdge {
             from: "petaltongue-tutorial".into(),
             to: "discovery-example".into(),
-            edge_type: "ipc.discovery".to_string(),
-            label: Some("discovers".to_string()),
+            edge_type: "ipc.discovery".to_owned(),
+            label: Some("discovers".to_owned()),
             capability: None,
             metrics: None,
         });
@@ -305,8 +305,8 @@ impl TutorialMode {
         graph.add_edge(petal_tongue_core::TopologyEdge {
             from: "discovery-example".into(),
             to: "security-example".into(),
-            edge_type: "ipc.trust".to_string(),
-            label: Some("authenticates".to_string()),
+            edge_type: "ipc.trust".to_owned(),
+            label: Some("authenticates".to_owned()),
             capability: None,
             metrics: None,
         });

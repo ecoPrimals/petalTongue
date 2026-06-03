@@ -117,11 +117,10 @@ impl ContentDirectState {
 }
 
 /// Index handler for the content-direct backend.
-#[expect(clippy::unused_async, reason = "axum handler signature")]
 pub async fn content_direct_index(state: Arc<ContentDirectState>) -> axum::response::Response {
     let root_path = state.content_dir.join("_index.md");
     if root_path.is_file() {
-        std::fs::read_to_string(&root_path).map_or_else(
+        tokio::fs::read_to_string(&root_path).await.map_or_else(
             |_| fallback_index().into_response(),
             |content| render_content(&content, "/", &state),
         )
@@ -172,7 +171,7 @@ pub async fn content_direct_fallback(
 
     // Content resolution
     if let Some(file_path) = state.resolve_content_path(&path) {
-        match std::fs::read_to_string(&file_path) {
+        match tokio::fs::read_to_string(&file_path).await {
             Ok(content) => {
                 return render_content_with_modality(
                     &content, &path, &accept, &query, &state, cache_ttl,

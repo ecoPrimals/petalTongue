@@ -31,22 +31,22 @@ impl Default for TrustConfig {
             min_level: 0,
             max_level: 3,
             level_names: vec![
-                "None".to_string(),
-                "Limited".to_string(),
-                "Elevated".to_string(),
-                "Full".to_string(),
+                "None".to_owned(),
+                "Limited".to_owned(),
+                "Elevated".to_owned(),
+                "Full".to_owned(),
             ],
             level_emojis: vec![
-                "⚫".to_string(),
-                "🟡".to_string(),
-                "🟠".to_string(),
-                "🟢".to_string(),
+                "⚫".to_owned(),
+                "🟡".to_owned(),
+                "🟠".to_owned(),
+                "🟢".to_owned(),
             ],
             level_colors: vec![
-                "#808080".to_string(), // Gray
-                "#FFD700".to_string(), // Gold
-                "#FF8C00".to_string(), // Dark orange
-                "#32CD32".to_string(), // Lime green
+                "#808080".to_owned(), // Gray
+                "#FFD700".to_owned(), // Gold
+                "#FF8C00".to_owned(), // Dark orange
+                "#32CD32".to_owned(), // Lime green
             ],
         }
     }
@@ -220,10 +220,10 @@ mod tests {
     fn test_node_decoration() {
         let adapter = EcoPrimalTrustAdapter::new();
         let mut props = Properties::new();
-        props.insert("trust_level".to_string(), PropertyValue::Number(2.0));
+        props.insert("trust_level".to_owned(), PropertyValue::Number(2.0));
 
         let decoration = adapter.node_decoration(&props).unwrap();
-        assert_eq!(decoration.badge, Some("🟠".to_string()));
+        assert_eq!(decoration.badge, Some("🟠".to_owned()));
         assert!(decoration.tooltip.is_some());
     }
 
@@ -232,12 +232,12 @@ mod tests {
         let config = TrustConfig {
             min_level: 0,
             max_level: 2,
-            level_names: vec!["A".to_string(), "B".to_string(), "C".to_string()],
-            level_emojis: vec!["1".to_string(), "2".to_string(), "3".to_string()],
+            level_names: vec!["A".to_owned(), "B".to_owned(), "C".to_owned()],
+            level_emojis: vec!["1".to_owned(), "2".to_owned(), "3".to_owned()],
             level_colors: vec![
-                "#FF0000".to_string(),
-                "#00FF00".to_string(),
-                "#0000FF".to_string(),
+                "#FF0000".to_owned(),
+                "#00FF00".to_owned(),
+                "#0000FF".to_owned(),
             ],
         };
         let adapter = EcoPrimalTrustAdapter::from_config(config);
@@ -288,7 +288,7 @@ mod tests {
     fn test_node_decoration_out_of_range() {
         let adapter = EcoPrimalTrustAdapter::new();
         let mut props = Properties::new();
-        props.insert("trust_level".to_string(), PropertyValue::Number(99.0));
+        props.insert("trust_level".to_owned(), PropertyValue::Number(99.0));
         assert!(adapter.node_decoration(&props).is_none());
     }
 
@@ -296,9 +296,9 @@ mod tests {
     fn test_node_decoration_clamped() {
         let adapter = EcoPrimalTrustAdapter::new();
         let mut props = Properties::new();
-        props.insert("trust_level".to_string(), PropertyValue::Number(1.5));
+        props.insert("trust_level".to_owned(), PropertyValue::Number(1.5));
         let decoration = adapter.node_decoration(&props).unwrap();
-        assert_eq!(decoration.badge, Some("🟡".to_string()));
+        assert_eq!(decoration.badge, Some("🟡".to_owned()));
     }
 
     #[test]
@@ -307,7 +307,7 @@ mod tests {
         let ctx = egui::Context::default();
         let _ = ctx.run(egui::RawInput::default(), |ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
-                adapter.render("trust_level", &PropertyValue::String("bad".to_string()), ui);
+                adapter.render("trust_level", &PropertyValue::String("bad".to_owned()), ui);
             });
         });
     }
@@ -354,13 +354,13 @@ mod tests {
         let config = TrustConfig {
             min_level: 0,
             max_level: 0,
-            level_names: vec!["X".to_string()],
-            level_emojis: vec!["X".to_string()],
-            level_colors: vec!["invalid".to_string()],
+            level_names: vec!["X".to_owned()],
+            level_emojis: vec!["X".to_owned()],
+            level_colors: vec!["invalid".to_owned()],
         };
         let adapter = EcoPrimalTrustAdapter::from_config(config);
         let mut props = Properties::new();
-        props.insert("trust_level".to_string(), PropertyValue::Number(0.0));
+        props.insert("trust_level".to_owned(), PropertyValue::Number(0.0));
         let decoration = adapter.node_decoration(&props).unwrap();
         assert!(decoration.fill_color.is_some());
     }

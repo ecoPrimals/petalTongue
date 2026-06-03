@@ -26,8 +26,7 @@ pub async fn status(
 
     match format {
         "json" => {
-            let json = serde_json::to_string_pretty(&status)
-                .map_err(|e| AppError::Other(format!("Failed to serialize status to JSON: {e}")))?;
+            let json = serde_json::to_string_pretty(&status)?;
             println!("{json}");
         }
         _ => {

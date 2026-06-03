@@ -225,10 +225,6 @@ enum Commands {
     },
 }
 
-#[expect(
-    clippy::too_many_lines,
-    reason = "CLI dispatch aggregates global + subcommand flags"
-)]
 fn main() -> Result<(), AppError> {
     let cli = Cli::parse();
 
@@ -255,9 +251,7 @@ fn main() -> Result<(), AppError> {
     if let Some(w) = cli_workers {
         rt_builder.worker_threads(w);
     }
-    let runtime = rt_builder
-        .build()
-        .map_err(|e| AppError::Other(format!("Failed to create tokio runtime: {e}")))?;
+    let runtime = rt_builder.build()?;
 
     let (cli_tcp_port, cli_bind_host) = match &cli.command {
         Commands::Server { port, bind, .. } | Commands::Live { port, bind, .. } => (
@@ -273,7 +267,7 @@ fn main() -> Result<(), AppError> {
     // Async setup: config, data service, discovery registration
     let (config, data_service) = runtime.block_on(async {
         tracing::info!("⚙️ Loading configuration from environment...");
-        let config = Config::from_env().map_err(|e| AppError::Other(e.to_string()))?;
+        let config = Config::from_env()?;
         tracing::info!(
             web_port = config.network.web_port,
             headless_port = config.network.headless_port,

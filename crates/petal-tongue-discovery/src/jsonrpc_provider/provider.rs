@@ -113,7 +113,7 @@ impl JsonRpcProvider {
         let id = self.request_id.fetch_add(1, Ordering::SeqCst);
 
         let request = JsonRpcRequest {
-            jsonrpc: "2.0".to_string(),
+            jsonrpc: "2.0".to_owned(),
             method: method.to_string(),
             params,
             id,
@@ -150,7 +150,7 @@ impl JsonRpcProvider {
 
         let response: JsonRpcResponse =
             serde_json::from_str(&line).map_err(|e| DiscoveryError::ParseError {
-                data_type: "JSON-RPC response".to_string(),
+                data_type: "JSON-RPC response".to_owned(),
                 message: e.to_string(),
             })?;
 
@@ -220,7 +220,7 @@ impl VisualizationDataProvider for JsonRpcProvider {
 
         let primals: Vec<PrimalInfo> =
             serde_json::from_value(result).map_err(|e| DiscoveryError::ParseError {
-                data_type: "primals".to_string(),
+                data_type: "primals".to_owned(),
                 message: e.to_string(),
             })?;
 
@@ -246,7 +246,7 @@ impl VisualizationDataProvider for JsonRpcProvider {
             Ok(result) => {
                 let topology: Vec<TopologyEdge> =
                     serde_json::from_value(result).map_err(|e| DiscoveryError::ParseError {
-                        data_type: "topology".to_string(),
+                        data_type: "topology".to_owned(),
                         message: e.to_string(),
                     })?;
                 debug!("✓ Received {} edges", topology.len());
@@ -276,13 +276,13 @@ impl VisualizationDataProvider for JsonRpcProvider {
 
     fn get_metadata(&self) -> ProviderMetadata {
         ProviderMetadata {
-            name: "JSON-RPC Provider".to_string(),
+            name: "JSON-RPC Provider".to_owned(),
             endpoint: format!("unix://{}", self.socket_path.display()),
-            protocol: "jsonrpc-2.0".to_string(),
+            protocol: "jsonrpc-2.0".to_owned(),
             capabilities: vec![
-                "primals".to_string(),
-                "devices".to_string(),
-                "topology".to_string(),
+                "primals".to_owned(),
+                "devices".to_owned(),
+                "topology".to_owned(),
             ],
         }
     }

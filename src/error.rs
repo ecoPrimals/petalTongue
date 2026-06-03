@@ -43,7 +43,27 @@ pub enum AppError {
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 
-    /// Wrapped error from dependencies.
+    /// Configuration error.
+    #[error("Config error: {0}")]
+    Config(#[from] petal_tongue_core::config_system::ConfigError),
+
+    /// IPC server error.
+    #[error("IPC server error: {0}")]
+    Ipc(#[from] petal_tongue_ipc::IpcServerError),
+
+    /// Bind-address parse error.
+    #[error("Invalid bind address: {0}")]
+    AddrParse(#[from] std::net::AddrParseError),
+
+    /// JSON serialization error.
+    #[error("JSON error: {0}")]
+    Json(#[from] serde_json::Error),
+
+    /// Async task join error.
+    #[error("Task join error: {0}")]
+    Join(#[from] tokio::task::JoinError),
+
+    /// Wrapped error from dependencies (catch-all for untyped sources).
     #[error("{0}")]
     Other(String),
 }

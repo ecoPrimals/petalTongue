@@ -39,8 +39,7 @@ fn create_live_server(
     let rendering_awareness = Arc::new(std::sync::RwLock::new(
         petal_tongue_core::RenderingAwareness::new(),
     ));
-    let mut server = UnixSocketServer::new_with_socket(graph, socket_override)
-        .map_err(|e| AppError::Other(format!("Failed to create IPC server: {e}")))?
+    let mut server = UnixSocketServer::new_with_socket(graph, socket_override)?
         .with_rendering_awareness(Arc::clone(&rendering_awareness))
         .with_motor_sender(motor_tx.clone())
         .with_tcp_bind_host(tcp_bind_host);

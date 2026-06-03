@@ -74,17 +74,17 @@ impl AiAdapter {
     pub async fn new(
         registry: Arc<RwLock<petal_tongue_ipc::InteractionSubscriberRegistry>>,
     ) -> Self {
-        let subscriber_id = "ai-interaction-adapter".to_string();
+        let subscriber_id = "ai-interaction-adapter".to_owned();
         {
             let mut reg = registry.write().await;
             reg.subscribe_with_filter(
                 &subscriber_id,
                 vec![
-                    "ai.focus".to_string(),
-                    "ai.select".to_string(),
-                    "ai.deselect".to_string(),
-                    "ai.highlight".to_string(),
-                    "ai.navigate".to_string(),
+                    "ai.focus".to_owned(),
+                    "ai.select".to_owned(),
+                    "ai.deselect".to_owned(),
+                    "ai.highlight".to_owned(),
+                    "ai.navigate".to_owned(),
                 ],
                 None,
                 None,
@@ -102,7 +102,7 @@ impl AiAdapter {
     #[must_use]
     pub fn new_deferred() -> Self {
         Self {
-            subscriber_id: "ai-interaction-adapter".to_string(),
+            subscriber_id: "ai-interaction-adapter".to_owned(),
             registry: Arc::new(RwLock::new(
                 petal_tongue_ipc::InteractionSubscriberRegistry::new(),
             )),
@@ -120,11 +120,11 @@ impl AiAdapter {
             reg.subscribe_with_filter(
                 &self.subscriber_id,
                 vec![
-                    "ai.focus".to_string(),
-                    "ai.select".to_string(),
-                    "ai.deselect".to_string(),
-                    "ai.highlight".to_string(),
-                    "ai.navigate".to_string(),
+                    "ai.focus".to_owned(),
+                    "ai.select".to_owned(),
+                    "ai.deselect".to_owned(),
+                    "ai.highlight".to_owned(),
+                    "ai.navigate".to_owned(),
                 ],
                 None,
                 None,
@@ -217,9 +217,9 @@ mod tests {
 
     fn make_event(event_type: &str, targets: Vec<&str>) -> InteractionEventNotification {
         InteractionEventNotification {
-            event_type: event_type.to_string(),
+            event_type: event_type.to_owned(),
             targets: targets.into_iter().map(String::from).collect(),
-            timestamp: "2026-03-14T00:00:00Z".to_string(),
+            timestamp: "2026-03-14T00:00:00Z".to_owned(),
             perspective_id: None,
         }
     }
@@ -305,14 +305,14 @@ mod tests {
         let mut reg = petal_tongue_ipc::InteractionSubscriberRegistry::new();
         reg.subscribe_with_filter(
             "ai-interaction-adapter",
-            vec!["ai.focus".to_string()],
+            vec!["ai.focus".to_owned()],
             None,
             None,
             None,
         );
         let event = InteractionEventNotification {
-            event_type: "ai.focus".to_string(),
-            targets: vec!["target-1".to_string()],
+            event_type: "ai.focus".to_owned(),
+            targets: vec!["target-1".to_owned()],
             timestamp: String::new(),
             perspective_id: None,
         };
@@ -329,7 +329,7 @@ mod tests {
     fn apply_command_focus_sets_perspective_focus() {
         let mut bridge = crate::interaction_bridge::EguiInteractionBridge::new();
         let cmd = AiInteractionCommand::Focus {
-            target: "test-node".to_string(),
+            target: "test-node".to_owned(),
         };
         AiAdapter::apply_command(&mut bridge, &cmd);
         assert!(bridge.focused_data_id().is_some());
@@ -339,7 +339,7 @@ mod tests {
     fn apply_command_select_sets_selection() {
         let mut bridge = crate::interaction_bridge::EguiInteractionBridge::new();
         let cmd = AiInteractionCommand::Select {
-            targets: vec!["a".to_string(), "b".to_string()],
+            targets: vec!["a".to_owned(), "b".to_owned()],
         };
         AiAdapter::apply_command(&mut bridge, &cmd);
         assert_eq!(bridge.selected_data_ids().len(), 2);
@@ -351,7 +351,7 @@ mod tests {
         AiAdapter::apply_command(
             &mut bridge,
             &AiInteractionCommand::Select {
-                targets: vec!["x".to_string()],
+                targets: vec!["x".to_owned()],
             },
         );
         assert_eq!(bridge.selected_data_ids().len(), 1);
@@ -365,18 +365,18 @@ mod tests {
     fn ai_command_serialization_roundtrip() {
         let cmds = vec![
             AiInteractionCommand::Focus {
-                target: "n1".to_string(),
+                target: "n1".to_owned(),
             },
             AiInteractionCommand::Select {
-                targets: vec!["a".to_string()],
+                targets: vec!["a".to_owned()],
             },
             AiInteractionCommand::Deselect,
             AiInteractionCommand::Highlight {
-                targets: vec!["p1".to_string()],
+                targets: vec!["p1".to_owned()],
                 duration_ms: 500,
             },
             AiInteractionCommand::Navigate {
-                destination: "home".to_string(),
+                destination: "home".to_owned(),
             },
         ];
         for cmd in &cmds {
