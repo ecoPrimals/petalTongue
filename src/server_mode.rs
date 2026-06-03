@@ -34,8 +34,7 @@ pub async fn run(
     let (motor_tx, motor_rx) = std::sync::mpsc::channel();
 
     let socket_override = socket_path.map(std::path::PathBuf::from);
-    let mut server = UnixSocketServer::new_with_socket(graph, socket_override)
-        .map_err(|e| AppError::Other(format!("Failed to create IPC server: {e}")))?
+    let mut server = UnixSocketServer::new_with_socket(graph, socket_override)?
         .with_motor_sender(motor_tx)
         .with_tcp_bind_host(tcp_bind_host);
 
@@ -68,7 +67,7 @@ pub async fn run(
 
     tokio::select! {
         result = server.start() => {
-            result.map_err(|e| AppError::Other(format!("IPC server error: {e}")))?;
+            result?;
         }
         () = crate::signal::shutdown_signal() => {
             tracing::info!("Server mode shut down gracefully");

@@ -533,10 +533,10 @@ headless_port = 8080\n";
             ("PETALTONGUE_WEB_PORT", Some("not-a-number")),
         ],
         || {
-            let result = Config::from_env().map_err(|e| AppError::Other(e.to_string()));
+            let result: Result<Config, AppError> = Config::from_env().map_err(Into::into);
             assert!(result.is_err());
             let err = result.unwrap_err();
-            assert!(matches!(err, AppError::Other(_)));
+            assert!(matches!(err, AppError::Config(_)));
             assert!(err.to_string().contains("Invalid") || err.to_string().contains("WEB_PORT"));
         },
     );

@@ -16,8 +16,8 @@ pub async fn gather_status(
     data_service: &Arc<crate::data_service::DataService>,
 ) -> Result<SystemStatus, AppError> {
     let status = Arc::new(RwLock::new(SystemStatus {
-        version: env!("CARGO_PKG_VERSION").to_string(),
-        mode: "status".to_string(),
+        version: env!("CARGO_PKG_VERSION").to_owned(),
+        mode: "status".to_owned(),
         unibin: UniBinStatus {
             compliant: true,
             binary_count: 1,
@@ -29,30 +29,30 @@ pub async fn gather_status(
             total_modes: 5,
             modes: vec![
                 ModeInfo {
-                    name: "ui".to_string(),
+                    name: "ui".to_owned(),
                     pure_rust: false,
                 },
                 ModeInfo {
-                    name: "tui".to_string(),
+                    name: "tui".to_owned(),
                     pure_rust: true,
                 },
                 ModeInfo {
-                    name: "web".to_string(),
+                    name: "web".to_owned(),
                     pure_rust: true,
                 },
                 ModeInfo {
-                    name: "headless".to_string(),
+                    name: "headless".to_owned(),
                     pure_rust: true,
                 },
                 ModeInfo {
-                    name: "status".to_string(),
+                    name: "status".to_owned(),
                     pure_rust: true,
                 },
             ],
         },
         system: SystemInfo {
-            os: std::env::consts::OS.to_string(),
-            arch: std::env::consts::ARCH.to_string(),
+            os: std::env::consts::OS.to_owned(),
+            arch: std::env::consts::ARCH.to_owned(),
             cpu_count: None,
             memory_total: None,
         },
@@ -87,12 +87,9 @@ pub async fn gather_status(
             status_guard.detailed = Some(detailed);
         });
 
-        tokio::try_join!(system_info_task, detailed_task)
-            .map_err(|e| AppError::Other(format!("Failed to gather system info: {e}")))?;
+        tokio::try_join!(system_info_task, detailed_task)?;
     } else {
-        system_info_task
-            .await
-            .map_err(|e| AppError::Other(format!("Failed to gather system info: {e}")))?;
+        system_info_task.await?;
     }
 
     let final_status = status.read().await.clone();
@@ -132,42 +129,42 @@ pub fn gather_detailed_status() -> DetailedStatus {
     DetailedStatus {
         modes: vec![
             ModeDetails {
-                name: "ui".to_string(),
-                description: "Desktop display (egui)".to_string(),
+                name: "ui".to_owned(),
+                description: "Desktop display (egui)".to_owned(),
                 pure_rust: false,
-                command: "petaltongue ui".to_string(),
+                command: "petaltongue ui".to_owned(),
             },
             ModeDetails {
-                name: "tui".to_string(),
-                description: "Terminal UI (ratatui)".to_string(),
+                name: "tui".to_owned(),
+                description: "Terminal UI (ratatui)".to_owned(),
                 pure_rust: true,
-                command: "petaltongue tui".to_string(),
+                command: "petaltongue tui".to_owned(),
             },
             ModeDetails {
-                name: "web".to_string(),
-                description: "Web server (axum)".to_string(),
+                name: "web".to_owned(),
+                description: "Web server (axum)".to_owned(),
                 pure_rust: true,
-                command: "petaltongue web".to_string(),
+                command: "petaltongue web".to_owned(),
             },
             ModeDetails {
-                name: "headless".to_string(),
-                description: "API server".to_string(),
+                name: "headless".to_owned(),
+                description: "API server".to_owned(),
                 pure_rust: true,
-                command: "petaltongue headless".to_string(),
+                command: "petaltongue headless".to_owned(),
             },
             ModeDetails {
-                name: "status".to_string(),
-                description: "System info".to_string(),
+                name: "status".to_owned(),
+                description: "System info".to_owned(),
                 pure_rust: true,
-                command: "petaltongue status".to_string(),
+                command: "petaltongue status".to_owned(),
             },
         ],
         features: vec![
-            "UniBin".to_string(),
-            "Pure Rust".to_string(),
-            "Concurrent".to_string(),
-            "No sleeps".to_string(),
-            "Modern Rust".to_string(),
+            "UniBin".to_owned(),
+            "Pure Rust".to_owned(),
+            "Concurrent".to_owned(),
+            "No sleeps".to_owned(),
+            "Modern Rust".to_owned(),
         ],
         dependencies: DependencyInfo {
             total: 150,
