@@ -108,8 +108,8 @@ files from this directory for any HTTP path not matched by API routes.
 **CLI flag**: `--backend <value>` (web subcommand)  
 **Example**: `PETALTONGUE_WEB_BACKEND=content-provider`
 
-Content backend strategy: `filesystem` (local docroot), `content-provider` or
-`nestgate` (capability-based content backend via UDS).
+Content backend strategy: `filesystem` (local docroot) or `content-provider`
+(capability-based content backend via UDS JSON-RPC).
 
 ### **PETALTONGUE_STRIP_SOURCES**
 **Type**: Boolean  
@@ -784,7 +784,7 @@ Before deploying to production:
 
 ---
 
-**Last Updated**: May 27, 2026 (Wave 54 — global `--socket`/`--port` CLI flags)  
+**Last Updated**: June 3, 2026 (Wave 74+ deep debt — removed stale `nestgate` alias, typed errors, async-safe I/O)  
 **Maintainer**: ecoPrimals Project  
 **License**: AGPL-3.0-or-later
 

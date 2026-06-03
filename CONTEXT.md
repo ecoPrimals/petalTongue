@@ -423,6 +423,18 @@ items resolved:
 
 6,217+ tests, 0 Clippy warnings, 0 doc warnings, 0 unsafe blocks.
 
+Wave 74+ deep debt passes (June 3, 2026): Two comprehensive deep debt
+passes executed. (1) TRUE PRIMAL: `capability_registry.toml` evolved from
+hardcoded `nestgate`/`songbird` to `content-provider`/`discovery-service`;
+`nucleus.rs` and `kderm.rs` viz data evolved to capability labels. (2) Typed
+errors: `ContentBackendError` thiserror enum (Connect, Write, Serialize,
+Base64, Protocol); `AppError` gained 5 `#[from]` typed conversions
+(ConfigError, IpcServerError, AddrParseError, serde_json::Error, JoinError),
+eliminating 11 `Other(format!())` sites. (3) Async safety: `content_direct.rs`
+blocking `std::fs` migrated to `tokio::fs`. (4) Idiomatic Rust: 440+
+`.to_string()` → `.to_owned()` across 13 files. (5) Clippy: removed
+unfulfilled lint expectation, `clone_into` in reporter.
+
 Wave 61 status (May 29, 2026): DH-1 /tmp cleanup complete (all socket paths
 through `resolve_biomeos_socket_dir()` tiered chain). Dep trim: dead `mdns-sd`
 removed, `tokio/full` → explicit features, `tower` 0.4→0.5. TRUE PRIMAL fix:
