@@ -121,7 +121,7 @@ capabilities.
 ```bash
 cargo build --release                     # Full binary (26M musl-static)
 cargo build --release --no-default-features  # Headless only
-cargo test --workspace --all-features     # 6,209+ tests, ~90% coverage
+cargo test --workspace --all-features     # 6,217+ tests, ~90% coverage
 ```
 
 ## Current State
@@ -421,7 +421,7 @@ items resolved:
   `tower_http::cors::CorsLayer`. Enables production deployment for SPA
   frontends and cross-origin API consumers.
 
-6,209+ tests, 0 Clippy warnings, 0 doc warnings, 0 unsafe blocks.
+6,217+ tests, 0 Clippy warnings, 0 doc warnings, 0 unsafe blocks.
 
 Wave 61 status (May 29, 2026): DH-1 /tmp cleanup complete (all socket paths
 through `resolve_biomeos_socket_dir()` tiered chain). Dep trim: dead `mdns-sd`

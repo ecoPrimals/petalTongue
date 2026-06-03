@@ -414,6 +414,275 @@ fn test_content_backend_request_id_increments() {
 }
 
 #[tokio::test]
+async fn test_content_backend_socket_beats_tcp_priority() {
+    use petal_tongue_core::test_fixtures::env_test_helpers;
+    let client = env_test_helpers::with_env_vars_async(
+        &[
+            ("CONTENT_BACKEND_SOCKET", Some("/explicit/content.sock")),
+            ("CONTENT_BACKEND_ENDPOINT", Some("eastgate.mesh:9100")),
+        ],
+        || async { ContentBackendClient::from_env().await },
+    )
+    .await;
+    match &client.endpoint {
+        ContentEndpoint::Unix(p) => {
+            assert_eq!(p, &std::path::PathBuf::from("/explicit/content.sock"));
+        }
+        ContentEndpoint::Tcp(addr) => {
+            panic!("socket should beat TCP, but got tcp:{addr}");
+        }
+    }
+}
+
+#[tokio::test]
+async fn test_content_backend_convention_socket_found() {
+    use petal_tongue_core::test_fixtures::env_test_helpers;
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let sock_path = tmp.path().join("content-provider-testfam.sock");
+    let _listener = std::os::unix::net::UnixListener::bind(&sock_path).unwrap();
+
+    let client = env_test_helpers::with_env_vars_async(
+        &[
+            ("CONTENT_BACKEND_SOCKET", None),
+            ("CONTENT_BACKEND_ENDPOINT", None),
+            ("CONTENT_BACKEND_PROVIDER", Some("content-provider")),
+            ("FAMILY_ID", Some("testfam")),
+            ("BIOMEOS_SOCKET_DIR", Some(tmp.path().to_str().unwrap())),
+        ],
+        || async { ContentBackendClient::from_env().await },
+    )
+    .await;
+    match &client.endpoint {
+        ContentEndpoint::Unix(p) => {
+            assert_eq!(p, &sock_path);
+        }
+        ContentEndpoint::Tcp(addr) => {
+            panic!("expected Unix convention socket, got tcp:{addr}");
+        }
+    }
+}
+
+#[test]
+fn test_content_endpoint_display_unix() {
+    let ep = ContentEndpoint::Unix(std::path::PathBuf::from(
+        "/run/user/1000/biomeos/content.sock",
+    ));
+    assert_eq!(format!("{ep}"), "unix:/run/user/1000/biomeos/content.sock");
+}
+
+#[test]
+fn test_content_endpoint_display_tcp() {
+    let ep = ContentEndpoint::Tcp("eastgate.mesh:9100".to_owned());
+    assert_eq!(format!("{ep}"), "tcp:eastgate.mesh:9100");
+}
+
+#[tokio::test]
+async fn test_content_backend_tcp_connect_failure_returns_error() {
+    let client = ContentBackendClient {
+        endpoint: ContentEndpoint::Tcp("127.0.0.1:1".to_owned()),
+        request_id: std::sync::atomic::AtomicU64::new(1),
+    };
+    let result = client.resolve("/test").await;
+    assert!(result.is_err(), "TCP connect to port 1 should fail");
+    let err = result.unwrap_err();
+    assert!(
+        err.contains("tcp connect"),
+        "error should mention tcp connect: {err}"
+    );
+}
+
+#[tokio::test]
+async fn test_content_index_fallback_to_dashboard() {
+    let client = Arc::new(ContentBackendClient {
+        endpoint: ContentEndpoint::Unix(std::path::PathBuf::from(
+            "/tmp/nonexistent-content-index-test.sock",
+        )),
+        request_id: std::sync::atomic::AtomicU64::new(1),
+    });
+    let resp = super::content_backend::content_index(client).await;
+    assert_eq!(
+        resp.status(),
+        200,
+        "index should return 200 (dashboard fallback)"
+    );
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let html = std::str::from_utf8(&body).unwrap();
+    assert!(
+        html.contains("petalTongue") || html.contains("<!DOCTYPE") || html.contains("<html"),
+        "should serve compiled-in dashboard HTML"
+    );
+}
+
+#[tokio::test]
+async fn test_content_backend_resolve_via_unix_socket() {
+    use base64::Engine as _;
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+    use tokio::net::UnixListener;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let sock_path = tmp.path().join("test-content.sock");
+
+    let listener = UnixListener::bind(&sock_path).unwrap();
+
+    let content = b"<h1>Hello from content backend</h1>";
+    let sock_path_clone = sock_path.clone();
+
+    let server = tokio::spawn(async move {
+        let (stream, _) = listener.accept().await.unwrap();
+        let (reader, mut writer) = stream.into_split();
+        let mut reader = BufReader::new(reader);
+        let mut line = String::new();
+        reader.read_line(&mut line).await.unwrap();
+        let req: serde_json::Value = serde_json::from_str(&line).unwrap();
+        assert_eq!(req["method"], "content.resolve");
+        assert_eq!(req["params"]["path"], "/index.html");
+
+        let resp = serde_json::json!({
+            "jsonrpc": "2.0",
+            "result": {
+                "content": base64::engine::general_purpose::STANDARD.encode(content),
+                "mime_type": "text/html"
+            },
+            "id": req["id"]
+        });
+        let mut resp_line = serde_json::to_string(&resp).unwrap();
+        resp_line.push('\n');
+        writer.write_all(resp_line.as_bytes()).await.unwrap();
+        writer.flush().await.unwrap();
+    });
+
+    let client = ContentBackendClient {
+        endpoint: ContentEndpoint::Unix(sock_path_clone),
+        request_id: std::sync::atomic::AtomicU64::new(1),
+    };
+    let result = client.resolve("/index.html").await;
+    server.await.unwrap();
+
+    let (bytes, mime) = result.unwrap().expect("should get content");
+    assert_eq!(mime, "text/html");
+    assert_eq!(bytes, content);
+}
+
+#[tokio::test]
+async fn test_content_backend_resolve_jsonrpc_error_returns_none() {
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+    use tokio::net::UnixListener;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let sock_path = tmp.path().join("test-content-err.sock");
+
+    let listener = UnixListener::bind(&sock_path).unwrap();
+
+    let server = tokio::spawn(async move {
+        let (stream, _) = listener.accept().await.unwrap();
+        let (reader, mut writer) = stream.into_split();
+        let mut reader = BufReader::new(reader);
+        let mut line = String::new();
+        reader.read_line(&mut line).await.unwrap();
+        let req: serde_json::Value = serde_json::from_str(&line).unwrap();
+
+        let resp = serde_json::json!({
+            "jsonrpc": "2.0",
+            "error": { "code": -32601, "message": "Not found" },
+            "id": req["id"]
+        });
+        let mut resp_line = serde_json::to_string(&resp).unwrap();
+        resp_line.push('\n');
+        writer.write_all(resp_line.as_bytes()).await.unwrap();
+        writer.flush().await.unwrap();
+    });
+
+    let client = ContentBackendClient {
+        endpoint: ContentEndpoint::Unix(sock_path),
+        request_id: std::sync::atomic::AtomicU64::new(1),
+    };
+    let result = client.resolve("/missing").await;
+    server.await.unwrap();
+
+    assert!(
+        result.unwrap().is_none(),
+        "JSON-RPC error should return Ok(None)"
+    );
+}
+
+#[tokio::test]
+async fn test_content_backend_resolve_via_tcp() {
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+    use tokio::net::TcpListener;
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+
+    let content = b"<p>TCP mesh content</p>";
+
+    let server = tokio::spawn(async move {
+        let (stream, _) = listener.accept().await.unwrap();
+        let (reader, mut writer) = stream.into_split();
+        let mut reader = BufReader::new(reader);
+        let mut line = String::new();
+        reader.read_line(&mut line).await.unwrap();
+        let req: serde_json::Value = serde_json::from_str(&line).unwrap();
+        assert_eq!(req["method"], "content.resolve");
+
+        use base64::Engine as _;
+        let resp = serde_json::json!({
+            "jsonrpc": "2.0",
+            "result": {
+                "content": base64::engine::general_purpose::STANDARD.encode(content),
+                "mime_type": "text/html"
+            },
+            "id": req["id"]
+        });
+        let mut resp_line = serde_json::to_string(&resp).unwrap();
+        resp_line.push('\n');
+        writer.write_all(resp_line.as_bytes()).await.unwrap();
+        writer.flush().await.unwrap();
+    });
+
+    let client = ContentBackendClient {
+        endpoint: ContentEndpoint::Tcp(addr.to_string()),
+        request_id: std::sync::atomic::AtomicU64::new(1),
+    };
+    let result = client.resolve("/mesh/page.html").await;
+    server.await.unwrap();
+
+    let (bytes, mime) = result.unwrap().expect("should get content via TCP");
+    assert_eq!(mime, "text/html");
+    assert_eq!(bytes, content);
+}
+
+#[test]
+fn test_resolve_docroot_path_prevents_traversal() {
+    let docroot = "/srv/content";
+    let safe = resolve_docroot_path(docroot, "/docs/page.html");
+    assert_eq!(
+        safe,
+        std::path::PathBuf::from("/srv/content/docs/page.html")
+    );
+
+    let escaped = resolve_docroot_path(docroot, "/../../../etc/passwd");
+    assert_eq!(
+        escaped,
+        std::path::PathBuf::from("/srv/content/etc/passwd"),
+        ".. components stripped, remaining segments stay under docroot"
+    );
+
+    let double = resolve_docroot_path(docroot, "/a/../b/c");
+    assert!(
+        !double.to_string_lossy().contains(".."),
+        "parent components should be stripped: {}",
+        double.display()
+    );
+    assert_eq!(
+        double,
+        std::path::PathBuf::from("/srv/content/a/b/c"),
+        "only Normal components are kept"
+    );
+}
+
+#[tokio::test]
 async fn test_content_fallback_unavailable_returns_502() {
     use axum::body::Body;
 

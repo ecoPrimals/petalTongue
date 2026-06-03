@@ -6,6 +6,42 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 74 Sovereign Verify + Mesh Testing + Coverage (June 3, 2026)
+
+Wave 74 — sovereign rendering verification, mesh content routing integration
+tests, WASM bundle profiling, content backend test coverage, security hardening.
+
+#### Changed
+- **Path traversal hardening**: `resolve_docroot_path` now filters to
+  `Component::Normal` only, stripping `..`, `.`, and root segments. Prevents
+  directory escape from docroot.
+- **Upstream merge resolution**: Restored `resolve_biomeos_socket_dir()` removed
+  by upstream; resolved conflict markers in `content_backend.rs`.
+
+#### Added
+- **Content backend integration tests**: 8 new tests covering all 4 discovery
+  tiers (socket override, TCP override, convention socket, fallback), tier
+  priority (socket beats TCP), `ContentEndpoint` display format, successful
+  resolve via UDS mock, JSON-RPC error handling, TCP transport integration test,
+  TCP connect failure, `content_index` dashboard fallback.
+- **Path traversal test**: Verifies `..` components are stripped from docroot
+  resolution.
+
+#### Profiled
+- **WASM bundle**: 610K raw, 191K gzipped (release build, wasm32-unknown-unknown)
+  - Dep tree: 6 direct deps (wasm-bindgen, console_error_panic_hook, serde,
+    serde_json, petal-tongue-types, petal-tongue-scene)
+  - `toml` + `tracing` elimination from Wave 73 confirmed effective
+  - Next trim targets: feature-gate `petal-tongue-scene` modules unused by WASM,
+    slim `bytes` serde feature, consider `serde-wasm-bindgen` for zero-copy
+
+#### Verified
+- Sovereign rendering: all 5 components (index.html, WASM, web_mode, handlers,
+  content_direct) confirmed origin-agnostic with zero external dependencies.
+- `cargo fmt --check`: clean
+- `cargo clippy --workspace`: 0 warnings
+- `cargo test --workspace`: 6,217 passed, 0 failed
+
 ### Wave 73 Sovereign + Mesh + Optimization (June 3, 2026)
 
 Wave 73 — sovereign rendering verification, mesh-aware content routing,

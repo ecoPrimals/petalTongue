@@ -73,6 +73,34 @@ pub fn ecosystem_runtime_dir_name() -> String {
     std::env::var(env::ECOSYSTEM_RUNTIME_DIR).unwrap_or_else(|_| "biomeos".to_string())
 }
 
+/// Resolve the biomeOS socket directory with the DH-1 tier chain.
+///
+/// Priority:
+/// 1. `BIOMEOS_SOCKET_DIR` env var (explicit — deployment/membrane control)
+/// 2. `$XDG_RUNTIME_DIR/biomeos/` (XDG standard)
+/// 3. `/run/user/{uid}/biomeos/` (Linux fallback)
+/// 4. `/tmp/biomeos/` (legacy last resort)
+#[must_use]
+pub fn resolve_biomeos_socket_dir() -> std::path::PathBuf {
+    let seg = ecosystem_runtime_dir_name();
+
+    if let Ok(dir) = std::env::var(env::BIOMEOS_SOCKET_DIR) {
+        return std::path::PathBuf::from(dir);
+    }
+
+    if let Ok(xdg) = std::env::var(env::XDG_RUNTIME_DIR) {
+        return std::path::PathBuf::from(xdg).join(&seg);
+    }
+
+    let uid = crate::system_info::get_current_uid();
+    let run_user = std::path::PathBuf::from(format!("/run/user/{uid}"));
+    if run_user.exists() || run_user.parent().is_some_and(std::path::Path::exists) {
+        return run_user.join(&seg);
+    }
+
+    std::path::PathBuf::from(LEGACY_TMP_PREFIX).join(&seg)
+}
+
 /// Canonical ordered list of directories to search for primal Unix sockets.
 ///
 /// Priority:
@@ -167,7 +195,8 @@ pub fn display_backend_port() -> u16 {
 pub fn default_bind_addr() -> &'static str {
     static BIND: std::sync::OnceLock<String> = std::sync::OnceLock::new();
     BIND.get_or_init(|| {
-        std::env::var(env::PETALTONGUE_BIND_ADDR).unwrap_or_else(|_| DEFAULT_LOOPBACK_HOST.to_string())
+        std::env::var(env::PETALTONGUE_BIND_ADDR)
+            .unwrap_or_else(|_| DEFAULT_LOOPBACK_HOST.to_string())
     })
 }
 

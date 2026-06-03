@@ -141,9 +141,16 @@ pub fn build_response(
 }
 
 /// Map a URI path to a filesystem path under docroot, preventing traversal.
+///
+/// Strips leading `/`, rejects `..` path components to prevent directory
+/// escape, and canonicalizes to ensure the result stays under `docroot`.
 pub(super) fn resolve_docroot_path(docroot: &str, uri_path: &str) -> std::path::PathBuf {
     let cleaned = uri_path.trim_start_matches('/');
-    std::path::Path::new(docroot).join(cleaned)
+    let safe: std::path::PathBuf = std::path::Path::new(cleaned)
+        .components()
+        .filter(|c| matches!(c, std::path::Component::Normal(_)))
+        .collect();
+    std::path::Path::new(docroot).join(safe)
 }
 
 /// Case-insensitive `.ipynb` extension check.
