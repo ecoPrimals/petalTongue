@@ -1,6 +1,6 @@
 # petalTongue -- Start Here
 
-**Updated**: June 2, 2026 (Wave 69 — modernization pass, error typing, dep narrowing, dead code elimination)
+**Updated**: June 3, 2026 (Wave 74+ deep debt — typed AppError, async-safe I/O, TRUE PRIMAL, idiom sweep)
 
 ---
 

@@ -126,7 +126,7 @@ petaltongue
 | Cargo Deny | advisories, bans, licenses, sources all clean |
 | Edition | 2024 (all 18 crates + sandbox) |
 | External C deps | None -- pure Rust (`rustix` for syscalls, `blake3` pure-Rust hash); `nokhwa`/`mozjpeg-sys` removed |
-| Error handling | Typed `thiserror` errors throughout -- zero `anyhow`, zero `Result<_, String>`, typed `#[from]` error chains in production |
+| Error handling | Typed `thiserror` errors throughout -- zero `anyhow`, zero `Result<_, String>`, typed `#[from]` error chains (`AppError`, `ContentBackendError`, crate-level enums) |
 | Zero-copy IDs | `DataSourceId`, `GrammarId` are `Arc<str>` -- O(1) clone |
 | Property tests | `proptest` for JSON-RPC parser + core data types |
 | Cross-primal e2e | Real Unix socket server ↔ JSON-RPC client integration tests |
