@@ -46,19 +46,17 @@ impl BiomeOsBackend {
     /// Try to create from environment (`XDG_RUNTIME_DIR` or fallback)
     /// Create from environment with capability-based discovery
     ///
-    /// # Socket Discovery Priority (DH-1 compliant)
+    /// # Socket Discovery Priority
     /// 1. `BIOMEOS_NEURAL_API_SOCKET` - explicit override (highest priority)
-    /// 2. `$BIOMEOS_SOCKET_DIR/neural-api.sock` - deployment override
-    /// 3. `$XDG_RUNTIME_DIR/biomeos/neural-api.sock` - XDG standard
-    /// 4. `/run/user/{uid}/biomeos/neural-api.sock` - Linux fallback
-    /// 5. `/tmp/biomeos-neural-api.sock` - legacy last resort
+    /// 2. `$XDG_RUNTIME_DIR/biomeos/neural-api.sock` - XDG standard
+    /// 3. `/tmp/biomeos-neural-api.sock` - legacy fallback
     ///
     /// # TRUE PRIMAL: Zero hardcoded paths in discovery logic
     ///
     /// # Errors
     ///
-    /// Returns an error if no biomeOS Neural API socket is found in any DH-1
-    /// discovery tier.
+    /// Returns an error if no biomeOS Neural API socket is found in any discovery
+    /// path (`BIOMEOS_NEURAL_API_SOCKET` env var, XDG runtime dir, or legacy `/tmp` fallback).
     pub fn from_env() -> Result<Self, DiscoveryError> {
         use crate::platform_dirs;
 
