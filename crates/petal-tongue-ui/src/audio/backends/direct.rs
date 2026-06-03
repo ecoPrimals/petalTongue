@@ -147,7 +147,7 @@ impl DirectBackend {
         "Direct PCM device access requires ALSA ioctl setup (sample rate, format, buffers) which is \
          not yet implemented. Use socket-based audio servers or software synthesis until this \
          backend is completed."
-            .to_string()
+            .to_owned()
     }
 
     /// Write samples to device (reserved for a future ALSA-backed implementation).

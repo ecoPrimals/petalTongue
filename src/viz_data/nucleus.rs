@@ -28,9 +28,9 @@ pub fn build_nucleus_scene() -> SceneGraph {
             id: "full-nucleus",
             label: "Full NUCLEUS",
             components: &[
-                "+ Squirrel (AI)",
-                "+ biomeOS (orchestration)",
-                "+ petalTongue (UUI)",
+                "+ AI inference",
+                "+ Orchestration layer",
+                "+ Universal User Interface",
             ],
             color: Color::from_rgba8(203, 166, 247, 120),
             x: 50.0,
@@ -41,7 +41,7 @@ pub fn build_nucleus_scene() -> SceneGraph {
         NucleusLayer {
             id: "nest-atomic",
             label: "Nest Atomic",
-            components: &["+ NestGate (storage)", "+ Provenance Trio"],
+            components: &["+ Content storage", "+ Provenance Trio"],
             color: Color::from_rgba8(148, 226, 213, 140),
             x: 80.0,
             y: 80.0,
@@ -51,11 +51,7 @@ pub fn build_nucleus_scene() -> SceneGraph {
         NucleusLayer {
             id: "node-atomic",
             label: "Node Atomic",
-            components: &[
-                "+ ToadStool (compute)",
-                "+ barraCuda (GPU math)",
-                "+ coralReef (GPU compiler)",
-            ],
+            components: &["+ Compute engine", "+ GPU math pipeline", "+ GPU compiler"],
             color: Color::from_rgba8(249, 226, 175, 140),
             x: 110.0,
             y: 130.0,
@@ -66,8 +62,8 @@ pub fn build_nucleus_scene() -> SceneGraph {
             id: "tower-atomic",
             label: "Tower Atomic",
             components: &[
-                "BearDog (crypto)",
-                "Songbird (network)",
+                "Cryptographic security",
+                "Network mesh",
                 "= Pure Rust HTTPS",
             ],
             color: Color::from_rgba8(166, 227, 161, 160),

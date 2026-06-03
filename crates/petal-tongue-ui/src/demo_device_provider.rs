@@ -44,7 +44,7 @@ impl DemoDeviceProvider {
     #[must_use]
     pub fn is_demo_mode_requested() -> bool {
         std::env::var("SHOWCASE_MODE")
-            .unwrap_or_else(|_| "false".to_string())
+            .unwrap_or_else(|_| "false".to_owned())
             .to_lowercase()
             == "true"
     }
@@ -71,12 +71,12 @@ impl DemoDeviceProvider {
     fn create_demo_devices() -> Vec<Device> {
         vec![
             Device {
-                id: "gpu-0".to_string(),
-                name: "NVIDIA RTX 4090".to_string(),
+                id: "gpu-0".to_owned(),
+                name: "NVIDIA RTX 4090".to_owned(),
                 device_type: DeviceType::GPU,
                 status: DeviceStatus::Online,
                 resource_usage: 0.45,
-                assigned_to: Some("primal-compute".to_string()),
+                assigned_to: Some("primal-compute".to_owned()),
                 metadata: serde_json::json!({
                     "vram": "24GB",
                     "cuda_cores": 16384,
@@ -84,8 +84,8 @@ impl DemoDeviceProvider {
                 }),
             },
             Device {
-                id: "cpu-0".to_string(),
-                name: "AMD Ryzen 9 7950X".to_string(),
+                id: "cpu-0".to_owned(),
+                name: "AMD Ryzen 9 7950X".to_owned(),
                 device_type: DeviceType::CPU,
                 status: DeviceStatus::Online,
                 resource_usage: 0.32,
@@ -97,12 +97,12 @@ impl DemoDeviceProvider {
                 }),
             },
             Device {
-                id: "ssd-0".to_string(),
-                name: "Samsung 990 PRO 2TB".to_string(),
+                id: "ssd-0".to_owned(),
+                name: "Samsung 990 PRO 2TB".to_owned(),
                 device_type: DeviceType::Storage,
                 status: DeviceStatus::Online,
                 resource_usage: 0.67,
-                assigned_to: Some("primal-storage".to_string()),
+                assigned_to: Some("primal-storage".to_owned()),
                 metadata: serde_json::json!({
                     "capacity": "2TB",
                     "used": "1.34TB",
@@ -110,8 +110,8 @@ impl DemoDeviceProvider {
                 }),
             },
             Device {
-                id: "net-0".to_string(),
-                name: "Intel X710 10GbE".to_string(),
+                id: "net-0".to_owned(),
+                name: "Intel X710 10GbE".to_owned(),
                 device_type: DeviceType::Network,
                 status: DeviceStatus::Online,
                 resource_usage: 0.15,
@@ -123,8 +123,8 @@ impl DemoDeviceProvider {
                 }),
             },
             Device {
-                id: "mem-0".to_string(),
-                name: "DDR5-6000 64GB".to_string(),
+                id: "mem-0".to_owned(),
+                name: "DDR5-6000 64GB".to_owned(),
                 device_type: DeviceType::Memory,
                 status: DeviceStatus::Online,
                 resource_usage: 0.58,
@@ -136,12 +136,12 @@ impl DemoDeviceProvider {
                 }),
             },
             Device {
-                id: "gpu-1".to_string(),
-                name: "NVIDIA A100".to_string(),
+                id: "gpu-1".to_owned(),
+                name: "NVIDIA A100".to_owned(),
                 device_type: DeviceType::GPU,
                 status: DeviceStatus::Busy,
                 resource_usage: 0.92,
-                assigned_to: Some("primal-compute".to_string()),
+                assigned_to: Some("primal-compute".to_owned()),
                 metadata: serde_json::json!({
                     "vram": "80GB",
                     "tensor_cores": 6912,
@@ -149,8 +149,8 @@ impl DemoDeviceProvider {
                 }),
             },
             Device {
-                id: "ssd-1".to_string(),
-                name: "WD Black SN850X 4TB".to_string(),
+                id: "ssd-1".to_owned(),
+                name: "WD Black SN850X 4TB".to_owned(),
                 device_type: DeviceType::Storage,
                 status: DeviceStatus::Offline,
                 resource_usage: 0.0,
@@ -167,9 +167,9 @@ impl DemoDeviceProvider {
     fn create_demo_primals() -> Vec<Primal> {
         vec![
             Primal {
-                id: "primal-security".to_string(),
-                name: "Security Primal".to_string(),
-                capabilities: vec!["security".to_string(), "auth".to_string()],
+                id: "primal-security".to_owned(),
+                name: "Security Primal".to_owned(),
+                capabilities: vec!["security".to_owned(), "auth".to_owned()],
                 health: Health::Healthy,
                 load: 0.23,
                 assigned_devices: vec![],
@@ -179,9 +179,9 @@ impl DemoDeviceProvider {
                 }),
             },
             Primal {
-                id: "primal-discovery".to_string(),
-                name: "Discovery Primal".to_string(),
-                capabilities: vec!["discovery".to_string(), "registry".to_string()],
+                id: "primal-discovery".to_owned(),
+                name: "Discovery Primal".to_owned(),
+                capabilities: vec!["discovery".to_owned(), "registry".to_owned()],
                 health: Health::Healthy,
                 load: 0.15,
                 assigned_devices: vec![],
@@ -191,33 +191,33 @@ impl DemoDeviceProvider {
                 }),
             },
             Primal {
-                id: "primal-compute".to_string(),
-                name: "Compute Primal".to_string(),
-                capabilities: vec!["compute".to_string(), "gpu".to_string()],
+                id: "primal-compute".to_owned(),
+                name: "Compute Primal".to_owned(),
+                capabilities: vec!["compute".to_owned(), "gpu".to_owned()],
                 health: Health::Healthy,
                 load: 0.68,
-                assigned_devices: vec!["gpu-0".to_string(), "gpu-1".to_string()],
+                assigned_devices: vec!["gpu-0".to_owned(), "gpu-1".to_owned()],
                 metadata: serde_json::json!({
                     "version": "2.1.0",
                     "uptime": "15d 3h"
                 }),
             },
             Primal {
-                id: "primal-storage".to_string(),
-                name: "Storage Primal".to_string(),
-                capabilities: vec!["storage".to_string(), "cache".to_string()],
+                id: "primal-storage".to_owned(),
+                name: "Storage Primal".to_owned(),
+                capabilities: vec!["storage".to_owned(), "cache".to_owned()],
                 health: Health::Healthy,
                 load: 0.45,
-                assigned_devices: vec!["ssd-0".to_string()],
+                assigned_devices: vec!["ssd-0".to_owned()],
                 metadata: serde_json::json!({
                     "version": "1.6.6",
                     "uptime": "15d 3h"
                 }),
             },
             Primal {
-                id: "primal-ui".to_string(),
-                name: "UI Primal".to_string(),
-                capabilities: vec!["ui".to_string(), "render".to_string()],
+                id: "primal-ui".to_owned(),
+                name: "UI Primal".to_owned(),
+                capabilities: vec!["ui".to_owned(), "render".to_owned()],
                 health: Health::Healthy,
                 load: 0.12,
                 assigned_devices: vec![],
@@ -227,9 +227,9 @@ impl DemoDeviceProvider {
                 }),
             },
             Primal {
-                id: "primal-ai".to_string(),
-                name: "AI Primal".to_string(),
-                capabilities: vec!["ai".to_string(), "learning".to_string()],
+                id: "primal-ai".to_owned(),
+                name: "AI Primal".to_owned(),
+                capabilities: vec!["ai".to_owned(), "learning".to_owned()],
                 health: Health::Degraded,
                 load: 0.87,
                 assigned_devices: vec![],
@@ -246,16 +246,16 @@ impl DemoDeviceProvider {
     fn create_demo_templates() -> Vec<NicheTemplate> {
         vec![
             NicheTemplate {
-                id: "nest".to_string(),
-                name: "Nest".to_string(),
-                description: "Complete ecoPrimals ecosystem with all core primals".to_string(),
+                id: "nest".to_owned(),
+                name: "Nest".to_owned(),
+                description: "Complete ecoPrimals ecosystem with all core primals".to_owned(),
                 required_primals: vec![
-                    "security".to_string(),
-                    "discovery".to_string(),
-                    "compute".to_string(),
-                    "storage".to_string(),
+                    "security".to_owned(),
+                    "discovery".to_owned(),
+                    "compute".to_owned(),
+                    "storage".to_owned(),
                 ],
-                optional_primals: vec!["ai".to_string(), "ui".to_string()],
+                optional_primals: vec!["ai".to_owned(), "ui".to_owned()],
                 metadata: serde_json::json!({
                     "icon": "🏠",
                     "complexity": "high",
@@ -268,11 +268,11 @@ impl DemoDeviceProvider {
                 }),
             },
             NicheTemplate {
-                id: "tower".to_string(),
-                name: "Tower".to_string(),
-                description: "High-performance compute tower for GPU-intensive tasks".to_string(),
-                required_primals: vec!["compute".to_string(), "storage".to_string()],
-                optional_primals: vec!["ai".to_string()],
+                id: "tower".to_owned(),
+                name: "Tower".to_owned(),
+                description: "High-performance compute tower for GPU-intensive tasks".to_owned(),
+                required_primals: vec!["compute".to_owned(), "storage".to_owned()],
+                optional_primals: vec!["ai".to_owned()],
                 metadata: serde_json::json!({
                     "icon": "🗼",
                     "complexity": "medium",
@@ -283,11 +283,11 @@ impl DemoDeviceProvider {
                 }),
             },
             NicheTemplate {
-                id: "node".to_string(),
-                name: "Node".to_string(),
-                description: "Minimal node for edge deployment".to_string(),
-                required_primals: vec!["discovery".to_string()],
-                optional_primals: vec!["security".to_string()],
+                id: "node".to_owned(),
+                name: "Node".to_owned(),
+                description: "Minimal node for edge deployment".to_owned(),
+                required_primals: vec!["discovery".to_owned()],
+                optional_primals: vec!["security".to_owned()],
                 metadata: serde_json::json!({
                     "icon": "📡",
                     "complexity": "low",
@@ -316,7 +316,7 @@ impl VisualizationDataProvider for DemoDeviceProvider {
             .map(|p| PrimalInfo {
                 id: p.id.clone().into(),
                 name: p.name.clone(),
-                primal_type: "demo".to_string(),
+                primal_type: "demo".to_owned(),
                 endpoint: format!("demo://{}", p.name),
                 capabilities: p.capabilities.clone(),
                 health: match p.health {
@@ -338,45 +338,45 @@ impl VisualizationDataProvider for DemoDeviceProvider {
     async fn get_topology(&self) -> DiscoveryResult<Vec<TopologyEdge>> {
         Ok(vec![
             TopologyEdge {
-                from: "primal-discovery".to_string().into(),
-                to: "primal-security".to_string().into(),
-                edge_type: "discovery".to_string(),
-                label: Some("Discovers".to_string()),
-                capability: Some("security".to_string()),
+                from: "primal-discovery".to_owned().into(),
+                to: "primal-security".to_owned().into(),
+                edge_type: "discovery".to_owned(),
+                label: Some("Discovers".to_owned()),
+                capability: Some("security".to_owned()),
                 metrics: None,
             },
             TopologyEdge {
-                from: "primal-discovery".to_string().into(),
-                to: "primal-compute".to_string().into(),
-                edge_type: "discovery".to_string(),
-                label: Some("Discovers".to_string()),
-                capability: Some("compute".to_string()),
+                from: "primal-discovery".to_owned().into(),
+                to: "primal-compute".to_owned().into(),
+                edge_type: "discovery".to_owned(),
+                label: Some("Discovers".to_owned()),
+                capability: Some("compute".to_owned()),
                 metrics: None,
             },
             TopologyEdge {
-                from: "primal-compute".to_string().into(),
-                to: "primal-storage".to_string().into(),
-                edge_type: "storage".to_string(),
-                label: Some("Uses".to_string()),
-                capability: Some("storage".to_string()),
+                from: "primal-compute".to_owned().into(),
+                to: "primal-storage".to_owned().into(),
+                edge_type: "storage".to_owned(),
+                label: Some("Uses".to_owned()),
+                capability: Some("storage".to_owned()),
                 metrics: None,
             },
         ])
     }
 
     async fn health_check(&self) -> DiscoveryResult<String> {
-        Ok("healthy (demo fallback)".to_string())
+        Ok("healthy (demo fallback)".to_owned())
     }
 
     fn get_metadata(&self) -> ProviderMetadata {
         warn!("⚠️ Using demo device provider (biomeOS unavailable)");
         ProviderMetadata {
-            name: "Demo Device Provider (Fallback)".to_string(),
-            endpoint: "demo://fallback".to_string(),
-            protocol: "demo".to_string(),
+            name: "Demo Device Provider (Fallback)".to_owned(),
+            endpoint: "demo://fallback".to_owned(),
+            protocol: "demo".to_owned(),
             capabilities: vec![
-                "device.discovery (demo)".to_string(),
-                "niche.templates (demo)".to_string(),
+                "device.discovery (demo)".to_owned(),
+                "niche.templates (demo)".to_owned(),
             ],
         }
     }

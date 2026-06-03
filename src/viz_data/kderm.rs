@@ -105,37 +105,37 @@ pub fn build_kderm_scene() -> SceneGraph {
 
     let vps_nodes = [
         VpsNode {
-            name: "golgiBody-ext",
+            name: "outer-proxy",
             layer: "outer",
             x: 550.0,
             color: Color::from_rgba8(250, 179, 135, 255),
         },
         VpsNode {
-            name: "peptidoglycan",
+            name: "membrane-wall",
             layer: "periplasm",
             x: 400.0,
             color: Color::from_rgba8(249, 226, 175, 255),
         },
         VpsNode {
-            name: "golgiBody",
+            name: "inner-proxy",
             layer: "periplasm",
             x: 250.0,
             color: Color::from_rgba8(245, 194, 231, 255),
         },
         VpsNode {
-            name: "eastGate",
+            name: "gate-primary",
             layer: "cytoplasm",
             x: 200.0,
             color: Color::from_rgba8(166, 227, 161, 255),
         },
         VpsNode {
-            name: "flockGate",
+            name: "gate-user",
             layer: "cytoplasm",
             x: 400.0,
             color: Color::from_rgba8(166, 227, 161, 255),
         },
         VpsNode {
-            name: "GitHub",
+            name: "upstream",
             layer: "extracellular",
             x: 600.0,
             color: Color::from_rgba8(186, 194, 222, 200),
@@ -185,10 +185,10 @@ pub fn build_kderm_scene() -> SceneGraph {
     scene.add_to_root(relay_group);
 
     let relay_steps: Vec<(&str, f64, f64, &str, f64, f64)> = vec![
-        ("flockGate", 400.0, 430.0, "golgiBody", 250.0, 235.0),
-        ("golgiBody", 250.0, 235.0, "peptidoglycan", 400.0, 235.0),
-        ("peptidoglycan", 400.0, 235.0, "golgiBody-ext", 550.0, 140.0),
-        ("golgiBody-ext", 550.0, 140.0, "GitHub", 600.0, 50.0),
+        ("gate-user", 400.0, 430.0, "inner-proxy", 250.0, 235.0),
+        ("inner-proxy", 250.0, 235.0, "membrane-wall", 400.0, 235.0),
+        ("membrane-wall", 400.0, 235.0, "outer-proxy", 550.0, 140.0),
+        ("outer-proxy", 550.0, 140.0, "upstream", 600.0, 50.0),
     ];
 
     for (i, (from, fx, fy, to, tx, ty)) in relay_steps.iter().enumerate() {
@@ -284,13 +284,13 @@ pub fn build_kderm_scene() -> SceneGraph {
     scene
 }
 
-/// Build the relay animation: flockGate -> golgiBody -> peptidoglycan -> golgiBody-ext -> GitHub.
+/// Build the relay animation: gate → inner-proxy → membrane → outer-proxy → upstream.
 pub fn build_kderm_relay_animation() -> Sequence {
     let steps = [
-        ("relay-step-0", "vps-flockGate", "vps-golgiBody"),
-        ("relay-step-1", "vps-golgiBody", "vps-peptidoglycan"),
-        ("relay-step-2", "vps-peptidoglycan", "vps-golgiBody-ext"),
-        ("relay-step-3", "vps-golgiBody-ext", "vps-GitHub"),
+        ("relay-step-0", "vps-gate-user", "vps-inner-proxy"),
+        ("relay-step-1", "vps-inner-proxy", "vps-membrane-wall"),
+        ("relay-step-2", "vps-membrane-wall", "vps-outer-proxy"),
+        ("relay-step-3", "vps-outer-proxy", "vps-upstream"),
     ];
 
     let mut animations = Vec::new();

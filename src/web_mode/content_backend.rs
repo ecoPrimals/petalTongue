@@ -17,6 +17,24 @@
 use axum::response::{Html, IntoResponse};
 use std::sync::Arc;
 
+/// Typed errors for the content backend RPC layer.
+#[derive(Debug, thiserror::Error)]
+pub enum ContentBackendError {
+    #[error("connect({endpoint}): {source}")]
+    Connect {
+        endpoint: String,
+        source: std::io::Error,
+    },
+    #[error("write: {0}")]
+    Write(#[from] std::io::Error),
+    #[error("serialize: {0}")]
+    Serialize(#[from] serde_json::Error),
+    #[error("base64 decode: {0}")]
+    Base64(#[from] base64::DecodeError),
+    #[error("{0}")]
+    Protocol(String),
+}
+
 /// Transport for reaching the content backend.
 #[derive(Debug, Clone)]
 pub enum ContentEndpoint {
@@ -166,14 +184,18 @@ impl ContentBackendClient {
     }
 
     /// Call `content.resolve` — returns `(content_bytes, mime_type)` or `None`.
-    pub async fn resolve(&self, path: &str) -> Result<Option<(Vec<u8>, String)>, String> {
+    /// Call `content.resolve` — returns `(content_bytes, mime_type)` or `None`.
+    pub async fn resolve(
+        &self,
+        path: &str,
+    ) -> Result<Option<(Vec<u8>, String)>, ContentBackendError> {
         let req = serde_json::json!({
             "jsonrpc": "2.0",
             "method": "content.resolve",
             "params": { "path": path },
             "id": self.next_id(),
         });
-        let mut line = serde_json::to_string(&req).map_err(|e| e.to_string())?;
+        let mut line = serde_json::to_string(&req)?;
         line.push('\n');
 
         let resp_line = match &self.endpoint {
@@ -181,8 +203,7 @@ impl ContentBackendClient {
             ContentEndpoint::Tcp(addr) => self.rpc_tcp(addr, &line).await?,
         };
 
-        let resp: serde_json::Value =
-            serde_json::from_str(&resp_line).map_err(|e| format!("content backend parse: {e}"))?;
+        let resp: serde_json::Value = serde_json::from_str(&resp_line)?;
 
         if resp.get("error").is_some() {
             return Ok(None);
@@ -190,73 +211,65 @@ impl ContentBackendClient {
 
         let result = resp
             .get("result")
-            .ok_or("content backend: no result field")?;
+            .ok_or_else(|| ContentBackendError::Protocol("no result field".to_owned()))?;
         let content_b64 = result
             .get("content")
             .and_then(|v| v.as_str())
-            .ok_or("content backend: missing content field")?;
+            .ok_or_else(|| ContentBackendError::Protocol("missing content field".to_owned()))?;
         let mime = result
             .get("mime_type")
             .and_then(|v| v.as_str())
             .unwrap_or("application/octet-stream");
 
         use base64::Engine as _;
-        let bytes = base64::engine::general_purpose::STANDARD
-            .decode(content_b64)
-            .map_err(|e| format!("content backend base64 decode: {e}"))?;
+        let bytes = base64::engine::general_purpose::STANDARD.decode(content_b64)?;
 
         Ok(Some((bytes, mime.to_owned())))
     }
 
-    async fn rpc_unix(&self, sock: &std::path::Path, request: &str) -> Result<String, String> {
+    async fn rpc_unix(
+        &self,
+        sock: &std::path::Path,
+        request: &str,
+    ) -> Result<String, ContentBackendError> {
         use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
         use tokio::net::UnixStream;
 
-        let mut stream = UnixStream::connect(sock)
-            .await
-            .map_err(|e| format!("content backend connect({}): {e}", sock.display()))?;
-        stream
-            .write_all(request.as_bytes())
-            .await
-            .map_err(|e| format!("content backend write: {e}"))?;
-        stream
-            .flush()
-            .await
-            .map_err(|e| format!("content backend flush: {e}"))?;
+        let mut stream =
+            UnixStream::connect(sock)
+                .await
+                .map_err(|source| ContentBackendError::Connect {
+                    endpoint: format!("unix:{}", sock.display()),
+                    source,
+                })?;
+        stream.write_all(request.as_bytes()).await?;
+        stream.flush().await?;
 
         let (reader, _) = stream.into_split();
         let mut reader = tokio::io::BufReader::new(reader);
         let mut resp = String::new();
-        reader
-            .read_line(&mut resp)
-            .await
-            .map_err(|e| format!("content backend read: {e}"))?;
+        reader.read_line(&mut resp).await?;
         Ok(resp)
     }
 
-    async fn rpc_tcp(&self, addr: &str, request: &str) -> Result<String, String> {
+    async fn rpc_tcp(&self, addr: &str, request: &str) -> Result<String, ContentBackendError> {
         use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
         use tokio::net::TcpStream;
 
-        let mut stream = TcpStream::connect(addr)
-            .await
-            .map_err(|e| format!("content backend tcp connect({addr}): {e}"))?;
-        stream
-            .write_all(request.as_bytes())
-            .await
-            .map_err(|e| format!("content backend tcp write: {e}"))?;
-        stream
-            .flush()
-            .await
-            .map_err(|e| format!("content backend tcp flush: {e}"))?;
+        let mut stream =
+            TcpStream::connect(addr)
+                .await
+                .map_err(|source| ContentBackendError::Connect {
+                    endpoint: format!("tcp:{addr}"),
+                    source,
+                })?;
+        stream.write_all(request.as_bytes()).await?;
+        stream.flush().await?;
 
         let (reader, _) = stream.into_split();
         let mut reader = tokio::io::BufReader::new(reader);
         let mut resp = String::new();
-        reader
-            .read_line(&mut resp)
-            .await
-            .map_err(|e| format!("content backend tcp read: {e}"))?;
+        reader.read_line(&mut resp).await?;
         Ok(resp)
     }
 }

@@ -121,9 +121,9 @@ impl GpuComputeProvider {
         if let Ok(endpoint) = std::env::var(crate::constants::GPU_RENDERING_ENDPOINT) {
             tracing::info!("Found GPU rendering service via environment: {endpoint}");
             return Ok(ComputeServiceInfo {
-                id: "discovered-gpu-renderer".to_string(),
+                id: "discovered-gpu-renderer".to_owned(),
                 endpoint,
-                capabilities: vec!["gpu.dispatch".to_string(), "display".to_string()],
+                capabilities: vec!["gpu.dispatch".to_owned(), "display".to_owned()],
                 metadata: HashMap::new(),
             });
         }
@@ -131,12 +131,12 @@ impl GpuComputeProvider {
         if let Ok(endpoint) = std::env::var(crate::constants::COMPUTE_PROVIDER_ENDPOINT) {
             tracing::info!("Found compute provider via environment: {endpoint}");
             return Ok(ComputeServiceInfo {
-                id: "discovered-compute-provider".to_string(),
+                id: "discovered-compute-provider".to_owned(),
                 endpoint,
                 capabilities: vec![
-                    "gpu.dispatch".to_string(),
-                    "science.gpu.dispatch".to_string(),
-                    "display".to_string(),
+                    "gpu.dispatch".to_owned(),
+                    "science.gpu.dispatch".to_owned(),
+                    "display".to_owned(),
                 ],
                 metadata: HashMap::new(),
             });
@@ -144,7 +144,7 @@ impl GpuComputeProvider {
 
         // Legacy: ecosystem manifest scan (S139 dual-write layout)
         let runtime_dir = std::env::var(crate::constants::XDG_RUNTIME_DIR)
-            .unwrap_or_else(|_| crate::constants::LEGACY_TMP_PREFIX.to_string());
+            .unwrap_or_else(|_| crate::constants::LEGACY_TMP_PREFIX.to_owned());
         let discovery_dir = format!("{runtime_dir}/ecoPrimals/discovery");
         if let Ok(entries) = std::fs::read_dir(&discovery_dir) {
             for entry in entries.flatten() {
@@ -168,12 +168,12 @@ impl GpuComputeProvider {
                             .get("endpoint")
                             .and_then(|e| e.as_str())
                             .unwrap_or("")
-                            .to_string();
+                            .to_owned();
                         let id = manifest
                             .get("id")
                             .and_then(|i| i.as_str())
                             .unwrap_or("discovered-compute")
-                            .to_string();
+                            .to_owned();
                         tracing::info!("Found GPU compute provider via ecosystem manifest: {id}");
                         return Ok(ComputeServiceInfo {
                             id,
@@ -192,12 +192,12 @@ impl GpuComputeProvider {
             if !endpoint.is_empty() {
                 tracing::info!("Using GPU compute endpoint from env: {endpoint}");
                 return Ok(ComputeServiceInfo {
-                    id: "env-gpu-compute".to_string(),
+                    id: "env-gpu-compute".to_owned(),
                     endpoint,
                     capabilities: vec![
-                        "gpu.dispatch".to_string(),
-                        "science.gpu.dispatch".to_string(),
-                        "display".to_string(),
+                        "gpu.dispatch".to_owned(),
+                        "science.gpu.dispatch".to_owned(),
+                        "display".to_owned(),
                     ],
                     metadata: HashMap::new(),
                 });
@@ -345,10 +345,10 @@ mod tests {
     #[test]
     fn test_parse_capabilities_ecosystem_strings() {
         let caps = vec![
-            "gpu.dispatch".to_string(),
-            "science.gpu.dispatch".to_string(),
-            "display".to_string(),
-            "shader.compile".to_string(),
+            "gpu.dispatch".to_owned(),
+            "science.gpu.dispatch".to_owned(),
+            "display".to_owned(),
+            "shader.compile".to_owned(),
         ];
         let parsed = GpuComputeProvider::parse_capabilities(&caps);
         // gpu.dispatch -> LayoutComputation, science.gpu.dispatch -> PhysicsSimulation
@@ -372,7 +372,7 @@ mod tests {
         let manifest_path = discovery_dir.join("gpu-compute.json");
         std::fs::write(&manifest_path, serde_json::to_string(&manifest).unwrap()).unwrap();
 
-        let runtime_dir = temp.path().to_str().unwrap().to_string();
+        let runtime_dir = temp.path().to_str().unwrap().to_owned();
         let provider = crate::test_fixtures::env_test_helpers::with_env_var_async(
             "XDG_RUNTIME_DIR",
             &runtime_dir,
@@ -433,9 +433,9 @@ mod tests {
     #[tokio::test]
     async fn test_capability_parsing() {
         let caps = vec![
-            "layout-computation".to_string(),
-            "physics".to_string(),
-            "unknown-capability".to_string(),
+            "layout-computation".to_owned(),
+            "physics".to_owned(),
+            "unknown-capability".to_owned(),
         ];
 
         let parsed = GpuComputeProvider::parse_capabilities(&caps);
@@ -476,7 +476,7 @@ mod tests {
 
     #[test]
     fn test_parse_capabilities_raytracing() {
-        let caps = vec!["ray-tracing".to_string(), "raytracing".to_string()];
+        let caps = vec!["ray-tracing".to_owned(), "raytracing".to_owned()];
         let parsed = GpuComputeProvider::parse_capabilities(&caps);
         assert_eq!(parsed.len(), 2);
         assert!(parsed.iter().all(|c| *c == ComputeCapability::RayTracing));
@@ -484,7 +484,7 @@ mod tests {
 
     #[test]
     fn test_parse_capabilities_particle_effects() {
-        let caps = vec!["particle-effects".to_string(), "particles".to_string()];
+        let caps = vec!["particle-effects".to_owned(), "particles".to_owned()];
         let parsed = GpuComputeProvider::parse_capabilities(&caps);
         assert_eq!(parsed.len(), 2);
         assert!(
@@ -496,7 +496,7 @@ mod tests {
 
     #[test]
     fn test_parse_capabilities_image_processing() {
-        let caps = vec!["image-processing".to_string(), "image".to_string()];
+        let caps = vec!["image-processing".to_owned(), "image".to_owned()];
         let parsed = GpuComputeProvider::parse_capabilities(&caps);
         assert_eq!(parsed.len(), 2);
         assert!(
@@ -509,10 +509,10 @@ mod tests {
     #[test]
     fn test_parse_capabilities_legacy_strings() {
         let caps = vec![
-            "layout-computation".to_string(),
-            "gpu-layout".to_string(),
-            "physics".to_string(),
-            "physics-simulation".to_string(),
+            "layout-computation".to_owned(),
+            "gpu-layout".to_owned(),
+            "physics".to_owned(),
+            "physics-simulation".to_owned(),
         ];
         let parsed = GpuComputeProvider::parse_capabilities(&caps);
         assert!(parsed.contains(&ComputeCapability::LayoutComputation));
@@ -521,7 +521,7 @@ mod tests {
 
     #[test]
     fn test_parse_capabilities_display_skipped() {
-        let caps = vec!["display".to_string(), "shader.compile".to_string()];
+        let caps = vec!["display".to_owned(), "shader.compile".to_owned()];
         let parsed = GpuComputeProvider::parse_capabilities(&caps);
         assert!(parsed.is_empty());
     }
@@ -536,12 +536,12 @@ mod tests {
     #[test]
     fn test_toadstool_service_info() {
         let mut metadata = HashMap::new();
-        metadata.insert("version".to_string(), "1.0.0".to_string());
+        metadata.insert("version".to_owned(), "1.0.0".to_owned());
 
         let info = ComputeServiceInfo {
-            id: "test-service".to_string(),
-            endpoint: crate::constants::DEFAULT_GPU_COMPUTE_ENDPOINT.to_string(),
-            capabilities: vec!["gpu-rendering".to_string()],
+            id: "test-service".to_owned(),
+            endpoint: crate::constants::DEFAULT_GPU_COMPUTE_ENDPOINT.to_owned(),
+            capabilities: vec!["gpu-rendering".to_owned()],
             metadata,
         };
 

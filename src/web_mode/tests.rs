@@ -484,10 +484,10 @@ async fn test_content_backend_tcp_connect_failure_returns_error() {
     };
     let result = client.resolve("/test").await;
     assert!(result.is_err(), "TCP connect to port 1 should fail");
-    let err = result.unwrap_err();
+    let err = result.unwrap_err().to_string();
     assert!(
-        err.contains("tcp connect"),
-        "error should mention tcp connect: {err}"
+        err.contains("tcp:"),
+        "error should mention tcp endpoint: {err}"
     );
 }
 

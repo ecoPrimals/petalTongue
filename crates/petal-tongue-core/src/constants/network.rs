@@ -70,7 +70,7 @@ pub const ALTERNATIVE_RUN_DIR: &str = "/var/run/ecoPrimals";
 /// Override via `ECOSYSTEM_RUNTIME_DIR` for custom deployments.
 #[must_use]
 pub fn ecosystem_runtime_dir_name() -> String {
-    std::env::var(env::ECOSYSTEM_RUNTIME_DIR).unwrap_or_else(|_| "biomeos".to_string())
+    std::env::var(env::ECOSYSTEM_RUNTIME_DIR).unwrap_or_else(|_| "biomeos".to_owned())
 }
 
 /// Resolve the biomeOS socket directory with the DH-1 tier chain.
@@ -139,7 +139,7 @@ pub fn socket_search_dirs() -> Vec<std::path::PathBuf> {
 /// Overridable via `BIOMEOS_SOCKET_NAME` env var for custom deployments
 #[must_use]
 pub fn biomeos_socket_name() -> String {
-    std::env::var(env::BIOMEOS_SOCKET_NAME).unwrap_or_else(|_| "biomeos-neural-api".to_string())
+    std::env::var(env::BIOMEOS_SOCKET_NAME).unwrap_or_else(|_| "biomeos-neural-api".to_owned())
 }
 
 /// Device management socket name (capability: device management)
@@ -147,21 +147,21 @@ pub fn biomeos_socket_name() -> String {
 #[must_use]
 pub fn biomeos_device_management_socket_name() -> String {
     std::env::var(env::BIOMEOS_DEVICE_MANAGEMENT_SOCKET)
-        .unwrap_or_else(|_| "biomeos-device-management".to_string())
+        .unwrap_or_else(|_| "biomeos-device-management".to_owned())
 }
 
 /// UI socket name (capability: UI/visualization)
 /// Overridable via `BIOMEOS_UI_SOCKET` env var
 #[must_use]
 pub fn biomeos_ui_socket_name() -> String {
-    std::env::var(env::BIOMEOS_UI_SOCKET).unwrap_or_else(|_| "biomeos-ui".to_string())
+    std::env::var(env::BIOMEOS_UI_SOCKET).unwrap_or_else(|_| "biomeos-ui".to_owned())
 }
 
 /// Discovery service socket name (capability: discovery/registry)
 /// Overridable via `DISCOVERY_SERVICE_SOCKET` env var
 #[must_use]
 pub fn discovery_service_socket_name() -> String {
-    std::env::var(env::DISCOVERY_SERVICE_SOCKET).unwrap_or_else(|_| "discovery-service".to_string())
+    std::env::var(env::DISCOVERY_SERVICE_SOCKET).unwrap_or_else(|_| "discovery-service".to_owned())
 }
 
 /// Legacy /tmp biomeOS socket name (fallback).
@@ -170,7 +170,7 @@ pub fn discovery_service_socket_name() -> String {
 /// compile-time primal dependency. Overridable via `BIOMEOS_LEGACY_SOCKET`.
 #[must_use]
 pub fn biomeos_legacy_socket_name() -> String {
-    std::env::var(env::BIOMEOS_LEGACY_SOCKET).unwrap_or_else(|_| "biomeos".to_string())
+    std::env::var(env::BIOMEOS_LEGACY_SOCKET).unwrap_or_else(|_| "biomeos".to_owned())
 }
 
 // ---------------------------------------------------------------------------
@@ -196,7 +196,7 @@ pub fn default_bind_addr() -> &'static str {
     static BIND: std::sync::OnceLock<String> = std::sync::OnceLock::new();
     BIND.get_or_init(|| {
         std::env::var(env::PETALTONGUE_BIND_ADDR)
-            .unwrap_or_else(|_| DEFAULT_LOOPBACK_HOST.to_string())
+            .unwrap_or_else(|_| DEFAULT_LOOPBACK_HOST.to_owned())
     })
 }
 
@@ -240,7 +240,7 @@ pub fn default_gpu_compute_endpoint() -> String {
         .or_else(|_| std::env::var(env::GPU_RENDERING_ENDPOINT))
         .or_else(|_| std::env::var(env::COMPUTE_PROVIDER_ENDPOINT))
         .or_else(|_| std::env::var(env::GPU_COMPUTE_ENDPOINT))
-        .unwrap_or_else(|_| DEFAULT_GPU_COMPUTE_ENDPOINT.to_string())
+        .unwrap_or_else(|_| DEFAULT_GPU_COMPUTE_ENDPOINT.to_owned())
 }
 
 /// GPU compute endpoint (env-driven with fallback).

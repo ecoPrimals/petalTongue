@@ -125,11 +125,11 @@ impl ShaderLineage {
                 })
                 .collect();
             bindings.push(DataBinding::Bar {
-                id: "shader_validation_by_spring".to_string(),
-                label: "Shader Validation Pass Rate".to_string(),
+                id: "shader_validation_by_spring".to_owned(),
+                label: "Shader Validation Pass Rate".to_owned(),
                 categories: origins.clone(),
                 values,
-                unit: "ratio".to_string(),
+                unit: "ratio".to_owned(),
             });
         }
 
@@ -169,12 +169,12 @@ impl ShaderLineage {
                 })
                 .collect();
             bindings.push(DataBinding::Heatmap {
-                id: "shader_delegation_matrix".to_string(),
-                label: "Delegation Matrix".to_string(),
+                id: "shader_delegation_matrix".to_owned(),
+                label: "Delegation Matrix".to_owned(),
                 x_labels: delegation_types,
                 y_labels: origins,
                 values,
-                unit: "delegations".to_string(),
+                unit: "delegations".to_owned(),
             });
         }
 
@@ -193,74 +193,74 @@ pub fn build_demo_lineage() -> ShaderLineage {
     let mut lineage = ShaderLineage::new();
 
     lineage.add_node(ShaderLineageNode {
-        id: "source-plasma".to_string(),
-        label: "Plasma Density".to_string(),
-        origin: "spring-a".to_string(),
-        shader_format: "WGSL".to_string(),
+        id: "source-plasma".to_owned(),
+        label: "Plasma Density".to_owned(),
+        origin: "spring-a".to_owned(),
+        shader_format: "WGSL".to_owned(),
         validation_checks: 85,
         validation_passed: 85,
         validation_status: ShaderValidationStatus::Passed,
     });
 
     lineage.add_node(ShaderLineageNode {
-        id: "source-df64".to_string(),
-        label: "DF64 Arithmetic".to_string(),
-        origin: "spring-a".to_string(),
-        shader_format: "WGSL".to_string(),
+        id: "source-df64".to_owned(),
+        label: "DF64 Arithmetic".to_owned(),
+        origin: "spring-a".to_owned(),
+        shader_format: "WGSL".to_owned(),
         validation_checks: 120,
         validation_passed: 118,
         validation_status: ShaderValidationStatus::Failed,
     });
 
     lineage.add_node(ShaderLineageNode {
-        id: "source-seismic".to_string(),
-        label: "Seismic Propagation".to_string(),
-        origin: "spring-b".to_string(),
-        shader_format: "WGSL".to_string(),
+        id: "source-seismic".to_owned(),
+        label: "Seismic Propagation".to_owned(),
+        origin: "spring-b".to_owned(),
+        shader_format: "WGSL".to_owned(),
         validation_checks: 48,
         validation_passed: 48,
         validation_status: ShaderValidationStatus::Passed,
     });
 
     lineage.add_node(ShaderLineageNode {
-        id: "compiler-stage".to_string(),
-        label: "Shader Compiler".to_string(),
-        origin: "compiler".to_string(),
-        shader_format: "SPIR-V".to_string(),
+        id: "compiler-stage".to_owned(),
+        label: "Shader Compiler".to_owned(),
+        origin: "compiler".to_owned(),
+        shader_format: "SPIR-V".to_owned(),
         validation_checks: 200,
         validation_passed: 195,
         validation_status: ShaderValidationStatus::Failed,
     });
 
     lineage.add_node(ShaderLineageNode {
-        id: "dispatch-stage".to_string(),
-        label: "GPU Dispatch".to_string(),
-        origin: "dispatcher".to_string(),
-        shader_format: "SPIR-V".to_string(),
+        id: "dispatch-stage".to_owned(),
+        label: "GPU Dispatch".to_owned(),
+        origin: "dispatcher".to_owned(),
+        shader_format: "SPIR-V".to_owned(),
         validation_checks: 30,
         validation_passed: 30,
         validation_status: ShaderValidationStatus::Passed,
     });
 
     lineage.add_delegation(ShaderDelegation {
-        from: "source-plasma".to_string(),
-        to: "compiler-stage".to_string(),
-        delegation_type: "compile".to_string(),
+        from: "source-plasma".to_owned(),
+        to: "compiler-stage".to_owned(),
+        delegation_type: "compile".to_owned(),
     });
     lineage.add_delegation(ShaderDelegation {
-        from: "source-df64".to_string(),
-        to: "compiler-stage".to_string(),
-        delegation_type: "compile".to_string(),
+        from: "source-df64".to_owned(),
+        to: "compiler-stage".to_owned(),
+        delegation_type: "compile".to_owned(),
     });
     lineage.add_delegation(ShaderDelegation {
-        from: "source-seismic".to_string(),
-        to: "compiler-stage".to_string(),
-        delegation_type: "compile".to_string(),
+        from: "source-seismic".to_owned(),
+        to: "compiler-stage".to_owned(),
+        delegation_type: "compile".to_owned(),
     });
     lineage.add_delegation(ShaderDelegation {
-        from: "compiler-stage".to_string(),
-        to: "dispatch-stage".to_string(),
-        delegation_type: "dispatch".to_string(),
+        from: "compiler-stage".to_owned(),
+        to: "dispatch-stage".to_owned(),
+        delegation_type: "dispatch".to_owned(),
     });
 
     lineage
@@ -301,17 +301,17 @@ impl ScenarioBuilder for ShaderLineageScenario {
 
     fn available_scenes(&self) -> Vec<String> {
         vec![
-            "validation_summary".to_string(),
-            "delegation_matrix".to_string(),
+            "validation_summary".to_owned(),
+            "delegation_matrix".to_owned(),
         ]
     }
 
     fn build_scene(&self, scene_name: &str) -> Option<VisualizationScene> {
         let meta = ScenarioMetadata {
             title: format!("Shader Lineage: {scene_name}"),
-            description: "Cross-spring shader evolution pipeline".to_string(),
-            version: "1.0.0".to_string(),
-            domain: "physics".to_string(),
+            description: "Cross-spring shader evolution pipeline".to_owned(),
+            version: "1.0.0".to_owned(),
+            domain: "physics".to_owned(),
         };
 
         let bindings = self.lineage.to_bindings();
@@ -324,16 +324,16 @@ impl ScenarioBuilder for ShaderLineageScenario {
                 let scene = VisualizationScene::new(meta)
                     .with_binding(binding)
                     .with_threshold(ThresholdRange {
-                        label: "Passing".to_string(),
+                        label: "Passing".to_owned(),
                         min: 0.95,
                         max: 1.0,
-                        status: "normal".to_string(),
+                        status: "normal".to_owned(),
                     })
                     .with_threshold(ThresholdRange {
-                        label: "Degraded".to_string(),
+                        label: "Degraded".to_owned(),
                         min: 0.8,
                         max: 0.95,
-                        status: "warning".to_string(),
+                        status: "warning".to_owned(),
                     });
                 Some(scene)
             }
@@ -416,10 +416,10 @@ mod tests {
             DataBinding::Bar {
                 categories, values, ..
             } => {
-                assert!(categories.contains(&"spring-a".to_string()));
-                assert!(categories.contains(&"spring-b".to_string()));
-                assert!(categories.contains(&"compiler".to_string()));
-                assert!(categories.contains(&"dispatcher".to_string()));
+                assert!(categories.contains(&"spring-a".to_owned()));
+                assert!(categories.contains(&"spring-b".to_owned()));
+                assert!(categories.contains(&"compiler".to_owned()));
+                assert!(categories.contains(&"dispatcher".to_owned()));
                 assert_eq!(categories.len(), values.len());
             }
             _ => panic!("expected Bar"),
@@ -482,10 +482,10 @@ mod tests {
     #[test]
     fn shader_lineage_node_serde() {
         let node = ShaderLineageNode {
-            id: "test".to_string(),
-            label: "Test".to_string(),
-            origin: "spring".to_string(),
-            shader_format: "WGSL".to_string(),
+            id: "test".to_owned(),
+            label: "Test".to_owned(),
+            origin: "spring".to_owned(),
+            shader_format: "WGSL".to_owned(),
             validation_checks: 10,
             validation_passed: 9,
             validation_status: ShaderValidationStatus::Failed,
