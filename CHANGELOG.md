@@ -6,6 +6,34 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Deep Debt Pass: TRUE PRIMAL + Typed Errors + Idiom Sweep (June 3, 2026)
+
+Comprehensive deep debt audit and resolution pass.
+
+#### Changed
+- **TRUE PRIMAL compliance**: Removed hardcoded primal names from
+  `config/capability_registry.toml` — content owner is now `content-provider`
+  (not `nestgate`), discovery owner is `discovery-service` (not `songbird`).
+- **Viz data agnostic labels**: `viz_data/nucleus.rs` and `viz_data/kderm.rs`
+  now use capability-based labels (e.g., "AI inference", "Content storage",
+  "inner-proxy", "gate-user") instead of hardcoded primal names.
+- **Typed content backend errors**: `content_backend.rs` RPC helpers evolved
+  from `Result<String, String>` to `Result<_, ContentBackendError>` with
+  `thiserror`-derived variants: `Connect`, `Write`, `Serialize`, `Base64`,
+  `Protocol`.
+- **Idiomatic Rust**: Replaced 220+ `"literal".to_string()` calls with
+  `.to_owned()` across `network.rs`, `shader_lineage.rs`,
+  `gpu_compute_provider.rs`, `demo_device_provider.rs`, and audio backends.
+- **CLI doc cleanup**: Removed stale `nestgate` backend alias from `--backend`
+  help text.
+
+#### Verified
+- Audio stubs (`direct.rs`, `socket.rs`) properly feature-gated behind
+  `audio-direct` / `audio-socket` — not compiled into default builds.
+- `DemoDeviceProvider` correctly gated behind `#[cfg(feature = "mock")]`.
+- Texture attach handler is a valid partial implementation, not a mock leak.
+- **6,217 tests pass**, zero warnings, `unsafe_code = "forbid"` enforced.
+
 ### Wave 74 Sovereign Verify + Mesh Testing + Coverage (June 3, 2026)
 
 Wave 74 — sovereign rendering verification, mesh content routing integration

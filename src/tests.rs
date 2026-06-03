@@ -328,11 +328,11 @@ fn test_cli_parse_web_docroot_default_none() {
 
 #[test]
 fn test_cli_parse_web_with_backend() {
-    let cli = Cli::parse_from(["petaltongue", "web", "--backend", "nestgate"]);
+    let cli = Cli::parse_from(["petaltongue", "web", "--backend", "content-provider"]);
     let Commands::Web { backend, .. } = cli.command else {
         unreachable!("parsed web")
     };
-    assert_eq!(backend, "nestgate");
+    assert_eq!(backend, "content-provider");
 }
 
 #[test]

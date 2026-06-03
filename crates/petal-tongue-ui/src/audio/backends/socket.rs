@@ -133,7 +133,7 @@ impl SocketBackend {
         "PipeWire/PulseAudio Unix-socket protocol is not implemented; discovery only. \
          Full implementation: session/stream setup, format negotiation, and PCM transfer over the \
          native server protocol."
-            .to_string()
+            .to_owned()
     }
 }
 

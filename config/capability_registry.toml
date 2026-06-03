@@ -71,16 +71,16 @@ methods = [
 # ─── Methods petalTongue CONSUMES ─────────────────────────────────────
 
 [content]
-owner = "nestgate"
+owner = "content-provider"
 role = "client"
-consumed_by = "web_mode::nestgate"
+consumed_by = "web_mode::content_backend"
 methods = [
     "content.get",
     "content.resolve",
 ]
 
 [discovery]
-owner = "songbird"
+owner = "discovery-service"
 role = "client"
 consumed_by = "primal_registration"
 methods = [
