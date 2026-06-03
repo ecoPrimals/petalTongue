@@ -35,15 +35,15 @@ impl PanelContentStore {
         );
     }
 
+    #[cfg(test)]
     #[must_use]
-    #[allow(dead_code, reason = "used by unit tests only; harmless in prod builds")]
     pub fn get(&self, panel: &PanelId) -> Option<&PanelContent> {
         let key = format!("{panel:?}");
         self.panels.get(&key)
     }
 
+    #[cfg(test)]
     #[must_use]
-    #[allow(dead_code, reason = "used by unit tests only; harmless in prod builds")]
     pub fn len(&self) -> usize {
         self.panels.len()
     }
@@ -101,8 +101,8 @@ impl NotificationQueue {
         &self.entries
     }
 
+    #[cfg(test)]
     #[must_use]
-    #[allow(dead_code, reason = "used by unit tests only; harmless in prod builds")]
     pub const fn len(&self) -> usize {
         self.entries.len()
     }
