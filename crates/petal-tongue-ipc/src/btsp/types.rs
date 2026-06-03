@@ -207,13 +207,16 @@ impl BtspHandshakeConfig {
                 || {
                     let provider = std::env::var(constants::BTSP_PROVIDER)
                         .unwrap_or_else(|_| "security".to_owned());
-                    let socket_dir = std::env::var(constants::BIOMEOS_SOCKET_DIR).unwrap_or_else(|_| {
-                        let xdg = std::env::var(constants::XDG_RUNTIME_DIR).unwrap_or_else(|_| {
-                            petal_tongue_core::constants::LEGACY_TMP_PREFIX.to_owned()
+                    let socket_dir =
+                        std::env::var(constants::BIOMEOS_SOCKET_DIR).unwrap_or_else(|_| {
+                            let xdg =
+                                std::env::var(constants::XDG_RUNTIME_DIR).unwrap_or_else(|_| {
+                                    petal_tongue_core::constants::LEGACY_TMP_PREFIX.to_owned()
+                                });
+                            let dir_name =
+                                petal_tongue_core::constants::ecosystem_runtime_dir_name();
+                            format!("{xdg}/{dir_name}")
                         });
-                        let dir_name = petal_tongue_core::constants::ecosystem_runtime_dir_name();
-                        format!("{xdg}/{dir_name}")
-                    });
                     std::path::PathBuf::from(format!(
                         "{socket_dir}/{provider}-{}.sock",
                         sanitize_family_segment(&fid)
