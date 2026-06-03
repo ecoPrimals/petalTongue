@@ -3,58 +3,161 @@
 //! Capability-based content backend for petalTongue web mode (PT-13).
 //!
 //! JSON-RPC client for any primal exposing `content.resolve` / `content.get`.
-//! Socket discovery follows the capability-first pattern:
-//! `CONTENT_BACKEND_SOCKET` env → ecosystem socket-dir convention
-//! → `$BIOMEOS_SOCKET_DIR/{content-provider}-{family}.sock`.
+//!
+//! Endpoint resolution follows a capability-first, mesh-aware tier chain:
+//!
+//! 1. `CONTENT_BACKEND_SOCKET`   — explicit Unix socket override
+//! 2. `CONTENT_BACKEND_ENDPOINT` — explicit TCP `host:port` (cross-gate)
+//! 3. `$BIOMEOS_SOCKET_DIR/{provider}-{family}.sock` convention
+//! 4. Discovery service `discovery.query("content")` (mesh / cross-gate)
 //!
 //! TRUE PRIMAL: The backend is primal-agnostic. petalTongue discovers the content
-//! provider by capability socket, never by primal name. The default socket prefix
-//! is `content-provider` (capability-based), overridable via `CONTENT_BACKEND_PROVIDER`.
+//! provider by capability, never by primal name.
 
 use axum::response::{Html, IntoResponse};
 use std::sync::Arc;
 
+/// Transport for reaching the content backend.
+#[derive(Debug, Clone)]
+pub enum ContentEndpoint {
+    /// Local or mesh-forwarded Unix domain socket.
+    Unix(std::path::PathBuf),
+    /// TCP `host:port` — used for cross-gate mesh routing.
+    Tcp(String),
+}
+
+impl std::fmt::Display for ContentEndpoint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Unix(p) => write!(f, "unix:{}", p.display()),
+            Self::Tcp(addr) => write!(f, "tcp:{addr}"),
+        }
+    }
+}
+
 /// A JSON-RPC client for any primal that implements `content.resolve`.
 pub struct ContentBackendClient {
-    pub socket_path: std::path::PathBuf,
+    pub endpoint: ContentEndpoint,
     pub request_id: std::sync::atomic::AtomicU64,
 }
 
 impl ContentBackendClient {
-    /// Resolve content backend socket from the environment.
+    /// Resolve content backend endpoint from the environment.
     ///
-    /// Resolution order (first match wins):
-    /// 1. `CONTENT_BACKEND_SOCKET` — explicit override
-    /// 2. `$BIOMEOS_SOCKET_DIR/{provider}-{family}.sock` where provider is
-    ///    `CONTENT_BACKEND_PROVIDER` env var (default `"content-provider"`)
-    /// 3. `$XDG_RUNTIME_DIR/biomeos/{provider}-{family}.sock` fallback
+    /// Resolution order (first reachable wins):
+    /// 1. `CONTENT_BACKEND_SOCKET`   — explicit Unix socket path
+    /// 2. `CONTENT_BACKEND_ENDPOINT` — explicit TCP `host:port` (cross-gate)
+    /// 3. `$BIOMEOS_SOCKET_DIR/{provider}-{family}.sock` convention
+    /// 4. Discovery service `discovery.query("content")` — mesh-aware fallback
     ///
     /// TRUE PRIMAL: The default provider name is capability-based (`content-provider`),
-    /// not coupled to any specific primal identity. Override via `CONTENT_BACKEND_PROVIDER`
-    /// or `CONTENT_BACKEND_SOCKET` for explicit routing.
-    pub fn from_env() -> Self {
-        let socket_path = std::env::var(petal_tongue_core::constants::CONTENT_BACKEND_SOCKET)
-            .map_or_else(
-                |_| {
-                    let provider =
-                        std::env::var(petal_tongue_core::constants::CONTENT_BACKEND_PROVIDER)
-                            .unwrap_or_else(|_| "content-provider".to_owned());
-                    let family = std::env::var(petal_tongue_core::constants::FAMILY_ID)
-                        .or_else(|_| {
-                            std::env::var(petal_tongue_core::constants::PETALTONGUE_FAMILY_ID)
-                        })
-                        .unwrap_or_else(|_| "default".to_owned());
-                    let dir = petal_tongue_core::constants::resolve_biomeos_socket_dir()
-                        .to_string_lossy()
-                        .into_owned();
-                    std::path::PathBuf::from(format!("{dir}/{provider}-{family}.sock"))
-                },
-                std::path::PathBuf::from,
-            );
+    /// not coupled to any specific primal identity.
+    pub async fn from_env() -> Self {
+        let endpoint = Self::resolve_endpoint().await;
         Self {
-            socket_path,
+            endpoint,
             request_id: std::sync::atomic::AtomicU64::new(1),
         }
+    }
+
+    async fn resolve_endpoint() -> ContentEndpoint {
+        // Tier 1: explicit Unix socket
+        if let Ok(sock) = std::env::var(petal_tongue_core::constants::CONTENT_BACKEND_SOCKET) {
+            tracing::info!(socket = %sock, "content backend: explicit socket");
+            return ContentEndpoint::Unix(std::path::PathBuf::from(sock));
+        }
+
+        // Tier 2: explicit TCP endpoint (cross-gate)
+        if let Ok(addr) = std::env::var(petal_tongue_core::constants::CONTENT_BACKEND_ENDPOINT) {
+            tracing::info!(endpoint = %addr, "content backend: explicit TCP endpoint");
+            return ContentEndpoint::Tcp(addr);
+        }
+
+        // Tier 3: socket-dir convention
+        let provider = std::env::var(petal_tongue_core::constants::CONTENT_BACKEND_PROVIDER)
+            .unwrap_or_else(|_| "content-provider".to_owned());
+        let family = std::env::var(petal_tongue_core::constants::FAMILY_ID)
+            .or_else(|_| std::env::var(petal_tongue_core::constants::PETALTONGUE_FAMILY_ID))
+            .unwrap_or_else(|_| "default".to_owned());
+        let dir = petal_tongue_core::constants::resolve_biomeos_socket_dir();
+        let convention_sock = dir.join(format!("{provider}-{family}.sock"));
+        if convention_sock.exists() {
+            tracing::info!(socket = %convention_sock.display(), "content backend: convention socket");
+            return ContentEndpoint::Unix(convention_sock);
+        }
+
+        // Tier 4: discovery service (mesh-aware)
+        if let Some(ep) = Self::discover_content_endpoint().await {
+            return ep;
+        }
+
+        // Fallback: convention path (will fail on connect with a clear error)
+        tracing::warn!(
+            socket = %convention_sock.display(),
+            "content backend: no socket found, using convention path"
+        );
+        ContentEndpoint::Unix(convention_sock)
+    }
+
+    /// Query the discovery service for a primal with `content` capability.
+    async fn discover_content_endpoint() -> Option<ContentEndpoint> {
+        use petal_tongue_discovery::DiscoveryServiceClient;
+
+        let family = std::env::var(petal_tongue_core::constants::FAMILY_ID)
+            .or_else(|_| std::env::var(petal_tongue_core::constants::PETALTONGUE_FAMILY_ID))
+            .ok();
+        let client = DiscoveryServiceClient::discover(family.as_deref()).ok()?;
+        let primals = client.discover_by_capability("content").await.ok()?;
+
+        for primal in &primals {
+            // Prefer endpoints struct with explicit transport info
+            if let Some(ref eps) = primal.endpoints {
+                if let Some(ref sock) = eps.unix_socket {
+                    let path = std::path::PathBuf::from(sock);
+                    if path.exists() {
+                        tracing::info!(
+                            primal = %primal.name, socket = %sock,
+                            "content backend: discovered local Unix socket via mesh"
+                        );
+                        return Some(ContentEndpoint::Unix(path));
+                    }
+                }
+                if let Some(ref http) = eps.http {
+                    if let Some(addr) = http.strip_prefix("http://") {
+                        tracing::info!(
+                            primal = %primal.name, endpoint = %addr,
+                            "content backend: discovered TCP endpoint via mesh"
+                        );
+                        return Some(ContentEndpoint::Tcp(addr.to_owned()));
+                    }
+                }
+            }
+
+            // Fall back to generic endpoint field
+            let ep = &primal.endpoint;
+            if std::path::Path::new(ep)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("sock"))
+                || ep.starts_with('/')
+            {
+                let path = std::path::PathBuf::from(ep);
+                if path.exists() {
+                    tracing::info!(
+                        primal = %primal.name, socket = %ep,
+                        "content backend: discovered socket"
+                    );
+                    return Some(ContentEndpoint::Unix(path));
+                }
+            } else if ep.contains(':') && !ep.starts_with("http") {
+                tracing::info!(
+                    primal = %primal.name, endpoint = %ep,
+                    "content backend: discovered TCP endpoint"
+                );
+                return Some(ContentEndpoint::Tcp(ep.clone()));
+            }
+        }
+
+        None
     }
 
     pub fn next_id(&self) -> u64 {
@@ -64,16 +167,6 @@ impl ContentBackendClient {
 
     /// Call `content.resolve` — returns `(content_bytes, mime_type)` or `None`.
     pub async fn resolve(&self, path: &str) -> Result<Option<(Vec<u8>, String)>, String> {
-        use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
-        use tokio::net::UnixStream;
-
-        let mut stream = UnixStream::connect(&self.socket_path).await.map_err(|e| {
-            format!(
-                "content backend connect({}): {e}",
-                self.socket_path.display()
-            )
-        })?;
-
         let req = serde_json::json!({
             "jsonrpc": "2.0",
             "method": "content.resolve",
@@ -82,22 +175,11 @@ impl ContentBackendClient {
         });
         let mut line = serde_json::to_string(&req).map_err(|e| e.to_string())?;
         line.push('\n');
-        stream
-            .write_all(line.as_bytes())
-            .await
-            .map_err(|e| format!("content backend write: {e}"))?;
-        stream
-            .flush()
-            .await
-            .map_err(|e| format!("content backend flush: {e}"))?;
 
-        let (reader, _) = stream.into_split();
-        let mut reader = tokio::io::BufReader::new(reader);
-        let mut resp_line = String::new();
-        reader
-            .read_line(&mut resp_line)
-            .await
-            .map_err(|e| format!("content backend read: {e}"))?;
+        let resp_line = match &self.endpoint {
+            ContentEndpoint::Unix(sock) => self.rpc_unix(sock, &line).await?,
+            ContentEndpoint::Tcp(addr) => self.rpc_tcp(addr, &line).await?,
+        };
 
         let resp: serde_json::Value =
             serde_json::from_str(&resp_line).map_err(|e| format!("content backend parse: {e}"))?;
@@ -124,6 +206,58 @@ impl ContentBackendClient {
             .map_err(|e| format!("content backend base64 decode: {e}"))?;
 
         Ok(Some((bytes, mime.to_owned())))
+    }
+
+    async fn rpc_unix(&self, sock: &std::path::Path, request: &str) -> Result<String, String> {
+        use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
+        use tokio::net::UnixStream;
+
+        let mut stream = UnixStream::connect(sock)
+            .await
+            .map_err(|e| format!("content backend connect({}): {e}", sock.display()))?;
+        stream
+            .write_all(request.as_bytes())
+            .await
+            .map_err(|e| format!("content backend write: {e}"))?;
+        stream
+            .flush()
+            .await
+            .map_err(|e| format!("content backend flush: {e}"))?;
+
+        let (reader, _) = stream.into_split();
+        let mut reader = tokio::io::BufReader::new(reader);
+        let mut resp = String::new();
+        reader
+            .read_line(&mut resp)
+            .await
+            .map_err(|e| format!("content backend read: {e}"))?;
+        Ok(resp)
+    }
+
+    async fn rpc_tcp(&self, addr: &str, request: &str) -> Result<String, String> {
+        use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
+        use tokio::net::TcpStream;
+
+        let mut stream = TcpStream::connect(addr)
+            .await
+            .map_err(|e| format!("content backend tcp connect({addr}): {e}"))?;
+        stream
+            .write_all(request.as_bytes())
+            .await
+            .map_err(|e| format!("content backend tcp write: {e}"))?;
+        stream
+            .flush()
+            .await
+            .map_err(|e| format!("content backend tcp flush: {e}"))?;
+
+        let (reader, _) = stream.into_split();
+        let mut reader = tokio::io::BufReader::new(reader);
+        let mut resp = String::new();
+        reader
+            .read_line(&mut resp)
+            .await
+            .map_err(|e| format!("content backend tcp read: {e}"))?;
+        Ok(resp)
     }
 }
 

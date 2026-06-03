@@ -170,6 +170,10 @@ pub const NESTGATE_SOCKET: &str = "NESTGATE_SOCKET";
 /// Content backend provider name prefix override.
 pub const CONTENT_BACKEND_PROVIDER: &str = "CONTENT_BACKEND_PROVIDER";
 
+/// TCP endpoint for cross-gate content backend (`host:port`).
+/// When set, the content backend uses TCP JSON-RPC instead of a local Unix socket.
+pub const CONTENT_BACKEND_ENDPOINT: &str = "CONTENT_BACKEND_ENDPOINT";
+
 /// JSON-RPC authentication mode (`permissive` or `enforced`).
 pub const PETALTONGUE_AUTH_MODE: &str = "PETALTONGUE_AUTH_MODE";
 

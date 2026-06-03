@@ -5,7 +5,7 @@
     reason = "test code uses unwrap/expect for brevity"
 )]
 
-use super::content_backend::{ContentBackendClient, content_fallback};
+use super::content_backend::{ContentBackendClient, ContentEndpoint, content_fallback};
 use super::handlers::*;
 use super::*;
 
@@ -356,34 +356,58 @@ async fn test_api_routes_take_precedence_over_docroot() {
     );
 }
 
-#[test]
-fn test_content_backend_client_from_env_default() {
-    let client = ContentBackendClient::from_env();
-    let path_str = client.socket_path.to_string_lossy();
+#[tokio::test]
+async fn test_content_backend_client_from_env_default() {
+    let client = ContentBackendClient::from_env().await;
+    let ep = format!("{}", client.endpoint);
     assert!(
-        path_str.ends_with(".sock"),
-        "socket path should end with .sock: {path_str}"
+        ep.contains(".sock") || ep.starts_with("tcp:"),
+        "endpoint should be a socket or TCP address: {ep}"
     );
 }
 
-#[test]
-fn test_content_backend_client_env_override() {
-    petal_tongue_core::test_fixtures::env_test_helpers::with_env_var(
+#[tokio::test]
+async fn test_content_backend_client_env_override() {
+    use petal_tongue_core::test_fixtures::env_test_helpers;
+    let client = env_test_helpers::with_env_var_async(
         "CONTENT_BACKEND_SOCKET",
         "/custom/content.sock",
-        || {
-            let client = ContentBackendClient::from_env();
-            assert_eq!(
-                client.socket_path,
-                std::path::PathBuf::from("/custom/content.sock")
-            );
-        },
-    );
+        || async { ContentBackendClient::from_env().await },
+    )
+    .await;
+    match &client.endpoint {
+        ContentEndpoint::Unix(p) => {
+            assert_eq!(p, &std::path::PathBuf::from("/custom/content.sock"));
+        }
+        ContentEndpoint::Tcp(addr) => panic!("expected Unix endpoint, got tcp:{addr}"),
+    }
+}
+
+#[tokio::test]
+async fn test_content_backend_tcp_endpoint_override() {
+    use petal_tongue_core::test_fixtures::env_test_helpers;
+    let client = env_test_helpers::with_env_vars_async(
+        &[
+            ("CONTENT_BACKEND_ENDPOINT", Some("eastgate.mesh:9100")),
+            ("CONTENT_BACKEND_SOCKET", None),
+        ],
+        || async { ContentBackendClient::from_env().await },
+    )
+    .await;
+    match &client.endpoint {
+        ContentEndpoint::Tcp(addr) => {
+            assert_eq!(addr, "eastgate.mesh:9100");
+        }
+        ContentEndpoint::Unix(p) => panic!("expected TCP endpoint, got unix:{}", p.display()),
+    }
 }
 
 #[test]
 fn test_content_backend_request_id_increments() {
-    let client = ContentBackendClient::from_env();
+    let client = ContentBackendClient {
+        endpoint: ContentEndpoint::Unix(std::path::PathBuf::from("/tmp/test.sock")),
+        request_id: std::sync::atomic::AtomicU64::new(1),
+    };
     let id1 = client.next_id();
     let id2 = client.next_id();
     assert_eq!(id2, id1 + 1);
@@ -394,7 +418,9 @@ async fn test_content_fallback_unavailable_returns_502() {
     use axum::body::Body;
 
     let client = Arc::new(ContentBackendClient {
-        socket_path: std::path::PathBuf::from("/tmp/nonexistent-content-test.sock"),
+        endpoint: ContentEndpoint::Unix(std::path::PathBuf::from(
+            "/tmp/nonexistent-content-test.sock",
+        )),
         request_id: std::sync::atomic::AtomicU64::new(1),
     });
     let req = axum::http::Request::builder()
@@ -411,7 +437,9 @@ async fn test_content_backend_installs_fallback() {
     use axum::body::Body;
 
     let client = Arc::new(ContentBackendClient {
-        socket_path: std::path::PathBuf::from("/tmp/nonexistent-content-test.sock"),
+        endpoint: ContentEndpoint::Unix(std::path::PathBuf::from(
+            "/tmp/nonexistent-content-test.sock",
+        )),
         request_id: std::sync::atomic::AtomicU64::new(1),
     });
     let client_clone = Arc::clone(&client);

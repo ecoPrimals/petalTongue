@@ -23,10 +23,6 @@ petal-tongue-core = { path = "../petal-tongue-core" }
 petal-tongue-ui-core = { path = "../petal-tongue-ui-core" }
 petal-tongue-graph = { path = "../petal-tongue-graph", default-features = false }
 petal-tongue-scene = { path = "../petal-tongue-scene" }
-petal-tongue-discovery = { path = "../petal-tongue-discovery" }
-
-# Async runtime
-tokio = { workspace = true }
 
 # Serialization
 serde = { workspace = true }

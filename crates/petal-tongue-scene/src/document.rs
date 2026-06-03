@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Metadata extracted from TOML `+++` front matter.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct PageMeta {
     pub title: String,
@@ -32,7 +32,7 @@ pub struct PageMeta {
     pub section: Option<String>,
     pub path: String,
     pub taxonomies: HashMap<String, Vec<String>>,
-    pub extra: HashMap<String, toml::Value>,
+    pub extra: HashMap<String, serde_json::Value>,
 }
 
 /// A resolved entity reference for shortcode expansion.
