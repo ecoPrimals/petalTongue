@@ -150,19 +150,31 @@ CORS allowed origins. Use `*` for all origins (development only).
 
 ### **CONTENT_BACKEND_SOCKET**
 **Type**: String (socket path)  
-**Default**: None (falls back to `NESTGATE_SOCKET` or capability discovery)  
+**Default**: None (falls back to convention, then discovery)  
 **Example**: `CONTENT_BACKEND_SOCKET=/run/user/1000/biomeos/content.sock`
 
-Direct socket path for the content backend provider. Prioritized over legacy
-`NESTGATE_SOCKET` and provider-name construction.
+Direct Unix socket path for the content backend provider. Highest priority
+in the resolution chain.
+
+### **CONTENT_BACKEND_ENDPOINT**
+**Type**: String (`host:port`)  
+**Default**: None  
+**Example**: `CONTENT_BACKEND_ENDPOINT=eastgate.mesh:9100`
+
+TCP endpoint for cross-gate content routing. When set, the content backend
+uses TCP JSON-RPC instead of a local Unix socket. Second priority after
+`CONTENT_BACKEND_SOCKET`. Enables mesh-aware content delivery from remote
+gates (e.g., NestGate on eastGate).
 
 ### **CONTENT_BACKEND_PROVIDER**
 **Type**: String  
-**Default**: `nestgate`  
+**Default**: `content-provider`  
 **Example**: `CONTENT_BACKEND_PROVIDER=content-provider`
 
 Provider name used to construct the socket path when neither
-`CONTENT_BACKEND_SOCKET` nor `NESTGATE_SOCKET` is set.
+`CONTENT_BACKEND_SOCKET` nor `CONTENT_BACKEND_ENDPOINT` is set.
+Third priority in the resolution chain.  If the convention socket doesn't
+exist, falls back to `discovery.query("content")` mesh discovery.
 
 ### **DISPLAY_BACKEND_SOCKET**
 **Type**: String (socket path)  

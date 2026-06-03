@@ -78,7 +78,8 @@ pub fn parse_front_matter(toml_str: &str) -> PageMeta {
     let mut extra = HashMap::new();
     if let Some(extra_table) = table.get("extra").and_then(|v| v.as_table()) {
         for (key, val) in extra_table {
-            extra.insert(key.clone(), val.clone());
+            let json_val = serde_json::to_value(val).unwrap_or(serde_json::Value::Null);
+            extra.insert(key.clone(), json_val);
         }
     }
 

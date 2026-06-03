@@ -95,9 +95,9 @@ pub async fn run(cfg: WebConfig<'_>, data_service: Arc<DataService>) -> Result<(
         .nest_service("/static", ServeDir::new(WEB_STATIC_DIR));
 
     if cfg.backend == "content-provider" {
-        let client = Arc::new(content_backend::ContentBackendClient::from_env());
+        let client = Arc::new(content_backend::ContentBackendClient::from_env().await);
         tracing::info!(
-            socket = %client.socket_path.display(),
+            endpoint = %client.endpoint,
             "Content backend active (capability: content.resolve)"
         );
         let index_client = Arc::clone(&client);

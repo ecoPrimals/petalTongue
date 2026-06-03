@@ -6,6 +6,40 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Wave 73 Sovereign + Mesh + Optimization (June 3, 2026)
+
+Wave 73 — sovereign rendering verification, mesh-aware content routing,
+WASM bundle trimming, continued tokio scope reduction.
+
+#### Changed
+- **Mesh-aware content routing**: `ContentBackendClient` evolved from Unix-only
+  to multi-transport (`ContentEndpoint::Unix` | `Tcp`). New 4-tier resolution:
+  `CONTENT_BACKEND_SOCKET` → `CONTENT_BACKEND_ENDPOINT` (TCP) → socket-dir
+  convention → `discovery.query("content")` mesh fallback. Cross-gate content
+  rendering (e.g. flockGate → NestGate on eastGate) now possible via TCP
+  JSON-RPC or discovery service.
+- **WASM bundle trim**: Removed `toml` and `tracing` from `petal-tongue-scene`
+  deps (zero usage in scene sources). `PageMeta.extra` type changed from
+  `HashMap<String, toml::Value>` to `HashMap<String, serde_json::Value>`,
+  eliminating the `toml`+`winnow` parser chain from WASM builds. `PageMeta`
+  gained `Eq` derive (now possible without `toml::Value`).
+- **Tokio scope reduction (9→6 production crates)**: Removed dead `tokio` from
+  `petal-tongue-ui-core` and `petal-tongue-headless`. Removed dead
+  `petal-tongue-discovery` from headless (eliminates transitive ipc/tokio from
+  headless binary). Removed dead `tokio-util` from `petal-tongue-tui`.
+
+#### Added
+- `CONTENT_BACKEND_ENDPOINT` env var for explicit TCP cross-gate content routing.
+- Discovery-based content resolution via `discovery.query("content")` capability.
+
+#### Verified
+- Sovereign rendering: zero hardcoded GitHub Pages URLs, zero CDN deps.
+  WASM exports are synchronous and origin-agnostic. `web/index.html` uses
+  only relative `/api/` paths. Ready for Caddy-served sovereign infrastructure.
+- `cargo fmt --check`: clean
+- `cargo clippy --workspace`: 0 warnings
+- `cargo test --workspace`: 6,209 passed, 0 failed
+
 ### Wave 69 Deep Debt + Modernization Pass (June 2, 2026)
 
 Wave 69 — error typing evolution, dependency narrowing, dead code elimination,

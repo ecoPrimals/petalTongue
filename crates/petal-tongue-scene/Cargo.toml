@@ -19,8 +19,6 @@ bytes = { workspace = true }
 petal-tongue-types = { path = "../petal-tongue-types" }
 serde = { workspace = true }
 serde_json = { workspace = true }
-toml = { workspace = true }
-tracing = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

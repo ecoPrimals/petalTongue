@@ -1,6 +1,6 @@
 +++
 title = "petalTongue Validation Summary"
-description = "Universal user interface primal — 6,208+ tests, 53 IPC methods, 18 crates, 7 modes, pure Rust"
+description = "Universal user interface primal — 6,209+ tests, 53 IPC methods, 18 crates, 7 modes, pure Rust"
 date = 2026-06-02
 
 [taxonomies]
@@ -11,7 +11,7 @@ springs = []
 ## Status
 
 - **v1.6.6** — workspace edition 2024, `forbid(unsafe_code)`
-- **6,208+ tests** passing, 0 failed (unit + integration + doc + property)
+- **6,209+ tests** passing, 0 failed (unit + integration + doc + property)
 - **53 IPC methods** across 10 domain categories (health, identity, auth,
   capabilities, visualization, interaction, audio, UI, motor, BTSP)
 - **18 workspace crates** (core, IPC, graph, scene, discovery, adapters,
