@@ -160,6 +160,13 @@ pub fn is_ipynb(path: &str) -> bool {
         .is_some_and(|ext| ext.eq_ignore_ascii_case("ipynb"))
 }
 
+/// Detect notebook content by MIME type (for content-addressable hash URLs
+/// where the path has no extension).
+pub fn is_notebook_mime(mime: &str) -> bool {
+    let m = mime.split(';').next().unwrap_or(mime).trim();
+    m == "application/x-ipynb+json" || m == "application/x-jupyter"
+}
+
 // ── Route handlers ──────────────────────────────────────────────────────
 
 pub(super) async fn index_handler() -> Html<&'static str> {

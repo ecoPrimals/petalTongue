@@ -30,11 +30,11 @@ pub enum StartupAudioError {
     /// Audio file read failed.
     #[error("Failed to read audio file: {0}")]
     FileRead(std::io::Error),
-    /// Audio decoding failed.
-    #[error("{context}: {source}")]
+    /// Audio decoding failed (symphonia or format error).
+    #[error("{context}: {detail}")]
     Decode {
         context: &'static str,
-        source: Box<dyn std::error::Error + Send + Sync>,
+        detail: String,
     },
 }
 
@@ -107,7 +107,7 @@ pub fn decode_audio_symphonia(audio_data: Bytes) -> Result<DecodedAudio, Startup
         )
         .map_err(|e| StartupAudioError::Decode {
             context: "Probe failed",
-            source: Box::new(e),
+            detail: e.to_string(),
         })?;
 
     let mut format = probed.format;
@@ -115,14 +115,14 @@ pub fn decode_audio_symphonia(audio_data: Bytes) -> Result<DecodedAudio, Startup
         .default_track()
         .ok_or_else(|| StartupAudioError::Decode {
             context: "No default track",
-            source: "missing default track in media".into(),
+            detail: "missing default track in media".to_owned(),
         })?;
 
     let mut decoder = symphonia::default::get_codecs()
         .make(&track.codec_params, &DecoderOptions::default())
         .map_err(|e| StartupAudioError::Decode {
             context: "Decoder creation failed",
-            source: Box::new(e),
+            detail: e.to_string(),
         })?;
 
     let sample_rate = track
@@ -130,7 +130,7 @@ pub fn decode_audio_symphonia(audio_data: Bytes) -> Result<DecodedAudio, Startup
         .sample_rate
         .ok_or_else(|| StartupAudioError::Decode {
             context: "No sample rate",
-            source: "missing sample rate in codec params".into(),
+            detail: "missing sample rate in codec params".to_owned(),
         })? as f32;
 
     let mut samples = Vec::new();

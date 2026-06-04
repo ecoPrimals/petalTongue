@@ -832,6 +832,16 @@ fn test_is_ipynb() {
 }
 
 #[test]
+fn test_is_notebook_mime() {
+    assert!(is_notebook_mime("application/x-ipynb+json"));
+    assert!(is_notebook_mime("application/x-jupyter"));
+    assert!(is_notebook_mime("application/x-ipynb+json; charset=utf-8"));
+    assert!(!is_notebook_mime("application/json"));
+    assert!(!is_notebook_mime("text/html"));
+    assert!(!is_notebook_mime("application/octet-stream"));
+}
+
+#[test]
 fn test_resolve_docroot_path() {
     let path = resolve_docroot_path("/srv/www", "/docs/page.html");
     assert_eq!(path, std::path::PathBuf::from("/srv/www/docs/page.html"));

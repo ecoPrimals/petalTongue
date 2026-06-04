@@ -292,7 +292,7 @@ pub async fn content_fallback(
     let path = req.uri().path().to_owned();
     match client.resolve(&path).await {
         Ok(Some((body, mime))) => {
-            if super::is_ipynb(&path) {
+            if super::is_ipynb(&path) || super::is_notebook_mime(&mime) {
                 if let Some(html) = crate::notebook_render::render_notebook(&body, &nb_config) {
                     return super::build_response(
                         html.into_bytes(),

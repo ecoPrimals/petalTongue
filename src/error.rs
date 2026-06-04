@@ -67,7 +67,15 @@ pub enum AppError {
     #[error("Tracing init: {0}")]
     TracingInit(String),
 
+    /// Web mode configuration error (invalid docroot, backend, etc.).
+    #[error("Web config: {0}")]
+    WebConfig(String),
+
     /// Wrapped error from dependencies (catch-all for untyped sources).
+    #[cfg_attr(
+        not(test),
+        allow(dead_code, reason = "retained as catch-all; all production sites now typed")
+    )]
     #[error("{0}")]
     Other(String),
 }
@@ -141,6 +149,14 @@ mod tests {
         assert!(matches!(err, AppError::TaskPanic(_)));
         assert!(err.to_string().contains("Task panicked"));
         assert!(err.to_string().contains("worker panicked"));
+    }
+
+    #[test]
+    fn test_web_config_constructor() {
+        let err = AppError::WebConfig("invalid docroot".to_owned());
+        assert!(matches!(err, AppError::WebConfig(_)));
+        assert!(err.to_string().contains("Web config"));
+        assert!(err.to_string().contains("invalid docroot"));
     }
 
     #[test]
